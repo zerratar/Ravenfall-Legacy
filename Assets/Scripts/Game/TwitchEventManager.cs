@@ -58,7 +58,10 @@ public class TwitchEventManager : MonoBehaviour
                 announceTimer -= Time.deltaTime;
                 if (announceTimer <= 0f)
                 {
-                    AnnounceExpMultiplierEnding(timeLeft);
+                    // In some cases we get here with less than zero time left. In those cases, don't send a time left message
+                    if (timeLeft > 0f)
+                        AnnounceExpMultiplierEnding(timeLeft);
+
                     announceTimer = timeLeft < 30F ? 10F : 30f;
                 }
             }
@@ -70,6 +73,7 @@ public class TwitchEventManager : MonoBehaviour
         }
         else
         {
+            AnnounceExpMultiplierEnded();
             CurrentBoost.Active = false;
             CurrentBoost.Multiplier = 1;
             CurrentBoost.Elapsed = Duration;
@@ -85,6 +89,13 @@ public class TwitchEventManager : MonoBehaviour
         gameManager.Server?.Client?.SendCommand("",
             "message",
             $"The current exp multiplier (x{CurrentBoost.Multiplier}) will end in {minutesStr}{secondsStr}.");
+    }
+
+    private void AnnounceExpMultiplierEnded()
+    {
+        gameManager.Server?.Client?.SendCommand("",
+            "message",
+            $"The current exp multiplier (x{CurrentBoost.Multiplier}) ended.");
     }
 
     public void Activate()
