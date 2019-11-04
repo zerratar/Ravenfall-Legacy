@@ -129,7 +129,11 @@ public class RaidManager : MonoBehaviour
                 Leave(player, bossKilled, timeout);
             }
         }
-        Destroy(Boss.gameObject);
+
+        if (!Boss.RaidBossControlsDestroy || timeout)
+        {
+            Destroy(Boss.gameObject);
+        }
     }
 
     public float GetParticipationPercentage(float enterTime)

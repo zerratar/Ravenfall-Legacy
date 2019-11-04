@@ -2,8 +2,8 @@
 {
     public class RavenNestStreamSettings : IAppSettings
     {
-        public string ApiEndpoint => "https://www.ravenfall.stream/api/";
-        public string WebSocketEndpoint => "wss://www.ravenfall.stream/api/stream";
+        public string ApiEndpoint => "https://ravenfall.stream/api/";
+        public string WebSocketEndpoint => "wss://ravenfall.stream/api/stream";
     }
 
     public class LocalRavenNestStreamSettings : IAppSettings

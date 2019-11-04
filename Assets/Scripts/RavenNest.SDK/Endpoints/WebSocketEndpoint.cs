@@ -96,9 +96,10 @@ namespace RavenNest.SDK.Endpoints
             if (oldState.InArena != newState.InArena) return true;
             if (oldState.InRaid != newState.InRaid) return true;
             if (oldState.Island != newState.Island) return true;
-            var op = oldState.Position;
-            var np = newState.Position;
-            if (op.X != np.X || op.Y != np.Y || op.Z != np.Z) return true;
+#warning disabled update player state on position change
+            //var op = oldState.Position;
+            //var np = newState.Position;
+            //if (op.X != np.X || op.Y != np.Y || op.Z != np.Z) return true;
             if (oldState.Task != newState.Task) return true;
             if (oldState.TaskArgument != newState.TaskArgument) return true;
             return oldState.DuelOpponent != newState.DuelOpponent;

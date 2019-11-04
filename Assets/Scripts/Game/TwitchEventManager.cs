@@ -118,7 +118,7 @@ public class TwitchEventManager : MonoBehaviour
         if (player)
         {
             var subscriberMultiplier = player.IsSubscriber ? 2f : 1f;
-            var observeTime = Mathf.Min(MaxObserveTime, (cheer.Bits / (float)BitsForMultiplier) 
+            var observeTime = Mathf.Min(MaxObserveTime, (cheer.Bits / (float)BitsForMultiplier)
                 * MaxObserveTime
                 * subscriberMultiplier);
 
@@ -168,6 +168,11 @@ public class TwitchEventManager : MonoBehaviour
             ? CurrentBoost.LastCheerer
             : data.UserName;
 
+        if (gameManager.Permissions.ExpMultiplierLimit == 0)
+        {
+            return;
+        }
+
         CurrentBoost.LastCheerAmount = data.Bits;
         CurrentBoost.CheerPot += data.Bits;
 
@@ -198,9 +203,15 @@ public class TwitchEventManager : MonoBehaviour
 
     private void AddSubscriber(TwitchSubscription data)
     {
+
         CurrentBoost.LastSubscriber = string.IsNullOrEmpty(data.UserName)
             ? CurrentBoost.LastSubscriber
             : data.UserName;
+
+        if (gameManager.Permissions.ExpMultiplierLimit == 0)
+        {
+            return;
+        }
 
         CurrentBoost.Elapsed = 0f;
         CurrentBoost.Active = true;
@@ -208,7 +219,8 @@ public class TwitchEventManager : MonoBehaviour
         if (data.Months >= 0)
         {
             CurrentBoost.Multiplier = Mathf.Min(
-                CurrentBoost.Multiplier + (UnityEngine.Random.value <= 0.10 ? 10 : 1), MaxMultiplier);
+                CurrentBoost.Multiplier + (UnityEngine.Random.value <= 0.10 ? 10 : 1),
+                gameManager.Permissions.ExpMultiplierLimit);
         }
 
         SaveState();

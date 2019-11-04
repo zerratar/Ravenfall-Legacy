@@ -132,28 +132,73 @@ public class ItemRepository : MonoBehaviour
     private void SetCameraTarget(Transform transform)
     {
         Debug.Log("setting itemRenderer parent to " + transform.name);
+
         var item = transform.GetComponent<ItemHolder>().Item;
-        var camera = renderCameras.FirstOrDefault(x => x.Type == item.Type);
+        var camera = renderCameras.FirstOrDefault(x => x.Item == transform.name);
+
         if (!camera)
         {
-            camera = renderCameras.FirstOrDefault(x => x.Category == item.Category);
+            camera = renderCameras.FirstOrDefault(x => x.Type == item.Type && string.IsNullOrEmpty(x.Item));
+        }
+
+        if (!camera)
+        {
+            camera = renderCameras.FirstOrDefault(x => x.Category == item.Category && string.IsNullOrEmpty(x.Item));
         }
 
         if (camera)
         {
-            ChangeCamera(camera);
+            SnapPicture(camera, item);
         }
     }
 
-    private void ChangeCamera(ItemRenderer newCamera)
+    private void SnapPicture(ItemRenderer newCamera, Item item)
     {
         if (oldCamera)
         {
             oldCamera.gameObject.SetActive(false);
         }
+
         newCamera.gameObject.SetActive(true);
         oldCamera = newCamera;
 
+        var targetTexture = new RenderTexture(512, 512, 32, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        var camera = newCamera.GetComponent<Camera>();
+        camera.targetTexture = targetTexture;
+
+        StartCoroutine(SaveRenderTexture(targetTexture, "C:\\Item Icons\\" + item.Id + ".png"));
+    }
+
+    public IEnumerator SaveRenderTexture(RenderTexture rt, string pngOutPath)
+    {
+        //yield return new WaitForSeconds(0.1f);
+
+        yield return null;
+
+        var oldRT = RenderTexture.active;
+        var tex = new Texture2D(rt.width, rt.height, TextureFormat.ARGB32, false, false);
+
+        if (rt.sRGB)
+        {
+            Debug.Log("WUP WUP! sRGB!");
+        }
+        else
+        {
+            Debug.LogError("No sRGB :<");
+        }
+
+        RenderTexture.active = rt;
+        //tex.alphaIsTransparency = true;
+
+        tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        tex.Apply();
+        System.IO.File.WriteAllBytes(pngOutPath, tex.EncodeToPNG());
+        RenderTexture.active = oldRT;
+
+        if (activeItemIndex < transform.childCount - 1)
+        {
+            ActivateNextItem();
+        }
     }
 
     private static Vector3 GetCenterPoint(Bounds[] bounds)
@@ -180,4 +225,27 @@ public class ItemRepository : MonoBehaviour
 public class ItemHolder : MonoBehaviour
 {
     public Item Item { get; internal set; }
+}
+
+public class Test2
+{
+
+}
+
+public class Test
+{
+
+    public static implicit operator bool(Test obj)
+    {
+        return obj != null;
+    }
+
+    public static implicit operator Test2(Test obj)
+    {
+        return new Test2();
+    }
+    public static explicit operator string(Test obj)
+    {
+        return "";
+    }
 }

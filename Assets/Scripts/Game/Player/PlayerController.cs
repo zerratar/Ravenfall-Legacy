@@ -525,6 +525,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         }
 
         var pets = Inventory.GetInventoryItemsOfType(ItemCategory.Pet, ItemType.Pet);
+        if (pets.Count == 0) return null;
         var petToEquip = pets.GroupBy(x => x.Item.Id)
             .OrderBy(x => UnityEngine.Random.value)
             .FirstOrDefault(x => x.Key != equippedPet.Id)
@@ -797,6 +798,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         Equipment.ShowWeapon(attackType);
         var weapon = Inventory.GetEquipmentOfCategory(ItemCategory.Weapon);
         var weaponAnim = TrainingMagic ? 4 : TrainingRanged ? 3 : weapon?.Type.GetAnimation() ?? 0;
+        var attackAnimation = TrainingMagic || TrainingRanged ? 0 : weapon?.Type.GetAnimationCount() ?? 4;
+
         if (!playerAnimations.IsAttacking() || lastTrainedSkill != Skill.Fighting)
         {
             lastTrainedSkill = Skill.Fighting;
@@ -804,7 +807,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             if (!damageOnDraw) return true;
         }
 
-        playerAnimations.Attack(weaponAnim);
+        playerAnimations.Attack(weaponAnim, UnityEngine.Random.Range(0, attackAnimation));
 
         transform.LookAt(Target.transform);
         StartCoroutine(DamageEnemy(target, hitTime));
@@ -1404,7 +1407,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
         InCombat = true;
 
-        attackers[attacker.Name] = attacker;
+        if (attacker != null)
+        {
+            attackers[attacker.Name] = attacker;
+        }
 
         if (!damageCounterManager)
             damageCounterManager = FindObjectOfType<DamageCounterManager>();

@@ -115,6 +115,12 @@ public static class GameMath
 
         return 0;
     }
+
+    internal static float CalculateExplosionDamage(IAttackable enemy, IAttackable player, float scale = 0.75f)
+    {
+        return CalculateDamage(enemy, player) * scale;
+    }
+
     private static float CalculateCastDamage(IAttackable attacker, IAttackable defender, int level, double power)
     {
         var rangeLvl = level;

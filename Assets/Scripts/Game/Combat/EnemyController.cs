@@ -14,8 +14,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     private readonly ConcurrentDictionary<string, float> attackerAggro
         = new ConcurrentDictionary<string, float>();
 
-    [SerializeField] private bool positionLocked = true;
-
+    [SerializeField] private bool positionLocked = true;    
     [SerializeField] private Vector3 spawnPoint;
     [SerializeField] private Quaternion spawnRotation;
     [SerializeField] private float respawnTime = 7F;
@@ -27,27 +26,25 @@ public class EnemyController : MonoBehaviour, IAttackable
     [SerializeField] private float attackTimer;
     [SerializeField] private float attackInterval = 0.22f;
 
+
+    [SerializeField] public EquipmentStats EquipmentStats;
+    [SerializeField] public Skills Stats;
+
+    public bool HandleFightBack = true;
+    public bool RotationLocked = false;
+
+    private float noDamageDropTargetTimer;
+    private float highestAttackerAggroValue;
+    private HealthBar healthBar;
     private WalkyWalkyScript animations;
     private DamageCounterManager damageCounterManager;
-    private Rigidbody rbody;
     private NavMeshAgent agent;
-
-    [SerializeField]
-    public EquipmentStats EquipmentStats;
-
-    [SerializeField]
-    public Skills Stats;
-
-    private HealthBar healthBar;
-    private float highestAttackerAggroValue;
+    private Rigidbody rbody;
 
     public IReadOnlyList<IAttackable> Attackers => attackers.Values.ToList();
     public IReadOnlyDictionary<string, float> Aggro => attackerAggro;
     public bool InCombat { get; private set; }
     public string Name => name;
-
-    public bool HandleFightBack = true;
-    private float noDamageDropTargetTimer;
 
     void Start()
     {
@@ -162,6 +159,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             transform.rotation = spawnRotation;
         }
 
+        if (RotationLocked) return;
         if (Target)
         {
             transform.LookAt(Target);

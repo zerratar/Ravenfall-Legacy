@@ -110,11 +110,12 @@ public class PlayerAnimationController : MonoBehaviour
                animator.GetBool("Attacking");
     }
 
-    public void Attack(int weapon)
+    public void Attack(int weapon, int action = 0)
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Attacking;
         animator.SetInteger("Weapon", weapon);
+        animator.SetInteger("Action", action);
         animator.SetBool("Attacking", true);
         animator.SetTrigger("Attack");
     }

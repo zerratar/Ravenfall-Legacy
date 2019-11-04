@@ -14,4 +14,17 @@ public static class ItemTypeExtensions
 
         return 0;
     }  
+
+    public static int GetAnimationCount(this ItemType type)
+    {
+        switch (type)
+        {
+            case ItemType.TwoHandedSword: return 3;
+            case ItemType.OneHandedMace:
+            case ItemType.OneHandedAxe:
+            case ItemType.OneHandedSword: return 2;
+        }
+
+        return 0;
+    }
 }
