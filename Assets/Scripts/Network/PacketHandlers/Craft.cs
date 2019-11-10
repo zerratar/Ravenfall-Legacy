@@ -39,11 +39,11 @@ public class Craft : PacketHandler<CraftRequest>
 
                         if (player.EquipIfBetter(item))
                         {
-                            client.SendCommand(data.Player.Username, "craft_success", $"You crafted and equipped a {item.Name}!");
+                            client.SendCommand(data.Player.Username, "craft_success", $"You crafted and equipped: {item.Name}!");
                         }
                         else
                         {
-                            client.SendCommand(data.Player.Username, "craft_success", $"You crafted a {item.Name}!");
+                            client.SendCommand(data.Player.Username, "craft_success", $"You crafted: {item.Name}!");
                         }
                         return;
                     }
