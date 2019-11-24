@@ -17,7 +17,7 @@ public class CraftingManager : MonoBehaviour
         if (!ioc) ioc = GetComponent<IoCContainer>();
     }
 
-    public CraftValidationStatus CanCraftItem(PlayerController player, ItemCategory itemCategory, ItemType type)
+    public CraftValidationStatus CanCraftItem(PlayerController player, Item item)
     {
         if (player.Chunk == null || player.Chunk.ChunkType != TaskType.Crafting)
         {
@@ -34,58 +34,52 @@ public class CraftingManager : MonoBehaviour
             return CraftValidationStatus.NeedCraftingStation;
         }
 
-        var item = GetCraftableItemForPlayer(player, itemCategory, type);
-        if (item == null)
-        {
-            return CraftValidationStatus.NotEnoughSkill;
-        }
-
-        if (!GotEnoughResources(player, item))
-        {
-            return CraftValidationStatus.NotEnoughResources;
-        }
+        //if (!GotEnoughResources(player, item))
+        //{
+        //    return CraftValidationStatus.NotEnoughResources;
+        //}
 
         return CraftValidationStatus.OK;
     }
 
-    public RavenNest.Models.Item CraftItem(PlayerController player, ItemCategory itemCategory, ItemType type)
-    {
-        var item = GetCraftableItemForPlayer(player, itemCategory, type);
-        if (item == null) return null;
-        if (!GotEnoughResources(player, item)) return null;
-        player.RemoveResources(item);
-        player.SaveResourcesAsync();
-        return item;
-    }
+    //public RavenNest.Models.Item CraftItem(PlayerController player, ItemCategory itemCategory, ItemType type)
+    //{
+    //    var item = GetCraftableItemForPlayer(player, itemCategory, type);
+    //    if (item == null) return null;
+    //    if (!GotEnoughResources(player, item)) return null;
+    //    player.RemoveResources(item);
+    //    player.SaveResourcesAsync();
+    //    return item;
+    //}
 
-    private bool CanCraftItem(PlayerController player, RavenNest.Models.Item item)
-    {
-        var requirements = item;
-        if (requirements.RequiredCraftingLevel > player.Stats.Crafting.CurrentValue)
-            return false;
+    //private bool CanCraftItem(PlayerController player, RavenNest.Models.Item item)
+    //{
+    //    var requirements = item;
+    //    if (requirements.RequiredCraftingLevel > player.Stats.Crafting.CurrentValue)
+    //        return false;
 
-        //if (requirements.MinCookingLevel > player.Stats.Cooking.CurrentValue)
-        //    return false;
+    //    //if (requirements.MinCookingLevel > player.Stats.Cooking.CurrentValue)
+    //    //    return false;
 
-        return true;
-    }
+    //    return true;
+    //}
 
-    private bool GotEnoughResources(PlayerController player, RavenNest.Models.Item item)
-    {
-        if (item.OreCost > player.Resources.Ore)
-            return false;
+    //private bool GotEnoughResources(PlayerController player, RavenNest.Models.Item item)
+    //{
+    //    if (item.OreCost > player.Resources.Ore)
+    //        return false;
 
-        if (item.WoodCost > player.Resources.Wood)
-            return false;
+    //    if (item.WoodCost > player.Resources.Wood)
+    //        return false;
 
-        //if (item.FishCost > player.Resources.Fish)
-        //    return false;
+    //    //if (item.FishCost > player.Resources.Fish)
+    //    //    return false;
 
-        //if (item.WheatCost > player.Resources.Wheat)
-        //    return false;
+    //    //if (item.WheatCost > player.Resources.Wheat)
+    //    //    return false;
 
-        return true;
-    }
+    //    return true;
+    //}
 
     public RavenNest.Models.Item GetCraftableItemForPlayer(PlayerController player, ItemCategory itemCategory, ItemType itemType)
     {

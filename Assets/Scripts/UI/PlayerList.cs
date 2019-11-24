@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,22 +14,38 @@ public class PlayerList : MonoBehaviour
     [SerializeField] private float itemHeight = 40;
     [SerializeField] private float stickyTime = 2f;
 
-    private bool showExpRate = false;
-
-    private readonly object mutex = new object();
-
-    private float stickyTimer = 0f;
-
     private readonly List<PlayerListItem> instantiatedPlayerListItems
         = new List<PlayerListItem>();
 
+    private readonly object mutex = new object();
+
+    private bool showExpRate = false;
+    private float stickyTimer = 0f;
+
+    private ScrollRect scroll;
+    private RectTransform scrollRectTransform;
     private GameCamera gameCamera;
     private float scrollPosition = 0f;
     private float scrollSpeed = 0.1f;
 
+    public float Bottom
+    {
+        get
+        {
+            if (!EnsureRectTransform()) return 0;
+            return scrollRectTransform.rect.yMin;
+        }
+        set
+        {
+            if (!EnsureRectTransform()) return;
+            scrollRectTransform.SetBottom(value);
+        }
+    }
+
     // Start is called before the first frame update
     void Start()
     {
+        EnsureRectTransform();
         gameCamera = GameObject.FindObjectOfType<GameCamera>();
     }
 
@@ -40,8 +57,7 @@ public class PlayerList : MonoBehaviour
 
     public void UpdateScroll()
     {
-        if (!scrollRect) return;
-        var scroll = scrollRect.GetComponent<ScrollRect>();
+        EnsureRectTransform();
         if (scroll != null)
         {
             if (stickyTimer > 0f)
@@ -51,7 +67,6 @@ public class PlayerList : MonoBehaviour
             }
 
             var speed = scrollSpeed * Time.deltaTime;
-
             lock (mutex) speed /= instantiatedPlayerListItems.Count * 0.25f;
             scrollPosition += speed;
             scrollPosition = Math.Min(1f, scrollPosition);
@@ -156,5 +171,15 @@ public class PlayerList : MonoBehaviour
                 item.ExpPerHourVisible = showExpRate;
             }
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool EnsureRectTransform()
+    {
+        if (!scrollRect) return false;
+        if (!scroll) scroll = scrollRect.GetComponent<ScrollRect>();
+        if (!scroll) return false;
+        if (!scrollRectTransform) scrollRectTransform = scrollRect.GetComponent<RectTransform>();
+        return scrollRectTransform;
     }
 }

@@ -55,6 +55,11 @@ public class ItemManager : MonoBehaviour
 
     public bool Loaded => state == LoadingState.Loaded;
 
+    public RavenNest.Models.Item GetItem(Guid itemId)
+    {
+        lock (mutex) return items.FirstOrDefault(x => x.Id == itemId);
+    }
+
     public IReadOnlyList<RavenNest.Models.Item> GetItems()
     {
         lock (mutex)

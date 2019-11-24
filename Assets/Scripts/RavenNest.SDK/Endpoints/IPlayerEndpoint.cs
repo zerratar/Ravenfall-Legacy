@@ -11,6 +11,7 @@ namespace RavenNest.SDK.Endpoints
         Task<RavenNest.Models.Player> GetPlayerAsync(string userId);
 
         Task<AddItemResult> AddItemAsync(string userId, Guid item);
+        Task<AddItemResult> CraftItemAsync(string userId, Guid item);
 
         Task<bool> UnEquipItemAsync(string userId, Guid item);
 

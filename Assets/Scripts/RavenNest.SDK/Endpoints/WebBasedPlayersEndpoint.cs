@@ -54,6 +54,18 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<AddItemResult> CraftItemAsync(string userId, Guid item)
+        {
+            return request.Create()
+                .Identifier(userId)
+                .Method("craft")
+                .AddParameter(item.ToString())
+                .Build()
+                .SendAsync<AddItemResult>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
         public Task<bool> UnEquipItemAsync(string userId, Guid item)
         {
             return request.Create()

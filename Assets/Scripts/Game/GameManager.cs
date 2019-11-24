@@ -35,6 +35,9 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private GameObject exitView;
     [SerializeField] private MusicManager musicManager;
 
+    private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
+        = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
+
     private readonly ConcurrentQueue<GameEvent> gameEventQueue = new ConcurrentQueue<GameEvent>();
     private readonly Queue<PlayerController> playerKickQueue = new Queue<PlayerController>();
     private readonly ConcurrentDictionary<string, LoadingState> loadingStates
@@ -70,6 +73,8 @@ public class GameManager : MonoBehaviour, IGameManager
     public FerryController Ferry => ferryController;
     public DropEventManager DropEvent => dropEventManager;
     public GameCamera Camera => gameCamera;
+
+    public PlayerList PlayerList => playerList;
 
     public bool IsSaving => saveCounter > 0;
 
@@ -120,9 +125,33 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!musicManager) musicManager = GetComponent<MusicManager>();
 
 
-        commandServer.StartServer(this);
+        RegisterGameEventHandler<ItemAddEventHandler>(GameEventType.ItemAdd);
+        RegisterGameEventHandler<ResourceUpdateEventHandler>(GameEventType.ResourceUpdate);
+        RegisterGameEventHandler<ServerMessageEventHandler>(GameEventType.ServerMessage);
+        RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
+        RegisterGameEventHandler<StreamerWarRaidEventHandler>(GameEventType.WarRaid);
+        RegisterGameEventHandler<StreamerRaidEventHandler>(GameEventType.Raid);
+        RegisterGameEventHandler<PlayerAppearanceEventHandler>(GameEventType.PlayerAppearance);
+        RegisterGameEventHandler<ItemBuyEventHandler>(GameEventType.ItemBuy);
+        RegisterGameEventHandler<ItemSellEventHandler>(GameEventType.ItemSell);
 
+        commandServer.StartServer(this);
         musicManager.PlayBackgroundMusic();
+    }
+
+    private void RegisterGameEventHandler<T>(GameEventType type) where T : IGameEventHandler, new()
+    {
+        gameEventHandlers[type] = new T();
+    }
+
+    private IGameEventHandler GetEventHandler(GameEventType type)
+    {
+        if (gameEventHandlers.TryGetValue(type, out var handler))
+        {
+            return handler;
+        }
+
+        return null;
     }
 
     // Update is called once per frame
@@ -265,25 +294,21 @@ public class GameManager : MonoBehaviour, IGameManager
         var spawnPoint = starter.GetPlayerSpawnPoint();
         var vector3 = Random.insideUnitSphere * 1f;
         var player = playerManager.Spawn(spawnPoint + vector3, playerDef, streamUser, raidInfo);
+
         if (!player)
-        {
             Debug.LogError("Can't spawn player, player is already playing.");
-        }
 
         playerList.AddPlayer(player);
-
         PlayerJoined(player);
 
-        if (player && gameCamera && gameCamera.AllowJoinObserve) gameCamera.ObservePlayer(player);
+        if (player && gameCamera && gameCamera.AllowJoinObserve)
+            gameCamera.ObservePlayer(player);
 
         if (dropEventManager.IsActive)
-        {
             player.BeginItemDropEvent();
-        }
 
         return player;
     }
-
     public void HandleGameEvents(EventList gameEvents)
     {
         foreach (var ge in gameEvents.Events)
@@ -297,6 +322,13 @@ public class GameManager : MonoBehaviour, IGameManager
         if (gameEvent == null)
             return;
 
+        var handler = GetEventHandler((GameEventType)gameEvent.Type);
+        if (handler != null)
+        {
+            handler.Handle(this, gameEvent.Data);
+            return;
+        }
+
         switch ((GameEventType)gameEvent.Type)
         {
             case GameEventType.PermissionChange:
@@ -305,159 +337,10 @@ public class GameManager : MonoBehaviour, IGameManager
                     Permissions = JsonConvert.DeserializeObject<Permissions>(gameEvent.Data);
                     break;
                 }
-            case GameEventType.ServerMessage:
-                {
-                    Debug.LogWarning("Server message received: " + gameEvent.Data);
-                    var serverMessage = JsonConvert.DeserializeObject<ServerMessage>(gameEvent.Data);
-                    OnServerMessage(serverMessage);
-                    break;
-                }
-            case GameEventType.PlayerRemove:
-                {
-                    Debug.LogWarning("Player remove received: " + gameEvent.Data);
-                    var playerInfo = JsonConvert.DeserializeObject<PlayerRemove>(gameEvent.Data);
-                    OnPlayerRemove(playerInfo);
-                    break;
-                }
-            case GameEventType.WarRaid:
-                {
-                    Debug.LogWarning("War raid received: " + gameEvent.Data);
-                    var raidInfo = JsonConvert.DeserializeObject<StreamRaidInfo>(gameEvent.Data);
-                    OnStreamerRaid(raidInfo, true);
-                    break;
-                }
-            case GameEventType.Raid:
-                {
-                    Debug.LogWarning("Raid received: " + gameEvent.Data);
-                    var raidInfo = JsonConvert.DeserializeObject<StreamRaidInfo>(gameEvent.Data);
-                    OnStreamerRaid(raidInfo, false);
-                    return;
-                }
-            case GameEventType.PlayerAppearance:
-                {
-                    Debug.LogWarning("Player appearance received: " + gameEvent.Data);
-                    var appearanceData = JsonConvert.DeserializeObject<AppearanceUpdate>(gameEvent.Data);
-                    var player = playerManager.GetPlayerByUserId(appearanceData.UserId);
-                    if (player)
-                    {
-                        player.Appearance.TryUpdate(appearanceData.Values);
-                    }
-                    return;
-                }
-            case GameEventType.ItemBuy:
-                {
-                    Debug.LogWarning("Item buy received: " + gameEvent.Data);
-                    var data = JsonConvert.DeserializeObject<ItemTradeUpdate>(gameEvent.Data);
-                    var player = playerManager.GetPlayerByUserId(data.BuyerId);
-                    if (player)
-                    {
-                        var coinsBefore = player.Resources.Coins;
-                        player.RemoveResource(Resource.Currency, data.Cost);
-                        var coinsChange = coinsBefore - player.Resources.Coins;
-                        Debug.Log("Coins change after item buy: " + coinsChange);
-                    }
-                    return;
-                }
-            case GameEventType.ItemSell:
-                {
-                    Debug.LogWarning("Item sell received: " + gameEvent.Data);
-                    var data = JsonConvert.DeserializeObject<ItemTradeUpdate>(gameEvent.Data);
-                    var player = playerManager.GetPlayerByUserId(data.SellerId);
-                    if (player)
-                    {
-                        var coinsBefore = player.Resources.Coins;
-                        player.AddResource(Resource.Currency, data.Cost, false);
-                        var coinsChange = coinsBefore - player.Resources.Coins;
-                        Debug.Log("Coins change after item sell: " + coinsChange);
-                    }
-                    return;
-                }
         }
     }
 
-    private void OnServerMessage(ServerMessage serverMessage)
-    {
-        Debug.Log("Server Message: " + serverMessage.Message);
-    }
-
-    private void OnPlayerRemove(PlayerRemove playerInfo)
-    {
-        var player = Players.GetPlayerByUserId(playerInfo.UserId);
-        if (!player)
-        {
-            Debug.Log($"Received Player Remove ({playerInfo.UserId}) but the player is not in this game. Reason: " + playerInfo.Reason);
-            return;
-        }
-
-        QueueRemovePlayer(player);
-        Debug.Log($"{player.PlayerName} removed from the game. Reason: " + playerInfo.Reason);
-    }
-
-    private async void OnStreamerRaid(StreamRaidInfo raidInfo, bool raidWar)
-    {
-        var players = Players.GetAllPlayers();
-        if (raidInfo.Players.Count == 0)
-        {
-            Server.Client?.SendCommand("", "message", raidInfo.RaiderUserName + " raided but without any players. Kappa");
-            return;
-        }
-
-        // only one active raid war at a time.
-        raidWar = raidWar && !StreamRaid.Started && !StreamRaid.IsWar;
-        StreamRaid.AnnounceRaid(raidInfo, raidWar && players.Count > 0);
-
-        if (players.Count == 0 && raidWar)
-        {
-            Server.Client?.SendCommand("", "message",
-                raidInfo.RaiderUserName + " raided with intent of war but we don't have any players. FeelsBadMan");
-        }
-
-        StreamRaid.ClearTeams();
-
-        if (!StreamRaid.Started && raidWar)
-        {
-            foreach (var player in players)
-            {
-                if (raidInfo.Players.Contains(player.UserId)) continue;
-                StreamRaid.AddToStreamerTeam(player);
-            }
-        }
-
-        var raiders = new List<PlayerController>();
-        foreach (var user in raidInfo.Players)
-        {
-            var existingPlayer = Players.GetPlayerByUserId(user);
-            if (existingPlayer)
-            {
-                RemovePlayer(existingPlayer);
-            }
-
-            var player = await AddPlayerByUserIdAsync(user, raidInfo);
-            if (player && raidWar)
-            {
-                raiders.Add(player);
-            }
-        }
-
-        if (raidWar)
-        {
-            StartCoroutine(StartRaidWar(raiders));
-        }
-    }
-
-    private IEnumerator StartRaidWar(IReadOnlyList<PlayerController> raiders)
-    {
-        yield return new WaitForEndOfFrame();
-        foreach (var raider in raiders)
-        {
-            StreamRaid.AddToRaiderTeam(raider);
-            yield return new WaitForEndOfFrame();
-        }
-
-        StreamRaid.StartRaidWar();
-    }
-
-    private async Task<PlayerController> AddPlayerByUserIdAsync(string userId, StreamRaidInfo raiderInfo)
+    internal async Task<PlayerController> AddPlayerByUserIdAsync(string userId, StreamRaidInfo raiderInfo)
     {
         var playerInfo = await RavenNest.PlayerJoinAsync(userId, "");
         if (playerInfo == null)
@@ -491,8 +374,8 @@ public class GameManager : MonoBehaviour, IGameManager
             client = new RavenNestClient(
                 logger,
                 this,
-            new RavenNestStreamSettings()
-            //new LocalRavenNestStreamSettings()
+            //new RavenNestStreamSettings()
+            new LocalRavenNestStreamSettings()
             );
 
             ravenNest = client;

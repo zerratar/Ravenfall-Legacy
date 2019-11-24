@@ -59,12 +59,6 @@ public class CookingTask : ChunkTask
             return false;
         }
 
-        if (player.Resources.Fish <= 0 && player.Resources.Wheat<= 0)
-        {
-            reason = TaskExecutionStatus.InsufficientResources;
-            return false;
-        }
-
         var possibleTargets =lazyCraftingStations();
         if (!possibleTargets.FirstOrDefault(x => x.transform == target))
         {

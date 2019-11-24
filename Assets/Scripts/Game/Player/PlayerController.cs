@@ -9,29 +9,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using RavenNest.Models;
 using RavenNest.SDK;
-using RPGCharacterAnims;
 using UnityEngine;
 using UnityEngine.AI;
 using Resources = RavenNest.Models.Resources;
 
 public interface IPlayerController { }
-public struct Transaction
-{
-    public readonly decimal Value;
-    public readonly float GameTime;
-    public Transaction(decimal value, float gametime)
-    {
-        Value = value;
-        GameTime = gametime;
-    }
-}
 
 public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 {
     private readonly HashSet<Guid> pickedItems = new HashSet<Guid>();
-
-    private readonly ConcurrentDictionary<Resource, List<Transaction>> resourceTransactions
-        = new ConcurrentDictionary<Resource, List<Transaction>>();
 
     internal readonly ConcurrentDictionary<string, IAttackable> attackers
         = new ConcurrentDictionary<string, IAttackable>();
@@ -88,7 +74,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     private decimal ExpOverTime;
 
     private decimal lastSavedExperienceTotal;
-    private Resources lastSavedResources;
     private Statistics lastSavedStatistics;
 
     private float outOfResourcesAlertTimer = 0f;
@@ -390,17 +375,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             state.Experience = Stats.ExperienceList;
         }
 
-
-
-        var resources = Resources.ToList()
-            .Delta(lastSavedResources?.ToList())
-            .ToArray();
-
-        if (resources.Any(x => x != 0))
-        {
-            state.Resources = resources;
-        }
-
         if (Chunk != null)
         {
             state.CurrentTask = Chunk.ChunkType + ":" + taskArguments.FirstOrDefault();
@@ -412,21 +386,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     internal void SavedSucceseful()
     {
         lastSavedStatistics = DataMapper.Map<Statistics, Statistics>(Statistics);
-        lastSavedResources = DataMapper.Map<Resources, Resources>(Resources);
         lastSavedExperienceTotal = Stats.TotalExperience;
-    }
-
-    public async Task SaveResourcesAsync()
-    {
-        if (!hasBeenInitialized) return;
-
-        var delta = Resources.ToList().Delta(lastSavedResources.ToList()).ToArray();
-        var result = await gameManager.RavenNest.Players.UpdateResourcesAsync(UserId, delta);
-        if (result)
-            Debug.Log("Resources for " + PlayerName + " saved.");
-        else
-            Debug.LogError("Resources for " + PlayerName + " failed to save!");
-        lastSavedResources = DataMapper.Map<Resources, Resources>(Resources);
     }
 
     public void Cheer()
@@ -566,7 +526,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         Raider = raidInfo;
 
         lastSavedStatistics = DataMapper.Map<Statistics, Statistics>(Statistics);
-        lastSavedResources = DataMapper.Map<Resources, Resources>(Resources);
 
         if (streamUser != null)
         {
@@ -616,7 +575,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             AddExp(fishingSpot.Experience, Skill.Fishing);
             var amount = fishingSpot.Resource * Mathf.FloorToInt(Stats.Fishing.CurrentValue / 10f);
             Statistics.TotalFishCollected += (int)amount;
-            AddResource(Resource.Fishing, amount);
         }
 
         return true;
@@ -640,8 +598,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         if (craftingStation.Craft(this))
         {
             AddExp(craftingStation.GetExperience(this), Skill.Cooking);
-            var costs = craftingStation.GetCraftingCost(this);
-            RemoveResources(costs);
         }
 
         return true;
@@ -667,8 +623,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         if (craftingStation.Craft(this))
         {
             AddExp(craftingStation.GetExperience(this), Skill.Crafting);
-            var costs = craftingStation.GetCraftingCost(this);
-            RemoveResources(costs);
         }
 
         return true;
@@ -698,7 +652,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             AddExp(rock.Experience, Skill.Mining);
             var amount = rock.Resource * Mathf.FloorToInt(Stats.Mining.CurrentValue / 10f);
             Statistics.TotalOreCollected += (int)amount;
-            AddResource(Resource.Mining, amount);
         }
 
         return true;
@@ -720,8 +673,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         }
 
         playerAnimations.Chop(0);
-
-        //this.transform.LookAt(tree.transform);
 
         StartCoroutine(DamageTree(tree));
 
@@ -749,7 +700,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             AddExp(farm.Experience, Skill.Farming);
             var amount = farm.Resource * Mathf.FloorToInt(Stats.Farming.CurrentValue / 10f);
             Statistics.TotalWheatCollected += amount;
-            AddResource(Resource.Farming, amount);
         }
 
         return true;
@@ -774,16 +724,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             return false;
         }
 
-        return Attack(player, true);
+        return AttackEntity(player, true);
     }
 
     public bool Attack(EnemyController enemy)
     {
         if (enemy == null || !enemy) return false;
-        return Attack((IAttackable)enemy);
+        return AttackEntity(enemy);
     }
 
-    private bool Attack(IAttackable target, bool damageOnDraw = false)
+    private bool AttackEntity(IAttackable target, bool damageOnDraw = false)
     {
         var attackType = GetAttackType();
         InCombat = true;
@@ -972,6 +922,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             CelebrateCombatSkillLevelUp(CombatSkill.Health, hpLevels);
         }
     }
+
     public void RemoveResources(RavenNest.Models.Item item)
     {
         if (item.WoodCost > 0)
@@ -998,8 +949,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
     public void RemoveResource(Resource resource, decimal amount)
     {
-        AddTransaction(resource, -amount);
-
         switch (resource)
         {
             case Resource.Mining:
@@ -1022,14 +971,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
     public void AddResource(Resource resource, decimal amount, bool allowMultiplier = true)
     {
-        if (gameManager.Boost.Active && allowMultiplier)
-        {
-            amount *= (decimal)gameManager.Boost.Multiplier;
-        }
-
         amount = Math.Max(1, amount);
-
-        AddTransaction(resource, amount);
 
         switch (resource)
         {
@@ -1153,18 +1095,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         playerAnimations.Cheer();
         gameManager.PlayerLevelUp(this, GetSkill(skillName));
         Effects.LevelUp();
-    }
-
-    private void AddTransaction(Resource resource, decimal value)
-    {
-        if (resourceTransactions.TryGetValue(resource, out var valueChanges))
-        {
-            valueChanges.Add(new Transaction(value, Time.time));
-        }
-        else
-        {
-            resourceTransactions[resource] = new List<Transaction> { new Transaction(value, Time.time) };
-        }
     }
 
     #endregion
@@ -1462,6 +1392,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
     public bool EquipIfBetter(RavenNest.Models.Item item)
     {
+        if (item.Category == ItemCategory.Resource || item.Category == ItemCategory.Food)
+        {
+            return false;
+        }
+
         if (item.RequiredDefenseLevel > Stats.Defense.Level)
         {
             return false;
@@ -1489,13 +1424,18 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         return false;
     }
 
-    public async void AddItem(RavenNest.Models.Item item)
+    public async void AddItem(RavenNest.Models.Item item, bool updateServer = true)
     {
         Inventory.Add(item);
 
         if (IntegrityCheck.IsCompromised)
         {
             Debug.LogError("Item add for user: " + UserId + ", item: " + item.Id + ", failed. Integrity compromised");
+            return;
+        }
+
+        if (!updateServer)
+        {
             return;
         }
 

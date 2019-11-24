@@ -218,10 +218,12 @@ namespace RavenNest.SDK.Endpoints
             var array = (Array)value;
             var len = array.Length;
             bw.Write(len);
+
             for (var i = 0; i < len; ++i)
             {
                 Serialize(bw, array.GetValue(i));
             }
+
             return true;
         }
 

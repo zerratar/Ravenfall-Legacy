@@ -39,7 +39,7 @@ namespace RavenNest.SDK
             appSettings = settings ?? new RavenNestStreamSettings();
 
             tokenProvider = new TokenProvider();
-            IApiRequestBuilderProvider request = new WebApiRequestBuilderProvider(appSettings, tokenProvider);
+            var request = new WebApiRequestBuilderProvider(appSettings, tokenProvider);
 
             Stream = new WebSocketEndpoint(gameManager, logger, settings, tokenProvider, new GamePacketSerializer(binarySerializer));
             Auth = new WebBasedAuthEndpoint(this, logger, request);

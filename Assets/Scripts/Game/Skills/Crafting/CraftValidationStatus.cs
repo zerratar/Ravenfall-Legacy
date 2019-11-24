@@ -3,6 +3,5 @@
     OK,
     NeedCraftingStation,
     NotEnoughResources,
-    NotEnoughSkill,
-    NotCraftable
+    NotEnoughSkill
 }

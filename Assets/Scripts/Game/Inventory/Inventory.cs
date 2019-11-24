@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RavenNest.Models;
 using UnityEngine;
@@ -100,7 +101,7 @@ public class Inventory : MonoBehaviour
             equipment.Equip(item);
         }
 
-        player.UpdateCombatStats(equipped);        
+        player.UpdateCombatStats(equipped);
     }
 
     public RavenNest.Models.Item GetEquipmentOfCategory(ItemCategory itemCategory)
@@ -113,6 +114,11 @@ public class Inventory : MonoBehaviour
         return backpack.Where(x => x.Item.Category == itemCategory && x.Item.Type == type).ToList();
     }
 
+    internal IReadOnlyList<GameInventoryItem> GetInventoryItems(Guid itemId)
+    {
+        return backpack.Where(x => x.Item.Id == itemId).ToList();
+    }
+
     public RavenNest.Models.Item GetEquipmentOfType(ItemCategory itemCategory, RavenNest.Models.ItemType type)
     {
         if (itemCategory == ItemCategory.Weapon)
@@ -122,6 +128,7 @@ public class Inventory : MonoBehaviour
 
         return equipped.FirstOrDefault(x => x.Category == itemCategory && x.Type == type);
     }
+
 
     public void EquipBestItems()
     {

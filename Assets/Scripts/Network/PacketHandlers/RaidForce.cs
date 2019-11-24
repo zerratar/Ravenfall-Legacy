@@ -17,7 +17,7 @@ public class RaidForce : PacketHandler<Player>
             return;
         }
 
-        if (Game.Raid && !Game.Raid.Started)
+        if (Game.Raid && !Game.Raid.Started && !Game.Raid.Boss)
         {
             Game.Raid.StartRaid(data.Username);
         }

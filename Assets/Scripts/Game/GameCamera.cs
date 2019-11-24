@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using FlatKit;
 using UnityEngine;
 
@@ -21,9 +22,13 @@ public class GameCamera : MonoBehaviour
     private int observedPlayerIndex;
 
     private GameCameraType state = GameCameraType.Free;
+    private bool allowJoinObserve = true;
 
-    public bool AllowJoinObserve { get; private set; } = true;
-
+    public bool AllowJoinObserve
+    {
+        get => allowJoinObserve && !gameManager.Raid.Started;
+        private set => allowJoinObserve = value;
+    }
     // Start is called before the first frame updateF
     void Start()
     {
@@ -62,8 +67,8 @@ public class GameCamera : MonoBehaviour
         }
 
         if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            if (ObserveNextPlayer()) return;
+        {   
+            ObserveNextPlayer();
             return;
         }
 
@@ -102,12 +107,14 @@ public class GameCamera : MonoBehaviour
 
         state = GameCameraType.Observe;
         focusTargetCamera.enabled = false;
-        observedPlayerIndex = (observedPlayerIndex + 1) % playerCount;
-        var player = playerManager.GetPlayerByIndex(observedPlayerIndex);
-        //var player = this.playerManager.GetRandomPlayer(this.orbitCamera.targetTransform);
-        if (!player)
+        PlayerController player;
+
+        while (true)
         {
-            return true;
+            observedPlayerIndex = (observedPlayerIndex + 1) % playerCount;
+            player = playerManager.GetPlayerByIndex(observedPlayerIndex);
+            if (!player) return true;
+            if (CanObservePlayer(player)) break;
         }
 
         ObservePlayer(player);
@@ -144,12 +151,20 @@ public class GameCamera : MonoBehaviour
 
     public void ObservePlayer(PlayerController player, float time)
     {
+        if (!CanObservePlayer(player)) return;
+
         observeNextPlayerTimer = time;
         observeCamera.ObservePlayer(player);
         playerObserver.Observe(player, time);
         freeCamera.enabled = false;
         orbitCamera.targetTransform = player.transform;
         orbitCamera.enabled = true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool CanObservePlayer(PlayerController player)
+    {
+        return !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.StreamRaid.InWar;
     }
 }
 

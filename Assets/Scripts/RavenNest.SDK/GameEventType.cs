@@ -12,9 +12,9 @@
         ItemSell = 7,
         ItemEquip = 8,
         ItemUnEquip = 9,
-        ResourceAdd = 10,
-        ResourceRemove = 11,
+        ItemAdd = 10,
+        ResourceUpdate = 11,
         ServerMessage = 12,
-        PermissionChange = 13
+        PermissionChange = 13,
     }
 }

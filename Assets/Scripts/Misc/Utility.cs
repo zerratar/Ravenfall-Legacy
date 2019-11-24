@@ -17,7 +17,7 @@ public static class Utility
             return Math.Round(ks, 1).ToString(CultureInfo.InvariantCulture) + "K";
         }
 
-        return Math.Round(value, 1).ToString(CultureInfo.InvariantCulture);
+        return ((long)Math.Round(value, 0)).ToString(CultureInfo.InvariantCulture);
     }
 
     public static T Random<T>()

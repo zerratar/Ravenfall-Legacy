@@ -76,13 +76,12 @@ public class RaidHandler : MonoBehaviour
         if (raidWon)
         {
             var proc = gameManager.Raid.GetParticipationPercentage(raidEnterTime);
-
             //var expAmount = 
-
-            var ratio = 549.8123f * proc;
+            //var ratio = 549.8123f * proc;
 
             var raidBossCombatLevel = gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
             var exp = GameMath.CombatExperience(raidBossCombatLevel / 25) * proc;
+
             //var combatType = player.GetCombatTypeFromArgs(player.GetTaskArguments());
             //if (combatType >= 0)
             //{
@@ -94,16 +93,16 @@ public class RaidHandler : MonoBehaviour
 
             player.AddExp((decimal)exp, Skill.Slayer);
 
-            var woodCuttingRatio = ratio;
-            var miningRatio = ratio;
-            var fishingRatio = ratio;
-            var farmingRatio = ratio;
+            //var woodCuttingRatio = ratio;
+            //var miningRatio = ratio;
+            //var fishingRatio = ratio;
+            //var farmingRatio = ratio;
 
-            player.AddResource(Resource.Currency, (int)(player.Stats.CombatLevel * ratio));
-            player.AddResource(Resource.Woodcutting, (int)(player.Stats.Woodcutting.Level * woodCuttingRatio));
-            player.AddResource(Resource.Mining, (int)(player.Stats.Mining.Level * miningRatio));
-            player.AddResource(Resource.Fishing, (int)(player.Stats.Fishing.Level * fishingRatio));
-            player.AddResource(Resource.Farming, (int)(player.Stats.Farming.Level * farmingRatio));
+            //player.AddResource(Resource.Currency, (int)(player.Stats.CombatLevel * ratio));
+            //player.AddResource(Resource.Woodcutting, (int)(player.Stats.Woodcutting.Level * woodCuttingRatio));
+            //player.AddResource(Resource.Mining, (int)(player.Stats.Mining.Level * miningRatio));
+            //player.AddResource(Resource.Fishing, (int)(player.Stats.Fishing.Level * fishingRatio));
+            //player.AddResource(Resource.Farming, (int)(player.Stats.Farming.Level * farmingRatio));
 
             ++player.Statistics.RaidsWon;
 

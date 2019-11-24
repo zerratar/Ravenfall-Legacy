@@ -60,12 +60,6 @@ public class CraftingTask : ChunkTask
             return false;
         }
 
-        if (player.Resources.Wood <= 0 && player.Resources.Ore <= 0)
-        {
-            reason = TaskExecutionStatus.InsufficientResources;
-            return false;
-        }
-
         var possibleTargets = lazyCraftingStations();
         if (!possibleTargets.FirstOrDefault(x => x.transform == target))
         {
