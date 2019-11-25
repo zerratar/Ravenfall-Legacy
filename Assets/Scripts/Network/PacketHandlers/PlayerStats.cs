@@ -21,11 +21,14 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
             return;
         }
 
-        var ps = player.Stats;
-        var eq = player.EquipmentStats;
-
         if (!string.IsNullOrEmpty(data.Skill))
-        {
+        {            
+            var targetPlayer = PlayerManager.GetPlayer(data.Skill);
+            if (targetPlayer != null) {
+                SendPlayerStats(targetPlayer, client);
+                return;
+            }
+
             SkillStat skill = null;
             var csi = player.GetCombatTypeFromArgs(data.Skill);
             if (csi != -1)
@@ -49,6 +52,12 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
             return;
         }
 
+        SendPlayerStats(player, client);
+    }
+
+    private void SendPlayerStats(PlayerController player, GameClient client) {
+        var ps = player.Stats;
+        var eq = player.EquipmentStats;
         var combatLevel = ps.CombatLevel;
         var skills = "";
         var total = ps
@@ -57,14 +66,5 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
             .Where(x => x.FieldType == typeof(SkillStat))
             .Select(x => { skills += (SkillStat)x.GetValue(ps) + ", "; return x; })
             .Sum(x => ((SkillStat)x.GetValue(ps)).Level);
-
-        client.SendCommand(data.Player.Username,
-            "player_stats",
-            $"Combat level {combatLevel}, " +
-            skills +
-            $" -- TOTAL {total} --, " +
-            $"Eq - power {eq.WeaponPower}, " +
-            $"aim {eq.WeaponAim}, " +
-            $"armor {eq.ArmorPower}");
     }
 }

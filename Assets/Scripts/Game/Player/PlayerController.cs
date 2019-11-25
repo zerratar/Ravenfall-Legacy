@@ -1272,7 +1272,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             case CombatSkill.Strength: return Stats.Strength;
             case CombatSkill.Health: return Stats.Health;
             case CombatSkill.Magic: return Stats.Magic;
-            case CombatSkill.Ranged: return Stats.Ranged;
+            case CombatSkill.Ranged: return Stats.Ranged;            
         }
         return null;
     }
@@ -1286,7 +1286,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             case 2: return Stats.Strength;
             case 3: return Stats.Health;
             case 4: return Stats.Magic;
-            case 5: return Stats.Ranged;
+            case 5: return Stats.Ranged;            
         }
         return null;
     }
@@ -1323,6 +1323,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             if (StartsWith(val, "cook")) return 3;
             if (StartsWith(val, "mine") || StartsWith(val, "mining")) return 4;
             if (StartsWith(val, "farm")) return 5;
+            if (StartsWith(val, "slay")) return 6;
+            if (StartsWith(val, "sail")) return 7;
         }
 
         return -1;

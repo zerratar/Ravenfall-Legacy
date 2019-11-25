@@ -31,6 +31,10 @@ public class CommandServer : MonoBehaviour
         server.Register<BuyItem>("buy_item");
         server.Register<SellItem>("sell_item");
 
+        server.Register<VendorItem>("vendor_item");
+        server.Register<GiftItem>("gift_item");
+        server.Register<ValueItem>("value_item");
+
         server.Register<PlayerStats>("player_stats");
         server.Register<PlayerResources>("player_resources");
         server.Register<HighestSkill>("highest_skill");
@@ -55,7 +59,6 @@ public class CommandServer : MonoBehaviour
         server.Register<RaidForce>("raid_force");
 
         server.Register<RaidStreamer>("raid_streamer");
-
 
         server.Register<Craft>("craft");
 

@@ -87,6 +87,15 @@ public class GameClient : IDisposable
         }
     }
 
+    public void SendMessage(string playerName, string message) 
+    {
+        SendCommand(playerName, "message", message);
+    }
+    public void SendMessage(Player player, string message) 
+    {
+        SendCommand(player.Username, "message", message);
+    }
+    
     public void SendCommand(string playerName, string command, params string[] args)
     {
         var arguments = "";

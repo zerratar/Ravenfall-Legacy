@@ -139,27 +139,26 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
         }
 
-        public Task<bool> GiftResourcesAsync(string userId, string receiverUserId, string resource, decimal amount)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("gift")
-                .AddParameter(receiverUserId)
-                .AddParameter(resource)
-                .AddParameter("value", amount)
-                .Build()
-                .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Get);
-        }
-
-        public Task<bool> GiftItemAsync(string userId, string receiverUserId, Guid itemId)
+        public Task<int> GiftItemAsync(string userId, string receiverUserId, Guid itemId, int amount)
         {
             return request.Create()
                 .Identifier(userId)
                 .Method("gift")
                 .AddParameter(receiverUserId)
                 .AddParameter(itemId.ToString())
+                .AddParameter(amount.ToString())
                 .Build()
-                .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Get);
+                .SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
+        }
+        public Task<int> VendorItemAsync(string userId, string receiverUserId, Guid itemId, int amount)
+        {
+            return request.Create()
+                .Identifier(userId)
+                .Method("vendor")
+                .AddParameter(itemId.ToString())
+                .AddParameter(amount.ToString())
+                .Build()
+                .SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
 
         public Task<bool[]> UpdateManyAsync(PlayerState[] states)

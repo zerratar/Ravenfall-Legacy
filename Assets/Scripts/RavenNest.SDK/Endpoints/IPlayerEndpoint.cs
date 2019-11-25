@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using RavenNest.Models;
 
 namespace RavenNest.SDK.Endpoints
-{
+{    
     public interface IPlayerEndpoint
     {
         Task<RavenNest.Models.Player> PlayerJoinAsync(string userId, string username);
@@ -25,9 +25,8 @@ namespace RavenNest.SDK.Endpoints
 
         Task<bool> UpdateResourcesAsync(string userId, decimal[] resources);
 
-        Task<bool> GiftResourcesAsync(string userId, string receiverUserId, string resource, decimal amount);
-
-        Task<bool> GiftItemAsync(string userId, string receiverUserId, Guid itemId);
+        Task<int> GiftItemAsync(string userId, string receiverUserId, Guid itemId, int amount);
+        Task<int> VendorItemAsync(string userId, Guid itemId, int amount);
 
         Task<bool[]> UpdateManyAsync(PlayerState[] states);
     }

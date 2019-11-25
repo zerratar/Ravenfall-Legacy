@@ -8,13 +8,17 @@ using ZerraBot.Core.ScriptParser;
 internal class ItemResolver : IItemResolver
 {
     private ItemManager itemManager;
+    private PlayerManager playerManager;
 
-    public TradeItem Resolve(string itemTradeQuery)
+    public TradeItem Resolve(string itemTradeQuery, bool parsePrice = true, bool parseUsername = false)
     {
         if (string.IsNullOrEmpty(itemTradeQuery)) return null;
 
         if (!itemManager)
             itemManager = GameObject.FindObjectOfType<ItemManager>();
+
+        if (!playerManager)
+            playerManager = GameObject.FindObjectOfType<PlayerManager>();
 
         if (!itemManager || !itemManager.Loaded) return null;
 
@@ -25,19 +29,24 @@ internal class ItemResolver : IItemResolver
         var amount = 1L;
         var price = 0m;
         var modifiedQuery = "";
+        PlayerController player = null;
 
         while (true)
         {
             var token = tokens[index];
             if (token.Type == TokenType.Identifier)
             {
-                if (price <= 0 && TryParsePrice(token, out var p))
+                if (parsePrice && price <= 0 && TryParsePrice(token, out var p))
                 {
                     price = p;
-                }
+                }                
                 else if (TryParseAmount(token, out var a))
                 {
                     amount = a;
+                }
+                else if (parseUsername && player == null) 
+                {
+                    player = playerManager.GetPlayerByUserId(token.Value);
                 }
                 else
                 {
@@ -58,7 +67,7 @@ internal class ItemResolver : IItemResolver
             return null;
         }
 
-        return new TradeItem(item, amount, price);
+        return new TradeItem(item, amount, price, player);
     }
 
     private static bool TryParsePrice(Token token, out decimal price)
