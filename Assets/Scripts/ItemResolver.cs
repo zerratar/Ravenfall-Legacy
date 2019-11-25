@@ -10,10 +10,11 @@ internal class ItemResolver : IItemResolver
     private ItemManager itemManager;
     private PlayerManager playerManager;
 
-    public TradeItem Resolve(string itemTradeQuery, bool parsePrice = true, bool parseUsername = false)
+    public TradeItem Resolve(string itemTradeQuery, bool parsePrice = true, bool parseUsername = false, bool parseAmount = true)
     {
         if (string.IsNullOrEmpty(itemTradeQuery)) return null;
-
+        itemTradeQuery = itemTradeQuery.Trim();
+        
         if (!itemManager)
             itemManager = GameObject.FindObjectOfType<ItemManager>();
 
@@ -22,6 +23,13 @@ internal class ItemResolver : IItemResolver
 
         if (!itemManager || !itemManager.Loaded) return null;
 
+        PlayerController player = null;
+        if (parseUsername) {
+            var username = itemTradeQuery.Split(' ')[0];
+            player = playerManager.GetPlayerByUserId(username);
+            itemTradeQuery = itemTradeQuery.Substring(username.Length).Trim();
+        }
+
         var lexer = new Lexer();
         var tokens = lexer.Tokenize(itemTradeQuery, true);
         var index = tokens.Count - 1;
@@ -29,7 +37,7 @@ internal class ItemResolver : IItemResolver
         var amount = 1L;
         var price = 0m;
         var modifiedQuery = "";
-        PlayerController player = null;
+
 
         while (true)
         {
@@ -40,13 +48,9 @@ internal class ItemResolver : IItemResolver
                 {
                     price = p;
                 }                
-                else if (TryParseAmount(token, out var a))
+                else if (parseAmount && TryParseAmount(token, out var a))
                 {
                     amount = a;
-                }
-                else if (parseUsername && player == null) 
-                {
-                    player = playerManager.GetPlayerByUserId(token.Value);
                 }
                 else
                 {

@@ -124,14 +124,14 @@ public class ValueItem : PacketHandler<TradeItemRequest>
 		}
 
 		var itemResolver = ioc.Resolve<IItemResolver>();
-		var item = itemResolver.Resolve(data.ItemQuery);
+		var item = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: false, parseAmount: false);
 		if (item == null)
 		{
 			client.SendMessage(player, "Could not find an item matching the query '" + data.ItemQuery + "'");
 			return;
 		}
 
-		client.SendMessage(player, $"{item.Item.Name} can be sold for {item.Item.ShopSellPrice} in the !vendor");
+		client.SendMessage(player, $"{item.Item.Name} can be sold for {Utility.FormatValue(item.Item.ShopSellPrice)} coins in the !vendor");
 	}
 }
 
