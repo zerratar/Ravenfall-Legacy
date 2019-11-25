@@ -150,7 +150,7 @@ namespace RavenNest.SDK.Endpoints
                 .Build()
                 .SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
-        public Task<int> VendorItemAsync(string userId, string receiverUserId, Guid itemId, int amount)
+        public Task<int> VendorItemAsync(string userId, Guid itemId, int amount)
         {
             return request.Create()
                 .Identifier(userId)

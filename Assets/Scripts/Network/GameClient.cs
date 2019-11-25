@@ -91,11 +91,15 @@ public class GameClient : IDisposable
     {
         SendCommand(playerName, "message", message);
     }
-    public void SendMessage(Player player, string message) 
+    public void SendMessage(PlayerController player, string message) 
+    {
+        SendCommand(player.PlayerName, "message", message);
+    }
+    public void SendMessage(Player player, string message)
     {
         SendCommand(player.Username, "message", message);
     }
-    
+
     public void SendCommand(string playerName, string command, params string[] args)
     {
         var arguments = "";

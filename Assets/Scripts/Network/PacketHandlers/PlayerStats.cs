@@ -22,9 +22,10 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
         }
 
         if (!string.IsNullOrEmpty(data.Skill))
-        {            
-            var targetPlayer = PlayerManager.GetPlayer(data.Skill);
-            if (targetPlayer != null) {
+        {
+            var targetPlayer = PlayerManager.GetPlayerByName(data.Skill);
+            if (targetPlayer != null)
+            {
                 SendPlayerStats(targetPlayer, client);
                 return;
             }
@@ -55,7 +56,8 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
         SendPlayerStats(player, client);
     }
 
-    private void SendPlayerStats(PlayerController player, GameClient client) {
+    private void SendPlayerStats(PlayerController player, GameClient client)
+    {
         var ps = player.Stats;
         var eq = player.EquipmentStats;
         var combatLevel = ps.CombatLevel;
