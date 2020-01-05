@@ -113,7 +113,7 @@ public class PlayerListItem : MonoBehaviour
         var nextLevelExp = GameMath.LevelToExperience(skill.Level + 1);
         var now = skill.Experience - thisLevelExp;
         var next = nextLevelExp - thisLevelExp;
-        pbSkill.progress = (float)now / (float)next;
+        pbSkill.Progress = (float)now / (float)next;
 
         var expPerHour = skill.GetExperiencePerHour();
         if (lblExpPerHour && ExpPerHourVisible)
@@ -126,7 +126,7 @@ public class PlayerListItem : MonoBehaviour
     {
         var now = skill.CurrentValue;
         var next = skill.Level;
-        pbHealth.progress = (float)now / (float)next;
+        pbHealth.Progress = (float)now / (float)next;
         oldHealthValue = skill.CurrentValue;
     }
 

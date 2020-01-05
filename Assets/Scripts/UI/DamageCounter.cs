@@ -1,11 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 
 public class DamageCounter : MonoBehaviour
 {
-    private float offsetY = 2.75f;
+    public float OffsetY = 2.75f;
 
     [SerializeField] private TextMeshProUGUI labelBack;
     [SerializeField] private TextMeshProUGUI labelFront;
@@ -59,7 +57,7 @@ public class DamageCounter : MonoBehaviour
 
         if (Target)
         {
-            transform.position = Target.transform.position + (Vector3.up * (offsetY + FadeoutOffsetY));
+            transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
         }
     }
 }

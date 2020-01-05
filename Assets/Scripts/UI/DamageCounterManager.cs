@@ -10,5 +10,11 @@ public class DamageCounterManager : MonoBehaviour
         var dc = counter.GetComponent<DamageCounter>();
         dc.Damage = damage;
         dc.Target = target;
+
+        var collider = target.GetComponent<CapsuleCollider>();
+        if (collider)
+        {
+            dc.OffsetY = collider.height * target.localScale.y;
+        }
     }
 }

@@ -55,7 +55,7 @@ public class HealthBarManager : MonoBehaviour
 
         var barComponent = healthBar.GetComponent<HealthBar>();
         barComponent.Manager = this;
-        barComponent.Target = enemy;
+        barComponent.SetTarget(enemy);
 
         lock (mutex)
         {

@@ -36,6 +36,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     [SerializeField] private RaidHandler raidHandler;
     [SerializeField] private StreamRaidHandler streamRaidHandler;
 
+    [SerializeField] private DungeonHandler dungeonHandler;
     [SerializeField] private ArenaHandler arenaHandler;
     [SerializeField] private CombatHandler combatHandler;
     [SerializeField] private DuelHandler duelHandler;
@@ -64,10 +65,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     private Skill lastTrainedSkill = Skill.Fighting;
     private ArenaController arena;
     private DamageCounterManager damageCounterManager;
-
-    private bool isLocked;
-    private bool inArena;
-    private float arenaEnterTime;
 
     private TaskType? lateGotoClosestType = null;
 
@@ -105,6 +102,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     public bool IsBroadcaster;
     public bool IsSubscriber;
     public bool IsVip;
+
+    public bool IsGameAdmin;
+    public bool IsGameModerator;
 
     public float RegenTime = 10f;
     public float RegenRate = 0.1f;
@@ -150,6 +150,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     public FerryHandler Ferry => ferryHandler;
     public EffectHandler Effects => effectHandler;
     public TeleportHandler Teleporter => teleportHandler;
+
+    public DungeonHandler Dungeon => dungeonHandler;
 
     public bool ItemDropEventActive { get; private set; }
 
@@ -232,18 +234,17 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
         UpdateHealthRegeneration();
 
+        if (dungeonHandler.InDungeon) return;
         if (duelHandler.InDuel) return;
         if (arenaHandler.InArena) return;
         if (raidHandler.InRaid) return;
         if (Stats.IsDead) return;
-
 
         if (ItemDropEventActive)
         {
             UpdateDropEvent();
             return;
         }
-
 
         if (Chunk != null)
         {
@@ -479,26 +480,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     internal async Task<GameInventoryItem> CycleEquippedPetAsync()
     {
         var equippedPet = Inventory.GetEquipmentOfCategory(ItemCategory.Pet);
-        if (equippedPet == null)
-        {
-            return null;
-        }
-
         var pets = Inventory.GetInventoryItemsOfType(ItemCategory.Pet, ItemType.Pet);
         if (pets.Count == 0) return null;
         var petToEquip = pets.GroupBy(x => x.Item.Id)
             .OrderBy(x => UnityEngine.Random.value)
-            .FirstOrDefault(x => x.Key != equippedPet.Id)
+            .FirstOrDefault(x => x.Key != equippedPet?.Id)
             .FirstOrDefault();
 
-        var result = await gameManager.RavenNest.Players.EquipItemAsync(UserId, petToEquip.Item.Id);
-        if (result)
-        {
-            Inventory.Equip(petToEquip.Item);
-            return petToEquip;
-        }
-
-        return null;
+        await gameManager.RavenNest.Players.EquipItemAsync(UserId, petToEquip.Item.Id);
+        Inventory.Equip(petToEquip.Item);
+        return petToEquip;
     }
 
     public void SetPlayer(
@@ -515,6 +506,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         }
 
         Definition = player;
+
+        IsGameAdmin = player.IsAdmin;
+        IsGameModerator = player.IsModerator;
 
         UserId = player.UserId;
         PlayerName = player.Name;
@@ -1060,24 +1054,30 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     private void AddTimeExp()
     {
         timeExpTimer -= Time.deltaTime;
-        if (timeExpTimer <= 0 && taskArguments != null && taskArguments.Length > 0)
+        if (timeExpTimer <= 0)
         {
-            timeExpTimer = 1f;
-            // this.Stats.Level
+            if (AddExpToCurrentSkill(ExpOverTime))
+                timeExpTimer = 1f;
+        }
+    }
 
+    public bool AddExpToCurrentSkill(decimal experience)
+    {
+        if (taskArguments != null && taskArguments.Length > 0)
+        {
             var combatType = GetCombatTypeFromArg(taskArguments[0]);
             if (combatType != -1)
             {
-                AddCombatExp(ExpOverTime, combatType);
+                AddCombatExp(experience, combatType);
             }
             else
             {
                 var skill = (Skill)GetSkillTypeFromArgs(taskArguments);
-                // crafting and cooking requires resources to train, no exp over time.
-                if (skill == Skill.Crafting || skill == Skill.Cooking) return;
-                AddExp(ExpOverTime, skill);
+                AddExp(experience, skill);
             }
+            return true;
         }
+        return false;
     }
 
     private void CelebrateCombatSkillLevelUp(CombatSkill skill, int levelCount)
@@ -1197,7 +1197,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
     public void Lock()
     {
-        isLocked = true;
         if (playerAnimations)
             playerAnimations.StopMoving();
 
@@ -1218,7 +1217,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
     public void Unlock()
     {
-        isLocked = false;
         if (agent)
         {
             agent.enabled = true;
@@ -1272,7 +1270,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             case CombatSkill.Strength: return Stats.Strength;
             case CombatSkill.Health: return Stats.Health;
             case CombatSkill.Magic: return Stats.Magic;
-            case CombatSkill.Ranged: return Stats.Ranged;            
+            case CombatSkill.Ranged: return Stats.Ranged;
         }
         return null;
     }
@@ -1286,7 +1284,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             case 2: return Stats.Strength;
             case 3: return Stats.Health;
             case 4: return Stats.Magic;
-            case 5: return Stats.Ranged;            
+            case 5: return Stats.Ranged;
         }
         return null;
     }
@@ -1347,6 +1345,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         if (!damageCounterManager)
             damageCounterManager = FindObjectOfType<DamageCounterManager>();
 
+
         damageCounterManager.Add(transform, damage);
         Stats.Health.Add(-damage);
         Statistics.TotalDamageTaken += damage;
@@ -1366,6 +1365,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     {
         ++Statistics.DeathCount;
         if (!arena) arena = FindObjectOfType<ArenaController>();
+        if (dungeonHandler.InDungeon) dungeonHandler.Died();
         if (arena) arena.Died(this);
         if (duelHandler.InDuel) duelHandler.Died();
         if (streamRaidHandler) streamRaidHandler.Died();
@@ -1446,10 +1446,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         {
             Debug.LogError("Item add for user: " + UserId + ", item: " + item.Id + ", result: " + result);
         }
-        else
-        {
-            Debug.Log("Item add for user: " + UserId + ", item: " + item.Id + ", result: " + result);
-        }
+        //else
+        //{
+        //    Debug.Log("Item add for user: " + UserId + ", item: " + item.Id + ", result: " + result);
+        //}
     }
 
     public void UpdateCombatStats(List<RavenNest.Models.Item> equipped)
@@ -1480,10 +1480,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         }
 
         transform.rotation = Quaternion.identity;
+        playerAnimations.Revive();
+
+        yield return new WaitForSeconds(2f);
+
         Stats.Health.Reset();
         Unlock();
-
-        playerAnimations.Revive();
 
         if (Chunk != null && Chunk.Island != Island)
         {

@@ -71,8 +71,7 @@ public class MusicManager : MonoBehaviour
     public void PlayRaidBossMusic()
     {
         Play(RaidBossMusic);
-    }
-
+    }    
 
     /// <summary>
     /// Setup the AudioSources

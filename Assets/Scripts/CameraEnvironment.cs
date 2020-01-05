@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class CameraEnvironment : MonoBehaviour
 {
-
     [SerializeField] private GameCamera gameCamera;
 
     private Vector3 cameraOffset;

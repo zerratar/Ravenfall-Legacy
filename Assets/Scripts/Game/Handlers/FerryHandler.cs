@@ -13,7 +13,8 @@ public class FerryHandler : MonoBehaviour
     public bool Active => state > PlayerFerryState.None;
     public bool Embarking => state == PlayerFerryState.Embarking;
     public bool Disembarking => state == PlayerFerryState.Disembarking;
-
+    public bool IsCaptain => OnFerry && ferry.IsCaptainPosition(transform.parent);
+    public IslandController Destination => destination;
     public decimal Experience => 25;
 
     private float expTime = 2.5f;
@@ -28,8 +29,6 @@ public class FerryHandler : MonoBehaviour
 
     private void Update()
     {
-        // fishing?
-
         player.Animations.SetCaptainState(IsCaptain);
 
         if (OnFerry)
@@ -51,6 +50,7 @@ public class FerryHandler : MonoBehaviour
 
         if (Embarking && !OnFerry)
         {
+            if (!player.Island) return;
             if (!player.Island.DockingArea) return;
             if (!player.Island.DockingArea.OnDock(player))
             {
@@ -104,8 +104,6 @@ public class FerryHandler : MonoBehaviour
         }
     }
 
-    public bool IsCaptain => OnFerry && ferry.IsCaptainPosition(transform.parent);
-    public IslandController Destination => destination;
     public void Embark(IslandController destination = null)
     {
         player.Animations.ResetAnimationStates();
@@ -122,8 +120,8 @@ public class FerryHandler : MonoBehaviour
     private void RemovePlayerFromFerry(IslandController island)
     {
         state = PlayerFerryState.None;
-
-        if (OnFerry)
+        var onFerry = OnFerry;
+        if (onFerry)
         {
             player.transform.SetParent(null);
             player.transform.position = island.DockingArea.DockPosition;
@@ -137,10 +135,13 @@ public class FerryHandler : MonoBehaviour
             player.GotoClosest(player.Chunk.ChunkType);
         }
 
-        gameManager.Server?.Client?.SendCommand(
-            player.PlayerName,
-            "ferry_success",
-            $"You have disembarked the ferry.");
+        if (onFerry)
+        {
+            gameManager.Server?.Client?.SendCommand(
+                player.PlayerName,
+                "ferry_success",
+                $"You have disembarked the ferry.");
+        }
     }
 
     private void AddPlayerToFerry()

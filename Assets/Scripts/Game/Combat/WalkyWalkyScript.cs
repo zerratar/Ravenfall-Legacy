@@ -158,7 +158,10 @@ public class WalkyWalkyScript : MonoBehaviour
     public void Revive()
     {
         if (meshRenderer) meshRenderer.enabled = true;
-        animator.SetBool(deathAnimation, false);
+        if (!string.IsNullOrEmpty(deathAnimation))
+        {
+            animator.SetBool(deathAnimation, false);
+        }
 
         if (animator.parameters.FirstOrDefault(x => x.name == "revive") != null)
         {

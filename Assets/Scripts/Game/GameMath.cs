@@ -281,9 +281,8 @@ public static class GameMath
     {
         switch (type)
         {
+            case RockType.Rune: return 100;
             default: return 5m;
         }
-
-        return 0;
     }
 }

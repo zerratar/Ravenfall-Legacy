@@ -40,7 +40,7 @@ public class StatObserver : MonoBehaviour
 
         var now = observedStat.Experience - thisLevelExp;
         var next = nextLevelExp - thisLevelExp;
-        bar.progress = (float)(now / next);
+        bar.Progress = (float)(now / next);
 
         lastCurrentValue = observedStat.CurrentValue;
         lastExperience = observedStat.Experience;

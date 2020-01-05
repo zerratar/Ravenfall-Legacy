@@ -108,6 +108,10 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public Color SkinColor;
     public Color HairColor;
     public Color BeardColor;
+    public Color StubbleColor;
+    //public Color EyebrowsColor;
+    public Color WarPaintColor;
+    public Color ScarColor;
     public Color EyeColor;
 
     public bool HelmetVisible;
@@ -157,10 +161,11 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             }
 
             if (equipmentSlots.Count == 0) UpdateBoneTransforms();
-            if (!equipmentSlots.TryGetValue(item.Type, out targetParent))
-            {
-                Debug.LogWarning($"Trying to equip an item but target attachment bone could not be found. {item.Type}");
-            }
+            equipmentSlots.TryGetValue(item.Type, out targetParent);
+            //if (!equipmentSlots.TryGetValue(item.Type, out targetParent))
+            //{
+            //    Debug.LogWarning($"Trying to equip an item but target attachment bone could not be found. {item.Type}");
+            //}
         }
 
         if (targetParent != null && targetParent)
@@ -204,6 +209,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     public void SetAppearance(SyntyAppearance appearance)
     {
+        ResetAppearance();
+
         var props = GetType().GetFields(BindingFlags.Public | BindingFlags.Instance).ToDictionary(x => x.Name, x => x);
         foreach (var prop in appearance
             .GetType()
@@ -255,19 +262,19 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     {
         var allModels = GetAll();
         foreach (var model in allModels) model.SetActive(false);
-        meshCombiner.UndoCombineMeshes();
+        if (meshCombiner.isMeshesCombineds)
+            meshCombiner.UndoCombineMeshes();
     }
 
     public void Optimize(Action afterUndo = null)
     {
-        //this.gameObject.CombineMeshes();
-
         int meshLayer = -1;
         if (transform.Find("Combined Mesh"))
         {
             meshLayer = meshCombiner.gameObject.layer;
             meshCombiner.UndoCombineMeshes();
         }
+
 
         afterUndo?.Invoke();
 
@@ -283,19 +290,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         }
 
         meshCombiner.CombineMeshes();
+        gameManager.Camera.EnsureObserverCamera();
 
-        if (meshLayer == -1)
-        {
-            return;
-        }
-
-        var combinedMesh = transform.Find("Combined Mesh");
-        if (!combinedMesh)
-        {
-            return;
-        }
-
-        combinedMesh.gameObject.layer = meshLayer;
     }
 
     public void UpdateAppearance()
@@ -325,6 +321,9 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                         continue;
                     }
 
+                    if (index >= item.Value.Length && item.Key != nameof(femaleHeads) && item.Key != nameof(maleHeads))
+                        continue;
+
                     if (item.Value.Length > 0)
                     {
                         index = Mathf.Min(item.Value.Length - 1, index);
@@ -340,10 +339,18 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                         {
                             renderer.material.SetColor("_Color_Eyes", EyeColor);
                             renderer.material.SetColor("_Color_Skin", SkinColor);
+                            //renderer.material.SetColor("_Color_Scar", ScarColor);
+                            renderer.material.SetColor("_Color_Stubble", StubbleColor);
+                            renderer.material.SetColor("_Color_BodyArt", WarPaintColor);
                         }
                         else if (item.Key == nameof(maleHeads) || item.Key == nameof(maleFacialHairs))
                         {
-                            renderer.material.SetColor("_Color_Stubble", BeardColor);
+                            //renderer.material.SetColor("_Color_Stubble", BeardColor);
+                            renderer.material.SetColor("_Color_Hair", BeardColor);
+                        }
+                        else if (item.Key == nameof(maleEyebrows) || item.Key == nameof(femaleEyebrows))
+                        {
+                            renderer.material.SetColor("_Color_Hair", HairColor);
                         }
                         else if (item.Key == nameof(hairs))
                         {
@@ -691,23 +698,32 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         if (Gender == Gender.Male)
         {
             Head = Math.Min(Head, maleHeads.Length - 1);
-            FacialHair = Math.Min(FacialHair, maleFacialHairs.Length - 1);
-            Eyebrows = Math.Min(Eyebrows, maleEyebrows.Length - 1);
+            //FacialHair = Math.Min(FacialHair, maleFacialHairs.Length - 1);
+            //Eyebrows = Math.Min(Eyebrows, maleEyebrows.Length - 1);
 
-            maleFacialHairs[FacialHair].gameObject.SetActive(!HelmetVisible);
+            if (FacialHair < maleFacialHairs.Length)
+                maleFacialHairs[FacialHair].gameObject.SetActive(!HelmetVisible);
+
             maleHeads[Head].gameObject.SetActive(!HelmetVisible);
-            maleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
+
+            if (Eyebrows < maleEyebrows.Length)
+                maleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
         }
         else
         {
             Head = Math.Min(Head, femaleHeads.Length - 1);
-            Eyebrows = Math.Min(Eyebrows, femaleEyebrows.Length - 1);
+            //Eyebrows = Math.Min(Eyebrows, femaleEyebrows.Length - 1);
 
             femaleHeads[Head].gameObject.SetActive(!HelmetVisible);
-            femaleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
+            if (Eyebrows < femaleEyebrows.Length)
+                femaleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
         }
 
-        hairs[Hair].gameObject.SetActive(!HelmetVisible);
+        if (Hair < hairs.Length)
+        {
+            hairs[Hair].gameObject.SetActive(!HelmetVisible);
+        }
+
         equippedHelmet.SetActive(HelmetVisible);
     }
 

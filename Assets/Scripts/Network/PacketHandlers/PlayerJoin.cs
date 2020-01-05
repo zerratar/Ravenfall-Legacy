@@ -43,7 +43,7 @@ public class PlayerJoin : PacketHandler
                         "Failed create or find a player with the username " + addPlayerRequest.Username);
                     return;
                 }
-
+                
                 var player = Game.SpawnPlayer(playerInfo, addPlayerRequest);
                 if (player)
                 {

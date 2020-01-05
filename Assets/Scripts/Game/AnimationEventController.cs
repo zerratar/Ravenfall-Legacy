@@ -39,6 +39,7 @@ public class AnimationEventController : MonoBehaviour
         }
     }
 
+    public void Hit() { }
     public void WeaponSwitch() { }
     public void FootL() { }
     public void FootR() { }

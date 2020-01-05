@@ -33,7 +33,7 @@ public class BATimer : MonoBehaviour
     {
         if (!timeProgressBar) return;
         timeProgressBar.displayProgress = false;
-        timeProgressBar.progress = 1f - (elapsed / total);
+        timeProgressBar.Progress = 1f - (elapsed / total);
     }
 
     public void SetActive(bool currentBoostActive)

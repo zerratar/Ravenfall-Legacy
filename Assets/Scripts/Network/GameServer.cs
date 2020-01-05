@@ -15,7 +15,7 @@ public class GameServer : IDisposable
     private readonly GameManager game;
 
     private readonly TcpListener server;
-    
+
     private readonly List<GameClient> connectedClients
         = new List<GameClient>();
 
@@ -49,7 +49,7 @@ public class GameServer : IDisposable
     {
         if (availablePackets.TryDequeue(out var packet))
         {
-            game.Log("Read packet: " + packet.JsonDataType);
+            //game.Log("Read packet: " + packet.JsonDataType);
             return packet;
         }
         return null;
@@ -215,6 +215,12 @@ public class GameServer : IDisposable
     public void LogError(string message) => game.LogError(message);
 
     public void Log(string message) => game.Log(message);
+
+    public void Announce(string message)
+    {
+        if (!Client.Connected) return;
+        Client.SendMessage("", message);
+    }
 }
 
 

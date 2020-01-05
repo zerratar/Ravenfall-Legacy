@@ -67,24 +67,33 @@ public class GameCamera : MonoBehaviour
         }
 
         if (Input.GetKeyDown(KeyCode.Tab))
-        {   
+        {
             ObserveNextPlayer();
             return;
         }
 
-        if (state == GameCameraType.Arena)
+        if (state == GameCameraType.Dungeon)
         {
-            freeCamera.enabled = false;
-            orbitCamera.enabled = false;
-            focusTargetCamera.enabled = true;
-            if (arena) focusTargetCamera.Target = arena.transform;
+            //freeCamera.enabled = false;
+            //orbitCamera.enabled = false;
+            //focusTargetCamera.enabled = false;
+            if (gameManager.Dungeons.Started)
+            {
+                var camPoint = gameManager.Dungeons.Dungeon.Room.CameraPoint;
+
+                EnableFocusTargetCamera(camPoint);
+                //transform.position = camPoint.position;
+                //transform.rotation = camPoint.rotation;
+            }
+        }
+        else if (state == GameCameraType.Arena)
+        {
+            EnableFocusTargetCamera(arena?.transform);
+
         }
         else if (state == GameCameraType.Raid)
         {
-            freeCamera.enabled = false;
-            orbitCamera.enabled = false;
-            focusTargetCamera.enabled = true;
-            if (arena) focusTargetCamera.Target = raidManager.Boss.transform;
+            EnableFocusTargetCamera(raidManager.Boss.transform);
         }
         else if (state == GameCameraType.Observe)
         {
@@ -137,10 +146,23 @@ public class GameCamera : MonoBehaviour
         orbitCamera.targetTransform = null;
     }
 
+    public void EnableDungeonCamera()
+    {
+        state = GameCameraType.Dungeon;
+        observeCamera.ObservePlayer(null);
+        playerObserver.Observe(null, 0);
+        orbitCamera.targetTransform = null;
+    }
+
     public void DisableFocusCamera()
     {
         if (state != GameCameraType.Observe)
             ObserveNextPlayer();
+    }
+
+    public void DisableDungeonCamera()
+    {
+        ObserveNextPlayer();
     }
 
     public void ObservePlayer(PlayerController player)
@@ -161,11 +183,25 @@ public class GameCamera : MonoBehaviour
         orbitCamera.enabled = true;
     }
 
+    public void EnsureObserverCamera()
+    {
+        observeCamera.UpdatePlayerLayer();
+    }
+
+    private void EnableFocusTargetCamera(Transform transform)
+    {
+        freeCamera.enabled = false;
+        orbitCamera.enabled = false;
+        focusTargetCamera.enabled = true;
+        if (transform) focusTargetCamera.Target = transform;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool CanObservePlayer(PlayerController player)
     {
         return !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.StreamRaid.InWar;
     }
+
 }
 
 public enum GameCameraType
@@ -173,5 +209,6 @@ public enum GameCameraType
     Free,
     Observe,
     Arena,
-    Raid
+    Raid,
+    Dungeon
 }

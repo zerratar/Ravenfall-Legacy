@@ -34,6 +34,11 @@ public class CraftingManager : MonoBehaviour
             return CraftValidationStatus.NeedCraftingStation;
         }
 
+        if (item.RequiredCraftingLevel > player.Stats.Crafting.Level)
+        {
+            return CraftValidationStatus.NotEnoughSkill;
+        }
+
         //if (!GotEnoughResources(player, item))
         //{
         //    return CraftValidationStatus.NotEnoughResources;

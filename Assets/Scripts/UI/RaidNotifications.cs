@@ -78,9 +78,10 @@ public class RaidNotifications : MonoBehaviour
         }
     }
 
-    public void SetHealthBarValue(float proc)
+    public void SetHealthBarValue(float proc, float maxValue = 1f)
     {
-        raidBossHealth.progress = proc;
+        raidBossHealth.MaxValue = maxValue;
+        raidBossHealth.Progress = proc;
     }
 
     public void UpdateRaidTimer(float timeoutTimer)

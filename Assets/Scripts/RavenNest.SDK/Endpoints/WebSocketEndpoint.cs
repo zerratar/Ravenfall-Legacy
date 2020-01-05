@@ -56,7 +56,7 @@ namespace RavenNest.SDK.Endpoints
                 player.UserId,
                 player.Stats.Health.CurrentValue,
                 player.Island?.Identifier,
-                player.Duel.Opponent?.UserId,
+                player.Duel.InDuel ? player.Duel.Opponent?.UserId : null,
                 player.Raid.InRaid,
                 player.Arena.InArena,
                 player.GetTask().ToString(),

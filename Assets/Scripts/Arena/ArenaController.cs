@@ -212,8 +212,6 @@ public class ArenaController : MonoBehaviour
         {
             joinedPlayers.Remove(player);
             player.Arena.OnLeave();
-
-
             return true;
         }
 

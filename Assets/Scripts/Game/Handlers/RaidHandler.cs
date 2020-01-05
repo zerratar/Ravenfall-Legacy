@@ -75,34 +75,15 @@ public class RaidHandler : MonoBehaviour
         InRaid = false;
         if (raidWon)
         {
-            var proc = gameManager.Raid.GetParticipationPercentage(raidEnterTime);
-            //var expAmount = 
-            //var ratio = 549.8123f * proc;
-
+            var proc = (decimal)gameManager.Raid.GetParticipationPercentage(raidEnterTime);
             var raidBossCombatLevel = gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
-            var exp = GameMath.CombatExperience(raidBossCombatLevel / 25) * proc;
+            var exp = GameMath.CombatExperience(raidBossCombatLevel / 15) * proc;
+            var yieldExp = exp / 2m;
 
-            //var combatType = player.GetCombatTypeFromArgs(player.GetTaskArguments());
-            //if (combatType >= 0)
-            //{
-            //    if (combatType == 3)
-            //    {
-            //        var distributedExp = exp / 3f;
-            //    }
-            //}
+            player.AddExp(yieldExp, Skill.Slayer);
 
-            player.AddExp((decimal)exp, Skill.Slayer);
-
-            //var woodCuttingRatio = ratio;
-            //var miningRatio = ratio;
-            //var fishingRatio = ratio;
-            //var farmingRatio = ratio;
-
-            //player.AddResource(Resource.Currency, (int)(player.Stats.CombatLevel * ratio));
-            //player.AddResource(Resource.Woodcutting, (int)(player.Stats.Woodcutting.Level * woodCuttingRatio));
-            //player.AddResource(Resource.Mining, (int)(player.Stats.Mining.Level * miningRatio));
-            //player.AddResource(Resource.Fishing, (int)(player.Stats.Fishing.Level * fishingRatio));
-            //player.AddResource(Resource.Farming, (int)(player.Stats.Farming.Level * farmingRatio));
+            if (!player.AddExpToCurrentSkill(yieldExp))
+                player.AddExp(yieldExp, Skill.Slayer);
 
             ++player.Statistics.RaidsWon;
 

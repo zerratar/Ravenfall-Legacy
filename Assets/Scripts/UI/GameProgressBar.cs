@@ -12,8 +12,9 @@ public class GameProgressBar : MonoBehaviour
 
     private float lastProgress = -1f;
 
-    public float progress;
-    
+    public float MaxValue = 1f;
+    public float Progress;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -42,16 +43,23 @@ public class GameProgressBar : MonoBehaviour
             return;
         }
 
-        if (lastProgress != progress)
+        if (lastProgress != Progress)
         {
             if (displayProgress && lblProgress)
             {
-                lblProgress.text = $"{Math.Round(progress * 100f, 1)}%";
+                if (MaxValue > 1f)
+                {
+                    lblProgress.text = $"{Math.Round(Progress * MaxValue, 0)} HP ({Math.Round(Progress * 100f, 1)}%)";
+                }
+                else
+                {
+                    lblProgress.text = $"{Math.Round(Progress * 100f, 1)}%";
+                }
             }
 
             var y = imgFront.rectTransform.sizeDelta.y;
-            imgFront.rectTransform.sizeDelta = new Vector2(size.x * progress, y);
-            lastProgress = progress;
+            imgFront.rectTransform.sizeDelta = new Vector2(size.x * Progress, y);
+            lastProgress = Progress;
         }
     }
 }

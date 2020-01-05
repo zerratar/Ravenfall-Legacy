@@ -102,7 +102,7 @@ public class GameUpdater : MonoBehaviour
         {
             progressBar.gameObject.SetActive(true);
             progressBar.displayProgress = true;
-            progressBar.progress = (float)progressPercent;
+            progressBar.Progress = (float)progressPercent;
         }
     }
 

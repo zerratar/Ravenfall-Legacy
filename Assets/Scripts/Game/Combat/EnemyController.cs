@@ -14,7 +14,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     private readonly ConcurrentDictionary<string, float> attackerAggro
         = new ConcurrentDictionary<string, float>();
 
-    [SerializeField] private bool positionLocked = true;    
+    [SerializeField] private bool positionLocked = true;
     [SerializeField] private Vector3 spawnPoint;
     [SerializeField] private Quaternion spawnRotation;
     [SerializeField] private float respawnTime = 7F;
@@ -32,6 +32,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     public bool HandleFightBack = true;
     public bool RotationLocked = false;
+    public bool AutomaticRespawn = true;
 
     private float noDamageDropTargetTimer;
     private float highestAttackerAggroValue;
@@ -127,7 +128,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             animations.Attack(() =>
             {
-                if (this.Stats.IsDead || !Target || !targetPlayer)
+                if (Stats.IsDead || !Target || !targetPlayer)
                 {
                     Target = null;
                     return;
@@ -182,7 +183,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     public bool TakeDamage(IAttackable attacker, int damage)
     {
-        if (gameObject == null)
+        if (this == null || !this || gameObject == null || !gameObject)
         {
             return false;
         }
@@ -217,7 +218,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         var totalAggro = aggro + damage;
         attackerAggro[attacker.Name] = totalAggro;
 
-        if (highestAttackerAggroValue < totalAggro)
+        if (highestAttackerAggroValue <= totalAggro)
         {
             highestAttackerAggroValue = totalAggro;
             if (attacker.Name != Target?.name)
@@ -247,8 +248,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         Unlock();
 
         if (animations) animations.Die();
-
-        StartCoroutine(Respawn());
+        if (AutomaticRespawn) Respawn();
         return true;
 
     }
@@ -272,7 +272,12 @@ public class EnemyController : MonoBehaviour, IAttackable
         return 1;
     }
 
-    private IEnumerator Respawn()
+    public void Respawn()
+    {
+        StartCoroutine(_Respawn());
+    }
+
+    private IEnumerator _Respawn()
     {
         yield return new WaitForSeconds(respawnTime);
         if (animations) animations.Revive();

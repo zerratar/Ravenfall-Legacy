@@ -4,5 +4,5 @@
     Copper,
     Iron,
     Mithril,
-    Diamond
+    Rune
 }

@@ -26,9 +26,11 @@ internal class ItemResolver : IItemResolver
         PlayerController player = null;
         if (parseUsername) {
             var username = itemTradeQuery.Split(' ')[0];
-            player = playerManager.GetPlayerByUserId(username);
+            player = playerManager.GetPlayerByName(username);
             itemTradeQuery = itemTradeQuery.Substring(username.Length).Trim();
         }
+
+        if (string.IsNullOrEmpty(itemTradeQuery)) return null;
 
         var lexer = new Lexer();
         var tokens = lexer.Tokenize(itemTradeQuery, true);

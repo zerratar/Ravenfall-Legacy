@@ -126,6 +126,11 @@ public class PlayerLeave : PacketHandler<Player>
         var player = PlayerManager.GetPlayer(data);
         if (player)
         {
+            if (Game.Dungeons.JoinedDungeon(player))
+            {
+                Game.Dungeons.Remove(player);
+            }
+
             if (!Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
             {
                 client.SendCommand(data.Username, "leave_failed", $"You cannot leave as you are participating in the arena that has already started and may break it. You have been queued up to leave after the arena has been finished.");

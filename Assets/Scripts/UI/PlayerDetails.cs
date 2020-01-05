@@ -16,8 +16,9 @@ public class PlayerDetails : MonoBehaviour
 
     [SerializeField] private GameObject subscriberBadge;
     [SerializeField] private GameObject vipBadge;
-    [SerializeField] private GameObject modBadge;
+    [SerializeField] private GameObject modBadge;    
     [SerializeField] private GameObject broadcasterBadge;
+    [SerializeField] private GameObject devBadge;
 
     private float observedPlayerTimeout;
 
@@ -48,6 +49,9 @@ public class PlayerDetails : MonoBehaviour
         SetActive(subscriberBadge, observedPlayer.IsSubscriber);
         SetActive(vipBadge, observedPlayer.IsVip);
         SetActive(modBadge, observedPlayer.IsModerator);
+
+        SetActive(devBadge, observedPlayer.IsGameAdmin);
+
         SetActive(broadcasterBadge, observedPlayer.IsBroadcaster);
 
         observedPlayerTimeout -= Time.deltaTime;

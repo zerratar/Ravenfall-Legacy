@@ -16,6 +16,11 @@ public class TeleportHandler : MonoBehaviour
 
     public void Teleport(Vector3 position)
     {
+        // check if player has been removed
+        // could have been kicked. *Looks at Solunae*
+        if (!this || this == null)
+            return;
+
         player.Lock();
         transform.position = position;
         player.Island = islandManager.FindPlayerIsland(player);

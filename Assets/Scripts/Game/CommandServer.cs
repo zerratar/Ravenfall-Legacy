@@ -34,6 +34,7 @@ public class CommandServer : MonoBehaviour
         server.Register<VendorItem>("vendor_item");
         server.Register<GiftItem>("gift_item");
         server.Register<ValueItem>("value_item");
+        server.Register<CraftRequirement>("req_item");
 
         server.Register<PlayerStats>("player_stats");
         server.Register<PlayerResources>("player_resources");
@@ -57,6 +58,10 @@ public class CommandServer : MonoBehaviour
 
         server.Register<RaidJoin>("raid_join");
         server.Register<RaidForce>("raid_force");
+
+        server.Register<DungeonJoin>("dungeon_join");
+        server.Register<DungeonForce>("dungeon_force");
+        server.Register<DungeonStart>("dungeon_start");
 
         server.Register<RaidStreamer>("raid_streamer");
 

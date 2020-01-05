@@ -71,16 +71,21 @@ public class NameTag : MonoBehaviour
 
     private Color GetColorFromHex(string hex)
     {
-        if (string.IsNullOrEmpty(hex)) return Color.white;
-        if (hex.StartsWith("#")) hex = hex.Substring(1);
-        if (hex.Length == 6)
-        {
-            var r = int.Parse(hex[0] + "" + hex[1], NumberStyles.HexNumber);
-            var g = int.Parse(hex[2] + "" + hex[3], NumberStyles.HexNumber);
-            var b = int.Parse(hex[4] + "" + hex[5], NumberStyles.HexNumber);
-            return new Color(r / 255f, g / 255f, b / 255f);
-        }
+        if (ColorUtility.TryParseHtmlString(hex, out var color))
+            return color;
 
-        return new Color();
+        return Color.white;
+
+        //if (string.IsNullOrEmpty(hex)) return Color.white;
+        //if (hex.StartsWith("#")) hex = hex.Substring(1);
+        //if (hex.Length == 6)
+        //{
+        //    var r = int.Parse(hex[0] + "" + hex[1], NumberStyles.HexNumber);
+        //    var g = int.Parse(hex[2] + "" + hex[3], NumberStyles.HexNumber);
+        //    var b = int.Parse(hex[4] + "" + hex[5], NumberStyles.HexNumber);
+        //    return new Color(r / 255f, g / 255f, b / 255f);
+        //}
+
+        //return new Color();
     }
 }

@@ -34,9 +34,8 @@ public class PlayerObserveCamera : MonoBehaviour
         gameObject.SetActive(true);
         this.player = player;        
         UpdatePlayerLayer();
-    }
-
-    private void UpdatePlayerLayer()
+    }       
+    public void UpdatePlayerLayer()
     {
         if (!player) return;
         if (playerObserveLayer <= 0)

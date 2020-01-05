@@ -23,10 +23,21 @@ public class Inventory : MonoBehaviour
         equipped = new List<Item>();
         player = GetComponent<PlayerController>();
         equipment = GetComponent<PlayerEquipment>();
-    }
+    }    
 
-    public void Remove(Item item, decimal amount)
+    public void Remove(Item item, decimal amount, bool removeEquipped = false)
     {
+        if (removeEquipped)
+        {
+            var eqItem = equipped.FirstOrDefault(x => x.Id == item.Id);
+            if (eqItem != null)
+            {
+                equipped.Remove(eqItem);
+                EquipAll();
+                return;
+            }
+        }
+
         var target = backpack.FirstOrDefault(x => x.Item.Id == item.Id);
         if (target != null)
         {
@@ -36,6 +47,7 @@ public class Inventory : MonoBehaviour
                 backpack.Remove(target);
             }
         }
+
     }
 
     public void Create(IReadOnlyList<InventoryItem> inventoryItems, IReadOnlyList<RavenNest.Models.Item> availableItems)
@@ -77,6 +89,11 @@ public class Inventory : MonoBehaviour
                 Amount = amount
             });
         }
+    }
+
+    public void EquipAll()
+    {
+        equipment.EquipAll(equipped);
     }
 
     public void Equip(Item item, bool updateAppearance = true)

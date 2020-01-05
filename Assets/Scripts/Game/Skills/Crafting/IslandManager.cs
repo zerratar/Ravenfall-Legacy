@@ -15,6 +15,7 @@ public class IslandManager : MonoBehaviour
     public IslandController[] All => islands;
     public IslandController Find(string islandName)
     {
+        if (islands == null || string.IsNullOrEmpty(islandName)) return null;
         return islands.FirstOrDefault(x => x.Identifier.StartsWith(islandName, StringComparison.OrdinalIgnoreCase));
     }
 

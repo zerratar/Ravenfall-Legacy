@@ -35,6 +35,9 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private GameObject exitView;
     [SerializeField] private MusicManager musicManager;
 
+    [SerializeField] private IslandManager islandManager;
+    [SerializeField] private DungeonManager dungeonManager;
+
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
         = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
 
@@ -43,8 +46,8 @@ public class GameManager : MonoBehaviour, IGameManager
     private readonly ConcurrentDictionary<string, LoadingState> loadingStates
         = new ConcurrentDictionary<string, LoadingState>();
 
-    [SerializeField] private IslandManager islandManager;
     private FerryController ferryController;
+
 
     private ChunkManager chunkManager;
     private PlayerManager playerManager;
@@ -69,6 +72,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public ArenaController Arena => arenaController;
     public RaidManager Raid => raidManager;
     public StreamRaidManager StreamRaid => streamRaidManager;
+    public DungeonManager Dungeons => dungeonManager;
     public GameServer Server => commandServer?.Server;
     public FerryController Ferry => ferryController;
     public DropEventManager DropEvent => dropEventManager;
@@ -274,7 +278,7 @@ public class GameManager : MonoBehaviour, IGameManager
     }
 
     public PlayerController SpawnPlayer(
-        RavenNest.Models.Player playerDef,
+        RavenNest.Models.Player playerDefinition,
         Player streamUser = null,
         StreamRaidInfo raidInfo = null)
     {
@@ -292,8 +296,15 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         var spawnPoint = starter.GetPlayerSpawnPoint();
+        //var startIsland = playerDefinition?.State?.Island;
+        //var island = Islands.Find(startIsland);
+        //if (island != null)
+        //{
+        //    spawnPoint = island.SpawnPosition;
+        //}
+
         var vector3 = Random.insideUnitSphere * 1f;
-        var player = playerManager.Spawn(spawnPoint + vector3, playerDef, streamUser, raidInfo);
+        var player = playerManager.Spawn(spawnPoint + vector3, playerDefinition, streamUser, raidInfo);
 
         if (!player)
             Debug.LogError("Can't spawn player, player is already playing.");
@@ -374,8 +385,8 @@ public class GameManager : MonoBehaviour, IGameManager
             client = new RavenNestClient(
                 logger,
                 this,
-            //new RavenNestStreamSettings()
-            new LocalRavenNestStreamSettings()
+            new RavenNestStreamSettings()
+            //new LocalRavenNestStreamSettings()
             );
 
             ravenNest = client;
@@ -449,31 +460,27 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        Debug.Log("Saving all active players!!");
         try
         {
             var players = playerManager
                 .GetAllPlayers();
+
             var states = players
                 .Select(x => x.BuildPlayerState())
                 .ToArray();
 
             var result = await ravenNest.Players.UpdateManyAsync(states);
-            if (result.All(x => x))
+            for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
             {
-                Debug.Log("All players saved successfully!");
-
-                foreach (var player in players.Select((res, index) => new { Result = res, Player = players[index] }).Where(x => x.Result))
+                var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
+                if (playerResult.Successeful)
                 {
-                    player.Player.SavedSucceseful();
+                    playerResult.Player.SavedSucceseful();
                 }
-            }
-            else
-            {
-                var successCount = result.Count(x => x);
-                var totalCount = result.Length;
-
-                Debug.LogWarning($"{successCount} out of {totalCount} players saved successfully!");
+                else
+                {
+                    Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
+                }
             }
         }
         catch (Exception exc)
@@ -537,6 +544,16 @@ public class GameManager : MonoBehaviour, IGameManager
                     raidManager.Join(p);
                 }
             }
+        }
+
+        if (isControlDown && Input.GetKeyUp(KeyCode.O))
+        {
+            Dungeons.ActivateDungeon();
+        }
+
+        if (isControlDown && Input.GetKeyUp(KeyCode.P))
+        {
+            Dungeons.ForceStartDungeon();
         }
 
         if (isControlDown && Input.GetKeyUp(KeyCode.R))

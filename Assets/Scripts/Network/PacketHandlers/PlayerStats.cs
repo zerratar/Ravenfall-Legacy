@@ -68,5 +68,14 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
             .Where(x => x.FieldType == typeof(SkillStat))
             .Select(x => { skills += (SkillStat)x.GetValue(ps) + ", "; return x; })
             .Sum(x => ((SkillStat)x.GetValue(ps)).Level);
+        
+        client.SendCommand(player.PlayerName,
+            "player_stats",
+            $"Combat level {combatLevel}, " +
+            skills +
+            $" -- TOTAL {total} --, " +
+            $"Eq - power {eq.WeaponPower}, " +
+            $"aim {eq.WeaponAim}, " +
+            $"armor {eq.ArmorPower}");
     }
 }

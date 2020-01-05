@@ -38,6 +38,7 @@ public class SettingsMenuView : MenuView
         if (raidHornVolumeSlider != null)
         {
             gameManager.Raid.Notifications.volume = raidHornVolumeSlider.value;
+            gameManager.Dungeons.Notifications.volume = raidHornVolumeSlider.value;
         }
 
         if (playerListSizeSlider != null)

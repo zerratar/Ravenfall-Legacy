@@ -14,6 +14,11 @@ public class KickPlayer : PacketHandler<Player>
         var player = PlayerManager.GetPlayer(data);
         if (player)
         {
+            if (Game.Dungeons.JoinedDungeon(player))
+            {
+                Game.Dungeons.Remove(player);
+            }
+
             if (!Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
             {
                 client.SendCommand(data.Username, "kick_failed", $"{player.PlayerName} cannot be kicked as they are participating in the arena that has already started and may break it. Player has been queued up to be kicked after the arena has been finished.");
