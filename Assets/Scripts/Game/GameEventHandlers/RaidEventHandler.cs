@@ -25,15 +25,6 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
 
         gameManager.StreamRaid.ClearTeams();
 
-        if (!gameManager.StreamRaid.Started && raidWar)
-        {
-            foreach (var player in players)
-            {
-                if (raidInfo.Players.Contains(player.UserId)) continue;
-                gameManager.StreamRaid.AddToStreamerTeam(player);
-            }
-        }
-
         var raiders = new List<PlayerController>();
         foreach (var user in raidInfo.Players)
         {
@@ -52,19 +43,33 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
 
         if (raidWar)
         {
-            gameManager.StartCoroutine(StartRaidWar(gameManager, raiders));
+            gameManager.StartCoroutine(StartRaidWar(gameManager, raidInfo, players, raiders));
         }
     }
 
-    private IEnumerator StartRaidWar(GameManager gameManager, IReadOnlyList<PlayerController> raiders)
+    private IEnumerator StartRaidWar(GameManager gameManager, StreamRaidInfo raidInfo, IReadOnlyList<PlayerController> players, IReadOnlyList<PlayerController> raiders)
     {
-        yield return new WaitForEndOfFrame();
-        foreach (var raider in raiders)
+        if (gameManager.Events.TryStart(gameManager.StreamRaid))
         {
-            gameManager.StreamRaid.AddToRaiderTeam(raider);
-            yield return new WaitForEndOfFrame();
-        }
+            foreach (var player in players)
+            {
+                if (raidInfo.Players.Contains(player.UserId)) continue;
+                gameManager.StreamRaid.AddToStreamerTeam(player);
+            }
 
-        gameManager.StreamRaid.StartRaidWar();
+            yield return new WaitForEndOfFrame();
+            foreach (var raider in raiders)
+            {
+                gameManager.StreamRaid.AddToRaiderTeam(raider);
+                yield return new WaitForEndOfFrame();
+            }
+
+            gameManager.StreamRaid.StartRaidWar();
+        }
+        else
+        {
+            yield return new WaitForSeconds(gameManager.Events.RescheduleTime);
+            yield return StartRaidWar(gameManager, raidInfo, players, raiders);
+        }
     }
 }

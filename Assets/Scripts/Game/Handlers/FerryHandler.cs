@@ -80,27 +80,33 @@ public class FerryHandler : MonoBehaviour
             }
 
             if (!ferry.Island.DockingArea) return;
-            if (!ferry.Island.DockingArea.OnDock(player))
-            {
-                if (ferry.Docked && destination)
-                {
-                    // we have reached our target destination
-                    if (destination == ferry.Island)
-                    {
-                        // disembark!
-                        RemovePlayerFromFerry(destination);
-                    }
 
-                }
-                else if (ferry.Docked && !destination)
+            Disembark();
+        }
+    }
+
+    private void Disembark()
+    {
+        if (!ferry.Island.DockingArea.OnDock(player))
+        {
+            if (ferry.Docked && destination)
+            {
+                // we have reached our target destination
+                if (destination == ferry.Island)
                 {
-                    RemovePlayerFromFerry(ferry.Island);
+                    // disembark!
+                    RemovePlayerFromFerry(destination);
                 }
+
             }
-            else
+            else if (ferry.Docked && !destination)
             {
                 RemovePlayerFromFerry(ferry.Island);
             }
+        }
+        else
+        {
+            RemovePlayerFromFerry(ferry.Island);
         }
     }
 

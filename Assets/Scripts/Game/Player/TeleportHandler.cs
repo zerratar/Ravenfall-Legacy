@@ -4,9 +4,8 @@ public class TeleportHandler : MonoBehaviour
 {
     [SerializeField] private IslandManager islandManager;
 
-    private bool hasTeleported;
     private PlayerController player;
-    private IChunk lastChunk;
+    private Transform parent;
 
     private void Start()
     {
@@ -21,8 +20,25 @@ public class TeleportHandler : MonoBehaviour
         if (!this || this == null)
             return;
 
+        var hasParent = !!player.transform.parent;
+        if (hasParent)
+        {
+            parent = player.Transform.parent;
+            player.transform.SetParent(null);
+        }
+
         player.Lock();
-        transform.position = position;
+
+        if (!hasParent && parent)
+        {
+            player.transform.SetParent(parent);
+            transform.localPosition = Vector3.zero;
+        }
+        else
+        {
+            transform.position = position;
+        }
+
         player.Island = islandManager.FindPlayerIsland(player);
     }
 }

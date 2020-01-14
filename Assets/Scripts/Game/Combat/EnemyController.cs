@@ -211,7 +211,9 @@ public class EnemyController : MonoBehaviour, IAttackable
 
         InCombat = true;
 
-        damageCounterManager.Add(transform, damage);
+        var dc = damageCounterManager.Add(transform, damage);
+        //dc.Color = player.PlayerNameHexColor;
+
         Stats.Health.Add(-damage);
 
         attackerAggro.TryGetValue(attacker.Name, out var aggro);

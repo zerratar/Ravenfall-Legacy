@@ -9,6 +9,8 @@ namespace RavenNest.SDK
 {
     public class RavenNestClient : IRavenNestClient
     {
+        private readonly TimeSpan tokenRefreshInterval = TimeSpan.FromHours(1);
+
         private readonly ILogger logger;
         private readonly IAppSettings appSettings;
         private readonly ITokenProvider tokenProvider;
@@ -22,6 +24,10 @@ namespace RavenNest.SDK
         private int updateCounter;
         private int revision;
         private int badClientVersion;
+
+        private string username;
+        private string password;
+        private DateTime lastLogin;
 
         public bool BadClientVersion => Volatile.Read(ref badClientVersion) == 1;
 
@@ -80,12 +86,22 @@ namespace RavenNest.SDK
                 return;
             }
 
+            if (lastLogin > DateTime.MinValue && DateTime.UtcNow - lastLogin >= tokenRefreshInterval)
+            {
+                await InvalidateAuthTokenAsync();
+            }
+
             if (!await Stream.UpdateAsync())
             {
                 logger.Debug("Reconnecting to server...");
             }
 
             Interlocked.Decrement(ref updateCounter);
+        }
+
+        private Task InvalidateAuthTokenAsync()
+        {
+            return LoginAsync(username, password);
         }
 
         public async Task<bool> SavePlayerAsync(PlayerController player)
@@ -103,6 +119,15 @@ namespace RavenNest.SDK
                 var authToken = await Auth.AuthenticateAsync(username, password);
                 if (authToken != null)
                 {
+                    lastLogin = DateTime.UtcNow;
+
+                    // TODO(zerratar): fix me, this is bad. Dont want to have these values
+                    //                 stored in memory
+
+                    this.username = username;
+                    this.password = password;
+
+                    // bump
                     currentAuthToken = authToken;
                     tokenProvider.SetAuthToken(currentAuthToken);
                     gameManager.OnAuthenticated();

@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 
-public class RaidManager : MonoBehaviour
+public class RaidManager : MonoBehaviour, IEvent
 {
     [SerializeField] private GameCamera camera;
     [SerializeField] private ChunkManager chunkManager;
@@ -95,21 +95,32 @@ public class RaidManager : MonoBehaviour
 
     public void StartRaid(string initiator = null)
     {
-        gameManager.Music.PlayRaidBossMusic();
+        if (gameManager.Events.TryStart(this))
+        {
+            gameManager.Music.PlayRaidBossMusic();
 
-        if (!notifications.gameObject.activeSelf) notifications.gameObject.SetActive(true);
+            if (!notifications.gameObject.activeSelf) notifications.gameObject.SetActive(true);
 
-        nextRaidTimer = -1f;
-        raidStartedTime = Time.time;
-        camera.EnableRaidCamera();
+            nextRaidTimer = -1f;
+            raidStartedTime = Time.time;
+            camera.EnableRaidCamera();
 
-        SpawnRaidBoss();
+            SpawnRaidBoss();
 
-        notifications.ShowRaidBossAppeared();
+            notifications.ShowRaidBossAppeared();
 
-        gameManager.Server?.Client?.SendCommand(
-            "", "raid_start",
-            $"A level {Boss.Enemy.Stats.CombatLevel} raid boss has appeared! Help fight him by typing !raid");
+            gameManager.Server?.Client?.SendCommand(
+                "", "raid_start",
+                $"A level {Boss.Enemy.Stats.CombatLevel} raid boss has appeared! Help fight him by typing !raid");
+
+            return;
+        }
+        else if (!string.IsNullOrEmpty(initiator))
+        {
+            gameManager.Server?.Announce($"Raid cannot be started right now.");
+        }
+
+        nextRaidTimer = gameManager.Events.RescheduleTime;
     }
 
     public void EndRaid(bool bossKilled, bool timeout)
@@ -118,7 +129,7 @@ public class RaidManager : MonoBehaviour
 
         raidEndedTime = Time.time;
         camera.DisableFocusCamera();
-        nextRaidTimer = UnityEngine.Random.Range(minTimeBetweenRaids, maxTimeBetweenRaids);
+        ScheduleNextRaid();
         notifications.HideRaidInfo();
 
         lock (mutex)
@@ -134,6 +145,13 @@ public class RaidManager : MonoBehaviour
         {
             Destroy(Boss.gameObject);
         }
+
+        gameManager.Events.End(this);
+    }
+
+    private void ScheduleNextRaid()
+    {
+        nextRaidTimer = UnityEngine.Random.Range(minTimeBetweenRaids, maxTimeBetweenRaids);
     }
 
     public float GetParticipationPercentage(float enterTime)

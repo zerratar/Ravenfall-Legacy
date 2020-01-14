@@ -14,6 +14,7 @@ public class ArenaController : MonoBehaviour
     [SerializeField] private float arenaStartTime = 60f; // takes 1 min before it starts.
     [SerializeField] private ArenaNotifications notifications;
     [SerializeField] private GameCamera gameCamera;
+    [SerializeField] private GameManager gameManager;
 
     private float arenaStartTimer;
     private bool arenaCountdownStarted;
@@ -31,6 +32,7 @@ public class ArenaController : MonoBehaviour
         arenaStartTimer = arenaStartTime;
         if (!gameCamera) gameCamera = GameObject.FindObjectOfType<GameCamera>();
         island = GetComponentInParent<IslandController>();
+        gameManager = FindObjectOfType<GameManager>();
     }
 
     // Update is called once per frame
@@ -167,6 +169,11 @@ public class ArenaController : MonoBehaviour
     {
         alreadyJoined = JoinedPlayers.FirstOrDefault(x => x.PlayerName.Equals(player.PlayerName));
         alreadyStarted = state >= ArenaState.Started;
+
+        if (gameManager.Events.IsActive)
+        {
+            return false;
+        }
 
         if (state >= ArenaState.Started)
         {

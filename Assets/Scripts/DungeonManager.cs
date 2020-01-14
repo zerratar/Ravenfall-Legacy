@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class DungeonManager : MonoBehaviour
+public class DungeonManager : MonoBehaviour, IEvent
 {
     [SerializeField] private GameManager gameManager;
     [SerializeField] private GameObject dungeonBossPrefab;
@@ -80,17 +80,27 @@ public class DungeonManager : MonoBehaviour
 
     public void ActivateDungeon()
     {
-        state = DungeonState.Active;
-        dungeonStartTimer = timeForDungeonStart;
-        nextDungeonTimer = 0f;
+        if (gameManager.Events.TryStart(this))
+        {
+            state = DungeonState.Active;
+            dungeonStartTimer = timeForDungeonStart;
+            nextDungeonTimer = 0f;
 
-        SelectRandomDungeon();
-        SpawnDungeonBoss();
-        AnnounceDungeon();
+            SelectRandomDungeon();
+            SpawnDungeonBoss();
+            AnnounceDungeon();
+        }
+        else
+        {
+            nextDungeonTimer = gameManager.Events.RescheduleTime;
+        }
     }
 
     public void ForceStartDungeon()
     {
+        if (state != DungeonState.Active)
+            return;
+
         notificationTimer = 0f;
         nextDungeonTimer = 0f;
         dungeonStartTimer = 0f;
@@ -204,6 +214,8 @@ public class DungeonManager : MonoBehaviour
 
         gameManager.Camera.DisableDungeonCamera();
         ScheduleNextDungeon();
+
+        gameManager.Events.End(this);
     }
 
     private void UpdateDungeonStartTimer()

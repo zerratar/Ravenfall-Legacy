@@ -69,6 +69,12 @@
             return;
         }
 
+        if (player1.Dungeon.InDungeon)
+        {
+            client.SendCommand(data.playerA.Username, "duel_failed", "You cannot duel another player as you are participating in a Dungeon.");
+            return;
+        }
+
         if (player2.Duel.InDuel)
         {
             client.SendCommand(data.playerA.Username, "duel_failed", $"You cannot duel {player2.PlayerName} as he or she is participating in a duel.");
@@ -84,6 +90,12 @@
         if (player2.Raid.InRaid)
         {
             client.SendCommand(data.playerA.Username, "duel_failed", $"You cannot duel {player2.PlayerName} as he or she is participating in a Raid.");
+            return;
+        }
+
+        if (player2.Dungeon.InDungeon)
+        {
+            client.SendCommand(data.playerA.Username, "duel_failed", $"You cannot duel {player2.PlayerName} as he or she is participating in a Dungeon.");
             return;
         }
 

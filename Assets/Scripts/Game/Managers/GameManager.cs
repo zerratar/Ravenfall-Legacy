@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,15 +38,16 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private DungeonManager dungeonManager;
 
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
-        = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
+    = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
 
     private readonly ConcurrentQueue<GameEvent> gameEventQueue = new ConcurrentQueue<GameEvent>();
     private readonly Queue<PlayerController> playerKickQueue = new Queue<PlayerController>();
     private readonly ConcurrentDictionary<string, LoadingState> loadingStates
         = new ConcurrentDictionary<string, LoadingState>();
 
-    private FerryController ferryController;
+    private readonly GameEventManager events = new GameEventManager();
 
+    private FerryController ferryController;
 
     private ChunkManager chunkManager;
     private PlayerManager playerManager;
@@ -77,7 +77,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public FerryController Ferry => ferryController;
     public DropEventManager DropEvent => dropEventManager;
     public GameCamera Camera => gameCamera;
-
+    public GameEventManager Events => events;
     public PlayerList PlayerList => playerList;
 
     public bool IsSaving => saveCounter > 0;

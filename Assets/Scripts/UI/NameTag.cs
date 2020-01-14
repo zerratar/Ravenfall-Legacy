@@ -69,7 +69,7 @@ public class NameTag : MonoBehaviour
         }
     }
 
-    private Color GetColorFromHex(string hex)
+    public static Color GetColorFromHex(string hex)
     {
         if (ColorUtility.TryParseHtmlString(hex, out var color))
             return color;

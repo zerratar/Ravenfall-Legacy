@@ -89,6 +89,16 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<bool> ToggleHelmetAsync(string userId)
+        {
+            return request.Create()
+                .Identifier(userId)
+                .Method("toggle-helmet")
+                .Build()
+                .SendAsync<bool>(ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
         public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
             return request.Create()

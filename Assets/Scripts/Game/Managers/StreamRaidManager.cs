@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class StreamRaidManager : MonoBehaviour
+public class StreamRaidManager : MonoBehaviour, IEvent
 {
     private readonly object mutex = new object();
     private readonly List<PlayerController> defenders = new List<PlayerController>();
@@ -122,6 +122,8 @@ public class StreamRaidManager : MonoBehaviour
 
     public void EndRaidWar()
     {
+        gameManager.Events.End(this);
+
         if (!IsWar)
         {
             return;

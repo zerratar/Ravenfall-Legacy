@@ -3,54 +3,97 @@ using UnityEngine;
 
 public class DamageCounter : MonoBehaviour
 {
-    public float OffsetY = 2.75f;
-
     [SerializeField] private TextMeshProUGUI labelBack;
     [SerializeField] private TextMeshProUGUI labelFront;
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private float FadeoutOffsetY = 0f;
+    [SerializeField] private UnityEngine.UI.Image background;
 
-    private float FadeoutTimer = 2f;
+    private int damage = 0;
+    private float fadeoutTimer = 2f;
 
+    public float OffsetY = 2.75f;
+    public string Color;
     public float TargetFadeoutOffsetY = 3f;
     public float FadeoutDuration = 2f;
     public Transform Target;
-    public int Damage = 0;
+    public DamageCounterManager Manager { get; internal set; }
+
+    public int Damage
+    {
+        get
+        {
+            return damage;
+        }
+        set
+        {
+            damage = value;
+            UpdateDamageText();
+        }
+    }
 
     void Start()
     {
-        FadeoutTimer = FadeoutDuration;
+        fadeoutTimer = FadeoutDuration;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (FadeoutTimer <= 0f)
+        if (!Target)
+        {
+            return;
+        }
+
+        if (fadeoutTimer <= 0f)
         {
             return;
         }
 
         transform.LookAt(Camera.main.transform);
 
-        FadeoutTimer -= Time.deltaTime;
+        fadeoutTimer -= Time.deltaTime;
 
-        if (FadeoutTimer <= 0f)
+        if (fadeoutTimer <= 0f)
         {
+            fadeoutTimer = FadeoutDuration;
+            FadeoutOffsetY = 0;
             canvasGroup.alpha = 0;
-            FadeoutTimer = FadeoutDuration;
-            DestroyImmediate(gameObject);
+            Manager.Return(this);
             return;
         }
 
+        FadeOut();
+    }
+
+    public void Activate(Transform target, int damage)
+    {
+        gameObject.SetActive(true);
+
+        Target = target;
+
+        transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
+        fadeoutTimer = FadeoutDuration;
+
+        Damage = damage;
+
+        canvasGroup.alpha = 1;
+    }
+
+    private void UpdateDamageText()
+    {
         labelBack.text = Damage.ToString();
         labelFront.text = Damage.ToString();
+    }
 
-        var fadeoutProgress = FadeoutTimer / FadeoutDuration;
+    private void FadeOut()
+    {
+        var fadeoutProgress = fadeoutTimer / FadeoutDuration;
         var proc = 1f - fadeoutProgress;
-
-        if (FadeoutTimer <= FadeoutDuration / 2f)
+        
+        if (fadeoutTimer <= FadeoutDuration / 2f)
         {
-            canvasGroup.alpha = FadeoutTimer / (FadeoutDuration / 2f);
+            canvasGroup.alpha = fadeoutTimer / (FadeoutDuration / 2f);
         }
 
         FadeoutOffsetY = Mathf.Lerp(0, TargetFadeoutOffsetY, proc);
@@ -58,6 +101,12 @@ public class DamageCounter : MonoBehaviour
         if (Target)
         {
             transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
+        }
+
+        if (background)
+        {
+            var color = NameTag.GetColorFromHex(Color);
+            background.color = color;
         }
     }
 }

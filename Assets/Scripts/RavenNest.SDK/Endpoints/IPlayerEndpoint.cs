@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using RavenNest.Models;
 
 namespace RavenNest.SDK.Endpoints
-{    
+{
     public interface IPlayerEndpoint
     {
         Task<RavenNest.Models.Player> PlayerJoinAsync(string userId, string username);
@@ -16,9 +16,8 @@ namespace RavenNest.SDK.Endpoints
         Task<bool> UnEquipItemAsync(string userId, Guid item);
 
         Task<bool> EquipItemAsync(string userId, Guid item);
-
+        Task<bool> ToggleHelmetAsync(string userId);
         Task<bool> UpdateAppearanceAsync(string userId, int[] appearance);
-
         Task<bool> UpdateExperienceAsync(string userId, decimal[] experience);
 
         Task<bool> UpdateStatisticsAsync(string userId, decimal[] statistics);

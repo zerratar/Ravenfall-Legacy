@@ -16,6 +16,8 @@
             return;
         }
 
+        Game.RavenNest.Players.ToggleHelmetAsync(targetPlayer.UserId);
+
         targetPlayer.Appearance.ToggleHelmVisibility();
     }
 }
