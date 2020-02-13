@@ -68,8 +68,6 @@ public class DamageCounter : MonoBehaviour
 
     public void Activate(Transform target, int damage)
     {
-        gameObject.SetActive(true);
-
         Target = target;
 
         transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
@@ -78,6 +76,8 @@ public class DamageCounter : MonoBehaviour
         Damage = damage;
 
         canvasGroup.alpha = 1;
+
+        gameObject.SetActive(true);
     }
 
     private void UpdateDamageText()
