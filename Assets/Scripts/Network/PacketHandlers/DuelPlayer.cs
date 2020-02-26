@@ -23,7 +23,7 @@
         if (!player2)
         {
             client.SendCommand(data.playerA?.Username,
-                "duel_failed", $"No player with the name {player2.PlayerName} is currently playing.");
+                "duel_failed", $"No player with the name {data.playerB?.Username} is currently playing.");
             return;
         }
 

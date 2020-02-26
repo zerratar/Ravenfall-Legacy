@@ -143,7 +143,7 @@ public class ArenaHandler : MonoBehaviour
     private PlayerController GetTarget()
     {
         var target = player.GetAttackers()
-            .Cast<PlayerController>()
+            .OfType<PlayerController>()
             .Where(atk => !atk.Stats.IsDead)
             .OrderBy(atk => Vector3.Distance(player.transform.position, atk.transform.position))
             .FirstOrDefault();

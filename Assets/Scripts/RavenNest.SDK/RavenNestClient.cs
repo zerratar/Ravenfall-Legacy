@@ -9,7 +9,7 @@ namespace RavenNest.SDK
 {
     public class RavenNestClient : IRavenNestClient
     {
-        private readonly TimeSpan tokenRefreshInterval = TimeSpan.FromHours(1);
+        //private readonly TimeSpan tokenRefreshInterval = TimeSpan.FromHours(1);
 
         private readonly ILogger logger;
         private readonly IAppSettings appSettings;
@@ -25,8 +25,8 @@ namespace RavenNest.SDK
         private int revision;
         private int badClientVersion;
 
-        private string username;
-        private string password;
+        //private string username;
+        //private string password;
         private DateTime lastLogin;
 
         public bool BadClientVersion => Volatile.Read(ref badClientVersion) == 1;
@@ -86,10 +86,10 @@ namespace RavenNest.SDK
                 return;
             }
 
-            if (lastLogin > DateTime.MinValue && DateTime.UtcNow - lastLogin >= tokenRefreshInterval)
-            {
-                await InvalidateAuthTokenAsync();
-            }
+            //if (lastLogin > DateTime.MinValue && DateTime.UtcNow - lastLogin >= tokenRefreshInterval)
+            //{
+            //    await InvalidateAuthTokenAsync();
+            //}
 
             if (!await Stream.UpdateAsync())
             {
@@ -99,10 +99,10 @@ namespace RavenNest.SDK
             Interlocked.Decrement(ref updateCounter);
         }
 
-        private Task InvalidateAuthTokenAsync()
-        {
-            return LoginAsync(username, password);
-        }
+        //private Task InvalidateAuthTokenAsync()
+        //{
+        //    return LoginAsync(username, password);
+        //}
 
         public async Task<bool> SavePlayerAsync(PlayerController player)
         {
@@ -124,8 +124,8 @@ namespace RavenNest.SDK
                     // TODO(zerratar): fix me, this is bad. Dont want to have these values
                     //                 stored in memory
 
-                    this.username = username;
-                    this.password = password;
+                    //this.username = username;
+                    //this.password = password;
 
                     // bump
                     currentAuthToken = authToken;

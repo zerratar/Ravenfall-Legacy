@@ -37,6 +37,8 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private IslandManager islandManager;
     [SerializeField] private DungeonManager dungeonManager;
 
+    [SerializeField] private VillageManager villageManager;
+
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
     = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
 
@@ -60,6 +62,9 @@ public class GameManager : MonoBehaviour, IGameManager
     public string ServerAddress;
 
     public IRavenNestClient RavenNest => ravenNest;
+
+    public VillageManager Village => villageManager;
+
     public TwitchSubscriberBoost Boost => subEventManager.CurrentBoost;
     public TwitchEventManager Twitch => subEventManager;
     public MusicManager Music => musicManager;
@@ -110,6 +115,8 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!ferryProgress) ferryProgress = FindObjectOfType<FerryProgress>();
         if (!gameCamera) gameCamera = FindObjectOfType<GameCamera>();
 
+        if (!villageManager) villageManager = FindObjectOfType<VillageManager>();
+
         if (!settings) settings = GetComponent<GameSettings>();
         if (!subEventManager) subEventManager = GetComponent<TwitchEventManager>();
         if (!subEventManager) subEventManager = gameObject.AddComponent<TwitchEventManager>();
@@ -128,10 +135,13 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!ferryController) ferryController = FindObjectOfType<FerryController>();
         if (!musicManager) musicManager = GetComponent<MusicManager>();
 
-
         RegisterGameEventHandler<ItemAddEventHandler>(GameEventType.ItemAdd);
         RegisterGameEventHandler<ResourceUpdateEventHandler>(GameEventType.ResourceUpdate);
         RegisterGameEventHandler<ServerMessageEventHandler>(GameEventType.ServerMessage);
+
+        RegisterGameEventHandler<VillageInfoEventHandler>(GameEventType.VillageInfo);
+        RegisterGameEventHandler<VillageLevelUpEventHandler>(GameEventType.VillageLevelUp);
+
         RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
         RegisterGameEventHandler<StreamerWarRaidEventHandler>(GameEventType.WarRaid);
         RegisterGameEventHandler<StreamerRaidEventHandler>(GameEventType.Raid);
@@ -472,6 +482,12 @@ public class GameManager : MonoBehaviour, IGameManager
             var result = await ravenNest.Players.UpdateManyAsync(states);
             for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
             {
+                if (players.Count <= playerIndex)
+                {
+                    Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
+                    continue;
+                }
+
                 var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
                 if (playerResult.Successeful)
                 {

@@ -112,6 +112,7 @@ public class ArenaController : MonoBehaviour
 
     public void BeginArenaFight()
     {
+        state = ArenaState.Started;
         StartCoroutine(_StartArenaFight());
     }
 
@@ -275,7 +276,6 @@ public class ArenaController : MonoBehaviour
             player.Arena.OnFightStart();
         }
 
-        state = ArenaState.Started;
         CloseGate();
         Debug.Log("Arena fight begins!");
     }
