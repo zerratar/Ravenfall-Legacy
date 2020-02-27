@@ -395,8 +395,8 @@ public class GameManager : MonoBehaviour, IGameManager
             client = new RavenNestClient(
                 logger,
                 this,
-            new RavenNestStreamSettings()
-            //new LocalRavenNestStreamSettings()
+                new RavenNestStreamSettings()
+                //new LocalRavenNestStreamSettings()
             );
 
             ravenNest = client;

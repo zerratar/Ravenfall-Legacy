@@ -23,6 +23,7 @@ namespace RavenNest.SDK.Endpoints
         Items,
         Players,
         Auth,
-        Marketplace
+        Marketplace,
+        Village
     }
 }

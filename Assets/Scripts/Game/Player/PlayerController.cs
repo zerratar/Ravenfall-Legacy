@@ -360,6 +360,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     {
         var state = new PlayerState();
 
+        state.SyncTime = Time.time;
         state.UserId = UserId;
 
         var statistics = Statistics.ToList()

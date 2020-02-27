@@ -7,7 +7,7 @@ namespace RavenNest.SDK.Endpoints
     {
         Task<GameInfo> GetAsync();
 
-        Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, bool local);
+        Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, bool local, float syncTime);
 
         Task<bool> EndSessionAndRaidAsync(string username, bool war);
 

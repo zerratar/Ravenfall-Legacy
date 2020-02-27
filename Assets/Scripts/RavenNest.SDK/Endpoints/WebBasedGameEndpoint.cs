@@ -22,14 +22,16 @@ namespace RavenNest.SDK.Endpoints
         }
 
         public Task<SessionToken> BeginSessionAsync(
-            string clientVersion, 
-            string accessKey, 
-            bool local)
+            string clientVersion,
+            string accessKey,
+            bool local,
+            float syncTime)
         {
             return request.Create()
                 .AddParameter(clientVersion)
                 .AddParameter(accessKey)
-                .AddParameter("value", local)
+                .AddParameter("value1", local)
+                .AddParameter("value2", syncTime)
                 .Build()
                 .SendAsync<SessionToken>(ApiRequestTarget.Game, ApiRequestType.Post);
         }
