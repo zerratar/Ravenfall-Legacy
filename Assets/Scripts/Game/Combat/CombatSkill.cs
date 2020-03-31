@@ -1,9 +1,9 @@
 ﻿public enum CombatSkill
 {
-    Attack,
-    Defense,
-    Strength,
-    Health,
-    Magic,
-    Ranged
+    Attack = 0,
+    Defense = 1,
+    Strength = 2,
+    Health = 3,
+    Magic = 4,
+    Ranged = 5
 }

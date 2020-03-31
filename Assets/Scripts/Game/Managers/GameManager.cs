@@ -39,6 +39,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
     [SerializeField] private VillageManager villageManager;
 
+    [SerializeField] private PlayerLogoManager playerLogoManager;
+
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
     = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
 
@@ -50,7 +52,6 @@ public class GameManager : MonoBehaviour, IGameManager
     private readonly GameEventManager events = new GameEventManager();
 
     private FerryController ferryController;
-
     private ChunkManager chunkManager;
     private PlayerManager playerManager;
     private CraftingManager craftingManager;
@@ -64,7 +65,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public IRavenNestClient RavenNest => ravenNest;
 
     public VillageManager Village => villageManager;
-
+    public PlayerLogoManager PlayerLogo => playerLogoManager;
     public TwitchSubscriberBoost Boost => subEventManager.CurrentBoost;
     public TwitchEventManager Twitch => subEventManager;
     public MusicManager Music => musicManager;
@@ -115,6 +116,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!ferryProgress) ferryProgress = FindObjectOfType<FerryProgress>();
         if (!gameCamera) gameCamera = FindObjectOfType<GameCamera>();
 
+        if (!playerLogoManager) playerLogoManager = GetComponent<PlayerLogoManager>();
         if (!villageManager) villageManager = FindObjectOfType<VillageManager>();
 
         if (!settings) settings = GetComponent<GameSettings>();
@@ -122,7 +124,6 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!subEventManager) subEventManager = gameObject.AddComponent<TwitchEventManager>();
 
         if (!commandServer) commandServer = GetComponent<CommandServer>();
-
         if (!islandManager) islandManager = GetComponent<IslandManager>();
         if (!itemManager) itemManager = GetComponent<ItemManager>();
         if (!playerManager) playerManager = GetComponent<PlayerManager>();
@@ -143,6 +144,15 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<VillageLevelUpEventHandler>(GameEventType.VillageLevelUp);
 
         RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
+        RegisterGameEventHandler<PlayerAddEventHandler>(GameEventType.PlayerAdd);
+        RegisterGameEventHandler<PlayerExpUpdateEventHandler>(GameEventType.PlayerExpUpdate);
+        RegisterGameEventHandler<PlayerJoinArenaEventHandler>(GameEventType.PlayerJoinArena);
+        RegisterGameEventHandler<PlayerJoinDungeonEventHandler>(GameEventType.PlayerJoinDungeon);
+        RegisterGameEventHandler<PlayerJoinRaidEventHandler>(GameEventType.PlayerJoinRaid);
+        RegisterGameEventHandler<PlayerNameUpdateEventHandler>(GameEventType.PlayerNameUpdate);
+        RegisterGameEventHandler<PlayerTaskEventHandler>(GameEventType.PlayerTask);
+
+
         RegisterGameEventHandler<StreamerWarRaidEventHandler>(GameEventType.WarRaid);
         RegisterGameEventHandler<StreamerRaidEventHandler>(GameEventType.Raid);
         RegisterGameEventHandler<PlayerAppearanceEventHandler>(GameEventType.PlayerAppearance);
@@ -392,9 +402,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (client == null)
         {
-            client = new RavenNestClient(
-                logger,
-                this,
+            client = new RavenNestClient(logger, this,
                 new RavenNestStreamSettings()
                 //new LocalRavenNestStreamSettings()
             );

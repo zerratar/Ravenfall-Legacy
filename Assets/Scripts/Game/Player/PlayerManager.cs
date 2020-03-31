@@ -10,6 +10,7 @@ public class PlayerManager : MonoBehaviour
     private readonly List<PlayerController> activePlayers = new List<PlayerController>();
     private readonly object mutex = new object();
 
+    [SerializeField] private GameManager gameManager;
     [SerializeField] private GameSettings settings;
     [SerializeField] private GameObject playerControllerPrefab;
     [SerializeField] private IoCContainer ioc;
@@ -19,6 +20,7 @@ public class PlayerManager : MonoBehaviour
 
     void Start()
     {
+        if (!gameManager) gameManager = GetComponent<GameManager>();
         if (!settings) settings = GetComponent<GameSettings>();
         if (!ioc) ioc = GetComponent<IoCContainer>();
     }
@@ -30,12 +32,6 @@ public class PlayerManager : MonoBehaviour
 
     void Update()
     {
-    }
-
-    public void SaveRepository()
-    {
-        //playerRepository.UpdateMany(activePlayers.Select(x => x.CreatePlayerDefinition()));
-        //playerRepository.Save();
     }
 
     public IReadOnlyList<PlayerController> GetAllPlayers()
@@ -124,10 +120,10 @@ public class PlayerManager : MonoBehaviour
                 return;
             }
 
-            SaveRepository();
             player.OnRemoved();
             activePlayers.Remove(player);
             Destroy(player.gameObject);
+            gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
         }
     }
 
@@ -148,6 +144,7 @@ public class PlayerManager : MonoBehaviour
         lock (mutex)
         {
             activePlayers.Add(player);
+            gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
             return player;
         }
     }

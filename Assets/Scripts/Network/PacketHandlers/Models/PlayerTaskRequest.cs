@@ -1,6 +1,7 @@
 ﻿public class PlayerTaskRequest
 {
-    public PlayerTaskRequest(Player player, string task, string[] arguments)
+    public PlayerTaskRequest
+        (Player player, string task, string[] arguments)
     {
         Player = player;
         Task = task;

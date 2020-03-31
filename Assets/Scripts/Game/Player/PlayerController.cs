@@ -842,41 +842,45 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             player.AddExp(tree.Experience, Skill.Woodcutting);
             var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
             player.Statistics.TotalWoodCollected += amount;
-            player.AddResource(Resource.Woodcutting, amount);
+            //player.AddResource(Resource.Woodcutting, amount);
         }
     }
 
     #region Manage EXP/Resources
 
-    public void AddCombatExp(decimal exp, int skill)
+    public void AddCombatExp(decimal exp, int skillIndex)
     {
+        var skill = (CombatSkill)skillIndex;
+
         if (gameManager.Boost.Active)
         {
             exp *= (decimal)gameManager.Boost.Multiplier;
         }
 
+        exp *= (decimal)gameManager.Village.GetExpBonusBySkill(skill);
+
         switch (skill)
         {
-            case 0:
+            case CombatSkill.Attack:
                 if (Stats.Attack.AddExp(exp, out var atkLvls))
                 {
-                    CelebrateCombatSkillLevelUp(CombatSkill.Attack, atkLvls);
+                    CelebrateCombatSkillLevelUp(skill, atkLvls);
                     Inventory.EquipBestItems();
                 }
                 break;
-            case 1:
+            case CombatSkill.Defense:
                 if (Stats.Defense.AddExp(exp, out var defLvls))
                 {
-                    CelebrateCombatSkillLevelUp(CombatSkill.Defense, defLvls);
+                    CelebrateCombatSkillLevelUp(skill, defLvls);
                     Inventory.EquipBestItems();
                 }
                 break;
-            case 2:
+            case CombatSkill.Strength:
                 if (Stats.Strength.AddExp(exp, out var strLvls))
-                    CelebrateCombatSkillLevelUp(CombatSkill.Strength, strLvls);
+                    CelebrateCombatSkillLevelUp(skill, strLvls);
                 break;
             // all / controlled
-            case 3:
+            case CombatSkill.Health:
                 {
                     var each = exp / 3;
                     if (Stats.Attack.AddExp(each, out var a))
@@ -894,19 +898,19 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
                         CelebrateCombatSkillLevelUp(CombatSkill.Strength, c);
                 }
                 break;
-            case 4:
+            case CombatSkill.Magic:
                 {
                     if (Stats.Magic.AddExp(exp, out var lvls))
                     {
-                        CelebrateCombatSkillLevelUp(CombatSkill.Magic, lvls);
+                        CelebrateCombatSkillLevelUp(skill, lvls);
                     }
                 }
                 break;
-            case 5:
+            case CombatSkill.Ranged:
                 {
                     if (Stats.Ranged.AddExp(exp, out var lvls))
                     {
-                        CelebrateCombatSkillLevelUp(CombatSkill.Ranged, lvls);
+                        CelebrateCombatSkillLevelUp(skill, lvls);
                     }
                 }
                 break;
@@ -995,11 +999,15 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             exp *= (decimal)gameManager.Boost.Multiplier;
         }
 
+        exp *= (decimal)gameManager.Village.GetExpBonusBySkill(skill);
 
         switch (skill)
         {
             case Skill.Woodcutting:
                 {
+
+
+
                     if (Stats.Woodcutting.AddExp(exp, out var a))
                         CelebrateSkillLevelUp(skill, a);
                 }

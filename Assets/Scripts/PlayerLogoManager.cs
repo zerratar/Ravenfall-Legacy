@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -14,6 +15,20 @@ public class PlayerLogoManager : MonoBehaviour
     private void Awake()
     {
         gameManager = FindObjectOfType<GameManager>();
+    }
+
+    public void GetLogo(string userId, Action<Sprite> onLogoDownloaded)
+    {
+        if (userId == null || onLogoDownloaded == null)
+            return;
+
+        if (gameManager.LogoCensor)
+            onLogoDownloaded(replacementLogo);
+
+        if (userLogos.TryGetValue(userId, out var sprite))
+            onLogoDownloaded(sprite);
+
+        StartCoroutine(DownloadTexture(userId, onLogoDownloaded));
     }
 
     public Sprite GetLogo(string raiderUserId)
@@ -32,7 +47,7 @@ public class PlayerLogoManager : MonoBehaviour
         return null;
     }
 
-    private IEnumerator DownloadTexture(string userId)
+    private IEnumerator DownloadTexture(string userId, Action<Sprite> onLogoDownloaded = null)
     {
         if (userLogos.ContainsKey(userId))
         {
@@ -56,6 +71,8 @@ public class PlayerLogoManager : MonoBehaviour
             Texture2D webTexture = ((DownloadHandlerTexture)www.downloadHandler).texture as Texture2D;
             Sprite webSprite = SpriteFromTexture2D(webTexture);
             userLogos[userId] = webSprite;
+            if (onLogoDownloaded != null)
+                onLogoDownloaded(webSprite);
         }
     }
 

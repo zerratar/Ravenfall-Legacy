@@ -12,6 +12,7 @@ namespace RavenNest.SDK
         IPlayerEndpoint Players { get; }
         IMarketplaceEndpoint Marketplace { get; }
         IWebSocketEndpoint Stream { get; }
+        IVillageEndpoint Village { get; }
 
         //GameEvent PollGameEvent();
         void Update();

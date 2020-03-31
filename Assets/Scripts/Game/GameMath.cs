@@ -116,6 +116,60 @@ public static class GameMath
         return 0;
     }
 
+    public static float CalculateHouseExpBonus(SkillStat skill)
+    {
+        // up to 50% exp bonus
+        return (skill.CurrentValue / (float)MaxLevel) * 50f;
+    }
+
+    public static SkillStat GetSkillByHouseType(Skills stats, TownHouseSlotType type)
+    {
+        switch (type)
+        {
+            case TownHouseSlotType.Woodcutting: return stats.Woodcutting;
+            case TownHouseSlotType.Mining: return stats.Mining;
+            case TownHouseSlotType.Farming: return stats.Farming;
+            case TownHouseSlotType.Crafting: return stats.Crafting;
+            case TownHouseSlotType.Cooking: return stats.Cooking;
+            case TownHouseSlotType.Slayer: return stats.Slayer;
+            case TownHouseSlotType.Sailing: return stats.Sailing;
+            case TownHouseSlotType.Fishing: return stats.Fishing;
+
+#warning Use combat level instead of health for combat based town house slots
+            case TownHouseSlotType.Melee: return stats.Health;
+
+            case TownHouseSlotType.Magic: return stats.Magic;
+            case TownHouseSlotType.Ranged: return stats.Ranged;
+
+            default: return stats.Mining;
+        }
+    }
+
+    public static TownHouseSlotType GetHouseTypeBySkill(Skill skill)
+    {
+        switch (skill)
+        {
+            case Skill.Cooking: return TownHouseSlotType.Cooking;
+            case Skill.Crafting: return TownHouseSlotType.Crafting;
+            case Skill.Farming: return TownHouseSlotType.Farming;
+            case Skill.Mining: return TownHouseSlotType.Mining;
+            case Skill.Sailing: return TownHouseSlotType.Sailing;
+            case Skill.Slayer: return TownHouseSlotType.Slayer;
+            case Skill.Woodcutting: return TownHouseSlotType.Woodcutting;
+            case Skill.Fishing: return TownHouseSlotType.Fishing;
+            default: return TownHouseSlotType.Empty;
+        }
+    }
+
+    public static TownHouseSlotType GetHouseTypeBySkill(CombatSkill skill)
+    {
+        switch (skill)
+        {
+            case CombatSkill.Ranged: return TownHouseSlotType.Ranged;
+            case CombatSkill.Magic: return TownHouseSlotType.Magic;
+            default: return TownHouseSlotType.Melee;
+        }
+    }
     internal static float CalculateExplosionDamage(IAttackable enemy, IAttackable player, float scale = 0.75f)
     {
         return CalculateDamage(enemy, player) * scale;

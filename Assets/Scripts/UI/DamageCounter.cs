@@ -40,28 +40,13 @@ public class DamageCounter : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!Target)
+        if (!Target || fadeoutTimer <= 0f)
         {
-            return;
-        }
-
-        if (fadeoutTimer <= 0f)
-        {
+            Manager.Return(this);
             return;
         }
 
         transform.LookAt(Camera.main.transform);
-
-        fadeoutTimer -= Time.deltaTime;
-
-        if (fadeoutTimer <= 0f)
-        {
-            fadeoutTimer = FadeoutDuration;
-            FadeoutOffsetY = 0;
-            canvasGroup.alpha = 0;
-            Manager.Return(this);
-            return;
-        }
 
         FadeOut();
     }
@@ -88,6 +73,8 @@ public class DamageCounter : MonoBehaviour
 
     private void FadeOut()
     {
+        fadeoutTimer -= Time.deltaTime;
+
         var fadeoutProgress = fadeoutTimer / FadeoutDuration;
         var proc = 1f - fadeoutProgress;
         
@@ -107,6 +94,14 @@ public class DamageCounter : MonoBehaviour
         {
             var color = NameTag.GetColorFromHex(Color);
             background.color = color;
+        }
+
+        if (fadeoutTimer <= 0f)
+        {
+            fadeoutTimer = FadeoutDuration;
+            FadeoutOffsetY = 0;
+            canvasGroup.alpha = 0;
+            Manager.Return(this);
         }
     }
 }

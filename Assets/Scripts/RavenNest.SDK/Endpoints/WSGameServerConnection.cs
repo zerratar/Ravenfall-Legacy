@@ -233,10 +233,19 @@ namespace RavenNest.SDK.Endpoints
             //    this.Disconnect();
             //    return false;
             //}
+            catch (WebSocketException socketExc)
+            {
+                if (socketExc.WebSocketErrorCode != WebSocketError.ConnectionClosedPrematurely)
+                {
+                    logger.Error(socketExc.ToString());
+                }
+
+                Disconnect();
+                return false;
+            }
             catch (Exception exc)
             {
                 logger.Error(exc.ToString());
-                //if (this.webSocket.State == WebSocketState.Aborted)
                 Disconnect();
                 return false;
             }

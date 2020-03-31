@@ -23,6 +23,11 @@ public class SkillStat
         Name = name;
     }
 
+    public void SetExp(decimal exp)
+    {
+        AddExp(exp - Experience, out _);
+    }
+
     public bool AddExp(decimal exp, out int newLevels)
     {
 
