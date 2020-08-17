@@ -10,7 +10,7 @@ public class TwitchEventManager : MonoBehaviour
 
     public int BitsForMultiplier = 250;
     public float MaxMultiplier = 50f;
-    public float Duration = 25f * 60f;
+    public const float DuartionPerBoost = 25f * 60f;
     public float MaxObserveTime = 30f;
     private float announceTimer;
 
@@ -46,12 +46,12 @@ public class TwitchEventManager : MonoBehaviour
             return;
         }
 
-        if (CurrentBoost.Elapsed < Duration)
+        if (CurrentBoost.Elapsed < CurrentBoost.Duration)
         {
             CurrentBoost.Elapsed += Time.deltaTime;
             saveTimer -= Time.deltaTime;
 
-            var timeLeft = Duration - CurrentBoost.Elapsed;
+            var timeLeft = CurrentBoost.Duration - CurrentBoost.Elapsed;
 
             if (timeLeft < 180f)
             {
@@ -72,7 +72,7 @@ public class TwitchEventManager : MonoBehaviour
         {
             CurrentBoost.Active = false;
             CurrentBoost.Multiplier = 1;
-            CurrentBoost.Elapsed = Duration;
+            CurrentBoost.Elapsed = CurrentBoost.Duration;
             SaveState();
         }
     }
@@ -89,7 +89,7 @@ public class TwitchEventManager : MonoBehaviour
 
     public void Activate()
     {
-        CurrentBoost.Active = CurrentBoost.Elapsed <= Duration;
+        CurrentBoost.Active = CurrentBoost.Elapsed <= CurrentBoost.Duration;
         SaveState();
     }
 
@@ -97,7 +97,7 @@ public class TwitchEventManager : MonoBehaviour
     {
         CurrentBoost.Active = false;
         CurrentBoost.Multiplier = 1;
-        CurrentBoost.Elapsed = Duration;
+        CurrentBoost.Elapsed = CurrentBoost.Duration;
         SaveState();
     }
 
@@ -176,15 +176,10 @@ public class TwitchEventManager : MonoBehaviour
         CurrentBoost.LastCheerAmount = data.Bits;
         CurrentBoost.CheerPot += data.Bits;
 
-        var totalMultipliersAdded = 0;
         while (CurrentBoost.CheerPot >= BitsForMultiplier)
         {
-            var multiplier = UnityEngine.Random.value <= 0.10 ? 10 : 1;
-            totalMultipliersAdded += multiplier;
-            CurrentBoost.Elapsed = 0f;
-            CurrentBoost.Active = true;
+            AddtoTimer();
             CurrentBoost.CheerPot -= BitsForMultiplier;
-            CurrentBoost.Multiplier = Mathf.Min(CurrentBoost.Multiplier + multiplier, MaxMultiplier);
         }
 
         if (totalMultipliersAdded > 0)
@@ -213,17 +208,19 @@ public class TwitchEventManager : MonoBehaviour
             return;
         }
 
-        CurrentBoost.Elapsed = 0f;
-        CurrentBoost.Active = true;
-
         if (data.Months >= 0)
         {
-            CurrentBoost.Multiplier = Mathf.Min(
-                CurrentBoost.Multiplier + (UnityEngine.Random.value <= 0.10 ? 10 : 1),
-                gameManager.Permissions.ExpMultiplierLimit);
+            AddtoTimer();
         }
 
         SaveState();
+    }
+
+    private void AddtoTimer()
+    {
+        CurrentBoost.Duration += DuartionPerBoost;
+        CurrentBoost.Active = true;
+        CurrentBoost.Multiplier = Mathf.Min(CurrentBoost.Multiplier + (UnityEngine.Random.value <= 0.10 ? 10 : 1), gameManager.Permissions.ExpMultiplierLimit);
     }
 
     public TwitchSubscriberBoost CurrentBoost
@@ -251,4 +248,5 @@ public class TwitchSubscriberBoost
     public bool Active;
     public float Multiplier = 1f;
     public float Elapsed;
+    public float Duration;
 }
