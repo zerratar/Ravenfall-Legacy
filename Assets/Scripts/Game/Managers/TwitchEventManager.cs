@@ -72,7 +72,8 @@ public class TwitchEventManager : MonoBehaviour
         {
             CurrentBoost.Active = false;
             CurrentBoost.Multiplier = 1;
-            CurrentBoost.Elapsed = CurrentBoost.Duration;
+            CurrentBoost.Elapsed = DuartionPerBoost;
+            CurrentBoost.Duration = DuartionPerBoost;
             SaveState();
         }
     }
