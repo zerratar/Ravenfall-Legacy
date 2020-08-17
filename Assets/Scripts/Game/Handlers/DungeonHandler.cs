@@ -47,6 +47,7 @@ public class DungeonHandler : MonoBehaviour
         var startingPoint = dungeon.Dungeon.StartingPoint;
         previousPosition = player.transform.position;
         player.Teleporter.Teleport(startingPoint);
+        player.Stats.Health.Reset();
         InDungeon = true;
     }
 
