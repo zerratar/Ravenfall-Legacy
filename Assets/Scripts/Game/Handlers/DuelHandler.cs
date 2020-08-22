@@ -106,7 +106,7 @@ public class DuelHandler : MonoBehaviour
 
     public void DeclineDuel(bool timedOut = false)
     {
-        if (gameManager.Server.Client != null && gameManager.Server.Client.Connected)
+        if ((gameManager.Server?.Client?.Connected).GetValueOrDefault())
         {
             if (timedOut)
             {

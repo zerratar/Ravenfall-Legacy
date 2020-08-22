@@ -28,7 +28,7 @@ public class ItemRepository : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall\Data\Repositories\items.json");
+        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall-Legacy\Data\Repositories\items.json");
         items = JsonConvert.DeserializeObject<Item[]>(json);
 
         if (renderCameras == null || renderCameras.Length == 0)

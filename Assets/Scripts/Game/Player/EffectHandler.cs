@@ -20,13 +20,20 @@ public class EffectHandler : MonoBehaviour
 
     internal void LevelUp()
     {
-        var obj = Instantiate(LevelUpPrefab, transform.position, Quaternion.identity);
+        try
+        {
+            if (!transform || transform == null || !this || this == null)
+                return;
 
-        obj.AddComponent<TimeoutDestroy>()
-            .TimeoutSeconds = LevelUpGlowDuration;
+            var obj = Instantiate(LevelUpPrefab, transform.position, Quaternion.identity);
 
-        obj.AddComponent<FollowTarget>()
-            .Target = gameObject;
+            obj.AddComponent<TimeoutDestroy>()
+                .TimeoutSeconds = LevelUpGlowDuration;
+
+            obj.AddComponent<FollowTarget>()
+                .Target = gameObject;
+        }
+        catch { }
     }
 
     internal void ShootMagicProjectile(Vector3 target)

@@ -52,6 +52,7 @@ public class CommandServer : MonoBehaviour
         server.Register<ArenaEnd>("arena_end");
 
         server.Register<DuelPlayer>("duel");
+        server.Register<SetExpMultiplier>("exp_multiplier");
         server.Register<DuelCancel>("duel_cancel");
         server.Register<DuelAccept>("duel_accept");
         server.Register<DuelDecline>("duel_decline");

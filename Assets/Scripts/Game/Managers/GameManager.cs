@@ -327,7 +327,10 @@ public class GameManager : MonoBehaviour, IGameManager
         var player = playerManager.Spawn(spawnPoint + vector3, playerDefinition, streamUser, raidInfo);
 
         if (!player)
+        {
             Debug.LogError("Can't spawn player, player is already playing.");
+            return null;
+        }
 
         playerList.AddPlayer(player);
         PlayerJoined(player);
@@ -404,7 +407,7 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             client = new RavenNestClient(logger, this,
                 new RavenNestStreamSettings()
-                //new LocalRavenNestStreamSettings()
+            //new LocalRavenNestStreamSettings()
             );
 
             ravenNest = client;
@@ -421,6 +424,16 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         if (ravenNest.Authenticated) return true;
         return await ravenNest.LoginAsync(username, password);
+    }
+
+    public void ForceGameSessionUpdate()
+    {
+        if (!ravenNest.Authenticated) return;
+        var result = ravenNest.StartSessionAsync(Application.version, accessKey, false).Result;
+        if (result)
+        {
+            gameSessionActive = true;
+        }
     }
 
     private async void RavenNestUpdate()
@@ -473,11 +486,6 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private async Task SavePlayersAsync()
     {
-        if (Interlocked.CompareExchange(ref saveCounter, 1, 0) == 1)
-        {
-            return;
-        }
-
         try
         {
             var players = playerManager
@@ -487,33 +495,61 @@ public class GameManager : MonoBehaviour, IGameManager
                 .Select(x => x.BuildPlayerState())
                 .ToArray();
 
-            var result = await ravenNest.Players.UpdateManyAsync(states);
-            for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
+            try
             {
-                if (players.Count <= playerIndex)
+                // Save using websocket
+                foreach (var player in players)
                 {
-                    Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
-                    continue;
+                    if (!await ravenNest.Stream.SavePlayerSkillsAsync(player))
+                    {
+                        Debug.LogError(player.Name + " failed saving skills.");
+                    }
+                    await Task.Delay(10);
                 }
+            }
+            catch
+            {
+                // fall back to HTTPS Post Save
+                var batchSize = 20;
+                for (var i = 0; i < states.Length;)
+                {
+                    var toUpdate = states.Skip(i * batchSize).Take(batchSize).ToArray();
+                    var remaining = states.Length - i;
+                    i += remaining < batchSize ? remaining : batchSize;
 
-                var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
-                if (playerResult.Successeful)
-                {
-                    playerResult.Player.SavedSucceseful();
-                }
-                else
-                {
-                    Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
+                    var result = await ravenNest.Players.UpdateManyAsync(toUpdate);
+                    if (result == null)
+                    {
+                        Debug.LogWarning($"Saving gave null result. Data may not have been saved.");
+                        continue;
+                    }
+
+                    for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
+                    {
+                        if (players.Count <= playerIndex)
+                        {
+                            Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
+                            continue;
+                        }
+
+                        var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
+                        if (playerResult.Successeful)
+                        {
+                            playerResult.Player.SavedSucceseful();
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
+                        }
+                    }
+
+                    await Task.Delay(100);
                 }
             }
         }
         catch (Exception exc)
         {
             Debug.LogError(exc.ToString());
-        }
-        finally
-        {
-            Interlocked.Decrement(ref saveCounter);
         }
     }
     private void UpdateChatBotCommunication()
@@ -664,12 +700,14 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public void PlayerJoined(PlayerController player)
     {
+        if (!player) return;
         SaveGameStat("last-joined-name", player.PlayerName);
         SaveGameStat("online-player-count", playerManager.GetPlayerCount());
     }
 
     public void PlayerLevelUp(PlayerController player, SkillStat skill)
     {
+        if (!player) return;
         SaveGameStat("last-level-up-name", player.PlayerName);
         SaveGameStat("last-level-up-skill", skill?.ToString());
     }

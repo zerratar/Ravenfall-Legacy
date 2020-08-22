@@ -273,7 +273,7 @@ public class GameUpdateHandler
             return true;
         }
         catch (Exception exc)
-        {
+        {   
             Debug.LogError("Unable to download update: " + exc.ToString());
             return false;
         }

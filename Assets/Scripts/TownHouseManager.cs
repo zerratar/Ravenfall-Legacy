@@ -83,15 +83,18 @@ public class TownHouseManager : MonoBehaviour
 
     internal bool IsHouseOwner(PlayerController player)
     {
-        return slots.Any(x => x.Owner?.UserId == player.UserId);
+        return slots.Any(x => x.Owner?.UserId == player?.UserId);
     }
 
     internal void SetOwner(TownHouseSlot activeSlot, PlayerController newOwner)
     {
-        var owningSlot = slots.FirstOrDefault(x => x.Owner?.UserId == newOwner.UserId);
-        if (owningSlot)
+        if (newOwner != null && newOwner)
         {
-            owningSlot.SetOwner(null);
+            var owningSlot = slots.FirstOrDefault(x => x.Owner?.UserId == newOwner.UserId);
+            if (owningSlot)
+            {
+                owningSlot.SetOwner(null);
+            }
         }
 
         activeSlot.SetOwner(newOwner);
@@ -147,7 +150,13 @@ public class TownHouseManager : MonoBehaviour
 
     internal void SetHouse(TownHouseSlot slot, TownHouseSlotType type)
     {
+        if (slot == null || !slot || buildableTownHouses == null || buildableTownHouses.Length == 0)
+            return;
+
         var house = buildableTownHouses.FirstOrDefault(x => x.Type == type);
+        if (house == null || !house)
+            return;
+
         slot.SetHouse(new VillageHouseInfo()
         {
             Slot = slot.Slot,

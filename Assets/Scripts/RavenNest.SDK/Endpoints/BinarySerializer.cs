@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,14 @@ namespace RavenNest.SDK.Endpoints
 {
     public class BinarySerializer : IBinarySerializer
     {
+        private readonly ConcurrentDictionary<string, MethodInfo> writeMethodCache = new ConcurrentDictionary<string, MethodInfo>();
+        private readonly ConcurrentDictionary<string, PropertyInfo[]> writePropsCache = new ConcurrentDictionary<string, PropertyInfo[]>();
+        private readonly ConcurrentDictionary<string, FieldInfo[]> writeFieldsCache = new ConcurrentDictionary<string, FieldInfo[]>();
+
+        private readonly ConcurrentDictionary<string, MethodInfo> readMethodCache = new ConcurrentDictionary<string, MethodInfo>();
+        private readonly ConcurrentDictionary<string, PropertyInfo[]> readPropsCache = new ConcurrentDictionary<string, PropertyInfo[]>();
+        private readonly ConcurrentDictionary<string, FieldInfo[]> readFieldsCache = new ConcurrentDictionary<string, FieldInfo[]>();
+
         public object Deserialize(byte[] data, Type type)
         {
             using (var ms = new MemoryStream(data))
@@ -28,33 +37,35 @@ namespace RavenNest.SDK.Endpoints
             using (var ms = new MemoryStream())
             using (var bw = new BinaryWriter(ms))
             {
-                if (!Serialize(bw, data))
-                {
-                    SerializeComplex(bw, data, data.GetType());
-                }
+                Serialize(bw, data);
                 return ms.ToArray();
             }
         }
 
         #region Serialization
 
-        private bool Serialize(BinaryWriter bw, object data)
+        private void Serialize(BinaryWriter bw, object data)
         {
             var type = data.GetType();
 
-            if (SerializeSpecial(bw, data, type)) return true;
+            if (SerializeSpecial(bw, data, type)) return;
 
-            var targetMethod = bw.GetType()
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(x => MatchWriteMethod(x, type));
+            if (!writeMethodCache.TryGetValue(type.FullName, out var targetMethod))
+            {
+                targetMethod = bw.GetType()
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .FirstOrDefault(x => MatchWriteMethod(x, type));
+                writeMethodCache[type.FullName] = targetMethod;
+            }
 
             if (targetMethod != null)
             {
                 targetMethod.Invoke(bw, new object[] { data });
-                return true;
+                return;
             }
 
-            return false;
+
+            SerializeComplex(bw, data, data.GetType());
         }
 
         private void Serialize(BinaryWriter bw, object data, PropertyInfo property)
@@ -73,11 +84,16 @@ namespace RavenNest.SDK.Endpoints
 
         private void Serialize(BinaryWriter bw, object value, Type type)
         {
-            if (SerializeSpecial(bw, value, type)) return;
+            if (SerializeSpecial(bw, value, type))
+                return;
 
-            var targetMethod = bw.GetType()
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(x => MatchWriteMethod(x, type));
+            if (!writeMethodCache.TryGetValue(type.FullName, out var targetMethod))
+            {
+                targetMethod = bw.GetType()
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .FirstOrDefault(x => MatchWriteMethod(x, type));
+                writeMethodCache[type.FullName] = targetMethod;
+            }
 
             if (targetMethod != null)
             {
@@ -95,13 +111,28 @@ namespace RavenNest.SDK.Endpoints
                 var hasData = data != null ? 1 : 0;
                 bw.Write((byte)hasData);
             }
-            var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var prop in props)
+
+            if (!writePropsCache.TryGetValue(type.Name, out var props))
             {
-                Serialize(bw, data, prop);
+                props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToArray();
+                writePropsCache[type.Name] = props;
             }
 
-            var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+            //var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var prop in props)
+            {
+                if (prop.CanWrite && prop.CanRead)
+                {
+                    Serialize(bw, data, prop);
+                }
+            }
+
+            if (!writeFieldsCache.TryGetValue(type.Name, out var fields))
+            {
+                fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).ToArray();
+                writeFieldsCache[type.Name] = fields;
+            }
+            //var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
             foreach (var field in fields)
             {
                 if (!field.IsInitOnly)
@@ -175,15 +206,8 @@ namespace RavenNest.SDK.Endpoints
                 bw.Write(dictionary.Count);
                 foreach (var key in dictionary.Keys)
                 {
-                    if (!Serialize(bw, key))
-                    {
-                        SerializeComplex(bw, key, key.GetType());
-                    }
-                    var val = dictionary[key];
-                    if (!Serialize(bw, val))
-                    {
-                        SerializeComplex(bw, val, val.GetType());
-                    }
+                    Serialize(bw, key);
+                    Serialize(bw, dictionary[key]);
                 }
                 return true;
             }
@@ -194,10 +218,7 @@ namespace RavenNest.SDK.Endpoints
                 bw.Write(items.Count);
                 foreach (var item in items)
                 {
-                    if (!Serialize(bw, item))
-                    {
-                        SerializeComplex(bw, item, item.GetType());
-                    }
+                    Serialize(bw, item);
                 }
 
                 return true;
@@ -205,7 +226,6 @@ namespace RavenNest.SDK.Endpoints
 
             return false;
         }
-
         private bool SerializeArray(BinaryWriter bw, object value, Type elementType, Type type)
         {
             if (elementType == null || !type.IsArray) return false;
@@ -218,12 +238,10 @@ namespace RavenNest.SDK.Endpoints
             var array = (Array)value;
             var len = array.Length;
             bw.Write(len);
-
             for (var i = 0; i < len; ++i)
             {
                 Serialize(bw, array.GetValue(i));
             }
-
             return true;
         }
 
@@ -233,8 +251,7 @@ namespace RavenNest.SDK.Endpoints
 
         private object Deserialize(BinaryReader br, PropertyInfo property)
         {
-            var type = property.PropertyType;
-            return Deserialize(br, type);
+            return Deserialize(br, property.PropertyType);
         }
 
         private object Deserialize(BinaryReader br, FieldInfo field)
@@ -250,9 +267,13 @@ namespace RavenNest.SDK.Endpoints
                 return res;
             }
 
-            var targetMethod = br.GetType()
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(x => MatchReadName(x.Name, type.Name));
+            if (!readMethodCache.TryGetValue(type.Name, out var targetMethod))
+            {
+                targetMethod = br.GetType()
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .FirstOrDefault(x => MatchReadName(x.Name, type.Name));
+                readMethodCache[type.Name] = targetMethod;
+            }
 
             if (targetMethod != null)
             {
@@ -274,18 +295,33 @@ namespace RavenNest.SDK.Endpoints
             }
 
             var obj = FormatterServices.GetUninitializedObject(type);
-            var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            if (!readPropsCache.TryGetValue(type.Name, out var props))
+            {
+                props = type
+                    .GetProperties(BindingFlags.Public | BindingFlags.Instance).ToArray();
+                readPropsCache[type.Name] = props;
+            }
+
+            //var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             foreach (var prop in props)
             {
-                // still need to deserialize so we read from the stream
-                var value = Deserialize(br, prop);
-                if (prop.CanWrite)
+                if (prop.CanRead && prop.CanWrite)
                 {
+                    var value = Deserialize(br, prop);
                     prop.SetValue(obj, value);
                 }
             }
 
-            var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+            if (!readFieldsCache.TryGetValue(type.Name, out var fields))
+            {
+                fields = type
+                    .GetFields(BindingFlags.Public | BindingFlags.Instance).ToArray();
+
+                readFieldsCache[type.Name] = fields;
+            }
+
+            //var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
             foreach (var field in fields)
             {
                 // still need to deserialize so we read from the stream
@@ -365,7 +401,6 @@ namespace RavenNest.SDK.Endpoints
             return false;
         }
 
-
         private bool TryDeserializeSpecial(BinaryReader br, Type type, out object result)
         {
             result = null;
@@ -419,10 +454,12 @@ namespace RavenNest.SDK.Endpoints
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool MatchReadName(string methodName, string typeName)
+        //private static bool MatchReadName(ReadOnlySpan<char> methodName, ReadOnlySpan<char> typeName)
         {
             if (typeName.Equals("float", StringComparison.OrdinalIgnoreCase) && methodName.Equals("ReadSingle")) return true;
-            if (!methodName.StartsWith("Read", StringComparison.OrdinalIgnoreCase)) return false;
-            return methodName.StartsWith("Read" + typeName, StringComparison.OrdinalIgnoreCase);
+            if (!methodName.StartsWith("read", StringComparison.OrdinalIgnoreCase)) return false;
+            return methodName.EndsWith(typeName, StringComparison.OrdinalIgnoreCase);
+            //return methodName.StartsWith("Read" + typeName, StringComparison.OrdinalIgnoreCase);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

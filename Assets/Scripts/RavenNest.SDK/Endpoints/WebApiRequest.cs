@@ -61,7 +61,7 @@ namespace RavenNest.SDK.Endpoints
             var requestData = "";
             //request.Accept = "application/json";
 
-            if (reqTarget == ApiRequestTarget.Game)
+            if (reqTarget == ApiRequestTarget.Game || reqTarget == ApiRequestTarget.Players)
             {
                 request.Timeout = 25000;
             }
@@ -137,7 +137,7 @@ namespace RavenNest.SDK.Endpoints
             }
             catch (Exception exc)
             {
-                throw exc;
+                return default(TResult);
             }
         }
 
@@ -154,8 +154,7 @@ namespace RavenNest.SDK.Endpoints
 
         private string GetTargetUrl(ApiRequestTarget reqTarget)
         {
-            // http(s)://server:1111/api/
-            var url = settings.ApiEndpoint;
+            var url = reqTarget == ApiRequestTarget.Auth ? settings.ApiAuthEndpoint : settings.ApiEndpoint;
             if (!url.EndsWith("/")) url += "/";
             url += reqTarget + "/";
             if (!string.IsNullOrEmpty(identifier)) url += $"{identifier}/";

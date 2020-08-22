@@ -261,9 +261,9 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public void ResetAppearance()
     {
         var allModels = GetAll();
-        foreach (var model in allModels) model.SetActive(false);
-        if (meshCombiner.isMeshesCombineds)
-            meshCombiner.UndoCombineMeshes();
+        foreach (var model in allModels) model?.SetActive(false);
+        if (meshCombiner?.isMeshesCombineds ?? false)
+            meshCombiner?.UndoCombineMeshes();
     }
 
     public void Optimize(Action afterUndo = null)

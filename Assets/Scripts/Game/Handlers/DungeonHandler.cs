@@ -44,9 +44,16 @@ public class DungeonHandler : MonoBehaviour
 
     public void OnEnter()
     {
+        if (!dungeon || dungeon == null || dungeon.Dungeon == null || !dungeon.Dungeon)
+            return;
+
+        if (!player || player == null)
+            return;
+        
         var startingPoint = dungeon.Dungeon.StartingPoint;
         previousPosition = player.transform.position;
         player.Teleporter.Teleport(startingPoint);
+        player.Stats.Health.Reset();
         InDungeon = true;
     }
 

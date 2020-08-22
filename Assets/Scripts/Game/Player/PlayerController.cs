@@ -116,6 +116,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     private bool hasBeenInitialized;
 
     private ItemController targetDropItem;
+    private Vector3 NextDestination;
 
     public Transform Target
     {
@@ -228,6 +229,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
         SavePlayerState();
         actionTimer -= Time.deltaTime;
+
+        if (NextDestination != Vector3.zero)
+        {
+            GotoPosition(NextDestination);
+        }
 
         if (streamRaidHandler.InWar) return;
         if (ferryHandler.OnFerry || ferryHandler.Active) return;
@@ -485,8 +491,15 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         if (pets.Count == 0) return null;
         var petToEquip = pets.GroupBy(x => x.Item.Id)
             .OrderBy(x => UnityEngine.Random.value)
-            .FirstOrDefault(x => x.Key != equippedPet?.Id)
+            .FirstOrDefault(x => x.Key != equippedPet?.Id)?
             .FirstOrDefault();
+
+        if (petToEquip == null)
+        {
+            var pet = pets.FirstOrDefault();
+            Inventory.Equip(pet.Item);
+            return pet;
+        }
 
         await gameManager.RavenNest.Players.EquipItemAsync(UserId, petToEquip.Item.Id);
         Inventory.Equip(petToEquip.Item);
@@ -1101,9 +1114,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
     private void CelebrateLevelUp(string skillName, int levelCount)
     {
-        playerAnimations.Cheer();
+        if (playerAnimations)
+            playerAnimations.Cheer();
         gameManager.PlayerLevelUp(this, GetSkill(skillName));
-        Effects.LevelUp();
+        if (Effects)
+            Effects.LevelUp();
     }
 
     #endregion
@@ -1130,7 +1145,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
                     if (reason == TaskExecutionStatus.InvalidTarget)
                     {
                         taskTarget = Chunk.GetTaskTarget(this);
-                        if (!taskTarget)
+                        if (taskTarget == null || !taskTarget)
                         {
                             return;
                         }
@@ -1200,7 +1215,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         Unlock();
         playerAnimations.StartMoving();
         InCombat = Duel.InDuel;
-        agent.SetDestination(position);
+
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            NextDestination = Vector3.zero;
+            agent.SetDestination(position);
+        }
+        else
+        {
+            NextDestination = position;
+        }
         return true;
     }
 
@@ -1212,8 +1236,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         if (agent && agent.enabled)
         {
             agent.velocity = Vector3.zero;
-            agent.SetDestination(transform.position);
-            agent.isStopped = true;
+            if (agent.isOnNavMesh)
+            {
+                agent.SetDestination(transform.position);
+                agent.isStopped = true;
+            }
             agent.enabled = false;
         }
 
@@ -1229,7 +1256,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         if (agent)
         {
             agent.enabled = true;
-            agent.isStopped = false;
+            if (agent.isOnNavMesh)
+                agent.isStopped = false;
         }
         if (rbody)
         {

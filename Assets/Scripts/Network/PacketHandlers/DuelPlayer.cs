@@ -1,4 +1,26 @@
-﻿public class DuelPlayer : PacketHandler<DuelPlayerRequest>
+﻿public class SetExpMultiplier : PacketHandler<SetExpMultiplierRequest>
+{
+    public SetExpMultiplier(
+       GameManager game,
+       GameServer server,
+       PlayerManager playerManager)
+       : base(game, server, playerManager)
+    {
+    }
+
+    public override void Handle(SetExpMultiplierRequest data, GameClient client)
+    {
+        var player = PlayerManager.GetPlayer(data.Player);
+        if (player == null || !player || !player.IsGameAdmin)
+        {
+            return;
+        }
+
+        Game.Twitch.SetExpMultiplier(player.Name, data.ExpMultiplier);
+    }
+}
+
+public class DuelPlayer : PacketHandler<DuelPlayerRequest>
 {
     public DuelPlayer(
         GameManager game,

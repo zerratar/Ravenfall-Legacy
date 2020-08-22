@@ -266,6 +266,7 @@ public class PlayerAnimationController : MonoBehaviour
         {
             //  && !appearance.AppearanceUpdated()
             if (animator) return true;
+            if (!behaviour || !behaviour.transform) return false;
             animator = behaviour.transform.GetComponentInChildren<Animator>();
         }
 

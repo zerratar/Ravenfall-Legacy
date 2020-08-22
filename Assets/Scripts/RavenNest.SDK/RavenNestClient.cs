@@ -95,7 +95,7 @@ namespace RavenNest.SDK
         {
             if (!SessionStarted) return false;
             if (!Stream.IsReady) return false;
-            return await Stream.SavePlayerAsync(player);
+            return await Stream.SavePlayerStateAsync(player);
         }
 
         public async Task<bool> LoginAsync(string username, string password)

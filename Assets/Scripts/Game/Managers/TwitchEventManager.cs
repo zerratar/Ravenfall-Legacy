@@ -184,7 +184,8 @@ public class TwitchEventManager : MonoBehaviour
             CurrentBoost.Elapsed = 0f;
             CurrentBoost.Active = true;
             CurrentBoost.CheerPot -= BitsForMultiplier;
-            CurrentBoost.Multiplier = Mathf.Min(CurrentBoost.Multiplier + multiplier, MaxMultiplier);
+            CurrentBoost.Multiplier = Mathf.Min(CurrentBoost.Multiplier + multiplier, 
+                gameManager.Permissions.ExpMultiplierLimit);
         }
 
         if (totalMultipliersAdded > 0)
@@ -224,6 +225,17 @@ public class TwitchEventManager : MonoBehaviour
         }
 
         SaveState();
+    }
+
+    public void SetExpMultiplier(string sender, int amount)
+    {
+        CurrentBoost.LastSubscriber = sender;
+        CurrentBoost.Elapsed = 0f;
+        CurrentBoost.Active = true;
+        CurrentBoost.Multiplier = amount;
+        SaveState();
+
+        gameManager.Server?.Client?.SendCommand(sender, "message", $"The exp multiplier has been set to {amount}!");
     }
 
     public TwitchSubscriberBoost CurrentBoost

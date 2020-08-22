@@ -3,18 +3,26 @@ using static RavenNest.SDK.Endpoints.WebSocketEndpoint;
 
 namespace RavenNest.SDK.Endpoints
 {
+
+    public class CharacterSkillUpdate
+    {
+        public string UserId { get; set; }
+        public decimal[] Experience { get; set; }
+    }
+
     public class CharacterStateUpdate
     {
         public CharacterStateUpdate(
-            string userId, 
-            int health, 
+            string userId,
+            int health,
             string island,
             string duelOpponent,
-            bool inRaid,            
+            bool inRaid,
             bool inArena,
             string task,
             string taskArgument,
-            Position position)
+            float x, float y, float z
+            )
         {
             UserId = userId;
             Health = health;
@@ -24,16 +32,20 @@ namespace RavenNest.SDK.Endpoints
             InArena = inArena;
             Task = task;
             TaskArgument = taskArgument;
-            Position = position;
+            X = x;
+            Y = y;
+            Z = z;
         }
-        public string UserId { get; }
-        public int Health { get; }
-        public string Island { get; }
-        public string DuelOpponent { get; }
-        public bool InRaid { get; }
-        public bool InArena { get; }        
-        public string Task { get; }
-        public string TaskArgument { get; }
-        public Position Position { get; }
+        public string UserId { get; set; }
+        public int Health { get; set; }
+        public string Island { get; set; }
+        public string DuelOpponent { get; set; }
+        public bool InRaid { get; set; }
+        public bool InArena { get; set; }
+        public string Task { get; set; }
+        public string TaskArgument { get; set; }
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
     }
 }

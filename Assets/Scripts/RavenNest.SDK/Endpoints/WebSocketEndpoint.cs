@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
 namespace RavenNest.SDK.Endpoints
@@ -7,6 +8,10 @@ namespace RavenNest.SDK.Endpoints
     {
         private ConcurrentDictionary<string, CharacterStateUpdate> lastSavedState
             = new ConcurrentDictionary<string, CharacterStateUpdate>();
+        private ConcurrentDictionary<string, DateTime> lastSavedTime
+            = new ConcurrentDictionary<string, DateTime>();
+
+        private const double ForceSaveInterval = 5d;
 
         private readonly IGameServerConnection connection;
         private readonly IGameManager gameManager;
@@ -24,7 +29,8 @@ namespace RavenNest.SDK.Endpoints
                 logger,
                 settings,
                 tokenProvider,
-                packetSerializer);
+                packetSerializer,
+                gameManager);
 
             connection.Register("game_event", new GameEventPacketHandler(gameManager));
             this.gameManager = gameManager;
@@ -44,8 +50,32 @@ namespace RavenNest.SDK.Endpoints
 
             return await connection.CreateAsync();
         }
+        public async Task<bool> SavePlayerSkillsAsync(PlayerController player)
+        {
+            if (IntegrityCheck.IsCompromised)
+            {
+                return false;
+            }
 
-        public async Task<bool> SavePlayerAsync(PlayerController player)
+            var state = player.BuildPlayerState();
+
+            var characterUpdate = new CharacterSkillUpdate
+            {
+                Experience = state.Experience,
+                UserId = state.UserId
+            };
+
+            var response = await connection.SendAsync("update_character_skills", characterUpdate);
+            if (response != null && response.TryGetValue<bool>(out var result))
+            {
+                return result;
+            }
+
+            return false;
+        }
+
+
+        public async Task<bool> SavePlayerStateAsync(PlayerController player)
         {
             if (IntegrityCheck.IsCompromised)
             {
@@ -55,18 +85,16 @@ namespace RavenNest.SDK.Endpoints
             var characterUpdate = new CharacterStateUpdate(
                 player.UserId,
                 player.Stats.Health.CurrentValue,
-                player.Island?.Identifier,
-                player.Duel.InDuel ? player.Duel.Opponent?.UserId : null,
+                player.Island?.Identifier ?? "",
+                player.Duel.InDuel ? player.Duel.Opponent?.UserId ?? "" : "",
                 player.Raid.InRaid,
                 player.Arena.InArena,
                 player.GetTask().ToString(),
                 string.Join(",", player.GetTaskArguments()),
-                new Position
-                {
-                    X = player.transform.position.x,
-                    Y = player.transform.position.y,
-                    Z = player.transform.position.z
-                });
+                    player.transform.position.x,
+                   player.transform.position.y,
+                    player.transform.position.z
+                );
 
             if (lastSavedState.TryGetValue(player.UserId, out var lastUpdate))
             {
@@ -82,6 +110,7 @@ namespace RavenNest.SDK.Endpoints
                 if (result)
                 {
                     lastSavedState[player.UserId] = characterUpdate;
+                    lastSavedTime[player.UserId] = DateTime.UtcNow;
                     return true;
                 }
             }
@@ -91,6 +120,9 @@ namespace RavenNest.SDK.Endpoints
 
         private bool RequiresUpdate(CharacterStateUpdate oldState, CharacterStateUpdate newState)
         {
+            if (!lastSavedTime.TryGetValue(oldState.UserId, out var date) || DateTime.UtcNow - date > TimeSpan.FromSeconds(ForceSaveInterval))
+                return true;
+
             if (oldState.Health != newState.Health) return true;
             if (oldState.InArena != newState.InArena) return true;
             if (oldState.InRaid != newState.InRaid) return true;
@@ -108,6 +140,8 @@ namespace RavenNest.SDK.Endpoints
         {
             connection.Close();
         }
+
+
         public class Position
         {
             public float X { get; set; }

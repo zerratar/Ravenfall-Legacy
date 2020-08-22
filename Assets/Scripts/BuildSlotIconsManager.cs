@@ -29,6 +29,9 @@ public class BuildSlotIconsManager : MonoBehaviour
 
     public void Show(TownHouseSlot slot)
     {
+        if (slot == null || !slot)
+            return;
+
         transform.position = slot.transform.position + ((yOffset + slot.IconOffset) * Vector3.up);
         activeSlot = slot;
         switch (slot.SlotType)
@@ -50,6 +53,7 @@ public class BuildSlotIconsManager : MonoBehaviour
                 buttonAssignPlayer.gameObject.SetActive(!slot.Owner && string.IsNullOrEmpty(slot.OwnerUserId));
                 break;
         }
+
         HideBuildDialog();
         gameObject.SetActive(true);
     }

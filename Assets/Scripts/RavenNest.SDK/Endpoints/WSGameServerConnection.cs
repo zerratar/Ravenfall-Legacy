@@ -14,7 +14,7 @@ namespace RavenNest.SDK.Endpoints
         private readonly IAppSettings settings;
         private readonly ITokenProvider tokenProvider;
         private readonly IGamePacketSerializer packetSerializer;
-
+        private readonly GameManager gameManager;
         private readonly ConcurrentDictionary<string, GamePacketHandler> packetHandlers
             = new ConcurrentDictionary<string, GamePacketHandler>();
 
@@ -40,12 +40,14 @@ namespace RavenNest.SDK.Endpoints
             ILogger logger,
             IAppSettings settings,
             ITokenProvider tokenProvider,
-            IGamePacketSerializer packetSerializer)
+            IGamePacketSerializer packetSerializer,
+            GameManager gameManager)
         {
             this.logger = logger;
             this.settings = settings;
             this.tokenProvider = tokenProvider;
             this.packetSerializer = packetSerializer;
+            this.gameManager = gameManager;
         }
 
         public bool IsReady
@@ -204,26 +206,33 @@ namespace RavenNest.SDK.Endpoints
                 }
                 else
                 {
-                    GamePacket packet = null;
-                    if (unfinishedPacket != null)
+                    try
                     {
-                        packet = unfinishedPacket.Build();
-                        unfinishedPacket = null;
-                    }
-                    else
-                    {
-                        packet = packetSerializer.Deserialize(segment.Array, result.Count);
-                    }
-
-                    if (awaitedReplies.TryGetValue(packet.CorrelationId, out var task))
-                    {
-                        if (task.TrySetResult(packet))
+                        GamePacket packet = null;
+                        if (unfinishedPacket != null)
                         {
-                            return true;
+                            packet = unfinishedPacket.Build();
+                            unfinishedPacket = null;
                         }
-                    }
+                        else
+                        {
+                            packet = packetSerializer.Deserialize(segment.Array, result.Count);
+                        }
 
-                    await HandlePacketAsync(packet);
+                        if (awaitedReplies.TryGetValue(packet.CorrelationId, out var task))
+                        {
+                            if (task.TrySetResult(packet))
+                            {
+                                return true;
+                            }
+                        }
+
+                        await HandlePacketAsync(packet);
+                    }
+                    catch (Exception exc)
+                    {
+                        Debug.LogError("Error deserializing packet: " + exc);
+                    }
                 }
                 return true;
             }
@@ -239,6 +248,8 @@ namespace RavenNest.SDK.Endpoints
                 {
                     logger.Error(socketExc.ToString());
                 }
+
+                gameManager.ForceGameSessionUpdate();
 
                 Disconnect();
                 return false;

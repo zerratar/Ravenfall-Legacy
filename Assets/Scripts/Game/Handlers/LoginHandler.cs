@@ -26,6 +26,8 @@ public class LoginHandler : MonoBehaviour
             txtUsername.text = savedUsername;
             txtPassword.Select();
         }
+
+        HandleAutoLogin();
     }
 
     public async void Login()
@@ -48,5 +50,59 @@ public class LoginHandler : MonoBehaviour
             invalidUsername.enabled = true;
             loginBtnText.text = "LOGIN";
         }
+    }
+
+    private void HandleAutoLogin()
+    {
+        const string AutoLoginFile = "autologin.conf";
+        if (!System.IO.File.Exists(AutoLoginFile))
+        {
+            return;
+        }
+
+        var loginInfo = ParseAutoLoginConfig(System.IO.File.ReadAllLines(AutoLoginFile));
+        if (string.IsNullOrEmpty(loginInfo.Username) || string.IsNullOrEmpty(loginInfo.Password))
+        {
+            return;
+        }
+
+        txtUsername.text = loginInfo.Username;
+        txtPassword.text = loginInfo.Password;
+        Login();
+    }
+
+    private AutoLoginInfo ParseAutoLoginConfig(string[] vs)
+    {
+        var user = "";
+        var pass = "";
+
+        for (var i = 0; i < vs.Length; ++i)
+        {
+            var line = vs[i]?.Trim();
+            if (string.IsNullOrEmpty(line)) continue;
+            if (line.IndexOf('=') > 0)
+            {
+                var data = line.Split('=');
+                var key = data[0];
+                var value = data[1];
+                if (key.ToLower().Trim().IndexOf("pass") >= 0)
+                {
+                    pass = value.Trim();
+                }
+                else if (key.ToLower().Trim().IndexOf("user") >= 0)
+                {
+                    user = value.Trim();
+                }
+            }
+        }
+
+        return new AutoLoginInfo { Username = user, Password = pass };
+    }
+
+
+    private struct AutoLoginInfo
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
     }
 }

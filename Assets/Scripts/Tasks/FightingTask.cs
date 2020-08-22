@@ -25,30 +25,42 @@ public class FightingTask : ChunkTask
     public override Transform GetTarget(PlayerController player)
     {
         var enemies = lazyEnemies();
-
         var attackers = player.GetAttackers();
-        foreach(var attacker in attackers.Where(x=>!x.GetStats().IsDead))
+        try
         {
-            var enemyController = attacker.Transform.GetComponent<EnemyController>();
-            if (!enemyController)
+            foreach (var attacker in attackers.Where(x => !x.GetStats().IsDead))
             {
-                continue;
+                if (!attacker.Transform)
+                {
+                    continue;
+                }
+
+                var enemyController = attacker.Transform.GetComponent<EnemyController>();
+                if (!enemyController)
+                {
+                    continue;
+                }
+
+                var targetEnemy = enemies.FirstOrDefault(x => x.GetInstanceID() == enemyController.GetInstanceID());
+                if (targetEnemy) return targetEnemy.transform;
             }
 
-            var targetEnemy = enemies.FirstOrDefault(x => x.GetInstanceID() == enemyController.GetInstanceID());
-            if (targetEnemy) return targetEnemy.transform;
-        }
+            var enemy = enemies
+                        .Where(x => !x.Stats.IsDead)
+                        //.OrderByDescending(x => x.Attackers.Count)
+                        //.ThenBy(x => Math.Abs(player.Stats.CombatLevel - x.Stats.CombatLevel))
+                        .OrderBy(x => Math.Abs(player.Stats.CombatLevel - x.Stats.CombatLevel))
+                        .ThenBy(x => x.Attackers.Count)
+                        .ThenBy(x => Vector3.Distance(x.transform.position, player.transform.position))
+                        .ThenBy(x => UnityEngine.Random.value)
+                        .FirstOrDefault();
 
-        return enemies
-            .Where(x => !x.Stats.IsDead)
-            //.OrderByDescending(x => x.Attackers.Count)
-            //.ThenBy(x => Math.Abs(player.Stats.CombatLevel - x.Stats.CombatLevel))
-            .OrderBy(x => Math.Abs(player.Stats.CombatLevel - x.Stats.CombatLevel))
-            .ThenBy(x => x.Attackers.Count)
-            .ThenBy(x => Vector3.Distance(x.transform.position, player.transform.position))
-            .ThenBy(x => UnityEngine.Random.value)
-            .FirstOrDefault()?
-            .transform;
+            return enemy?.transform;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public override bool Execute(PlayerController player, Transform target)

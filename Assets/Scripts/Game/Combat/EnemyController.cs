@@ -188,6 +188,11 @@ public class EnemyController : MonoBehaviour, IAttackable
             return false;
         }
 
+        if (attacker == null)
+        {
+            return false;
+        }
+
         if (Stats.IsDead)
         {
             return false;
@@ -198,61 +203,74 @@ public class EnemyController : MonoBehaviour, IAttackable
             return false;
         }
 
-        if (attackers.Count == 0)
+        if (!player)
         {
-            Target = player.transform;
-            transform.LookAt(player.transform);
-        }
-
-        attackers[attacker.Name] = attacker;
-
-        if (!damageCounterManager)
-            damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
-
-        InCombat = true;
-
-        var dc = damageCounterManager.Add(transform, damage);
-        //dc.Color = player.PlayerNameHexColor;
-
-        Stats.Health.Add(-damage);
-
-        attackerAggro.TryGetValue(attacker.Name, out var aggro);
-        var totalAggro = aggro + damage;
-        attackerAggro[attacker.Name] = totalAggro;
-
-        if (highestAttackerAggroValue <= totalAggro)
-        {
-            highestAttackerAggroValue = totalAggro;
-            if (attacker.Name != Target?.name)
-            {
-                Target = attacker.Transform;
-            }
-        }
-
-        if (healthBar)
-        {
-            healthBar.UpdateHealth();
-        }
-
-        if (!Stats.IsDead)
-        {
-            // when an enemy has been ignored for some time, it will lose its interest
-            // to attack its target. this is to avoid having them forever following
-            // a player that has stopped training combat.
-            noDamageDropTargetTimer = 0f;
             return false;
         }
 
-        noDamageDropTargetTimer = -1f;
-        InCombat = false;
-        highestAttackerAggroValue = 0;
-        Target = null;
-        Unlock();
+        try
+        {
+            if (attackers.Count == 0)
+            {
+                Target = player.transform;
+                transform.LookAt(player.transform);
+            }
 
-        if (animations) animations.Die();
-        if (AutomaticRespawn) Respawn();
-        return true;
+            var attackerName = attacker.Name;
 
+            attackers[attackerName] = attacker;
+
+            if (!damageCounterManager)
+                damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
+
+            InCombat = true;
+
+            var dc = damageCounterManager.Add(transform, damage);
+            //dc.Color = player.PlayerNameHexColor;
+
+            Stats.Health.Add(-damage);
+
+            attackerAggro.TryGetValue(attackerName, out var aggro);
+            var totalAggro = aggro + damage;
+            attackerAggro[attackerName] = totalAggro;
+
+            if (highestAttackerAggroValue <= totalAggro)
+            {
+                highestAttackerAggroValue = totalAggro;
+                if (attackerName != Target?.name)
+                {
+                    Target = attacker.Transform;
+                }
+            }
+
+            if (healthBar)
+            {
+                healthBar.UpdateHealth();
+            }
+
+            if (!Stats.IsDead)
+            {
+                // when an enemy has been ignored for some time, it will lose its interest
+                // to attack its target. this is to avoid having them forever following
+                // a player that has stopped training combat.
+                noDamageDropTargetTimer = 0f;
+                return false;
+            }
+
+            noDamageDropTargetTimer = -1f;
+            InCombat = false;
+            highestAttackerAggroValue = 0;
+            Target = null;
+            Unlock();
+
+            if (animations) animations.Die();
+            if (AutomaticRespawn) Respawn();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public IReadOnlyList<IAttackable> GetAttackers()

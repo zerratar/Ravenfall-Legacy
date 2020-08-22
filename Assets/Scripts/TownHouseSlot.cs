@@ -81,10 +81,9 @@ public class TownHouseSlot : MonoBehaviour
         Owner = player;
         OwnerUserId = player?.UserId;
 
-        if (!player)
+        if (!player || player == null)
         {
-
-            gameManager.Village.SetBonus(Slot, SlotType, 0);
+            gameManager?.Village?.SetBonus(Slot, SlotType, 0);
             return;
         }
 
@@ -92,7 +91,7 @@ public class TownHouseSlot : MonoBehaviour
         var existingSkill = GameMath.GetSkillByHouseType(player.Stats, SlotType);
         var bonus = GameMath.CalculateHouseExpBonus(existingSkill);
 
-        gameManager.Village.SetBonus(Slot, SlotType, bonus);
+        gameManager?.Village?.SetBonus(Slot, SlotType, bonus);
     }
 
     public void Deselect(Material defaultMaterial)

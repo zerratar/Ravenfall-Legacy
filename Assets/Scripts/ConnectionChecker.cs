@@ -20,7 +20,16 @@ public class ConnectionChecker : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!gameManager || gameManager.RavenNest == null || 
+        try
+        {
+            UpdateUI();
+        }
+        catch { }
+    }
+
+    private void UpdateUI()
+    {
+        if (!gameManager || gameManager.RavenNest == null ||
             !gameManager.RavenNest.Authenticated || !Graphics)
         {
             return;

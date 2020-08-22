@@ -7,7 +7,8 @@ namespace RavenNest.SDK.Endpoints
     {
         bool IsReady { get; }
         Task<bool> UpdateAsync();
-        Task<bool> SavePlayerAsync(PlayerController player);
+        Task<bool> SavePlayerStateAsync(PlayerController player);
+        Task<bool> SavePlayerSkillsAsync(PlayerController player);
         void Close();
     }
 }

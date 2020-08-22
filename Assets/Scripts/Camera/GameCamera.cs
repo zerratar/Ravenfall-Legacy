@@ -29,6 +29,7 @@ public class GameCamera : MonoBehaviour
         get => allowJoinObserve && !gameManager.Raid.Started;
         private set => allowJoinObserve = value;
     }
+
     // Start is called before the first frame updateF
     void Start()
     {
@@ -50,59 +51,65 @@ public class GameCamera : MonoBehaviour
             return;
         }
 
-        if (state != GameCameraType.Free &&
-            Input.GetKey(KeyCode.LeftControl) && Input.GetKey(KeyCode.Tab))
+        try
         {
-            state = GameCameraType.Free;
-            playerObserver.Observe(null, 0);
-            observeCamera.ObservePlayer(null);
-            orbitCamera.targetTransform = null;
-            freeCamera.enabled = true;
-            orbitCamera.enabled = false;
-            focusTargetCamera.enabled = false;
-
-            AllowJoinObserve = false;
-
-            return;
-        }
-
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            ObserveNextPlayer();
-            return;
-        }
-
-        if (state == GameCameraType.Dungeon)
-        {
-            //freeCamera.enabled = false;
-            //orbitCamera.enabled = false;
-            //focusTargetCamera.enabled = false;
-            if (gameManager.Dungeons.Started)
+            if (state != GameCameraType.Free &&
+                Input.GetKey(KeyCode.LeftControl) && Input.GetKey(KeyCode.Tab))
             {
-                var camPoint = gameManager.Dungeons.Dungeon.Room.CameraPoint;
+                state = GameCameraType.Free;
+                playerObserver.Observe(null, 0);
+                observeCamera.ObservePlayer(null);
+                orbitCamera.targetTransform = null;
+                freeCamera.enabled = true;
+                orbitCamera.enabled = false;
+                focusTargetCamera.enabled = false;
 
-                EnableFocusTargetCamera(camPoint);
-                //transform.position = camPoint.position;
-                //transform.rotation = camPoint.rotation;
+                AllowJoinObserve = false;
+
+                return;
             }
-        }
-        else if (state == GameCameraType.Arena)
-        {
-            EnableFocusTargetCamera(arena?.transform);
 
-        }
-        else if (state == GameCameraType.Raid)
-        {
-            EnableFocusTargetCamera(raidManager.Boss.transform);
-        }
-        else if (state == GameCameraType.Observe)
-        {
-            AllowJoinObserve = true;
-            observeNextPlayerTimer -= Time.deltaTime;
-            if (observeNextPlayerTimer <= 0)
+            if (Input.GetKeyDown(KeyCode.Tab))
             {
                 ObserveNextPlayer();
+                return;
             }
+
+            if (state == GameCameraType.Dungeon)
+            {
+                //freeCamera.enabled = false;
+                //orbitCamera.enabled = false;
+                //focusTargetCamera.enabled = false;
+                if (gameManager.Dungeons.Started)
+                {
+                    var camPoint = gameManager.Dungeons.Dungeon.Room.CameraPoint;
+
+                    EnableFocusTargetCamera(camPoint);
+                    //transform.position = camPoint.position;
+                    //transform.rotation = camPoint.rotation;
+                }
+            }
+            else if (state == GameCameraType.Arena)
+            {
+                EnableFocusTargetCamera(arena?.transform);
+            }
+            else if (state == GameCameraType.Raid)
+            {
+                EnableFocusTargetCamera(raidManager?.Boss?.transform);
+            }
+            else if (state == GameCameraType.Observe)
+            {
+                AllowJoinObserve = true;
+                observeNextPlayerTimer -= Time.deltaTime;
+                if (observeNextPlayerTimer <= 0)
+                {
+                    ObserveNextPlayer();
+                }
+            }
+        }
+        catch (Exception exc)
+        {
+            Debug.LogWarning(exc.ToString());
         }
     }
 
@@ -167,6 +174,7 @@ public class GameCamera : MonoBehaviour
 
     public void ObservePlayer(PlayerController player)
     {
+        if (!player) return;
         var subMultiplier = player.IsSubscriber ? 2f : 1f;
         ObservePlayer(player, ObserverJumpTimer * subMultiplier);
     }
@@ -201,7 +209,6 @@ public class GameCamera : MonoBehaviour
     {
         return !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.StreamRaid.InWar;
     }
-
 }
 
 public enum GameCameraType

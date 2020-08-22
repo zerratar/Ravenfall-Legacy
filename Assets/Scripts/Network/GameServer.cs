@@ -218,7 +218,7 @@ public class GameServer : IDisposable
 
     public void Announce(string message)
     {
-        if (!Client.Connected) return;
+        if (Client == null || !Client.Connected) return;
         Client.SendMessage("", message);
     }
 }
