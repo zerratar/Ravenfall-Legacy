@@ -149,7 +149,8 @@ public class WalkyWalkyScript : MonoBehaviour
         if (attackAnimations.Length > 0)
         {
             attackAnimation = attackAnimations.Random();
-            animator.SetTrigger(attackAnimation);
+            if (animator)
+                animator.SetTrigger(attackAnimation);
         }
         attackAnimationTrigger = onAnimationTrigger;
         attackAnimationTimer = attackAnimationLength;

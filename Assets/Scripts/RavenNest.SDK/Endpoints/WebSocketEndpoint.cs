@@ -141,6 +141,10 @@ namespace RavenNest.SDK.Endpoints
             connection.Close();
         }
 
+        public void Reconnect()
+        {
+            connection.Reconnect();
+        }
 
         public class Position
         {

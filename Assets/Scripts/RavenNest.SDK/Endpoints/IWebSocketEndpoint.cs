@@ -10,5 +10,6 @@ namespace RavenNest.SDK.Endpoints
         Task<bool> SavePlayerStateAsync(PlayerController player);
         Task<bool> SavePlayerSkillsAsync(PlayerController player);
         void Close();
+        void Reconnect();
     }
 }

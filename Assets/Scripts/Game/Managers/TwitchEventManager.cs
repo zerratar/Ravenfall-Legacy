@@ -37,6 +37,21 @@ public class TwitchEventManager : MonoBehaviour
         {
             CurrentBoost.LastSubscriber = PlayerPrefs.GetString(TwitchSubscriberBoost.KEY_LASTSUB);
         }
+
+        if (PlayerPrefs.HasKey(TwitchSubscriberBoost.KEY_LASTCHEER))
+        {
+            CurrentBoost.LastCheerer = PlayerPrefs.GetString(TwitchSubscriberBoost.KEY_LASTCHEER);
+        }
+
+        if (PlayerPrefs.HasKey(TwitchSubscriberBoost.KEY_LASTCHEER_AMOUNT))
+        {
+            CurrentBoost.LastCheerAmount = PlayerPrefs.GetInt(TwitchSubscriberBoost.KEY_LASTCHEER_AMOUNT);
+        }
+
+        if (PlayerPrefs.HasKey(TwitchSubscriberBoost.KEY_CHEER_POT))
+        {
+            CurrentBoost.CheerPot = PlayerPrefs.GetInt(TwitchSubscriberBoost.KEY_CHEER_POT);
+        }
     }
 
     private void Update()
@@ -184,7 +199,7 @@ public class TwitchEventManager : MonoBehaviour
             CurrentBoost.Elapsed = 0f;
             CurrentBoost.Active = true;
             CurrentBoost.CheerPot -= BitsForMultiplier;
-            CurrentBoost.Multiplier = Mathf.Min(CurrentBoost.Multiplier + multiplier, 
+            CurrentBoost.Multiplier = Mathf.Min(CurrentBoost.Multiplier + multiplier,
                 gameManager.Permissions.ExpMultiplierLimit);
         }
 

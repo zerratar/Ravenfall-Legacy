@@ -15,5 +15,6 @@ namespace RavenNest.SDK.Endpoints
 
         Task<bool> CreateAsync();
         void Close();
+        void Reconnect();
     }
 }

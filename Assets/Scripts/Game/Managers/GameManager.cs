@@ -103,6 +103,7 @@ public class GameManager : MonoBehaviour, IGameManager
     private string streamerRaid;
     private TextMeshProUGUI exitViewText;
     private string exitViewTextFormat;
+    private DateTime lastGameEventRecevied;
 
     public Permissions Permissions { get; set; } = new Permissions();
     public bool LogoCensor { get; set; }
@@ -200,7 +201,10 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        UpdateGameEvents();
+        if (!UpdateGameEvents())
+        {
+            return;
+        }
 
         UpdateExpBoostTimer();
 
@@ -216,12 +220,29 @@ public class GameManager : MonoBehaviour, IGameManager
         IntegrityCheck.Update();
     }
 
-    private void UpdateGameEvents()
+    private bool UpdateGameEvents()
     {
         if (gameEventQueue.TryDequeue(out var ge))
         {
             HandleGameEvent(ge);
         }
+
+        var players = playerManager.GetAllPlayers();
+        if (players.Count > 0) // no need to check if no players are online as there will most likely not be any events
+        {
+            var minTime = TimeSpan.FromMinutes(2);
+            if (players.Any(x => x.TrainingResourceChangingSkill))
+                minTime = TimeSpan.FromSeconds(30); // we are expecting events at least 1 per 10s
+
+            if (DateTime.UtcNow - lastGameEventRecevied > minTime)
+            {
+                ravenNest.Stream.Reconnect();
+                lastGameEventRecevied = DateTime.UtcNow;
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public bool UpdateExitView()
@@ -345,6 +366,8 @@ public class GameManager : MonoBehaviour, IGameManager
     }
     public void HandleGameEvents(EventList gameEvents)
     {
+        lastGameEventRecevied = DateTime.UtcNow;
+
         foreach (var ge in gameEvents.Events)
         {
             gameEventQueue.Enqueue(ge);
@@ -422,6 +445,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public async Task<bool> RavenNestLoginAsync(string username, string password)
     {
+        if (ravenNest == null) return false;
         if (ravenNest.Authenticated) return true;
         return await ravenNest.LoginAsync(username, password);
     }
@@ -448,6 +472,7 @@ public class GameManager : MonoBehaviour, IGameManager
             if (await ravenNest.StartSessionAsync(Application.version, accessKey, false))
             {
                 gameSessionActive = true;
+                lastGameEventRecevied = DateTime.UtcNow;
             }
         }
 
@@ -464,12 +489,6 @@ public class GameManager : MonoBehaviour, IGameManager
         if (saveTimer <= 0f)
         {
             saveTimer = saveFrequency;
-
-            if (IntegrityCheck.IsCompromised)
-            {
-                return;
-            }
-
             await SavePlayersAsync();
         }
     }

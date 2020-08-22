@@ -79,13 +79,18 @@ namespace RavenNest.SDK.Endpoints
         }
         public bool ReconnectRequired => !IsReady && Volatile.Read(ref connectionCounter) > 0;
 
+        public void Reconnect()
+        {
+            Close();
+        }
+
         public async Task<bool> CreateAsync()
         {
             if (connecting || connected)
             {
                 return false;
             }
-            if (disposed) return false;
+
             connecting = true;
             try
             {
@@ -272,7 +277,6 @@ namespace RavenNest.SDK.Endpoints
 
         public void Dispose()
         {
-            if (disposed) return;
             if (webSocket != null)
             {
                 if (IsReady)
@@ -282,8 +286,6 @@ namespace RavenNest.SDK.Endpoints
 
                 webSocket.Dispose();
             }
-            disposed = true;
-
             readProcessThread.Join();
             sendProcessThread.Join();
         }

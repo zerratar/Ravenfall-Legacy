@@ -137,6 +137,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     public bool UseLongRange => HasTaskArgument("ranged") || HasTaskArgument("magic");
     public bool TrainingRanged => HasTaskArgument("ranged");
     public bool TrainingMagic => HasTaskArgument("magic");
+    public bool TrainingResourceChangingSkill => HasTaskArgument("woodcutting") || HasTaskArgument("mining")
+        || HasTaskArgument("fishing") || HasTaskArgument("cooking") || HasTaskArgument("crafting") || HasTaskArgument("farming");
 
     public PlayerAnimationController Animations => playerAnimations;
     public IslandController Island { get; set; }
