@@ -6,6 +6,7 @@ namespace RavenNest.SDK.Endpoints
     public interface IWebSocketEndpoint
     {
         bool IsReady { get; }
+        bool ForceReconnecting { get; }
         Task<bool> UpdateAsync();
         Task<bool> SavePlayerStateAsync(PlayerController player);
         Task<bool> SavePlayerSkillsAsync(PlayerController player);

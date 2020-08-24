@@ -16,6 +16,7 @@ namespace RavenNest.SDK.Endpoints
         private readonly IGameServerConnection connection;
         private readonly IGameManager gameManager;
 
+        public bool ForceReconnecting { get; private set; }
         public bool IsReady => connection?.IsReady ?? false;
 
         public WebSocketEndpoint(
@@ -33,7 +34,13 @@ namespace RavenNest.SDK.Endpoints
                 gameManager);
 
             connection.Register("game_event", new GameEventPacketHandler(gameManager));
+            connection.OnReconnected += OnReconnected;
             this.gameManager = gameManager;
+        }
+
+        private void OnReconnected(object sender, EventArgs e)
+        {
+            ForceReconnecting = false;
         }
 
         public async Task<bool> UpdateAsync()
@@ -143,6 +150,7 @@ namespace RavenNest.SDK.Endpoints
 
         public void Reconnect()
         {
+            ForceReconnecting = true;
             connection.Reconnect();
         }
 

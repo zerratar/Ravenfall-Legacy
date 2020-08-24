@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 
 public class ConnectionChecker : MonoBehaviour
@@ -35,7 +33,7 @@ public class ConnectionChecker : MonoBehaviour
             return;
         }
 
-        if (gameManager.RavenNest.Stream.IsReady && Graphics.activeSelf)
+        if ((gameManager.RavenNest.Stream.IsReady || gameManager.RavenNest.Stream.ForceReconnecting) && Graphics.activeSelf)
         {
             Graphics.SetActive(false);
             return;

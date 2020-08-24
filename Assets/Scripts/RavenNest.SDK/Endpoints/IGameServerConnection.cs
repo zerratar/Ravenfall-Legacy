@@ -1,9 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace RavenNest.SDK.Endpoints
 {
     internal interface IGameServerConnection
     {
+        event EventHandler OnReconnected;
         Task<GamePacket> SendAsync(GamePacket packet);
         Task<GamePacket> SendAsync(string id, object model);
 

@@ -9,10 +9,17 @@ public class GameMenuHandler : MonoBehaviour
     [SerializeField] private MenuView menuView;
     [SerializeField] private MenuView activeMenu;
 
+    [SerializeField] private TMPro.TextMeshProUGUI lblVersion;
+
     public bool Visible => gameObject.activeSelf;
 
     private void Awake()
     {
+        if (lblVersion)
+        {
+            lblVersion.text = "v" + Application.version;
+        }
+
         Hide();
     }
 

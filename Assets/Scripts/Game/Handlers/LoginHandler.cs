@@ -1,4 +1,6 @@
-﻿using TMPro;
+﻿using System.Collections;
+using System.Threading.Tasks;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -31,6 +33,11 @@ public class LoginHandler : MonoBehaviour
     }
 
     public async void Login()
+    {
+        await LoginImplementation();
+    }
+
+    private async Task LoginImplementation()
     {
         loginBtnText.text = "LOGGING IN...";
         if (txtUsername.text.Length == 0 || txtPassword.text.Length == 0) return;
@@ -68,6 +75,12 @@ public class LoginHandler : MonoBehaviour
 
         txtUsername.text = loginInfo.Username;
         txtPassword.text = loginInfo.Password;
+        StartCoroutine(DelayedLogin());
+    }
+
+    private IEnumerator DelayedLogin()
+    {
+        yield return new WaitForSeconds(1);
         Login();
     }
 

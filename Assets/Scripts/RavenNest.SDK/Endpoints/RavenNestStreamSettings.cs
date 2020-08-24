@@ -9,8 +9,8 @@
 
     public class LocalRavenNestStreamSettings : IAppSettings
     {
-        public string ApiEndpoint => "http://localhost:5001/api/";
+        public string ApiEndpoint => "https://localhost:5001/api/";
         public string ApiAuthEndpoint => "https://localhost:5001/api/";
-        public string WebSocketEndpoint => "ws://localhost:5001/api/stream";
+        public string WebSocketEndpoint => "wss://localhost:5001/api/stream";
     }
 }

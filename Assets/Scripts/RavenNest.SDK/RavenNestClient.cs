@@ -115,6 +115,7 @@ namespace RavenNest.SDK
             catch (Exception exc)
             {
                 logger.Error(exc.ToString());
+
             }
             finally
             {

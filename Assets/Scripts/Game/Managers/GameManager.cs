@@ -40,6 +40,8 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private VillageManager villageManager;
 
     [SerializeField] private PlayerLogoManager playerLogoManager;
+    [SerializeField] private ServerNotificationManager serverNotificationManager;
+
 
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
     = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
@@ -85,6 +87,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public GameCamera Camera => gameCamera;
     public GameEventManager Events => events;
     public PlayerList PlayerList => playerList;
+    public ServerNotificationManager ServerNotifications => serverNotificationManager;
 
     public bool IsSaving => saveCounter > 0;
 
@@ -205,6 +208,8 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             return;
         }
+
+        SaveGameStat("uptime", Time.realtimeSinceStartup);
 
         UpdateExpBoostTimer();
 
@@ -429,7 +434,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (client == null)
         {
             client = new RavenNestClient(logger, this,
-                new RavenNestStreamSettings()
+            new RavenNestStreamSettings()
             //new LocalRavenNestStreamSettings()
             );
 

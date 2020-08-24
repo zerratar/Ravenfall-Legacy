@@ -33,6 +33,9 @@ namespace RavenNest.SDK.Endpoints
         private bool connected;
         private bool connecting;
         private int connectionCounter;
+        private bool reconnecting;
+
+        public event EventHandler OnReconnected;
 
         public int SendAsyncTimeout { get; set; } = 5000;
 
@@ -81,6 +84,7 @@ namespace RavenNest.SDK.Endpoints
 
         public void Reconnect()
         {
+            reconnecting = true;
             Close();
         }
 
@@ -113,6 +117,12 @@ namespace RavenNest.SDK.Endpoints
 
                 if (sendProcessThread == null)
                     (sendProcessThread = new Thread(ProcessSend)).Start();
+
+                if (reconnecting)
+                {
+                    reconnecting = false;
+                    OnReconnected?.Invoke(this, EventArgs.Empty);
+                }
 
                 return true;
             }
@@ -168,6 +178,7 @@ namespace RavenNest.SDK.Endpoints
                 }
                 catch (Exception exc)
                 {
+                    Disconnect();
                     logger.Error(exc.ToString());
                 }
             }
