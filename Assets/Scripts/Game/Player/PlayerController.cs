@@ -528,7 +528,18 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
         UserId = player.UserId;
         PlayerName = player.Name;
+
         Stats = new Skills(player.Skills);
+
+        if (player.IsRejoin)
+        {
+            Skills playerSkills = this.gameManager.GetStoredPlayerSkills(player.UserId);
+            if (playerSkills != null)
+            {
+                Stats.TakeBestOf(playerSkills);
+            }
+        }
+
         Resources = player.Resources;
         Statistics = player.Statistics;
         ExpOverTime = 1m;

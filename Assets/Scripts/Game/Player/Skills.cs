@@ -96,33 +96,37 @@ public class Skills : IComparable
         Sailing.Level
     };
 
+    public SkillStat[] SkillList => new SkillStat[]
+    {
+            Attack,
+            Defense,
+            Strength,
+            Health,
+            Woodcutting,
+            Fishing,
+            Mining,
+            Crafting,
+            Cooking,
+            Farming,
+            Slayer,
+            Magic,
+            Ranged,
+            Sailing
+    };
 
     public SkillStat Attack;
-
     public SkillStat Defense;
-
     public SkillStat Strength;
-
     public SkillStat Health;
-
     public SkillStat Magic;
-
     public SkillStat Ranged;
-
     public SkillStat Farming;
-
     public SkillStat Cooking;
-
     public SkillStat Crafting;
-
     public SkillStat Mining;
-
     public SkillStat Fishing;
-
     public SkillStat Woodcutting;
-
     public SkillStat Slayer;
-
     public SkillStat Sailing;
 
     public int CompareTo(object obj)
@@ -130,5 +134,18 @@ public class Skills : IComparable
         if (obj == null) return 1;
         if (obj is Skills skills) return CombatLevel - skills.CombatLevel;
         return 0;
+    }
+
+    internal void TakeBestOf(Skills target)
+    {
+        for (int i = 0; i < SkillList.Length; i++)
+        {
+            SkillStat skill = SkillList[i];
+            SkillStat tskill = target.SkillList[i];
+            if (tskill.Experience > skill.Experience)
+            {
+                skill.Experience = tskill.Experience;
+            }
+        }
     }
 }

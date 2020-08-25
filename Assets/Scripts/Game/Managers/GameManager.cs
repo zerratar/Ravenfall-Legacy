@@ -276,6 +276,11 @@ public class GameManager : MonoBehaviour, IGameManager
         return false;
     }
 
+    public Skills GetStoredPlayerSkills(string userId)
+    {
+        return playerManager.GetStoredPlayerSkills(userId);
+    }
+
     internal void BeginStreamerRaid(string username, bool war)
     {
         exitView.SetActive(true);
@@ -455,15 +460,15 @@ public class GameManager : MonoBehaviour, IGameManager
         return await ravenNest.LoginAsync(username, password);
     }
 
-    public void ForceGameSessionUpdate()
-    {
-        if (!ravenNest.Authenticated) return;
-        var result = ravenNest.StartSessionAsync(Application.version, accessKey, false).Result;
-        if (result)
-        {
-            gameSessionActive = true;
-        }
-    }
+    //public void ForceGameSessionUpdate()
+    //{
+    //    if (!ravenNest.Authenticated) return;
+    //    var result = ravenNest.StartSessionAsync(Application.version, accessKey, false).Result;
+    //    if (result)
+    //    {
+    //        gameSessionActive = true;
+    //    }
+    //}
 
     private async void RavenNestUpdate()
     {
@@ -526,49 +531,51 @@ public class GameManager : MonoBehaviour, IGameManager
                 {
                     if (!await ravenNest.Stream.SavePlayerSkillsAsync(player))
                     {
-                        Debug.LogError(player.Name + " failed saving skills.");
+                        break;
                     }
                     await Task.Delay(10);
                 }
+                return;
             }
             catch
             {
-                // fall back to HTTPS Post Save
-                var batchSize = 20;
-                for (var i = 0; i < states.Length;)
-                {
-                    var toUpdate = states.Skip(i * batchSize).Take(batchSize).ToArray();
-                    var remaining = states.Length - i;
-                    i += remaining < batchSize ? remaining : batchSize;
+            }
 
-                    var result = await ravenNest.Players.UpdateManyAsync(toUpdate);
-                    if (result == null)
+            // fall back to HTTPS Post Save
+            var batchSize = 20;
+            for (var i = 0; i < states.Length;)
+            {
+                var toUpdate = states.Skip(i * batchSize).Take(batchSize).ToArray();
+                var remaining = states.Length - i;
+                i += remaining < batchSize ? remaining : batchSize;
+
+                var result = await ravenNest.Players.UpdateManyAsync(toUpdate);
+                if (result == null)
+                {
+                    Debug.LogWarning($"Saving gave null result. Data may not have been saved.");
+                    continue;
+                }
+
+                for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
+                {
+                    if (players.Count <= playerIndex)
                     {
-                        Debug.LogWarning($"Saving gave null result. Data may not have been saved.");
+                        Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
                         continue;
                     }
 
-                    for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
+                    var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
+                    if (playerResult.Successeful)
                     {
-                        if (players.Count <= playerIndex)
-                        {
-                            Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
-                            continue;
-                        }
-
-                        var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
-                        if (playerResult.Successeful)
-                        {
-                            playerResult.Player.SavedSucceseful();
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
-                        }
+                        playerResult.Player.SavedSucceseful();
                     }
-
-                    await Task.Delay(100);
+                    else
+                    {
+                        Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
+                    }
                 }
+
+                await Task.Delay(100);
             }
         }
         catch (Exception exc)

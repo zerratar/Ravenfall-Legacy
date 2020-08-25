@@ -7,6 +7,8 @@ using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
 {
+    private const string CacheDirectory = "data/";
+    private const string CacheFileName = "statcache.json";
     private readonly List<PlayerController> activePlayers = new List<PlayerController>();
     private readonly object mutex = new object();
 
@@ -15,14 +17,50 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private GameObject playerControllerPrefab;
     [SerializeField] private IoCContainer ioc;
 
+    public readonly ConcurrentDictionary<string, Skills> StoredStats
+        = new ConcurrentDictionary<string, Skills>();
+
     public readonly ConcurrentQueue<RavenNest.Models.Player> PlayerQueue
         = new ConcurrentQueue<RavenNest.Models.Player>();
+
+    private DateTime lastCacheSave = DateTime.MinValue;
+
 
     void Start()
     {
         if (!gameManager) gameManager = GetComponent<GameManager>();
         if (!settings) settings = GetComponent<GameSettings>();
         if (!ioc) ioc = GetComponent<IoCContainer>();
+        LoadStatCache();
+    }
+
+    private void LoadStatCache()
+    {
+        if (System.IO.File.Exists(CacheFileName))
+        {
+            var json = System.IO.File.ReadAllText(CacheFileName);
+            LoadStatCache(Newtonsoft.Json.JsonConvert.DeserializeObject<List<StatCacheData>>(json));
+        }
+    }
+
+    private void LoadStatCache(List<StatCacheData> lists)
+    {
+        foreach (var l in lists)
+        {
+            StoredStats[l.UserId] = l.Skills;
+        }
+    }
+
+    private void SaveStatCache()
+    {
+        if (!System.IO.Directory.Exists(CacheDirectory))
+            System.IO.Directory.CreateDirectory(CacheDirectory);
+        var list = new List<StatCacheData>();
+        foreach (var k in StoredStats.Keys)
+        {
+            list.Add(new StatCacheData { UserId = k, Skills = StoredStats[k] });
+        }
+        System.IO.File.WriteAllText(CacheFileName, Newtonsoft.Json.JsonConvert.SerializeObject(list));
     }
 
     public bool Contains(string userId)
@@ -32,6 +70,12 @@ public class PlayerManager : MonoBehaviour
 
     void Update()
     {
+        var sinceLastSave = DateTime.UtcNow - lastCacheSave;
+        if (sinceLastSave >= TimeSpan.FromSeconds(10))
+        {
+            SaveStatCache();
+            lastCacheSave = DateTime.UtcNow;
+        }
     }
 
     public IReadOnlyList<PlayerController> GetAllPlayers()
@@ -144,8 +188,21 @@ public class PlayerManager : MonoBehaviour
         lock (mutex)
         {
             activePlayers.Add(player);
+            StoredStats[player.UserId] = player.Stats;
             gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
             return player;
         }
     }
+
+    internal Skills GetStoredPlayerSkills(string userId)
+    {
+        if (StoredStats.TryGetValue(userId, out var skills)) return skills;
+        return null;
+    }
+}
+
+public class StatCacheData
+{
+    public string UserId { get; set; }
+    public Skills Skills { get; set; }
 }

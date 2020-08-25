@@ -265,7 +265,7 @@ namespace RavenNest.SDK.Endpoints
                     logger.Error(socketExc.ToString());
                 }
 
-                gameManager.ForceGameSessionUpdate();
+                //gameManager.ForceGameSessionUpdate();
 
                 Disconnect();
                 return false;
