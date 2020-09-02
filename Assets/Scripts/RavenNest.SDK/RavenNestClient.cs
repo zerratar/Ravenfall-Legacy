@@ -35,7 +35,7 @@ namespace RavenNest.SDK
 
             this.logger = logger ?? new UnityLogger();
             this.gameManager = gameManager;
-            var binarySerializer = new BinarySerializer();
+            var binarySerializer = new CompressedJsonSerializer();//new BinarySerializer();
             appSettings = settings ?? new RavenNestStreamSettings();
 
             tokenProvider = new TokenProvider();
@@ -95,7 +95,8 @@ namespace RavenNest.SDK
         {
             if (!SessionStarted) return false;
             if (!Stream.IsReady) return false;
-            return await Stream.SavePlayerStateAsync(player);
+            var result = await Stream.SavePlayerStateAsync(player);
+            return await Stream.SavePlayerSkillsAsync(player) || result;
         }
 
         public async Task<bool> LoginAsync(string username, string password)

@@ -276,10 +276,10 @@ public class RaidBossController : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
     {
-        var health = Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 100;
-        var strength = Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue);
-        var defense = Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue);
-        var attack = Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue);
+        var health = (int)(Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 1.25 * 100);
+        var strength = (int)(Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue) * 1.25);
+        var defense = (int)(Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue) * 1.25);
+        var attack = (int)(Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue) * 1.25);
 
         return new Skills
         {

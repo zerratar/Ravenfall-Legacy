@@ -6,7 +6,7 @@
         {
             UnityEngine.Debug.Log($"Congratulations! Village gained {data.LevelDelta} level(s)!");
 
-
+            gameManager.Village.SetExp(data.Experience);
             gameManager.Village.SetTierByLevel(data.Level);
             gameManager.Village.SetSlotCount(data.HouseSlots);
         }

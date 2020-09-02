@@ -26,6 +26,7 @@ public class PathSelector : MonoBehaviour
     private int pathIndex = 0;
     private bool changingPath;
     private float leaveTimer;
+    private GameManager gameManager;
 
     public int PathIndex => pathIndex;
     public float CurrentSpeed => pathFollower.speed;
@@ -60,11 +61,21 @@ public class PathSelector : MonoBehaviour
         pathDuration = new float[paths.Length];
         pathStart = new float[paths.Length];
         pathStart[pathIndex] = Time.time;
+        this.gameManager = FindObjectOfType<GameManager>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        var speed = movementSpeed;
+        var stop = stopBetweenPaths;
+
+        if (Input.GetKey(KeyCode.LeftShift) && Input.GetKey(KeyCode.Space) && (gameManager.Permissions?.IsAdministrator).GetValueOrDefault())
+        {
+            speed = 500;
+            stop = 3;
+        }
+
         if (leaveTimer > 0f) leaveTimer -= Time.deltaTime;
         if (leaveTimer < 0) leaveTimer = 0f;
         if (!pathFollower) return;
@@ -72,7 +83,7 @@ public class PathSelector : MonoBehaviour
 
         if (pathFollower.IsPathCompleted && !changingPath)
         {
-            StartCoroutine(ChangePath());
+            StartCoroutine(ChangePath(stop));
         }
         else if (!pathFollower.IsPathCompleted)
         {
@@ -83,7 +94,7 @@ public class PathSelector : MonoBehaviour
             {
                 // going from zero to hero
                 var percent = Mathf.Min(Mathf.Max(0.01f, distance / speedChangeAtPercent), 1f);
-                pathFollower.speed = movementSpeed * percent;
+                pathFollower.speed = speed * percent;
                 ferryController.SetMovementEffect(percent);
             }
             else
@@ -94,26 +105,26 @@ public class PathSelector : MonoBehaviour
                     // hero to zero Kappa
                     var percent = (1f - distance) / speedChangeAtPercent;
                     var slowdown = Mathf.Max(minSpeedPercent, percent);
-                    pathFollower.speed = movementSpeed * slowdown;
+                    pathFollower.speed = speed * slowdown;
                     ferryController.SetMovementEffect(slowdown);
                 }
                 else
                 {
-                    pathFollower.speed = movementSpeed;
+                    pathFollower.speed = speed;
                     ferryController.SetMovementEffect(1f);
                 }
             }
         }
     }
 
-    private IEnumerator ChangePath()
+    private IEnumerator ChangePath(float stop)
     {
         var pathTime = Time.time - pathStart[pathIndex];
         pathDuration[pathIndex] = pathTime;
         changingPath = true;
         ferryController.state = FerryState.Docked;
-        leaveTimer = stopBetweenPaths;
-        yield return new WaitForSeconds(stopBetweenPaths);
+        leaveTimer = stop;
+        yield return new WaitForSeconds(stop);
         pathIndex = (pathIndex + 1) % paths.Length;
         pathFollower.ResetPath();
         pathFollower.pathCreator = paths[pathIndex];

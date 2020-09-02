@@ -144,6 +144,7 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ResourceUpdateEventHandler>(GameEventType.ResourceUpdate);
         RegisterGameEventHandler<ServerMessageEventHandler>(GameEventType.ServerMessage);
 
+        RegisterGameEventHandler<PermissionChangedEventHandler>(GameEventType.PermissionChange);
         RegisterGameEventHandler<VillageInfoEventHandler>(GameEventType.VillageInfo);
         RegisterGameEventHandler<VillageLevelUpEventHandler>(GameEventType.VillageLevelUp);
 
@@ -232,20 +233,20 @@ public class GameManager : MonoBehaviour, IGameManager
             HandleGameEvent(ge);
         }
 
-        var players = playerManager.GetAllPlayers();
-        if (players.Count > 0) // no need to check if no players are online as there will most likely not be any events
-        {
-            var minTime = TimeSpan.FromMinutes(2);
-            if (players.Any(x => x.TrainingResourceChangingSkill))
-                minTime = TimeSpan.FromSeconds(30); // we are expecting events at least 1 per 10s
+        //var players = playerManager.GetAllPlayers();
+        //if (players.Count > 0 && ravenNest.Stream.IsReady) // no need to check if no players are online as there will most likely not be any events
+        //{
+        //    var minTime = TimeSpan.FromMinutes(2);
+        //    if (players.Any(x => x.TrainingResourceChangingSkill))
+        //        minTime = TimeSpan.FromSeconds(30); // we are expecting events at least 1 per 10s
 
-            if (DateTime.UtcNow - lastGameEventRecevied > minTime)
-            {
-                ravenNest.Stream.Reconnect();
-                lastGameEventRecevied = DateTime.UtcNow;
-                return false;
-            }
-        }
+        //    if (DateTime.UtcNow - lastGameEventRecevied > minTime)
+        //    {
+        //        ravenNest.Stream.Reconnect();
+        //        lastGameEventRecevied = DateTime.UtcNow;
+        //        return false;
+        //    }
+        //}
 
         return true;
     }
@@ -395,16 +396,6 @@ public class GameManager : MonoBehaviour, IGameManager
             handler.Handle(this, gameEvent.Data);
             return;
         }
-
-        switch ((GameEventType)gameEvent.Type)
-        {
-            case GameEventType.PermissionChange:
-                {
-                    Debug.LogWarning("User Permission Update received: " + gameEvent.Data);
-                    Permissions = JsonConvert.DeserializeObject<Permissions>(gameEvent.Data);
-                    break;
-                }
-        }
     }
 
     internal async Task<PlayerController> AddPlayerByUserIdAsync(string userId, StreamRaidInfo raiderInfo)
@@ -517,65 +508,34 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         try
         {
-            var players = playerManager
-                .GetAllPlayers();
-
-            var states = players
-                .Select(x => x.BuildPlayerState())
-                .ToArray();
-
+            Debug.Log("Saving all players...");
+            var players = playerManager.GetAllPlayers().ToList();
+            var failedToSave = new List<PlayerController>();
             try
             {
                 // Save using websocket
                 foreach (var player in players)
                 {
-                    if (!await ravenNest.Stream.SavePlayerSkillsAsync(player))
+                    if (await ravenNest.Stream.SavePlayerSkillsAsync(player))
                     {
-                        break;
-                    }
-                    await Task.Delay(10);
-                }
-                return;
-            }
-            catch
-            {
-            }
-
-            // fall back to HTTPS Post Save
-            var batchSize = 20;
-            for (var i = 0; i < states.Length;)
-            {
-                var toUpdate = states.Skip(i * batchSize).Take(batchSize).ToArray();
-                var remaining = states.Length - i;
-                i += remaining < batchSize ? remaining : batchSize;
-
-                var result = await ravenNest.Players.UpdateManyAsync(toUpdate);
-                if (result == null)
-                {
-                    Debug.LogWarning($"Saving gave null result. Data may not have been saved.");
-                    continue;
-                }
-
-                for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
-                {
-                    if (players.Count <= playerIndex)
-                    {
-                        Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
-                        continue;
-                    }
-
-                    var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
-                    if (playerResult.Successeful)
-                    {
-                        playerResult.Player.SavedSucceseful();
+                        player.SavedSucceseful();
                     }
                     else
                     {
-                        Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
+                        player.FailedToSave();
+                        failedToSave.Add(player);
                     }
+                    await Task.Delay(100);
                 }
+            }
+            catch (Exception exc)
+            {
+                Debug.LogError(exc.ToString());
+            }
 
-                await Task.Delay(100);
+            if (failedToSave.Count > 0)
+            {
+                await SavePlayersUsingHTTP(failedToSave);
             }
         }
         catch (Exception exc)
@@ -583,6 +543,52 @@ public class GameManager : MonoBehaviour, IGameManager
             Debug.LogError(exc.ToString());
         }
     }
+
+    private async Task SavePlayersUsingHTTP(IReadOnlyList<PlayerController> players)
+    {
+        var states = players
+            .Select(x => x.BuildPlayerState())
+            .ToArray();
+
+        // fall back to HTTPS Post Save
+        var batchSize = 20;
+        for (var i = 0; i < states.Length;)
+        {
+            var toUpdate = states.Skip(i * batchSize).Take(batchSize).ToArray();
+            var remaining = states.Length - i;
+            i += remaining < batchSize ? remaining : batchSize;
+
+            var result = await ravenNest.Players.UpdateManyAsync(toUpdate);
+            if (result == null)
+            {
+                Debug.LogWarning($"Saving gave null result. Data may not have been saved.");
+                continue;
+            }
+
+            for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
+            {
+                if (players.Count <= playerIndex)
+                {
+                    Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
+                    continue;
+                }
+
+                var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
+                if (playerResult.Successeful)
+                {
+                    playerResult.Player.SavedSucceseful();
+                }
+                else
+                {
+                    playerResult.Player.FailedToSave();
+                    Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
+                }
+            }
+
+            await Task.Delay(1000);
+        }
+    }
+
     private void UpdateChatBotCommunication()
     {
         if (Server == null || !Server.IsBound)
@@ -620,22 +626,22 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
 
-        if (Input.GetKeyUp(KeyCode.Space))
-        {
-            var player = Players.FindPlayers("zerratar").FirstOrDefault();
-            if (player)
-            {
-                var def = JsonConvert.DeserializeObject<RavenNestPlayer>(JsonConvert.SerializeObject(player.Definition));
-                def.UserId = UnityEngine.Random.Range(12345, 99999).ToString();
-                def.Name += def.UserId;
-                def.UserName += def.UserId;
-                var p = SpawnPlayer(def);
-                if (raidManager.Started)
-                {
-                    raidManager.Join(p);
-                }
-            }
-        }
+        //if (Input.GetKeyUp(KeyCode.Space))
+        //{
+        //    var player = Players.FindPlayers("zerratar").FirstOrDefault();
+        //    if (player)
+        //    {
+        //        var def = JsonConvert.DeserializeObject<RavenNestPlayer>(JsonConvert.SerializeObject(player.Definition));
+        //        def.UserId = UnityEngine.Random.Range(12345, 99999).ToString();
+        //        def.Name += def.UserId;
+        //        def.UserName += def.UserId;
+        //        var p = SpawnPlayer(def);
+        //        if (raidManager.Started)
+        //        {
+        //            raidManager.Join(p);
+        //        }
+        //    }
+        //}
 
         if (isControlDown && Input.GetKeyUp(KeyCode.O))
         {

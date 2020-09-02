@@ -4,12 +4,18 @@ using UnityEngine;
 public class TownHallManager : MonoBehaviour
 {
     [SerializeField] private TownHallController[] townHallBuildings;
+    [SerializeField] private TownHallInfoManager info;
 
     private int tier;
+    private int level;
+    private decimal exp;
+
     private TownHallController activeTownHall;
 
     void Start()
     {
+        if (!info) info = FindObjectOfType<TownHallInfoManager>();
+
         if (townHallBuildings == null || townHallBuildings.Length == 0)
             townHallBuildings = GetComponentsInChildren<TownHallController>();
 
@@ -17,8 +23,14 @@ public class TownHallManager : MonoBehaviour
             activeTownHall = townHallBuildings[0];
     }
 
+    public decimal Experience => exp;
+    public int Level => level;
+    public int Tier => tier;
+    public decimal ExperienceToLevel => GameMath.LevelToExperience(Level + 1);
+
     public void SetTierByLevel(int level)
     {
+        SetLevel(level);
         SetTier(GetTownHallTier(level));
     }
 
@@ -34,6 +46,45 @@ public class TownHallManager : MonoBehaviour
 
         activeTownHall = townHallBuildings[tier];
         activeTownHall.gameObject.SetActive(true);
+
+        if (info)
+        {
+            info.Tier = tier;
+        }
+    }
+
+    internal void SetSlotCount(int count)
+    {
+        if (info)
+        {
+            info.Slots = count;
+        }
+    }
+
+    internal void OpenVillageDialog()
+    {
+        if (info)
+        {
+            info.Toggle();
+        }
+    }
+
+    private void SetLevel(int level)
+    {
+        this.level = level;
+        if (info)
+        {
+            info.Level = level;
+        }
+    }
+
+    internal void SetExp(decimal experience)
+    {
+        this.exp = experience;
+        if (info)
+        {
+            info.Experience = experience;
+        }
     }
 
     private int GetTownHallTier(int level)

@@ -150,13 +150,27 @@ public class TownHouseManager : MonoBehaviour
 
     internal void SetHouse(TownHouseSlot slot, TownHouseSlotType type)
     {
-        if (slot == null || !slot || buildableTownHouses == null || buildableTownHouses.Length == 0)
+        if (slot == null || !slot)
+            return;
+
+        if (type == TownHouseSlotType.Empty)
+        {
+            SetHouseType(slot, TownHouseSlotType.Empty, null);
+            return;
+        }
+
+        if (buildableTownHouses == null || buildableTownHouses.Length == 0)
             return;
 
         var house = buildableTownHouses.FirstOrDefault(x => x.Type == type);
         if (house == null || !house)
             return;
 
+        SetHouseType(slot, type, house);
+    }
+
+    private void SetHouseType(TownHouseSlot slot, TownHouseSlotType type, TownHouse house)
+    {
         slot.SetHouse(new VillageHouseInfo()
         {
             Slot = slot.Slot,

@@ -35,10 +35,10 @@ public class TownHouseSlot : MonoBehaviour
         SetOwner(houseOwner);
 
         OwnerUserId = houseInfo.Owner;
-
         SlotType = (TownHouseSlotType)houseInfo.Type;
         Slot = houseInfo.Slot;
         townHouseSource = townHouse;
+
         if (House)
         {
             Destroy(House.gameObject);

@@ -43,6 +43,8 @@ public class PlayerListItem : MonoBehaviour
     void Start()
     {
         rectTransform = transform.GetComponent<RectTransform>();
+        if (lblPlayerName)
+            lblPlayerName.richText = true;
     }
 
     // Update is called once per frame
@@ -99,6 +101,12 @@ public class PlayerListItem : MonoBehaviour
         SetText(lblCombatLevel, $"Lv: <b>{TargetPlayer.Stats.CombatLevel}");
 
         UpdateHealthBar(TargetPlayer.Stats.Health);
+
+        if (TargetPlayer)
+        {
+            var color = TargetPlayer.IsUpToDate ? default : Color.red;
+            SetText(lblPlayerName, TargetPlayer.PlayerName.ToLower(), color);
+        }
     }
 
 
@@ -197,11 +205,13 @@ public class PlayerListItem : MonoBehaviour
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SetText(TextMeshProUGUI label, string value)
+    private static void SetText(TextMeshProUGUI label, string value, Color color = default)
     {
-        if (label.text != value)
+        if (color == default) color = Color.white;
+        var newValue = color != Color.white ? "<color=#" + ColorUtility.ToHtmlStringRGB(color) + ">" + value : value;
+        if (label.text != newValue)
         {
-            label.text = value;
+            label.text = newValue;
         }
     }
 

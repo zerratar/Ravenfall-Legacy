@@ -126,13 +126,14 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     public RavenNest.Models.Player Definition { get; private set; }
     public Transform Transform => gameObject.transform;
     public bool IsMoving => agent.isActiveAndEnabled && agent.remainingDistance > 0;
+    public bool IsUpToDate { get; private set; }
     public bool Kicked { get; set; }
     public bool IsNPC => PlayerName != null && PlayerName.StartsWith("Player ");
     public bool IsReadyForAction => actionTimer <= 0f;
     public string Name => PlayerName;
     public bool GivesExperienceWhenKilled => false;
     public bool InCombat { get; private set; }
-
+    public float HealthBarOffset => 0f;
     public StreamRaidInfo Raider { get; private set; }
     public bool UseLongRange => HasTaskArgument("ranged") || HasTaskArgument("magic");
     public bool TrainingRanged => HasTaskArgument("ranged");
@@ -229,7 +230,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
     {
         if (!hasBeenInitialized) return;
 
-        SavePlayerState();
+        SavePlayer();
+
         actionTimer -= Time.deltaTime;
 
         if (NextDestination != Vector3.zero)
@@ -322,7 +324,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         }
     }
 
-    private void SavePlayerState()
+    private void SavePlayer()
     {
         if (IntegrityCheck.IsCompromised)
         {
@@ -380,10 +382,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
             state.Statistics = statistics;
         }
 
-        if (Stats.TotalExperience > lastSavedExperienceTotal)
-        {
-            state.Experience = Stats.ExperienceList;
-        }
+        state.Experience = Stats.ExperienceList;
 
         if (Chunk != null)
         {
@@ -393,8 +392,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         return state;
     }
 
+    internal void FailedToSave()
+    {
+        IsUpToDate = false;
+    }
     internal void SavedSucceseful()
     {
+        IsUpToDate = true;
         lastSavedStatistics = DataMapper.Map<Statistics, Statistics>(Statistics);
         lastSavedExperienceTotal = Stats.TotalExperience;
     }
@@ -531,13 +535,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
 
         Stats = new Skills(player.Skills);
 
-        if (player.IsRejoin)
+        Skills playerSkills = this.gameManager.GetStoredPlayerSkills(player.UserId);
+        if (playerSkills != null)
         {
-            Skills playerSkills = this.gameManager.GetStoredPlayerSkills(player.UserId);
-            if (playerSkills != null)
-            {
-                Stats.TakeBestOf(playerSkills);
-            }
+            Stats.TakeBestOf(playerSkills);
         }
 
         Resources = player.Resources;
@@ -571,6 +572,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPlayerController
         Equipment.HideEquipments(); // don't show sword on join
         hasBeenInitialized = true;
     }
+
 
     public bool Fish(FishingController fishingSpot)
     {

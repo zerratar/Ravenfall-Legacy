@@ -30,7 +30,10 @@ public class BuildSlotIconsManager : MonoBehaviour
     public void Show(TownHouseSlot slot)
     {
         if (slot == null || !slot)
+        {
+            Hide();
             return;
+        }
 
         transform.position = slot.transform.position + ((yOffset + slot.IconOffset) * Vector3.up);
         activeSlot = slot;
@@ -156,18 +159,21 @@ public class BuildSlotIconsManager : MonoBehaviour
     public async void EraseBuilding()
     {
         Debug.Log("Erase building clicked");
-        if (activeSlot)
+        if (!activeSlot)
         {
-            if (await gameManager.RavenNest.Village.RemoveHouseAsync(activeSlot.Slot))
-            {
-                gameManager.Village.TownHouses.SetHouse(activeSlot, TownHouseSlotType.Empty);
-                Hide();
-                return;
-            }
-
-            Debug.LogError("Failed to erase house :(");
-            Show(activeSlot);
+            Debug.LogError("Failed to erase house. No active slot selected :o");
+            return;
         }
+
+        if (await gameManager.RavenNest.Village.RemoveHouseAsync(activeSlot.Slot))
+        {
+            gameManager.Village.TownHouses.SetHouse(activeSlot, TownHouseSlotType.Empty);
+            Hide();
+            return;
+        }
+
+        Debug.LogError("Failed to erase house :(");
+        Show(activeSlot);
     }
 
     public async void BuildHouse()
@@ -180,20 +186,23 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
         }
 
-        if (activeSlot)
+        if (!activeSlot)
         {
-            var slot = activeSlot.Slot;
-            var slotType = selectBuildingDialog.SelectedHouse.Type;
-
-            if (await gameManager.RavenNest.Village.BuildHouseAsync(slot, (int)slotType))
-            {
-                gameManager.Village.TownHouses.SetHouse(activeSlot, slotType);
-                Hide();
-                return;
-            }
-
-            Debug.LogError("Failed to build house :(");
-            Show(activeSlot);
+            Debug.LogError("Failed to build house. No active slot selected.");
+            return;
         }
+
+        var slot = activeSlot.Slot;
+        var slotType = selectBuildingDialog.SelectedHouse.Type;
+
+        if (await gameManager.RavenNest.Village.BuildHouseAsync(slot, (int)slotType))
+        {
+            gameManager.Village.TownHouses.SetHouse(activeSlot, slotType);
+            Hide();
+            return;
+        }
+
+        Debug.LogError("Failed to build house :(");
+        Show(activeSlot);
     }
 }

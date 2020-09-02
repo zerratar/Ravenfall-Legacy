@@ -150,7 +150,7 @@ public class FerryHandler : MonoBehaviour
         }
     }
 
-    private void AddPlayerToFerry()
+    public void AddPlayerToFerry()
     {
         var ferryPoint = ferry.GetNextPlayerPoint();
         if (ferryPoint)

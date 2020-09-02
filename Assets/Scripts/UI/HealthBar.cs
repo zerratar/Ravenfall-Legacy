@@ -12,7 +12,6 @@ public class HealthBar : MonoBehaviour
     public HealthBarManager Manager;
     private DungeonBossController dungeonBoss;
     private bool isDungeonBoss;
-
     // Start is called before the first frame update
     void Start()
     {
@@ -67,7 +66,7 @@ public class HealthBar : MonoBehaviour
         {
             var targetTransform = tar.transform;
             progress.sizeDelta = new Vector2(proc, 100f);
-            transform.position = targetTransform.position + (Vector3.up * 2f);
+            transform.position = targetTransform.position + (Vector3.up * 2f) + (Target.HealthBarOffset * Vector3.up);
             if (isDungeonBoss)
             {
                 transform.position += Vector3.up * dungeonBoss.transform.localScale.x * 1.125f;

@@ -9,5 +9,6 @@
     }
 
     public override void Handle(Player data, GameClient client)
-    { }
+    { 
+    }
 }

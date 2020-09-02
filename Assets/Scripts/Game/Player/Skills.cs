@@ -144,7 +144,7 @@ public class Skills : IComparable
             SkillStat tskill = target.SkillList[i];
             if (tskill.Experience > skill.Experience)
             {
-                skill.Experience = tskill.Experience;
+                skill.SetExp(tskill.Experience);
             }
         }
     }

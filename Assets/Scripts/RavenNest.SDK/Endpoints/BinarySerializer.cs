@@ -10,6 +10,7 @@ using System.Runtime.Serialization;
 
 namespace RavenNest.SDK.Endpoints
 {
+
     public class BinarySerializer : IBinarySerializer
     {
         private readonly ConcurrentDictionary<string, MethodInfo> writeMethodCache = new ConcurrentDictionary<string, MethodInfo>();

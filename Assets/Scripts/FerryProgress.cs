@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Xml;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -48,10 +49,15 @@ public class FerryProgress : MonoBehaviour
     private void UpdateFerryPosition()
     {
         var progress = ferry.GetProgress();
+
+        if (ferry.PathIndex == 0)
+            progress *= 0.5f;
+
+        if (ferry.PathIndex == 1)
+            progress = 0.5f + progress * 0.5f;
+
         if (progress < 1f)
-        {
             tmpProgress = progress;
-        }
 
         if (progress >= 1f && !triggerFlip)
         {

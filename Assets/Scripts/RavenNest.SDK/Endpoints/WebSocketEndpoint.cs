@@ -8,7 +8,12 @@ namespace RavenNest.SDK.Endpoints
     {
         private ConcurrentDictionary<string, CharacterStateUpdate> lastSavedState
             = new ConcurrentDictionary<string, CharacterStateUpdate>();
-        private ConcurrentDictionary<string, DateTime> lastSavedTime
+        private ConcurrentDictionary<string, CharacterSkillUpdate> lastSavedSkills
+            = new ConcurrentDictionary<string, CharacterSkillUpdate>();
+
+        private ConcurrentDictionary<string, DateTime> lastSavedStateTime
+            = new ConcurrentDictionary<string, DateTime>();
+        private ConcurrentDictionary<string, DateTime> lastSavedSkillsTime
             = new ConcurrentDictionary<string, DateTime>();
 
         private const double ForceSaveInterval = 5d;
@@ -57,13 +62,9 @@ namespace RavenNest.SDK.Endpoints
 
             return await connection.CreateAsync();
         }
+
         public async Task<bool> SavePlayerSkillsAsync(PlayerController player)
         {
-            if (IntegrityCheck.IsCompromised)
-            {
-                return false;
-            }
-
             var state = player.BuildPlayerState();
 
             var characterUpdate = new CharacterSkillUpdate
@@ -72,10 +73,20 @@ namespace RavenNest.SDK.Endpoints
                 UserId = state.UserId
             };
 
-            var response = await connection.SendAsync("update_character_skills", characterUpdate);
-            if (response != null && response.TryGetValue<bool>(out var result))
+            if (lastSavedSkills.TryGetValue(player.UserId, out var lastUpdate))
             {
-                return result;
+                if (!RequiresUpdate(lastUpdate, characterUpdate))
+                {
+                    return true; // return true so we dont get a red name in the player list just because the exp hasnt changed.
+                }
+            }
+
+            var response = await connection.SendAsync("update_character_skills", characterUpdate);
+            if (response != null && response.TryGetValue<bool>(out var result) && result)
+            {
+                lastSavedSkills[player.UserId] = characterUpdate;
+                lastSavedSkillsTime[player.UserId] = DateTime.UtcNow;
+                return true;
             }
 
             return false;
@@ -117,7 +128,7 @@ namespace RavenNest.SDK.Endpoints
                 if (result)
                 {
                     lastSavedState[player.UserId] = characterUpdate;
-                    lastSavedTime[player.UserId] = DateTime.UtcNow;
+                    lastSavedStateTime[player.UserId] = DateTime.UtcNow;
                     return true;
                 }
             }
@@ -127,7 +138,7 @@ namespace RavenNest.SDK.Endpoints
 
         private bool RequiresUpdate(CharacterStateUpdate oldState, CharacterStateUpdate newState)
         {
-            if (!lastSavedTime.TryGetValue(oldState.UserId, out var date) || DateTime.UtcNow - date > TimeSpan.FromSeconds(ForceSaveInterval))
+            if (!lastSavedStateTime.TryGetValue(oldState.UserId, out var date) || DateTime.UtcNow - date > TimeSpan.FromSeconds(ForceSaveInterval))
                 return true;
 
             if (oldState.Health != newState.Health) return true;
@@ -141,6 +152,24 @@ namespace RavenNest.SDK.Endpoints
             if (oldState.Task != newState.Task) return true;
             if (oldState.TaskArgument != newState.TaskArgument) return true;
             return oldState.DuelOpponent != newState.DuelOpponent;
+        }
+
+        private bool RequiresUpdate(CharacterSkillUpdate oldState, CharacterSkillUpdate newState)
+        {
+            if (!lastSavedSkillsTime.TryGetValue(oldState.UserId, out var date))
+                return true;
+
+            if (DateTime.UtcNow - date < TimeSpan.FromSeconds(ForceSaveInterval))
+                return false; // don't save yet or we will be saving on each update.
+
+            for (var i = 0; i < oldState.Experience.Length; ++i)
+            {
+                var oldExp = oldState.Experience[i];
+                var newExp = newState.Experience[i];
+                if (oldExp != newExp) return true;
+            }
+
+            return false;
         }
 
         public void Close()

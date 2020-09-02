@@ -9,7 +9,7 @@ public class SkillStat
     public int Level;
     public decimal Experience;
 
-    private float refreshRate = 600f;
+    private float refreshRate = 60f;
     private decimal totalEarnedExperience;
     private DateTime earnedExperienceStart;
     private DateTime lastExperienceGain;
@@ -85,4 +85,5 @@ public class SkillStat
         var proc = Mathf.FloorToInt((float)(currentExp / nextLevel) * 100);
         return $"{Name} {Level} ({proc}%)";
     }
+
 }

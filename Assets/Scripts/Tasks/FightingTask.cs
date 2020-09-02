@@ -129,6 +129,9 @@ public class FightingTask : ChunkTask
         //if (player.TrainingMagic) range = player.MagicAttackRange;
 
         var range = player.GetAttackRange();
+        if (collider.radius > range)
+            range = collider.radius;
+
         var distance = Vector3.Distance(player.transform.position, target.position);
         if (distance > range)
         {

@@ -201,10 +201,10 @@ public class DungeonBossController : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
     {
-        var health = (int)(0.5f * UnityEngine.Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 100);
-        var strength = (int)(0.5f * UnityEngine.Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue));
-        var defense = (int)(0.5f * UnityEngine.Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue));
-        var attack = (int)(0.5f * UnityEngine.Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue));
+        var health = (int)(UnityEngine.Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 100);
+        var strength = (int)(UnityEngine.Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue));
+        var defense = (int)(UnityEngine.Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue));
+        var attack = (int)(UnityEngine.Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue));
 
         return new Skills
         {

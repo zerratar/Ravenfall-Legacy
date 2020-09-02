@@ -14,6 +14,7 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
     [SerializeField] private GameObject ownerDisconnected;
 
     [SerializeField] private TMPro.TextMeshProUGUI lblBuildingName;
+    [SerializeField] private TMPro.TextMeshProUGUI lblPlayerName;
 
     private PlayerController selectedPlayer;
     private TownHouseController townHouse;
@@ -34,6 +35,7 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
         townHouse = townHouseController;
         gameObject.SetActive(true);
         lblBuildingName.text = townHouse.TownHouse.Name;
+        lblPlayerName.text = townHouseController.Owner?.Name;
 
         UpdatePlayerList();
         RebuildTags();

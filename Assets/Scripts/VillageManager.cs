@@ -23,15 +23,23 @@ public class VillageManager : MonoBehaviour
         if (!townHouseManager) townHouseManager = FindObjectOfType<TownHouseManager>();
     }
 
+    internal void SetExp(long experience)
+    {
+        TownHall.SetExp(experience);
+    }
+
+
     public void SetHouses(IReadOnlyList<VillageHouseInfo> houses)
     {
         // do something
         townHouseManager.SetHouses(houses);
+        townHallManager.SetSlotCount(houses.Count);
     }
 
     public void SetSlotCount(int count)
     {
         townHouseManager.SetSlotCount(count);
+        townHallManager.SetSlotCount(count);
     }
 
     public void SetTierByLevel(int level)
@@ -47,6 +55,20 @@ public class VillageManager : MonoBehaviour
     public void SetBonus(int slot, TownHouseSlotType slotType, float bonus)
     {
         expBonus[slot] = new TownHouseExpBonus(slotType, bonus);
+    }
+
+    internal float GetTotalExpBonus()
+    {
+        var values = expBonus.Values;
+        if (values.Count == 0)
+            return 1f;
+
+        return 1f + (values.Sum(x => x.Bonus) / 100f);
+    }
+
+    public ICollection<TownHouseExpBonus> GetExpBonuses()
+    {
+        return expBonus.Values;
     }
 
     public float GetExpBonusBySkill(CombatSkill skill)

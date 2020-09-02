@@ -14,4 +14,5 @@ public interface IAttackable
     Transform Target { get; }
     Transform Transform { get; }
     decimal GetExperience();
+    float HealthBarOffset { get; }
 }

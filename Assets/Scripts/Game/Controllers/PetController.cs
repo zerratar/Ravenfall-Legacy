@@ -16,6 +16,7 @@ public class PetController : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         player = GetComponentInParent<PlayerController>();
+
     }
 
     void Update()

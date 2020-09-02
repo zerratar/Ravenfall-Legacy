@@ -19,13 +19,12 @@ public class EnemyController : MonoBehaviour, IAttackable
     [SerializeField] private Quaternion spawnRotation;
     [SerializeField] private float respawnTime = 7F;
     [SerializeField] private HealthBarManager healthBarManager;
-
+    [SerializeField] private float healthBarOffset = 0f;
     [SerializeField] private float attackRange = 2.88f;
     [SerializeField] private double experience;
 
     [SerializeField] private float attackTimer;
     [SerializeField] private float attackInterval = 0.22f;
-
 
     [SerializeField] public EquipmentStats EquipmentStats;
     [SerializeField] public Skills Stats;
@@ -46,6 +45,8 @@ public class EnemyController : MonoBehaviour, IAttackable
     public IReadOnlyDictionary<string, float> Aggro => attackerAggro;
     public bool InCombat { get; private set; }
     public string Name => name;
+
+    public float HealthBarOffset => healthBarOffset;
 
     void Start()
     {
@@ -102,11 +103,18 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             Target = null;
             InCombat = false;
-            SetDestination(transform.position);
+            //SetDestination(transform.position);
+            Lock();
             return;
         }
 
         var dist = Vector3.Distance(Transform.position, Target.position);
+        if (dist >= (attackRange + targetPlayer.GetAttackRange()))
+        {
+            Lock();
+            return;
+        }
+
         if (dist <= attackRange)
         {
             // we can reach our target
