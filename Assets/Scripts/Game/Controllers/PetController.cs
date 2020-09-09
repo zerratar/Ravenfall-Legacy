@@ -1,30 +1,41 @@
-﻿using UnityEngine;
+﻿using Assets.Scripts;
+using UnityEngine;
 
 public class PetController : MonoBehaviour
 {
     [SerializeField] private float movementSpeed = 1.0f;
     [SerializeField] private Vector3 offsetPosition;
     [SerializeField] private float sleepTimer = 3.0f;
+    [SerializeField] private GameManager gameManager;
 
     public bool isSleeping;
     public float lastPlayerMove;
 
     private Animator animator;
     private PlayerController player;
+    private Light lightSource;
 
     void Start()
     {
+        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
         animator = GetComponent<Animator>();
+        if (!animator) animator = GetComponentInChildren<Animator>();
         player = GetComponentInParent<PlayerController>();
-
+        lightSource = GetComponentInChildren<Light>();
     }
 
     void Update()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
         if (!player)
         {
             player = GetComponentInParent<PlayerController>();
             return;
+        }
+
+        if (lightSource)
+        {
+            lightSource.enabled = !gameManager.PotatoMode;
         }
 
         if (!animator) return;

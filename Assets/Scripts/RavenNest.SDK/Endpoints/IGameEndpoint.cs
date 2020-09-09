@@ -14,5 +14,7 @@ namespace RavenNest.SDK.Endpoints
         Task EndSessionAsync();
 
         Task<EventCollection> PollEventsAsync(int revision);
+
+        Task AttachPlayersAsync(string[] userids);
     }
 }

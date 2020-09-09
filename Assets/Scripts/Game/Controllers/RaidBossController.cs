@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts;
+using System;
 using System.Collections;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -65,6 +66,7 @@ public class RaidBossController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
         if (droneController)
         {
             rb.isKinematic = true;
@@ -276,10 +278,10 @@ public class RaidBossController : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
     {
-        var health = (int)(Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 1.25 * 100);
-        var strength = (int)(Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue) * 1.25);
-        var defense = (int)(Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue) * 1.25);
-        var attack = (int)(Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue) * 1.25);
+        var health = (int)(Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 1.1 * 100);
+        var strength = (int)(Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue) * 1.1);
+        var defense = (int)(Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue) * 1.1);
+        var attack = (int)(Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue) * 1.1);
 
         return new Skills
         {

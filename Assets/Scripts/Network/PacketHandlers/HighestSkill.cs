@@ -67,7 +67,7 @@ public class HighestSkill : PacketHandler<HighestSkillRequest>
             }
             else if (!anySkill)
             {
-                var secondary = player.GetSkill((int)skill);
+                var secondary = player.GetSkill(skill);
                 if (highest == null || highest.Experience < secondary.Experience)
                 {
                     p = player;

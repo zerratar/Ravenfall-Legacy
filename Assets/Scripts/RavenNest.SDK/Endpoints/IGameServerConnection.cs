@@ -8,6 +8,8 @@ namespace RavenNest.SDK.Endpoints
         event EventHandler OnReconnected;
         Task<GamePacket> SendAsync(GamePacket packet);
         Task<GamePacket> SendAsync(string id, object model);
+        void SendNoAwait(string id, object model);
+        void SendNoAwait(GamePacket packet);
 
         void Register<TPacketHandler>(string packetId, TPacketHandler packetHandler)
             where TPacketHandler : GamePacketHandler;

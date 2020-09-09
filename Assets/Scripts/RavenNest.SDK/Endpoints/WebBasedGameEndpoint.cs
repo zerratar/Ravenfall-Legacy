@@ -36,6 +36,15 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<SessionToken>(ApiRequestTarget.Game, ApiRequestType.Post);
         }
 
+        public Task AttachPlayersAsync(string[] userids)
+        {
+            return request.Create()
+                .Method("attach")
+                .AddParameter("values", userids)
+                .Build()
+                .SendAsync(ApiRequestTarget.Game, ApiRequestType.Post);
+        }
+
         public Task<bool> EndSessionAndRaidAsync(string username, bool war)
         {
             return request.Create()
@@ -61,5 +70,6 @@ namespace RavenNest.SDK.Endpoints
                 .Build()
                 .SendAsync<EventCollection>(ApiRequestTarget.Game, ApiRequestType.Get);
         }
+
     }
 }

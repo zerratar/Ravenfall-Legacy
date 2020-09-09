@@ -49,9 +49,12 @@ public class RaidManager : MonoBehaviour, IEvent
             return RaidJoinResult.NoActiveRaid;
         }
 
-        if (raidingPlayers.Contains(player))
+        lock (mutex)
         {
-            return RaidJoinResult.AlreadyJoined;
+            if (raidingPlayers.Contains(player))
+            {
+                return RaidJoinResult.AlreadyJoined;
+            }
         }
 
         var currentHealth = (float)Boss.Enemy.Stats.Health.CurrentValue;
@@ -176,6 +179,12 @@ public class RaidManager : MonoBehaviour, IEvent
             {
                 StartRaid();
             }
+        }
+
+        if (Started && players.Count == 0)
+        {
+            EndRaid(false, true);
+            return;
         }
 
         if (notifications && Boss)

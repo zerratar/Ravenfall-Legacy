@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts;
+using System;
 using UnityEngine;
 
 public class HealthBar : MonoBehaviour
@@ -12,6 +13,10 @@ public class HealthBar : MonoBehaviour
     public HealthBarManager Manager;
     private DungeonBossController dungeonBoss;
     private bool isDungeonBoss;
+    private Transform targetTransform;
+    private Vector3 oldPos;
+    private float oldProc;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -29,6 +34,7 @@ public class HealthBar : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
         if (Target == null || !((MonoBehaviour)Target))
         {
             if (Manager)
@@ -47,13 +53,10 @@ public class HealthBar : MonoBehaviour
     // This is being called whenever health is actually changed.
     public void UpdateHealth()
     {
-        if (canvasGroup)
-            canvasGroup.alpha = 1f;
-
         var stats = Target.GetStats();
         if (stats.IsDead || !Target.InCombat)
         {
-            if (canvasGroup)
+            if (canvasGroup && canvasGroup.alpha > 0f)
                 canvasGroup.alpha = 0f;
         }
 
@@ -61,16 +64,23 @@ public class HealthBar : MonoBehaviour
             ? 100f * ((float)stats.Health.CurrentValue / stats.Health.Level)
             : 0f;
 
-        var tar = (MonoBehaviour)Target;
-        if (tar)
+        if (targetTransform)
         {
-            var targetTransform = tar.transform;
-            progress.sizeDelta = new Vector2(proc, 100f);
-            transform.position = targetTransform.position + (Vector3.up * 2f) + (Target.HealthBarOffset * Vector3.up);
+            var pos = targetTransform.position + (Vector3.up * 2f) + (Target.HealthBarOffset * Vector3.up);
             if (isDungeonBoss)
             {
-                transform.position += Vector3.up * dungeonBoss.transform.localScale.x * 1.125f;
+                pos += Vector3.up * dungeonBoss.transform.localScale.x * 1.125f;
             }
+
+            if ((oldPos - pos).sqrMagnitude > 0.01)
+            {
+                transform.position = pos;
+                progress.sizeDelta = new Vector2(proc, 100f);
+            }
+
+            if (oldProc != proc)
+                oldPos = pos;
+            oldProc = proc;
         }
     }
 
@@ -80,5 +90,10 @@ public class HealthBar : MonoBehaviour
         var behaviour = (MonoBehaviour)enemy;
         this.dungeonBoss = behaviour.GetComponent<DungeonBossController>();
         this.isDungeonBoss = !!dungeonBoss;
+
+        this.targetTransform = behaviour.transform;
+
+        if (canvasGroup && canvasGroup.alpha != 1f)
+            canvasGroup.alpha = 1f;
     }
 }

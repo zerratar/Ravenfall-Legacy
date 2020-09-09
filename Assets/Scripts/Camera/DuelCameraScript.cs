@@ -83,6 +83,7 @@ public class DuelCameraScript : MonoBehaviour
     {
         lock (mutex)
         {
+            gameObject.SetActive(true);
             targetObserverTimer = targetTime;
             targets.Add(duelHandler);
         }

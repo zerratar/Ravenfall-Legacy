@@ -38,7 +38,7 @@ public class GameServer : IDisposable
     {
         server.Start(0x1000);
         server.BeginAcceptTcpClient(OnAcceptTcpClient, null);
-        game.Log("Server started");
+        game.Log("Bot Server started");
     }
 
     public GameClient Client => connectedClients.Count > 0
@@ -68,9 +68,19 @@ public class GameServer : IDisposable
 
     public void Stop()
     {
+        foreach (var client in connectedClients)
+        {
+            client.Dispose();
+        }
+
         if (server.Server.IsBound)
         {
             server.Stop();
+        }
+
+        if (!server.Server.IsBound)
+        {
+            game.Log("Bot Server stopped.");
         }
     }
 
@@ -176,14 +186,14 @@ public class GameServer : IDisposable
 
     public void OnClientConnected(TcpClient client)
     {
-        game.Log("Client connected");
+        game.Log("Bot connected");
         var gameClient = new GameClient(this, client);
         connectedClients.Add(gameClient);
     }
 
     public void OnClientDisconnected(GameClient gameClient)
     {
-        game.Log("Client disconnected");
+        game.Log("Bot disconnected");
         connectedClients.Remove(gameClient);
     }
 

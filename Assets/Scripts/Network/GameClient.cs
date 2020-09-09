@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts;
+using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Sockets;
@@ -13,6 +14,7 @@ public class GameClient : IDisposable
 
     private readonly ConcurrentQueue<string> toWrite
         = new ConcurrentQueue<string>();
+    private bool disposed;
 
     public GameClient(GameServer server, TcpClient client)
     {
@@ -30,11 +32,12 @@ public class GameClient : IDisposable
     {
         while (client.Connected)
         {
-            var msg = "";
+            if (disposed || GameCache.Instance.IsAwaitingGameRestore) 
+                return;
+            
             try
             {
-                msg = await reader.ReadLineAsync();
-                //server.Log(msg);
+                var msg = await reader.ReadLineAsync();
                 HandlePacket(msg);
             }
             catch (Exception exc)
@@ -67,6 +70,9 @@ public class GameClient : IDisposable
     {
         while (client.Connected)
         {
+            if (disposed || GameCache.Instance.IsAwaitingGameRestore) 
+                return;
+
             try
             {
                 if (toWrite.TryDequeue(out var cmd))
@@ -87,11 +93,11 @@ public class GameClient : IDisposable
         }
     }
 
-    public void SendMessage(string playerName, string message) 
+    public void SendMessage(string playerName, string message)
     {
         SendCommand(playerName, "message", message);
     }
-    public void SendMessage(PlayerController player, string message) 
+    public void SendMessage(PlayerController player, string message)
     {
         SendCommand(player.PlayerName, "message", message);
     }
@@ -132,8 +138,10 @@ public class GameClient : IDisposable
 
     public void Dispose()
     {
+        if (disposed) return;
         try
         {
+            disposed = true;
             client?.Dispose();
             reader?.Dispose();
             writer?.Dispose();

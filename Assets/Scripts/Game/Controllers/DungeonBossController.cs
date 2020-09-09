@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts;
+using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -54,6 +55,7 @@ public class DungeonBossController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
         if (destroyed)
         {
             return;
@@ -173,10 +175,6 @@ public class DungeonBossController : MonoBehaviour
             return;
         }
 
-        enemyController.Stats = GenerateCombatStats(rngLowStats ?? new Skills(), rngHighStats ?? new Skills());
-        enemyController.EquipmentStats = GenerateEquipmentStats(rngLowEq ?? new EquipmentStats(), rngHighEq ?? new EquipmentStats());
-
-
         modelObject = Instantiate(model, transform);
         modelAnimator = modelObject.GetComponent<Animator>();
         if (modelAnimator)
@@ -185,10 +183,16 @@ public class DungeonBossController : MonoBehaviour
             animator.avatar = modelAnimator.avatar;
         }
 
+        SetStats(rngLowStats, rngHighStats, rngLowEq, rngHighEq);
+    }
+
+    public void SetStats(Skills rngLowStats, Skills rngHighStats, EquipmentStats rngLowEq, EquipmentStats rngHighEq)
+    {
+        enemyController.Stats = GenerateCombatStats(rngLowStats ?? new Skills(), rngHighStats ?? new Skills());
+        enemyController.EquipmentStats = GenerateEquipmentStats(rngLowEq ?? new EquipmentStats(), rngHighEq ?? new EquipmentStats());
         transform.localScale = Vector3.one * Mathf.Max(1f, Mathf.Min(3.5f, enemyController.Stats.CombatLevel * 0.003f));
         modelObject.transform.localScale = Vector3.one;
     }
-
 
     public void Die()
     {

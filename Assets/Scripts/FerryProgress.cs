@@ -17,8 +17,10 @@ public class FerryProgress : MonoBehaviour
     private bool goingBack = false;
     private bool triggerFlip = false;
     private float tmpProgress = 0f;
+    private float updateETATimer = 0.2f;
+    private float updateETATimerInterval = 0.2f;
     private string etaFormat;
-
+    
     private void Awake()
     {
         etaFormat = txtETA.text;
@@ -33,17 +35,25 @@ public class FerryProgress : MonoBehaviour
 
     private void UpdateFerryETA()
     {
-        var leavingEta = ferry.CurrentLeaveETA;
-        var etaSeconds = leavingEta > 0 ? leavingEta : ferry.CurrentPathETA;
-        var etaMinutes = 0f;
-        if (etaSeconds >= 60f)
+        if (updateETATimer > 0)
+            updateETATimer -= Time.deltaTime;
+
+        if (updateETATimer <= 0)
         {
-            etaMinutes = etaSeconds / 60f;
-            etaSeconds = etaSeconds % 60f;
+            var leavingEta = ferry.CurrentLeaveETA;
+            var etaSeconds = leavingEta > 0 ? leavingEta : ferry.CurrentPathETA;
+            var etaMinutes = 0f;
+            if (etaSeconds >= 60f)
+            {
+                etaMinutes = etaSeconds / 60f;
+                etaSeconds = etaSeconds % 60f;
+            }
+
+            var eta = etaMinutes.ToString("00") + ":" + etaSeconds.ToString("00");
+            var state = leavingEta > 0 ? "Departing in" : "ETA";
+            txtETA.text = string.Format(etaFormat, state, eta);
+            updateETATimer = updateETATimerInterval;
         }
-        var eta = etaMinutes.ToString("00") + ":" + etaSeconds.ToString("00");
-        var state = leavingEta > 0 ? "Departing in" : "ETA";
-        txtETA.text = string.Format(etaFormat, state, eta);
     }
 
     private void UpdateFerryPosition()

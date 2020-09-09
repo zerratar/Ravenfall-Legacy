@@ -59,14 +59,35 @@ public class LoginHandler : MonoBehaviour
         }
     }
 
+    public void ActivateTempAutoLogin()
+    {
+        const string TmpAutoLoginFile = "tmpautologin.conf";
+        System.IO.File.WriteAllLines(TmpAutoLoginFile, new string[] {
+            "user=" + txtUsername.text,
+            "pass=" + txtPassword.text
+        });
+    }
     private void HandleAutoLogin()
     {
         const string AutoLoginFile = "autologin.conf";
-        if (!System.IO.File.Exists(AutoLoginFile))
+        const string TmpAutoLoginFile = "tmpautologin.conf";
+        if (!System.IO.File.Exists(AutoLoginFile) && !System.IO.File.Exists(TmpAutoLoginFile))
         {
             return;
         }
 
+        if (System.IO.File.Exists(TmpAutoLoginFile))
+        {
+            AutoLogin(TmpAutoLoginFile);
+            System.IO.File.Delete(TmpAutoLoginFile);
+            return;
+        }
+
+        AutoLogin(AutoLoginFile);
+    }
+
+    private void AutoLogin(string AutoLoginFile)
+    {
         var loginInfo = ParseAutoLoginConfig(System.IO.File.ReadAllLines(AutoLoginFile));
         if (string.IsNullOrEmpty(loginInfo.Username) || string.IsNullOrEmpty(loginInfo.Password))
         {
@@ -80,7 +101,7 @@ public class LoginHandler : MonoBehaviour
 
     private IEnumerator DelayedLogin()
     {
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(1f);
         Login();
     }
 

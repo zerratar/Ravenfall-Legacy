@@ -117,11 +117,33 @@ public class GameUpdater : MonoBehaviour
             label.text = "Initializing update.";
         }
 
-        // 1. start patcher
+        // 1. stop the bot if its running
+        var botProcess = System.Diagnostics.Process
+            .GetProcesses()
+            .FirstOrDefault(x => x.ProcessName.IndexOf("ravenbot", StringComparison.OrdinalIgnoreCase) >= 0);
+        if (botProcess != null)
+        {
+            TryStopProcess(botProcess);
+        }
+
+        // 2. start patcher
         System.Diagnostics.Process.Start("RavenWeave.exe");
 
-        // 2. stop unity game
+
+        // 3. stop unity game
         Application.Quit();
+    }
+
+    private void TryStopProcess(System.Diagnostics.Process process)
+    {
+        try
+        {
+            process.Kill();
+        }
+        catch (Exception exc)
+        {
+            UnityEngine.Debug.LogError("Failed to stop the ravenbot before running the patcher.");
+        }
     }
 
     private void CreateMetaDataFile()
@@ -234,46 +256,10 @@ public class GameUpdateHandler
                 Debug.LogWarning("Download took " + el.TotalSeconds + " seconds.");
             }
 
-            //downloadProgress?.Invoke(new DownloadProgress(fileSize, totalRead, 0));
-
-            //var req = (HttpWebRequest)HttpWebRequest.Create(downloadUrl);
-            //req.Method = HttpMethod.Get.Method;
-            //using (var res = await req.GetResponseAsync())
-            //using (var str = res.GetResponseStream())
-            //using (var fs = new FileStream(updateFile, FileMode.Create, FileAccess.Write))
-            //{
-            //    var fileSize = res.ContentLength;
-            //    var buffer = new byte[4096 * 2];
-            //    var read = 0;
-            //    var totalRead = 0;
-            //    var lastProgressChange = DateTime.Now;
-            //    downloadProgress?.Invoke(new DownloadProgress(fileSize, totalRead, 0));
-
-            //    await str.CopyToAsync(fs);
-
-            //    while ((read = await str.ReadAsync(buffer, 0, buffer.Length)) != 0)
-            //    {
-
-
-            //        await fs.WriteAsync(buffer, 0, read);
-            //        totalRead += read;
-
-            //        var elapsed = DateTime.Now - start;
-            //        var elapsedProgressChange = DateTime.Now - lastProgressChange;
-            //        if (elapsedProgressChange >= TimeSpan.FromSeconds(1))
-            //        {
-            //            downloadProgress?.Invoke(new DownloadProgress(fileSize, totalRead, totalRead / elapsed.TotalSeconds));
-            //            lastProgressChange = DateTime.Now;
-            //        }
-            //    }
-
-            //downloadProgress?.Invoke(new DownloadProgress(fileSize, totalRead, 0));
-            //}
-
             return true;
         }
         catch (Exception exc)
-        {   
+        {
             Debug.LogError("Unable to download update: " + exc.ToString());
             return false;
         }

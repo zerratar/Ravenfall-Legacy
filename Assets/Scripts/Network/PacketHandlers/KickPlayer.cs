@@ -1,4 +1,6 @@
 ﻿
+using System.Linq;
+
 public class KickPlayer : PacketHandler<Player>
 {
     public KickPlayer(
@@ -11,6 +13,39 @@ public class KickPlayer : PacketHandler<Player>
 
     public override void Handle(Player data, GameClient client)
     {
+        if (data.Username.Equals("afk", System.StringComparison.OrdinalIgnoreCase))
+        {
+            var kickedPlayerCount = 0;
+            var players = PlayerManager
+                .GetAllPlayers()
+                .Where(x => x.GetTask() == TaskType.None)
+                .ToList();
+
+            foreach (var plr in players)
+            {
+                if (plr.IdleTime < 30f)
+                    continue;
+
+                if (plr.Ferry.OnFerry)
+                    continue;
+
+                if (Game.Dungeons.JoinedDungeon(plr))
+                    continue;
+
+                if (!Game.Arena.CanJoin(plr, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+                    continue;
+
+                if (plr.Duel.InDuel)
+                    continue;
+
+                ++kickedPlayerCount;
+                Game.RemovePlayer(plr);
+            }
+
+            client.SendCommand(data.Username, "kick_success", $"{kickedPlayerCount} players was kicked from the game.");
+            return;
+        }
+
         var player = PlayerManager.GetPlayer(data);
         if (player)
         {

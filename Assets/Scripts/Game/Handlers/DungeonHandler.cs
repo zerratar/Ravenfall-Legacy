@@ -7,7 +7,7 @@ public class DungeonHandler : MonoBehaviour
 
     private Vector3 previousPosition;
     private EnemyController enemyTarget;
-
+    
     public bool InDungeon { get; private set; }
 
     private void Start()

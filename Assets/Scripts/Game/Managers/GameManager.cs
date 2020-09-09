@@ -1,15 +1,18 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Assets.Scripts;
 using Newtonsoft.Json;
 using RavenNest.Models;
 using RavenNest.SDK;
 using RavenNest.SDK.Endpoints;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 using RavenNestPlayer = RavenNest.Models.Player;
 
@@ -41,7 +44,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
     [SerializeField] private PlayerLogoManager playerLogoManager;
     [SerializeField] private ServerNotificationManager serverNotificationManager;
+    [SerializeField] private LoginHandler loginHandler;
 
+    [SerializeField] private GameObject gameReloadMessage;
 
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
     = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
@@ -107,15 +112,34 @@ public class GameManager : MonoBehaviour, IGameManager
     private TextMeshProUGUI exitViewText;
     private string exitViewTextFormat;
     private DateTime lastGameEventRecevied;
+    private bool isReloadingScene;
+    private float savingPlayersTime = 0f;
+    private float savingPlayersTimeDuration = 60000f;
+    private float uptimeSaveTimerInterval = 5f;
+    private float uptimeSaveTimer = 5f;
+
+    private bool potatoMode;
+    private bool forcedPotatoMode;
 
     public Permissions Permissions { get; set; } = new Permissions();
     public bool LogoCensor { get; set; }
+    public bool PotatoMode
+    {
+        get => forcedPotatoMode || potatoMode;
+        set => potatoMode = value;
+    }
 
+    public bool AutoPotatoMode { get; set; }
     public bool IsLoaded => loadingStates.All(x => x.Value == LoadingState.Loaded);
 
     // Start is called before the first frame update   
     void Start()
     {
+        AutoPotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_AutoPotatoMode, 0) > 0;
+        PotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_PotatoMode, 0) > 0;
+
+        gameReloadMessage.SetActive(false);
+        if (!loginHandler) loginHandler = FindObjectOfType<LoginHandler>();
         if (!dropEventManager) dropEventManager = GetComponent<DropEventManager>();
         if (!ferryProgress) ferryProgress = FindObjectOfType<FerryProgress>();
         if (!gameCamera) gameCamera = FindObjectOfType<GameCamera>();
@@ -183,10 +207,103 @@ public class GameManager : MonoBehaviour, IGameManager
         return null;
     }
 
+    public void ReloadGame()
+    {
+        if (!loginHandler) return;
+        isReloadingScene = true;
+        loginHandler.ActivateTempAutoLogin();
+        var gc = GameCache.Instance;
+
+        gc.SetPlayersState(this.playerManager.GetAllPlayers());
+        gc.BuildState();
+
+        ravenNest.Stream.Close();
+        Server.Stop();
+
+        gameReloadMessage.SetActive(true);
+
+        SceneManager.LoadScene(1);
+    }
+
+    private IEnumerator RestoreGameState(GameCacheState state)
+    {
+        if (state.Players == null || state.Players.Count == 0)
+            yield break;
+
+        try
+        {
+            ravenNest.Game.AttachPlayersAsync(state.Players.Select(x => x.StreamUser.UserId).ToArray());
+        }
+        catch (Exception exc)
+        {
+            LogError("Failed to attach players on restore. " + exc.ToString());
+        }
+
+        yield return new WaitForSeconds(0.5f);
+
+        foreach (var player in state.Players)
+        {
+            var instance = SpawnPlayer(player.Definition, player.StreamUser);
+            if (!instance || instance == null)
+            {
+                continue;
+            }
+
+            yield return new WaitForEndOfFrame();
+
+            instance.Lock();
+
+            //instance.Stats.Health.CurrentValue = player.Health;
+
+            yield return new WaitForEndOfFrame();
+
+            instance.Inventory.EquipAll();
+
+            yield return new WaitForEndOfFrame();
+
+            if (!player.ResetPosition)
+            {
+                instance.transform.position = player.Position;
+                instance.Island = islandManager.FindPlayerIsland(instance);
+            }
+
+            yield return new WaitForEndOfFrame();
+
+            if (player.TrainingTaskArg != null && player.TrainingTaskArg.Length > 0)
+            {
+                instance.SetTaskArguments(player.TrainingTaskArg);
+                instance.GotoClosest(player.TrainingTask);
+            }
+
+            yield return new WaitForEndOfFrame();
+        }
+    }
+
     // Update is called once per frame
     void Update()
     {
+        if (isReloadingScene)
+        {
+            return;
+        }
+
+        if (AutoPotatoMode)
+        {
+            forcedPotatoMode = !Application.isFocused;
+        }
+
+        if (Time.frameCount % 30 == 0)
+        {
+            System.GC.Collect();
+        }
+
         UpdateIntegrityCheck();
+
+        if (Input.GetKeyDown(KeyCode.F5))
+        {
+            ReloadGame();
+            return;
+        }
 
         if (UpdateExitView())
         {
@@ -210,7 +327,24 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        SaveGameStat("uptime", Time.realtimeSinceStartup);
+        if (ravenNest.Authenticated && ravenNest.SessionStarted && ravenNest.Stream.IsReady)
+        {
+            var reloadState = GameCache.Instance.GetReloadState();
+            if (reloadState != null)
+            {
+                StartCoroutine(RestoreGameState(reloadState));
+                return;
+            }
+        }
+
+        if (uptimeSaveTimer > 0)
+            uptimeSaveTimer -= Time.deltaTime;
+
+        if (uptimeSaveTimer <= 0)
+        {
+            uptimeSaveTimer = uptimeSaveTimerInterval;
+            SaveGameStat("uptime", Time.realtimeSinceStartup);
+        }
 
         UpdateExpBoostTimer();
 
@@ -324,6 +458,16 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public void RemovePlayer(PlayerController player)
     {
+        if (player.Dungeon.InDungeon)
+        {
+            dungeonManager.Remove(player);
+        }
+
+        if (player.Raid.InRaid)
+        {
+            raidManager.Leave(player);
+        }
+
         player.Kicked = true;
         playerList.RemovePlayer(player);
         playerManager.Remove(player);
@@ -492,6 +636,11 @@ public class GameManager : MonoBehaviour, IGameManager
             saveTimer = saveFrequency;
             await SavePlayersAsync();
         }
+
+        if (savingPlayersTime > 0)
+        {
+            savingPlayersTime -= Time.deltaTime;
+        }
     }
 
     private async void StopRavenNestSession()
@@ -508,24 +657,28 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         try
         {
-            Debug.Log("Saving all players...");
+            if (savingPlayersTime > 0) return;
             var players = playerManager.GetAllPlayers().ToList();
             var failedToSave = new List<PlayerController>();
+            if (players.Count == 0) return;
+            Debug.Log($"Saving {players.Count} players...");
             try
             {
+                savingPlayersTime = savingPlayersTimeDuration;
                 // Save using websocket
                 foreach (var player in players)
                 {
-                    if (await ravenNest.Stream.SavePlayerSkillsAsync(player))
-                    {
-                        player.SavedSucceseful();
-                    }
-                    else
-                    {
-                        player.FailedToSave();
-                        failedToSave.Add(player);
-                    }
-                    await Task.Delay(100);
+                    await ravenNest.SavePlayerAsync(player);
+                    //if (await ravenNest.SavePlayerAsync(player))
+                    //{
+                    //    player.SavedSucceseful();
+                    //}
+                    //else
+                    //{
+                    //    player.FailedToSave();
+                    //    failedToSave.Add(player);
+                    //}
+                    await Task.Delay(10);
                 }
             }
             catch (Exception exc)
@@ -533,19 +686,22 @@ public class GameManager : MonoBehaviour, IGameManager
                 Debug.LogError(exc.ToString());
             }
 
-            if (failedToSave.Count > 0)
-            {
-                await SavePlayersUsingHTTP(failedToSave);
-            }
+            //if (failedToSave.Count > 0)
+            //{
+            //    await SavePlayersUsingHTTP(failedToSave);
+            //}
         }
         catch (Exception exc)
         {
             Debug.LogError(exc.ToString());
         }
+
+        savingPlayersTime = 0;
     }
 
     private async Task SavePlayersUsingHTTP(IReadOnlyList<PlayerController> players)
     {
+        Debug.LogWarning($"Fallbacking to HTTP Endpoint Saving {players.Count} players...");
         var states = players
             .Select(x => x.BuildPlayerState())
             .ToArray();
@@ -730,23 +886,23 @@ public class GameManager : MonoBehaviour, IGameManager
     private void SaveEmptyGameStats()
     {
         SaveGameStat("online-player-count", 0);
-        SaveGameStat("last-joined-name", "");
-        SaveGameStat("last-level-up-name", "");
-        SaveGameStat("last-level-up-skill", "");
+        //SaveGameStat("last-joined-name", "");
+        //SaveGameStat("last-level-up-name", "");
+        //SaveGameStat("last-level-up-skill", "");
     }
 
     public void PlayerJoined(PlayerController player)
     {
         if (!player) return;
-        SaveGameStat("last-joined-name", player.PlayerName);
+        //SaveGameStat("last-joined-name", player.PlayerName);
         SaveGameStat("online-player-count", playerManager.GetPlayerCount());
     }
 
     public void PlayerLevelUp(PlayerController player, SkillStat skill)
     {
         if (!player) return;
-        SaveGameStat("last-level-up-name", player.PlayerName);
-        SaveGameStat("last-level-up-skill", skill?.ToString());
+        //SaveGameStat("last-level-up-name", player.PlayerName);
+        //SaveGameStat("last-level-up-skill", skill?.ToString());
     }
 
     private void SaveGameStat<T>(string name, T value)

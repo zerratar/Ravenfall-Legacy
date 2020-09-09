@@ -119,7 +119,7 @@ public static class GameMath
     public static float CalculateHouseExpBonus(SkillStat skill)
     {
         // up to 50% exp bonus
-        return (skill.CurrentValue / (float)MaxLevel) * 50f;
+        return (skill.Level / (float)MaxLevel) * 50f;
     }
 
     public static SkillStat GetSkillByHouseType(Skills stats, TownHouseSlotType type)

@@ -5,6 +5,9 @@ public class DayNightCycle : MonoBehaviour
 {
     private static readonly int atmosphereThicknessID = Shader.PropertyToID("_AtmosphereThickness");
 
+
+    [SerializeField] public GameManager gameManager;
+
     [SerializeField] public Light DayLight;
     [SerializeField] public Light NightLight;
 
@@ -37,6 +40,7 @@ public class DayNightCycle : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
         skyLight = RenderSettings.sun;
         skyboxMaterial = RenderSettings.skybox;
     }
@@ -45,6 +49,7 @@ public class DayNightCycle : MonoBehaviour
     void Update()
     {
         TotalTime += Time.deltaTime;
+
         var cycle = TotalTime / CycleLength;
         var cycleProgress = cycle - Mathf.Floor(cycle);
 
@@ -63,5 +68,15 @@ public class DayNightCycle : MonoBehaviour
         skyLight.transform.rotation = Quaternion.Lerp(NightLight.transform.rotation, DayLight.transform.rotation, skylightLerpValue);
 
         skyboxMaterial.SetFloat(atmosphereThicknessID, Mathf.Lerp(NightAtmosphere, DayAtmosphere, skylightLerpValue));
+
+        if (gameManager.PotatoMode)
+        {
+            TotalTime = 0;
+            skyLight.shadows = LightShadows.None;
+        }
+        else
+        {
+            skyLight.shadows = LightShadows.Soft;
+        }
     }
 }

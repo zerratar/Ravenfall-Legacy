@@ -93,10 +93,19 @@ namespace RavenNest.SDK
 
         public async Task<bool> SavePlayerAsync(PlayerController player)
         {
-            if (!SessionStarted) return false;
-            if (!Stream.IsReady) return false;
-            var result = await Stream.SavePlayerStateAsync(player);
-            return await Stream.SavePlayerSkillsAsync(player) || result;
+            if (!player || player == null)
+            {
+                return false;
+            }
+
+            if (!SessionStarted)
+            {
+                UnityEngine.Debug.LogWarning("Trying to save player " + player.PlayerName + " but session has not been started.");
+                return false;
+            }
+            var saveResult = await Stream.SavePlayerSkillsAsync(player);
+            await Stream.SavePlayerStateAsync(player);
+            return saveResult;
         }
 
         public async Task<bool> LoginAsync(string username, string password)

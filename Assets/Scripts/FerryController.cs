@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -57,6 +58,7 @@ public class FerryController : MonoBehaviour
     // Update is called once per frame
     private void LateUpdate()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
         UpdateAnimation();
     }
 

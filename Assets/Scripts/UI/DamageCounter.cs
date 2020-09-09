@@ -1,13 +1,17 @@
-﻿using TMPro;
+﻿using Assets.Scripts;
+using TMPro;
 using UnityEngine;
 
 public class DamageCounter : MonoBehaviour
 {
+    private static readonly Vector3 OutOfScreen = new Vector3(0, -999999, 0);
+
     [SerializeField] private TextMeshProUGUI labelBack;
     [SerializeField] private TextMeshProUGUI labelFront;
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private float FadeoutOffsetY = 0f;
     [SerializeField] private UnityEngine.UI.Image background;
+
 
     private int damage = 0;
     private float fadeoutTimer = 2f;
@@ -40,15 +44,26 @@ public class DamageCounter : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
+        if (this.transform.position.y - 0.0001 <= OutOfScreen.y)
+        {
+            return;
+        }
         if (!Target || fadeoutTimer <= 0f)
         {
-            Manager.Return(this);
+            ReturnToPool();
             return;
         }
 
         transform.LookAt(Camera.main.transform);
 
         FadeOut();
+    }
+
+    private void ReturnToPool()
+    {
+        this.transform.position = OutOfScreen;
+        Manager.Return(this);
     }
 
     public void Activate(Transform target, int damage)
@@ -62,7 +77,8 @@ public class DamageCounter : MonoBehaviour
 
         canvasGroup.alpha = 1;
 
-        gameObject.SetActive(true);
+        if (!gameObject.activeSelf)
+            gameObject.SetActive(true);
     }
 
     private void UpdateDamageText()
@@ -75,9 +91,19 @@ public class DamageCounter : MonoBehaviour
     {
         fadeoutTimer -= Time.deltaTime;
 
+        if (fadeoutTimer <= 0f)
+        {
+            fadeoutTimer = FadeoutDuration;
+            FadeoutOffsetY = 0;
+            if (canvasGroup.alpha > 0)
+                canvasGroup.alpha = 0;
+            ReturnToPool();
+            return;
+        }
+
         var fadeoutProgress = fadeoutTimer / FadeoutDuration;
         var proc = 1f - fadeoutProgress;
-        
+
         if (fadeoutTimer <= FadeoutDuration / 2f)
         {
             canvasGroup.alpha = fadeoutTimer / (FadeoutDuration / 2f);
@@ -96,12 +122,5 @@ public class DamageCounter : MonoBehaviour
             background.color = color;
         }
 
-        if (fadeoutTimer <= 0f)
-        {
-            fadeoutTimer = FadeoutDuration;
-            FadeoutOffsetY = 0;
-            canvasGroup.alpha = 0;
-            Manager.Return(this);
-        }
     }
 }

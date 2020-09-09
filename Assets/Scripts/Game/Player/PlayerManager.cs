@@ -99,7 +99,10 @@ public class PlayerManager : MonoBehaviour
 
     public IReadOnlyList<PlayerController> GetAllPlayers()
     {
-        return activePlayers;
+        lock (mutex)
+        {
+            return activePlayers.ToList();
+        }
     }
 
     public PlayerController Spawn(
@@ -108,32 +111,39 @@ public class PlayerManager : MonoBehaviour
         Player streamUser,
         StreamRaidInfo raidInfo)
     {
-        if (activePlayers.Any(x => x.PlayerName == playerDefinition.Name))
+
+        lock (mutex)
         {
-            return null; // player is already in game
+            if (activePlayers.Any(x => x.PlayerName == playerDefinition.Name))
+            {
+                return null; // player is already in game
+            }
+
+            var player = Instantiate(playerControllerPrefab);
+            if (!player)
+            {
+                Debug.LogError("Player Prefab not found!!!");
+                return null;
+            }
+
+            player.transform.position = position;
+
+            return Add(player.GetComponent<PlayerController>(), playerDefinition, streamUser, raidInfo);
         }
-
-        var player = Instantiate(playerControllerPrefab);
-        if (!player)
-        {
-            Debug.LogError("Player Prefab not found!!!");
-            return null;
-        }
-
-        player.transform.position = position;
-
-        return Add(player.GetComponent<PlayerController>(), playerDefinition, streamUser, raidInfo);
     }
 
     internal IReadOnlyList<PlayerController> GetAllModerators()
     {
-        return activePlayers.Where(x => x.IsModerator).ToList();
+        lock (mutex)
+        {
+            return activePlayers.Where(x => x.IsModerator).ToList();
+        }
     }
 
     public PlayerController GetPlayer(Player taskPlayer)
     {
-        var player = GetPlayerByName(taskPlayer.Username);
-        return player ? player : GetPlayerByUserId(taskPlayer.UserId);
+        var player = GetPlayerByUserId(taskPlayer.UserId);
+        return player ? player : GetPlayerByName(taskPlayer.Username);
     }
 
     public PlayerController GetPlayerByUserId(string userId)
@@ -150,8 +160,7 @@ public class PlayerManager : MonoBehaviour
         playerName = playerName.StartsWith("@") ? playerName.Substring(1) : playerName;
         lock (mutex)
         {
-            return activePlayers.FirstOrDefault(x =>
-            x.PlayerName.Equals(playerName, StringComparison.InvariantCultureIgnoreCase));
+            return activePlayers.FirstOrDefault(x => x.PlayerName.Equals(playerName, StringComparison.InvariantCultureIgnoreCase));
         }
     }
 

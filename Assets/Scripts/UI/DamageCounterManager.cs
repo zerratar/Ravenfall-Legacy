@@ -44,7 +44,6 @@ public class DamageCounterManager : MonoBehaviour
 
     internal void Return(DamageCounter damageCounter)
     {
-        damageCounter.gameObject.SetActive(false);
         availableDamageCounters.Push(damageCounter);
     }
 }

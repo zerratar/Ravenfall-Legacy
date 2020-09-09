@@ -23,7 +23,7 @@ public class Inventory : MonoBehaviour
         equipped = new List<Item>();
         player = GetComponent<PlayerController>();
         equipment = GetComponent<PlayerEquipment>();
-    }    
+    }
 
     public void Remove(Item item, decimal amount, bool removeEquipped = false)
     {
@@ -131,6 +131,31 @@ public class Inventory : MonoBehaviour
         return backpack.Where(x => x.Item.Category == itemCategory && x.Item.Type == type).ToList();
     }
 
+    internal IReadOnlyList<InventoryItem> GetInventoryItems()
+    {
+        var i = new List<InventoryItem>();
+        foreach (var eq in equipped)
+        {
+            i.Add(new InventoryItem
+            {
+                Amount = 1,
+                Equipped = true,
+                Id = Guid.NewGuid(),
+                ItemId = eq.Id
+            });
+        }
+        foreach (var eq in backpack)
+        {
+            i.Add(new InventoryItem
+            {
+                Amount = (long)eq.Amount,
+                Equipped = false,
+                Id = Guid.NewGuid(),
+                ItemId = eq.Item.Id
+            });
+        }
+        return i;
+    }
     internal IReadOnlyList<GameInventoryItem> GetInventoryItems(Guid itemId)
     {
         return backpack.Where(x => x.Item.Id == itemId).ToList();

@@ -5,5 +5,8 @@
     Strength = 2,
     Health = 3,
     Magic = 4,
-    Ranged = 5
+    Ranged = 5,
+
+
+    None = -1
 }

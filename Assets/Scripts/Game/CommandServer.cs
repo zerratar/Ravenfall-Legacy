@@ -36,6 +36,11 @@ public class CommandServer : MonoBehaviour
         server.Register<ValueItem>("value_item");
         server.Register<CraftRequirement>("req_item");
 
+        server.Register<MaxMultiplier>("multiplier");
+        server.Register<ReloadGame>("reload");
+        server.Register<SetPet>("set_pet");
+        server.Register<GetPet>("get_pet");
+
         server.Register<PlayerStats>("player_stats");
         server.Register<PlayerResources>("player_resources");
         server.Register<HighestSkill>("highest_skill");

@@ -15,12 +15,15 @@ public class SkillStat
     private DateTime lastExperienceGain;
 
     public SkillStat() { }
-    public SkillStat(string name, decimal exp)
+    public SkillStat(
+        string name, 
+        decimal exp)
     {
         CurrentValue = GameMath.ExperienceToLevel(exp);
         Level = GameMath.ExperienceToLevel(exp);
         Experience = exp;
         Name = name;
+
     }
 
     public void SetExp(decimal exp)

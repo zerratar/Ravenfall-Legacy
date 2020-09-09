@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Assets.Scripts;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +18,7 @@ public class TreeController : MonoBehaviour
     [SerializeField] private int maxHealth = 4;
 
     [SerializeField] private float treeShakeTime = 1f;
-    [SerializeField] private float treeShakeTimer = 1f;
+    [SerializeField] private float treeShakeTimer = 0;
     [SerializeField] private float treeShakeRange = 2f;
 
     private Quaternion startRotation;
@@ -38,7 +39,6 @@ public class TreeController : MonoBehaviour
         startRotation = transform.rotation;
     }
 
-
     void Awake()
     {
         if (stump) stump.SetActive(false);
@@ -50,6 +50,7 @@ public class TreeController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
         if (treeShakeTimer > 0)
         {
             treeShakeTimer -= Time.deltaTime;

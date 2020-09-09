@@ -9,6 +9,11 @@ public class FreeCamera : MonoBehaviour
     [SerializeField] private float lookSpeed = 0.25f;
     [SerializeField] private GameManager gameManager;
 
+    [SerializeField] private float slowDownMovementScale = 0.25f;
+    [SerializeField] private float slowDownLookScale = 0.35f;
+
+    private float moveSpeedModifierDelta = 5f;
+    private float moveSpeedModifier;
     private Vector3 lastMousePosition;
     private KeyCode[] positionKeys = {
         KeyCode.Alpha0, KeyCode.Alpha1, KeyCode.Alpha2,KeyCode.Alpha3,KeyCode.Alpha4,
@@ -20,7 +25,7 @@ public class FreeCamera : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        //Cursor.lockState = CursorLockMode.Confined;
+        //Cursor.lockState = CursorLockMode.Confined;        
         Cursor.lockState = CursorLockMode.None;
         lastMousePosition = Input.mousePosition;
         LoadPositionData();
@@ -37,20 +42,38 @@ public class FreeCamera : MonoBehaviour
             return;
         }
 
-        var newMousePosition = Input.mousePosition;
-        if (Input.GetMouseButton(1)
-            || Input.GetKey(KeyCode.LeftControl)
-            || Input.GetKey(KeyCode.RightControl)
-            || Input.GetKey(KeyCode.LeftAlt)
-            || Input.GetKey(KeyCode.RightAlt))
+        if (Input.GetKeyDown(KeyCode.KeypadPlus))
         {
-            var mouseDeltaPosition = newMousePosition - lastMousePosition;
-            mouseDeltaPosition = new Vector3(-mouseDeltaPosition.y * lookSpeed, mouseDeltaPosition.x * lookSpeed, 0);
-            mouseDeltaPosition = new Vector3(transform.eulerAngles.x + mouseDeltaPosition.x, transform.eulerAngles.y + mouseDeltaPosition.y, 0);
-            transform.eulerAngles = mouseDeltaPosition;
+            moveSpeedModifier += moveSpeedModifierDelta;
+        }
+        else if (Input.GetKeyDown(KeyCode.KeypadMinus))
+        {
+            moveSpeedModifier -= moveSpeedModifierDelta;
+        }
+        else if (Input.GetKeyDown(KeyCode.KeypadMultiply)
+            || Input.GetKeyDown(KeyCode.LeftCurlyBracket)
+            || Input.GetKeyDown(KeyCode.LeftBracket))
+        {
+            moveSpeedModifier = 0;
         }
 
         var shiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        var slowDown = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+        var mouseSpeed = slowDown ? slowDownLookScale : 1f;
+        var newMousePosition = Input.mousePosition;
+        if (Input.GetMouseButton(1)
+            || Input.GetKey(KeyCode.LeftControl)
+            || Input.GetKey(KeyCode.RightControl))
+        /*
+            || Input.GetKey(KeyCode.LeftAlt)
+            || Input.GetKey(KeyCode.RightAlt)             
+         */
+        {
+            var mouseDeltaPosition = newMousePosition - lastMousePosition;
+            mouseDeltaPosition = new Vector3(-mouseDeltaPosition.y * lookSpeed * mouseSpeed, mouseDeltaPosition.x * lookSpeed * mouseSpeed, 0);
+            mouseDeltaPosition = new Vector3(transform.eulerAngles.x + mouseDeltaPosition.x, transform.eulerAngles.y + mouseDeltaPosition.y, 0);
+            transform.eulerAngles = mouseDeltaPosition;
+        }
 
         if (shiftDown)
         {
@@ -62,15 +85,22 @@ public class FreeCamera : MonoBehaviour
             return;
         }
 
+
+        var speedUp = slowDown ? slowDownMovementScale : shiftDown ? 5f : 1f;
+        var speed = GetMoveSpeed() * speedUp;
         lastMousePosition = newMousePosition;
-        var speedUp = shiftDown ? 5f : 1f;
         var vertical = Input.GetAxis("Vertical");
         var horizontal = Input.GetAxis("Horizontal");
-        var moveUp = Input.GetKey(KeyCode.E) ? transform.up * Time.deltaTime * moveSpeed * speedUp : Vector3.zero;
-        var moveDown = Input.GetKey(KeyCode.Q) ? transform.up * -1 * Time.deltaTime * moveSpeed * speedUp : Vector3.zero;
-        var moveSides = transform.right * horizontal * Time.deltaTime * moveSpeed * speedUp;
-        var moveForward = transform.forward * vertical * Time.deltaTime * moveSpeed * speedUp;
+        var moveUp = Input.GetKey(KeyCode.E) ? transform.up * Time.deltaTime * speed : Vector3.zero;
+        var moveDown = Input.GetKey(KeyCode.Q) ? transform.up * -1 * Time.deltaTime * speed : Vector3.zero;
+        var moveSides = transform.right * horizontal * Time.deltaTime * speed;
+        var moveForward = transform.forward * vertical * Time.deltaTime * speed;
         transform.position += moveForward + moveSides + moveUp + moveDown;
+    }
+
+    private float GetMoveSpeed()
+    {
+        return this.moveSpeed + moveSpeedModifier;
     }
 
     private bool GotoStoredPosition()

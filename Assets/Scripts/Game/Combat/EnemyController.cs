@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -78,6 +79,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     void Update()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
         if (!HandleFightBack || !InCombat || !Target)
         {
             return;

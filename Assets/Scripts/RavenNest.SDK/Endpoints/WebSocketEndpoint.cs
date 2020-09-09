@@ -81,21 +81,22 @@ namespace RavenNest.SDK.Endpoints
                 }
             }
 
-            var response = await connection.SendAsync("update_character_skills", characterUpdate);
-            if (response != null && response.TryGetValue<bool>(out var result) && result)
-            {
-                lastSavedSkills[player.UserId] = characterUpdate;
-                lastSavedSkillsTime[player.UserId] = DateTime.UtcNow;
-                return true;
-            }
-
-            return false;
+            connection.SendNoAwait("update_character_skills", characterUpdate);
+            //if (response != null && response.TryGetValue<bool>(out var result) && result)
+            //{
+            //    lastSavedSkills[player.UserId] = characterUpdate;
+            //    lastSavedSkillsTime[player.UserId] = DateTime.UtcNow;
+            //    return true;
+            //}
+            lastSavedSkills[player.UserId] = characterUpdate;
+            lastSavedSkillsTime[player.UserId] = DateTime.UtcNow;
+            return true;
         }
 
 
         public async Task<bool> SavePlayerStateAsync(PlayerController player)
         {
-            if (IntegrityCheck.IsCompromised)
+            if (player == null || !player)
             {
                 return false;
             }
@@ -122,18 +123,22 @@ namespace RavenNest.SDK.Endpoints
                 }
             }
 
-            var response = await connection.SendAsync("update_character_state", characterUpdate);
-            if (response != null && response.TryGetValue<bool>(out var result))
-            {
-                if (result)
-                {
-                    lastSavedState[player.UserId] = characterUpdate;
-                    lastSavedStateTime[player.UserId] = DateTime.UtcNow;
-                    return true;
-                }
-            }
+            connection.SendNoAwait("update_character_state", characterUpdate);
 
-            return false;
+            //var response = await connection.SendAsync("update_character_state", characterUpdate);
+            //if (response != null && response.TryGetValue<bool>(out var result))
+            //{
+            //    if (result)
+            //    {
+            //        lastSavedState[player.UserId] = characterUpdate;
+            //        lastSavedStateTime[player.UserId] = DateTime.UtcNow;
+            //        return true;
+            //    }
+            //}
+
+            lastSavedState[player.UserId] = characterUpdate;
+            lastSavedStateTime[player.UserId] = DateTime.UtcNow;
+            return true;
         }
 
         private bool RequiresUpdate(CharacterStateUpdate oldState, CharacterStateUpdate newState)

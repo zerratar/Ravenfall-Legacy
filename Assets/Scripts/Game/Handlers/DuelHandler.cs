@@ -144,7 +144,6 @@ public class DuelHandler : MonoBehaviour
         Opponent.Duel.StartDuel();
         StartDuel();
 
-
         isDuelCameraOwner = duelCamera.AddTarget(this);
     }
 
@@ -201,6 +200,7 @@ public class DuelHandler : MonoBehaviour
     {
         state = DuelState.Started;
         duelRequestTimer = 0f;
+        player.Stats.Health.Reset();
     }
 
     private void Reset()

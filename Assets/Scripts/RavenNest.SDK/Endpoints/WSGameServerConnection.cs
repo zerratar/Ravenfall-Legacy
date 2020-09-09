@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Assets.Scripts;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
@@ -57,17 +58,7 @@ namespace RavenNest.SDK.Endpoints
         {
             get
             {
-                if (!connected)
-                {
-                    return false;
-                }
-
                 if (webSocket == null)
-                {
-                    return false;
-                }
-
-                if (webSocket.CloseStatus != null)
                 {
                     return false;
                 }
@@ -75,6 +66,16 @@ namespace RavenNest.SDK.Endpoints
                 if (webSocket.State == WebSocketState.Open)
                 {
                     return true;
+                }
+
+                if (webSocket.CloseStatus != null)
+                {
+                    return false;
+                }
+
+                if (!connected)
+                {
+                    return false;
                 }
 
                 return false;
@@ -163,6 +164,7 @@ namespace RavenNest.SDK.Endpoints
         private async Task<bool> SendDataAsync()
         {
             if (!IsReady) return false;
+            if (GameCache.Instance.IsAwaitingGameRestore) return false;
             if (sendQueue.TryPeek(out var packet))
             {
                 try
@@ -187,6 +189,7 @@ namespace RavenNest.SDK.Endpoints
 
         private async Task<bool> ReceiveDataAsync()
         {
+            if (GameCache.Instance.IsAwaitingGameRestore) return false;
             if (!IsReady)
             {
                 //if (!await CreateAsync())
@@ -347,10 +350,25 @@ namespace RavenNest.SDK.Endpoints
 
             return null;
         }
+        public void SendNoAwait(GamePacket packet)
+        {
+            sendQueue.Enqueue(packet);
+        }
 
         public Task<GamePacket> SendAsync(string id, object model)
         {
             return SendAsync(new GamePacket()
+            {
+                CorrelationId = Guid.NewGuid(),
+                Data = model,
+                Id = id,
+                Type = model.GetType().Name
+            });
+        }
+
+        public void SendNoAwait(string id, object model)
+        {
+            SendNoAwait(new GamePacket()
             {
                 CorrelationId = Guid.NewGuid(),
                 Data = model,

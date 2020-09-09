@@ -37,6 +37,12 @@ public class SellItem : PacketHandler<TradeItemRequest>
             return;
         }
 
+        if (item.Amount >= long.MaxValue)
+        {
+            client.SendCommand(player.PlayerName, "item_trade_result", $"You cannot sell {item.Amount}x {item.Item.Name}. Max is {long.MaxValue}.");
+            return;
+        }
+
         var result = await Game.RavenNest.Marketplace.SellItemAsync(player.UserId, item.Item.Id, item.Amount, item.PricePerItem);
         switch (result.State)
         {

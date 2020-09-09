@@ -21,7 +21,7 @@ public class PlayerTask : PacketHandler
             var player = PlayerManager.GetPlayer(task.Player);
             if (player == null || !player)
             {
-                packet.Client.SendCommand(task.Player.Username, "task_failed", "You are not playing, use !join to play.");
+                packet.Client.SendCommand(task.Player.Username, "message", "You are not playing, use !join to play.");
                 return;
             }
 

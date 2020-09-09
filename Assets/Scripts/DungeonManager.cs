@@ -70,7 +70,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         lock (mutex)
         {
-            if (deadPlayers.Count == joinedPlayers.Count)
+            if (deadPlayers.Count == joinedPlayers.Count || joinedPlayers.All(x => !x || x == null))
             {
                 EndDungeonFailed();
                 return;
@@ -87,8 +87,10 @@ public class DungeonManager : MonoBehaviour, IEvent
             nextDungeonTimer = 0f;
 
             SelectRandomDungeon();
-            SpawnDungeonBoss();
-            AnnounceDungeon();
+            if (SpawnDungeonBoss())
+            {
+                AnnounceDungeon();
+            }
         }
         else
         {
@@ -142,6 +144,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             if (joinedPlayers.Contains(player)) return;
             joinedPlayers.Add(player);
+
+            AdjustBossStats();
         }
     }
 
@@ -167,12 +171,12 @@ public class DungeonManager : MonoBehaviour, IEvent
         ResetDungeon();
     }
 
-    private void SpawnDungeonBoss()
+    private bool SpawnDungeonBoss()
     {
         if (!dungeonBossPrefab)
         {
             Debug.LogError("NO DUNGEON BOSS PREFAB SET!!!");
-            return;
+            return false;
         }
 
         var spawnPosition = Dungeon.BossSpawnPoint;
@@ -187,8 +191,25 @@ public class DungeonManager : MonoBehaviour, IEvent
         var bossRoom = Dungeon.BossRoom;
         bossRoom.Boss = Instantiate(dungeonBossPrefab, spawnPosition, Quaternion.identity).GetComponent<DungeonBossController>();
         bossRoom.Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
+        return true;
     }
 
+    private void AdjustBossStats()
+    {
+        lock (mutex)
+        {
+            var bossRoom = Dungeon.BossRoom;
+            if (bossRoom.Boss)
+            {
+                var highestStats = joinedPlayers.Max(x => x.Stats);
+                var lowestStats = joinedPlayers.Min(x => x.Stats);
+                var rngLowEq = joinedPlayers.Min(x => x.EquipmentStats);
+                var rngHighEq = joinedPlayers.Max(x => x.EquipmentStats);
+
+                bossRoom.Boss.SetStats(lowestStats, highestStats * 0.75f, rngLowEq, rngHighEq);
+            }
+        }
+    }
 
     private void RewardPlayers()
     {

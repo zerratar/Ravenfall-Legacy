@@ -161,7 +161,7 @@ public class Chunk : MonoBehaviour, IChunk
             task = this.origin.secondaryTask;
         }
 
-        public Transform GetTaskTarget(PlayerController player) => task.GetTarget(player);
+        public Transform GetTaskTarget(PlayerController player) => task?.GetTarget(player);
         public bool IsTaskCompleted(PlayerController player, Transform target) => task == null || task.IsCompleted(player, target);
         public bool CanExecuteTask(PlayerController player, Transform target, out TaskExecutionStatus reason)
         {

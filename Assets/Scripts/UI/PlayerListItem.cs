@@ -87,32 +87,31 @@ public class PlayerListItem : MonoBehaviour
                 ? combatNames[skillIndex]
                 : skillNames[skillIndex];
 
-            skillName = ToSentenceCase(skillName);
+            //skillName = ToSentenceCase(skillName);
 
             var skill = isCombatSkill
                 ? TargetPlayer.GetCombatSkill(skillIndex)
                 : TargetPlayer.GetSkill(skillIndex);
 
-            SetText(lblSkillLevel, $"{skillName}: <b>{skill.Level}");
+            SetText(lblSkillLevel, skillName + ": <b>" + skill.Level);
 
             UpdateSkillProgressBar(skill);
         }
 
-        SetText(lblCombatLevel, $"Lv: <b>{TargetPlayer.Stats.CombatLevel}");
+        SetText(lblCombatLevel, "Lv: <b>" + TargetPlayer.Stats.CombatLevel);
 
         UpdateHealthBar(TargetPlayer.Stats.Health);
 
         if (TargetPlayer)
         {
-            var color = TargetPlayer.IsUpToDate ? default : Color.red;
-            SetText(lblPlayerName, TargetPlayer.PlayerName.ToLower(), color);
+            if (!TargetPlayer.IsUpToDate)
+            {
+                SetText(lblPlayerName, TargetPlayer.PlayerNameLowerCase, Color.red);
+                return;
+            }
+
+            SetText(lblPlayerName, TargetPlayer.PlayerNameLowerCase);
         }
-    }
-
-
-    private string ToSentenceCase(string str)
-    {
-        return char.ToUpper(str[0]) + str.Substring(1).ToLower();
     }
 
     private void UpdateSkillProgressBar(SkillStat skill)
@@ -144,7 +143,7 @@ public class PlayerListItem : MonoBehaviour
 
         SetText(lblSkillLevel, "");
         SetText(lblCombatLevel, "");
-        SetText(lblPlayerName, player.PlayerName.ToLower());
+        SetText(lblPlayerName, player.PlayerNameLowerCase);
 
         TargetPlayer = player;
 
@@ -176,12 +175,12 @@ public class PlayerListItem : MonoBehaviour
             isCombatSkill = false;
             isRotatingSkill = false;
 
-            var si = TargetPlayer.GetCombatTypeFromArgs(taskArgs);
+            var si = TargetPlayer.CombatType;
             if (si != -1)
             {
                 isCombatSkill = true;
-                var combatSkillIndex = skillIndex = TargetPlayer.GetCombatTypeFromArgs(taskArgs);
-                if (combatSkillIndex == 3)
+                skillIndex = si;
+                if (si == 3)
                 {
                     skillIndex = 0;
                     isRotatingSkill = true;
@@ -189,7 +188,7 @@ public class PlayerListItem : MonoBehaviour
             }
             else
             {
-                skillIndex = TargetPlayer.GetSkillTypeFromArgs(taskArgs);
+                skillIndex = TargetPlayer.SkillType;
             }
         }
 
@@ -205,7 +204,17 @@ public class PlayerListItem : MonoBehaviour
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SetText(TextMeshProUGUI label, string value, Color color = default)
+    private static void SetText(TextMeshProUGUI label, string value)
+    {
+        if (label.text != value)
+        {
+            label.text = value;
+        }
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SetText(TextMeshProUGUI label, string value, Color color)
     {
         if (color == default) color = Color.white;
         var newValue = color != Color.white ? "<color=#" + ColorUtility.ToHtmlStringRGB(color) + ">" + value : value;

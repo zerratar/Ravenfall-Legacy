@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts;
+using System;
 using System.Collections;
 using System.Linq;
 using UnityEngine;
@@ -46,6 +47,7 @@ public class WalkyWalkyScript : MonoBehaviour
     }
     private void Update()
     {
+        if (GameCache.Instance.IsAwaitingGameRestore) return;
         var moving = navMeshAgent && navMeshAgent.enabled && hasMoveAnimation && navMeshAgent.remainingDistance > minDestinationDistance;
         if (moveAnimation != null)
         {

@@ -125,6 +125,7 @@ public class TwitchEventManager : MonoBehaviour
         PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_LASTCHEER_AMOUNT, CurrentBoost.LastCheerAmount);
         PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_CHEER_POT, CurrentBoost.CheerPot);
         PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_ACTIVE, CurrentBoost.Active ? 1 : 0);
+        saveTimer = 5f;
     }
 
     public void OnCheer(TwitchCheer cheer)

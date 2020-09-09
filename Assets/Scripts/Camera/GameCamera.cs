@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using FlatKit;
 using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
 
 public class GameCamera : MonoBehaviour
 {
@@ -17,6 +18,11 @@ public class GameCamera : MonoBehaviour
     [SerializeField] private GameObject arena;
 
     [SerializeField] private PlayerDetails playerObserver;
+
+    [SerializeField] private float potatoModeFarClipDistance = 500f;
+    private PostProcessLayer postProcessingLayer;
+    private Camera camera;
+    private float farClipDistance;
 
     private float observeNextPlayerTimer = ObserverJumpTimer;
     private int observedPlayerIndex;
@@ -38,6 +44,9 @@ public class GameCamera : MonoBehaviour
         if (!focusTargetCamera) focusTargetCamera = GetComponent<FocusTargetCamera>();
 
         if (!playerObserver) playerObserver = gameManager.ObservedPlayerDetails;
+        postProcessingLayer = GetComponent<PostProcessLayer>();
+        camera = GetComponent<Camera>();
+        farClipDistance = camera.farClipPlane;
     }
 
     // Update is called once per frame
@@ -49,6 +58,19 @@ public class GameCamera : MonoBehaviour
             !gameManager.IsLoaded)
         {
             return;
+        }
+
+        if (gameManager.PotatoMode)
+        {
+            camera.farClipPlane = potatoModeFarClipDistance;
+            if (postProcessingLayer)
+                postProcessingLayer.enabled = false;
+        }
+        else
+        {
+            camera.farClipPlane = farClipDistance;
+            if (postProcessingLayer)
+                postProcessingLayer.enabled = true;
         }
 
         try

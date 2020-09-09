@@ -19,6 +19,9 @@ public class LookAt : MonoBehaviour
     {
         if (!Target) return;
 
-        rectTransform.LookAt(Target);
+        if (Time.frameCount % 10 == 0)
+        {
+            rectTransform.LookAt(Target);
+        }
     }
 }
