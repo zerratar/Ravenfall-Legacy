@@ -14,6 +14,7 @@ public class TownHouseManager : MonoBehaviour
     [SerializeField] private Material selectedMaterial;
     [SerializeField] private BuildSlotIconsManager buildSlotIcons;
     [SerializeField] private TownHouse[] buildableTownHouses;
+    [SerializeField] private TownHallInfoManager info;
 
     private TownHouseSlot selectedHouseSlot;
 
@@ -21,9 +22,9 @@ public class TownHouseManager : MonoBehaviour
 
     void Start()
     {
+        if (!info) info = FindObjectOfType<TownHallInfoManager>();
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
         slots = GetComponentsInChildren<TownHouseSlot>();
-
         SetSlotCount(0);
     }
 
@@ -88,14 +89,20 @@ public class TownHouseManager : MonoBehaviour
 
     internal void SetOwner(TownHouseSlot activeSlot, PlayerController newOwner)
     {
+        if (slots == null || slots.Length == 0)
+            return;
+
         if (newOwner != null && newOwner)
         {
             var owningSlot = slots.FirstOrDefault(x => x.Owner?.UserId == newOwner.UserId);
-            if (owningSlot)
+            if (owningSlot != null && owningSlot)
             {
                 owningSlot.SetOwner(null);
             }
         }
+
+        if (!activeSlot || activeSlot == null)
+            return;
 
         activeSlot.SetOwner(newOwner);
     }
@@ -139,12 +146,12 @@ public class TownHouseManager : MonoBehaviour
     internal void SetHouses(IReadOnlyList<VillageHouseInfo> houses)
     {
         SetSlotCount(houses.Count);
-
         for (var i = 0; i < houses.Count; ++i)
         {
             var house = houses[i];
             var prefab = buildableTownHouses.FirstOrDefault(x => x.Type == (TownHouseSlotType)house.Type);
             slots[i].SetHouse(house, prefab);
+            SetHouseType(slots[i], slots[i].SlotType, slots[i].House?.TownHouse);
         }
     }
 
@@ -171,11 +178,22 @@ public class TownHouseManager : MonoBehaviour
 
     private void SetHouseType(TownHouseSlot slot, TownHouseSlotType type, TownHouse house)
     {
-        slot.SetHouse(new VillageHouseInfo()
+        try
         {
-            Slot = slot.Slot,
-            Type = (int)type
-        }, house);
+            slot.SetHouse(new VillageHouseInfo()
+            {
+                Slot = slot.Slot,
+                Type = (int)type
+            }, house);
+
+            if (slots != null && slots.Length > 0)
+            {
+                info.UsedSlots = slots.Count(x => x != null && x.SlotType != TownHouseSlotType.Empty && x.SlotType != TownHouseSlotType.Undefined);
+            }
+        }
+        catch
+        {
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -188,7 +206,7 @@ public class TownHouseManager : MonoBehaviour
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsPointerOverUIElement()
+    public static bool IsPointerOverUIElement()
     {
         return IsPointerOverUIElement(GetEventSystemRaycastResults());
     }

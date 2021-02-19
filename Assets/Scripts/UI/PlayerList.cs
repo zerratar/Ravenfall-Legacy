@@ -11,7 +11,6 @@ public class PlayerList : MonoBehaviour
     [SerializeField] private GameObject playerListItem; // prefabs
     //[SerializeField] private RectTransform contentPanel; // prefabs
     [SerializeField] private GameObject scrollRect; // prefabs
-    [SerializeField] private float itemHeight = 40;
     [SerializeField] private float stickyTime = 2f;
 
     private readonly List<PlayerListItem> instantiatedPlayerListItems
@@ -19,7 +18,8 @@ public class PlayerList : MonoBehaviour
 
     private readonly object mutex = new object();
 
-    private bool showExpRate = false;
+    private ExpProgressHelpStates expHelpState;
+
     private float stickyTimer = 0f;
 
     private ScrollRect scroll;
@@ -27,6 +27,18 @@ public class PlayerList : MonoBehaviour
     private GameCamera gameCamera;
     private float scrollPosition = 0f;
     private float scrollSpeed = 0.1f;
+
+    public float Scale
+    {
+        get
+        {
+            return scrollRect.transform.localScale.x;
+        }
+        set
+        {
+            scrollRect.transform.localScale = new Vector3(value, value, 1);
+        }
+    }
 
     public float Bottom
     {
@@ -107,7 +119,7 @@ public class PlayerList : MonoBehaviour
 
         var item = Instantiate(playerListItem, transform);
         var listItem = item.GetComponent<PlayerListItem>();
-        listItem.ExpPerHourVisible = showExpRate;
+        listItem.ExpProgressHelpState = expHelpState;
         listItem.UpdatePlayerInfo(player, gameCamera);
         lock (mutex) instantiatedPlayerListItems.Add(listItem);
     }
@@ -165,10 +177,10 @@ public class PlayerList : MonoBehaviour
     {
         lock (mutex)
         {
-            showExpRate = !showExpRate;
+            expHelpState = (ExpProgressHelpStates)((((int)expHelpState) + 1) % 4);
             foreach (var item in instantiatedPlayerListItems)
             {
-                item.ExpPerHourVisible = showExpRate;
+                item.ExpProgressHelpState = expHelpState;
             }
         }
     }

@@ -9,11 +9,11 @@ public class DamageCounterManager : MonoBehaviour
     private readonly Stack<DamageCounter> availableDamageCounters
         = new Stack<DamageCounter>();
 
-    public DamageCounter Add(Transform target, int damage)
+    public DamageCounter Add(Transform target, int damage, bool isHeal = false)
     {
         var dc = GetAvailableDamageCounter();
 
-        dc.Activate(target, damage);
+        dc.Activate(target, damage, isHeal);
 
         var collider = target.GetComponent<CapsuleCollider>();
         if (collider)

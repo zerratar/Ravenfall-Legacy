@@ -22,6 +22,8 @@ public class FreeCamera : MonoBehaviour
 
     private StoredPosition[] storedPositions = new StoredPosition[10];
 
+    public bool SlowMotion = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -58,7 +60,7 @@ public class FreeCamera : MonoBehaviour
         }
 
         var shiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-        var slowDown = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+        var slowDown = SlowMotion || Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
         var mouseSpeed = slowDown ? slowDownLookScale : 1f;
         var newMousePosition = Input.mousePosition;
         if (Input.GetMouseButton(1)

@@ -143,10 +143,10 @@ public class FerryHandler : MonoBehaviour
 
         if (onFerry)
         {
-            gameManager.Server?.Client?.SendCommand(
-                player.PlayerName,
-                "ferry_success",
-                $"You have disembarked the ferry.");
+            //gameManager.Server?.Client?.SendCommand(
+            //    player.PlayerName,
+            //    "ferry_success",
+            //    $"You have disembarked the ferry.");
         }
     }
 

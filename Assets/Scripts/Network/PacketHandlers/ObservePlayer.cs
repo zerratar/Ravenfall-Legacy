@@ -2,7 +2,7 @@
 {
     public ObservePlayer(
     GameManager game,
-    GameServer server,
+    RavenBotConnection server,
     PlayerManager playerManager)
     : base(game, server, playerManager)
     {
@@ -13,6 +13,7 @@
         var player = PlayerManager.GetPlayer(data);
         if (!player)
         {
+            client.SendFormat(data.DisplayName, "Player is not currently in the game.");
             return;
         }
 

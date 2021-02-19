@@ -2,7 +2,7 @@
 {
     public ToggleHelmetVisibility(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager) : base(game, server, playerManager)
     {
     }
@@ -12,7 +12,7 @@
         var targetPlayer = PlayerManager.GetPlayer(data);
         if (!targetPlayer)
         {
-            client.SendCommand(data.Username, "toggle_helmet", "You are not currently playing. Use !join to start playing!");
+            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 

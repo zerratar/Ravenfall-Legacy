@@ -4,7 +4,7 @@ public class DungeonJoin : PacketHandler<Player>
 {
     public DungeonJoin(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
     : base(game, server, playerManager)
     {
@@ -17,22 +17,19 @@ public class DungeonJoin : PacketHandler<Player>
             var player = PlayerManager.GetPlayer(data);
             if (player == null)
             {
-                client.SendMessage(data.Username,
-                    "You are not currently playing, use the !join to start playing.");
+                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             if (Game.StreamRaid.IsWar)
             {
-                client.SendMessage(data.Username,
-                    "Dungeon is unavailable during wars. Please wait for it to be over.");
+                client.SendMessage(data.Username, "Dungeon is unavailable during wars. Please wait for it to be over.");
                 return;
             }
 
             if (player.Ferry.OnFerry)
             {
-                client.SendMessage(data.Username,
-                    "You cannot join the dungeon while on the ferry. Please !disembark before you can join.");
+                client.SendMessage(data.Username, "You cannot join the dungeon while on the ferry. Please !disembark before you can join.");
                 return;
             }
 

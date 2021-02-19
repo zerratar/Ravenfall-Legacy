@@ -10,7 +10,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     [SerializeField] private DungeonNotifications dungeonNotifications;
     [SerializeField] private float minTimeBetweenDungeons = 900;
     [SerializeField] private float maxTimeBetweenDungeons = 2700;
-    [SerializeField] private float timeForDungeonStart = 180;
+    [SerializeField] private float timeForDungeonStart = 120;
     [SerializeField] private float notificationUpdate = 30;
 
     private readonly object mutex = new object();
@@ -34,6 +34,10 @@ public class DungeonManager : MonoBehaviour, IEvent
     public bool Started => state == DungeonState.Started;
 
     public DungeonController Dungeon => currentDungeon;
+
+    public bool IsBusy { get; internal set; }
+
+    private bool yieldSpecialReward = false;
 
     // Start is called before the first frame update
     void Start()
@@ -146,6 +150,8 @@ public class DungeonManager : MonoBehaviour, IEvent
             joinedPlayers.Add(player);
 
             AdjustBossStats();
+
+            gameManager.EventTriggerSystem.SendInput(player.UserId, "dungeon");
         }
     }
 
@@ -180,8 +186,6 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
 
         var spawnPosition = Dungeon.BossSpawnPoint;
-
-        //var players = GetPlayers();
         var players = gameManager.Players.GetAllPlayers();
         var highestStats = players.Max(x => x.Stats);
         var lowestStats = players.Min(x => x.Stats);
@@ -189,8 +193,9 @@ public class DungeonManager : MonoBehaviour, IEvent
         var rngHighEq = players.Max(x => x.EquipmentStats);
 
         var bossRoom = Dungeon.BossRoom;
-        bossRoom.Boss = Instantiate(dungeonBossPrefab, spawnPosition, Quaternion.identity).GetComponent<DungeonBossController>();
-        bossRoom.Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
+        bossRoom.Boss = Instantiate(dungeonBossPrefab, spawnPosition, Quaternion.identity)
+            .GetComponent<DungeonBossController>();
+        bossRoom.Boss.Create(lowestStats, highestStats * 0.75f, rngLowEq, rngHighEq * 0.5f);
         return true;
     }
 
@@ -206,7 +211,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                 var rngLowEq = joinedPlayers.Min(x => x.EquipmentStats);
                 var rngHighEq = joinedPlayers.Max(x => x.EquipmentStats);
 
-                bossRoom.Boss.SetStats(lowestStats, highestStats * 0.75f, rngLowEq, rngHighEq);
+                bossRoom.Boss.SetStats(lowestStats, highestStats * 0.75f, rngLowEq, rngHighEq * 0.33f);
             }
         }
     }
@@ -217,7 +222,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             foreach (var player in joinedPlayers)
             {
-                Dungeon.RewardPlayer(player);
+                Dungeon.RewardPlayer(player, yieldSpecialReward);
             }
         }
     }
@@ -230,11 +235,14 @@ public class DungeonManager : MonoBehaviour, IEvent
         if (!currentDungeon) return;
         currentDungeon.ResetRooms();
         currentDungeon = null;
+
         notificationTimer = notificationUpdate;
         dungeonStartTimer = timeForDungeonStart;
 
         gameManager.Camera.DisableDungeonCamera();
         ScheduleNextDungeon();
+
+        Dungeon.BossRoom.Boss = null;
 
         gameManager.Events.End(this);
     }
@@ -259,7 +267,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         var secondsLeft = timeLeft.Seconds;
         var minutesLeft = timeLeft.Minutes;
 
-        gameManager.Server.Client.SendMessage("", $"{minutesLeft:00}m{secondsLeft:00}s until dungeon starts.");
+        gameManager.RavenBot.Broadcast("{minutes}m{seconds}s until dungeon starts.", minutesLeft.ToString("00"), secondsLeft.ToString("00"));
         notificationTimer = notificationUpdate;
     }
 
@@ -283,6 +291,8 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void StartDungeon()
     {
+        Notifications.Hide();
+
         lock (mutex)
         {
             if (!joinedPlayers.Any())
@@ -297,12 +307,16 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void AnnounceDungeon()
     {
+        var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
+        var evt = ioc.Resolve<EventTriggerSystem>();
+        evt.TriggerEvent("dungeon", TimeSpan.FromSeconds(10));
+
         Notifications.SetTimeout(dungeonStartTimer);
         Notifications.SetLevel(Dungeon.BossRoom.Boss.Enemy.Stats.CombatLevel);
         Notifications.ShowDungeonActivated();
 
         // 1. announce dungeon event
-        gameManager.Server.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
+        gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
     }
 
     private void SelectRandomDungeon()

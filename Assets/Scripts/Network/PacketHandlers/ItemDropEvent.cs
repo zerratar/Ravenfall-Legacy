@@ -4,19 +4,17 @@ public class ItemDropEvent : PacketHandler<TradeItemRequest>
 {
     public ItemDropEvent(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
     }
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override void Handle(TradeItemRequest data, GameClient client)
     {
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendCommand(
-                data.Player.Username, "message",
-                "You're not playing, Mr. Broadcaster.");
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -26,17 +24,11 @@ public class ItemDropEvent : PacketHandler<TradeItemRequest>
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
-        if (!ioc)
-        {
-            client.SendCommand(player.PlayerName, "message", "Crap. Error occured. Dunno why.");
-            return;
-        }
-
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery);
         if (item == null)
         {
-            client.SendCommand(player.PlayerName, "message", "Could not find an item matching the query '" + data.ItemQuery + "'");
+            //client.SendMessage(player.PlayerName, "Could not find an item matching the query '{query}'", data.ItemQuery);
             return;
         }
 

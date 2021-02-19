@@ -9,9 +9,12 @@ public class HealthBar : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
 
     public IAttackable Target;
-
+    public float YOffset = 0.2f;
     public HealthBarManager Manager;
+    private CapsuleCollider capsuleCollider;
     private DungeonBossController dungeonBoss;
+    private PlayerController player;
+    private bool isPlayer;
     private bool isDungeonBoss;
     private Transform targetTransform;
     private Vector3 oldPos;
@@ -59,6 +62,11 @@ public class HealthBar : MonoBehaviour
             if (canvasGroup && canvasGroup.alpha > 0f)
                 canvasGroup.alpha = 0f;
         }
+        else
+        {
+            if (canvasGroup && canvasGroup.alpha <= 0f)
+                canvasGroup.alpha = 1f;
+        }
 
         var proc = stats.Health.CurrentValue > 0
             ? 100f * ((float)stats.Health.CurrentValue / stats.Health.Level)
@@ -66,10 +74,20 @@ public class HealthBar : MonoBehaviour
 
         if (targetTransform)
         {
-            var pos = targetTransform.position + (Vector3.up * 2f) + (Target.HealthBarOffset * Vector3.up);
-            if (isDungeonBoss)
+            Vector3 pos = Vector3.zero;
+            if (isPlayer && capsuleCollider)
             {
-                pos += Vector3.up * dungeonBoss.transform.localScale.x * 1.125f;
+                pos = targetTransform.position
+                    + (Vector3.up * (capsuleCollider.height * targetTransform.localScale.y))
+                    + (Vector3.up * YOffset);
+            }
+            else
+            {
+                pos = targetTransform.position + (Vector3.up * 2f) + (Target.HealthBarOffset * Vector3.up);
+                if (isDungeonBoss)
+                {
+                    pos += Vector3.up * dungeonBoss.transform.localScale.x * 1.125f;
+                }
             }
 
             if ((oldPos - pos).sqrMagnitude > 0.01)
@@ -84,11 +102,14 @@ public class HealthBar : MonoBehaviour
         }
     }
 
-    internal void SetTarget(IAttackable enemy)
+    internal void SetTarget(IAttackable target)
     {
-        Target = enemy;
-        var behaviour = (MonoBehaviour)enemy;
+        Target = target;
+        var behaviour = (MonoBehaviour)target;
+        this.capsuleCollider = behaviour.GetComponent<CapsuleCollider>();
         this.dungeonBoss = behaviour.GetComponent<DungeonBossController>();
+        this.player = behaviour.GetComponent<PlayerController>();
+        this.isPlayer = !!player;
         this.isDungeonBoss = !!dungeonBoss;
 
         this.targetTransform = behaviour.transform;

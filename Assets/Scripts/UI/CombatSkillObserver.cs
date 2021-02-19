@@ -9,29 +9,42 @@ public class CombatSkillObserver : MonoBehaviour
     [SerializeField] private StatObserver health;
     [SerializeField] private StatObserver magic;
     [SerializeField] private StatObserver ranged;
+    [SerializeField] private StatObserver healing;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
+    private float nextUpdate = 0f;
+    private float updateInterval = 1f;
 
-    // Update is called once per frame
-    void Update()
+    public void Update()
     {
         if (!observedPlayer)
-        {
             return;
+
+        if (nextUpdate > 0)
+        {
+            nextUpdate -= Time.deltaTime;
+            if (nextUpdate <= 0)
+            {
+                UpdateStats();
+                nextUpdate = updateInterval;
+            }
         }
     }
 
     public void Observe(PlayerController player)
     {
         observedPlayer = player;
-        attack.Observe(player?.Stats?.Attack);
-        defense.Observe(player?.Stats?.Defense);
-        strength.Observe(player?.Stats?.Strength);
-        health.Observe(player?.Stats?.Health);
-        magic.Observe(player?.Stats?.Magic);
-        ranged.Observe(player?.Stats?.Ranged);
+        UpdateStats();
+        nextUpdate = 0.1f;
+    }
+
+    private void UpdateStats()
+    {
+        attack.Observe(observedPlayer?.Stats?.Attack);
+        defense.Observe(observedPlayer?.Stats?.Defense);
+        strength.Observe(observedPlayer?.Stats?.Strength);
+        health.Observe(observedPlayer?.Stats?.Health);
+        magic.Observe(observedPlayer?.Stats?.Magic);
+        ranged.Observe(observedPlayer?.Stats?.Ranged);
+        healing?.Observe(observedPlayer?.Stats?.Healing);
     }
 }

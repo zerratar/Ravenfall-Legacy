@@ -3,66 +3,118 @@ using UnityEngine;
 
 public static class GameMath
 {
-    public const int MaxLevel = 170;
+    public const int MaxLevel = 999;
+    public readonly static double[] ExperienceArray = new double[MaxLevel];
 
-    private static decimal[] ExperienceArray = new decimal[MaxLevel];
+    #region old stuff
+    public const int OldMaxLevel = 170;
+    public const float MaxExpBonusPerSlot = 50f;
+    private static decimal[] OldExperienceArray = new decimal[OldMaxLevel];
+    public const decimal ExpScale = 1m;
+    #endregion
 
     static GameMath()
     {
+        #region old stuff
         var totalExp = 0L;
-        for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
+        for (var levelIndex = 0; levelIndex < OldMaxLevel; levelIndex++)
         {
             var level = levelIndex + 1M;
             var levelExp = (long)(level + (decimal)(300D * Math.Pow(2D, (double)(level / 7M))));
             totalExp += levelExp;
-            ExperienceArray[levelIndex] = (decimal)((totalExp & 0xffffffffc) / 4d);
+            OldExperienceArray[levelIndex] = (decimal)((totalExp & 0xffffffffc) / 4d);
+        }
+        #endregion
+
+        for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
+        {
+            var level = levelIndex + 1M;
+            var expForLevel = Math.Floor(300D * Math.Pow(2D, (double)(level / 7M)));
+            ExperienceArray[levelIndex] = Math.Round(expForLevel / 4d, 0, MidpointRounding.ToEven);
         }
     }
 
+    public static float CalculateHealing(IAttackable attacker, IAttackable defender)
+    {
+        var attackerStats = attacker.GetStats();
+        var attackerEq = attacker.GetEquipmentStats();
+
+        var defenderDamageSkill = 1;
+        var attackerDamageSkill = attackerStats.Healing.CurrentValue;
+        var attackerAimSkill = attackerStats.Healing.CurrentValue;
+        var attackerPower = attackerEq.MagicPower;
+        var attackerAim = attackerEq.MagicAim;
+
+        return CalculateDamage(attacker, defender, Skills.Zero, EquipmentStats.Zero, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+    }
+
     public static float CalculateMagicDamage(IAttackable attacker, IAttackable defender)
-    {
-        var lvl = attacker.GetStats().Magic.Level;
-        return CalculateCastDamage(attacker, defender, lvl, MagicPower(lvl / 10));
-    }
-
-    public static float CalculateRangedDamage(IAttackable attacker, IAttackable defender)
-    {
-        var rangeLvl = attacker.GetStats().Ranged.Level;
-        return CalculateCastDamage(attacker, defender, rangeLvl, ArrowPower(rangeLvl / 10));
-    }
-
-    public static float CalculateDamage(IAttackable attacker, IAttackable defender)
     {
         var attackerStats = attacker.GetStats();
         var defenderStats = defender.GetStats();
         var attackerEq = attacker.GetEquipmentStats();
         var defenderEq = defender.GetEquipmentStats();
 
-        var burst = false;
-        var superhuman = false;
-        var ultimate = false;
-        var bonus = StyleBonus(attacker, 2);
-        var max = MaxHit(attackerStats.Strength.CurrentValue, attackerEq.WeaponPower, burst, superhuman, ultimate, bonus);
+        var defenderDamageSkill = defenderStats.Magic.CurrentValue;
+        var attackerDamageSkill = attackerStats.Magic.CurrentValue;
+        var attackerAimSkill = attackerStats.Magic.CurrentValue;
+        var attackerPower = attackerEq.MagicPower;
+        var attackerAim = attackerEq.MagicAim;
 
-        var attackPrayers = AddPrayers(burst, superhuman, ultimate);
+        return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+    }
 
-        var newAtt = (int)(attackPrayers * (attackerStats.Attack.CurrentValue / 0.8D)
-                     + (UnityEngine.Random.Range(0, 4) == 0
-                         ? attackerEq.WeaponPower
-                         : attackerEq.WeaponAim / 2.5d)
-                     + (attacker.GetCombatStyle() == 1 && UnityEngine.Random.Range(0, 2) == 0 ? 4 : 0)
-                     + (UnityEngine.Random.Range(0, 100) <= 10 ? (attackerStats.Strength.CurrentValue / 5D) : 0)
-                     + (StyleBonus(attacker, 0) * 2));
+    public static float CalculateRangedDamage(IAttackable attacker, IAttackable defender)
+    {
+        var attackerStats = attacker.GetStats();
+        var defenderStats = defender.GetStats();
+        var attackerEq = attacker.GetEquipmentStats();
+        var defenderEq = defender.GetEquipmentStats();
 
-        var defensePrayers = AddPrayers(burst, superhuman, ultimate);
+        var defenderDamageSkill = defenderStats.Ranged.CurrentValue;
+        var attackerDamageSkill = attackerStats.Ranged.CurrentValue;
+        var attackerAimSkill = attackerStats.Ranged.CurrentValue;
+        var attackerPower = attackerEq.RangedPower;
+        var attackerAim = attackerEq.RangedAim;
 
-        var newDef = (int)(defensePrayers
-                     * ((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderStats.Defense.CurrentValue) * 1.1D)
+        return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+    }
+
+    public static float CalculateMeleeDamage(IAttackable attacker, IAttackable defender)
+    {
+        var attackerStats = attacker.GetStats();
+        var defenderStats = defender.GetStats();
+        var attackerEq = attacker.GetEquipmentStats();
+        var defenderEq = defender.GetEquipmentStats();
+
+        var defenderDamageSkill = defenderStats.Strength.CurrentValue;
+        var attackerDamageSkill = attackerStats.Strength.CurrentValue;
+        var attackerAimSkill = attackerStats.Attack.CurrentValue;
+        var attackerPower = attackerEq.WeaponPower;
+        var attackerAim = attackerEq.WeaponAim;
+
+        return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+    }
+
+    private static float CalculateDamage(
+        IAttackable attacker,
+        IAttackable defender,
+        Skills defenderStats,
+        EquipmentStats defenderEq,
+        int defenderDamageSkill,
+        int attackerDamageSkill,
+        int attackerAimSkill,
+        int attackerPower,
+        int attackerAim,
+        int minHitChance = 40)
+    {
+        var max = MaxHit(attackerDamageSkill, attackerPower);
+        var newAtt = (int)((attackerAimSkill / 0.8D) + attackerAim + (attackerDamageSkill / 5D) + 10);
+        var newDef = (int)(((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderStats.Defense.CurrentValue) * 1.1D)
                      + ((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderEq.ArmorPower) / 2.75D)
-                     + (defenderStats.Strength.CurrentValue / 4D) + (StyleBonus(defender, 1) * 2));
+                     + (defenderDamageSkill / 4D) + (StyleBonus(defender, 1) * 2));
 
         var hitChance = UnityEngine.Random.Range(0, 100) + (newAtt - newDef);
-
         if (attacker is EnemyController)
         {
             hitChance -= 5;
@@ -73,20 +125,18 @@ public static class GameMath
             hitChance += 20;
         }
 
-        if (hitChance > (defender is EnemyController ? 40 : 50))
+        var reqHitChance = Mathf.Min(minHitChance, (defender is EnemyController ? 40 : 50));
+        if (hitChance > reqHitChance)
         {
             var newMax = 0;
             var maxProb = 5;
             var nearMaxProp = 7;
             var avProb = 73;
-            var lowHit = 10;
+            var defenseRange = (int)Math.Round(defenderEq.ArmorPower * 0.02d, MidpointRounding.AwayFromZero);
 
-            var shiftValue = (int)Math.Round(defenderEq.ArmorPower * 0.02d, MidpointRounding.AwayFromZero);
-
-            maxProb -= shiftValue;
-            nearMaxProp -= (int)Math.Round(shiftValue * 1.5, MidpointRounding.AwayFromZero);
-            avProb -= (int)Math.Round(shiftValue * 2.0, MidpointRounding.AwayFromZero);
-            lowHit += (int)Math.Round(shiftValue * 3.5, MidpointRounding.AwayFromZero);
+            maxProb -= defenseRange;
+            nearMaxProp -= (int)Math.Round(defenseRange * 1.5, MidpointRounding.AwayFromZero);
+            avProb -= (int)Math.Round(defenseRange * 2.0, MidpointRounding.AwayFromZero);
 
             var hitRange = UnityEngine.Random.Range(0, 100);
             if (hitRange >= (100 - maxProb))
@@ -108,9 +158,6 @@ public static class GameMath
 
             newMax = (int)Math.Round(max - max * 0.5D);
             return (int)Math.Round(Math.Abs((newMax - (newMax * (UnityEngine.Random.Range(0, 50) * 0.01D)))), MidpointRounding.AwayFromZero);
-
-
-            //return (int)Math.Round(Math.Abs(newMax - newMax * (UnityEngine.Random.Range(0, 95) * 0.01D)), MidpointRounding.AwayFromZero);
         }
 
         return 0;
@@ -119,7 +166,7 @@ public static class GameMath
     public static float CalculateHouseExpBonus(SkillStat skill)
     {
         // up to 50% exp bonus
-        return (skill.Level / (float)MaxLevel) * 50f;
+        return (skill.Level / (float)OldMaxLevel) * MaxExpBonusPerSlot;
     }
 
     public static SkillStat GetSkillByHouseType(Skills stats, TownHouseSlotType type)
@@ -134,13 +181,10 @@ public static class GameMath
             case TownHouseSlotType.Slayer: return stats.Slayer;
             case TownHouseSlotType.Sailing: return stats.Sailing;
             case TownHouseSlotType.Fishing: return stats.Fishing;
-
-#warning Use combat level instead of health for combat based town house slots
             case TownHouseSlotType.Melee: return stats.Health;
-
+            case TownHouseSlotType.Healing: return stats.Healing;
             case TownHouseSlotType.Magic: return stats.Magic;
             case TownHouseSlotType.Ranged: return stats.Ranged;
-
             default: return stats.Mining;
         }
     }
@@ -165,6 +209,7 @@ public static class GameMath
     {
         switch (skill)
         {
+            case CombatSkill.Healing: return TownHouseSlotType.Healing;
             case CombatSkill.Ranged: return TownHouseSlotType.Ranged;
             case CombatSkill.Magic: return TownHouseSlotType.Magic;
             default: return TownHouseSlotType.Melee;
@@ -172,7 +217,7 @@ public static class GameMath
     }
     internal static float CalculateExplosionDamage(IAttackable enemy, IAttackable player, float scale = 0.75f)
     {
-        return CalculateDamage(enemy, player) * scale;
+        return CalculateMeleeDamage(enemy, player) * scale;
     }
 
     private static float CalculateCastDamage(IAttackable attacker, IAttackable defender, int level, double power)
@@ -188,23 +233,13 @@ public static class GameMath
             return 0;
         }
 
-        int max = (int)(((double)rangeLvl * 0.15D) + 0.85D + power);
-        int peak = (int)(((double)max / 100D) * (double)armourRatio);
-        int dip = (int)(((double)peak / 3D) * 2D);
-        return RandomWeighted(0, dip, peak, max);
+        int max = (int)((rangeLvl * 0.15D) + 0.85D + power);
+        int peak = (int)(max / 100D * armourRatio);
+        int dip = (int)(peak / 3D * 2D);
+        return RandomWeighted(dip, peak, max);
     }
 
-    private static double ArrowPower(int arrowId)
-    {
-        return arrowId * 0.5f;
-    }
-
-    private static double MagicPower(int arrowId)
-    {
-        return arrowId * 0.5f;
-    }
-
-    public static int RandomWeighted(int low, int dip, int peak, int max)
+    public static int RandomWeighted(int dip, int peak, int max)
     {
         int total = 0;
         int probability = 100;
@@ -252,16 +287,11 @@ public static class GameMath
         return 0;
     }
 
-    public static int MaxHit(
-        int strength, int weaponPower,
-        bool burst, bool superhuman, bool ultimate, int bonus)
+    public static int MaxHit(int strength, int weaponPower)
     {
-        var prayer = AddPrayers(burst, superhuman, ultimate);
-        var newStrength = strength * prayer + bonus;
-
         var w1 = weaponPower * 0.00175D;
         var w2 = w1 + 0.1d;
-        var w3 = newStrength * w2 + 1.05D;
+        var w3 = (strength + 3) * w2 + 1.05D;
         return (int)(w3 * 0.95d);
     }
 
@@ -283,52 +313,52 @@ public static class GameMath
         return (int)((level * 10 + 10) * 1.5D);
     }
 
-    public static int ExperienceToLevel(decimal exp)
+    public static decimal ExperienceForLevel(int level)
     {
-        for (int level = 0; level < MaxLevel - 1; level++)
+        return (decimal)(level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
+    }
+
+    [Obsolete]
+    public static int OLD_ExperienceToLevel(decimal exp)
+    {
+        for (int level = 0; level < OldMaxLevel - 1; level++)
         {
-            if (exp >= ExperienceArray[level])
+            if (exp >= OldExperienceArray[level])
                 continue;
             return (level + 1);
         }
-        return MaxLevel;
+        return OldMaxLevel;
     }
 
-    public static decimal LevelToExperience(int level)
+    [Obsolete]
+    public static decimal OLD_LevelToExperience(int level)
     {
-        return level - 2 < 0 ? 0 : ExperienceArray[level - 2];
+        return level - 2 < 0 ? 0 : OldExperienceArray[level - 2];
     }
 
     public static decimal GetFishingExperience(int level)
     {
-        if (level < 15) return 25;
-        if (level < 30) return 37.5m;
-        if (level < 45) return 100;
-        if (level < 60) return 175;
-        if (level < 75) return 250;
-
-        return 10;
+        return (level * 0.66m) + (level * (level / 40m)) + (level * level * 0.005m) + level * 0.5m;
     }
 
     public static decimal GetFarmingExperience(int level)
     {
-        if (level < 15) return 25;
-        if (level < 30) return 37.5m;
-        if (level < 45) return 100;
-        if (level < 60) return 175;
-        if (level < 75) return 250;
-
-        return 10;
+        /*
+            Following formula will generate:
+            Level   Exp
+            15		24,15
+            30		61,8
+            45		112,95
+            60		177,6
+            75		255,75
+            90		347,4
+            110		490,6
+         */
+        return (level * 0.66m) + (level * (level / 40m)) + (level * level * 0.005m) + level * 0.5m;
     }
     public static decimal GetWoodcuttingExperience(int level)
     {
-        if (level >= 90) return 300;
-        if (level < 75) return 250;
-        if (level < 60) return 175;
-        if (level < 45) return 100;
-        if (level < 30) return 37.5m;
-        if (level < 15) return 25;
-        return 25;
+        return (level * 0.66m) + (level * (level / 40m)) + (level * level * 0.005m) + level * 0.5m;
     }
 
     public static decimal GetMiningExperienceFromType(RockType type)

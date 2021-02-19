@@ -18,6 +18,10 @@ public class EffectHandler : MonoBehaviour
     [SerializeField] private GameObject LevelUpPrefab;
     [SerializeField] private float LevelUpGlowDuration = 3f;
 
+    [Header("Heal Effect")]
+    [SerializeField] private GameObject HealPrefab;
+    [SerializeField] private float HealDuration = 3f;
+
     internal void LevelUp()
     {
         try
@@ -29,6 +33,25 @@ public class EffectHandler : MonoBehaviour
 
             obj.AddComponent<TimeoutDestroy>()
                 .TimeoutSeconds = LevelUpGlowDuration;
+
+            obj.AddComponent<FollowTarget>()
+                .Target = gameObject;
+        }
+        catch { }
+    }
+
+    internal void Heal()
+    {
+        try
+        {
+            if (!HealPrefab) return;
+            if (!transform || transform == null || !this || this == null)
+                return;
+
+            var obj = Instantiate(HealPrefab, transform.position, Quaternion.identity);
+
+            obj.AddComponent<TimeoutDestroy>()
+                .TimeoutSeconds = HealDuration;
 
             obj.AddComponent<FollowTarget>()
                 .Target = gameObject;

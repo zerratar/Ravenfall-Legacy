@@ -26,7 +26,9 @@ public class DuelCameraScript : MonoBehaviour
 
         if (!image)
         {
-            image = GameObject.Find("DuelCameraImage").GetComponent<RawImage>();
+            var duelCamera = GameObject.Find("DuelCameraImage");
+            if (duelCamera)
+                image = duelCamera.GetComponent<RawImage>();
         }
 
         if (focusCam)

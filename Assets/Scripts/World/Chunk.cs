@@ -29,7 +29,7 @@ public class Chunk : MonoBehaviour, IChunk
 
     public IslandController Island { get; private set; }
     public int GetRequiredCombatLevel() => RequiredCombatLevel;
-    public int GetRequiredkillLevel() => RequiredSkilllevel;
+    public int GetRequiredSkillLevel() => RequiredSkilllevel;
 
     // Start is called before the first frame update
     void Start()
@@ -80,15 +80,6 @@ public class Chunk : MonoBehaviour, IChunk
             farmingPatches = farmingPatchesContainer.GetComponentsInChildren<FarmController>();
         }
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        Debug.DrawLine(CenterPointWorld - (Vector3.forward * 3f), CenterPointWorld + (Vector3.forward * 3f));
-        Debug.DrawLine(CenterPointWorld - (Vector3.left * 3f), CenterPointWorld + (Vector3.left * 3f));
-        Debug.DrawLine(CenterPointWorld, CenterPointWorld + (Vector3.up * 3f));
-    }
-
     public Vector3 GetPlayerSpawnPoint()
     {
         if (!IsStarterArea || !spawnPoint) return Vector3.zero;
@@ -191,7 +182,7 @@ public class Chunk : MonoBehaviour, IChunk
             return origin.RequiredCombatLevel;
         }
 
-        public int GetRequiredkillLevel()
+        public int GetRequiredSkillLevel()
         {
             return origin.RequiredSkilllevel;
         }
@@ -206,7 +197,7 @@ public interface IChunk
     bool ExecuteTask(PlayerController player, Transform target);
 
     int GetRequiredCombatLevel();
-    int GetRequiredkillLevel();
+    int GetRequiredSkillLevel();
 
     Transform GetTaskTarget(PlayerController player);
     Vector3 CenterPointWorld { get; }

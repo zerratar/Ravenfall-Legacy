@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.AI;
 
 public class TeleportHandler : MonoBehaviour
 {
@@ -7,12 +8,6 @@ public class TeleportHandler : MonoBehaviour
     private PlayerController player;
     private Transform parent;
 
-    private void Start()
-    {
-        if (!islandManager) islandManager = FindObjectOfType<IslandManager>();
-        player = GetComponent<PlayerController>();
-    }
-
     public void Teleport(Vector3 position)
     {
         // check if player has been removed
@@ -20,12 +15,17 @@ public class TeleportHandler : MonoBehaviour
         if (!this || this == null)
             return;
 
+        if (!islandManager) islandManager = FindObjectOfType<IslandManager>();
+        if (!player) player = GetComponent<PlayerController>();
+
         var hasParent = !!player.transform.parent;
         if (hasParent)
         {
             parent = player.Transform.parent;
             player.transform.SetParent(null);
         }
+
+        player.GetComponent<NavMeshAgent>().Warp(position);
 
         player.Lock();
 

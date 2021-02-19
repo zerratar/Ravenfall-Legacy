@@ -18,11 +18,24 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
 
     private PlayerController selectedPlayer;
     private TownHouseController townHouse;
+    private int lastPlayerCount;
 
     public PlayerController SelectedPlayer
     {
         get => selectedPlayer;
         set => SetSelectedPlayer(value);
+    }
+
+    private void Update()
+    {
+        if (Time.frameCount % 10 == 0)
+        {
+            var players = gameManager.Players.GetAllPlayers();
+            if (lastPlayerCount != players.Count)
+            {
+                UpdatePlayerList();
+            }
+        }
     }
 
     public void Hide()
@@ -45,6 +58,8 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
     {
         var players = gameManager.Players.GetAllPlayers();
 
+        lastPlayerCount = players.Count;
+
         SetPlayerLogo(townHouse.Owner?.UserId);
 
         for (var i = 0; i < playerListContent.childCount; ++i)
@@ -52,7 +67,7 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
             Destroy(playerListContent.GetChild(i).gameObject);
         }
 
-        foreach (var player in players)
+        foreach (var player in players.OrderByDescending(x => GetExpBonus(x, townHouse)))
         {
             if (townHouse.Owner && townHouse.Owner.UserId == player.UserId)
                 continue;
@@ -65,6 +80,22 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
                 townHouseManager.IsHouseOwner(player),
                 townHouse);
         }
+    }
+
+    public float GetExpBonus(PlayerController player, TownHouseController dialogHouse)
+    {
+        var existingBonus = 0;
+        if (dialogHouse.Owner)
+        {
+            var existingSkill = GameMath.GetSkillByHouseType(dialogHouse.Owner.Stats, dialogHouse.TownHouse.Type);
+            existingBonus = (int)GameMath.CalculateHouseExpBonus(existingSkill);
+        }
+
+        var skill = GameMath.GetSkillByHouseType(player.Stats, dialogHouse.TownHouse.Type);
+        var playerBonus = (int)GameMath.CalculateHouseExpBonus(skill);
+        var bonusPlus = playerBonus - existingBonus;
+
+        return bonusPlus;
     }
 
     private void SetPlayerLogo(string userId)
@@ -100,6 +131,11 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
     private void SetSelectedPlayer(PlayerController value)
     {
         selectedPlayer = value;
+        if (value != null)
+        {
+            lblPlayerName.text = value.Name;
+            SetPlayerLogo(value.UserId);
+        }
     }
 
     private void RebuildTags(Transform parent = null)

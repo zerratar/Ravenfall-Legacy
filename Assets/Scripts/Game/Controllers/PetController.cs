@@ -14,6 +14,7 @@ public class PetController : MonoBehaviour
     private Animator animator;
     private PlayerController player;
     private Light lightSource;
+    private bool playerWasMoving;
 
     void Start()
     {
@@ -40,7 +41,6 @@ public class PetController : MonoBehaviour
 
         if (!animator) return;
 
-        transform.localPosition = offsetPosition;
         var playerIsMoving = player.IsMoving;
         if (playerIsMoving)
         {
@@ -56,8 +56,20 @@ public class PetController : MonoBehaviour
             isSleeping = true;
         }
 
-        animator.SetFloat("Walk", playerIsMoving ? movementSpeed : 0);
-        animator.SetFloat("Run", playerIsMoving ? movementSpeed : 0);
-        animator.SetBool("Sleeping", isSleeping);
+        if (transform.localPosition.x != offsetPosition.x)
+            transform.localPosition = offsetPosition;
+
+        UpdateAnimator(playerIsMoving);
+    }
+
+    private void UpdateAnimator(bool playerIsMoving)
+    {
+        if (playerWasMoving != playerIsMoving)
+        {
+            animator.SetFloat("Walk", playerIsMoving ? movementSpeed : 0);
+            animator.SetFloat("Run", playerIsMoving ? movementSpeed : 0);
+            animator.SetBool("Sleeping", isSleeping);
+            playerWasMoving = playerIsMoving;
+        }
     }
 }

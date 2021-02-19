@@ -6,7 +6,7 @@ public class CraftRequirement : PacketHandler<TradeItemRequest>
 {
     public CraftRequirement(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -17,24 +17,17 @@ public class CraftRequirement : PacketHandler<TradeItemRequest>
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendMessage(
-                data.Player, "You have to play the game to valuate items. Use !join to play.");
+            client.SendMessage(data.Player, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
-        if (!ioc)
-        {
-            client.SendMessage(
-                data.Player, "Unable to valuate the item right now.");
-            return;
-        }
 
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery);
         if (item == null)
         {
-            client.SendMessage(player, "Could not find an item matching the query '" + data.ItemQuery + "'");
+            client.SendMessage(player, Localization.MSG_CRAFT_ITEM_NOT_FOUND, data.ItemQuery);
             return;
         }
 

@@ -1,4 +1,6 @@
-﻿public class GameEventManager
+﻿using System;
+
+public class GameEventManager
 {
     private IEvent activeEvent;
 

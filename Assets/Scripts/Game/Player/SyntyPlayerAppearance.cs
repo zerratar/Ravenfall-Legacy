@@ -1,6 +1,7 @@
 ﻿using MTAssets;
 using RavenNest.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -26,6 +27,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     [SerializeField] private GameObject[] faceCoverings;
     //[SerializeField] private GameObject[] headCoverings;
 
+    [SerializeField] private GameObject[] capes;
     [SerializeField] private GameObject[] hairs;
     //[SerializeField] private GameObject[] helmetAttachments;
 
@@ -105,6 +107,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public int Hips = 0;
     public int Legs = 0;
 
+    public int Cape = -1;
+
     public Color SkinColor;
     public Color HairColor;
     public Color BeardColor;
@@ -122,12 +126,16 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     private Dictionary<string, GameObject[]> modelObjects;
     private GameObject equippedHelmet;
     private GameManager gameManager;
+    private PlayerLogoManager logoManager;
+    private PlayerController player;
 
     Gender IPlayerAppearance.Gender => Gender;
 
     public Transform MainHandTransform => equipmentSlots[ItemType.TwoHandedSword];
 
     public Transform OffHandTransform => equipmentSlots[ItemType.Shield];
+
+    public GameObject MonsterMesh { get; set; }
 
     void Awake()
     {
@@ -138,7 +146,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     public void Equip(ItemController item)
     {
-        if (item.Category == ItemCategory.Armor)
+        if (item.Category == ItemCategory.Armor && string.IsNullOrEmpty(item.GenericPrefabPath))
         {
             EquipArmor(item);
             return;
@@ -153,11 +161,13 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         {
             if (equippedItems.TryGetValue(item.Type, out var currentItem))
             {
-                Destroy(currentItem.gameObject);
+                if (currentItem != null && currentItem && currentItem.gameObject)
+                    Destroy(currentItem.gameObject);
             }
             else if (equippedObjects.TryGetValue(item.Type, out var currentObject))
             {
-                Destroy(currentObject);
+                if (currentItem != null && currentItem && currentItem.gameObject)
+                    Destroy(currentObject);
             }
 
             if (equipmentSlots.Count == 0) UpdateBoneTransforms();
@@ -207,9 +217,12 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         throw new NotSupportedException();
     }
 
-    public void SetAppearance(SyntyAppearance appearance)
+    public void SetAppearance(SyntyAppearance appearance, Action onReady)
     {
         ResetAppearance();
+
+        if (!logoManager) logoManager = FindObjectOfType<PlayerLogoManager>();
+        if (!player) player = GetComponent<PlayerController>();
 
         var props = GetType().GetFields(BindingFlags.Public | BindingFlags.Instance).ToDictionary(x => x.Name, x => x);
         foreach (var prop in appearance
@@ -238,8 +251,25 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             }
         }
 
-        UpdateAppearance();
-        Optimize();
+        if (this.player.Clan.InClan)
+        {
+            logoManager.GetLogo(
+                this.player.Clan.ClanInfo.Owner,
+                this.player.Clan.Logo, logo =>
+                {
+                    UpdateAppearance(logo);
+                    Optimize();
+                    if (onReady != null)
+                        onReady();
+                });
+        }
+        else
+        {
+            UpdateAppearance();
+            Optimize();
+            if (onReady != null)
+                onReady();
+        }
     }
 
     private Color GetColorFromHex(string value)
@@ -253,7 +283,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         return false;
     }
 
-    public void UnEquip(ItemController item)
+    public void Unequip(ItemController item)
     {
         UnEquip(item.gameObject);
     }
@@ -268,8 +298,16 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     public void Optimize(Action afterUndo = null)
     {
+        StartCoroutine(OptimizeAppearance(afterUndo));
+    }
+
+    private IEnumerator OptimizeAppearance(Action afterUndo)
+    {
+        yield return new WaitForSeconds(0.1f);
+
         int meshLayer = -1;
-        if (transform.Find("Combined Mesh"))
+        var cm = GetCombinedMesh();
+        if (cm)
         {
             meshLayer = meshCombiner.gameObject.layer;
             meshCombiner.UndoCombineMeshes();
@@ -277,6 +315,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
 
         afterUndo?.Invoke();
+
+        yield return new WaitForFixedUpdate();
 
         meshCombiner.meshesToIgnore.Clear();
         var petControllers = gameObject.transform.GetComponentsInChildren<PetController>();
@@ -289,12 +329,31 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             }
         }
 
+        yield return new WaitForFixedUpdate();
+
         meshCombiner.CombineMeshes();
         gameManager.Camera.EnsureObserverCamera();
-
     }
 
-    public void UpdateAppearance()
+    public Transform GetCombinedMesh()
+    {
+        var cm = transform.Find("Combined Mesh");
+        if (!cm)
+        {
+            for (var ci = 0; ci < transform.childCount; ++ci)
+            {
+                var c = transform.GetChild(ci);
+                if (c && c.name.ToLower().Contains("combined mesh"))
+                {
+                    cm = c;
+                    break;
+                }
+            }
+        }
+        return cm;
+    }
+
+    public void UpdateAppearance(Sprite capeLogo = null)
     {
         ResetAppearance();
         var models = GetAllModels();
@@ -334,6 +393,11 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                     if (renderer)
                     {
                         //renderer.material =   //itemMaterials.Random();
+
+                        if (item.Key == nameof(capes) && capeLogo)
+                        {
+                            renderer.material.SetTexture("_Texture", capeLogo.texture);
+                        }
 
                         if (item.Key == nameof(femaleHeads) || item.Key == nameof(maleHeads))
                         {
@@ -663,7 +727,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         equipmentSlots[ItemType.Amulet] = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Neck");
         equipmentSlots[ItemType.TwoHandedSword] = mainHand;
         equipmentSlots[ItemType.TwoHandedStaff] = mainHand;
-        equipmentSlots[ItemType.TwoHandedBow] = mainHand;
+        equipmentSlots[ItemType.TwoHandedBow] = offHand;
         equipmentSlots[ItemType.TwoHandedAxe] = mainHand;
         equipmentSlots[ItemType.OneHandedAxe] = mainHand;
         equipmentSlots[ItemType.OneHandedMace] = mainHand;
@@ -727,37 +791,39 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         equippedHelmet.SetActive(HelmetVisible);
     }
 
+    public void SetMonsterMesh(GameObject prefab)
+    {
+        var combinedMesh = GetCombinedMesh();
+        MonsterMesh = Instantiate(prefab, this.transform);
+        MonsterMesh.name = "Monster";
+        MonsterMesh.transform.localScale = Vector3.one;
+
+        if (combinedMesh)
+        {
+            SetLayerRecursive(MonsterMesh, combinedMesh.gameObject.layer);
+        }
+    }
+
+    public void DestroyMonsterMesh()
+    {
+        var combinedMesh = GetCombinedMesh();
+        if (combinedMesh)
+            combinedMesh.gameObject.SetActive(true);
+
+        if (!MonsterMesh)
+            return;
+
+        Destroy(MonsterMesh);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SetLayerRecursive(GameObject go, int layer)
+    {
+        go.layer = layer;
+        for (var i = 0; i < go.transform.childCount; ++i)
+        {
+            SetLayerRecursive(go.transform.GetChild(i).gameObject, layer);
+        }
+    }
     #endregion
-}
-
-public static class IEnumerableExtensions
-{
-    public static IReadOnlyList<decimal> Delta(this IList<decimal> newValue, IReadOnlyList<decimal> oldValue)
-    {
-        if (oldValue == null)
-        {
-            return new List<decimal>(newValue.Count);
-        }
-        if (newValue.Count != oldValue.Count)
-        {
-            return new List<decimal>(newValue.Count);
-        }
-
-        return newValue.Select((x, i) => x - oldValue[i]).ToList();
-    }
-
-    public static IEnumerable<T> Except<T>(this IEnumerable<T> items, T except)
-    {
-        return items.Where(x => !x.Equals(except));
-    }
-
-    public static int RandomIndex<T>(this IEnumerable<T> items)
-    {
-        return Mathf.FloorToInt(UnityEngine.Random.value * items.Count());
-    }
-    public static T Random<T>(this IEnumerable<T> items)
-    {
-        var selections = items.ToList();
-        return selections[Mathf.FloorToInt(UnityEngine.Random.value * selections.Count)];
-    }
 }

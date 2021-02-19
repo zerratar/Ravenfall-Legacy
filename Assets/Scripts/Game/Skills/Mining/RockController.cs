@@ -2,9 +2,8 @@
 
 public class RockController : MonoBehaviour
 {
-    public RockType Type;
-
-    public decimal Experience => GameMath.GetMiningExperienceFromType(Type);
+    public int Level;
+    public decimal Experience => GameMath.GetWoodcuttingExperience(Level);
     public decimal Resource => 1;
 
     public bool Mine(PlayerController player)

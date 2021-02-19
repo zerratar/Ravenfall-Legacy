@@ -33,7 +33,8 @@ public class DungeonBossController : MonoBehaviour
         if (!enemyController) enemyController = GetComponent<EnemyController>();
 
         enemyController.GivesExperienceWhenKilled = false;
-        enemyController.HandleFightBack = false;
+        //enemyController.HandleFightBack = t;
+
 
         if (!attackRadiusCollider || !activateRadiusCollider)
         {
@@ -130,11 +131,11 @@ public class DungeonBossController : MonoBehaviour
         }
 
         attackTimer = attackInterval;
-        var damage = GameMath.CalculateDamage(enemyController, target);
+        var damage = GameMath.CalculateMeleeDamage(enemyController, target);
 
         if (animator)
         {
-            animator.SetInteger("AttackType", UnityEngine.Random.Range(0, 3));
+            animator.SetInteger("AttackType", UnityEngine.Random.Range(0, 4));
             animator.SetTrigger("AttackTrigger");
         }
 
@@ -205,10 +206,10 @@ public class DungeonBossController : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
     {
-        var health = (int)(UnityEngine.Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 100);
-        var strength = (int)(UnityEngine.Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue));
-        var defense = (int)(UnityEngine.Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue));
-        var attack = (int)(UnityEngine.Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue));
+        var health = Math.Max(100, (int)(UnityEngine.Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 100));
+        var strength = Math.Max(1, (int)(UnityEngine.Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue)));
+        var defense = Math.Max(1, (int)(UnityEngine.Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue)));
+        var attack = Math.Max(1, (int)(UnityEngine.Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue)));
 
         return new Skills
         {

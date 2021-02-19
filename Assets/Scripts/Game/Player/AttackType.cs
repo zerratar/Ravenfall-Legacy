@@ -3,4 +3,5 @@
     Melee,
     Ranged,
     Magic,
+    Healing
 }

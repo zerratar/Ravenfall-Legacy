@@ -43,6 +43,9 @@ public class GameProgressBar : MonoBehaviour
             return;
         }
 
+        if (Progress > 1)
+            Progress = 1;
+
         if (lastProgress != Progress)
         {
             if (displayProgress && lblProgress)

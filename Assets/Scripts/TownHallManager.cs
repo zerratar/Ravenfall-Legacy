@@ -26,7 +26,7 @@ public class TownHallManager : MonoBehaviour
     public decimal Experience => exp;
     public int Level => level;
     public int Tier => tier;
-    public decimal ExperienceToLevel => GameMath.LevelToExperience(Level + 1);
+    public decimal ExperienceToLevel => GameMath.OLD_LevelToExperience(Level + 1);
 
     public void SetTierByLevel(int level)
     {
@@ -96,7 +96,9 @@ public class TownHallManager : MonoBehaviour
         if (level < 10) return 0;
         if (level < 30) return 1;
         if (level < 80) return 2;
-        return 2;
+        if (level < 150) return 3;
+        if (level < 200) return 4;
+        return 4;
 
         //var tier = 1;
         //for (; tier < 4; ++tier)

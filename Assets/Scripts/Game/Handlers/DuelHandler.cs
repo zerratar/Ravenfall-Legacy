@@ -95,33 +95,23 @@ public class DuelHandler : MonoBehaviour
         Opponent = duelHandler.player;
         duelRequestTimer = duelRequestTime;
         state = DuelState.RequestReceived;
-        if (gameManager.Server.Client != null && gameManager.Server.Client.Connected)
+        if (gameManager.RavenBot.Local != null && gameManager.RavenBot.IsConnected)
         {
-            gameManager.Server.Client.SendCommand(
-                player.PlayerName,
-                "duel_alert",
-                $"A duel request received from {Opponent.PlayerName}, reply with !duel accept or !duel decline");
+            gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ, Opponent.PlayerName);
         }
     }
 
     public void DeclineDuel(bool timedOut = false)
     {
-        if ((gameManager.Server?.Client?.Connected).GetValueOrDefault())
+        if ((gameManager.RavenBot?.IsConnected).GetValueOrDefault())
         {
             if (timedOut)
             {
-                gameManager.Server.Client.SendCommand(
-                    player.PlayerName,
-                    "duel_declined",
-                    $"The duel request from {Requester.PlayerName} has timed out and automatically declined.");
-
+                gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_TIMEOUT, Requester.PlayerName);
             }
             else
             {
-                gameManager.Server.Client.SendCommand(
-                    player.PlayerName,
-                    "duel_declined",
-                    $"Duel with {Requester.PlayerName} was declined.");
+                gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_DECLINE, Requester.PlayerName);
             }
         }
 
@@ -130,12 +120,9 @@ public class DuelHandler : MonoBehaviour
 
     public void AcceptDuel()
     {
-        if (gameManager.Server.Client != null && gameManager.Server.Client.Connected)
+        if (gameManager.RavenBot.IsConnected)
         {
-            gameManager.Server.Client.SendCommand(
-                player.PlayerName,
-                "duel_accepted",
-                $"You have accepted the duel against {Requester.PlayerName}. May the best fighter win!");
+            gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_ACCEPT, Requester.PlayerName);
         }
 
         Opponent = Requester;
@@ -157,13 +144,13 @@ public class DuelHandler : MonoBehaviour
     public void StartFight()
     {
         if (!InDuel) return;
+        player.Stats.Health.Reset();
         state = DuelState.Fighting;
     }
 
     private void LostDuel()
     {
         RemoveDuelCamera();
-
         ++player.Statistics.DuelsLost;
         Reset();
     }
@@ -172,9 +159,9 @@ public class DuelHandler : MonoBehaviour
     {
         RemoveDuelCamera();
 
-        if (gameManager.Server.Client != null && gameManager.Server.Client.Connected)
+        if (gameManager.RavenBot.IsConnected)
         {
-            gameManager.Server.Client.SendCommand(player.PlayerName, "duel_result", $"You won the duel against {Opponent.PlayerName}!");
+            gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_WON, Opponent.PlayerName);
         }
 
         ++player.Statistics.DuelsWon;

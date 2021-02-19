@@ -62,14 +62,7 @@ public class RaidNotifications : MonoBehaviour
         raidBossAppeared.SetActive(true);
         raidBossHud.SetActive(true);
 
-
         ShowRaidJoinInfo();
-
-        var zoomAnimation = raidBossAppeared.GetComponent<ZoomAnimationUI>();
-        if (zoomAnimation)
-        {
-            zoomAnimation.Reset();
-        }
 
         var autoHide = raidBossAppeared.GetComponent<AutoHideUI>();
         if (autoHide)

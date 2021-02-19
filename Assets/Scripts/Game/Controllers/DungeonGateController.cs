@@ -26,7 +26,9 @@ public class DungeonGateController : MonoBehaviour
 
     public void Close()
     {
+        if (!gate) gate = transform.GetChild(0);
         isOpen = false;
+        if (gate)
         gate.position = closeStatePosition;
     }
 

@@ -2,7 +2,7 @@
 {
     public DuelDecline(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -14,8 +14,6 @@
 
         if (!player.Duel.HasActiveRequest)
         {
-            client.SendCommand(data.Username, "duel_failed",
-                "You do not have any pending duel requests to decline.");
             return;
         }
 

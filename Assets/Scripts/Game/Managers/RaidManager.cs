@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -36,6 +37,8 @@ public class RaidManager : MonoBehaviour, IEvent
     //private float lastRaidEndTime = 0f;
 
     public bool Started => nextRaidTimer < 0f;
+
+    public bool IsBusy { get; internal set; }
 
     private void Start()
     {
@@ -76,6 +79,13 @@ public class RaidManager : MonoBehaviour, IEvent
 
         lock (mutex)
         {
+            var bossHealth = Boss.Enemy.Stats.Health;
+            if (raidingPlayers.Count == 0 || bossHealth.CurrentValue == bossHealth.Level)
+            {
+                // reset the start time until someone joins or boss health is the same.
+                raidStartedTime = Time.time;
+            }
+
             if (!raidingPlayers.Remove(player))
             {
                 raidingPlayers.Add(player);
@@ -83,6 +93,8 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         player.Raid.OnEnter();
+
+        gameManager.EventTriggerSystem.SendInput(player.UserId, "raid");
     }
 
     public void Leave(PlayerController player, bool reward = false, bool timeout = false)
@@ -112,15 +124,17 @@ public class RaidManager : MonoBehaviour, IEvent
 
             notifications.ShowRaidBossAppeared();
 
-            gameManager.Server?.Client?.SendCommand(
-                "", "raid_start",
-                $"A level {Boss.Enemy.Stats.CombatLevel} raid boss has appeared! Help fight him by typing !raid");
+            gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
+
+            var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
+            var evt = ioc.Resolve<EventTriggerSystem>();
+            evt.TriggerEvent("raid", TimeSpan.FromSeconds(10));
 
             return;
         }
         else if (!string.IsNullOrEmpty(initiator))
         {
-            gameManager.Server?.Announce($"Raid cannot be started right now.");
+            gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_ERROR);
         }
 
         nextRaidTimer = gameManager.Events.RescheduleTime;
@@ -147,6 +161,7 @@ public class RaidManager : MonoBehaviour, IEvent
         if (!Boss.RaidBossControlsDestroy || timeout)
         {
             Destroy(Boss.gameObject);
+            Boss = null;
         }
 
         gameManager.Events.End(this);
@@ -238,7 +253,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
         Boss = Instantiate(raidBossPrefab, spawnPosition, Quaternion.identity).GetComponent<RaidBossController>();
 
-        Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
+        Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq * 0.75f);
 
         timeoutTimer = Mathf.Min(maxTimeoutSeconds, Mathf.Max(minTimeoutSeconds, Boss.Enemy.Stats.CombatLevel * 0.8249123f));
     }

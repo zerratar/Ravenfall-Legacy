@@ -11,20 +11,6 @@ public class ResourcesObserver : MonoBehaviour
     [SerializeField] private ResourceObserver wheat;
     [SerializeField] private ResourceObserver coin;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (!observedPlayer)
-        {
-            return;
-        }
-    }
-
     public void Observe(PlayerController player)
     {
         observedPlayer = player;

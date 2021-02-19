@@ -6,8 +6,8 @@ public class StatObserver : MonoBehaviour
     [SerializeField] private TextMeshProUGUI label;
     [SerializeField] private GameProgressBar bar;
 
-    private int lastCurrentValue;
-    private decimal lastExperience;
+    private int? lastCurrentValue;
+    private decimal? lastExperience;
     private SkillStat observedStat;
 
     // Start is called before the first frame update
@@ -24,8 +24,8 @@ public class StatObserver : MonoBehaviour
             return;
         }
 
-        if (lastCurrentValue == observedStat.CurrentValue &&
-            lastExperience == observedStat.Experience)
+        if (lastCurrentValue != null && lastCurrentValue == observedStat.CurrentValue &&
+            lastExperience != null && lastExperience == observedStat.Experience)
         {
             return;
         }
@@ -35,12 +35,10 @@ public class StatObserver : MonoBehaviour
         var nextLevel = observedStat.Level + 1;
 
         label.text = value == max ? $"{value}" : value > max ? $"<color=#00ff00>{value}" : $"<color=#ff0000>{value}";
-        var thisLevelExp = GameMath.LevelToExperience(observedStat.Level);
-        var nextLevelExp = GameMath.LevelToExperience(nextLevel);
+        var thisLevelExp = observedStat.Experience;
+        var nextLevelExp = GameMath.ExperienceForLevel(nextLevel);
 
-        var now = observedStat.Experience - thisLevelExp;
-        var next = nextLevelExp - thisLevelExp;
-        bar.Progress = (float)(now / next);
+        bar.Progress = thisLevelExp > 0 && nextLevelExp > 0 ? (float)(thisLevelExp / nextLevelExp) : 0;
 
         lastCurrentValue = observedStat.CurrentValue;
         lastExperience = observedStat.Experience;

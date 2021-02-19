@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using UnityEngine;
 
 public class DungeonHandler : MonoBehaviour
 {
@@ -7,7 +8,8 @@ public class DungeonHandler : MonoBehaviour
 
     private Vector3 previousPosition;
     private EnemyController enemyTarget;
-    
+    private PlayerController healTarget;
+
     public bool InDungeon { get; private set; }
 
     private void Start()
@@ -26,6 +28,22 @@ public class DungeonHandler : MonoBehaviour
 
         if (roomType == DungeonRoomType.Start)
             return;
+
+        if (player.TrainingHealing)
+        {
+            if (healTarget && healTarget.Stats.IsDead)
+                healTarget = null;
+
+            healTarget = dungeon.GetPlayers()
+                .OrderByDescending(x => x.Stats.Health.Level - x.Stats.Health.CurrentValue)
+                .FirstOrDefault();
+
+            if (!healTarget)
+                return;
+
+            HealTarget();
+            return;
+        }
 
         if (enemyTarget && enemyTarget.Stats.IsDead)
             enemyTarget = null;
@@ -49,9 +67,26 @@ public class DungeonHandler : MonoBehaviour
 
         if (!player || player == null)
             return;
-        
+
         var startingPoint = dungeon.Dungeon.StartingPoint;
-        previousPosition = player.transform.position;
+        if (this.player.Ferry.OnFerry)
+        {
+            if (player.Ferry.Destination)
+            {
+                previousPosition = player.Ferry.Destination.SpawnPosition;
+            }
+            else
+            {
+                var chunk = player.Game.Chunks.GetStarterChunk();
+                previousPosition = chunk.GetPlayerSpawnPoint();
+            }
+            player.transform.parent = null;
+        }
+        else
+        {
+            previousPosition = player.transform.position;
+        }
+
         player.Teleporter.Teleport(startingPoint);
         player.Stats.Health.Reset();
         InDungeon = true;
@@ -65,13 +100,44 @@ public class DungeonHandler : MonoBehaviour
         player.Teleporter.Teleport(previousPosition);
         InDungeon = false;
         enemyTarget = null;
+        healTarget = null;
     }
 
     public void Died()
     {
-        InDungeon = false;
+        healTarget = null;
         enemyTarget = null;
         dungeon.PlayerDied(this.player);
+        OnExit();
+    }
+
+    private void HealTarget()
+    {
+        var range = player.GetAttackRange();
+        var distance = Vector3.Distance(transform.position, healTarget.transform.position);
+        if (distance <= range)
+        {
+            if (healTarget.Stats.IsDead)
+            {
+                healTarget = null;
+                return;
+            }
+
+            if (!player.IsReadyForAction)
+            {
+                player.Lock();
+                return;
+            }
+            
+            if (player == null || !player || healTarget == null || !healTarget)
+                return;
+
+            player.Heal(healTarget);
+        }
+        else
+        {
+            player.GotoPosition(healTarget.transform.position);
+        }
     }
 
     private void AttackTarget()

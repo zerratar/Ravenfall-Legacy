@@ -29,6 +29,10 @@
         ServerMessage = 12,
         PermissionChange = 13,
         VillageLevelUp = 14,
-        VillageInfo = 15
+        VillageInfo = 15,
+        ExpMultiplier = 28,
+        ClanLevelChanged = 29,
+        ClanSkillLevelChanged = 30,
+        ServerTime = 31,
     }
 }

@@ -12,30 +12,40 @@ public class SkillStatsObserver : MonoBehaviour
     [SerializeField] private StatObserver slayer;
     [SerializeField] private StatObserver sailing;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
+    private float nextUpdate = 0f;
+    private float updateInterval = 1f;
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        if (!observedPlayer)
+        if (!observedPlayer) return;
+
+        if (nextUpdate > 0)
         {
-            return;
+            nextUpdate -= Time.deltaTime;
+            if (nextUpdate <= 0)
+            {
+                UpdateStats();
+                nextUpdate = updateInterval;
+            }
         }
     }
 
     public void Observe(PlayerController player)
     {
         observedPlayer = player;
-        woodcutting.Observe(player?.Stats?.Woodcutting);
-        fishing.Observe(player?.Stats?.Fishing);
-        mining.Observe(player?.Stats?.Mining);
-        crafting.Observe(player?.Stats?.Crafting);
-        cooking.Observe(player?.Stats?.Cooking);
-        farming.Observe(player?.Stats?.Farming);
-        slayer.Observe(player?.Stats?.Slayer);
-        sailing.Observe(player?.Stats?.Sailing);
+        UpdateStats();
+        nextUpdate = 0.1f;
+    }
+
+    private void UpdateStats()
+    {
+        woodcutting.Observe(observedPlayer?.Stats?.Woodcutting);
+        fishing.Observe(observedPlayer?.Stats?.Fishing);
+        mining.Observe(observedPlayer?.Stats?.Mining);
+        crafting.Observe(observedPlayer?.Stats?.Crafting);
+        cooking.Observe(observedPlayer?.Stats?.Cooking);
+        farming.Observe(observedPlayer?.Stats?.Farming);
+        slayer.Observe(observedPlayer?.Stats?.Slayer);
+        sailing.Observe(observedPlayer?.Stats?.Sailing);
     }
 }

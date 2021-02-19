@@ -4,6 +4,8 @@ using UnityEngine.UI;
 
 public class PlayerObserveCamera : MonoBehaviour
 {
+    public bool CanControlPlayer;
+
     [SerializeField] private float positionOffsetY = 5f;
     [SerializeField] private float viewOffsetY = 5f;
     [SerializeField] private float distance = 5f;
@@ -22,19 +24,44 @@ public class PlayerObserveCamera : MonoBehaviour
             return;
         }
 
-        var position = player.transform.position + player.transform.forward * distance;
+        if (CanControlPlayer && Input.GetKeyUp(KeyCode.F3))
+        {
+            player.ToggleControl();
+            if (player.Controlled)
+            {
+                Debug.Log(player.Name + " is now being controlled.");
+            }
+            else
+            {
+                Debug.Log(player.Name + " is no longer being controlled.");
+            }
+        }
+
+        if (player.Controlled)
+        {
+            return;
+        }
+
+        var playerScale = player.transform.localScale.y;
+        var position = player.transform.position + player.transform.forward * (playerScale * distance);
+
         transform.position = position + positionOffsetY * Vector3.up;
         transform.LookAt(player.transform.position + new Vector3(0, viewOffsetY, 0));
     }
 
     public void ObservePlayer(PlayerController player)
     {
-        if (this.player) ResetPlayerLayer();
+        if (this.player)
+        {
+            this.player.RevokeControl();
+            ResetPlayerLayer();
+        }
+
         if (image) image.gameObject.SetActive(true);
         gameObject.SetActive(true);
-        this.player = player;        
+        this.player = player;
         UpdatePlayerLayer();
-    }       
+    }
     public void UpdatePlayerLayer()
     {
         if (!player) return;

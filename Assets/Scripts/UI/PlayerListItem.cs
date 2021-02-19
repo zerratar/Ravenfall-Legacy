@@ -15,10 +15,8 @@ public class PlayerListItem : MonoBehaviour
     [SerializeField] private TextMeshProUGUI lblExpPerHour;
     [SerializeField] private TextMeshProUGUI lblPlayerName;
 
-    [SerializeField] private string[] combatNames = { "Atk", "Def", "Str", "All", "Mag", "Ran" };
-    [SerializeField] private string[] skillNames = { "Woo", "Fis", "Coo", "Cra", "Min", "Far" };
-
-    public bool ExpPerHourVisible = false;
+    private string[] combatNames = { "Atk", "Def", "Str", "All", "Mag", "Ran", "Heal" };
+    private string[] skillNames = { "Woo", "Fis", "Cra", "Coo", "Min", "Far" };
 
     private RectTransform rectTransform;
 
@@ -38,6 +36,9 @@ public class PlayerListItem : MonoBehaviour
     private int oldHealthValue;
 
     public PlayerController TargetPlayer { get; private set; }
+
+    public ExpProgressHelpStates ExpProgressHelpState;
+
 
     // Start is called before the first frame update
     void Start()
@@ -104,28 +105,75 @@ public class PlayerListItem : MonoBehaviour
 
         if (TargetPlayer)
         {
+            var playerName = TargetPlayer.PlayerNameLowerCase;
+            if (TargetPlayer.CharacterIndex > 0)
+                playerName += " <color=#ff444444>" + TargetPlayer.CharacterIndex;
+
             if (!TargetPlayer.IsUpToDate)
             {
-                SetText(lblPlayerName, TargetPlayer.PlayerNameLowerCase, Color.red);
+                SetText(lblPlayerName, playerName, Color.red);
                 return;
             }
 
-            SetText(lblPlayerName, TargetPlayer.PlayerNameLowerCase);
+            SetText(lblPlayerName, playerName);
         }
     }
 
     private void UpdateSkillProgressBar(SkillStat skill)
     {
-        var thisLevelExp = GameMath.LevelToExperience(skill.Level);
-        var nextLevelExp = GameMath.LevelToExperience(skill.Level + 1);
-        var now = skill.Experience - thisLevelExp;
-        var next = nextLevelExp - thisLevelExp;
-        pbSkill.Progress = (float)now / (float)next;
+        var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
+        pbSkill.Progress = skill.Experience > 0 && nextLevelExp > 0 ? ((float)(skill.Experience / nextLevelExp)) : 0;
 
         var expPerHour = skill.GetExperiencePerHour();
-        if (lblExpPerHour && ExpPerHourVisible)
+        var expLeft = nextLevelExp - skill.Experience;
+
+        if (lblExpPerHour)
         {
-            SetText(lblExpPerHour, Utility.FormatValue(expPerHour) + " xp / h");
+            SetText(lblExpPerHour, "");
+            switch (ExpProgressHelpState)
+            {
+                case ExpProgressHelpStates.ExpLeft:
+                    SetText(lblExpPerHour, FormatValue((long)expLeft) + " xp");
+                    break;
+
+                case ExpProgressHelpStates.TimeLeft:
+                    {
+                        if (expPerHour <= 0 || expLeft <= 0) break;
+
+                        var hours = (double)(expLeft / expPerHour);
+                        if (hours < 1)
+                        {
+                            var minutes = hours * 60d;
+                            if (minutes > 1)
+                            {
+                                SetText(lblExpPerHour, (int)minutes + "m");
+                            }
+                            else
+                            {
+                                var seconds = minutes * 60d;
+                                SetText(lblExpPerHour, (int)seconds + "s");
+                            }
+                        }
+                        else
+                        {
+                            var minutes = (int)(hours - (long)hours) * 60d;
+                            if (minutes > 1)
+                            {
+                                SetText(lblExpPerHour, (int)hours + "h " + minutes + "m");
+                            }
+                            else
+                            {
+                                SetText(lblExpPerHour, (int)hours + "h");
+                            }
+                        }
+                    }
+                    break;
+
+                case ExpProgressHelpStates.ExpPerHour:
+                    if (expPerHour <= 0) break;
+                    SetText(lblExpPerHour, Utility.FormatValue(expPerHour) + " xp / h");
+                    break;
+            }
         }
     }
 
@@ -135,6 +183,14 @@ public class PlayerListItem : MonoBehaviour
         var next = skill.Level;
         pbHealth.Progress = (float)now / (float)next;
         oldHealthValue = skill.CurrentValue;
+    }
+    private static string FormatValue(long num)
+    {
+        var str = num.ToString();
+        if (str.Length <= 3) return str;
+        for (var i = str.Length - 3; i >= 0; i -= 3)
+            str = str.Insert(i, " ");
+        return str;
     }
 
     public void UpdatePlayerInfo(PlayerController player, GameCamera gameCamera)
@@ -154,7 +210,7 @@ public class PlayerListItem : MonoBehaviour
     {
         if (lblExpPerHour)
         {
-            SetActive(lblExpPerHour.gameObject, ExpPerHourVisible);
+            SetActive(lblExpPerHour.gameObject, ExpProgressHelpState != ExpProgressHelpStates.NotVisible);
         }
 
         if (!TargetPlayer)
@@ -232,4 +288,12 @@ public class PlayerListItem : MonoBehaviour
             gameObject.SetActive(value);
         }
     }
+}
+
+public enum ExpProgressHelpStates : int
+{
+    NotVisible,
+    ExpPerHour,
+    ExpLeft,
+    TimeLeft,
 }

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 [Serializable]
 public class Skills : IComparable
@@ -18,6 +16,7 @@ public class Skills : IComparable
     public SkillStat Health;
     public SkillStat Magic;
     public SkillStat Ranged;
+    public SkillStat Healing;
     public SkillStat Farming;
     public SkillStat Cooking;
     public SkillStat Crafting;
@@ -26,23 +25,25 @@ public class Skills : IComparable
     public SkillStat Woodcutting;
     public SkillStat Slayer;
     public SkillStat Sailing;
+    public static Skills Zero => new Skills();
 
     public Skills()
     {
-        Attack = new SkillStat(nameof(Attack), 0);
-        Defense = new SkillStat(nameof(Defense), 0);
-        Strength = new SkillStat(nameof(Strength), 0);
-        Health = new SkillStat(nameof(Health), 1000);
-        Woodcutting = new SkillStat(nameof(Woodcutting), 0);
-        Fishing = new SkillStat(nameof(Fishing), 0);
-        Mining = new SkillStat(nameof(Mining), 0);
-        Crafting = new SkillStat(nameof(Crafting), 0);
-        Cooking = new SkillStat(nameof(Cooking), 0);
-        Farming = new SkillStat(nameof(Farming), 0);
-        Magic = new SkillStat(nameof(Magic), 0);
-        Ranged = new SkillStat(nameof(Ranged), 0);
-        Slayer = new SkillStat(nameof(Slayer), 0);
-        Sailing = new SkillStat(nameof(Sailing), 0);
+        Attack = new SkillStat(nameof(Attack), 1, 0);
+        Defense = new SkillStat(nameof(Defense), 1, 0);
+        Strength = new SkillStat(nameof(Strength), 1, 0);
+        Health = new SkillStat(nameof(Health), 10, 1000);
+        Woodcutting = new SkillStat(nameof(Woodcutting), 1, 0);
+        Fishing = new SkillStat(nameof(Fishing), 1, 0);
+        Mining = new SkillStat(nameof(Mining), 1, 0);
+        Crafting = new SkillStat(nameof(Crafting), 1, 0);
+        Cooking = new SkillStat(nameof(Cooking), 1, 0);
+        Farming = new SkillStat(nameof(Farming), 1, 0);
+        Magic = new SkillStat(nameof(Magic), 1, 0);
+        Ranged = new SkillStat(nameof(Ranged), 1, 0);
+        Slayer = new SkillStat(nameof(Slayer), 1, 0);
+        Sailing = new SkillStat(nameof(Sailing), 1, 0);
+        Healing = new SkillStat(nameof(Healing), 1, 0);
 
         skills = new ConcurrentDictionary<string, SkillStat>(
             SkillList.ToDictionary(x => x.Name.ToLower(), x => x));
@@ -50,20 +51,21 @@ public class Skills : IComparable
 
     public Skills(RavenNest.Models.Skills skills)
     {
-        Attack = new SkillStat(nameof(Attack), skills.Attack);
-        Defense = new SkillStat(nameof(Defense), skills.Defense);
-        Strength = new SkillStat(nameof(Strength), skills.Strength);
-        Health = new SkillStat(nameof(Health), skills.Health);
-        Woodcutting = new SkillStat(nameof(Woodcutting), skills.Woodcutting);
-        Fishing = new SkillStat(nameof(Fishing), skills.Fishing);
-        Mining = new SkillStat(nameof(Mining), skills.Mining);
-        Crafting = new SkillStat(nameof(Crafting), skills.Crafting);
-        Cooking = new SkillStat(nameof(Cooking), skills.Cooking);
-        Farming = new SkillStat(nameof(Farming), skills.Farming);
-        Magic = new SkillStat(nameof(Magic), skills.Magic);
-        Ranged = new SkillStat(nameof(Ranged), skills.Ranged);
-        Slayer = new SkillStat(nameof(Slayer), skills.Slayer);
-        Sailing = new SkillStat(nameof(Sailing), skills.Sailing);
+        Attack = new SkillStat(nameof(Attack), skills.AttackLevel, skills.Attack);
+        Defense = new SkillStat(nameof(Defense), skills.DefenseLevel, skills.Defense);
+        Strength = new SkillStat(nameof(Strength), skills.StrengthLevel, skills.Strength);
+        Health = new SkillStat(nameof(Health), skills.HealthLevel, skills.Health);
+        Woodcutting = new SkillStat(nameof(Woodcutting), skills.WoodcuttingLevel, skills.Woodcutting);
+        Fishing = new SkillStat(nameof(Fishing), skills.FishingLevel, skills.Fishing);
+        Mining = new SkillStat(nameof(Mining), skills.MiningLevel, skills.Mining);
+        Crafting = new SkillStat(nameof(Crafting), skills.CraftingLevel, skills.Crafting);
+        Cooking = new SkillStat(nameof(Cooking), skills.CookingLevel, skills.Cooking);
+        Farming = new SkillStat(nameof(Farming), skills.FarmingLevel, skills.Farming);
+        Magic = new SkillStat(nameof(Magic), skills.MagicLevel, skills.Magic);
+        Ranged = new SkillStat(nameof(Ranged), skills.RangedLevel, skills.Ranged);
+        Slayer = new SkillStat(nameof(Slayer), skills.SlayerLevel, skills.Slayer);
+        Sailing = new SkillStat(nameof(Sailing), skills.SailingLevel, skills.Sailing);
+        Healing = new SkillStat(nameof(Healing), skills.HealingLevel, skills.Healing);
     }
 
     public bool IsDead => Health.CurrentValue <= 0;
@@ -88,7 +90,8 @@ public class Skills : IComparable
                 Slayer,
                 Magic,
                 Ranged,
-                Sailing
+                Sailing,
+                Healing
         });
 
     public int CompareTo(object obj)
@@ -117,24 +120,57 @@ public class Skills : IComparable
         return new RavenNest.Models.Skills
         {
             Attack = skills.Attack.Experience,
+            AttackLevel = skills.Attack.Level,
+
             Cooking = skills.Cooking.Experience,
+            CookingLevel = skills.Cooking.Level,
+
             Crafting = skills.Crafting.Experience,
+            CraftingLevel = skills.Crafting.Level,
+
             Defense = skills.Defense.Experience,
+            DefenseLevel = skills.Defense.Level,
+
             Farming = skills.Farming.Experience,
+            FarmingLevel = skills.Farming.Level,
+
             Fishing = skills.Fishing.Experience,
+            FishingLevel = skills.Fishing.Level,
+
             Health = skills.Health.Experience,
+            HealthLevel = skills.Health.Level,
+
             Magic = skills.Magic.Experience,
+            MagicLevel = skills.Magic.Level,
+
+            Healing = skills.Healing.Experience,
+            HealingLevel = skills.Healing.Level,
+
             Mining = skills.Mining.Experience,
+            MiningLevel = skills.Mining.Level,
+
             Ranged = skills.Ranged.Experience,
+            RangedLevel = skills.Ranged.Level,
+
             Sailing = skills.Sailing.Experience,
+            SailingLevel = skills.Sailing.Level,
+
             Slayer = skills.Slayer.Experience,
+            SlayerLevel = skills.Slayer.Level,
+
             Strength = skills.Strength.Experience,
-            Woodcutting = skills.Woodcutting.Experience
+            StrengthLevel = skills.Strength.Level,
+
+            Woodcutting = skills.Woodcutting.Experience,
+            WoodcuttingLevel = skills.Woodcutting.Level
         };
     }
     public static Skills operator *(Skills skill, float num)
     {
         var newSkills = new Skills();
+
+        if (skill == null) return newSkills;
+
         newSkills.TakeBestOf(skill);
 
         for (int i = 0; i < newSkills.SkillList.Length; i++)
@@ -155,6 +191,7 @@ public class Skills : IComparable
             case CombatSkill.Health: return Health;
             case CombatSkill.Magic: return Magic;
             case CombatSkill.Ranged: return Ranged;
+            case CombatSkill.Healing: return Healing;
         }
         return null;
     }

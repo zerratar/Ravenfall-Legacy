@@ -13,9 +13,17 @@ public class ItemController : MonoBehaviour
     public int Level;
     public int WeaponAim;
     public int WeaponPower;
+    public int MagicPower;
+    public int MagicAim;
+    public int RangedPower;
+    public int RangedAim;
     public int ArmorPower;
     public int RequiredAttackLevel;
     public int RequiredDefenseLevel;
+    public int RequiredRangedLevel;
+    public int RequiredMagicLevel;
+    public int RequiredSlayerLevel;
+
     public ItemCategory Category;
     public ItemType Type;
     public ItemMaterial Material;
@@ -26,7 +34,6 @@ public class ItemController : MonoBehaviour
     public string MalePrefabPath;
     public string FemalePrefabPath;
     public bool IsGenericModel;
-
 
     [SerializeField] private float pickupRadius = 3f;
 
@@ -43,8 +50,11 @@ public class ItemController : MonoBehaviour
 
     public void Update()
     {
-        transform.localPosition = Vector3.zero;
-        transform.localRotation = Quaternion.identity;
+        if (transform.localPosition.x != 0)
+        {
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+        }
     }
 
     internal void EnablePickup(DropEventManager dropEventManager)
@@ -54,7 +64,7 @@ public class ItemController : MonoBehaviour
         var pickupCollider = gameObject.AddComponent<SphereCollider>();
         pickupCollider.radius = pickupRadius;
         pickupCollider.isTrigger = true;
-    }    
+    }
 
     public ItemController Create(RavenNest.Models.Item item, bool useMalePrefab)
     {
@@ -73,8 +83,17 @@ public class ItemController : MonoBehaviour
         WeaponPower = item.WeaponPower;
         ArmorPower = item.ArmorPower;
 
+        MagicAim = item.MagicAim;
+        MagicPower = item.MagicPower;
+
+        RangedPower = item.RangedPower;
+        RangedAim = item.RangedAim;
+
         RequiredAttackLevel = item.RequiredAttackLevel;
         RequiredDefenseLevel = item.RequiredDefenseLevel;
+        RequiredRangedLevel = item.RequiredRangedLevel;
+        RequiredMagicLevel = item.RequiredMagicLevel;
+        RequiredSlayerLevel = item.RequiredSlayerLevel;
 
         Category = item.Category;
         Type = item.Type;
@@ -128,7 +147,7 @@ public class ItemController : MonoBehaviour
         if (!dropEventManager) return;
 
         if (player.PickupEventItem(Id))
-        {            
+        {
             dropEventManager.RemoveDropItem(this);
             Destroy(gameObject);
         }

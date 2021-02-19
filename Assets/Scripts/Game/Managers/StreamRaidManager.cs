@@ -19,6 +19,8 @@ public class StreamRaidManager : MonoBehaviour, IEvent
     public bool Started;
     public bool IsWar;
 
+    public StreamRaidNotifications Notifications => streamRaidNotifications;
+
     private void Start()
     {
         if (!streamRaidNotifications) streamRaidNotifications = FindObjectOfType<StreamRaidNotifications>();

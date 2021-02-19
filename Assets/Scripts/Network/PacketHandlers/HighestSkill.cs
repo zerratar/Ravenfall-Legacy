@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Linq;
-
 public class HighestSkill : PacketHandler<HighestSkillRequest>
 {
     public HighestSkill(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -18,14 +17,14 @@ public class HighestSkill : PacketHandler<HighestSkillRequest>
         var anySkill = true;
         var skillName = data.Skill;
 
-
         if (skillName.Equals("all", StringComparison.OrdinalIgnoreCase) || skillName.Equals("overall", StringComparison.OrdinalIgnoreCase))
         {
             var highestAll = players.OrderByDescending(x => x.Stats.LevelList.Sum()).FirstOrDefault();
             if (highestAll != null)
             {
-                client.SendCommand(data.Player.Username, "highest_skill",
-                    $"{highestAll.PlayerName} has the highest total level with {highestAll.Stats.LevelList.Sum()}.");
+                client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_TOTAL,
+                    highestAll.PlayerName,
+                    highestAll.Stats.LevelList.Sum());
                 return;
             }
         }
@@ -35,8 +34,9 @@ public class HighestSkill : PacketHandler<HighestSkillRequest>
             var highestAll = players.OrderByDescending(x => x.Stats.CombatLevel).FirstOrDefault();
             if (highestAll != null)
             {
-                client.SendCommand(data.Player.Username, "highest_skill",
-                    $"{highestAll.PlayerName} has the highest combat level with {highestAll.Stats.CombatLevel}.");
+                client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_COMBAT,
+                    highestAll.PlayerName,
+                    highestAll.Stats.CombatLevel);
                 return;
             }
         }
@@ -59,7 +59,7 @@ public class HighestSkill : PacketHandler<HighestSkillRequest>
             if (isCombatSkill)
             {
                 var combatSkill = player.GetCombatSkill(combat);
-                if (highest == null || highest.Experience < combatSkill.Experience)
+                if (highest == null || (highest.Level <= combatSkill.Level && highest.Experience < combatSkill.Experience))
                 {
                     p = player;
                     highest = combatSkill;
@@ -68,7 +68,7 @@ public class HighestSkill : PacketHandler<HighestSkillRequest>
             else if (!anySkill)
             {
                 var secondary = player.GetSkill(skill);
-                if (highest == null || highest.Experience < secondary.Experience)
+                if (highest == null || (highest.Level <= secondary.Level && highest.Experience < secondary.Experience))
                 {
                     p = player;
                     highest = secondary;
@@ -78,14 +78,12 @@ public class HighestSkill : PacketHandler<HighestSkillRequest>
 
         if (p == null || highest == null)
         {
-            client.SendCommand(data.Player.Username,
-                "highest_skill",
-                $"No player could be found that has a skill named {skillName}");
             return;
         }
 
-        client.SendCommand(data.Player.Username,
-            "highest_skill",
-            $"{p.PlayerName} has the highest level {skillName} with level {highest.Level}.");
+        client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_SKILL,
+            p.PlayerName,
+            skillName,
+            highest.Level);
     }
 }

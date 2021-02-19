@@ -47,20 +47,20 @@ public class TreeController : MonoBehaviour
     }
 
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (GameCache.Instance.IsAwaitingGameRestore) return;
-        if (treeShakeTimer > 0)
-        {
-            treeShakeTimer -= Time.deltaTime;
-            transform.rotation = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-treeShakeRange / 2f, treeShakeRange / 2f));
-            if (treeShakeTimer <= 0)
-            {
-                transform.rotation = startRotation;
-            }
-        }
-    }
+    //// Update is called once per frame
+    //void Update()
+    //{
+    //    if (GameCache.Instance.IsAwaitingGameRestore) return;
+    //    if (treeShakeTimer > 0)
+    //    {
+    //        treeShakeTimer -= Time.deltaTime;
+    //        transform.rotation = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-treeShakeRange / 2f, treeShakeRange / 2f));
+    //        if (treeShakeTimer <= 0)
+    //        {
+    //            transform.rotation = startRotation;
+    //        }
+    //    }
+    //}
 
     private IEnumerator Respawn()
     {

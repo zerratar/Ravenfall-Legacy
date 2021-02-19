@@ -18,20 +18,15 @@ public class PlayerTaskEventHandler : GameEventHandler<RavenNest.Models.PlayerTa
         if (player.Duel.InDuel)
             return;
 
-        var type = Enum
-            .GetValues(typeof(TaskType))
-            .Cast<TaskType>()
-            .FirstOrDefault(x => x.ToString().Equals(data.Task, StringComparison.InvariantCultureIgnoreCase));
-
         gameManager.Raid.Leave(player);
 
         if (gameManager.Arena.HasJoined(player))
             gameManager.Arena.Leave(player);
 
-        var taskArgs = new string[] { data.TaskArgument };
+        var taskArgs = data.TaskArgument;
+        var task = data.Task;
 
-        player.SetTaskArguments(taskArgs);
-        player.GotoClosest(type);
+        player.SetTask(task, taskArgs);
     }
 }
 

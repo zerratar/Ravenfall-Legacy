@@ -1,67 +1,111 @@
-﻿using System;
-using System.Globalization;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class NameTag : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI label;
+    [SerializeField] private TextMeshProUGUI clanName;
     [SerializeField] private Image logo;
 
-    public float YOffset = 2.75f;
-    public PlayerController Target;
-    public Sprite RaiderLogo;
     private bool nameTagSet;
     private GameManager gameManager;
+    private float originalFontSize;
     private bool oldCensor;
+    private string lastSetClanName;
+    private float oldScale = 1f;
 
+    public float YMinDistance = 0.45f;
+    public float YOffset = 2.75f;
+    public float Scale = 1f;
+
+    public Transform TargetTransform;
+    public PlayerController TargetPlayer;
+    public Sprite RaiderLogo;
     public NameTagManager Manager { get; set; }
+
 
     void Start()
     {
         if (!label) label = GetComponentInChildren<TextMeshProUGUI>();
         if (!logo) logo = GetComponentInChildren<Image>();
         gameManager = FindObjectOfType<GameManager>();
+        originalFontSize = label.fontSize;
     }
 
     // Update is called once per frame
     void Update()
     {
-
-        if (!Target)
+        if (!TargetTransform)
         {
             return;
         }
 
-        if (string.IsNullOrEmpty(label.text) || !nameTagSet)
+        if (string.IsNullOrEmpty(label.text) || !nameTagSet || oldScale != Scale)
         {
             SetupNameTagLabel();
         }
 
-        if (Target.Raider != null && (RaiderLogo == null || !logo.gameObject.activeSelf || oldCensor != gameManager.LogoCensor))
+        if (TargetPlayer)
         {
-            SetupRaiderTag();
+            if (clanName && TargetPlayer.Clan.InClan && lastSetClanName != TargetPlayer.Clan.ClanInfo.Name)
+            {
+                clanName.text = "<" + TargetPlayer.Clan.ClanInfo.Name + ">";
+                lastSetClanName = TargetPlayer.Clan.ClanInfo.Name;
+            }
+            else if (!TargetPlayer.Clan.InClan && !string.IsNullOrEmpty(lastSetClanName))
+            {
+                clanName.text = "";
+                lastSetClanName = "";
+            }
+            if (TargetPlayer.Raider != null && (RaiderLogo == null || !logo.gameObject.activeSelf || oldCensor != gameManager.LogoCensor))
+            {
+                SetupRaiderTag();
+            }
+            else if (!RaiderLogo && logo && logo.gameObject.activeSelf)
+            {
+                logo.gameObject.SetActive(false);
+            }
         }
-        else if (!RaiderLogo && logo && logo.gameObject.activeSelf)
+        else
         {
             logo.gameObject.SetActive(false);
         }
 
-        transform.position = Target.transform.position + (Vector3.up * YOffset);
+        transform.position = TargetTransform.position
+            + (Vector3.up * TargetTransform.localScale.y * YOffset * Scale)
+            + (Vector3.up * YMinDistance * Scale);
+
         oldCensor = gameManager.LogoCensor;
     }
 
     private void SetupNameTagLabel()
     {
         nameTagSet = true;
-        label.color = GetColorFromHex(Target.PlayerNameHexColor);
-        label.text = Target.PlayerName;
+        var collider = TargetTransform.GetComponent<CapsuleCollider>();
+        if (collider)
+            YOffset = collider.height;
+
+        if (TargetPlayer)
+        {
+            label.color = GetColorFromHex(TargetPlayer.PlayerNameHexColor);
+            label.text = TargetPlayer.PlayerName;
+        }
+        else
+        {
+            label.text = TargetTransform.name;
+        }
+
+        if (Scale != oldScale)
+        {
+            label.fontSize = originalFontSize * Scale;
+            oldScale = Scale;
+        }
     }
 
     private void SetupRaiderTag()
     {
-        RaiderLogo = Manager.LogoManager.GetLogo(Target.Raider.RaiderUserId);
+        RaiderLogo = Manager.LogoManager.GetLogo(TargetPlayer.Raider.RaiderUserId);
         if (logo && RaiderLogo)
         {
             logo.gameObject.SetActive(true);
@@ -73,19 +117,6 @@ public class NameTag : MonoBehaviour
     {
         if (ColorUtility.TryParseHtmlString(hex, out var color))
             return color;
-
         return Color.white;
-
-        //if (string.IsNullOrEmpty(hex)) return Color.white;
-        //if (hex.StartsWith("#")) hex = hex.Substring(1);
-        //if (hex.Length == 6)
-        //{
-        //    var r = int.Parse(hex[0] + "" + hex[1], NumberStyles.HexNumber);
-        //    var g = int.Parse(hex[2] + "" + hex[3], NumberStyles.HexNumber);
-        //    var b = int.Parse(hex[4] + "" + hex[5], NumberStyles.HexNumber);
-        //    return new Color(r / 255f, g / 255f, b / 255f);
-        //}
-
-        //return new Color();
     }
 }

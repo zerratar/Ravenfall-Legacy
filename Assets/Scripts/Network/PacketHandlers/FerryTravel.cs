@@ -4,7 +4,7 @@ public class FerryTravel : PacketHandler<FerryTravelRequest>
 {
     public FerryTravel(
          GameManager game,
-         GameServer server,
+         RavenBotConnection server,
          PlayerManager playerManager)
       : base(game, server, playerManager)
     {
@@ -15,14 +15,13 @@ public class FerryTravel : PacketHandler<FerryTravelRequest>
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendCommand(data.Player.Username, "ferry_travel_failed", $"You are not currently playing. Type !join to start playing.");
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         if (player.StreamRaid.InWar)
         {
-            client.SendCommand(data.Player.Username, "ferry_travel_failed",
-                "You cannot travel when participating in a war. Please wait for it to be over.");
+            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_WAR);
             return;
         }
 
@@ -31,7 +30,7 @@ public class FerryTravel : PacketHandler<FerryTravelRequest>
         if (!island)
         {
 
-            client.SendCommand(data.Player.Username, "ferry_travel_failed", $"No islands named '{islandName}'. You may travel to: '{string.Join(", ", Game.Islands.All.Select(x => x.Identifier))}'");
+            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_NO_SUCH_ISLAND, islandName, string.Join(", ", Game.Islands.All.Select(x => x.Identifier)));
             return;
         }
 

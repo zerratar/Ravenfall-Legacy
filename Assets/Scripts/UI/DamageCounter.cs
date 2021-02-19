@@ -12,12 +12,17 @@ public class DamageCounter : MonoBehaviour
     [SerializeField] private float FadeoutOffsetY = 0f;
     [SerializeField] private UnityEngine.UI.Image background;
 
+    [SerializeField] private Color damageColor;
+    [SerializeField] private Color healColor;
+    [SerializeField] private Color noChangeColor;
 
     private int damage = 0;
     private float fadeoutTimer = 2f;
 
     public float OffsetY = 2.75f;
-    public string Color;
+
+    //public string Color;
+
     public float TargetFadeoutOffsetY = 3f;
     public float FadeoutDuration = 2f;
     public Transform Target;
@@ -66,16 +71,33 @@ public class DamageCounter : MonoBehaviour
         Manager.Return(this);
     }
 
-    public void Activate(Transform target, int damage)
+    public void Activate(Transform target, int damage, bool isHeal)
     {
         Target = target;
 
         transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
         fadeoutTimer = FadeoutDuration;
 
-        Damage = damage;
-
         canvasGroup.alpha = 1;
+
+        if (isHeal)
+        {
+            background.color = healColor;
+        }
+        else
+        {
+            if (damage == 0)
+            {
+                background.color = noChangeColor;
+            }
+            else
+            {
+
+                background.color = damageColor;
+            }
+        }
+
+        Damage = System.Math.Abs(damage);
 
         if (!gameObject.activeSelf)
             gameObject.SetActive(true);
@@ -116,11 +138,10 @@ public class DamageCounter : MonoBehaviour
             transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
         }
 
-        if (background)
-        {
-            var color = NameTag.GetColorFromHex(Color);
-            background.color = color;
-        }
-
+        //if (background)
+        //{
+        //    var color = NameTag.GetColorFromHex(Color);
+        //    background.color = color;
+        //}
     }
 }

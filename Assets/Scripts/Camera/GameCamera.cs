@@ -29,10 +29,13 @@ public class GameCamera : MonoBehaviour
 
     private GameCameraType state = GameCameraType.Free;
     private bool allowJoinObserve = true;
+    private bool forcedFreeCamera;
+
+    public PlayerDetails Observer => playerObserver;
 
     public bool AllowJoinObserve
     {
-        get => allowJoinObserve && !gameManager.Raid.Started;
+        get => !forcedFreeCamera && allowJoinObserve && !gameManager.Raid.Started;
         private set => allowJoinObserve = value;
     }
 
@@ -44,6 +47,8 @@ public class GameCamera : MonoBehaviour
         if (!focusTargetCamera) focusTargetCamera = GetComponent<FocusTargetCamera>();
 
         if (!playerObserver) playerObserver = gameManager.ObservedPlayerDetails;
+
+        playerObserver.gameObject.SetActive(false);
         postProcessingLayer = GetComponent<PostProcessLayer>();
         camera = GetComponent<Camera>();
         farClipDistance = camera.farClipPlane;
@@ -75,19 +80,15 @@ public class GameCamera : MonoBehaviour
 
         try
         {
+            if (forcedFreeCamera)
+            {
+                return;
+            }
+
             if (state != GameCameraType.Free &&
                 Input.GetKey(KeyCode.LeftControl) && Input.GetKey(KeyCode.Tab))
             {
-                state = GameCameraType.Free;
-                playerObserver.Observe(null, 0);
-                observeCamera.ObservePlayer(null);
-                orbitCamera.targetTransform = null;
-                freeCamera.enabled = true;
-                orbitCamera.enabled = false;
-                focusTargetCamera.enabled = false;
-
-                AllowJoinObserve = false;
-
+                EnableFreeCamera();
                 return;
             }
 
@@ -135,6 +136,34 @@ public class GameCamera : MonoBehaviour
         }
     }
 
+    private void EnableFreeCamera()
+    {
+        state = GameCameraType.Free;
+
+        playerObserver.Observe(null, 0);
+        observeCamera.ObservePlayer(null);
+
+        orbitCamera.targetTransform = null;
+        freeCamera.enabled = true;
+        orbitCamera.enabled = false;
+        focusTargetCamera.enabled = false;
+
+        AllowJoinObserve = false;
+    }
+
+    public void ForceFreeCamera()
+    {
+        forcedFreeCamera = true;
+        freeCamera.SlowMotion = true;
+        EnableFreeCamera();
+    }
+
+    public void ReleaseFreeCamera()
+    {
+        freeCamera.SlowMotion = false;
+        forcedFreeCamera = false;
+    }
+
     public bool ObserveNextPlayer()
     {
         var playerCount = playerManager.GetPlayerCount(true);
@@ -161,6 +190,7 @@ public class GameCamera : MonoBehaviour
 
     public void EnableRaidCamera()
     {
+        if (forcedFreeCamera) return;
         state = GameCameraType.Raid;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
@@ -169,6 +199,7 @@ public class GameCamera : MonoBehaviour
 
     public void EnableArenaCamera()
     {
+        if (forcedFreeCamera) return;
         state = GameCameraType.Arena;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
@@ -177,6 +208,7 @@ public class GameCamera : MonoBehaviour
 
     public void EnableDungeonCamera()
     {
+        if (forcedFreeCamera) return;
         state = GameCameraType.Dungeon;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
@@ -185,24 +217,28 @@ public class GameCamera : MonoBehaviour
 
     public void DisableFocusCamera()
     {
+        if (forcedFreeCamera) return;
         if (state != GameCameraType.Observe)
             ObserveNextPlayer();
     }
 
     public void DisableDungeonCamera()
     {
+        if (forcedFreeCamera) return;
         ObserveNextPlayer();
     }
 
     public void ObservePlayer(PlayerController player)
     {
+        if (forcedFreeCamera) return;
         if (!player) return;
-        var subMultiplier = player.IsSubscriber ? 2f : 1f;
+        var subMultiplier = player.IsSubscriber ? 3f : 1f;
         ObservePlayer(player, ObserverJumpTimer * subMultiplier);
     }
 
     public void ObservePlayer(PlayerController player, float time)
     {
+        if (forcedFreeCamera) return;
         if (!CanObservePlayer(player)) return;
 
         observeNextPlayerTimer = time;
@@ -220,6 +256,7 @@ public class GameCamera : MonoBehaviour
 
     private void EnableFocusTargetCamera(Transform transform)
     {
+        if (forcedFreeCamera) return;
         freeCamera.enabled = false;
         orbitCamera.enabled = false;
         focusTargetCamera.enabled = true;
@@ -229,7 +266,7 @@ public class GameCamera : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool CanObservePlayer(PlayerController player)
     {
-        return !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.StreamRaid.InWar;
+        return !forcedFreeCamera && !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.StreamRaid.InWar;
     }
 }
 

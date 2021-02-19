@@ -9,16 +9,22 @@ public class GameMenuHandler : MonoBehaviour
     [SerializeField] private MenuView menuView;
     [SerializeField] private MenuView activeMenu;
 
+    [SerializeField] private GameManager gameManager;
+    [SerializeField] private LoginHandler loginScreen;
+
     [SerializeField] private TMPro.TextMeshProUGUI lblVersion;
 
     public bool Visible => gameObject.activeSelf;
-
+    private bool IsAuthenticated => gameManager && gameManager.RavenNest != null && gameManager.RavenNest.Authenticated;
     private void Awake()
     {
         if (lblVersion)
         {
             lblVersion.text = "v" + Application.version;
         }
+
+        if (!loginScreen) loginScreen = FindObjectOfType<LoginHandler>();
+        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
 
         Hide();
     }
@@ -59,6 +65,10 @@ public class GameMenuHandler : MonoBehaviour
     public void Hide()
     {
         gameObject.SetActive(false);
+        if (loginScreen && !IsAuthenticated)
+        {
+            loginScreen.gameObject.SetActive(true);
+        }
     }
 
     public void ShowRaidMenu()
@@ -78,6 +88,11 @@ public class GameMenuHandler : MonoBehaviour
 
     private void ActivateMenu(MenuView menuView)
     {
+        if (loginScreen && !IsAuthenticated)
+        {
+            loginScreen.gameObject.SetActive(false);
+        }
+
         if (!Visible)
         {
             Show();

@@ -5,45 +5,64 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
 
-public class GameServer : IDisposable
+public class RavenBotConnection : IDisposable
 {
     public const int ServerPort = 4040;
+    public readonly int RemoteBotPort = 4041;
 
     private readonly GameManager game;
-
     private readonly TcpListener server;
+    private readonly List<GameClient> connectedClients = new List<GameClient>();
+    private readonly ConcurrentQueue<Packet> availablePackets = new ConcurrentQueue<Packet>();
+    private readonly ConcurrentDictionary<string, Type> packetHandlers = new ConcurrentDictionary<string, Type>();
+    private SessionOwnerMessage queuedSessionOwnerMessage;
+    private GameClient remoteClient;
 
-    private readonly List<GameClient> connectedClients
-        = new List<GameClient>();
+    public event EventHandler<GameClient> LocalConnected;
+    public event EventHandler<GameClient> RemoteConnected;
+    public event EventHandler<GameClient> LocalDisconnected;
+    public event EventHandler<GameClient> RemoteDisconnected;
 
-    private readonly ConcurrentQueue<Packet> availablePackets
-        = new ConcurrentQueue<Packet>();
-
-    private readonly ConcurrentDictionary<string, Type> packetHandlers
-        = new ConcurrentDictionary<string, Type>();
-
-    public GameServer(GameManager game)
+    public RavenBotConnection(GameManager game, string remoteBotServer)
     {
         this.game = game;
-        var ipEndPoint = new IPEndPoint(IPAddress.Any, ServerPort);
-        server = new TcpListener(ipEndPoint);
+        server = new TcpListener(new IPEndPoint(IPAddress.Any, ServerPort));
+
+        if (string.IsNullOrEmpty(remoteBotServer))
+            remoteBotServer = "127.0.0.1";
+
+        RemoteBotHost = remoteBotServer;
     }
 
     public bool IsBound => server.Server.IsBound;
 
-    public void Start()
-    {
-        server.Start(0x1000);
-        server.BeginAcceptTcpClient(OnAcceptTcpClient, null);
-        game.Log("Bot Server started");
-    }
 
-    public GameClient Client => connectedClients.Count > 0
+    public GameClient Local => connectedClients.Count > 0
             ? connectedClients.FirstOrDefault(x => x.Connected)
             : null;
+
+    public GameClient Remote => remoteClient;
+    public GameClient ActiveClient
+    {
+        get
+        {
+            if (IsConnectedToRemote)
+                return remoteClient;
+            if (IsConnectedToLocal)
+                return Local;
+            return null;
+        }
+    }
+
+    public bool IsConnectedToRemote => Remote?.Connected ?? false;
+    public bool IsConnectedToLocal => Local?.Connected ?? false;
+    public bool IsConnected => IsConnectedToRemote || IsConnectedToLocal;
+
+    public string RemoteBotHost { get; internal set; }
 
     public Packet ReadPacket()
     {
@@ -68,10 +87,16 @@ public class GameServer : IDisposable
 
     public void Stop()
     {
-        foreach (var client in connectedClients)
+        try
         {
-            client.Dispose();
+            foreach (var client in connectedClients)
+            {
+                client.Dispose();
+            }
         }
+        catch { }
+
+        connectedClients.Clear();
 
         if (server.Server.IsBound)
         {
@@ -91,7 +116,6 @@ public class GameServer : IDisposable
 
     public void DataReceived(GameClient gameClient, string rawCommand)
     {
-        //game.Log("Raw data: " + rawCommand);
         var index = rawCommand.IndexOf(':');
         var jsonDataType = rawCommand.Remove(index);
         var jsonData = rawCommand.Substring(index + 1);
@@ -103,14 +127,32 @@ public class GameServer : IDisposable
         packetHandlers[packetCommand.ToLower()] = typeof(T);
     }
 
-    public void SendObject<T>(T obj)
+    public void SendCommand(string receiver, string identifier, string message, params string[] args)
     {
-        Client?.Write(JsonConvert.SerializeObject(obj));
+        var client = ActiveClient;
+        if (client == null) return;
+        client.SendCommand(receiver, identifier, message, args);
     }
 
-    public void Send(string correlationId, string playerName, string rawCommand)
+    public void SendMessage(string receiver, string format, params string[] args)
     {
-        Client?.Write(correlationId + "|" + playerName + ":" + rawCommand);
+        var client = ActiveClient;
+        if (client == null) return;
+        client.SendMessage(receiver, format, args);
+    }
+    public void Send(string receiver, string format, params object[] args)
+    {
+        var client = ActiveClient;
+        if (client == null) return;
+        var a = args == null ? new string[0] : args.Select(x => x.ToString()).ToArray();
+        client.SendMessage(receiver, format, a);
+    }
+    public void Broadcast(string format, params object[] args)
+    {
+        var client = ActiveClient;
+        if (client == null) return;
+        var a = args == null ? new string[0] : args.Select(x => x.ToString()).ToArray();
+        client.SendMessage(string.Empty, format, a);
     }
 
     private void HandlePacket(Packet packet, params object[] packetHandlerArgs)
@@ -145,6 +187,59 @@ public class GameServer : IDisposable
         }
 
         packetHandler.Handle(packet);
+    }
+
+    internal void Connect(BotConnectionType type)
+    {
+        if (type == BotConnectionType.Local)
+        {
+            if (server == null || !server.Server.IsBound)
+            {
+                ListenForLocalBot();
+            }
+        }
+        else if (!IsConnectedToRemote)
+        {
+            game.Log("Connecting to remote bot...");
+            remoteClient = new GameClient(this, OnClientConnected, OnRemoteConnectionFailed);
+        }
+    }
+
+    private async void OnRemoteConnectionFailed()
+    {
+        game.Log("Failed to connect to remote bot. Retrying");
+
+        await Task.Delay(1000);
+
+        if (IsConnectedToLocal)
+        {
+            game.Log("Connected to local bot, remote reconnection tries cancelled.");
+            return;
+        }
+
+        Connect(BotConnectionType.Remote);
+    }
+
+    internal void Disconnect(BotConnectionType type)
+    {
+        if (type == BotConnectionType.Local)
+        {
+            // disconnecting local means stopping the server.
+            Stop();
+        }
+        else if (remoteClient != null)
+        {
+            //remoteClient.SendCommand("", "leave", game.RavenNest.TwitchUserId + "$" + game.RavenNest.TwitchUserName);
+            remoteClient.Dispose();
+            remoteClient = null;
+        }
+    }
+
+    private void ListenForLocalBot()
+    {
+        server.Start(0x1000);
+        server.BeginAcceptTcpClient(OnAcceptTcpClient, null);
+        game.Log("Bot Server started");
     }
 
     private PacketHandler InstantiateHandler(Type packetHandlerType, params object[] args)
@@ -184,17 +279,46 @@ public class GameServer : IDisposable
         catch { }
     }
 
+
+    public void OnClientConnected(GameClient client)
+    {
+        game.Log("Connected to remote bot");
+        RemoteConnected?.Invoke(this, client);
+
+        if (queuedSessionOwnerMessage != null)
+        {
+            var msg = queuedSessionOwnerMessage;
+            SendSessionOwner(msg.TwitchUserId, msg.TwitchUserName, msg.SessionId);
+        }
+    }
+
     public void OnClientConnected(TcpClient client)
     {
         game.Log("Bot connected");
         var gameClient = new GameClient(this, client);
         connectedClients.Add(gameClient);
+        LocalConnected?.Invoke(this, gameClient);
+
+        if (queuedSessionOwnerMessage != null)
+        {
+            var msg = queuedSessionOwnerMessage;
+            SendSessionOwner(msg.TwitchUserId, msg.TwitchUserName, msg.SessionId);
+        }
     }
 
     public void OnClientDisconnected(GameClient gameClient)
     {
-        game.Log("Bot disconnected");
-        connectedClients.Remove(gameClient);
+        if (connectedClients.Remove(gameClient))
+        {
+            game.Log("Bot disconnected");
+            connectedClients.Remove(gameClient);
+            LocalDisconnected?.Invoke(this, gameClient);
+        }
+        else
+        {
+            game.LogError("Disconnected from remote bot");
+            RemoteDisconnected?.Invoke(this, gameClient);
+        }
     }
 
     private bool TryParseHexColor(string hexColorString, out Color color)
@@ -226,13 +350,45 @@ public class GameServer : IDisposable
 
     public void Log(string message) => game.Log(message);
 
-    public void Announce(string message)
+    public void Announce(string message, params string[] args)
     {
-        if (Client == null || !Client.Connected) return;
-        Client.SendMessage("", message);
+        if (!IsConnected) return;
+        ActiveClient.SendMessage("", message, args);
+    }
+
+    internal void SendSessionOwner(string twitchUserId, string twitchUserName, Guid sessionId)
+    {
+        if (!IsConnected)
+        {
+            this.queuedSessionOwnerMessage = new SessionOwnerMessage
+            {
+                TwitchUserId = twitchUserId,
+                TwitchUserName = twitchUserName,
+                SessionId = sessionId
+            };
+            return;
+        }
+
+        ActiveClient.SendSessionOwner(twitchUserId, twitchUserName, sessionId);
+        if (ActiveClient.IsRemote)
+        {
+            game.Log("Sent session info to server");
+        }
     }
 }
 
+public enum BotConnectionType
+{
+    Local,
+    Remote
+}
+
+public class SessionOwnerMessage
+{
+    public string TwitchUserId { get; set; }
+    public string TwitchUserName { get; set; }
+    public Guid SessionId { get; set; }
+}
 
 public static class TwitchColors
 {

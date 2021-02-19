@@ -10,13 +10,25 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
             return;
         }
 
-        var playerInfo = await gameManager.RavenNest.PlayerJoinAsync(data.UserId, data.UserName);
+        var playerInfo = await gameManager.RavenNest.PlayerJoinAsync(
+            new PlayerJoinData
+            {
+                UserId = data.UserId,
+                UserName = data.UserName,
+                Identifier = "1",
+            });
+
         if (playerInfo == null)
         {
             return;
         }
 
-        gameManager.SpawnPlayer(playerInfo);
+        if (!playerInfo.Success)
+        {
+            return;
+        }
+
+        gameManager.SpawnPlayer(playerInfo.Player);
 
         Debug.Log($"PlayerAddEventHandler " + data.UserId + ", " + data.UserName);
     }

@@ -23,6 +23,8 @@ public class ItemManager : MonoBehaviour
     [Header("Item Material Setup")]
     [SerializeField] private Material[] itemMaterials;
 
+    [SerializeField] private RedeemableItem[] redeemableItems;
+
     void Start()
     {
         if (!game) game = GetComponent<GameManager>();
@@ -42,6 +44,40 @@ public class ItemManager : MonoBehaviour
             LoadItemsAsync();
         }
     }
+
+
+    public Item GetStreamerToken()
+    {
+        lock (mutex)
+        {
+            return items.FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
+        }
+    }
+
+    public IReadOnlyList<RedeemableItem> Redeemable
+    {
+        get
+        {
+            var items = new List<RedeemableItem>();
+            var date = DateTime.UtcNow;
+            if (redeemableItems == null)
+                return items;
+
+            foreach (var redeemable in redeemableItems)
+            {
+                if (redeemable.Year != 0 && redeemable.Year != date.Year)
+                    continue;
+                if (redeemable.Month != 0 && redeemable.Month != date.Month)
+                    continue;
+                if (redeemable.Day != 0 && redeemable.Day != date.Day)
+                    continue;
+
+                items.Add(redeemable);
+            }
+            return items;
+        }
+    }
+
     public Material GetMaterial(int material)
     {
         return material >= 0 && itemMaterials.Length > material ? itemMaterials[material] : null;
@@ -88,4 +124,15 @@ public class ItemManager : MonoBehaviour
     {
         return items.FirstOrDefault(x => x.Id == id);
     }
+}
+
+[Serializable]
+public struct RedeemableItem
+{
+    public Guid ItemId;
+    public string Name;
+    public int Cost;
+    public int Year;
+    public int Month;
+    public int Day;
 }

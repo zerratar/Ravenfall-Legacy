@@ -2,7 +2,7 @@
 {
     public FerryLeave(
        GameManager game,
-       GameServer server,
+       RavenBotConnection server,
        PlayerManager playerManager)
     : base(game, server, playerManager)
     {
@@ -13,25 +13,22 @@
         var player = PlayerManager.GetPlayer(data);
         if (!player)
         {
-            client.SendCommand(data.Username, "ferry_leave_failed", $"You are not currently playing. Type !join to start playing.");
+            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         if (!player.Ferry)
-        {
-            client.SendCommand(data.Username, "ferry_leave_failed", $"Uh oh! A bug! Player doesnt know where the ferry is.");
             return;
-        }
 
         if (player.Ferry.Disembarking)
         {
-            client.SendCommand(data.Username, "ferry_leave_failed", $"You're already disembarking the ferry.");
+            client.SendMessage(data.Username, Localization.MSG_DISEMBARK_ALREADY);
             return;
         }
 
         if (!player.Ferry.Active)
         {
-            client.SendCommand(data.Username, "ferry_leave_failed", $"You're not on the ferry.");
+            client.SendMessage(data.Username, Localization.MSG_DISEMBARK_FAIL);
             return;
         }
 

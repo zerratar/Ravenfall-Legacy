@@ -21,11 +21,6 @@ public class ChunkManager : MonoBehaviour
                     .ToArray();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-    }
-
     public IChunk GetChunkAt(int x, int y)
     {
         return null;

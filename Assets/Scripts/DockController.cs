@@ -1,10 +1,11 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using UnityEngine;
 
 public class DockController : MonoBehaviour
 {
-    private readonly ConcurrentDictionary<string, PlayerController> players
-        = new ConcurrentDictionary<string, PlayerController>();
+    private readonly ConcurrentDictionary<Guid, PlayerController> players
+        = new ConcurrentDictionary<Guid, PlayerController>();
 
     private BoxCollider boxCollider;
 
@@ -19,12 +20,22 @@ public class DockController : MonoBehaviour
 
     public bool OnDock(PlayerController player)
     {
-        return players.TryGetValue(player.UserId, out _);
+        if (players.TryGetValue(player.Id, out _))
+        {
+            return true;
+        }
+
+        return Vector3.Distance(DockPosition, player.Transform.position) < 2;
     }
 
-    public bool OnDock(string userId)
+    public void Enter(PlayerController player)
     {
-        return players.TryGetValue(userId, out _);
+        players[player.Id] = player;
+    }
+
+    public void Exit(PlayerController player)
+    {
+        players.TryRemove(player.Id, out _);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -35,7 +46,7 @@ public class DockController : MonoBehaviour
             return;
         }
 
-        players[player.UserId] = player;
+        players[player.Id] = player;
     }
 
     private void OnTriggerExit(Collider other)
@@ -46,6 +57,6 @@ public class DockController : MonoBehaviour
             return;
         }
 
-        players.TryRemove(player.UserId, out _);
+        players.TryRemove(player.Id, out _);
     }
 }

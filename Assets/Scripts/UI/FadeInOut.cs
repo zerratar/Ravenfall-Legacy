@@ -1,62 +1,62 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
 
 public class FadeInOut : MonoBehaviour
 {
-    [SerializeField] private FadeState fadeState = FadeState.Out;
     [SerializeField] private float fadeTime = 1f;
-    [SerializeField] private bool forever = true;
+    [SerializeField] private AnimationCurve fadeCurve;
 
     private CanvasGroup canvasGroup;
     private float fadeTimer;
+    private bool sentMidPoint;
+    private bool sentCompleted;
+
+    public bool FadeActive = false;
+
+    public Action FadeCompleted;
+    public Action FadeHalfWay;
 
     // Start is called before the first frame update
     void Start()
     {
         canvasGroup = GetComponent<CanvasGroup>();
-        fadeTimer = fadeTime;
+        fadeTimer = 0;
+        canvasGroup.alpha = fadeCurve.Evaluate(0);
+    }
+
+    public void StartFade()
+    {
+        FadeActive = true;
+        sentMidPoint = false;
+        sentCompleted = false;
+        fadeTimer = 0f;
+        canvasGroup.alpha = fadeCurve.Evaluate(0);
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!canvasGroup)
+        if (!canvasGroup || !FadeActive)
         {
             return;
         }
 
-        if (fadeState == FadeState.Out)
+        fadeTimer += Time.deltaTime;
+        fadeTimer = Math.Min(fadeTimer, fadeTime);
+        var t = fadeTimer / fadeTime;
+        canvasGroup.alpha = fadeCurve.Evaluate(t);
+
+        if (t >= 0.5 && !sentMidPoint)
         {
-            if (canvasGroup.alpha > 0f)
-            {
-                fadeTimer -= Time.deltaTime;
-                canvasGroup.alpha = fadeTimer / fadeTime;
-            }
-            else if (forever)
-            {
-                fadeTimer = fadeTime;
-                fadeState = FadeState.In;
-            }
+            sentMidPoint = true;
+            FadeHalfWay?.Invoke();
         }
-        else
+
+        if (t >= 1.0 && !sentCompleted)
         {
-            if (canvasGroup.alpha < 1f)
-            {
-                fadeTimer -= Time.deltaTime;
-                canvasGroup.alpha = (fadeTime - fadeTimer) / fadeTime;
-            }
-            else if (forever)
-            {
-                fadeTimer = fadeTime;
-                fadeState = FadeState.Out;
-            }
+            sentCompleted = true;
+            FadeActive = false;
+            FadeCompleted?.Invoke();
         }
     }
-}
-
-public enum FadeState
-{
-    In,
-    Out
 }

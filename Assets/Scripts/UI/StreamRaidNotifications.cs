@@ -1,7 +1,5 @@
-﻿using System;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class StreamRaidNotifications : MonoBehaviour
 {
@@ -12,11 +10,17 @@ public class StreamRaidNotifications : MonoBehaviour
     [SerializeField] private GameObject defendersWin;
 
     private AudioSource audioSource;
+    public float volume
+    {
+        get => audioSource.volume;
+        set => audioSource.volume = value;
+    }
 
     private void Start()
     {
         if (!logoManager) logoManager = FindObjectOfType<PlayerLogoManager>();
         if (!audioSource) audioSource = GetComponent<AudioSource>();
+        audioSource.volume = PlayerPrefs.GetFloat("RaidHornVolume", 1f);
         HideRaidInfo();
     }
 
@@ -37,7 +41,8 @@ public class StreamRaidNotifications : MonoBehaviour
 
         raidBossAppeared.GetComponentInChildren<TextMeshProUGUI>().text = message;
 
-        if (audioSource) audioSource.Play();
+        if (audioSource)
+            audioSource.Play();
 
         raidBossAppeared.SetActive(true);
         raidBossAppeared.GetComponent<AutoHideUI>()?.Reset();
@@ -49,7 +54,6 @@ public class StreamRaidNotifications : MonoBehaviour
         if (defendersWin)
         {
             defendersWin.GetComponent<AutoHideUI>()?.Reset();
-
         }
     }
 

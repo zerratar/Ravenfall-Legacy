@@ -2,7 +2,7 @@
 {
     public ArenaLeave(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {

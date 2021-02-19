@@ -31,7 +31,7 @@ namespace RavenNest.SDK
                         p.SetValue(output, value);
                     }
                 }
-                catch (Exception exc)
+                catch
                 {
                 }
             }

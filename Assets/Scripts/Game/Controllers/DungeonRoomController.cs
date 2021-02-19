@@ -83,9 +83,17 @@ public class DungeonRoomController : MonoBehaviour
 
     public EnemyController GetNextEnemyTarget(PlayerController player)
     {
-        return enemies
+        if (enemies == null || enemies.Length == 0)
+            return null;
+
+        var aliveEnemies = enemies
             .Where(x => !x.Stats.IsDead)
-            .OrderBy(x => x.Attackers.Count)
+            .ToList();
+
+        if (aliveEnemies.Count == 0)
+            return null;
+
+        return aliveEnemies.OrderBy(x => x.Attackers.Count)
             .ThenBy(x => Vector3.Distance(x.transform.position, player.transform.position))
             .FirstOrDefault();
     }

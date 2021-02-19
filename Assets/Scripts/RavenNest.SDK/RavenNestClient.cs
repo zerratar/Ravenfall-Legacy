@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using RavenNest.Models;
@@ -14,7 +16,6 @@ namespace RavenNest.SDK
         private readonly ITokenProvider tokenProvider;
 
         private readonly GameManager gameManager;
-
         private AuthToken currentAuthToken;
         private SessionToken currentSessionToken;
 
@@ -31,17 +32,18 @@ namespace RavenNest.SDK
             IAppSettings settings)
         {
             ServicePointManager.DefaultConnectionLimit = 100;
-            ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy();
+            ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(ValidateCertificate);
+            //ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy();
 
             this.logger = logger ?? new UnityLogger();
             this.gameManager = gameManager;
             var binarySerializer = new CompressedJsonSerializer();//new BinarySerializer();
-            appSettings = settings ?? new RavenNestStreamSettings();
+            appSettings = settings ?? new ProductionRavenNestStreamSettings();
 
             tokenProvider = new TokenProvider();
             var request = new WebApiRequestBuilderProvider(appSettings, tokenProvider);
 
-            Stream = new WebSocketEndpoint(gameManager, logger, settings, tokenProvider, new GamePacketSerializer(binarySerializer));
+            Stream = new WebSocketEndpoint(this, gameManager, logger, settings, tokenProvider, new GamePacketSerializer(binarySerializer));
             Auth = new WebBasedAuthEndpoint(this, logger, request);
             Game = new WebBasedGameEndpoint(this, logger, request);
             Items = new WebBasedItemsEndpoint(this, logger, request);
@@ -70,9 +72,15 @@ namespace RavenNest.SDK
         public bool HasActiveRequest => activeRequestCount > 0;
 
         public string ServerAddress => appSettings.ApiEndpoint;
+        public Guid SessionId { get; private set; }
+        public string TwitchUserName { get; private set; }
+        public string TwitchDisplayName { get; private set; }
+        public string TwitchUserId { get; private set; }
 
+        public bool Desynchronized { get; set; }
         public async void Update()
         {
+            if (Desynchronized) return;
             if (!SessionStarted)
             {
                 return;
@@ -90,9 +98,26 @@ namespace RavenNest.SDK
 
             Interlocked.Decrement(ref updateCounter);
         }
+        public void SendPlayerLoyaltyData(PlayerController player)
+        {
+            if (Desynchronized) return;
+
+            if (!player || player == null)
+            {
+                return;
+            }
+
+            if (!SessionStarted)
+            {
+                return;
+            }
+
+            Stream.SendPlayerLoyaltyData(player);
+        }
 
         public async Task<bool> SavePlayerAsync(PlayerController player)
         {
+            if (Desynchronized) return false;
             if (!player || player == null)
             {
                 return false;
@@ -103,6 +128,7 @@ namespace RavenNest.SDK
                 UnityEngine.Debug.LogWarning("Trying to save player " + player.PlayerName + " but session has not been started.");
                 return false;
             }
+
             var saveResult = await Stream.SavePlayerSkillsAsync(player);
             await Stream.SavePlayerStateAsync(player);
             return saveResult;
@@ -110,6 +136,7 @@ namespace RavenNest.SDK
 
         public async Task<bool> LoginAsync(string username, string password)
         {
+            if (Desynchronized) return false;
             try
             {
                 Interlocked.Increment(ref activeRequestCount);
@@ -136,6 +163,7 @@ namespace RavenNest.SDK
 
         public async Task<bool> StartSessionAsync(string clientVersion, string accessKey, bool useLocalPlayers)
         {
+            if (Desynchronized) return false;
             try
             {
                 Interlocked.Increment(ref activeRequestCount);
@@ -144,6 +172,11 @@ namespace RavenNest.SDK
                 {
                     tokenProvider.SetSessionToken(sessionToken);
                     currentSessionToken = sessionToken;
+                    SessionId = currentSessionToken.SessionId;
+                    TwitchUserName = currentSessionToken.TwitchUserName;
+                    TwitchDisplayName = currentSessionToken.TwitchDisplayName;
+                    TwitchUserId = currentSessionToken.TwitchUserId;
+                    gameManager.OnSessionStart();
                     return true;
                 }
                 else
@@ -164,12 +197,31 @@ namespace RavenNest.SDK
             return false;
         }
 
-        public async Task<RavenNest.Models.Player> PlayerJoinAsync(string userId, string username)
+        internal async void PlayerRemoveAsync(PlayerController player)
         {
+            if (Desynchronized) return;
             try
             {
                 Interlocked.Increment(ref activeRequestCount);
-                return await Players.PlayerJoinAsync(userId, username);
+                await Players.PlayerRemoveAsync(player.Id);
+            }
+            catch (Exception exc)
+            {
+                logger.Error(exc.ToString());
+            }
+            finally
+            {
+                Interlocked.Decrement(ref activeRequestCount);
+            }
+        }
+
+        public async Task<RavenNest.Models.PlayerJoinResult> PlayerJoinAsync(PlayerJoinData joinData)
+        {
+            if (Desynchronized) return null;
+            try
+            {
+                Interlocked.Increment(ref activeRequestCount);
+                return await Players.PlayerJoinAsync(joinData);
             }
             catch (Exception exc)
             {
@@ -222,6 +274,10 @@ namespace RavenNest.SDK
                 currentSessionToken = null;
                 tokenProvider.SetSessionToken(null);
             }
+        }
+        private bool ValidateCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
         }
     }
 }

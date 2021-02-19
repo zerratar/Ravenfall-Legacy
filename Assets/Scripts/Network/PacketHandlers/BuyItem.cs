@@ -6,7 +6,7 @@ public class BuyItem : PacketHandler<TradeItemRequest>
 {
     public BuyItem(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -17,24 +17,16 @@ public class BuyItem : PacketHandler<TradeItemRequest>
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendCommand(
-                data.Player.Username, "item_trade_result",
-                "You have to play the game to buy items. Use !join to play.");
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
-        if (!ioc)
-        {
-            client.SendCommand(player.PlayerName, "item_trade_result", "Unable to buy items right now. Unknown error");
-            return;
-        }
-
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery);
         if (item == null)
         {
-            client.SendCommand(player.PlayerName, "message", "Could not find an item matching the query '" + data.ItemQuery + "'");
+            client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_NOT_FOUND, data.ItemQuery);
             return;
         }
         try
@@ -44,14 +36,14 @@ public class BuyItem : PacketHandler<TradeItemRequest>
             switch (result.State)
             {
                 case ItemTradeState.DoesNotExist:
-                    client.SendCommand(player.PlayerName, "item_trade_result", $"Could not find any {item.Item.Name} in the marketplace.");
+                    client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_NOT_IN_MARKET, item.Item.Name);
                     break;
                 case ItemTradeState.InsufficientCoins:
-                    client.SendCommand(player.PlayerName, "item_trade_result", $"You do not have enough coins to buy the {item.Item.Name}.");
+                    client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_INSUFFICIENT_COIN, item.Item.Name);
                     break;
 
                 case ItemTradeState.Failed:
-                    client.SendCommand(player.PlayerName, "item_trade_result", $"Error accessing marketplace right now.");
+                    client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_MARKETPLACE_ERROR);
                     break;
 
                 case ItemTradeState.RequestToLow:
@@ -60,25 +52,48 @@ public class BuyItem : PacketHandler<TradeItemRequest>
                         .OrderBy(x => x)
                         .FirstOrDefault();
 
-                    client.SendCommand(player.PlayerName, "item_trade_result", $"Unable to buy any {item.Item.Name}, the cheapest asking price is {Utility.FormatValue(cheapest)}.");
+                    client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_TOO_LOW, item.Item.Name, Utility.FormatValue(cheapest));
                     break;
 
                 case ItemTradeState.Success:
                     player.Inventory.Add(item.Item, item.Amount);
-                    var amountStr = "";
-                    if (result.TotalAmount > 1) amountStr = $"{result.TotalAmount}x ";
-                    client.SendCommand(player.PlayerName,
-                        "item_trade_result",
-                        player.EquipIfBetter(item.Item)
-                            ? $"{amountStr}{item.Item.Name} was bought and equipped for {Utility.FormatValue(result.TotalCost)} coins."
-                            : $"{amountStr}{item.Item.Name} was bought for {Utility.FormatValue(result.TotalCost)} coins.");
+                    var msg = "";
+                    var arg0 = "";
+                    var arg1 = "";
+                    var arg2 = "";
+
+                    if (result.TotalAmount > 1)
+                    {
+                        arg0 = result.TotalAmount.ToString();
+                        arg1 = item.Item.Name;
+                        arg2 = Utility.FormatValue(result.TotalCost);
+                        msg = "{totalAmount}x ";
+                    }
+                    else
+                    {
+                        arg0 = item.Item.Name;
+                        arg1 = Utility.FormatValue(result.TotalCost);
+                    }
+
+                    msg += "{itemName} was bought ";
+
+                    if (player.EquipIfBetter(item.Item))
+                    {
+                        msg += "and equipped for {price} coins.";
+                    }
+                    else
+                    {
+                        msg += "for {price} coins.";
+                    }
+
+                    client.SendMessage(player.PlayerName, msg, arg0, arg1, arg2);
                     break;
             }
 
         }
         catch (Exception exc)
         {
-            client.SendCommand(player.PlayerName, "item_trade_result", $"Error buying {item.Item.Name}. Server returned an error. :( Try !leave and then !join to see if buying it was successeful or not.");
+            client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_ERROR, item.Item.Name);
         }
     }
 }

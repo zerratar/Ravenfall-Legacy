@@ -2,7 +2,7 @@
 {
     public DuelCancel(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -10,6 +10,5 @@
 
     public override void Handle(Player data, GameClient client)
     {
-        client.SendCommand(data.Username, "duel_failed", "Duel has not been implemented yet.");
     }
 }

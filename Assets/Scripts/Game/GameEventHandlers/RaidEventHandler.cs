@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
@@ -9,33 +11,49 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
         var players = gameManager.Players.GetAllPlayers();
         if (raidInfo.Players.Count == 0)
         {
-            gameManager.Server.Client?.SendCommand("", "message", raidInfo.RaiderUserName + " raided but without any players. Kappa");
+            gameManager.RavenBot.Announce(Localization.MSG_STREAMRAID_NO_PLAYERS, raidInfo.RaiderUserName);
             return;
         }
 
+        var raiderPlayerCount = raidInfo.Players.Count;
         // only one active raid war at a time.
         raidWar = raidWar && !gameManager.StreamRaid.Started && !gameManager.StreamRaid.IsWar;
         gameManager.StreamRaid.AnnounceRaid(raidInfo, raidWar && players.Count > 0);
 
         if (players.Count == 0 && raidWar)
         {
-            gameManager.Server.Client?.SendCommand("", "message",
-                raidInfo.RaiderUserName + " raided with intent of war but we don't have any players. FeelsBadMan");
+            gameManager.RavenBot.Announce(Localization.MSG_STREAMRAID_WAR_NO_PLAYERS, raidInfo.RaiderUserName);
         }
 
         gameManager.StreamRaid.ClearTeams();
 
+        if (raidWar)
+        {
+            gameManager.RavenBot.Broadcast("{raiderName} is declaring war with an army of {raiderPlayerCount}!",
+                raidInfo.RaiderUserName,
+                raiderPlayerCount.ToString());
+        }
+        else
+        {
+            gameManager.RavenBot.Broadcast("{raiderName} is raiding with {raiderPlayerCount} players!",
+                raidInfo.RaiderUserName,
+                raiderPlayerCount.ToString());
+        }
+
         var raiders = new List<PlayerController>();
         foreach (var user in raidInfo.Players)
         {
-            var existingPlayer = gameManager.Players.GetPlayerByUserId(user);
+            if (user == null || user.UserId == null)
+                continue;
+
+            var existingPlayer = gameManager.Players.GetPlayerByUserId(user.UserId);
             if (existingPlayer)
             {
                 gameManager.RemovePlayer(existingPlayer);
             }
 
-            var player = await gameManager.AddPlayerByUserIdAsync(user, raidInfo);
-            if (player && raidWar)
+            var player = await gameManager.AddPlayerByCharacterIdAsync(user.CharacterId, raidInfo);
+            if (player != null && player && raidWar)
             {
                 raiders.Add(player);
             }
@@ -51,9 +69,11 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
     {
         if (gameManager.Events.TryStart(gameManager.StreamRaid))
         {
+            var myPlayerCount = gameManager.Players.GetPlayerCount();
+            var raiderPlayerCount = raidInfo.Players.Count;
             foreach (var player in players)
             {
-                if (raidInfo.Players.Contains(player.UserId)) continue;
+                if (raidInfo.Players.Any(x => x.UserId == player.UserId)) continue;
                 gameManager.StreamRaid.AddToStreamerTeam(player);
             }
 
@@ -65,6 +85,10 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
             }
 
             gameManager.StreamRaid.StartRaidWar();
+            gameManager.RavenBot.Broadcast("The raid war from {raiderName} is starting. {myPlayerCount} vs {raiderPlayerCount}!",
+                raidInfo.RaiderUserName,
+                myPlayerCount.ToString(),
+                raiderPlayerCount.ToString());
         }
         else
         {

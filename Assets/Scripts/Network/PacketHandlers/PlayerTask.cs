@@ -7,7 +7,7 @@ public class PlayerTask : PacketHandler
 {
     public PlayerTask(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -21,7 +21,7 @@ public class PlayerTask : PacketHandler
             var player = PlayerManager.GetPlayer(task.Player);
             if (player == null || !player)
             {
-                packet.Client.SendCommand(task.Player.Username, "message", "You are not playing, use !join to play.");
+                packet.Client.SendMessage(task.Player.Username, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
@@ -36,15 +36,21 @@ public class PlayerTask : PacketHandler
                 return;
             }
 
-            if (player.Duel.InDuel)
-            {
-                return;
-            }
-
             var type = Enum
                 .GetValues(typeof(TaskType))
                 .Cast<TaskType>()
-                .FirstOrDefault(x => x.ToString().Equals(task.Task, StringComparison.InvariantCultureIgnoreCase));
+                .FirstOrDefault(x =>
+                    x.ToString().Equals(task.Task, StringComparison.InvariantCultureIgnoreCase));
+
+            var taskArgs = task.Arguments == null || task.Arguments.Length == 0
+                ? new[] { type.ToString() }
+                : task.Arguments;
+
+            if (player.Duel.InDuel)
+            {
+                player.SetTaskArguments(taskArgs);
+                return;
+            }
 
             Game.Raid.Leave(player);
 
@@ -53,12 +59,17 @@ public class PlayerTask : PacketHandler
                 Game.Arena.Leave(player);
             }
 
-            var taskArgs = task.Arguments == null || task.Arguments.Length == 0
-                ? new[] { type.ToString() }
-                : task.Arguments;
-
             player.SetTaskArguments(taskArgs);
-            player.GotoClosest(type);
+
+            // training healing is enough if you stay in place.
+            if (player.TrainingHealing)
+            {
+                player.SetChunk(type);
+            }
+            else
+            {
+                player.GotoClosest(type);
+            }
         }
         catch (Exception exc)
         {

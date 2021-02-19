@@ -1,64 +1,77 @@
 ﻿using System;
-using Newtonsoft.Json;
 
-
-public class PlayerJoin : PacketHandler
+public class PlayerJoin : PacketHandler<Player>
 {
     public PlayerJoin(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
     }
 
-    public override async void Handle(Packet packet)
+    public override async void Handle(Player data, GameClient client)
     {
         try
         {
-            var addPlayerRequest = JsonConvert.DeserializeObject<Player>(packet.JsonData);
-
+            var addPlayerRequest = data;
             if (Game.RavenNest.SessionStarted)
             {
                 if (!Game.Items.Loaded)
                 {
-                    packet.Client.SendCommand(addPlayerRequest.Username,
-                        "join_failed",
-                        "Game has not finished loading yet, try again soon!");
-
+                    client.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_LOADED);
                     return;
                 }
 
                 if (Game.Players.Contains(addPlayerRequest.UserId))
                 {
-                    packet.Client.SendCommand(addPlayerRequest.Username, "join_failed", "You're already playing!");
+                    client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                     return;
                 }
 
-                var playerInfo = await Game.RavenNest.PlayerJoinAsync(addPlayerRequest.UserId, addPlayerRequest.Username);
+                Game.EventTriggerSystem.SendInput(addPlayerRequest.UserId, "join");
+
+                var playerInfo = await Game.RavenNest.PlayerJoinAsync(
+                    new RavenNest.Models.PlayerJoinData
+                    {
+                        Identifier = addPlayerRequest.Identifier,
+                        Moderator = addPlayerRequest.IsModerator,
+                        Subscriber = addPlayerRequest.IsSubscriber,
+                        Vip = addPlayerRequest.IsVip,
+                        UserId = addPlayerRequest.UserId,
+                        UserName = addPlayerRequest.Username,
+                    });
+
                 if (playerInfo == null)
                 {
-                    packet.Client.SendCommand(addPlayerRequest.Username,
-                        "join_failed",
-                        "Failed create or find a player with the username " + addPlayerRequest.Username);
+                    client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED, addPlayerRequest.Username);
                     return;
                 }
-                
-                var player = Game.SpawnPlayer(playerInfo, addPlayerRequest);
+
+                if (!playerInfo.Success)
+                {
+                    client.SendMessage(addPlayerRequest.Username, playerInfo.ErrorMessage);
+                    return;
+                }
+
+                var player = Game.SpawnPlayer(playerInfo.Player, addPlayerRequest);
                 if (player)
                 {
                     player.PlayerNameHexColor = addPlayerRequest.Color;
-                    packet.Client.SendCommand(addPlayerRequest.Username, "join_success", "Welcome to the game!");                    
+                    client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_WELCOME);
+
+                    if (player.IsBroadcaster)
+                        Game.EventTriggerSystem.TriggerEvent("join", TimeSpan.FromSeconds(1));
                     // receiver:cmd|arg1|arg2|arg3|
                 }
                 else
                 {
-                    packet.Client.SendCommand(addPlayerRequest.Username, "join_failed", "You're already playing!");
+                    client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                 }
             }
             else
             {
-                packet.Client.SendCommand(addPlayerRequest.Username, "join_failed", "Game is not ready yet!");
+                client.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_READY);
             }
         }
         catch (Exception exc)

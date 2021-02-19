@@ -5,7 +5,7 @@ public class AppearanceChange : PacketHandler<PlayerAppearanceRequest>
 {
     public AppearanceChange(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -18,13 +18,13 @@ public class AppearanceChange : PacketHandler<PlayerAppearanceRequest>
             var player = PlayerManager.GetPlayer(data.Player);
             if (!player)
             {
-                client.SendCommand(data.Player.Username, "change_appearance_failed", "You are not playing, use !join to to start playing first.");
+                client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             if (string.IsNullOrEmpty(data.Appearance))
             {
-                client.SendCommand(data.Player.Username, "change_appearance_failed", "Invalid appearance data");
+                client.SendMessage(data.Player.Username, Localization.MSG_APPEARANCE_INVALID);
                 return;
             }
 
@@ -38,7 +38,7 @@ public class AppearanceChange : PacketHandler<PlayerAppearanceRequest>
         }
         else
         {
-            client.SendCommand(data.Player.Username, "change_appearance_failed", "Game is not ready yet.");
+            client.SendMessage(data.Player.Username, Localization.GAME_NOT_READY);
         }
     }
 }

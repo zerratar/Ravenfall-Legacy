@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using RavenNest.Models;
 
 namespace RavenNest.SDK.Endpoints
@@ -15,6 +16,9 @@ namespace RavenNest.SDK.Endpoints
 
         Task<EventCollection> PollEventsAsync(int revision);
 
-        Task AttachPlayersAsync(string[] userids);
+        Task AttachPlayersAsync(Guid[] ids);
+        Task<ScrollUseResult> ActivateRaidAsync(PlayerController player);
+        Task<ScrollUseResult> ActivateDungeonAsync(PlayerController player);
+        Task<ScrollUseResult> ActivateExpMultiplierAsync(PlayerController player);
     }
 }

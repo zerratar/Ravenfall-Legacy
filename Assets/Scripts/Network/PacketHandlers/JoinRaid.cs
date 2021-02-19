@@ -4,7 +4,7 @@ public class RaidJoin : PacketHandler<Player>
 {
     public RaidJoin(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -17,13 +17,13 @@ public class RaidJoin : PacketHandler<Player>
         {
             if (player.StreamRaid.InWar)
             {
-                client.SendCommand(data.Username, "raid_join_failed", $"You cannot fight a raid boss during a war!");
+                client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_WAR);
                 return;
             }
 
             if (player.Ferry.OnFerry)
             {
-                client.SendCommand(data.Username, "raid_join_failed", $"You cannot join the raid while on the ferry.");
+                client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_FERRY);
                 return;
             }
 
@@ -34,13 +34,13 @@ public class RaidJoin : PacketHandler<Player>
 
             if (player.Arena.InArena && Game.Arena.Started)
             {
-                client.SendCommand(data.Username, "raid_join_failed", $"You cannot join the raid while in the arena.");
+                client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_ARENA);
                 return;
             }
 
             if (player.Duel.InDuel)
             {
-                client.SendCommand(data.Username, "raid_join_failed", $"You cannot join the raid while in a duel.");
+                client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_DUEL);
                 return;
             }
 
@@ -48,23 +48,23 @@ public class RaidJoin : PacketHandler<Player>
             switch (result)
             {
                 case RaidJoinResult.NoActiveRaid:
-                    client.SendCommand(data.Username, "raid_join_failed", $"There are no active raids at the moment.");
+                    client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_NO_RAID);
                     return;
                 case RaidJoinResult.AlreadyJoined:
-                    client.SendCommand(data.Username, "raid_join_failed", $"You have already joined the raid.");
+                    client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_ALREADY);
                     return;
                 case RaidJoinResult.MinHealthReached:
-                    client.SendCommand(data.Username, "raid_join_failed", $"You can no longer join the raid.");
+                    client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_PAST_HEALTH);
                     return;
             }
 
             Game.Arena.Leave(player);
             Game.Raid.Join(player);
-            client.SendCommand(data.Username, "raid_join_success", $"You have joined the raid. Good luck!");
+            client.SendMessage(data.Username, Localization.MSG_JOIN_RAID);
         }
         else
         {
-            client.SendCommand(data.Username, "raid_join_failed", $"You have to !join the game before using this command.");
+            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
         }
     }
 }

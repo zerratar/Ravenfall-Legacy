@@ -23,8 +23,8 @@ public class PlayerManager : MonoBehaviour
     [SerializeField] private GameObject playerControllerPrefab;
     [SerializeField] private IoCContainer ioc;
 
-    public readonly ConcurrentDictionary<string, Skills> StoredStats
-        = new ConcurrentDictionary<string, Skills>();
+    //public readonly ConcurrentDictionary<Guid, Skills> StoredStats
+    //    = new ConcurrentDictionary<Guid, Skills>();
 
     public readonly ConcurrentQueue<RavenNest.Models.Player> PlayerQueue
         = new ConcurrentQueue<RavenNest.Models.Player>();
@@ -37,65 +37,61 @@ public class PlayerManager : MonoBehaviour
         if (!gameManager) gameManager = GetComponent<GameManager>();
         if (!settings) settings = GetComponent<GameSettings>();
         if (!ioc) ioc = GetComponent<IoCContainer>();
-        LoadStatCache();
+        //LoadStatCache();
     }
 
-    private void LoadStatCache()
-    {
-        if (System.IO.File.Exists(CacheFileNameOld) && Application.version == "0.4.3a")
-        {
-            var json = System.IO.File.ReadAllText(CacheFileNameOld);
-            LoadStatCache(Newtonsoft.Json.JsonConvert.DeserializeObject<List<StatCacheData>>(json));
-            System.IO.File.Delete(CacheFileNameOld);
-            return;
-        }
+    //private void LoadStatCache()
+    //{
+    //    if (System.IO.File.Exists(CacheFileName))
+    //    {
+    //        var data = System.IO.File.ReadAllText(CacheFileName);
+    //        var json = StringCipher.Decrypt(data, CacheKey);
+    //        LoadStatCache(Newtonsoft.Json.JsonConvert.DeserializeObject<List<StatCacheData>>(json));
+    //    }
+    //}
 
-        if (System.IO.File.Exists(CacheFileName))
-        {
-            var data = System.IO.File.ReadAllText(CacheFileName);
-            var json = StringCipher.Decrypt(data, CacheKey);
-            LoadStatCache(Newtonsoft.Json.JsonConvert.DeserializeObject<List<StatCacheData>>(json));
-        }
-    }
+    //private void LoadStatCache(List<StatCacheData> lists)
+    //{
+    //    foreach (var l in lists)
+    //    {
+    //        StoredStats[l.Id] = l.Skills;
+    //    }
+    //}
 
-    private void LoadStatCache(List<StatCacheData> lists)
-    {
-        foreach (var l in lists)
-        {
-            StoredStats[l.UserId] = l.Skills;
-        }
-    }
+    //private void SaveStatCache()
+    //{
+    //    if (!System.IO.Directory.Exists(CacheDirectory))
+    //        System.IO.Directory.CreateDirectory(CacheDirectory);
 
-    private void SaveStatCache()
-    {
-        if (!System.IO.Directory.Exists(CacheDirectory))
-            System.IO.Directory.CreateDirectory(CacheDirectory);
+    //    var list = new List<StatCacheData>();
+    //    foreach (var k in StoredStats.Keys)
+    //    {
+    //        list.Add(new StatCacheData
+    //        {
+    //            Id = k,
+    //            Skills = StoredStats[k]
+    //        });
+    //    }
 
-        var list = new List<StatCacheData>();
-        foreach (var k in StoredStats.Keys)
-        {
-            list.Add(new StatCacheData { UserId = k, Skills = StoredStats[k] });
-        }
-
-        var json = Newtonsoft.Json.JsonConvert.SerializeObject(list);
-        var data = StringCipher.Encrypt(json, CacheKey);
-        System.IO.File.WriteAllText(CacheFileName, data);
-    }
+    //    var json = Newtonsoft.Json.JsonConvert.SerializeObject(list);
+    //    var data = StringCipher.Encrypt(json, CacheKey);
+    //    System.IO.File.WriteAllText(CacheFileName, data);
+    //}
 
     public bool Contains(string userId)
     {
         return GetPlayerByUserId(userId);
     }
 
-    void Update()
-    {
-        var sinceLastSave = DateTime.UtcNow - lastCacheSave;
-        if (sinceLastSave >= TimeSpan.FromSeconds(10))
-        {
-            SaveStatCache();
-            lastCacheSave = DateTime.UtcNow;
-        }
-    }
+    //void Update()
+    //{
+    //    //var sinceLastSave = DateTime.UtcNow - lastCacheSave;
+    //    //if (sinceLastSave >= TimeSpan.FromSeconds(10))
+    //    //{
+    //    //    SaveStatCache();
+    //    //    lastCacheSave = DateTime.UtcNow;
+    //    //}
+    //}
 
     public IReadOnlyList<PlayerController> GetAllPlayers()
     {
@@ -151,12 +147,16 @@ public class PlayerManager : MonoBehaviour
         lock (mutex)
         {
             return activePlayers.FirstOrDefault(x =>
+                x.Id.ToString().Equals(userId, StringComparison.InvariantCultureIgnoreCase) ||
                 x.UserId.Equals(userId, StringComparison.InvariantCultureIgnoreCase));
         }
     }
 
     public PlayerController GetPlayerByName(string playerName)
     {
+        if (string.IsNullOrEmpty(playerName))
+            return null;
+
         playerName = playerName.StartsWith("@") ? playerName.Substring(1) : playerName;
         lock (mutex)
         {
@@ -168,6 +168,19 @@ public class PlayerManager : MonoBehaviour
     {
         lock (mutex)
             return activePlayers?.Count(x => includeNpc || !x.IsNPC) ?? 0;
+    }
+
+    public PlayerController GetPlayerById(Guid characterId)
+    {
+        lock (mutex)
+        {
+            if (activePlayers == null)
+            {
+                return null;
+            }
+
+            return activePlayers.FirstOrDefault(x => x.Id == characterId);
+        }
     }
 
     public PlayerController GetPlayerByIndex(int index)
@@ -216,22 +229,24 @@ public class PlayerManager : MonoBehaviour
         lock (mutex)
         {
             activePlayers.Add(player);
-            StoredStats[player.UserId] = player.Stats;
+            //StoredStats[player.Id] = player.Stats;
             gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
             return player;
         }
     }
 
-    internal Skills GetStoredPlayerSkills(string userId)
-    {
-        if (StoredStats.TryGetValue(userId, out var skills)) return skills;
-        return null;
-    }
+
+    //internal Skills GetStoredPlayerSkills(Guid id)
+    //{
+    //    if (StoredStats.TryGetValue(id, out var skills)) return skills;
+    //    return null;
+    //}
 }
 
 public class StatCacheData
 {
-    public string UserId { get; set; }
+    //public string UserId { get; set; }
+    public Guid Id { get; set; }
     public Skills Skills { get; set; }
 }
 

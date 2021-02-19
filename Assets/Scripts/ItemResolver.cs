@@ -149,13 +149,13 @@ internal class ItemResolver : IItemResolver
 
     private static bool IsMatch(string name, string itemQuery)
     {
-        if (name.Equals(itemQuery, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return GetItemNameAbbreviations(name)
-            .Any(abbr => abbr.Equals(itemQuery, StringComparison.OrdinalIgnoreCase));
+        //if (name.Equals(itemQuery, StringComparison.OrdinalIgnoreCase))
+        //{
+        //    return true;
+        //}
+        return name.Equals(itemQuery, StringComparison.OrdinalIgnoreCase);
+        //return GetItemNameAbbreviations(name)
+        //    .Any(abbr => abbr.Equals(itemQuery, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string[] GetItemNameAbbreviations(string name)

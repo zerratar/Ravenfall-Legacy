@@ -1,10 +1,12 @@
 ﻿using System.Linq;
+using System.Text;
+using UnityEngine;
 
 public class PlayerStats : PacketHandler<PlayerStatsRequest>
 {
     public PlayerStats(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -15,7 +17,7 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendCommand(data.Player.Username, "player_stats", "You are not currently playing. Use !join to start playing!");
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -46,14 +48,27 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
 
             if (skill != null)
             {
-                client.SendCommand(data.Player.Username, "player_stats", skill.ToString() + ", " + skill.Experience + " EXP.");
+                var expRequired = GameMath.ExperienceForLevel(skill.Level + 1);
+                var expReq = (long)expRequired;
+                var curExp = (long)skill.Experience;
+                client.SendMessage(data.Player.Username, Localization.MSG_SKILL,
+                    skill.ToString(),
+                    FormatValue(curExp),
+                    FormatValue(expReq));
             }
             return;
         }
 
         SendPlayerStats(player, client);
     }
-
+    private static string FormatValue(long num)
+    {
+        var str = num.ToString();
+        if (str.Length <= 3) return str;
+        for (var i = str.Length - 3; i >= 0; i -= 3)
+            str = str.Insert(i, " ");
+        return str;
+    }
     private void SendPlayerStats(PlayerController player, GameClient client)
     {
         var ps = player.Stats;
@@ -64,13 +79,12 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
             .Select(x => { skills += x + ", "; return x; })
             .Sum(x => x.Level);
 
-        client.SendCommand(player.PlayerName,
-            "player_stats",
-            $"Combat level {combatLevel}, " +
-            skills +
-            $" -- TOTAL {total} --, " +
-            $"Eq - power {eq.WeaponPower}, " +
-            $"aim {eq.WeaponAim}, " +
-            $"armor {eq.ArmorPower}");
+        client.SendMessage(player.PlayerName, Localization.MSG_STATS,
+            combatLevel.ToString(),
+            skills,
+            total.ToString(),
+            eq.WeaponPower.ToString(),
+            eq.WeaponAim.ToString(),
+            eq.ArmorPower.ToString());
     }
 }

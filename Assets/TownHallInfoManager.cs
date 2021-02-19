@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using Assets.Scripts;
 using System.Linq;
 using UnityEngine;
 
 public class TownHallInfoManager : MonoBehaviour
 {
-
     [SerializeField] private VillageManager villageManager;
-
     [SerializeField] private TMPro.TextMeshPro lblTier;
     [SerializeField] private TMPro.TextMeshPro lblLevel;
     [SerializeField] private TMPro.TextMeshPro lblSlots;
@@ -18,7 +14,7 @@ public class TownHallInfoManager : MonoBehaviour
     public decimal Experience { get; set; }
     public int Level { get; set; }
     public int Slots { get; set; }
-
+    public int UsedSlots { get; set; }
     // Start is called before the first frame update
     void Start()
     {
@@ -29,10 +25,10 @@ public class TownHallInfoManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var nextLevel = GameMath.LevelToExperience(Level + 1);
-        var progress = Mathf.RoundToInt(Mathf.Floor((float)(Experience / nextLevel) * 100f));
+        var nextLevel = GameMath.OLD_LevelToExperience(Level + 1);
+        var progress = Experience > 0 && nextLevel > 0 ? Mathf.RoundToInt(Mathf.Floor((float)(Experience / nextLevel) * 100f)) : 0;
         lblLevel.text = "Level: " + Level + " (" + progress + "%)";
-        lblSlots.text = "Slots: " + Slots;
+        lblSlots.text = "Slots: " + UsedSlots + "/" + Slots;
         lblTier.text = "Tier: " + Tier;
 
         var bonuses = villageManager.GetExpBonuses().GroupBy(x => x.SlotType).ToList();
@@ -41,13 +37,16 @@ public class TownHallInfoManager : MonoBehaviour
             lblTotalExpBonus.text = "";
             foreach (var bonus in bonuses)
             {
-                if (bonus.Key == TownHouseSlotType.Empty)
+                if (bonus.Key == TownHouseSlotType.Empty || bonus.Key == TownHouseSlotType.Undefined)
                     continue;
 
                 var expBonus = 0f;
                 var values = bonus.ToList();
                 if (values.Count > 0)
-                    expBonus = values.Sum(x => x.Bonus) / 100f;
+                {
+                    var b = values.Sum(x => x.Bonus);
+                    expBonus = b > 0 ? b / 100f : 0;
+                }
 
                 lblTotalExpBonus.text += bonus.Key + ": " + Mathf.RoundToInt(expBonus * 100f) + "%\r\n";
             }

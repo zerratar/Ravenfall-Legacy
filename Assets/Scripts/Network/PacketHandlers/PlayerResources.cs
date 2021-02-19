@@ -2,7 +2,7 @@
 {
     public PlayerResources(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -13,18 +13,17 @@
         var player = PlayerManager.GetPlayer(data);
         if (!player)
         {
-            client.SendCommand(data.Username, "player_resources", "You are not currently playing. Use !join to start playing!");
+            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var res = player.Resources;
 
-        client.SendCommand(data.Username,
-            "player_resources",
-            $"Wood {Utility.FormatValue(res.Wood)}, " +
-            $"Ore {Utility.FormatValue(res.Ore)}, " +
-            $"Fish {Utility.FormatValue(res.Fish)}, " +
-            $"Wheat {Utility.FormatValue(res.Wheat)}, " +
-            $"Coin {Utility.FormatValue(res.Coins)}");
+        client.SendMessage(data.Username, Localization.MSG_RESOURCES,
+            Utility.FormatValue(res.Wood),
+            Utility.FormatValue(res.Ore),
+            Utility.FormatValue(res.Fish),
+            Utility.FormatValue(res.Wheat),
+            Utility.FormatValue(res.Coins));
     }
 }

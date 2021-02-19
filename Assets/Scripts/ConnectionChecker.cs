@@ -44,7 +44,12 @@ public class ConnectionChecker : MonoBehaviour
             return;
         }
 
-        if (!gameManager.RavenNest.SessionStarted && gameManager.RavenNest.BadClientVersion)
+        if (gameManager.RavenNest.Desynchronized)
+        {
+            Label.text = "CLIENT CANNOT SYNCHRONIZE WITH SERVER. PLEASE RESTART OR USE !RELOAD";
+            Graphics.SetActive(true);
+        }
+        else if (!gameManager.RavenNest.SessionStarted && gameManager.RavenNest.BadClientVersion)
         {
             Label.text = "CLIENT IS OUT OF DATE. RESTART RAVENFALL TO UPDATE";
             Graphics.SetActive(true);

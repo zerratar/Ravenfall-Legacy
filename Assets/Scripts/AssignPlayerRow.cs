@@ -26,7 +26,7 @@ public class AssignPlayerRow : MonoBehaviour
         lblHouseOwner.SetActive(isHouseOwner);
 
         if (dialogHouse.Owner)
-        {            
+        {
             var existingSkill = GameMath.GetSkillByHouseType(player.Stats, dialogHouse.TownHouse.Type);
             existingBonus = (int)GameMath.CalculateHouseExpBonus(existingSkill);
         }

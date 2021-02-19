@@ -4,9 +4,12 @@ using UnityEngine;
 public class PlayerAnimationController : MonoBehaviour
 {
     private IPlayerAppearance appearance;
-    private Animator animator;
+    private Animator defaultAnimator;
+    private Animator activeAnimator;
     private PlayerAnimationState animationState;
     private float idleTimer;
+
+    public bool IsMoving { get; internal set; }
 
     // Use this for initialization
     void Start()
@@ -39,92 +42,148 @@ public class PlayerAnimationController : MonoBehaviour
 
     #region General
 
+    public void ResetActiveAnimator()
+    {
+        activeAnimator = defaultAnimator;
+    }
+
+    public void SetActiveAnimator(Animator animator)
+    {
+        activeAnimator = animator;
+        for (var i = 0; i < defaultAnimator.parameterCount; ++i)
+        {
+            var parameter = defaultAnimator.parameters[i];
+            switch (parameter.type)
+            {
+                case AnimatorControllerParameterType.Bool:
+                    activeAnimator.SetBool(parameter.name, defaultAnimator.GetBool(parameter.name));
+                    break;
+                case AnimatorControllerParameterType.Float:
+                    activeAnimator.SetFloat(parameter.name, defaultAnimator.GetFloat(parameter.name));
+                    break;
+                case AnimatorControllerParameterType.Int:
+                    activeAnimator.SetInteger(parameter.name, defaultAnimator.GetInteger(parameter.name));
+                    break;
+                case AnimatorControllerParameterType.Trigger:
+                    activeAnimator.SetBool(parameter.name, defaultAnimator.GetBool(parameter.name));
+                    break;
+            }
+        }
+        //activeAnimator.playbackTime = defaultAnimator.playbackTime;
+        ResetAnimationStates();
+    }
+
+    private void SetTrigger(string trigger)
+    {
+        activeAnimator.SetTrigger(trigger);
+        if (activeAnimator != defaultAnimator)
+            defaultAnimator.SetTrigger(trigger);
+    }
+
+    private void SetInteger(string key, int value)
+    {
+        activeAnimator.SetInteger(key, value);
+        if (activeAnimator != defaultAnimator)
+            defaultAnimator.SetInteger(key, value);
+    }
+
+    private void SetBool(string key, bool value)
+    {
+        activeAnimator.SetBool(key, value);
+        if (activeAnimator != defaultAnimator)
+            defaultAnimator.SetBool(key, value);
+    }
     public void ForceCheer()
     {
         if (!EnsureAnimator()) return;
-        animator.SetTrigger("ForceCheer");
+        SetTrigger("ForceCheer");
     }
 
     public void Death()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Dead;
-        animator.SetBool("Dead", true);
+        SetBool("Dead", true);
+        SetTrigger("Died");
     }
 
     public void SetCaptainState(bool isCaptain)
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Captain;
-        animator.SetBool("Captain", isCaptain);
+        SetBool("Captain", isCaptain);
     }
 
     public void Revive()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
-        animator.SetBool("Dead", false);
+        SetBool("Dead", false);
     }
 
     private void TriggerBored()
     {
         if (!EnsureAnimator()) return;
         if (animationState == PlayerAnimationState.Idle)
-            animator.SetTrigger("Bored");
+            SetTrigger("Bored");
     }
 
     public void Cheer()
     {
         if (!EnsureAnimator()) return;
-        animator.SetTrigger("Cheer");
+        SetTrigger("Cheer");
     }
 
     public void StartMoving()
     {
         if (!EnsureAnimator()) return;
-        animator.SetBool("Moving", true);
+        SetBool("Moving", true);
+        IsMoving = true;
     }
 
     public void StopMoving()
     {
         if (!EnsureAnimator()) return;
-        animator.SetBool("Moving", false);
+        SetBool("Moving", false);
+        IsMoving = false;
     }
     #endregion
 
     #region Combat
-    public void StartCombat(int weapon)
+    public void StartCombat(int weapon, bool hasShield)
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Attacking;
         ResetAnimationStates();
-        animator.SetTrigger("Start");
-        animator.SetInteger("Weapon", weapon);
-        animator.SetBool("Attacking", true);
+        SetTrigger("Start");
+        SetInteger("Weapon", weapon);
+        SetBool("Attacking", true);
+        SetBool("Shield", hasShield);
     }
 
     public bool IsAttacking()
     {
         if (!EnsureAnimator()) return false;
         return animationState == PlayerAnimationState.Attacking ||
-               animator.GetBool("Attacking");
+               activeAnimator.GetBool("Attacking");
     }
 
-    public void Attack(int weapon, int action = 0)
+    public void Attack(int weapon, int action = 0, bool hasShield = false)
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Attacking;
-        animator.SetInteger("Weapon", weapon);
-        animator.SetInteger("Action", action);
-        animator.SetBool("Attacking", true);
-        animator.SetTrigger("Attack");
+        SetInteger("Weapon", weapon);
+        SetInteger("Action", action);
+        SetBool("Attacking", true);
+        SetBool("Shield", hasShield);
+        SetTrigger("Attack");
     }
 
     public void EndCombat()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
-        animator.SetBool("Attacking", false);
+        SetBool("Attacking", false);
     }
     #endregion
 
@@ -133,20 +192,20 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (!EnsureAnimator()) return;
         ResetAnimationStates();
-        animator.SetTrigger("Start");
+        activeAnimator.SetTrigger("Start");
         Mine();
     }
     public void Mine()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Mining;
-        animator.SetBool("Mining", true);
+        activeAnimator.SetBool("Mining", true);
     }
     public void EndMining()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
-        animator.SetBool("Mining", false);
+        activeAnimator.SetBool("Mining", false);
     }
     #endregion
 
@@ -156,23 +215,23 @@ public class PlayerAnimationController : MonoBehaviour
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Woodcutting;
         ResetAnimationStates();
-        animator.SetTrigger("Start");
-        animator.SetBool("Woodcutting", true);
+        SetTrigger("Start");
+        SetBool("Woodcutting", true);
     }
 
     public void Chop(int animation)
     {
         if (!EnsureAnimator()) return;
-        animator.SetBool("Woodcutting", true);
-        animator.SetInteger("Action", animation);
-        animator.SetTrigger("Chop");
+        SetBool("Woodcutting", true);
+        SetInteger("Action", animation);
+        SetTrigger("Chop");
     }
 
     public void EndWoodcutting()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
-        animator.SetBool("Woodcutting", false);
+        SetBool("Woodcutting", false);
     }
     #endregion
 
@@ -181,7 +240,7 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (!EnsureAnimator()) return;
         ResetAnimationStates();
-        animator.SetTrigger("Start");
+        SetTrigger("Start");
         Fish();
     }
 
@@ -189,14 +248,14 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Fishing;
-        animator.SetBool("Fishing", true);
+        SetBool("Fishing", true);
     }
 
     public void EndFishing()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
-        animator.SetBool("Fishing", false);
+        SetBool("Fishing", false);
     }
     #endregion
 
@@ -205,7 +264,7 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (!EnsureAnimator()) return;
         ResetAnimationStates();
-        animator.SetTrigger("Start");
+        SetTrigger("Start");
         Craft();
     }
 
@@ -213,14 +272,14 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Crafting;
-        animator.SetBool("Crafting", true);
+        SetBool("Crafting", true);
     }
 
     public void EndCrafting()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
-        animator.SetBool("Crafting", false);
+        SetBool("Crafting", false);
     }
     #endregion
 
@@ -230,15 +289,15 @@ public class PlayerAnimationController : MonoBehaviour
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Farming;
         ResetAnimationStates();
-        animator.SetTrigger("Start");
-        animator.SetBool("Farming", true);
+        SetTrigger("Start");
+        SetBool("Farming", true);
     }
 
     public void EndFarming()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
-        animator.SetBool("Farming", false);
+        SetBool("Farming", false);
     }
     #endregion
 
@@ -248,15 +307,15 @@ public class PlayerAnimationController : MonoBehaviour
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Cooking;
         ResetAnimationStates();
-        animator.SetTrigger("Start");
-        animator.SetBool("Cooking", true);
+        SetTrigger("Start");
+        SetBool("Cooking", true);
     }
 
     public void EndCooking()
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
-        animator.SetBool("Cooking", false);
+        SetBool("Cooking", false);
     }
     #endregion
 
@@ -265,12 +324,13 @@ public class PlayerAnimationController : MonoBehaviour
         if (appearance is MonoBehaviour behaviour)
         {
             //  && !appearance.AppearanceUpdated()
-            if (animator) return true;
+            if (activeAnimator) return true;
             if (!behaviour || !behaviour.transform) return false;
-            animator = behaviour.transform.GetComponentInChildren<Animator>();
+            activeAnimator = behaviour.transform.GetComponentInChildren<Animator>();
+            defaultAnimator = activeAnimator;
         }
 
-        return animator;
+        return activeAnimator;
     }
 
     public void ResetAnimationStates()

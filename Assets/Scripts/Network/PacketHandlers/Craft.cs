@@ -5,7 +5,7 @@ using RavenNest.Models;
 
 public class Craft : PacketHandler<TradeItemRequest>
 {
-    public Craft(GameManager game, GameServer server, PlayerManager playerManager)
+    public Craft(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)
     {
     }
@@ -15,26 +15,21 @@ public class Craft : PacketHandler<TradeItemRequest>
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendCommand(data.Player.Username, "craft_failed", "You need to !join the game before you can can craft.");
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         if (player.Ferry && player.Ferry.Active)
         {
-            client.SendCommand(data.Player.Username, "craft_failed", "You cannot craft while on the ferry");
+            client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_FAILED_FERRY);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
-        if (!ioc)
-        {
-            client.SendMessage(
-                data.Player, "Unable to gift the item right now.");
-            return;
-        }
+        var itemResolver = ioc.Resolve<IItemResolver>();
+
         Item item = null;
         var amountToCraft = 1m;
-        var itemResolver = ioc.Resolve<IItemResolver>();
         var queriedItem = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: false);
         if (queriedItem != null && queriedItem.Item != null)
         {
@@ -48,22 +43,22 @@ public class Craft : PacketHandler<TradeItemRequest>
             item = Game.Crafting.GetCraftableItemForPlayer(player, category, type);
             if (item == null)
             {
-                client.SendCommand(data.Player.Username, "craft_failed", $"{category} {type} cannot be crafted right now.");
+                client.SendFormat(data.Player.Username, Localization.MSG_CRAFT_FAILED, category, type);
                 return;
             }
         }
-
+        var toCraft = amountToCraft > int.MaxValue ? int.MaxValue : (int)amountToCraft;
         var status = Game.Crafting.CanCraftItem(player, item);
         switch (status)
         {
             case CraftValidationStatus.OK:
-                await CraftItemAsync(data, client, player, item, amountToCraft);
+                await CraftItemAsync(data, client, player, item, toCraft);
                 return;
             case CraftValidationStatus.NeedCraftingStation:
-                client.SendCommand(data.Player.Username, "craft_failed", "You can't currently craft weapons or armor. You have to be at the crafting table by typing !train crafting");
+                client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_FAILED_STATION);
                 return;
             case CraftValidationStatus.NotEnoughSkill:
-                client.SendCommand(data.Player.Username, "craft_failed", $"You can't craft this item, it requires level {item.RequiredCraftingLevel} crafting.");
+                client.SendFormat(data.Player.Username, Localization.MSG_CRAFT_FAILED_LEVEL, item.RequiredCraftingLevel);
                 return;
             case CraftValidationStatus.NotEnoughResources:
                 InsufficientResources(player, data, client, item);
@@ -124,7 +119,6 @@ public class Craft : PacketHandler<TradeItemRequest>
             requiredItemsStr.Append("You need ");
             if (item.WoodCost > 0)
             {
-
                 requiredItemsStr.Append($"{Utility.FormatValue(player.Resources.Wood)} / {Utility.FormatValue(item.WoodCost)} Wood, ");
             }
 
@@ -146,18 +140,16 @@ public class Craft : PacketHandler<TradeItemRequest>
             }
 
             requiredItemsStr.Append("to craft " + item.Name);
-            client.SendCommand(data.Player.Username, "craft_failed", requiredItemsStr.ToString());
+            client.SendMessage(data.Player.Username, requiredItemsStr.ToString());
         }
         else
         {
-            client.SendCommand(data.Player.Username, "craft_failed", $"Insufficient resources to craft " + item.Name);
+            client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_FAILED_RES, item.Name);
         }
     }
 
-    private async System.Threading.Tasks.Task<bool> CraftItemAsync(TradeItemRequest data, GameClient client, PlayerController player, Item item, decimal amountToCraft)
+    private async System.Threading.Tasks.Task<bool> CraftItemAsync(TradeItemRequest data, GameClient client, PlayerController player, Item item, int amountToCraft)
     {
-        //for (var i = 0; i < amountToCraft; ++i)
-        //{
         var craftResult = await Game.RavenNest.Players.CraftItemAsync(player.UserId, item.Id);
         if (craftResult == AddItemResult.Failed)
         {
@@ -165,11 +157,14 @@ public class Craft : PacketHandler<TradeItemRequest>
             return false;
         }
 
-        player.AddItem(item, false);
+        for (var i = 0; i < amountToCraft; ++i)
+        {
+            player.AddItem(item, false);
+        }
 
         foreach (var req in item.CraftingRequirements)
         {
-            var amount = req.Amount;
+            var amount = req.Amount * amountToCraft;
             var stacks = player.Inventory.GetInventoryItems(req.ResourceItemId);
             foreach (GameInventoryItem stack in stacks)
             {
@@ -187,17 +182,23 @@ public class Craft : PacketHandler<TradeItemRequest>
             }
         }
 
-        player.RemoveResource(Resource.Woodcutting, item.WoodCost);
-        player.RemoveResource(Resource.Mining, item.OreCost);
+        player.RemoveResource(Resource.Woodcutting, item.WoodCost * amountToCraft);
+        player.RemoveResource(Resource.Mining, item.OreCost * amountToCraft);
 
         switch (craftResult)
         {
             case AddItemResult.AddedAndEquipped:
-                player.EquipIfBetter(item);
-                client.SendCommand(data.Player.Username, "craft_success", $"You crafted and equipped a {item.Name}!");
-                break;
+            //player.EquipIfBetter(item);
+            //client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_EQUIPPED, item.Name);
+            //break;
             case AddItemResult.Added:
-                client.SendCommand(data.Player.Username, "craft_success", $"You crafted a {item.Name}!");
+                if (amountToCraft > 1)
+                    client.SendMessage(data.Player.Username, 
+                        Localization.MSG_CRAFT_MANY, 
+                        item.Name, 
+                        amountToCraft.ToString());
+                else
+                    client.SendMessage(data.Player.Username, Localization.MSG_CRAFT, item.Name);
                 break;
         }
         //}

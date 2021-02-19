@@ -2,7 +2,7 @@
 
 public abstract class PacketHandler
 {
-    protected PacketHandler(GameManager game, GameServer server, PlayerManager playerManager)
+    protected PacketHandler(GameManager game, RavenBotConnection server, PlayerManager playerManager)
     {
         Game = game;
         Server = server;
@@ -10,7 +10,7 @@ public abstract class PacketHandler
     }
 
     protected GameManager Game { get; }
-    protected GameServer Server { get; }
+    protected RavenBotConnection Server { get; }
     protected PlayerManager PlayerManager { get; }
 
     public abstract void Handle(Packet packet);
@@ -18,7 +18,7 @@ public abstract class PacketHandler
 
 public abstract class PacketHandler<TPacketType> : PacketHandler
 {
-    protected PacketHandler(GameManager game, GameServer server, PlayerManager playerManager)
+    protected PacketHandler(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)
     {
     }

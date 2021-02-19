@@ -13,17 +13,15 @@ public class TownHouseRenderer : MonoBehaviour
         startPosition = transform.position;
     }
 
-    private void Update()
-    {
-        if (townHouse)
-            transform.position = startPosition + townHouse.CameraOffset;
-    }
-
     internal RenderTexture PrepareRenderTexture(TownHouse townHouse, int renderIndex)
     {
         this.townHouse = townHouse;
         renderTexture = Resources.Load<RenderTexture>($"BuildingRenderTextures/Building{renderIndex}");
         camera.targetTexture = renderTexture;
+
+        if (townHouse)
+            transform.position = startPosition + townHouse.CameraOffset;
+
         return renderTexture;
     }
 }

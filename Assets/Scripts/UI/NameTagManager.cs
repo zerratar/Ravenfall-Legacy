@@ -24,7 +24,7 @@ public class NameTagManager : MonoBehaviour
     {
         lock (mutex)
         {
-            var nameTag = nameTags.FirstOrDefault(x => x.Target == player);
+            var nameTag = nameTags.FirstOrDefault(x => x.TargetPlayer == player);
             if (nameTag)
             {
                 Destroy(nameTag.gameObject);
@@ -33,40 +33,74 @@ public class NameTagManager : MonoBehaviour
         }
     }
 
-    public void Add(PlayerController player)
+    public void Remove(Transform transform)
     {
-        if (!player) return;
-        if (!nameTagPrefab) return;
+        lock (mutex)
+        {
+            var nameTag = nameTags.FirstOrDefault(x => x.TargetTransform.GetInstanceID() == transform.GetInstanceID());
+            if (nameTag)
+            {
+                Destroy(nameTag.gameObject);
+                nameTags.Remove(nameTag);
+            }
+        }
+    }
+
+    public NameTag Add(Transform transform)
+    {
+        if (!transform) return null;
+        if (!nameTagPrefab) return null;
+        var targetName = transform.name;
+        lock (mutex)
+        {
+            if (nameTags.Any(x => x.TargetTransform.GetInstanceID() == transform.GetInstanceID()))
+            {
+                Debug.LogWarning($"{targetName} already have an assigned name tag.");
+                return null;
+            }
+        }
+        return AddNameTag(null, targetName, transform);
+    }
+
+    public NameTag Add(PlayerController player)
+    {
+        if (!player) return null;
+        if (!nameTagPrefab) return null;
 
         lock (mutex)
         {
-            if (nameTags.Any(x => x.Target == player))
+            if (nameTags.Any(x => x.TargetPlayer == player))
             {
                 Debug.LogWarning($"{player.PlayerName} already have an assigned name tag.");
-                return;
+                return null;
             }
         }
 
+        var targetName = player.PlayerName;
+        var targetTransform = player.Transform;
+
+        return AddNameTag(player, targetName, targetTransform);
+    }
+
+    private NameTag AddNameTag(PlayerController player, string targetName, Transform targetTransform)
+    {
         var obj = Instantiate(nameTagPrefab, transform);
         if (!obj)
         {
-            Debug.LogError($"Failed to add a nametag for {player.PlayerName}");
-            return;
+            Debug.LogError($"Failed to add a nametag for {targetName}");
+            return null;
         }
 
         var nameTag = obj.GetComponent<NameTag>();
-        nameTag.Target = player;
+        nameTag.TargetPlayer = player;
+        nameTag.TargetTransform = targetTransform;
         nameTag.Manager = this;
-
-        //if (player.Raider != null)
-        //{
-        //    nameTag.RaiderLogo = logoManager.GetLogo(player.Raider.RaiderUserId);
-        //}
 
         lock (mutex)
         {
             nameTags.Add(nameTag);
         }
-    }
 
+        return nameTag;
+    }
 }

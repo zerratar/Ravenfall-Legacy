@@ -4,7 +4,7 @@ public class RaidStreamer : PacketHandler<StreamerRaid>
 {
     public RaidStreamer(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -12,15 +12,15 @@ public class RaidStreamer : PacketHandler<StreamerRaid>
 
     public override async void Handle(StreamerRaid data, GameClient client)
     {
-        client.SendCommand("", "message", $"Requesting {(data.War ? "war raid" : "raid")} on {data.Player.Username}s stream!");
+        client.SendMessage("", Localization.MSG_REQ_RAID, data.War ? "war raid" : "raid", data.Player.Username);
         if (await Game.RavenNest.EndSessionAndRaidAsync(data.Player.Username, data.War))
         {
-            client.SendCommand("", "message", $"The raid will start any moment now! PogChamp");            
+            client.SendMessage("", Localization.MSG_REQ_RAID_SOON);
             Game.BeginStreamerRaid(data.Player.Username, data.War);
         }
         else
         {
-            client.SendCommand("", "message", $"Request failed, streamer is no longer playing or has disabled raids. :(");
+            client.SendMessage("", Localization.MSG_REQ_RAID_FAILED);
         }
     }
 }

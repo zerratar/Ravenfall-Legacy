@@ -1,16 +1,23 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class TownHouseSelectionDialog : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
     [SerializeField] private TownHouseManager townHouseManager;
     [SerializeField] private RectTransform buildingScrollViewContent;
+    [SerializeField] private ScrollRect buildingScrollRect;
     [SerializeField] private GameObject townHouseButtonPrefab;
     [SerializeField] private TownHouseRenderManager townHouseRenderManager;
 
+    [SerializeField] private TownHouseScrollButton chevronLeft;
+    [SerializeField] private TownHouseScrollButton chevronRight;
+
     [SerializeField] private TMPro.TextMeshProUGUI buildingNameLabel;
     [SerializeField] private TMPro.TextMeshProUGUI buildingDescriptionLabel;
+    [SerializeField] private float scrollSpeed = 0.1f;
+
 
     private List<TownHouseButton> instantiatedButtons = new List<TownHouseButton>();
     private TownHouse selectedHouse;
@@ -38,6 +45,19 @@ public class TownHouseSelectionDialog : MonoBehaviour
         GenerateTownHouseButtons();
     }
 
+    void Update()
+    {
+        if (chevronLeft && chevronLeft.IsPointerDown)
+        {
+            ScrollLeft();
+        }
+
+        if (chevronRight && chevronRight.IsPointerDown)
+        {
+            ScrollRight();
+        }
+    }
+
     private void SelectHouse(TownHouse house)
     {
         foreach (var button in instantiatedButtons)
@@ -47,9 +67,8 @@ public class TownHouseSelectionDialog : MonoBehaviour
 
         selectedHouse = house;
         buildingNameLabel.text = house.Name;
-        buildingDescriptionLabel.text = house.Description;
+        buildingDescriptionLabel.text = string.Format(house.Description, (int)GameMath.MaxExpBonusPerSlot);
     }
-
 
     private void GenerateTownHouseButtons()
     {
@@ -63,6 +82,18 @@ public class TownHouseSelectionDialog : MonoBehaviour
         }
 
         RebuildTags();
+    }
+
+    public void ScrollLeft()
+    {
+        var newScroll = buildingScrollRect.horizontalNormalizedPosition - scrollSpeed * Time.deltaTime;
+        buildingScrollRect.horizontalNormalizedPosition = Mathf.Max(0, newScroll);
+    }
+
+    public void ScrollRight()
+    {
+        var newScroll = buildingScrollRect.horizontalNormalizedPosition + scrollSpeed * Time.deltaTime;
+        buildingScrollRect.horizontalNormalizedPosition = Mathf.Min(1, newScroll);
     }
 
     private void RebuildTags(Transform parent = null)

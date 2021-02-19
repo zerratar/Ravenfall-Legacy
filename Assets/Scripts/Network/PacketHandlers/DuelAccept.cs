@@ -2,7 +2,7 @@
 {
     public DuelAccept(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -14,32 +14,31 @@
 
         if (player.Ferry.OnFerry)
         {
-            client.SendCommand(data.Username, "duel_failed", $"You cannot accept a duel while on the ferry.");
+            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_FERRY);
             return;
         }
 
         if (player.Duel.InDuel)
         {
-            client.SendCommand(data.Username, "duel_failed", "You cannot accept the duel of another player as you are already in a duel.");
+            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_IN_DUEL);
             return;
         }
 
         if (player.Arena.InArena)
         {
-            client.SendCommand(data.Username, "duel_failed", "You cannot accept the duel of another player as you are participating in the Arena.");
+            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_IN_ARENA);
             return;
         }
 
         if (player.Raid.InRaid)
         {
-            client.SendCommand(data.Username, "duel_failed", "You cannot accept the duel of another player as you are participating in a Raid.");
+            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_IN_RAID);
             return;
         }
 
         if (!player.Duel.HasActiveRequest)
         {
-            client.SendCommand(data.Username, "duel_failed",
-                "You do not have any pending duel requests to accept.");
+            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_NO_REQ);
             return;
         }
 

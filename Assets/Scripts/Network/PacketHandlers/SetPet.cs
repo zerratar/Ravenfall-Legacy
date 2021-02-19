@@ -4,7 +4,7 @@ public class SetPet : PacketHandler<SetPetRequest>
 {
     public SetPet(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -15,17 +15,11 @@ public class SetPet : PacketHandler<SetPetRequest>
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendCommand(data.Player.Username, "set_pet", "You are not currently playing. Use !join to start playing!");
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
-        if (!ioc)
-        {
-            client.SendMessage(data.Player, "Change pet right now.");
-            return;
-        }
-
         var itemResolver = ioc.Resolve<IItemResolver>();
         var queriedItem = itemResolver.Resolve(data.Pet, parsePrice: false, parseUsername: false, parseAmount: false);
 
@@ -36,13 +30,13 @@ public class SetPet : PacketHandler<SetPetRequest>
 
         if (queriedItem == null)
         {
-            client.SendCommand(data.Player.Username, "message", "Could not find an item matching the name: " + data.Pet);
+            client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, data.Pet);
             return;
         }
 
         if (queriedItem.Item.Type != ItemType.Pet)
         {
-            client.SendCommand(data.Player.Username, "message", queriedItem.Item.Name + " is not a pet.");
+            client.SendMessage(data.Player.Username, Localization.MSG_SET_PET_NOT_PET, queriedItem.Item.Name);
             return;
         }
 
@@ -52,7 +46,7 @@ public class SetPet : PacketHandler<SetPetRequest>
         {
             if (equippedPet == null || equippedPet.Id != queriedItem.Item.Id)
             {
-                client.SendCommand(data.Player.Username, "message", "You do not have any " + queriedItem.Item.Name + ".");
+                client.SendMessage(data.Player.Username, Localization.MSG_SET_PET_NOT_OWNED, queriedItem.Item.Name);
                 return;
             }
         }
@@ -62,6 +56,116 @@ public class SetPet : PacketHandler<SetPetRequest>
             await player.EquipAsync(queriedItem.Item);
         }
 
-        client.SendCommand(data.Player.Username, "message", "You have changed your active pet to " + queriedItem.Item.Name);
+        client.SendMessage(data.Player.Username, Localization.MSG_SET_PET, queriedItem.Item.Name);
+    }
+}
+
+
+public class EquipItem : PacketHandler<TradeItemRequest>
+{
+    public EquipItem(
+        GameManager game,
+        RavenBotConnection server,
+        PlayerManager playerManager)
+        : base(game, server, playerManager)
+    {
+    }
+
+    public override async void Handle(TradeItemRequest data, GameClient client)
+    {
+        var player = PlayerManager.GetPlayer(data.Player);
+        if (!player)
+        {
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(data.ItemQuery))
+        {
+            return;
+        }
+
+        if (data.ItemQuery.Equals("all", System.StringComparison.OrdinalIgnoreCase))
+        {
+            await player.EquipBestItemsAsync();
+            client.SendMessage(data.Player.Username, Localization.MSG_EQUIPPED_ALL);
+            return;
+        }
+
+        var ioc = Game.gameObject.GetComponent<IoCContainer>();
+        var itemResolver = ioc.Resolve<IItemResolver>();
+        var queriedItem = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: false, parseAmount: false);
+
+        if (queriedItem == null)
+            queriedItem = itemResolver.Resolve(data.ItemQuery + " pet", parsePrice: false, parseUsername: false, parseAmount: false);
+
+        if (queriedItem == null)
+        {
+            client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, data.ItemQuery);
+            return;
+        }
+
+        var item = player.Inventory.GetInventoryItems(queriedItem.Item.Id);
+        if (item == null || item.Count == 0)
+        {
+            client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
+            return;
+        }
+
+        if (await player.EquipAsync(queriedItem.Item))
+        {
+            client.SendMessage(data.Player.Username, Localization.MSG_EQUIPPED, queriedItem.Item.Name);
+        }
+    }
+}
+
+public class UnequipItem : PacketHandler<TradeItemRequest>
+{
+    public UnequipItem(
+        GameManager game,
+        RavenBotConnection server,
+        PlayerManager playerManager)
+        : base(game, server, playerManager)
+    {
+    }
+
+    public override async void Handle(TradeItemRequest data, GameClient client)
+    {
+        var player = PlayerManager.GetPlayer(data.Player);
+        if (!player)
+        {
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            return;
+        }
+
+        if (data.ItemQuery.Equals("all", System.StringComparison.OrdinalIgnoreCase))
+        {
+            await player.UnequipAllItemsAsync();
+            client.SendMessage(data.Player.Username, Localization.MSG_UNEQUIPPED_ALL);
+            return;
+        }
+
+        var ioc = Game.gameObject.GetComponent<IoCContainer>();
+        var itemResolver = ioc.Resolve<IItemResolver>();
+        var queriedItem = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: false, parseAmount: false);
+
+        if (queriedItem == null)
+            queriedItem = itemResolver.Resolve(data.ItemQuery + " pet", parsePrice: false, parseUsername: false, parseAmount: false);
+
+        if (queriedItem == null)
+        {
+            client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, data.ItemQuery);
+            return;
+        }
+
+        var item = player.Inventory.GetEquippedItem(queriedItem.Item.Id);
+        if (item == null)
+        {
+            client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_EQUIPPED, queriedItem.Item.Name);
+            return;
+        }
+
+        await player.UnequipAsync(queriedItem.Item);
+        client.SendMessage(data.Player.Username, Localization.MSG_UNEQUIPPED, queriedItem.Item.Name);
     }
 }

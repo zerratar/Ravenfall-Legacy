@@ -1,6 +1,5 @@
 ﻿using Assets.Scripts;
 using System;
-using System.Collections;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -13,7 +12,6 @@ public class RaidBossController : MonoBehaviour
     [SerializeField] private EnemyController enemyController;
     [SerializeField] private Animator animator;
     [SerializeField] private SphereCollider activateRadiusCollider;
-    [SerializeField] private DroneController droneController;
 
     [SerializeField] private SphereCollider attackRadiusCollider;
     [SerializeField] private float attackInterval = 1.5f;
@@ -40,11 +38,10 @@ public class RaidBossController : MonoBehaviour
     void Awake()
     {
         if (!enemyController) enemyController = GetComponent<EnemyController>();
-        if (!droneController) droneController = GetComponentInChildren<DroneController>();
         if (!rb) rb = GetComponent<Rigidbody>();
 
         enemyController.GivesExperienceWhenKilled = false;
-        enemyController.HandleFightBack = false;
+        //enemyController.HandleFightBack = false;
 
         if (!attackRadiusCollider || !activateRadiusCollider)
         {
@@ -67,10 +64,6 @@ public class RaidBossController : MonoBehaviour
     void Update()
     {
         if (GameCache.Instance.IsAwaitingGameRestore) return;
-        if (droneController)
-        {
-            rb.isKinematic = true;
-        }
 
         if (activated)
         {
@@ -142,27 +135,13 @@ public class RaidBossController : MonoBehaviour
 
     private void Attack()
     {
-        if (!droneController)
-        {
-            transform.LookAt(target.transform);
-        }
         attackTimer = attackInterval;
-        var damage = GameMath.CalculateDamage(enemyController, target);
+        var damage = GameMath.CalculateMeleeDamage(enemyController, target);
 
         if (animator)
         {
-            animator.SetInteger("AttackType", Random.Range(0, 3));
+            animator.SetInteger("AttackType", Random.Range(0, 4));
             animator.SetTrigger("AttackTrigger");
-        }
-
-        if (droneController)
-        {
-            droneController.FireGuns(target.Transform, attackInterval * 0.9f);
-            var random = Random.value;
-            if (random >= 0.75)
-                droneController.FireMissiles(target.Transform);
-            else if (random >= 0.5)
-                droneController.FireMortars(target.Transform);
         }
 
         target.TakeDamage(enemyController, (int)damage);
@@ -232,27 +211,13 @@ public class RaidBossController : MonoBehaviour
             animator.avatar = modelAnimator.avatar;
         }
 
-        if (!droneController) droneController = GetComponentInChildren<DroneController>();
-
-        if (droneController)
-        {
-            //enemyController.RotationLocked = true;            
-            RaidBossControlsDestroy = true;
-
-            //transform.localScale = Vector3.one * Mathf.Max(1f, Mathf.Min(3.5f, enemyController.Stats.CombatLevel * 0.003f));
-            modelObject.transform.GetChild(0).localScale *= Mathf.Max(1f, Mathf.Min(3.5f, enemyController.Stats.CombatLevel * 0.003f));
-        }
-        else
-        {
-            transform.localScale = Vector3.one * Mathf.Max(1f, Mathf.Min(3.5f, enemyController.Stats.CombatLevel * 0.003f));
-            modelObject.transform.localScale = Vector3.one; // take control of the scale of these :D MWOUAHAHHA
-        }
+        transform.localScale = Vector3.one * Mathf.Max(1f, Mathf.Min(3.5f, enemyController.Stats.CombatLevel * 0.003f));
+        modelObject.transform.localScale = Vector3.one; // take control of the scale of these :D MWOUAHAHHA
     }
 
 
     public void Die()
     {
-        if (droneController) droneController.Death();
         raidManager.EndRaid(true, false);
     }
 
@@ -278,10 +243,10 @@ public class RaidBossController : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
     {
-        var health = (int)(Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 1.1 * 100);
-        var strength = (int)(Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue) * 1.1);
-        var defense = (int)(Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue) * 1.1);
-        var attack = (int)(Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue) * 1.1);
+        var health = Math.Max(100, (int)(Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 1.1 * 100));
+        var strength = Math.Max(1, (int)(Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue) * 1.1));
+        var defense = Math.Max(1, (int)(Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue) * 1.1));
+        var attack = Math.Max(1, (int)(Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue) * 1.1));
 
         return new Skills
         {

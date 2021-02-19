@@ -37,10 +37,9 @@ public class EnemyController : MonoBehaviour, IAttackable
     private float noDamageDropTargetTimer;
     private float highestAttackerAggroValue;
     private HealthBar healthBar;
-    private WalkyWalkyScript animations;
+    private WalkyWalkyScript movement;
     private DamageCounterManager damageCounterManager;
-    private NavMeshAgent agent;
-    private Rigidbody rbody;
+    //private NavMeshAgent agent;
 
     public IReadOnlyList<IAttackable> Attackers => attackers.Values.ToList();
     public IReadOnlyDictionary<string, float> Aggro => attackerAggro;
@@ -54,7 +53,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         //if (!wander) wander = this.GetComponent<WanderScript>();                
         if (!damageCounterManager) damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
         if (!healthBarManager) healthBarManager = GameObject.FindObjectOfType<HealthBarManager>();
-        if (!animations) animations = GetComponent<WalkyWalkyScript>();
+        if (!movement) movement = GetComponent<WalkyWalkyScript>();
 
         spawnPoint = transform.position;
         spawnRotation = transform.rotation;
@@ -72,15 +71,12 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             Stats = new Skills();
         }
-
-        rbody = GetComponent<Rigidbody>();
-        agent = GetComponent<NavMeshAgent>();
     }
 
     void Update()
     {
         if (GameCache.Instance.IsAwaitingGameRestore) return;
-        if (!HandleFightBack || !InCombat || !Target)
+        if (!InCombat || !Target)
         {
             return;
         }
@@ -121,7 +117,11 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             // we can reach our target
             Lock();
-            AttackTarget(targetPlayer);
+
+            if (HandleFightBack)
+            {
+                AttackTarget(targetPlayer);
+            }
         }
         else
         {
@@ -132,11 +132,12 @@ public class EnemyController : MonoBehaviour, IAttackable
     private void AttackTarget(PlayerController targetPlayer)
     {
         if (!targetPlayer) return;
+        if (!movement) return;
 
         attackTimer -= Time.deltaTime;
         if (attackTimer <= 0f)
         {
-            animations.Attack(() =>
+            movement.Attack(() =>
             {
                 if (Stats.IsDead || !Target || !targetPlayer)
                 {
@@ -144,7 +145,7 @@ public class EnemyController : MonoBehaviour, IAttackable
                     return;
                 }
 
-                var damage = GameMath.CalculateDamage(this, targetPlayer);
+                var damage = GameMath.CalculateMeleeDamage(this, targetPlayer);
                 if (targetPlayer.TakeDamage(this, (int)damage))
                 {
                     Target = null;
@@ -157,9 +158,8 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     private void SetDestination(Vector3 position)
     {
-        if (!agent) return;
         Unlock();
-        agent.SetDestination(position);
+        movement.SetDestination(position);
     }
 
     void LateUpdate()
@@ -190,6 +190,11 @@ public class EnemyController : MonoBehaviour, IAttackable
     public bool GivesExperienceWhenKilled { get; set; } = true;
 
     public Transform Target { get; private set; }
+
+    public bool Heal(IAttackable attacker, int damage)
+    {
+        return false;
+    }
 
     public bool TakeDamage(IAttackable attacker, int damage)
     {
@@ -241,7 +246,14 @@ public class EnemyController : MonoBehaviour, IAttackable
             Stats.Health.Add(-damage);
 
             attackerAggro.TryGetValue(attackerName, out var aggro);
-            var totalAggro = aggro + damage;
+
+            var aggroMultiplier = 1f;
+            var sword = player.Inventory.GetMeleeWeapon();
+            if (sword != null && sword.Type == RavenNest.Models.ItemType.OneHandedSword)
+                aggroMultiplier = 2.5f;
+
+            var totalAggro = aggro + (damage * aggroMultiplier);
+
             attackerAggro[attackerName] = totalAggro;
 
             if (highestAttackerAggroValue <= totalAggro)
@@ -273,7 +285,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             Target = null;
             Unlock();
 
-            if (animations) animations.Die();
+            if (movement) movement.Die();
             if (AutomaticRespawn) Respawn();
             return true;
         }
@@ -310,7 +322,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     private IEnumerator _Respawn()
     {
         yield return new WaitForSeconds(respawnTime);
-        if (animations) animations.Revive();
+        if (movement) movement.Revive();
         attackers.Clear();
         attackerAggro.Clear();
 
@@ -321,31 +333,12 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     public void Lock()
     {
-        if (agent && agent.enabled)
-        {
-            agent.SetDestination(transform.position);
-            agent.isStopped = true;
-            agent.enabled = false;
-        }
-
-        if (rbody)
-        {
-            rbody.isKinematic = true;
-        }
+        movement.Lock();
     }
 
     public void Unlock()
     {
-        if (agent)
-        {
-            agent.enabled = true;
-            agent.isStopped = false;
-        }
-
-        if (rbody)
-        {
-            rbody.isKinematic = true;
-        }
+        movement.Unlock();
     }
 
     public void AddAttacker(PlayerController player)

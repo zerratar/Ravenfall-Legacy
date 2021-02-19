@@ -5,7 +5,7 @@ public class KickPlayer : PacketHandler<Player>
 {
     public KickPlayer(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -42,7 +42,7 @@ public class KickPlayer : PacketHandler<Player>
                 Game.RemovePlayer(plr);
             }
 
-            client.SendCommand(data.Username, "kick_success", $"{kickedPlayerCount} players was kicked from the game.");
+            client.SendMessage(data.Username, "{kickedPlayerCount} players was kicked from the game.", kickedPlayerCount.ToString());
             return;
         }
 
@@ -54,26 +54,30 @@ public class KickPlayer : PacketHandler<Player>
                 Game.Dungeons.Remove(player);
             }
 
-            if (!Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+            if (!Game.Arena.Started && Game.Arena.Activated && player.Arena.InArena)
             {
-                client.SendCommand(data.Username, "kick_failed", $"{player.PlayerName} cannot be kicked as they are participating in the arena that has already started and may break it. Player has been queued up to be kicked after the arena has been finished.");
+                Game.Arena.Leave(player);
+            }
+            else if (!Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+            {
+                client.SendMessage(data.Username, "{player} cannot be kicked as they are participating in the arena that has already started and may break it. Player has been queued up to be kicked after the arena has been finished.", player.PlayerName);
                 Game.QueueRemovePlayer(player);
                 return;
             }
 
             if (player.Duel.InDuel)
             {
-                client.SendCommand(data.Username, "kick_failed", $"{player.PlayerName} cannot be kicked while fighting a duel. Player has been queued up to be kicked after the duel has been finished.");
+                client.SendMessage(data.Username, "{player} cannot be kicked while fighting a duel. Player has been queued up to be kicked after the duel has been finished.", player.PlayerName);
                 Game.QueueRemovePlayer(player);
                 return;
             }
 
             Game.RemovePlayer(player);
-            client.SendCommand(data.Username, "kick_success", $"{player.PlayerName} was kicked from the game.");
+            client.SendMessage(data.Username, "{player} was kicked from the game.", player.PlayerName);
         }
         else
         {
-            client.SendCommand(data.Username, "kick_failed", $"No players with the name '{data.Username}' is playing.");
+            client.SendMessage(data.Username, "No players with the name '{player}' is playing.", data.Username);
         }
     }
 }

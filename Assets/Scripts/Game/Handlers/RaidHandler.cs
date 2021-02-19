@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class RaidHandler : MonoBehaviour
@@ -30,12 +31,27 @@ public class RaidHandler : MonoBehaviour
             return;
         }
 
-        var boss = gameManager.Raid.Boss;
+        var target = gameManager.Raid.Boss.transform;
+        PlayerController healTarget = null;
+        if (player.TrainingHealing)
+        {
+            var raiders = gameManager.Raid.Raiders;
+            healTarget = raiders
+                .OrderByDescending(x => x.Stats.Health.Level - x.Stats.Health.CurrentValue)
+                .FirstOrDefault();
+            target = healTarget.transform;
+        }
+
+        if (!target)
+        {
+            return;
+        }
+
         var range = player.GetAttackRange();
-        var distance = Vector3.Distance(transform.position, boss.transform.position);
+        var distance = Vector3.Distance(transform.position, target.position);
         if (distance <= range)
         {
-            if (boss.Enemy.Stats.IsDead)
+            if (!player.TrainingHealing && gameManager.Raid.Boss.Enemy.Stats.IsDead)
             {
                 return;
             }
@@ -46,11 +62,18 @@ public class RaidHandler : MonoBehaviour
                 return;
             }
 
-            player.Attack(boss.Enemy);
+            if (player.TrainingHealing)
+            {
+                player.Heal(healTarget);
+            }
+            else
+            {
+                player.Attack(gameManager.Raid.Boss.Enemy);
+            }
         }
         else
         {
-            player.GotoPosition(boss.transform.position);
+            player.GotoPosition(target.position);
         }
     }
 

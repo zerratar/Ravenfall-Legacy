@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RavenNest.SDK.Endpoints
@@ -10,7 +11,12 @@ namespace RavenNest.SDK.Endpoints
         Task<bool> UpdateAsync();
         Task<bool> SavePlayerStateAsync(PlayerController player);
         Task<bool> SavePlayerSkillsAsync(PlayerController player);
+        void SendPlayerLoyaltyData(PlayerController player);
+        void SendPlayerLoyaltyData(TwitchSubscription data);
+        void SendPlayerLoyaltyData(TwitchCheer data);
         void Close();
         void Reconnect();
+        Task UpdatePlayerEventStatsAsync(EventTriggerSystem.SysEventStats e);
+        void SyncTimeAsync(TimeSpan delta, DateTime localTime, DateTime serverTime);
     }
 }

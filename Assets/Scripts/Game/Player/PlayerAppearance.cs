@@ -78,20 +78,22 @@ public class PlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     public Transform OffHandTransform => throw new NotImplementedException();
 
+    public GameObject MonsterMesh => throw new NotImplementedException();
+
     // Start is called before the first frame update
     void Start()
     {
         //UpdateAppearance();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (Base)
-        {
-            Base.transform.localPosition = Vector3.zero;
-        }
-    }
+    //// Update is called once per frame
+    //void Update()
+    //{
+    //    if (Base)
+    //    {
+    //        Base.transform.localPosition = Vector3.zero;
+    //    }
+    //}
 
     public void SetItem(ItemController item, Transform parent)
     {
@@ -195,7 +197,7 @@ public class PlayerAppearance : MonoBehaviour, IPlayerAppearance
     }
 
 
-    public void UpdateAppearance()
+    public void UpdateAppearance(Sprite capeLogo = null)
     {
         if (Base)
         {
@@ -455,12 +457,12 @@ public class PlayerAppearance : MonoBehaviour, IPlayerAppearance
         throw new NotImplementedException();
     }
 
-    public void UnEquip(ItemController item)
+    public void Unequip(ItemController item)
     {
         throw new NotImplementedException();
     }
 
-    public void SetAppearance(SyntyAppearance appearance)
+    public void SetAppearance(SyntyAppearance appearance, Action onReady)
     {
         throw new NotSupportedException();
     }
@@ -471,6 +473,21 @@ public class PlayerAppearance : MonoBehaviour, IPlayerAppearance
     }
 
     public void Optimize(Action afterUndo = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Transform GetCombinedMesh()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetMonsterMesh(GameObject prefab)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void DestroyMonsterMesh()
     {
         throw new NotImplementedException();
     }

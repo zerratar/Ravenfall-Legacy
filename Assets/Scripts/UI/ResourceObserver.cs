@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Globalization;
 using TMPro;
 using UnityEngine;
 
@@ -27,8 +26,6 @@ public class ResourceObserver : MonoBehaviour
 
         label.text = formattedValue;
     }
-
-
 
     public void Observe(Func<decimal?> amount)
     {

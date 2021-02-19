@@ -12,5 +12,6 @@
     Mining = 8,
     Sailing = 9,
     Slayer = 10,
-    Fishing = 11
+    Fishing = 11,
+    Healing = 12
 }

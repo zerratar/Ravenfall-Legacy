@@ -137,6 +137,11 @@ namespace RavenNest.SDK.Endpoints
             }
             catch (Exception exc)
             {
+                try
+                {
+                    UnityEngine.Debug.LogError(exc.ToString());
+                }
+                catch { }
                 return default(TResult);
             }
         }

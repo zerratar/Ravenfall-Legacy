@@ -9,11 +9,6 @@ public class TownHouseRenderManager : MonoBehaviour
     private List<TownHouseRenderer> houseRenderers = new List<TownHouseRenderer>();
     private List<GameObject> instantiated = new List<GameObject>();
 
-    // Update is called once per frame
-    void Update()
-    {
-    }
-
     internal RenderTexture CreateHouseRender(TownHouse townHouse)
     {
         var houseObject = Instantiate(townHouse.Prefab, transform);

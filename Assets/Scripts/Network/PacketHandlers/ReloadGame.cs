@@ -3,7 +3,7 @@ public class ReloadGame : PacketHandler<Player>
 {
     public ReloadGame(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
     : base(game, server, playerManager)
     {
@@ -14,7 +14,7 @@ public class ReloadGame : PacketHandler<Player>
         var player = PlayerManager.GetPlayer(data);
         if (!player)
         {
-            client.SendCommand(data.Username, "message", "You are not currently playing. Use !join to start playing!");
+            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -24,7 +24,6 @@ public class ReloadGame : PacketHandler<Player>
             return;
         }
 
-        //client.SendCommand(data.Username, "message", "Game is being reloaded.. Everyone please wait.");
         Game.ReloadGame();
     }
 }

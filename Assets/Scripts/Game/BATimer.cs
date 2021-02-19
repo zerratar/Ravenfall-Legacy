@@ -16,11 +16,13 @@ public class BATimer : MonoBehaviour
         if (!timeProgressBar) timeProgressBar = GetComponentInChildren<GameProgressBar>();
     }
 
-    public void SetSubscriber(string subber)
+    public void SetSubscriber(string subber, bool byUser)
     {
         if (!subscriber || lastSubber == subber) return;
         lastSubber = subber;
-        subscriber.text = "Last subscriber: " + SanitizeText(subber);
+        subscriber.text =
+            (byUser ? "Thanks to " : "")
+             + SanitizeText(subber);
     }
 
     public void SetText(string text)

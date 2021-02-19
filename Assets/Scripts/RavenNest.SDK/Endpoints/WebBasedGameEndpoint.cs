@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using RavenNest.Models;
 
 namespace RavenNest.SDK.Endpoints
@@ -36,31 +37,79 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<SessionToken>(ApiRequestTarget.Game, ApiRequestType.Post);
         }
 
-        public Task AttachPlayersAsync(string[] userids)
+        public Task AttachPlayersAsync(Guid[] ids)
         {
             return request.Create()
                 .Method("attach")
-                .AddParameter("values", userids)
+                .AddParameter("values", ids)
                 .Build()
                 .SendAsync(ApiRequestTarget.Game, ApiRequestType.Post);
         }
+
+        public Task<ScrollUseResult> ActivateRaidAsync(PlayerController plr)
+        {
+            return request.Create()
+                   .Method("use-scroll")
+                   .AddParameter(plr.Id.ToString())
+                   .AddParameter(ScrollType.Raid.ToString())
+                   .Build()
+                   .SendAsync<ScrollUseResult>(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
+
+        public Task<ScrollUseResult> ActivateDungeonAsync(PlayerController plr)
+        {
+            return request.Create()
+                   .Method("use-scroll")
+                   .AddParameter(plr.Id.ToString())
+                   .AddParameter(ScrollType.Dungeon.ToString())
+                   .Build()
+                   .SendAsync<ScrollUseResult>(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
+
+        public Task<ScrollUseResult> ActivateExpMultiplierAsync(PlayerController plr)
+        {
+            return request.Create()
+                   .Method("use-scroll")
+                   .AddParameter(plr.Id.ToString())
+                   .AddParameter(ScrollType.Experience.ToString())
+                   .Build()
+                   .SendAsync<ScrollUseResult>(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
+
+        //public Task<bool> EndSessionAndRaidAsync(string username, bool war)
+        //{
+        //    return request.Create()
+        //        .Method("raid")
+        //        .AddParameter(username)
+        //        .AddParameter("value", war)
+        //        .Build()
+        //        .SendAsync<bool>(ApiRequestTarget.Game, ApiRequestType.Post);
+        //}
 
         public Task<bool> EndSessionAndRaidAsync(string username, bool war)
         {
             return request.Create()
                 .Method("raid")
                 .AddParameter(username)
-                .AddParameter("value", war)
+                .AddParameter(war.ToString())
                 .Build()
-                .SendAsync<bool>(ApiRequestTarget.Game, ApiRequestType.Remove);
+                .SendAsync<bool>(ApiRequestTarget.Game, ApiRequestType.Get);
         }
 
         public Task EndSessionAsync()
         {
             return request.Create()
+                .Method("end")
                 .Build()
-                .SendAsync(ApiRequestTarget.Game, ApiRequestType.Remove);
+                .SendAsync(ApiRequestTarget.Game, ApiRequestType.Get);
         }
+
+        //public Task EndSessionAsync()
+        //{
+        //    return request.Create()
+        //        .Build()
+        //        .SendAsync(ApiRequestTarget.Game, ApiRequestType.Post);
+        //}
 
         public Task<EventCollection> PollEventsAsync(int revision)
         {

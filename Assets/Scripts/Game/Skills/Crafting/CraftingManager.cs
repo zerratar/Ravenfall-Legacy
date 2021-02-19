@@ -102,13 +102,20 @@ public class CraftingManager : MonoBehaviour
 
                 var enoughDefense = x.RequiredDefenseLevel <= player.Stats.Defense.CurrentValue;
                 var enoughAttack = x.RequiredAttackLevel <= player.Stats.Attack.CurrentValue;
+                var enoughRanged = x.RequiredRangedLevel <= player.Stats.Ranged.CurrentValue;
+                var enoughMagic = x.RequiredMagicLevel <= player.Stats.Magic.CurrentValue;
+                var enoughSlayer = x.RequiredSlayerLevel <= player.Stats.Slayer.CurrentValue;
 
                 return sameCategory &&
                        sameType &&
                        enoughCraftingLevel &&
                        enoughCookingLevel &&
                        enoughDefense &&
-                       enoughAttack;
+                       enoughAttack &&
+                       enoughRanged &&
+                       enoughMagic &&
+                       enoughSlayer;
+
             }).OrderBy(x =>
                 Math.Abs(x.RequiredCraftingLevel - player.Stats.Crafting.CurrentValue) +
                 Math.Abs( /*x.CraftingRequirements.MinCookingLevel*/ 0 - player.Stats.Cooking.CurrentValue))

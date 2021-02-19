@@ -70,7 +70,11 @@ public class ArenaHandler : MonoBehaviour
         player.Stats.Health.Reset();
 
         CelebrateArenaWin(wonByDraw);
+        WalkAwayFromArena();
+    }
 
+    public void WalkAwayFromArena()
+    {
         if (previousChunk == null || previousChunk.ChunkType == TaskType.Arena)
         {
             player.GotoStartingArea();
@@ -144,7 +148,7 @@ public class ArenaHandler : MonoBehaviour
     {
         var target = player.GetAttackers()
             .OfType<PlayerController>()
-            .Where(atk => !atk.Stats.IsDead)
+            .Where(atk => atk != null && atk && !atk.Stats.IsDead)
             .OrderBy(atk => Vector3.Distance(player.transform.position, atk.transform.position))
             .FirstOrDefault();
 
@@ -152,12 +156,13 @@ public class ArenaHandler : MonoBehaviour
         {
             return target;
         }
-
+        
         return gameManager.Arena
             .AvailablePlayers
+            .Where(x => x != null && x)
             .Except(player)
             .OrderBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-            .FirstOrDefault(); ;
+            .FirstOrDefault();
     }
 
     private void CelebrateArenaWin(bool wonByDraw)

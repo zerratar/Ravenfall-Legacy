@@ -4,7 +4,7 @@ public class ArenaJoin : PacketHandler<Player>
 {
     public ArenaJoin(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
@@ -17,29 +17,25 @@ public class ArenaJoin : PacketHandler<Player>
             var player = PlayerManager.GetPlayer(data);
             if (player == null)
             {
-                client.SendCommand(data.Username,
-                    "arena_join_failed",
-                    "You are not currently playing, use the !join to start playing.");
-
+                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             if (Game.StreamRaid.IsWar)
             {
-                client.SendCommand(data.Username, "arena_join_failed",
-                    "Arena is unavailable during wars. Please wait for it to be over.");
+                client.SendMessage(data.Username, Localization.MSG_ARENA_UNAVAILABLE_WAR);
                 return;
             }
 
             if (Game.Arena.Island != player.Island)
             {
-                client.SendCommand(data.Username, "arena_failed", $"There is no arena on the island you're on.");
+                client.SendMessage(data.Username, Localization.MSG_ARENA_WRONG_ISLAND);
                 return;
             }
 
             if (player.Ferry.OnFerry)
             {
-                client.SendCommand(data.Username, "arena_failed", $"You cannot join the arena while on the ferry.");
+                client.SendMessage(data.Username, Localization.MSG_ARENA_FERRY);
                 return;
             }
 
@@ -49,38 +45,54 @@ public class ArenaJoin : PacketHandler<Player>
             }
 
             if (!Game.Arena.CanJoin(player, out var alreadyJoined, out var alreadyStarted)
+                || Game.Raid.Started
+                || Game.Dungeons.Active
+                || Game.Dungeons.Started
                 || player.Raid.InRaid
-                || player.Duel.InDuel)
+                || player.Duel.InDuel
+                || player.Dungeon.InDungeon)
             {
                 var errorMessage = "";
-                if (player.Duel.InDuel)
+                if (Game.Raid.Started)
                 {
-                    errorMessage = "You are currently fighting in a duel.";
+                    errorMessage = Localization.MSG_RAID_STARTED;
+                }
+                else if (Game.Dungeons.Active || Game.Dungeons.Started)
+                {
+                    errorMessage = Localization.MSG_DUNGEON_STARTED;
+                }
+                else if (player.Dungeon.InDungeon)
+                {
+                    errorMessage = Localization.MSG_IN_DUNGEON;
+                }
+                else if (player.Duel.InDuel)
+                {
+                    errorMessage = Localization.MSG_IN_DUEL;
                 }
                 else if (player.Raid.InRaid)
                 {
-                    errorMessage = "You are currently fighting in the raid.";
+                    errorMessage = Localization.MSG_IN_RAID;
                 }
                 else if (alreadyJoined)
                 {
-                    errorMessage = "You have already joined the arena.";
+                    errorMessage = Localization.MSG_ARENA_ALREADY_JOINED;
                 }
                 else if (alreadyStarted)
                 {
-                    errorMessage = "You cannot join as the arena has already started.";
+                    errorMessage = Localization.MSG_ARENA_ALREADY_STARTED;
                 }
                 else
                 {
-                    errorMessage = "You cannot join the arena at this time.";
+                    errorMessage = Localization.MSG_ARENA_JOIN_ERROR;
                 }
-
-                client.SendCommand(data.Username, "arena_join_failed", errorMessage);
+             
+                client.SendMessage(data.Username, errorMessage);
                 return;
             }
 
             Game.Arena.Join(player);
 
-            client.SendCommand(player.PlayerName, "arena_join_success", $"You have joined the arena. Good luck!");
+            client.SendMessage(player.PlayerName, Localization.MSG_ARENA_JOIN);
         }
         catch (Exception exc)
         {

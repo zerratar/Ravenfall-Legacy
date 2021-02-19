@@ -63,6 +63,9 @@ public class ItemRepository : MonoBehaviour
             {
                 Debug.Log("Instantiate male prefab: " + item.MalePrefab);
                 var itemObj = UnityEngine.Resources.Load<GameObject>(item.GenericPrefab);
+
+                //AssetPreview.GetAssetPreview
+
                 InstantiateItem(item, itemObj);
             }
             else

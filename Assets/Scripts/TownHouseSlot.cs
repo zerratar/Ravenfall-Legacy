@@ -86,11 +86,8 @@ public class TownHouseSlot : MonoBehaviour
             gameManager?.Village?.SetBonus(Slot, SlotType, 0);
             return;
         }
-
-        Debug.Log(player.Name + " was set as the new owner set for slot " + Slot);
         var existingSkill = GameMath.GetSkillByHouseType(player.Stats, SlotType);
         var bonus = GameMath.CalculateHouseExpBonus(existingSkill);
-
         gameManager?.Village?.SetBonus(Slot, SlotType, bonus);
     }
 

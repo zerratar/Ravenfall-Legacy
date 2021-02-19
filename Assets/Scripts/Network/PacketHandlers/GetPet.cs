@@ -4,28 +4,28 @@ public class GetPet : PacketHandler<GetPetRequest>
 {
     public GetPet(
         GameManager game,
-        GameServer server,
+        RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
     }
 
-    public override async void Handle(GetPetRequest data, GameClient client)
+    public override void Handle(GetPetRequest data, GameClient client)
     {
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendCommand(data.Player.Username, "set_pet", "You are not currently playing. Use !join to start playing!");
+            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var equippedPet = player.Inventory.GetEquipmentOfCategory(ItemCategory.Pet);
         if (equippedPet == null)
         {
-            client.SendCommand(data.Player.Username, "message", "You do not have any pets equipped.");
+            client.SendMessage(data.Player.Username, Localization.MSG_GET_PET_NO_PET);
             return;
         }
 
-        client.SendCommand(data.Player.Username, "message", "You currently have " + equippedPet.Name + " equipped.");
+        client.SendMessage(data.Player.Username, Localization.MSG_GET_PET, equippedPet.Name);
     }
 }

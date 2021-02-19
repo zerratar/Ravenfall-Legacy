@@ -108,6 +108,7 @@ public class BuildSlotIconsManager : MonoBehaviour
 
     public void ShowHouseSelection()
     {
+        HidePlayerAssignDialog();
         if (selectBuildingDialog)
         {
             selectBuildingDialog.gameObject.SetActive(true);
@@ -127,14 +128,19 @@ public class BuildSlotIconsManager : MonoBehaviour
         if (!townHouseController)
             return;
 
+        HideBuildDialog();
+
         townHouseController.Owner = activeSlot.Owner;
         playerAssignDialog.Show(townHouseController);
     }
 
     public async void AssignPlayer()
     {
+        if (!activeSlot || activeSlot == null)
+            return;
+
         var newOwner = playerAssignDialog.SelectedPlayer;
-        if (!newOwner)
+        if (!newOwner || newOwner == null)
         {
             Hide();
             return;
@@ -144,9 +150,9 @@ public class BuildSlotIconsManager : MonoBehaviour
         {
             gameManager.Village.TownHouses.SetOwner(activeSlot, newOwner);
             Hide();
+            gameManager.UpdateVillageBoostText();
             return;
         }
-
 
         Hide();
     }

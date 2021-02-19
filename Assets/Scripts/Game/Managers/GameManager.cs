@@ -19,7 +19,7 @@ using RavenNestPlayer = RavenNest.Models.Player;
 public class GameManager : MonoBehaviour, IGameManager
 {
     [SerializeField] private GameCamera gameCamera;
-    [SerializeField] private CommandServer commandServer;
+    [SerializeField] private RavenBot commandServer;
 
     [SerializeField] private PlayerDetails playerObserver;
     [SerializeField] private PlayerList playerList;
@@ -31,6 +31,7 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private BATimer boostTimer;
     [SerializeField] private PlayerSearchHandler playerSearchHandler;
     [SerializeField] private GameMenuHandler menuHandler;
+
     [SerializeField] private string accessKey;
 
     [SerializeField] private FerryProgress ferryProgress;
@@ -48,6 +49,10 @@ public class GameManager : MonoBehaviour, IGameManager
 
     [SerializeField] private GameObject gameReloadMessage;
 
+    [SerializeField] private TavernHandler tavern;
+
+    [SerializeField] private DayNightCycle dayNightCycle;
+
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
     = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
 
@@ -57,7 +62,7 @@ public class GameManager : MonoBehaviour, IGameManager
         = new ConcurrentDictionary<string, LoadingState>();
 
     private readonly GameEventManager events = new GameEventManager();
-
+    private IoCContainer ioc;
     private FerryController ferryController;
     private ChunkManager chunkManager;
     private PlayerManager playerManager;
@@ -70,6 +75,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public string ServerAddress;
 
     public IRavenNestClient RavenNest => ravenNest;
+    public ClanManager Clans => clanManager ?? (clanManager = new ClanManager(this));
 
     public VillageManager Village => villageManager;
     public PlayerLogoManager PlayerLogo => playerLogoManager;
@@ -86,7 +92,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public RaidManager Raid => raidManager;
     public StreamRaidManager StreamRaid => streamRaidManager;
     public DungeonManager Dungeons => dungeonManager;
-    public GameServer Server => commandServer?.Server;
+    public RavenBotConnection RavenBot => commandServer?.Connection;
     public FerryController Ferry => ferryController;
     public DropEventManager DropEvent => dropEventManager;
     public GameCamera Camera => gameCamera;
@@ -94,9 +100,11 @@ public class GameManager : MonoBehaviour, IGameManager
     public PlayerList PlayerList => playerList;
     public ServerNotificationManager ServerNotifications => serverNotificationManager;
 
-    public bool IsSaving => saveCounter > 0;
+    public EventTriggerSystem EventTriggerSystem => ioc.Resolve<EventTriggerSystem>();
 
-    private float spawnTimer = 10f;
+    public TavernHandler Tavern => tavern;
+
+    public bool IsSaving => saveCounter > 0;
 
     private float saveTimer = 5f;
     private float saveFrequency = 10f;
@@ -120,9 +128,18 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private bool potatoMode;
     private bool forcedPotatoMode;
+    private DateTime dungeonStartTime;
+    private DateTime raidStartTime;
+    private ClanManager clanManager;
+    private float lastServerTimeUpdateFloat;
+    private DateTime lastServerTimeUpdateDateTime;
+    private DateTime serverTime;
+    private readonly TimeSpan dungeonStartCooldown = TimeSpan.FromMinutes(10);
+    private readonly TimeSpan raidStartCooldown = TimeSpan.FromMinutes(10);
 
     public Permissions Permissions { get; set; } = new Permissions();
     public bool LogoCensor { get; set; }
+
     public bool PotatoMode
     {
         get => forcedPotatoMode || potatoMode;
@@ -131,14 +148,19 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public bool AutoPotatoMode { get; set; }
     public bool IsLoaded => loadingStates.All(x => x.Value == LoadingState.Loaded);
+    public bool DungeonStartEnabled { get; internal set; } = true;
+    public bool RaidStartEnabled { get; internal set; } = true;
 
     // Start is called before the first frame update   
     void Start()
     {
+        ioc = GetComponent<IoCContainer>();
         AutoPotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_AutoPotatoMode, 0) > 0;
         PotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_PotatoMode, 0) > 0;
 
         gameReloadMessage.SetActive(false);
+        if (!dayNightCycle) dayNightCycle = GetComponent<DayNightCycle>();
+
         if (!loginHandler) loginHandler = FindObjectOfType<LoginHandler>();
         if (!dropEventManager) dropEventManager = GetComponent<DropEventManager>();
         if (!ferryProgress) ferryProgress = FindObjectOfType<FerryProgress>();
@@ -151,7 +173,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!subEventManager) subEventManager = GetComponent<TwitchEventManager>();
         if (!subEventManager) subEventManager = gameObject.AddComponent<TwitchEventManager>();
 
-        if (!commandServer) commandServer = GetComponent<CommandServer>();
+        if (!commandServer) commandServer = GetComponent<RavenBot>();
         if (!islandManager) islandManager = GetComponent<IslandManager>();
         if (!itemManager) itemManager = GetComponent<ItemManager>();
         if (!playerManager) playerManager = GetComponent<PlayerManager>();
@@ -172,6 +194,12 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<VillageInfoEventHandler>(GameEventType.VillageInfo);
         RegisterGameEventHandler<VillageLevelUpEventHandler>(GameEventType.VillageLevelUp);
 
+        RegisterGameEventHandler<ClanLevelChangedEventHandler>(GameEventType.ClanLevelChanged);
+        RegisterGameEventHandler<ClanSkillLevelChangedEventHandler>(GameEventType.ClanSkillLevelChanged);
+        RegisterGameEventHandler<ServerTimeEventHandler>(GameEventType.ServerTime);
+
+        RegisterGameEventHandler<ExpMultiplierEventHandler>(GameEventType.ExpMultiplier);
+
         RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
         RegisterGameEventHandler<PlayerAddEventHandler>(GameEventType.PlayerAdd);
         RegisterGameEventHandler<PlayerExpUpdateEventHandler>(GameEventType.PlayerExpUpdate);
@@ -188,8 +216,24 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ItemBuyEventHandler>(GameEventType.ItemBuy);
         RegisterGameEventHandler<ItemSellEventHandler>(GameEventType.ItemSell);
 
-        commandServer.StartServer(this);
+        commandServer.Initialize(this);
         musicManager.PlayBackgroundMusic();
+
+        this.EventTriggerSystem.SourceTripped += OnSourceTripped;
+    }
+
+    internal void OnSessionStart()
+    {
+        commandServer.SendSessionOwner(this.RavenNest.TwitchUserId, this.RavenNest.TwitchUserName, this.RavenNest.SessionId);
+    }
+
+    private void OnSourceTripped(object sender, EventTriggerSystem.SysEventStats e)
+    {
+        if (!ravenNest.Authenticated && ravenNest.Stream.IsReady)
+        {
+            return;
+        }
+        ravenNest.Stream.UpdatePlayerEventStatsAsync(e);
     }
 
     private void RegisterGameEventHandler<T>(GameEventType type) where T : IGameEventHandler, new()
@@ -218,7 +262,7 @@ public class GameManager : MonoBehaviour, IGameManager
         gc.BuildState();
 
         ravenNest.Stream.Close();
-        Server.Stop();
+        RavenBot.Stop();
 
         gameReloadMessage.SetActive(true);
 
@@ -230,9 +274,13 @@ public class GameManager : MonoBehaviour, IGameManager
         if (state.Players == null || state.Players.Count == 0)
             yield break;
 
+        yield return UnityEngine.Resources.UnloadUnusedAssets();
+
         try
         {
-            ravenNest.Game.AttachPlayersAsync(state.Players.Select(x => x.StreamUser.UserId).ToArray());
+            var players = state.Players?.Select(x => x.Definition.Id)?.ToArray();
+            if (players != null)
+                ravenNest.Game.AttachPlayersAsync(players);
         }
         catch (Exception exc)
         {
@@ -243,7 +291,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         foreach (var player in state.Players)
         {
-            var instance = SpawnPlayer(player.Definition, player.StreamUser);
+            var instance = SpawnPlayer(player.Definition, player.TwitchUser);
             if (!instance || instance == null)
             {
                 continue;
@@ -252,8 +300,6 @@ public class GameManager : MonoBehaviour, IGameManager
             yield return new WaitForEndOfFrame();
 
             instance.Lock();
-
-            //instance.Stats.Health.CurrentValue = player.Health;
 
             yield return new WaitForEndOfFrame();
 
@@ -292,10 +338,10 @@ public class GameManager : MonoBehaviour, IGameManager
             forcedPotatoMode = !Application.isFocused;
         }
 
-        if (Time.frameCount % 30 == 0)
-        {
-            System.GC.Collect();
-        }
+        //if (Time.frameCount % 300 == 0)
+        //{
+        //    System.GC.Collect();
+        //}
 
         UpdateIntegrityCheck();
 
@@ -366,22 +412,6 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             HandleGameEvent(ge);
         }
-
-        //var players = playerManager.GetAllPlayers();
-        //if (players.Count > 0 && ravenNest.Stream.IsReady) // no need to check if no players are online as there will most likely not be any events
-        //{
-        //    var minTime = TimeSpan.FromMinutes(2);
-        //    if (players.Any(x => x.TrainingResourceChangingSkill))
-        //        minTime = TimeSpan.FromSeconds(30); // we are expecting events at least 1 per 10s
-
-        //    if (DateTime.UtcNow - lastGameEventRecevied > minTime)
-        //    {
-        //        ravenNest.Stream.Reconnect();
-        //        lastGameEventRecevied = DateTime.UtcNow;
-        //        return false;
-        //    }
-        //}
-
         return true;
     }
 
@@ -411,11 +441,6 @@ public class GameManager : MonoBehaviour, IGameManager
         return false;
     }
 
-    public Skills GetStoredPlayerSkills(string userId)
-    {
-        return playerManager.GetStoredPlayerSkills(userId);
-    }
-
     internal void BeginStreamerRaid(string username, bool war)
     {
         exitView.SetActive(true);
@@ -432,19 +457,24 @@ public class GameManager : MonoBehaviour, IGameManager
         loadingStates[key] = state;
     }
 
-    public void Log(string message)
-    {
-        Debug.Log(message);
-    }
-
     public void OnAuthenticated()
     {
-        ShowFerryProgress();
+        //ShowFerryProgress();
     }
 
     public void ShowFerryProgress()
     {
         ferryProgress.gameObject.SetActive(true);
+    }
+
+    internal void SetTimeOfDay(int totalTime, int freezeTime)
+    {
+        dayNightCycle.SetTimeOfDay(totalTime, freezeTime);
+    }
+
+    public void Log(string message)
+    {
+        //Debug.Log(message);
     }
 
     public void LogError(string message)
@@ -468,9 +498,14 @@ public class GameManager : MonoBehaviour, IGameManager
             raidManager.Leave(player);
         }
 
+
+        ravenNest.PlayerRemoveAsync(player);
+
         player.Kicked = true;
         playerList.RemovePlayer(player);
         playerManager.Remove(player);
+
+        UpdateVillageBoostText();
     }
 
     public PlayerController SpawnPlayer(
@@ -511,6 +546,8 @@ public class GameManager : MonoBehaviour, IGameManager
         playerList.AddPlayer(player);
         PlayerJoined(player);
 
+        UpdateVillageBoostText();
+
         if (player && gameCamera && gameCamera.AllowJoinObserve)
             gameCamera.ObservePlayer(player);
 
@@ -519,6 +556,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         return player;
     }
+
     public void HandleGameEvents(EventList gameEvents)
     {
         lastGameEventRecevied = DateTime.UtcNow;
@@ -542,26 +580,47 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-    internal async Task<PlayerController> AddPlayerByUserIdAsync(string userId, StreamRaidInfo raiderInfo)
+    internal async Task<PlayerController> AddPlayerByCharacterIdAsync(Guid characterId, StreamRaidInfo raiderInfo)
     {
-        var playerInfo = await RavenNest.PlayerJoinAsync(userId, "");
-        if (playerInfo == null)
+        var playerInfo = await RavenNest.PlayerJoinAsync(new PlayerJoinData
+        {
+            CharacterId = characterId
+        });
+
+        if (playerInfo == null || !playerInfo.Success)
         {
             return null;
         }
 
-        return SpawnPlayer(playerInfo, raidInfo: raiderInfo);
+        return SpawnPlayer(playerInfo.Player, raidInfo: raiderInfo);
+    }
+
+    internal async Task<PlayerController> AddPlayerByUserIdAsync(string userId, StreamRaidInfo raiderInfo)
+    {
+        var playerInfo = await RavenNest.PlayerJoinAsync(new PlayerJoinData
+        {
+            UserId = userId,
+            UserName = "",
+            Identifier = "1"
+        });
+
+        if (playerInfo == null || !playerInfo.Success)
+        {
+            return null;
+        }
+
+        return SpawnPlayer(playerInfo.Player, raidInfo: raiderInfo);
     }
 
     private void OnApplicationQuit()
     {
+        this.EventTriggerSystem.Dispose();
+
         StopRavenNestSession();
 
         Debug.Log("Application ending after " + Time.time + " seconds");
-        var client = Server.Client;
-        if (client == null) return;
 
-        Server.Stop();
+        RavenBot.Stop();
         SaveEmptyGameStats();
     }
 
@@ -574,7 +633,8 @@ public class GameManager : MonoBehaviour, IGameManager
         if (client == null)
         {
             client = new RavenNestClient(logger, this,
-            new RavenNestStreamSettings()
+            new ProductionRavenNestStreamSettings()
+            //new StagingRavenNestStreamSettings()
             //new LocalRavenNestStreamSettings()
             );
 
@@ -594,16 +654,6 @@ public class GameManager : MonoBehaviour, IGameManager
         if (ravenNest.Authenticated) return true;
         return await ravenNest.LoginAsync(username, password);
     }
-
-    //public void ForceGameSessionUpdate()
-    //{
-    //    if (!ravenNest.Authenticated) return;
-    //    var result = ravenNest.StartSessionAsync(Application.version, accessKey, false).Result;
-    //    if (result)
-    //    {
-    //        gameSessionActive = true;
-    //    }
-    //}
 
     private async void RavenNestUpdate()
     {
@@ -661,7 +711,7 @@ public class GameManager : MonoBehaviour, IGameManager
             var players = playerManager.GetAllPlayers().ToList();
             var failedToSave = new List<PlayerController>();
             if (players.Count == 0) return;
-            Debug.Log($"Saving {players.Count} players...");
+            //Debug.Log($"Saving {players.Count} players...");
             try
             {
                 savingPlayersTime = savingPlayersTimeDuration;
@@ -678,7 +728,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     //    player.FailedToSave();
                     //    failedToSave.Add(player);
                     //}
-                    await Task.Delay(10);
+                    await Task.Delay(5);
                 }
             }
             catch (Exception exc)
@@ -747,12 +797,12 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void UpdateChatBotCommunication()
     {
-        if (Server == null || !Server.IsBound)
+        if (RavenBot == null || !RavenBot.IsBound)
         {
             return;
         }
 
-        Server.HandleNextPacket(this, Server, playerManager);
+        RavenBot.HandleNextPacket(this, RavenBot, playerManager);
     }
 
     //private IslandController lastIslandToggle = null;
@@ -760,6 +810,11 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         var isShiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         var isControlDown = isShiftDown || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+
+        if (Input.GetKeyUp(KeyCode.F2))
+        {
+            Camera.Observer.ToggleVisibility();
+        }
 
         if (Input.GetKeyUp(KeyCode.Q))
         {
@@ -781,41 +836,63 @@ public class GameManager : MonoBehaviour, IGameManager
             SavePlayersAsync();
         }
 
-
-        //if (Input.GetKeyUp(KeyCode.Space))
-        //{
-        //    var player = Players.FindPlayers("zerratar").FirstOrDefault();
-        //    if (player)
-        //    {
-        //        var def = JsonConvert.DeserializeObject<RavenNestPlayer>(JsonConvert.SerializeObject(player.Definition));
-        //        def.UserId = UnityEngine.Random.Range(12345, 99999).ToString();
-        //        def.Name += def.UserId;
-        //        def.UserName += def.UserId;
-        //        var p = SpawnPlayer(def);
-        //        if (raidManager.Started)
-        //        {
-        //            raidManager.Join(p);
-        //        }
-        //    }
-        //}
-
-        if (isControlDown && Input.GetKeyUp(KeyCode.O))
+        if (Permissions.IsAdministrator && isControlDown && Input.GetKeyUp(KeyCode.C))
         {
-            Dungeons.ActivateDungeon();
+            Twitch.OnCheer(new TwitchCheer("72424639", "zerratar", "Zerratar", true, true, true, 10));
         }
 
-        if (isControlDown && Input.GetKeyUp(KeyCode.P))
+        if (Permissions.IsAdministrator && isControlDown && Input.GetKeyUp(KeyCode.X))
         {
-            Dungeons.ForceStartDungeon();
+            Twitch.OnSubscribe(new TwitchSubscription("72424639", "zerratar", "Zerratar", null, true, true, 1, true));
         }
 
-        if (isControlDown && Input.GetKeyUp(KeyCode.R))
+        if (Permissions.IsAdministrator && isControlDown && Input.GetKeyUp(KeyCode.O))
         {
-            raidManager.StartRaid();
+            var elapsed = DateTime.UtcNow - dungeonStartTime;
+            if (elapsed > dungeonStartCooldown || Permissions.IsAdministrator)
+            {
+                dungeonStartTime = DateTime.UtcNow;
+                Dungeons.ActivateDungeon();
+            }
+            else
+            {
+                var timeLeft = dungeonStartCooldown - elapsed;
+                RavenBot.Announce("You have to wait {cooldown} seconds before you can start another raid.", timeLeft.TotalSeconds.ToString());
+            }
+        }
+
+        if (Permissions.IsAdministrator && isControlDown && Input.GetKeyUp(KeyCode.R))
+        {
+            var elapsed = DateTime.UtcNow - raidStartTime;
+            if (elapsed > raidStartCooldown || Permissions.IsAdministrator)
+            {
+                raidStartTime = DateTime.UtcNow;
+                raidManager.StartRaid("streamer");
+            }
+            else
+            {
+                var timeLeft = raidStartCooldown - elapsed;
+                RavenBot.Announce("You have to wait {cooldown} seconds before you can start another raid.", timeLeft.TotalSeconds.ToString());
+            }
         }
 
         if (Permissions.IsAdministrator || Application.isEditor)
         {
+
+            if (isControlDown && Input.GetKeyDown(KeyCode.KeypadPlus))
+            {
+                var adminPlayer = this.Players.GetAllPlayers().FirstOrDefault(x => x.IsGameAdmin);
+                if (adminPlayer != null)
+                {
+                    var st = itemManager.GetItems().FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
+                    if (st != null)
+                    {
+                        adminPlayer.PickupItem(st);
+                    }
+                }
+            }
+
+
             if (isControlDown && Input.GetKeyDown(KeyCode.Delete))
             {
                 subEventManager.Reset();
@@ -826,15 +903,11 @@ public class GameManager : MonoBehaviour, IGameManager
                 subEventManager.Activate();
             }
 
-            if (isControlDown && Input.GetKeyUp(KeyCode.X))
-            {
-                Twitch.OnSubscribe(new TwitchSubscription(null, null, null, null, 1, true));
-            }
 
-            if (isControlDown && Input.GetKeyUp(KeyCode.C))
-            {
-                Twitch.OnSubscribe(new TwitchSubscription(null, null, null, null, -1, true));
-            }
+            //if (isControlDown && Input.GetKeyUp(KeyCode.C))
+            //{
+            //    Twitch.OnSubscribe(new TwitchSubscription(null, null, null, null, false, false, -1, true));
+            //}
         }
     }
 
@@ -864,9 +937,15 @@ public class GameManager : MonoBehaviour, IGameManager
         boostTimer.SetActive(subEventManager.CurrentBoost.Active);
         if (subEventManager.CurrentBoost.Active)
         {
-            boostTimer.SetSubscriber(subEventManager.CurrentBoost.LastSubscriber);
+            var secondsLeft = Mathf.FloorToInt(subEventManager.Duration - subEventManager.CurrentBoost.Elapsed);
+            var timeLeft = $"{secondsLeft} sec";
+            if (secondsLeft > 3600)
+                timeLeft = $"{Mathf.FloorToInt(secondsLeft / 3600f)} hours";
+            else if (secondsLeft > 60)
+                timeLeft = $"{Mathf.FloorToInt(secondsLeft / 60f)} mins";
+            boostTimer.SetSubscriber(subEventManager.CurrentBoost.LastSubscriber, !subEventManager.CurrentBoost.LastSubscriber.Contains(" "));
             boostTimer.SetText(
-                $"EXP Multiplier x{subEventManager.CurrentBoost.Multiplier} - {Mathf.FloorToInt(subEventManager.Duration - subEventManager.CurrentBoost.Elapsed)}s left");
+                $"EXP Multiplier x{subEventManager.CurrentBoost.Multiplier} - {timeLeft}");
             boostTimer.SetTime(subEventManager.CurrentBoost.Elapsed, subEventManager.Duration);
         }
 
@@ -881,6 +960,17 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             RavenNestUpdate();
         }
+    }
+
+    public void UpdateVillageBoostText()
+    {
+        var bonuses = Village.GetExpBonuses();
+        var bonusString = string.Join(", ", bonuses.GroupBy(x => x.SlotType)
+            .Where(x => x.Key != TownHouseSlotType.Empty && x.Key != TownHouseSlotType.Undefined)
+            .Select(x => $"{x.Key} {x.Sum(y => y.Bonus)}%"));
+
+
+        SaveGameStat("village-boost", bonusString);
     }
 
     private void SaveEmptyGameStats()
@@ -920,5 +1010,44 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             // Ignore: since we do not want this to interrupt any execution of the script.
         }
+    }
+
+    internal void UpdateServerTime(DateTime timeUtc)
+    {
+        //if (Permissions.IsAdministrator)
+        //    return;
+
+        //var f0 = lastServerTimeUpdateFloat;
+        //var dt0 = lastServerTimeUpdateDateTime;
+        //var st0 = serverTime;
+        //var now = DateTime.UtcNow;
+
+        //var f1 = lastServerTimeUpdateFloat = Time.realtimeSinceStartup;
+        //var dt1 = lastServerTimeUpdateDateTime = DateTime.UtcNow;
+        //var st1 = serverTime = timeUtc;
+        //var margin = 3600;
+
+        //if (f0 > 0.0001f && dt0 != DateTime.MinValue && st0 != DateTime.MinValue)
+        //{
+        //    var nowDelta = now - timeUtc;
+        //    if (nowDelta > TimeSpan.FromSeconds(margin))
+        //    {
+        //        var fd = f1 - f0;
+        //        var dtd = dt1 - dt0;
+        //        var std = st1 - st0;
+
+        //        var us = (long)fd;
+        //        var cs = (long)dtd.TotalSeconds;
+        //        var ss = (long)std.TotalSeconds;
+
+        //        if (Math.Abs(cs - ss) > margin || Math.Abs(us - cs) > margin || Math.Abs(us - ss) > margin)
+        //        {
+        //            RavenNest.Stream.SyncTimeAsync(nowDelta, now, timeUtc);
+        //            RavenNest.Desynchronized = true;
+        //            // Things will not be saved properly.
+        //        }
+        //    }
+        //}
+
     }
 }

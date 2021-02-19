@@ -2,38 +2,32 @@
 {
     public ValueItem(
        GameManager game,
-       GameServer server,
+       RavenBotConnection server,
        PlayerManager playerManager)
        : base(game, server, playerManager)
     {
     }
 
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override void Handle(TradeItemRequest data, GameClient client)
     {
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player)
         {
-            client.SendMessage(
-                data.Player, "You have to play the game to valuate items. Use !join to play.");
+            client.SendMessage(data.Player, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
-        if (!ioc)
-        {
-            client.SendMessage(
-                data.Player, "Unable to valuate the item right now.");
-            return;
-        }
-
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery);
         if (item == null)
         {
-            client.SendMessage(player, "Could not find an item matching the query '" + data.ItemQuery + "'");
+            client.SendMessage(player, Localization.MSG_VALUE_ITEM_NOT_FOUND, data.ItemQuery);
             return;
         }
 
-        client.SendMessage(player, $"{item.Item.Name} can be sold for {item.Item.ShopSellPrice} in the !vendor");
+        client.SendFormat(player.PlayerName, Localization.MSG_VALUE_ITEM,
+            item.Item.Name,
+            item.Item.ShopSellPrice);
     }
 }

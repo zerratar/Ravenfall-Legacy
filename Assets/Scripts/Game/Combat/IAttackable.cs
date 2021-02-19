@@ -7,6 +7,7 @@ public interface IAttackable
     bool GivesExperienceWhenKilled { get; }
     bool InCombat { get; }
     bool TakeDamage(IAttackable attacker, int damage);
+    bool Heal(IAttackable healer, int amount);
     IReadOnlyList<IAttackable> GetAttackers();
     Skills GetStats();
     EquipmentStats GetEquipmentStats();

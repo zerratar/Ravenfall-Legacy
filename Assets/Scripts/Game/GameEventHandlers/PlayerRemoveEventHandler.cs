@@ -4,7 +4,8 @@ public class PlayerRemoveEventHandler : GameEventHandler<PlayerRemove>
 {
     protected override void Handle(GameManager gameManager, PlayerRemove data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+
+        var player = gameManager.Players.GetPlayerById(data.CharacterId);
         if (!player)
         {
             Debug.Log($"Received Player Remove ({data.UserId}) but the player is not in this game. Reason: " + data.Reason);

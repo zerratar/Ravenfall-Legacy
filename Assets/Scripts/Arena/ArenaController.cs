@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class ArenaController : MonoBehaviour
+public class ArenaController : MonoBehaviour, IEvent
 {
     private readonly List<PlayerController> joinedPlayers = new List<PlayerController>();
     private readonly List<PlayerController> deadPlayers = new List<PlayerController>();
@@ -11,7 +11,7 @@ public class ArenaController : MonoBehaviour
     [SerializeField] private SphereCollider fightArea;
     [SerializeField] private ArenaGateController gate;
     [SerializeField] private ArenaState state = ArenaState.NotStarted;
-    [SerializeField] private float arenaStartTime = 60f; // takes 1 min before it starts.
+    [SerializeField] private float arenaStartTime = 10f;
     [SerializeField] private ArenaNotifications notifications;
     [SerializeField] private GameCamera gameCamera;
     [SerializeField] private GameManager gameManager;
@@ -21,7 +21,7 @@ public class ArenaController : MonoBehaviour
     private IslandController island;
 
     public IslandController Island => island;
-
+    public bool Activated => state >= ArenaState.WaitingForPlayers;
     public bool Started => state == ArenaState.Started;
     public IReadOnlyList<PlayerController> JoinedPlayers => joinedPlayers;
     public IReadOnlyList<PlayerController> AvailablePlayers => joinedPlayers.Except(deadPlayers).Where(InsideArena).ToList();
@@ -45,16 +45,26 @@ public class ArenaController : MonoBehaviour
 
             RemoveKickedPlayers();
 
-            if (joinedPlayers.Count < 2)
+            if (joinedPlayers.Count > 1)
             {
-                state = ArenaState.NotStarted;
-                return;
+                notifications.ShowStartingSoon((int)arenaStartTimer);
             }
-
-            notifications.ShowStartingSoon((int)arenaStartTimer);
 
             if (arenaStartTimer <= 0f)
             {
+                if (joinedPlayers.Count < 2)
+                {
+                    var plr = joinedPlayers.FirstOrDefault();
+                    if (plr)
+                    {
+                        plr.Arena.OnLeave();
+                        plr.Arena.WalkAwayFromArena();
+                    }
+
+                    ResetState();
+                    return;
+                }
+
                 if (JoinedPlayers.All(InsideArena))
                 {
                     BeginArenaFight();
@@ -91,14 +101,10 @@ public class ArenaController : MonoBehaviour
     }
 
     public void BeginCountdown()
-    {
-        if (state != ArenaState.NotStarted)
-        {
-            return;
-        }
-
+    {       
         if (JoinedPlayers.Count < 2)
         {
+            state = ArenaState.WaitingForPlayers;
             notifications.ShowActivateArena(2 - JoinedPlayers.Count);
             //Debug.Log("Arena is not ready yet, we need one more player to start the countdown!");
             return;
@@ -149,6 +155,8 @@ public class ArenaController : MonoBehaviour
 
     private void ResetState()
     {
+        gameManager.Events.End(this);
+
         Debug.Log("Arena has been reset");
         joinedPlayers.Clear();
         deadPlayers.Clear();
@@ -171,7 +179,7 @@ public class ArenaController : MonoBehaviour
         alreadyJoined = JoinedPlayers.FirstOrDefault(x => x.PlayerName.Equals(player.PlayerName));
         alreadyStarted = state >= ArenaState.Started;
 
-        if (gameManager.Events.IsActive)
+        if (gameManager.Events.IsActive && !Activated)
         {
             return false;
         }
@@ -220,6 +228,12 @@ public class ArenaController : MonoBehaviour
         {
             joinedPlayers.Remove(player);
             player.Arena.OnLeave();
+
+            if (joinedPlayers.Count == 0)
+            {
+                ResetState();
+            }
+
             return true;
         }
 
@@ -233,16 +247,19 @@ public class ArenaController : MonoBehaviour
             return;
         }
 
-        Debug.Log($"{player.PlayerName} joined the arena!");
-
-        if (!joinedPlayers.Remove(player))
+        if (gameManager.Events.TryStart(this) || Activated)
         {
-            joinedPlayers.Add(player);
+            Debug.Log($"{player.PlayerName} joined the arena!");
+
+            if (!joinedPlayers.Remove(player))
+            {
+                joinedPlayers.Add(player);
+            }
+
+            player.Arena.OnEnter();
+
+            BeginCountdown();
         }
-
-        player.Arena.OnEnter();
-
-        BeginCountdown();
     }
 
     public void Died(PlayerController player)
@@ -294,6 +311,7 @@ public class ArenaController : MonoBehaviour
 public enum ArenaState
 {
     NotStarted,
+    WaitingForPlayers,
     WaitingForStart,
     Started,
     WaitingForFinish,

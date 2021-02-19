@@ -26,6 +26,8 @@ public class DayNightCycle : MonoBehaviour
     public float Cycle;
     public float CycleProgress;
 
+    private float freezeTimer;
+
     private Light skyLight;
     private Material skyboxMaterial;
 
@@ -45,10 +47,29 @@ public class DayNightCycle : MonoBehaviour
         skyboxMaterial = RenderSettings.skybox;
     }
 
+    internal void SetTimeOfDay(int totalTime, int freezeTime)
+    {
+        this.freezeTimer = freezeTime;
+        this.TotalTime = totalTime;
+    }
+
     // Update is called once per frame
     void Update()
     {
-        TotalTime += Time.deltaTime;
+        if (freezeTimer > 0)
+        {
+            freezeTimer -= Time.deltaTime;
+        }
+        else if (gameManager.PotatoMode)
+        {
+            TotalTime = 0;
+            skyLight.shadows = LightShadows.None;
+        }
+        else
+        {
+            skyLight.shadows = LightShadows.Soft;
+            TotalTime += Time.deltaTime;
+        }
 
         var cycle = TotalTime / CycleLength;
         var cycleProgress = cycle - Mathf.Floor(cycle);
@@ -68,15 +89,6 @@ public class DayNightCycle : MonoBehaviour
         skyLight.transform.rotation = Quaternion.Lerp(NightLight.transform.rotation, DayLight.transform.rotation, skylightLerpValue);
 
         skyboxMaterial.SetFloat(atmosphereThicknessID, Mathf.Lerp(NightAtmosphere, DayAtmosphere, skylightLerpValue));
-
-        if (gameManager.PotatoMode)
-        {
-            TotalTime = 0;
-            skyLight.shadows = LightShadows.None;
-        }
-        else
-        {
-            skyLight.shadows = LightShadows.Soft;
-        }
     }
+
 }

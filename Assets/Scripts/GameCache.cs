@@ -13,6 +13,8 @@ namespace Assets.Scripts
 
         private List<GameCachePlayerItem> playerCache;
         public bool IsAwaitingGameRestore => stateCache.Count > 0;
+        public TwitchUserStore TwitchUserStore { get; } = new TwitchUserStore();
+
         internal void SetPlayersState(IReadOnlyList<PlayerController> players)
         {
             lock (mutex)
@@ -21,6 +23,7 @@ namespace Assets.Scripts
                 foreach (var player in players)
                 {
                     var item = new GameCachePlayerItem();
+                    item.TwitchUser = player.TwitchUser;
                     item.Definition = player.Definition;
                     item.Definition.Resources = player.Resources;
                     item.Definition.Statistics = player.Statistics;
@@ -62,7 +65,7 @@ namespace Assets.Scripts
 
     public class GameCachePlayerItem
     {
-        public Player StreamUser { get; set; }
+        public Player TwitchUser { get; set; }
         public RavenNest.Models.Player Definition { get; set; }
         public TaskType TrainingTask { get; set; }
         public string[] TrainingTaskArg { get; set; }

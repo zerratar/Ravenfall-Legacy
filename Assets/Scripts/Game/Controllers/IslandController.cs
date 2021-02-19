@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 public class IslandController : MonoBehaviour
 {
@@ -12,6 +16,8 @@ public class IslandController : MonoBehaviour
 
     private SphereCollider sphereCollider;
     private float radius;
+    private readonly ConcurrentDictionary<Guid, PlayerController> players
+        = new ConcurrentDictionary<Guid, PlayerController>();
 
     public Vector3 SpawnPosition => SpawnPositionTransform ? SpawnPositionTransform.position : transform.position;
 
@@ -26,6 +32,7 @@ public class IslandController : MonoBehaviour
         sphereCollider = GetComponent<SphereCollider>();
         radius = sphereCollider.radius;
     }
+
     private void OnTriggerEnter(Collider other)
     {
         var raidBoss = other.gameObject.GetComponent<RaidBossController>();
@@ -58,5 +65,17 @@ public class IslandController : MonoBehaviour
             ferry.IslandExit();
             return;
         }
+    }
+
+    public IReadOnlyList<PlayerController> GetPlayers() => players.Values.ToList();
+
+    internal void AddPlayer(PlayerController playerController)
+    {
+        players[playerController.Id] = playerController;
+    }
+
+    internal void RemovePlayer(PlayerController playerController)
+    {
+        players.TryRemove(playerController.Id, out _);
     }
 }
