@@ -26,7 +26,7 @@ public class TownHallInfoManager : MonoBehaviour
     void Update()
     {
         var nextLevel = GameMath.OLD_LevelToExperience(Level + 1);
-        var progress = Experience > 0 && nextLevel > 0 ? Mathf.RoundToInt(Mathf.Floor((float)(Experience / nextLevel) * 100f)) : 0;
+        var progress = Experience > 0 && nextLevel > 0 ? System.Math.Round((float)(Experience / nextLevel) * 100f, 2) : 0;
         lblLevel.text = "Level: " + Level + " (" + progress + "%)";
         lblSlots.text = "Slots: " + UsedSlots + "/" + Slots;
         lblTier.text = "Tier: " + Tier;

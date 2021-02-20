@@ -69,7 +69,7 @@ public class Skills : IComparable
     }
 
     public bool IsDead => Health.CurrentValue <= 0;
-    public int CombatLevel => (int)((Attack.Level + Defense.Level + Strength.Level + Health.Level) / 4f + Ranged.Level / 8f + Magic.Level / 8f);
+    public int CombatLevel => (int)((Attack.Level + Defense.Level + Strength.Level + Health.Level) / 4f + (Ranged.Level + Magic.Level + Healing.Level) / 8f);
     public decimal TotalExperience => SkillList.Sum(x => x.Experience);
     public decimal[] ExperienceList => SkillList.Select(x => x.Experience).ToArray();
     public int[] LevelList => SkillList.Select(x => x.Level).ToArray();

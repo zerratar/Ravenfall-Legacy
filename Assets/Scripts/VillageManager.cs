@@ -37,13 +37,18 @@ namespace Assets.Scripts
         {
             // do something
             townHouseManager.SetHouses(houses);
-            townHallManager.SetSlotCount(houses.Count);
+            townHallManager.SetSlotCount(houses.Count(x => x.Type != (int)TownHouseSlotType.Empty), houses.Count);
         }
 
         public void SetSlotCount(int count)
         {
             townHouseManager.SetSlotCount(count);
-            townHallManager.SetSlotCount(count);
+            var usedSlots = 0;
+            if (this.TownHouses?.TownHouses != null && this.TownHouses?.TownHouses.Length > 0)
+            {
+                usedSlots = this.TownHouses?.TownHouses.Count(x => x.Type != (int)TownHouseSlotType.Empty) ?? 0;
+            }
+            townHallManager.SetSlotCount(usedSlots, count);
         }
 
         public void SetTierByLevel(int level)

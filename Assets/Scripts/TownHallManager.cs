@@ -53,10 +53,11 @@ public class TownHallManager : MonoBehaviour
         }
     }
 
-    internal void SetSlotCount(int count)
+    internal void SetSlotCount(int usedCount, int count)
     {
         if (info)
         {
+            info.UsedSlots = usedCount;
             info.Slots = count;
         }
     }

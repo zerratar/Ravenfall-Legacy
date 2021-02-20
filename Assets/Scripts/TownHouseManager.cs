@@ -150,8 +150,7 @@ public class TownHouseManager : MonoBehaviour
         {
             var house = houses[i];
             var prefab = buildableTownHouses.FirstOrDefault(x => x.Type == (TownHouseSlotType)house.Type);
-            slots[i].SetHouse(house, prefab);
-            SetHouseType(slots[i], slots[i].SlotType, slots[i].House?.TownHouse);
+            slots[i].SetHouse(house, prefab);            
         }
     }
 
