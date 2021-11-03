@@ -17,8 +17,8 @@ public class HealthBar : MonoBehaviour
     private bool isPlayer;
     private bool isDungeonBoss;
     private Transform targetTransform;
-    private Vector3 oldPos;
-    private float oldProc;
+    private Transform targetCamera;
+    private Vector3 targetOffset;
 
     // Start is called before the first frame update
     void Start()
@@ -37,6 +37,11 @@ public class HealthBar : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!targetCamera && Camera.main)
+        {
+            this.targetCamera = Camera.main.transform;
+        }
+
         if (GameCache.Instance.IsAwaitingGameRestore) return;
         if (Target == null || !((MonoBehaviour)Target))
         {
@@ -56,55 +61,53 @@ public class HealthBar : MonoBehaviour
     // This is being called whenever health is actually changed.
     public void UpdateHealth()
     {
+        if (Target == null)
+        {
+            return;
+        }
+
         var stats = Target.GetStats();
         if (stats.IsDead || !Target.InCombat)
         {
+            this.gameObject.SetActive(false);
+
             if (canvasGroup && canvasGroup.alpha > 0f)
+            {
                 canvasGroup.alpha = 0f;
+
+                return;
+            }
         }
         else
         {
+            this.gameObject.SetActive(true);
             if (canvasGroup && canvasGroup.alpha <= 0f)
+            {
                 canvasGroup.alpha = 1f;
+            }
         }
 
-        var proc = stats.Health.CurrentValue > 0
-            ? 100f * ((float)stats.Health.CurrentValue / stats.Health.Level)
-            : 0f;
+
+        if (!targetCamera)
+        {
+            return;
+        }
 
         if (targetTransform)
         {
-            Vector3 pos = Vector3.zero;
-            if (isPlayer && capsuleCollider)
-            {
-                pos = targetTransform.position
-                    + (Vector3.up * (capsuleCollider.height * targetTransform.localScale.y))
-                    + (Vector3.up * YOffset);
-            }
-            else
-            {
-                pos = targetTransform.position + (Vector3.up * 2f) + (Target.HealthBarOffset * Vector3.up);
-                if (isDungeonBoss)
-                {
-                    pos += Vector3.up * dungeonBoss.transform.localScale.x * 1.125f;
-                }
-            }
-
-            if ((oldPos - pos).sqrMagnitude > 0.01)
-            {
-                transform.position = pos;
-                progress.sizeDelta = new Vector2(proc, 100f);
-            }
-
-            if (oldProc != proc)
-                oldPos = pos;
-            oldProc = proc;
+            float proc = stats.Health.CurrentValue > 0 ? 100f * ((float)stats.Health.CurrentValue / stats.Health.Level) : 0f;
+            this.transform.position = targetTransform.position + targetOffset;
+            this.transform.rotation = targetCamera.rotation;
+            progress.sizeDelta = new Vector2(proc, 100f);
         }
     }
 
     internal void SetTarget(IAttackable target)
     {
         Target = target;
+
+        this.gameObject.SetActive(true);
+
         var behaviour = (MonoBehaviour)target;
         this.capsuleCollider = behaviour.GetComponent<CapsuleCollider>();
         this.dungeonBoss = behaviour.GetComponent<DungeonBossController>();
@@ -113,6 +116,28 @@ public class HealthBar : MonoBehaviour
         this.isDungeonBoss = !!dungeonBoss;
 
         this.targetTransform = behaviour.transform;
+
+        if (this.targetTransform)
+        {
+            Vector3 pos;
+
+            if (isPlayer && capsuleCollider)
+            {
+                pos = (Vector3.up * (capsuleCollider.height * targetTransform.localScale.y))
+                    + (Vector3.up * YOffset);
+            }
+            else
+            {
+                pos = (Vector3.up * 2f) + (Target.HealthBarOffset * Vector3.up);
+                if (isDungeonBoss)
+                {
+                    pos += Vector3.up * dungeonBoss.transform.localScale.x * 1.125f;
+                }
+            }
+
+            this.targetOffset = pos;
+        }
+
 
         if (canvasGroup && canvasGroup.alpha != 1f)
             canvasGroup.alpha = 1f;

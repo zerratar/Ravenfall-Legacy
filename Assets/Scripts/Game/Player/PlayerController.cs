@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -11,7 +12,6 @@ using RavenNest.SDK;
 using UnityEngine;
 using UnityEngine.AI;
 using Resources = RavenNest.Models.Resources;
-
 public class PlayerController : MonoBehaviour, IAttackable
 {
     private static readonly ConcurrentDictionary<string, int> combatTypeArgLookup
@@ -20,18 +20,21 @@ public class PlayerController : MonoBehaviour, IAttackable
     private static readonly ConcurrentDictionary<string, int> skillTypeArgLookup
         = new ConcurrentDictionary<string, int>();
 
+    private static readonly ConcurrentDictionary<string, Skill> skillLookup
+        = new ConcurrentDictionary<string, Skill>();
+
     private readonly HashSet<Guid> pickedItems = new HashSet<Guid>();
 
-    internal readonly ConcurrentDictionary<string, IAttackable> attackers
-        = new ConcurrentDictionary<string, IAttackable>();
+    internal readonly HashSet<string> AttackerNames = new HashSet<string>();
+    internal readonly List<IAttackable> Attackers = new List<IAttackable>();
 
     [SerializeField] private ManualPlayerController manualPlayerController;
-    [SerializeField] private HashSet<string> taskArguments;
+    [SerializeField] private HashSet<string> taskArguments = new HashSet<string>();
+    [SerializeField] private string taskArgument;
 
     [SerializeField] private GameManager gameManager;
     [SerializeField] private ChunkManager chunkManager;
 
-    [SerializeField] private NameTagManager nameTagManager;
     [SerializeField] private HealthBarManager healthBarManager;
     [SerializeField] private NavMeshAgent agent;
     [SerializeField] private Animator animator;
@@ -41,6 +44,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     [SerializeField] private ClanHandler clanHandler;
 
     [SerializeField] private DungeonHandler dungeonHandler;
+    [SerializeField] private OnsenHandler onsenHandler;
 
     [SerializeField] private ArenaHandler arenaHandler;
     [SerializeField] private CombatHandler combatHandler;
@@ -69,15 +73,15 @@ public class PlayerController : MonoBehaviour, IAttackable
     private IPlayerAppearance playerAppearance;
     private float actionTimer = 0f;
     private float timeExpTimer = 1f;
-    private Skill lastTrainedSkill = Skill.Fighting;
+    private Skill lastTrainedSkill = Skill.Attack;
 
     private ArenaController arena;
     private DamageCounterManager damageCounterManager;
 
     private TaskType? lateGotoClosestType = null;
 
-    private decimal ExpOverTime;
-    private decimal lastSavedExperienceTotal;
+    private double ExpOverTime;
+    private double lastSavedExperienceTotal;
 
     private Statistics lastSavedStatistics;
 
@@ -85,9 +89,9 @@ public class PlayerController : MonoBehaviour, IAttackable
     private float outOfResourcesAlertTime = 60f;
     private int outOfResourcesAlertCounter;
 
-    private Transform attackTarget;
+    internal Transform attackTarget;
+    internal object taskTarget;
 
-    internal Transform taskTarget;
     public IChunk Chunk;
 
     public Skills Stats = new Skills();
@@ -97,8 +101,10 @@ public class PlayerController : MonoBehaviour, IAttackable
     public PlayerEquipment Equipment;
     public Inventory Inventory;
 
+
     public string PlayerName;
     public string PlayerNameLowerCase;
+
     public string PlayerNameHexColor = "#FFFFFF";
 
     public string UserId;
@@ -106,7 +112,8 @@ public class PlayerController : MonoBehaviour, IAttackable
     public float AttackRange = 1.8f;
     public float RangedAttackRange = 15F;
     public float MagicAttackRange = 15f;
-    public float HealingRange = 20f;
+    public float HealingRange = 15f;
+    public int PatreonTier;
 
     public EquipmentStats EquipmentStats = new EquipmentStats();
 
@@ -121,7 +128,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     public int GiftedSubs;
     public int TotalBitsCheered;
     public int TotalGiftedSubs;
-    public Player TwitchUser { get; private set; }
+    public TwitchPlayerInfo TwitchUser { get; private set; }
     public int CharacterIndex { get; private set; }
 
     public bool IsGameAdmin;
@@ -145,39 +152,78 @@ public class PlayerController : MonoBehaviour, IAttackable
     private float scaleTimer;
     private float loyaltyUpdateTimer = -1f;
 
+    private readonly ConcurrentQueue<Guid> queuedItemAdd = new ConcurrentQueue<Guid>();
+
     public Transform Target
     {
-        get => attackTarget ?? taskTarget;
+        get => attackTarget ?? (taskTarget as IAttackable)?.Transform ?? (taskTarget as Transform) ?? (taskTarget as MonoBehaviour)?.transform;
         private set => attackTarget = value;
     }
 
     public GameManager Game => gameManager;
     public float IdleTime { get; private set; }
+    public CharacterRestedState Rested { get; private set; } = new CharacterRestedState();
     public RavenNest.Models.Player Definition { get; private set; }
-    public Transform Transform => gameObject.transform;
-    public bool IsMoving => agent.isActiveAndEnabled && agent.isOnNavMesh && agent.remainingDistance > 0;
+
+    private Transform cachedTransform;
+    public Transform Transform
+    {
+        get
+        {
+            if (isDestroyed)
+            {
+                return null;
+            }
+
+            try
+            {
+                if (cachedTransform == null)
+                {
+                    cachedTransform = this.transform;
+                }
+
+                return cachedTransform; //gameObject != null && gameObject && transform != null && transform && gameObject.transform != null ? gameObject.transform : null;
+            }
+            catch { return null; }
+        }
+    }
+
+    internal Vector3 PositionInternal;
+    public Vector3 Position => PositionInternal;
+    public bool IsMoving => MovementTime > 0.05 || (agent.isActiveAndEnabled && agent.velocity.magnitude >= 0.01);
     public bool IsUpToDate { get; private set; } = true;
-    public bool Kicked { get; set; }
+    public bool Removed { get; set; }
     public bool IsNPC => PlayerName != null && PlayerName.StartsWith("Player ");
     public bool IsReadyForAction => actionTimer <= 0f;
     public string Name => PlayerName;
     public bool GivesExperienceWhenKilled => false;
-    public bool InCombat { get; private set; }
+    public bool InCombat { get; set; }
     public float HealthBarOffset => 0f;
     public StreamRaidInfo Raider { get; private set; }
-    public bool UseLongRange => HasTaskArgument("ranged") || HasTaskArgument("magic");
-    public bool TrainingRanged => HasTaskArgument("ranged");
-    public bool TrainingMelee => HasTaskArgument("all") || HasTaskArgument("atk") || HasTaskArgument("def") || HasTaskArgument("str");
-    public bool TrainingMagic => HasTaskArgument("magic");
-    public bool TrainingHealing => HasTaskArgument("heal") || HasTaskArgument("healing");
-    public bool TrainingResourceChangingSkill =>
-        HasTaskArgument("woodcutting") || HasTaskArgument("mining")
-        || HasTaskArgument("fishing") || HasTaskArgument("cooking")
-        || HasTaskArgument("crafting") || HasTaskArgument("farming");
+    public bool UseLongRange { get; private set; }
+    public bool TrainingRanged { get; private set; }
+    public bool TrainingMelee { get; private set; }
+    public bool TrainingAll { get; private set; }
+    public bool TrainingStrength { get; private set; }
+    public bool TrainingDefense { get; private set; }
+    public bool TrainingAttack { get; private set; }
+    public bool TrainingMagic { get; private set; }
+    public bool TrainingHealing { get; private set; }
+    public bool TrainingResourceChangingSkill { get; private set; }
 
     public PlayerAnimationController Animations => playerAnimations;
 
     private IslandController _island;
+    private float lastHeal;
+    private bool isDestroyed;
+    private CombatSkill lastTrainedCombatSkill;
+    private bool hasQueuedItemAdd;
+    private SphereCollider hitRangeCollider;
+    private float MovementTime;
+    private Vector3 LastDestination;
+    private bool movementIsLocked;
+    private Vector3 positionJitter;
+
     public IslandController Island
     {
         get => _island;
@@ -187,16 +233,17 @@ public class PlayerController : MonoBehaviour, IAttackable
             {
                 _island.RemovePlayer(this);
             }
-            else if (value)
+            else if (value && value != _island)
             {
                 value.AddPlayer(this);
+                //if (!value.AllowRaidWar)
+                //IslandHistory.Add(value);
             }
             _island = value;
         }
     }
     public IPlayerAppearance Appearance => playerAppearance
-        ?? (playerAppearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>()
-        ?? GetComponent<PlayerAppearance>());
+        ?? (playerAppearance = GetComponent<SyntyPlayerAppearance>());
     public StreamRaidHandler StreamRaid => streamRaidHandler;
     public RaidHandler Raid => raidHandler;
     public ClanHandler Clan => clanHandler;
@@ -207,13 +254,42 @@ public class PlayerController : MonoBehaviour, IAttackable
     public EffectHandler Effects => effectHandler;
     public TeleportHandler Teleporter => teleportHandler;
     public DungeonHandler Dungeon => dungeonHandler;
+    public OnsenHandler Onsen => onsenHandler;
 
     public bool ItemDropEventActive { get; private set; }
 
     public int CombatType { get; set; }
     public int SkillType { get; set; }
     public bool IsDiaperModeEnabled { get; private set; }
+    public bool IsBot { get; internal set; }
+    public BotPlayerController Bot { get; internal set; }
 
+    public readonly ConcurrentQueue<AsyncPlayerRequest> RequestQueue = new ConcurrentQueue<AsyncPlayerRequest>();
+
+    private long createdRequests = 0;
+    public void UpdateRequestQueue()
+    {
+        // every 10th request is a "save everything"
+        if (createdRequests % 10 == 0)
+        {
+            EnqueueRequest(() => gameManager.RavenNest.SavePlayerAsync(this));
+        }
+        //// every 3rd is a state update
+        //if (createdRequests % 3 == 0)
+        //{
+        //    EnqueueRequest(async () => await gameManager.RavenNest.SavePlayerStateAsync(this));
+        //}
+        // otherwise, save active skill
+        else
+        {
+            EnqueueRequest(() => gameManager.RavenNest.SaveTrainingSkill(this));
+        }
+    }
+    public void EnqueueRequest(Func<Task> action)
+    {
+        RequestQueue.Enqueue(new AsyncPlayerRequest(action));
+        ++createdRequests;
+    }
     internal void ToggleDiaperMode()
     {
         IsDiaperModeEnabled = !IsDiaperModeEnabled;
@@ -242,6 +318,14 @@ public class PlayerController : MonoBehaviour, IAttackable
         Inventory.UnequipAll();
     }
 
+    public float GetHitRange()
+    {
+        if (hitRangeCollider)
+        {
+            return hitRangeCollider.radius;
+        }
+        return 0;
+    }
     public float GetAttackRange()
     {
         if (TrainingHealing) return HealingRange;
@@ -270,10 +354,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         loyaltyUpdateTimer = 0.5f;
     }
 
-    public bool HasTaskArgument(string args) =>
-        taskArguments?.Contains(args) ?? false;
-
-
+    public bool HasTaskArgument(string args) => taskArguments.Contains(args);
     internal void SetScale(float scale)
     {
         scaleTimer = 300f;
@@ -315,13 +396,21 @@ public class PlayerController : MonoBehaviour, IAttackable
         return true;
     }
 
+    internal void SetRestedState(PlayerRestedUpdate data)
+    {
+        Rested.CombatStatsBoost = data.StatsBoost;
+        Rested.ExpBoost = data.ExpBoost;
+        Rested.RestedPercent = data.RestedPercent;
+        Rested.RestedTime = data.RestedTime;
+    }
+
     /// <summary>
     /// Called whenever the player is removed from the PlayerManager
     /// </summary>
     public void OnRemoved()
     {
         if (healthBarManager) healthBarManager.Remove(this);
-        if (nameTagManager) nameTagManager.Remove(this);
+        gameManager.NameTags.Remove(this);
     }
     public void UpdateCharacterAppearance()
     {
@@ -340,6 +429,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     void Start()
     {
+        PositionInternal = this.transform.position;
+        if (!onsenHandler) onsenHandler = GetComponent<OnsenHandler>();
         if (!clanHandler) clanHandler = GetComponent<ClanHandler>();
         if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
         if (!Inventory) Inventory = GetComponent<Inventory>();
@@ -360,12 +451,19 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!duelHandler) duelHandler = GetComponent<DuelHandler>();
         if (!combatHandler) combatHandler = GetComponent<CombatHandler>();
 
-        playerAppearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>() ?? GetComponent<PlayerAppearance>();
+        playerAppearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
 
         if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
         if (healthBarManager) healthBar = healthBarManager.Add(this);
 
+        this.hitRangeCollider = GetComponent<SphereCollider>();
+
         //if (rbody) rbody.isKinematic = true;
+
+        // add some jitter to help separating players apart a bit.
+        var x = UnityEngine.Random.Range(-0.5f, 0.5f);
+        var z = UnityEngine.Random.Range(-0.5f, 0.5f);
+        this.positionJitter = new Vector3(x, 0, z);
     }
 
     void LateUpdate()
@@ -375,13 +473,64 @@ public class PlayerController : MonoBehaviour, IAttackable
         transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
     }
 
+    void OnDrawGizmosSelected()
+    {
+        // Display the explosion radius when selected
+        if (LastDestination != Vector3.zero)
+        {
+            Gizmos.color = new Color(1, 1, 0, 0.75F);
+            Gizmos.DrawLine(transform.position, LastDestination);
+            Gizmos.DrawSphere(LastDestination, 0.1f);
+        }
+        if (NextDestination != Vector3.zero)
+        {
+            Gizmos.color = new Color(0, 1, 1, 0.75F);
+            Gizmos.DrawLine(transform.position, this.NextDestination);
+            Gizmos.DrawSphere(NextDestination, 0.1f);
+        }
+
+        if (agent && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            if (agent.pathPending)
+            {
+                UnityEngine.Debug.LogWarning("Path is being processed");
+            }
+
+            if (agent.hasPath)
+            {
+                UnityEngine.Debug.LogWarning("Path is ready");
+            }
+
+            if (agent.isPathStale)
+            {
+                UnityEngine.Debug.LogWarning("Path is stale");
+            }
+        }
+
+        if (agent && agent.isActiveAndEnabled && agent.destination != Vector3.zero)
+        {
+            Gizmos.color = new Color(1, 0, 1, 0.75F);
+            Gizmos.DrawSphere(agent.destination, 0.1f);
+            Vector3 last = transform.position;
+            foreach (var corner in agent.path.corners)
+            {
+                Gizmos.DrawLine(last, corner);
+                Gizmos.DrawSphere(corner, 0.1f);
+                last = corner;
+            }
+        }
+
+    }
+
     void Update()
     {
+        PositionInternal = this.transform.position;
         if (GameCache.Instance.IsAwaitingGameRestore) return;
+        var deltaTime = Time.deltaTime;
 
-        if (loyaltyUpdateTimer > 0)
+        if (loyaltyUpdateTimer > 0 && !IsBot)
         {
-            loyaltyUpdateTimer -= Time.deltaTime;
+            loyaltyUpdateTimer -= deltaTime;
             if (loyaltyUpdateTimer <= 0)
             {
                 loyaltyUpdateTimer = -1f;
@@ -389,10 +538,16 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
-        if ((this.transform.position - lastPosition).magnitude < 0.05f)
-            IdleTime += Time.deltaTime;
+        if (this.Ferry.OnFerry || (this.PositionInternal - lastPosition).magnitude < 0.01f)
+        {
+            IdleTime += deltaTime;
+            MovementTime = 0;
+        }
         else
+        {
             IdleTime = 0;
+            MovementTime += deltaTime;
+        }
 
         //if (Island && agent && 
         //    agent.isActiveAndEnabled && 
@@ -401,19 +556,25 @@ public class PlayerController : MonoBehaviour, IAttackable
         //    !IsMoving && 
         //    Animations.IsMoving)
         //{
-        //    agent.Warp(transform.position + Vector3.up * 3f);
+
+        //    agent.Warp(Position + Vector3.up * 3f);
         //}
 
-        lastPosition = this.transform.position;
+        lastPosition = this.PositionInternal;
 
         if (!hasBeenInitialized) return;
 
+        HandleRested();
+        if (hasQueuedItemAdd)
+        {
+            AddQueuedItemAsync();
+        }
         if (scaleTimer > 0)
         {
             //foreach (var item in Equipment.EquippedItems)
             //    item.transform.localScale = Vector3.one;
 
-            scaleTimer -= Time.deltaTime;
+            scaleTimer -= deltaTime;
             if (scaleTimer <= 0)
             {
                 transform.localScale = Vector3.one;
@@ -427,7 +588,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (monsterTimer > 0)
         {
-            monsterTimer -= Time.deltaTime;
+            monsterTimer -= deltaTime;
             var visibleMesh = this.Appearance.GetCombinedMesh();
             if (visibleMesh)
                 visibleMesh.gameObject.SetActive(false);
@@ -440,13 +601,25 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         UpdateHealthRegeneration();
 
-        actionTimer -= Time.deltaTime;
+        actionTimer -= deltaTime;
+
+        if (Onsen.InOnsen)
+            return;
+
+        if (!IsMoving && this.Animations.IsMoving)
+        {
+            this.Animations.StopMoving();
+        }
+        else if (IsMoving && !this.Animations.IsMoving)
+        {
+            this.Animations.StartMoving();
+        }
 
         if (Controlled)
             return;
 
-        if (NextDestination != Vector3.zero)
-            GotoPosition(NextDestination);
+        //if (NextDestination != Vector3.zero)
+        //    GotoPosition(NextDestination);
 
         if (streamRaidHandler.InWar) return;
         if (ferryHandler.OnFerry || ferryHandler.Active) return;
@@ -466,6 +639,16 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             DoTask();
             AddTimeExp();
+        }
+    }
+
+    private void HandleRested()
+    {
+        // this will be updated from the server every 1s. but to get a smoother transition
+        // we do this locally until we get the server update.
+        if (!this.Onsen.InOnsen && Rested.RestedTime > 0)
+        {
+            Rested.RestedTime -= Time.deltaTime;
         }
     }
 
@@ -502,7 +685,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         var availableDropItems = gameManager.DropEvent.GetDropItems();
 
         targetDropItem = availableDropItems
-            .OrderBy(x => Vector3.Distance(x.transform.position, transform.position))
+            .OrderBy(x => Vector3.Distance(x.transform.position, PositionInternal))
             .FirstOrDefault(x => !pickedItems.Contains(x.Id));
 
         if (targetDropItem == null)
@@ -513,27 +696,52 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     private void UpdateHealthRegeneration()
     {
-        if ((Chunk == null || Chunk.ChunkType != TaskType.Fighting) && !InCombat)
+        try
         {
-            regenTimer += Time.deltaTime;
+            if (this.gameObject == null || this.transform == null)
+            {
+                // player removed.
+                return;
+            }
+        }
+        catch
+        {
+            // ignored
+            return;
         }
 
-        if (regenTimer >= RegenTime)
+        try
         {
-            var amount = this.Stats.Health.Level * RegenRate * Time.deltaTime;
-            regenAmount += amount;
-            var add = Mathf.FloorToInt(regenAmount);
-            if (add > 0)
+            if ((Chunk?.ChunkType != TaskType.Fighting) && !InCombat)
             {
-                Stats.Health.CurrentValue = Mathf.Min(this.Stats.Health.Level, Stats.Health.CurrentValue + add);
-                healthBar.UpdateHealth();
-                regenAmount -= add;
+                regenTimer += Time.deltaTime;
             }
+            if (regenTimer >= RegenTime)
+            {
+                var amount = this.Stats.Health.Level * RegenRate * Time.deltaTime;
+                regenAmount += amount;
+                var add = Mathf.FloorToInt(regenAmount);
+                if (add > 0)
+                {
+                    Stats.Health.CurrentValue = Mathf.Min(this.Stats.Health.Level, Stats.Health.CurrentValue + add);
 
-            if (Stats.Health.CurrentValue == Stats.Health.Level)
-            {
-                regenTimer = 0;
+                    if (healthBar && healthBar != null)
+                    {
+                        healthBar.UpdateHealth();
+                    }
+
+                    regenAmount -= add;
+                }
+
+                if (Stats.Health.CurrentValue == Stats.Health.Level)
+                {
+                    regenTimer = 0;
+                }
             }
+        }
+        catch
+        {
+            // ignored
         }
     }
 
@@ -550,22 +758,20 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void PickupItem(Item item, string messageStart = "You found")
     {
-        if (item == null)
-            return;
-
+        if (item == null) return;
         AddItem(item);
-
         var itemName = item.Name;
         if (item.Category == ItemCategory.StreamerToken)
         {
             itemName = this.gameManager.RavenNest.TwitchDisplayName + " Token";
         }
-
         if (EquipIfBetter(item))
         {
+            if (IsBot) return;
             gameManager.RavenBot.Send(PlayerName, messageStart + " and equipped a {itemName}!", itemName);
             return;
         }
+        if (IsBot) return;
         gameManager.RavenBot.Send(PlayerName, messageStart + " a {itemName}!", itemName);
     }
 
@@ -633,17 +839,28 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
         if (!chunkManager)
         {
-            Debug.LogError($"No ChunkManager found!");
+            GameManager.LogError($"No ChunkManager found!");
             return;
         }
 
         Island = gameManager.Islands.FindPlayerIsland(this);
         Chunk = chunkManager.GetChunkOfType(this, type);
+
+        if (Raid.InRaid || Dungeon.InDungeon)
+        {
+            return;
+        }
+
         if (Chunk == null)
         {
             var chunks = chunkManager.GetChunksOfType(Island, type);
             if (chunks.Count > 0)
             {
+                if (IsBot)
+                {
+                    return;
+                }
+
                 var lowestReq = chunks.OrderBy(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel()).FirstOrDefault();
                 var reqCombat = lowestReq.GetRequiredCombatLevel();
                 var reqSkill = lowestReq.GetRequiredSkillLevel();
@@ -651,30 +868,32 @@ public class PlayerController : MonoBehaviour, IAttackable
                 var arg0 = "";
                 var arg1 = "";
                 var msg = "";
-                if (reqCombat > 1)
+
+                if (reqCombat > 1 && reqSkill > 1)
+                {
+                    msg = "You need to be at least combat level {reqCombat} and skill level {reqSkill} to train this skill on this island.";
+                    arg0 = reqCombat.ToString();
+                    arg1 = reqSkill.ToString();
+                }
+                else if (reqCombat > 1)
                 {
                     msg = "You need to be at least combat level {reqCombat} to train this skill on this island.";
                     arg0 = reqCombat.ToString();
                 }
                 else if (reqSkill > 1)
                 {
-                    msg = "You need have level {reqSkill} {type} to train this skill on this island.";
+                    msg = "You need to have at least level {reqSkill} {type} to train this skill on this island.";
                     arg0 = reqSkill.ToString();
                     arg1 = type.ToString();
                 }
-                else
-                {
-                    msg = "You need to be at least combat level {reqCombat} and skill level {reqSkill} to train this skill on this island.";
-                    arg0 = reqCombat.ToString();
-                    arg1 = reqSkill.ToString();
-                }
+
 
                 gameManager.RavenBot.Send(PlayerName, msg, arg0, arg1);
                 return;
             }
 
             gameManager.RavenBot.Send(PlayerName, "You cannot train {type} here.", type);
-            Debug.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
+            GameManager.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
             return;
         }
 
@@ -688,7 +907,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
         if (!chunkManager)
         {
-            Debug.LogError($"No ChunkManager found!");
+            GameManager.LogError($"No ChunkManager found!");
             return;
         }
 
@@ -727,19 +946,50 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void SetTaskArguments(string[] taskArgs)
     {
+        if (taskArgs == null || taskArgs.Length == 0 || taskArgs[0] == null)
+        {
+            return;
+        }
+
         taskArguments = new HashSet<string>(taskArgs.Select(x => x.ToLower()));
+        taskArgument = taskArguments.First();
         taskTarget = null;
 
         CombatType = GetCombatTypeFromArgs(taskArgs);
+
+        if (CombatType != -1)
+        {
+            lastTrainedCombatSkill = (CombatSkill)CombatType;
+        }
+
         SkillType = GetSkillTypeFromArgs(taskArgs);
 
         // in case we change what we train.
         // we don't want shield armor to be added to magic, ranged or healing.
         Inventory.UpdateCombatStats();
+
+        UpdateTrainingFlags();
+    }
+
+    internal void UpdateTrainingFlags()
+    {
+        UseLongRange = HasTaskArgument("ranged") || HasTaskArgument("magic");
+        TrainingRanged = HasTaskArgument("ranged");
+        TrainingMelee = HasTaskArgument("all") || HasTaskArgument("atk") || HasTaskArgument("att") || HasTaskArgument("def") || HasTaskArgument("str");
+        TrainingAll = HasTaskArgument("all");
+        TrainingStrength = HasTaskArgument("str");
+        TrainingDefense = HasTaskArgument("def");
+        TrainingAttack = HasTaskArgument("atk") || HasTaskArgument("att");
+        TrainingMagic = HasTaskArgument("magic");
+        TrainingHealing = HasTaskArgument("heal") || HasTaskArgument("healing");
+        TrainingResourceChangingSkill =
+            HasTaskArgument("woodcutting") || HasTaskArgument("mining")
+            || HasTaskArgument("fishing") || HasTaskArgument("cooking")
+            || HasTaskArgument("crafting") || HasTaskArgument("farming");
     }
 
     public TaskType GetTask() => Chunk?.ChunkType ?? TaskType.None;
-    public string[] GetTaskArguments() => taskArguments?.ToArray() ?? new string[0];
+    public HashSet<string> GetTaskArguments() => taskArguments;
 
     internal async Task<GameInventoryItem> CycleEquippedPetAsync()
     {
@@ -757,8 +1007,10 @@ public class PlayerController : MonoBehaviour, IAttackable
             Inventory.Equip(pet.Item);
             return pet;
         }
-
-        await gameManager.RavenNest.Players.EquipItemAsync(UserId, petToEquip.Item.Id);
+        if (!IsBot)
+        {
+            await gameManager.RavenNest.Players.EquipItemAsync(UserId, petToEquip.Item.Id);
+        }
         Inventory.Equip(petToEquip.Item);
         return petToEquip;
     }
@@ -766,19 +1018,28 @@ public class PlayerController : MonoBehaviour, IAttackable
     internal async Task UnequipAllItemsAsync()
     {
         UnequipAllItems();
-        await gameManager.RavenNest.Players.UnequipAllItemsAsync(UserId);
+        if (!IsBot)
+        {
+            await gameManager.RavenNest.Players.UnequipAllItemsAsync(UserId);
+        }
     }
 
     internal async Task EquipBestItemsAsync()
     {
         EquipBestItems();
-        await gameManager.RavenNest.Players.EquipBestItemsAsync(UserId);
+        if (!IsBot)
+        {
+            await gameManager.RavenNest.Players.EquipBestItemsAsync(UserId);
+        }
     }
 
     internal async Task UnequipAsync(Item item)
     {
         Inventory.Unequip(item);
-        await gameManager.RavenNest.Players.UnequipItemAsync(UserId, item.Id);
+        if (!IsBot)
+        {
+            await gameManager.RavenNest.Players.UnequipItemAsync(UserId, item.Id);
+        }
     }
 
     internal async Task<bool> EquipAsync(Item item)
@@ -809,7 +1070,23 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
-        Inventory.Equip(item);
+        var equipped = Inventory.Equip(item);
+        if (!equipped)
+        {
+            var requirement = "You require level ";
+            if (item.RequiredAttackLevel > 0) requirement += item.RequiredAttackLevel + " Attack.";
+            if (item.RequiredDefenseLevel > 0) requirement += item.RequiredAttackLevel + " Defense.";
+            if (item.RequiredMagicLevel > 0) requirement += item.RequiredAttackLevel + " Magic or Healing.";
+            if (item.RequiredRangedLevel > 0) requirement += item.RequiredAttackLevel + " Ranged.";
+            if (item.RequiredSlayerLevel > 0) requirement += item.RequiredAttackLevel + " Slayer.";
+            gameManager.RavenBot.SendMessage(this.TwitchUser.Username, "You do not meet the requirements to equip " + item.Name + ". " + requirement);
+            return false;
+        }
+
+        if (IsBot)
+        {
+            return true;
+        }
 
         if (await gameManager.RavenNest.Players.EquipItemAsync(UserId, item.Id))
         {
@@ -819,9 +1096,24 @@ public class PlayerController : MonoBehaviour, IAttackable
         return true;
     }
 
+    public void UpdateTwitchUser(TwitchPlayerInfo twitchUser)
+    {
+        if (twitchUser == null)
+        {
+            return;
+        }
+
+        // you can never not be broadcaster, but if for any reason you were not before, make sure you are now.
+        IsBroadcaster = IsBroadcaster || twitchUser.IsBroadcaster;
+        IsModerator = twitchUser.IsModerator;
+        IsSubscriber = twitchUser.IsSubscriber;
+        IsVip = twitchUser.IsVip;
+        TwitchUser = twitchUser;
+    }
+
     public void SetPlayer(
         RavenNest.Models.Player player,
-        Player streamUser,
+        TwitchPlayerInfo twitchUser,
         StreamRaidInfo raidInfo)
     {
         gameObject.name = player.Name;
@@ -830,99 +1122,186 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         clanHandler.SetClan(player.Clan, player.ClanRole);
 
+        Definition = player;
+
+        IsGameAdmin = player.IsAdmin;
+        IsGameModerator = player.IsModerator;
+
+        Id = player.Id;
+        UserId = player.UserId;
+
+        agent.avoidancePriority = UnityEngine.Random.Range(1, 99);
+
+        if (UserId.StartsWith("#") || this.IsBot)
+        {
+            this.IsBot = true;
+            this.Bot = this.gameObject.AddComponent<BotPlayerController>();
+        }
+        PatreonTier = player.PatreonTier;
+        PlayerName = player.Name;
+        PlayerNameLowerCase = player.Name.ToLower();
+        Stats = new Skills(player.Skills);
+        CharacterIndex = player.CharacterIndex;
+        Resources = player.Resources;
+        Statistics = player.Statistics;
+        ExpOverTime = 1d;
+
+        Raider = raidInfo;
+        lastSavedStatistics = DataMapper.Map<Statistics, Statistics>(Statistics);
+
+        if (twitchUser == null)
+        {
+            twitchUser = new TwitchPlayerInfo(
+                player.UserId,
+                player.UserName,
+                player.Name,
+                PlayerNameHexColor,
+                false, false, false, false, player.Identifier);
+        }
+
+        UpdateTwitchUser(twitchUser);
+
+        gameManager.NameTags.Add(this);
+
+        Stats.Health.Reset();
+        //Inventory.EquipBestItems();
+        Equipment.HideEquipments(); // don't show sword on join
+
+        Island = gameManager.Islands.FindPlayerIsland(this);
+
+        //if (Raider != null)
+        if (player.State != null)
+        {
+
+
+            if (!string.IsNullOrEmpty(player.State.Island) && player.State.X != null)
+            {
+                if (player.State.InDungeon)
+                {
+                    var targetIsland = gameManager.Islands.Find(player.State.Island);
+                    if (targetIsland)
+                    {
+                        this.Teleporter.Teleport(targetIsland.SpawnPosition);
+                    }
+                }
+                else
+                {
+                    var newPosition = new Vector3(
+                        (float)player.State.X.Value,
+                        (float)player.State.Y.Value,
+                        (float)player.State.Z.Value);
+
+                    var targetIsland = gameManager.Islands.FindIsland(newPosition);
+                    if (targetIsland)
+                    {
+                        this.Teleporter.Teleport(newPosition);
+                    }
+                }
+            }
+
+            if (player.State.InOnsen && onsenHandler)
+            {
+                // Attach player to the onsen...                
+                Game.Onsen.Join(this);
+            }
+
+            if (!string.IsNullOrEmpty(player.State.Task))
+            {
+                SetTask(player.State.Task, new string[] { player.State.TaskArgument });
+            }
+        }
+
         Appearance.SetAppearance(player.Appearance, () =>
         {
-            Definition = player;
-
-            IsGameAdmin = player.IsAdmin;
-            IsGameModerator = player.IsModerator;
-
-            Id = player.Id;
-            UserId = player.UserId;
-            PlayerName = player.Name;
-            PlayerNameLowerCase = player.Name.ToLower();
-            Stats = new Skills(player.Skills);
-            CharacterIndex = player.CharacterIndex;
-
-            Resources = player.Resources;
-            Statistics = player.Statistics;
-            ExpOverTime = 1m;
-
-            Raider = raidInfo;
-            lastSavedStatistics = DataMapper.Map<Statistics, Statistics>(Statistics);
-
-            if (streamUser != null)
-            {
-                IsModerator = streamUser.IsModerator;
-                IsBroadcaster = streamUser.IsBroadcaster;
-                IsSubscriber = streamUser.IsSubscriber;
-                IsVip = streamUser.IsVip;
-                TwitchUser = streamUser;
-            }
-
-            Island = gameManager.Islands.FindPlayerIsland(this);
             Inventory.Create(player.InventoryItems, gameManager.Items.GetItems());
-            lastSavedExperienceTotal = Stats.TotalExperience;
-
-            if (!nameTagManager)
-                nameTagManager = GameObject.Find("NameTags").GetComponent<NameTagManager>();
-
-            if (nameTagManager)
-                nameTagManager.Add(this);
-
-            Stats.Health.Reset();
-            //Inventory.EquipBestItems();
-            Equipment.HideEquipments(); // don't show sword on join
-
-            //if (Raider != null)
-            if (player.State != null)
-            {
-                if (!string.IsNullOrEmpty(player.State.Island) && player.State.X != null)
-                {
-                    if (player.State.InDungeon)
-                    {
-                        var targetIsland = gameManager.Islands.Find(player.State.Island);
-                        if (targetIsland)
-                        {
-                            this.Teleporter.Teleport(targetIsland.SpawnPosition);
-                        }
-                    }
-                    else
-                    {
-                        var newPosition = new Vector3(
-                            (float)player.State.X.Value,
-                            (float)player.State.Y.Value,
-                            (float)player.State.Z.Value);
-
-                        var targetIsland = gameManager.Islands.FindIsland(newPosition);
-                        if (targetIsland)
-                        {
-                            this.Teleporter.Teleport(newPosition);
-                        }
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(player.State.Task))
-                {
-                    SetTask(player.State.Task, player.State.TaskArgument);
-                }
-            }
 
             hasBeenInitialized = true;
         });
     }
 
-    public void SetTask(string task, string taskArgument)
+    public void SetTask(string targetTaskName, string[] args)
     {
-        var taskArgs = new string[] { taskArgument };
+        if (string.IsNullOrEmpty(targetTaskName))
+        {
+            return;
+        }
 
+        if (Ferry && Ferry.Active)
+        {
+            Ferry.Disembark();
+        }
+
+        if (Game.Arena && Game.Arena.HasJoined(this) && !Game.Arena.Leave(this))
+        {
+            GameManager.Log(PlayerName + " task cannot be done as you're inside the arena.");
+            return;
+        }
+
+        targetTaskName = targetTaskName.Trim();
         var type = Enum
             .GetValues(typeof(TaskType))
             .Cast<TaskType>()
-            .FirstOrDefault(x => x.ToString().Equals(task, StringComparison.InvariantCultureIgnoreCase));
+            .FirstOrDefault(x =>
+                x.ToString().Equals(targetTaskName, StringComparison.InvariantCultureIgnoreCase));
+
+        if (type == TaskType.None)
+        {
+            return;
+        }
+
+        var taskArgs = args == null || args.Length == 0f
+            ? new[] { type.ToString() }
+            : args;
+
+        if (Onsen.InOnsen)
+        {
+            Game.Onsen.Leave(this);
+        }
+
+        if (Duel.InDuel)
+        {
+            SetTaskArguments(taskArgs);
+            return;
+        }
+
+        if (Raid.InRaid && !IsCombatTask(taskArgs))
+        {
+            Game.Raid.Leave(this);
+        }
+
+        if (Game.Arena.HasJoined(this))
+        {
+            Game.Arena.Leave(this);
+        }
+
+        if (Dungeon.InDungeon && !IsCombatTask(taskArgs))
+        {
+            return;
+        }
 
         SetTaskArguments(taskArgs);
-        GotoClosest(type);
+
+        if (Raid.InRaid || Dungeon.InDungeon)
+        {
+            return;
+        }
+
+        // training healing is enough if you stay in place.
+        if (TrainingHealing)
+        {
+            SetChunk(type);
+        }
+        else
+        {
+            GotoClosest(type);
+        }
+    }
+
+    private bool IsCombatTask(string[] taskArgs)
+    {
+        var ta = new HashSet<string>(taskArgs.Select(x => x.ToLower()));
+        var combatSkill = GetCombatTypeFromArgs(ta);
+        return combatSkill != -1;
     }
 
     public bool Fish(FishingController fishingSpot)
@@ -1082,7 +1461,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         if (player == this)
         {
-            Debug.LogError(player.PlayerName + ", You cant fight yourself :o");
+            GameManager.LogError(player.PlayerName + ", You cant fight yourself :o");
             return false;
         }
         if (player == null || !player)
@@ -1111,13 +1490,33 @@ public class PlayerController : MonoBehaviour, IAttackable
             return false;
         }
 
+        if (!this || this.isDestroyed)
+        {
+            return false;
+        }
+
+        if (!target.Transform || target.Transform == null)
+        {
+            return false;
+        }
+
+        Target = target.Transform;
         var attackType = GetAttackType();
         InCombat = true;
         regenTimer = 0f;
         actionTimer = GetAttackAnimationTime(attackType);
-        Target = target.Transform;
 
         var hitTime = actionTimer / 2;
+
+        if (TrainingHealing)
+        {
+            if (Time.time - this.lastHeal < hitTime)
+            {
+                return true;
+            }
+
+            this.lastHeal = Time.time;
+        }
 
         Lock();
 
@@ -1127,9 +1526,11 @@ public class PlayerController : MonoBehaviour, IAttackable
         var weaponAnim = TrainingHealing ? 6 : TrainingMagic ? 4 : TrainingRanged ? 3 : weapon?.GetAnimation() ?? 0;
         var attackAnimation = TrainingHealing || TrainingMagic || TrainingRanged ? 0 : weapon?.GetAnimationCount() ?? 4;
 
-        if (!playerAnimations.IsAttacking() || lastTrainedSkill != Skill.Fighting)
+        if (!playerAnimations.IsAttacking() || !lastTrainedSkill.IsCombatSkill())
         {
-            lastTrainedSkill = Skill.Fighting;
+            //this.GetActiveCombatSkill()
+#warning lastTrainedSkill is set to Skill.Attack, it should be set to the actual current combat skill
+            lastTrainedSkill = Skill.Attack;
             playerAnimations.StartCombat(weaponAnim, Equipment.HasShield);
             if (!damageOnDraw) return true;
         }
@@ -1148,6 +1549,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
         return true;
     }
+
+
 
     private float GetAttackAnimationTime(AttackType attackType)
     {
@@ -1174,23 +1577,28 @@ public class PlayerController : MonoBehaviour, IAttackable
     public IEnumerator HealTarget(IAttackable target, float hitTime)
     {
         yield return new WaitForSeconds(hitTime);
-        if (target == null) yield break;
-        var damage = CalculateDamage(target);
-        if (!target.Heal(this, damage))
-            yield break;
-
         try
         {
+            if (target == null || !target.Transform || target.GetStats().IsDead) yield break;
+
+            var damage = CalculateDamage(target);
+            if (!target.Heal(this, damage))
+                yield break;
+
             if (!target.GivesExperienceWhenKilled)
                 yield break;
 
-            var exp = 0m;
+            var exp = 0d;
             if (damage == 0)
-                exp = 2m;
+                exp = 2d;
             else
-                exp = (decimal)Mathf.Max(2f, damage / 2f);
+                exp = (double)Mathf.Max(2f, damage / 2f);
 
-            AddCombatExp(exp, (int)CombatSkill.Healing);
+            AddExp(exp, Skill.Healing);
+        }
+        catch (Exception exc)
+        {
+            GameManager.LogError("Unable to heal target: " + exc);
         }
         finally
         {
@@ -1203,6 +1611,11 @@ public class PlayerController : MonoBehaviour, IAttackable
         yield return new WaitForSeconds(hitTime);
         if (enemy == null)
             yield break;
+
+        if (TrainingRanged)
+        {
+            this.Effects.DestroyProjectile();
+        }
 
         var damage = CalculateDamage(enemy);
         if (enemy == null || !enemy.TakeDamage(this, damage))
@@ -1231,10 +1644,14 @@ public class PlayerController : MonoBehaviour, IAttackable
                 }
 
                 var combatExperience = enemy.GetExperience();
-                player.AddCombatExp(combatExperience,
-                    player.taskArguments != null
-                        ? GetCombatTypeFromArgs(player.taskArguments)
-                        : Mathf.FloorToInt(UnityEngine.Random.value * 3));
+
+                var activeSkill = GetActiveSkill();
+                if (!activeSkill.IsCombatSkill())
+                {
+                    activeSkill = Skill.Health; // ALL
+                }
+
+                player.AddExp(combatExperience, activeSkill);// (CombatSkill)GetCombatTypeFromArgs(player.taskArguments));    
             }
         }
         finally
@@ -1261,44 +1678,125 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     #region Manage EXP/Resources
 
-    public void AddCombatExp(decimal exp, int skillIndex)
+    public double GetTierExpMultiplier()
     {
-        var skill = (CombatSkill)skillIndex;
+        var tierMulti = TwitchEventManager.TierExpMultis[gameManager.Permissions.SubscriberTier];
+        var subMulti = (this.IsSubscriber || Game.PlayerBoostRequirement > 0) ? tierMulti : 0;
+        var multi = subMulti;
+        if (PatreonTier > 0)
+        {
+            var patreonMulti = TwitchEventManager.TierExpMultis[PatreonTier];
+            if (patreonMulti > multi)
+            {
+                return patreonMulti;
+            }
+        }
+        return multi;
+    }
 
-        var tierSub = this.IsSubscriber ? (decimal)TwitchEventManager.TierExpMultis[gameManager.Permissions.SubscriberTier] : 1m;
-        var multi = tierSub + ((decimal)gameManager.Village.GetExpBonusBySkill(skill));
+    //public void AddCombatExp(double exp, CombatSkill skill)
+    //{
+    //    var tierSub = GetTierExpMultiplier();
+    //    var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
+    //    if (gameManager.Boost.Active)
+    //    {
+    //        multi += gameManager.Boost.Multiplier;
+    //    }
+    //    multi = Math.Max(1, multi);
+    //    if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
+    //        multi *= (float)Rested.ExpBoost;
+    //    exp *= multi * GameMath.ExpScale;
+    //    var stat = Stats.GetCombatSkill(skill);
+    //    if (stat == null)
+    //        return;
+    //    if (Stats.Health.AddExp(exp / 3d, out var hpLevels))
+    //        CelebrateSkillLevelUp(Skill.Health, hpLevels);
+    //    if (skill == CombatSkill.Health)
+    //    {
+    //        var each = exp / 3d;
+    //        if (Stats.Attack.AddExp(each, out var a))
+    //            CelebrateSkillLevelUp(Skill.Attack, a);
+    //        if (Stats.Defense.AddExp(each, out var b))
+    //            CelebrateSkillLevelUp(Skill.Defense, b);
+    //        if (Stats.Strength.AddExp(each, out var c))
+    //            CelebrateSkillLevelUp(Skill.Strength, c);
+    //        return;
+    //    }
+    //    if (stat.AddExp(exp, out var atkLvls))
+    //    {
+    //        CelebrateSkillLevelUp(skill, atkLvls);
+    //    }
+    //}
+
+    public void AddExp(double exp, Skill skill)
+    {
+        var tierSub = GetTierExpMultiplier();
+        var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
+
         if (gameManager.Boost.Active)
-            multi += ((decimal)gameManager.Boost.Multiplier);
+        {
+            multi += gameManager.Boost.Multiplier;
+        }
+
+        multi = Math.Max(1, multi);
+        if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
+            multi *= (float)Rested.ExpBoost;
+
         exp *= multi * GameMath.ExpScale;
 
-        var stat = Stats.GetCombatSkill(skill);
+        var stat = Stats.GetSkill(skill);
         if (stat == null)
             return;
 
-        if (Stats.Health.AddExp(exp / 3, out var hpLevels))
-            CelebrateCombatSkillLevelUp(CombatSkill.Health, hpLevels);
-
-        if (skill == CombatSkill.Health)
+        if (skill.IsCombatSkill())
         {
-            var each = exp / 3;
-            if (Stats.Attack.AddExp(each, out var a))
-                CelebrateCombatSkillLevelUp(CombatSkill.Attack, a);
+            if (Stats.Health.AddExp(exp / 3d, out var hpLevels))
+                CelebrateSkillLevelUp(Skill.Health, hpLevels);
 
-            if (Stats.Defense.AddExp(each, out var b))
-                CelebrateCombatSkillLevelUp(CombatSkill.Defense, b);
+            if (skill == Skill.Health)
+            {
+                var each = exp / 3d;
+                if (Stats.Attack.AddExp(each, out var a))
+                    CelebrateSkillLevelUp(Skill.Attack, a);
 
-            if (Stats.Strength.AddExp(each, out var c))
-                CelebrateCombatSkillLevelUp(CombatSkill.Strength, c);
+                if (Stats.Defense.AddExp(each, out var b))
+                    CelebrateSkillLevelUp(Skill.Defense, b);
 
-            return;
+                if (Stats.Strength.AddExp(each, out var c))
+                    CelebrateSkillLevelUp(Skill.Strength, c);
+
+                return;
+            }
         }
 
         if (stat.AddExp(exp, out var atkLvls))
         {
-            CelebrateCombatSkillLevelUp(skill, atkLvls);
+            CelebrateSkillLevelUp(skill, atkLvls);
         }
     }
 
+    //public void AddExp(double exp, Skill skill)
+    //{
+    //    var tierSub = GetTierExpMultiplier();
+    //    var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
+    //    if (gameManager.Boost.Active)
+    //    {
+    //        multi += gameManager.Boost.Multiplier;
+    //    }
+
+    //    multi = Math.Max(1, multi);
+    //    if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
+    //        multi *= (float)Rested.ExpBoost;
+
+    //    exp *= multi * GameMath.ExpScale;
+
+    //    var stat = Stats.GetSkill(skill);
+    //    if (stat == null)
+    //        return;
+
+    //    if (stat.AddExp(exp, out var a))
+    //        CelebrateSkillLevelUp(skill, a);
+    //}
     public void RemoveResources(RavenNest.Models.Item item)
     {
         if (item.WoodCost > 0)
@@ -1323,7 +1821,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             RemoveResource(Resource.Mining, item.Ore);
     }
 
-    public void RemoveResource(Resource resource, decimal amount)
+    public void RemoveResource(Resource resource, double amount)
     {
         switch (resource)
         {
@@ -1345,7 +1843,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    public void AddResource(Resource resource, decimal amount, bool allowMultiplier = true)
+    public void AddResource(Resource resource, double amount, bool allowMultiplier = true)
     {
         amount = Math.Max(1, amount);
 
@@ -1369,26 +1867,6 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    public void AddExp(decimal exp, Skill skill)
-    {
-        var tierSub = this.IsSubscriber
-            ? (decimal)TwitchEventManager.TierExpMultis[gameManager.Permissions.SubscriberTier]
-            : 1m;
-
-        var multi = tierSub + ((decimal)gameManager.Village.GetExpBonusBySkill(skill));
-        if (gameManager.Boost.Active)
-            multi += (decimal)gameManager.Boost.Multiplier;
-
-        exp *= multi * GameMath.ExpScale;
-
-        var stat = Stats.GetSkill(skill);
-        if (stat == null)
-            return;
-
-        if (stat.AddExp(exp, out var a))
-            CelebrateSkillLevelUp(skill, a);
-    }
-
     private void AddTimeExp()
     {
         timeExpTimer -= Time.deltaTime;
@@ -1399,40 +1877,40 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    public bool AddExpToCurrentSkill(decimal experience)
+    public bool AddExpToCurrentSkill(double experience)
     {
-        if (taskArguments != null && taskArguments.Count > 0)
+        var skill = GetActiveSkill();
+
+        // !string.IsNullOrEmpty(taskArgument)
+        if (skill != Skill.None)
         {
-            var combatType = GetCombatTypeFromArg(taskArguments.First());
-            if (combatType != -1)
-            {
-                AddCombatExp(experience, combatType);
-            }
-            else
-            {
-                var skill = (Skill)GetSkillTypeFromArgs(taskArguments);
-                AddExp(experience, skill);
-            }
+            AddExp(experience, skill);
+            //var combatType = GetCombatTypeFromArg(taskArgument);
+            //if (combatType != -1)
+            //{
+            //    AddCombatExp(experience, (CombatSkill)combatType);
+            //}
+            //else
+            //{
+            //    var skill = (TaskSkill)GetSkillTypeFromArgs(taskArguments);
+            //    AddExp(experience, skill.AsSkill());
+            //}
             return true;
         }
         return false;
     }
 
-    private void CelebrateCombatSkillLevelUp(CombatSkill skill, int levelCount)
-    {
-        CelebrateLevelUp(skill.ToString(), levelCount);
-    }
-
+    //AsSkill
     private void CelebrateSkillLevelUp(Skill skill, int levelCount)
     {
-        CelebrateLevelUp(skill.ToString(), levelCount);
+        CelebrateLevelUp();// skill.ToString(), levelCount);
     }
 
-    private void CelebrateLevelUp(string skillName, int levelCount)
+    private void CelebrateLevelUp()//(string skillName, int levelCount)
     {
         if (playerAnimations)
             playerAnimations.Cheer();
-        gameManager.PlayerLevelUp(this, GetSkill(skillName));
+        //gameManager.PlayerLevelUp(this, GetSkill(skillName));
         if (Effects)
             Effects.LevelUp();
     }
@@ -1443,11 +1921,11 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         if (Chunk == null)
         {
-            Debug.LogError("Cannot do task if we do not know in which chunk we are. :o");
+            GameManager.LogError("Cannot do task if we do not know in which chunk we are. :o");
             return;
         }
 
-        if (taskTarget)
+        if (taskTarget != null)
         {
             var taskCompleted = Chunk.IsTaskCompleted(this, taskTarget);
             if (taskCompleted)
@@ -1461,7 +1939,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                     if (reason == TaskExecutionStatus.InvalidTarget)
                     {
                         taskTarget = Chunk.GetTaskTarget(this);
-                        if (taskTarget == null || !taskTarget)
+                        if (taskTarget == null)
                             return;
 
                         Chunk.TargetAcquired(this, taskTarget);
@@ -1469,14 +1947,14 @@ public class PlayerController : MonoBehaviour, IAttackable
                     }
 
                     if (reason == TaskExecutionStatus.OutOfRange)
-                        GotoPosition(taskTarget.transform.position);
+                        GotoPosition(GetTaskTargetPosition(taskTarget));
 
                     if (reason == TaskExecutionStatus.InsufficientResources)
                     {
                         outOfResourcesAlertTimer -= Time.deltaTime;
                         if (outOfResourcesAlertTimer <= 0f)
                         {
-                            Debug.LogWarning(PlayerName + " is out of resources and won't gain any crafting exp.");
+                            GameManager.LogWarning(PlayerName + " is out of resources and won't gain any crafting exp.");
 
                             var message = lastTrainedSkill == Skill.Cooking
                                 ? "You're out of resources, you wont gain any cooking exp. Use !train farming or !train fishing to get some resources."
@@ -1499,7 +1977,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         taskTarget = Chunk.GetTaskTarget(this);
-        if (!taskTarget)
+        if (taskTarget == null)
         {
             return;
         }
@@ -1509,8 +1987,31 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!Chunk.CanExecuteTask(this, taskTarget, out var exeTaskReason))
         {
             if (exeTaskReason == TaskExecutionStatus.OutOfRange)
-                GotoPosition(taskTarget.transform.position);
+                GotoPosition(GetTaskTargetPosition(taskTarget));
+
+            return;
         }
+
+        if (Chunk.ExecuteTask(this, taskTarget))
+        {
+            outOfResourcesAlertCounter = 0;
+            outOfResourcesAlertTimer = 0f;
+            return;
+        }
+    }
+
+    private Vector3 GetTaskTargetPosition(object obj)
+    {
+        if (obj is IAttackable attackable)
+        {
+            return attackable.Position + positionJitter;
+        }
+        return (((obj as Transform) ?? (obj as MonoBehaviour)?.transform)?.position ?? this.PositionInternal) + positionJitter;
+    }
+
+    private Transform GetTaskTargetTransform(object obj)
+    {
+        return (obj as IAttackable)?.Transform ?? (obj as Transform) ?? (obj as MonoBehaviour)?.transform;
     }
 
     #region Transform Adjustments
@@ -1522,66 +2023,95 @@ public class PlayerController : MonoBehaviour, IAttackable
         transform.rotation = new Quaternion(rot.x, transform.rotation.y, rot.z, rot.w);
     }
 
-    public bool GotoPosition(Vector3 position)
+    public bool GotoPosition(Vector3 position, bool force = false)
     {
         Unlock();
+
         playerAnimations.StartMoving();
         InCombat = Duel.InDuel;
+        NextDestination = Vector3.zero;
 
-        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        if ((force || Vector3.Distance(position, LastDestination) >= 1 || Vector3.Distance(agent.destination, position) >= 10) && agent.isActiveAndEnabled && agent.isOnNavMesh && !agent.pathPending)
         {
-            NextDestination = Vector3.zero;
+            //if (agent.pathStatus ==  NavMeshPathStatus.)
             agent.SetDestination(position);
+            LastDestination = position;
+        }
+        //else
+        //{
+        //    NextDestination = position;
+        //}
+
+        //if (this.PositionInternal != position)
+        //{
+        //    MovementTime += Time.deltaTime;
+        //}
+        return true;
+    }
+
+    public void SetPosition(Vector3 position)
+    {
+        if (agent && agent.enabled)
+        {
+            agent.Warp(position);
         }
         else
         {
-            NextDestination = position;
+            transform.position = position;
         }
-        return true;
+        PositionInternal = position;
+        Island = Game.Islands.FindPlayerIsland(this);
     }
 
     public void Lock()
     {
-        if (playerAnimations)
-            playerAnimations.StopMoving();
+        if (movementIsLocked)
+        {
+            return;
+        }
 
         if (agent && agent.enabled)
         {
             agent.velocity = Vector3.zero;
             if (agent.isOnNavMesh)
             {
-                agent.SetDestination(transform.position);
+                agent.SetDestination(Transform.position);
                 agent.isStopped = true;
             }
             agent.enabled = false;
-        }
 
-        //if (rbody) rbody.isKinematic = true;
+            if (playerAnimations)
+                playerAnimations.StopMoving();
+        }
+        MovementTime = 0;
+        this.movementIsLocked = true;
     }
 
     public void Unlock()
     {
-        if (agent)
+        if (!movementIsLocked)
         {
-            agent.enabled = true;
-            if (agent.isOnNavMesh)
-                agent.isStopped = false;
+            return;
         }
-        //if (rbody)
-        //{
-        //    rbody.isKinematic = true;
-        //}
+
+        agent.enabled = true;
+        if (agent.isOnNavMesh)
+            agent.isStopped = false;
+
+        movementIsLocked = false;
     }
     #endregion
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SkillStat GetSkill(string skillName) => Stats.GetSkillByName(skillName);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SkillStat GetSkill(Skill skill) => Stats[skill];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public SkillStat GetSkill(Skill skill) => Stats.GetSkill(skill);
+    public SkillStat GetSkill(TaskSkill skill) => Stats.GetSkill(skill);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public SkillStat GetSkill(int skillIndex) => Stats.GetSkill((Skill)skillIndex);
+    public SkillStat GetSkill(int skillIndex) => Stats.GetSkill((TaskSkill)skillIndex);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SkillStat GetCombatSkill(CombatSkill skill) => Stats.GetCombatSkill(skill);
@@ -1589,14 +2119,42 @@ public class PlayerController : MonoBehaviour, IAttackable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SkillStat GetCombatSkill(int skillIndex) => Stats.GetCombatSkill((CombatSkill)skillIndex);
 
+
+    [Obsolete("Please use GetActiveSkillStat instead.")]
+    public SkillStat GetActiveCombatSkillStat()
+    {
+        var skillIndex = GetCombatTypeFromArgs(taskArguments);
+        return Stats.GetCombatSkill((CombatSkill)skillIndex);
+    }
+
+    [Obsolete("Please use GetActiveSkillStat instead.")]
+    internal SkillStat GetActiveTaskSkillStat()
+    {
+        var acs = GetActiveCombatSkillStat();
+        if (acs != null) return acs;
+        var st = GetSkillTypeFromArgs(this.taskArguments);
+        if (st >= 0) return GetSkill((TaskSkill)st);
+        return null;
+    }
+
+    internal SkillStat GetActiveSkillStat()
+    {
+        var skill = GetActiveSkill();
+        if (skill == Skill.None) return null;
+        return Stats[skill];
+    }
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [Obsolete("Use GetActiveSkill instead")]
     public int GetCombatTypeFromArgs(params string[] args)
     {
-        foreach (var v in args.Select(x => GetCombatTypeFromArg(x))) if (v >= 0) return v;
+        foreach (var v in args.Select(x => GetCombatTypeFromArg(x.ToLower()))) if (v >= 0) return v;
         return -1;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [Obsolete("Use GetActiveSkill instead")]
     public int GetCombatTypeFromArgs(HashSet<string> args)
     {
         foreach (var v in args.Select(x => GetCombatTypeFromArg(x))) if (v >= 0) return v;
@@ -1604,6 +2162,22 @@ public class PlayerController : MonoBehaviour, IAttackable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Skill GetActiveSkill(Skill defaultSkill = Skill.None)
+    {
+        foreach (var v in taskArguments)
+        {
+            var skill = GetSkillFromArg(v);
+            if (skill != Skill.None)
+            {
+                return skill;
+            }
+        }
+
+        return defaultSkill;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [Obsolete("Use GetActiveSkill instead")]
     public int GetSkillTypeFromArgs(HashSet<string> args)
     {
         foreach (var v in args.Select(x => GetSkillTypeFromArg(x))) if (v >= 0) return v;
@@ -1612,65 +2186,100 @@ public class PlayerController : MonoBehaviour, IAttackable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [Obsolete("Use GetActiveSkill instead")]
     public int GetSkillTypeFromArgs(params string[] args)
     {
-        foreach (var v in args.Select(x => GetSkillTypeFromArg(x))) if (v >= 0) return v;
+        foreach (var v in args.Select(x => GetSkillTypeFromArg(x.ToLower()))) if (v >= 0) return v;
         return -1;
     }
 
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetSkillTypeFromArg(string val)
+    public Skill GetSkillFromArg(string val)
+    {
+        if (string.IsNullOrEmpty(val))
+            return Skill.None;
+
+        var key = val.ToLower();
+
+        if (skillLookup.TryGetValue(key, out var type))
+            return type;
+
+        if (val == "hp" || val == "health" || val == "all")
+        {
+            return skillLookup[key] = Skill.Health;
+        }
+
+        if (val == "mine")
+        {
+            return skillLookup[key] = Skill.Mining;
+        }
+
+        return Skill.None;
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [Obsolete("Use GetSkillFromArg instead")]
+    public int GetSkillTypeFromArg(string val)
     {
         if (string.IsNullOrEmpty(val))
             return -1;
 
-        var lower = val.ToLower();
-        if (skillTypeArgLookup.TryGetValue(lower, out var type))
+        if (skillTypeArgLookup.TryGetValue(val, out var type))
             return type;
+
         if (StartsWith(val, "wood") || StartsWith(val, "chomp") || StartsWith(val, "chop"))
-            return skillTypeArgLookup[lower] = 0;
+            return skillTypeArgLookup[val] = 0;
         if (StartsWith(val, "fish") || StartsWith(val, "fist"))
-            return skillTypeArgLookup[lower] = 1;
+            return skillTypeArgLookup[val] = 1;
         if (StartsWith(val, "craft"))
-            return skillTypeArgLookup[lower] = 2;
+            return skillTypeArgLookup[val] = 2;
         if (StartsWith(val, "cook"))
-            return skillTypeArgLookup[lower] = 3;
+            return skillTypeArgLookup[val] = 3;
         if (StartsWith(val, "mine") || StartsWith(val, "mining"))
-            return skillTypeArgLookup[lower] = 4;
+            return skillTypeArgLookup[val] = 4;
         if (StartsWith(val, "farm"))
-            return skillTypeArgLookup[lower] = 5;
+            return skillTypeArgLookup[val] = 5;
         if (StartsWith(val, "slay"))
-            return skillTypeArgLookup[lower] = 6;
+            return skillTypeArgLookup[val] = 6;
         if (StartsWith(val, "sail"))
-            return skillTypeArgLookup[lower] = 7;
+            return skillTypeArgLookup[val] = 7;
 
         return -1;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [Obsolete("Use GetSkillFromArg instead")]
     public static int GetCombatTypeFromArg(string val)
     {
         if (string.IsNullOrEmpty(val))
             return -1;
 
-        var lower = val.ToLower();
-        if (combatTypeArgLookup.TryGetValue(lower, out var type))
+        if (combatTypeArgLookup.TryGetValue(val, out var type))
             return type;
         if (StartsWith(val, "atk") || StartsWith(val, "att"))
-            return combatTypeArgLookup[lower] = 0;
+            return combatTypeArgLookup[val] = 0;
         if (StartsWith(val, "def"))
-            return combatTypeArgLookup[lower] = 1;
+            return combatTypeArgLookup[val] = 1;
         if (StartsWith(val, "str"))
-            return combatTypeArgLookup[lower] = 2;
+            return combatTypeArgLookup[val] = 2;
         if (StartsWith(val, "all") || StartsWith(val, "combat") || StartsWith(val, "health") || StartsWith(val, "hits") || StartsWith(val, "hp"))
-            return combatTypeArgLookup[lower] = 3;
+            return combatTypeArgLookup[val] = 3;
         if (StartsWith(val, "magic"))
-            return combatTypeArgLookup[lower] = 4;
+            return combatTypeArgLookup[val] = 4;
         if (StartsWith(val, "ranged"))
-            return combatTypeArgLookup[lower] = 5;
+            return combatTypeArgLookup[val] = 5;
         if (StartsWith(val, "heal"))
-            return combatTypeArgLookup[lower] = 6;
+            return combatTypeArgLookup[val] = 6;
         return -1;
+    }
+
+    public void ClearAttackers()
+    {
+        AttackerNames.Clear();
+        Attackers.Clear();
     }
 
     public bool Heal(IAttackable healer, int amount)
@@ -1704,12 +2313,23 @@ public class PlayerController : MonoBehaviour, IAttackable
         InCombat = true;
 
         if (attacker != null)
-            attackers[attacker.Name] = attacker;
+        {
+            if (AttackerNames.Add(attacker.Name))
+            {
+                Attackers.Add(attacker);
+            }
+        }
 
         if (!damageCounterManager)
+        {
             damageCounterManager = FindObjectOfType<DamageCounterManager>();
+        }
 
-        damageCounterManager.Add(transform, damage);
+        if (damageCounterManager)
+        {
+            damageCounterManager.Add(transform, damage);
+        }
+
         Stats.Health.Add(-damage);
         if (damage > 0)
         {
@@ -1744,7 +2364,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public IReadOnlyList<IAttackable> GetAttackers()
     {
-        return attackers.Values.Where(x => x != null).ToList();
+        return Attackers;
     }
 
     public Skills GetStats()
@@ -1758,17 +2378,17 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public int GetCombatStyle() => 1;
 
-    public decimal GetExperience() => 0;
+    public double GetExperience() => 0;
 
     public bool EquipIfBetter(RavenNest.Models.Item item)
     {
-        if (item.Category == ItemCategory.Resource || item.Category == ItemCategory.Food)
+        if (item.Category == ItemCategory.Resource || item.Category == ItemCategory.Food || item.Category == ItemCategory.Scroll)
             return false;
 
         if (item.RequiredDefenseLevel > Stats.Defense.Level) return false;
         if (item.RequiredAttackLevel > Stats.Attack.Level) return false;
         if (item.RequiredSlayerLevel > Stats.Slayer.Level) return false;
-        if (item.RequiredMagicLevel > Stats.Magic.Level) return false;
+        if (item.RequiredMagicLevel > Stats.Magic.Level && item.RequiredMagicLevel > Stats.Healing.Level) return false;
         if (item.RequiredRangedLevel > Stats.Ranged.Level) return false;
 
         var currentEquipment = Inventory.GetEquipmentOfType(item.Category, item.Type);
@@ -1787,23 +2407,61 @@ public class PlayerController : MonoBehaviour, IAttackable
         return false;
     }
 
-    public async void AddItem(RavenNest.Models.Item item, bool updateServer = true)
+    public void AddItem(RavenNest.Models.Item item, bool updateServer = true)
     {
         if (item == null) return;
         Inventory.Add(item);
 
+        if (IsBot)
+        {
+            return;
+        }
+
         if (IntegrityCheck.IsCompromised)
         {
-            Debug.LogError("Item add for user: " + UserId + ", item: " + item.Id + ", failed. Integrity compromised");
+            GameManager.LogError("Item add for user: " + UserId + ", item: " + item.Id + ", failed. Integrity compromised");
             return;
         }
 
         if (!updateServer)
             return;
 
-        var result = await gameManager.RavenNest.Players.AddItemAsync(UserId, item.Id);
-        if (result == AddItemResult.Failed)
-            Debug.LogError("Item add for user: " + UserId + ", item: " + item.Id + ", result: " + result);
+        queuedItemAdd.Enqueue(item.Id);
+        this.hasQueuedItemAdd = true;
+        AddQueuedItemAsync();
+    }
+
+    private async void AddQueuedItemAsync()
+    {
+        if (IsBot)
+        {
+            return;
+        }
+
+        if (!Game.RavenNest.Stream.IsReady)
+        {
+            return;
+        }
+
+        if (queuedItemAdd.TryDequeue(out var itemId))
+        {
+            try
+            {
+                var result = await gameManager.RavenNest.Players.AddItemAsync(UserId, itemId);
+                if (result == AddItemResult.Failed)
+                {
+                    queuedItemAdd.Enqueue(itemId);
+                    GameManager.LogError("Item add for user: " + UserId + ", item: " + itemId + ", result: " + result);
+                }
+            }
+            catch (Exception exc)
+            {
+                queuedItemAdd.Enqueue(itemId);
+                GameManager.LogError(exc.ToString());
+            }
+        }
+
+        hasQueuedItemAdd = queuedItemAdd.Count > 0;
     }
 
     public void UpdateCombatStats(List<RavenNest.Models.Item> equipped)
@@ -1838,12 +2496,16 @@ public class PlayerController : MonoBehaviour, IAttackable
     private IEnumerator Respawn()
     {
         yield return new WaitForSeconds(respawnTime);
-        attackers.Clear();
+
+        ClearAttackers();
 
         if (Island && Island.SpawnPositionTransform)
             transform.position = Island.SpawnPosition;
         else
             transform.position = chunkManager.GetStarterChunk().GetPlayerSpawnPoint();
+
+        MovementTime = 0;
+        IdleTime = 0;
 
         transform.rotation = Quaternion.identity;
         playerAnimations.Revive();
@@ -1878,14 +2540,96 @@ public class PlayerController : MonoBehaviour, IAttackable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool StartsWith(string str, string arg)
-        => str.StartsWith(arg, StringComparison.OrdinalIgnoreCase);
+    private static bool StartsWith(string str, string arg) => str.IndexOf(arg) == 0;
 
     internal void Unstuck()
     {
-        if (Island && agent && agent.isActiveAndEnabled && agent.isOnNavMesh && IdleTime > 2f && !IsMoving && Animations.IsMoving)
+        if (Raid.InRaid)
         {
-            agent.Warp(Island.SpawnPosition);
+            this.SetPosition(this.Island.SpawnPosition);
+            return;
         }
+
+        if (Dungeon.InDungeon)
+        {
+            this.SetPosition(Dungeon.SpawnPosition);
+            return;
+        }
+
+        if (Duel.InDuel)
+        {
+            this.Duel.Interrupt();
+            return;
+        }
+
+        if (Island && Island.AllowRaidWar && !StreamRaid.InWar)
+        {
+            var homeIsland = Game.Islands.All.FirstOrDefault(x => x.Identifier == "home");
+            if (homeIsland)
+            {
+                agent.Warp(homeIsland.SpawnPosition);
+                Island = homeIsland;
+                return;
+            }
+        }
+
+        if (!Onsen.InOnsen && !Dungeon.InDungeon && Animations.IsMoving && !Ferry.OnFerry)
+        {
+            var i = Island;
+            if (!i) i = Game.Islands.All.FirstOrDefault(x => x.Identifier == "home");
+            this.SetPosition(i.SpawnPosition);
+            return;
+        }
+
+        if ((Island && this.Game.Islands.FindPlayerIsland(this) != Island) ||
+            Island && agent && agent.isActiveAndEnabled && agent.isOnNavMesh && IdleTime > 2f && !IsMoving && Animations.IsMoving)
+        {
+            this.SetPosition(Island.SpawnPosition);
+        }
+    }
+    public void Destroy()
+    {
+        if (!isDestroyed)
+        {
+            GameObject.Destroy(gameObject);
+            isDestroyed = true;
+        }
+    }
+}
+
+public class CharacterRestedState
+{
+    public double ExpBoost { get; internal set; }
+    public double RestedPercent { get; internal set; }
+    public double RestedTime { get; internal set; }
+    public double CombatStatsBoost { get; internal set; }
+}
+
+public class AsyncPlayerRequest
+{
+    private readonly Task request;
+    private readonly Func<Task> lazyRequest;
+    public AsyncPlayerRequest(Func<Task> action)
+    {
+        lazyRequest = action;
+    }
+    public AsyncPlayerRequest(Task request)
+    {
+        this.request = request;
+    }
+
+    public AsyncPlayerRequest(Action request)
+    {
+        this.request = new Task(request);
+    }
+
+    public Task InvokeAsync()
+    {
+        if (lazyRequest != null)
+        {
+            return lazyRequest.Invoke();
+        }
+
+        return request;
     }
 }

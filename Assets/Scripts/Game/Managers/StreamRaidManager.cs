@@ -42,7 +42,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         {
             defenders.Add(player);
             if (!raidWarIsland) raidWarIsland = gameManager.Islands.Find("war");
-            oldPlayerPosition[player.UserId] = player.transform.position;
+            oldPlayerPosition[player.UserId] = player.Position;
             player.Teleporter.Teleport(raidWarIsland.StreamerSpawningPoint.position);
             player.StreamRaid.OnEnter();
         }

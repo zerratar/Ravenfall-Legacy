@@ -28,6 +28,9 @@ public class Dragscript : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         canvas = canvasScaler.GetComponent<Canvas>();
         var refW = canvasScaler.referenceResolution.x;
         var refH = canvasScaler.referenceResolution.y;
+
+        
+
         this.screenW = refW;
         this.screenH = refH;
         this.scaleX = Screen.width / refW;

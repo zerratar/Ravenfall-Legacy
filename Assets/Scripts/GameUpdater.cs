@@ -23,8 +23,10 @@ public class GameUpdater : MonoBehaviour
 
     private void Start()
     {
+        var startupArgs = System.Environment.GetCommandLineArgs();
+        var forceUpdate = startupArgs.Select(x => x.ToLower()).Any(x => x.Contains("forceupdate") || x.Contains("force-update") || x.Contains("reinstall"));
         gameUpdater = new GameUpdateHandler(CheckUpdateUri);
-        gameUpdater.UpdateAsync().ContinueWith(async res =>
+        gameUpdater.UpdateAsync(forceUpdate).ContinueWith(async res =>
         {
             updateResult = await res;
         });
@@ -61,8 +63,14 @@ public class GameUpdater : MonoBehaviour
 
         if (updateResult == UpdateResult.Failed)
         {
-            // display error message on screen            
-            DisplayError();
+            DisplayError_Generic();
+            return;
+        }
+
+        if (updateResult == UpdateResult.Failed_NoInternet)
+        {
+            // display error message on screen
+            DisplayError_NoConnection();
             return;
         }
 
@@ -81,7 +89,30 @@ public class GameUpdater : MonoBehaviour
         UpdateProgress((double)progress.BytesDownloaded / progress.FileSize);
     }
 
-    private void DisplayError()
+
+    private void DisplayError_Generic()
+    {
+        if (label)
+        {
+            label.text = "Error occurred when trying to update the game. \r\nPress space to open the log folder.";
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                TryOpenLogFolder();
+            }
+        }
+    }
+
+    private static void TryOpenLogFolder()
+    {
+        try
+        {
+            var path = System.IO.Path.GetDirectoryName(Application.consoleLogPath);
+            System.Diagnostics.Process.Start("explorer.exe", path);
+        }
+        catch { }
+    }
+
+    private void DisplayError_NoConnection()
     {
         if (label)
         {
@@ -117,18 +148,42 @@ public class GameUpdater : MonoBehaviour
             label.text = "Initializing update.";
         }
 
-        // 1. stop the bot if its running
-        var botProcess = System.Diagnostics.Process
-            .GetProcesses()
-            .FirstOrDefault(x => x.ProcessName.IndexOf("ravenbot", StringComparison.OrdinalIgnoreCase) >= 0);
-        if (botProcess != null)
+        try
         {
-            TryStopProcess(botProcess);
+            // 1. stop the bot if its running
+            var processes = System.Diagnostics.Process.GetProcesses();
+            var botProcess = processes.FirstOrDefault(x =>
+            {
+                if (x.HasExited)
+                {
+                    return false;
+                }
+
+                return x.ProcessName.IndexOf("ravenbot", StringComparison.OrdinalIgnoreCase) >= 0;
+            });
+
+            if (botProcess != null)
+            {
+                TryStopProcess(botProcess);
+            }
+        }
+        catch (Exception exc)
+        {
+            // Note: one or more processes has been terminated as this was doing a test.
+            // does not necessarily have to be ravenbot, but could be anything. Casting 
+            // InvalidOperationException: Process has exited or is inaccessible, so the requested information is not available.
+            GameManager.LogWarning("Failed to stop local running RavenBot. This can be ignored. Error: " + exc.ToString());
         }
 
         // 2. start patcher
-        System.Diagnostics.Process.Start("RavenWeave.exe");
-
+        if (System.IO.File.Exists("RavenWeave.exe"))
+        {
+            System.Diagnostics.Process.Start("RavenWeave.exe");
+        }
+        else
+        {
+            GameManager.LogWarning("RavenWeave.exe could not be found. Unable to start the patcher.");
+        }
 
         // 3. stop unity game
         Application.Quit();
@@ -138,11 +193,22 @@ public class GameUpdater : MonoBehaviour
     {
         try
         {
+            if (process.HasExited)
+            {
+                return;
+            }
+
+            process.Refresh();
+            if (process.HasExited)
+            {
+                return;
+            }
+
             process.Kill();
         }
-        catch (Exception exc)
+        catch
         {
-            UnityEngine.Debug.LogError("Failed to stop the ravenbot before running the patcher.");
+            GameManager.LogError("Failed to stop the ravenbot before running the patcher.");
         }
     }
 
@@ -168,7 +234,8 @@ public enum UpdateResult
     None,
     UpToDate,
     Success,
-    Failed,
+    Failed_NoInternet,
+    Failed
 }
 public class GameUpdateHandler
 {
@@ -177,7 +244,6 @@ public class GameUpdateHandler
     private readonly string version;
     private DownloadProgress lastDownloadProgress;
     private UpdateData latestUpdate;
-
     public GameUpdateHandler(string host)
     {
         this.host = host;
@@ -185,15 +251,15 @@ public class GameUpdateHandler
         if (!this.host.EndsWith("/")) this.host += "/";
     }
 
-    public async Task<UpdateResult> UpdateAsync()
+    public async Task<UpdateResult> UpdateAsync(bool forceUpdate = false)
     {
         latestUpdate = await DownloadUpdateInfoAsync();
         if (latestUpdate == null)
         {
-            return UpdateResult.Failed;
+            return UpdateResult.Failed_NoInternet;
         }
 
-        if (latestUpdate.Version == version)
+        if (latestUpdate.Version == version && !forceUpdate)
         {
             return UpdateResult.UpToDate;
         }
@@ -226,10 +292,12 @@ public class GameUpdateHandler
         string downloadUrl,
         Action<DownloadProgress> downloadProgress)
     {
+        GameManager.Log("Downloading update file: " + downloadUrl);
         try
         {
             var fileName = downloadUrl.Split('/').LastOrDefault();
             var updateFile = "update/" + fileName;
+
             if (!Directory.Exists("update"))
             {
                 Directory.CreateDirectory("update");
@@ -253,14 +321,14 @@ public class GameUpdateHandler
 
                 await wc.DownloadFileTaskAsync(downloadUrl, updateFile);
                 var el = DateTime.Now - start;
-                Debug.LogWarning("Download took " + el.TotalSeconds + " seconds.");
+                GameManager.Log("Download took " + el.TotalSeconds + " seconds.");
             }
 
             return true;
         }
         catch (Exception exc)
         {
-            Debug.LogError("Unable to download update: " + exc.ToString());
+            GameManager.LogError("Unable to download update: " + exc.ToString());
             return false;
         }
     }
@@ -280,18 +348,32 @@ public class GameUpdateHandler
             {
                 var update = await sr.ReadToEndAsync();
                 var updateData = JsonConvert.DeserializeObject<UpdateData>(update);
-                if (!Directory.Exists("update"))
+
+                if (updateData.Version == version)
                 {
-                    Directory.CreateDirectory("update");
+                    return updateData;
                 }
 
-                File.WriteAllText("update/update.json", update);
+                try
+                {
+                    if (!Directory.Exists("update"))
+                    {
+                        Directory.CreateDirectory("update");
+                    }
+
+                    File.WriteAllText("update/update.json", update);
+                }
+                catch (Exception exc)
+                {
+                    GameManager.LogError("Unable to save update json: " + exc.ToString());
+                }
+
                 return updateData;
             }
         }
         catch (Exception exc)
         {
-            Debug.LogError("Error downloading update information: " + exc.ToString());
+            GameManager.LogError("Error downloading update information: " + exc.ToString());
             // Ignore request issues.
         }
         return null;

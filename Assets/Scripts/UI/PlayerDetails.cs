@@ -16,6 +16,17 @@ public class PlayerDetails : MonoBehaviour
     [SerializeField] private TextMeshProUGUI lblClanName;
     [SerializeField] private CanvasGroup canvasGroup;
 
+
+
+    [SerializeField] private GameObject timeforlevelPanel;
+    [SerializeField] private TextMeshProUGUI lblTimeForLevel;
+
+    [SerializeField] private GameObject restedPanel;
+    [SerializeField] private TextMeshProUGUI lblRestedAmount;
+
+    [SerializeField] private TextMeshProUGUI lblTraining;
+    [SerializeField] private TextMeshProUGUI lblTrainingSkill;
+
     [SerializeField] private AttributeStatsManager attributeStatsManager;
     [SerializeField] private EquipmentSlotManager equipmentSlotManager;
 
@@ -66,8 +77,23 @@ public class PlayerDetails : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!visible || !observedPlayer)
+        if (!visible)
+        {
             return;
+        }
+
+        if (!observedPlayer || observedPlayer.gameObject == null || observedPlayer.Removed)
+        {
+            if (gameManager.Players.GetPlayerCount() == 0)
+            {
+                Observe(null, 0);
+            }
+            else
+            {
+                gameManager.Camera.ObserveNextPlayer();
+            }
+            return;
+        }
 
         if (canvasGroup.alpha != 1)
             canvasGroup.alpha = 1;
@@ -91,6 +117,50 @@ public class PlayerDetails : MonoBehaviour
         SetText(lblObserving, $"({Mathf.FloorToInt(observedPlayerTimeout) + 1}s)");
         SetText(lblPlayerlevel, $"LV : <b>{observedPlayer.Stats.CombatLevel}");
 
+        var isRested = observedPlayer.Rested.RestedTime > 0;
+        SetActive(restedPanel, isRested);
+        if (isRested)
+        {
+            var time = Utility.FormatTime(observedPlayer.Rested.RestedTime / 60f / 60f, false);
+            if (observedPlayer.Onsen.InOnsen)
+            {
+                SetText(lblRestedAmount, "<color=#FFDE00>" + time);
+                // increasing time
+            }
+            else
+            {
+                SetText(lblRestedAmount, time);
+                // decreasing time
+            }
+        }
+        var playerTask = observedPlayer.GetTask();
+        var isTrainingSomething = playerTask != TaskType.None || observedPlayer.GetTaskArguments().Count > 0;
+        SetActive(lblTraining.gameObject, isTrainingSomething);
+        SetActive(lblTrainingSkill.gameObject, isTrainingSomething);
+
+        if (isTrainingSomething)
+        {
+            var activeSkill = observedPlayer.GetActiveTaskSkillStat();
+            if (activeSkill != null)
+            {
+                if (playerTask == TaskType.None)
+                {
+                    SetActive(timeforlevelPanel, false);
+                    lblTrainingSkill.text = "<color=red>" + activeSkill.Name + "\r\n<size=14>Ineligible</size></color>";
+                }
+                else
+                {
+                    SetActive(timeforlevelPanel, true);
+                    lblTrainingSkill.text = activeSkill.Name;
+                    lblTimeForLevel.text = GetTimeLeftForLevelFormatted();
+                }
+            }
+        }
+        else
+        {
+            SetActive(timeforlevelPanel, false);
+        }
+
         if (observedPlayer.CharacterIndex > 0)
             SetText(lblPlayername, $"{observedPlayer.PlayerName} #{observedPlayer.CharacterIndex}");
         else
@@ -98,6 +168,55 @@ public class PlayerDetails : MonoBehaviour
 
         if (observedPlayerTimeout < 0)
             gameManager.Camera.ObserveNextPlayer();
+    }
+
+    private string GetTimeLeftForLevelFormatted()
+    {
+        var skill = observedPlayer.GetActiveTaskSkillStat();
+        if (skill == null) return "";
+
+        var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
+        var expPerHour = skill.GetExperiencePerHour();
+        var expLeft = nextLevelExp - skill.Experience;
+
+        if (expPerHour <= 0 || expLeft <= 0)
+            return "<color=red>Unknown</color>";
+
+        var hours = (double)(expLeft / expPerHour);
+        var timeLeft = System.TimeSpan.MaxValue;
+        if (hours < System.TimeSpan.MaxValue.Hours)
+        {
+            timeLeft = System.TimeSpan.FromHours(hours);
+        }
+        if (timeLeft.Days >= 365 * 10_000)
+        {
+            return "<color=red>When hell freezes over</color>";
+        }
+        if (timeLeft.Days >= 365 * 1000)
+        {
+            return "<color=red>Unreasonably long</color>";
+        }
+        if (timeLeft.Days >= 365)
+        {
+            return "<color=red>Way too long</color>";
+        }
+        if (timeLeft.Days > 21)
+        {
+            return "<color=orange>" + (int)(timeLeft.Days / 7) + " weeks</color>";
+        }
+        if (timeLeft.Days > 0)
+        {
+            return "<color=yellow>" + timeLeft.Days + " days, " + timeLeft.Hours + " hours</color>";
+        }
+        if (timeLeft.Hours > 0)
+        {
+            return timeLeft.Hours + " hours, " + timeLeft.Minutes + " mins";
+        }
+        if (timeLeft.Minutes > 0)
+        {
+            return timeLeft.Minutes + " mins, " + timeLeft.Seconds + " secs";
+        }
+        return timeLeft.Seconds + " seconds";
     }
 
     public void Observe(PlayerController player, float timeout)

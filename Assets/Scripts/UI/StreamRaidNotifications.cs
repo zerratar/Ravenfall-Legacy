@@ -35,7 +35,7 @@ public class StreamRaidNotifications : MonoBehaviour
     {
         if (!raidBossAppeared)
         {
-            Debug.LogError("No Raid Message set on Raid Notifications");
+            GameManager.LogError("No Raid Message set on Raid Notifications");
             return;
         }
 
@@ -50,7 +50,7 @@ public class StreamRaidNotifications : MonoBehaviour
 
     internal void ShowDefendersWon()
     {
-        Debug.Log("ShowDefendersWon");
+        GameManager.Log("ShowDefendersWon");
         if (defendersWin)
         {
             defendersWin.GetComponent<AutoHideUI>()?.Reset();
@@ -59,7 +59,7 @@ public class StreamRaidNotifications : MonoBehaviour
 
     internal void ShowRaidersWon()
     {
-        Debug.Log("ShowRaidersWon");
+        GameManager.Log("ShowRaidersWon");
         if (raidersWin)
         {
             raidersWin.GetComponent<AutoHideUI>()?.Reset();

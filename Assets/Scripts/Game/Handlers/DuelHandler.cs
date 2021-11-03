@@ -42,10 +42,10 @@ public class DuelHandler : MonoBehaviour
 
         if (state == DuelState.Started)
         {
-            var distance = Vector3.Distance(player.transform.position, Opponent.transform.position);
+            var distance = Vector3.Distance(player.Position, Opponent.Position);
             if (distance > player.AttackRange)
             {
-                player.GotoPosition(Opponent.transform.position);
+                player.GotoPosition(Opponent.Position);
             }
             else
             {
@@ -103,19 +103,26 @@ public class DuelHandler : MonoBehaviour
 
     public void DeclineDuel(bool timedOut = false)
     {
-        if ((gameManager.RavenBot?.IsConnected).GetValueOrDefault())
+        try
         {
-            if (timedOut)
+            if ((gameManager.RavenBot?.IsConnected).GetValueOrDefault())
             {
-                gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_TIMEOUT, Requester.PlayerName);
+                if (timedOut)
+                {
+                    gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_TIMEOUT, Requester.PlayerName);
+                }
+                else
+                {
+                    gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_DECLINE, Requester.PlayerName);
+                }
             }
-            else
-            {
-                gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_DECLINE, Requester.PlayerName);
-            }
-        }
 
-        Reset();
+            Reset();
+        }
+        catch (System.Exception exc)
+        {
+            GameManager.LogError(exc.ToString());
+        }
     }
 
     public void AcceptDuel()

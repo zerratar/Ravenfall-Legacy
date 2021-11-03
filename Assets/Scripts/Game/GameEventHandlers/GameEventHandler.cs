@@ -12,7 +12,7 @@ public abstract class GameEventHandler<TEventData> : IGameEventHandler
         }
         catch (Exception exc)
         {
-            UnityEngine.Debug.LogWarning("Failed to deserialize event data: " + exc);
+            GameManager.LogWarning("Failed to deserialize event data: " + exc + "; " + data);
         }
     }
 }

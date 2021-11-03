@@ -1,24 +1,27 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
 public class SkillStat
 {
+    private static readonly Dictionary<int, double> expScaleCache = new Dictionary<int, double>();
+
     public string Name;
     public int CurrentValue;
     public int Level;
-    public decimal Experience;
+    public double Experience;
 
     private float refreshRate = 60f;
-    private decimal totalEarnedExperience;
-    private DateTime earnedExperienceStart;
-    private DateTime lastExperienceGain;
+    private double totalEarnedExperience;
+    private float earnedExperienceStart;
+    private float lastExperienceGain;
 
     public SkillStat() { }
     public SkillStat(
         string name,
         int level,
-        decimal exp)
+        double exp)
     {
         CurrentValue = level;//GameMath.ExperienceToLevel(exp);
         Level = level;//GameMath.ExperienceToLevel(exp);
@@ -26,7 +29,7 @@ public class SkillStat
         Name = name;
     }
 
-    public void Set(int newLevel, decimal newExp, bool updateExpPerHour = true)
+    public void Set(int newLevel, double newExp, bool updateExpPerHour = true)
     {
         if (!updateExpPerHour)
         {
@@ -36,7 +39,7 @@ public class SkillStat
             return;
         }
 
-        var expToAdd = 0m;
+        var expToAdd = 0d;
         var levelDelta = newLevel - Level;
         if (levelDelta > 0)
         {
@@ -63,31 +66,38 @@ public class SkillStat
         }
     }
 
-    public void SetExp(decimal exp)
+    public void SetExp(double exp)
     {
         AddExp(exp - Experience, out _, false);
     }
 
-    public void AddExp(decimal exp)
+    public void AddExp(double exp)
     {
         AddExp(exp, out _);
     }
+    public static double GetExperienceScale(int level)
+    {
+        if (expScaleCache.TryGetValue(level, out var scale))
+        {
+            return scale;
+        }
 
-    public bool AddExp(decimal exp, out int newLevels, bool scale = true)
+        return expScaleCache[level] = ((((1d + (level / 100d) + (level / 75d)) * Math.Pow(2, (double)(level / 20d))) / 20d) + 1d);
+    }
+    public bool AddExp(double exp, out int newLevels, bool scale = true)
     {
         if (scale)
         {
-            exp *= (((1m + (decimal)(Level / 100f) + (decimal)(Level / 75f)) * (decimal)Math.Pow(2, (double)(Level / 20d))) / 20m) + 1m;
+            exp *= GetExperienceScale(Level);
         }
-
-        if (earnedExperienceStart == DateTime.MinValue ||
-            (DateTime.UtcNow - earnedExperienceStart).TotalSeconds >= refreshRate)
+        var now = UnityEngine.Time.realtimeSinceStartup;
+        if (earnedExperienceStart == 0 || now - earnedExperienceStart >= refreshRate)
         {
-            earnedExperienceStart = DateTime.UtcNow;
-            totalEarnedExperience = 0m;
+            earnedExperienceStart = now;
+            totalEarnedExperience = 0d;
         }
 
-        lastExperienceGain = DateTime.UtcNow;
+        lastExperienceGain = now;
         totalEarnedExperience += exp;
 
         newLevels = 0;
@@ -106,12 +116,12 @@ public class SkillStat
         return newLevels > 0;
     }
 
-    public decimal GetExperiencePerHour()
+    public double GetExperiencePerHour()
     {
         var durationSeconds = lastExperienceGain - earnedExperienceStart;
-        if (totalEarnedExperience <= 0 || durationSeconds.TotalSeconds <= 0) return 0m;
-        var gainPerSecond = totalEarnedExperience / (decimal)durationSeconds.TotalSeconds;
-        return gainPerSecond * 60m * 60m;
+        if (totalEarnedExperience <= 0 || durationSeconds <= 0) return 0d;
+        var gainPerSecond = totalEarnedExperience / durationSeconds;
+        return gainPerSecond * 60d * 60d;
     }
 
     public void Reset()

@@ -25,7 +25,7 @@ public class DockController : MonoBehaviour
             return true;
         }
 
-        return Vector3.Distance(DockPosition, player.Transform.position) < 2;
+        return Vector3.Distance(DockPosition, player.Position) < 2;
     }
 
     public void Enter(PlayerController player)

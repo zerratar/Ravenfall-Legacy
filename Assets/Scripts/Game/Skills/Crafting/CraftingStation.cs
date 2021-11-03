@@ -4,15 +4,31 @@ using UnityEngine;
 public class CraftingStation : MonoBehaviour
 {
     public int Level = 1;
-    public decimal ExpPerResource => 10;
+    public double ExpPerResource => 10;
+
+    public IslandController Island { get; private set; }
+
     public CraftingStationType StationType = CraftingStationType.Crafting;
 
-    public decimal GetExperience(PlayerController playerController)
+    public float ExpMultiplier = 1f;
+    public float MaxActionDistance = 5;
+    void Start()
     {
+        this.Island = GetComponentInParent<IslandController>();
+        var collider = GetComponent<SphereCollider>();
+        if (collider)
+        {
+            MaxActionDistance = collider.radius;
+        }
+    }
+    public double GetExperience(PlayerController playerController)
+    {
+        ExpMultiplier = Mathf.Min(1f, ExpMultiplier);
+
         var rsx = GetCraftingCost(playerController);
         var fishWood = StationType == CraftingStationType.Cooking ? rsx.Fish : rsx.Wood;
         var wheatOre = StationType == CraftingStationType.Cooking ? rsx.Wheat : rsx.Ore;
-        return ExpPerResource * fishWood + ExpPerResource * wheatOre;
+        return (ExpPerResource * fishWood + ExpPerResource * wheatOre) * ExpMultiplier;
     }
 
     public bool Craft(PlayerController player)

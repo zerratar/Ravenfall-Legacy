@@ -1,5 +1,4 @@
 ﻿using Assets.Scripts;
-using Pathfinding;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -13,9 +12,10 @@ public class WalkyWalkyScript : MonoBehaviour
     [SerializeField] private float attackAnimationLength = 0.22f;
     [SerializeField] private float deathAnimationLength = 3f;
     [SerializeField] private EnemyController enemyController;
+    [SerializeField] private NavMeshAgent navMeshAgent;
 
     private Animator animator;
-    private NavMeshAgent navMeshAgent;
+
     //private AIPath aiPathAgent;
 
     private SkinnedMeshRenderer meshRenderer;
@@ -35,6 +35,7 @@ public class WalkyWalkyScript : MonoBehaviour
     private ConcurrentDictionary<string, AnimatorControllerParameter> parameters
         = new ConcurrentDictionary<string, AnimatorControllerParameter>();
     private bool lastMove;
+    private bool isMovingInternal;
 
     private void Awake()
     {
@@ -59,7 +60,7 @@ public class WalkyWalkyScript : MonoBehaviour
 
         SetupDeathAnimation();
         SetupAttackAnimation();
-        Lock();
+        //Lock();
     }
 
     private bool IsMoving()
@@ -67,20 +68,28 @@ public class WalkyWalkyScript : MonoBehaviour
         if (!hasMoveAnimation)
             return false;
 
-        if (navMeshAgent && navMeshAgent.enabled)
+        if (navMeshAgent && navMeshAgent.enabled && navMeshAgent.isOnNavMesh)
             return navMeshAgent.remainingDistance > minDestinationDistance;
 
-        //if (aiPathAgent && aiPathAgent.enabled)
-        //    return aiPathAgent.remainingDistance > minDestinationDistance;
-
         return false;
+    }
+
+    private void OnBecameVisible()
+    {
+        animator.enabled = true;
+    }
+    private void OnBecameInvisible()
+    {
+        animator.enabled = false;
     }
 
     private void Update()
     {
         if (GameCache.Instance.IsAwaitingGameRestore) return;
-        var moving = IsMoving();
-        if (moveAnimation != null && lastMove != moving)
+
+        var moving = isMovingInternal;//IsMoving();
+
+        if (moveAnimation != null && lastMove != moving && animator.enabled)
         {
             if (moveAnimation.type == AnimatorControllerParameterType.Float)
                 animator.SetFloat(moveAnimation.name, moving ? 1f : 0);
@@ -108,13 +117,15 @@ public class WalkyWalkyScript : MonoBehaviour
         //    return;
         //}
 
+        if (!navMeshAgent) navMeshAgent = GetComponent<NavMeshAgent>();
         var agent = navMeshAgent;
-        if (agent && agent.enabled)
+        if (agent && agent.enabled && agent.isOnNavMesh)
         {
             agent.SetDestination(transform.position);
             agent.isStopped = true;
             agent.enabled = false;
         }
+        this.isMovingInternal = false;
     }
     public void Unlock()
     {
@@ -124,6 +135,7 @@ public class WalkyWalkyScript : MonoBehaviour
         //    return;
         //}
 
+        if (!navMeshAgent) navMeshAgent = GetComponent<NavMeshAgent>();
         var agent = navMeshAgent;
         if (agent)
         {
@@ -140,14 +152,17 @@ public class WalkyWalkyScript : MonoBehaviour
         //    return;
         //}
 
+
         var agent = navMeshAgent;
 
         if (agent && agent.isActiveAndEnabled && !agent.isOnNavMesh)
         {
-            Debug.LogError(this.name + " is not on a navmesh!!!");
+            GameManager.LogError(this.name + " is not on a navmesh!!!");
         }
 
         if (!agent || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+
+        this.isMovingInternal = true;
         agent.SetDestination(pos);
     }
 
@@ -185,7 +200,7 @@ public class WalkyWalkyScript : MonoBehaviour
 
     private void PlayDeathAnimation()
     {
-        if (deathAnimations.Length > 0)
+        if (deathAnimations.Length > 0 && animator.enabled)
         {
             var index = UnityEngine.Random.Range(0, deathAnimations.Length);
             deathAnimation = deathAnimations[index];
@@ -208,7 +223,7 @@ public class WalkyWalkyScript : MonoBehaviour
 
     public void Attack(Action onAnimationTrigger)
     {
-        if (attackAnimations.Length > 0)
+        if (attackAnimations.Length > 0 && animator.enabled)
         {
             attackAnimation = attackAnimations.Random();
             if (HasParameter(attackAnimation))
@@ -223,14 +238,17 @@ public class WalkyWalkyScript : MonoBehaviour
     public void Revive()
     {
         if (meshRenderer) meshRenderer.enabled = true;
-        if (!string.IsNullOrEmpty(deathAnimation))
+        if (animator.enabled)
         {
-            animator.SetBool(deathAnimation, false);
-        }
+            if (!string.IsNullOrEmpty(deathAnimation))
+            {
+                animator.SetBool(deathAnimation, false);
+            }
 
-        if (HasParameter("revive"))
-        {
-            animator.SetTrigger("revive");
+            if (HasParameter("revive"))
+            {
+                animator.SetTrigger("revive");
+            }
         }
 
         Unlock();

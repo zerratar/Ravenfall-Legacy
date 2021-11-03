@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using TMPro;
 using UnityEngine;
@@ -6,9 +7,24 @@ using UnityEngine.UI;
 
 public class PlayerListItem : MonoBehaviour
 {
+    private static Dictionary<int, string> number2strCache;
+    static PlayerListItem()
+    {
+        number2strCache = new Dictionary<int, string>();
+        for (var i = 0; i <= 999; ++i)
+        {
+            number2strCache[i] = i.ToString();
+        }
+    }
+
     //[SerializeField] private UnityEngine.UI.Text lblSkillIcon;
     [SerializeField] private GameProgressBar pbHealth;
     [SerializeField] private GameProgressBar pbSkill;
+
+    [SerializeField] private RectTransform bg;
+
+    [SerializeField] private GameObject restedObject;
+    [SerializeField] private TextMeshProUGUI lblRestedTime;
 
     [SerializeField] private TextMeshProUGUI lblCombatLevel;
     [SerializeField] private TextMeshProUGUI lblSkillLevel;
@@ -19,7 +35,6 @@ public class PlayerListItem : MonoBehaviour
     private string[] skillNames = { "Woo", "Fis", "Cra", "Coo", "Min", "Far" };
 
     private RectTransform rectTransform;
-
     private bool isRotatingSkill = false;
     private bool isCombatSkill = false;
 
@@ -34,11 +49,21 @@ public class PlayerListItem : MonoBehaviour
     private GameCamera gameCamera;
     private bool hasSkill;
     private int oldHealthValue;
+    private int oldHealthLevel;
 
-    public PlayerController TargetPlayer { get; private set; }
+    public PlayerController TargetPlayer;
 
     public ExpProgressHelpStates ExpProgressHelpState;
+    public float ExpPerHourUpdate;
 
+    private SkillStat lastSkillTrained;
+    private int lastSkillTrainedLevel;
+    private Guid playerId;
+    private int lastCombatLevel;
+    private GameObject lblExpPerHourObj;
+    private GameObject pbSkillObj;
+
+    //private int lastCombatLevel;
 
     // Start is called before the first frame update
     void Start()
@@ -46,6 +71,9 @@ public class PlayerListItem : MonoBehaviour
         rectTransform = transform.GetComponent<RectTransform>();
         if (lblPlayerName)
             lblPlayerName.richText = true;
+
+        lblExpPerHourObj = lblExpPerHour.gameObject;
+        pbSkillObj = pbSkill.gameObject;
     }
 
     // Update is called once per frame
@@ -74,40 +102,68 @@ public class PlayerListItem : MonoBehaviour
             return;
         }
 
+        var combatLevel = TargetPlayer.Stats.CombatLevel;
+        if (combatLevel != lastCombatLevel)
+        {
+            SetText(lblCombatLevel, "Lv:<b> " + number2strCache[combatLevel]);
+            lastCombatLevel = combatLevel;
+        }
         if (skillIndex == -1)
         {
             SetText(lblSkillLevel, "");
-            SetText(lblCombatLevel, "");
-            SetActive(pbSkill.gameObject, false);
+            //SetText(lblCombatLevel, "");
+            SetActive(pbSkillObj, false);
         }
         else if (hasSkill)
         {
-            SetActive(pbSkill.gameObject, true);
+            SetActive(pbSkillObj, true);
+            try
+            {
+                string skillName = null;
+                SkillStat skill = null;
+                if (isCombatSkill)
+                {
+                    if (skillIndex < combatNames.Length)
+                    {
+                        skillName = combatNames[skillIndex];
+                        skill = TargetPlayer.GetCombatSkill(skillIndex);
+                    }
+                }
+                else
+                {
+                    if (skillIndex < skillNames.Length)
+                    {
+                        skillName = skillNames[skillIndex];
+                        skill = TargetPlayer.GetSkill(skillIndex);
+                    }
+                }
+                if (skill != null)
+                {
+                    if (lastSkillTrainedLevel != skill.Level || lastSkillTrained != skill)
+                    {
+                        SetText(lblSkillLevel, skillName + ":<b> " + number2strCache[skill.Level]);
+                    }
+                    UpdateSkillProgressBar(skill);
+                    this.lastSkillTrained = skill;
+                    this.lastSkillTrainedLevel = skill.Level;
 
-            var skillName = isCombatSkill
-                ? combatNames[skillIndex]
-                : skillNames[skillIndex];
-
-            //skillName = ToSentenceCase(skillName);
-
-            var skill = isCombatSkill
-                ? TargetPlayer.GetCombatSkill(skillIndex)
-                : TargetPlayer.GetSkill(skillIndex);
-
-            SetText(lblSkillLevel, skillName + ": <b>" + skill.Level);
-
-            UpdateSkillProgressBar(skill);
+                }
+            }
+            catch (System.Exception exc)
+            {
+                GameManager.LogError(exc.ToString());
+            }
         }
-
-        SetText(lblCombatLevel, "Lv: <b>" + TargetPlayer.Stats.CombatLevel);
 
         UpdateHealthBar(TargetPlayer.Stats.Health);
 
-        if (TargetPlayer)
+        if (this.playerId != TargetPlayer.Id)
         {
+            this.playerId = TargetPlayer.Id;
+
             var playerName = TargetPlayer.PlayerNameLowerCase;
             if (TargetPlayer.CharacterIndex > 0)
-                playerName += " <color=#ff444444>" + TargetPlayer.CharacterIndex;
+                playerName += " <color=#ff444444>" + number2strCache[TargetPlayer.CharacterIndex];
 
             if (!TargetPlayer.IsUpToDate)
             {
@@ -129,6 +185,12 @@ public class PlayerListItem : MonoBehaviour
 
         if (lblExpPerHour)
         {
+            var now = Time.time;
+            var sinceLastUpdate = Time.time - ExpPerHourUpdate;
+            var minTime = 1f;//ExpProgressHelpState == ExpProgressHelpStates.TimeLeft ? 1f : 5f;
+            if (sinceLastUpdate < minTime)
+                return;
+
             SetText(lblExpPerHour, "");
             switch (ExpProgressHelpState)
             {
@@ -138,51 +200,31 @@ public class PlayerListItem : MonoBehaviour
 
                 case ExpProgressHelpStates.TimeLeft:
                     {
-                        if (expPerHour <= 0 || expLeft <= 0) break;
-
+                        if (expPerHour <= 0 || expLeft <= 0) return;
                         var hours = (double)(expLeft / expPerHour);
-                        if (hours < 1)
-                        {
-                            var minutes = hours * 60d;
-                            if (minutes > 1)
-                            {
-                                SetText(lblExpPerHour, (int)minutes + "m");
-                            }
-                            else
-                            {
-                                var seconds = minutes * 60d;
-                                SetText(lblExpPerHour, (int)seconds + "s");
-                            }
-                        }
-                        else
-                        {
-                            var minutes = (int)(hours - (long)hours) * 60d;
-                            if (minutes > 1)
-                            {
-                                SetText(lblExpPerHour, (int)hours + "h " + minutes + "m");
-                            }
-                            else
-                            {
-                                SetText(lblExpPerHour, (int)hours + "h");
-                            }
-                        }
+                        var text = Utility.FormatDayTime(hours);
+                        SetText(lblExpPerHour, text);
                     }
                     break;
 
                 case ExpProgressHelpStates.ExpPerHour:
-                    if (expPerHour <= 0) break;
+                    if (expPerHour <= 0) return;
                     SetText(lblExpPerHour, Utility.FormatValue(expPerHour) + " xp / h");
                     break;
             }
+            ExpPerHourUpdate = now;
         }
     }
-
     private void UpdateHealthBar(SkillStat skill)
     {
         var now = skill.CurrentValue;
         var next = skill.Level;
-        pbHealth.Progress = (float)now / (float)next;
-        oldHealthValue = skill.CurrentValue;
+        if (oldHealthValue != now || oldHealthLevel != skill.Level)
+        {
+            pbHealth.Progress = (float)now / (float)next;
+            oldHealthValue = skill.CurrentValue;
+            oldHealthLevel = skill.Level;
+        }
     }
     private static string FormatValue(long num)
     {
@@ -197,11 +239,20 @@ public class PlayerListItem : MonoBehaviour
     {
         this.gameCamera = gameCamera;
 
+        if (!lblExpPerHourObj) lblExpPerHourObj = lblExpPerHour.gameObject;
+        if (!pbSkillObj) pbSkillObj = pbSkill.gameObject;
+
         SetText(lblSkillLevel, "");
-        SetText(lblCombatLevel, "");
         SetText(lblPlayerName, player.PlayerNameLowerCase);
 
         TargetPlayer = player;
+
+        var combatLevel = player.Stats.CombatLevel;
+        if (combatLevel != lastCombatLevel)
+        {
+            SetText(lblCombatLevel, "Lv:<b> " + number2strCache[combatLevel]);
+            lastCombatLevel = combatLevel;
+        }
 
         UpdateUI();
     }
@@ -210,7 +261,7 @@ public class PlayerListItem : MonoBehaviour
     {
         if (lblExpPerHour)
         {
-            SetActive(lblExpPerHour.gameObject, ExpProgressHelpState != ExpProgressHelpStates.NotVisible);
+            SetActive(lblExpPerHourObj, ExpProgressHelpState != ExpProgressHelpStates.NotVisible);
         }
 
         if (!TargetPlayer)
@@ -219,11 +270,33 @@ public class PlayerListItem : MonoBehaviour
             return;
         }
 
+        if (TargetPlayer.Rested.RestedTime > 0)
+        {
+            SetActive(restedObject, true);
+
+            var time = Utility.FormatTime(TargetPlayer.Rested.RestedTime / 60f / 60f, false);
+
+            if (TargetPlayer.Onsen.InOnsen)
+            {
+                SetText(lblRestedTime, "<color=#FFDE00>" + time);
+                // increasing time
+            }
+            else
+            {
+                SetText(lblRestedTime, time);
+                // decreasing time
+            }
+        }
+        else
+        {
+            SetActive(restedObject, false);
+        }
+
         //progressBarHealth.offsetMax = new Vector2(-this.width, progressBarHealth.offsetMin.y);
         //progressBarSkill.offsetMax = new Vector2(-this.width, progressBarSkill.offsetMin.y);
 
         var taskArgs = TargetPlayer.GetTaskArguments();
-        hasSkill = taskArgs != null && taskArgs.Length > 0;
+        hasSkill = taskArgs != null && taskArgs.Count > 0;
 
         if (hasSkill)
         {

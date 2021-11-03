@@ -83,12 +83,16 @@ public class ArenaController : MonoBehaviour, IEvent
         var playersToKick = JoinedPlayers.Where(x => x.gameObject == null).ToList();
         foreach (var player in playersToKick)
         {
-            player.Arena.OnKicked();
+            if (player && player.Arena)
+            {
+                player.Arena.OnKicked();
+            }
+
             joinedPlayers.Remove(player);
         }
     }
 
-    public bool InsideArena(PlayerController target) => InsideArena(target.transform);
+    public bool InsideArena(IAttackable target) => InsideArena(target.Transform);
     public bool InsideArena(Transform target)
     {
         if (!fightArea) fightArea = GetComponent<SphereCollider>();
@@ -101,7 +105,7 @@ public class ArenaController : MonoBehaviour, IEvent
     }
 
     public void BeginCountdown()
-    {       
+    {
         if (JoinedPlayers.Count < 2)
         {
             state = ArenaState.WaitingForPlayers;
@@ -127,7 +131,7 @@ public class ArenaController : MonoBehaviour, IEvent
         if (gameCamera) gameCamera.DisableFocusCamera();
         if (AvailablePlayers.Count != 1)
         {
-            Debug.Log("It ended in a draw! Reward them all!");
+            GameManager.Log("It ended in a draw! Reward them all!");
 
             notifications.ShowDraw();
 
@@ -157,7 +161,7 @@ public class ArenaController : MonoBehaviour, IEvent
     {
         gameManager.Events.End(this);
 
-        Debug.Log("Arena has been reset");
+        GameManager.Log("Arena has been reset");
         joinedPlayers.Clear();
         deadPlayers.Clear();
         state = ArenaState.NotStarted;
@@ -249,7 +253,9 @@ public class ArenaController : MonoBehaviour, IEvent
 
         if (gameManager.Events.TryStart(this) || Activated)
         {
-            Debug.Log($"{player.PlayerName} joined the arena!");
+#if DEBUG
+            GameManager.Log($"{player.PlayerName} joined the arena!");
+#endif
 
             if (!joinedPlayers.Remove(player))
             {
@@ -294,7 +300,7 @@ public class ArenaController : MonoBehaviour, IEvent
         }
 
         CloseGate();
-        Debug.Log("Arena fight begins!");
+        GameManager.Log("Arena fight begins!");
     }
 
     private IEnumerator _OpenGate()

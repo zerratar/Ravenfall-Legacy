@@ -8,7 +8,7 @@ public class PlayerNameUpdateEventHandler : GameEventHandler<PlayerNameUpdate>
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player) return;
         player.PlayerName = data.Name;
-        Debug.Log($"PlayerNameUpdateEventHandler " + data.UserId);
+        GameManager.Log($"PlayerNameUpdateEventHandler " + data.UserId);
     }
 }
 

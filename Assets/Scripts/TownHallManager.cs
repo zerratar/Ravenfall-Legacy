@@ -6,7 +6,7 @@ public class TownHallManager : MonoBehaviour
     [SerializeField] private TownHallController[] townHallBuildings;
     [SerializeField] private TownHallInfoManager info;
 
-    private int tier;
+    private int tier = -1;
     private int level;
     private decimal exp;
 
@@ -36,6 +36,12 @@ public class TownHallManager : MonoBehaviour
 
     public void SetTier(int tier)
     {
+        if (this.tier == tier)
+        {
+            return;
+        }
+
+
         this.tier = tier;
 
         foreach (var townHall in townHallBuildings)

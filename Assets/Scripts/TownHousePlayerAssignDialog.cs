@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class TownHousePlayerAssignDialog : MonoBehaviour
@@ -19,6 +20,8 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
     private PlayerController selectedPlayer;
     private TownHouseController townHouse;
     private int lastPlayerCount;
+
+    private List<AssignPlayerRow> instantiatedPlayerRows = new List<AssignPlayerRow>();
 
     public PlayerController SelectedPlayer
     {
@@ -48,7 +51,7 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
         townHouse = townHouseController;
         gameObject.SetActive(true);
         lblBuildingName.text = townHouse.TownHouse.Name;
-        lblPlayerName.text = townHouseController.Owner?.Name;
+        lblPlayerName.text = townHouseController.Slot.PlayerName;
 
         UpdatePlayerList();
         RebuildTags();
@@ -60,34 +63,112 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
 
         lastPlayerCount = players.Count;
 
-        SetPlayerLogo(townHouse.Owner?.UserId);
+        SetPlayerLogo(townHouse.Slot.OwnerUserId);
 
-        for (var i = 0; i < playerListContent.childCount; ++i)
+        //var playerRows = EnsureAndGetAssingPlayerRows(lastPlayerCount);
+
+        EnsureAssingPlayerRows(lastPlayerCount);
+
+        foreach (var row in instantiatedPlayerRows)
         {
-            Destroy(playerListContent.GetChild(i).gameObject);
+            row.gameObject.SetActive(false);
         }
 
-        foreach (var player in players.OrderByDescending(x => GetExpBonus(x, townHouse)))
+        var targetPlayers = players.OrderByDescending(x => GetExpBonus(x, townHouse)).ToArray();
+        for (int i = 0; i < targetPlayers.Length; i++)
         {
-            if (townHouse.Owner && townHouse.Owner.UserId == player.UserId)
-                continue;
+            var player = targetPlayers[i];
+            if (i >= instantiatedPlayerRows.Count)
+            {
+                UnityEngine.Debug.LogError("Unable to assign all player slot rows properly.");
+                break;
+            }
 
+            var playerRow = this.instantiatedPlayerRows[i++];
+
+            //var go = Instantiate(playerRowPrefab, playerListContent);
+            //var playerRow = go.GetComponent<AssignPlayerRow>();
+
+            if (townHouse.Slot.OwnerUserId == player.UserId)
+            {
+                playerRow.gameObject.SetActive(false);
+            }
+            else
+            {
+                playerRow.gameObject.SetActive(true);
+                playerRow.SetPlayer(
+                    player,
+                    townHouseManager.IsHouseOwner(player),
+                    townHouse);
+                UnityEngine.Debug.Log("Set Player Row with player: " + player.Name);
+            }
+        }
+    }
+
+    public void EnsureAssingPlayerRows(int count)
+    {
+        var result = new List<AssignPlayerRow>();
+        if (count < this.instantiatedPlayerRows.Count)
+        {
+            return;
+        }
+        var delta = count - this.instantiatedPlayerRows.Count;
+        for (var i = 0; i < delta; ++i)
+        {
             var go = Instantiate(playerRowPrefab, playerListContent);
             var playerRow = go.GetComponent<AssignPlayerRow>();
-
-            playerRow.SetPlayer(
-                player,
-                townHouseManager.IsHouseOwner(player),
-                townHouse);
+            instantiatedPlayerRows.Add(playerRow);
         }
+    }
+    private IReadOnlyList<AssignPlayerRow> EnsureAndGetAssingPlayerRows(int count)
+    {
+        if (count <= 0) { return new AssignPlayerRow[0]; }
+        var result = new List<AssignPlayerRow>();
+        var delta = this.instantiatedPlayerRows.Count - count;
+
+        if (delta >= 0)
+        {
+            for (var i = 0; i < instantiatedPlayerRows.Count; ++i)
+            {
+                if (i >= count)
+                {
+                    instantiatedPlayerRows[i].gameObject.SetActive(false);
+                }
+                else
+                {
+                    instantiatedPlayerRows[i].gameObject.SetActive(true);
+                    result.Add(instantiatedPlayerRows[i]);
+                }
+            }
+        }
+        else
+        {
+            for (var i = 0; i < count; ++i)
+            {
+                if (i < instantiatedPlayerRows.Count)
+                {
+                    instantiatedPlayerRows[i].gameObject.SetActive(true);
+                    result.Add(instantiatedPlayerRows[i]);
+                }
+                else
+                {
+                    var go = Instantiate(playerRowPrefab, playerListContent);
+                    var playerRow = go.GetComponent<AssignPlayerRow>();
+                    instantiatedPlayerRows.Add(playerRow);
+                    result.Add(playerRow);
+                }
+            }
+        }
+
+        return result;
     }
 
     public float GetExpBonus(PlayerController player, TownHouseController dialogHouse)
     {
         var existingBonus = 0;
-        if (dialogHouse.Owner)
+        if (dialogHouse.Slot.PlayerSkills != null)
         {
-            var existingSkill = GameMath.GetSkillByHouseType(dialogHouse.Owner.Stats, dialogHouse.TownHouse.Type);
+            var existingSkill = GameMath.GetSkillByHouseType(dialogHouse.Slot.PlayerSkills, dialogHouse.TownHouse.Type);
             existingBonus = (int)GameMath.CalculateHouseExpBonus(existingSkill);
         }
 
@@ -100,8 +181,6 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
 
     private void SetPlayerLogo(string userId)
     {
-        Debug.Log($"TownHousePlayerAssignDialog::SetPlayerLogo({userId})");
-
         var hasOwner = !string.IsNullOrEmpty(userId);
         noOwnerAssigned.SetActive(!hasOwner);
         ownerLogoLoading.SetActive(false);
@@ -116,6 +195,7 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
                 ownerLogoLoading.gameObject.SetActive(false);
                 ownerLogoImage.gameObject.SetActive(true);
                 ownerLogoImage.color = owner ? Color.white : new Color(1f, 1f, 1f, 0.35f);
+                if (logo == null) return;
                 ownerLogoImage.sprite = logo;
             });
         }

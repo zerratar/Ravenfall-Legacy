@@ -10,15 +10,13 @@ public class FarmingTask : ChunkTask
     {
         this.lazyTargets = lazyTargets;
     }
-
-    public override bool IsCompleted(PlayerController player, Transform target)
+    public override bool IsCompleted(PlayerController player, object target)
     {
-        var farm = target.GetComponent<FarmController>();
+        var farm = target as FarmController;
         if (!farm) return true;
         return false;
     }
-
-    public override Transform GetTarget(PlayerController player)
+    public override object GetTarget(PlayerController player)
     {
         var farmingSpots = lazyTargets();
 
@@ -26,24 +24,13 @@ public class FarmingTask : ChunkTask
             //.Where(x => !x.IsDepleted)
             .OrderBy(x => UnityEngine.Random.value)
             //.ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-            .FirstOrDefault()?
-            .transform;
+            .FirstOrDefault();
     }
 
-    public override bool Execute(PlayerController player, Transform target)
+    public override bool Execute(PlayerController player, object target)
     {
-        if (!target)
-        {
-            return false;
-        }
-
-        if (!player)
-        {
-            return false;
-        }
-
-        var farmingPatch = target.GetComponent<FarmController>();
-        if (!farmingPatch)
+        var farmingPatch = target as FarmController;
+        if (target == null || !farmingPatch || !player)
         {
             return false;
         }
@@ -51,44 +38,30 @@ public class FarmingTask : ChunkTask
         return player.Farm(farmingPatch);
     }
 
-    public override bool CanExecute(PlayerController player, Transform target, out TaskExecutionStatus reason)
+    public override bool CanExecute(PlayerController player, object target, out TaskExecutionStatus reason)
     {
         reason = TaskExecutionStatus.NotReady;
+        var farm = target as FarmController;
 
-        if (!player)
+        if (!farm || !player || player.Stats.IsDead || !player.IsReadyForAction || target == null)
         {
             return false;
         }
 
-        if (player.Stats.IsDead)
-        {
-            return false;
-        }
-
-        if (!player.IsReadyForAction)
-        {
-            return false;
-        }
-
-        if (!target)
-        {
-            return false;
-        }
-
-        var possibleTargets = lazyTargets();
-        if (!possibleTargets.FirstOrDefault(x => x.transform == target))
+        if (farm.Island != player.Island)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
 
-        var collider = target.GetComponent<SphereCollider>();
-        if (!collider)
-        {
-            return false;
-        }
+        //var possibleTargets = lazyTargets();
+        //if (!possibleTargets.FirstOrDefault(x => x.transform == target))
+        //{
+        //    reason = TaskExecutionStatus.InvalidTarget;
+        //    return false;
+        //}
 
-        if (Vector3.Distance(player.transform.position, target.transform.position) >= collider.radius)
+        if (Vector3.Distance(player.transform.position, farm.transform.position) >= farm.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;
@@ -96,5 +69,17 @@ public class FarmingTask : ChunkTask
 
         reason = TaskExecutionStatus.Ready;
         return true;
+    }
+
+    internal override bool TargetExistsImpl(object target)
+    {
+        var tar = target as FarmController;
+        if (!tar)
+        {
+            return false;
+        }
+
+        var possibleTargets = lazyTargets();
+        return possibleTargets.Any(x => x.GetInstanceID() == tar.GetInstanceID());
     }
 }

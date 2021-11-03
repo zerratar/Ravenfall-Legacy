@@ -9,7 +9,9 @@
     public const string MSG_STATS = "Combat level {combatLevel}, {skills} -- TOTAL {total} --, Eq - power {weaponPower}, aim {weaponAim}, armor {armorPower}";
     public const string MSG_SKILL = "{skill}, {currenExp} / {requiredExp} EXP.";
     public const string MSG_RESOURCES = "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
-    public const string MSG_TOKENS = "You have {tokenCount} {tokenName}(s) you can use.";
+    public const string MSG_STREAMER_TOKENS = "You have {tokenCount} {tokenName}(s) you can use.";
+
+    //public const string MSG_SEASON_TOKENS = "You have {tokenCount} {tokenName}(s) you can use.";
 
     public const string MSG_PLAYER_INSPECT_URL = "https://www.ravenfall.stream/inspect/{characterId}";
     public const string MSG_PLAYERS_ONLINE = "There are currently {playerCount} players in the game.";
@@ -44,12 +46,24 @@
     public const string MSG_FERRY_ALREADY_ON = "You're already on the ferry.";
     public const string MSG_FERRY_ALREADY_WAITING = "You're already waiting for the ferry.";
 
+    public const string MSG_FERRY_TRAIN_SAIL = "You've decided to sail the seas forever. Use !disembark or !travel <new destination> to leave the ferry. You will gain sailing exp for as long as you're on the ferry.";
+
     public const string MSG_DISEMBARK_ALREADY = "You're already disembarking the ferry.";
     public const string MSG_DISEMBARK_FAIL = "You're not on the ferry.";
 
     public const string MSG_ISLAND_ON_FERRY_DEST = "You're currently on the ferry, going to disembark at '{destination}'.";
     public const string MSG_ISLAND_ON_FERRY = "You're currently on the ferry.";
     public const string MSG_ISLAND = "You're on the island called {islandName}";
+
+    public const string MSG_RESTED = "You're rested and gain {expBoost}x more exp for {restedTime}";
+    public const string MSG_NOT_RESTED = "You're not rested. Sail to Kyo and use !rest or !onsen to rest.";
+    public const string MSG_RESTING = "You're currently resting and will have {expBoost}x more exp for {restedTime}";
+
+    public const string MSG_ONSEN_WRONG_ISLAND = "The onsen is only available on Kyo. You're currently on {islandName}.";
+    public const string MSG_ONSEN_FERRY = "You can't enter the onsen while you're on the ferry. Disembark at Kyo to use the onsen.";
+    public const string MSG_ONSEN_FULL = "Onsen seem to be full. You will have to try again later.";
+    public const string MSG_ONSEN_ENTRY = "You are now resting peacefully at the onsen. You will gain 2x more exp for two seconds for every second you stay here. Use !onsen leave when you're done.";
+    public const string MSG_ONSEN_LEFT = "You have left the onsen.";
 
     public const string MSG_ARENA_UNAVAILABLE_WAR = "Arena is unavailable during wars. Please wait for it to be over.";
     public const string MSG_ARENA_WRONG_ISLAND = "There is no arena on the island you're on.";
@@ -63,7 +77,7 @@
     public const string MSG_BUY_ITEM_NOT_IN_MARKET = "Could not find any {itemName} in the marketplace.";
     public const string MSG_BUY_ITEM_INSUFFICIENT_COIN = "You do not have enough coins to buy the {itemName}.";
     public const string MSG_BUY_ITEM_MARKETPLACE_ERROR = "Error accessing marketplace right now.";
-    public const string MSG_BUY_ITEM_ERROR = "Error buying {itemName}. Server returned an error. :( Try !leave and then !join to see if buying it was successeful or not.";
+    public const string MSG_BUY_ITEM_ERROR = "Error buying {itemName}. Server returned an error. :( Try !leave and then !join to see if buying it was successful or not.";
     public const string MSG_BUY_ITEM_TOO_LOW = "Unable to buy any {itemName}, the cheapest asking price is {cheapestPrice}.";
 
     public const string MSG_IN_DUEL = "You are currently fighting in a duel.";
@@ -91,6 +105,8 @@
     public const string MSG_CRAFT_FAILED_RES = "Insufficient resources to craft {itemName}";
     public const string MSG_CRAFT_EQUIPPED = "You crafted and equipped a {itemName}!";
     public const string MSG_CRAFT_ITEM_NOT_FOUND = "Could not find an item matching the query '{query}'";
+    public const string MSG_CRAFT_ITEM_NOT_FOUND_MEAN = "Could not find an item matching the query '{query}', did you mean '{itemName}'?";
+
     public const string MSG_CRAFT = "You crafted a {itemName}!";
     public const string MSG_CRAFT_MANY = "You crafted x{amount} {itemName}s!";
 
@@ -119,14 +135,19 @@
 
     public const string MSG_APPEARANCE_INVALID = "Invalid appearance data";
 
+    public const string MSG_TRAVEL_ALREADY_ON_ISLAND = "You cannot travel to the island you're already on.";
     public const string MSG_TRAVEL_NO_SUCH_ISLAND = "No islands named '{islandName}'. You may travel to: '{islandList}'";
     public const string MSG_TRAVEL_WAR = "You cannot travel when participating in a war. Please wait for it to be over.";
+    public const string MSG_TRAVEL_DUEL = "You cannot travel when duelling another player.";
+    public const string MSG_TRAVEL_ARENA = "You cannot travel when participating in the arena.";
+    public const string MSG_TRAVEL_DUNGEON = "You cannot travel when in the dungeon.";
 
     public const string MSG_HIGHEST_SKILL = "{player} has the highest level {skillName} with level {level}.";
     public const string MSG_HIGHEST_COMBAT = "{player} has the highest combat level with {combatLevel}.";
     public const string MSG_HIGHEST_TOTAL = "{player} has the highest total level with {level}.";
 
     public const string MSG_VILLAGE_BOOST = "Village is level {townHallLevel}, active boosts {activeBoosts}";
+    public const string MSG_VILLAGE_UPDATED = "You've changed the village target to {targetType}, active boosts {activeBoosts}";
 
     public const string MSG_HIGHSCORE_RANK = "You're at rank #{rank}";
     public const string MSG_HIGHSCORE_MAIN_ONLY = "Only your main character is listed on the highscore right now.";

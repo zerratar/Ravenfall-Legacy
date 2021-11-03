@@ -48,12 +48,14 @@ public class PetController : MonoBehaviour
             if (isSleeping)
             {
                 isSleeping = false;
+                animator.SetBool("Sleeping", false);
             }
         }
 
         if (Time.time - lastPlayerMove > sleepTimer && !isSleeping)
         {
             isSleeping = true;
+            animator.SetBool("Sleeping", true);
         }
 
         if (transform.localPosition.x != offsetPosition.x)
@@ -68,7 +70,6 @@ public class PetController : MonoBehaviour
         {
             animator.SetFloat("Walk", playerIsMoving ? movementSpeed : 0);
             animator.SetFloat("Run", playerIsMoving ? movementSpeed : 0);
-            animator.SetBool("Sleeping", isSleeping);
             playerWasMoving = playerIsMoving;
         }
     }

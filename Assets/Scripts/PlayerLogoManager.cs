@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
 public class PlayerLogoManager : MonoBehaviour
 {
-    public const string TwitchLogoUrl = "https://www.ravenfall.stream/api/twitch/logo/";
+    //public const string TwitchLogoUrl = "https://www.ravenfall.stream/api/twitch/clan-logo/";
 
     private readonly ConcurrentDictionary<string, Logo> userLogos = new ConcurrentDictionary<string, Logo>();
 
     [SerializeField] private Sprite replacementLogo;
 
     private GameManager gameManager;
+    public string TwitchLogoUrl => gameManager.ServerAddress + "twitch/clan-logo/";
 
     private void Awake()
     {
@@ -22,7 +23,6 @@ public class PlayerLogoManager : MonoBehaviour
 
     public void GetLogo(string userId, string url, Action<Sprite> onLogoDownloaded)
     {
-        //ClearCache();
         if (userId == null || onLogoDownloaded == null)
             return;
 
@@ -32,7 +32,7 @@ public class PlayerLogoManager : MonoBehaviour
             return;
         }
 
-        if (userLogos.TryGetValue(userId, out var sprite) && !sprite.Expired)
+        if (TryGetLogo(userId, out var sprite))
         {
             onLogoDownloaded(sprite.Sprite);
             return;
@@ -44,7 +44,6 @@ public class PlayerLogoManager : MonoBehaviour
 
     public void GetLogo(string userId, Action<Sprite> onLogoDownloaded)
     {
-        //ClearCache();
         if (userId == null || onLogoDownloaded == null)
             return;
 
@@ -54,7 +53,7 @@ public class PlayerLogoManager : MonoBehaviour
             return;
         }
 
-        if (userLogos.TryGetValue(userId, out var sprite) && !sprite.Expired)
+        if (TryGetLogo(userId, out var sprite))
         {
             onLogoDownloaded(sprite.Sprite);
             return;
@@ -69,54 +68,74 @@ public class PlayerLogoManager : MonoBehaviour
         if (gameManager.LogoCensor)
             return replacementLogo;
 
-        if (userLogos.TryGetValue(raiderUserId, out var sprite) && !sprite.Expired)
+        if (TryGetLogo(raiderUserId, out var sprite))
             return sprite.Sprite;
 
         StartCoroutine(DownloadTexture(raiderUserId, TwitchLogoUrl + raiderUserId));
         return null;
     }
 
-    //private void ClearCache()
-    //{
-    //    var keysToRemove = new HashSet<string>();
-    //    foreach (var item in userLogos)
-    //    {
-    //        if (item.Value.Expired)
-    //        {
-    //            keysToRemove.Add(item.Key);
-    //        }
-    //    }
+    internal async void ClearCache()
+    {
+        if (gameManager.RavenNest.Authenticated)
+        {
+            await gameManager.RavenNest.ClearLogoAsync(gameManager.RavenNest.TwitchUserId);
+        }
 
-    //    foreach (var key in keysToRemove)
-    //    {
-    //        userLogos.TryRemove(key, out _);
-    //    }
-    //}
+        userLogos.Clear();
+
+        foreach (var player in this.gameManager.Players.GetAllPlayers())
+        {
+            player.Appearance.UpdateClanCape();
+        }
+    }
+
+    private bool TryGetLogo(string userId, out Logo logo)
+    {
+        if (userLogos.TryGetValue(userId, out var sprite) && sprite != null && !sprite.Expired && sprite.Sprite != null)
+        {
+            logo = sprite;
+            return true;
+        }
+        logo = null;
+        return false;
+    }
 
     private IEnumerator DownloadTexture(string userId, string url, Action<Sprite> onLogoDownloaded = null)
     {
         if (userLogos.ContainsKey(userId))
         {
-            yield break;
+            if (TryGetLogo(userId, out var logo))
+            {
+                onLogoDownloaded?.Invoke(logo.Sprite);
+                yield break;
+            }
         }
 
         userLogos[userId] = null;
-
         UnityWebRequest www = UnityWebRequestTexture.GetTexture(url);
 
         yield return www.SendWebRequest();
 
         if (IsError(www.result))
         {
-            Debug.Log(www.error);
+            GameManager.Log(www.error);
             userLogos.TryRemove(userId, out _);
+            onLogoDownloaded?.Invoke(null);
         }
         else
         {
-            Texture2D webTexture = ((DownloadHandlerTexture)www.downloadHandler).texture as Texture2D;
-            Sprite webSprite = SpriteFromTexture2D(webTexture);
-            userLogos[userId] = new Logo(webSprite);
-            onLogoDownloaded?.Invoke(webSprite);
+            try
+            {
+                Texture2D webTexture = ((DownloadHandlerTexture)www.downloadHandler).texture as Texture2D;
+                Sprite webSprite = SpriteFromTexture2D(webTexture);
+                userLogos[userId] = new Logo(webSprite);
+                onLogoDownloaded?.Invoke(webSprite);
+            }
+            catch
+            {
+                onLogoDownloaded?.Invoke(null);
+            }
         }
     }
 

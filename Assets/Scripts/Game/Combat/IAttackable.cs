@@ -14,6 +14,8 @@ public interface IAttackable
     int GetCombatStyle();
     Transform Target { get; }
     Transform Transform { get; }
-    decimal GetExperience();
+    Vector3 Position { get; }
+    double GetExperience();
     float HealthBarOffset { get; }
+    float GetHitRange();
 }

@@ -9,13 +9,13 @@ public class PlayerAnimationController : MonoBehaviour
     private PlayerAnimationState animationState;
     private float idleTimer;
 
-    public bool IsMoving { get; internal set; }
+    public bool IsMoving;
 
     // Use this for initialization
     void Start()
     {
         if (appearance == null)
-            appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>() ?? GetComponent<PlayerAppearance>();
+            appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
     }
 
     // Update is called once per frame
@@ -105,6 +105,7 @@ public class PlayerAnimationController : MonoBehaviour
         animationState = PlayerAnimationState.Dead;
         SetBool("Dead", true);
         SetTrigger("Died");
+        StopMoving(true);
     }
 
     public void SetCaptainState(bool isCaptain)
@@ -112,6 +113,7 @@ public class PlayerAnimationController : MonoBehaviour
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Captain;
         SetBool("Captain", isCaptain);
+        StopMoving(true);
     }
 
     public void Revive()
@@ -119,6 +121,7 @@ public class PlayerAnimationController : MonoBehaviour
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Idle;
         SetBool("Dead", false);
+        StopMoving(true);
     }
 
     private void TriggerBored()
@@ -127,23 +130,43 @@ public class PlayerAnimationController : MonoBehaviour
         if (animationState == PlayerAnimationState.Idle)
             SetTrigger("Bored");
     }
-
     public void Cheer()
     {
         if (!EnsureAnimator()) return;
         SetTrigger("Cheer");
     }
-
-    public void StartMoving()
+    internal void Sit()
     {
         if (!EnsureAnimator()) return;
+        SetBool("Sitting", true);
+    }
+    internal void Swim()
+    {
+        if (!EnsureAnimator()) return;
+        SetBool("Swimming", true);
+    }
+    internal void Meditate()
+    {
+        if (!EnsureAnimator()) return;
+        SetBool("Meditating", true);
+    }
+    internal void ClearOnsenAnimations()
+    {
+        if (!EnsureAnimator()) return;
+        SetBool("Sitting", false);
+        SetBool("Swimming", false);
+        SetBool("Meditating", false);
+    }
+
+    public void StartMoving(bool force = false)
+    {
+        if ((!force && IsMoving) || !EnsureAnimator()) return;
         SetBool("Moving", true);
         IsMoving = true;
     }
-
-    public void StopMoving()
+    public void StopMoving(bool force = false)
     {
-        if (!EnsureAnimator()) return;
+        if ((!force && !IsMoving) || !EnsureAnimator()) return;
         SetBool("Moving", false);
         IsMoving = false;
     }

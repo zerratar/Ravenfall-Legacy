@@ -25,9 +25,12 @@ public class AssignPlayerRow : MonoBehaviour
 
         lblHouseOwner.SetActive(isHouseOwner);
 
-        if (dialogHouse.Owner)
+        if (dialogHouse.Slot.PlayerSkills != null)
         {
-            var existingSkill = GameMath.GetSkillByHouseType(player.Stats, dialogHouse.TownHouse.Type);
+            var existingSkill = GameMath.GetSkillByHouseType(dialogHouse.Slot.PlayerSkills, dialogHouse.TownHouse.Type);
+
+            //  (stats.Attack.Level+stats.Defense.Level+stats.Strength.Level)/3 for combat?
+
             existingBonus = (int)GameMath.CalculateHouseExpBonus(existingSkill);
         }
 
@@ -36,7 +39,7 @@ public class AssignPlayerRow : MonoBehaviour
         var bonusPlus = playerBonus - existingBonus;
 
         lblPlayerName.text = player.Name;
-        lblSkill.text = skill.Name + " Lv. " + skill.CurrentValue;
+        lblSkill.text = skill.Name + " Lv. " + skill.Level;
 
         if (bonusPlus == 0)
         {

@@ -15,6 +15,7 @@ public class FreeCamera : MonoBehaviour
     private float moveSpeedModifierDelta = 5f;
     private float moveSpeedModifier;
     private Vector3 lastMousePosition;
+    private Camera gameCamera;
     private KeyCode[] positionKeys = {
         KeyCode.Alpha0, KeyCode.Alpha1, KeyCode.Alpha2,KeyCode.Alpha3,KeyCode.Alpha4,
         KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7,KeyCode.Alpha8,KeyCode.Alpha9,
@@ -30,6 +31,7 @@ public class FreeCamera : MonoBehaviour
         //Cursor.lockState = CursorLockMode.Confined;        
         Cursor.lockState = CursorLockMode.None;
         lastMousePosition = Input.mousePosition;
+        gameCamera = GetComponent<Camera>();
         LoadPositionData();
     }
 
@@ -63,6 +65,12 @@ public class FreeCamera : MonoBehaviour
         var slowDown = SlowMotion || Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
         var mouseSpeed = slowDown ? slowDownLookScale : 1f;
         var newMousePosition = Input.mousePosition;
+
+        if (Input.GetMouseButtonUp(0))
+        {
+            CheckForClickOnPlayer();
+        }
+
         if (Input.GetMouseButton(1)
             || Input.GetKey(KeyCode.LeftControl)
             || Input.GetKey(KeyCode.RightControl))
@@ -98,6 +106,22 @@ public class FreeCamera : MonoBehaviour
         var moveSides = transform.right * horizontal * Time.deltaTime * speed;
         var moveForward = transform.forward * vertical * Time.deltaTime * speed;
         transform.position += moveForward + moveSides + moveUp + moveDown;
+    }
+
+    private void CheckForClickOnPlayer()
+    {
+        var ray = gameCamera.ScreenPointToRay(Input.mousePosition);
+        var hits = Physics.RaycastAll(ray, 100);
+        foreach (var hit in hits)
+        {
+            var pc = hit.collider.gameObject.GetComponent<PlayerController>();
+            if (pc)
+            {
+                gameManager.Camera.ObservePlayer(pc);
+                //UnityEngine.Debug.LogError("You've clicked on: " + pc.Name);
+                return;
+            }
+        }
     }
 
     private float GetMoveSpeed()
@@ -154,19 +178,33 @@ public class FreeCamera : MonoBehaviour
 
     private void SavePositionData()
     {
-        if (!System.IO.Directory.Exists("data"))
-            System.IO.Directory.CreateDirectory("data");
-        var data = JsonConvert.SerializeObject(storedPositions);
-        System.IO.File.WriteAllText(CameraPositionDataFile, data);
+        try
+        {
+            if (!System.IO.Directory.Exists("data"))
+                System.IO.Directory.CreateDirectory("data");
+            var data = JsonConvert.SerializeObject(storedPositions);
+            System.IO.File.WriteAllText(CameraPositionDataFile, data);
+        }
+        catch
+        {
+            UnityEngine.Debug.LogWarning("Failed to save camera position data. Access to the data folder denied.");
+        }
     }
 
     private void LoadPositionData()
     {
-        if (!System.IO.File.Exists(CameraPositionDataFile))
-            return;
+        try
+        {
+            if (!System.IO.File.Exists(CameraPositionDataFile))
+                return;
 
-        var data = System.IO.File.ReadAllText(CameraPositionDataFile);
-        storedPositions = JsonConvert.DeserializeObject<StoredPosition[]>(data);
+            var data = System.IO.File.ReadAllText(CameraPositionDataFile);
+            storedPositions = JsonConvert.DeserializeObject<StoredPosition[]>(data);
+        }
+        catch
+        {
+            UnityEngine.Debug.LogWarning("Failed to load camera position data. Access to the data folder denied.");
+        }
     }
 
     public class StoredPosition

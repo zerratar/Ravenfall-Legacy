@@ -35,7 +35,7 @@ public class StreamRaidHandler : MonoBehaviour
                 // force check if object has not been destroyed.
                 .Where(x => x && x != null && x.gameObject && x.gameObject != null)
                 .OrderBy(x => Mathf.Abs(x.Stats.CombatLevel - player.Stats.CombatLevel))
-                .ThenBy(x => Vector3.Distance(x.transform.position, player.transform.position))
+                .ThenBy(x => Vector3.Distance(x.Position, player.Position))
                 .ThenBy(x => x.GetAttackers().Count)
                 .FirstOrDefault();
         }
@@ -47,7 +47,7 @@ public class StreamRaidHandler : MonoBehaviour
         }
 
         var range = player.GetAttackRange();
-        var distance = Vector3.Distance(transform.position, target.transform.position);
+        var distance = Vector3.Distance(transform.position, target.Position);
         if (distance <= range)
         {
             if (target.Stats.IsDead)
@@ -66,7 +66,7 @@ public class StreamRaidHandler : MonoBehaviour
         }
         else
         {
-            player.GotoPosition(target.transform.position);
+            player.GotoPosition(target.Position);
         }
     }
 
@@ -85,7 +85,7 @@ public class StreamRaidHandler : MonoBehaviour
         {
             player.Stats.Health.Reset();
         }
-        player.attackers.Clear();
+        player.ClearAttackers();
     }
 
     internal void Died()

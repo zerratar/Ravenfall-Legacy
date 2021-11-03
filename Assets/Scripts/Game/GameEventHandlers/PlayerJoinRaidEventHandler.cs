@@ -38,7 +38,7 @@ public class PlayerJoinRaidEventHandler : GameEventHandler<PlayerId>
 
         gameManager.Arena.Leave(player);
         gameManager.Raid.Join(player);
-        Debug.Log($"PlayerJoinRaidEventHandler " + data.UserId);
+        GameManager.Log($"PlayerJoinRaidEventHandler " + data.UserId);
     }
 }
 

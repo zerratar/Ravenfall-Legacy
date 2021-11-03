@@ -8,6 +8,8 @@ public class TownHouseRenderer : MonoBehaviour
     private RenderTexture renderTexture;
     private Vector3 startPosition;
 
+
+    public TownHouse TownHouse => townHouse;
     private void Start()
     {
         startPosition = transform.position;

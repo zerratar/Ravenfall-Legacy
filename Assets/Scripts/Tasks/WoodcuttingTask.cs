@@ -10,10 +10,9 @@ public class WoodcuttingTask : ChunkTask
     {
         this.lazyTrees = lazyTrees;
     }
-
-    public override bool IsCompleted(PlayerController player, Transform target)
+    public override bool IsCompleted(PlayerController player, object target)
     {
-        var tree = target.GetComponent<TreeController>();
+        var tree = target as TreeController;
         if (!tree)
         {
             return true;
@@ -21,26 +20,23 @@ public class WoodcuttingTask : ChunkTask
 
         return tree.IsStump;
     }
-
-    public override Transform GetTarget(PlayerController player)
+    public override object GetTarget(PlayerController player)
     {
         var trees = lazyTrees();
 
         return trees
             .Where(x => !x.IsStump)
-            .OrderBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-            .ThenBy(x => UnityEngine.Random.value)
-            .FirstOrDefault()?
-            .transform;
+            .OrderBy(x => Vector3.Distance(player.Position, x.transform.position) + UnityEngine.Random.value * 10f)
+            .FirstOrDefault();
     }
 
-    public override bool Execute(PlayerController player, Transform target)
+    public override bool Execute(PlayerController player, object target)
     {
-        var tree = target.GetComponent<TreeController>();
+        var tree = target as TreeController;
         return player.Cut(tree);
-    }    
+    }
 
-    public override bool CanExecute(PlayerController player, Transform target, out TaskExecutionStatus reason)
+    public override bool CanExecute(PlayerController player, object target, out TaskExecutionStatus reason)
     {
         reason = TaskExecutionStatus.NotReady;
 
@@ -59,32 +55,31 @@ public class WoodcuttingTask : ChunkTask
             return false;
         }
 
-        if (!target)
-        {
-            return false;
-        }
-
-        var possibleTargets = lazyTrees();
-        if (!possibleTargets.FirstOrDefault(x => x.transform == target))
+        if (target == null)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
 
-        var tree = target.GetComponent<TreeController>();
+        //var possibleTargets = lazyTrees();
+        //if (!possibleTargets.FirstOrDefault(x => x.transform == target))
+        //{
+        //    reason = TaskExecutionStatus.InvalidTarget;
+        //    return false;
+        //}
+
+        var tree = target as TreeController;
         if (!tree)
         {
             return false;
         }
-
-        var collider = target.GetComponent<SphereCollider>();
-        if (!collider)
+        if (tree.Island != player.Island)
         {
+            reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
-
-        var distance = Vector3.Distance(player.transform.position, target.position);
-        if (distance >= collider.radius)
+        var distance = Vector3.Distance(player.Position, tree.transform.position);
+        if (distance >= tree.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;
@@ -92,5 +87,17 @@ public class WoodcuttingTask : ChunkTask
 
         reason = TaskExecutionStatus.Ready;
         return true;
+    }
+
+    internal override bool TargetExistsImpl(object target)
+    {
+        var tar = target as TreeController;
+        if (!tar)
+        {
+            return false;
+        }
+
+        var possibleTargets = lazyTrees();
+        return possibleTargets.Any(x => x.GetInstanceID() == tar.GetInstanceID());
     }
 }

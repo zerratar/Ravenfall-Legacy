@@ -10,6 +10,7 @@ public class FadeInOut : MonoBehaviour
     private float fadeTimer;
     private bool sentMidPoint;
     private bool sentCompleted;
+    private bool broken;
 
     public bool FadeActive = false;
 
@@ -19,13 +20,27 @@ public class FadeInOut : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        canvasGroup = GetComponent<CanvasGroup>();
+
         fadeTimer = 0;
-        canvasGroup.alpha = fadeCurve.Evaluate(0);
+        try
+        {
+            canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup != null && fadeCurve != null && canvasGroup)
+            {
+                canvasGroup.alpha = fadeCurve.Evaluate(0);
+            }
+        }
+        catch
+        {
+            broken = true;
+        }
     }
 
     public void StartFade()
     {
+        if (broken || !canvasGroup || canvasGroup == null || fadeCurve == null)
+            return;
+
         FadeActive = true;
         sentMidPoint = false;
         sentCompleted = false;
@@ -36,7 +51,7 @@ public class FadeInOut : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!canvasGroup || !FadeActive)
+        if (broken || !canvasGroup || canvasGroup == null || fadeCurve == null || !FadeActive)
         {
             return;
         }

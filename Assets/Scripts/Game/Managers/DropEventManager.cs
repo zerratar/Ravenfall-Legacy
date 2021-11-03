@@ -50,7 +50,7 @@ public class DropEventManager : MonoBehaviour
     {
         if (spawnPoints == null || spawnPoints.Length == 0)
         {
-            Debug.LogError("Uh oh, unable to spawn items!! No spawn points have been configured!");
+            GameManager.LogError("Uh oh, unable to spawn items!! No spawn points have been configured!");
             return;
         }
 

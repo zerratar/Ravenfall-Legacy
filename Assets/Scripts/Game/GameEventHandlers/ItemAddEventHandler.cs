@@ -8,13 +8,13 @@ public class ItemAddEventHandler : GameEventHandler<ItemAdd>
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player)
         {
-            Debug.Log("No player with userid " + data.UserId + " when adding item.");
+            GameManager.Log("No player with userid " + data.UserId + " when adding item.");
             return;
         }
         var item = gameManager.Items.GetItem(data.ItemId);
         if (item == null)
         {
-            Debug.Log("No item with id " + data.ItemId + " was found.");
+            GameManager.Log("No item with id " + data.ItemId + " was found.");
             return;
         }
 

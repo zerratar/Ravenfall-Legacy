@@ -8,12 +8,14 @@ public class BATimer : MonoBehaviour
     [SerializeField] private GameProgressBar timeProgressBar;
 
     private string lastSubber;
+    private bool isActive;
 
     private void Awake()
     {
         if (!label) label = GetComponentInChildren<TextMeshProUGUI>();
         if (!subscriber) subscriber = GetComponentInChildren<TextMeshProUGUI>();
         if (!timeProgressBar) timeProgressBar = GetComponentInChildren<GameProgressBar>();
+        this.isActive = gameObject.activeInHierarchy;
     }
 
     public void SetSubscriber(string subber, bool byUser)
@@ -40,6 +42,12 @@ public class BATimer : MonoBehaviour
 
     public void SetActive(bool currentBoostActive)
     {
+        if (isActive == currentBoostActive)
+        {
+            return;
+        }
+
+        isActive = currentBoostActive;
         gameObject.SetActive(currentBoostActive);
     }
 

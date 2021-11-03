@@ -17,8 +17,15 @@ public class TownHouseManager : MonoBehaviour
     [SerializeField] private TownHallInfoManager info;
 
     private TownHouseSlot selectedHouseSlot;
+    private int activeSlotCount;
 
     public TownHouse[] TownHouses => buildableTownHouses;
+    
+    public int SlotCount => activeSlotCount;
+    public void EnsureAssignPlayerRows(int count)
+    {
+        buildSlotIcons.AssignPlayerDialog.EnsureAssingPlayerRows(count);
+    }
 
     void Start()
     {
@@ -84,27 +91,30 @@ public class TownHouseManager : MonoBehaviour
 
     internal bool IsHouseOwner(PlayerController player)
     {
-        return slots.Any(x => x.Owner?.UserId == player?.UserId);
+        return slots.Any(x => x.OwnerUserId == player?.UserId);
     }
 
-    internal void SetOwner(TownHouseSlot activeSlot, PlayerController newOwner)
+    internal void SetOwner(TownHouseSlot activeSlot, PlayerController owner)
     {
         if (slots == null || slots.Length == 0)
             return;
 
-        if (newOwner != null && newOwner)
-        {
-            var owningSlot = slots.FirstOrDefault(x => x.Owner?.UserId == newOwner.UserId);
-            if (owningSlot != null && owningSlot)
-            {
-                owningSlot.SetOwner(null);
-            }
-        }
-
         if (!activeSlot || activeSlot == null)
             return;
 
-        activeSlot.SetOwner(newOwner);
+        if (owner != null && owner)
+        {
+            var existingHouse = slots.FirstOrDefault(x => x.OwnerUserId == owner.UserId);
+            if (existingHouse != null && existingHouse)
+            {
+                existingHouse.RemoveOwner();
+            }
+
+            activeSlot.SetOwner(owner.UserId);
+            return;
+        }
+
+        activeSlot.RemoveOwner();
     }
 
     private bool HandleHouseSlotClick(RaycastHit hit)
@@ -129,6 +139,7 @@ public class TownHouseManager : MonoBehaviour
 
     internal void SetSlotCount(int count)
     {
+        this.activeSlotCount = count;
         for (var i = 0; i < slots.Length; ++i)
         {
             SetActiveFast(slots[i].gameObject, i < count);
@@ -141,6 +152,8 @@ public class TownHouseManager : MonoBehaviour
         {
             slot.InvalidateOwner();
         }
+
+        gameManager.UpdateVillageBoostText();
     }
 
     internal void SetHouses(IReadOnlyList<VillageHouseInfo> houses)
@@ -150,7 +163,12 @@ public class TownHouseManager : MonoBehaviour
         {
             var house = houses[i];
             var prefab = buildableTownHouses.FirstOrDefault(x => x.Type == (TownHouseSlotType)house.Type);
-            slots[i].SetHouse(house, prefab);            
+            slots[i].SetHouse(house, prefab);
+        }
+
+        if (slots != null && slots.Length > 0)
+        {
+            info.UsedSlots = slots.Count(x => x != null && x.SlotType != TownHouseSlotType.Empty && x.SlotType != TownHouseSlotType.Undefined);
         }
     }
 
@@ -190,8 +208,9 @@ public class TownHouseManager : MonoBehaviour
                 info.UsedSlots = slots.Count(x => x != null && x.SlotType != TownHouseSlotType.Empty && x.SlotType != TownHouseSlotType.Undefined);
             }
         }
-        catch
+        catch (Exception exc)
         {
+            GameManager.LogError(exc.ToString());
         }
     }
 

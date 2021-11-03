@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Schema;
+using System;
 using System.Collections.Concurrent;
 using UnityEngine;
 
@@ -7,9 +8,9 @@ public class TwitchEventManager : MonoBehaviour
     [SerializeField] private GameManager gameManager;
     [SerializeField] private TwitchSubscriberBoost boost;
 
-    public static readonly float[] TierExpMultis = new float[4]
+    public static readonly float[] TierExpMultis = new float[10]
     {
-        1f, 2f, 3f, 5f
+        0f, 2f, 3f, 5f, 5f, 5f, 5f, 5f, 5f, 5f
     };
 
     private float saveTimer = 5f;
@@ -27,6 +28,7 @@ public class TwitchEventManager : MonoBehaviour
     private float announceTimer;
     private int limitOverride = -1;
     public int ExpMultiplierLimit => limitOverride > 0 ? limitOverride : gameManager.Permissions.ExpMultiplierLimit;
+    public TimeSpan MaxBoostTime => TimeSpan.FromHours(TierExpMultis[gameManager.Permissions.SubscriberTier] - 1f);
 
     private void Awake()
     {
@@ -110,10 +112,13 @@ public class TwitchEventManager : MonoBehaviour
         var timeLeft = TimeSpan.FromSeconds(secondsLeft);
         var minutesStr = timeLeft.Minutes > 0 ? timeLeft.Minutes + " mins " : "";
         var secondsStr = timeLeft.Seconds > 0 ? timeLeft.Seconds + " seconds" : "";
-        gameManager.RavenBot.SendMessage("", Localization.MSG_MULTIPLIER_ENDS,
-            CurrentBoost.Multiplier.ToString(),
-            minutesStr,
-            secondsStr);
+        if (timeLeft.Seconds >= 10)
+        {
+            gameManager.RavenBot.SendMessage("", Localization.MSG_MULTIPLIER_ENDS,
+                CurrentBoost.Multiplier.ToString(),
+                minutesStr,
+                secondsStr);
+        }
     }
 
     public void Activate()
@@ -128,7 +133,7 @@ public class TwitchEventManager : MonoBehaviour
         CurrentBoost.EndTime = DateTime.MinValue;
         CurrentBoost.StartTime = DateTime.MinValue;
         CurrentBoost.Active = false;
-        CurrentBoost.Multiplier = 1;
+        CurrentBoost.Multiplier = 0;
         CurrentBoost.Elapsed = Duration;
         SaveState();
     }
@@ -175,29 +180,38 @@ public class TwitchEventManager : MonoBehaviour
 
     public void OnSubscribe(TwitchSubscription subscribe)
     {
+        PlayerController receiver = null;
         var player = gameManager.Players.GetPlayerByUserId(subscribe.UserId);
         if (!player) player = gameManager.Players.GetPlayerByName(subscribe.UserName);
+
+        var receiverName = player?.Name;
+
+        if (subscribe.ReceiverUserId != null)
+        {
+            receiver = gameManager.Players.GetPlayerByUserId(subscribe.ReceiverUserId);
+            if (receiver)
+            {
+                receiver.IsSubscriber = true;
+                receiverName = receiver.Name;
+            }
+        }
+
         if (player)
         {
-            gameManager.RavenBot?.Send(player.Name, Localization.MSG_SUB_CREW,
-                gameManager.RavenNest.TwitchDisplayName,
-                TierExpMultis[gameManager.Permissions.SubscriberTier]);
-
             if (subscribe.ReceiverUserId == null)
             {
                 player.IsSubscriber = true;
             }
-            else
-            {
-                var receiver = gameManager.Players.GetPlayerByUserId(subscribe.ReceiverUserId);
-                if (receiver)
-                {
-                    player.IsSubscriber = true;
-                }
-            }
 
             player.AddSubscribe(subscribe.ReceiverUserId != null);
             gameManager.Camera.ObservePlayer(player, MaxObserveTime);
+        }
+
+        if (!string.IsNullOrEmpty(receiverName))
+        {
+            gameManager.RavenBot?.Send(receiverName, Localization.MSG_SUB_CREW,
+                    gameManager.RavenNest.TwitchDisplayName,
+                    TierExpMultis[gameManager.Permissions.SubscriberTier]);
         }
 
         var activePlayers = gameManager.Players.GetAllPlayers();
@@ -248,7 +262,6 @@ public class TwitchEventManager : MonoBehaviour
             }
             else if (totalMultipliersAdded > 0)
             {
-
                 gameManager.RavenBot.Send(data.UserName, Localization.MSG_BIT_CHEER_INCREASE,
                     (int)CurrentBoost.BoostTime.TotalMinutes,
                     data.Bits,
@@ -263,8 +276,6 @@ public class TwitchEventManager : MonoBehaviour
 
         SaveState();
     }
-
-    public TimeSpan MaxBoostTime => TimeSpan.FromHours(TierExpMultis[gameManager.Permissions.SubscriberTier] - 1f);
 
     private void AddSubscriber(TwitchSubscription data, bool increaseMultiplier = true)
     {

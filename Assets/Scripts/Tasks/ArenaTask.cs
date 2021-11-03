@@ -1,19 +1,23 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using UnityEngine;
 
 public class ArenaTask : ChunkTask
 {
     private readonly ArenaController arena;
-
     public ArenaTask(ArenaController arena)
     {
         this.arena = arena;
     }
 
-    public override bool IsCompleted(PlayerController player, Transform target)
+    public override bool IsCompleted(PlayerController player, object target)
     {
-        if (player.transform == target)
+        var targetPlayer = target as PlayerController;
+        if (targetPlayer == null)
+        {
+            return true;
+        }
+
+        if (player.Id == targetPlayer.Id)
         {
             return true;
         }
@@ -23,40 +27,33 @@ public class ArenaTask : ChunkTask
             return true;
         }
 
-        if (!target)
-        {
-            return true;
-        }
-
-        var targetPlayer = target.GetComponent<PlayerController>();
         return !targetPlayer || targetPlayer.Stats.IsDead;
     }
 
-    public override Transform GetTarget(PlayerController player)
+    public override object GetTarget(PlayerController player)
     {
         if (!arena.Started)
         {
-            return player.transform;
+            return player;
         }
 
         var attackers = player.GetAttackers();
         var attackerTarget = attackers
             .Cast<PlayerController>()
             .Where(atk => !atk.GetStats().IsDead)
-            .OrderBy(atk => Vector3.Distance(player.transform.position, atk.transform.position))
+            .OrderBy(atk => Vector3.Distance(player.Position, atk.Position))
             .FirstOrDefault();
 
         if (attackerTarget && arena.AvailablePlayers.Contains(attackerTarget))
         {
-            return attackerTarget.transform;
+            return attackerTarget;
         }
 
         var target = arena
             .AvailablePlayers
             .Except(player)
-            .OrderBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-            .FirstOrDefault()?
-            .transform;
+            .OrderBy(x => Vector3.Distance(player.Position, x.Position))
+            .FirstOrDefault();
 
         if (!target)
         {
@@ -66,14 +63,14 @@ public class ArenaTask : ChunkTask
         return target;
     }
 
-    public override bool Execute(PlayerController player, Transform target)
+    public override bool Execute(PlayerController player, object target)
     {
         if (!arena.Started)
         {
             return false;
         }
 
-        var targetPlayer = target.GetComponent<PlayerController>();
+        var targetPlayer = target as PlayerController;
         if (target == player)
         {
             return false;
@@ -82,10 +79,10 @@ public class ArenaTask : ChunkTask
         return player.Attack(targetPlayer);
     }
 
-    public override bool CanExecute(PlayerController player, Transform target, out TaskExecutionStatus reason)
+    public override bool CanExecute(PlayerController player, object target, out TaskExecutionStatus reason)
     {
         reason = TaskExecutionStatus.NotReady;
-
+        var attackable = target as IAttackable;
         if (!player)
         {
             return false;
@@ -101,18 +98,18 @@ public class ArenaTask : ChunkTask
             return false;
         }
 
-        if (!target)
+        if (target == null || attackable == null)
         {
             return false;
         }
 
-        if (!arena.AvailablePlayers.FirstOrDefault(x => x.transform == target))
+        if (!arena.AvailablePlayers.FirstOrDefault(x => x.transform.GetInstanceID() == attackable.Transform.GetInstanceID()))
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
 
-        if (!arena.InsideArena(target))
+        if (!arena.InsideArena(attackable))
         {
             return false;
         }
@@ -122,12 +119,18 @@ public class ArenaTask : ChunkTask
             return false;
         }
 
-        if (Vector3.Distance(player.transform.position, target.position) > player.AttackRange)
+        if (Vector3.Distance(player.transform.position, attackable.Position) > player.AttackRange)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;
         }
 
+        return true;
+    }
+
+    internal override bool TargetExistsImpl(object target)
+    {
+        // We do the check in canexecute already.
         return true;
     }
 }

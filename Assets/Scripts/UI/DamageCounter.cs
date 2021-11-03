@@ -18,7 +18,7 @@ public class DamageCounter : MonoBehaviour
 
     private int damage = 0;
     private float fadeoutTimer = 2f;
-
+    private Camera mainCamera;
     public float OffsetY = 2.75f;
 
     //public string Color;
@@ -27,7 +27,7 @@ public class DamageCounter : MonoBehaviour
     public float FadeoutDuration = 2f;
     public Transform Target;
     public DamageCounterManager Manager { get; internal set; }
-
+    public float FadeOutProgress => (FadeoutDuration - fadeoutTimer) / FadeoutDuration;
     public int Damage
     {
         get
@@ -44,6 +44,7 @@ public class DamageCounter : MonoBehaviour
     void Start()
     {
         fadeoutTimer = FadeoutDuration;
+        this.mainCamera = Camera.main;
     }
 
     // Update is called once per frame
@@ -60,8 +61,10 @@ public class DamageCounter : MonoBehaviour
             return;
         }
 
-        transform.LookAt(Camera.main.transform);
-
+        if (mainCamera)
+        {
+            transform.LookAt(mainCamera.transform);
+        }
         FadeOut();
     }
 
@@ -75,11 +78,22 @@ public class DamageCounter : MonoBehaviour
     {
         Target = target;
 
+        mainCamera = Camera.main;
         transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
         fadeoutTimer = FadeoutDuration;
 
         canvasGroup.alpha = 1;
 
+        UpdateBackgroundColor(isHeal);
+
+        Damage = System.Math.Abs(damage);
+
+        if (!gameObject.activeSelf)
+            gameObject.SetActive(true);
+    }
+
+    public void UpdateBackgroundColor(bool isHeal)
+    {
         if (isHeal)
         {
             background.color = healColor;
@@ -96,15 +110,11 @@ public class DamageCounter : MonoBehaviour
                 background.color = damageColor;
             }
         }
-
-        Damage = System.Math.Abs(damage);
-
-        if (!gameObject.activeSelf)
-            gameObject.SetActive(true);
     }
 
     private void UpdateDamageText()
     {
+        mainCamera = Camera.main;
         labelBack.text = Damage.ToString();
         labelFront.text = Damage.ToString();
     }

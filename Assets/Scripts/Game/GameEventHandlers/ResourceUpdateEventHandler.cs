@@ -8,11 +8,11 @@ public class ResourceUpdateEventHandler : GameEventHandler<ResourceUpdate>
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player)
         {
-            Debug.LogWarning("No player with userid " + data.UserId + " when updating resources.");
+            GameManager.LogWarning("No player with userid " + data.UserId + " when updating resources.");
             return;
         }
         
-        Debug.Log("Got resource update for player: " + player.Name);
+        //Debug.Log("Got resource update for player: " + player.Name);
 
         player.Resources.Fish = data.FishAmount;
         player.Resources.Ore = data.OreAmount;

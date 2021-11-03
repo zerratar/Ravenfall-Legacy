@@ -16,7 +16,7 @@ public class PlayerList : MonoBehaviour
     private readonly List<PlayerListItem> instantiatedPlayerListItems
         = new List<PlayerListItem>();
 
-    private readonly object mutex = new object();
+    //private readonly object mutex = new object();
 
     private ExpProgressHelpStates expHelpState;
 
@@ -79,7 +79,7 @@ public class PlayerList : MonoBehaviour
             }
 
             var speed = scrollSpeed * Time.deltaTime;
-            lock (mutex) speed /= instantiatedPlayerListItems.Count * 0.25f;
+            speed /= instantiatedPlayerListItems.Count * 0.25f;
             scrollPosition += speed;
             scrollPosition = Math.Min(1f, scrollPosition);
             scrollPosition = Math.Max(0f, scrollPosition);
@@ -98,22 +98,22 @@ public class PlayerList : MonoBehaviour
     {
         if (!player)
         {
-            Debug.LogWarning("Player already exists in the list?");
+            GameManager.LogWarning("Player already exists in the list?");
             return;
         }
 
-        lock (mutex)
+        //lock (mutex)
         {
             if (instantiatedPlayerListItems.Any(x => x.TargetPlayer && x.TargetPlayer.PlayerName == player.PlayerName))
             {
-                Debug.LogWarning("Player already exists in the list ;o");
+                GameManager.LogWarning("Unable to add Player " + player.Name + " to the player list. It is already in there :o");
                 return;
             }
         }
 
         if (playerListItem == null)
         {
-            Debug.LogError("No PlayerList Item Prefab set.");
+            GameManager.LogError("No PlayerList Item Prefab set.");
             return;
         }
 
@@ -121,7 +121,7 @@ public class PlayerList : MonoBehaviour
         var listItem = item.GetComponent<PlayerListItem>();
         listItem.ExpProgressHelpState = expHelpState;
         listItem.UpdatePlayerInfo(player, gameCamera);
-        lock (mutex) instantiatedPlayerListItems.Add(listItem);
+        instantiatedPlayerListItems.Add(listItem);
     }
 
     public void RemovePlayer(PlayerController player)
@@ -131,7 +131,7 @@ public class PlayerList : MonoBehaviour
             return;
         }
 
-        lock (mutex)
+        //lock (mutex)
         {
             var li = instantiatedPlayerListItems.FirstOrDefault(x =>
             x.TargetPlayer && x.TargetPlayer.PlayerName == player.PlayerName);
@@ -146,7 +146,7 @@ public class PlayerList : MonoBehaviour
 
     public void ClearFocus()
     {
-        lock (mutex)
+        //lock (mutex)
         {
             foreach (var item in instantiatedPlayerListItems)
             {
@@ -159,7 +159,7 @@ public class PlayerList : MonoBehaviour
 
     public void FocusOnPlayers(IReadOnlyList<PlayerController> players)
     {
-        lock (mutex)
+        //lock (mutex)
         {
             var tintOutPlayers = instantiatedPlayerListItems.Except(
             players.Select(x => instantiatedPlayerListItems.FirstOrDefault(y => y.TargetPlayer == x)));
@@ -175,12 +175,13 @@ public class PlayerList : MonoBehaviour
 
     public void ToggleExpRate()
     {
-        lock (mutex)
+        //lock (mutex)
         {
             expHelpState = (ExpProgressHelpStates)((((int)expHelpState) + 1) % 4);
             foreach (var item in instantiatedPlayerListItems)
             {
                 item.ExpProgressHelpState = expHelpState;
+                item.ExpPerHourUpdate = 0; // this will trigger the UI to update right away.
             }
         }
     }

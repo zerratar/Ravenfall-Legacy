@@ -53,16 +53,18 @@ public class RaidBossController : MonoBehaviour
             }
             else
             {
-                Debug.LogError("Blerp");
+                GameManager.LogError("Blerp");
             }
         }
         name = "___RAID__BOSS___";
         EnsureRaidManager();
+        //this.Enemy.Unlock();
     }
 
     // Update is called once per frame
     void Update()
     {
+
         if (GameCache.Instance.IsAwaitingGameRestore) return;
 
         if (activated)
@@ -155,23 +157,20 @@ public class RaidBossController : MonoBehaviour
         try
         {
             return raiders
-                .Where(x => x != null && x && !x.Stats.IsDead && Vector3.Distance(x.transform.position, transform.position) <= attackRadiusCollider.radius)
-                .OrderBy(x => Vector3.Distance(x.transform.position, transform.position))
-                .ThenByDescending(x =>
+                .Where(x => x != null && x && !x.Stats.IsDead && Vector3.Distance(x.Position, enemyController.Position) <= attackRadiusCollider.radius)
+                .OrderByDescending(x =>
                 {
                     enemyController.Aggro.TryGetValue(x.Name, out var aggro);
-                    return aggro;
+                    return aggro + Random.value;
                 })
-                .ThenBy(x => Random.value)
                 .FirstOrDefault();
         }
         catch (Exception exc)
         {
-            UnityEngine.Debug.LogError(exc.ToString());
+            GameManager.LogError(exc.ToString());
             return null;
         }
     }
-
     public void IslandEnter(IslandController island)
     {
         this.island = island;
@@ -181,13 +180,12 @@ public class RaidBossController : MonoBehaviour
     {
         island = null;
     }
-
     public void Activate()
     {
         activated = true;
         attackTimer = attackInterval;
+        Enemy.Unlock();
     }
-
     public void Create(
         Skills rngLowStats, Skills rngHighStats, EquipmentStats rngLowEq, EquipmentStats rngHighEq)
     {
@@ -195,7 +193,7 @@ public class RaidBossController : MonoBehaviour
         var model = models.OrderBy(x => UnityEngine.Random.value).FirstOrDefault();
         if (!model)
         {
-            Debug.LogError("No available raid boss models??!?!");
+            GameManager.LogError("No available raid boss models??!?!");
             return;
         }
 
@@ -213,6 +211,7 @@ public class RaidBossController : MonoBehaviour
 
         transform.localScale = Vector3.one * Mathf.Max(1f, Mathf.Min(3.5f, enemyController.Stats.CombatLevel * 0.003f));
         modelObject.transform.localScale = Vector3.one; // take control of the scale of these :D MWOUAHAHHA
+        Enemy.Unlock();
     }
 
 
@@ -229,24 +228,27 @@ public class RaidBossController : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool WithinActivateRange(PlayerController player)
     {
-        if (!player || player.Kicked || player.gameObject == null && !ReferenceEquals(player.gameObject, null)) return false;
-        return Vector3.Distance(transform.position, player.transform.position) <= activateRadiusCollider.radius;
+        if (!player || player.Removed || player.gameObject == null && !ReferenceEquals(player.gameObject, null)) return false;
+        return Vector3.Distance(enemyController.Position, player.Position) <= activateRadiusCollider.radius;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool WithinAttackRange(PlayerController player)
     {
-        if (!player || player.Kicked || player.gameObject == null && !ReferenceEquals(player.gameObject, null)) return false;
-        return Vector3.Distance(transform.position, player.transform.position) <= activateRadiusCollider.radius;
+        if (!player || player.Removed || player.gameObject == null && !ReferenceEquals(player.gameObject, null)) return false;
+        return Vector3.Distance(enemyController.Position, player.Position) <= activateRadiusCollider.radius;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
     {
-        var health = Math.Max(100, (int)(Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 1.1 * 100));
-        var strength = Math.Max(1, (int)(Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue) * 1.1));
-        var defense = Math.Max(1, (int)(Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue) * 1.1));
-        var attack = Math.Max(1, (int)(Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue) * 1.1));
+        var health = Math.Max(100, (int)(Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 100));
+        var strength = Math.Max(1, (int)(Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue)));
+        var defense = Math.Max(1, (int)(Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue)));
+        var attack = Math.Max(1, (int)(Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue)));
+
+        var magic = Math.Max(1, (int)(Random.Range(rngLowStats.Magic.CurrentValue, rngHighStats.Magic.CurrentValue)));
+        var ranged = Math.Max(1, (int)(Random.Range(rngLowStats.Ranged.CurrentValue, rngHighStats.Ranged.CurrentValue)));
 
         return new Skills
         {
@@ -270,6 +272,16 @@ public class RaidBossController : MonoBehaviour
                 CurrentValue = health,
                 Level = health
             },
+            Magic = new SkillStat
+            {
+                CurrentValue = magic,
+                Level = magic
+            },
+            Ranged = new SkillStat
+            {
+                CurrentValue = ranged,
+                Level = ranged
+            }
         };
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

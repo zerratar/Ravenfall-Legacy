@@ -7,126 +7,159 @@ public class FightingTask : ChunkTask
 {
     private readonly Func<EnemyController[]> lazyEnemies;
 
+    //private readonly Func<EnemyController[]> lazyEnemies;
+    private EnemyController[] allEnemies;
+    private Dictionary<int, EnemyController> instanceLookup;
     public FightingTask(Func<EnemyController[]> lazyEnemies)
     {
         this.lazyEnemies = lazyEnemies;
     }
 
-    public override bool IsCompleted(PlayerController player, Transform target)
+    private EnemyController[] GetEnemies(bool reload = false)
     {
-        if (player.TrainingHealing)
+        if (this.allEnemies != null && !reload)
         {
-            var plr = target.GetComponent<PlayerController>();
-            if (!plr)
-            {
-                return true;
-            }
+            return this.allEnemies;
+        }
 
-            var hp = plr.GetStats().Health;
-            if (hp.CurrentValue >= hp.Level)
-            {
-                var newTarget = GetTarget(player);
-                return newTarget != target;
-            }
-
-            return false;
+        this.allEnemies = lazyEnemies();
+        if (this.allEnemies == null || this.allEnemies.Length == 0)
+        {
+            this.instanceLookup = new Dictionary<int, EnemyController>();
         }
         else
         {
-            var enemy = target.GetComponent<EnemyController>();
-            if (!enemy)
-            {
-                return true;
-            }
-            return enemy.Stats.IsDead;
+            this.instanceLookup = this.allEnemies.ToDictionary(x => x.GetInstanceID());
+        }
+        return allEnemies;
+    }
+
+    public override bool IsCompleted(PlayerController player, object target)
+    {
+        if (player.TrainingHealing)
+        {
+            var plr = target as PlayerController;
+            return plr == null || !plr || plr.Stats.IsDead || plr.TrainingHealing || plr.Stats.HealthPercent >= 0.9;
+        }
+        else
+        {
+            var enemy = target as EnemyController;
+            return enemy == null || !enemy || enemy.Stats.Health.CurrentValue <= 0;
         }
     }
 
-    public override Transform GetTarget(PlayerController player)
+    public override object GetTarget(PlayerController player)
     {
         if (player.TrainingHealing)
         {
             if (player.Duel.InDuel || player.Arena.InArena)
             {
-                return player.Transform;
+                return player;
             }
 
-            IReadOnlyList<PlayerController> players = null;
-
-            if (!player.Island)
+            var players = player.Island.GetPlayers();
+            var playerCount = players.Count;
+            PlayerController targetPlayer = null;
+            var healthDif = 0;
+            for (var i = 0; i < playerCount; ++i)
             {
-                players = player.Game.Players
-                    .GetAllPlayers()
-                    .Where(x => (!x.Island || x.Island == null) && !x.Duel.InDuel && !x.Arena.InArena)
-                    .ToList();
-            }
-            else
-            {
-                players = player.Island
-                    .GetPlayers()
-                    .Where(x => !x.Stats.IsDead && !x.Duel.InDuel && !x.Arena.InArena)
-                    .ToList();
-            }
+                var x = players[i];
+                if (x.Stats.Health.CurrentValue <= 0)
+                {
+                    continue;
+                }
 
-            if (players.Count == 0)
-                return player.transform;
-
-            var targetPlayer = players
-                .Where(x => !x.Stats.IsDead && x.InCombat)
-                .OrderByDescending(x => x.Stats.Health.Level - x.Stats.Health.CurrentValue)
-                .FirstOrDefault();
+                var hd = x.Stats.Health.Level - x.Stats.Health.CurrentValue;
+                if (hd >= healthDif)
+                {
+                    healthDif = hd;
+                    targetPlayer = x;
+                }
+            }
 
             if (!targetPlayer)
+            {
                 targetPlayer = player;
+            }
 
-            return targetPlayer.transform;
+            return targetPlayer;
         }
 
-        var enemies = lazyEnemies();
+        var enemies = GetEnemies(); //allEnemies;//lazyEnemies();
         var attackers = player.GetAttackers();
         try
         {
-            foreach (var attacker in attackers.Where(x => !x.GetStats().IsDead))
+            if (attackers.Count > 0)
             {
-                if (!attacker.Transform)
+                var e = attackers.GetEnumerator();
+                while (e.MoveNext())
                 {
-                    continue;
-                }
+                    var attacker = e.Current;
+                    if (attacker == null || !attacker.Transform)
+                    {
+                        continue;
+                    }
 
-                var enemyController = attacker.Transform.GetComponent<EnemyController>();
-                if (!enemyController)
-                {
-                    continue;
+                    var enemyController = attacker as EnemyController;
+                    if (enemyController == null || !enemyController)
+                    {
+                        continue;
+                    }
+                    if (instanceLookup.TryGetValue(enemyController.GetInstanceID(), out var existingTarget) && enemyController && !enemyController.Stats.IsDead)
+                    {
+                        return enemyController;
+                    }
                 }
-
-                var targetEnemy = enemies.FirstOrDefault(x => x.GetInstanceID() == enemyController.GetInstanceID());
-                if (targetEnemy) return targetEnemy.transform;
             }
 
-            var enemy = enemies
-                        .Where(x => !x.Stats.IsDead)
-                        //.OrderByDescending(x => x.Attackers.Count)
-                        //.ThenBy(x => Math.Abs(player.Stats.CombatLevel - x.Stats.CombatLevel))
-                        .OrderBy(x => Math.Abs(player.Stats.CombatLevel - x.Stats.CombatLevel))
-                        .ThenBy(x => Vector3.Distance(x.transform.position, player.transform.position))
-                        .ThenBy(x => x.Stats.Health.CurrentValue)
-                        .ThenBy(x => x.Attackers.Count)
-                        .ThenBy(x => UnityEngine.Random.value)
-                        .FirstOrDefault();
+            float maxDist = float.MaxValue;
+            EnemyController enemy = null;
+            for (var i = 0; i < enemies.Length; ++i)
+            {
+                try
+                {
+                    var x = enemies[i];
+                    if (x == null || !x || x.gameObject == null || x.Stats.Health.CurrentValue <= 0)
+                        continue;
 
-            return enemy?.transform;
+                    var dist = Vector3.Distance(x.Position, player.Position) + UnityEngine.Random.value;
+                    if (dist < maxDist)
+                    {
+                        maxDist = dist;
+                        enemy = x;
+                    }
+                }
+                catch (Exception exc)
+                {
+#if DEBUG
+                    GameManager.LogError(exc);
+#endif
+                    continue;
+                }
+            }
+
+            //if (!enemy || enemy == null)
+            //{
+            //    GetEnemies(true);
+            //    UnityEngine.Debug.LogError("All enemies are dead, cannot find new target");
+            //}
+
+            return enemy;
         }
-        catch
+        catch (Exception exc)
         {
+#if DEBUG
+            GameManager.LogError(exc);
+#endif
             return null;
         }
     }
 
-    public override bool Execute(PlayerController player, Transform target)
+    public override bool Execute(PlayerController player, object target)
     {
         if (player.TrainingHealing)
         {
-            var tar = target.GetComponent<PlayerController>();
+            var tar = target as PlayerController;
             if (!tar)
             {
                 return false;
@@ -135,7 +168,7 @@ public class FightingTask : ChunkTask
             return player.Heal(tar);
         }
 
-        var enemy = target.GetComponent<EnemyController>();
+        var enemy = target as EnemyController;
         if (!enemy)
         {
             return false;
@@ -144,14 +177,14 @@ public class FightingTask : ChunkTask
         return player.Attack(enemy);
     }
 
-    public override void TargetAcquired(PlayerController player, Transform target)
+    public override void TargetAcquired(PlayerController player, object target)
     {
         if (player.TrainingHealing)
         {
             return;
         }
 
-        var enemy = target.GetComponent<EnemyController>();
+        var enemy = target as EnemyController;
         if (!enemy)
         {
             return;
@@ -160,59 +193,68 @@ public class FightingTask : ChunkTask
         enemy.AddAttacker(player);
     }
 
-    public override bool CanExecute(
-        PlayerController player, Transform target, out TaskExecutionStatus reason)
+    public override bool CanExecute(PlayerController player, object target, out TaskExecutionStatus reason)
     {
+        var attackable = target as IAttackable;
         reason = TaskExecutionStatus.NotReady;
         if (!player)
         {
             return false;
         }
-
-        if (!target || target == null)
+        if (attackable == null)
+        {
+            reason = TaskExecutionStatus.InvalidTarget;
             return false;
+        }
+        if (target == null || attackable.Transform == null)
+        {
+            reason = TaskExecutionStatus.InvalidTarget;
+            return false;
+        }
 
         if (!player.IsReadyForAction)
         {
+            reason = TaskExecutionStatus.NotReady;
             return false;
         }
 
         if (player.TrainingHealing)
         {
-            var tar = target.GetComponent<PlayerController>();
+            var tar = target as PlayerController;
             if (!tar)
             {
                 reason = TaskExecutionStatus.InvalidTarget;
                 return false;
             }
 
-            if (tar.Stats.IsDead)
+            if (tar.Island != player.Island)
             {
                 reason = TaskExecutionStatus.InvalidTarget;
                 return false;
             }
-            //var possibleTargets = player.Island?.GetPlayers();
-            //if (possibleTargets == null || !possibleTargets.FirstOrDefault(x => x != null && x && x.transform != null && target && target != null && x.transform == target))
-            //{
-            //    reason = TaskExecutionStatus.InvalidTarget;
-            //    return false;
-            //}
+
+            if (tar.Stats.Health.CurrentValue <= 0)
+            {
+                reason = TaskExecutionStatus.InvalidTarget;
+                return false;
+            }
         }
         else
         {
-            var enemy = target.GetComponent<EnemyController>();
+            var enemy = target as EnemyController;
             if (!enemy)
             {
+                reason = TaskExecutionStatus.InvalidTarget;
                 return false;
             }
 
-            if (enemy.Stats.IsDead)
+            if (enemy.Island != player.Island)
             {
+                reason = TaskExecutionStatus.InvalidTarget;
                 return false;
             }
 
-            var possibleTargets = lazyEnemies();
-            if (!possibleTargets.FirstOrDefault(x => x.transform == target))
+            if (enemy.Stats.Health.CurrentValue <= 0)
             {
                 reason = TaskExecutionStatus.InvalidTarget;
                 return false;
@@ -220,13 +262,13 @@ public class FightingTask : ChunkTask
         }
 
         var range = player.GetAttackRange();
-        var collider = target.GetComponent<SphereCollider>();
-        if (collider && collider.radius > range)
+        var hitRange = attackable.GetHitRange();
+        if (hitRange > range)
         {
-            range = collider.radius;
+            range = hitRange;
         }
 
-        var distance = Vector3.Distance(player.transform.position, target.position);
+        var distance = Vector3.Distance(player.Position, attackable.Position);
         if (distance > range)
         {
             reason = TaskExecutionStatus.OutOfRange;
@@ -234,6 +276,11 @@ public class FightingTask : ChunkTask
         }
 
         reason = TaskExecutionStatus.Ready;
+        return true;
+    }
+
+    internal override bool TargetExistsImpl(object target)
+    {
         return true;
     }
 }

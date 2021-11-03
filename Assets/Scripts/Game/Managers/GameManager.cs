@@ -15,7 +15,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 using RavenNestPlayer = RavenNest.Models.Player;
-
 public class GameManager : MonoBehaviour, IGameManager
 {
     [SerializeField] private GameCamera gameCamera;
@@ -42,6 +41,8 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private DungeonManager dungeonManager;
 
     [SerializeField] private VillageManager villageManager;
+
+    [SerializeField] private OnsenManager onsen;
 
     [SerializeField] private PlayerLogoManager playerLogoManager;
     [SerializeField] private ServerNotificationManager serverNotificationManager;
@@ -71,9 +72,15 @@ public class GameManager : MonoBehaviour, IGameManager
     private StreamRaidManager streamRaidManager;
     private ArenaController arenaController;
     private ItemManager itemManager;
+    private GraphicsToggler graphics;
+
+    private int lastButtonIndex = 0;
+    private float playerRequestTime = 0.5f;
+    private float playerRequestInterval = 0.5f;
 
     public string ServerAddress;
 
+    public GraphicsToggler Graphics => graphics;
     public IRavenNestClient RavenNest => ravenNest;
     public ClanManager Clans => clanManager ?? (clanManager = new ClanManager(this));
 
@@ -93,6 +100,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public StreamRaidManager StreamRaid => streamRaidManager;
     public DungeonManager Dungeons => dungeonManager;
     public RavenBotConnection RavenBot => commandServer?.Connection;
+    public RavenBot RavenBotController => commandServer;
     public FerryController Ferry => ferryController;
     public DropEventManager DropEvent => dropEventManager;
     public GameCamera Camera => gameCamera;
@@ -101,13 +109,13 @@ public class GameManager : MonoBehaviour, IGameManager
     public ServerNotificationManager ServerNotifications => serverNotificationManager;
 
     public EventTriggerSystem EventTriggerSystem => ioc.Resolve<EventTriggerSystem>();
-
+    public OnsenManager Onsen => onsen;
     public TavernHandler Tavern => tavern;
 
     public bool IsSaving => saveCounter > 0;
 
-    private float saveTimer = 5f;
-    private float saveFrequency = 10f;
+    private float updateSessionInfoTime = 5f;
+    private float saveFrequency = 5f;
     private int saveCounter;
 
     private RavenNestClient ravenNest;
@@ -136,6 +144,11 @@ public class GameManager : MonoBehaviour, IGameManager
     private DateTime serverTime;
     private readonly TimeSpan dungeonStartCooldown = TimeSpan.FromMinutes(10);
     private readonly TimeSpan raidStartCooldown = TimeSpan.FromMinutes(10);
+    private bool hasLoadedPlayers;
+    private int botSpawnIndex = 0;
+    private NameTagManager nametagManager;
+    private ConcurrentDictionary<string, string> saveGameStatValues = new ConcurrentDictionary<string, string>();
+    public int PlayerBoostRequirement { get; set; } = 0;
 
     public Permissions Permissions { get; set; } = new Permissions();
     public bool LogoCensor { get; set; }
@@ -146,21 +159,31 @@ public class GameManager : MonoBehaviour, IGameManager
         set => potatoMode = value;
     }
 
+    public bool RealtimeDayNightCycle
+    {
+        get => dayNightCycle?.UseRealTime ?? false; set
+        {
+            if (dayNightCycle)
+                dayNightCycle.UseRealTime = value;
+        }
+    }
     public bool AutoPotatoMode { get; set; }
-    public bool IsLoaded => loadingStates.All(x => x.Value == LoadingState.Loaded);
+    public bool IsLoaded { get; private set; }
     public bool DungeonStartEnabled { get; internal set; } = true;
     public bool RaidStartEnabled { get; internal set; } = true;
+    public NameTagManager NameTags => nametagManager;
 
     // Start is called before the first frame update   
     void Start()
     {
+        GameCache.Instance.IsAwaitingGameRestore = false;
         ioc = GetComponent<IoCContainer>();
-        AutoPotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_AutoPotatoMode, 0) > 0;
-        PotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_PotatoMode, 0) > 0;
 
         gameReloadMessage.SetActive(false);
+        if (!graphics) graphics = FindObjectOfType<GraphicsToggler>();
+        if (!nametagManager) nametagManager = FindObjectOfType<NameTagManager>();
         if (!dayNightCycle) dayNightCycle = GetComponent<DayNightCycle>();
-
+        if (!onsen) onsen = GetComponent<OnsenManager>();
         if (!loginHandler) loginHandler = FindObjectOfType<LoginHandler>();
         if (!dropEventManager) dropEventManager = GetComponent<DropEventManager>();
         if (!ferryProgress) ferryProgress = FindObjectOfType<FerryProgress>();
@@ -198,6 +221,10 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ClanSkillLevelChangedEventHandler>(GameEventType.ClanSkillLevelChanged);
         RegisterGameEventHandler<ServerTimeEventHandler>(GameEventType.ServerTime);
 
+        RegisterGameEventHandler<PlayerRestedUpdateEventHandler>(GameEventType.PlayerRestedUpdate);
+
+        RegisterGameEventHandler<PubSubTokenReceivedEventHandler>(GameEventType.PubSubToken);
+
         RegisterGameEventHandler<ExpMultiplierEventHandler>(GameEventType.ExpMultiplier);
 
         RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
@@ -217,14 +244,40 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ItemSellEventHandler>(GameEventType.ItemSell);
 
         commandServer.Initialize(this);
+
+        LoadGameSettings();
+
         musicManager.PlayBackgroundMusic();
 
         this.EventTriggerSystem.SourceTripped += OnSourceTripped;
+
+        GameCache.Instance.LoadState();
+    }
+
+    private void LoadGameSettings()
+    {
+        AutoPotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_AutoPotatoMode, 0) > 0;
+        PotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_PotatoMode, 0) > 0;
+        RealtimeDayNightCycle = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_RealTimeDayNightCycle, 0) > 0;
+        PlayerBoostRequirement = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_PlayerBoostRequirement);
+
+        PlayerList.Bottom = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_PlayerListSize, PlayerList.Bottom);
+        PlayerList.Scale = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_PlayerListScale, PlayerList.Scale);
+
+        Raid.Notifications.volume = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_RaidHornVolume, Raid.Notifications.volume);
+        Music.volume = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_MusicVolume, Music.volume);
+
+        SettingsMenuView.SetResolutionScale(PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_DPIScale, 1f));
     }
 
     internal void OnSessionStart()
     {
-        commandServer.SendSessionOwner(this.RavenNest.TwitchUserId, this.RavenNest.TwitchUserName, this.RavenNest.SessionId);
+        commandServer.UpdateSessionInfo();
+
+        if (RavenBot.UseRemoteBot && RavenBot.IsConnectedToRemote)
+        {
+            RavenBot.SendSessionOwner(this.RavenNest.TwitchUserId, this.RavenNest.TwitchUserName, this.RavenNest.SessionId);
+        }
     }
 
     private void OnSourceTripped(object sender, EventTriggerSystem.SysEventStats e)
@@ -251,78 +304,80 @@ public class GameManager : MonoBehaviour, IGameManager
         return null;
     }
 
+    public void SaveStateAndShutdownGame(bool activateTempLogin = true)
+    {
+        if (activateTempLogin)
+        {
+            if (!loginHandler) return;
+            loginHandler.ActivateTempAutoLogin();
+        }
+
+        SavePlayerStates();
+        Application.Quit();
+    }
+
+    public void SavePlayerStates()
+    {
+        GameCache.Instance.SavePlayersState(this.playerManager.GetAllPlayers());
+
+        //var gc = GameCache.Instance;
+        //var players = ;
+
+        //gc.SetPlayersState(players);
+        //gc.BuildState();
+        //gc.SaveState();
+    }
+
+    public void ReloadScene()
+    {
+        ravenNest.Stream.Close();
+        RavenBot.Stop();
+        SceneManager.LoadScene(1, LoadSceneMode.Single);
+    }
+
     public void ReloadGame()
     {
         if (!loginHandler) return;
+
         isReloadingScene = true;
         loginHandler.ActivateTempAutoLogin();
-        var gc = GameCache.Instance;
 
-        gc.SetPlayersState(this.playerManager.GetAllPlayers());
-        gc.BuildState();
+        SavePlayerStates();
+
+        GameCache.Instance.IsAwaitingGameRestore = true;
 
         ravenNest.Stream.Close();
         RavenBot.Stop();
 
         gameReloadMessage.SetActive(true);
 
-        SceneManager.LoadScene(1);
+        ReloadScene();
     }
 
     private IEnumerator RestoreGameState(GameCacheState state)
     {
+        GameCache.Instance.IsAwaitingGameRestore = false;
+
         if (state.Players == null || state.Players.Count == 0)
             yield break;
 
         yield return UnityEngine.Resources.UnloadUnusedAssets();
 
-        try
-        {
-            var players = state.Players?.Select(x => x.Definition.Id)?.ToArray();
-            if (players != null)
-                ravenNest.Game.AttachPlayersAsync(players);
-        }
-        catch (Exception exc)
-        {
-            LogError("Failed to attach players on restore. " + exc.ToString());
-        }
 
-        yield return new WaitForSeconds(0.5f);
+        Log("Restoring game state with " + state.Players.Count + " players.");
 
         foreach (var player in state.Players)
         {
-            var instance = SpawnPlayer(player.Definition, player.TwitchUser);
-            if (!instance || instance == null)
+            if (player.TwitchUser == null || string.IsNullOrEmpty(player.TwitchUser.UserId))
             {
-                continue;
+                LogError("Unable to restore character, TwitchUser is null or missing UserId.");
+                yield return null;
             }
 
-            yield return new WaitForEndOfFrame();
-
-            instance.Lock();
-
-            yield return new WaitForEndOfFrame();
-
-            instance.Inventory.EquipAll();
-
-            yield return new WaitForEndOfFrame();
-
-            if (!player.ResetPosition)
-            {
-                instance.transform.position = player.Position;
-                instance.Island = islandManager.FindPlayerIsland(instance);
-            }
-
-            yield return new WaitForEndOfFrame();
-
-            if (player.TrainingTaskArg != null && player.TrainingTaskArg.Length > 0)
-            {
-                instance.SetTaskArguments(player.TrainingTaskArg);
-                instance.GotoClosest(player.TrainingTask);
-            }
-
-            yield return new WaitForEndOfFrame();
+            yield return Players.JoinAsync(player.TwitchUser, RavenBot.ActiveClient, false, false, player.CharacterId);
         }
+
+        //SavePlayerStates();
     }
 
     // Update is called once per frame
@@ -333,17 +388,58 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
+        //if (Input.GetKeyDown(KeyCode.L))
+        //{
+        //    (new StreamerRaidEventHandler()).Handle(this, JsonConvert.SerializeObject(new StreamRaidInfo()
+        //    {
+        //        RaiderUserId = "72424639",
+        //        RaiderUserName = "zerratar",
+        //        Players = new List<UserCharacter>
+        //        {
+        //            new UserCharacter()
+        //            {
+        //                CharacterId = new Guid("0d4e920d-64a7-4b98-9c78-01dd1913824b"),
+        //                UserId ="72424639",
+        //                Username = "zerratar"
+        //            }
+        //        }
+        //    }));
+        //}
+
         if (AutoPotatoMode)
         {
             forcedPotatoMode = !Application.isFocused;
         }
 
-        //if (Time.frameCount % 300 == 0)
-        //{
-        //    System.GC.Collect();
-        //}
+        var currentQualityLevel = QualitySettings.GetQualityLevel();
+        if (PotatoMode)
+        {
+            if (currentQualityLevel != 0)
+            {
+                QualitySettings.SetQualityLevel(0);
+            }
+        }
+        else
+        {
+            if (currentQualityLevel != 1)
+            {
+                QualitySettings.SetQualityLevel(1);
+            }
+        }
 
         UpdateIntegrityCheck();
+
+        if (Input.GetKeyDown(KeyCode.F11) && RavenBot.UseRemoteBot && !RavenBot.IsConnectedToLocal)
+        {
+            RavenBot.Disconnect(BotConnectionType.Remote);
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.F12))
+        {
+            RavenNest.Stream.Reconnect();
+            return;
+        }
 
         if (Input.GetKeyDown(KeyCode.F5))
         {
@@ -358,7 +454,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (Input.GetKeyUp(KeyCode.Escape) && !menuHandler.Visible && !playerSearchHandler.Visible)
         {
-            menuHandler.Show();
+            menuHandler.Show(true);
         }
 
         UpdateApiCommunication();
@@ -373,12 +469,13 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (ravenNest.Authenticated && ravenNest.SessionStarted && ravenNest.Stream.IsReady)
+        if (GameCache.Instance.IsAwaitingGameRestore && ravenNest.Authenticated && ravenNest.SessionStarted && ravenNest.Stream.IsReady && Items.Loaded)
         {
+            GameCache.Instance.IsAwaitingGameRestore = false;
             var reloadState = GameCache.Instance.GetReloadState();
             if (reloadState != null)
             {
-                StartCoroutine(RestoreGameState(reloadState));
+                StartCoroutine(RestoreGameState(reloadState.Value));
                 return;
             }
         }
@@ -433,7 +530,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (streamerRaidTimer <= 0f)
             {
-                Application.Quit();
+                //Application.Quit();
+                SaveStateAndShutdownGame(false);
             }
 
             return true;
@@ -455,6 +553,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public void SetLoadingState(string key, LoadingState state)
     {
         loadingStates[key] = state;
+        IsLoaded = loadingStates.All(x => x.Value == LoadingState.Loaded);
     }
 
     public void OnAuthenticated()
@@ -471,15 +570,21 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         dayNightCycle.SetTimeOfDay(totalTime, freezeTime);
     }
-
-    public void Log(string message)
+    public static void Log(string message)
     {
-        //Debug.Log(message);
+        Debug.Log("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
     }
-
-    public void LogError(string message)
+    public static void LogWarning(string message)
     {
-        Debug.LogError(message);
+        Debug.LogWarning("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
+    }
+    public static void LogError(string message)
+    {
+        Debug.LogError("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
+    }
+    public static void LogError(Exception message)
+    {
+        Debug.LogError("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
     }
     public void QueueRemovePlayer(PlayerController player)
     {
@@ -498,31 +603,70 @@ public class GameManager : MonoBehaviour, IGameManager
             raidManager.Leave(player);
         }
 
-
         ravenNest.PlayerRemoveAsync(player);
 
-        player.Kicked = true;
+        player.Removed = true;
         playerList.RemovePlayer(player);
         playerManager.Remove(player);
 
+        if (gameCamera.Observer != null && gameCamera.Observer.ObservedPlayer == player)
+        {
+            gameCamera.ObservePlayer(null);
+        }
+
         UpdateVillageBoostText();
+        UpdatePlayerCount();
+        SavePlayerStates();
     }
 
+    public async void SpawnManyBotPlayers(int count)
+    {
+        for (var i = 0; i < count; ++i)
+        {
+            await SpawnBotPlayer();
+            await Task.Delay(10);
+        }
+    }
+
+    public async Task SpawnBotPlayer()
+    {
+        var id = Random.Range(10000, 99999);
+
+        var userId = "#" + id;
+
+        while (playerManager.GetPlayerByUserId(userId))
+        {
+            id = Random.Range(10000, 99999);
+            userId = "#" + id;
+            await Task.Delay(5);
+        }
+
+        var userName = "Bot" + id;
+
+        //var uid = 1000 + (botSpawnIndex++);
+        var playerInfo = new TwitchPlayerInfo(userId, userName, userName, "#ffffff", false, false, false, false, "1");
+        var player = await Players.JoinAsync(playerInfo, RavenBot.ActiveClient, false, true);
+        if (player)
+        {
+            await player.EquipBestItemsAsync();
+            ++botSpawnIndex;
+        }
+    }
     public PlayerController SpawnPlayer(
         RavenNest.Models.Player playerDefinition,
-        Player streamUser = null,
+        TwitchPlayerInfo streamUser = null,
         StreamRaidInfo raidInfo = null)
     {
         if (!chunkManager)
         {
-            Debug.LogError("No chunk manager available!");
+            LogError("No chunk manager available!");
             return null;
         }
 
         var starter = chunkManager.GetStarterChunk();
         if (starter == null)
         {
-            Debug.LogError("No starter chunk available!");
+            LogError("No starter chunk available!");
             return null;
         }
 
@@ -539,12 +683,15 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (!player)
         {
-            Debug.LogError("Can't spawn player, player is already playing.");
+            LogError("Can't spawn player, player is already playing.");
             return null;
         }
 
         playerList.AddPlayer(player);
-        PlayerJoined(player);
+
+        Village.TownHouses.EnsureAssignPlayerRows(Players.GetPlayerCount());
+
+        UpdatePlayerCount();
 
         UpdateVillageBoostText();
 
@@ -591,7 +738,6 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             return null;
         }
-
         return SpawnPlayer(playerInfo.Player, raidInfo: raiderInfo);
     }
 
@@ -614,13 +760,14 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void OnApplicationQuit()
     {
+        RavenBot.Stop();
+
         this.EventTriggerSystem.Dispose();
 
         StopRavenNestSession();
 
-        Debug.Log("Application ending after " + Time.time + " seconds");
+        Log("Application ending after " + Time.time + " seconds");
 
-        RavenBot.Stop();
         SaveEmptyGameStats();
     }
 
@@ -636,6 +783,7 @@ public class GameManager : MonoBehaviour, IGameManager
             new ProductionRavenNestStreamSettings()
             //new StagingRavenNestStreamSettings()
             //new LocalRavenNestStreamSettings()
+            //new UnsecureLocalRavenNestStreamSettings()
             );
 
             ravenNest = client;
@@ -662,6 +810,11 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
+        if (ravenNest.BadClientVersion)
+        {
+            return;
+        }
+
         if (ravenNest.Authenticated && !ravenNest.SessionStarted)
         {
             if (await ravenNest.StartSessionAsync(Application.version, accessKey, false))
@@ -676,15 +829,44 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (saveTimer > 0)
+        if (updateSessionInfoTime > 0)
         {
-            saveTimer -= Time.deltaTime;
+            updateSessionInfoTime -= Time.deltaTime;
         }
 
-        if (saveTimer <= 0f)
+        if (RavenBot.UseRemoteBot && !RavenBot.IsConnectedToRemote && !RavenBot.IsConnectedToLocal)
         {
-            saveTimer = saveFrequency;
-            await SavePlayersAsync();
+            RavenBot.Connect(BotConnectionType.Remote);
+
+            if (RavenNest.Authenticated && RavenNest.SessionStarted && RavenBot.UseRemoteBot && RavenBot.IsConnectedToRemote)
+            {
+                commandServer.UpdateSessionInfo();
+            }
+        }
+
+
+        if (RavenNest.Authenticated && RavenNest.SessionStarted)
+        {
+            if (playerRequestTime >= 0)
+            {
+                playerRequestTime -= Time.deltaTime;
+                if (playerRequestTime < 0f)
+                {
+                    await SendPlayerRequestsAsync();
+                    playerRequestTime = playerRequestInterval;
+                }
+            }
+        }
+
+        if (updateSessionInfoTime <= 0f)
+        {
+            updateSessionInfoTime = saveFrequency;
+            //await SavePlayersAsync();
+
+            if (RavenNest.Authenticated && RavenNest.SessionStarted && RavenBot.UseRemoteBot && RavenBot.IsConnectedToRemote)
+            {
+                commandServer.UpdateSessionInfo();
+            }
         }
 
         if (savingPlayersTime > 0)
@@ -693,13 +875,36 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-    private async void StopRavenNestSession()
+    public async void StopRavenNestSession()
     {
         if (gameSessionActive)
         {
             await SavePlayersAsync();
             await ravenNest.EndSessionAsync();
-            Debug.Log("Saving complete!");
+            Log("Saving complete!");
+        }
+    }
+
+    private async Task SendPlayerRequestsAsync()
+    {
+        try
+        {
+            var players = playerManager.GetAllPlayers();
+
+            foreach (var player in players)
+            {
+                if (player.RequestQueue.TryDequeue(out var req))
+                {
+                    await req.InvokeAsync();
+                }
+
+                player.UpdateRequestQueue();
+            }
+
+        }
+        catch (Exception exc)
+        {
+            LogError(exc.ToString());
         }
     }
 
@@ -708,7 +913,7 @@ public class GameManager : MonoBehaviour, IGameManager
         try
         {
             if (savingPlayersTime > 0) return;
-            var players = playerManager.GetAllPlayers().ToList();
+            var players = playerManager.GetAllPlayers();
             var failedToSave = new List<PlayerController>();
             if (players.Count == 0) return;
             //Debug.Log($"Saving {players.Count} players...");
@@ -733,7 +938,7 @@ public class GameManager : MonoBehaviour, IGameManager
             }
             catch (Exception exc)
             {
-                Debug.LogError(exc.ToString());
+                LogError(exc.ToString());
             }
 
             //if (failedToSave.Count > 0)
@@ -743,57 +948,57 @@ public class GameManager : MonoBehaviour, IGameManager
         }
         catch (Exception exc)
         {
-            Debug.LogError(exc.ToString());
+            LogError(exc.ToString());
         }
 
         savingPlayersTime = 0;
     }
 
-    private async Task SavePlayersUsingHTTP(IReadOnlyList<PlayerController> players)
-    {
-        Debug.LogWarning($"Fallbacking to HTTP Endpoint Saving {players.Count} players...");
-        var states = players
-            .Select(x => x.BuildPlayerState())
-            .ToArray();
+    //private async Task SavePlayersUsingHTTP(IReadOnlyList<PlayerController> players)
+    //{
+    //    Debug.LogWarning($"Fallbacking to HTTP Endpoint Saving {players.Count} players...");
+    //    var states = players
+    //        .Select(x => x.BuildPlayerState())
+    //        .ToArray();
 
-        // fall back to HTTPS Post Save
-        var batchSize = 20;
-        for (var i = 0; i < states.Length;)
-        {
-            var toUpdate = states.Skip(i * batchSize).Take(batchSize).ToArray();
-            var remaining = states.Length - i;
-            i += remaining < batchSize ? remaining : batchSize;
+    //    // fall back to HTTPS Post Save
+    //    var batchSize = 20;
+    //    for (var i = 0; i < states.Length;)
+    //    {
+    //        var toUpdate = states.Skip(i * batchSize).Take(batchSize).ToArray();
+    //        var remaining = states.Length - i;
+    //        i += remaining < batchSize ? remaining : batchSize;
 
-            var result = await ravenNest.Players.UpdateManyAsync(toUpdate);
-            if (result == null)
-            {
-                Debug.LogWarning($"Saving gave null result. Data may not have been saved.");
-                continue;
-            }
+    //        var result = await ravenNest.Players.UpdateManyAsync(toUpdate);
+    //        if (result == null)
+    //        {
+    //            Debug.LogWarning($"Saving gave null result. Data may not have been saved.");
+    //            continue;
+    //        }
 
-            for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
-            {
-                if (players.Count <= playerIndex)
-                {
-                    Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
-                    continue;
-                }
+    //        for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
+    //        {
+    //            if (players.Count <= playerIndex)
+    //            {
+    //                Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
+    //                continue;
+    //            }
 
-                var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
-                if (playerResult.Successeful)
-                {
-                    playerResult.Player.SavedSucceseful();
-                }
-                else
-                {
-                    playerResult.Player.FailedToSave();
-                    Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
-                }
-            }
+    //            var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
+    //            if (playerResult.Successeful)
+    //            {
+    //                playerResult.Player.SavedSucceseful();
+    //            }
+    //            else
+    //            {
+    //                playerResult.Player.FailedToSave();
+    //                Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
+    //            }
+    //        }
 
-            await Task.Delay(1000);
-        }
-    }
+    //        await Task.Delay(1000);
+    //    }
+    //}
 
     private void UpdateChatBotCommunication()
     {
@@ -911,6 +1116,140 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
+#if DEBUG
+    private void OnGUI()
+    {
+        if (!Permissions.IsAdministrator)
+        {
+            return;
+        }
+
+        int buttonWidth = 150;
+        int buttonMarginY = 5;
+        int buttonHeight = 40;
+        int buttonStartY = (Screen.height / 2) - (lastButtonIndex * (buttonHeight / 2));//60;
+
+        Rect GetButtonRect(int i) => new Rect(Screen.width - buttonWidth - 20, buttonStartY + ((buttonHeight + buttonMarginY) * i), buttonWidth, buttonHeight);
+
+        var buttonIndex = 0;
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 500 Bots"))
+        {
+            SpawnManyBotPlayers(500);
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 100 Bots"))
+        {
+            SpawnManyBotPlayers(100);
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn a bot"))
+        {
+            SpawnBotPlayer();
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Combat"))
+        {
+            var bots = this.playerManager.GetAllBots();
+            foreach (var bot in bots)
+            {
+                bot.SetTask("fighting", new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", "healing" }).Random() });
+            }
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Gathering"))
+        {
+            var bots = this.playerManager.GetAllBots();
+            foreach (var bot in bots)
+            {
+                bot.SetTask((new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting" }).Random(), new string[0]);
+            }
+        }
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Random"))
+        {
+            var bots = this.playerManager.GetAllBots();
+            foreach (var bot in bots)
+            {
+
+                var s = (new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting", "fighting" }).Random();
+                if (s == "fighting")
+                {
+                    bot.SetTask(s, new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", "healing" }).Random() });
+                }
+                else
+                {
+                    bot.SetTask(s, new string[0]);
+                }
+            }
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Healing 50/Combat 50"))
+        {
+            var bots = this.playerManager.GetAllBots();
+            var c = bots.Count / 2;
+            var i = 0;
+            foreach (var bot in bots)
+            {
+                var task = "fighting";
+                var subTask = (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", }).Random();
+                if (i++ <= c)
+                {
+                    subTask = "healing";
+                }
+                bot.SetTask(task, new string[] { subTask });
+            }
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Sail 2 Heim"))
+        {
+            var bots = this.playerManager.GetAllBots();
+
+            var island = Islands.Find("Heim");
+
+            foreach (var bot in bots)
+            {
+                bot.Ferry.Embark(island);
+            }
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Start Dungeon"))
+        {
+            dungeonManager.ToggleDungeon();
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Start Raid"))
+        {
+            raidManager.StartRaid("admin");
+        }
+
+
+        if (this.raidManager.Started)
+        {
+            if (GUI.Button(GetButtonRect(buttonIndex++), "Join Raid"))
+            {
+                var bots = this.playerManager.GetAllBots();
+                foreach (var bot in bots)
+                {
+                    Raid.Join(bot);
+                }
+            }
+        }
+
+        if (this.dungeonManager.Active)
+        {
+            if (GUI.Button(GetButtonRect(buttonIndex++), "Join Dungeon"))
+            {
+                var bots = this.playerManager.GetAllBots();
+                foreach (var bot in bots)
+                {
+                    dungeonManager.Join(bot);
+                }
+            }
+        }
+
+        lastButtonIndex = buttonIndex;
+    }
+#endif
+
     private void UpdatePlayerKickQueue()
     {
         if (playerKickQueue.Count <= 0 || !Arena || Arena.Started)
@@ -935,12 +1274,22 @@ public class GameManager : MonoBehaviour, IGameManager
         if (expBoostTimerUpdate > 0f) return;
 
         boostTimer.SetActive(subEventManager.CurrentBoost.Active);
+
+
         if (subEventManager.CurrentBoost.Active)
         {
             var secondsLeft = Mathf.FloorToInt(subEventManager.Duration - subEventManager.CurrentBoost.Elapsed);
             var timeLeft = $"{secondsLeft} sec";
             if (secondsLeft > 3600)
+            {
                 timeLeft = $"{Mathf.FloorToInt(secondsLeft / 3600f)} hours";
+                var minutes = secondsLeft / 60;
+                minutes = (int)(minutes % 60);
+                if (minutes > 0)
+                {
+                    timeLeft += " " + (int)+minutes + "min";
+                }
+            }
             else if (secondsLeft > 60)
                 timeLeft = $"{Mathf.FloorToInt(secondsLeft / 60f)} mins";
             boostTimer.SetSubscriber(subEventManager.CurrentBoost.LastSubscriber, !subEventManager.CurrentBoost.LastSubscriber.Contains(" "));
@@ -962,13 +1311,13 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
+
     public void UpdateVillageBoostText()
     {
         var bonuses = Village.GetExpBonuses();
-        var bonusString = string.Join(", ", bonuses.GroupBy(x => x.SlotType)
+        var bonusString = string.Join(", ", bonuses.Where(x => x.Bonus > 0).GroupBy(x => x.SlotType)
             .Where(x => x.Key != TownHouseSlotType.Empty && x.Key != TownHouseSlotType.Undefined)
             .Select(x => $"{x.Key} {x.Sum(y => y.Bonus)}%"));
-
 
         SaveGameStat("village-boost", bonusString);
     }
@@ -981,30 +1330,28 @@ public class GameManager : MonoBehaviour, IGameManager
         //SaveGameStat("last-level-up-skill", "");
     }
 
-    public void PlayerJoined(PlayerController player)
+    public void UpdatePlayerCount()
     {
-        if (!player) return;
-        //SaveGameStat("last-joined-name", player.PlayerName);
         SaveGameStat("online-player-count", playerManager.GetPlayerCount());
-    }
-
-    public void PlayerLevelUp(PlayerController player, SkillStat skill)
-    {
-        if (!player) return;
-        //SaveGameStat("last-level-up-name", player.PlayerName);
-        //SaveGameStat("last-level-up-skill", skill?.ToString());
     }
 
     private void SaveGameStat<T>(string name, T value)
     {
         try
         {
+            // CHeck if text has changed, otherwise we dont save it.
+            var val = value.ToString();
+            if (saveGameStatValues.TryGetValue(name, out var v) && v == val)
+            {
+                return;
+            }
+
+            saveGameStatValues[name] = val;
+
             if (!System.IO.Directory.Exists(settings.StreamLabelsFolder))
                 System.IO.Directory.CreateDirectory(settings.StreamLabelsFolder);
 
-            System.IO.File.WriteAllText(
-                System.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt"),
-                value.ToString());
+            System.IO.File.WriteAllText(System.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt"), val);
         }
         catch
         {

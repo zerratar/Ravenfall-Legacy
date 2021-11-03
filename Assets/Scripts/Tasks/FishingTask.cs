@@ -11,14 +11,14 @@ public class FishingTask : ChunkTask
         this.lazyFishes = lazyFishes;
     }
 
-    public override bool IsCompleted(PlayerController player, Transform target)
+    public override bool IsCompleted(PlayerController player, object target)
     {
-        var fishingSpot = target.GetComponent<FishingController>();
+        var fishingSpot = target as FishingController;
         if (!fishingSpot) return true;
         return false;
     }
 
-    public override Transform GetTarget(PlayerController player)
+    public override object GetTarget(PlayerController player)
     {
         var fishingSpots = lazyFishes();
 
@@ -26,13 +26,12 @@ public class FishingTask : ChunkTask
                 //.Where(x => !x.IsDepleted)
                 .OrderBy(x => UnityEngine.Random.value)
                 .ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-                .FirstOrDefault()?
-                .transform;
+                .FirstOrDefault();
     }
 
-    public override bool Execute(PlayerController player, Transform target)
+    public override bool Execute(PlayerController player, object target)
     {
-        if (!target)
+        if (target == null)
         {
             return false;
         }
@@ -42,7 +41,7 @@ public class FishingTask : ChunkTask
             return false;
         }
 
-        var fishingSpot = target.GetComponent<FishingController>();
+        var fishingSpot = target as FishingController;
         if (!fishingSpot)
         {
             return false;
@@ -51,10 +50,9 @@ public class FishingTask : ChunkTask
         return player.Fish(fishingSpot);
     }
 
-    public override bool CanExecute(PlayerController player, Transform target, out TaskExecutionStatus reason)
+    public override bool CanExecute(PlayerController player, object target, out TaskExecutionStatus reason)
     {
         reason = TaskExecutionStatus.NotReady;
-
         if (!player)
         {
             return false;
@@ -70,25 +68,25 @@ public class FishingTask : ChunkTask
             return false;
         }
 
-        if (!target)
+        if (target == null)
         {
             return false;
         }
 
-        var possibleTargets = lazyFishes();
-        if (!possibleTargets.FirstOrDefault(x => x.transform == target))
+        //var possibleTargets = lazyFishes();
+        //if (!possibleTargets.FirstOrDefault(x => x.transform == target))
+        //{
+        //    reason = TaskExecutionStatus.InvalidTarget;
+        //    return false;
+        //}
+
+        var fish = target as FishingController;
+        if (!fish)
         {
-            reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
 
-        var collider = target.GetComponent<CapsuleCollider>();
-        if (!collider)
-        {
-            return false;
-        }
-
-        if (Vector3.Distance(player.transform.position, target.transform.position) >= collider.radius)
+        if (Vector3.Distance(player.transform.position, fish.transform.position) >= fish.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;
@@ -96,5 +94,17 @@ public class FishingTask : ChunkTask
 
         reason = TaskExecutionStatus.Ready;
         return true;
+    }
+
+    internal override bool TargetExistsImpl(object target)
+    {
+        var tar = target as FishingController;
+        if (!tar)
+        {
+            return false;
+        }
+
+        var possibleTargets = lazyFishes();
+        return possibleTargets.Any(x => x.GetInstanceID() == tar.GetInstanceID());
     }
 }

@@ -127,9 +127,14 @@ public class RaidManager : MonoBehaviour, IEvent
             gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
 
             var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
-            var evt = ioc.Resolve<EventTriggerSystem>();
-            evt.TriggerEvent("raid", TimeSpan.FromSeconds(10));
-
+            if (ioc)
+            {
+                var evt = ioc.Resolve<EventTriggerSystem>();
+                if (evt != null)
+                {
+                    evt.TriggerEvent("raid", TimeSpan.FromSeconds(10));
+                }
+            }
             return;
         }
         else if (!string.IsNullOrEmpty(initiator))
@@ -158,11 +163,8 @@ public class RaidManager : MonoBehaviour, IEvent
             }
         }
 
-        if (!Boss.RaidBossControlsDestroy || timeout)
-        {
-            Destroy(Boss.gameObject);
-            Boss = null;
-        }
+        Destroy(Boss.gameObject);
+        Boss = null;
 
         gameManager.Events.End(this);
     }
@@ -202,8 +204,20 @@ public class RaidManager : MonoBehaviour, IEvent
             return;
         }
 
+        if (!Boss && Started)
+        {
+            EndRaid(true, true);
+            return;
+        }
+
         if (notifications && Boss)
         {
+            if (Boss.Enemy.Stats.Health.CurrentValue <= 0)
+            {
+                EndRaid(true, true);
+                return;
+            }
+
             timeoutTimer -= Time.deltaTime;
             if (timeoutTimer <= 0f && Boss.Enemy.Stats.Health.CurrentValue > 0)
             {
@@ -227,7 +241,7 @@ public class RaidManager : MonoBehaviour, IEvent
     {
         if (!raidBossPrefab)
         {
-            Debug.LogError("NO RAID BOSS PREFAB SET!!!");
+            GameManager.LogError("NO RAID BOSS PREFAB SET!!!");
             return;
         }
 
@@ -256,6 +270,8 @@ public class RaidManager : MonoBehaviour, IEvent
         Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq * 0.75f);
 
         timeoutTimer = Mathf.Min(maxTimeoutSeconds, Mathf.Max(minTimeoutSeconds, Boss.Enemy.Stats.CombatLevel * 0.8249123f));
+
+        Boss.Enemy.Unlock();
     }
 }
 

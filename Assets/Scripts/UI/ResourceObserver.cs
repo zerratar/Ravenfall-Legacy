@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ResourceObserver : MonoBehaviour
 {
-    private Func<decimal?> observedResource;
+    private Func<double?> observedResource;
 
     [SerializeField] private TextMeshProUGUI label;
 
@@ -27,7 +27,7 @@ public class ResourceObserver : MonoBehaviour
         label.text = formattedValue;
     }
 
-    public void Observe(Func<decimal?> amount)
+    public void Observe(Func<double?> amount)
     {
         observedResource = amount;
     }

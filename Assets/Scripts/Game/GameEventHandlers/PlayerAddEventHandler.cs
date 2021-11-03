@@ -15,7 +15,8 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
             {
                 UserId = data.UserId,
                 UserName = data.UserName,
-                Identifier = "1",
+                Identifier = data.Identifier,
+                CharacterId = data.CharacterId
             });
 
         if (playerInfo == null)
@@ -29,8 +30,9 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
         }
 
         gameManager.SpawnPlayer(playerInfo.Player);
+        gameManager.SavePlayerStates();
 
-        Debug.Log($"PlayerAddEventHandler " + data.UserId + ", " + data.UserName);
+        GameManager.Log($"PlayerAddEventHandler " + data.UserId + ", " + data.UserName);
     }
 }
 

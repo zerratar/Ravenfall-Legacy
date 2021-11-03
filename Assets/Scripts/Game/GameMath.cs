@@ -10,7 +10,7 @@ public static class GameMath
     public const int OldMaxLevel = 170;
     public const float MaxExpBonusPerSlot = 50f;
     private static decimal[] OldExperienceArray = new decimal[OldMaxLevel];
-    public const decimal ExpScale = 1m;
+    public const double ExpScale = 1d;
     #endregion
 
     static GameMath()
@@ -163,14 +163,29 @@ public static class GameMath
         return 0;
     }
 
-    public static float CalculateHouseExpBonus(SkillStat skill)
+    public static float CalculateHouseExpBonus(this SkillStat skill)
     {
         // up to 50% exp bonus
         return (skill.Level / (float)OldMaxLevel) * MaxExpBonusPerSlot;
     }
 
-    public static SkillStat GetSkillByHouseType(Skills stats, TownHouseSlotType type)
+    public static SkillStat GetSkillByHouseType(this Skills stats, TownHouseSlotType type)
     {
+        if (type == TownHouseSlotType.Melee)
+        {
+            if (stats.Attack.Level > stats.Defense.Level && stats.Attack.Level > stats.Strength.Level)
+            {
+                return stats.Attack;
+            }
+            else if (stats.Defense.Level > stats.Attack.Level && stats.Defense.Level > stats.Strength.Level)
+            {
+                return stats.Defense;
+            }
+            else if (stats.Strength.Level >= stats.Attack.Level && stats.Strength.Level >= stats.Defense.Level)
+            {
+                return stats.Strength;
+            }
+        }
         switch (type)
         {
             case TownHouseSlotType.Woodcutting: return stats.Woodcutting;
@@ -188,8 +203,7 @@ public static class GameMath
             default: return stats.Mining;
         }
     }
-
-    public static TownHouseSlotType GetHouseTypeBySkill(Skill skill)
+    public static TownHouseSlotType GetHouseTypeBySkill(this Skill skill)
     {
         switch (skill)
         {
@@ -201,11 +215,74 @@ public static class GameMath
             case Skill.Slayer: return TownHouseSlotType.Slayer;
             case Skill.Woodcutting: return TownHouseSlotType.Woodcutting;
             case Skill.Fishing: return TownHouseSlotType.Fishing;
+            case Skill.Healing: return TownHouseSlotType.Healing;
+            case Skill.Ranged: return TownHouseSlotType.Ranged;
+            case Skill.Magic: return TownHouseSlotType.Magic;
+            default: return TownHouseSlotType.Melee;
+        }
+    }
+
+    public static TownHouseSlotType GetHouseTypeBySkill(this TaskSkill skill)
+    {
+        switch (skill)
+        {
+            case TaskSkill.Cooking: return TownHouseSlotType.Cooking;
+            case TaskSkill.Crafting: return TownHouseSlotType.Crafting;
+            case TaskSkill.Farming: return TownHouseSlotType.Farming;
+            case TaskSkill.Mining: return TownHouseSlotType.Mining;
+            case TaskSkill.Sailing: return TownHouseSlotType.Sailing;
+            case TaskSkill.Slayer: return TownHouseSlotType.Slayer;
+            case TaskSkill.Woodcutting: return TownHouseSlotType.Woodcutting;
+            case TaskSkill.Fishing: return TownHouseSlotType.Fishing;
             default: return TownHouseSlotType.Empty;
         }
     }
 
-    public static TownHouseSlotType GetHouseTypeBySkill(CombatSkill skill)
+    public static bool IsCombatSkill(this Skill skill)
+    {
+        switch (skill)
+        {
+            case Skill.Attack:
+            case Skill.Defense:
+            case Skill.Strength:
+            case Skill.Health:
+            case Skill.Ranged:
+            case Skill.Magic:
+            case Skill.Healing:
+                return true;
+        }
+        return false;
+    }
+    public static Skill AsSkill(this CombatSkill skill)
+    {
+        switch (skill)
+        {
+            case CombatSkill.Attack: return Skill.Attack;
+            case CombatSkill.Defense: return Skill.Defense;
+            case CombatSkill.Strength: return Skill.Strength;
+            case CombatSkill.Health: return Skill.Health;
+            case CombatSkill.Ranged: return Skill.Ranged;
+            case CombatSkill.Magic: return Skill.Magic;
+            case CombatSkill.Healing: return Skill.Healing;
+            default: return Skill.Health;
+        }
+    }
+    public static Skill AsSkill(this TaskSkill skill)
+    {
+        switch (skill)
+        {
+            case TaskSkill.Cooking: return Skill.Cooking;
+            case TaskSkill.Crafting: return Skill.Crafting;
+            case TaskSkill.Farming: return Skill.Farming;
+            case TaskSkill.Mining: return Skill.Mining;
+            case TaskSkill.Sailing: return Skill.Sailing;
+            case TaskSkill.Slayer: return Skill.Slayer;
+            case TaskSkill.Woodcutting: return Skill.Woodcutting;
+            case TaskSkill.Fishing: return Skill.Fishing;
+            default: return Skill.Woodcutting;
+        }
+    }
+    public static TownHouseSlotType GetHouseTypeBySkill(this CombatSkill skill)
     {
         switch (skill)
         {
@@ -313,9 +390,14 @@ public static class GameMath
         return (int)((level * 10 + 10) * 1.5D);
     }
 
-    public static decimal ExperienceForLevel(int level)
+    public static double ExperienceForLevel(int level)
     {
-        return (decimal)(level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
+        if (level - 2 >= ExperienceArray.Length)
+        {
+            return ExperienceArray[ExperienceArray.Length - 1];
+        }
+
+        return (level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
     }
 
     [Obsolete]
@@ -336,12 +418,12 @@ public static class GameMath
         return level - 2 < 0 ? 0 : OldExperienceArray[level - 2];
     }
 
-    public static decimal GetFishingExperience(int level)
+    public static double GetFishingExperience(int level)
     {
-        return (level * 0.66m) + (level * (level / 40m)) + (level * level * 0.005m) + level * 0.5m;
+        return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
     }
 
-    public static decimal GetFarmingExperience(int level)
+    public static double GetFarmingExperience(int level)
     {
         /*
             Following formula will generate:
@@ -354,19 +436,19 @@ public static class GameMath
             90		347,4
             110		490,6
          */
-        return (level * 0.66m) + (level * (level / 40m)) + (level * level * 0.005m) + level * 0.5m;
+        return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
     }
-    public static decimal GetWoodcuttingExperience(int level)
+    public static double GetWoodcuttingExperience(int level)
     {
-        return (level * 0.66m) + (level * (level / 40m)) + (level * level * 0.005m) + level * 0.5m;
+        return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
     }
 
-    public static decimal GetMiningExperienceFromType(RockType type)
+    public static double GetMiningExperienceFromType(RockType type)
     {
         switch (type)
         {
             case RockType.Rune: return 100;
-            default: return 5m;
+            default: return 5d;
         }
     }
 }

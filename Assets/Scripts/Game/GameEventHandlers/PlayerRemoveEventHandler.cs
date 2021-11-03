@@ -8,11 +8,11 @@ public class PlayerRemoveEventHandler : GameEventHandler<PlayerRemove>
         var player = gameManager.Players.GetPlayerById(data.CharacterId);
         if (!player)
         {
-            Debug.Log($"Received Player Remove ({data.UserId}) but the player is not in this game. Reason: " + data.Reason);
+            GameManager.Log($"Received Player Remove ({data.UserId}) but the player is not in this game. Reason: " + data.Reason);
             return;
         }
 
         gameManager.QueueRemovePlayer(player);
-        Debug.Log($"{player.PlayerName} removed from the game. Reason: " + data.Reason);
+        GameManager.Log($"{player.PlayerName} removed from the game. Reason: " + data.Reason);
     }
 }

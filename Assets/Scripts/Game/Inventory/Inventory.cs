@@ -10,7 +10,7 @@ public class GameInventoryItem
 {
     public RavenNest.Models.Item Item { get; set; }
     public string Tag { get; set; }
-    public decimal Amount { get; set; }
+    public double Amount { get; set; }
 }
 
 public class Inventory : MonoBehaviour
@@ -28,7 +28,21 @@ public class Inventory : MonoBehaviour
         equipment = GetComponent<PlayerEquipment>();
     }
 
-    public void Remove(Item item, decimal amount, bool removeEquipped = false)
+    public void Remove(Guid itemId, long amount)
+    {
+        var target = backpack.FirstOrDefault(x => x.Item.Id == itemId);
+        if (target == null)
+        {
+            return;
+        }
+
+        target.Amount -= amount;
+        if (target.Amount <= 0)
+        {
+            backpack.Remove(target);
+        }
+    }
+    public void Remove(Item item, double amount, bool removeEquipped = false)
     {
         if (removeEquipped)
         {
@@ -80,6 +94,24 @@ public class Inventory : MonoBehaviour
         equipment.EquipAll(equipped);
     }
 
+    public void UpdateScrolls(ScrollInfoCollection scrolls)
+    {
+        var existingScrolls = GetInventoryItemsOfCategory(ItemCategory.Scroll);
+        foreach (var scroll in existingScrolls)
+        {
+            backpack.Remove(scroll);
+        }
+
+        foreach (var s in scrolls)
+        {
+            var scrollItem = gameManager.Items.Get(s.ItemId);
+            if (scrollItem != null)
+            {
+                Add(scrollItem, s.Amount);
+            }
+        }
+    }
+
     internal long RemoveScroll(RavenNest.Models.ScrollType scroll)
     {
         var scrolls = GetInventoryItemsOfCategory(ItemCategory.Scroll);
@@ -96,7 +128,7 @@ public class Inventory : MonoBehaviour
         return 0L;
     }
 
-    public void Add(RavenNest.Models.Item item, decimal amount = 1)
+    public void Add(RavenNest.Models.Item item, double amount = 1)
     {
         if (item == null)
         {
@@ -163,22 +195,22 @@ public class Inventory : MonoBehaviour
         }
     }
 
-    public void Equip(ItemController i, bool updateAppearance = true)
+    public bool Equip(ItemController i, bool updateAppearance = true)
     {
         var item = gameManager.Items.Get(i.Id);
-        Equip(item, updateAppearance);
+        return Equip(item, updateAppearance);
     }
 
-    public void Equip(Guid itemId, bool updateAppearance = true)
+    public bool Equip(Guid itemId, bool updateAppearance = true)
     {
         var item = gameManager.Items.Get(itemId);
-        Equip(item, updateAppearance);
+        return Equip(item, updateAppearance);
     }
 
-    public void Equip(Item item, bool updateAppearance = true)
+    public bool Equip(Item item, bool updateAppearance = true)
     {
-        if (item == null || !player || player == null || !player.transform || player.transform == null)
-            return;
+        if (item == null || !player || player == null || !player.transform || player.transform == null || !CanEquipItem(item))
+            return false;
 
         player.transform.localScale = Vector3.one;
 
@@ -215,6 +247,7 @@ public class Inventory : MonoBehaviour
 
         player.UpdateCombatStats(equipped);
         player.transform.localScale = player.TempScale;
+        return true;
     }
 
     public void UpdateCombatStats()
@@ -227,9 +260,20 @@ public class Inventory : MonoBehaviour
         // always default to melee weapon when no type is used.
         if (itemCategory == ItemCategory.Weapon)
         {
-            return equipped.FirstOrDefault(IsMeleeWeapon);
+            for (var i = 0; i < equipped.Count; ++i)
+            {
+                var item = equipped[i];
+                if (IsMeleeWeapon(item)) return item;
+            }
+            return null;
         }
-        return equipped.FirstOrDefault(x => x.Category == itemCategory);
+
+        for (var i = 0; i < equipped.Count; ++i)
+        {
+            var item = equipped[i];
+            if (item.Category == itemCategory) return item;
+        }
+        return null;
     }
 
     public IReadOnlyList<RavenNest.Models.Item> GetEquipmentsOfCategory(ItemCategory itemCategory)
@@ -350,7 +394,10 @@ public class Inventory : MonoBehaviour
 
         EquipBestItem(ItemCategory.Weapon, ItemType.TwoHandedStaff);
         EquipBestItem(ItemCategory.Weapon, ItemType.TwoHandedBow);
-        EquipBestItem(ItemCategory.Armor, ItemType.Helm);
+        EquipBestItem(ItemCategory.Armor, ItemType.Helmet);
+
+        // TODO: Equip best suitable out of the Masks, Hat, HeadCoverings and Helmets
+
         EquipBestItem(ItemCategory.Armor, ItemType.Leggings);
         EquipBestItem(ItemCategory.Armor, ItemType.Gloves);
         EquipBestItem(ItemCategory.Armor, ItemType.LeftShoulder);
@@ -370,7 +417,7 @@ public class Inventory : MonoBehaviour
             : GetEquipmentOfCategory(category);
 
         var bestValue = equippedItem != null
-            ? equippedItem.WeaponPower + equippedItem.WeaponAim + equippedItem.ArmorPower
+            ? equippedItem.GetTotalStats()
             : 0;
 
         if (player.IsDiaperModeEnabled &&
@@ -405,23 +452,27 @@ public class Inventory : MonoBehaviour
         }
     }
 
-    public static int GetItemValue(GameInventoryItem item)
-    {
-        return item.Item.WeaponPower + item.Item.WeaponAim + item.Item.ArmorPower
-                        + item.Item.RangedPower + item.Item.RangedAim
-                        + item.Item.MagicPower + item.Item.MagicAim;
-    }
-
-    public bool CanEquipItem(GameInventoryItem item)
+    public bool CanEquipItem(Item item)
     {
         return player.IsGameAdmin ||
-                player.Stats.Defense.Level >= item.Item.RequiredDefenseLevel &&
-                player.Stats.Attack.Level >= item.Item.RequiredAttackLevel &&
-                player.Stats.Ranged.Level >= item.Item.RequiredRangedLevel &&
-                player.Stats.Magic.Level >= item.Item.RequiredMagicLevel &&
-                player.Stats.Slayer.Level >= item.Item.RequiredSlayerLevel;
+                player.Stats.Defense.Level >= item.RequiredDefenseLevel &&
+                player.Stats.Attack.Level >= item.RequiredAttackLevel &&
+                player.Stats.Ranged.Level >= item.RequiredRangedLevel &&
+                (player.Stats.Magic.Level >= item.RequiredMagicLevel || player.Stats.Healing.Level >= item.RequiredMagicLevel) &&
+                player.Stats.Slayer.Level >= item.RequiredSlayerLevel;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool CanEquipItem(GameInventoryItem item)
+    {
+        return CanEquipItem(item.Item);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int GetItemValue(GameInventoryItem item)
+    {
+        return item.Item.GetTotalStats();
+    }
     public void UpdateAppearance()
     {
         equipment.EquipAll(equipped);
@@ -443,8 +494,8 @@ public class Inventory : MonoBehaviour
     {
         public int Compare(RavenNest.Models.Item item1, RavenNest.Models.Item item)
         {
-            var stats1 = item1.WeaponAim + item1.WeaponPower + item1.ArmorPower;
-            var stats2 = item.WeaponAim + item.WeaponPower + item.ArmorPower;
+            var stats1 = item1.GetTotalStats();
+            var stats2 = item.GetTotalStats();
             return stats1 - stats2;
         }
     }

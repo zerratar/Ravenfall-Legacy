@@ -86,28 +86,28 @@ public class Chunk : MonoBehaviour, IChunk
         return spawnPoint.transform.position;
     }
 
-    public Transform GetTaskTarget(PlayerController player)
+    public object GetTaskTarget(PlayerController player)
     {
         return task?.GetTarget(player);
     }
 
-    public bool IsTaskCompleted(PlayerController player, Transform target)
+    public bool IsTaskCompleted(PlayerController player, object target)
     {
         return task == null || task.IsCompleted(player, target);
     }
 
-    public bool CanExecuteTask(PlayerController player, Transform target, out TaskExecutionStatus reason)
+    public bool CanExecuteTask(PlayerController player, object target, out TaskExecutionStatus reason)
     {
         reason = TaskExecutionStatus.NotReady;
         return task != null && task.CanExecute(player, target, out reason);
     }
 
-    public void TargetAcquired(PlayerController player, Transform target)
+    public void TargetAcquired(PlayerController player, object target)
     {
         task.TargetAcquired(player, target);
     }
 
-    public bool ExecuteTask(PlayerController player, Transform target)
+    public bool ExecuteTask(PlayerController player, object target)
     {
         return task != null && task.Execute(player, target);
     }
@@ -131,7 +131,7 @@ public class Chunk : MonoBehaviour, IChunk
                 return new FarmingTask(() => farmingPatches);
             case TaskType.Cooking:
                 return new CookingTask(() =>
-                    craftingStations.Where(x => x.StationType == CraftingStationType.Cooking).ToList());            
+                    craftingStations.Where(x => x.StationType == CraftingStationType.Cooking).ToList());
             default: return null;
         }
     }
@@ -152,15 +152,30 @@ public class Chunk : MonoBehaviour, IChunk
             task = this.origin.secondaryTask;
         }
 
-        public Transform GetTaskTarget(PlayerController player) => task?.GetTarget(player);
-        public bool IsTaskCompleted(PlayerController player, Transform target) => task == null || task.IsCompleted(player, target);
-        public bool CanExecuteTask(PlayerController player, Transform target, out TaskExecutionStatus reason)
+        public object GetTaskTarget(PlayerController player) => task?.GetTarget(player);
+        public bool IsTaskCompleted(PlayerController player, object target) => task == null || task.IsCompleted(player, target);
+        public bool CanExecuteTask(PlayerController player, object target, out TaskExecutionStatus reason)
         {
             reason = TaskExecutionStatus.NotReady;
-            return task != null && task.CanExecute(player, target, out reason);
+            if (task == null) return false;
+
+            if (!task.CanExecute(player, target, out reason))
+            {
+                if (target != null && reason == TaskExecutionStatus.OutOfRange)
+                {
+                    // Verify that target is part of chunk.                    
+                    if (!task.TargetExists(target))
+                    {
+                        reason = TaskExecutionStatus.InvalidTarget;
+                    }
+                }
+                return false;
+            }
+
+            return true;
         }
 
-        public void TargetAcquired(PlayerController player, Transform target)
+        public void TargetAcquired(PlayerController player, object target)
         {
             if (task != null)
             {
@@ -168,7 +183,7 @@ public class Chunk : MonoBehaviour, IChunk
             }
         }
 
-        public bool ExecuteTask(PlayerController player, Transform target) => task != null && task.Execute(player, target);
+        public bool ExecuteTask(PlayerController player, object target) => task != null && task.Execute(player, target);
 
         public Vector3 CenterPointWorld => origin.CenterPointWorld;
         public TaskType ChunkType => origin.SecondaryType;
@@ -191,15 +206,15 @@ public class Chunk : MonoBehaviour, IChunk
 
 public interface IChunk
 {
-    bool IsTaskCompleted(PlayerController player, Transform target);
-    bool CanExecuteTask(PlayerController player, Transform target, out TaskExecutionStatus reason);
-    void TargetAcquired(PlayerController player, Transform target);
-    bool ExecuteTask(PlayerController player, Transform target);
+    bool IsTaskCompleted(PlayerController player, object target);
+    bool CanExecuteTask(PlayerController player, object target, out TaskExecutionStatus reason);
+    void TargetAcquired(PlayerController player, object target);
+    bool ExecuteTask(PlayerController player, object target);
 
     int GetRequiredCombatLevel();
     int GetRequiredSkillLevel();
 
-    Transform GetTaskTarget(PlayerController player);
+    object GetTaskTarget(PlayerController player);
     Vector3 CenterPointWorld { get; }
     TaskType ChunkType { get; }
     Vector3 GetPlayerSpawnPoint();

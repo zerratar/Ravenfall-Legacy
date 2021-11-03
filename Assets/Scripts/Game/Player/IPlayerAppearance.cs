@@ -16,7 +16,7 @@ public interface IPlayerAppearance
     void Optimize(Action afterUndo = null);
     void Equip(ItemController item);
     void Unequip(ItemController item);
-
+    void UpdateClanCape();
     Transform MainHandTransform { get; }
     Transform OffHandTransform { get; }
 

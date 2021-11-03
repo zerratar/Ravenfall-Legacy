@@ -30,7 +30,7 @@ public class ArenaHandler : MonoBehaviour
     {
         if (!chunkManager)
         {
-            Debug.LogError($"No chunk manager set for {player.PlayerName}.");
+            GameManager.LogError($"No chunk manager set for {player.PlayerName}.");
             return;
         }
 
@@ -120,9 +120,9 @@ public class ArenaHandler : MonoBehaviour
                 return;
             }
 
-            if (Vector3.Distance(player.transform.position, target.transform.position) > player.AttackRange)
+            if (Vector3.Distance(player.Position, target.Position) > player.AttackRange)
             {
-                player.GotoPosition(target.transform.position);
+                player.GotoPosition(target.Position);
                 return;
             }
 
@@ -149,19 +149,19 @@ public class ArenaHandler : MonoBehaviour
         var target = player.GetAttackers()
             .OfType<PlayerController>()
             .Where(atk => atk != null && atk && !atk.Stats.IsDead)
-            .OrderBy(atk => Vector3.Distance(player.transform.position, atk.transform.position))
+            .OrderBy(atk => Vector3.Distance(player.Position, atk.Position))
             .FirstOrDefault();
 
         if (target && gameManager.Arena.AvailablePlayers.Contains(target))
         {
             return target;
         }
-        
+
         return gameManager.Arena
             .AvailablePlayers
             .Where(x => x != null && x)
             .Except(player)
-            .OrderBy(x => Vector3.Distance(player.transform.position, x.transform.position))
+            .OrderBy(x => Vector3.Distance(player.Position, x.Position))
             .FirstOrDefault();
     }
 

@@ -30,6 +30,8 @@ public class ItemManager : MonoBehaviour
         if (!game) game = GetComponent<GameManager>();
         if (!game) return;
         game.SetLoadingState("items", state);
+
+        MaterialProvider.Instance.RegisterBaseMaterials(itemMaterials);
     }
 
     void Update()
@@ -46,6 +48,13 @@ public class ItemManager : MonoBehaviour
     }
 
 
+    public Item Find(Func<Item, bool> predicate)
+    {
+        lock (mutex)
+        {
+            return items.FirstOrDefault(predicate);
+        }
+    }
     public Item GetStreamerToken()
     {
         lock (mutex)
@@ -65,12 +74,29 @@ public class ItemManager : MonoBehaviour
 
             foreach (var redeemable in redeemableItems)
             {
-                if (redeemable.Year != 0 && redeemable.Year != date.Year)
-                    continue;
-                if (redeemable.Month != 0 && redeemable.Month != date.Month)
-                    continue;
-                if (redeemable.Day != 0 && redeemable.Day != date.Day)
-                    continue;
+                if (redeemable.YearStart > 0 || redeemable.YearEnd > 0)
+                {
+                    if ((redeemable.YearEnd > 0 && date.Year > redeemable.YearEnd) || date.Year < redeemable.YearStart)
+                    {
+                        continue;
+                    }
+                }
+
+                if (redeemable.MonthStart > 0 || redeemable.MonthEnd > 0)
+                {
+                    if ((redeemable.MonthEnd > 0 && date.Month > redeemable.MonthEnd) || date.Month < redeemable.MonthStart)
+                    {
+                        continue;
+                    }
+                }
+
+                if (redeemable.DayStart > 0 || redeemable.DayEnd > 0)
+                {
+                    if ((redeemable.DayEnd > 0 && date.Day > redeemable.DayEnd) || date.Day < redeemable.DayStart)
+                    {
+                        continue;
+                    }
+                }
 
                 items.Add(redeemable);
             }
@@ -118,7 +144,7 @@ public class ItemManager : MonoBehaviour
         state = LoadingState.Loaded;
         game.SetLoadingState("items", state);
 
-        Debug.Log(items.Count + " items loaded!");
+        GameManager.Log(items.Count + " items loaded!");
     }
     public Item Get(Guid id)
     {
@@ -132,7 +158,35 @@ public struct RedeemableItem
     public Guid ItemId;
     public string Name;
     public int Cost;
-    public int Year;
-    public int Month;
-    public int Day;
+    public int YearStart;
+    public int YearEnd;
+    public int MonthStart;
+    public int MonthEnd;
+    public int DayStart;
+    public int DayEnd;
+}
+public class MaterialProvider
+{
+    public static readonly MaterialProvider Instance = new MaterialProvider();
+    private readonly Dictionary<ItemMaterial, Material> baseMaterials = new Dictionary<ItemMaterial, Material>();
+
+    internal void RegisterBaseMaterials(Material[] itemMaterials)
+    {
+        var materialTypes = Enum
+            .GetValues(typeof(RavenNest.Models.ItemMaterial))
+            .Cast<RavenNest.Models.ItemMaterial>()
+            .ToArray();
+
+        for (var i = 0; i < materialTypes.Length; ++i)
+        {
+            if (i < itemMaterials.Length)
+            {
+                RegisterMaterial(materialTypes[i], itemMaterials[i]);
+            }
+        }
+    }
+    private void RegisterMaterial(ItemMaterial itemMaterial, Material material)
+    {
+        baseMaterials[itemMaterial] = material;
+    }
 }

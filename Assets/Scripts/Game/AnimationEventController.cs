@@ -35,10 +35,10 @@ public class AnimationEventController : MonoBehaviour
         }
 
         if (player.TrainingMagic)
-            player.Effects.ShootMagicProjectile(player.Target.position);
+            player.Effects.ShootMagicProjectile(player.Target);
 
         if (player.TrainingRanged)
-            player.Effects.ShootRangedProjectile(player.Target.position);
+            player.Effects.ShootRangedProjectile(player.Target);
     }
 
     public void Hit() { }

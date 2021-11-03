@@ -67,17 +67,25 @@ public class PathSelector : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var speed = movementSpeed;
+        var speed = movementSpeed + ferryController.CaptainSpeedAdjustment;
         var stop = stopBetweenPaths;
 
         if (Input.GetKey(KeyCode.LeftShift) && Input.GetKey(KeyCode.Space) && (gameManager.Permissions?.IsAdministrator).GetValueOrDefault())
         {
-            speed = 500;
+            speed = 500 + ferryController.CaptainSpeedAdjustment;
             stop = 3;
         }
 
         if (leaveTimer > 0f) leaveTimer -= Time.deltaTime;
-        if (leaveTimer < 0) leaveTimer = 0f;
+        if (leaveTimer <= 0)
+        {
+            // check for players embarking the ferry.
+            // if there are players within a certain range. Wait for them to arrive
+            // before the ferry starts travelling. Gotta be a little bit nice to them.
+            //if (ferryController.EmbarkingPlayers)
+
+            leaveTimer = 0f;
+        }
         if (!pathFollower) return;
         if (paths == null || paths.Length == 0) return;
 

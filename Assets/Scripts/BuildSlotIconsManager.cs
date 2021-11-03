@@ -21,12 +21,21 @@ public class BuildSlotIconsManager : MonoBehaviour
 
     private TownHouseSlot activeSlot;
 
+    public TownHousePlayerAssignDialog AssignPlayerDialog => playerAssignDialog;
+
     private void Start()
     {
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
         Hide();
     }
 
+    private void Update()
+    {
+        if (Time.frameCount % 15 == 0)
+        {
+            UpdatePlayerState();
+        }
+    }
     public void Show(TownHouseSlot slot)
     {
         if (slot == null || !slot)
@@ -53,12 +62,22 @@ public class BuildSlotIconsManager : MonoBehaviour
                 buttonBuildHouse.gameObject.SetActive(false);
                 buttonEraseHouse.gameObject.SetActive(true);
                 buttonSwitchPlayer.gameObject.SetActive(!string.IsNullOrEmpty(slot.OwnerUserId));
-                buttonAssignPlayer.gameObject.SetActive(!slot.Owner && string.IsNullOrEmpty(slot.OwnerUserId));
+                buttonAssignPlayer.gameObject.SetActive(!slot.Player && string.IsNullOrEmpty(slot.OwnerUserId));
                 break;
         }
 
         HideBuildDialog();
         gameObject.SetActive(true);
+    }
+
+    public void UpdatePlayerState()
+    {
+        if (!activeSlot || activeSlot == null)
+        {
+            return;
+        }
+
+        SetPlayerLogo(activeSlot.OwnerUserId);
     }
 
     private void SetPlayerLogo(string userId)
@@ -77,6 +96,7 @@ public class BuildSlotIconsManager : MonoBehaviour
                 ownerLogoLoading.gameObject.SetActive(false);
                 ownerLogoImage.gameObject.SetActive(true);
                 ownerLogoImage.color = owner ? Color.white : new Color(1f, 1f, 1f, 0.35f);
+                if (logo == null) return;
                 ownerLogoImage.sprite = logo;
             });
         }
@@ -129,8 +149,11 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
 
         HideBuildDialog();
-
-        townHouseController.Owner = activeSlot.Owner;
+        if (!townHouseController.Slot)
+        {
+            townHouseController.Slot = activeSlot;
+        }
+        //townHouseController.Owner = activeSlot.Player;
         playerAssignDialog.Show(townHouseController);
     }
 
@@ -146,7 +169,7 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
         }
 
-        if (await gameManager.RavenNest.Village.AssignPlayerAsync(activeSlot.Slot, newOwner.UserId))
+        if ((newOwner.IsBot && newOwner.UserId.StartsWith("#")) || await gameManager.RavenNest.Village.AssignPlayerAsync(activeSlot.Slot, newOwner.UserId))
         {
             gameManager.Village.TownHouses.SetOwner(activeSlot, newOwner);
             Hide();
@@ -159,15 +182,15 @@ public class BuildSlotIconsManager : MonoBehaviour
 
     public void SwitchPlayer()
     {
-        Debug.Log("Switch player clicked");
+        GameManager.Log("Switch player clicked");
     }
 
     public async void EraseBuilding()
     {
-        Debug.Log("Erase building clicked");
+        GameManager.Log("Erase building clicked");
         if (!activeSlot)
         {
-            Debug.LogError("Failed to erase house. No active slot selected :o");
+            GameManager.LogError("Failed to erase house. No active slot selected :o");
             return;
         }
 
@@ -178,13 +201,13 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
         }
 
-        Debug.LogError("Failed to erase house :(");
+        GameManager.LogError("Failed to erase house :(");
         Show(activeSlot);
     }
 
     public async void BuildHouse()
     {
-        Debug.Log("Build house clicked");
+        GameManager.Log("Build house clicked");
 
         if (!selectBuildingDialog.SelectedHouse)
         {
@@ -194,7 +217,7 @@ public class BuildSlotIconsManager : MonoBehaviour
 
         if (!activeSlot)
         {
-            Debug.LogError("Failed to build house. No active slot selected.");
+            GameManager.LogError("Failed to build house. No active slot selected.");
             return;
         }
 
@@ -208,7 +231,7 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
         }
 
-        Debug.LogError("Failed to build house :(");
+        GameManager.LogError("Failed to build house :(");
         Show(activeSlot);
     }
 }

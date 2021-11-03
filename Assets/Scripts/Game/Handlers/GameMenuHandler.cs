@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 public class GameMenuHandler : MonoBehaviour
 {
@@ -14,10 +15,16 @@ public class GameMenuHandler : MonoBehaviour
 
     [SerializeField] private TMPro.TextMeshProUGUI lblVersion;
 
+    [SerializeField] private FadeInOut fadeToBlack;
+    [SerializeField] private UnityEngine.UI.Button signOutButton;
     public bool Visible => gameObject.activeSelf;
     private bool IsAuthenticated => gameManager && gameManager.RavenNest != null && gameManager.RavenNest.Authenticated;
     private void Awake()
     {
+        if (!fadeToBlack) fadeToBlack = FindObjectOfType<FadeInOut>();
+
+        signOutButton.gameObject.SetActive(false);
+
         if (lblVersion)
         {
             lblVersion.text = "v" + Application.version;
@@ -51,15 +58,31 @@ public class GameMenuHandler : MonoBehaviour
             Hide();
         }
     }
-
+    public void ClearClanFlagCache()
+    {
+        gameManager.PlayerLogo.ClearCache();
+    }
     public void ShowMenu()
     {
         ActivateMenu(menuView);
     }
 
-    public void Show()
+    public void Show(bool hideActiveMenu = false)
     {
-        gameObject.SetActive(true);
+        if (Visible)
+        {
+            Hide();
+        }
+        else
+        {
+            signOutButton.gameObject.SetActive(gameManager.RavenNest.Authenticated);
+            gameObject.SetActive(true);
+
+            //if (activeMenu && hideActiveMenu)
+            //{
+            //    activeMenu.gameObject.SetActive(false);
+            //}
+        }
     }
 
     public void Hide()
@@ -98,18 +121,37 @@ public class GameMenuHandler : MonoBehaviour
             Show();
         }
 
-        if (activeMenu)
-        {
-            activeMenu.Hide();
-        }
+        var oldMenu = activeMenu;
 
         menuView.Show();
 
         activeMenu = menuView;
+
+        StartCoroutine(ToggleMenu(oldMenu, activeMenu));
+    }
+
+    private IEnumerator ToggleMenu(MenuView hide, MenuView show)
+    {
+        if (hide)
+        {
+            yield return null;
+            hide.Hide();
+        }
+
+        yield return null;
+        show.Show();
+    }
+
+    public void Logout()
+    {
+        //fadeToBlack.StartFade();
+        gameManager.SavePlayerStates();
+        loginScreen.ClearPassword();
+        gameManager.ReloadScene();
     }
 
     public void Exit()
     {
-        Application.Quit();
+        gameManager.SaveStateAndShutdownGame(false);
     }
 }

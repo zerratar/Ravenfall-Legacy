@@ -15,7 +15,7 @@ public class PlayerExpUpdateEventHandler : GameEventHandler<PlayerExpUpdate>
             skill.SetExp(data.Experience);
         }
 
-        Debug.Log($"PlayerExpUpdateEventHandler " + data.UserId);
+        GameManager.Log($"PlayerExpUpdateEventHandler " + data.UserId);
     }
 }
 

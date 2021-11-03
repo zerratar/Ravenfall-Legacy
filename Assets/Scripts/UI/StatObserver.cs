@@ -7,7 +7,7 @@ public class StatObserver : MonoBehaviour
     [SerializeField] private GameProgressBar bar;
 
     private int? lastCurrentValue;
-    private decimal? lastExperience;
+    private double? lastExperience;
     private SkillStat observedStat;
 
     // Start is called before the first frame update

@@ -8,9 +8,11 @@ public class NameTag : MonoBehaviour
     [SerializeField] private TextMeshProUGUI clanName;
     [SerializeField] private Image logo;
 
+    private bool hasInitialized;
     private bool nameTagSet;
     private GameManager gameManager;
     private float originalFontSize;
+    private Transform targetCamera;
     private bool oldCensor;
     private string lastSetClanName;
     private float oldScale = 1f;
@@ -23,7 +25,10 @@ public class NameTag : MonoBehaviour
     public PlayerController TargetPlayer;
     public Sprite RaiderLogo;
     public NameTagManager Manager { get; set; }
+    public bool HasTargetPlayer;
 
+    private bool isVisible = true;
+    private Vector3 offset;
 
     void Start()
     {
@@ -31,22 +36,35 @@ public class NameTag : MonoBehaviour
         if (!logo) logo = GetComponentInChildren<Image>();
         gameManager = FindObjectOfType<GameManager>();
         originalFontSize = label.fontSize;
+        if (Camera.main)
+            targetCamera = Camera.main.transform;
+    }
+
+    private void OnBecameInvisible()
+    {
+        isVisible = false;
+    }
+
+    private void OnBecameVisible()
+    {
+        isVisible = true;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!TargetTransform)
+        if (!isVisible || !HasTargetPlayer)
         {
             return;
         }
 
-        if (string.IsNullOrEmpty(label.text) || !nameTagSet || oldScale != Scale)
+        if (!nameTagSet || oldScale != Scale || string.IsNullOrEmpty(label.text))
         {
             SetupNameTagLabel();
+            return;
         }
 
-        if (TargetPlayer)
+        if (!hasInitialized)
         {
             if (clanName && TargetPlayer.Clan.InClan && lastSetClanName != TargetPlayer.Clan.ClanInfo.Name)
             {
@@ -66,16 +84,21 @@ public class NameTag : MonoBehaviour
             {
                 logo.gameObject.SetActive(false);
             }
-        }
-        else
-        {
-            logo.gameObject.SetActive(false);
-        }
 
-        transform.position = TargetTransform.position
-            + (Vector3.up * TargetTransform.localScale.y * YOffset * Scale)
-            + (Vector3.up * YMinDistance * Scale);
+            hasInitialized = true;
+        }
+        
+        if (!targetCamera)
+            targetCamera = Camera.main.transform;
 
+        if (!targetCamera)
+            return;
+
+        var t = transform;
+        t.position = TargetPlayer.Position + this.offset;
+        //+ (Vector3.up * TargetTransform.localScale.y * YOffset * Scale)
+        //+ (Vector3.up * YMinDistance * Scale);
+        t.rotation = targetCamera.rotation;
         oldCensor = gameManager.LogoCensor;
     }
 
@@ -85,6 +108,8 @@ public class NameTag : MonoBehaviour
         var collider = TargetTransform.GetComponent<CapsuleCollider>();
         if (collider)
             YOffset = collider.height;
+
+        this.offset = (Vector3.up * TargetTransform.localScale.y * YOffset * Scale) + (Vector3.up * YMinDistance * Scale);
 
         if (TargetPlayer)
         {

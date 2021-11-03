@@ -18,10 +18,10 @@ public static class StatisticsResourcesExtensions
                res.Coins == other.Coins;
     }
 
-    public static decimal[] ToList(this Statistics s)
+    public static double[] ToList(this Statistics s)
     {
-        if (s == null) return new decimal[0];
-        return new decimal[]
+        if (s == null) return new double[0];
+        return new double[]
         {
             s.RaidsWon,
             s.RaidsLost,
@@ -60,7 +60,7 @@ public static class StatisticsResourcesExtensions
         };
     }
 
-    public static decimal[] ToList(this Resources res)
+    public static double[] ToList(this Resources res)
     {
         return new[]
         {

@@ -6,12 +6,12 @@ using Image = UnityEngine.UIElements.Image;
 public class DuelCameraScript : MonoBehaviour
 {
     private readonly List<DuelHandler> targets = new List<DuelHandler>();
-    private readonly object mutex = new object();
 
     [SerializeField] private FocusTargetCamera focusCam;
     [SerializeField] private RawImage image;
     [SerializeField] private float targetTime = 3f;
 
+    private Camera renderCamera;
     private DuelHandler target;
     private float targetObserverTimer = 3f;
     private int targetIndex;
@@ -19,6 +19,7 @@ public class DuelCameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        renderCamera = GetComponent<Camera>();
         if (!focusCam)
         {
             focusCam = GetComponent<FocusTargetCamera>();
@@ -39,26 +40,25 @@ public class DuelCameraScript : MonoBehaviour
 
     void Update()
     {
-        lock (mutex)
+        if (targets.Count == 0)
         {
-            if (targets.Count == 0)
+            focusCam.enabled = false;
+            renderCamera.enabled = false;
+            if (image)
             {
-                if (image)
-                {
-                    image.enabled = false;
-                }
-                return;
+                image.enabled = false;
             }
+            return;
+        }
 
-            if (targetObserverTimer > 0f)
+        if (targetObserverTimer > 0f)
+        {
+            targetObserverTimer -= Time.deltaTime;
+            if (targetObserverTimer <= 0f)
             {
-                targetObserverTimer -= Time.deltaTime;
-                if (targetObserverTimer <= 0f)
-                {
-                    targetObserverTimer = targetTime;
-                    targetIndex = (targetIndex + 1) % targets.Count;
-                    target = targets[targetIndex];
-                }
+                targetObserverTimer = targetTime;
+                targetIndex = (targetIndex + 1) % targets.Count;
+                target = targets[targetIndex];
             }
         }
 
@@ -78,25 +78,32 @@ public class DuelCameraScript : MonoBehaviour
         }
 
 
-        focusCam.TargetPosition = 0.5f * Vector3.Normalize(target.Opponent.transform.position - target.transform.position) + target.transform.position;
+        focusCam.TargetPosition = 0.5f * Vector3.Normalize(target.Opponent.Position - target.transform.position) + target.transform.position;
     }
 
     public bool AddTarget(DuelHandler duelHandler)
     {
-        lock (mutex)
-        {
-            gameObject.SetActive(true);
-            targetObserverTimer = targetTime;
-            targets.Add(duelHandler);
-        }
+        focusCam.enabled = true;
+        renderCamera.enabled = true;
+
+        targetObserverTimer = targetTime;
+        targets.Add(duelHandler);
         return true;
     }
 
     public void RemoveTarget(DuelHandler duelHandler)
     {
-        lock (mutex)
+        targets.Remove(duelHandler);
+        if (targets.Count == 0)
         {
-            targets.Remove(duelHandler);
+            if (image)
+            {
+                image.enabled = false;
+            }
+
+            focusCam.enabled = false;
+            renderCamera.enabled = false;
+            gameObject.SetActive(false);
         }
     }
 }

@@ -61,8 +61,42 @@ public class ChunkManager : MonoBehaviour
         var refIsland = playerRef.Island;
         var refCombatLevel = playerRef.Stats.CombatLevel;
         var chunk = chunks
-            .Where(x => (x.Island == refIsland || x.Island == FindPlayerIsland(playerRef)) &&
-            (x.Type == type || x.SecondaryType == type) && x.RequiredCombatLevel <= refCombatLevel            && x.RequiredSkilllevel <= GetSkillLevel(playerRef, type))
+            .Where(x =>
+            {
+                if (x.Island != refIsland && x.Island != FindPlayerIsland(playerRef))
+                {
+                    return false;
+                }
+                if (x.Type != type && x.SecondaryType != type)
+                {
+                    return false;
+                }
+
+                if (x.RequiredCombatLevel > refCombatLevel)
+                {
+                    return false;
+                }
+
+                if (type == TaskType.Fighting && x.RequiredSkilllevel > 1)
+                {
+                    if (playerRef.TrainingAll)
+                    {
+                        var attack = playerRef.Stats.GetCombatSkill(CombatSkill.Attack);
+                        var defense = playerRef.Stats.GetCombatSkill(CombatSkill.Defense);
+                        var strength = playerRef.Stats.GetCombatSkill(CombatSkill.Strength);
+                        var req = x.RequiredSkilllevel;
+                        return attack.Level >= req && defense.Level >= req && strength.Level >= req;
+                    }
+
+                    var skill = playerRef.GetActiveCombatSkillStat();
+                    if (skill != null)
+                    {
+                        return x.RequiredSkilllevel <= skill.Level;
+                    }
+                }
+
+                return x.RequiredSkilllevel <= GetSkillLevel(playerRef, type);
+            })
             .OrderByDescending(x => x.RequiredCombatLevel + x.RequiredSkilllevel)
             .ThenBy(x => Vector3.Distance(x.transform.position, playerRef.transform.position))
             .FirstOrDefault();

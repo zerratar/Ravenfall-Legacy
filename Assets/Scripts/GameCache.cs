@@ -1,78 +1,169 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Numerics;
 
 namespace Assets.Scripts
 {
     public class GameCache
     {
+        private const string PlayerStateCacheFileName = "state-data.json";
+        private const string TempPlayerStateCacheFileName = "tmp-state-data.json";
         private static GameCache instance;
         public static GameCache Instance => instance ?? (instance = new GameCache());
-        private readonly ConcurrentQueue<GameCacheState> stateCache = new ConcurrentQueue<GameCacheState>();
+        //private readonly ConcurrentQueue<GameCacheState> stateCache = new ConcurrentQueue<GameCacheState>();
+
         private readonly object mutex = new object();
 
+        private GameCacheState? stateCache;
+
         private List<GameCachePlayerItem> playerCache;
-        public bool IsAwaitingGameRestore => stateCache.Count > 0;
+        public bool IsAwaitingGameRestore { get; set; }
         public TwitchUserStore TwitchUserStore { get; } = new TwitchUserStore();
 
+        internal void SavePlayersState(IReadOnlyList<PlayerController> players)
+        {
+            SetPlayersState(players);
+            BuildState();
+            SaveState();
+        }
         internal void SetPlayersState(IReadOnlyList<PlayerController> players)
         {
+            GameManager.Log("Updating Player State.");
             lock (mutex)
             {
                 playerCache = new List<GameCachePlayerItem>();
                 foreach (var player in players)
                 {
-                    var item = new GameCachePlayerItem();
-                    item.TwitchUser = player.TwitchUser;
-                    item.Definition = player.Definition;
-                    item.Definition.Resources = player.Resources;
-                    item.Definition.Statistics = player.Statistics;
-                    item.Definition.Skills = player.Stats;
-                    item.Definition.InventoryItems = player.Inventory.GetInventoryItems();
+                    try
+                    {
+                        if (player.IsBot)
+                        {
+                            GameManager.LogWarning(player.Name + " is a bot and was not added to player state cache.");
+                            continue;
+                        }
 
-                    item.Health = player.Stats.Health.CurrentValue;
-                    item.Position = player.Transform.position;
-                    item.TrainingTask = player.GetTask();
-                    item.TrainingTaskArg = player.GetTaskArguments();
+                        var def = player.Definition;
 
-                    item.ResetPosition = player.Dungeon.InDungeon || player.Raid.InRaid || player.Ferry.OnFerry || player.StreamRaid.InWar;
-                    item.Island = player.Island?.Identifier;
+                        var item = new GameCachePlayerItem();
+                        item.NameTagHexColor = player.PlayerNameHexColor;
+                        item.TwitchUser = player.TwitchUser;
+                        item.CharacterId = player.Id;
+                        item.CharacterIndex = player.CharacterIndex;
+                        
+                        if (item.TwitchUser == null)
+                        {
+                            item.TwitchUser = new TwitchPlayerInfo(
+                                    def.UserId,
+                                    def.UserName,
+                                    def.Name,
+                                    player.PlayerNameHexColor,
+                                    player.IsBroadcaster,
+                                    player.IsModerator,
+                                    player.IsSubscriber,
+                                    player.IsVip,
+                                    def.Identifier
+                                );
+                        }
+                        else
+                        {
+                            item.TwitchUser.IsVip = player.IsVip;
+                            item.TwitchUser.IsModerator = player.IsModerator;
+                            item.TwitchUser.IsBroadcaster = player.IsBroadcaster;
+                            item.TwitchUser.IsSubscriber = player.IsSubscriber;
+                        }
 
-                    playerCache.Add(item);
+                        //item.Definition = player.Definition;
+                        //item.Definition.Resources = player.Resources;
+                        //item.Definition.Statistics = player.Statistics;
+                        //item.Definition.Skills = player.Stats;
+                        //item.Definition.InventoryItems = player.Inventory.GetInventoryItems();
+                        playerCache.Add(item);
+                    }
+                    catch (System.Exception exc)
+                    {
+                        GameManager.LogError("Failed to add " + player?.Name + " to the player state cache.");
+                    }
                 }
             }
         }
 
-        internal void BuildState()
+        internal GameCacheState BuildState()
         {
             var state = new GameCacheState();
+            state.Created = System.DateTime.UtcNow;
             state.Players = playerCache;
-            stateCache.Enqueue(state);
+            //stateCache.Enqueue(state);
+            stateCache = state;
+            return state;
         }
 
-        internal GameCacheState GetReloadState()
+        internal void LoadState()
         {
-            if (stateCache.TryDequeue(out var res))
-                return res;
-            return null;
+            if (System.IO.File.Exists(PlayerStateCacheFileName))
+            {
+                try
+                {
+                    var state = Newtonsoft.Json.JsonConvert.DeserializeObject<GameCacheState>(System.IO.File.ReadAllText(PlayerStateCacheFileName));
+
+                    if ((System.DateTime.UtcNow - state.Created) > SettingsMenuView.GetPlayerCacheExpiryTime())
+                    {
+                        return;
+                    }
+
+                    stateCache = state;
+
+                    IsAwaitingGameRestore = true;
+                }
+                catch (System.Exception exc)
+                {
+                    GameManager.LogError("Failed to load player state: " + exc);
+                }
+            }
+        }
+
+        internal void SaveState()
+        {
+            if (stateCache != null)
+            {
+                try
+                {
+                    var stateData = Newtonsoft.Json.JsonConvert.SerializeObject(stateCache);
+                    // To ensure we dont accidently overwrite the state-data with half written data.
+                    // in case the game crashes and saving in progress.
+                    System.IO.File.WriteAllText(TempPlayerStateCacheFileName, stateData);
+                    System.IO.File.Copy(TempPlayerStateCacheFileName, PlayerStateCacheFileName, true);
+                    System.IO.File.Delete(TempPlayerStateCacheFileName);
+                }
+                catch (System.Exception exc)
+                {
+                    GameManager.LogError("Failed to save player state: " + exc);
+                }
+            }
+        }
+
+        internal GameCacheState? GetReloadState()
+        {
+            try
+            {
+                return stateCache;
+            }
+            finally
+            {
+                stateCache = null;
+            }
         }
     }
 
-    public class GameCacheState
+    public struct GameCacheState
     {
+        public System.DateTime Created { get; set; }
         public List<GameCachePlayerItem> Players { get; set; }
     }
 
     public class GameCachePlayerItem
     {
-        public Player TwitchUser { get; set; }
-        public RavenNest.Models.Player Definition { get; set; }
-        public TaskType TrainingTask { get; set; }
-        public string[] TrainingTaskArg { get; set; }
-        public UnityEngine.Vector3 Position { get; set; }
-        public int Health { get; set; }
-
-        public bool ResetPosition { get; set; }
-        public string Island { get; set; }
+        public TwitchPlayerInfo TwitchUser { get; set; }
+        public System.Guid CharacterId { get; set; }
+        public string NameTagHexColor { get; set; }
+        public int CharacterIndex { get; set; }
     }
 }

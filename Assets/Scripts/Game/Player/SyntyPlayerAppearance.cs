@@ -23,13 +23,15 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     /* Genderless Models */
     [Header("Generic Model Objects")]
-    //[SerializeField] private GameObject[] hairCoverings;    
-    [SerializeField] private GameObject[] faceCoverings;
-    //[SerializeField] private GameObject[] headCoverings;
+    [SerializeField] private GameObject[] hats;
+    [SerializeField] private GameObject[] masks;
+    [SerializeField] private GameObject[] headCoverings;
 
     [SerializeField] private GameObject[] capes;
     [SerializeField] private GameObject[] hairs;
-    //[SerializeField] private GameObject[] helmetAttachments;
+    [SerializeField] private GameObject[] headAttachments;
+
+    [SerializeField] private GameObject[] ears;
 
     [SerializeField] private GameObject[] shoulderPadsRight;
     [SerializeField] private GameObject[] shoulderPadsLeft;
@@ -87,6 +89,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     //[Header("Item Material Setup")]
     //[SerializeField] private Material[] itemMaterials;
 
+    private readonly List<Material> capeLogoMaterials = new List<Material>();
 
 
     [Header("Character Setup")]
@@ -100,6 +103,11 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public int Elbow = -1;
     public int Kneepad = -1;
     public int Helmet = -1;
+
+    public int Mask = -1;
+    public int Hat = -1;
+    public int HeadCovering = -1;
+
     public int Torso = 0;
     public int ArmUpper = 0;
     public int ArmLower = 0;
@@ -108,6 +116,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public int Legs = 0;
 
     public int Cape = -1;
+
+    public int[] HeadAttachments = new int[0];
 
     public Color SkinColor;
     public Color HairColor;
@@ -129,6 +139,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     private PlayerLogoManager logoManager;
     private PlayerController player;
 
+
+
     Gender IPlayerAppearance.Gender => Gender;
 
     public Transform MainHandTransform => equipmentSlots[ItemType.TwoHandedSword];
@@ -136,6 +148,11 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public Transform OffHandTransform => equipmentSlots[ItemType.Shield];
 
     public GameObject MonsterMesh { get; set; }
+
+    public GameObject[] GetHeadAttachments()
+    {
+        return this.headAttachments;
+    }
 
     void Awake()
     {
@@ -246,29 +263,29 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                 }
                 catch (Exception exc)
                 {
-                    Debug.LogError(exc.ToString());
+                    GameManager.LogError(exc.ToString());
                 }
             }
         }
 
+        UpdateAppearance();
+        Optimize();
+        onReady?.Invoke();
+
+        UpdateClanCape();
+
+    }
+
+    public void UpdateClanCape()
+    {
         if (this.player.Clan.InClan)
         {
             logoManager.GetLogo(
                 this.player.Clan.ClanInfo.Owner,
                 this.player.Clan.Logo, logo =>
                 {
-                    UpdateAppearance(logo);
-                    Optimize();
-                    if (onReady != null)
-                        onReady();
+                    SetCapeLogo(logo);
                 });
-        }
-        else
-        {
-            UpdateAppearance();
-            Optimize();
-            if (onReady != null)
-                onReady();
         }
     }
 
@@ -291,7 +308,10 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public void ResetAppearance()
     {
         var allModels = GetAll();
-        foreach (var model in allModels) model?.SetActive(false);
+        foreach (var model in allModels)
+        {
+            model?.SetActive(false);
+        }
         if (meshCombiner?.isMeshesCombineds ?? false)
             meshCombiner?.UndoCombineMeshes();
     }
@@ -313,26 +333,41 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             meshCombiner.UndoCombineMeshes();
         }
 
-
         afterUndo?.Invoke();
 
         yield return new WaitForFixedUpdate();
 
-        meshCombiner.meshesToIgnore.Clear();
-        var petControllers = gameObject.transform.GetComponentsInChildren<PetController>();
-        foreach (var pet in petControllers)
+        if (meshCombiner)
         {
-            var renderer = pet.GetComponentInChildren<SkinnedMeshRenderer>();
-            if (renderer && renderer.sharedMesh)
+            meshCombiner.meshesToIgnore.Clear();
+            var petControllers = gameObject.transform.GetComponentsInChildren<PetController>();
+            foreach (var pet in petControllers)
             {
-                meshCombiner.meshesToIgnore.Add(renderer);
+                var renderer = pet.GetComponentInChildren<SkinnedMeshRenderer>();
+                if (renderer && renderer.sharedMesh)
+                {
+                    meshCombiner.meshesToIgnore.Add(renderer);
+                }
+            }
+
+            yield return new WaitForFixedUpdate();
+
+            meshCombiner.CombineMeshes();
+            while (!meshCombiner.isMeshesCombineds)
+            {
+                yield return null;
+            }
+            cm = GetCombinedMesh();
+            if (cm)
+            {
+                cm.transform.localPosition = Vector3.zero;
             }
         }
 
-        yield return new WaitForFixedUpdate();
-
-        meshCombiner.CombineMeshes();
-        gameManager.Camera.EnsureObserverCamera();
+        if (gameManager && gameManager.Camera)
+        {
+            gameManager.Camera.EnsureObserverCamera();
+        }
     }
 
     public Transform GetCombinedMesh()
@@ -353,89 +388,231 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         return cm;
     }
 
+    public void SetCapeLogo(Sprite capeLogo)
+    {
+        if (capeLogoMaterials == null)
+        {
+            return;
+        }
+
+        foreach (var capeLogoMaterial in capeLogoMaterials)
+        {
+            if (capeLogoMaterial == null || !capeLogoMaterial)
+            {
+                continue;
+            }
+
+            capeLogoMaterial.SetTexture("_Texture", capeLogo?.texture);
+        }
+    }
+
+    internal HashSet<string> FromActive()
+    {
+        var models = GetAllModels();
+        var fields = GetType()
+            .GetFields(BindingFlags.Public | BindingFlags.Instance)
+            .Where(x => x.FieldType == typeof(int) || x.FieldType == typeof(int[]))
+            .ToList();
+        var usedMaterials = new HashSet<string>();
+
+        fields.ForEach(field =>
+        {
+            IEnumerable<KeyValuePair<string, GameObject[]>> items = null;
+
+            if (field.Name == nameof(Hat))
+            {
+                items = models.Where(x => x.Key.Equals("hats", StringComparison.OrdinalIgnoreCase));
+            }
+            else if (field.Name == nameof(Mask))
+            {
+                items = models.Where(x => x.Key.Equals("masks", StringComparison.OrdinalIgnoreCase));
+            }
+            else if (field.Name == nameof(HeadCovering))
+            {
+                items = models.Where(x => x.Key.Equals("headcoverings", StringComparison.OrdinalIgnoreCase));
+            }
+            else if (field.Name == nameof(Head))
+            {
+                items = models.Where(x => x.Key.StartsWith(Gender.ToString() + field.Name, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                items = models.Where(x =>
+                    x.Key.StartsWith(field.Name, StringComparison.OrdinalIgnoreCase) ||
+                    x.Key.StartsWith(Gender.ToString() + field.Name, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (field.FieldType == typeof(int[]))
+            {
+                var value = new List<int>();
+                foreach (var item in items)
+                {
+                    var isActive = item.Value.Where(x => x.activeSelf);
+                    foreach (var activeItem in isActive)
+                    {
+                        value.Add(Array.IndexOf(item.Value, activeItem));
+
+                        var material = activeItem.GetComponent<SkinnedMeshRenderer>()?.material
+                            ?? activeItem.GetComponentInChildren<SkinnedMeshRenderer>()?.material
+                            ?? activeItem.GetComponent<MeshRenderer>()?.material;
+
+                        if (material)
+                        {
+                            usedMaterials.Add(material.name.Replace("(Instance)", "").Trim());
+                        }
+                    }
+                }
+                field.SetValue(this, value.ToArray());
+                //UnityEngine.Debug.LogWarning("Setting Appearance Data from Active objects not supporting arrays yet. (" + field.Name + ")");
+            }
+            else
+            {
+                foreach (var item in items)
+                {
+                    var isActive = item.Value.Where(x => x.activeSelf);
+                    var activeItem = isActive.FirstOrDefault();
+                    if (activeItem)
+                    {
+                        var material = activeItem.GetComponent<SkinnedMeshRenderer>()?.material
+                            ?? activeItem.GetComponentInChildren<SkinnedMeshRenderer>()?.material
+                            ?? activeItem.GetComponent<MeshRenderer>()?.material;
+
+                        if (material)
+                        {
+                            usedMaterials.Add(material.name.Replace("(Instance)", "").Trim());
+                        }
+
+                        field.SetValue(this, Array.IndexOf(item.Value, activeItem));
+                    }
+                }
+            }
+        });
+
+        if (Helmet >= 0)
+        {
+            HelmetVisible = false;
+            ToggleHelmVisibility();
+        }
+        else
+        {
+            HelmetVisible = true;
+            ToggleHelmVisibility();
+        }
+        return usedMaterials;
+    }
+
     public void UpdateAppearance(Sprite capeLogo = null)
     {
         ResetAppearance();
         var models = GetAllModels();
         var fields = GetType()
             .GetFields(BindingFlags.Public | BindingFlags.Instance)
-            .Where(x => x.FieldType == typeof(int))
+            .Where(x => x.FieldType == typeof(int) || x.FieldType == typeof(int[]))
             .ToList();
+
+        capeLogoMaterials.Clear();
 
         fields.ForEach(field =>
         {
+            // Exclude certain ones, such as head attachments, coverings and masks
+
             var items = models.Where(x =>
+                !x.Key.Contains(nameof(headCoverings)) &&
+                !x.Key.Contains(nameof(masks)) &&
+                !x.Key.Contains(nameof(hats)) &&
                 x.Key.StartsWith(field.Name, StringComparison.OrdinalIgnoreCase) ||
                 x.Key.StartsWith(Gender.ToString() + field.Name, StringComparison.OrdinalIgnoreCase));
 
-            var index = (int)field.GetValue(this);
-            if (index == -1) return;
-            foreach (var item in items)
+            if (field.FieldType == typeof(int[]))
             {
-                try
+                var indices = (int[])field.GetValue(this);
+                if (indices.Length == 0) return;
+                foreach (var item in items)
                 {
-                    // female facial hairs Kappa
-                    if (item.Value.Length == 0)
+                    foreach (var index in indices)
                     {
-                        continue;
-                    }
-
-                    if (index >= item.Value.Length && item.Key != nameof(femaleHeads) && item.Key != nameof(maleHeads))
-                        continue;
-
-                    if (item.Value.Length > 0)
-                    {
-                        index = Mathf.Min(item.Value.Length - 1, index);
-                    }
-
-                    item.Value[index].SetActive(true);
-                    var renderer = item.Value[index].GetComponent<SkinnedMeshRenderer>();
-                    if (renderer)
-                    {
-                        //renderer.material =   //itemMaterials.Random();
-
-                        if (item.Key == nameof(capes) && capeLogo)
+                        try
                         {
-                            renderer.material.SetTexture("_Texture", capeLogo.texture);
+                            item.Value[index].SetActive(true);
                         }
-
-                        if (item.Key == nameof(femaleHeads) || item.Key == nameof(maleHeads))
+                        catch (Exception exc)
                         {
-                            renderer.material.SetColor("_Color_Eyes", EyeColor);
-                            renderer.material.SetColor("_Color_Skin", SkinColor);
-                            //renderer.material.SetColor("_Color_Scar", ScarColor);
-                            renderer.material.SetColor("_Color_Stubble", StubbleColor);
-                            renderer.material.SetColor("_Color_BodyArt", WarPaintColor);
+                            GameManager.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}");
                         }
-                        else if (item.Key == nameof(maleHeads) || item.Key == nameof(maleFacialHairs))
-                        {
-                            //renderer.material.SetColor("_Color_Stubble", BeardColor);
-                            renderer.material.SetColor("_Color_Hair", BeardColor);
-                        }
-                        else if (item.Key == nameof(maleEyebrows) || item.Key == nameof(femaleEyebrows))
-                        {
-                            renderer.material.SetColor("_Color_Hair", HairColor);
-                        }
-                        else if (item.Key == nameof(hairs))
-                        {
-                            renderer.material.SetColor("_Color_Hair", HairColor);
-                        }
-                        // when unequipped, we need to update the skin color to match
-                        // any other items should not have material changed or it will be instanced.
-                        else if (index == 0)
-                        {
-                            renderer.material.SetColor("_Color_Skin", SkinColor);
-                        }
-
-                        //renderer.material.SetColor("_Color_Eyes", EyeColor);
-                        //renderer.material.SetColor("_Color_Hair", HairColor);
-                        //renderer.material.SetColor("_Color_Skin", SkinColor);
-                        //renderer.material.SetColor("_Color_Stubble", BeardColor);
                     }
                 }
-                catch
+            }
+            else
+            {
+                var index = (int)field.GetValue(this);
+                if (index == -1) return;
+                foreach (var item in items)
                 {
-                    Debug.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}");
+                    try
+                    {
+
+                        if (item.Key == nameof(headAttachments))
+                        {
+                            continue;
+                        }
+
+                        // female facial hairs Kappa
+                        if (item.Value.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        if (index >= item.Value.Length && item.Key != nameof(femaleHeads) && item.Key != nameof(maleHeads))
+                            continue;
+
+                        if (item.Value.Length > 0)
+                        {
+                            index = Mathf.Min(item.Value.Length - 1, index);
+                        }
+
+                        item.Value[index].SetActive(true);
+                        var renderer = item.Value[index].GetComponent<SkinnedMeshRenderer>();
+                        if (renderer)
+                        {
+                            if (item.Key == nameof(capes))
+                            {
+                                capeLogoMaterials.Add(renderer.material);
+                            }
+
+                            if (item.Key == nameof(femaleHeads) || item.Key == nameof(maleHeads))
+                            {
+                                //renderer.material.SetColor("_Color_Scar", ScarColor);
+
+                                renderer.material.SetColor("_Color_Eyes", EyeColor);
+                                renderer.material.SetColor("_Color_Skin", SkinColor);
+                                renderer.material.SetColor("_Color_Stubble", StubbleColor);
+                                renderer.material.SetColor("_Color_BodyArt", WarPaintColor);
+                            }
+                            else if (item.Key == nameof(maleHeads) || item.Key == nameof(maleFacialHairs))
+                            {
+                                //renderer.material.SetColor("_Color_Stubble", BeardColor);
+                                renderer.material.SetColor("_Color_Hair", BeardColor);
+                            }
+                            else if (item.Key == nameof(maleEyebrows) || item.Key == nameof(femaleEyebrows))
+                            {
+                                renderer.material.SetColor("_Color_Hair", HairColor);
+                            }
+                            else if (item.Key == nameof(hairs))
+                            {
+                                renderer.material.SetColor("_Color_Hair", HairColor);
+                            }
+                            // when unequipped, we need to update the skin color to match
+                            // any other items should not have material changed or it will be instanced.
+                            else if (index == 0)
+                            {
+                                renderer.material.SetColor("_Color_Skin", SkinColor);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        GameManager.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}");
+                    }
                 }
             }
         });
@@ -454,19 +631,46 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     #region Private Members
     private void EquipArmor(ItemController item)
     {
-        int itemIndex;
-        if (Gender == Gender.Male
-            ? int.TryParse(item.MaleModelID, out itemIndex)
-            : int.TryParse(item.FemaleModelID, out itemIndex))
+        int itemIndex = Gender == Gender.Male
+            ? item.MaleModelID
+            : item.FemaleModelID;
+
+        if (itemIndex >= 0)
         {
-            EquipArmor(item.Type, itemIndex, (int)item.Material - 1);
+            EquipArmor(item.Type, itemIndex, (int)item.Material - 1, item.AdditionalIndex);
         }
     }
 
     internal GameObject Get(ItemType type, ItemMaterial material, string maleModelId)
     {
         var itemMaterial = (gameManager ? gameManager.Items : itemManager).GetMaterial((int)material - 1);
-        if (!int.TryParse(maleModelId, out var itemIndex)) return null;
+        var itemIndex = -1;
+        var ids = new int[0];
+        //var headCovering_no_hair = false; // 
+        if (!string.IsNullOrEmpty(maleModelId))
+        {
+            //if (maleModelId.ToLower().StartsWith("c"))
+            //{
+            //    maleModelId = maleModelId.Substring(1);
+            //}
+            if (maleModelId.Contains(','))
+            {
+                ids = maleModelId.Split(',').Select(int.Parse).ToArray();
+                itemIndex = ids[0];
+            }
+            else
+            {
+                if (!int.TryParse(maleModelId, out itemIndex)) return null;
+                ids = new int[1] { itemIndex };
+            }
+        }
+
+        if (ids.Length == 0) return null;
+
+        var shoulderIndex = 20;
+        var upperArmIndex = 13;
+        var armLowerIndex = 5;
+
         var output = new GameObject(type + "_" + material);
         switch (type)
         {
@@ -478,25 +682,62 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
             case ItemType.Chest:
                 ActivateAndInstantiate(maleTorso[itemIndex], output.transform);
-                ActivateAndInstantiate(maleArmUpperLeft[13], output.transform);
-                ActivateAndInstantiate(maleArmUpperRight[13], output.transform);
-                ActivateAndInstantiate(shoulderPadsLeft[20], output.transform);
-                ActivateAndInstantiate(shoulderPadsRight[20], output.transform);
+
+                if (ids.Length > 1)
+                {
+                    shoulderIndex = ids[1];
+                    upperArmIndex = ids[2];
+                }
+
+                ActivateAndInstantiate(shoulderPadsLeft[shoulderIndex], output.transform);
+                ActivateAndInstantiate(shoulderPadsRight[shoulderIndex], output.transform);
+
+                ActivateAndInstantiate(maleArmUpperLeft[upperArmIndex], output.transform);
+                ActivateAndInstantiate(maleArmUpperRight[upperArmIndex], output.transform);
                 break;
 
             case ItemType.Gloves:
                 ActivateAndInstantiate(maleHandsLeft[itemIndex], output.transform);
                 ActivateAndInstantiate(maleHandsRight[itemIndex], output.transform);
-                ActivateAndInstantiate(maleArmLowerLeft[5], output.transform);
-                ActivateAndInstantiate(maleArmLowerRight[5], output.transform);
+
+                if (ids.Length > 1)
+                {
+                    armLowerIndex = ids[1];
+                }
+
+                ActivateAndInstantiate(maleArmLowerLeft[armLowerIndex], output.transform);
+                ActivateAndInstantiate(maleArmLowerRight[armLowerIndex], output.transform);
                 break;
             case ItemType.LeftShoulder:
             case ItemType.RightShoulder:
                 ActivateAndInstantiate(shoulderPadsLeft[itemIndex], output.transform);
                 ActivateAndInstantiate(shoulderPadsRight[itemIndex], output.transform);
                 break;
-            case ItemType.Helm:
-                ActivateAndInstantiate(maleHelmets[itemIndex], output.transform);
+
+            case ItemType.Hat:
+            case ItemType.Mask:
+            case ItemType.Helmet:
+            case ItemType.HeadCovering:
+
+                var isHelmet = type == ItemType.Helmet;
+                var isMask = type == ItemType.Mask;
+                var isHat = type == ItemType.Hat;
+
+                var itemObjs = isHelmet ? maleHelmets : isMask ? masks : isHat ? hats : headCoverings;
+
+                ActivateAndInstantiate(itemObjs[itemIndex], output.transform);
+
+                if (ids.Length > 1)
+                {
+                    foreach (var headAttachment in ids.Skip(1))
+                    {
+                        if (headAttachment < 0) continue;
+                        if (headAttachments.Length > headAttachment)
+                        {
+                            ActivateAndInstantiate(headAttachments[headAttachment], output.transform);
+                        }
+                    }
+                }
                 break;
             case ItemType.Leggings:
                 ActivateAndInstantiate(maleHips[itemIndex], output.transform);
@@ -510,7 +751,6 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                 renderer.sharedMaterial = itemMaterial;
             }
         }
-
         return output;
     }
 
@@ -520,40 +760,57 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         Instantiate(obj, parent);
     }
 
-    private void EquipArmor(ItemType itemType, int itemIndex, int material)
+    private void EquipArmor(ItemType itemType, int itemIndex, int material, params int[] additionalIndices)
     {
         var newMaterial = gameManager.Items.GetMaterial(material);
         switch (itemType)
         {
-
             case ItemType.Boots:
                 EquipPairItems(
                     maleLegsLeft,
                     maleLegsRight,
                     femaleLegsLeft,
                     femaleLegsRight,
-
                     itemIndex, newMaterial);
                 break;
 
             case ItemType.Chest:
                 EquipItems(maleTorso, femaleTorso, itemIndex, newMaterial);
 
-                // equip or unequip upper armsF
+                // equip or unequip upper arms
                 if (itemIndex > 0)
                 {
-                    EquipPairItems(
-                        maleArmUpperLeft, maleArmUpperRight,
-                        femaleArmUpperLeft, femaleArmUpperRight,
-                        Gender == Gender.Male ? 13 : 12, newMaterial);
-
+                    // 0: shoulder
                     var shoulderIndex = Gender == Gender.Male ? 20 : 14;
+                    if (additionalIndices.Length > 0)
+                    {
+                        shoulderIndex = additionalIndices[0];
+                    }
+
                     EquipPair(
                         shoulderPadsLeft[shoulderIndex],
                         shoulderPadsRight[shoulderIndex],
                         newMaterial);
 
-                    EquipPair(elbowsLeft[0], elbowsRight[0], newMaterial);
+                    // upper arm
+                    var upperArmIndex = Gender == Gender.Male ? 13 : 12;
+                    if (additionalIndices.Length > 1)
+                    {
+                        upperArmIndex = additionalIndices[1];
+                    }
+
+                    EquipPairItems(
+                        maleArmUpperLeft, maleArmUpperRight,
+                        femaleArmUpperLeft, femaleArmUpperRight,
+                        upperArmIndex, newMaterial);
+
+                    // elbows
+                    var elbowIndex = 0;
+                    if (additionalIndices.Length > 2)
+                    {
+                        elbowIndex = additionalIndices[2];
+                    }
+                    EquipPair(elbowsLeft[elbowIndex], elbowsRight[elbowIndex], newMaterial);
                 }
                 else
                 {
@@ -573,10 +830,16 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
                 if (itemIndex > 0)
                 {
+                    var lowerArm = Gender == Gender.Male ? 5 : 15;
+                    if (additionalIndices.Length > 0)
+                    {
+                        lowerArm = additionalIndices[0];
+                    }
+
                     EquipPairItems(
                         maleArmLowerLeft, maleArmLowerRight,
                         femaleArmLowerLeft, femaleArmLowerRight,
-                            Gender == Gender.Male ? 5 : 15, newMaterial);
+                           lowerArm, newMaterial);
                 }
                 else
                 {
@@ -591,16 +854,41 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             case ItemType.RightShoulder:
                 EquipPairItems(shoulderPadsLeft, shoulderPadsRight, itemIndex, newMaterial);
                 break;
-            case ItemType.Helm:
-                equippedHelmet = EquipItems(maleHelmets, femaleHelmets, itemIndex, newMaterial);
+
+            case ItemType.Hat:
+            case ItemType.Mask:
+            case ItemType.Helmet:
+            case ItemType.HeadCovering:
+                var isHelmet = itemType == ItemType.Helmet;
+                var isMask = itemType == ItemType.Mask;
+                var isHat = itemType == ItemType.Hat;
+
+                equippedHelmet = EquipItems(
+                    isHelmet ? maleHelmets : isMask ? masks : isHat ? hats : headCoverings,
+                    isHelmet ? femaleHelmets : isMask ? masks : isHat ? hats : headCoverings,
+                    itemIndex, newMaterial);
+
+                if (additionalIndices.Length > 0)
+                {
+                    var i = 0;
+                    foreach (var headAttachment in additionalIndices)
+                    {
+                        Equip(headAttachments[headAttachment], newMaterial, i++ == 0);
+                    }
+                }
                 UpdateHelmetVisibility();
                 break;
             case ItemType.Leggings:
                 EquipItems(maleHips, femaleHips, itemIndex, newMaterial);
+                if (additionalIndices.Length > 0)
+                {
+                    var kneepadIndex = additionalIndices[0];
+                    EquipItems(kneeAttachmentsLeft, kneeAttachmentsLeft, kneepadIndex, newMaterial);
+                    EquipItems(kneeAttachmentsRight, kneeAttachmentsRight, kneepadIndex, newMaterial);
+                }
                 break;
         }
     }
-
     private GameObject EquipItems(
         GameObject[] male,
         GameObject[] female,
@@ -648,9 +936,9 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     {
         item.SetActive(false);
     }
-    private GameObject Equip(GameObject item, Material material)
+    private GameObject Equip(GameObject item, Material material, bool deactivateOthers = true)
     {
-        if (item.transform.parent)
+        if (item.transform.parent && deactivateOthers)
         {
             for (var i = 0; i < item.transform.parent.childCount; ++i)
             {
@@ -686,30 +974,30 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         return modelObjects;
     }
 
-    private void RandomizeCharacter()
+    public void RandomizeCharacter()
     {
         Gender = Enum.GetValues(typeof(Gender)).Cast<Gender>().Random();
-        var models = GetAllModels();
-        var fields = GetType()
-            .GetFields(BindingFlags.Public | BindingFlags.Instance)
-            .Where(x => x.FieldType == typeof(int))
-            .ToList();
+        //var models = GetAllModels();
+        //var fields = GetType()
+        //    .GetFields(BindingFlags.Public | BindingFlags.Instance)
+        //    .Where(x => x.FieldType == typeof(int))
+        //    .ToList();
 
         EyeColor = RandomColor();
         HairColor = RandomColor();
         BeardColor = RandomColor();
         SkinColor = RandomColor();
 
-        fields.ForEach(field =>
-        {
-            var item = models
-            .FirstOrDefault(x => x.Key.StartsWith(field.Name, StringComparison.OrdinalIgnoreCase) || x.Key.StartsWith(Gender.ToString() + field.Name, StringComparison.OrdinalIgnoreCase));
+        //fields.ForEach(field =>
+        //{
+        //    var item = models
+        //    .FirstOrDefault(x => x.Key.StartsWith(field.Name, StringComparison.OrdinalIgnoreCase) || x.Key.StartsWith(Gender.ToString() + field.Name, StringComparison.OrdinalIgnoreCase));
 
-            if (item.Value != null && item.Value.Length > 0)
-            {
-                field.SetValue(this, item.Value.RandomIndex());
-            }
-        });
+        //    if (item.Value != null && item.Value.Length > 0)
+        //    {
+        //        field.SetValue(this, item.Value.RandomIndex());
+        //    }
+        //});
     }
     //public Material GetMaterial(int material)
     //{
@@ -750,13 +1038,30 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         Optimize(UpdateHelmetVisibility);
     }
 
-    private void UpdateHelmetVisibility()
+    public void UpdateHelmetVisibility()
     {
         var helmets = Gender == Gender.Female ? femaleHelmets : maleHelmets;
 
-        if (!equippedHelmet)
+        if (!equippedHelmet && Helmet < 0)
         {
             return;
+        }
+
+        var toggleHair = true;
+        var toggleHead = true;
+        var toggleFacials = true;
+
+        if (equippedHelmet)
+        {
+            if (equippedHelmet.name.IndexOf("no_elements", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                // Toggle All off
+            }
+            else // Check if _Base_Hair (Hat), _No_FacialHair (Mask), _No_Hair (HeadCovering)
+            {
+                // ...
+            }
+
         }
 
         if (Gender == Gender.Male)
@@ -788,7 +1093,10 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             hairs[Hair].gameObject.SetActive(!HelmetVisible);
         }
 
-        equippedHelmet.SetActive(HelmetVisible);
+        if (equippedHelmet)
+        {
+            equippedHelmet.SetActive(HelmetVisible);
+        }
     }
 
     public void SetMonsterMesh(GameObject prefab)

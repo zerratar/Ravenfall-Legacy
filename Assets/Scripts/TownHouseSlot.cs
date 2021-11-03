@@ -11,9 +11,10 @@ public class TownHouseSlot : MonoBehaviour
     private TownHouse townHouseSource;
 
     public TownHouseController House;
-
+    public Skills PlayerSkills { get; private set; }
+    public string PlayerName { get; private set; }
     public string OwnerUserId { get; private set; }
-    public PlayerController Owner { get; private set; }
+    public PlayerController Player { get; private set; }
     public TownHouseSlotType SlotType { get; set; }
     public int Slot { get; set; }
     public bool Selected { get; private set; }
@@ -24,71 +25,125 @@ public class TownHouseSlot : MonoBehaviour
     {
         if (!mud) mud = transform.Find("Mud").gameObject;
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
-        playerManager = FindObjectOfType<PlayerManager>();
-        meshRenderer = GetComponentInChildren<MeshRenderer>();
+        if (!playerManager) playerManager = FindObjectOfType<PlayerManager>();
+        if (!meshRenderer) meshRenderer = GetComponentInChildren<MeshRenderer>();
     }
 
     public void SetHouse(VillageHouseInfo houseInfo, TownHouse townHouse)
     {
-        var houseOwner = playerManager.GetPlayerByUserId(houseInfo.Owner);
-
-        SetOwner(houseOwner);
+        if (SlotType == (TownHouseSlotType)houseInfo.Type && OwnerUserId == houseInfo.Owner)
+        {
+            UpdateExpBonus();
+            return;
+        }
 
         OwnerUserId = houseInfo.Owner;
+        Player = playerManager.GetPlayerByUserId(houseInfo.Owner);
+
+        if (Player)
+        {
+            PlayerSkills = Player.Stats;
+            PlayerName = Player.Name;
+        }
+
         SlotType = (TownHouseSlotType)houseInfo.Type;
         Slot = houseInfo.Slot;
         townHouseSource = townHouse;
 
-        if (House)
+        try
         {
-            Destroy(House.gameObject);
-            House = null;
-            mud.SetActive(true);
+            // if we have a hut,
+            // check if the hut changed. If it did, we want to destroy and instantiate the new model.
+            if (House)
+            {
+                House.Slot = this;
+
+                if (townHouse != null && House.TownHouse.Name == townHouse.Name)
+                {
+                    return;
+                }
+
+                Destroy(House.gameObject);
+                House = null;
+                mud.SetActive(true);
+            }
+
+            // if the townhouse was null, or the type is now empty. Return out
+            if (!townHouse || SlotType == TownHouseSlotType.Empty)
+            {
+                return;
+            }
+
+            var houseObject = Instantiate(townHouse.Prefab, this.transform);
+            if (houseObject)
+            {
+                House = houseObject.GetComponent<TownHouseController>();
+                House.TownHouse = townHouse;
+                House.Slot = this;
+                mud.SetActive(false);
+            }
         }
-
-        if (!townHouse)
+        finally
         {
-            return;
+            UpdateExpBonus();
         }
+    }
 
-        var houseObject = Instantiate(townHouse.Prefab, this.transform);
-        if (houseObject)
+    public void UpdateExpBonus()
+    {
+        float bonus = 0;
+        try
         {
-            House = houseObject.GetComponent<TownHouseController>();
-            House.TownHouse = townHouse;
-            House.Owner = houseOwner;
+            var playerSkills = this.PlayerSkills;
+            if (Player != null && Player)
+            {
+                playerSkills = Player.Stats;
+            }
 
-            mud.SetActive(false);
+            if (playerSkills != null)
+            {
+                var existingSkill = GameMath.GetSkillByHouseType(playerSkills, SlotType);
+                bonus = GameMath.CalculateHouseExpBonus(existingSkill);
+                gameManager?.Village?.SetBonus(Slot, SlotType, bonus);
+                return;
+            }
+
+            gameManager?.Village?.SetBonus(Slot, SlotType, 0);
+        }
+        catch (Exception exc)
+        {
+            GameManager.LogError(exc.ToString());
         }
     }
 
     public void InvalidateOwner()
-    {
+    {        
+        Player = playerManager.GetPlayerByUserId(OwnerUserId);
+        if (Player)
+        {
+            PlayerSkills = Player.Stats;
+            PlayerName = Player.Name;
+        }
+
         if (string.IsNullOrEmpty(OwnerUserId))
         {
-            SetOwner(null);
-            return;
+            PlayerSkills = null;
+            PlayerName = null;
         }
 
-        var ownerId = OwnerUserId;
-        var houseOwner = playerManager.GetPlayerByUserId(OwnerUserId);
-        SetOwner(houseOwner);
-        OwnerUserId = ownerId;
+        UpdateExpBonus();
     }
 
-    public void SetOwner(PlayerController player)
+    internal void SetOwner(string userId)
     {
-        Owner = player;
-        OwnerUserId = player?.UserId;
+        this.OwnerUserId = userId;
+        InvalidateOwner();
+    }
 
-        if (!player || player == null)
-        {
-            gameManager?.Village?.SetBonus(Slot, SlotType, 0);
-            return;
-        }
-        var existingSkill = GameMath.GetSkillByHouseType(player.Stats, SlotType);
-        var bonus = GameMath.CalculateHouseExpBonus(existingSkill);
-        gameManager?.Village?.SetBonus(Slot, SlotType, bonus);
+    internal void RemoveOwner()
+    {
+        this.OwnerUserId = null;
+        InvalidateOwner();
     }
 
     public void Deselect(Material defaultMaterial)

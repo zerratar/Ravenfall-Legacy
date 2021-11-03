@@ -2,6 +2,6 @@
 
 public class TownHouseController : MonoBehaviour
 {
-    public TownHouse TownHouse;
-    public PlayerController Owner;
+    public TownHouse TownHouse;    
+    public TownHouseSlot Slot;
 }

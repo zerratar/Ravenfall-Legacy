@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using UnityEngine;
 
 [Serializable]
 public class Skills : IComparable
@@ -67,13 +68,12 @@ public class Skills : IComparable
         Sailing = new SkillStat(nameof(Sailing), skills.SailingLevel, skills.Sailing);
         Healing = new SkillStat(nameof(Healing), skills.HealingLevel, skills.Healing);
     }
-
     public bool IsDead => Health.CurrentValue <= 0;
     public int CombatLevel => (int)((Attack.Level + Defense.Level + Strength.Level + Health.Level) / 4f + (Ranged.Level + Magic.Level + Healing.Level) / 8f);
-    public decimal TotalExperience => SkillList.Sum(x => x.Experience);
-    public decimal[] ExperienceList => SkillList.Select(x => x.Experience).ToArray();
+    public double TotalExperience => SkillList.Sum(x => x.Experience);
+    public double[] ExperienceList => SkillList.Select(x => x.Experience).ToArray();
     public int[] LevelList => SkillList.Select(x => x.Level).ToArray();
-
+    public float HealthPercent => Health.CurrentValue / Health.Level;
     public SkillStat[] SkillList => skillList ??
         (skillList = new SkillStat[]
         {
@@ -110,8 +110,19 @@ public class Skills : IComparable
             SkillStat tskill = target.SkillList[i];
             if (tskill.Experience > skill.Experience)
             {
-                skill.SetExp(tskill.Experience);
+                skill.Set(tskill.Level, tskill.Experience);
+                //skill.SetExp(tskill.Experience);
             }
+        }
+    }
+
+    internal void CopyTo(Skills target)
+    {
+        for (int i = 0; i < SkillList.Length; i++)
+        {
+            SkillStat skill = SkillList[i];
+            SkillStat tskill = target.SkillList[i];
+            tskill.Set(skill.Level, skill.Experience);
         }
     }
 
@@ -165,22 +176,22 @@ public class Skills : IComparable
             WoodcuttingLevel = skills.Woodcutting.Level
         };
     }
-    public static Skills operator *(Skills skill, float num)
+
+    internal static int IndexOf(Skills skills, SkillStat activeSkill)
     {
-        var newSkills = new Skills();
-
-        if (skill == null) return newSkills;
-
-        newSkills.TakeBestOf(skill);
-
-        for (int i = 0; i < newSkills.SkillList.Length; i++)
-        {
-            newSkills.SkillList[i].SetExp((decimal)num * newSkills.SkillList[i].Experience);
-        }
-
-        return newSkills;
+        return Array.IndexOf(skills.SkillList, activeSkill);
     }
 
+    public SkillStat this[int index]
+    {
+        get => this.skillList[index];
+    }
+
+    public SkillStat this[Skill skill]
+    {
+        get => this.skillList[(int)skill];
+    }
+    
     internal SkillStat GetCombatSkill(CombatSkill skill)
     {
         switch (skill)
@@ -195,19 +206,23 @@ public class Skills : IComparable
         }
         return null;
     }
-
     public SkillStat GetSkill(Skill skill)
+    {
+        return this.skillList[(int)skill];
+    }
+
+    public SkillStat GetSkill(TaskSkill skill)
     {
         switch (skill)
         {
-            case Skill.Woodcutting: return Woodcutting;
-            case Skill.Fishing: return Fishing;
-            case Skill.Crafting: return Crafting;
-            case Skill.Cooking: return Cooking;
-            case Skill.Mining: return Mining;
-            case Skill.Farming: return Farming;
-            case Skill.Slayer: return Slayer;
-            case Skill.Sailing: return Sailing;
+            case TaskSkill.Woodcutting: return Woodcutting;
+            case TaskSkill.Fishing: return Fishing;
+            case TaskSkill.Crafting: return Crafting;
+            case TaskSkill.Cooking: return Cooking;
+            case TaskSkill.Mining: return Mining;
+            case TaskSkill.Farming: return Farming;
+            case TaskSkill.Slayer: return Slayer;
+            case TaskSkill.Sailing: return Sailing;
         }
         return null;
     }
@@ -220,5 +235,113 @@ public class Skills : IComparable
         }
 
         return null;
+    }
+
+    public static Skills operator *(Skills srcSkills, float num)
+    {
+        var newSkills = new Skills();
+        if (srcSkills == null) return newSkills;
+        for (int i = 0; i < newSkills.SkillList.Length; i++)
+        {
+            var outSkill = newSkills.SkillList[i];
+            var skill = srcSkills.SkillList[i];
+
+            var high = (skill.Level * num);
+            var low = (int)high;
+            var progress = high - low;
+            var additionalExp = GameMath.ExperienceForLevel(low + 1) * progress;
+
+            if (low >= GameMath.MaxLevel)
+            {
+                outSkill.Set(low, 0, false);
+                continue;
+            }
+
+            outSkill.Set(low, additionalExp, false);
+            outSkill.AddExp(skill.Experience * num);
+        }
+
+        return newSkills;
+    }
+
+    public static Skills operator +(Skills valueA, Skills valueB)
+    {
+        var newSkills = new Skills();
+        if (valueA == null || valueB == null) return newSkills;
+        for (int i = 0; i < newSkills.SkillList.Length; i++)
+        {
+            var newSkill = newSkills.SkillList[i];
+            var a = valueA.SkillList[i];
+            var b = valueB.SkillList[i];
+            var level = (a.Level + b.Level);
+            newSkill.Set(level, 0, false);
+
+            if (level < GameMath.MaxLevel)
+            {
+                newSkill.AddExp(a.Experience + b.Experience);
+            }
+        }
+
+        return newSkills;
+    }
+
+    /// <summary>
+    /// Gets the highest value out of the two given stats.
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <returns></returns>
+    public static Skills Max(Skills a, Skills b)
+    {
+        var newSkills = new Skills();
+        for (int i = 0; i < newSkills.SkillList.Length; i++)
+        {
+            var newSkill = newSkills.SkillList[i];
+            var skillA = a.SkillList[i];
+            var skillB = b.SkillList[i];
+            newSkill.Set(Math.Max(skillA.Level, skillB.Level), 0, false);
+        }
+        return newSkills;
+    }
+
+    /// <summary>
+    /// Lerps between the two given stats
+    /// </summary>
+    /// <param name="valueFrom"></param>
+    /// <param name="valueTo"></param>
+    /// <param name="amount"></param>
+    /// <returns></returns>
+    public static Skills Lerp(Skills valueFrom, Skills valueTo, float amount)
+    {
+        var newSkills = new Skills();
+        for (int i = 0; i < newSkills.SkillList.Length; i++)
+        {
+            var newSkill = newSkills.SkillList[i];
+            var lowSkill = valueFrom.SkillList[i];
+            var higSkill = valueTo.SkillList[i];
+            var newLevel = (int)(Mathf.Lerp(lowSkill.Level, higSkill.Level, amount));
+            newSkill.Set(Math.Max(1, newLevel), 0, false);
+        }
+        return newSkills;
+    }
+
+    /// <summary>
+    /// Gets random skills given the lower and upper range
+    /// </summary>
+    /// <param name="rngLowStats"></param>
+    /// <param name="rngHighStats"></param>
+    /// <returns></returns>
+    public static Skills Random(Skills rngLowStats, Skills rngHighStats)
+    {
+        var newSkills = new Skills();
+        for (int i = 0; i < newSkills.SkillList.Length; i++)
+        {
+            var newSkill = newSkills.SkillList[i];
+            var lowSkill = rngLowStats.SkillList[i];
+            var higSkill = rngHighStats.SkillList[i];
+            var newLevel = (int)(UnityEngine.Random.Range(lowSkill.Level, higSkill.Level));
+            newSkill.Set(Math.Max(1, newLevel), 0, false);
+        }
+        return newSkills;
     }
 }

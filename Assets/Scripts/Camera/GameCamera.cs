@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Runtime.CompilerServices;
 using FlatKit;
 using UnityEngine;
@@ -9,7 +10,7 @@ public class GameCamera : MonoBehaviour
     private const float ObserverJumpTimer = 10f;
 
     [SerializeField] private FreeCamera freeCamera;
-    [SerializeField] private MouseOrbitCamera orbitCamera;
+    [SerializeField] private OrbitCamera orbitCamera;
     [SerializeField] private FocusTargetCamera focusTargetCamera;
     [SerializeField] private PlayerManager playerManager;
     [SerializeField] private GameManager gameManager;
@@ -21,18 +22,21 @@ public class GameCamera : MonoBehaviour
 
     [SerializeField] private float potatoModeFarClipDistance = 500f;
     private PostProcessLayer postProcessingLayer;
-    private Camera camera;
+
+    private Camera _camera;
+
     private float farClipDistance;
 
     private float observeNextPlayerTimer = ObserverJumpTimer;
     private int observedPlayerIndex;
 
     private GameCameraType state = GameCameraType.Free;
+    private bool canObserveNextPlayer = true;
     private bool allowJoinObserve = true;
     private bool forcedFreeCamera;
 
     public PlayerDetails Observer => playerObserver;
-
+    public bool ForcedFreeCamera => forcedFreeCamera;
     public bool AllowJoinObserve
     {
         get => !forcedFreeCamera && allowJoinObserve && !gameManager.Raid.Started;
@@ -43,15 +47,15 @@ public class GameCamera : MonoBehaviour
     void Start()
     {
         if (!freeCamera) freeCamera = GetComponent<FreeCamera>();
-        if (!orbitCamera) orbitCamera = GetComponent<MouseOrbitCamera>();
+        if (!orbitCamera) orbitCamera = GetComponent<OrbitCamera>();
         if (!focusTargetCamera) focusTargetCamera = GetComponent<FocusTargetCamera>();
 
         if (!playerObserver) playerObserver = gameManager.ObservedPlayerDetails;
 
         playerObserver.gameObject.SetActive(false);
         postProcessingLayer = GetComponent<PostProcessLayer>();
-        camera = GetComponent<Camera>();
-        farClipDistance = camera.farClipPlane;
+        _camera = GetComponent<Camera>();
+        farClipDistance = _camera.farClipPlane;
     }
 
     // Update is called once per frame
@@ -67,13 +71,13 @@ public class GameCamera : MonoBehaviour
 
         if (gameManager.PotatoMode)
         {
-            camera.farClipPlane = potatoModeFarClipDistance;
+            _camera.farClipPlane = potatoModeFarClipDistance;
             if (postProcessingLayer)
                 postProcessingLayer.enabled = false;
         }
         else
         {
-            camera.farClipPlane = farClipDistance;
+            _camera.farClipPlane = farClipDistance;
             if (postProcessingLayer)
                 postProcessingLayer.enabled = true;
         }
@@ -85,14 +89,16 @@ public class GameCamera : MonoBehaviour
                 return;
             }
 
+
+            var leftCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
             if (state != GameCameraType.Free &&
-                Input.GetKey(KeyCode.LeftControl) && Input.GetKey(KeyCode.Tab))
+                leftCtrl && Input.GetKey(KeyCode.Tab))
             {
                 EnableFreeCamera();
                 return;
             }
-
-            if (Input.GetKeyDown(KeyCode.Tab))
+            else if (canObserveNextPlayer && Input.GetKeyDown(KeyCode.Tab))
             {
                 ObserveNextPlayer();
                 return;
@@ -105,7 +111,8 @@ public class GameCamera : MonoBehaviour
                 //focusTargetCamera.enabled = false;
                 if (gameManager.Dungeons.Started)
                 {
-                    var camPoint = gameManager.Dungeons.Dungeon.Room.CameraPoint;
+
+                    var camPoint = gameManager.Dungeons.Dungeon.CameraPoint;
 
                     EnableFocusTargetCamera(camPoint);
                     //transform.position = camPoint.position;
@@ -132,29 +139,48 @@ public class GameCamera : MonoBehaviour
         }
         catch (Exception exc)
         {
-            Debug.LogWarning(exc.ToString());
+            GameManager.LogWarning(exc.ToString());
         }
     }
 
     private void EnableFreeCamera()
     {
         state = GameCameraType.Free;
+        canObserveNextPlayer = false;
 
-        playerObserver.Observe(null, 0);
-        observeCamera.ObservePlayer(null);
+        var position = this.transform.position;
+        var rotation = this.transform.rotation;
 
-        orbitCamera.targetTransform = null;
+        orbitCamera.TargetTransform = null;
         freeCamera.enabled = true;
         orbitCamera.enabled = false;
         focusTargetCamera.enabled = false;
 
+        playerObserver.Observe(null, 0);
+        observeCamera.ObservePlayer(null);
+
+
         AllowJoinObserve = false;
+
+        this.transform.position = position;
+        this.transform.rotation = rotation;
+
+        StartCoroutine(SetTransform(position, rotation));
     }
 
-    public void ForceFreeCamera()
+    private IEnumerator SetTransform(Vector3 pos, Quaternion rot)
+    {
+        yield return null;
+        yield return new WaitForFixedUpdate();
+        this.transform.position = pos;
+        this.transform.rotation = rot;
+        canObserveNextPlayer = true;
+    }
+
+    public void ForceFreeCamera(bool slowMOtion = true)
     {
         forcedFreeCamera = true;
-        freeCamera.SlowMotion = true;
+        freeCamera.SlowMotion = slowMOtion;
         EnableFreeCamera();
     }
 
@@ -194,7 +220,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Raid;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
-        orbitCamera.targetTransform = null;
+        orbitCamera.TargetTransform = null;
     }
 
     public void EnableArenaCamera()
@@ -203,7 +229,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Arena;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
-        orbitCamera.targetTransform = null;
+        orbitCamera.TargetTransform = null;
     }
 
     public void EnableDungeonCamera()
@@ -212,7 +238,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Dungeon;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
-        orbitCamera.targetTransform = null;
+        orbitCamera.TargetTransform = null;
     }
 
     public void DisableFocusCamera()
@@ -245,7 +271,7 @@ public class GameCamera : MonoBehaviour
         observeCamera.ObservePlayer(player);
         playerObserver.Observe(player, time);
         freeCamera.enabled = false;
-        orbitCamera.targetTransform = player.transform;
+        orbitCamera.TargetTransform = player.transform;
         orbitCamera.enabled = true;
     }
 

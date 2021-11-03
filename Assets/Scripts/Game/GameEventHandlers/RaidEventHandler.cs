@@ -59,6 +59,8 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
             }
         }
 
+        gameManager.SavePlayerStates();
+
         if (raidWar)
         {
             gameManager.StartCoroutine(StartRaidWar(gameManager, raidInfo, players, raiders));

@@ -2,13 +2,17 @@
 {
     protected override void Handle(GameManager gameManager, VillageInfo data)
     {
-        gameManager.Village.SetTierByLevel(data.Level);
-        gameManager.Village.SetHouses(data.Houses);
-        gameManager.Village.SetExp(data.Experience);
+        if (gameManager.Village && gameManager.Village != null)
+        {
+            gameManager.Village.SetTierByLevel(data.Level);
+            if (!gameManager.Village.HousesAreUpdating)
+            {
+                gameManager.Village.SetHouses(data.Houses);
+            }
+            gameManager.Village.TownHall.SetExp(data.Experience);
+            return;
+        }
 
-        UnityEngine.Debug.Log("Village Info Received! " +
-            "Name: " + data.Name +
-            ", Level: " + data.Level +
-            ", House Slots: " + data.Houses.Count);
+        // We are in another scene, ignore any errors.
     }
 }

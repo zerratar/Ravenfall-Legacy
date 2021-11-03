@@ -19,13 +19,13 @@ public class TreeController : MonoBehaviour
 
     [SerializeField] private float treeShakeTime = 1f;
     [SerializeField] private float treeShakeTimer = 0;
-    [SerializeField] private float treeShakeRange = 2f;
+    //[SerializeField] private float treeShakeRange = 2f;
 
-    private Quaternion startRotation;
+    //private Quaternion startRotation;
 
     public int Level = 1;
 
-    public decimal Experience => GameMath.GetWoodcuttingExperience(Level);
+    public double Experience => GameMath.GetWoodcuttingExperience(Level);
 
     public double Resource => 1;
 
@@ -33,14 +33,27 @@ public class TreeController : MonoBehaviour
 
     public bool IsStump => health <= 0;
 
+    public IslandController Island { get; private set; }
+
     // Start is called before the first frame update
+    public float MaxActionDistance = 5f;
+
     void Start()
     {
-        startRotation = transform.rotation;
+        var collider = GetComponent<SphereCollider>();
+        if (collider)
+        {
+            MaxActionDistance = collider.radius;
+        }
+
+        //startRotation = transform.rotation;
     }
 
     void Awake()
     {
+
+        this.Island = GetComponentInParent<IslandController>();
+
         if (stump) stump.SetActive(false);
         foreach (var tree in trees) tree.SetActive(false);
         ActivateRandomTree();
@@ -71,11 +84,17 @@ public class TreeController : MonoBehaviour
 
     private void ActivateRandomTree()
     {
-        if (trees.Length == 0) return;
-        if (stump) stump.SetActive(false);
-        var index = Mathf.FloorToInt(UnityEngine.Random.value * trees.Length);
-        trees[index].SetActive(true);
-        health = maxHealth;
+        try
+        {
+            if (trees.Length == 0) return;
+            if (stump) stump.SetActive(false);
+            trees[Random.Range(0, trees.Length)].SetActive(true);
+            health = maxHealth;
+        }
+        catch (System.Exception exception)
+        {
+            GameManager.LogError(exception.ToString());
+        }
     }
 
     private void CutDown()

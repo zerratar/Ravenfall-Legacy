@@ -19,6 +19,7 @@ public class LoginHandler : MonoBehaviour
     {
         invalidUsername.gameObject.SetActive(false);
         var savedUsername = PlayerPrefs.GetString("LoginUsername", string.Empty);
+        var savedPassword = PlayerPrefs.GetString("LoginPassword", string.Empty);
         if (string.IsNullOrEmpty(savedUsername))
         {
             txtUsername.Select();
@@ -26,7 +27,13 @@ public class LoginHandler : MonoBehaviour
         else
         {
             txtUsername.text = savedUsername;
-            txtPassword.Select();
+            if (!string.IsNullOrEmpty(savedPassword))
+            {
+                txtPassword.text = savedPassword;
+                txtPassword.Select();
+                StartCoroutine(DelayedLogin());
+                return;
+            }
         }
 
         HandleAutoLogin();
@@ -35,6 +42,14 @@ public class LoginHandler : MonoBehaviour
     public async void Login()
     {
         await LoginImplementation();
+    }
+
+    public void ClearPassword()
+    {
+        PlayerPrefs.SetString("LoginUsername", null);
+        PlayerPrefs.SetString("LoginPassword", null);
+        txtUsername.text = "";
+        txtPassword.text = "";
     }
 
     private async Task LoginImplementation()
@@ -46,9 +61,10 @@ public class LoginHandler : MonoBehaviour
             gameObject.SetActive(false);
             invalidUsername.enabled = false;
 
-            if (rememberMeToggle && rememberMeToggle.isOn)
+            if (rememberMeToggle != null && rememberMeToggle && rememberMeToggle.isOn)
             {
                 PlayerPrefs.SetString("LoginUsername", txtUsername.text);
+                PlayerPrefs.SetString("LoginPassword", txtPassword.text);
             }
         }
         else
@@ -127,6 +143,11 @@ public class LoginHandler : MonoBehaviour
                 {
                     user = value.Trim();
                 }
+            }
+            else
+            {
+                if (i == 0) user = vs[i]?.Trim();
+                if (i == 1) pass = vs[i]?.Trim();
             }
         }
 

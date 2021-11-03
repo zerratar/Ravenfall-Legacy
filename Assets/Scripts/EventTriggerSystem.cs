@@ -35,6 +35,16 @@ public class EventTriggerSystem : IDisposable
 
     public void SendInput(string source, string input)
     {
+        if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(input))
+        {
+            return;
+        }
+
+        if (source.StartsWith("#"))
+        {
+            return;
+        }
+
         lock (triggerMutex)
         {
             activeInputs.Enqueue(new SysEventInput(source, input));
@@ -50,6 +60,11 @@ public class EventTriggerSystem : IDisposable
             {
                 while (activeInputs.TryDequeue(out var input))
                 {
+                    if (input == null || string.IsNullOrEmpty(input.Source))
+                    {
+                        continue;
+                    }
+
                     var alreadyTriggered = false;
                     var triggered = false;
                     foreach (var activeEvent in activeEvents)
@@ -147,7 +162,7 @@ public class EventTriggerSystem : IDisposable
 
         if (avgSecPerTrigger <= 0.2)
             return true;
-        
+
         if (stats.TriggerStreak >= 20)
             return true;
 

@@ -7,6 +7,7 @@ public class ConnectionChecker : MonoBehaviour
 
     public GameObject Graphics;
     public TextMeshProUGUI Label;
+    private float lastUpdate;
 
     // Start is called before the first frame update
     void Start()
@@ -33,9 +34,9 @@ public class ConnectionChecker : MonoBehaviour
             return;
         }
 
-        if ((gameManager.RavenNest.Stream.IsReady || gameManager.RavenNest.Stream.ForceReconnecting) && Graphics.activeSelf)
+        if ((gameManager.RavenNest.Stream.IsReady) && Graphics.activeSelf)
         {
-            Graphics.SetActive(false);
+            SetVisibility(false);
             return;
         }
 
@@ -47,12 +48,12 @@ public class ConnectionChecker : MonoBehaviour
         if (gameManager.RavenNest.Desynchronized)
         {
             Label.text = "CLIENT CANNOT SYNCHRONIZE WITH SERVER. PLEASE RESTART OR USE !RELOAD";
-            Graphics.SetActive(true);
+            SetVisibility(true);
         }
         else if (!gameManager.RavenNest.SessionStarted && gameManager.RavenNest.BadClientVersion)
         {
             Label.text = "CLIENT IS OUT OF DATE. RESTART RAVENFALL TO UPDATE";
-            Graphics.SetActive(true);
+            SetVisibility(true);
         }
 
         if (!gameManager.RavenNest.SessionStarted || gameManager.RavenNest.Stream.IsReady)
@@ -61,6 +62,15 @@ public class ConnectionChecker : MonoBehaviour
         }
 
         Label.text = "CONNECTION LOST";
-        Graphics.SetActive(true);
+        SetVisibility(true);
+    }
+
+    private void SetVisibility(bool value)
+    {
+        if (Time.time - lastUpdate > 0.25)
+        {
+            Graphics.SetActive(value);
+            lastUpdate = Time.time;
+        }
     }
 }

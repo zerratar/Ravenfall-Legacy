@@ -10,6 +10,7 @@ public class ClanHandler : MonoBehaviour
     {
         if (!player) player = GetComponent<PlayerController>();
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+
     }
     public bool InClan { get; private set; }
     public Clan ClanInfo { get; private set; }
@@ -17,12 +18,14 @@ public class ClanHandler : MonoBehaviour
     public string Logo { get; private set; }
     public void SetClan(Clan clan, ClanRole role)
     {
+        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+
         InClan = clan != null;
         ClanInfo = clan;
         Role = role;
 
         if (InClan && !string.IsNullOrEmpty(clan.Owner))
-            Logo = clan.Logo ?? (PlayerLogoManager.TwitchLogoUrl + clan.Owner);
+            Logo = clan.Logo ?? (gameManager.PlayerLogo.TwitchLogoUrl + clan.Owner);
         else
             Logo = null;
 

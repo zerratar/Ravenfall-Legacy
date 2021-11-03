@@ -6,17 +6,26 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
 {
     private const string CacheDirectory = "data/";
     private const string CacheFileNameOld = "statcache.json";
+
+
     private const string CacheFileName = "data/statcache.bin";
     private const string CacheKey = "Ahgjkeaweg12!2KJAHgkhjeAhgegaeegjasdgauyEGIUM";
 
-    private readonly List<PlayerController> activePlayers = new List<PlayerController>();
-    private readonly object mutex = new object();
+    //private readonly List<PlayerController> activePlayers = new List<PlayerController>();
+    private readonly Dictionary<string, PlayerController> playerTwitchIdLookup = new Dictionary<string, PlayerController>();
+    private readonly Dictionary<string, PlayerController> playerNameLookup = new Dictionary<string, PlayerController>();
+    private readonly Dictionary<Guid, PlayerController> playerIdLookup = new Dictionary<Guid, PlayerController>();
+
+    private readonly List<PlayerController> playerList = new List<PlayerController>();
+
+    //private readonly object mutex = new object();
 
     [SerializeField] private GameManager gameManager;
     [SerializeField] private GameSettings settings;
@@ -31,13 +40,150 @@ public class PlayerManager : MonoBehaviour
 
     private DateTime lastCacheSave = DateTime.MinValue;
 
-
     void Start()
     {
         if (!gameManager) gameManager = GetComponent<GameManager>();
         if (!settings) settings = GetComponent<GameSettings>();
         if (!ioc) ioc = GetComponent<IoCContainer>();
+
         //LoadStatCache();
+    }
+
+    internal async Task<PlayerController> JoinAsync(TwitchPlayerInfo data, GameClient client, bool userTriggered, bool isBot = false, Guid? characterId = null)
+    {
+        var Game = gameManager;
+        try
+        {
+
+            if (string.IsNullOrEmpty(data.UserId))
+            {
+                GameManager.LogError("A user tried to join the game but had no UserId.");
+                return null;
+            }
+
+            var addPlayerRequest = data;
+            if (Game.RavenNest.SessionStarted)
+            {
+                if (!Game.Items.Loaded)
+                {
+                    if (userTriggered)
+                    {
+                        client.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_LOADED);
+                    }
+
+                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. Game not finished loading.");
+                    return null;
+                }
+
+                if (Contains(addPlayerRequest.UserId))
+                {
+                    if (userTriggered)
+                    {
+                        client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
+                    }
+
+                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
+                    return null;
+                }
+
+                if (!isBot)
+                {
+                    Game.EventTriggerSystem.SendInput(addPlayerRequest.UserId, "join");
+                }
+
+                var playerInfo = await Game.RavenNest.PlayerJoinAsync(
+                    new RavenNest.Models.PlayerJoinData
+                    {
+                        Identifier = string.IsNullOrEmpty(addPlayerRequest.Identifier) ? "0" : addPlayerRequest.Identifier,
+                        CharacterId = characterId ?? Guid.Empty,
+                        Moderator = addPlayerRequest.IsModerator,
+                        Subscriber = addPlayerRequest.IsSubscriber,
+                        Vip = addPlayerRequest.IsVip,
+                        UserId = addPlayerRequest.UserId,
+                        UserName = addPlayerRequest.Username,
+                        IsGameRestore = !userTriggered
+                    });
+
+                if (playerInfo == null)
+                {
+                    if (userTriggered)
+                    {
+                        client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED, addPlayerRequest.Username);
+                    }
+                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. Missing PlayerInfo");
+                    return null;
+                }
+
+                if (!playerInfo.Success)
+                {
+                    if (userTriggered)
+                    {
+                        client.SendMessage(addPlayerRequest.Username, playerInfo.ErrorMessage);
+                    }
+
+                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. " + playerInfo.ErrorMessage);
+                    return null;
+                }
+
+                var player = AddPlayer(isBot, addPlayerRequest, playerInfo.Player);
+                if (player)
+                {
+                    if (userTriggered && !player.IsBot)
+                    {
+                        gameManager.SavePlayerStates();
+                        client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_WELCOME);
+                    }
+                    return player;
+                }
+                else
+                {
+                    if (userTriggered)
+                    {
+                        client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
+                    }
+                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
+                }
+            }
+            else
+            {
+                if (userTriggered)
+                    client.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_READY);
+            }
+        }
+        catch (Exception exc)
+        {
+            GameManager.LogError(exc.ToString());
+        }
+        return null;
+    }
+
+    private PlayerController AddPlayer(bool isBot, TwitchPlayerInfo twitchPlayerInfo, RavenNest.Models.Player ravenfallPlayerInfo)
+    {
+        var Game = gameManager;
+        var player = Game.SpawnPlayer(ravenfallPlayerInfo, twitchPlayerInfo);
+        if (player)
+        {
+            player.Unlock();
+            player.IsBot = isBot;
+            if (player.IsBot)
+            {
+                player.Bot = this.gameObject.AddComponent<BotPlayerController>();
+                if (player.UserId != null && !player.UserId.StartsWith("#"))
+                {
+                    player.UserId = "#" + player.UserId;
+                }
+            }
+
+            player.PlayerNameHexColor = twitchPlayerInfo.Color;
+            if (player.IsBroadcaster && !player.IsBot)
+            {
+                Game.EventTriggerSystem.TriggerEvent("join", TimeSpan.FromSeconds(1));
+            }
+
+            // receiver:cmd|arg1|arg2|arg3|
+            return player;
+        }
+        return null;
     }
 
     //private void LoadStatCache()
@@ -93,63 +239,65 @@ public class PlayerManager : MonoBehaviour
     //    //}
     //}
 
+    public IReadOnlyList<PlayerController> GetAllBots()
+    {
+        return playerList.Where(x => x.IsBot).ToList();
+    }
     public IReadOnlyList<PlayerController> GetAllPlayers()
     {
-        lock (mutex)
-        {
-            return activePlayers.ToList();
-        }
+        return playerList;
     }
 
     public PlayerController Spawn(
         Vector3 position,
         RavenNest.Models.Player playerDefinition,
-        Player streamUser,
+        TwitchPlayerInfo twitchUser,
         StreamRaidInfo raidInfo)
     {
 
-        lock (mutex)
+        if (playerTwitchIdLookup.ContainsKey(playerDefinition.UserId))
         {
-            if (activePlayers.Any(x => x.PlayerName == playerDefinition.Name))
-            {
-                return null; // player is already in game
-            }
-
-            var player = Instantiate(playerControllerPrefab);
-            if (!player)
-            {
-                Debug.LogError("Player Prefab not found!!!");
-                return null;
-            }
-
-            player.transform.position = position;
-
-            return Add(player.GetComponent<PlayerController>(), playerDefinition, streamUser, raidInfo);
+            return null;
         }
+
+        var player = Instantiate(playerControllerPrefab);
+        if (!player)
+        {
+            GameManager.LogError("Player Prefab not found!!!");
+            return null;
+        }
+
+        player.transform.position = position;
+
+        return Add(player.GetComponent<PlayerController>(), playerDefinition, twitchUser, raidInfo);
     }
 
     internal IReadOnlyList<PlayerController> GetAllModerators()
     {
-        lock (mutex)
-        {
-            return activePlayers.Where(x => x.IsModerator).ToList();
-        }
+        return playerTwitchIdLookup.Values.Where(x => x.IsModerator).ToList();
     }
 
-    public PlayerController GetPlayer(Player taskPlayer)
+    public PlayerController GetPlayer(TwitchPlayerInfo twitchUser)
     {
-        var player = GetPlayerByUserId(taskPlayer.UserId);
-        return player ? player : GetPlayerByName(taskPlayer.Username);
+        var player = GetPlayerByUserId(twitchUser.UserId);
+        if (!player) player = GetPlayerByName(twitchUser.Username);
+        if (player)
+        {
+            player.UpdateTwitchUser(twitchUser);
+        }
+        return player;
     }
 
     public PlayerController GetPlayerByUserId(string userId)
     {
-        lock (mutex)
+        if (string.IsNullOrEmpty(userId))
         {
-            return activePlayers.FirstOrDefault(x =>
-                x.Id.ToString().Equals(userId, StringComparison.InvariantCultureIgnoreCase) ||
-                x.UserId.Equals(userId, StringComparison.InvariantCultureIgnoreCase));
+            return null;
         }
+
+        if (playerTwitchIdLookup.TryGetValue(userId, out var user)) return user;
+
+        return playerTwitchIdLookup.Values.FirstOrDefault(x => x.Id.ToString().Equals(userId, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public PlayerController GetPlayerByName(string playerName)
@@ -158,81 +306,89 @@ public class PlayerManager : MonoBehaviour
             return null;
 
         playerName = playerName.StartsWith("@") ? playerName.Substring(1) : playerName;
-        lock (mutex)
+
+        if (playerNameLookup.TryGetValue(playerName.ToLower(), out var plr))
         {
-            return activePlayers.FirstOrDefault(x => x.PlayerName.Equals(playerName, StringComparison.InvariantCultureIgnoreCase));
+            return plr;
         }
+
+        return null;
     }
 
     public int GetPlayerCount(bool includeNpc = false)
     {
-        lock (mutex)
-            return activePlayers?.Count(x => includeNpc || !x.IsNPC) ?? 0;
+        return playerTwitchIdLookup.Values.Count(x => includeNpc || !x.IsNPC);
     }
 
     public PlayerController GetPlayerById(Guid characterId)
     {
-        lock (mutex)
+        if (playerTwitchIdLookup == null)
         {
-            if (activePlayers == null)
-            {
-                return null;
-            }
-
-            return activePlayers.FirstOrDefault(x => x.Id == characterId);
+            return null;
         }
+
+        if (playerIdLookup.TryGetValue(characterId, out var plr))
+        {
+            return plr;
+        }
+
+        return null;
     }
 
     public PlayerController GetPlayerByIndex(int index)
     {
-        lock (mutex)
+        if (playerList.Count <= index)
         {
-            if (activePlayers == null || activePlayers.Count <= index)
-            {
-                return null;
-            }
-
-            return activePlayers[index];
+            return null;
         }
+
+        return playerList[index];
     }
 
     public void Remove(PlayerController player)
     {
-        lock (mutex)
+        if (playerTwitchIdLookup.TryGetValue(player.UserId, out var plrToRemove))
         {
-            if (!activePlayers.Contains(player))
-            {
-                return;
-            }
+            playerTwitchIdLookup.Remove(player.UserId);
+            playerNameLookup.Remove(player.PlayerName.ToLower());
+            playerIdLookup.Remove(player.Id);
+            playerList.Remove(plrToRemove);
 
-            player.OnRemoved();
-            activePlayers.Remove(player);
-            Destroy(player.gameObject);
+            plrToRemove.OnRemoved();
+
+            Destroy(plrToRemove.gameObject);
             gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
         }
     }
 
     public IReadOnlyList<PlayerController> FindPlayers(string query)
     {
-        lock (mutex)
-            return activePlayers.Where(x => x.PlayerName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+        return playerList.Where(x => x.PlayerName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private PlayerController Add(
         PlayerController player,
         RavenNest.Models.Player def,
-        Player streamUser,
+        TwitchPlayerInfo twitchUser,
         StreamRaidInfo raidInfo)
     {
-        player.SetPlayer(def, streamUser, raidInfo);
-        lock (mutex)
-        {
-            activePlayers.Add(player);
-            //StoredStats[player.Id] = player.Stats;
-            gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
-            return player;
-        }
+        player.SetPlayer(def, twitchUser, raidInfo);
+        playerTwitchIdLookup[player.UserId] = player;
+        playerNameLookup[player.PlayerName.ToLower()] = player;
+        playerIdLookup[player.Id] = player;
+        playerList.Add(player);
+
+        gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
+        return player;
+    }
+
+    internal void UpdateRestedState(RavenNest.Models.PlayerRestedUpdate data)
+    {
+        if (data == null) return;
+        var player = GetPlayerById(data.CharacterId);
+        if (player == null) return;
+        player.SetRestedState(data);
     }
 
 

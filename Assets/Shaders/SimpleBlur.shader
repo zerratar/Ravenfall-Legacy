@@ -3,6 +3,7 @@
     Properties
     {
         _Radius("Radius", Range(1, 255)) = 1
+        _MainTex("Sprite Texture", 2D) = "white" {}
     }
  
     Category
@@ -121,9 +122,14 @@
                 }
  
                 sampler2D _GrabTexture;
+
+
                 float4 _GrabTexture_TexelSize;
                 float _Radius;
- 
+
+                sampler2D _MainTex;
+                float4 _MainTex_ST;
+
                 half4 frag(v2f i) : COLOR
                 {
  

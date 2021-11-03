@@ -21,7 +21,7 @@ public class IslandManager : MonoBehaviour
 
     public IslandController FindPlayerIsland(PlayerController player)
     {
-        return All.FirstOrDefault(x => x.InsideIsland(player.transform.position));
+        return All.FirstOrDefault(x => x.InsideIsland(player.Position));
     }
 
     public IslandController FindIsland(Vector3 position)

@@ -4,15 +4,23 @@ using UnityEngine;
 public class RavenBot : MonoBehaviour
 {
     public string RemoteServer;
-
+    public bool UseRemoteBot = true;
     public RavenBotConnection Connection { get; private set; }
-    public string TwitchUserId { get; private set; }
-    public string TwitchUserName { get; private set; }
-    public Guid SessionId { get; private set; }
+
+    private GameManager gameManager;
+
+    public BotState State { get; set; }
+
+    public void Start()
+    {
+        if (!this.gameManager) gameManager = FindObjectOfType<GameManager>();
+    }
 
     public void Initialize(GameManager gameManager)
     {
-        Connection = new RavenBotConnection(gameManager, RemoteServer);
+        if (!this.gameManager) this.gameManager = gameManager;
+
+        Connection = new RavenBotConnection(gameManager, this, RemoteServer);
         Connection.Register<KickPlayer>("kick");
         Connection.Register<PlayerLeave>("leave");
         Connection.Register<IslandInfo>("island_info");
@@ -34,6 +42,7 @@ public class RavenBot : MonoBehaviour
         Connection.Register<CraftRequirement>("req_item");
         Connection.Register<MaxMultiplier>("multiplier");
         Connection.Register<ReloadGame>("reload");
+        Connection.Register<RestartGame>("restart");
         Connection.Register<SetPet>("set_pet");
         Connection.Register<GetPet>("get_pet");
         Connection.Register<EquipItem>("equip");
@@ -65,8 +74,10 @@ public class RavenBot : MonoBehaviour
         Connection.Register<RaidForce>("raid_force");
         Connection.Register<DungeonJoin>("dungeon_join");
         Connection.Register<DungeonForce>("dungeon_force");
+        Connection.Register<DungeonStop>("dungeon_stop");
         Connection.Register<DungeonStart>("dungeon_start");
         Connection.Register<RaidStreamer>("raid_streamer");
+        Connection.Register<RaidStop>("raid_stop");
         Connection.Register<Craft>("craft");
         Connection.Register<FerryEnter>("ferry_enter");
         Connection.Register<FerryLeave>("ferry_leave");
@@ -77,11 +88,20 @@ public class RavenBot : MonoBehaviour
         Connection.Register<GetTokenCount>("token_count");
         Connection.Register<GetScrollsCount>("scrolls_count");
         Connection.Register<GetVillageBoost>("get_village_boost");
+        Connection.Register<SetVillageHuts>("set_village_huts");
         Connection.Register<TicTacToeActivate>("ttt_activate");
         Connection.Register<TicTacToePlay>("ttt_play");
         Connection.Register<TicTacToeReset>("ttt_reset");
         Connection.Register<PetRacingPlay>("pet_race_play");
         Connection.Register<PetRacingReset>("pet_race_reset");
+        Connection.Register<ConnectionPing>("ping");
+
+        Connection.Register<OnsenJoin>("onsen_join");
+        Connection.Register<OnsenLeave>("onsen_leave");
+        Connection.Register<RestedStatus>("rested_status");
+        Connection.Register<ClientVersion>("client_version");
+
+
         Connection.LocalConnected -= BotConnected;
         Connection.LocalConnected += BotConnected;
         Connection.LocalDisconnected -= BotDisconnected;
@@ -90,37 +110,76 @@ public class RavenBot : MonoBehaviour
         Connection.RemoteConnected += BotConnected;
         Connection.RemoteDisconnected -= BotDisconnected;
         Connection.RemoteDisconnected += BotDisconnected;
+        Connection.UseRemoteBot = UseRemoteBot;
+
+        Connection.DataSent += Connection_DataSent;
         Connection.Connect(BotConnectionType.Local);
         Connection.Connect(BotConnectionType.Remote);
     }
 
+    private void Connection_DataSent(object sender, string data)
+    {
+        if (State == BotState.Disconnected)
+        {
+            State = BotState.Connected;
+        }
+
+        //#if UNITY_EDITOR
+        //        UnityEngine.Debug.Log("Sent to Bot: " + data);
+        //#endif
+        //if (State != BotState.Disconnected)
+        //{
+        //    State = BotState.Ready;
+        //}
+    }
+
     private void BotDisconnected(object sender, GameClient e)
     {
+        State = BotState.Disconnected;
         if ((!Connection.IsConnectedToLocal || e.IsLocal) && !Connection.IsConnectedToRemote)
         {
-
             Connection.Connect(BotConnectionType.Remote);
         }
     }
 
     private void BotConnected(object sender, GameClient e)
     {
+        if (State == BotState.Disconnected)
+        {
+            State = BotState.Connected;
+        }
+
         if (e.IsLocal && Connection.IsConnectedToRemote)
             Connection.Disconnect(BotConnectionType.Remote);
 
-        if (!string.IsNullOrEmpty(TwitchUserId))
-            this.Connection.SendSessionOwner(TwitchUserId, TwitchUserName, SessionId);
+        UpdateSessionInfo();
     }
 
-    internal void SendSessionOwner(string twitchUserId, string twitchUserName, Guid sessionId)
+    internal void UpdateSessionInfo()
     {
-        this.TwitchUserId = twitchUserId;
-        this.TwitchUserName = twitchUserName;
-        this.SessionId = sessionId;
-
-        if (this.Connection != null)
+        if (!gameManager)
         {
-            this.Connection.SendSessionOwner(twitchUserId, twitchUserName, sessionId);
+            return;
+        }
+
+        if (this.Connection != null && gameManager.RavenNest != null)
+        {
+            this.Connection.SendSessionOwner(
+                gameManager.RavenNest.TwitchUserId,
+                gameManager.RavenNest.TwitchUserName,
+                gameManager.RavenNest.SessionId);
         }
     }
+
+    private void OnDestroy()
+    {
+        this.Connection.Stop();
+    }
+}
+
+public enum BotState
+{
+    Disconnected,
+    Connected,
+    Ready
 }

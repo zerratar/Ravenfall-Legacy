@@ -2,7 +2,7 @@
 {
     protected override void Handle(GameManager gameManager, Permissions data)
     {
-        UnityEngine.Debug.LogWarning("User Permission Update received.");
+        //UnityEngine.Debug.LogWarning("User Permission Update received.");
         gameManager.Permissions = data;
     }
 }

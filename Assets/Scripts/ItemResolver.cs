@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using UnityEngine;
-using ZerraBot.Core.ScriptParser;
+
+using Shinobytes.Core.ScriptParser;
 
 internal class ItemResolver : IItemResolver
 {
@@ -12,75 +13,84 @@ internal class ItemResolver : IItemResolver
 
     public TradeItem Resolve(string itemTradeQuery, bool parsePrice = true, bool parseUsername = false, bool parseAmount = true)
     {
-        if (string.IsNullOrEmpty(itemTradeQuery)) return null;
-        itemTradeQuery = itemTradeQuery.Trim();
-        
-        if (!itemManager)
-            itemManager = GameObject.FindObjectOfType<ItemManager>();
-
-        if (!playerManager)
-            playerManager = GameObject.FindObjectOfType<PlayerManager>();
-
-        if (!itemManager || !itemManager.Loaded) return null;
-
-        PlayerController player = null;
-        if (parseUsername) {
-            var username = itemTradeQuery.Split(' ')[0];
-            player = playerManager.GetPlayerByName(username);
-            itemTradeQuery = itemTradeQuery.Substring(username.Length).Trim();
-        }
-
-        if (string.IsNullOrEmpty(itemTradeQuery)) return null;
-
-        var lexer = new Lexer();
-        var tokens = lexer.Tokenize(itemTradeQuery, true);
-        var index = tokens.Count - 1;
-
-        var amount = 1L;
-        var price = 0m;
-        var modifiedQuery = "";
-
-
-        while (true)
+        try
         {
-            var token = tokens[index];
-            if (token.Type == TokenType.Identifier)
+            if (string.IsNullOrEmpty(itemTradeQuery)) return null;
+            itemTradeQuery = itemTradeQuery.Trim();
+
+            if (!itemManager)
+                itemManager = GameObject.FindObjectOfType<ItemManager>();
+
+            if (!playerManager)
+                playerManager = GameObject.FindObjectOfType<PlayerManager>();
+
+            if (!itemManager || !itemManager.Loaded) return null;
+
+            PlayerController player = null;
+            if (parseUsername)
             {
-                if (parsePrice && price <= 0 && TryParsePrice(token, out var p))
+                var username = itemTradeQuery.Split(' ')[0];
+                player = playerManager.GetPlayerByName(username);
+                itemTradeQuery = itemTradeQuery.Substring(username.Length).Trim();
+            }
+
+            if (string.IsNullOrEmpty(itemTradeQuery)) return null;
+
+            var lexer = new Lexer();
+            var tokens = lexer.Tokenize(itemTradeQuery, true);
+            var index = tokens.Count - 1;
+
+            var amount = 1L;
+            var price = 0d;
+            var modifiedQuery = "";
+
+
+            while (true)
+            {
+                var token = tokens[index];
+                if (token.Type == TokenType.Identifier)
                 {
-                    price = p;
-                }                
-                else if (parseAmount && TryParseAmount(token, out var a))
-                {
-                    amount = a;
+                    if (parsePrice && price <= 0 && TryParsePrice(token, out var p))
+                    {
+                        price = p;
+                    }
+                    else if (parseAmount && TryParseAmount(token, out var a))
+                    {
+                        amount = a;
+                    }
+                    else
+                    {
+                        modifiedQuery = token.Value + modifiedQuery;
+                    }
                 }
                 else
                 {
                     modifiedQuery = token.Value + modifiedQuery;
                 }
+                if (--index < 0) break;
             }
-            else
-            {
-                modifiedQuery = token.Value + modifiedQuery;
-            }
-            if (--index < 0) break;
-        }
 
-        var itemQuery = modifiedQuery.Trim();
-        var item = itemManager.GetItems().FirstOrDefault(x => IsMatch(x.Name, itemQuery));
-        if (item == null)
+            var itemQuery = modifiedQuery.Trim();
+            var item = itemManager.GetItems().FirstOrDefault(x => IsMatch(x.Name, itemQuery));
+            if (item == null)
+            {
+                return null;
+            }
+
+            return new TradeItem(item, amount, price, player);
+        }
+        catch (Exception exc)
         {
+            GameManager.LogError(exc);
             return null;
         }
-
-        return new TradeItem(item, amount, price, player);
     }
 
-    private static bool TryParsePrice(Token token, out decimal price)
+    private static bool TryParsePrice(Token token, out double price)
     {
-        price = 0m;
+        price = 0d;
 
-        var values = new Dictionary<string, decimal>
+        var values = new Dictionary<string, double>
             {
                 { "k", 1000 },
                 { "m", 1000_000 },
@@ -90,7 +100,7 @@ internal class ItemResolver : IItemResolver
         var lastChar = token.Value[token.Value.Length - 1];
         if (values.TryGetValue(char.ToLower(lastChar).ToString(), out var m))
         {
-            if (decimal.TryParse(token.Value.Remove(token.Value.Length - 1), NumberStyles.Any, new NumberFormatInfo(), out var p))
+            if (double.TryParse(token.Value.Remove(token.Value.Length - 1), NumberStyles.Any, new NumberFormatInfo(), out var p))
             {
                 price = p * m;
                 return true;
@@ -99,7 +109,7 @@ internal class ItemResolver : IItemResolver
 
         if (!char.IsDigit(lastChar)) return false;
         {
-            if (!decimal.TryParse(token.Value, NumberStyles.Any, new NumberFormatInfo(), out var p)) return false;
+            if (!double.TryParse(token.Value, NumberStyles.Any, new NumberFormatInfo(), out var p)) return false;
             price = p;
             return true;
         }

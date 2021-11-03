@@ -28,7 +28,7 @@ public class PlayerJoinArenaEventHandler : GameEventHandler<PlayerId>
 
         gameManager.Arena.Join(player);
 
-        Debug.Log($"PlayerJoinArenaEventHandler " + data.UserId);
+        GameManager.Log($"PlayerJoinArenaEventHandler " + data.UserId);
     }
 }
 

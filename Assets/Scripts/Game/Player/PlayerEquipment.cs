@@ -41,7 +41,7 @@ public class PlayerEquipment : MonoBehaviour
     {
         gameManager = FindObjectOfType<GameManager>();
         equippedObjects = new List<ItemController>();
-        appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>() ?? GetComponent<PlayerAppearance>();
+        appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
         player = GetComponent<PlayerController>();
     }
 
@@ -279,7 +279,7 @@ public class PlayerEquipment : MonoBehaviour
 
         if (!removed)
         {
-            Debug.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. ID {id}");
+            GameManager.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. ID {id}");
         }
     }
 
@@ -287,7 +287,7 @@ public class PlayerEquipment : MonoBehaviour
     {
         if (!baseItemPrefab)
         {
-            Debug.LogError("BaseItemPrefab not set on player!! Unable to create item");
+            GameManager.LogError("BaseItemPrefab not set on player!! Unable to create item");
             return;
         }
 

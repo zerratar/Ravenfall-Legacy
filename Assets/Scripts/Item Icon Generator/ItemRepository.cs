@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using RavenNest.Models;
+using UnityEditor;
+using UnityEditor.Experimental;
 using UnityEngine;
 
 public class ItemRepository : MonoBehaviour
@@ -25,10 +28,17 @@ public class ItemRepository : MonoBehaviour
     private int activeItemIndex = -1;
     private ItemRenderer oldCamera;
 
+    public bool UseLegacyScreenshots = true;
+    public bool AutoNextItem = true;
+
+    public Texture2D[] AssetPreviews;
+    private List<Texture2D> assetPreviews = new List<Texture2D>();
     // Start is called before the first frame update
     void Start()
     {
-        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall-Legacy\Data\Repositories\items.json");
+        QualitySettings.antiAliasing = 0;
+
+        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall-Legacy-new\Data\Repositories\items.json");
         items = JsonConvert.DeserializeObject<Item[]>(json);
 
         if (renderCameras == null || renderCameras.Length == 0)
@@ -36,54 +46,115 @@ public class ItemRepository : MonoBehaviour
             renderCameras = FindObjectsOfType<ItemRenderer>();
         }
 
-        foreach (var item in renderCameras)
-        {
-            item.gameObject.SetActive(false);
-        }
 
-        SpawnItems();
+
+        //foreach (var item in renderCameras)
+        //{
+        //    item.gameObject.SetActive(false);
+        //}
+
+        StartCoroutine(SpawnItems());
     }
 
-    private void SpawnItems()
+    private IEnumerator SpawnItems()
     {
+
         foreach (var item in items)
         {
             if (!string.IsNullOrEmpty(item.GenericPrefab))
             {
-                var itemObj = UnityEngine.Resources.Load<GameObject>(item.GenericPrefab);
-                InstantiateItem(item, itemObj);
+                yield return StartCoroutine(SavePrefabTexture(item, item.GenericPrefab));
             }
             else if (!string.IsNullOrEmpty(item.FemalePrefab))
             {
-                Debug.Log("Instantiate female prefab: " + item.FemalePrefab);
-                var itemObj = UnityEngine.Resources.Load<GameObject>(item.GenericPrefab);
-                InstantiateItem(item, itemObj);
+                yield return StartCoroutine(SavePrefabTexture(item, item.FemalePrefab));
+
             }
             else if (!string.IsNullOrEmpty(item.MalePrefab))
             {
-                Debug.Log("Instantiate male prefab: " + item.MalePrefab);
-                var itemObj = UnityEngine.Resources.Load<GameObject>(item.GenericPrefab);
-
-                //AssetPreview.GetAssetPreview
-
-                InstantiateItem(item, itemObj);
+                yield return StartCoroutine(SavePrefabTexture(item, item.MalePrefab));
+                //#if UNITY_EDITOR
+                //                SaveTexture(AssetPreview.GetAssetPreview(itemObj), "C:\\Item Icons\\" + item.Id + ".png");
+                //#endif
+                //InstantiateItem(item, itemObj);
             }
             else
             {
-                var syntyItem = playerAppereance.Get(item.Type, item.Material, item.MaleModelId);
-                if (syntyItem)
+                if (playerAppereance && item != null)
                 {
-                    syntyItem.transform.SetParent(transform);
-                    syntyItem.name = item.Name;
-                    syntyItem.AddComponent<ItemHolder>().Item = item;
+                    var syntyItem = playerAppereance.Get(item.Type, item.Material, item.MaleModelId);
+                    if (syntyItem)
+                    {
+                        syntyItem.transform.SetParent(transform);
+                        syntyItem.name = item.Name;
+                        syntyItem.AddComponent<ItemHolder>().Item = item;
+                    }
                 }
             }
         }
-
-        StartCoroutine(DeactivatePlayerAppearance());
+        AssetPreviews = assetPreviews.ToArray();
+        yield return DeactivatePlayerAppearance();
     }
 
-    private void InstantiateItem(Item item, GameObject itemObj)
+    private IEnumerator SavePrefabTexture(Item item, string prefab)
+    {
+        var itemObj = UnityEngine.Resources.Load<GameObject>(prefab);
+        if (!itemObj)
+        {
+            GameManager.LogError(prefab + " does not exist!");
+            yield break;
+        }
+
+        if (UseLegacyScreenshots)
+        {
+            InstantiateItem(item, itemObj);
+            yield break;
+        }
+#if UNITY_EDITOR
+        var prev = AssetPreview.GetMiniThumbnail(itemObj);
+
+        //var prevT = (Texture)prev;
+        AssetPreview.SetPreviewTextureCacheSize(1024);
+
+        if (!prev.isReadable)
+        {
+            //prev = Texture2D.CreateExternalTexture(prevT.width, prevT.height, TextureFormat.RGBA32, false, false, prevT.GetNativeTexturePtr());
+            //var pixels = ((Texture2D)prevT).GetPixels(0, 0, prev.width, prev.height, 0);
+
+            var assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(itemObj);
+            if (!string.IsNullOrEmpty(assetPath))
+            {
+                GameManager.Log("Asset Path: " + assetPath);
+                var icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
+                if (icon != null)
+                {
+                    prev = icon;
+                }
+            }
+
+            if (!prev.isReadable || prev.width == 0)
+            {
+                GameManager.LogWarning("MiniThumbnail for " + itemObj.name + " is not readable. Using GetAssetPreview");
+                var instanceId = itemObj.GetInstanceID();
+
+                do
+                {
+                    yield return new WaitForSeconds(0.01f);
+                    prev = AssetPreview.GetAssetPreview(itemObj);
+                } while (AssetPreview.IsLoadingAssetPreview(instanceId) || prev == null);
+
+            }
+        }
+
+        assetPreviews.Add(prev);
+
+        SaveTexture(prev, "C:\\Item Icons\\" + item.Id + ".png");
+        //InstantiateItem(item, itemObj);
+
+#endif
+    }
+
+    private void InstantiateItem(Item item, UnityEngine.GameObject itemObj)
     {
         var i = Instantiate(itemObj, transform);
         i.name = item.Name;
@@ -93,8 +164,10 @@ public class ItemRepository : MonoBehaviour
     private IEnumerator DeactivatePlayerAppearance()
     {
         yield return new WaitForSeconds(0.5f);
-
-        playerAppereance.gameObject.SetActive(false);
+        if (playerAppereance)
+        {
+            playerAppereance.gameObject.SetActive(false);
+        }
         itemsSpawned = true;
     }
 
@@ -134,8 +207,6 @@ public class ItemRepository : MonoBehaviour
 
     private void SetCameraTarget(Transform transform)
     {
-        Debug.Log("setting itemRenderer parent to " + transform.name);
-
         var item = transform.GetComponent<ItemHolder>().Item;
         var camera = renderCameras.FirstOrDefault(x => x.Item == transform.name);
 
@@ -162,10 +233,16 @@ public class ItemRepository : MonoBehaviour
             oldCamera.gameObject.SetActive(false);
         }
 
+
+        GameManager.Log("Taking snap of " + item.Name + " using " + newCamera.name);
+
+
         newCamera.gameObject.SetActive(true);
         oldCamera = newCamera;
 
         var targetTexture = new RenderTexture(512, 512, 32, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+        targetTexture.name = item.Name;
+
         var camera = newCamera.GetComponent<Camera>();
         camera.targetTexture = targetTexture;
 
@@ -183,11 +260,11 @@ public class ItemRepository : MonoBehaviour
 
         if (rt.sRGB)
         {
-            Debug.Log("WUP WUP! sRGB!");
+            GameManager.Log("WUP WUP! sRGB!");
         }
         else
         {
-            Debug.LogError("No sRGB :<");
+            GameManager.LogError("No sRGB :<");
         }
 
         RenderTexture.active = rt;
@@ -198,9 +275,35 @@ public class ItemRepository : MonoBehaviour
         System.IO.File.WriteAllBytes(pngOutPath, tex.EncodeToPNG());
         RenderTexture.active = oldRT;
 
-        if (activeItemIndex < transform.childCount - 1)
+        if (AutoNextItem && activeItemIndex < transform.childCount - 1)
         {
             ActivateNextItem();
+        }
+    }
+
+    private void SaveTexture(Texture2D tex, string pngOutPath)
+    {
+        if (tex == null)
+        {
+            GameManager.LogError("Saving " + pngOutPath + " failed. Texture not ready");
+            return;
+        }
+
+        try
+        {
+            GameManager.Log("Saving " + pngOutPath + ", " + tex.name + ", " + tex.width + "x" + tex.height);
+            var pngData = tex.EncodeToPNG();
+            if (pngData == null || pngData.Length == 0)
+            {
+                GameManager.LogError("Saving " + pngOutPath + " failed. EncodeToPNG returned empty data");
+                return;
+            }
+
+            System.IO.File.WriteAllBytes(pngOutPath, pngData);
+        }
+        catch (Exception exc)
+        {
+            GameManager.LogError(pngOutPath + " could not be saved. " + exc);
         }
     }
 

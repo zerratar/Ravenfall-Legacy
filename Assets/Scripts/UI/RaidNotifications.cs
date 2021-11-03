@@ -26,7 +26,7 @@ public class RaidNotifications : MonoBehaviour
         if (!comeJoinImage) comeJoinImage = raidBossHud.transform.Find("Image").GetComponent<Image>();
         if (!audioSource) audioSource = GetComponent<AudioSource>();
 
-        audioSource.volume = PlayerPrefs.GetFloat("RaidHornVolume", 1f);
+        audioSource.volume = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_RaidHornVolume, 1f);
 
         HideRaidInfo();
     }
@@ -53,7 +53,7 @@ public class RaidNotifications : MonoBehaviour
     {
         if (!raidBossAppeared)
         {
-            Debug.LogError("No Raid Boss Message set on Raid Notifications");
+            GameManager.LogError("No Raid Boss Message set on Raid Notifications");
             return;
         }
 

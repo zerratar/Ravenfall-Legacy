@@ -29,12 +29,21 @@ public class PlayerObserveCamera : MonoBehaviour
             player.ToggleControl();
             if (player.Controlled)
             {
-                Debug.Log(player.Name + " is now being controlled.");
+                GameManager.Log(player.Name + " is now being controlled.");
             }
             else
             {
-                Debug.Log(player.Name + " is no longer being controlled.");
+                GameManager.Log(player.Name + " is no longer being controlled.");
             }
+        }
+
+    }
+
+    public void LateUpdate()
+    {
+        if (!player)
+        {
+            return;
         }
 
         if (player.Controlled)
@@ -42,11 +51,13 @@ public class PlayerObserveCamera : MonoBehaviour
             return;
         }
 
-        var playerScale = player.transform.localScale.y;
-        var position = player.transform.position + player.transform.forward * (playerScale * distance);
+        var t = player.transform;
+        var playerScale = t.localScale.y;
+        //var position = player.PositionInternal + t.forward * (playerScale * distance);
+        var position = t.position + t.forward * (playerScale * distance);
 
         transform.position = position + positionOffsetY * Vector3.up;
-        transform.LookAt(player.transform.position + new Vector3(0, viewOffsetY, 0));
+        transform.LookAt(t.position + new Vector3(0, viewOffsetY, 0));
     }
 
     public void ObservePlayer(PlayerController player)
@@ -57,9 +68,14 @@ public class PlayerObserveCamera : MonoBehaviour
             ResetPlayerLayer();
         }
 
+        this.player = player;
+        if (!this.player)
+        {
+            return;
+        }
+
         if (image) image.gameObject.SetActive(true);
         gameObject.SetActive(true);
-        this.player = player;
         UpdatePlayerLayer();
     }
     public void UpdatePlayerLayer()

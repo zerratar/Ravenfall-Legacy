@@ -6,6 +6,8 @@ public class GameProgressBar : MonoBehaviour
 {
     [SerializeField] private UnityEngine.UI.Image imgBack;
     [SerializeField] private UnityEngine.UI.Image imgFront;
+
+    [SerializeField] private UnityEngine.UI.Image imgFrontBack;
     [SerializeField] private TextMeshProUGUI lblProgress;
     [SerializeField] private Vector2 size;
     [SerializeField] public bool displayProgress = true;

@@ -21,11 +21,32 @@ public class HealthBarManager : MonoBehaviour
     {
         lock (mutex)
         {
-            var bar = healthBars.FirstOrDefault(x => x.Target == player);
-            if (bar)
+            try
             {
-                Destroy(bar.gameObject);
-                healthBars.Remove(bar);
+                if (player == null || player.gameObject == null)
+                {
+                    return;
+                }
+
+                var bar = healthBars.FirstOrDefault(x =>
+                    x != null
+                    && x.Target != null
+                    && ((x.Target == player || x.Target.Name == player.Name)
+                    || x.Target.Transform != null
+                    && x.Target.Transform
+                    && x.Target.Transform.GetInstanceID() == player.GetInstanceID()));
+
+                if (bar)
+                {
+                    Destroy(bar.gameObject);
+                    healthBars.Remove(bar);
+                }
+            }
+            catch (System.Exception exc)
+            {
+#if DEBUG
+                GameManager.Log("Warning: Unable to remove healthbar properly. This can be ignored. ");
+#endif
             }
         }
     }
@@ -39,17 +60,19 @@ public class HealthBarManager : MonoBehaviour
 
         lock (mutex)
         {
-            if (healthBars.Any(x => x.Target == enemy))
+            var hb = healthBars.FirstOrDefault(x => x.Target == enemy);
+            if (hb)
             {
-                Debug.LogWarning($"{enemyName} already have an assigned health bar.");
-                return null;
+                GameManager.LogWarning($"{enemyName} already have an assigned health bar.");
+                hb.gameObject.SetActive(true);
+                return hb;
             }
         }
 
         var healthBar = Instantiate(healthBarPrefab, transform);
         if (!healthBar)
         {
-            Debug.LogError($"Failed to add health bar for {enemyName}");
+            GameManager.LogError($"Failed to add health bar for {enemyName}");
             return null;
         }
 

@@ -35,12 +35,15 @@ public class FerryController : MonoBehaviour
     private ParticleSystem.MinMaxCurve rateOverTime;
     private float posY;
 
+    private bool isVisible = true;
     public IslandController Island => island;
     public float GetProgress() => pathSelector.GetProgress();
     public int PathIndex => pathSelector.PathIndex;
     public float CurrentSpeed => pathSelector.CurrentSpeed;
     public float CurrentPathETA => pathSelector.CurrentPathETA;
     public float CurrentLeaveETA => pathSelector.CurrentLeaveETA;
+
+    public float CaptainSpeedAdjustment { get; private set; }
 
     // Use this for initialization
     void Start()
@@ -54,11 +57,19 @@ public class FerryController : MonoBehaviour
 
     public bool Docked => state == FerryState.Docked;
 
+    private void OnBecameVisible()
+    {
+        this.isVisible = true;
+    }
 
+    private void OnBecameInvisible()
+    {
+        this.isVisible = false;
+    }
     // Update is called once per frame
     private void LateUpdate()
     {
-        if (GameCache.Instance.IsAwaitingGameRestore) return;
+        if (GameCache.Instance.IsAwaitingGameRestore || !isVisible) return;
         UpdateAnimation();
     }
 
@@ -105,5 +116,17 @@ public class FerryController : MonoBehaviour
     public void SetMovementEffect(float v)
     {
         emission.rateOverTime = rateOverTime.constant * v;
+    }
+
+    internal void SetCaptain(PlayerController currentCaptain)
+    {
+        if (currentCaptain != null)
+        {
+            CaptainSpeedAdjustment = currentCaptain.Stats.Sailing.CurrentValue;
+        }
+        else
+        {
+            CaptainSpeedAdjustment = 0;
+        }
     }
 }

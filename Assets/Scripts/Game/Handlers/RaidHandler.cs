@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +13,7 @@ public class RaidHandler : MonoBehaviour
 
     private bool teleported;
     private Vector3 prevPosition;
+    private string[] prevTaskArgs;
     private IChunk prevChunk;
 
     public bool InRaid { get; private set; }
@@ -36,10 +38,24 @@ public class RaidHandler : MonoBehaviour
         if (player.TrainingHealing)
         {
             var raiders = gameManager.Raid.Raiders;
-            healTarget = raiders
-                .OrderByDescending(x => x.Stats.Health.Level - x.Stats.Health.CurrentValue)
-                .FirstOrDefault();
-            target = healTarget.transform;
+            if (raiders != null)
+            {
+                healTarget = raiders
+                    .Where(x => x != null && x.Stats != null && !x.Stats.IsDead && x.Raid.InRaid)
+                    .OrderByDescending(x =>
+                        x.Stats.Health.Level - x.Stats.Health.CurrentValue)
+                    .FirstOrDefault();
+
+                if (healTarget && healTarget != null)
+                {
+                    target = healTarget.transform;
+                }
+                else
+                {
+                    healTarget = this.player;
+                    target = this.player.transform;
+                }
+            }
         }
 
         if (!target)
@@ -81,9 +97,42 @@ public class RaidHandler : MonoBehaviour
     {
         InRaid = true;
         raidEnterTime = Time.time;
-        Debug.Log($"{player.PlayerName} entered the raid");
+#if DEBUG
+        GameManager.Log($"{player.PlayerName} entered the raid");
+#endif
+        prevTaskArgs = player.GetTaskArguments().ToArray();
+        if (!gameManager || !gameManager.Raid || !gameManager.Raid.Boss)
+        {
+            StartCoroutine(WaitForStart());
+            return;
+        }
 
         var boss = gameManager.Raid.Boss;
+        if (player.Island != boss.Island)
+        {
+            teleported = true;
+            prevPosition = player.transform.position;
+            prevChunk = player.Chunk;
+            player.Teleporter.Teleport(boss.Island.SpawnPosition);
+        }
+    }
+
+    private IEnumerator WaitForStart()
+    {
+        var tries = 0;
+        var maxTries = 10000;
+        while (!gameManager || !gameManager.Raid || !gameManager.Raid.Boss)
+        {
+            yield return null;
+            yield return new WaitForSeconds(0.1f);
+            if (++tries >= maxTries)
+            {
+                yield break;
+            }
+        }
+
+        var boss = gameManager.Raid.Boss;
+
         if (player.Island != boss.Island)
         {
             teleported = true;
@@ -98,10 +147,10 @@ public class RaidHandler : MonoBehaviour
         InRaid = false;
         if (raidWon)
         {
-            var proc = (decimal)gameManager.Raid.GetParticipationPercentage(raidEnterTime);
+            var proc = gameManager.Raid.GetParticipationPercentage(raidEnterTime);
             var raidBossCombatLevel = gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
             var exp = GameMath.CombatExperience(raidBossCombatLevel / 15) * proc;
-            var yieldExp = exp / 2m;
+            var yieldExp = exp / 2d;
 
             player.AddExp(yieldExp, Skill.Slayer);
 
@@ -127,16 +176,18 @@ public class RaidHandler : MonoBehaviour
             player.Stats.Health.Reset();
         }
 
-        player.attackers.Clear();
+        player.ClearAttackers();
 
         if (teleported)
         {
             teleported = false;
             player.Teleporter.Teleport(prevPosition);
             player.Chunk = prevChunk;
+            player.SetTaskArguments(prevTaskArgs);
             player.taskTarget = null;
         }
-
-        Debug.Log($"{player.PlayerName} left the raid");
+#if DEBUG
+        GameManager.Log($"{player.PlayerName} left the raid");
+#endif
     }
 }

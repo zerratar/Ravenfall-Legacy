@@ -5,7 +5,7 @@ public class PlayerMoveEventHandler : GameEventHandler<PlayerMove>
 {
     protected override void Handle(GameManager gameManager, PlayerMove data)
     {
-        Debug.Log($"PlayerMoveEventHandler " + data.UserId);
+        GameManager.Log($"PlayerMoveEventHandler " + data.UserId);
     }
 }
 

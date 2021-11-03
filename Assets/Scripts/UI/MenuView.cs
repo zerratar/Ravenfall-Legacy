@@ -12,7 +12,7 @@ public class MenuView : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.Escape))
         {
             //this.Hide();
-            HideAndApplyChanges();
+            Hide();
         }
     }
 
@@ -24,15 +24,16 @@ public class MenuView : MonoBehaviour
 
     public void Hide()
     {
+        OnChangesApplied();
         gameObject.SetActive(false);
         if (onHide != null) onHide();
     }
 
-    public void HideAndApplyChanges()
-    {
-        OnChangesApplied();
-        Hide();
-    }
+    //public void HideAndApplyChanges()
+    //{
+    //    OnChangesApplied();
+    //    Hide();
+    //}
 
     protected virtual void OnChangesApplied()
     {

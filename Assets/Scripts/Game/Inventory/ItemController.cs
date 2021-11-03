@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using RavenNest.Models;
 using UnityEngine;
 using Resources = UnityEngine.Resources;
@@ -27,8 +28,11 @@ public class ItemController : MonoBehaviour
     public ItemCategory Category;
     public ItemType Type;
     public ItemMaterial Material;
-    public string MaleModelID;
-    public string FemaleModelID;
+
+    public int MaleModelID;
+    public int FemaleModelID;
+
+    public int[] AdditionalIndex;
 
     public string GenericPrefabPath;
     public string MalePrefabPath;
@@ -43,20 +47,18 @@ public class ItemController : MonoBehaviour
 
     public int Compare(RavenNest.Models.Item item)
     {
-        var stats1 = WeaponAim + WeaponPower + ArmorPower;
-        var stats2 = item.WeaponAim + item.WeaponPower + item.ArmorPower;
+        var stats1 = this.GetTotalStats();
+        var stats2 = item.GetTotalStats();
         return stats1 - stats2;
     }
-
-    public void Update()
+    public void FixedUpdate()
     {
-        if (transform.localPosition.x != 0)
+        if (Time.frameCount % 30 == 0 && transform.localPosition.x != 0)
         {
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
         }
     }
-
     internal void EnablePickup(DropEventManager dropEventManager)
     {
         this.dropEventManager = dropEventManager;
@@ -98,12 +100,51 @@ public class ItemController : MonoBehaviour
         Category = item.Category;
         Type = item.Type;
         Material = item.Material;
-        FemaleModelID = item.FemaleModelId;
-        MaleModelID = item.MaleModelId;
+
+
+        if (!string.IsNullOrEmpty(item.FemaleModelId))
+        {
+            if (item.FemaleModelId.Contains(","))
+            {
+                var indices = item.FemaleModelId.Split(',');
+                FemaleModelID = int.Parse(indices[0]);
+                AdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
+            }
+            else
+            {
+                FemaleModelID = int.Parse(item.FemaleModelId);
+            }
+        }
+        else
+        {
+            FemaleModelID = -1;
+        }
+
+        if (!string.IsNullOrEmpty(item.MaleModelId))
+        {
+            if (item.MaleModelId.Contains(","))
+            {
+                var indices = item.MaleModelId.Split(',');
+                MaleModelID = int.Parse(indices[0]);
+                AdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
+            }
+            else
+            {
+                MaleModelID = int.Parse(item.MaleModelId);
+            }
+        }
+        else
+        {
+            MaleModelID = -1;
+        }
+
         GenericPrefabPath = item.GenericPrefab;
         MalePrefabPath = item.MalePrefab;
         FemalePrefabPath = item.FemalePrefab;
-        IsGenericModel = item.IsGenericModel.GetValueOrDefault();
+        IsGenericModel = item.IsGenericModel.GetValueOrDefault() || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
+
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
 
         if (!prefab)
         {
@@ -149,7 +190,8 @@ public class ItemController : MonoBehaviour
         if (player.PickupEventItem(Id))
         {
             dropEventManager.RemoveDropItem(this);
-            Destroy(gameObject);
+            gameObject.SetActive(false);
+            Destroy(gameObject, 0.1f);
         }
     }
 }

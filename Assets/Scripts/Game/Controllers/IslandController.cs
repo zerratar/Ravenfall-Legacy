@@ -16,8 +16,8 @@ public class IslandController : MonoBehaviour
 
     private SphereCollider sphereCollider;
     private float radius;
-    private readonly ConcurrentDictionary<Guid, PlayerController> players
-        = new ConcurrentDictionary<Guid, PlayerController>();
+    //private readonly Dictionary<Guid, PlayerController> players = new Dictionary<Guid, PlayerController>();
+    private readonly List<PlayerController> players = new List<PlayerController>();
 
     public Vector3 SpawnPosition => SpawnPositionTransform ? SpawnPositionTransform.position : transform.position;
 
@@ -66,16 +66,16 @@ public class IslandController : MonoBehaviour
             return;
         }
     }
-
-    public IReadOnlyList<PlayerController> GetPlayers() => players.Values.ToList();
-
+    public IReadOnlyList<PlayerController> GetPlayers() => players;//players.Values.ToList();
     internal void AddPlayer(PlayerController playerController)
     {
-        players[playerController.Id] = playerController;
+        players.Add(playerController);
+        //players[playerController.Id] = playerController;
     }
 
     internal void RemovePlayer(PlayerController playerController)
     {
-        players.TryRemove(playerController.Id, out _);
+        players.Remove(playerController);
+        //players.Remove(playerController.Id);
     }
 }
