@@ -60,7 +60,7 @@ public class TeleportHandler : MonoBehaviour
             transform.position = position;
         }
         player.InCombat = false;
-        player.ClearAttackers();        
+        player.ClearAttackers();
         player.Island = islandManager.FindPlayerIsland(player);
     }
 }

@@ -7,7 +7,16 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
     {
         if (gameManager.Players.Contains(data.UserId))
         {
-            return;
+            var existing = gameManager.Players.GetPlayerByUserId(data.UserId);
+            if (existing == null)
+            {
+                UnityEngine.Debug.LogWarning("Unable to add player: " + data.UserName + " (" + data.UserId + "). A character of the same user is already in the game.");
+                return;
+            }
+
+            gameManager.RemovePlayer(existing, false);
+
+            //return;
         }
 
         var playerInfo = await gameManager.RavenNest.PlayerJoinAsync(

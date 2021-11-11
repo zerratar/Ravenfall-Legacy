@@ -12,12 +12,14 @@ public class RaidHandler : MonoBehaviour
     private float raidEnterTime;
 
     private bool teleported;
+    private IslandController previousIsland;
     private Vector3 prevPosition;
     private string[] prevTaskArgs;
     private IChunk prevChunk;
 
     public bool InRaid { get; private set; }
-
+    public IslandController PreviousIsland => previousIsland;
+    public Vector3 PreviousPosition => prevPosition;
     // Start is called before the first frame update
     void Start()
     {
@@ -112,6 +114,7 @@ public class RaidHandler : MonoBehaviour
         {
             teleported = true;
             prevPosition = player.transform.position;
+            previousIsland = player.Island;
             prevChunk = player.Chunk;
             player.Teleporter.Teleport(boss.Island.SpawnPosition);
         }
@@ -153,9 +156,10 @@ public class RaidHandler : MonoBehaviour
             var yieldExp = exp / 2d;
 
             player.AddExp(yieldExp, Skill.Slayer);
+            player.AddExpToActiveSkillStat(yieldExp);
 
-            if (!player.AddExpToCurrentSkill(yieldExp))
-                player.AddExp(yieldExp, Skill.Slayer);
+            //if (!player.AddExpToCurrentSkill(yieldExp))
+            //player.AddExp(yieldExp, Skill.Slayer);
 
             ++player.Statistics.RaidsWon;
 

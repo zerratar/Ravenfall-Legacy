@@ -1167,13 +1167,9 @@ public class PlayerController : MonoBehaviour, IAttackable
         //Inventory.EquipBestItems();
         Equipment.HideEquipments(); // don't show sword on join
 
-        Island = gameManager.Islands.FindPlayerIsland(this);
-
         //if (Raider != null)
         if (player.State != null)
         {
-
-
             if (!string.IsNullOrEmpty(player.State.Island) && player.State.X != null)
             {
                 if (player.State.InDungeon)
@@ -1198,6 +1194,8 @@ public class PlayerController : MonoBehaviour, IAttackable
                     }
                 }
             }
+
+            Island = gameManager.Islands.FindPlayerIsland(this);
 
             if (player.State.InOnsen && onsenHandler)
             {
@@ -1694,41 +1692,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         return multi;
     }
 
-    //public void AddCombatExp(double exp, CombatSkill skill)
-    //{
-    //    var tierSub = GetTierExpMultiplier();
-    //    var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
-    //    if (gameManager.Boost.Active)
-    //    {
-    //        multi += gameManager.Boost.Multiplier;
-    //    }
-    //    multi = Math.Max(1, multi);
-    //    if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
-    //        multi *= (float)Rested.ExpBoost;
-    //    exp *= multi * GameMath.ExpScale;
-    //    var stat = Stats.GetCombatSkill(skill);
-    //    if (stat == null)
-    //        return;
-    //    if (Stats.Health.AddExp(exp / 3d, out var hpLevels))
-    //        CelebrateSkillLevelUp(Skill.Health, hpLevels);
-    //    if (skill == CombatSkill.Health)
-    //    {
-    //        var each = exp / 3d;
-    //        if (Stats.Attack.AddExp(each, out var a))
-    //            CelebrateSkillLevelUp(Skill.Attack, a);
-    //        if (Stats.Defense.AddExp(each, out var b))
-    //            CelebrateSkillLevelUp(Skill.Defense, b);
-    //        if (Stats.Strength.AddExp(each, out var c))
-    //            CelebrateSkillLevelUp(Skill.Strength, c);
-    //        return;
-    //    }
-    //    if (stat.AddExp(exp, out var atkLvls))
-    //    {
-    //        CelebrateSkillLevelUp(skill, atkLvls);
-    //    }
-    //}
-
-    public void AddExp(double exp, Skill skill)
+    public double GetExpMultiplier(Skill skill)
     {
         var tierSub = GetTierExpMultiplier();
         var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
@@ -1742,7 +1706,12 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
             multi *= (float)Rested.ExpBoost;
 
-        exp *= multi * GameMath.ExpScale;
+        return multi * GameMath.ExpScale;
+    }
+
+    public void AddExp(double exp, Skill skill)
+    {
+        exp *= GetExpMultiplier(skill);
 
         var stat = Stats.GetSkill(skill);
         if (stat == null)
@@ -1775,28 +1744,6 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    //public void AddExp(double exp, Skill skill)
-    //{
-    //    var tierSub = GetTierExpMultiplier();
-    //    var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
-    //    if (gameManager.Boost.Active)
-    //    {
-    //        multi += gameManager.Boost.Multiplier;
-    //    }
-
-    //    multi = Math.Max(1, multi);
-    //    if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
-    //        multi *= (float)Rested.ExpBoost;
-
-    //    exp *= multi * GameMath.ExpScale;
-
-    //    var stat = Stats.GetSkill(skill);
-    //    if (stat == null)
-    //        return;
-
-    //    if (stat.AddExp(exp, out var a))
-    //        CelebrateSkillLevelUp(skill, a);
-    //}
     public void RemoveResources(RavenNest.Models.Item item)
     {
         if (item.WoodCost > 0)
@@ -1872,19 +1819,25 @@ public class PlayerController : MonoBehaviour, IAttackable
         timeExpTimer -= Time.deltaTime;
         if (timeExpTimer <= 0)
         {
-            if (AddExpToCurrentSkill(ExpOverTime))
+            if (AddExpToActiveSkillStat(ExpOverTime))
+            {
                 timeExpTimer = 1f;
+            }
         }
     }
 
-    public bool AddExpToCurrentSkill(double experience)
+    public bool AddExpToActiveSkillStat(double experience)
     {
         var skill = GetActiveSkill();
 
         // !string.IsNullOrEmpty(taskArgument)
-        if (skill != Skill.None)
+        if (skill != Skill.None || skill == Skill.Slayer)
         {
             AddExp(experience, skill);
+
+//#if DEBUG
+//            UnityEngine.Debug.LogWarning("Giving " + experience + " to " + skill);
+//#endif
             //var combatType = GetCombatTypeFromArg(taskArgument);
             //if (combatType != -1)
             //{
@@ -1897,6 +1850,13 @@ public class PlayerController : MonoBehaviour, IAttackable
             //}
             return true;
         }
+//        else
+//        {
+
+//#if DEBUG
+//            UnityEngine.Debug.LogWarning("Unable to give exp: " + experience + ", skill is: " + skill);
+//#endif
+//        }
         return false;
     }
 
@@ -2206,14 +2166,24 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (skillLookup.TryGetValue(key, out var type))
             return type;
 
-        if (val == "hp" || val == "health" || val == "all")
-        {
+        if (val == "hp" || val == "health" || val == "all")        
             return skillLookup[key] = Skill.Health;
+
+        if (val == "mine") return skillLookup[key] = Skill.Mining;
+        if (val == "mage") return skillLookup[key] = Skill.Magic;
+        if (val == "atk") return skillLookup[key] = Skill.Attack;
+
+        if (Enum.TryParse<Skill>(val, true, out var skill))
+        {
+            return skillLookup[key] = skill;
         }
 
-        if (val == "mine")
+        // do a where -> foreach instead of first or default as first value is not "none"
+        // which means we would get wrong skill
+
+        foreach (var s in System.Enum.GetValues(typeof(Skill)).Cast<Skill>().Where(x => x.ToString().ToLower().StartsWith(key)))
         {
-            return skillLookup[key] = Skill.Mining;
+            return skillLookup[key] = s;
         }
 
         return Skill.None;

@@ -6,12 +6,16 @@ public class DungeonHandler : MonoBehaviour
     [SerializeField] private DungeonManager dungeon;
     [SerializeField] private PlayerController player;
 
-    private Vector3 previousPosition;
+
     private EnemyController enemyTarget;
     private PlayerController healTarget;
     private string[] previousTaskArgs;
     private float waitForDungeon;
 
+    private Vector3 previousPosition;
+    private IslandController previousIsland;
+    public IslandController PreviousIsland => previousIsland;
+    public Vector3 PreviousPosition => previousPosition;
     public bool InDungeon { get; private set; }
 
     private void Start()
@@ -169,6 +173,8 @@ public class DungeonHandler : MonoBehaviour
             player.transform.parent = null;
         }
 
+        previousIsland = this.player.Island;
+
         player.Teleporter.Teleport(startingPoint);
         player.Stats.Health.Reset();
 
@@ -272,7 +278,7 @@ public class DungeonHandler : MonoBehaviour
 
             if (!dungeon.Dungeon.HasPredefinedRooms)
             {
-                EnemyController[] enemies = dungeon.GetEnemiesNear(enemyTarget.Position);
+                var enemies = dungeon.GetEnemiesNear(enemyTarget.Position);
                 if (enemies != null)
                 {
                     foreach (var enemy in enemies)

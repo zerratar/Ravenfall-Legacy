@@ -327,7 +327,7 @@ public class RavenBotConnection : IDisposable
         }
         catch (Exception exc)
         {
-            GameManager.LogError("Unable to start bot server. If using centralized bot, this can be ignored.");
+            GameManager.LogError("Unable to start bot server. If using centralized bot, this can be ignored. " + exc);
         }
     }
 

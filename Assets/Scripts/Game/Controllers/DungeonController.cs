@@ -298,9 +298,10 @@ public class DungeonController : MonoBehaviour
 
         var yieldExp = exp / 2d;
         player.AddExp(yieldExp, Skill.Slayer);
+        player.AddExpToActiveSkillStat(yieldExp);
 
-        if (!player.AddExpToCurrentSkill(yieldExp))
-            player.AddExp(yieldExp, Skill.Slayer);
+        //if (!player.AddExpToCurrentSkill(yieldExp))
+        //    player.AddExp(yieldExp, Skill.Slayer);
 
         var type = generateMagicAttributes ? DropType.MagicRewardGuaranteed : DropType.StandardGuaranteed;
         for (var i = 0; i < itemRewardCount; ++i)

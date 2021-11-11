@@ -6,7 +6,7 @@ public class ArenaGateController : MonoBehaviour
     [SerializeField] private float openPosition = 2.075f;
     [SerializeField] private float closedPosition = 0f;
 
-    [SerializeField] private float openSpeed = 4f;
+    //[SerializeField] private float openSpeed = 4f;
     [SerializeField] private float closeSpeed = 1f;
 
     private float animationTimer = 0f;

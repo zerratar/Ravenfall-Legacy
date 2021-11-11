@@ -326,32 +326,3 @@ public class ItemRepository : MonoBehaviour
         return targetLookatPosition;
     }
 }
-
-
-public class ItemHolder : MonoBehaviour
-{
-    public Item Item { get; internal set; }
-}
-
-public class Test2
-{
-
-}
-
-public class Test
-{
-
-    public static implicit operator bool(Test obj)
-    {
-        return obj != null;
-    }
-
-    public static implicit operator Test2(Test obj)
-    {
-        return new Test2();
-    }
-    public static explicit operator string(Test obj)
-    {
-        return "";
-    }
-}

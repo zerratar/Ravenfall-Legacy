@@ -67,6 +67,9 @@ public class Skills : IComparable
         Slayer = new SkillStat(nameof(Slayer), skills.SlayerLevel, skills.Slayer);
         Sailing = new SkillStat(nameof(Sailing), skills.SailingLevel, skills.Sailing);
         Healing = new SkillStat(nameof(Healing), skills.HealingLevel, skills.Healing);
+
+        this.skills = new ConcurrentDictionary<string, SkillStat>(
+            SkillList.ToDictionary(x => x.Name.ToLower(), x => x));
     }
     public bool IsDead => Health.CurrentValue <= 0;
     public int CombatLevel => (int)((Attack.Level + Defense.Level + Strength.Level + Health.Level) / 4f + (Ranged.Level + Magic.Level + Healing.Level) / 8f);
@@ -211,6 +214,7 @@ public class Skills : IComparable
         return this.skillList[(int)skill];
     }
 
+    [Obsolete("Please use GetSkill instead.")]
     public SkillStat GetSkill(TaskSkill skill)
     {
         switch (skill)

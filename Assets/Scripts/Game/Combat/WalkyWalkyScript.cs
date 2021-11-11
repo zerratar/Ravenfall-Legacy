@@ -34,8 +34,23 @@ public class WalkyWalkyScript : MonoBehaviour
 
     private ConcurrentDictionary<string, AnimatorControllerParameter> parameters
         = new ConcurrentDictionary<string, AnimatorControllerParameter>();
+
     private bool lastMove;
     private bool isMovingInternal;
+
+    private void OnDestroy()
+    {
+        parameters.Clear();
+        parameters = null;
+        enemyController = null;
+        navMeshAgent = null;
+        animator = null;
+        attackAnimations = null;
+        attackAnimation = null;
+        deathAnimations = null;
+        deathAnimation = null;
+        attackAnimationTrigger = null;
+    }
 
     private void Awake()
     {
@@ -119,10 +134,14 @@ public class WalkyWalkyScript : MonoBehaviour
 
         if (!navMeshAgent) navMeshAgent = GetComponent<NavMeshAgent>();
         var agent = navMeshAgent;
-        if (agent && agent.enabled && agent.isOnNavMesh)
+        if (agent)
         {
-            agent.SetDestination(transform.position);
-            agent.isStopped = true;
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.SetDestination(transform.position);
+                agent.isStopped = true;
+            }
+
             agent.enabled = false;
         }
         this.isMovingInternal = false;

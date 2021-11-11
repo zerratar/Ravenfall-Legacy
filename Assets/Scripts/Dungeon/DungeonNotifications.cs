@@ -125,7 +125,7 @@ public class DungeonNotifications : MonoBehaviour
         runTime = 0;
     }
 
-    internal void UpdateInformation(int alivePlayerCount, EnemyController[] enemies, DungeonBossController boss)
+    internal void UpdateInformation(int alivePlayerCount, int aliveEnemyCount, DungeonBossController boss)
     {
         if (!dungeonDetailsObject) return;
         if (!dungeonDetailsObject.activeSelf)
@@ -146,6 +146,6 @@ public class DungeonNotifications : MonoBehaviour
 
         lblDungeonActiveTimer.text = string.Format(lblDungeonActiveTimerFormat, Utility.FormatTime(runTime / 60f / 60f));
         lblPlayers.text = string.Format(lblPlayersFormat, alivePlayerCount);
-        lblEnemies.text = string.Format(lblEnemiesFormat, enemies.Count(x => x != null && x.gameObject != null && !x.Stats.IsDead && x.Stats.Health.CurrentValue > 0));
+        lblEnemies.text = string.Format(lblEnemiesFormat, aliveEnemyCount);
     }
 }

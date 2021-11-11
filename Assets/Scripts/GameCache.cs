@@ -80,7 +80,7 @@ namespace Assets.Scripts
                     }
                     catch (System.Exception exc)
                     {
-                        GameManager.LogError("Failed to add " + player?.Name + " to the player state cache.");
+                        GameManager.LogError("Failed to add " + player?.Name + " to the player state cache. " + exc);
                     }
                 }
             }

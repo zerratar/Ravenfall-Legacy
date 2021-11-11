@@ -16,9 +16,6 @@ public class DungeonEditor : Editor
     private SerializedProperty bossSpawnPoint;
     private SerializedProperty startingPoint;
 
-
-
-
     void OnEnable()
     {
         spawnRate = serializedObject.FindProperty("SpawnRate");

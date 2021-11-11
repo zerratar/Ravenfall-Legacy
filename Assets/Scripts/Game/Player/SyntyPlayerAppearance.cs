@@ -537,7 +537,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                         }
                         catch (Exception exc)
                         {
-                            GameManager.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}");
+                            GameManager.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}: " + exc);
                         }
                     }
                 }
@@ -1047,9 +1047,9 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             return;
         }
 
-        var toggleHair = true;
-        var toggleHead = true;
-        var toggleFacials = true;
+        //var toggleHair = true;
+        //var toggleHead = true;
+        //var toggleFacials = true;
 
         if (equippedHelmet)
         {

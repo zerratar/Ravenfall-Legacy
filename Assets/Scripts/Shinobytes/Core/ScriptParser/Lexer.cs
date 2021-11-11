@@ -18,9 +18,9 @@ namespace Shinobytes.Core.ScriptParser
             var lastIndex = -1;
             var index = 0;
 
-            char Peek()
+            char Peek(int offset = 1)
             {
-                return index + 1 >= content.Length ? '\0' : content[index + 1];
+                return index + offset >= content.Length ? '\0' : content[index + 1];
             }
 
             char Next()
@@ -150,7 +150,7 @@ namespace Shinobytes.Core.ScriptParser
             {
                 // obviously there's way more invalid chars
                 // but easier to list the most common ones that will be used in the parsing
-                var invalidIdentifierChars = "-<>|`'¨\"\\/&%#!$§½{}[]()+?*$€£@:; \t\r\n\0".ToCharArray();
+                var invalidIdentifierChars = "-<>|`'¨\"\\/&%#!$§½{}[]()+?*$€£:; \t\r\n\0".ToCharArray();
                 var t = content[index];
                 var identifier = "";
                 while (t != '\0' && !invalidIdentifierChars.Contains(char.ToLower(t)))
@@ -161,17 +161,17 @@ namespace Shinobytes.Core.ScriptParser
                 Token(TokenType.Identifier, identifier);
             }
 
-            void ParseString(char type)
+            void ParseString(char type, bool allowSingleBackslash = false)
             {
                 var stringContent = "";
                 // first is ' or ", skip it                
                 ++index;
-                
+
                 if (index >= content.Length)
                 {
                     return;
                 }
-                
+
                 var t = content[index];
                 do
                 {
@@ -180,11 +180,38 @@ namespace Shinobytes.Core.ScriptParser
                         return;
                     }
 
+                    if (t == '\\' && allowSingleBackslash)
+                    {
+                        stringContent += "\\";
+                        t = Next();
+                        continue;
+                    }
+
+                    if (t == '\\' && Peek() == '\\')
+                    {
+                        stringContent += $"{t}{Next()}";
+                        t = Next();
+                        continue;
+                    }
+
                     if (t == '\\' && Peek() == type)
                     {
-                        stringContent += $"{t}{Peek()}";
-                        index += 2;
+                        if (allowSingleBackslash)
+                        {
+                            stringContent += t;
+                            break;
+                        }
+
+                        stringContent += $"{t}{Next()}";
+                        // index += 2;
+                        t = Next();
                         continue;
+                    }
+
+                    if (t == type)
+                    {
+                        // empty string
+                        break;
                     }
 
                     stringContent += t;
@@ -211,7 +238,7 @@ namespace Shinobytes.Core.ScriptParser
                     //}
 
                     //logger.WriteWarning("Lexer::Tokenize stuck in infinite loop. Cancelling.");
-                    break;
+                    //break;
                 }
 
                 lastIndex = index;
@@ -256,17 +283,45 @@ namespace Shinobytes.Core.ScriptParser
                     case '%':
                         Token(TokenType.Percentage);
                         break;
+                    case '&':
+                        if (Peek() == '&')
+                        {
+                            Token(TokenType.AndAnd, $"{token}{Next()}");
+                            break;
+                        }
+                        Token(TokenType.And);
+                        break;
+                    case '|':
+                        if (Peek() == '|')
+                        {
+                            Token(TokenType.OrOr, $"{token}{Next()}");
+                            break;
+                        }
+                        Token(TokenType.Or);
+                        break;
                     case '+':
                         if (char.IsDigit(Peek()))
                         {
-                            goto default;
+                            ParseNumber();
+                            continue;
+                        }
+                        if (Peek() == '+')
+                        {
+                            Token(TokenType.PlusPlus, $"{token}{Next()}");
+                            break;
                         }
                         Token(TokenType.Plus);
                         break;
                     case '-':
                         if (char.IsDigit(Peek()))
                         {
-                            goto default;
+                            ParseNumber();
+                            continue;
+                        }
+                        if (Peek() == '-')
+                        {
+                            Token(TokenType.MinusMinus, $"{token}{Next()}");
+                            break;
                         }
                         Token(TokenType.Minus);
                         break;
@@ -328,6 +383,15 @@ namespace Shinobytes.Core.ScriptParser
                         break;
                     case '$':
                         Token(TokenType.DollarSign);
+                        break;
+                    case '@':
+                        var nc = Peek();
+                        if (nc == '"' || (nc == '$' && Peek(2) == '"'))
+                        {
+                            ParseString(Next(), true);
+                            continue;
+                        }
+                        Token(TokenType.At, "@");
                         break;
                     case '#':
                         Token(TokenType.HashTag);

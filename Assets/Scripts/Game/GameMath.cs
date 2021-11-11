@@ -222,6 +222,7 @@ public static class GameMath
         }
     }
 
+    [Obsolete("Please use GetHouseTypeBySkill instead.")]
     public static TownHouseSlotType GetHouseTypeBySkill(this TaskSkill skill)
     {
         switch (skill)
@@ -238,6 +239,17 @@ public static class GameMath
         }
     }
 
+    [Obsolete("Please use GetHouseTypeBySkill instead.")]
+    public static TownHouseSlotType GetHouseTypeBySkill(this CombatSkill skill)
+    {
+        switch (skill)
+        {
+            case CombatSkill.Healing: return TownHouseSlotType.Healing;
+            case CombatSkill.Ranged: return TownHouseSlotType.Ranged;
+            case CombatSkill.Magic: return TownHouseSlotType.Magic;
+            default: return TownHouseSlotType.Melee;
+        }
+    }
     public static bool IsCombatSkill(this Skill skill)
     {
         switch (skill)
@@ -282,16 +294,7 @@ public static class GameMath
             default: return Skill.Woodcutting;
         }
     }
-    public static TownHouseSlotType GetHouseTypeBySkill(this CombatSkill skill)
-    {
-        switch (skill)
-        {
-            case CombatSkill.Healing: return TownHouseSlotType.Healing;
-            case CombatSkill.Ranged: return TownHouseSlotType.Ranged;
-            case CombatSkill.Magic: return TownHouseSlotType.Magic;
-            default: return TownHouseSlotType.Melee;
-        }
-    }
+
     internal static float CalculateExplosionDamage(IAttackable enemy, IAttackable player, float scale = 0.75f)
     {
         return CalculateMeleeDamage(enemy, player) * scale;

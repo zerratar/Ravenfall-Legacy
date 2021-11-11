@@ -23,9 +23,22 @@ public class DungeonBossController : MonoBehaviour
     private bool playingDeathAnimation;
     private DungeonRoomController room;
     private bool destroyed;
-    
+
     public EnemyController Enemy => enemyController;
 
+    private void OnDestroy()
+    {
+        dungeonManager.Boss = null;
+        models = null;
+        enemyController = null;
+        animator = null;
+        modelAnimator = null;
+        dungeonManager = null;
+        modelObject = null;
+        target = null;
+        room = null;
+        destroyed = true;
+    }
     void Awake()
     {
         if (!room) room = GetComponentInParent<DungeonRoomController>();
@@ -153,13 +166,9 @@ public class DungeonBossController : MonoBehaviour
         try
         {
 
-            if (players.Count == 1 || players.All(x => x.TrainingHealing))
+            if ((players.Count == 1 || players.All(x => x.TrainingHealing)) && !dungeonManager.HasAliveEnemies())
             {
-                var aliveEnemies = dungeonManager.GetAliveEnemies();
-                if (aliveEnemies.Length == 0)
-                {
-                    return players.FirstOrDefault(x => x != null && x && !x.Stats.IsDead);
-                }
+                return players.FirstOrDefault(x => x != null && x && !x.Stats.IsDead);
             }
 
             return players

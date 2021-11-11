@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class DungeonManager : MonoBehaviour, IEvent
@@ -16,6 +17,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     [SerializeField] private float maxTimeBetweenDungeons = 2700;
     [SerializeField] private float timeForDungeonStart = 120;
     [SerializeField] private float notificationUpdate = 30;
+    [SerializeField] private EnemyPool dungeonEnemyPool;
 
     [SerializeField] private ItemDropList[] itemDropLists;
 
@@ -38,17 +40,21 @@ public class DungeonManager : MonoBehaviour, IEvent
     private float dungeonStartTimer;
     private float nextDungeonTimer;
     private float notificationTimer;
-    private DungeonState state;
+    private DungeonManagerState state;
 
     public DungeonNotifications Notifications => dungeonNotifications;
-    public bool Active => state >= DungeonState.Active;
-    public bool Started => state == DungeonState.Started;
+    public bool Active => state >= DungeonManagerState.Active;
+    public bool Started => state == DungeonManagerState.Started;
     public DungeonController Dungeon => currentDungeon;
     public bool IsBusy { get; internal set; }
 
     private bool yieldSpecialReward = false;
     private DungeonBossController generatedBoss;
-    private EnemyController[] generatedEnemies;
+
+    //private EnemyController[] generatedEnemies;
+
+
+
     public Vector3 StartingPoint
     {
         get
@@ -73,13 +79,29 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    public EnemyController[] GetAliveEnemies()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsAlive(EnemyController x)
     {
-        if (generatedEnemies.Length > 0)
-            return generatedEnemies.Where(x => x != null && x.gameObject != null && !x.Stats.IsDead && x.Stats.Health.CurrentValue > 0).ToArray();
-        return new EnemyController[0];
+        return x != null && x.gameObject != null && !x.Stats.IsDead && x.Stats.Health.CurrentValue > 0;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetAliveEnemyCount()
+    {
+        return dungeonEnemyPool.HasLeasedEnemies ? dungeonEnemyPool.GetLeasedEnemies().Count(IsAlive) : 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool HasAliveEnemies()
+    {
+        return dungeonEnemyPool.HasLeasedEnemies ? dungeonEnemyPool.GetLeasedEnemies().Any(IsAlive) : false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public IReadOnlyList<EnemyController> GetAliveEnemies()
+    {
+        return dungeonEnemyPool.HasLeasedEnemies ? dungeonEnemyPool.GetLeasedEnemies().Where(IsAlive).ToList() : new List<EnemyController>();
+    }
     internal EnemyController GetNextEnemyTarget(PlayerController player)
     {
         if (Dungeon.HasPredefinedRooms)
@@ -101,9 +123,10 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         EnemyController enemyTarget = null;
 
-        if (this.generatedEnemies != null && this.generatedEnemies.Length > 0)
+        var aliveEnemies = this.GetAliveEnemies();
+        if (aliveEnemies.Count > 0)
         {
-            enemyTarget = generatedEnemies.GetNextEnemyTargetExceptBoss(player);//GetNextEnemyTarget(player, x => !x.name.Contains("_BOSS_"));
+            enemyTarget = aliveEnemies.GetNextEnemyTargetExceptBoss(player);//GetNextEnemyTarget(player, x => !x.name.Contains("_BOSS_"));
         }
 
         var boss = Boss;
@@ -217,7 +240,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         //var start = DateTime.Now;
         //for (var i = 0; i < 100; ++i)
         //{
-        if (this.state == DungeonState.None)
+        if (this.state == DungeonManagerState.None)
         {
             ActivateDungeon();
             yield return null;
@@ -272,14 +295,15 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    internal EnemyController[] GetEnemiesNear(Vector3 position)
+    internal IReadOnlyList<EnemyController> GetEnemiesNear(Vector3 position)
     {
-        if (generatedEnemies == null || generatedEnemies.Length == 0)
+        var enemies = GetAliveEnemies();
+        if (enemies.Count == 0)
         {
             return null;
         }
 
-        return generatedEnemies.Where(x => Vector3.Distance(position, x.Position) <= x.AggroRange).ToArray();
+        return enemies.Where(x => Vector3.Distance(position, x.Position) <= x.AggroRange).ToList();
     }
 
     private void HideDungeonUI()
@@ -290,7 +314,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         if (this.Dungeon && !this.Dungeon.HasPredefinedRooms && Started)
         {
-            Notifications.UpdateInformation(this.GetAlivePlayerCount(), this.generatedEnemies, this.Boss);
+            Notifications.UpdateInformation(this.GetAlivePlayerCount(), this.GetAliveEnemyCount(), this.Boss);
         }
     }
 
@@ -302,7 +326,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
             if (SpawnDungeonBoss())
             {
-                state = DungeonState.Active;
+                state = DungeonManagerState.Active;
                 dungeonStartTimer = timeForDungeonStart;
                 nextDungeonTimer = 0f;
 
@@ -323,7 +347,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     public void ForceStartDungeon()
     {
-        if (state != DungeonState.Active)
+        if (state != DungeonManagerState.Active)
             return;
 
         notificationTimer = 0f;
@@ -368,7 +392,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             if (joinedPlayers.Contains(player)) return;
             joinedPlayers.Add(player);
 
-            UpdateGeneratedEnemies();
+            SpawnEnemies();
 
             AdjustBossStats();
             AdjustEnemyStats();
@@ -451,15 +475,15 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void AdjustEnemyStats()
     {
-        if (this.generatedEnemies == null || this.generatedEnemies.Length == 0)
+        var enemies = this.dungeonEnemyPool.GetLeasedEnemies();
+        if (enemies.Count == 0)
         {
             return;
         }
 
         lock (mutex)
         {
-
-            generatedEnemies = generatedEnemies.Where(x => x != null && x.gameObject != null && x.transform != null).ToArray();
+            //generatedEnemies = generatedEnemies.Where(x => x != null && x.gameObject != null && x.transform != null).ToArray();
 
             var highestStats = joinedPlayers.Max(x => x.Stats);
             var lowestStats = joinedPlayers.Min(x => x.Stats);
@@ -469,7 +493,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             var avgCombatLevel = joinedPlayers.Sum(x => x.Stats.CombatLevel) / joinedPlayers.Count;
             var lerpAmount = avgCombatLevel / highestStats.CombatLevel;
 
-            foreach (var enemy in generatedEnemies)
+            foreach (var enemy in enemies)
             {
                 var starting = lowestStats;
                 var high = lowestStats + highestStats;
@@ -530,8 +554,11 @@ public class DungeonManager : MonoBehaviour, IEvent
                 gameManager.Camera.ReleaseFreeCamera();
             }
 
-            generatedEnemies = null;
-            state = DungeonState.None;
+            //generatedEnemies = null;
+
+            dungeonEnemyPool.ReturnAll();
+
+            state = DungeonManagerState.None;
             lock (mutex) joinedPlayers.Clear();
             deadPlayers.Clear();
 
@@ -626,7 +653,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void StartDungeon()
     {
-        UpdateGeneratedEnemies();
+        SpawnEnemies();
 
         Notifications.Hide();
 
@@ -637,7 +664,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                 ResetDungeon();
                 return;
             }
-            state = DungeonState.Started;
+            state = DungeonManagerState.Started;
             currentDungeon.Enter();
         }
     }
@@ -667,7 +694,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                 currentDungeon.Name = "Legendary Dungeoon";
             }
 
-            UpdateGeneratedEnemies();
+            SpawnEnemies();
         }
 
         // 1. announce dungeon event
@@ -676,7 +703,10 @@ public class DungeonManager : MonoBehaviour, IEvent
     private void SelectRandomDungeon()
     {
         currentDungeon = dungeons.Weighted(x => x.SpawnRate);
-        this.generatedEnemies = null;
+
+        // Might not be needed.
+        dungeonEnemyPool.ReturnAll();
+
         if (!currentDungeon.HasPredefinedRooms)
         {
             //UnityEngine.Debug.LogError("Procedural Generated Dungeon Selected.");
@@ -686,7 +716,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                 d.GenerateDungeon();
             }
 
-            UpdateGeneratedEnemies();
+            SpawnEnemies();
         }
         else
         {
@@ -698,17 +728,29 @@ public class DungeonManager : MonoBehaviour, IEvent
             currentDungeon.ItemDrops.SetDropList(itemDropLists.Random());
         }
     }
-    private void UpdateGeneratedEnemies()
+    private void SpawnEnemies()
     {
-        if (!this.currentDungeon)
+        if (!this.currentDungeon || this.dungeonEnemyPool.HasLeasedEnemies)
         {
             return;
         }
 
-        this.generatedEnemies = this.currentDungeon
-            .GetComponentsInChildren<EnemyController>()
-            .Where(x => x != null && x.gameObject != null && !x.name.Contains("_BOSS_"))
-            .ToArray();
+        // Spawn the necessary amount of enemies in their right positions.
+        // Do this by 1. find out all positions we can spawn enemies
+        //            2. Lock movements, warp them and make sure they are set active
+        var spawnPoints = currentDungeon.gameObject.GetComponentsInChildren<EnemySpawnPoint>();
+
+        foreach (var point in spawnPoints)
+        {
+            var enemy = this.dungeonEnemyPool.Lease();
+            enemy.transform.position = point.transform.position;
+            enemy.gameObject.SetActive(true);
+        }
+
+        //this.generatedEnemies = this.currentDungeon
+        //    .GetComponentsInChildren<EnemyController>()
+        //    .Where(x => x != null && x.gameObject != null && !x.name.Contains("_BOSS_"))
+        //    .ToArray();
     }
 }
 
@@ -759,7 +801,8 @@ public class DungeonNameGenerator
         return string.Format(nameFormats.Random(), types.Random(), elements.Random(), bossName);
     }
 }
-public enum DungeonState
+
+public enum DungeonManagerState
 {
     None,
     Active,

@@ -25,8 +25,8 @@ public class DungeonGenerator : MonoBehaviour
 
     public Vector3 StartingRoomPosition;
 
-    private bool validDungeon;
-    private bool generatingDungeon;
+    //private bool validDungeon;
+    //private bool generatingDungeon;
     private List<Bounds> addedSurfaces = new List<Bounds>();
     private List<DungeonRoom> addedRooms = new List<DungeonRoom>();
     private bool interrupted;
@@ -73,8 +73,8 @@ public class DungeonGenerator : MonoBehaviour
     public void GenerateDungeon()
     {
         interrupted = false;
-        generatingDungeon = true;
-        validDungeon = false;
+        //generatingDungeon = true;
+        //validDungeon = false;
         StartCoroutine(GenerateRooms(UnityEngine.Random.Range(MinRoomCount, MaxRoomCount + 1)));
     }
 
@@ -493,10 +493,10 @@ public class DungeonGenerator : MonoBehaviour
         {
             GenerateDungeon();
         }
-        else
-        {
-            generatingDungeon = false;
-        }
+        //else
+        //{
+        //    generatingDungeon = false;
+        //}
     }
 
     private void GenerateStartingRoom()

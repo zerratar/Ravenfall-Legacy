@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -121,6 +122,33 @@ public class DungeonRoomController : MonoBehaviour
 
 public static class TargetExtensions
 {
+
+    public static EnemyController GetNextEnemyTargetExceptBoss(this IReadOnlyList<EnemyController> enemies, PlayerController player)
+    {
+        if (enemies == null || enemies.Count == 0)
+            return null;
+
+        var maxDist = float.MaxValue;
+        EnemyController target = null;
+        for (var i = 0; i < enemies.Count; ++i)
+        {
+            var x = enemies[i];
+            if (x.Stats.Health.CurrentValue <= 0)
+            {
+                continue;
+            }
+
+            var dist = Vector3.Distance(x.PositionInternal, player.PositionInternal);
+            if (dist < maxDist)
+            {
+                maxDist = dist;
+                target = x;
+            }
+        }
+
+        return target;
+    }
+
     public static EnemyController GetNextEnemyTargetExceptBoss(this EnemyController[] enemies, PlayerController player)
     {
         if (enemies == null || enemies.Length == 0)

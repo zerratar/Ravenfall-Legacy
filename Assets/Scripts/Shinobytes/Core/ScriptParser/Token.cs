@@ -20,5 +20,11 @@
         {
             return ctx.GetSourcePosition(Index);
         }
+
+        public override string ToString()
+        {
+            var pos = GetSourcePosition();
+            return pos.Row + ":" + pos.Column + " [" + Index + "] " + Type + ": " + Value;
+        }
     }
 }

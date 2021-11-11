@@ -11,7 +11,6 @@ public class EnemyController : MonoBehaviour, IAttackable
 {
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
-
     private readonly Dictionary<string, float> attackerAggro = new Dictionary<string, float>();
 
     [SerializeField] private bool positionLocked = true;
@@ -70,6 +69,24 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
         return Attackers.Count;
     }
+
+    void OnDestroy()
+    {
+        attackerAggro.Clear();
+        Attackers.Clear();
+        AttackerNames.Clear();
+
+        if (healthBar)
+        {
+            healthBarManager.Remove(this.healthBar);
+            healthBar = null;
+            healthBarManager = null;
+        }
+
+        EquipmentStats = null;
+        Stats = null;
+    }
+
     void Start()
     {
 
@@ -326,7 +343,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
             attackerAggro.TryGetValue(attackerName, out var aggro);
 
-            var aggroMultiplier = 1f;
+            //var aggroMultiplier = 1f;
 
             var totalAggro = aggro;
 

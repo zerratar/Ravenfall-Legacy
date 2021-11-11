@@ -149,8 +149,35 @@ public class ItemDropEditor : Editor
 
         if (dropList.objectReferenceValue)
         {
+
             var idl = dropList.objectReferenceValue as ItemDropList;
-            if (GUILayout.Button("Copy all items to DropList") && idl != null)
+
+            if (idl != null && GUILayout.Button("Load from DropList"))
+            {
+                items.ClearArray();
+
+                //items.arraySize = idl.Items.Length;
+                for (var i = 0; i < idl.Items.Length; ++i)
+                {
+                    items.InsertArrayElementAtIndex(0);
+                }
+
+                for (var i = 0; i < idl.Items.Length; ++i)
+                {
+                    var elm = items.GetArrayElementAtIndex(i);
+                    var idProp = elm.FindPropertyRelative("ItemID");
+                    var nameProp = elm.FindPropertyRelative("ItemName");
+                    var dropChanceProp = elm.FindPropertyRelative("DropChance");
+
+                    var item = idl.Items[i];
+
+                    idProp.stringValue = item.ItemID;
+                    nameProp.stringValue = item.ItemName;
+                    dropChanceProp.floatValue = item.DropChance;
+                }
+            }
+
+            if (idl != null && GUILayout.Button("Copy all items to DropList"))
             {
                 idl.Items = new ItemDrop[items.arraySize];
 

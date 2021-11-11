@@ -176,6 +176,11 @@ public class GameManager : MonoBehaviour, IGameManager
     // Start is called before the first frame update   
     void Start()
     {
+
+#if DEBUG
+        Application.SetStackTraceLogType(LogType.Assert | LogType.Error | LogType.Exception | LogType.Log | LogType.Warning, StackTraceLogType.Full);
+#endif
+
         GameCache.Instance.IsAwaitingGameRestore = false;
         ioc = GetComponent<IoCContainer>();
 
@@ -591,7 +596,7 @@ public class GameManager : MonoBehaviour, IGameManager
         playerKickQueue.Enqueue(player);
     }
 
-    public void RemovePlayer(PlayerController player)
+    public void RemovePlayer(PlayerController player, bool notifyServer = true)
     {
         if (player.Dungeon.InDungeon)
         {
@@ -603,7 +608,10 @@ public class GameManager : MonoBehaviour, IGameManager
             raidManager.Leave(player);
         }
 
-        ravenNest.PlayerRemoveAsync(player);
+        if (notifyServer)
+        {
+            ravenNest.PlayerRemoveAsync(player);
+        }
 
         player.Removed = true;
         playerList.RemovePlayer(player);
@@ -889,7 +897,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         try
         {
-            var players = playerManager.GetAllPlayers();
+            var players = playerManager.GetAllPlayers().ToList();
 
             foreach (var player in players)
             {
@@ -1156,6 +1164,15 @@ public class GameManager : MonoBehaviour, IGameManager
             }
         }
 
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Fishing"))
+        {
+            var bots = this.playerManager.GetAllBots();
+            foreach (var bot in bots)
+            {
+                bot.SetTask("fishing", new string[0]);
+            }
+        }
+
         if (GUI.Button(GetButtonRect(buttonIndex++), "Train Gathering"))
         {
             var bots = this.playerManager.GetAllBots();
@@ -1199,6 +1216,18 @@ public class GameManager : MonoBehaviour, IGameManager
             }
         }
 
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Sail 2 Kyo"))
+        {
+            var bots = this.playerManager.GetAllBots();
+
+            var island = Islands.Find("Kyo");
+
+            foreach (var bot in bots)
+            {
+                bot.Ferry.Embark(island);
+            }
+        }
+
         if (GUI.Button(GetButtonRect(buttonIndex++), "Sail 2 Heim"))
         {
             var bots = this.playerManager.GetAllBots();
@@ -1211,7 +1240,8 @@ public class GameManager : MonoBehaviour, IGameManager
             }
         }
 
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Start Dungeon"))
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), dungeonManager.Active ? "Stop Dungeon" : "Start Dungeon"))
         {
             dungeonManager.ToggleDungeon();
         }
@@ -1246,9 +1276,26 @@ public class GameManager : MonoBehaviour, IGameManager
             }
         }
 
+
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Start Stop 100 Dungeons"))
+        {
+            StartCoroutine(ToggleManyDungeons(100));
+        }
+
+
         lastButtonIndex = buttonIndex;
     }
 #endif
+
+    private IEnumerator ToggleManyDungeons(int count)
+    {
+        for (var i = 0; i < count; ++i)
+        {
+            dungeonManager.ToggleDungeon();
+            yield return null;
+        }
+    }
 
     private void UpdatePlayerKickQueue()
     {

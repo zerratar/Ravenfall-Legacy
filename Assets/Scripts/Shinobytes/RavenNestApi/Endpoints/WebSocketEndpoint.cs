@@ -23,8 +23,6 @@ namespace RavenNest.SDK.Endpoints
         private ConcurrentDictionary<string, DateTime> lastSavedSkillsTime
             = new ConcurrentDictionary<string, DateTime>();
 
-        private HashSet<Guid> expSaveLock = new HashSet<Guid>();
-
         private const double ForceSaveInterval = 5d;
 
         private readonly IGameServerConnection connection;
@@ -132,18 +130,6 @@ namespace RavenNest.SDK.Endpoints
                 return true;
             }
 
-            if (!EnterExpSaveLock(player))
-            {
-                return true;
-            }
-
-            var activeSkill = player.GetActiveTaskSkillStat();
-            if (activeSkill == null)
-            {
-                ReleaseExpSaveLock(player);
-                return false;
-            }
-
             return await Task.Run(() =>
             {
                 try
@@ -158,6 +144,7 @@ namespace RavenNest.SDK.Endpoints
                     //      10th-tick or enqueued item should be "Save All" and every enqueued item other than that one
                     //      is for saving the active one.
 
+                    var activeSkill = player.GetActiveTaskSkillStat();
                     var characterUpdate = new CharacterExpUpdate
                     {
                         SkillIndex = Skills.IndexOf(player.Stats, activeSkill),
@@ -183,24 +170,9 @@ namespace RavenNest.SDK.Endpoints
                     UnityEngine.Debug.LogError("Saving " + player?.Name + " failed. " + exc);
                     return false;
                 }
-                finally
-                {
-                    ReleaseExpSaveLock(player);
-                }
             });
 
         }
-
-        private void ReleaseExpSaveLock(PlayerController player)
-        {
-            expSaveLock.Remove(player.Id);
-        }
-
-        private bool EnterExpSaveLock(PlayerController player)
-        {
-            return expSaveLock.Add(player.Id);
-        }
-
         public async Task<bool> SavePlayerSkillsAsync(PlayerController player)
         {
             if (player.IsBot && player.UserId.StartsWith("#"))
@@ -208,15 +180,9 @@ namespace RavenNest.SDK.Endpoints
                 return true;
             }
 
-            if (!EnterExpSaveLock(player))
-            {
-                return true;
-            }
-
             var state = player.BuildPlayerState();
             if (state == null || string.IsNullOrEmpty(state.UserId))
             {
-                ReleaseExpSaveLock(player);
                 return false;
             }
 
@@ -257,10 +223,6 @@ namespace RavenNest.SDK.Endpoints
                 {
                     UnityEngine.Debug.LogError("Saving " + player?.Name + " failed. " + exc);
                     return false;
-                }
-                finally
-                {
-                    ReleaseExpSaveLock(player);
                 }
             });
         }
@@ -345,13 +307,33 @@ namespace RavenNest.SDK.Endpoints
             }
 
             var pos = player.transform.position;
+            var island = player.Island?.Identifier ?? "";
+
+            if (player.Raid.InRaid)
+            {
+                pos = player.Raid.PreviousPosition;
+                if (player.Raid.PreviousIsland != null)
+                {
+                    island = player.Raid.PreviousIsland?.Identifier ?? "";
+                }
+            }
+
+            if (player.Dungeon.InDungeon)
+            {
+                pos = player.Dungeon.PreviousPosition;
+                if (player.Dungeon.PreviousIsland != null)
+                {
+                    island = player.Dungeon.PreviousIsland?.Identifier ?? "";
+                }
+            }
+
             return await Task.Run(() =>
             {
                 var characterUpdate = new CharacterStateUpdate(
                     player.UserId,
                     player.Id,
                     player.Stats.Health.CurrentValue,
-                    player.Island?.Identifier ?? "",
+                    island,
                     player.Duel.InDuel ? player.Duel.Opponent?.UserId ?? "" : "",
                     player.Raid.InRaid,
                     player.Arena.InArena,
