@@ -7,7 +7,32 @@ Assets/AssetStoreTools*
 
 # Visual Studio cache directory
 .vs/
-
+Logs/*
+Assets/Toon/*
+Assets/Ventuar/*
+Assets/Tessera/*
+Assets/Stylized*/*
+Assets/Standard Assets/*
+Assets/Polygon*/*
+Assets/Plugins/*
+Assets/OUTPUT/*
+Assets/Monsters*/*
+Assets/Sword_Scabbard/*
+Assets/Downrain*/*
+Assets/FImpossible*/*
+Assets/Amplify*/*
+Assets/CRT Studio/*
+Assets/Low Poly*/*
+Assets/Blink/*
+Assets/FlatKit/*
+Assets/UserReporting/*
+MemoryCaptures/*
+SerializedBuildInfo/*
+Build/*
+Build Headless/*
+Build Linux/*
+Assets/CodeRespawn/*
+Assets/Standard Assets/3rd Party/*
 Assets/3rd Party/*
 Assets/3rd Party/*/*
 Build Temp/*
