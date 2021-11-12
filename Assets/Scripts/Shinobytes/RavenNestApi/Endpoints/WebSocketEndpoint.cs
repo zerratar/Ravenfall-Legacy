@@ -145,6 +145,12 @@ namespace RavenNest.SDK.Endpoints
                     //      is for saving the active one.
 
                     var activeSkill = player.GetActiveTaskSkillStat();
+                    
+                    if (activeSkill == null)
+                    {
+                        return true; // return true so we dont get a red name in the player list just because they are afk.
+                    }
+                    
                     var characterUpdate = new CharacterExpUpdate
                     {
                         SkillIndex = Skills.IndexOf(player.Stats, activeSkill),
