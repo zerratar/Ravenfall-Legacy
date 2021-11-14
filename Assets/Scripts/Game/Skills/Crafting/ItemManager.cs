@@ -144,7 +144,7 @@ public class ItemManager : MonoBehaviour
         state = LoadingState.Loaded;
         game.SetLoadingState("items", state);
 
-        GameManager.Log(items.Count + " items loaded!");
+        Shinobytes.Debug.Log(items.Count + " items loaded!");
     }
     public Item Get(Guid id)
     {

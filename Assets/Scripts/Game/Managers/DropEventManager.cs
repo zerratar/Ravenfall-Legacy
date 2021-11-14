@@ -50,7 +50,7 @@ public class DropEventManager : MonoBehaviour
     {
         if (spawnPoints == null || spawnPoints.Length == 0)
         {
-            GameManager.LogError("Uh oh, unable to spawn items!! No spawn points have been configured!");
+            Shinobytes.Debug.LogError("Uh oh, unable to spawn items!! No spawn points have been configured!");
             return;
         }
 

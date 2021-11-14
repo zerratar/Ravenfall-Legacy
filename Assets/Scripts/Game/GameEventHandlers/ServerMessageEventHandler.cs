@@ -2,7 +2,7 @@
 {
     protected override void Handle(GameManager gameManager, ServerMessage data)
     {
-        GameManager.Log($"Message from server: " + data.Message);
+        Shinobytes.Debug.Log($"Message from server: " + data.Message);
         gameManager.ServerNotifications.EnqueueServerMessage(data);
     }
 }

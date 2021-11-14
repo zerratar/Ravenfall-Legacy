@@ -86,6 +86,6 @@ public abstract class JsonBasedRepository<T> : IRepository<T>
         var json = JsonConvert.SerializeObject(items.Values.ToList());
         var repoFile = System.IO.Path.Combine(repoFolder, "repository.json");
         System.IO.File.WriteAllText(repoFile, json);
-        GameManager.Log(repoFile + " saved.");
+        Shinobytes.Debug.Log(repoFile + " saved.");
     }
 }

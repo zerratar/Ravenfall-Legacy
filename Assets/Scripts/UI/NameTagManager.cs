@@ -55,7 +55,7 @@ public class NameTagManager : MonoBehaviour
         {
             if (nameTags.Any(x => x.TargetTransform.GetInstanceID() == transform.GetInstanceID()))
             {
-                GameManager.LogWarning($"{targetName} already have an assigned name tag.");
+                Shinobytes.Debug.LogWarning($"{targetName} already have an assigned name tag.");
                 return null;
             }
         }
@@ -71,7 +71,7 @@ public class NameTagManager : MonoBehaviour
         {
             if (nameTags.Any(x => x.TargetPlayer == player))
             {
-                GameManager.LogWarning($"{player.PlayerName} already have an assigned name tag.");
+                Shinobytes.Debug.LogWarning($"{player.PlayerName} already have an assigned name tag.");
                 return null;
             }
         }
@@ -87,7 +87,7 @@ public class NameTagManager : MonoBehaviour
         var obj = Instantiate(nameTagPrefab, transform);
         if (!obj)
         {
-            GameManager.LogError($"Failed to add a nametag for {targetName}");
+            Shinobytes.Debug.LogError($"Failed to add a nametag for {targetName}");
             return null;
         }
 

@@ -132,7 +132,7 @@ public class FightingTask : ChunkTask
                 catch (Exception exc)
                 {
 #if DEBUG
-                    GameManager.LogError(exc);
+                    Shinobytes.Debug.LogError(exc);
 #endif
                     continue;
                 }
@@ -149,7 +149,7 @@ public class FightingTask : ChunkTask
         catch (Exception exc)
         {
 #if DEBUG
-            GameManager.LogError(exc);
+            Shinobytes.Debug.LogError(exc);
 #endif
             return null;
         }

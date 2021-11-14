@@ -229,7 +229,7 @@ public class DungeonController : MonoBehaviour
 
         if (this.HasPredefinedRooms && !currentRoom)
         {
-            GameManager.LogError("No starting room was found!");
+            Shinobytes.Debug.LogError("No starting room was found!");
             return;
         }
 

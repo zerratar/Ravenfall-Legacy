@@ -57,7 +57,7 @@ public class DungeonBossController : MonoBehaviour
             }
             else
             {
-                GameManager.LogError("Blerp");
+                Shinobytes.Debug.LogError("Blerp");
             }
         }
 
@@ -148,6 +148,12 @@ public class DungeonBossController : MonoBehaviour
         }
 
         attackTimer = attackInterval;
+
+        if (this == null || enemyController == null)
+        {
+            return;
+        }
+
         var damage = GameMath.CalculateMeleeDamage(enemyController, target);
 
         if (animator)
@@ -182,7 +188,7 @@ public class DungeonBossController : MonoBehaviour
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
             return null;
         }
     }
@@ -193,7 +199,7 @@ public class DungeonBossController : MonoBehaviour
         var model = models.OrderBy(x => UnityEngine.Random.value).FirstOrDefault();
         if (!model)
         {
-            GameManager.LogError("No available dungeon boss models??!?!");
+            Shinobytes.Debug.LogError("No available dungeon boss models??!?!");
             return;
         }
 

@@ -143,7 +143,7 @@ namespace RavenNest.SDK.Endpoints
             }
             catch (Exception exc)
             {
-                logger.Error("Connection failed: " + exc.Message.ToString());
+                logger.Error("Connection failed: " + exc.Message);
                 connected = false;
             }
             finally
@@ -195,7 +195,7 @@ namespace RavenNest.SDK.Endpoints
                 catch (Exception exc)
                 {
                     Disconnect();
-                    logger.Error(exc.ToString());
+                    logger.Error(exc.Message);
                 }
             }
             return false;
@@ -264,7 +264,7 @@ namespace RavenNest.SDK.Endpoints
                     }
                     catch (Exception exc)
                     {
-                        GameManager.LogError("Error deserializing packet: " + exc);
+                        Shinobytes.Debug.LogError("Error deserializing packet: " + exc.Message);
                     }
                 }
                 return true;
@@ -279,7 +279,7 @@ namespace RavenNest.SDK.Endpoints
             {
                 if (socketExc.WebSocketErrorCode != WebSocketError.ConnectionClosedPrematurely)
                 {
-                    logger.Error(socketExc.ToString());
+                    logger.Error(socketExc.Message);
                 }
 
                 //gameManager.ForceGameSessionUpdate();
@@ -289,7 +289,7 @@ namespace RavenNest.SDK.Endpoints
             }
             catch (Exception exc)
             {
-                logger.Error(exc.ToString());
+                logger.Error(exc.Message);
                 Disconnect();
                 return false;
             }

@@ -77,7 +77,7 @@ public class GameClient : IDisposable
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc);
+            Shinobytes.Debug.LogError(exc);
             onConnectFailed?.Invoke();
         }
     }
@@ -98,7 +98,7 @@ public class GameClient : IDisposable
                 var pingPongDelta = UnityEngine.Time.realtimeSinceStartup - lastPongSentTime;
                 if (lastPongSentTime > 0 && pingPongDelta > PingPongTimeoutSeconds && server.IsConnectedToRemote)
                 {
-                    //GameManager.LogError("No Ping Pong from Remote Bot in the past " + pingPongDelta + " seconds! This may mean that we cannot get any data from the remote bot. Trying to force reconnect.");
+                    //Shinobytes.Debug.LogError("No Ping Pong from Remote Bot in the past " + pingPongDelta + " seconds! This may mean that we cannot get any data from the remote bot. Trying to force reconnect.");
                     //server.Disconnect(BotConnectionType.Remote);
                     lastPongSentTime = UnityEngine.Time.realtimeSinceStartup;
                 }
@@ -145,7 +145,7 @@ public class GameClient : IDisposable
                             return;
                         }
 
-                        server.LogError(exc.ToString());
+                        server.LogError(exc.Message);
                         break;
                     }
                 }
@@ -232,7 +232,7 @@ public class GameClient : IDisposable
                     }
                     catch (Exception exc)
                     {
-                        server.LogError(exc.ToString());
+                        server.LogError(exc.Message);
                     }
                 }
             }
@@ -267,7 +267,7 @@ public class GameClient : IDisposable
     {
         if (string.IsNullOrEmpty(userId) || sessionId == Guid.Empty || string.IsNullOrEmpty(username))
         {
-            UnityEngine.Debug.Log("Oh my! We tried to send session details to the bot without having anything. A bit hasty arnt we?");
+            //UnityEngine.Debug.Log("Oh my! We tried to send session details to the bot without having anything. A bit hasty arnt we?");
             return;
         }
 

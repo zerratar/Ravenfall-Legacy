@@ -176,7 +176,7 @@ public class WalkyWalkyScript : MonoBehaviour
 
         if (agent && agent.isActiveAndEnabled && !agent.isOnNavMesh)
         {
-            GameManager.LogError(this.name + " is not on a navmesh!!!");
+            Shinobytes.Debug.LogError(this.name + " is not on a navmesh!!!");
         }
 
         if (!agent || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;

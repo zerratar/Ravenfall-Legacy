@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using UnityEngine;
-
+using Debug = Shinobytes.Debug;
 public class FreeCamera : MonoBehaviour
 {
     private const string CameraPositionDataFile = "data/camera-positions.json";
@@ -187,7 +187,7 @@ public class FreeCamera : MonoBehaviour
         }
         catch
         {
-            UnityEngine.Debug.LogWarning("Failed to save camera position data. Access to the data folder denied.");
+            Debug.LogWarning("Failed to save camera position data. Access to the data folder denied.");
         }
     }
 
@@ -203,7 +203,7 @@ public class FreeCamera : MonoBehaviour
         }
         catch
         {
-            UnityEngine.Debug.LogWarning("Failed to load camera position data. Access to the data folder denied.");
+            Debug.LogWarning("Failed to load camera position data. Access to the data folder denied.");
         }
     }
 

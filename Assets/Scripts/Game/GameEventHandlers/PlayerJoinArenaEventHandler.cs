@@ -28,7 +28,7 @@ public class PlayerJoinArenaEventHandler : GameEventHandler<PlayerId>
 
         gameManager.Arena.Join(player);
 
-        GameManager.Log($"PlayerJoinArenaEventHandler " + data.UserId);
+        Shinobytes.Debug.Log($"PlayerJoinArenaEventHandler " + data.UserId);
     }
 }
 

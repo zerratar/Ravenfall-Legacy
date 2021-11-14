@@ -153,7 +153,7 @@ public class TownHouseManager : MonoBehaviour
             slot.InvalidateOwner();
         }
 
-        gameManager.UpdateVillageBoostText();
+        gameManager.villageBoostLabel.Update();
     }
 
     internal void SetHouses(IReadOnlyList<VillageHouseInfo> houses)
@@ -210,7 +210,7 @@ public class TownHouseManager : MonoBehaviour
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
     }
 

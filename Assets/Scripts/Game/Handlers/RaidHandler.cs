@@ -100,7 +100,7 @@ public class RaidHandler : MonoBehaviour
         InRaid = true;
         raidEnterTime = Time.time;
 #if DEBUG
-        GameManager.Log($"{player.PlayerName} entered the raid");
+        Shinobytes.Debug.Log($"{player.PlayerName} entered the raid");
 #endif
         prevTaskArgs = player.GetTaskArguments().ToArray();
         if (!gameManager || !gameManager.Raid || !gameManager.Raid.Boss)
@@ -191,7 +191,7 @@ public class RaidHandler : MonoBehaviour
             player.taskTarget = null;
         }
 #if DEBUG
-        GameManager.Log($"{player.PlayerName} left the raid");
+        Shinobytes.Debug.Log($"{player.PlayerName} left the raid");
 #endif
     }
 }

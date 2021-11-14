@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class DungeonManager : MonoBehaviour, IEvent
@@ -242,12 +243,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         //{
         if (this.state == DungeonManagerState.None)
         {
-            ActivateDungeon();
-            yield return null;
+            yield return ActivateDungeon();
         }
         else
         {
-            ResetDungeon();
+            EndDungeonFailed();
             yield return null;
         }
         //}
@@ -318,10 +318,12 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    public bool ActivateDungeon()
+    public async Task<bool> ActivateDungeon()
     {
         if (gameManager.Events.TryStart(this))
         {
+            await Notifications.OnDungeonActivated();
+
             SelectRandomDungeon();
 
             if (SpawnDungeonBoss())
@@ -397,7 +399,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             AdjustBossStats();
             AdjustEnemyStats();
 
-            gameManager.EventTriggerSystem.SendInput(player.UserId, "dungeon");
+            //gameManager.EventTriggerSystem.SendInput(player.UserId, "dungeon");
         }
     }
 
@@ -433,7 +435,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         if (Dungeon.HasPredefinedRooms && !dungeonBossPrefab)
         {
-            GameManager.LogError("NO DUNGEON BOSS PREFAB SET!!!");
+            Shinobytes.Debug.LogError("NO DUNGEON BOSS PREFAB SET!!!");
             return false;
         }
 
@@ -453,7 +455,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
             if (!this.Boss)
             {
-                GameManager.LogError("Failed to spawn dungeon boss. Unknown reason");
+                Shinobytes.Debug.LogError("Failed to spawn dungeon boss. Unknown reason");
                 return false;
             }
 
@@ -468,7 +470,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
         catch (Exception exc)
         {
-            GameManager.LogError("Unable to create dungeon boss. Error: " + exc);
+            Shinobytes.Debug.LogError("Unable to create dungeon boss. Error: " + exc.Message);
             return false;
         }
     }
@@ -593,7 +595,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
         finally
         {
@@ -671,9 +673,9 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void AnnounceDungeon()
     {
-        var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
-        var evt = ioc.Resolve<EventTriggerSystem>();
-        evt.TriggerEvent("dungeon", TimeSpan.FromSeconds(10));
+        //var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
+        //var evt = ioc.Resolve<EventTriggerSystem>();
+        //evt.TriggerEvent("dungeon", TimeSpan.FromSeconds(10));
 
         Notifications.SetTimeout(dungeonStartTimer);
         Notifications.SetLevel(Boss.Enemy.Stats.CombatLevel);

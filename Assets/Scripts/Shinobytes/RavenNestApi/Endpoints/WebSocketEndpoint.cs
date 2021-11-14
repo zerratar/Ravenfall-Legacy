@@ -144,7 +144,12 @@ namespace RavenNest.SDK.Endpoints
                     //      10th-tick or enqueued item should be "Save All" and every enqueued item other than that one
                     //      is for saving the active one.
 
-                    var activeSkill = player.GetActiveTaskSkillStat();
+                    var activeSkill = player.GetActiveSkillStat();
+                    if (activeSkill == null)
+                    {
+                        return true;
+                    }
+
                     var characterUpdate = new CharacterExpUpdate
                     {
                         SkillIndex = Skills.IndexOf(player.Stats, activeSkill),
@@ -167,7 +172,7 @@ namespace RavenNest.SDK.Endpoints
                 }
                 catch (Exception exc)
                 {
-                    UnityEngine.Debug.LogError("Saving " + player?.Name + " failed. " + exc);
+                    Shinobytes.Debug.LogError("Saving " + player?.Name + " failed. " + exc.Message);
                     return false;
                 }
             });
@@ -203,7 +208,7 @@ namespace RavenNest.SDK.Endpoints
                     {
                         if (!RequiresUpdate(lastUpdate, characterUpdate))
                         {
-                            //UnityEngine.Debug.LogWarning("Saving " + player?.Name + " skipped. No changes to stats.");
+                            //Shinobytes.Debug.LogWarning("Saving " + player?.Name + " skipped. No changes to stats.");
                             return true; // return true so we dont get a red name in the player list just because the exp hasnt changed.
                         }
                     }
@@ -221,7 +226,7 @@ namespace RavenNest.SDK.Endpoints
                 }
                 catch (Exception exc)
                 {
-                    UnityEngine.Debug.LogError("Saving " + player?.Name + " failed. " + exc);
+                    Shinobytes.Debug.LogError("Saving " + player?.Name + " failed. " + exc.Message);
                     return false;
                 }
             });

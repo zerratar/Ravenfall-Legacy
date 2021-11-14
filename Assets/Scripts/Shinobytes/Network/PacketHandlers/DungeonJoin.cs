@@ -63,7 +63,7 @@ public class DungeonJoin : PacketHandler<TwitchPlayerInfo>
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
     }
 }

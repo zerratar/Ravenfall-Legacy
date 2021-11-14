@@ -29,11 +29,11 @@ public class PlayerObserveCamera : MonoBehaviour
             player.ToggleControl();
             if (player.Controlled)
             {
-                GameManager.Log(player.Name + " is now being controlled.");
+                Shinobytes.Debug.Log(player.Name + " is now being controlled.");
             }
             else
             {
-                GameManager.Log(player.Name + " is no longer being controlled.");
+                Shinobytes.Debug.Log(player.Name + " is no longer being controlled.");
             }
         }
 

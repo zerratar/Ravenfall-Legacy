@@ -94,7 +94,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
         player.Raid.OnEnter();
 
-        gameManager.EventTriggerSystem.SendInput(player.UserId, "raid");
+        //gameManager.EventTriggerSystem.SendInput(player.UserId, "raid");
     }
 
     public void Leave(PlayerController player, bool reward = false, bool timeout = false)
@@ -112,6 +112,8 @@ public class RaidManager : MonoBehaviour, IEvent
     {
         if (gameManager.Events.TryStart(this))
         {
+            notifications.OnBeforeRaidStart();
+
             gameManager.Music.PlayRaidBossMusic();
 
             if (!notifications.gameObject.activeSelf) notifications.gameObject.SetActive(true);
@@ -126,15 +128,15 @@ public class RaidManager : MonoBehaviour, IEvent
 
             gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
 
-            var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
-            if (ioc)
-            {
-                var evt = ioc.Resolve<EventTriggerSystem>();
-                if (evt != null)
-                {
-                    evt.TriggerEvent("raid", TimeSpan.FromSeconds(10));
-                }
-            }
+            //var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
+            //if (ioc)
+            //{
+            //    var evt = ioc.Resolve<EventTriggerSystem>();
+            //    if (evt != null)
+            //    {
+            //        evt.TriggerEvent("raid", TimeSpan.FromSeconds(10));
+            //    }
+            //}
             return;
         }
         else if (!string.IsNullOrEmpty(initiator))
@@ -241,7 +243,7 @@ public class RaidManager : MonoBehaviour, IEvent
     {
         if (!raidBossPrefab)
         {
-            GameManager.LogError("NO RAID BOSS PREFAB SET!!!");
+            Shinobytes.Debug.LogError("NO RAID BOSS PREFAB SET!!!");
             return;
         }
 

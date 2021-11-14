@@ -121,7 +121,7 @@ public class DuelHandler : MonoBehaviour
         }
         catch (System.Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
     }
 

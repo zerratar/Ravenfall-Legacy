@@ -15,7 +15,7 @@ public class PlayerExpUpdateEventHandler : GameEventHandler<PlayerExpUpdate>
             skill.SetExp(data.Experience);
         }
 
-        GameManager.Log($"PlayerExpUpdateEventHandler " + data.UserId);
+        Shinobytes.Debug.Log($"PlayerExpUpdateEventHandler " + data.UserId);
     }
 }
 

@@ -9,7 +9,7 @@
     }
     public override async void Handle(TwitchPlayerInfo data, GameClient client)
     {
-        GameManager.Log("Raid Stop Received");
+        Shinobytes.Debug.Log("Raid Stop Received");
         try
         {
             var plr = PlayerManager.GetPlayer(data);
@@ -32,6 +32,9 @@
             Game.Raid.EndRaid(false, true);
             client.SendMessage(data.Username, "Raid has been forcibly stopped.");
         }
-        catch { }
+        catch (System.Exception exc)
+        {
+            UnityEngine.Debug.LogError("Unable to force stop raid: " + exc.Message);
+        }
     }
 }

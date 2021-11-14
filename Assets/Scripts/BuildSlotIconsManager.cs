@@ -173,7 +173,7 @@ public class BuildSlotIconsManager : MonoBehaviour
         {
             gameManager.Village.TownHouses.SetOwner(activeSlot, newOwner);
             Hide();
-            gameManager.UpdateVillageBoostText();
+            gameManager.villageBoostLabel.Update();
             return;
         }
 
@@ -182,15 +182,15 @@ public class BuildSlotIconsManager : MonoBehaviour
 
     public void SwitchPlayer()
     {
-        GameManager.Log("Switch player clicked");
+        Shinobytes.Debug.Log("Switch player clicked");
     }
 
     public async void EraseBuilding()
     {
-        GameManager.Log("Erase building clicked");
+        Shinobytes.Debug.Log("Erase building clicked");
         if (!activeSlot)
         {
-            GameManager.LogError("Failed to erase house. No active slot selected :o");
+            Shinobytes.Debug.LogError("Failed to erase house. No active slot selected :o");
             return;
         }
 
@@ -201,13 +201,13 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
         }
 
-        GameManager.LogError("Failed to erase house :(");
+        Shinobytes.Debug.LogError("Failed to erase house :(");
         Show(activeSlot);
     }
 
     public async void BuildHouse()
     {
-        GameManager.Log("Build house clicked");
+        Shinobytes.Debug.Log("Build house clicked");
 
         if (!selectBuildingDialog.SelectedHouse)
         {
@@ -217,7 +217,7 @@ public class BuildSlotIconsManager : MonoBehaviour
 
         if (!activeSlot)
         {
-            GameManager.LogError("Failed to build house. No active slot selected.");
+            Shinobytes.Debug.LogError("Failed to build house. No active slot selected.");
             return;
         }
 
@@ -231,7 +231,7 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
         }
 
-        GameManager.LogError("Failed to build house :(");
+        Shinobytes.Debug.LogError("Failed to build house :(");
         Show(activeSlot);
     }
 }

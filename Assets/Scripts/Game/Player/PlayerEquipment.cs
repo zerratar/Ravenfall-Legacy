@@ -279,7 +279,7 @@ public class PlayerEquipment : MonoBehaviour
 
         if (!removed)
         {
-            GameManager.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. ID {id}");
+            Shinobytes.Debug.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. ID {id}");
         }
     }
 
@@ -287,7 +287,7 @@ public class PlayerEquipment : MonoBehaviour
     {
         if (!baseItemPrefab)
         {
-            GameManager.LogError("BaseItemPrefab not set on player!! Unable to create item");
+            Shinobytes.Debug.LogError("BaseItemPrefab not set on player!! Unable to create item");
             return;
         }
 

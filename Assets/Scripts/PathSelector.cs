@@ -95,7 +95,7 @@ public class PathSelector : MonoBehaviour
         }
         else if (!pathFollower.IsPathCompleted)
         {
-            ferryController.state = FerryState.Moving;
+            ferryController.SetState(FerryState.Moving);
             var distance = pathFollower.GetProgress();
 
             if (distance < speedChangeAtPercent)
@@ -130,7 +130,7 @@ public class PathSelector : MonoBehaviour
         var pathTime = Time.time - pathStart[pathIndex];
         pathDuration[pathIndex] = pathTime;
         changingPath = true;
-        ferryController.state = FerryState.Docked;
+        ferryController.SetState(FerryState.Docked);
         leaveTimer = stop;
         yield return new WaitForSeconds(stop);
         pathIndex = (pathIndex + 1) % paths.Length;

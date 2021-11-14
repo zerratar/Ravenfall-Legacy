@@ -76,7 +76,7 @@ public class Skills : IComparable
     public double TotalExperience => SkillList.Sum(x => x.Experience);
     public double[] ExperienceList => SkillList.Select(x => x.Experience).ToArray();
     public int[] LevelList => SkillList.Select(x => x.Level).ToArray();
-    public float HealthPercent => Health.CurrentValue / Health.Level;
+    public float HealthPercent => Health.CurrentValue / (float)Health.Level;
     public SkillStat[] SkillList => skillList ??
         (skillList = new SkillStat[]
         {
@@ -194,7 +194,7 @@ public class Skills : IComparable
     {
         get => this.skillList[(int)skill];
     }
-    
+
     internal SkillStat GetCombatSkill(CombatSkill skill)
     {
         switch (skill)

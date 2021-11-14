@@ -59,7 +59,7 @@ public class DungeonGenerator : MonoBehaviour
 
     public void GoodDungeon()
     {
-        GameManager.Log(string.Join(",", addedRooms.Select((x, i) => i.ToString()).ToArray()));
+        Shinobytes.Debug.Log(string.Join(",", addedRooms.Select((x, i) => i.ToString()).ToArray()));
     }
 
 

@@ -30,7 +30,7 @@ public class ArenaHandler : MonoBehaviour
     {
         if (!chunkManager)
         {
-            GameManager.LogError($"No chunk manager set for {player.PlayerName}.");
+            Shinobytes.Debug.LogError($"No chunk manager set for {player.PlayerName}.");
             return;
         }
 

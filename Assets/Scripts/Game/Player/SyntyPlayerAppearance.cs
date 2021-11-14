@@ -263,7 +263,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                 }
                 catch (Exception exc)
                 {
-                    GameManager.LogError(exc.ToString());
+                    Shinobytes.Debug.LogError(exc);
                 }
             }
         }
@@ -537,7 +537,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                         }
                         catch (Exception exc)
                         {
-                            GameManager.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}: " + exc);
+                            Shinobytes.Debug.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}: " + exc.Message);
                         }
                     }
                 }
@@ -611,7 +611,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                     }
                     catch
                     {
-                        GameManager.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}");
+                        Shinobytes.Debug.LogError($"({field.Name}) {item.Key}[{index}] out of bounds, {item.Key}.Length = {item.Value.Length}");
                     }
                 }
             }

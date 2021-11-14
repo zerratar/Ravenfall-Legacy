@@ -74,9 +74,9 @@ public class TicTacToe : MonoBehaviour, ITavernGame
         this.state = TavernGameState.WaitingForPlayers;
         this.helpText.text = "!tictactoe 1-9\r\n" + infoTextColor + infoTextSize + "JOIN AND PLAY";
 
-        var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
-        var evt = ioc.Resolve<EventTriggerSystem>();
-        evt.TriggerEvent("ttt", TimeSpan.FromSeconds(1));
+        //var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
+        //var evt = ioc.Resolve<EventTriggerSystem>();
+        //evt.TriggerEvent("ttt", TimeSpan.FromSeconds(1));
     }
 
     public void Play(PlayerController player, int slot)
@@ -372,7 +372,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
     private void RejectPlay(PlayerController player, string message)
     {
         gameManager.RavenBot.SendMessage(player.Name, message);
-        GameManager.Log(message);
+        Shinobytes.Debug.Log(message);
     }
 
     private Dictionary<int, List<string>> GetTeamPlayers()

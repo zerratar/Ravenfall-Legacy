@@ -58,7 +58,9 @@ public class DungeonForce : PacketHandler<TwitchPlayerInfo>
                 var result = await Game.RavenNest.Game.ActivateDungeonAsync(plr);
                 if (result == ScrollUseResult.Success)
                 {
-                    if (Game.Dungeons.ActivateDungeon())
+                    await ExternalResources.ReloadIfModifiedAsync("dungeon.mp3");
+
+                    if (await Game.Dungeons.ActivateDungeon())
                     {
                         var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Dungeon);
                         client.SendFormat(data.Username, "You have used a Dungeon Scroll.");
@@ -89,7 +91,7 @@ public class DungeonForce : PacketHandler<TwitchPlayerInfo>
         }
         catch (System.Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
         finally
         {

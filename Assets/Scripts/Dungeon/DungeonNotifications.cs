@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public class DungeonNotifications : MonoBehaviour
 {
@@ -27,6 +30,15 @@ public class DungeonNotifications : MonoBehaviour
     private string lblEnemiesFormat;
     private float runTime;
 
+    private string dungeonSound = "dungeon.mp3";
+
+    private GameManager gameManager;
+    private StreamLabel playersLeftLabel;
+    private StreamLabel enemiesLeftLabel;
+    private StreamLabel runTimeLabel;
+    private StreamLabel bossHealthLabel;
+    private StreamLabel bossLevelLabel;
+
     public float volume
     {
         get => audioSource.volume;
@@ -39,10 +51,13 @@ public class DungeonNotifications : MonoBehaviour
 
         if (!audioSource) audioSource = GetComponent<AudioSource>();
         audioSource.volume = PlayerPrefs.GetFloat("RaidHornVolume", 1f);
-
         HideInformation();
     }
 
+    private void Start()
+    {
+        this.gameManager = FindObjectOfType<GameManager>();
+    }
     private void Update()
     {
         if (activatedObject.gameObject.activeSelf)
@@ -57,6 +72,7 @@ public class DungeonNotifications : MonoBehaviour
 
     private void StartTimer()
     {
+        ExternalResources.ReloadIfModifiedAsync(dungeonSound);
         timeBeforeTimer = timer;
         activatedObject.gameObject.SetActive(false);
         dungeonBossHealth.gameObject.SetActive(false);
@@ -66,7 +82,12 @@ public class DungeonNotifications : MonoBehaviour
 
     public void ShowDungeonActivated()
     {
-        if (audioSource) audioSource.Play();
+        if (audioSource)
+        {
+            var o = ExternalResources.GetAudioClip(dungeonSound);
+            if (o != null) audioSource.clip = o;
+            audioSource.Play();
+        }
         timerObject.gameObject.SetActive(false);
         dungeonBossHealth.gameObject.SetActive(false);
         activatedObject.gameObject.SetActive(true);
@@ -110,6 +131,8 @@ public class DungeonNotifications : MonoBehaviour
 
     public void Hide()
     {
+        ExternalResources.ReloadIfModifiedAsync(dungeonSound);
+
         activatedObject.gameObject.SetActive(false);
         timerObject.gameObject.SetActive(false);
         dungeonBossHealth.gameObject.SetActive(false);
@@ -117,11 +140,13 @@ public class DungeonNotifications : MonoBehaviour
 
     internal void HideInformation()
     {
-        if (!dungeonDetailsObject)
-            return;
+        Hide();
 
-        dungeonDetailsObject.SetActive(false);
-        dungeonBossHealth.gameObject.SetActive(false);
+        if (dungeonDetailsObject)
+        {
+            dungeonDetailsObject.SetActive(false);
+        }
+
         runTime = 0;
     }
 
@@ -147,5 +172,49 @@ public class DungeonNotifications : MonoBehaviour
         lblDungeonActiveTimer.text = string.Format(lblDungeonActiveTimerFormat, Utility.FormatTime(runTime / 60f / 60f));
         lblPlayers.text = string.Format(lblPlayersFormat, alivePlayerCount);
         lblEnemies.text = string.Format(lblEnemiesFormat, aliveEnemyCount);
+
+        if (this.playersLeftLabel == null)
+            this.playersLeftLabel = gameManager.StreamLabels.Register("dungeon-players-left", () => alivePlayerCount.ToString());
+        this.playersLeftLabel.Update();
+
+        if (this.enemiesLeftLabel == null)
+            this.enemiesLeftLabel = gameManager.StreamLabels.Register("dungeon-enemies-left", () => aliveEnemyCount.ToString());
+        this.enemiesLeftLabel.Update();
+
+        if (this.runTimeLabel == null)
+            this.runTimeLabel = gameManager.StreamLabels.Register("dungeon-run-time", () => runTime.ToString());
+        if (Time.frameCount % 30 == 0)
+        {
+            this.runTimeLabel.Update();
+        }
+
+        if (this.bossHealthLabel == null)
+            this.bossHealthLabel = gameManager.StreamLabels.Register("dungeon-boss-health", () =>
+            {
+                if (boss && !boss.Enemy.Stats.IsDead)
+                {
+                    return Math.Round(boss.Enemy.Stats.HealthPercent * 100f, 2) + "%";
+                }
+
+                return "Dead";
+            });
+        this.bossHealthLabel.Update();
+
+        if (this.bossLevelLabel == null)
+            this.bossLevelLabel = gameManager.StreamLabels.Register("dungeon-boss-level", () =>
+            {
+                if (boss && !boss.Enemy.Stats.IsDead)
+                {
+                    return boss.Enemy.Stats.CombatLevel.ToString();
+                }
+
+                return "";
+            });
+        this.bossLevelLabel.Update();
+    }
+
+    internal async Task OnDungeonActivated()
+    {
+        await ExternalResources.ReloadIfModifiedAsync(dungeonSound);
     }
 }

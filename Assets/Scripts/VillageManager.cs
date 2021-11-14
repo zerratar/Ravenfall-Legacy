@@ -39,7 +39,7 @@ namespace Assets.Scripts
             townHouseManager.SetHouses(houses);
             townHallManager.SetSlotCount(houses.Count(x => x.Type != (int)TownHouseSlotType.Empty && x.Type != -1), houses.Count);
 
-            gameManager.UpdateVillageBoostText();
+            gameManager.villageBoostLabel.Update();
         }
 
         public void SetSlotCount(int count)

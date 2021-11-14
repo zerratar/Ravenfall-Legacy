@@ -172,7 +172,7 @@ public class GameUpdater : MonoBehaviour
             // Note: one or more processes has been terminated as this was doing a test.
             // does not necessarily have to be ravenbot, but could be anything. Casting 
             // InvalidOperationException: Process has exited or is inaccessible, so the requested information is not available.
-            GameManager.LogWarning("Failed to stop local running RavenBot. This can be ignored. Error: " + exc.ToString());
+            Shinobytes.Debug.LogWarning("Failed to stop local running RavenBot. This can be ignored. Error: " + exc.Message);
         }
 
         // 2. start patcher
@@ -182,7 +182,7 @@ public class GameUpdater : MonoBehaviour
         }
         else
         {
-            GameManager.LogWarning("RavenWeave.exe could not be found. Unable to start the patcher.");
+            Shinobytes.Debug.LogWarning("RavenWeave.exe could not be found. Unable to start the patcher.");
         }
 
         // 3. stop unity game
@@ -208,7 +208,7 @@ public class GameUpdater : MonoBehaviour
         }
         catch
         {
-            GameManager.LogError("Failed to stop the ravenbot before running the patcher.");
+            Shinobytes.Debug.LogError("Failed to stop the ravenbot before running the patcher.");
         }
     }
 
@@ -292,7 +292,7 @@ public class GameUpdateHandler
         string downloadUrl,
         Action<DownloadProgress> downloadProgress)
     {
-        GameManager.Log("Downloading update file: " + downloadUrl);
+        Shinobytes.Debug.Log("Downloading update file: " + downloadUrl);
         try
         {
             var fileName = downloadUrl.Split('/').LastOrDefault();
@@ -321,14 +321,14 @@ public class GameUpdateHandler
 
                 await wc.DownloadFileTaskAsync(downloadUrl, updateFile);
                 var el = DateTime.Now - start;
-                GameManager.Log("Download took " + el.TotalSeconds + " seconds.");
+                Shinobytes.Debug.Log("Download took " + el.TotalSeconds + " seconds.");
             }
 
             return true;
         }
         catch (Exception exc)
         {
-            GameManager.LogError("Unable to download update: " + exc.ToString());
+            Shinobytes.Debug.LogError("Unable to download update: " + exc.Message);
             return false;
         }
     }
@@ -365,7 +365,7 @@ public class GameUpdateHandler
                 }
                 catch (Exception exc)
                 {
-                    GameManager.LogError("Unable to save update json: " + exc.ToString());
+                    Shinobytes.Debug.LogError("Unable to save update json: " + exc.Message);
                 }
 
                 return updateData;
@@ -373,7 +373,7 @@ public class GameUpdateHandler
         }
         catch (Exception exc)
         {
-            GameManager.LogError("Error downloading update information: " + exc.ToString());
+            Shinobytes.Debug.LogError("Error downloading update information: " + exc.Message);
             // Ignore request issues.
         }
         return null;

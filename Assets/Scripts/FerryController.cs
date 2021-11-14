@@ -30,12 +30,15 @@ public class FerryController : MonoBehaviour
     private IslandController island;
 
     private Vector3 destination;
+    private GameManager gameManager;
     private ParticleSystem movementParticleSystem;
     private ParticleSystem.EmissionModule emission;
     private ParticleSystem.MinMaxCurve rateOverTime;
     private float posY;
 
     private bool isVisible = true;
+    private StreamLabel ferryStateLabel;
+
     public IslandController Island => island;
     public float GetProgress() => pathSelector.GetProgress();
     public int PathIndex => pathSelector.PathIndex;
@@ -46,13 +49,62 @@ public class FerryController : MonoBehaviour
     public float CaptainSpeedAdjustment { get; private set; }
 
     // Use this for initialization
+
     void Start()
     {
+        gameManager = FindObjectOfType<GameManager>();
         movementParticleSystem = movementEffect.GetComponent<ParticleSystem>();
         pathSelector = gameObject.GetComponent<PathSelector>();
         emission = movementParticleSystem.emission;
         rateOverTime = emission.rateOverTime;
         posY = transform.position.y;
+
+        RegisterStreamLabels();
+    }
+
+    private void RegisterStreamLabels()
+    {
+        this.ferryStateLabel = gameManager.StreamLabels.Register("ferry-state", () =>
+        {
+            if (state == FerryState.Docked)
+            {
+                return "Currently docked at " + this.Island?.Identifier;
+            }
+
+            var destination = "";
+
+            if (PathIndex == 0)
+            {
+                destination = "Away";
+            }
+
+            if (PathIndex == 1)
+            {
+                destination = "Ironhill";
+            }
+
+            if (PathIndex == 2)
+            {
+                destination = "Kyo";
+            }
+
+            if (PathIndex == 3)
+            {
+                destination = "Heim";
+            }
+
+            if (PathIndex == 4)
+            {
+                destination = "Home";
+            }
+
+            if (string.IsNullOrEmpty(destination))
+            {
+                return "Currently sailing";
+            }
+
+            return "Currently sailing towards " + destination;
+        });
     }
 
     public bool Docked => state == FerryState.Docked;
@@ -111,6 +163,15 @@ public class FerryController : MonoBehaviour
             .OrderBy(x => x.transform.childCount)
             .ThenBy(x => UnityEngine.Random.value)
             .FirstOrDefault();
+    }
+
+    internal void SetState(FerryState newState)
+    {
+        this.state = newState;
+        if (ferryStateLabel != null)
+        {
+            ferryStateLabel.Update();
+        }
     }
 
     public void SetMovementEffect(float v)

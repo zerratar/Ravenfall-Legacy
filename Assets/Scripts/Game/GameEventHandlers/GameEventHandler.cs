@@ -12,7 +12,7 @@ public abstract class GameEventHandler<TEventData> : IGameEventHandler
         }
         catch (Exception exc)
         {
-            GameManager.LogWarning("Failed to deserialize event data: " + exc + "; " + data);
+            Shinobytes.Debug.LogWarning("Failed to deserialize event data: " + exc.Message + "; " + data);
         }
     }
 }

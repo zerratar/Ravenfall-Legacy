@@ -45,7 +45,7 @@ public class HealthBarManager : MonoBehaviour
             catch (System.Exception exc)
             {
 #if DEBUG
-                GameManager.Log("Warning: Unable to remove healthbar properly. This can be ignored. ");
+                Shinobytes.Debug.Log("Warning: Unable to remove healthbar properly. This can be ignored. ");
 #endif
             }
         }
@@ -63,7 +63,7 @@ public class HealthBarManager : MonoBehaviour
             var hb = healthBars.FirstOrDefault(x => x.Target == enemy);
             if (hb)
             {
-                GameManager.LogWarning($"{enemyName} already have an assigned health bar.");
+                Shinobytes.Debug.LogWarning($"{enemyName} already have an assigned health bar.");
                 hb.gameObject.SetActive(true);
                 return hb;
             }
@@ -72,7 +72,7 @@ public class HealthBarManager : MonoBehaviour
         var healthBar = Instantiate(healthBarPrefab, transform);
         if (!healthBar)
         {
-            GameManager.LogError($"Failed to add health bar for {enemyName}");
+            Shinobytes.Debug.LogError($"Failed to add health bar for {enemyName}");
             return null;
         }
 

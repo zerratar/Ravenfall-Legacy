@@ -135,7 +135,7 @@ public class RavenBotConnection : IDisposable
 
         if (!server.Server.IsBound)
         {
-            GameManager.Log("Bot Server stopped.");
+            Shinobytes.Debug.Log("Bot Server stopped.");
         }
     }
 
@@ -202,7 +202,7 @@ public class RavenBotConnection : IDisposable
             var type = packet.JsonDataType;
             if (!packetHandlers.TryGetValue(type.ToLower(), out var handlerType))
             {
-                GameManager.LogError($"'{type}' is not a known command. :(");
+                Shinobytes.Debug.LogError($"'{type}' is not a known command. :(");
                 return;
             }
 
@@ -210,7 +210,7 @@ public class RavenBotConnection : IDisposable
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
     }
 
@@ -254,7 +254,7 @@ public class RavenBotConnection : IDisposable
             try
             {
 
-                GameManager.Log("Connecting to remote bot...");
+                Shinobytes.Debug.Log("Connecting to remote bot...");
                 remoteClient?.Dispose();
                 remoteClient = new GameClient(this, OnClientConnected, OnRemoteConnectionFailed, str =>
                 {
@@ -264,7 +264,7 @@ public class RavenBotConnection : IDisposable
             catch (Exception exc)
             {
                 connectionInProgress = false;
-                UnityEngine.Debug.LogError("Error Connecting to Remote Bot: " + exc);
+                UnityEngine.Debug.LogError("Error Connecting to Remote Bot: " + exc.Message);
             }
             finally
             {
@@ -282,14 +282,14 @@ public class RavenBotConnection : IDisposable
             return;
         }
 
-        GameManager.Log("Failed to connect to remote bot. Retrying");
+        Shinobytes.Debug.Log("Failed to connect to remote bot. Retrying");
 
         await Task.Delay(reconnectionTimer);
 
         if (IsConnectedToLocal)
         {
             //reconnectionTimer = 1000;
-            GameManager.Log("Connected to local bot, remote reconnection tries cancelled.");
+            Shinobytes.Debug.Log("Connected to local bot, remote reconnection tries cancelled.");
             return;
         }
 
@@ -323,11 +323,11 @@ public class RavenBotConnection : IDisposable
         {
             server.Start(0x1000);
             server.BeginAcceptTcpClient(OnAcceptTcpClient, null);
-            GameManager.Log("Bot Server started");
+            Shinobytes.Debug.Log("Bot Server started");
         }
         catch (Exception exc)
         {
-            GameManager.LogError("Unable to start bot server. If using centralized bot, this can be ignored. " + exc);
+            Shinobytes.Debug.LogError("Unable to start bot server. If using centralized bot, this can be ignored. " + exc.Message);
         }
     }
 
@@ -339,14 +339,14 @@ public class RavenBotConnection : IDisposable
         var ctor = ctors.FirstOrDefault();
         if (ctor == null)
         {
-            GameManager.LogError($"InstantiateHandler: No public constructor found!");
+            Shinobytes.Debug.LogError($"InstantiateHandler: No public constructor found!");
             return null;
         }
 
         var parameters = ctor.GetParameters();
         if (parameters.Length != args.Length)
         {
-            GameManager.LogError($"InstantiateHandler: Unexpected amount of parameters for ctor: {parameters.Length}, expected: {args.Length}");
+            Shinobytes.Debug.LogError($"InstantiateHandler: Unexpected amount of parameters for ctor: {parameters.Length}, expected: {args.Length}");
             return null;
         }
 
@@ -373,7 +373,7 @@ public class RavenBotConnection : IDisposable
     {
         connectionInProgress = false;
 
-        GameManager.Log("Connected to remote bot");
+        Shinobytes.Debug.Log("Connected to remote bot");
         RemoteConnected?.Invoke(this, client);
         reconnectionTimer = 1000;
         if (ravenbot.State == BotState.Disconnected)
@@ -393,7 +393,7 @@ public class RavenBotConnection : IDisposable
 
     public void OnClientConnected(TcpClient client)
     {
-        GameManager.Log("Bot connected");
+        Shinobytes.Debug.Log("Bot connected");
         var gameClient = new GameClient(this, client, str =>
         {
             DataSent?.Invoke(this, str);
@@ -411,13 +411,13 @@ public class RavenBotConnection : IDisposable
     {
         if (connectedClients.Remove(gameClient))
         {
-            GameManager.Log("Bot disconnected");
+            Shinobytes.Debug.Log("Bot disconnected");
             connectedClients.Remove(gameClient);
             LocalDisconnected?.Invoke(this, gameClient);
         }
         else if (gameClient.IsRemote)
         {
-            GameManager.Log("Disconnected from remote bot");
+            Shinobytes.Debug.Log("Disconnected from remote bot");
             RemoteDisconnected?.Invoke(this, gameClient);
         }
     }
@@ -447,9 +447,9 @@ public class RavenBotConnection : IDisposable
         return true;
     }
 
-    public void LogError(string message) => GameManager.LogError(message);
+    public void LogError(string message) => Shinobytes.Debug.LogError(message);
 
-    public void Log(string message) => GameManager.Log(message);
+    public void Log(string message) => Shinobytes.Debug.Log(message);
 
     public void Announce(string message, params string[] args)
     {

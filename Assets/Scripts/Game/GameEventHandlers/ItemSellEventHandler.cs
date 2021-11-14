@@ -11,7 +11,7 @@ public class ItemSellEventHandler : GameEventHandler<ItemTradeUpdate>
             var coinsBefore = player.Resources.Coins;
             player.AddResource(Resource.Currency, data.Cost, false);
             var coinsChange = coinsBefore - player.Resources.Coins;
-            GameManager.Log("Coins change after item sell: " + coinsChange);
+            Shinobytes.Debug.Log("Coins change after item sell: " + coinsChange);
         }
     }
 }

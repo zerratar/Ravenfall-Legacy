@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Debug = Shinobytes.Debug;
 public class EnemyPool : ComponentPool<EnemyController>
 {
     private readonly List<EnemyController> leasedEnemies = new List<EnemyController>();
@@ -62,7 +62,7 @@ public abstract class ComponentPool<T> : MonoBehaviour where T : Component
         var comp = obj.GetComponent<T>();
         if (!comp)
         {
-            UnityEngine.Debug.LogError($"The expected component {typeof(T).Name} could not be found on the poolable object.");
+            Debug.LogError($"The expected component {typeof(T).Name} could not be found on the poolable object.");
             return null;
         }
 

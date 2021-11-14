@@ -27,7 +27,7 @@ namespace Assets.Scripts
         }
         internal void SetPlayersState(IReadOnlyList<PlayerController> players)
         {
-            GameManager.Log("Updating Player State.");
+            Shinobytes.Debug.Log("Updating Player State.");
             lock (mutex)
             {
                 playerCache = new List<GameCachePlayerItem>();
@@ -37,7 +37,7 @@ namespace Assets.Scripts
                     {
                         if (player.IsBot)
                         {
-                            GameManager.LogWarning(player.Name + " is a bot and was not added to player state cache.");
+                            Shinobytes.Debug.LogWarning(player.Name + " is a bot and was not added to player state cache.");
                             continue;
                         }
 
@@ -80,7 +80,7 @@ namespace Assets.Scripts
                     }
                     catch (System.Exception exc)
                     {
-                        GameManager.LogError("Failed to add " + player?.Name + " to the player state cache. " + exc);
+                        Shinobytes.Debug.LogError("Failed to add " + player?.Name + " to the player state cache. " + exc.Message);
                     }
                 }
             }
@@ -115,7 +115,7 @@ namespace Assets.Scripts
                 }
                 catch (System.Exception exc)
                 {
-                    GameManager.LogError("Failed to load player state: " + exc);
+                    Shinobytes.Debug.LogError("Failed to load player state: " + exc.Message);
                 }
             }
         }
@@ -135,7 +135,7 @@ namespace Assets.Scripts
                 }
                 catch (System.Exception exc)
                 {
-                    GameManager.LogError("Failed to save player state: " + exc);
+                    Shinobytes.Debug.LogError("Failed to save player state: " + exc.Message);
                 }
             }
         }

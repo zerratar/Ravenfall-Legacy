@@ -155,7 +155,7 @@ namespace RavenNest.SDK
 
             if (!SessionStarted)
             {
-                GameManager.LogWarning("Trying to save player " + player.PlayerName + " but session has not been started.");
+                Shinobytes.Debug.LogWarning("Trying to save player " + player.PlayerName + " but session has not been started.");
                 return false;
             }
 
@@ -178,7 +178,7 @@ namespace RavenNest.SDK
 
             if (!SessionStarted)
             {
-                GameManager.LogWarning("Trying to save player " + player.PlayerName + " but session has not been started.");
+                Shinobytes.Debug.LogWarning("Trying to save player " + player.PlayerName + " but session has not been started.");
                 return false;
             }
 
@@ -201,7 +201,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.ToString());
+                logger.Error(exc.Message);
 
             }
             finally
@@ -238,7 +238,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.ToString());
+                logger.Error(exc.Message);
             }
             finally
             {
@@ -262,7 +262,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.ToString());
+                logger.Error(exc.Message);
             }
             finally
             {
@@ -327,7 +327,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.ToString());
+                logger.Error(exc.Message);
                 return false;
             }
             finally
@@ -348,7 +348,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.ToString());
+                logger.Error(exc.Message);
                 return false;
             }
             finally

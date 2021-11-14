@@ -5,7 +5,7 @@ public class PlayerMoveEventHandler : GameEventHandler<PlayerMove>
 {
     protected override void Handle(GameManager gameManager, PlayerMove data)
     {
-        GameManager.Log($"PlayerMoveEventHandler " + data.UserId);
+        Shinobytes.Debug.Log($"PlayerMoveEventHandler " + data.UserId);
     }
 }
 

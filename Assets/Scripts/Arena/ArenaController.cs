@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
+using Debug = Shinobytes.Debug;
 public class ArenaController : MonoBehaviour, IEvent
 {
     private readonly List<PlayerController> joinedPlayers = new List<PlayerController>();
@@ -131,7 +131,7 @@ public class ArenaController : MonoBehaviour, IEvent
         if (gameCamera) gameCamera.DisableFocusCamera();
         if (AvailablePlayers.Count != 1)
         {
-            GameManager.Log("It ended in a draw! Reward them all!");
+            Debug.Log("It ended in a draw! Reward them all!");
 
             notifications.ShowDraw();
 
@@ -161,7 +161,7 @@ public class ArenaController : MonoBehaviour, IEvent
     {
         gameManager.Events.End(this);
 
-        GameManager.Log("Arena has been reset");
+        Debug.Log("Arena has been reset");
         joinedPlayers.Clear();
         deadPlayers.Clear();
         state = ArenaState.NotStarted;
@@ -254,7 +254,7 @@ public class ArenaController : MonoBehaviour, IEvent
         if (gameManager.Events.TryStart(this) || Activated)
         {
 #if DEBUG
-            GameManager.Log($"{player.PlayerName} joined the arena!");
+            Debug.Log($"{player.PlayerName} joined the arena!");
 #endif
 
             if (!joinedPlayers.Remove(player))
@@ -300,7 +300,7 @@ public class ArenaController : MonoBehaviour, IEvent
         }
 
         CloseGate();
-        GameManager.Log("Arena fight begins!");
+        Debug.Log("Arena fight begins!");
     }
 
     private IEnumerator _OpenGate()

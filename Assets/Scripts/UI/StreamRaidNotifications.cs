@@ -10,6 +10,7 @@ public class StreamRaidNotifications : MonoBehaviour
     [SerializeField] private GameObject defendersWin;
 
     private AudioSource audioSource;
+    private string raidSound = "streamraid.mp3";
     public float volume
     {
         get => audioSource.volume;
@@ -21,11 +22,18 @@ public class StreamRaidNotifications : MonoBehaviour
         if (!logoManager) logoManager = FindObjectOfType<PlayerLogoManager>();
         if (!audioSource) audioSource = GetComponent<AudioSource>();
         audioSource.volume = PlayerPrefs.GetFloat("RaidHornVolume", 1f);
+        LoadSoundOverride();
         HideRaidInfo();
+    }
+
+    public void LoadSoundOverride()
+    {
+        StartCoroutine(audioSource.LoadAudioClipFromFile("streamraid.mp3"));
     }
 
     public void HideRaidInfo()
     {
+        ExternalResources.ReloadIfModifiedAsync(raidSound);
         if (raidBossAppeared) raidBossAppeared.SetActive(false);
         if (raidersWin) raidersWin.SetActive(false);
         if (defendersWin) raidersWin.SetActive(false);
@@ -35,14 +43,18 @@ public class StreamRaidNotifications : MonoBehaviour
     {
         if (!raidBossAppeared)
         {
-            GameManager.LogError("No Raid Message set on Raid Notifications");
+            Shinobytes.Debug.LogError("No Raid Message set on Raid Notifications");
             return;
         }
 
         raidBossAppeared.GetComponentInChildren<TextMeshProUGUI>().text = message;
 
         if (audioSource)
+        {
+            var o = ExternalResources.GetAudioClip(raidSound);
+            if (o != null) audioSource.clip = o;
             audioSource.Play();
+        }
 
         raidBossAppeared.SetActive(true);
         raidBossAppeared.GetComponent<AutoHideUI>()?.Reset();
@@ -50,7 +62,7 @@ public class StreamRaidNotifications : MonoBehaviour
 
     internal void ShowDefendersWon()
     {
-        GameManager.Log("ShowDefendersWon");
+        Shinobytes.Debug.Log("ShowDefendersWon");
         if (defendersWin)
         {
             defendersWin.GetComponent<AutoHideUI>()?.Reset();
@@ -59,7 +71,7 @@ public class StreamRaidNotifications : MonoBehaviour
 
     internal void ShowRaidersWon()
     {
-        GameManager.Log("ShowRaidersWon");
+        Shinobytes.Debug.Log("ShowRaidersWon");
         if (raidersWin)
         {
             raidersWin.GetComponent<AutoHideUI>()?.Reset();

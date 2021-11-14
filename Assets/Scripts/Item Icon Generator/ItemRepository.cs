@@ -101,7 +101,7 @@ public class ItemRepository : MonoBehaviour
         var itemObj = UnityEngine.Resources.Load<GameObject>(prefab);
         if (!itemObj)
         {
-            GameManager.LogError(prefab + " does not exist!");
+            Shinobytes.Debug.LogError(prefab + " does not exist!");
             yield break;
         }
 
@@ -124,7 +124,7 @@ public class ItemRepository : MonoBehaviour
             var assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(itemObj);
             if (!string.IsNullOrEmpty(assetPath))
             {
-                GameManager.Log("Asset Path: " + assetPath);
+                Shinobytes.Debug.Log("Asset Path: " + assetPath);
                 var icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
                 if (icon != null)
                 {
@@ -134,7 +134,7 @@ public class ItemRepository : MonoBehaviour
 
             if (!prev.isReadable || prev.width == 0)
             {
-                GameManager.LogWarning("MiniThumbnail for " + itemObj.name + " is not readable. Using GetAssetPreview");
+                Shinobytes.Debug.LogWarning("MiniThumbnail for " + itemObj.name + " is not readable. Using GetAssetPreview");
                 var instanceId = itemObj.GetInstanceID();
 
                 do
@@ -234,7 +234,7 @@ public class ItemRepository : MonoBehaviour
         }
 
 
-        GameManager.Log("Taking snap of " + item.Name + " using " + newCamera.name);
+        Shinobytes.Debug.Log("Taking snap of " + item.Name + " using " + newCamera.name);
 
 
         newCamera.gameObject.SetActive(true);
@@ -260,11 +260,11 @@ public class ItemRepository : MonoBehaviour
 
         if (rt.sRGB)
         {
-            GameManager.Log("WUP WUP! sRGB!");
+            Shinobytes.Debug.Log("WUP WUP! sRGB!");
         }
         else
         {
-            GameManager.LogError("No sRGB :<");
+            Shinobytes.Debug.LogError("No sRGB :<");
         }
 
         RenderTexture.active = rt;
@@ -285,17 +285,17 @@ public class ItemRepository : MonoBehaviour
     {
         if (tex == null)
         {
-            GameManager.LogError("Saving " + pngOutPath + " failed. Texture not ready");
+            Shinobytes.Debug.LogError("Saving " + pngOutPath + " failed. Texture not ready");
             return;
         }
 
         try
         {
-            GameManager.Log("Saving " + pngOutPath + ", " + tex.name + ", " + tex.width + "x" + tex.height);
+            Shinobytes.Debug.Log("Saving " + pngOutPath + ", " + tex.name + ", " + tex.width + "x" + tex.height);
             var pngData = tex.EncodeToPNG();
             if (pngData == null || pngData.Length == 0)
             {
-                GameManager.LogError("Saving " + pngOutPath + " failed. EncodeToPNG returned empty data");
+                Shinobytes.Debug.LogError("Saving " + pngOutPath + " failed. EncodeToPNG returned empty data");
                 return;
             }
 
@@ -303,7 +303,7 @@ public class ItemRepository : MonoBehaviour
         }
         catch (Exception exc)
         {
-            GameManager.LogError(pngOutPath + " could not be saved. " + exc);
+            Shinobytes.Debug.LogError(pngOutPath + " could not be saved. " + exc.Message);
         }
     }
 

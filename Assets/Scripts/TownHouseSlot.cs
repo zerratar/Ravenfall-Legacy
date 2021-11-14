@@ -112,7 +112,7 @@ public class TownHouseSlot : MonoBehaviour
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
     }
 

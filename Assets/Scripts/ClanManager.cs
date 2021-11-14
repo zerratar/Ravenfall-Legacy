@@ -53,7 +53,7 @@ namespace Assets.Scripts
             if (data.LevelDelta > 0)
             {
                 // yay level up!
-                GameManager.Log("Clan Skill: " + skill.Name + ", gained " + data.LevelDelta + " new level(s)! Now at " + skill.Level);
+                Shinobytes.Debug.Log("Clan Skill: " + skill.Name + ", gained " + data.LevelDelta + " new level(s)! Now at " + skill.Level);
             }
         }
 
@@ -67,7 +67,7 @@ namespace Assets.Scripts
             if (data.LevelDelta > 0)
             {
                 // yay level up!
-                GameManager.Log("Clan gained " + data.LevelDelta + " new level(s)! Now at " + clan.Level);
+                Shinobytes.Debug.Log("Clan gained " + data.LevelDelta + " new level(s)! Now at " + clan.Level);
             }
         }
 

@@ -81,7 +81,7 @@ internal class ItemResolver : IItemResolver
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc);
+            Shinobytes.Debug.LogError(exc);
             return null;
         }
     }

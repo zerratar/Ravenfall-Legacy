@@ -53,7 +53,7 @@ public class RaidBossController : MonoBehaviour
             }
             else
             {
-                GameManager.LogError("Blerp");
+                Shinobytes.Debug.LogError("Blerp");
             }
         }
         name = "___RAID__BOSS___";
@@ -167,7 +167,7 @@ public class RaidBossController : MonoBehaviour
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
             return null;
         }
     }
@@ -193,7 +193,7 @@ public class RaidBossController : MonoBehaviour
         var model = models.OrderBy(x => UnityEngine.Random.value).FirstOrDefault();
         if (!model)
         {
-            GameManager.LogError("No available raid boss models??!?!");
+            Shinobytes.Debug.LogError("No available raid boss models??!?!");
             return;
         }
 

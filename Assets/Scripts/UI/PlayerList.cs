@@ -98,7 +98,7 @@ public class PlayerList : MonoBehaviour
     {
         if (!player)
         {
-            GameManager.LogWarning("Player already exists in the list?");
+            Shinobytes.Debug.LogWarning("Player already exists in the list?");
             return;
         }
 
@@ -106,14 +106,14 @@ public class PlayerList : MonoBehaviour
         {
             if (instantiatedPlayerListItems.Any(x => x.TargetPlayer && x.TargetPlayer.PlayerName == player.PlayerName))
             {
-                GameManager.LogWarning("Unable to add Player " + player.Name + " to the player list. It is already in there :o");
+                Shinobytes.Debug.LogWarning("Unable to add Player " + player.Name + " to the player list. It is already in there :o");
                 return;
             }
         }
 
         if (playerListItem == null)
         {
-            GameManager.LogError("No PlayerList Item Prefab set.");
+            Shinobytes.Debug.LogError("No PlayerList Item Prefab set.");
             return;
         }
 

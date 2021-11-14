@@ -139,7 +139,7 @@ namespace RavenNest.SDK.Endpoints
             {
                 try
                 {
-                    GameManager.LogError(exc.ToString());
+                    Shinobytes.Debug.LogError(exc);
                 }
                 catch { }
                 return default(TResult);

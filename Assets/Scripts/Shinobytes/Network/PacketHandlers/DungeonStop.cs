@@ -9,7 +9,7 @@
     }
     public override async void Handle(TwitchPlayerInfo data, GameClient client)
     {
-        GameManager.Log("Dungeon Stop Received");
+        Shinobytes.Debug.Log("Dungeon Stop Received");
         try
         {
             var plr = PlayerManager.GetPlayer(data);

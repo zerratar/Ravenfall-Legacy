@@ -57,7 +57,7 @@ public class PlayerManager : MonoBehaviour
 
             if (string.IsNullOrEmpty(data.UserId))
             {
-                GameManager.LogError("A user tried to join the game but had no UserId.");
+                Shinobytes.Debug.LogError("A user tried to join the game but had no UserId.");
                 return null;
             }
 
@@ -71,7 +71,7 @@ public class PlayerManager : MonoBehaviour
                         client.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_LOADED);
                     }
 
-                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. Game not finished loading.");
+                    Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Game not finished loading.");
                     return null;
                 }
 
@@ -82,14 +82,14 @@ public class PlayerManager : MonoBehaviour
                         client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                     }
 
-                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
+                    Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
                     return null;
                 }
 
-                if (!isBot)
-                {
-                    Game.EventTriggerSystem.SendInput(addPlayerRequest.UserId, "join");
-                }
+                //if (!isBot)
+                //{
+                //    Game.EventTriggerSystem.SendInput(addPlayerRequest.UserId, "join");
+                //}
 
                 var playerInfo = await Game.RavenNest.PlayerJoinAsync(
                     new RavenNest.Models.PlayerJoinData
@@ -110,7 +110,7 @@ public class PlayerManager : MonoBehaviour
                     {
                         client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED, addPlayerRequest.Username);
                     }
-                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. Missing PlayerInfo");
+                    Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Missing PlayerInfo");
                     return null;
                 }
 
@@ -121,7 +121,7 @@ public class PlayerManager : MonoBehaviour
                         client.SendMessage(addPlayerRequest.Username, playerInfo.ErrorMessage);
                     }
 
-                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. " + playerInfo.ErrorMessage);
+                    Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. " + playerInfo.ErrorMessage);
                     return null;
                 }
 
@@ -141,7 +141,7 @@ public class PlayerManager : MonoBehaviour
                     {
                         client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                     }
-                    GameManager.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
+                    Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
                 }
             }
             else
@@ -152,7 +152,7 @@ public class PlayerManager : MonoBehaviour
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
         return null;
     }
@@ -175,10 +175,10 @@ public class PlayerManager : MonoBehaviour
             }
 
             player.PlayerNameHexColor = twitchPlayerInfo.Color;
-            if (player.IsBroadcaster && !player.IsBot)
-            {
-                Game.EventTriggerSystem.TriggerEvent("join", TimeSpan.FromSeconds(1));
-            }
+            //if (player.IsBroadcaster && !player.IsBot)
+            //{
+            //    Game.EventTriggerSystem.TriggerEvent("join", TimeSpan.FromSeconds(1));
+            //}
 
             // receiver:cmd|arg1|arg2|arg3|
             return player;
@@ -263,7 +263,7 @@ public class PlayerManager : MonoBehaviour
         var player = Instantiate(playerControllerPrefab);
         if (!player)
         {
-            GameManager.LogError("Player Prefab not found!!!");
+            Shinobytes.Debug.LogError("Player Prefab not found!!!");
             return null;
         }
 

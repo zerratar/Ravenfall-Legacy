@@ -186,7 +186,12 @@ public class Craft : PacketHandler<TradeItemRequest>
         }
     }
 
-    private async System.Threading.Tasks.Task<bool> CraftItemAsync(TradeItemRequest data, GameClient client, PlayerController player, Item item, int amountToCraft)
+    private async System.Threading.Tasks.Task<bool> CraftItemAsync(
+        TradeItemRequest data, 
+        GameClient client, 
+        PlayerController player, 
+        Item item, 
+        int amountToCraft)
     {
         var craftResult = await Game.RavenNest.Players.CraftItemsAsync(player.UserId, item.Id, amountToCraft);
         if (craftResult.Status == CraftItemResultStatus.InsufficientResources)

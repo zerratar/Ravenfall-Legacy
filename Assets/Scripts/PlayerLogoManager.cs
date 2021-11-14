@@ -119,7 +119,7 @@ public class PlayerLogoManager : MonoBehaviour
 
         if (IsError(www.result))
         {
-            GameManager.Log(www.error);
+            Shinobytes.Debug.Log(www.error);
             userLogos.TryRemove(userId, out _);
             onLogoDownloaded?.Invoke(null);
         }

@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Debug = Shinobytes.Debug;
 public class RavenBotConnectionUI : MonoBehaviour
 {
     [SerializeField] private Sprite botConnectingSprite;
@@ -21,7 +21,7 @@ public class RavenBotConnectionUI : MonoBehaviour
     {        
         if (lastState != ravenBot.State)
         {
-            UnityEngine.Debug.Log("RavenBot State Changed from: " + lastState + " => " + ravenBot.State);
+            Debug.Log("RavenBot State Changed from: " + lastState + " => " + ravenBot.State);
             switch (ravenBot.State)
             {
                 case BotState.Connected:

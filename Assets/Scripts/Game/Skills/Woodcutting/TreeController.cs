@@ -93,7 +93,7 @@ public class TreeController : MonoBehaviour
         }
         catch (System.Exception exception)
         {
-            GameManager.LogError(exception.ToString());
+            Shinobytes.Debug.LogError(exception.ToString());
         }
     }
 

@@ -210,6 +210,10 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             movement.Attack(() =>
             {
+                if (this == null)
+                {
+                    return;
+                }
 
                 if (!Target && targetPlayer)
                 {
@@ -379,7 +383,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
         catch (Exception exc)
         {
-            GameManager.LogError("Error handling Damage " + exc);
+            Shinobytes.Debug.LogError("Error handling Damage: " + exc.Message);
             return false;
         }
     }
@@ -482,7 +486,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
         catch (Exception exc)
         {
-            GameManager.LogError("Error handling Damage " + exc);
+            Shinobytes.Debug.LogError("Error handling Damage: " + exc.Message);
             return false;
         }
     }
@@ -526,7 +530,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     public Skills GetStats()
     {
-        return Stats ?? new Skills();
+        return Stats ?? (Stats = new Skills());
     }
     public int GetCombatStyle()
     {

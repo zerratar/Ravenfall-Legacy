@@ -12,6 +12,7 @@ using RavenNest.SDK;
 using UnityEngine;
 using UnityEngine.AI;
 using Resources = RavenNest.Models.Resources;
+using Debug = Shinobytes.Debug;
 public class PlayerController : MonoBehaviour, IAttackable
 {
     private static readonly ConcurrentDictionary<string, int> combatTypeArgLookup
@@ -493,17 +494,17 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             if (agent.pathPending)
             {
-                UnityEngine.Debug.LogWarning("Path is being processed");
+                Debug.LogWarning("Path is being processed");
             }
 
             if (agent.hasPath)
             {
-                UnityEngine.Debug.LogWarning("Path is ready");
+                Debug.LogWarning("Path is ready");
             }
 
             if (agent.isPathStale)
             {
-                UnityEngine.Debug.LogWarning("Path is stale");
+                Debug.LogWarning("Path is stale");
             }
         }
 
@@ -839,7 +840,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
         if (!chunkManager)
         {
-            GameManager.LogError($"No ChunkManager found!");
+            Shinobytes.Debug.LogError($"No ChunkManager found!");
             return;
         }
 
@@ -893,7 +894,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
 
             gameManager.RavenBot.Send(PlayerName, "You cannot train {type} here.", type);
-            GameManager.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
+            Shinobytes.Debug.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
             return;
         }
 
@@ -907,7 +908,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
         if (!chunkManager)
         {
-            GameManager.LogError($"No ChunkManager found!");
+            Shinobytes.Debug.LogError($"No ChunkManager found!");
             return;
         }
 
@@ -1231,7 +1232,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (Game.Arena && Game.Arena.HasJoined(this) && !Game.Arena.Leave(this))
         {
-            GameManager.Log(PlayerName + " task cannot be done as you're inside the arena.");
+            Shinobytes.Debug.Log(PlayerName + " task cannot be done as you're inside the arena.");
             return;
         }
 
@@ -1459,7 +1460,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         if (player == this)
         {
-            GameManager.LogError(player.PlayerName + ", You cant fight yourself :o");
+            Shinobytes.Debug.LogError(player.PlayerName + ", You cant fight yourself :o");
             return false;
         }
         if (player == null || !player)
@@ -1596,7 +1597,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
         catch (Exception exc)
         {
-            GameManager.LogError("Unable to heal target: " + exc);
+            Shinobytes.Debug.LogError("Unable to heal target: " + exc.Message);
         }
         finally
         {
@@ -1835,9 +1836,9 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             AddExp(experience, skill);
 
-//#if DEBUG
-//            UnityEngine.Debug.LogWarning("Giving " + experience + " to " + skill);
-//#endif
+            //#if DEBUG
+            //            Shinobytes.Debug.LogWarning("Giving " + experience + " to " + skill);
+            //#endif
             //var combatType = GetCombatTypeFromArg(taskArgument);
             //if (combatType != -1)
             //{
@@ -1850,13 +1851,13 @@ public class PlayerController : MonoBehaviour, IAttackable
             //}
             return true;
         }
-//        else
-//        {
+        //        else
+        //        {
 
-//#if DEBUG
-//            UnityEngine.Debug.LogWarning("Unable to give exp: " + experience + ", skill is: " + skill);
-//#endif
-//        }
+        //#if DEBUG
+        //            Shinobytes.Debug.LogWarning("Unable to give exp: " + experience + ", skill is: " + skill);
+        //#endif
+        //        }
         return false;
     }
 
@@ -1881,7 +1882,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         if (Chunk == null)
         {
-            GameManager.LogError("Cannot do task if we do not know in which chunk we are. :o");
+            Shinobytes.Debug.LogError("Cannot do task if we do not know in which chunk we are. :o");
             return;
         }
 
@@ -1914,7 +1915,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                         outOfResourcesAlertTimer -= Time.deltaTime;
                         if (outOfResourcesAlertTimer <= 0f)
                         {
-                            GameManager.LogWarning(PlayerName + " is out of resources and won't gain any crafting exp.");
+                            Shinobytes.Debug.LogWarning(PlayerName + " is out of resources and won't gain any crafting exp.");
 
                             var message = lastTrainedSkill == Skill.Cooking
                                 ? "You're out of resources, you wont gain any cooking exp. Use !train farming or !train fishing to get some resources."
@@ -2166,8 +2167,13 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (skillLookup.TryGetValue(key, out var type))
             return type;
 
-        if (val == "hp" || val == "health" || val == "all")        
+        if (val == "hp" || val == "health" || val == "all")
             return skillLookup[key] = Skill.Health;
+
+        if (val.StartsWith("heal", StringComparison.OrdinalIgnoreCase))
+        {
+            return skillLookup[key] = Skill.Healing;
+        }
 
         if (val == "mine") return skillLookup[key] = Skill.Mining;
         if (val == "mage") return skillLookup[key] = Skill.Magic;
@@ -2389,7 +2395,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (IntegrityCheck.IsCompromised)
         {
-            GameManager.LogError("Item add for user: " + UserId + ", item: " + item.Id + ", failed. Integrity compromised");
+            Shinobytes.Debug.LogError("Item add for user: " + UserId + ", item: " + item.Id + ", failed. Integrity compromised");
             return;
         }
 
@@ -2421,13 +2427,13 @@ public class PlayerController : MonoBehaviour, IAttackable
                 if (result == AddItemResult.Failed)
                 {
                     queuedItemAdd.Enqueue(itemId);
-                    GameManager.LogError("Item add for user: " + UserId + ", item: " + itemId + ", result: " + result);
+                    Shinobytes.Debug.LogError("Item add for user: " + UserId + ", item: " + itemId + ", result: " + result);
                 }
             }
             catch (Exception exc)
             {
                 queuedItemAdd.Enqueue(itemId);
-                GameManager.LogError(exc.ToString());
+                Shinobytes.Debug.LogError(exc);
             }
         }
 
@@ -2491,7 +2497,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     private int CalculateDamage(IAttackable enemy)
     {
-        if (enemy == null) return 0;
+        if (this == null || enemy == null) return 0;
         if (TrainingHealing)
             return (int)GameMath.CalculateHealing(this, enemy);
 

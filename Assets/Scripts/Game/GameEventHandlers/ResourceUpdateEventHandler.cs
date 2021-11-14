@@ -8,7 +8,7 @@ public class ResourceUpdateEventHandler : GameEventHandler<ResourceUpdate>
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player)
         {
-            GameManager.LogWarning("No player with userid " + data.UserId + " when updating resources.");
+            Shinobytes.Debug.LogWarning("No player with userid " + data.UserId + " when updating resources.");
             return;
         }
         

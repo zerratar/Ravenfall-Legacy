@@ -36,64 +36,103 @@ public static class GameMath
 
     public static float CalculateHealing(IAttackable attacker, IAttackable defender)
     {
-        var attackerStats = attacker.GetStats();
-        var attackerEq = attacker.GetEquipmentStats();
+        try
+        {
+            if (attacker == null || defender == null) return 0;
+            var attackerStats = attacker.GetStats();
+            var attackerEq = attacker.GetEquipmentStats();
+            if (attackerStats == null || attackerEq == null) return 0;
 
-        var defenderDamageSkill = 1;
-        var attackerDamageSkill = attackerStats.Healing.CurrentValue;
-        var attackerAimSkill = attackerStats.Healing.CurrentValue;
-        var attackerPower = attackerEq.MagicPower;
-        var attackerAim = attackerEq.MagicAim;
+            var defenderDamageSkill = 1;
+            var attackerDamageSkill = attackerStats.Healing.CurrentValue;
+            var attackerAimSkill = attackerStats.Healing.CurrentValue;
+            var attackerPower = attackerEq.MagicPower;
+            var attackerAim = attackerEq.MagicAim;
 
-        return CalculateDamage(attacker, defender, Skills.Zero, EquipmentStats.Zero, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+            return CalculateDamage(attacker, defender, Skills.Zero, EquipmentStats.Zero, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     public static float CalculateMagicDamage(IAttackable attacker, IAttackable defender)
     {
-        var attackerStats = attacker.GetStats();
-        var defenderStats = defender.GetStats();
-        var attackerEq = attacker.GetEquipmentStats();
-        var defenderEq = defender.GetEquipmentStats();
+        try
+        {
+            if (attacker == null || defender == null) return 0;
+            var attackerStats = attacker.GetStats();
+            var defenderStats = defender.GetStats();
+            if (attackerStats == null || defenderStats == null) return 0;
+            var attackerEq = attacker.GetEquipmentStats();
+            var defenderEq = defender.GetEquipmentStats();
+            if (attackerEq == null || defenderEq == null) return 0;
 
-        var defenderDamageSkill = defenderStats.Magic.CurrentValue;
-        var attackerDamageSkill = attackerStats.Magic.CurrentValue;
-        var attackerAimSkill = attackerStats.Magic.CurrentValue;
-        var attackerPower = attackerEq.MagicPower;
-        var attackerAim = attackerEq.MagicAim;
+            var defenderDamageSkill = defenderStats.Magic.CurrentValue;
+            var attackerDamageSkill = attackerStats.Magic.CurrentValue;
+            var attackerAimSkill = attackerStats.Magic.CurrentValue;
+            var attackerPower = attackerEq.MagicPower;
+            var attackerAim = attackerEq.MagicAim;
 
-        return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+            return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     public static float CalculateRangedDamage(IAttackable attacker, IAttackable defender)
     {
-        var attackerStats = attacker.GetStats();
-        var defenderStats = defender.GetStats();
-        var attackerEq = attacker.GetEquipmentStats();
-        var defenderEq = defender.GetEquipmentStats();
+        try
+        {
+            if (attacker == null || defender == null) return 0;
+            var attackerStats = attacker.GetStats();
+            var defenderStats = defender.GetStats();
+            if (attackerStats == null || defenderStats == null) return 0;
+            var attackerEq = attacker.GetEquipmentStats();
+            var defenderEq = defender.GetEquipmentStats();
+            if (attackerEq == null || defenderEq == null) return 0;
 
-        var defenderDamageSkill = defenderStats.Ranged.CurrentValue;
-        var attackerDamageSkill = attackerStats.Ranged.CurrentValue;
-        var attackerAimSkill = attackerStats.Ranged.CurrentValue;
-        var attackerPower = attackerEq.RangedPower;
-        var attackerAim = attackerEq.RangedAim;
+            var defenderDamageSkill = defenderStats.Ranged.CurrentValue;
+            var attackerDamageSkill = attackerStats.Ranged.CurrentValue;
+            var attackerAimSkill = attackerStats.Ranged.CurrentValue;
+            var attackerPower = attackerEq.RangedPower;
+            var attackerAim = attackerEq.RangedAim;
 
-        return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+            return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     public static float CalculateMeleeDamage(IAttackable attacker, IAttackable defender)
     {
-        var attackerStats = attacker.GetStats();
-        var defenderStats = defender.GetStats();
-        var attackerEq = attacker.GetEquipmentStats();
-        var defenderEq = defender.GetEquipmentStats();
+        try
+        {
+            if (attacker == null || defender == null) return 0;
+            var attackerStats = attacker.GetStats();
+            var defenderStats = defender.GetStats();
+            if (attackerStats == null || defenderStats == null) return 0;
+            var attackerEq = attacker.GetEquipmentStats();
+            var defenderEq = defender.GetEquipmentStats();
+            if (attackerEq == null || defenderEq == null) return 0;
 
-        var defenderDamageSkill = defenderStats.Strength.CurrentValue;
-        var attackerDamageSkill = attackerStats.Strength.CurrentValue;
-        var attackerAimSkill = attackerStats.Attack.CurrentValue;
-        var attackerPower = attackerEq.WeaponPower;
-        var attackerAim = attackerEq.WeaponAim;
+            var defenderDamageSkill = defenderStats.Strength.CurrentValue;
+            var attackerDamageSkill = attackerStats.Strength.CurrentValue;
+            var attackerAimSkill = attackerStats.Attack.CurrentValue;
+            var attackerPower = attackerEq.WeaponPower;
+            var attackerAim = attackerEq.WeaponAim;
 
-        return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+            return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     private static float CalculateDamage(

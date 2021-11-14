@@ -7,7 +7,7 @@
 
         if (data.LevelDelta > 0)
         {
-            GameManager.Log($"Congratulations! Village gained {data.LevelDelta} level(s)!");
+            Shinobytes.Debug.Log($"Congratulations! Village gained {data.LevelDelta} level(s)!");
             gameManager.Village.SetTierByLevel(data.Level);
             gameManager.Village.SetSlotCount(data.HouseSlots);
         }

@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,7 +14,7 @@ public class RaidNotifications : MonoBehaviour
     [SerializeField] private TextMeshProUGUI lbLRaidBossLevel;
 
     private AudioSource audioSource;
-
+    private string raidSound = "raid.mp3";
     public float volume
     {
         get => audioSource.volume;
@@ -35,6 +36,9 @@ public class RaidNotifications : MonoBehaviour
     {
         if (raidBossAppeared) raidBossAppeared.SetActive(false);
         if (raidBossHealth) raidBossHud.SetActive(false);
+        
+        // This happens after the raid. but it should be fine
+        ExternalResources.ReloadIfModifiedAsync(raidSound);
     }
 
     public void HideRaidJoinInfo()
@@ -53,11 +57,16 @@ public class RaidNotifications : MonoBehaviour
     {
         if (!raidBossAppeared)
         {
-            GameManager.LogError("No Raid Boss Message set on Raid Notifications");
+            Shinobytes.Debug.LogError("No Raid Boss Message set on Raid Notifications");
             return;
         }
 
-        if (audioSource) audioSource.Play();
+        if (audioSource)
+        {
+            var o = ExternalResources.GetAudioClip(raidSound);
+            if (o != null) audioSource.clip = o;
+            audioSource.Play();
+        }
 
         raidBossAppeared.SetActive(true);
         raidBossHud.SetActive(true);
@@ -90,5 +99,10 @@ public class RaidNotifications : MonoBehaviour
     public void SetRaidBossLevel(int combatLevel)
     {
         if (lbLRaidBossLevel) lbLRaidBossLevel.text = $"Lv: <b>{combatLevel}";
+    }
+
+    internal void OnBeforeRaidStart()
+    {
+        ExternalResources.ReloadIfModifiedAsync(raidSound);
     }
 }

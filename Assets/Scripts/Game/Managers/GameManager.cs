@@ -15,6 +15,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 using RavenNestPlayer = RavenNest.Models.Player;
+using Debug = Shinobytes.Debug;
 public class GameManager : MonoBehaviour, IGameManager
 {
     [SerializeField] private GameCamera gameCamera;
@@ -108,7 +109,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public PlayerList PlayerList => playerList;
     public ServerNotificationManager ServerNotifications => serverNotificationManager;
 
-    public EventTriggerSystem EventTriggerSystem => ioc.Resolve<EventTriggerSystem>();
+    //public EventTriggerSystem EventTriggerSystem => ioc.Resolve<EventTriggerSystem>();
     public OnsenManager Onsen => onsen;
     public TavernHandler Tavern => tavern;
 
@@ -139,15 +140,19 @@ public class GameManager : MonoBehaviour, IGameManager
     private DateTime dungeonStartTime;
     private DateTime raidStartTime;
     private ClanManager clanManager;
+
     private float lastServerTimeUpdateFloat;
     private DateTime lastServerTimeUpdateDateTime;
     private DateTime serverTime;
+
     private readonly TimeSpan dungeonStartCooldown = TimeSpan.FromMinutes(10);
     private readonly TimeSpan raidStartCooldown = TimeSpan.FromMinutes(10);
-    private bool hasLoadedPlayers;
-    private int botSpawnIndex = 0;
     private NameTagManager nametagManager;
-    private ConcurrentDictionary<string, string> saveGameStatValues = new ConcurrentDictionary<string, string>();
+
+    public StreamLabel uptimeLabel;
+    public StreamLabel villageBoostLabel;
+    public StreamLabel playerCountLabel;
+
     public int PlayerBoostRequirement { get; set; } = 0;
 
     public Permissions Permissions { get; set; } = new Permissions();
@@ -172,6 +177,13 @@ public class GameManager : MonoBehaviour, IGameManager
     public bool DungeonStartEnabled { get; internal set; } = true;
     public bool RaidStartEnabled { get; internal set; } = true;
     public NameTagManager NameTags => nametagManager;
+    public StreamLabels StreamLabels { get; private set; }
+
+    void Awake()
+    {
+        if (!settings) settings = GetComponent<GameSettings>();
+        this.StreamLabels = new StreamLabels(settings);
+    }
 
     // Start is called before the first frame update   
     void Start()
@@ -180,6 +192,8 @@ public class GameManager : MonoBehaviour, IGameManager
 #if DEBUG
         Application.SetStackTraceLogType(LogType.Assert | LogType.Error | LogType.Exception | LogType.Log | LogType.Warning, StackTraceLogType.Full);
 #endif
+
+        this.SetupStreamLabels();
 
         GameCache.Instance.IsAwaitingGameRestore = false;
         ioc = GetComponent<IoCContainer>();
@@ -197,7 +211,6 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!playerLogoManager) playerLogoManager = GetComponent<PlayerLogoManager>();
         if (!villageManager) villageManager = FindObjectOfType<VillageManager>();
 
-        if (!settings) settings = GetComponent<GameSettings>();
         if (!subEventManager) subEventManager = GetComponent<TwitchEventManager>();
         if (!subEventManager) subEventManager = gameObject.AddComponent<TwitchEventManager>();
 
@@ -254,9 +267,22 @@ public class GameManager : MonoBehaviour, IGameManager
 
         musicManager.PlayBackgroundMusic();
 
-        this.EventTriggerSystem.SourceTripped += OnSourceTripped;
+        //this.EventTriggerSystem.SourceTripped += OnSourceTripped;
 
         GameCache.Instance.LoadState();
+    }
+
+    private void SetupStreamLabels()
+    {
+        uptimeLabel = StreamLabels.Register("uptime", () => Time.realtimeSinceStartup.ToString());
+        villageBoostLabel = StreamLabels.Register("village-boost", () =>
+        {
+            var bonuses = Village.GetExpBonuses();
+            return string.Join(", ", bonuses.Where(x => x.Bonus > 0).GroupBy(x => x.SlotType)
+                .Where(x => x.Key != TownHouseSlotType.Empty && x.Key != TownHouseSlotType.Undefined)
+                .Select(x => $"{x.Key} {x.Sum(y => y.Bonus)}%"));
+        });
+        playerCountLabel = StreamLabels.Register("online-player-count", () => playerManager.GetPlayerCount().ToString());
     }
 
     private void LoadGameSettings()
@@ -285,20 +311,10 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-    private void OnSourceTripped(object sender, EventTriggerSystem.SysEventStats e)
-    {
-        if (!ravenNest.Authenticated && ravenNest.Stream.IsReady)
-        {
-            return;
-        }
-        ravenNest.Stream.UpdatePlayerEventStatsAsync(e);
-    }
-
     private void RegisterGameEventHandler<T>(GameEventType type) where T : IGameEventHandler, new()
     {
         gameEventHandlers[type] = new T();
     }
-
     private IGameEventHandler GetEventHandler(GameEventType type)
     {
         if (gameEventHandlers.TryGetValue(type, out var handler))
@@ -320,7 +336,6 @@ public class GameManager : MonoBehaviour, IGameManager
         SavePlayerStates();
         Application.Quit();
     }
-
     public void SavePlayerStates()
     {
         GameCache.Instance.SavePlayersState(this.playerManager.GetAllPlayers());
@@ -368,14 +383,13 @@ public class GameManager : MonoBehaviour, IGameManager
 
         yield return UnityEngine.Resources.UnloadUnusedAssets();
 
-
-        Log("Restoring game state with " + state.Players.Count + " players.");
+        Debug.Log("Restoring game state with " + state.Players.Count + " players.");
 
         foreach (var player in state.Players)
         {
             if (player.TwitchUser == null || string.IsNullOrEmpty(player.TwitchUser.UserId))
             {
-                LogError("Unable to restore character, TwitchUser is null or missing UserId.");
+                Debug.LogError("Unable to restore character, TwitchUser is null or missing UserId.");
                 yield return null;
             }
 
@@ -491,7 +505,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (uptimeSaveTimer <= 0)
         {
             uptimeSaveTimer = uptimeSaveTimerInterval;
-            SaveGameStat("uptime", Time.realtimeSinceStartup);
+            uptimeLabel.Update();
         }
 
         UpdateExpBoostTimer();
@@ -575,27 +589,10 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         dayNightCycle.SetTimeOfDay(totalTime, freezeTime);
     }
-    public static void Log(string message)
-    {
-        Debug.Log("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
-    }
-    public static void LogWarning(string message)
-    {
-        Debug.LogWarning("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
-    }
-    public static void LogError(string message)
-    {
-        Debug.LogError("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
-    }
-    public static void LogError(Exception message)
-    {
-        Debug.LogError("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
-    }
     public void QueueRemovePlayer(PlayerController player)
     {
         playerKickQueue.Enqueue(player);
     }
-
     public void RemovePlayer(PlayerController player, bool notifyServer = true)
     {
         if (player.Dungeon.InDungeon)
@@ -622,8 +619,8 @@ public class GameManager : MonoBehaviour, IGameManager
             gameCamera.ObservePlayer(null);
         }
 
-        UpdateVillageBoostText();
-        UpdatePlayerCount();
+        villageBoostLabel.Update();
+        playerCountLabel.Update();
         SavePlayerStates();
     }
 
@@ -657,7 +654,6 @@ public class GameManager : MonoBehaviour, IGameManager
         if (player)
         {
             await player.EquipBestItemsAsync();
-            ++botSpawnIndex;
         }
     }
     public PlayerController SpawnPlayer(
@@ -667,14 +663,14 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         if (!chunkManager)
         {
-            LogError("No chunk manager available!");
+            Debug.LogError("No chunk manager available!");
             return null;
         }
 
         var starter = chunkManager.GetStarterChunk();
         if (starter == null)
         {
-            LogError("No starter chunk available!");
+            Debug.LogError("No starter chunk available!");
             return null;
         }
 
@@ -691,7 +687,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (!player)
         {
-            LogError("Can't spawn player, player is already playing.");
+            Debug.LogError("Can't spawn player, player is already playing.");
             return null;
         }
 
@@ -699,9 +695,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
         Village.TownHouses.EnsureAssignPlayerRows(Players.GetPlayerCount());
 
-        UpdatePlayerCount();
-
-        UpdateVillageBoostText();
+        playerCountLabel.Update();
+        villageBoostLabel.Update();
 
         if (player && gameCamera && gameCamera.AllowJoinObserve)
             gameCamera.ObservePlayer(player);
@@ -770,13 +765,11 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         RavenBot.Stop();
 
-        this.EventTriggerSystem.Dispose();
+        //this.EventTriggerSystem.Dispose();
 
         StopRavenNestSession();
 
-        Log("Application ending after " + Time.time + " seconds");
-
-        SaveEmptyGameStats();
+        Debug.Log("Application ending after " + Time.time + " seconds");
     }
 
     private void HandleRavenNestConnection()
@@ -889,7 +882,7 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             await SavePlayersAsync();
             await ravenNest.EndSessionAsync();
-            Log("Saving complete!");
+            Debug.Log("Saving complete!");
         }
     }
 
@@ -912,7 +905,7 @@ public class GameManager : MonoBehaviour, IGameManager
         }
         catch (Exception exc)
         {
-            LogError(exc.ToString());
+            Debug.LogError(exc);
         }
     }
 
@@ -946,7 +939,7 @@ public class GameManager : MonoBehaviour, IGameManager
             }
             catch (Exception exc)
             {
-                LogError(exc.ToString());
+                Debug.LogError(exc);
             }
 
             //if (failedToSave.Count > 0)
@@ -956,7 +949,7 @@ public class GameManager : MonoBehaviour, IGameManager
         }
         catch (Exception exc)
         {
-            LogError(exc.ToString());
+            Debug.LogError(exc);
         }
 
         savingPlayersTime = 0;
@@ -1357,55 +1350,6 @@ public class GameManager : MonoBehaviour, IGameManager
             RavenNestUpdate();
         }
     }
-
-
-    public void UpdateVillageBoostText()
-    {
-        var bonuses = Village.GetExpBonuses();
-        var bonusString = string.Join(", ", bonuses.Where(x => x.Bonus > 0).GroupBy(x => x.SlotType)
-            .Where(x => x.Key != TownHouseSlotType.Empty && x.Key != TownHouseSlotType.Undefined)
-            .Select(x => $"{x.Key} {x.Sum(y => y.Bonus)}%"));
-
-        SaveGameStat("village-boost", bonusString);
-    }
-
-    private void SaveEmptyGameStats()
-    {
-        SaveGameStat("online-player-count", 0);
-        //SaveGameStat("last-joined-name", "");
-        //SaveGameStat("last-level-up-name", "");
-        //SaveGameStat("last-level-up-skill", "");
-    }
-
-    public void UpdatePlayerCount()
-    {
-        SaveGameStat("online-player-count", playerManager.GetPlayerCount());
-    }
-
-    private void SaveGameStat<T>(string name, T value)
-    {
-        try
-        {
-            // CHeck if text has changed, otherwise we dont save it.
-            var val = value.ToString();
-            if (saveGameStatValues.TryGetValue(name, out var v) && v == val)
-            {
-                return;
-            }
-
-            saveGameStatValues[name] = val;
-
-            if (!System.IO.Directory.Exists(settings.StreamLabelsFolder))
-                System.IO.Directory.CreateDirectory(settings.StreamLabelsFolder);
-
-            System.IO.File.WriteAllText(System.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt"), val);
-        }
-        catch
-        {
-            // Ignore: since we do not want this to interrupt any execution of the script.
-        }
-    }
-
     internal void UpdateServerTime(DateTime timeUtc)
     {
         //if (Permissions.IsAdministrator)

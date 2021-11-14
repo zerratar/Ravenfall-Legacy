@@ -139,7 +139,7 @@ public class GameCamera : MonoBehaviour
         }
         catch (Exception exc)
         {
-            GameManager.LogWarning(exc.ToString());
+            Shinobytes.Debug.LogWarning("GameCamera->Update: " + exc.Message);
         }
     }
 

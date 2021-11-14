@@ -265,7 +265,7 @@ public class DungeonHandler : MonoBehaviour
             return;
         }
 
-        var distance = Vector3.Distance(transform.position, enemyTarget.Position);
+        var distance = Vector3.Distance(transform.position, enemyTarget.transform.position);
         if (distance <= range)
         {
             if (!player.IsReadyForAction)
@@ -278,7 +278,7 @@ public class DungeonHandler : MonoBehaviour
 
             if (!dungeon.Dungeon.HasPredefinedRooms)
             {
-                var enemies = dungeon.GetEnemiesNear(enemyTarget.Position);
+                var enemies = dungeon.GetEnemiesNear(enemyTarget.transform.position);
                 if (enemies != null)
                 {
                     foreach (var enemy in enemies)
@@ -297,7 +297,7 @@ public class DungeonHandler : MonoBehaviour
         }
         else
         {
-            player.GotoPosition(enemyTarget.Position);
+            player.GotoPosition(enemyTarget.transform.position);
 
             enemyTarget = null;
         }

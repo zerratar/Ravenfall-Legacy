@@ -1,28 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class PlayerListItem : MonoBehaviour
 {
-    private static Dictionary<int, string> number2strCache;
-    static PlayerListItem()
-    {
-        number2strCache = new Dictionary<int, string>();
-        for (var i = 0; i <= 999; ++i)
-        {
-            number2strCache[i] = i.ToString();
-        }
-    }
-
-    //[SerializeField] private UnityEngine.UI.Text lblSkillIcon;
     [SerializeField] private GameProgressBar pbHealth;
     [SerializeField] private GameProgressBar pbSkill;
-
     [SerializeField] private RectTransform bg;
-
     [SerializeField] private GameObject restedObject;
     [SerializeField] private TextMeshProUGUI lblRestedTime;
 
@@ -42,9 +27,6 @@ public class PlayerListItem : MonoBehaviour
     private float lastSkillCheckTime = 5f;
 
     private int skillIndex = -1;
-
-    //private char[] combatIcons = { '\uf71d', '\uf132', '\uf6de' };
-    //private char[] skillIcons = { '\uf724', '\uf578', '\uf6e3', '\uf7eb', '\uf6fd' };
 
     private GameCamera gameCamera;
     private bool hasSkill;
@@ -91,7 +73,6 @@ public class PlayerListItem : MonoBehaviour
 
         UpdateUI();
     }
-
     private void UpdateLabels()
     {
         if (!TargetPlayer)
@@ -105,7 +86,7 @@ public class PlayerListItem : MonoBehaviour
         var combatLevel = TargetPlayer.Stats.CombatLevel;
         if (combatLevel != lastCombatLevel)
         {
-            SetText(lblCombatLevel, "Lv:<b> " + number2strCache[combatLevel]);
+            SetText(lblCombatLevel, "Lv:<b> " + combatLevel);
             lastCombatLevel = combatLevel;
         }
         if (skillIndex == -1)
@@ -141,7 +122,7 @@ public class PlayerListItem : MonoBehaviour
                 {
                     if (lastSkillTrainedLevel != skill.Level || lastSkillTrained != skill)
                     {
-                        SetText(lblSkillLevel, skillName + ":<b> " + number2strCache[skill.Level]);
+                        SetText(lblSkillLevel, skillName + ":<b> " + skill.Level);
                     }
                     UpdateSkillProgressBar(skill);
                     this.lastSkillTrained = skill;
@@ -151,7 +132,7 @@ public class PlayerListItem : MonoBehaviour
             }
             catch (System.Exception exc)
             {
-                GameManager.LogError(exc.ToString());
+                Shinobytes.Debug.LogError(exc.ToString());
             }
         }
 
@@ -163,7 +144,7 @@ public class PlayerListItem : MonoBehaviour
 
             var playerName = TargetPlayer.PlayerNameLowerCase;
             if (TargetPlayer.CharacterIndex > 0)
-                playerName += " <color=#ff444444>" + number2strCache[TargetPlayer.CharacterIndex];
+                playerName += " <color=#ff444444>" + TargetPlayer.CharacterIndex;
 
             if (!TargetPlayer.IsUpToDate)
             {
@@ -250,7 +231,7 @@ public class PlayerListItem : MonoBehaviour
         var combatLevel = player.Stats.CombatLevel;
         if (combatLevel != lastCombatLevel)
         {
-            SetText(lblCombatLevel, "Lv:<b> " + number2strCache[combatLevel]);
+            SetText(lblCombatLevel, "Lv:<b> " + combatLevel);
             lastCombatLevel = combatLevel;
         }
 

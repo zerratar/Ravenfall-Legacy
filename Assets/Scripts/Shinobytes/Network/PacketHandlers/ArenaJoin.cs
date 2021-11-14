@@ -96,7 +96,7 @@ public class ArenaJoin : PacketHandler<TwitchPlayerInfo>
         }
         catch (Exception exc)
         {
-            GameManager.LogError(exc.ToString());
+            Shinobytes.Debug.LogError(exc);
         }
     }
 }
