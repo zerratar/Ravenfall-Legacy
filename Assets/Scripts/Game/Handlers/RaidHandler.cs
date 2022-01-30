@@ -166,7 +166,7 @@ public class RaidHandler : MonoBehaviour
             var itemDrop = gameManager.Raid.Boss.GetComponent<ItemDropHandler>();
             if (itemDrop)
             {
-                itemDrop.DropItem(player);
+                itemDrop.DropItem(player, DropType.StandardGuaranteed, "you found"); //ABBY - to use old method
             }
         }
 

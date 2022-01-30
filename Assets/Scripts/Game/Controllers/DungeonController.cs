@@ -1,8 +1,9 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Text;
 using UnityEngine;
 
 public class DungeonController : MonoBehaviour
@@ -300,15 +301,124 @@ public class DungeonController : MonoBehaviour
         player.AddExp(yieldExp, Skill.Slayer);
         player.AddExpToActiveSkillStat(yieldExp);
 
-        //if (!player.AddExpToCurrentSkill(yieldExp))
-        //    player.AddExp(yieldExp, Skill.Slayer);
-
         var type = generateMagicAttributes ? DropType.MagicRewardGuaranteed : DropType.StandardGuaranteed;
+        //get list of Items with a list of playerNames that recieved this loot
+        Dictionary<Item, List<string>> playerListByItem = new Dictionary<Item, List<string>>(); //List<PlayerController> if more details needed
         for (var i = 0; i < itemRewardCount; ++i)
         {
-            ItemDrops.DropItem(player, type);
+            var dictDroppedItem = ItemDrops.DropItem(player, type);
+            List<string> playerList;
+
+            foreach (KeyValuePair<Item, bool> item in dictDroppedItem)
+            {
+                string playerName = player.Name;
+                if (item.Value)
+                    playerName += "*"; //* denote item was equipped
+                if (playerListByItem.TryGetValue(item.Key, out playerList)) //add to list of item with a player, otherwise add player to existing item
+                {
+
+                    playerList.Add(playerName);
+                }
+                else
+                {
+                    playerList = new List<string>();
+                    playerList.Add(playerName);
+                    playerListByItem.Add(item.Key, playerList);
+                }
+            }
+
+            AlertPlayers(playerListByItem);
+
         }
     }
+
+
+
+    //Send Message Winning loot, limited by 500 text
+    //Formatted like so, sending new message if last string goes over 500 text
+    /*
+     * Victorious! The loots have gone to these players: Loot Name:- UserName1 & Username2!! Other Loot:- UserName4 & UserName7!!
+     */
+    internal void AlertPlayers(Dictionary<Item, List<string>> playerListByItem)
+    {
+        try
+        {
+            int maxMessageLenght = 500; //Set to max lenght that can be transmitted over twitch
+            string messageStart = "Victorious! The loots have gone to these players: "; //first part of the message
+            StringBuilder sb = new StringBuilder(100, maxMessageLenght);
+            int rollingCount = messageStart.Length;
+            sb.Append(messageStart);
+
+            foreach (KeyValuePair<Item, List<string>> kvItem in playerListByItem) //for each keypair
+            {
+                Item thisItem = kvItem.Key;
+                string name = name = thisItem.Name;
+
+                if (thisItem.Category == ItemCategory.StreamerToken)
+                {
+                    name = this.gameManager.RavenNest.TwitchDisplayName + " Token"; //convert streamertoken to correct name
+                }
+                name += ":- "; //add :-
+
+                if (rollingCount + name.Length >= maxMessageLenght) //check that we don't appending a message over max Lenght
+                {
+                    gameManager.RavenBot.Send(null, sb.ToString(), null); //send and clear if we do
+                    sb.Clear();
+                }
+                sb.Append(name);
+                rollingCount = sb.Length;
+
+                List<string> playerInList = kvItem.Value; //get list of players that gotten this loot
+                int totalplayerInList = playerInList.Count;
+
+                for (int i = 0; i < totalplayerInList; i++)
+                {
+                    string playerName = playerInList[i];
+                    playerName += (i + 1) == totalplayerInList ? "!! " : " & "; //append !! to last player in the list, & if not
+                    if (rollingCount + playerName.Length >= maxMessageLenght) //message check
+                    {
+                        gameManager.RavenBot.Send(null, sb.ToString().Trim(), null);
+                        sb.Clear();
+                    }
+                    sb.Append(playerName);
+                    rollingCount = sb.Length;
+                }
+            }
+            
+            if (sb.Length>0)
+                gameManager.RavenBot.Send(null, sb.ToString(), null); //I think RavenBot catches empty string, I don't think we'll get an empty char or few
+        }
+        catch (Exception ex)
+        {
+            //TODO - most likely error is over Max cap for StringBuilder, set maxMessageLenght
+        }
+
+      
+
+        
+    }
+
+    /*    internal void RewardPlayer(PlayerController player, bool generateMagicAttributes)
+        {
+            if (!ItemDrops) return;
+
+            var exp = GameMath.CombatExperience(bossCombatLevel / 5);
+
+            var yieldExp = exp / 2d;
+            player.AddExp(yieldExp, Skill.Slayer);
+            player.AddExpToActiveSkillStat(yieldExp);
+
+            //if (!player.AddExpToCurrentSkill(yieldExp))
+            //    player.AddExp(yieldExp, Skill.Slayer);
+
+            var type = generateMagicAttributes ? DropType.MagicRewardGuaranteed : DropType.StandardGuaranteed;
+            for (var i = 0; i < itemRewardCount; ++i)
+            {
+                ItemDrops.DropItem(player, type);
+            }
+
+
+        }*/
     internal void DisableContainer()
     {
         dungeonContainer.SetActive(false);
