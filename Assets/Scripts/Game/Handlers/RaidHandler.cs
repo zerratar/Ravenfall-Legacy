@@ -163,11 +163,11 @@ public class RaidHandler : MonoBehaviour
 
             ++player.Statistics.RaidsWon;
 
-            var itemDrop = gameManager.Raid.Boss.GetComponent<ItemDropHandler>();
-            if (itemDrop)
-            {
-                itemDrop.DropItem(player, DropType.StandardGuaranteed, "you found"); //ABBY - to use old method
-            }
+            //var itemDrop = gameManager.Raid.Boss.GetComponent<ItemDropHandler>();
+            //if (itemDrop)
+            //{
+            //    itemDrop.DropItem(player, DropType.StandardGuaranteed, "you found"); 
+            //} moved to ItemDropHandler
         }
 
         if (raidTimedOut)

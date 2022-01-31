@@ -540,10 +540,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         lock (mutex)
         {
-            foreach (var player in joinedPlayers)
-            {
-                Dungeon.RewardPlayer(player, yieldSpecialReward);
-            }
+            Dungeon.RewardPlayers(joinedPlayers, yieldSpecialReward);
         }
     }
 

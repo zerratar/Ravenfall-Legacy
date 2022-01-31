@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using RavenNest.Models;
+using System.Text;
 
 public class ItemDropHandler : MonoBehaviour
 {
@@ -23,15 +24,52 @@ public class ItemDropHandler : MonoBehaviour
         items = dropList.Items;
     }
 
-    public Dictionary<Item, bool> DropItem(PlayerController player,
-        DropType dropType = DropType.Standard, string messageStart = null)
+    internal void DropItemForPlayers(List<PlayerController> joinedPlayers, DropType dropType = DropType.Standard, int itemRewardCount = 1)
     {
-
         if (items == null || items.Length == 0)
+            return;
+
+        Dictionary<Item, List<string>> playerListByItem = new Dictionary<Item, List<string>>(); //List<PlayerController> if more details needed
+        List<string> playerList;
+
+        foreach (PlayerController player in joinedPlayers)
         {
-            return null; //error? - no items
+            if (player != null) continue;
+
+            for (var i = 0; i < itemRewardCount; ++i)
+            {
+                var itemRecieved = DropItem(player, dropType);
+                if (itemRecieved == null)
+                    continue;
+
+                bool? EquipIfBetter = player.PickupItem(itemRecieved);
+                if (EquipIfBetter == null)
+                    continue;
+
+                string playerName = player.Name;
+                if (EquipIfBetter ?? false)
+                    playerName += "*"; //* denote item was equipped
+
+                if (playerListByItem.TryGetValue(itemRecieved, out playerList)) //add to list of item with a player, otherwise add player to existing item
+                {
+
+                    playerList.Add(playerName);
+                }
+                else
+                {
+                    playerList = new List<string>();
+                    playerList.Add(playerName);
+                    playerListByItem.Add(itemRecieved, playerList);
+                }
+            }
         }
-        Dictionary<Item, bool> droppedItemForPlayer = new Dictionary<Item, bool>();
+
+        AlertPlayers(playerListByItem);
+    }
+
+    public Item DropItem(PlayerController player,
+        DropType dropType = DropType.Standard)
+    {
         var guaranteedDrop = dropType == DropType.MagicRewardGuaranteed || dropType == DropType.StandardGuaranteed;
 
         var dropitems = this.items.ToList();
@@ -64,85 +102,79 @@ public class ItemDropHandler : MonoBehaviour
 
             foreach (var item in droppableItems)
             {
-                //if (player.Stats.Attack.Level < item.Item.RequiredAttackLevel ||
-                //    player.Stats.Defense.Level < item.Item.RequiredDefenseLevel)
-                //    continue;
 
                 if (UnityEngine.Random.value <= item.DropChance)
                 {
-                    if (messageStart == null)
-                    {
-                        bool? EquipIfBetter = player.PickupItem(item.Item);
-                        if (EquipIfBetter == null)
-                            return droppedItemForPlayer;
+                    if (!player.IsBot)
+                        return null;
 
-                        droppedItemForPlayer.Add(item.Item, EquipIfBetter ?? false);
-                        return droppedItemForPlayer;
-                    }
-                    else
-                    {
-                        player.PickupItem(item.Item, messageStart);
-                    }
-                    
+                    return item.Item;
                 }
             }
         } while (guaranteedDrop);
 
-        return droppedItemForPlayer;
+        return null;
     }
 
-    /*public void DropItem(PlayerController player,
-        DropType dropType = DropType.Standard,
-        string messageStart = "You found")
+    //Send Message Winning loot, limited by 500 text
+    //Formatted like so, sending new message if last string goes over 500 text
+    /*
+     * Victorious! The loots have gone to these players: Loot Name:- UserName1 & Username2!! Other Loot:- UserName4 & UserName7!!
+     */
+    internal void AlertPlayers(Dictionary<Item, List<string>> playerListByItem)
     {
-        if (items == null || items.Length == 0)
+        try
         {
-            return;
-        }
-        var guaranteedDrop = dropType == DropType.MagicRewardGuaranteed || dropType == DropType.StandardGuaranteed;
+            int maxMessageLenght = 500; //Set to max lenght that can be transmitted over twitch
+            string messageStart = "Victorious! The loots have gone to these players: "; //first part of the message
+            StringBuilder sb = new StringBuilder(100, maxMessageLenght);
+            int rollingCount = messageStart.Length;
+            sb.Append(messageStart);
 
-        var dropitems = this.items.ToList();
-        var now = DateTime.UtcNow;
-        //AddTimelyMonthDrop(10, 1, "Halloween Token");
-        AddMonthDrop(dropitems, 12, 1, "Christmas Token", "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f);
-        AddMonthDrop(dropitems, 10, now.Year == 2021 ? 2 : 1, "Halloween Token", "91fc824a-0ede-4104-96d1-531cdf8d56a6", 0.05f, 0.0175f);
-
-        do
-        {
-            var allItems = gameManager.Items.GetItems();
-            var droppableItems = dropitems.Select(x =>
+            foreach (KeyValuePair<Item, List<string>> kvItem in playerListByItem) //for each keypair
             {
-                RavenNest.Models.Item item = allItems.FirstOrDefault(y =>
-                    y.Name.StartsWith(x.ItemName ?? "", StringComparison.OrdinalIgnoreCase) ||
-                    y.Name.StartsWith(x.ItemID, StringComparison.OrdinalIgnoreCase) ||
-                    y.Id.ToString().ToLower() == x.ItemID.ToLower());
+                Item thisItem = kvItem.Key;
+                string name = name = thisItem.Name;
 
-                if (item == null && Guid.TryParse(x.ItemID, out var itemId))
-                    item = allItems.FirstOrDefault(y => y.Id == itemId);
-
-                return new
+                if (thisItem.Category == ItemCategory.StreamerToken)
                 {
-                    Item = item,
-                    x.DropChance
-                };
-            })
-                .Where(x => x.Item != null)
-                .OrderByDescending(x => x.DropChance).ToList();
+                    name = this.gameManager.RavenNest.TwitchDisplayName + " Token"; //convert streamertoken to correct name
+                }
+                name += ":- "; //add :-
 
-            foreach (var item in droppableItems)
-            {
-                //if (player.Stats.Attack.Level < item.Item.RequiredAttackLevel ||
-                //    player.Stats.Defense.Level < item.Item.RequiredDefenseLevel)
-                //    continue;
-
-                if (UnityEngine.Random.value <= item.DropChance)
+                if (rollingCount + name.Length >= maxMessageLenght) //check that we don't appending a message over max Lenght
                 {
-                    player.PickupItem(item.Item, messageStart);
-                    return;
+                    gameManager.RavenBot.Send(null, sb.ToString(), null); //send and clear if we do
+                    sb.Clear();
+                }
+                sb.Append(name);
+                rollingCount = sb.Length;
+
+                List<string> playerInList = kvItem.Value; //get list of players that gotten this loot
+                int totalplayerInList = playerInList.Count;
+
+                for (int i = 0; i < totalplayerInList; i++)
+                {
+                    string playerName = playerInList[i];
+                    playerName += (i + 1) == totalplayerInList ? "!! " : " & "; //append !! to last player in the list, & if not
+                    if (rollingCount + playerName.Length >= maxMessageLenght) //message check
+                    {
+                        gameManager.RavenBot.Send(null, sb.ToString().Trim(), null);
+                        sb.Clear();
+                    }
+                    sb.Append(playerName);
+                    rollingCount = sb.Length;
                 }
             }
-        } while (guaranteedDrop);
-    }*/
+
+            if (sb.Length > 0)
+                gameManager.RavenBot.Send(null, sb.ToString(), null); //I think RavenBot catches empty string, I don't think we'll get an empty char or few
+        }
+        catch (Exception ex)
+        {
+            //TODO - most likely error is over Max cap for StringBuilder, set maxMessageLenght
+        }
+    }
 
     private void AddMonthDrop(List<ItemDrop> droplist, int monthStart, int monthsLength, string itemName, string itemId, float maxDropRate, float minDropRate)
     {
@@ -163,6 +195,8 @@ public class ItemDropHandler : MonoBehaviour
             });
         }
     }
+
+
 }
 
 public enum DropType
