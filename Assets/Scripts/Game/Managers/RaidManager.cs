@@ -155,10 +155,13 @@ public class RaidManager : MonoBehaviour, IEvent
         camera.DisableFocusCamera();
         ScheduleNextRaid();
         notifications.HideRaidInfo();
+        var itemDrop = gameManager.Raid.Boss.GetComponent<ItemDropHandler>();
 
         lock (mutex)
         {
             var playersToLeave = raidingPlayers.ToList();
+            if(itemDrop != null && bossKilled) //Only when is killed should players be rewarded
+                itemDrop.DropItemForPlayers(playersToLeave, DropType.StandardGuaranteed);
             foreach (var player in playersToLeave)
             {
                 Leave(player, bossKilled, timeout);

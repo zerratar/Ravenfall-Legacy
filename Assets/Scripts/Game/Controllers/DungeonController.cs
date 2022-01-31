@@ -1,8 +1,9 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Text;
 using UnityEngine;
 
 public class DungeonController : MonoBehaviour
@@ -290,8 +291,18 @@ public class DungeonController : MonoBehaviour
         }
     }
 
-    internal void RewardPlayer(PlayerController player, bool generateMagicAttributes)
+    internal void RewardPlayers(List<PlayerController> joinedPlayers, bool yieldSpecialReward)
     {
+        var type = yieldSpecialReward ? DropType.MagicRewardGuaranteed : DropType.StandardGuaranteed;
+        ItemDrops.DropItemForPlayers(joinedPlayers, type);
+        foreach(var player in joinedPlayers)
+        {
+            GivePlayerExp(player);
+        }    
+    }
+
+    internal void GivePlayerExp(PlayerController player)
+     {
         if (!ItemDrops) return;
 
         var exp = GameMath.CombatExperience(bossCombatLevel / 5);
@@ -300,15 +311,8 @@ public class DungeonController : MonoBehaviour
         player.AddExp(yieldExp, Skill.Slayer);
         player.AddExpToActiveSkillStat(yieldExp);
 
-        //if (!player.AddExpToCurrentSkill(yieldExp))
-        //    player.AddExp(yieldExp, Skill.Slayer);
-
-        var type = generateMagicAttributes ? DropType.MagicRewardGuaranteed : DropType.StandardGuaranteed;
-        for (var i = 0; i < itemRewardCount; ++i)
-        {
-            ItemDrops.DropItem(player, type);
-        }
-    }
+        //drops moved to ItemDropHandler
+     }
     internal void DisableContainer()
     {
         dungeonContainer.SetActive(false);
@@ -326,4 +330,6 @@ public class DungeonController : MonoBehaviour
             room.ResetRoom();
         }
     }
+
+
 }

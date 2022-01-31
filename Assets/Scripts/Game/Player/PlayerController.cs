@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using Resources = RavenNest.Models.Resources;
 using Debug = Shinobytes.Debug;
+
 public class PlayerController : MonoBehaviour, IAttackable
 {
     private static readonly ConcurrentDictionary<string, int> combatTypeArgLookup
@@ -757,23 +758,31 @@ public class PlayerController : MonoBehaviour, IAttackable
         return false;
     }
 
-    public void PickupItem(Item item, string messageStart = "You found")
+    //return boolean based on EquipIfBetter, null if IsBot or Item is null
+    public bool? PickupItem(Item item)
     {
-        if (item == null) return;
+        if (item == null) return null;
         AddItem(item);
-        var itemName = item.Name;
-        if (item.Category == ItemCategory.StreamerToken)
-        {
-            itemName = this.gameManager.RavenNest.TwitchDisplayName + " Token";
-        }
-        if (EquipIfBetter(item))
-        {
-            if (IsBot) return;
-            gameManager.RavenBot.Send(PlayerName, messageStart + " and equipped a {itemName}!", itemName);
-            return;
-        }
-        if (IsBot) return;
+        return !IsBot ? EquipIfBetter(item) : null;
+    }
+    public bool? PickupItem(Item item, string messageStart = "You found")
+     {
+         if (item == null) return null;
+         AddItem(item);
+         var itemName = item.Name;
+         if (item.Category == ItemCategory.StreamerToken)
+         {
+             itemName = this.gameManager.RavenNest.TwitchDisplayName + " Token";
+         }
+         if (EquipIfBetter(item))
+         {
+             if (IsBot) return null;
+             gameManager.RavenBot.Send(PlayerName, messageStart + " and equipped a {itemName}!", itemName);
+             return true;
+         }
+         if (IsBot) return null;
         gameManager.RavenBot.Send(PlayerName, messageStart + " a {itemName}!", itemName);
+        return false;
     }
 
     public PlayerState BuildPlayerState()
