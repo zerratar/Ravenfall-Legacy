@@ -16,6 +16,7 @@ using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 using RavenNestPlayer = RavenNest.Models.Player;
 using Debug = Shinobytes.Debug;
+
 public class GameManager : MonoBehaviour, IGameManager
 {
     [SerializeField] private GameCamera gameCamera;
@@ -54,6 +55,11 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private TavernHandler tavern;
 
     [SerializeField] private DayNightCycle dayNightCycle;
+
+
+    [SerializeField] private GameObject gameReloadUIPanel;
+
+
 
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
     = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
@@ -109,10 +115,11 @@ public class GameManager : MonoBehaviour, IGameManager
     public PlayerList PlayerList => playerList;
     public ServerNotificationManager ServerNotifications => serverNotificationManager;
 
-    //public EventTriggerSystem EventTriggerSystem => ioc.Resolve<EventTriggerSystem>();
+    private EventTriggerSystem eventTriggerSystem;
+    public EventTriggerSystem EventTriggerSystem => eventTriggerSystem ?? (eventTriggerSystem = ioc.Resolve<EventTriggerSystem>());
     public OnsenManager Onsen => onsen;
     public TavernHandler Tavern => tavern;
-
+    public Overlay Overlay => overlay;
     public bool IsSaving => saveCounter > 0;
 
     private float updateSessionInfoTime = 5f;
@@ -179,10 +186,20 @@ public class GameManager : MonoBehaviour, IGameManager
     public NameTagManager NameTags => nametagManager;
     public StreamLabels StreamLabels { get; private set; }
 
+    private Overlay overlay;
+    private bool expMultiplierUpdating;
+    private DateTime waitBeforeExpMultiplierCheck;
+
+    public bool RequireCodeForDungeonOrRaid;
+    private GameCache.LoadStateResult gameCacheStateFileLoadResult;
+    private bool stateFileStatusReported;
+
     void Awake()
     {
+        overlay = gameObject.AddComponent<Overlay>();
         if (!settings) settings = GetComponent<GameSettings>();
         this.StreamLabels = new StreamLabels(settings);
+        gameReloadUIPanel.SetActive(false);
     }
 
     // Start is called before the first frame update   
@@ -191,6 +208,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
 #if DEBUG
         Application.SetStackTraceLogType(LogType.Assert | LogType.Error | LogType.Exception | LogType.Log | LogType.Warning, StackTraceLogType.Full);
+#else 
+        Application.SetStackTraceLogType(LogType.Log | LogType.Warning, StackTraceLogType.None);
+        Application.SetStackTraceLogType(LogType.Error | LogType.Exception, StackTraceLogType.ScriptOnly);
 #endif
 
         this.SetupStreamLabels();
@@ -267,9 +287,19 @@ public class GameManager : MonoBehaviour, IGameManager
 
         musicManager.PlayBackgroundMusic();
 
-        //this.EventTriggerSystem.SourceTripped += OnSourceTripped;
+        this.EventTriggerSystem.SourceTripped += OnSourceTripped;
 
-        GameCache.Instance.LoadState();
+        gameCacheStateFileLoadResult = GameCache.Instance.LoadState();
+    }
+
+    private void OnSourceTripped(object sender, EventTriggerSystem.SysEventStats e)
+    {
+        if (!ravenNest.Authenticated || !ravenNest.Stream.IsReady)
+        {
+            return;
+        }
+
+        ravenNest.Stream.UpdatePlayerEventStatsAsync(e);
     }
 
     private void SetupStreamLabels()
@@ -378,23 +408,45 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         GameCache.Instance.IsAwaitingGameRestore = false;
 
+        gameReloadUIPanel.SetActive(true);
         if (state.Players == null || state.Players.Count == 0)
             yield break;
 
         yield return UnityEngine.Resources.UnloadUnusedAssets();
 
-        Debug.Log("Restoring game state with " + state.Players.Count + " players.");
+        Shinobytes.Debug.Log("Restoring game state with " + state.Players.Count + " players.");
 
-        foreach (var player in state.Players)
+        var waitTime = 0;
+        // if we got disconnected or something
+        while ((!RavenNest.Authenticated || !RavenNest.SessionStarted || !RavenNest.Stream.IsReady) && waitTime < 100)
         {
-            if (player.TwitchUser == null || string.IsNullOrEmpty(player.TwitchUser.UserId))
-            {
-                Debug.LogError("Unable to restore character, TwitchUser is null or missing UserId.");
-                yield return null;
-            }
-
-            yield return Players.JoinAsync(player.TwitchUser, RavenBot.ActiveClient, false, false, player.CharacterId);
+            yield return new WaitForSeconds(1);
+            waitTime++;
         }
+
+        // still not connected? retry later.
+        if (!RavenNest.Authenticated || !RavenNest.SessionStarted || !RavenNest.Stream.IsReady)
+        {
+            Shinobytes.Debug.LogWarning("No conneciton to server when trying to restore players. Retrying");
+            GameCache.Instance.SetState(state);
+            yield break;
+        }
+
+        // RestoreAsync
+
+        yield return Players.RestoreAsync(state.Players);
+        gameReloadUIPanel.SetActive(false);
+        //foreach (var player in state.Players)
+        //{
+        //    if (player.TwitchUser == null || string.IsNullOrEmpty(player.TwitchUser.UserId))
+        //    {
+        //        Debug.LogError("Unable to restore character, TwitchUser is null or missing UserId.");
+        //        yield return null;
+        //    }
+
+
+        //    yield return Players.JoinAsync(player.TwitchUser, RavenBot.ActiveClient, false, false, player.CharacterId);
+        //}
 
         //SavePlayerStates();
     }
@@ -488,7 +540,11 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (GameCache.Instance.IsAwaitingGameRestore && ravenNest.Authenticated && ravenNest.SessionStarted && ravenNest.Stream.IsReady && Items.Loaded)
+        if (GameCache.Instance.IsAwaitingGameRestore
+            && ravenNest.Authenticated
+            && ravenNest.SessionStarted
+            && ravenNest.Stream.IsReady
+            && Items.Loaded)
         {
             GameCache.Instance.IsAwaitingGameRestore = false;
             var reloadState = GameCache.Instance.GetReloadState();
@@ -497,6 +553,15 @@ public class GameManager : MonoBehaviour, IGameManager
                 StartCoroutine(RestoreGameState(reloadState.Value));
                 return;
             }
+        }
+        else if (
+             ravenNest.Authenticated &&
+             ravenNest.SessionStarted &&
+             RavenBot.IsConnected &&
+            !stateFileStatusReported && gameCacheStateFileLoadResult == GameCache.LoadStateResult.Expired)
+        {
+            RavenBot.Announce("Player restore state file has expired. No players has been added back.");
+            stateFileStatusReported = true;
         }
 
         if (uptimeSaveTimer > 0)
@@ -528,7 +593,46 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             HandleGameEvent(ge);
         }
+
+        // update exp multiplier
+        UpdateExpMultiplierAsync();
+
         return true;
+    }
+
+    private async void UpdateExpMultiplierAsync()
+    {
+        try
+        {
+            if (expMultiplierUpdating)
+            {
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            if (waitBeforeExpMultiplierCheck > now)
+            {
+                return;
+            }
+
+            var expMultiplierSinceLastUpdate = now - Twitch.LastUpdated;
+            if (expMultiplierSinceLastUpdate.TotalSeconds >= 5)
+            {
+                expMultiplierUpdating = true;
+                var multiplier = await RavenNest.Game.GetExpMultiplierAsync();
+                Twitch.SetExpMultiplier(
+                    multiplier.EventName,
+                    multiplier.Multiplier,
+                    multiplier.StartTime,
+                    multiplier.EndTime);
+            }
+        }
+        catch
+        {
+            // ignore, but wait some time before we try this again.
+            waitBeforeExpMultiplierCheck = DateTime.UtcNow.AddSeconds(10);
+        }
+        finally { expMultiplierUpdating = false; }
     }
 
     public bool UpdateExitView()
@@ -603,6 +707,12 @@ public class GameManager : MonoBehaviour, IGameManager
         if (player.Raid.InRaid)
         {
             raidManager.Leave(player);
+        }
+
+
+        if (player.Ferry.OnFerry)
+        {
+            player.Ferry.RemoveFromFerry();
         }
 
         if (notifyServer)
@@ -739,27 +849,29 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (playerInfo == null || !playerInfo.Success)
         {
+            Shinobytes.Debug.LogError("Unable to add character with id: " + characterId + " " + (playerInfo != null ? playerInfo.ErrorMessage : ""));
             return null;
         }
         return SpawnPlayer(playerInfo.Player, raidInfo: raiderInfo);
     }
 
-    internal async Task<PlayerController> AddPlayerByUserIdAsync(string userId, StreamRaidInfo raiderInfo)
-    {
-        var playerInfo = await RavenNest.PlayerJoinAsync(new PlayerJoinData
-        {
-            UserId = userId,
-            UserName = "",
-            Identifier = "1"
-        });
+    //internal async Task<PlayerController> AddPlayerByUserIdAsync(string userId, StreamRaidInfo raiderInfo)
+    //{
+    //    var playerInfo = await RavenNest.PlayerJoinAsync(new PlayerJoinData
+    //    {
+    //        UserId = userId,
+    //        UserName = "",
+    //        Identifier = "1"
+    //    });
 
-        if (playerInfo == null || !playerInfo.Success)
-        {
-            return null;
-        }
+    //    if (playerInfo == null || !playerInfo.Success)
+    //    {
 
-        return SpawnPlayer(playerInfo.Player, raidInfo: raiderInfo);
-    }
+    //        return null;
+    //    }
+
+    //    return SpawnPlayer(playerInfo.Player, raidInfo: raiderInfo);
+    //}
 
     private void OnApplicationQuit()
     {
@@ -781,9 +893,9 @@ public class GameManager : MonoBehaviour, IGameManager
         if (client == null)
         {
             client = new RavenNestClient(logger, this,
-            new ProductionRavenNestStreamSettings()
+            //new ProductionRavenNestStreamSettings()
             //new StagingRavenNestStreamSettings()
-            //new LocalRavenNestStreamSettings()
+            new LocalRavenNestStreamSettings()
             //new UnsecureLocalRavenNestStreamSettings()
             );
 
@@ -934,7 +1046,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     //    player.FailedToSave();
                     //    failedToSave.Add(player);
                     //}
-                    await Task.Delay(5);
+                    //await Task.Delay(5);
                 }
             }
             catch (Exception exc)
@@ -1042,84 +1154,93 @@ public class GameManager : MonoBehaviour, IGameManager
             SavePlayersAsync();
         }
 
-        if (Permissions.IsAdministrator && isControlDown && Input.GetKeyUp(KeyCode.C))
+        if (Permissions.IsAdministrator)
         {
-            Twitch.OnCheer(new TwitchCheer("72424639", "zerratar", "Zerratar", true, true, true, 10));
-        }
-
-        if (Permissions.IsAdministrator && isControlDown && Input.GetKeyUp(KeyCode.X))
-        {
-            Twitch.OnSubscribe(new TwitchSubscription("72424639", "zerratar", "Zerratar", null, true, true, 1, true));
-        }
-
-        if (Permissions.IsAdministrator && isControlDown && Input.GetKeyUp(KeyCode.O))
-        {
-            var elapsed = DateTime.UtcNow - dungeonStartTime;
-            if (elapsed > dungeonStartCooldown || Permissions.IsAdministrator)
+            if (isControlDown && Input.GetKeyUp(KeyCode.C))
             {
-                dungeonStartTime = DateTime.UtcNow;
-                Dungeons.ActivateDungeon();
+                Twitch.OnCheer(new TwitchCheer("72424639", "zerratar", "Zerratar", true, true, true, 10));
             }
-            else
-            {
-                var timeLeft = dungeonStartCooldown - elapsed;
-                RavenBot.Announce("You have to wait {cooldown} seconds before you can start another raid.", timeLeft.TotalSeconds.ToString());
-            }
-        }
 
-        if (Permissions.IsAdministrator && isControlDown && Input.GetKeyUp(KeyCode.R))
-        {
-            var elapsed = DateTime.UtcNow - raidStartTime;
-            if (elapsed > raidStartCooldown || Permissions.IsAdministrator)
+            if (isControlDown && Input.GetKeyUp(KeyCode.X))
             {
-                raidStartTime = DateTime.UtcNow;
-                raidManager.StartRaid("streamer");
+                Twitch.OnSubscribe(new TwitchSubscription("72424639", "zerratar", "Zerratar", null, true, true, 1, true));
             }
-            else
-            {
-                var timeLeft = raidStartCooldown - elapsed;
-                RavenBot.Announce("You have to wait {cooldown} seconds before you can start another raid.", timeLeft.TotalSeconds.ToString());
-            }
-        }
 
-        if (Permissions.IsAdministrator || Application.isEditor)
-        {
-
-            if (isControlDown && Input.GetKeyDown(KeyCode.KeypadPlus))
+            if (isControlDown && Input.GetKeyUp(KeyCode.O))
             {
-                var adminPlayer = this.Players.GetAllPlayers().FirstOrDefault(x => x.IsGameAdmin);
-                if (adminPlayer != null)
+                var elapsed = DateTime.UtcNow - dungeonStartTime;
+                if (elapsed > dungeonStartCooldown || Permissions.IsAdministrator)
                 {
-                    var st = itemManager.GetItems().FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
-                    if (st != null)
-                    {
-                        adminPlayer.PickupItem(st);
-                    }
+                    dungeonStartTime = DateTime.UtcNow;
+                    Dungeons.ActivateDungeon();
+                }
+                else
+                {
+                    var timeLeft = dungeonStartCooldown - elapsed;
+                    RavenBot.Announce("You have to wait {cooldown} seconds before you can start another raid.", timeLeft.TotalSeconds.ToString());
                 }
             }
 
-
-            if (isControlDown && Input.GetKeyDown(KeyCode.Delete))
+            if (isControlDown && Input.GetKeyUp(KeyCode.R))
             {
-                subEventManager.Reset();
+                var elapsed = DateTime.UtcNow - raidStartTime;
+                if (elapsed > raidStartCooldown || Permissions.IsAdministrator)
+                {
+                    raidStartTime = DateTime.UtcNow;
+                    raidManager.StartRaid("streamer");
+                }
+                else
+                {
+                    var timeLeft = raidStartCooldown - elapsed;
+                    RavenBot.Announce("You have to wait {cooldown} seconds before you can start another raid.", timeLeft.TotalSeconds.ToString());
+                }
             }
 
-            if (isControlDown && Input.GetKeyUp(KeyCode.A))
-            {
-                subEventManager.Activate();
-            }
-
-
-            //if (isControlDown && Input.GetKeyUp(KeyCode.C))
+            //if (isControlDown && Input.GetKeyUp(KeyCode.Y))
             //{
-            //    Twitch.OnSubscribe(new TwitchSubscription(null, null, null, null, false, false, -1, true));
+            //    RavenNest.EnqueueLoyaltyUpdate(new TwitchCheer("72424639", "zerratar", "zerratar", true, true, true, 200));
+            //}
+
+            //if (isControlDown && Input.GetKeyUp(KeyCode.T))
+            //{
+            //    RavenNest.EnqueueLoyaltyUpdate(new TwitchSubscription("72424639", "zerratar", "zerratar", "72424639", true, true, 1, false));
             //}
         }
+
+        //if (Permissions.IsAdministrator || Application.isEditor)
+        //{
+        //    //if (isControlDown && Input.GetKeyDown(KeyCode.KeypadPlus))
+        //    //{
+        //    //    var adminPlayer = this.Players.GetAllPlayers().FirstOrDefault(x => x.IsGameAdmin);
+        //    //    if (adminPlayer != null)
+        //    //    {
+        //    //        var st = itemManager.GetItems().FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
+        //    //        if (st != null)
+        //    //        {
+        //    //            adminPlayer.PickupItem(st);
+        //    //        }
+        //    //    }
+        //    //}
+        //    //if (isControlDown && Input.GetKeyDown(KeyCode.Delete))
+        //    //{
+        //    //    subEventManager.Reset();
+        //    //}
+        //    //if (isControlDown && Input.GetKeyUp(KeyCode.A))
+        //    //{
+        //    //    subEventManager.Activate();
+        //    //}
+        //    //if (isControlDown && Input.GetKeyUp(KeyCode.C))
+        //    //{
+        //    //    Twitch.OnSubscribe(new TwitchSubscription(null, null, null, null, false, false, -1, true));
+        //    //}
+        //}
     }
 
 #if DEBUG
     private void OnGUI()
     {
+        return;
+
         if (!Permissions.IsAdministrator)
         {
             return;
@@ -1133,14 +1254,23 @@ public class GameManager : MonoBehaviour, IGameManager
         Rect GetButtonRect(int i) => new Rect(Screen.width - buttonWidth - 20, buttonStartY + ((buttonHeight + buttonMarginY) * i), buttonWidth, buttonHeight);
 
         var buttonIndex = 0;
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 500 Bots"))
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 300 Bots"))
         {
-            SpawnManyBotPlayers(500);
+            SpawnManyBotPlayers(300);
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 200 Bots"))
+        {
+            SpawnManyBotPlayers(200);
         }
 
         if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 100 Bots"))
         {
             SpawnManyBotPlayers(100);
+        }
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 99 Bots"))
+        {
+            SpawnManyBotPlayers(99);
         }
 
         if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn a bot"))
@@ -1153,10 +1283,17 @@ public class GameManager : MonoBehaviour, IGameManager
             var bots = this.playerManager.GetAllBots();
             foreach (var bot in bots)
             {
-                bot.SetTask("fighting", new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", "healing" }).Random() });
+                bot.SetTask("fighting", new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic" }).Random() });
             }
         }
-
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Healing"))
+        {
+            var bots = this.playerManager.GetAllBots();
+            foreach (var bot in bots)
+            {
+                bot.SetTask("fighting", new string[] { (new string[] { "healing" }).Random() });
+            }
+        }
         if (GUI.Button(GetButtonRect(buttonIndex++), "Train Fishing"))
         {
             var bots = this.playerManager.GetAllBots();
@@ -1165,51 +1302,113 @@ public class GameManager : MonoBehaviour, IGameManager
                 bot.SetTask("fishing", new string[0]);
             }
         }
-
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Gathering"))
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Woodcutting"))
         {
             var bots = this.playerManager.GetAllBots();
             foreach (var bot in bots)
             {
-                bot.SetTask((new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting" }).Random(), new string[0]);
+                bot.SetTask("woodcutting", new string[0]);
             }
         }
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Random"))
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Mining"))
         {
             var bots = this.playerManager.GetAllBots();
             foreach (var bot in bots)
             {
-
-                var s = (new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting", "fighting" }).Random();
-                if (s == "fighting")
-                {
-                    bot.SetTask(s, new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", "healing" }).Random() });
-                }
-                else
-                {
-                    bot.SetTask(s, new string[0]);
-                }
+                bot.SetTask((new string[] { "mining" }).Random(), new string[0]);
             }
         }
 
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Healing 50/Combat 50"))
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Farming"))
         {
             var bots = this.playerManager.GetAllBots();
-            var c = bots.Count / 2;
-            var i = 0;
             foreach (var bot in bots)
             {
-                var task = "fighting";
-                var subTask = (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", }).Random();
-                if (i++ <= c)
-                {
-                    subTask = "healing";
-                }
-                bot.SetTask(task, new string[] { subTask });
+                bot.SetTask((new string[] { "farming" }).Random(), new string[0]);
             }
         }
 
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Sail 2 Kyo"))
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Train Crafting"))
+        {
+            var bots = this.playerManager.GetAllBots();
+            foreach (var bot in bots)
+            {
+                bot.SetTask((new string[] { "Crafting" }).Random(), new string[0]);
+            }
+        }
+
+        //if (GUI.Button(GetButtonRect(buttonIndex++), "Train Gathering"))
+        //{
+        //    var bots = this.playerManager.GetAllBots();
+        //    foreach (var bot in bots)
+        //    {
+        //        bot.SetTask((new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting" }).Random(), new string[0]);
+        //    }
+        //}
+
+        //if (GUI.Button(GetButtonRect(buttonIndex++), "Train Random"))
+        //{
+        //    var bots = this.playerManager.GetAllBots();
+        //    foreach (var bot in bots)
+        //    {
+
+        //        var s = (new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting", "fighting" }).Random();
+        //        if (s == "fighting")
+        //        {
+        //            bot.SetTask(s, new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", "healing" }).Random() });
+        //        }
+        //        else
+        //        {
+        //            bot.SetTask(s, new string[0]);
+        //        }
+        //    }
+        //}
+
+        //if (GUI.Button(GetButtonRect(buttonIndex++), "Healing 50/Combat 50"))
+        //{
+        //    var bots = this.playerManager.GetAllBots();
+        //    var c = bots.Count / 2;
+        //    var i = 0;
+        //    foreach (var bot in bots)
+        //    {
+        //        var task = "fighting";
+        //        var subTask = (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", }).Random();
+        //        if (i++ <= c)
+        //        {
+        //            subTask = "healing";
+        //        }
+        //        bot.SetTask(task, new string[] { subTask });
+        //    }
+        //}
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Away"))
+        {
+            var bots = this.playerManager.GetAllBots();
+
+            var island = Islands.Find("Away");
+
+            foreach (var bot in bots)
+            {
+                //bot.Ferry.Embark(island);
+                bot.Teleporter.Teleport(island.SpawnPosition);
+            }
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Ironhill"))
+        {
+            var bots = this.playerManager.GetAllBots();
+
+            var island = Islands.Find("Ironhill");
+
+            foreach (var bot in bots)
+            {
+                //bot.Ferry.Embark(island);
+                bot.Teleporter.Teleport(island.SpawnPosition);
+            }
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Kyo"))
         {
             var bots = this.playerManager.GetAllBots();
 
@@ -1217,11 +1416,12 @@ public class GameManager : MonoBehaviour, IGameManager
 
             foreach (var bot in bots)
             {
-                bot.Ferry.Embark(island);
+                //bot.Ferry.Embark(island);
+                bot.Teleporter.Teleport(island.SpawnPosition);
             }
         }
 
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Sail 2 Heim"))
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Heim"))
         {
             var bots = this.playerManager.GetAllBots();
 
@@ -1229,52 +1429,53 @@ public class GameManager : MonoBehaviour, IGameManager
 
             foreach (var bot in bots)
             {
-                bot.Ferry.Embark(island);
+                //bot.Ferry.Embark(island);
+                bot.Teleporter.Teleport(island.SpawnPosition);
             }
         }
 
 
-        if (GUI.Button(GetButtonRect(buttonIndex++), dungeonManager.Active ? "Stop Dungeon" : "Start Dungeon"))
-        {
-            dungeonManager.ToggleDungeon();
-        }
+        //if (GUI.Button(GetButtonRect(buttonIndex++), dungeonManager.Active ? "Stop Dungeon" : "Start Dungeon"))
+        //{
+        //    dungeonManager.ToggleDungeon();
+        //}
 
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Start Raid"))
-        {
-            raidManager.StartRaid("admin");
-        }
-
-
-        if (this.raidManager.Started)
-        {
-            if (GUI.Button(GetButtonRect(buttonIndex++), "Join Raid"))
-            {
-                var bots = this.playerManager.GetAllBots();
-                foreach (var bot in bots)
-                {
-                    Raid.Join(bot);
-                }
-            }
-        }
-
-        if (this.dungeonManager.Active)
-        {
-            if (GUI.Button(GetButtonRect(buttonIndex++), "Join Dungeon"))
-            {
-                var bots = this.playerManager.GetAllBots();
-                foreach (var bot in bots)
-                {
-                    dungeonManager.Join(bot);
-                }
-            }
-        }
+        //if (GUI.Button(GetButtonRect(buttonIndex++), "Start Raid"))
+        //{
+        //    raidManager.StartRaid("admin");
+        //}
 
 
+        //if (this.raidManager.Started)
+        //{
+        //    if (GUI.Button(GetButtonRect(buttonIndex++), "Join Raid"))
+        //    {
+        //        var bots = this.playerManager.GetAllBots();
+        //        foreach (var bot in bots)
+        //        {
+        //            Raid.Join(bot);
+        //        }
+        //    }
+        //}
 
-        if (GUI.Button(GetButtonRect(buttonIndex++), "Start Stop 100 Dungeons"))
-        {
-            StartCoroutine(ToggleManyDungeons(100));
-        }
+        //if (this.dungeonManager.Active)
+        //{
+        //    if (GUI.Button(GetButtonRect(buttonIndex++), "Join Dungeon"))
+        //    {
+        //        var bots = this.playerManager.GetAllBots();
+        //        foreach (var bot in bots)
+        //        {
+        //            dungeonManager.Join(bot);
+        //        }
+        //    }
+        //}
+
+
+
+        //if (GUI.Button(GetButtonRect(buttonIndex++), "Start Stop 100 Dungeons"))
+        //{
+        //    StartCoroutine(ToggleManyDungeons(100));
+        //}
 
 
         lastButtonIndex = buttonIndex;
@@ -1292,7 +1493,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void UpdatePlayerKickQueue()
     {
-        if (playerKickQueue.Count <= 0 || !Arena || Arena.Started)
+        if (playerKickQueue.Count <= 0)// || !Arena || Arena.Started)
         {
             return;
         }
@@ -1306,6 +1507,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         RemovePlayer(player);
     }
+
     private void UpdateExpBoostTimer()
     {
         if (!boostTimer) return;
@@ -1352,40 +1554,41 @@ public class GameManager : MonoBehaviour, IGameManager
     }
     internal void UpdateServerTime(DateTime timeUtc)
     {
-        //if (Permissions.IsAdministrator)
-        //    return;
+        if (Permissions.IsAdministrator)
+            return;
 
-        //var f0 = lastServerTimeUpdateFloat;
-        //var dt0 = lastServerTimeUpdateDateTime;
-        //var st0 = serverTime;
-        //var now = DateTime.UtcNow;
+        var f0 = lastServerTimeUpdateFloat;
+        var dt0 = lastServerTimeUpdateDateTime;
+        var st0 = serverTime;
+        var now = DateTime.UtcNow;
 
-        //var f1 = lastServerTimeUpdateFloat = Time.realtimeSinceStartup;
-        //var dt1 = lastServerTimeUpdateDateTime = DateTime.UtcNow;
-        //var st1 = serverTime = timeUtc;
-        //var margin = 3600;
+        var f1 = lastServerTimeUpdateFloat = Time.realtimeSinceStartup;
+        var dt1 = lastServerTimeUpdateDateTime = DateTime.UtcNow;
+        var st1 = serverTime = timeUtc;
+        var margin = 3600;
 
-        //if (f0 > 0.0001f && dt0 != DateTime.MinValue && st0 != DateTime.MinValue)
-        //{
-        //    var nowDelta = now - timeUtc;
-        //    if (nowDelta > TimeSpan.FromSeconds(margin))
-        //    {
-        //        var fd = f1 - f0;
-        //        var dtd = dt1 - dt0;
-        //        var std = st1 - st0;
+        if (f0 > 0.0001f && dt0 != DateTime.MinValue && st0 != DateTime.MinValue)
+        {
+            var nowDelta = now - timeUtc;
+            if (nowDelta > TimeSpan.FromSeconds(margin))
+            {
+                var fd = f1 - f0;
+                var dtd = dt1 - dt0;
+                var std = st1 - st0;
 
-        //        var us = (long)fd;
-        //        var cs = (long)dtd.TotalSeconds;
-        //        var ss = (long)std.TotalSeconds;
+                var us = (long)fd;
+                var cs = (long)dtd.TotalSeconds;
+                var ss = (long)std.TotalSeconds;
 
-        //        if (Math.Abs(cs - ss) > margin || Math.Abs(us - cs) > margin || Math.Abs(us - ss) > margin)
-        //        {
-        //            RavenNest.Stream.SyncTimeAsync(nowDelta, now, timeUtc);
-        //            RavenNest.Desynchronized = true;
-        //            // Things will not be saved properly.
-        //        }
-        //    }
-        //}
+                if (Math.Abs(cs - ss) > margin || Math.Abs(us - cs) > margin || Math.Abs(us - ss) > margin)
+                {
+                    RavenNest.Stream.SyncTimeAsync(nowDelta, now, timeUtc);
+                    //RavenNest.Desynchronized = true;
+
+                    // Things will not be saved properly.
+                }
+            }
+        }
 
     }
 }

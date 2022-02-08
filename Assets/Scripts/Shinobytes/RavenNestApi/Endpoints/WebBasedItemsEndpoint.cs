@@ -24,6 +24,15 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<ItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
         }
 
+        public Task<RedeemableItemCollection> GetRedeemablesAsync()
+        {
+
+            return request.Create()
+                .Method("redeemable")
+                .Build()
+                .SendAsync<RedeemableItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
+        }
+
         public Task<bool> AddItemAsync(Item item)
         {
             return request.Create().Build()
@@ -40,7 +49,7 @@ namespace RavenNest.SDK.Endpoints
         {
             return request.Create()
                 .AddParameter(item.ToString())
-                .Build()                
+                .Build()
                 .SendAsync<bool>(ApiRequestTarget.Items, ApiRequestType.Remove);
         }
     }

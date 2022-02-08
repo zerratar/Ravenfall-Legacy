@@ -26,6 +26,13 @@ public class Craft : PacketHandler<TradeItemRequest>
             return;
         }
 
+        if (string.IsNullOrEmpty(data.ItemQuery))
+        {
+            // Player perhaps intended to train crafting.
+            player.SetTask("crafting", new string[0]);
+            return;
+        }
+
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
 
@@ -35,7 +42,7 @@ public class Craft : PacketHandler<TradeItemRequest>
 
         if (queriedItem != null && queriedItem.Item != null)
         {
-            item = queriedItem.Item;
+            item = queriedItem.Item.Item;
             amountToCraft = Math.Min(MaxCraftingCount, queriedItem.Amount);
         }
         else
@@ -97,49 +104,51 @@ public class Craft : PacketHandler<TradeItemRequest>
 
     private (ItemCategory, string) GetCraftingTarget(string categoryAndType)
     {
-        var types = categoryAndType.Split(' ');
-        var categories = Enum.GetNames(typeof(CraftableCategory));
-
-        for (var i = 0; i < types.Length; ++i)
+        if (!string.IsNullOrEmpty(categoryAndType))
         {
-            if (categories.Any(x => x.Equals(types[i], StringComparison.InvariantCultureIgnoreCase)))
+            var types = categoryAndType.Split(' ');
+            var categories = Enum.GetNames(typeof(CraftableCategory));
+
+            for (var i = 0; i < types.Length; ++i)
             {
-                if (Enum.TryParse<CraftableCategory>(types[i], true, out var item))
+                if (categories.Any(x => x.Equals(types[i], StringComparison.InvariantCultureIgnoreCase)))
                 {
-                    var category = ItemCategory.Weapon;
-                    switch ((CraftableCategory)item)
+                    if (Enum.TryParse<CraftableCategory>(types[i], true, out var item))
                     {
-                        case CraftableCategory.Weapon:
-                            category = ItemCategory.Weapon;
-                            break;
+                        var category = ItemCategory.Weapon;
+                        switch ((CraftableCategory)item)
+                        {
+                            case CraftableCategory.Weapon:
+                                category = ItemCategory.Weapon;
+                                break;
 
-                        case CraftableCategory.Armor:
-                        case CraftableCategory.Helm:
-                        case CraftableCategory.Chest:
-                        case CraftableCategory.Gloves:
-                        case CraftableCategory.Leggings:
-                        case CraftableCategory.Boots:
-                            category = ItemCategory.Armor;
-                            break;
+                            case CraftableCategory.Armor:
+                            case CraftableCategory.Helm:
+                            case CraftableCategory.Chest:
+                            case CraftableCategory.Gloves:
+                            case CraftableCategory.Leggings:
+                            case CraftableCategory.Boots:
+                                category = ItemCategory.Armor;
+                                break;
 
-                        case CraftableCategory.Ring:
-                            category = ItemCategory.Ring;
-                            break;
+                            case CraftableCategory.Ring:
+                                category = ItemCategory.Ring;
+                                break;
 
-                        case CraftableCategory.Amulet:
-                            category = ItemCategory.Amulet;
-                            break;
+                            case CraftableCategory.Amulet:
+                                category = ItemCategory.Amulet;
+                                break;
+                        }
+
+                        return (category, categoryAndType);
                     }
-
-                    return (category, categoryAndType);
-                }
-                else if (Enum.TryParse<ItemCategory>(categoryAndType, true, out var weapon))
-                {
-                    return (weapon, "");
+                    else if (Enum.TryParse<ItemCategory>(categoryAndType, true, out var weapon))
+                    {
+                        return (weapon, "");
+                    }
                 }
             }
         }
-
         return (ItemCategory.Potion, null);
     }
 
@@ -187,69 +196,91 @@ public class Craft : PacketHandler<TradeItemRequest>
     }
 
     private async System.Threading.Tasks.Task<bool> CraftItemAsync(
-        TradeItemRequest data, 
-        GameClient client, 
-        PlayerController player, 
-        Item item, 
+        TradeItemRequest data,
+        GameClient client,
+        PlayerController player,
+        Item item,
         int amountToCraft)
     {
-        var craftResult = await Game.RavenNest.Players.CraftItemsAsync(player.UserId, item.Id, amountToCraft);
-        if (craftResult.Status == CraftItemResultStatus.InsufficientResources)
+        try
         {
-            InsufficientResources(player, data, client, item, amountToCraft);
-            return false;
-        }
-
-        if (craftResult.Status == CraftItemResultStatus.LevelTooLow)
-        {
-            client.SendMessage(data.Player.Username, "Your crafting level is too low. You need to be level {reqCraftingLevel}. You are currently level {craftingLevel}.",
-                item.RequiredCraftingLevel.ToString(), player.Stats.Crafting.Level.ToString());
-            return false;
-        }
-
-        if (craftResult.Status == CraftItemResultStatus.Success || craftResult.Status == CraftItemResultStatus.PartialSuccess)
-        {
-            amountToCraft = craftResult.Value;
-            for (var i = 0; i < amountToCraft; ++i)
+            var craftResult = await Game.RavenNest.Players.CraftItemsAsync(player.UserId, item.Id, amountToCraft);
+            if (craftResult != null)
             {
-                player.AddItem(item, false);
-            }
-
-            foreach (var req in item.CraftingRequirements)
-            {
-                var amount = req.Amount * amountToCraft;
-                var stacks = player.Inventory.GetInventoryItems(req.ResourceItemId);
-                foreach (GameInventoryItem stack in stacks)
+                if (craftResult.Status == CraftItemResultStatus.InsufficientResources)
                 {
-                    if (stack.Amount < amount)
+                    InsufficientResources(player, data, client, item, amountToCraft);
+                    return false;
+                }
+
+                if (craftResult.Status == CraftItemResultStatus.LevelTooLow)
+                {
+                    client.SendMessage(data.Player.Username, "Your crafting level is too low. You need to be level {reqCraftingLevel}. You are currently level {craftingLevel}.",
+                        item.RequiredCraftingLevel.ToString(), player.Stats.Crafting.Level.ToString());
+                    return false;
+                }
+
+                if (craftResult.Status == CraftItemResultStatus.Success || craftResult.Status == CraftItemResultStatus.PartialSuccess)
+                {
+                    amountToCraft = craftResult.Value;
+                    for (var i = 0; i < amountToCraft; ++i)
                     {
-                        var toRemove = amount - stack.Amount;
-                        player.Inventory.Remove(stack.Item, toRemove);
-                        amount -= (int)toRemove;
+                        player.Inventory.AddToBackpack(item);
                     }
 
-                    if (stack.Amount >= amount)
+                    foreach (var req in item.CraftingRequirements)
                     {
-                        player.Inventory.Remove(stack.Item, amount);
+                        var amount = req.Amount * amountToCraft;
+                        var stacks = player.Inventory.GetInventoryItems(req.ResourceItemId);
+                        foreach (GameInventoryItem stack in stacks)
+                        {
+                            if (stack.Amount < amount)
+                            {
+                                var toRemove = amount - stack.Amount;
+                                player.Inventory.Remove(stack.Item, toRemove);
+                                amount -= (int)toRemove;
+                            }
+
+                            if (stack.Amount >= amount)
+                            {
+                                player.Inventory.Remove(stack.Item, amount);
+                            }
+                        }
                     }
+
+                    if (item.WoodCost > 0) player.RemoveResource(Resource.Woodcutting, item.WoodCost * amountToCraft);
+                    if (item.OreCost > 0) player.RemoveResource(Resource.Mining, item.OreCost * amountToCraft);
+
+                    if (amountToCraft > 1)
+                    {
+                        var msgAddS = item.Name.EndsWith("s") ? "" : "s";
+                        client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_MANY, amountToCraft.ToString(), item.Name + msgAddS);
+                    }
+                    else client.SendMessage(data.Player.Username, Localization.MSG_CRAFT, item.Name);
+                    return true;
                 }
             }
 
-            if (item.WoodCost > 0) player.RemoveResource(Resource.Woodcutting, item.WoodCost * amountToCraft);
-            if (item.OreCost > 0) player.RemoveResource(Resource.Mining, item.OreCost * amountToCraft);
+            if (craftResult == null)
+            {
+                client.SendMessage(data.Player.Username, "Crafting failed. Server did not respond. Try again later");
+                return false;
+            }
 
-            if (amountToCraft > 1) client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_MANY, amountToCraft.ToString(), item.Name);
-            else client.SendMessage(data.Player.Username, Localization.MSG_CRAFT, item.Name);
+            if (craftResult.Status == CraftItemResultStatus.Error || craftResult.Status == CraftItemResultStatus.UncraftableItem || craftResult.Status == CraftItemResultStatus.UnknownItem)
+            {
+                client.SendMessage(data.Player.Username, "Server returned an error when trying to craft the item: {serverResponseResult}", craftResult.Status.ToString());
+                return false;
+            }
+
             return true;
         }
-
-        if (craftResult.Status == CraftItemResultStatus.Error || craftResult.Status == CraftItemResultStatus.UncraftableItem || craftResult.Status == CraftItemResultStatus.UnknownItem)
+        catch (System.Exception exc)
         {
-            client.SendMessage(data.Player.Username, "Server returned an error when trying to craft the item: {serverResponseResult}", craftResult.Status.ToString());
+            client.SendMessage(data.Player.Username, "Crafting failed. Server did not respond. Try again later");
+            Shinobytes.Debug.LogError("Error when trying to craft an item: " + exc);
             return false;
         }
-
-        return true;
     }
 
     public enum CraftableCategory

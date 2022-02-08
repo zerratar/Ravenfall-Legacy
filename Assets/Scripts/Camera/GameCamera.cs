@@ -256,8 +256,8 @@ public class GameCamera : MonoBehaviour
 
     public void ObservePlayer(PlayerController player)
     {
-        if (forcedFreeCamera) return;
         if (!player) return;
+        if (forcedFreeCamera) return;
         var subMultiplier = player.IsSubscriber ? 3f : 1f;
         ObservePlayer(player, ObserverJumpTimer * subMultiplier);
     }

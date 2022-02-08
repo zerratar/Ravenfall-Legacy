@@ -10,6 +10,8 @@ public class ItemController : MonoBehaviour
     private GameObject model;
 
     public Guid Id;
+    public Guid ItemId;
+
     public string Name;
     public int Level;
     public int WeaponAim;
@@ -41,7 +43,8 @@ public class ItemController : MonoBehaviour
 
     [SerializeField] private float pickupRadius = 3f;
 
-    private RavenNest.Models.Item definition;
+    public GameInventoryItem Definition;
+
     private DropEventManager dropEventManager;
     private bool pickable;
 
@@ -51,14 +54,14 @@ public class ItemController : MonoBehaviour
         var stats2 = item.GetTotalStats();
         return stats1 - stats2;
     }
-    public void FixedUpdate()
-    {
-        if (Time.frameCount % 30 == 0 && transform.localPosition.x != 0)
-        {
-            transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.identity;
-        }
-    }
+    //public void FixedUpdate()
+    //{
+    //    if (Time.frameCount % 30 == 0 && transform.localPosition.x != 0)
+    //    {
+    //        transform.localPosition = Vector3.zero;
+    //        transform.localRotation = Quaternion.identity;
+    //    }
+    //}
     internal void EnablePickup(DropEventManager dropEventManager)
     {
         this.dropEventManager = dropEventManager;
@@ -70,49 +73,55 @@ public class ItemController : MonoBehaviour
 
     public ItemController Create(RavenNest.Models.Item item, bool useMalePrefab)
     {
-        definition = item;
+        return Create(new GameInventoryItem(null, new InventoryItem { Id = Guid.NewGuid(), ItemId = item.Id }, item), useMalePrefab);
+    }
 
-        gameObject.name = item.Name;
+    public ItemController Create(GameInventoryItem item, bool useMalePrefab)
+    {
+        Definition = item;
+
+        gameObject.name = item.InventoryItem.Name ?? item.Item.Name;
 
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;
 
-        Id = item.Id;
-        Name = item.Name;
-        Level = item.Level;
+        Id = item.InventoryItem.Id;
+        ItemId = item.Item.Id;
+        Name = item.InventoryItem.Name ?? item.Item.Name;
+        Level = item.Item.Level;
 
-        WeaponAim = item.WeaponAim;
-        WeaponPower = item.WeaponPower;
-        ArmorPower = item.ArmorPower;
+        WeaponAim = item.Item.WeaponAim;
+        WeaponPower = item.Item.WeaponPower;
+        ArmorPower = item.Item.ArmorPower;
 
-        MagicAim = item.MagicAim;
-        MagicPower = item.MagicPower;
+        MagicAim = item.Item.MagicAim;
+        MagicPower = item.Item.MagicPower;
 
-        RangedPower = item.RangedPower;
-        RangedAim = item.RangedAim;
+        RangedPower = item.Item.RangedPower;
+        RangedAim = item.Item.RangedAim;
 
-        RequiredAttackLevel = item.RequiredAttackLevel;
-        RequiredDefenseLevel = item.RequiredDefenseLevel;
-        RequiredRangedLevel = item.RequiredRangedLevel;
-        RequiredMagicLevel = item.RequiredMagicLevel;
-        RequiredSlayerLevel = item.RequiredSlayerLevel;
+        RequiredAttackLevel = item.Item.RequiredAttackLevel;
+        RequiredDefenseLevel = item.Item.RequiredDefenseLevel;
+        RequiredRangedLevel = item.Item.RequiredRangedLevel;
+        RequiredMagicLevel = item.Item.RequiredMagicLevel;
+        RequiredSlayerLevel = item.Item.RequiredSlayerLevel;
 
-        Category = item.Category;
-        Type = item.Type;
-        Material = item.Material;
+        Category = item.Item.Category;
+        Type = item.Item.Type;
+        Material = item.Item.Material;
 
 
-        if (!string.IsNullOrEmpty(item.FemaleModelId))
+        if (!string.IsNullOrEmpty(item.Item.FemaleModelId))
         {
-            if (item.FemaleModelId.Contains(","))
+            if (item.Item.FemaleModelId.Contains(","))
             {
-                var indices = item.FemaleModelId.Split(',');
+                var indices = item.Item.FemaleModelId.Split(',');
                 FemaleModelID = int.Parse(indices[0]);
                 AdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
             }
             else
             {
-                FemaleModelID = int.Parse(item.FemaleModelId);
+                FemaleModelID = int.Parse(item.Item.FemaleModelId);
             }
         }
         else
@@ -120,17 +129,17 @@ public class ItemController : MonoBehaviour
             FemaleModelID = -1;
         }
 
-        if (!string.IsNullOrEmpty(item.MaleModelId))
+        if (!string.IsNullOrEmpty(item.Item.MaleModelId))
         {
-            if (item.MaleModelId.Contains(","))
+            if (item.Item.MaleModelId.Contains(","))
             {
-                var indices = item.MaleModelId.Split(',');
+                var indices = item.Item.MaleModelId.Split(',');
                 MaleModelID = int.Parse(indices[0]);
                 AdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
             }
             else
             {
-                MaleModelID = int.Parse(item.MaleModelId);
+                MaleModelID = int.Parse(item.Item.MaleModelId);
             }
         }
         else
@@ -138,13 +147,10 @@ public class ItemController : MonoBehaviour
             MaleModelID = -1;
         }
 
-        GenericPrefabPath = item.GenericPrefab;
-        MalePrefabPath = item.MalePrefab;
-        FemalePrefabPath = item.FemalePrefab;
-        IsGenericModel = item.IsGenericModel.GetValueOrDefault() || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
-
-        transform.localPosition = Vector3.zero;
-        transform.localRotation = Quaternion.identity;
+        GenericPrefabPath = item.Item.GenericPrefab;
+        MalePrefabPath = item.Item.MalePrefab;
+        FemalePrefabPath = item.Item.FemalePrefab;
+        IsGenericModel = item.Item.IsGenericModel.GetValueOrDefault() || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
 
         if (!prefab)
         {
@@ -166,8 +172,11 @@ public class ItemController : MonoBehaviour
                 return this;
             }
 
-            model = Instantiate(prefab, transform) as GameObject;
+            model = Instantiate(prefab, transform) as GameObject;            
         }
+
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
 
         return this;
     }
@@ -187,7 +196,7 @@ public class ItemController : MonoBehaviour
 
         if (!dropEventManager) return;
 
-        if (player.PickupEventItem(Id))
+        if (player.PickupItemById(ItemId))
         {
             dropEventManager.RemoveDropItem(this);
             gameObject.SetActive(false);

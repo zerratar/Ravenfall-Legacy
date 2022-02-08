@@ -28,6 +28,7 @@
     public const string MSG_BIT_CHEER_LEFT = "We only need {bitsLeft} more bits for increasing the multiplier timer!";
     public const string MSG_SUB_TOKEN_REWARD = "You were rewarded {amount} {tokenName}(s)!";
 
+    public const string MSG_RAID_START_CODE = "A level {raidLevel} raid boss has appeared! Help fight him by typing '!raid code', find the code on stream.";
     public const string MSG_RAID_START = "A level {raidLevel} raid boss has appeared! Help fight him by typing !raid";
     public const string MSG_RAID_START_ERROR = "Raid cannot be started right now.";
 
@@ -91,7 +92,7 @@
     public const string MSG_STREAMRAID_WAR_NO_PLAYERS = "{raiderName} raided with intent of war but we don't have any players. FeelsBadMan";
 
     public const string MSG_JOIN_WELCOME = "Welcome to the game!";
-    public const string MSG_JOIN_FAILED = "Failed create or find a player with the username {player}";
+    public const string MSG_JOIN_FAILED = "Unable to join the game right now, server may be down and not responding.";
     public const string MSG_JOIN_FAILED_ALREADY_PLAYING = "You're already playing!";
 
     public const string MSG_REQ_RAID = "Requesting {raidType} on {streamer}s stream!";
@@ -108,7 +109,7 @@
     public const string MSG_CRAFT_ITEM_NOT_FOUND_MEAN = "Could not find an item matching the query '{query}', did you mean '{itemName}'?";
 
     public const string MSG_CRAFT = "You crafted a {itemName}!";
-    public const string MSG_CRAFT_MANY = "You crafted x{amount} {itemName}s!";
+    public const string MSG_CRAFT_MANY = "You crafted x{amount} {itemName}!";
 
     public const string MSG_GIFT = "You gifted {giftCount}x {itemName} to {player}!";
     public const string MSG_GIFT_PLAYER_NOT_FOUND = "Could not find an item or player matching the query '{query}'";
@@ -117,6 +118,18 @@
 
     public const string MSG_EQUIPPED = "You have equipped {itemName}.";
     public const string MSG_EQUIPPED_ALL = "You have equipped all of your best items.";
+    public const string MSG_ENCHANT_MISSING_ARGS = "You must specify an item to enchant. Use !enchant (item name)";
+    public const string MSG_ENCHANT_CLAN_SKILL = "Enchanting is a clan skill. Join a clan to be able to use it!";
+    public const string MSG_ENCHANT_UNKNOWN_ERROR = "Enchanting failed. Unknown reason. Please try again later.";
+    public const string MSG_ENCHANT_COOLDOWN = "You have to wait {timeLeft} before you can try to enchant something again.";
+    public const string MSG_ENCHANT_FAILED = "You failed to enchant {itemName}. You may try again in {cooldown}";
+    public const string MSG_ENCHANT_NOT_ENCHANTABLE = "{itemName} can't be enchanted. Only weapon, armor, amulet and rings can be enchanted.";
+    public const string MSG_ENCHANT_SUCCESS = "You have successfully enchanted {oldItemName} into {newItemName}. You must now wait {cooldown} before you can enchant something again.";
+    public const string MSG_ENCHANT_REPLACE = "You have successfully replaced the enchantment on {newItemName}. You must now wait {cooldown} before you can enchant something again.";
+
+    public const string MSG_ENCHANT_WARN_REPLACE = "{itemName} is already enchanted with {stats}. If you want to replace the enchantment, use !enchant replace {itemName}";
+
+    public const string MSG_ENCHANT_STATS = "{enchantmentStats} was added to {enchantedItemName}";
 
     public const string MSG_UNEQUIPPED = "You have unequipped {itemName}.";
     public const string MSG_UNEQUIPPED_ALL = "You have unequipped all of your items.";
@@ -168,6 +181,8 @@
     public const string MSG_SELL_ITEM_NOT_FOUND = "Could not find an item matching the name: {query}";
     public const string MSG_SELL_ITEM_NOT_OWNED = "You do not have any {itemName} in your inventory.";
     public const string MSG_SELL_MARKETPLACE_ERROR = "Error accessing marketplace right now.";
+    public const string MSG_ITEM_SOULBOUND = "{itemName} is soulbound and cannot be sold to the marketplace or gifted to another player.";
+
     public const string MSG_SELL = "{itemAmount}x {itemName} was put in the marketplace listing for {itemPrice} per item.";
 
     public const string MSG_VALUE_ITEM = "{itemName} can be sold for {vendorPrice} in the !vendor";

@@ -89,26 +89,22 @@ public class FightingTask : ChunkTask
         var attackers = player.GetAttackers();
         try
         {
-            if (attackers.Count > 0)
+            for (var i = 0; i < attackers.Count; ++i)
             {
-                var e = attackers.GetEnumerator();
-                while (e.MoveNext())
+                var attacker = attackers[i];
+                if (attacker == null || !attacker.Transform)
                 {
-                    var attacker = e.Current;
-                    if (attacker == null || !attacker.Transform)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    var enemyController = attacker as EnemyController;
-                    if (enemyController == null || !enemyController)
-                    {
-                        continue;
-                    }
-                    if (instanceLookup.TryGetValue(enemyController.GetInstanceID(), out var existingTarget) && enemyController && !enemyController.Stats.IsDead)
-                    {
-                        return enemyController;
-                    }
+                var enemyController = attacker as EnemyController;
+                if (enemyController == null || !enemyController)
+                {
+                    continue;
+                }
+                if (instanceLookup.TryGetValue(enemyController.GetInstanceID(), out var existingTarget) && enemyController && !enemyController.Stats.IsDead)
+                {
+                    return enemyController;
                 }
             }
 
@@ -119,7 +115,7 @@ public class FightingTask : ChunkTask
                 try
                 {
                     var x = enemies[i];
-                    if (x == null || !x || x.gameObject == null || x.Stats.Health.CurrentValue <= 0)
+                    if (x.Removed || x.Stats.Health.CurrentValue <= 0)
                         continue;
 
                     var dist = Vector3.Distance(x.Position, player.Position) + UnityEngine.Random.value;

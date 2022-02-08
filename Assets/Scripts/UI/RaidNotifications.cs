@@ -9,12 +9,15 @@ public class RaidNotifications : MonoBehaviour
     [SerializeField] private GameObject raidBossHud;
     [SerializeField] private GameProgressBar raidBossHealth;
     [SerializeField] private TextMeshProUGUI raidTimer;
-    [SerializeField] private Image comeJoinImage;
+    [SerializeField] private TextMeshProUGUI lblComeJoinText;
 
     [SerializeField] private TextMeshProUGUI lbLRaidBossLevel;
 
     private AudioSource audioSource;
     private string raidSound = "raid.mp3";
+    private string joinStringFormat;
+    private Vector3 raidTimerStartPos;
+
     public float volume
     {
         get => audioSource.volume;
@@ -23,10 +26,13 @@ public class RaidNotifications : MonoBehaviour
 
     private void Start()
     {
+
+        this.joinStringFormat = lblComeJoinText.text;
         if (!raidTimer) raidTimer = GetComponentInChildren<TextMeshProUGUI>();
-        if (!comeJoinImage) comeJoinImage = raidBossHud.transform.Find("Image").GetComponent<Image>();
+        //if (!comeJoinImage) comeJoinImage = raidBossHud.transform.Find("Image").GetComponent<Image>();
         if (!audioSource) audioSource = GetComponent<AudioSource>();
 
+        raidTimerStartPos = raidTimer.rectTransform.localPosition;
         audioSource.volume = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_RaidHornVolume, 1f);
 
         HideRaidInfo();
@@ -36,24 +42,25 @@ public class RaidNotifications : MonoBehaviour
     {
         if (raidBossAppeared) raidBossAppeared.SetActive(false);
         if (raidBossHealth) raidBossHud.SetActive(false);
-        
+
         // This happens after the raid. but it should be fine
         ExternalResources.ReloadIfModifiedAsync(raidSound);
     }
 
     public void HideRaidJoinInfo()
     {
-        comeJoinImage.enabled = false;
+        lblComeJoinText.enabled = false;
         raidTimer.rectTransform.localPosition = new Vector3(0, 15f);
     }
 
-    private void ShowRaidJoinInfo()
+    private void ShowRaidJoinInfo(string code)
     {
-        comeJoinImage.enabled = true;
-        raidTimer.rectTransform.localPosition = new Vector3(0, 120);
+        lblComeJoinText.enabled = true;
+        lblComeJoinText.text = String.Format(joinStringFormat, code).Replace("  ", " ");
+        raidTimer.rectTransform.localPosition = raidTimerStartPos;
     }
 
-    public void ShowRaidBossAppeared()
+    public void ShowRaidBossAppeared(string code)
     {
         if (!raidBossAppeared)
         {
@@ -71,7 +78,7 @@ public class RaidNotifications : MonoBehaviour
         raidBossAppeared.SetActive(true);
         raidBossHud.SetActive(true);
 
-        ShowRaidJoinInfo();
+        ShowRaidJoinInfo(code);
 
         var autoHide = raidBossAppeared.GetComponent<AutoHideUI>();
         if (autoHide)

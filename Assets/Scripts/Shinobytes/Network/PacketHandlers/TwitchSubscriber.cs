@@ -11,6 +11,7 @@ public class TwitchSubscriber : PacketHandler<TwitchSubscription>
 
     public override void Handle(TwitchSubscription data, GameClient client)
     {
+        Game.RavenNest.EnqueueLoyaltyUpdate(data);
         Game.Twitch.OnSubscribe(data);
     }
 }

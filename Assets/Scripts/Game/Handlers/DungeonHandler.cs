@@ -26,6 +26,11 @@ public class DungeonHandler : MonoBehaviour
 
     private void Update()
     {
+        if (!Overlay.IsGame)
+        {
+            return;
+        }
+
         if (waitForDungeon > 0f)
         {
             waitForDungeon -= Time.deltaTime;
@@ -149,6 +154,7 @@ public class DungeonHandler : MonoBehaviour
 
         if (this.player.Ferry.OnFerry)
         {
+            var wasCaptainOfFerry = this.player.Ferry.IsCaptain;
             if (player.Ferry.Destination)
             {
                 previousPosition = player.Ferry.Destination.SpawnPosition;
@@ -198,10 +204,9 @@ public class DungeonHandler : MonoBehaviour
         this.player.SetTaskArguments(previousTaskArgs);
 
         var currentTask = player.GetTask();
-
-        if (player.Chunk == null && currentTask != TaskType.None)
+        if (currentTask != TaskType.None)
         {
-            player.SetChunk(currentTask);
+            player.GotoClosest(currentTask);
         }
     }
 

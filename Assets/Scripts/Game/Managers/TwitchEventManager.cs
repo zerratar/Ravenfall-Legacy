@@ -18,7 +18,26 @@ public class TwitchEventManager : MonoBehaviour
         ? (float)(EndTime - CurrentBoost.StartTime).TotalSeconds
         : 1800f;
 
-    public DateTime EndTime => CurrentBoost.EndTime.Add(CurrentBoost.BoostTime);
+    public DateTime EndTime
+    {
+        get
+        {
+            try
+            {
+                if (CurrentBoost.BoostTime <= TimeSpan.Zero)
+                    return CurrentBoost.EndTime;
+
+                if (CurrentBoost.EndTime == DateTime.MinValue)
+                    return DateTime.MinValue;
+
+                return CurrentBoost.EndTime.Add(CurrentBoost.BoostTime);
+            }
+            catch
+            {
+                return DateTime.UtcNow.Subtract(TimeSpan.FromHours(1));
+            }
+        }
+    }
 
     private int BitsForMultiplier = 100;
 
@@ -27,6 +46,9 @@ public class TwitchEventManager : MonoBehaviour
     private float MaxObserveTime = 30f;
     private float announceTimer;
     private int limitOverride = -1;
+
+    public DateTime LastUpdated;
+
     public int ExpMultiplierLimit => limitOverride > 0 ? limitOverride : gameManager.Permissions.ExpMultiplierLimit;
     public TimeSpan MaxBoostTime => TimeSpan.FromHours(TierExpMultis[gameManager.Permissions.SubscriberTier] - 1f);
 
@@ -91,7 +113,10 @@ public class TwitchEventManager : MonoBehaviour
                 announceTimer -= Time.deltaTime;
                 if (announceTimer <= 0f)
                 {
-                    AnnounceExpMultiplierEnding(timeLeft);
+                    if (timeLeft > 0)
+                    {
+                        AnnounceExpMultiplierEnding(timeLeft);
+                    }
                     announceTimer = timeLeft < 30F ? 10F : 30f;
                 }
             }
@@ -129,6 +154,11 @@ public class TwitchEventManager : MonoBehaviour
 
     public void Reset()
     {
+        if (CurrentBoost.Multiplier != 0)
+        {
+            Shinobytes.Debug.Log("Global Exp Multiplier have been reset.");
+        }
+
         CurrentBoost.BoostTime = TimeSpan.Zero;
         CurrentBoost.EndTime = DateTime.MinValue;
         CurrentBoost.StartTime = DateTime.MinValue;
@@ -140,14 +170,22 @@ public class TwitchEventManager : MonoBehaviour
 
     private void SaveState()
     {
-        PlayerPrefs.SetFloat(TwitchSubscriberBoost.KEY_MULTIPLIER, CurrentBoost.Multiplier);
-        PlayerPrefs.SetFloat(TwitchSubscriberBoost.KEY_ELAPSED, CurrentBoost.Elapsed);
-        PlayerPrefs.SetString(TwitchSubscriberBoost.KEY_LASTSUB, CurrentBoost.LastSubscriber);
-        PlayerPrefs.SetString(TwitchSubscriberBoost.KEY_LASTCHEER, CurrentBoost.LastCheerer);
-        PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_LASTCHEER_AMOUNT, CurrentBoost.LastCheerAmount);
-        PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_CHEER_POT, CurrentBoost.CheerPot);
-        PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_ACTIVE, CurrentBoost.Active ? 1 : 0);
-        PlayerPrefs.SetString(TwitchSubscriberBoost.KEY_BOOST_TIME, ((long)(CurrentBoost.BoostTime.TotalSeconds)).ToString());
+        try
+        {
+            PlayerPrefs.SetFloat(TwitchSubscriberBoost.KEY_MULTIPLIER, CurrentBoost.Multiplier);
+            PlayerPrefs.SetFloat(TwitchSubscriberBoost.KEY_ELAPSED, CurrentBoost.Elapsed);
+            PlayerPrefs.SetString(TwitchSubscriberBoost.KEY_LASTSUB, CurrentBoost.LastSubscriber);
+            PlayerPrefs.SetString(TwitchSubscriberBoost.KEY_LASTCHEER, CurrentBoost.LastCheerer);
+            PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_LASTCHEER_AMOUNT, CurrentBoost.LastCheerAmount);
+            PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_CHEER_POT, CurrentBoost.CheerPot);
+            PlayerPrefs.SetInt(TwitchSubscriberBoost.KEY_ACTIVE, CurrentBoost.Active ? 1 : 0);
+            PlayerPrefs.SetString(TwitchSubscriberBoost.KEY_BOOST_TIME, ((long)(CurrentBoost.BoostTime.TotalSeconds)).ToString());
+        }
+        catch
+        {
+            // In case it was called from the wrong thread.
+        }
+
         saveTimer = 5f;
     }
 
@@ -168,11 +206,7 @@ public class TwitchEventManager : MonoBehaviour
             }
 
             player.Cheer();
-            player.AddBitCheer(cheer.Bits);
-        }
-        else
-        {
-            gameManager.RavenNest.Stream.SendPlayerLoyaltyData(cheer);
+            //player.AddBitCheer(cheer.Bits);
         }
 
         AddCheer(cheer, CurrentBoost.Active);
@@ -180,7 +214,6 @@ public class TwitchEventManager : MonoBehaviour
 
     public void OnSubscribe(TwitchSubscription subscribe)
     {
-        PlayerController receiver = null;
         var player = gameManager.Players.GetPlayerByUserId(subscribe.UserId);
         if (!player) player = gameManager.Players.GetPlayerByName(subscribe.UserName);
 
@@ -188,7 +221,7 @@ public class TwitchEventManager : MonoBehaviour
 
         if (subscribe.ReceiverUserId != null)
         {
-            receiver = gameManager.Players.GetPlayerByUserId(subscribe.ReceiverUserId);
+            var receiver = gameManager.Players.GetPlayerByUserId(subscribe.ReceiverUserId);
             if (receiver)
             {
                 receiver.IsSubscriber = true;
@@ -203,7 +236,6 @@ public class TwitchEventManager : MonoBehaviour
                 player.IsSubscriber = true;
             }
 
-            player.AddSubscribe(subscribe.ReceiverUserId != null);
             gameManager.Camera.ObservePlayer(player, MaxObserveTime);
         }
 
@@ -218,11 +250,6 @@ public class TwitchEventManager : MonoBehaviour
         foreach (var plr in activePlayers)
         {
             plr.Cheer();
-        }
-
-        if (!player)
-        {
-            gameManager.RavenNest.Stream.SendPlayerLoyaltyData(subscribe);
         }
 
         AddSubscriber(subscribe, CurrentBoost.Active);
@@ -304,8 +331,7 @@ public class TwitchEventManager : MonoBehaviour
         CurrentBoost.LastSubscriber = sender;
         CurrentBoost.Elapsed = 0f;
         CurrentBoost.Active = true;
-        CurrentBoost.Multiplier = Mathf.Min(
-            CurrentBoost.Multiplier + amount, ExpMultiplierLimit);
+        CurrentBoost.Multiplier = Mathf.Min(CurrentBoost.Multiplier + amount, ExpMultiplierLimit);
         var added = CurrentBoost.Multiplier - oldMultiplier;
         if (added > 0)
             gameManager.RavenBot?.Send(sender, Localization.MSG_MULTIPLIER_INCREASE, added, CurrentBoost.Multiplier);
@@ -320,6 +346,7 @@ public class TwitchEventManager : MonoBehaviour
         DateTime startTime,
         DateTime endTime)
     {
+        LastUpdated = DateTime.UtcNow;
         var multi = Mathf.Min(multiplier, ExpMultiplierLimit);
         if (multi <= 1)
         {

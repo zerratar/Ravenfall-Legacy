@@ -23,7 +23,7 @@ public class EnemyPool : ComponentPool<EnemyController>
         // Do any reset necessary as well or preperations before we can use this enemy.
         // then activate the component
         leasedEnemies.Add(component);
-
+        component.ResetState();
         component.Lock();
 
         return component;
@@ -36,6 +36,7 @@ public class EnemyPool : ComponentPool<EnemyController>
 
         component.Lock();
         component.transform.localPosition = Vector3.zero;
+        component.ResetState();
         component.gameObject.SetActive(false);
 
         return component;

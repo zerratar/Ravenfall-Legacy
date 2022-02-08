@@ -71,7 +71,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     [SerializeField] private GameObject[] availableMonsterMeshes;
 
-    private IPlayerAppearance playerAppearance;
+    private SyntyPlayerAppearance playerAppearance;
     private float actionTimer = 0f;
     private float timeExpTimer = 1f;
     private Skill lastTrainedSkill = Skill.Attack;
@@ -125,10 +125,10 @@ public class PlayerController : MonoBehaviour, IAttackable
     public bool IsSubscriber;
     public bool IsVip;
 
-    public int BitsCheered;
-    public int GiftedSubs;
-    public int TotalBitsCheered;
-    public int TotalGiftedSubs;
+    //public int BitsCheered;
+    //public int GiftedSubs;
+    //public int TotalBitsCheered;
+    //public int TotalGiftedSubs;
     public TwitchPlayerInfo TwitchUser { get; private set; }
     public int CharacterIndex { get; private set; }
 
@@ -151,9 +151,9 @@ public class PlayerController : MonoBehaviour, IAttackable
     private Vector3 NextDestination;
     private float monsterTimer;
     private float scaleTimer;
-    private float loyaltyUpdateTimer = -1f;
+    //private float loyaltyUpdateTimer = -1f;
 
-    private readonly ConcurrentQueue<Guid> queuedItemAdd = new ConcurrentQueue<Guid>();
+    private readonly ConcurrentQueue<GameInventoryItem> queuedItemAdd = new ConcurrentQueue<GameInventoryItem>();
 
     public Transform Target
     {
@@ -243,7 +243,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             _island = value;
         }
     }
-    public IPlayerAppearance Appearance => playerAppearance
+    public SyntyPlayerAppearance Appearance => playerAppearance
         ?? (playerAppearance = GetComponent<SyntyPlayerAppearance>());
     public StreamRaidHandler StreamRaid => streamRaidHandler;
     public RaidHandler Raid => raidHandler;
@@ -268,6 +268,8 @@ public class PlayerController : MonoBehaviour, IAttackable
     public readonly ConcurrentQueue<AsyncPlayerRequest> RequestQueue = new ConcurrentQueue<AsyncPlayerRequest>();
 
     private long createdRequests = 0;
+    private bool hasGameManager;
+
     public void UpdateRequestQueue()
     {
         // every 10th request is a "save everything"
@@ -335,25 +337,25 @@ public class PlayerController : MonoBehaviour, IAttackable
         return AttackRange;
     }
 
-    internal void AddBitCheer(int bits)
-    {
-        this.BitsCheered += bits;
-        this.TotalBitsCheered += bits;
-        gameManager.RavenNest.SendPlayerLoyaltyData(this);
-    }
+    //internal void AddBitCheer(int bits)
+    //{
+    //    this.BitsCheered += bits;
+    //    this.TotalBitsCheered += bits;
+    //    //gameManager.RavenNest.SendPlayerLoyaltyData(this);
+    //}
 
-    internal void AddSubscribe(bool gifted)
-    {
-        if (gifted)
-        {
-            this.GiftedSubs++;
-            this.TotalGiftedSubs++;
-        }
-        // in case of multiple gifted subs at the same time. we delay this 
-        // by 500ms for each time an added subscription
-        // and send it as a bulk. instead of having it send 1 per sub
-        loyaltyUpdateTimer = 0.5f;
-    }
+    //internal void AddSubscribe(bool gifted)
+    //{
+    //    if (gifted)
+    //    {
+    //        this.GiftedSubs++;
+    //        this.TotalGiftedSubs++;
+    //    }
+    //    // in case of multiple gifted subs at the same time. we delay this 
+    //    // by 500ms for each time an added subscription
+    //    // and send it as a bulk. instead of having it send 1 per sub
+    //    //loyaltyUpdateTimer = 0.5f;
+    //}
 
     public bool HasTaskArgument(string args) => taskArguments.Contains(args);
     internal void SetScale(float scale)
@@ -367,9 +369,9 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     internal bool TurnIntoMonster(float time)
     {
-        if (monsterTimer > 0 || Appearance.MonsterMesh)
+        if (monsterTimer > 0 || Appearance.FullBodySkinMesh)
         {
-            ResetMonster();
+            ResetFullBodySkin();
         }
 
         monsterTimer = time;
@@ -377,11 +379,23 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (availableMonsterMeshes == null || availableMonsterMeshes.Length == 0)
             return false;
 
+        return ApplyPlayerFullBodySkin(availableMonsterMeshes.Random());
+    }
+
+    // We could add things like "Turn into werewolf during fullmoon" if you have a specific treat
+    // on your charater. And it would limit the player in certain combat related skills. but give boost to different things.
+
+    internal bool ApplyPlayerFullBodySkin(GameObject meshSkinObject)
+    {
+        if (Appearance.FullBodySkinMesh)
+        {
+            ResetFullBodySkin();
+        }
+
         Equipment.HideEquipments();
+        Appearance.SetFullBodySkinMesh(meshSkinObject);
 
-        Appearance.SetMonsterMesh(availableMonsterMeshes.Random());
-
-        var monsterMesh = Appearance.MonsterMesh;
+        var monsterMesh = Appearance.FullBodySkinMesh;
         if (!monsterMesh)
             return false;
 
@@ -410,6 +424,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     /// </summary>
     public void OnRemoved()
     {
+        Removed = true;
         if (healthBarManager) healthBarManager.Remove(this);
         gameManager.NameTags.Remove(this);
     }
@@ -452,7 +467,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!duelHandler) duelHandler = GetComponent<DuelHandler>();
         if (!combatHandler) combatHandler = GetComponent<CombatHandler>();
 
-        playerAppearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
+        playerAppearance = GetComponent<SyntyPlayerAppearance>();
 
         if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
         if (healthBarManager) healthBar = healthBarManager.Add(this);
@@ -470,8 +485,11 @@ public class PlayerController : MonoBehaviour, IAttackable
     void LateUpdate()
     {
         if (GameCache.Instance.IsAwaitingGameRestore) return;
-        var euler = transform.rotation.eulerAngles;
-        transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
+        if (Overlay.IsGame)
+        {
+            var euler = transform.rotation.eulerAngles;
+            transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
+        }
     }
 
     void OnDrawGizmosSelected()
@@ -525,19 +543,24 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     void Update()
     {
+        if (IsBot && !Overlay.IsGame)
+        {
+            return;
+        }
+
         PositionInternal = this.transform.position;
         if (GameCache.Instance.IsAwaitingGameRestore) return;
         var deltaTime = Time.deltaTime;
 
-        if (loyaltyUpdateTimer > 0 && !IsBot)
-        {
-            loyaltyUpdateTimer -= deltaTime;
-            if (loyaltyUpdateTimer <= 0)
-            {
-                loyaltyUpdateTimer = -1f;
-                gameManager.RavenNest.SendPlayerLoyaltyData(this);
-            }
-        }
+        //if (loyaltyUpdateTimer > 0 && !IsBot)
+        //{
+        //    loyaltyUpdateTimer -= deltaTime;
+        //    if (loyaltyUpdateTimer <= 0)
+        //    {
+        //        loyaltyUpdateTimer = -1f;
+        //        gameManager.RavenNest.SendPlayerLoyaltyData(this);
+        //    }
+        //}
 
         if (this.Ferry.OnFerry || (this.PositionInternal - lastPosition).magnitude < 0.01f)
         {
@@ -590,15 +613,19 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (monsterTimer > 0)
         {
             monsterTimer -= deltaTime;
-            var visibleMesh = this.Appearance.GetCombinedMesh();
-            if (visibleMesh)
-                visibleMesh.gameObject.SetActive(false);
+
+            HideCombinedMesh();
 
             if (monsterTimer <= 0)
             {
-                ResetMonster();
+                ResetFullBodySkin();
             }
         }
+
+        //if (fullbodyPlayerSkinActive)
+        //{
+        //    HideCombinedMesh();
+        //}
 
         UpdateHealthRegeneration();
 
@@ -619,8 +646,13 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (Controlled)
             return;
 
-        //if (NextDestination != Vector3.zero)
-        //    GotoPosition(NextDestination);
+        //if (agent && agent.enabled && agent.pathPending)
+        //{
+        //    var actualSpeed = agent.speed * Time.deltaTime * 0.25f;
+        //    this.transform.LookAt(agent.destination);
+        //    var direction = (agent.destination - transform.position).normalized;
+        //    this.transform.position += direction * actualSpeed;
+        //}
 
         if (streamRaidHandler.InWar) return;
         if (ferryHandler.OnFerry || ferryHandler.Active) return;
@@ -639,8 +671,19 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (Chunk != null)
         {
             DoTask();
-            AddTimeExp();
         }
+
+        //if (currentTask != TaskType.None)
+        //{
+        //    AddTimeExp();
+        //}
+    }
+
+    private void HideCombinedMesh()
+    {
+        var visibleMesh = this.Appearance.GetCombinedMesh();
+        if (visibleMesh)
+            visibleMesh.gameObject.SetActive(false);
     }
 
     private void HandleRested()
@@ -653,9 +696,9 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    private void ResetMonster()
+    private void ResetFullBodySkin()
     {
-        Appearance.DestroyMonsterMesh();
+        Appearance.DestroyFullBodySkinMesh();
         animator = gameObject.GetComponent<Animator>();
         Animations.ResetActiveAnimator();
     }
@@ -687,7 +730,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         targetDropItem = availableDropItems
             .OrderBy(x => Vector3.Distance(x.transform.position, PositionInternal))
-            .FirstOrDefault(x => !pickedItems.Contains(x.Id));
+            .FirstOrDefault(x => !pickedItems.Contains(x.ItemId));
 
         if (targetDropItem == null)
         {
@@ -699,7 +742,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         try
         {
-            if (this.gameObject == null || this.transform == null)
+            if (Removed)
             {
                 // player removed.
                 return;
@@ -746,7 +789,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    public bool PickupEventItem(Guid id)
+    public bool PickupItemById(Guid id)
     {
         if (pickedItems.Add(id))
         {
@@ -757,23 +800,34 @@ public class PlayerController : MonoBehaviour, IAttackable
         return false;
     }
 
-    public void PickupItem(Item item, string messageStart = "You found")
+
+    /// <summary>
+    ///     Adds an item to the player inventory and updates the server with newly added item.
+    /// </summary>
+    /// <param name="item">Item to add</param>
+    /// <param name="alertInChat">Whether or not player should be alerted in Twitch Chat</param>
+    /// <returns></returns>
+    public GameInventoryItem PickupItem(Item item, bool alertInChat = true)
     {
-        if (item == null) return;
-        AddItem(item);
-        var itemName = item.Name;
-        if (item.Category == ItemCategory.StreamerToken)
+        if (item == null) return null;
+
+        var itemInstance = Inventory.AddToBackpack(item);
+        if (itemInstance == null) return null;
+
+        if (!IsBot)
         {
-            itemName = this.gameManager.RavenNest.TwitchDisplayName + " Token";
+            EnqueueItemAdd(itemInstance);
         }
-        if (EquipIfBetter(item))
+
+        var wasEquipped = EquipIfBetter(itemInstance);
+        if (alertInChat && !IsBot)
         {
-            if (IsBot) return;
-            gameManager.RavenBot.Send(PlayerName, messageStart + " and equipped a {itemName}!", itemName);
-            return;
+            gameManager.RavenBot.Send(PlayerName, wasEquipped
+                ? "You found and equipped a {itemName}!"
+                : "You found a {itemName}!", item.Name);
         }
-        if (IsBot) return;
-        gameManager.RavenBot.Send(PlayerName, messageStart + " a {itemName}!", itemName);
+
+        return itemInstance;
     }
 
     public PlayerState BuildPlayerState()
@@ -796,9 +850,9 @@ public class PlayerController : MonoBehaviour, IAttackable
         state.Experience = Stats.ExperienceList;
         state.Level = Stats.LevelList;
 
-        if (Chunk != null)
+        if (currentTask != TaskType.None)
         {
-            state.CurrentTask = Chunk.ChunkType + ":" + taskArguments.FirstOrDefault();
+            state.CurrentTask = currentTask + ":" + taskArguments.FirstOrDefault();
         }
 
         return state;
@@ -837,13 +891,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         if (!animator) animator = GetComponentInChildren<Animator>();
-        if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
-        if (!chunkManager)
-        {
-            Shinobytes.Debug.LogError($"No ChunkManager found!");
-            return;
-        }
 
+        chunkManager = gameManager.Chunks;
         Island = gameManager.Islands.FindPlayerIsland(this);
         Chunk = chunkManager.GetChunkOfType(this, type);
 
@@ -852,53 +901,61 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
-        if (Chunk == null)
+        try
         {
-            var chunks = chunkManager.GetChunksOfType(Island, type);
-            if (chunks.Count > 0)
+            if (Chunk == null)
             {
-                if (IsBot)
+                var chunks = chunkManager.GetChunksOfType(Island, type);
+                if (chunks.Count > 0)
                 {
+                    if (IsBot)
+                    {
+                        return;
+                    }
+
+                    var lowestReq = chunks.OrderBy(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel()).FirstOrDefault();
+                    var reqCombat = lowestReq.GetRequiredCombatLevel();
+                    var reqSkill = lowestReq.GetRequiredSkillLevel();
+
+                    var arg0 = "";
+                    var arg1 = "";
+                    var msg = "";
+
+                    if (reqCombat > 1 && reqSkill > 1)
+                    {
+                        msg = "You need to be at least combat level {reqCombat} and skill level {reqSkill} to train this skill on this island.";
+                        arg0 = reqCombat.ToString();
+                        arg1 = reqSkill.ToString();
+                    }
+                    else if (reqCombat > 1)
+                    {
+                        msg = "You need to be at least combat level {reqCombat} to train this skill on this island.";
+                        arg0 = reqCombat.ToString();
+                    }
+                    else if (reqSkill > 1)
+                    {
+                        msg = "You need to have at least level {reqSkill} {type} to train this skill on this island.";
+                        arg0 = reqSkill.ToString();
+                        arg1 = type.ToString();
+                    }
+
+
+                    gameManager.RavenBot.Send(PlayerName, msg, arg0, arg1);
                     return;
                 }
 
-                var lowestReq = chunks.OrderBy(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel()).FirstOrDefault();
-                var reqCombat = lowestReq.GetRequiredCombatLevel();
-                var reqSkill = lowestReq.GetRequiredSkillLevel();
-
-                var arg0 = "";
-                var arg1 = "";
-                var msg = "";
-
-                if (reqCombat > 1 && reqSkill > 1)
-                {
-                    msg = "You need to be at least combat level {reqCombat} and skill level {reqSkill} to train this skill on this island.";
-                    arg0 = reqCombat.ToString();
-                    arg1 = reqSkill.ToString();
-                }
-                else if (reqCombat > 1)
-                {
-                    msg = "You need to be at least combat level {reqCombat} to train this skill on this island.";
-                    arg0 = reqCombat.ToString();
-                }
-                else if (reqSkill > 1)
-                {
-                    msg = "You need to have at least level {reqSkill} {type} to train this skill on this island.";
-                    arg0 = reqSkill.ToString();
-                    arg1 = type.ToString();
-                }
-
-
-                gameManager.RavenBot.Send(PlayerName, msg, arg0, arg1);
+                gameManager.RavenBot.Send(PlayerName, "You cannot train {type} here.", type);
+                Shinobytes.Debug.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
                 return;
             }
-
-            gameManager.RavenBot.Send(PlayerName, "You cannot train {type} here.", type);
-            Shinobytes.Debug.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
-            return;
+        }
+        finally
+        {
+            playerAnimations.ResetAnimationStates();
+            taskTarget = null;
+            Lock();
         }
 
-        playerAnimations.ResetAnimationStates();
         GotoPosition(Chunk.CenterPointWorld);
     }
 
@@ -965,11 +1022,11 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         SkillType = GetSkillTypeFromArgs(taskArgs);
 
+        UpdateTrainingFlags();
+
         // in case we change what we train.
         // we don't want shield armor to be added to magic, ranged or healing.
         Inventory.UpdateCombatStats();
-
-        UpdateTrainingFlags();
     }
 
     internal void UpdateTrainingFlags()
@@ -989,7 +1046,8 @@ public class PlayerController : MonoBehaviour, IAttackable
             || HasTaskArgument("crafting") || HasTaskArgument("farming");
     }
 
-    public TaskType GetTask() => Chunk?.ChunkType ?? TaskType.None;
+    private TaskType currentTask;
+    public TaskType GetTask() => currentTask;//Chunk?.ChunkType ?? TaskType.None;
     public HashSet<string> GetTaskArguments() => taskArguments;
 
     internal async Task<GameInventoryItem> CycleEquippedPetAsync()
@@ -999,20 +1057,20 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (pets.Count == 0) return null;
         var petToEquip = pets.GroupBy(x => x.Item.Id)
             .OrderBy(x => UnityEngine.Random.value)
-            .FirstOrDefault(x => x.Key != equippedPet?.Id)?
+            .FirstOrDefault(x => x.Key != equippedPet?.ItemId)?
             .FirstOrDefault();
 
         if (petToEquip == null)
         {
             var pet = pets.FirstOrDefault();
-            Inventory.Equip(pet.Item);
+            Inventory.Equip(pet);
             return pet;
         }
         if (!IsBot)
         {
             await gameManager.RavenNest.Players.EquipItemAsync(UserId, petToEquip.Item.Id);
         }
-        Inventory.Equip(petToEquip.Item);
+        Inventory.Equip(petToEquip);
         return petToEquip;
     }
 
@@ -1034,12 +1092,12 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    internal async Task UnequipAsync(Item item)
+    internal async Task UnequipAsync(GameInventoryItem item)
     {
         Inventory.Unequip(item);
         if (!IsBot)
         {
-            await gameManager.RavenNest.Players.UnequipItemAsync(UserId, item.Id);
+            await gameManager.RavenNest.Players.UnequipItemInstanceAsync(UserId, item.InstanceId);
         }
     }
 
@@ -1066,12 +1124,12 @@ public class PlayerController : MonoBehaviour, IAttackable
 
                 if (shield != null)
                 {
-                    Inventory.Equip(shield.Item);
+                    Inventory.Equip(shield);
                 }
             }
         }
 
-        var equipped = Inventory.Equip(item);
+        var equipped = Inventory.Equip(item.Id);
         if (!equipped)
         {
             var requirement = "You require level ";
@@ -1115,13 +1173,15 @@ public class PlayerController : MonoBehaviour, IAttackable
     public void SetPlayer(
         RavenNest.Models.Player player,
         TwitchPlayerInfo twitchUser,
-        StreamRaidInfo raidInfo)
+        StreamRaidInfo raidInfo,
+        GameManager gm)
     {
         gameObject.name = player.Name;
 
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        gameManager = gm;
+        hasGameManager = !!gameManager;
 
-        clanHandler.SetClan(player.Clan, player.ClanRole);
+        clanHandler.SetClan(player.Clan, player.ClanRole, gameManager, gameManager.PlayerLogo);
 
         Definition = player;
 
@@ -1138,6 +1198,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             this.IsBot = true;
             this.Bot = this.gameObject.AddComponent<BotPlayerController>();
         }
+
         PatreonTier = player.PatreonTier;
         PlayerName = player.Name;
         PlayerNameLowerCase = player.Name.ToLower();
@@ -1162,46 +1223,59 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         UpdateTwitchUser(twitchUser);
 
-        gameManager.NameTags.Add(this);
-
-        Stats.Health.Reset();
-        //Inventory.EquipBestItems();
-        Equipment.HideEquipments(); // don't show sword on join
-
         //if (Raider != null)
         if (player.State != null)
         {
-            if (!string.IsNullOrEmpty(player.State.Island) && player.State.X != null)
+            if (hasGameManager)
             {
-                if (player.State.InDungeon)
+                this.Teleporter.islandManager = this.gameManager.Islands;
+                this.Teleporter.player = this;
+
+                if (!string.IsNullOrEmpty(player.State.Island) && player.State.X != null)
                 {
-                    var targetIsland = gameManager.Islands.Find(player.State.Island);
-                    if (targetIsland)
+                    if (player.State.InDungeon)
                     {
-                        this.Teleporter.Teleport(targetIsland.SpawnPosition);
+                        var targetIsland = gameManager.Islands.Find(player.State.Island);
+                        if (targetIsland)
+                        {
+                            this.Teleporter.Teleport(targetIsland.SpawnPosition);
+                        }
                     }
+                    else
+                    {
+                        var newPosition = new Vector3(
+                            (float)player.State.X.Value,
+                            (float)player.State.Y.Value,
+                            (float)player.State.Z.Value);
+
+                        var targetIsland = gameManager.Islands.FindIsland(newPosition);
+                        if (targetIsland)
+                        {
+                            this.Teleporter.Teleport(newPosition);
+                        }
+                    }
+                }
+                // could it be? are we on the ferry??
+                // ... Let scheck?
+
+                if (string.IsNullOrEmpty(player.State.Island) && (
+                    Mathf.Abs((float)player.State.X.GetValueOrDefault()) > 0.01 ||
+                    Mathf.Abs((float)player.State.Y.GetValueOrDefault()) > 0.01 ||
+                    Mathf.Abs((float)player.State.Z.GetValueOrDefault()) > 0.01))
+                {
+                    // most likely on the ferry, bub!
+                    Ferry.AddPlayerToFerry();
                 }
                 else
                 {
-                    var newPosition = new Vector3(
-                        (float)player.State.X.Value,
-                        (float)player.State.Y.Value,
-                        (float)player.State.Z.Value);
+                    Island = gameManager.Islands.FindPlayerIsland(this);
 
-                    var targetIsland = gameManager.Islands.FindIsland(newPosition);
-                    if (targetIsland)
+                    if (player.State.InOnsen && onsenHandler)
                     {
-                        this.Teleporter.Teleport(newPosition);
+                        // Attach player to the onsen...                
+                        Game.Onsen.Join(this);
                     }
                 }
-            }
-
-            Island = gameManager.Islands.FindPlayerIsland(this);
-
-            if (player.State.InOnsen && onsenHandler)
-            {
-                // Attach player to the onsen...                
-                Game.Onsen.Join(this);
             }
 
             if (!string.IsNullOrEmpty(player.State.Task))
@@ -1210,29 +1284,39 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
+        if (gameManager)
+            gameManager.NameTags.Add(this);
+
+        Stats.Health.Reset();
+        //Inventory.EquipBestItems();
+        Equipment.HideEquipments(); // don't show sword on join
+
+
+        var itemManager = gameManager?.Items;
+        if (itemManager == null)
+        {
+            itemManager = FindObjectOfType<ItemManager>();
+        }
+
+        this.Appearance.player = this;
+        this.Appearance.gameManager = gameManager;
         Appearance.SetAppearance(player.Appearance, () =>
         {
-            Inventory.Create(player.InventoryItems, gameManager.Items.GetItems());
-
+            Inventory.Create(player.InventoryItems, itemManager.GetItems());
             hasBeenInitialized = true;
         });
+    }
+
+    public void SetTask(TaskType task, string[] arg)
+    {
+        this.currentTask = task;
+        this.SetTaskArguments(arg);
     }
 
     public void SetTask(string targetTaskName, string[] args)
     {
         if (string.IsNullOrEmpty(targetTaskName))
         {
-            return;
-        }
-
-        if (Ferry && Ferry.Active)
-        {
-            Ferry.Disembark();
-        }
-
-        if (Game.Arena && Game.Arena.HasJoined(this) && !Game.Arena.Leave(this))
-        {
-            Shinobytes.Debug.Log(PlayerName + " task cannot be done as you're inside the arena.");
             return;
         }
 
@@ -1252,16 +1336,29 @@ public class PlayerController : MonoBehaviour, IAttackable
             ? new[] { type.ToString() }
             : args;
 
+        if (Overlay.IsOverlay || Duel.InDuel)
+        {
+            currentTask = type;
+            SetTaskArguments(taskArgs);
+            return;
+        }
+
+        if (Ferry && Ferry.Active)
+        {
+            Ferry.Disembark();
+        }
+
+        if (Game.Arena && Game.Arena.HasJoined(this) && !Game.Arena.Leave(this))
+        {
+            Shinobytes.Debug.Log(PlayerName + " task cannot be done as you're inside the arena.");
+            return;
+        }
+
         if (Onsen.InOnsen)
         {
             Game.Onsen.Leave(this);
         }
 
-        if (Duel.InDuel)
-        {
-            SetTaskArguments(taskArgs);
-            return;
-        }
 
         if (Raid.InRaid && !IsCombatTask(taskArgs))
         {
@@ -1278,6 +1375,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
+        currentTask = type;
         SetTaskArguments(taskArgs);
 
         if (Raid.InRaid || Dungeon.InDungeon)
@@ -1324,9 +1422,9 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (fishingSpot.Fish(this))
         {
-            AddExp(fishingSpot.Experience, Skill.Fishing);
-            var amount = fishingSpot.Resource * Mathf.FloorToInt(Stats.Fishing.CurrentValue / 10f);
-            Statistics.TotalFishCollected += (int)amount;
+            AddExp(Skill.Fishing, GetExpFactor());
+            //var amount = fishingSpot.Resource * Mathf.FloorToInt(Stats.Fishing.CurrentValue / 10f);
+            //Statistics.TotalFishCollected += (int)amount;
         }
 
         return true;
@@ -1349,7 +1447,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (craftingStation.Craft(this))
         {
-            AddExp(craftingStation.GetExperience(this), Skill.Cooking);
+            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            AddExp(Skill.Cooking, factor);//, craftingStation.GetExperience(this));
         }
 
         return true;
@@ -1374,7 +1473,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         LookAt(craftingStation.transform);
         if (craftingStation.Craft(this))
         {
-            AddExp(craftingStation.GetExperience(this), Skill.Crafting);
+            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            AddExp(Skill.Crafting, factor);//, craftingStation.GetExperience(this));
         }
 
         return true;
@@ -1401,7 +1501,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (rock.Mine(this))
         {
-            AddExp(rock.Experience, Skill.Mining);
+            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            AddExp(Skill.Mining, factor);
             //var amount = rock.Resource * Mathf.FloorToInt(Stats.Mining.CurrentValue / 10f);
             //Statistics.TotalOreCollected += (int)amount;
         }
@@ -1448,7 +1549,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (farm.Farm(this))
         {
-            AddExp(farm.Experience, Skill.Farming);
+            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            AddExp(Skill.Farming, factor);
             var amount = farm.Resource * Mathf.FloorToInt(Stats.Farming.CurrentValue / 10f);
             Statistics.TotalWheatCollected += amount;
         }
@@ -1580,20 +1682,14 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             if (target == null || !target.Transform || target.GetStats().IsDead) yield break;
 
-            var damage = CalculateDamage(target);
-            if (!target.Heal(this, damage))
+            var maxHeal = GameMath.MaxHit(Stats.Healing.CurrentValue, EquipmentStats.MagicPower);
+            var heal = CalculateDamage(target);
+            if (!target.Heal(this, heal))
                 yield break;
 
-            if (!target.GivesExperienceWhenKilled)
-                yield break;
-
-            var exp = 0d;
-            if (damage == 0)
-                exp = 2d;
-            else
-                exp = (double)Mathf.Max(2f, damage / 2f);
-
-            AddExp(exp, Skill.Healing);
+            // allow for some variation in gains based on how high you heal.
+            var factor = 1 + ((heal / maxHeal) * 0.2);
+            AddExp(Skill.Healing, factor);
         }
         catch (Exception exc)
         {
@@ -1642,15 +1738,14 @@ public class PlayerController : MonoBehaviour, IAttackable
                     ++player.Statistics.EnemiesKilled;
                 }
 
-                var combatExperience = enemy.GetExperience();
-
-                var activeSkill = GetActiveSkill();
-                if (!activeSkill.IsCombatSkill())
+                //var combatExperience = enemy.GetExperience();
+                var activeSkill = player.GetActiveSkill();
+                if (activeSkill.IsCombatSkill())
                 {
-                    activeSkill = Skill.Health; // ALL
+                    //activeSkill = Skill.Health; // ALL
+                    var factor = Dungeon.InDungeon ? 1d : Chunk?.CalculateExpFactor(this) ?? 1d;
+                    player.AddExp(activeSkill, factor);
                 }
-
-                player.AddExp(combatExperience, activeSkill);// (CombatSkill)GetCombatTypeFromArgs(player.taskArguments));    
             }
         }
         finally
@@ -1669,9 +1764,11 @@ public class PlayerController : MonoBehaviour, IAttackable
         foreach (var player in tree.WoodCutters)
         {
             ++player.Statistics.TotalTreesCutDown;
-            player.AddExp(tree.Experience, Skill.Woodcutting);
-            var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
-            player.Statistics.TotalWoodCollected += amount;
+
+            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            player.AddExp(Skill.Woodcutting, factor);// tree.Experience);
+            //var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
+            //player.Statistics.TotalWoodCollected += amount;
         }
     }
 
@@ -1693,30 +1790,84 @@ public class PlayerController : MonoBehaviour, IAttackable
         return multi;
     }
 
+    //public double GetExpMultiplier(Skill skill)
+    //{
+    //    var tierSub = GetTierExpMultiplier();
+    //    var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
+
+    //    if (gameManager.Boost.Active)
+    //    {
+    //        multi += gameManager.Boost.Multiplier;
+    //    }
+
+    //    multi = Math.Max(1, multi);
+    //    if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
+    //        multi *= (float)Rested.ExpBoost;
+
+    //    return multi * GameMath.ExpScale;
+    //}
+
     public double GetExpMultiplier(Skill skill)
     {
         var tierSub = GetTierExpMultiplier();
-        var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
+        var multi = (float)tierSub;
 
-        if (gameManager.Boost.Active)
+        if (Game.Boost.Active)
+            multi += Game.Boost.Multiplier;
+
+        multi += gameManager.Village.GetExpBonusBySkill(skill);
+        multi = Math.Max(1, multi);
+        if (Rested.ExpBoost > 1 && Rested.RestedTime > 0)
         {
-            multi += gameManager.Boost.Multiplier;
+            var rexp = (float)Rested.ExpBoost;
+            multi = Mathf.Max(rexp * multi, rexp);
         }
 
-        multi = Math.Max(1, multi);
-        if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
-            multi *= (float)Rested.ExpBoost;
-
-        return multi * GameMath.ExpScale;
+        return multi;
     }
 
-    public void AddExp(double exp, Skill skill)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public double GetMultiplierFactor() => 1;
+
+    public double GetExpFactor()
     {
-        exp *= GetExpMultiplier(skill);
+        var skill = GetActiveSkill();
+        if (skill == Skill.Sailing || skill == Skill.Healing) return 1;
+        if (skill == Skill.Health) return 1d / 3d;
+        return Chunk?.CalculateExpFactor(this) ?? 1d;
+    }
+
+    public double GetExperience(Skill skill, double factor)
+    {
+        // check if we are training all. If so, take the avg level + 1
+        // we can't take the min level as if you have super high str and low the rest.
+        // exp gain shouldnt be super low. Don't want to punish those players
+        // we can't take the max level either as it would mean that you can focus leveling on
+        // one skill first and then gain the rest super quickly. using avg will still
+        // benefit the player but not as much that it can be abused.
+        // It will be more beneficial if the player have similar level on each skill (ATK,DEF,STR)
+        int nextLevel = skill == Skill.Health
+            ? ((GetSkill(Skill.Attack).Level + GetSkill(Skill.Defense).Level + GetSkill(Skill.Strength).Level) / 3) + 1
+            : GetSkill(skill).Level + 1;
+
+        return GameMath.Exp.CalculateExperience(nextLevel, skill, factor, GetExpMultiplier(skill), GetMultiplierFactor());
+    }
+
+    public void AddExp(Skill skill, double factor = 1)
+    {
+        //exp *= GetExpMultiplier(skill);
 
         var stat = Stats.GetSkill(skill);
         if (stat == null)
             return;
+
+        var exp = GetExperience(skill, factor);
+
+        //if (!isTimeExp && Application.isEditor)
+        //{
+        //    var expTickSkill = skill.IsCombatSkill() && skill != Skill.Healing ? Skill.Health : skill;
+        //    IslandStatisticsUI.Data.ExpTick(this.Island, expTickSkill);
+        //}
 
         if (skill.IsCombatSkill())
         {
@@ -1815,49 +1966,33 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    private void AddTimeExp()
-    {
-        timeExpTimer -= Time.deltaTime;
-        if (timeExpTimer <= 0)
-        {
-            if (AddExpToActiveSkillStat(ExpOverTime))
-            {
-                timeExpTimer = 1f;
-            }
-        }
-    }
+    //private void AddTimeExp()
+    //{
+    //    timeExpTimer -= Time.deltaTime;
+    //    if (timeExpTimer <= 0)
+    //    {
+    //        if (AddExpToActiveSkillStat(ExpOverTime, true))
+    //        {
+    //            timeExpTimer = 1f;
+    //        }
+    //    }
+    //}
 
-    public bool AddExpToActiveSkillStat(double experience)
+    /// <summary>
+    ///     Adds experience based on the given factor to the currently trained skill.
+    /// </summary>
+    /// <param name="factor"></param>
+    /// <returns></returns>
+    public bool AddExp(double factor = 1)
     {
         var skill = GetActiveSkill();
 
-        // !string.IsNullOrEmpty(taskArgument)
-        if (skill != Skill.None || skill == Skill.Slayer)
+        if (skill != Skill.None)
         {
-            AddExp(experience, skill);
-
-            //#if DEBUG
-            //            Shinobytes.Debug.LogWarning("Giving " + experience + " to " + skill);
-            //#endif
-            //var combatType = GetCombatTypeFromArg(taskArgument);
-            //if (combatType != -1)
-            //{
-            //    AddCombatExp(experience, (CombatSkill)combatType);
-            //}
-            //else
-            //{
-            //    var skill = (TaskSkill)GetSkillTypeFromArgs(taskArguments);
-            //    AddExp(experience, skill.AsSkill());
-            //}
+            AddExp(skill, factor);
             return true;
         }
-        //        else
-        //        {
 
-        //#if DEBUG
-        //            Shinobytes.Debug.LogWarning("Unable to give exp: " + experience + ", skill is: " + skill);
-        //#endif
-        //        }
         return false;
     }
 
@@ -1992,11 +2127,17 @@ public class PlayerController : MonoBehaviour, IAttackable
         InCombat = Duel.InDuel;
         NextDestination = Vector3.zero;
 
-        if ((force || Vector3.Distance(position, LastDestination) >= 1 || Vector3.Distance(agent.destination, position) >= 10) && agent.isActiveAndEnabled && agent.isOnNavMesh && !agent.pathPending)
+        if ((force || !agent.hasPath || Vector3.Distance(position, LastDestination) >= 1 || Vector3.Distance(agent.destination, position) >= 10) && agent.isActiveAndEnabled && agent.isOnNavMesh && !agent.pathPending)
         {
             //if (agent.pathStatus ==  NavMeshPathStatus.)
-            agent.SetDestination(position);
+
             LastDestination = position;
+
+            var jitterRange = 2f;
+
+            position += positionJitter + new Vector3(UnityEngine.Random.Range(-jitterRange, jitterRange), 0, UnityEngine.Random.Range(-jitterRange, jitterRange));
+
+            agent.SetDestination(position);
         }
         //else
         //{
@@ -2214,7 +2355,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return skillTypeArgLookup[val] = 2;
         if (StartsWith(val, "cook"))
             return skillTypeArgLookup[val] = 3;
-        if (StartsWith(val, "mine") || StartsWith(val, "mining"))
+        if (StartsWith(val, "min") || StartsWith(val, "mining"))
             return skillTypeArgLookup[val] = 4;
         if (StartsWith(val, "farm"))
             return skillTypeArgLookup[val] = 5;
@@ -2356,7 +2497,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public double GetExperience() => 0;
 
-    public bool EquipIfBetter(RavenNest.Models.Item item)
+    public bool EquipIfBetter(GameInventoryItem item)
     {
         if (item.Category == ItemCategory.Resource || item.Category == ItemCategory.Food || item.Category == ItemCategory.Scroll)
             return false;
@@ -2376,37 +2517,25 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (currentEquipment.GetTotalStats() < item.GetTotalStats())
         {
-            Inventory.Equip(item);
-            return true;
+            // cosmetic ones should not be replaced.
+            // maybe we should find a good way to mark an item as cosmetic?
+            if (currentEquipment.Type == ItemType.Helmet && currentEquipment.GetTotalStats() == 0)
+            {
+                return false;
+            }
+
+            return Inventory.Equip(item);
         }
 
         return false;
     }
 
-    public void AddItem(RavenNest.Models.Item item, bool updateServer = true)
+    private void EnqueueItemAdd(GameInventoryItem itemInstance)
     {
-        if (item == null) return;
-        Inventory.Add(item);
-
-        if (IsBot)
-        {
-            return;
-        }
-
-        if (IntegrityCheck.IsCompromised)
-        {
-            Shinobytes.Debug.LogError("Item add for user: " + UserId + ", item: " + item.Id + ", failed. Integrity compromised");
-            return;
-        }
-
-        if (!updateServer)
-            return;
-
-        queuedItemAdd.Enqueue(item.Id);
+        queuedItemAdd.Enqueue(itemInstance);
         this.hasQueuedItemAdd = true;
         AddQueuedItemAsync();
     }
-
     private async void AddQueuedItemAsync()
     {
         if (IsBot)
@@ -2419,20 +2548,24 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
-        if (queuedItemAdd.TryDequeue(out var itemId))
+        if (queuedItemAdd.TryDequeue(out var item))
         {
             try
             {
-                var result = await gameManager.RavenNest.Players.AddItemAsync(UserId, itemId);
-                if (result == AddItemResult.Failed)
+                var result = await gameManager.RavenNest.Players.AddItemInstanceAsync(UserId, item);
+                if (result == Guid.Empty)
                 {
-                    queuedItemAdd.Enqueue(itemId);
-                    Shinobytes.Debug.LogError("Item add for user: " + UserId + ", item: " + itemId + ", result: " + result);
+                    queuedItemAdd.Enqueue(item);
+                    Shinobytes.Debug.LogError("Item add for user: " + UserId + ", item: " + item + ", result: " + result);
+                }
+                else
+                {
+                    item.InstanceId = result;
                 }
             }
             catch (Exception exc)
             {
-                queuedItemAdd.Enqueue(itemId);
+                queuedItemAdd.Enqueue(item);
                 Shinobytes.Debug.LogError(exc);
             }
         }
@@ -2440,7 +2573,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         hasQueuedItemAdd = queuedItemAdd.Count > 0;
     }
 
-    public void UpdateCombatStats(List<RavenNest.Models.Item> equipped)
+    public void UpdateCombatStats(List<GameInventoryItem> equipped)
     {
         EquipmentStats.ArmorPower = 0;
         EquipmentStats.WeaponAim = 0;
@@ -2449,24 +2582,48 @@ public class PlayerController : MonoBehaviour, IAttackable
         EquipmentStats.MagicAim = 0;
         EquipmentStats.RangedPower = 0;
         EquipmentStats.RangedAim = 0;
+
+        EquipmentStats.ArmorPowerBonus = 0;
+        EquipmentStats.WeaponAimBonus = 0;
+        EquipmentStats.WeaponPowerBonus = 0;
+        EquipmentStats.MagicPowerBonus = 0;
+        EquipmentStats.MagicAimBonus = 0;
+        EquipmentStats.RangedPowerBonus = 0;
+        EquipmentStats.RangedAimBonus = 0;
+
         foreach (var e in equipped)
         {
             // Ignore shield when training ranged or magic.
-            if ((TrainingHealing || TrainingMagic || TrainingRanged) && e.Type == ItemType.Shield)
+            if ((TrainingHealing || TrainingMagic || TrainingRanged) && e.Item.Type == ItemType.Shield)
                 continue;
 
-            EquipmentStats.ArmorPower += e.ArmorPower;
-            EquipmentStats.WeaponAim += e.WeaponAim;
-            EquipmentStats.WeaponPower += e.WeaponPower;
-            EquipmentStats.MagicPower += e.MagicPower;
-            EquipmentStats.MagicAim += e.MagicAim;
-            EquipmentStats.RangedPower += e.RangedPower;
-            EquipmentStats.RangedAim += e.RangedAim;
+            var stats = e.GetItemStats();
+
+            EquipmentStats.ArmorPower += stats.ArmorPower;
+            EquipmentStats.WeaponAim += stats.WeaponAim;
+            EquipmentStats.WeaponPower += stats.WeaponPower;
+            EquipmentStats.MagicPower += stats.MagicPower;
+            EquipmentStats.MagicAim += stats.MagicAim;
+            EquipmentStats.RangedPower += stats.RangedPower;
+            EquipmentStats.RangedAim += stats.RangedAim;
+
+            EquipmentStats.ArmorPowerBonus += stats.ArmorPower.Bonus;
+            EquipmentStats.WeaponAimBonus += stats.WeaponAim.Bonus;
+            EquipmentStats.WeaponPowerBonus += stats.WeaponPower.Bonus;
+            EquipmentStats.MagicPowerBonus += stats.MagicPower.Bonus;
+            EquipmentStats.MagicAimBonus += stats.MagicAim.Bonus;
+            EquipmentStats.RangedPowerBonus += stats.RangedPower.Bonus;
+            EquipmentStats.RangedAimBonus += stats.RangedAim.Bonus;
         }
 
-        var op = this.gameManager.Camera.Observer.ObservedPlayer;
-        if (op && op.Id == Id)
-            this.gameManager.Camera.Observer.ForceUpdate();
+        if (gameManager)
+        {
+            var op = this.gameManager.Camera.Observer.ObservedPlayer;
+            if (op && op.Id == Id)
+            {
+                this.gameManager.Camera.Observer.ForceUpdate();
+            }
+        }
     }
 
     private IEnumerator Respawn()

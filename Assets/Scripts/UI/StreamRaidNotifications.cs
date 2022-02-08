@@ -22,13 +22,7 @@ public class StreamRaidNotifications : MonoBehaviour
         if (!logoManager) logoManager = FindObjectOfType<PlayerLogoManager>();
         if (!audioSource) audioSource = GetComponent<AudioSource>();
         audioSource.volume = PlayerPrefs.GetFloat("RaidHornVolume", 1f);
-        LoadSoundOverride();
         HideRaidInfo();
-    }
-
-    public void LoadSoundOverride()
-    {
-        StartCoroutine(audioSource.LoadAudioClipFromFile("streamraid.mp3"));
     }
 
     public void HideRaidInfo()

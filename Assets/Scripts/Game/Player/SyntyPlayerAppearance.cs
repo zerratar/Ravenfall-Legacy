@@ -133,11 +133,11 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     //public int HelmetAttachment;
     //public int HipsAttachment;
 
+    private static List<FieldInfo> appearanceFields = null;
     private Dictionary<string, GameObject[]> modelObjects;
     private GameObject equippedHelmet;
-    private GameManager gameManager;
-    private PlayerLogoManager logoManager;
-    private PlayerController player;
+    public GameManager gameManager;
+    public PlayerController player;
 
 
 
@@ -147,7 +147,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     public Transform OffHandTransform => equipmentSlots[ItemType.Shield];
 
-    public GameObject MonsterMesh { get; set; }
+    public GameObject FullBodySkinMesh { get; set; }
 
     public GameObject[] GetHeadAttachments()
     {
@@ -157,6 +157,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     void Awake()
     {
         gameManager = FindObjectOfType<GameManager>();
+        if (!itemManager) itemManager = gameManager?.Items ?? FindObjectOfType<ItemManager>();
         if (!meshCombiner) meshCombiner = GetComponent<SkinnedMeshCombiner>();
         UpdateBoneTransforms();
     }
@@ -188,7 +189,9 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             }
 
             if (equipmentSlots.Count == 0) UpdateBoneTransforms();
+
             equipmentSlots.TryGetValue(item.Type, out targetParent);
+
             //if (!equipmentSlots.TryGetValue(item.Type, out targetParent))
             //{
             //    Debug.LogWarning($"Trying to equip an item but target attachment bone could not be found. {item.Type}");
@@ -238,7 +241,6 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     {
         ResetAppearance();
 
-        if (!logoManager) logoManager = FindObjectOfType<PlayerLogoManager>();
         if (!player) player = GetComponent<PlayerController>();
 
         var props = GetType().GetFields(BindingFlags.Public | BindingFlags.Instance).ToDictionary(x => x.Name, x => x);
@@ -271,16 +273,14 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         UpdateAppearance();
         Optimize();
         onReady?.Invoke();
-
         UpdateClanCape();
-
     }
 
     public void UpdateClanCape()
     {
         if (this.player.Clan.InClan)
         {
-            logoManager.GetLogo(
+            gameManager.PlayerLogo.GetLogo(
                 this.player.Clan.ClanInfo.Owner,
                 this.player.Clan.Logo, logo =>
                 {
@@ -291,6 +291,11 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     private Color GetColorFromHex(string value)
     {
+        if (!string.IsNullOrEmpty(value) && !value.StartsWith("#"))
+        {
+            value = "#" + value;
+        }
+
         ColorUtility.TryParseHtmlString(value, out var color);
         return color;
     }
@@ -504,24 +509,30 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public void UpdateAppearance(Sprite capeLogo = null)
     {
         ResetAppearance();
+
         var models = GetAllModels();
-        var fields = GetType()
-            .GetFields(BindingFlags.Public | BindingFlags.Instance)
-            .Where(x => x.FieldType == typeof(int) || x.FieldType == typeof(int[]))
-            .ToList();
+
+        if (appearanceFields == null)
+        {
+            appearanceFields = GetType()
+                .GetFields(BindingFlags.Public | BindingFlags.Instance)
+                .Where(x => x.FieldType == typeof(int) || x.FieldType == typeof(int[]))
+                .ToList();
+        }
 
         capeLogoMaterials.Clear();
 
-        fields.ForEach(field =>
+        for (var i = 0; i < appearanceFields.Count; ++i)
         {
             // Exclude certain ones, such as head attachments, coverings and masks
 
+            var field = appearanceFields[i];
             var items = models.Where(x =>
-                !x.Key.Contains(nameof(headCoverings)) &&
-                !x.Key.Contains(nameof(masks)) &&
-                !x.Key.Contains(nameof(hats)) &&
-                x.Key.StartsWith(field.Name, StringComparison.OrdinalIgnoreCase) ||
-                x.Key.StartsWith(Gender.ToString() + field.Name, StringComparison.OrdinalIgnoreCase));
+           !x.Key.Contains(nameof(headCoverings)) &&
+           !x.Key.Contains(nameof(masks)) &&
+           !x.Key.Contains(nameof(hats)) &&
+           x.Key.StartsWith(field.Name, StringComparison.OrdinalIgnoreCase) ||
+           x.Key.StartsWith(Gender.ToString() + field.Name, StringComparison.OrdinalIgnoreCase));
 
             if (field.FieldType == typeof(int[]))
             {
@@ -615,12 +626,41 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                     }
                 }
             }
-        });
+        }
     }
 
     public SyntyAppearance ToSyntyAppearanceData()
     {
-        return new SyntyAppearance();
+        var appearance = new SyntyAppearance();
+        var props = GetType().GetFields(BindingFlags.Public | BindingFlags.Instance).ToDictionary(x => x.Name, x => x);
+        foreach (var prop in appearance
+            .GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (props.TryGetValue(prop.Name, out var p))
+            {
+                var valueToSet = p.GetValue(this);// prop.GetValue(appearance);
+                try
+                {
+                    if (p.FieldType == typeof(Color))
+                    {
+                        prop.SetValue(appearance, ColorUtility.ToHtmlStringRGB((Color)valueToSet));
+                        //p.SetValue(this, GetColorFromHex(valueToSet?.ToString()));
+                    }
+                    else
+                    {
+                        prop.SetValue(appearance, valueToSet);
+                    }
+
+                }
+                catch (Exception exc)
+                {
+                    Shinobytes.Debug.LogError(exc);
+                }
+            }
+        }
+
+        return appearance;
     }
 
     public int[] ToAppearanceData()
@@ -762,7 +802,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     private void EquipArmor(ItemType itemType, int itemIndex, int material, params int[] additionalIndices)
     {
-        var newMaterial = gameManager.Items.GetMaterial(material);
+
+        var newMaterial = itemManager.GetMaterial(material);
         switch (itemType)
         {
             case ItemType.Boots:
@@ -1007,12 +1048,14 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     {
         //this.equipmentSlots[ItemType.] = this.transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Back_Attachment");
 
-        var mainHand = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_R/Shoulder_R/Elbow_R/Hand_R"); ;
-        var offHand = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_L/Shoulder_L/Elbow_L/Hand_L"); ;
-        var shoulderLeft = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_L/Shoulder_L"); ;
-        var shoulderRight = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_R/Shoulder_R"); ;
+        var mainHand = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_R/Shoulder_R/Elbow_R/Hand_R");
+        var offHand = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_L/Shoulder_L/Elbow_L/Hand_L");
+        var shoulderLeft = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_L/Shoulder_L");
+        var shoulderRight = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_R/Shoulder_R");
 
-        equipmentSlots[ItemType.Amulet] = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Neck");
+        var neck = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Neck");
+        equipmentSlots[ItemType.Amulet] = neck;
+        equipmentSlots[ItemType.Helmet] = neck.Find("Head/Head_Attachment");
         equipmentSlots[ItemType.TwoHandedSword] = mainHand;
         equipmentSlots[ItemType.TwoHandedStaff] = mainHand;
         equipmentSlots[ItemType.TwoHandedBow] = offHand;
@@ -1099,29 +1142,29 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         }
     }
 
-    public void SetMonsterMesh(GameObject prefab)
+    public void SetFullBodySkinMesh(GameObject prefab)
     {
         var combinedMesh = GetCombinedMesh();
-        MonsterMesh = Instantiate(prefab, this.transform);
-        MonsterMesh.name = "Monster";
-        MonsterMesh.transform.localScale = Vector3.one;
+        FullBodySkinMesh = Instantiate(prefab, this.transform);
+        FullBodySkinMesh.name = "FullBodySkin";
+        FullBodySkinMesh.transform.localScale = Vector3.one;
 
         if (combinedMesh)
         {
-            SetLayerRecursive(MonsterMesh, combinedMesh.gameObject.layer);
+            SetLayerRecursive(FullBodySkinMesh, combinedMesh.gameObject.layer);
         }
     }
 
-    public void DestroyMonsterMesh()
+    public void DestroyFullBodySkinMesh()
     {
         var combinedMesh = GetCombinedMesh();
         if (combinedMesh)
             combinedMesh.gameObject.SetActive(true);
 
-        if (!MonsterMesh)
+        if (!FullBodySkinMesh)
             return;
 
-        Destroy(MonsterMesh);
+        Destroy(FullBodySkinMesh);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

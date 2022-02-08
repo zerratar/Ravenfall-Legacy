@@ -32,15 +32,15 @@ namespace Shinobytes
     {
         public static void Log(string message)
         {
-#if DEBUG            
+//#if DEBUG
             UnityEngine.Debug.Log("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
-#endif
+//#endif
         }
         public static void Log(object message)
         {
-#if DEBUG            
+//#if DEBUG            
             UnityEngine.Debug.Log("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
-#endif
+//#endif
         }
         public static void LogWarning(string message)
         {

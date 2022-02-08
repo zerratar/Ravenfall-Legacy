@@ -31,7 +31,7 @@ public class CraftRequirement : PacketHandler<TradeItemRequest>
             return;
         }
 
-        var msg = GetItemCraftingRequirements(player, client, item.Item);
+        var msg = GetItemCraftingRequirements(player, client, item.Item.Item);
         client.SendMessage(player, msg);
     }
 

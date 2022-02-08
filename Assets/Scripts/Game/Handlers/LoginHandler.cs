@@ -15,6 +15,9 @@ public class LoginHandler : MonoBehaviour
     [SerializeField] private Toggle rememberMeToggle;
     //[SerializeField] private LoadingHandler loading;
 
+    const string AutoLoginFile = "autologin.conf";
+    const string TmpAutoLoginFile = "tmpautologin.conf";
+
     void Start()
     {
         invalidUsername.gameObject.SetActive(false);
@@ -77,25 +80,22 @@ public class LoginHandler : MonoBehaviour
 
     public void ActivateTempAutoLogin()
     {
-        const string TmpAutoLoginFile = "tmpautologin.conf";
-        System.IO.File.WriteAllLines(TmpAutoLoginFile, new string[] {
+        Shinobytes.IO.File.WriteAllLines(TmpAutoLoginFile, new string[] {
             "user=" + txtUsername.text,
             "pass=" + txtPassword.text
         });
     }
     private void HandleAutoLogin()
     {
-        const string AutoLoginFile = "autologin.conf";
-        const string TmpAutoLoginFile = "tmpautologin.conf";
-        if (!System.IO.File.Exists(AutoLoginFile) && !System.IO.File.Exists(TmpAutoLoginFile))
+        if (!Shinobytes.IO.File.Exists(AutoLoginFile) && !Shinobytes.IO.File.Exists(TmpAutoLoginFile))
         {
             return;
         }
 
-        if (System.IO.File.Exists(TmpAutoLoginFile))
+        if (Shinobytes.IO.File.Exists(TmpAutoLoginFile))
         {
             AutoLogin(TmpAutoLoginFile);
-            System.IO.File.Delete(TmpAutoLoginFile);
+            Shinobytes.IO.File.Delete(TmpAutoLoginFile);
             return;
         }
 
@@ -104,7 +104,7 @@ public class LoginHandler : MonoBehaviour
 
     private void AutoLogin(string AutoLoginFile)
     {
-        var loginInfo = ParseAutoLoginConfig(System.IO.File.ReadAllLines(AutoLoginFile));
+        var loginInfo = ParseAutoLoginConfig(Shinobytes.IO.File.ReadAllLines(AutoLoginFile));
         if (string.IsNullOrEmpty(loginInfo.Username) || string.IsNullOrEmpty(loginInfo.Password))
         {
             return;

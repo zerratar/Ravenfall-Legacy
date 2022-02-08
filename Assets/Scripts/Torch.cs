@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using Sirenix.OdinInspector;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Torch : MonoBehaviour
@@ -9,6 +11,13 @@ public class Torch : MonoBehaviour
     private GameObject fobj;
     private bool wasActivated;
     private GameManager gameManager;
+
+
+    [Button("Adjust Placement")]
+    public void AdjustPlacement()
+    {
+        PlacementUtility.PlaceOnGround(this.gameObject);
+    }
 
     // Start is called before the first frame update
     void Start()

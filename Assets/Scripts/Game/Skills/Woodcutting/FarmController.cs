@@ -2,7 +2,7 @@
 public class FarmController : MonoBehaviour
 {
     public int Level = 1;
-    public double Experience => GameMath.GetFishingExperience(Level);
+    //public double Experience => GameMath.GetFishingExperience(Level);
     public int Resource => 1;
 
     public float MaxActionDistance = 5;

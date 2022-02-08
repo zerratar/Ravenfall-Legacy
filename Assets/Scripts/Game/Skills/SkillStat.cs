@@ -68,30 +68,18 @@ public class SkillStat
 
     public void SetExp(double exp)
     {
-        AddExp(exp - Experience, out _, false);
+        AddExp(exp - Experience, out _);
     }
 
     public void AddExp(double exp)
     {
         AddExp(exp, out _);
     }
-    public static double GetExperienceScale(int level)
-    {
-        if (expScaleCache.TryGetValue(level, out var scale))
-        {
-            return scale;
-        }
 
-        return expScaleCache[level] = ((((1d + (level / 100d) + (level / 75d)) * Math.Pow(2, (double)(level / 20d))) / 20d) + 1d);
-    }
-    public bool AddExp(double exp, out int newLevels, bool scale = true)
+    public bool AddExp(double exp, out int newLevels)
     {
-        if (scale)
-        {
-            exp *= GetExperienceScale(Level);
-        }
         var now = UnityEngine.Time.realtimeSinceStartup;
-        if (earnedExperienceStart == 0 || now - earnedExperienceStart >= refreshRate)
+        if (earnedExperienceStart == 0 || now - lastExperienceGain/*earnedExperienceStart */>= refreshRate)
         {
             earnedExperienceStart = now;
             totalEarnedExperience = 0d;
@@ -120,7 +108,7 @@ public class SkillStat
     {
         var durationSeconds = lastExperienceGain - earnedExperienceStart;
         if (totalEarnedExperience <= 0 || durationSeconds <= 0) return 0d;
-        var gainPerSecond = totalEarnedExperience / durationSeconds;
+        var gainPerSecond = totalEarnedExperience / System.Math.Max(durationSeconds, 3);
         return gainPerSecond * 60d * 60d;
     }
 
@@ -141,5 +129,11 @@ public class SkillStat
         var expForNextLevel = GameMath.ExperienceForLevel(Level + 1);
         var proc = Mathf.FloorToInt((float)(Experience / expForNextLevel) * 100);
         return $"{Name} {Level} ({proc}%)";
+    }
+
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Name, CurrentValue, Level, Experience);
     }
 }

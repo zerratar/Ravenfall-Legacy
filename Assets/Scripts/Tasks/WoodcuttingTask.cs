@@ -78,6 +78,9 @@ public class WoodcuttingTask : ChunkTask
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
+
+        tree.AddWoodcutter(player);
+
         var distance = Vector3.Distance(player.Position, tree.transform.position);
         if (distance >= tree.MaxActionDistance)
         {

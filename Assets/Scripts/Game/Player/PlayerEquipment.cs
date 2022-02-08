@@ -22,7 +22,7 @@ public class PlayerEquipment : MonoBehaviour
     [SerializeField] private ItemController bow;
 
     private GameManager gameManager;
-
+    private ItemManager itemManager;
     private List<ItemController> equippedObjects;
 
     private PlayerController player;
@@ -33,6 +33,15 @@ public class PlayerEquipment : MonoBehaviour
     private GameObject hammer;
     private GameObject fishingRod;
     private GameObject rake;
+    private bool staffVisible;
+    private bool bowVisible;
+    private bool shieldVisible;
+    private bool weaponVisible;
+    private bool rakeVisible;
+    private bool hammerVisible;
+    private bool woodcuttingHatchetVisible;
+    private bool miningPickaxeVisible;
+    private bool fishingRodVisible;
 
     public IReadOnlyList<ItemController> EquippedItems => equippedObjects;
     public bool HasShield => !!shield;
@@ -40,6 +49,7 @@ public class PlayerEquipment : MonoBehaviour
     private void Awake()
     {
         gameManager = FindObjectOfType<GameManager>();
+        itemManager = gameManager?.Items ?? FindObjectOfType<ItemManager>();
         equippedObjects = new List<ItemController>();
         appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
         player = GetComponent<PlayerController>();
@@ -47,35 +57,44 @@ public class PlayerEquipment : MonoBehaviour
 
     public void HideHatchet()
     {
-        if (woodcuttingHatchet) woodcuttingHatchet.SetActive(false);
+        if (woodcuttingHatchetVisible && woodcuttingHatchet) woodcuttingHatchet.SetActive(false);
+        woodcuttingHatchetVisible = false;
     }
 
     public void HidePickAxe()
     {
-        if (miningPickaxe) miningPickaxe.SetActive(false);
+        if (miningPickaxeVisible && miningPickaxe) miningPickaxe.SetActive(false);
+        miningPickaxeVisible = false;
     }
 
     public void HideFishingRod()
     {
-        if (fishingRod) fishingRod.SetActive(false);
+        if (fishingRodVisible && fishingRod) fishingRod.SetActive(false);
+        fishingRodVisible = false;
     }
 
     public void HideRake()
     {
-        if (rake) rake.SetActive(false);
+        if (rakeVisible && rake) rake.SetActive(false);
+        rakeVisible = false;
     }
 
     public void HideWeapon()
     {
-        if (weapon) weapon.gameObject.SetActive(false);
-        if (shield) shield.gameObject.SetActive(false);
-        if (bow) bow.gameObject.SetActive(false);
-        if (staff) staff.gameObject.SetActive(false);
+        if (weaponVisible && weapon) weapon.gameObject.SetActive(false);
+        if (shieldVisible && shield) shield.gameObject.SetActive(false);
+        if (bowVisible && bow) bow.gameObject.SetActive(false);
+        if (staffVisible && staff) staff.gameObject.SetActive(false);
+        weaponVisible = false;
+        shieldVisible = false;
+        bowVisible = false;
+        staffVisible = false;
     }
 
     public void HideHammer()
     {
-        if (hammer) hammer.SetActive(false);
+        if (hammerVisible && hammer) hammer.SetActive(false);
+        hammerVisible = false;
     }
 
     public void HideEquipments()
@@ -100,6 +119,7 @@ public class PlayerEquipment : MonoBehaviour
         {
             bow.transform.SetParent(appearance.OffHandTransform);
             bow.gameObject.SetActive(true);
+            bowVisible = true;
         }
     }
 
@@ -115,6 +135,7 @@ public class PlayerEquipment : MonoBehaviour
         {
             staff.transform.SetParent(appearance.MainHandTransform);
             staff.gameObject.SetActive(true);
+            staffVisible = true;
         }
     }
 
@@ -125,8 +146,8 @@ public class PlayerEquipment : MonoBehaviour
         if (!fishingRod && fishingRodPrefab)
             fishingRod = Instantiate(fishingRodPrefab, appearance.MainHandTransform);
 
-        if (fishingRod)
-            fishingRod.SetActive(true);
+        if (fishingRod) fishingRod.SetActive(true);
+        fishingRodVisible = true;
     }
 
     public void ShowPickAxe()
@@ -135,9 +156,8 @@ public class PlayerEquipment : MonoBehaviour
 
         if (!miningPickaxe && miningPickaxePrefab)
             miningPickaxe = Instantiate(miningPickaxePrefab, appearance.MainHandTransform);
-
-        if (miningPickaxe)
-            miningPickaxe.SetActive(true);
+        if (miningPickaxe) miningPickaxe.SetActive(true);
+        miningPickaxeVisible = true;
     }
 
     public void ShowHammer()
@@ -146,9 +166,8 @@ public class PlayerEquipment : MonoBehaviour
 
         if (!hammer && hammerPrefab)
             hammer = Instantiate(hammerPrefab, appearance.MainHandTransform);
-
-        if (hammer)
-            hammer.SetActive(true);
+        if (hammer) hammer.SetActive(true);
+        hammerVisible = true;
     }
 
     public void ShowHatchet()
@@ -158,8 +177,8 @@ public class PlayerEquipment : MonoBehaviour
         if (!woodcuttingHatchet && woodcuttingHatchetPrefab)
             woodcuttingHatchet = Instantiate(woodcuttingHatchetPrefab, appearance.MainHandTransform);
 
-        if (woodcuttingHatchet)
-            woodcuttingHatchet.SetActive(true);
+        if (woodcuttingHatchet) woodcuttingHatchet.SetActive(true);
+        woodcuttingHatchetVisible = true;
     }
 
     public void ShowRake()
@@ -167,6 +186,7 @@ public class PlayerEquipment : MonoBehaviour
         HideEquipments();
         if (!rake && rakePrefab) rake = Instantiate(rakePrefab, appearance.MainHandTransform);
         if (rake) rake.SetActive(true);
+        rakeVisible = true;
     }
 
     public void ShowWeapon(AttackType type)
@@ -193,6 +213,7 @@ public class PlayerEquipment : MonoBehaviour
                 if (showShield)
                 {
                     shield.gameObject.SetActive(true);
+                    shieldVisible = true;
                 }
                 return;
         }
@@ -205,7 +226,7 @@ public class PlayerEquipment : MonoBehaviour
                         weapon.Type == ItemType.OneHandedMace;
     }
 
-    public void EquipAll(IReadOnlyList<RavenNest.Models.Item> inventoryEquippedItems)
+    public void EquipAll(IReadOnlyList<GameInventoryItem> inventoryEquippedItems)
     {
         HideWeapon();
         appearance.UpdateAppearance();
@@ -262,9 +283,9 @@ public class PlayerEquipment : MonoBehaviour
         return false;
     }
 
-    public void Unequip(Guid id)
+    public void UnequipByItemId(Guid itemId)
     {
-        var equipped = equippedObjects.FirstOrDefault(x => x.Id == id);
+        var equipped = equippedObjects.FirstOrDefault(x => x.ItemId == itemId);
         var removed = false;
         if (equipped != null)
         {
@@ -279,11 +300,11 @@ public class PlayerEquipment : MonoBehaviour
 
         if (!removed)
         {
-            Shinobytes.Debug.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. ID {id}");
+            Shinobytes.Debug.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. ID {itemId}");
         }
     }
 
-    public void Equip(RavenNest.Models.Item item)
+    public void Equip(GameInventoryItem item)
     {
         if (!baseItemPrefab)
         {
@@ -291,14 +312,14 @@ public class PlayerEquipment : MonoBehaviour
             return;
         }
 
-        var existingItemController = equippedObjects.FirstOrDefault(x => x.Id == item.Id);
+        var existingItemController = equippedObjects.FirstOrDefault(x => x.ItemId == item.Item.Id);
         if (existingItemController != null && existingItemController)
         {
             Destroy(existingItemController.gameObject);
             equippedObjects.Remove(existingItemController);
         }
 
-        var itemController = gameManager.Items.Create(item, player.Appearance.Gender == Gender.Male);
+        var itemController = itemManager.Create(item, player.Appearance.Gender == Gender.Male);
         itemController.transform.SetParent(transform);
         itemController.gameObject.layer = player.gameObject.layer;
 

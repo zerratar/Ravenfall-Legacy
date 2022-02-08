@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sirenix.OdinInspector;
+using System;
 using UnityEngine;
 
 public class TownHouseSlot : MonoBehaviour
@@ -19,6 +20,13 @@ public class TownHouseSlot : MonoBehaviour
     public int Slot { get; set; }
     public bool Selected { get; private set; }
     public float IconOffset => townHouseSource?.IconOffset ?? 0;
+
+
+    [Button("Adjust Placement")]
+    public void AdjustPlacement()
+    {
+        PlacementUtility.PlaceOnGround(this.gameObject);
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -117,12 +125,16 @@ public class TownHouseSlot : MonoBehaviour
     }
 
     public void InvalidateOwner()
-    {        
+    {
         Player = playerManager.GetPlayerByUserId(OwnerUserId);
         if (Player)
         {
             PlayerSkills = Player.Stats;
             PlayerName = Player.Name;
+        }
+        else
+        {
+            PlayerSkills = null;
         }
 
         if (string.IsNullOrEmpty(OwnerUserId))

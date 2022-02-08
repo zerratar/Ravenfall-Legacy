@@ -140,18 +140,19 @@ public class PlayerDetails : MonoBehaviour
 
         if (isTrainingSomething)
         {
-            var activeSkill = observedPlayer.GetActiveTaskSkillStat();
+            var activeSkill = observedPlayer.GetActiveSkillStat();
             if (activeSkill != null)
             {
-                if (playerTask == TaskType.None)
+                var name = activeSkill == observedPlayer.GetSkill(Skill.Health) ? "All" : activeSkill.Name;
+                if (playerTask == TaskType.None || observedPlayer.Chunk == null)
                 {
                     SetActive(timeforlevelPanel, false);
-                    lblTrainingSkill.text = "<color=red>" + activeSkill.Name + "\r\n<size=14>Ineligible</size></color>";
+                    lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Ineligible</size></color>";
                 }
                 else
                 {
                     SetActive(timeforlevelPanel, true);
-                    lblTrainingSkill.text = activeSkill.Name;
+                    lblTrainingSkill.text = name;
                     lblTimeForLevel.text = GetTimeLeftForLevelFormatted();
                 }
             }
@@ -175,8 +176,12 @@ public class PlayerDetails : MonoBehaviour
         var skill = observedPlayer.GetActiveTaskSkillStat();
         if (skill == null) return "";
 
+        var s = observedPlayer.GetActiveSkill();
+        var f = observedPlayer.GetExpFactor();
+        var expPerTick = ObservedPlayer.GetExperience(s, f);
+        var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
         var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
-        var expPerHour = skill.GetExperiencePerHour();
+        var expPerHour = System.Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
         var expLeft = nextLevelExp - skill.Experience;
 
         if (expPerHour <= 0 || expLeft <= 0)
@@ -184,7 +189,7 @@ public class PlayerDetails : MonoBehaviour
 
         var hours = (double)(expLeft / expPerHour);
         var timeLeft = System.TimeSpan.MaxValue;
-        if (hours < System.TimeSpan.MaxValue.Hours)
+        if (hours < System.TimeSpan.MaxValue.TotalHours)
         {
             timeLeft = System.TimeSpan.FromHours(hours);
         }
@@ -242,6 +247,8 @@ public class PlayerDetails : MonoBehaviour
         resourcesObserver.Observe(observedPlayer);
         combatSkillObserver.Observe(observedPlayer);
         skillStatsObserver.Observe(observedPlayer);
+
+        gameManager.Overlay.SendObservePlayer(observedPlayer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

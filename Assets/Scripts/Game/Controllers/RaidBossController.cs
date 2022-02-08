@@ -20,6 +20,7 @@ public class RaidBossController : MonoBehaviour
     [SerializeField] private Rigidbody rb;
 
     public bool RaidBossControlsDestroy = false;
+    public ItemDropHandler ItemDrops;
 
     private float attackTimer = 0f;
     private Animator modelAnimator;
@@ -39,6 +40,7 @@ public class RaidBossController : MonoBehaviour
     {
         if (!enemyController) enemyController = GetComponent<EnemyController>();
         if (!rb) rb = GetComponent<Rigidbody>();
+        if (!ItemDrops) ItemDrops = GetComponent<ItemDropHandler>();
 
         enemyController.GivesExperienceWhenKilled = false;
         //enemyController.HandleFightBack = false;

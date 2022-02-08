@@ -33,9 +33,9 @@ namespace RavenNest.SDK.Endpoints
         private ClientWebSocket webSocket;
         private bool disposed;
         private bool connected;
-        private bool connecting;
         private int connectionCounter;
         private bool reconnecting;
+        private volatile bool connecting;
 
         public event EventHandler OnReconnected;
 
@@ -104,9 +104,12 @@ namespace RavenNest.SDK.Endpoints
             connecting = true;
             try
             {
-                logger.Debug("Connecting to the server...");
+                //logger.Debug("Connecting to the server...");
 
                 var sessionToken = tokenProvider.GetSessionToken();
+                if (sessionToken == null)
+                    return true;
+
                 var token = JsonConvert.SerializeObject(sessionToken);
                 var sessionTokenData = token.Base64Encode();
 
@@ -121,7 +124,7 @@ namespace RavenNest.SDK.Endpoints
 
                 Interlocked.Increment(ref connectionCounter);
 
-                logger.Debug("Connected to the server");
+                //logger.Debug("Connected to the server");
 
                 if (readProcessThread == null)
                 {

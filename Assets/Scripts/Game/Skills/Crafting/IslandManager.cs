@@ -16,16 +16,33 @@ public class IslandManager : MonoBehaviour
     public IslandController Find(string islandName)
     {
         if (islands == null || string.IsNullOrEmpty(islandName)) return null;
-        return islands.FirstOrDefault(x => x.Identifier.StartsWith(islandName, StringComparison.OrdinalIgnoreCase));
+
+        for (var i = 0; i < All.Length; i++)
+        {
+            if (All[i].Identifier.StartsWith(islandName, StringComparison.OrdinalIgnoreCase)) 
+                return All[i];
+        }
+
+        return null;
     }
 
     public IslandController FindPlayerIsland(PlayerController player)
     {
-        return All.FirstOrDefault(x => x.InsideIsland(player.Position));
+        for (var i = 0; i < All.Length; i++)
+        {
+            if (All[i].InsideIsland(player.Position)) return All[i];
+        }
+
+        return null;
     }
 
     public IslandController FindIsland(Vector3 position)
     {
-        return All.FirstOrDefault(x => x.InsideIsland(position));
+        for (var i = 0; i < All.Length; i++)
+        {
+            if (All[i].InsideIsland(position)) return All[i];
+        }
+
+        return null;
     }
 }

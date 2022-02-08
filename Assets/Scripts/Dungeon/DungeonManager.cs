@@ -54,7 +54,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     //private EnemyController[] generatedEnemies;
 
-
+    public string RequiredCode;
 
     public Vector3 StartingPoint
     {
@@ -331,8 +331,11 @@ public class DungeonManager : MonoBehaviour, IEvent
                 state = DungeonManagerState.Active;
                 dungeonStartTimer = timeForDungeonStart;
                 nextDungeonTimer = 0f;
-
-                AnnounceDungeon();
+                if (gameManager.RequireCodeForDungeonOrRaid)
+                {
+                    RequiredCode = EventCode.New();
+                }
+                AnnounceDungeon(RequiredCode);
             }
             else
             {
@@ -374,15 +377,27 @@ public class DungeonManager : MonoBehaviour, IEvent
             deadPlayers.Remove(player);
         }
     }
-
-    public bool CanJoin(PlayerController player)
+    public DungeonJoinResult CanJoin(PlayerController player)
     {
-        if (!Active) return false;
+        if (!Active) return DungeonJoinResult.NoActiveDungeon;
 
         lock (mutex)
         {
-            return !joinedPlayers.Contains(player);
+            if (joinedPlayers.Contains(player))
+                return DungeonJoinResult.AlreadyJoined;
+
+            return DungeonJoinResult.CanJoin;
         }
+    }
+
+    public DungeonJoinResult CanJoin(PlayerController player, string code)
+    {
+        var result = CanJoin(player);
+        if (result == DungeonJoinResult.CanJoin && !string.IsNullOrEmpty(this.RequiredCode) && code != this.RequiredCode)
+        {
+            return DungeonJoinResult.WrongCode;
+        }
+        return result;
     }
 
     public void Join(PlayerController player)
@@ -399,7 +414,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             AdjustBossStats();
             AdjustEnemyStats();
 
-            //gameManager.EventTriggerSystem.SendInput(player.UserId, "dungeon");
+            gameManager.EventTriggerSystem.SendInput(player.UserId, "dungeon");
         }
     }
 
@@ -540,9 +555,12 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         lock (mutex)
         {
+
+            Dungeon.RewardItemDrops(joinedPlayers);
+
             foreach (var player in joinedPlayers)
             {
-                Dungeon.RewardPlayer(player, yieldSpecialReward);
+                Dungeon.AddExperienceReward(player);
             }
         }
     }
@@ -551,6 +569,8 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         try
         {
+            RequiredCode = null;
+
             if (!this.gameManager.Tavern.IsActivated)
             {
                 gameManager.Camera.ReleaseFreeCamera();
@@ -628,7 +648,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         notificationTimer = notificationUpdate;
     }
 
-    private void UpdateDungeonTimer()
+    private async void UpdateDungeonTimer()
     {
         if (Started) return;
         if (nextDungeonTimer > 0f)
@@ -636,7 +656,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             nextDungeonTimer -= Time.deltaTime;
             if (nextDungeonTimer <= 0f)
             {
-                ActivateDungeon();
+                await ActivateDungeon();
             }
         }
     }
@@ -671,7 +691,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    private void AnnounceDungeon()
+    private void AnnounceDungeon(string code)
     {
         //var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
         //var evt = ioc.Resolve<EventTriggerSystem>();
@@ -679,7 +699,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         Notifications.SetTimeout(dungeonStartTimer);
         Notifications.SetLevel(Boss.Enemy.Stats.CombatLevel);
-        Notifications.ShowDungeonActivated();
+        Notifications.ShowDungeonActivated(code);
 
         if (currentDungeon.Tier == DungeonTier.Dynamic)
         {
@@ -700,7 +720,14 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
 
         // 1. announce dungeon event
-        gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
+        if (gameManager.RequireCodeForDungeonOrRaid)
+        {
+            gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type '!dungeon code' to join. Find the code on the stream.");
+        }
+        else
+        {
+            gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
+        }
     }
     private void SelectRandomDungeon()
     {
@@ -754,6 +781,14 @@ public class DungeonManager : MonoBehaviour, IEvent
         //    .Where(x => x != null && x.gameObject != null && !x.name.Contains("_BOSS_"))
         //    .ToArray();
     }
+}
+
+public enum DungeonJoinResult
+{
+    CanJoin,
+    NoActiveDungeon,
+    AlreadyJoined,
+    WrongCode
 }
 
 public class DungeonNameGenerator

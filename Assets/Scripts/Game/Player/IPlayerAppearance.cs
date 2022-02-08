@@ -20,7 +20,7 @@ public interface IPlayerAppearance
     Transform MainHandTransform { get; }
     Transform OffHandTransform { get; }
 
-    GameObject MonsterMesh { get; }
-    void SetMonsterMesh(GameObject prefab);
-    void DestroyMonsterMesh();
+    GameObject FullBodySkinMesh { get; }
+    void SetFullBodySkinMesh(GameObject prefab);
+    void DestroyFullBodySkinMesh();
 }

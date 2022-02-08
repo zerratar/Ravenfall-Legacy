@@ -8,7 +8,7 @@ namespace Assets
 {
     public class FindBadNamedScripts : EditorWindow
     {
-        [MenuItem("Ravenfall/Tools/Find Bad Named Scripts")]
+        [MenuItem("Ravenfall/Tools/Scripts/Find Bad Named Scripts")]
         public static void ShowWindow()
         {
             EditorWindow.GetWindow(typeof(FindBadNamedScripts));

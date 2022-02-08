@@ -120,10 +120,7 @@ public class PlayerListItem : MonoBehaviour
                 }
                 if (skill != null)
                 {
-                    if (lastSkillTrainedLevel != skill.Level || lastSkillTrained != skill)
-                    {
-                        SetText(lblSkillLevel, skillName + ":<b> " + skill.Level);
-                    }
+                    SetText(lblSkillLevel, skillName + ":<b> " + skill.Level);
                     UpdateSkillProgressBar(skill);
                     this.lastSkillTrained = skill;
                     this.lastSkillTrainedLevel = skill.Level;
@@ -159,10 +156,9 @@ public class PlayerListItem : MonoBehaviour
     private void UpdateSkillProgressBar(SkillStat skill)
     {
         var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
-        pbSkill.Progress = skill.Experience > 0 && nextLevelExp > 0 ? ((float)(skill.Experience / nextLevelExp)) : 0;
-
-        var expPerHour = skill.GetExperiencePerHour();
         var expLeft = nextLevelExp - skill.Experience;
+
+        pbSkill.Progress = skill.Experience > 0 && nextLevelExp > 0 ? ((float)(skill.Experience / nextLevelExp)) : 0;
 
         if (lblExpPerHour)
         {
@@ -171,6 +167,12 @@ public class PlayerListItem : MonoBehaviour
             var minTime = 1f;//ExpProgressHelpState == ExpProgressHelpStates.TimeLeft ? 1f : 5f;
             if (sinceLastUpdate < minTime)
                 return;
+
+            var s = TargetPlayer.GetActiveSkill();
+            var f = TargetPlayer.GetExpFactor();
+            var expPerTick = TargetPlayer.GetExperience(s, f);
+            var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
+            var expPerHour = System.Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
 
             SetText(lblExpPerHour, "");
             switch (ExpProgressHelpState)

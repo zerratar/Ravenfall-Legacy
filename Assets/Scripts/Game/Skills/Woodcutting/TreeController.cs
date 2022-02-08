@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts;
+using Sirenix.OdinInspector;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ public class TreeController : MonoBehaviour
 
     public int Level = 1;
 
-    public double Experience => GameMath.GetWoodcuttingExperience(Level);
+    //public double Experience => GameMath.GetWoodcuttingExperience(Level);
 
     public double Resource => 1;
 
@@ -36,7 +37,14 @@ public class TreeController : MonoBehaviour
     public IslandController Island { get; private set; }
 
     // Start is called before the first frame update
+    [ReadOnly]
     public float MaxActionDistance = 5f;
+
+    [Button("Adjust Placement")]
+    public void AdjustPlacement()
+    {
+        PlacementUtility.PlaceOnGround(this.gameObject);
+    }
 
     void Start()
     {
@@ -110,6 +118,11 @@ public class TreeController : MonoBehaviour
         }
 
         StartCoroutine(Respawn());
+    }
+
+    public void AddWoodcutter(PlayerController player)
+    {
+        woodCutters[player.PlayerName] = player;
     }
 
     public bool DoDamage(PlayerController player, int amount)

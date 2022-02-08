@@ -7,7 +7,10 @@ using UnityEngine;
 public class GraphicsToggler : MonoBehaviour
 {
     [SerializeField] private Camera uiCamera;
+    [SerializeField] private Camera mainCamera;
     [SerializeField] private Camera[] cameras;
+
+    [SerializeField] private Canvas canvas2d;
 
     [SerializeField] private GameObject ui2d;
     [SerializeField] private GameObject ui3d;
@@ -60,7 +63,7 @@ public class GraphicsToggler : MonoBehaviour
 
         if (!graphicsEnabled)
         {
-            uiCamera.enabled = Time.frameCount % 90 == 0;
+            //uiCamera.enabled = Time.frameCount % 90 == 0;
             //System.Threading.Thread.Sleep(5);
 
             mutex.Wait(TimeSpan.FromMilliseconds(10));
@@ -80,6 +83,8 @@ public class GraphicsToggler : MonoBehaviour
             this.ui2d.SetActive(false);
             this.ui3d.SetActive(false);
             this.graphy.SetActive(false);
+
+            canvas2d.worldCamera = uiCamera;
         }
         else
         {
@@ -87,6 +92,8 @@ public class GraphicsToggler : MonoBehaviour
             this.ui2d.SetActive(true);
             this.ui3d.SetActive(true);
             this.graphy.SetActive(true);
+
+            canvas2d.worldCamera = mainCamera;
         }
 
         yield return null;

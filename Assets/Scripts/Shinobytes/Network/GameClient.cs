@@ -95,13 +95,13 @@ public class GameClient : IDisposable
                 BeginReceive();
                 BeginWrite();
 
-                var pingPongDelta = UnityEngine.Time.realtimeSinceStartup - lastPongSentTime;
-                if (lastPongSentTime > 0 && pingPongDelta > PingPongTimeoutSeconds && server.IsConnectedToRemote)
-                {
-                    //Shinobytes.Debug.LogError("No Ping Pong from Remote Bot in the past " + pingPongDelta + " seconds! This may mean that we cannot get any data from the remote bot. Trying to force reconnect.");
-                    //server.Disconnect(BotConnectionType.Remote);
-                    lastPongSentTime = UnityEngine.Time.realtimeSinceStartup;
-                }
+                //var pingPongDelta = UnityEngine.Time.realtimeSinceStartup - lastPongSentTime;
+                //if (lastPongSentTime > 0 && pingPongDelta > PingPongTimeoutSeconds && server.IsConnectedToRemote)
+                //{
+                //    //Shinobytes.Debug.LogError("No Ping Pong from Remote Bot in the past " + pingPongDelta + " seconds! This may mean that we cannot get any data from the remote bot. Trying to force reconnect.");
+                //    //server.Disconnect(BotConnectionType.Remote);
+                //    lastPongSentTime = UnityEngine.Time.realtimeSinceStartup;
+                //}
             }
         }
         catch (Exception exc)
@@ -210,7 +210,7 @@ public class GameClient : IDisposable
 
                 while (client.Connected)
                 {
-                    if (disposed || GameCache.Instance.IsAwaitingGameRestore)
+                    if (writer == null || disposed || GameCache.Instance.IsAwaitingGameRestore)
                         return;
 
                     try
@@ -218,17 +218,19 @@ public class GameClient : IDisposable
                         if (toWrite.TryDequeue(out var cmd))
                         {
                             //server.Log(cmd);
-                            var json = JsonConvert.SerializeObject(cmd);
-                            writer.WriteLine(json);
-                            writer.Flush();
+                            if (cmd != null)
+                            {
+                                var json = JsonConvert.SerializeObject(cmd);
+                                writer.WriteLine(json);
+                                writer.Flush();
 
-                            onDataSent?.Invoke(json);
+                                onDataSent?.Invoke(json);
+                                continue;
+                            }
                         }
-                        else
-                        {
-                            //await Task.Delay(10);
-                            System.Threading.Thread.Sleep(10);
-                        }
+                     
+                        //await Task.Delay(10);
+                        System.Threading.Thread.Sleep(10);
                     }
                     catch (Exception exc)
                     {

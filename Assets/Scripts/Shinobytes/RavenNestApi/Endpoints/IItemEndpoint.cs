@@ -8,6 +8,8 @@ namespace RavenNest.SDK.Endpoints
     {
         Task<ItemCollection> GetAsync();
 
+        Task<RedeemableItemCollection> GetRedeemablesAsync();
+
         Task<bool> AddItemAsync(Item item);
 
         Task<bool> UpdateItemAsync(Item item);

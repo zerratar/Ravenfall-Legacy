@@ -20,7 +20,7 @@ public class EquipmentSlot : MonoBehaviour
         ClearItem();
     }
 
-    internal void SetItem(Item item)
+    internal void SetItem(GameInventoryItem item)
     {
         if (item == null)
         {
@@ -31,10 +31,10 @@ public class EquipmentSlot : MonoBehaviour
         tooltip.Enable();
         iconImage.gameObject.SetActive(false);
 
-        if (!loadedItemImages.TryGetValue(item.Id, out var sprite))
+        if (!loadedItemImages.TryGetValue(item.Item.Id, out var sprite))
         {
-            sprite = UnityEngine.Resources.Load<Sprite>("Items/" + item.Id);
-            loadedItemImages[item.Id] = sprite;
+            sprite = UnityEngine.Resources.Load<Sprite>("Items/" + item.Item.Id);
+            loadedItemImages[item.Item.Id] = sprite;
         }
 
         if (sprite)
@@ -43,23 +43,49 @@ public class EquipmentSlot : MonoBehaviour
         }
 
         itemImage.sprite = sprite;
-        tooltip.Title = item.Name;
+        tooltip.Title = item.InventoryItem.Name ?? item.Item.Name;
         tooltip.Body = GenerateItemTooltipContent(item);
     }
 
-    private string GenerateItemTooltipContent(Item item)
+    private string GenerateItemTooltipContent(GameInventoryItem item)
     {
-        if (item.Type == ItemType.Pet)
+        if (item.Item.Type == ItemType.Pet)
         {
             return "Aww! What a cute little pet!";
         }
 
         StringBuilder sb = new StringBuilder();
-        var stats = GetItemStats(item);
-
+        var stats = item.GetItemStats();
+        sb.Append("<mspace=20>");
         foreach (var s in stats)
-            sb.AppendLine(s.Name + "\t" + s.Value);
+        {
+            var bonus = "";
+            if (s.Enchantment != null)
+            {
+                if (s.Bonus > 0)
+                {
+                    bonus = " <color=green>(+" + s.Bonus + ")</color>";
+                }
+                else if (s.Bonus < 0)
+                {
+                    bonus = " <color=red>(-" + s.Bonus + ")</color>";
+                }
+            }
 
+            sb.AppendLine(s.Name.PadRight(14, ' ') + " <b>" + s.Value + bonus + "</b>");
+        }
+
+        if (item.Enchantments != null && item.Enchantments.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("<color=green><b>Enchantments</b>");
+            foreach (var e in item.Enchantments)
+            {
+                sb.AppendLine(e.Name.PadRight(14, ' ') + (" <b>+" + (e.ValueType == AttributeValueType.Percent ? ((int)(e.Value * 100)) + "%" : e.Value + "") + "</b>").PadLeft(11, ' '));
+
+            }
+        }
+        sb.Append("</mspace>");
         return sb.ToString();
     }
 
@@ -69,30 +95,4 @@ public class EquipmentSlot : MonoBehaviour
         itemImage.gameObject.SetActive(false);
         tooltip.Disable();
     }
-
-    private IReadOnlyList<ItemStat> GetItemStats(Item i)
-    {
-        var stats = new List<ItemStat>();
-        if (i.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.WeaponAim));
-        if (i.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.WeaponPower));
-        if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.RangedAim));
-        if (i.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", i.RangedPower));
-        if (i.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.MagicAim));
-        if (i.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.MagicPower));
-        if (i.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.ArmorPower));
-        return stats;
-    }
-
-    private class ItemStat
-    {
-        public ItemStat() { }
-        public ItemStat(string name, int value)
-        {
-            this.Name = name;
-            this.Value = value;
-        }
-        public string Name { get; set; }
-        public int Value { get; set; }
-    }
-
 }

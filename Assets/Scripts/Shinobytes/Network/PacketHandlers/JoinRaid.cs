@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class RaidJoin : PacketHandler<TwitchPlayerInfo>
+public class RaidJoin : PacketHandler<EventJoinRequest>
 {
     public RaidJoin(
         GameManager game,
@@ -10,20 +10,21 @@ public class RaidJoin : PacketHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(EventJoinRequest data, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var username = data.Player.Username;
+        var player = PlayerManager.GetPlayer(data.Player);
         if (player)
         {
             if (player.StreamRaid.InWar)
             {
-                client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_WAR);
+                client.SendMessage(username, Localization.MSG_JOIN_RAID_WAR);
                 return;
             }
 
             if (player.Ferry.OnFerry)
             {
-                client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_FERRY);
+                client.SendMessage(username, Localization.MSG_JOIN_RAID_FERRY);
                 return;
             }
 
@@ -34,28 +35,31 @@ public class RaidJoin : PacketHandler<TwitchPlayerInfo>
 
             if (player.Arena.InArena && Game.Arena.Started)
             {
-                client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_ARENA);
+                client.SendMessage(username, Localization.MSG_JOIN_RAID_ARENA);
                 return;
             }
 
             if (player.Duel.InDuel)
             {
-                client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_DUEL);
+                client.SendMessage(username, Localization.MSG_JOIN_RAID_DUEL);
                 return;
-            }            
+            }
 
-            var result = Game.Raid.CanJoin(player);
+            var result = Game.Raid.CanJoin(player, data.Code);
             switch (result)
             {
                 case RaidJoinResult.NoActiveRaid:
-                    client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_NO_RAID);
+                    client.SendMessage(username, Localization.MSG_JOIN_RAID_NO_RAID);
                     return;
                 case RaidJoinResult.AlreadyJoined:
-                    client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_ALREADY);
+                    client.SendMessage(username, Localization.MSG_JOIN_RAID_ALREADY);
                     return;
                 case RaidJoinResult.MinHealthReached:
-                    client.SendMessage(data.Username, Localization.MSG_JOIN_RAID_PAST_HEALTH);
+                    client.SendMessage(username, Localization.MSG_JOIN_RAID_PAST_HEALTH);
                     return;
+                case RaidJoinResult.WrongCode:
+                    client.SendMessage(username, "You have used incorrect command for joining the raid. Use !raid [word seen on stream] to join.");
+                    break;
             }
 
             if (player.Onsen.InOnsen)
@@ -65,11 +69,11 @@ public class RaidJoin : PacketHandler<TwitchPlayerInfo>
 
             Game.Arena.Leave(player);
             Game.Raid.Join(player);
-            client.SendMessage(data.Username, Localization.MSG_JOIN_RAID);
+            client.SendMessage(username, Localization.MSG_JOIN_RAID);
         }
         else
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendMessage(username, Localization.MSG_NOT_PLAYING);
         }
     }
 }

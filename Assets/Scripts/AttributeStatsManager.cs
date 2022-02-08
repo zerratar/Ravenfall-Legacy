@@ -54,15 +54,17 @@ public class AttributeStatsManager : MonoBehaviour
     {
         var scrolls = player.Inventory.GetInventoryItemsOfCategory(RavenNest.Models.ItemCategory.Scroll);
         var e = scrolls?.FirstOrDefault(x => x.Item.Name.ToLower().Contains("exp"));
-        exp.Text = ((long)(e?.Amount ?? 0d)).ToString();
+        exp.Text = ((long)(e?.InventoryItem.Amount ?? 0d)).ToString();
         var r = scrolls?.FirstOrDefault(x => x.Item.Name.ToLower().Contains("raid"));
-        raid.Text = ((long)(r?.Amount ?? 0d)).ToString();
+        raid.Text = ((long)(r?.InventoryItem.Amount ?? 0d)).ToString();
         var d = scrolls?.FirstOrDefault(x => x.Item.Name.ToLower().Contains("dungeon"));
-        dungeon.Text = ((long)(d?.Amount ?? 0d)).ToString();
+        dungeon.Text = ((long)(d?.InventoryItem.Amount ?? 0d)).ToString();
 
-        armor.Text = observedPlayer.EquipmentStats.ArmorPower.ToString();
-        melee.Text = observedPlayer.EquipmentStats.WeaponAim + "\n" + observedPlayer.EquipmentStats.WeaponPower;
-        ranged.Text = observedPlayer.EquipmentStats.RangedAim + "\n" + observedPlayer.EquipmentStats.RangedPower;
-        magic.Text = observedPlayer.EquipmentStats.MagicAim + "\n" + observedPlayer.EquipmentStats.MagicPower;
+        var eqStats = observedPlayer.EquipmentStats;
+
+        armor.Text = (eqStats.ArmorPowerBonus > 0 ? "<color=green>" : "") + eqStats.ArmorPower.ToString();
+        melee.Text = (eqStats.WeaponBonus > 0 ? "<color=green>" : "") + eqStats.WeaponAim + "\n" + eqStats.WeaponPower;
+        ranged.Text = (eqStats.RangedBonus > 0 ? "<color=green>" : "") + eqStats.RangedAim + "\n" + eqStats.RangedPower;
+        magic.Text = (eqStats.MagicBonus > 0 ? "<color=green>" : "") + eqStats.MagicAim + "\n" + eqStats.MagicPower;
     }
 }

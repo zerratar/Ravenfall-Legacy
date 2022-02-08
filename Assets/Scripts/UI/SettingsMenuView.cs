@@ -54,7 +54,8 @@ public class SettingsMenuView : MenuView
         TimeSpan.FromHours(12), // [4]
         TimeSpan.FromHours(24), // [5]
         TimeSpan.FromHours(36), // [6]
-        TimeSpan.FromHours(48)  // [7]
+        TimeSpan.FromHours(48), // [7]
+        TimeSpan.FromDays(30)   // [8]
     };
 
     public static TimeSpan GetPlayerCacheExpiryTime()

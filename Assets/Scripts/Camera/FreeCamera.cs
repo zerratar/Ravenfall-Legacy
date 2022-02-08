@@ -180,10 +180,10 @@ public class FreeCamera : MonoBehaviour
     {
         try
         {
-            if (!System.IO.Directory.Exists("data"))
-                System.IO.Directory.CreateDirectory("data");
+            if (!Shinobytes.IO.Directory.Exists("data"))
+                Shinobytes.IO.Directory.CreateDirectory("data");
             var data = JsonConvert.SerializeObject(storedPositions);
-            System.IO.File.WriteAllText(CameraPositionDataFile, data);
+            Shinobytes.IO.File.WriteAllText(CameraPositionDataFile, data);
         }
         catch
         {
@@ -195,10 +195,10 @@ public class FreeCamera : MonoBehaviour
     {
         try
         {
-            if (!System.IO.File.Exists(CameraPositionDataFile))
+            if (!Shinobytes.IO.File.Exists(CameraPositionDataFile))
                 return;
 
-            var data = System.IO.File.ReadAllText(CameraPositionDataFile);
+            string data = Shinobytes.IO.File.ReadAllText(CameraPositionDataFile);
             storedPositions = JsonConvert.DeserializeObject<StoredPosition[]>(data);
         }
         catch

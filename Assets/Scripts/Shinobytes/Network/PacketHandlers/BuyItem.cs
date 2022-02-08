@@ -39,7 +39,7 @@ public class BuyItem : PacketHandler<TradeItemRequest>
             if (pricePerItem > long.MaxValue)
                 pricePerItem = long.MaxValue;
 
-            var result = await Game.RavenNest.Marketplace.BuyItemAsync(player.UserId, item.Item.Id, (long)amount, (long)pricePerItem);
+            var result = await Game.RavenNest.Marketplace.BuyItemAsync(player.UserId, item.Id, (long)amount, (long)pricePerItem);
 
             switch (result.State)
             {
@@ -64,7 +64,7 @@ public class BuyItem : PacketHandler<TradeItemRequest>
                     break;
 
                 case ItemTradeState.Success:
-                    player.Inventory.Add(item.Item, item.Amount);
+                    var instance = player.Inventory.AddToBackpack(item.Item.Item, item.Amount);
                     var msg = "";
                     var arg0 = "";
                     var arg1 = "";
@@ -85,7 +85,7 @@ public class BuyItem : PacketHandler<TradeItemRequest>
 
                     msg += "{itemName} was bought ";
 
-                    if (player.EquipIfBetter(item.Item))
+                    if (player.EquipIfBetter(instance))
                     {
                         msg += "and equipped for {price} coins.";
                     }

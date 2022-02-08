@@ -18,7 +18,6 @@
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
-
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: true);
 
@@ -34,15 +33,23 @@
             return;
         }
 
+        if (item.Item?.Soulbound ?? false)
+        {
+            client.SendMessage(player, Localization.MSG_ITEM_SOULBOUND, item.Item.Name);
+            return;
+        }
+
         var amount = item.Amount;
         if (amount > long.MaxValue)
             amount = long.MaxValue;
 
-        var giftCount = await Game.RavenNest.Players.GiftItemAsync(player.UserId, item.Player.UserId, item.Item.Id, (long)amount);
+        var giftCount = await Game.RavenNest.Players.GiftItemAsync(player.UserId, item.Player.UserId, item.Id, (long)amount);
         if (giftCount > 0)
         {
-            item.Player.Inventory.Add(item.Item, item.Amount);
-            player.Inventory.Remove(item.Item, item.Amount, true);
+            // Update game client with the changes
+            // this is done locally to avoid sending additional data from server to client and visa versa.
+            item.Player.Inventory.AddToBackpack(item.Item, item.Amount);
+            player.Inventory.Remove(item.Item.Item, item.Amount, true);
             client.SendFormat(player.PlayerName, Localization.MSG_GIFT, giftCount, item.Item.Name, item.Player.PlayerName);
         }
         else

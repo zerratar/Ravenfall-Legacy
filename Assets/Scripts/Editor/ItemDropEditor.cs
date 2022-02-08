@@ -20,17 +20,21 @@ public class ItemDropEditor : Editor
 
         if (this.itemManager == null || JsonBasedItemRepository.Instance == null)
         {
-            this.itemManager = new JsonBasedItemRepository(@"C:\git\Ravenfall-Legacy-new\Data\Repositories\items.json");
+            this.itemManager = new JsonBasedItemRepository();
         }
 
-        if (this.itemManager == null)
+        if (this.itemManager == null) {             
             return;
+        }
 
 
         this.loadedItems = itemManager.GetItems();
-
         if (loadedItems == null || loadedItems.Count == 0)
+        {
+            Debug.LogError("items.json repository file could not be found.");
             return;
+        }
+            
 
         itemNames = loadedItems.Select(x => x.Name).OrderBy(x => x).ToArray();
 
@@ -40,14 +44,18 @@ public class ItemDropEditor : Editor
         items = serializedObject.FindProperty("items");
         dropList = serializedObject.FindProperty("dropList");
     }
+
     public override void OnInspectorGUI()
     {
-        if (serializedObject == null || loadedItems == null)
+        if (items == null || dropList == null || serializedObject == null || loadedItems == null)
             return;
 
         serializedObject.Update();
 
-        EditorGUILayout.PropertyField(dropList);
+        if (dropList != null)
+        {
+            EditorGUILayout.PropertyField(dropList);
+        }
 
         items.isExpanded = EditorGUILayout.Foldout(items.isExpanded, "Droppable Items");
         if (items.isExpanded)
@@ -146,8 +154,7 @@ public class ItemDropEditor : Editor
         }
 
         //EditorGUILayout.PropertyField(items);
-
-        if (dropList.objectReferenceValue)
+        if (dropList != null && dropList.objectReferenceValue)
         {
 
             var idl = dropList.objectReferenceValue as ItemDropList;

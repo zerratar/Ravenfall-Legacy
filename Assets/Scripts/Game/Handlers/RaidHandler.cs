@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class RaidHandler : MonoBehaviour
@@ -9,7 +10,7 @@ public class RaidHandler : MonoBehaviour
     [SerializeField] private GameManager gameManager;
     [SerializeField] private PlayerController player;
 
-    private float raidEnterTime;
+    public float RaidEnterTime;
 
     private bool teleported;
     private IslandController previousIsland;
@@ -98,7 +99,7 @@ public class RaidHandler : MonoBehaviour
     public void OnEnter()
     {
         InRaid = true;
-        raidEnterTime = Time.time;
+        RaidEnterTime = Time.time;
 #if DEBUG
         Shinobytes.Debug.Log($"{player.PlayerName} entered the raid");
 #endif
@@ -145,29 +146,27 @@ public class RaidHandler : MonoBehaviour
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public float GetParticipationPercentage()
+    {
+        return gameManager.Raid.GetParticipationPercentage(RaidEnterTime);
+    }
+
     public void OnLeave(bool raidWon, bool raidTimedOut)
     {
         InRaid = false;
         if (raidWon)
         {
-            var proc = gameManager.Raid.GetParticipationPercentage(raidEnterTime);
-            var raidBossCombatLevel = gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
-            var exp = GameMath.CombatExperience(raidBossCombatLevel / 15) * proc;
-            var yieldExp = exp / 2d;
-
-            player.AddExp(yieldExp, Skill.Slayer);
-            player.AddExpToActiveSkillStat(yieldExp);
-
-            //if (!player.AddExpToCurrentSkill(yieldExp))
-            //player.AddExp(yieldExp, Skill.Slayer);
-
             ++player.Statistics.RaidsWon;
 
-            var itemDrop = gameManager.Raid.Boss.GetComponent<ItemDropHandler>();
-            if (itemDrop)
-            {
-                itemDrop.DropItem(player);
-            }
+            var proc = gameManager.Raid.GetParticipationPercentage(RaidEnterTime);
+            var raidBossCombatLevel = (double)gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
+            //var exp = GameMath.CombatExperience(raidBossCombatLevel / 15) * proc;
+            //var yieldExp = exp / 2d;
+
+            var factor = Math.Min(50, Math.Max(raidBossCombatLevel / player.Stats.CombatLevel, 10d)) * proc;
+            player.AddExp(Skill.Slayer, factor);
+            player.AddExp(Math.Max(5 * proc, factor * 0.5));
         }
 
         if (raidTimedOut)
@@ -187,7 +186,10 @@ public class RaidHandler : MonoBehaviour
             teleported = false;
             player.Teleporter.Teleport(prevPosition);
             player.Chunk = prevChunk;
-            player.SetTaskArguments(prevTaskArgs);
+            if (prevChunk != null)
+            {
+                player.SetTask(prevChunk.ChunkType, prevTaskArgs);
+            }
             player.taskTarget = null;
         }
 #if DEBUG

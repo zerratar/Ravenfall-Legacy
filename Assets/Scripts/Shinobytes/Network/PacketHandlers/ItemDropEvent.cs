@@ -35,7 +35,7 @@ public class ItemDropEvent : PacketHandler<TradeItemRequest>
         if (dropEventManager)
         {
             var itemCount = Game.Players.GetPlayerCount() * 2;
-            dropEventManager.Drop(item.Item, itemCount);
+            dropEventManager.Drop(item.Item.Item, itemCount);
         }
     }
 }

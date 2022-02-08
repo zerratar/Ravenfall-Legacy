@@ -2,5 +2,5 @@
 
 internal interface IItemResolver
 {
-    TradeItem Resolve(string itemTradeQuery, bool parsePrice = true, bool parseUsername = false, bool parseAmount = true);
+    TradeItem Resolve(string itemTradeQuery, bool parsePrice = true, bool parseUsername = false, bool parseAmount = true, PlayerController playerToSearch = null);
 }

@@ -8,14 +8,13 @@ using UnityEngine;
 namespace Assets
 {
 
-
     public class GenerateRedeemableRow : EditorWindow
     {
-        [MenuItem("Ravenfall/Tools/Generate Redeemable Row")]
+        [MenuItem("Ravenfall/Tools/Items/Generate Redeemable Row")]
         public static void ShowWindow()
         {
             var editor = EditorWindow.GetWindow<GenerateRedeemableRow>();
-            editor.itemManager = new JsonBasedItemRepository(@"C:\git\Ravenfall-Legacy-new\Data\Repositories\items.json");
+            editor.itemManager = new JsonBasedItemRepository();
             editor.loadedItems = editor.itemManager.GetItems();
         }
 
@@ -72,7 +71,7 @@ namespace Assets
     }
     public class FindMissingScripts : EditorWindow
     {
-        [MenuItem("Ravenfall/Tools/FindMissingScripts")]
+        [MenuItem("Ravenfall/Tools/Scripts/FindMissingScripts")]
         public static void ShowWindow()
         {
             EditorWindow.GetWindow(typeof(FindMissingScripts));

@@ -66,7 +66,7 @@ public class StreamLabel
             if (!System.IO.Directory.Exists(settings.StreamLabelsFolder))
                 System.IO.Directory.CreateDirectory(settings.StreamLabelsFolder);
 
-            System.IO.File.WriteAllText(System.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt"), Value);
+            Shinobytes.IO.File.WriteAllText(System.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt"), Value);
         }
         catch
         {

@@ -48,7 +48,12 @@ namespace RavenNest.SDK.Endpoints
             return SendAsync<object>(target, type);
         }
 
-        public async Task<TResult> SendAsync<TResult, TModel>(ApiRequestTarget reqTarget, ApiRequestType type, TModel model)
+        public Task<TResult> SendAsync<TResult, TModel>(ApiRequestTarget reqTarget, ApiRequestType type, TModel model)
+        {
+            return SendAsync<TResult>(reqTarget, type, model);
+        }
+
+        public async Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, object model)
         {
             if (IntegrityCheck.IsCompromised)
             {
@@ -101,7 +106,6 @@ namespace RavenNest.SDK.Endpoints
             {
                 requestData = JsonConvert.SerializeObject(model);
             }
-
 
             if (!string.IsNullOrEmpty(requestData))
             {

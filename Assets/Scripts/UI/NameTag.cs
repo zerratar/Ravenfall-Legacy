@@ -139,7 +139,7 @@ public class NameTag : MonoBehaviour
     }
 
     public static Color GetColorFromHex(string hex)
-    {
+    {        
         if (ColorUtility.TryParseHtmlString(hex, out var color))
             return color;
         return Color.white;

@@ -6,8 +6,8 @@ using UnityEngine;
 public class ItemDropHandler : MonoBehaviour
 {
     [SerializeField] private ItemDropList dropList;
-
     [SerializeField] private ItemDrop[] items;
+
     private GameManager gameManager;
 
     // Start is called before the first frame update
@@ -22,20 +22,57 @@ public class ItemDropHandler : MonoBehaviour
         items = dropList.Items;
     }
 
-    public void DropItem(PlayerController player,
-        DropType dropType = DropType.Standard,
-        string messageStart = "You found")
+    public PlayerItemDropText DropItems(IEnumerable<PlayerController> players, DropType dropType)
     {
+        //DropItem(player);
+        // Does unity allow us to use C# 10?
+        //Action<string, string[]> Announce = gameManager.RavenBot.Announce;
+        var droppedItems = new Dictionary<string, List<string>>();
+        foreach (var player in players)
+        {
+            var result = DropItem(player, dropType);
+            if (result.Item != null)
+            {
+                var item = player.PickupItem(result.Item, false);
+                var key = result.Item.Name;
+
+                if (!droppedItems.TryGetValue(key, out var items))
+                {
+                    droppedItems[key] = (items = new List<string>());
+                }
+
+                items.Add(player.PlayerName);
+            }
+        }
+
+        return new PlayerItemDropText(droppedItems, true);
+    }
+
+    private AllocatedItemDrop DropItem(
+        PlayerController player,
+        DropType dropType = DropType.Maybe)
+    {
+
         if (items == null || items.Length == 0)
         {
-            return;
+            return new AllocatedItemDrop
+            {
+                Player = player
+            };
         }
-        var guaranteedDrop = dropType == DropType.MagicRewardGuaranteed || dropType == DropType.StandardGuaranteed;
+
+        var guaranteedDrop = dropType == DropType.Guaranteed;
 
         var dropitems = this.items.ToList();
         var now = DateTime.UtcNow;
-        //AddTimelyMonthDrop(10, 1, "Halloween Token");
-        AddMonthDrop(dropitems, 12, 1, "Christmas Token", "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f);
+
+        var invItems = player.Inventory.GetInventoryItems();
+
+        var santaHat = "Santa Hat";
+        var santaHatId = Guid.Parse("cfb510cb-7916-4b2c-a17f-6048f5c6b282");
+        var existingSantaHat = invItems.FirstOrDefault(x => x.ItemId == santaHatId) != null;
+        AddMonthDrop(dropitems, now.Year == 2022 ? 1 : 12, 1, santaHat, santaHatId.ToString(), 0.05f, 0.0175f, existingSantaHat);
+        AddMonthDrop(dropitems, now.Year == 2022 ? 1 : 12, 1, "Christmas Token", "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f);
         AddMonthDrop(dropitems, 10, now.Year == 2021 ? 2 : 1, "Halloween Token", "91fc824a-0ede-4104-96d1-531cdf8d56a6", 0.05f, 0.0175f);
 
         do
@@ -54,7 +91,8 @@ public class ItemDropHandler : MonoBehaviour
                 return new
                 {
                     Item = item,
-                    x.DropChance
+                    x.DropChance,
+                    x.Unique,
                 };
             })
                 .Where(x => x.Item != null)
@@ -68,14 +106,22 @@ public class ItemDropHandler : MonoBehaviour
 
                 if (UnityEngine.Random.value <= item.DropChance)
                 {
-                    player.PickupItem(item.Item, messageStart);
-                    return;
+                    return new AllocatedItemDrop
+                    {
+                        Player = player,
+                        Item = item.Item
+                    };
                 }
             }
         } while (guaranteedDrop);
+
+        return new AllocatedItemDrop
+        {
+            Player = player
+        };
     }
 
-    private void AddMonthDrop(List<ItemDrop> droplist, int monthStart, int monthsLength, string itemName, string itemId, float maxDropRate, float minDropRate)
+    private void AddMonthDrop(List<ItemDrop> droplist, int monthStart, int monthsLength, string itemName, string itemId, float maxDropRate, float minDropRate, bool dropRateDecreased = false)
     {
         var now = DateTime.UtcNow;
         var start = new DateTime(now.Year, monthStart, 1);
@@ -90,26 +136,15 @@ public class ItemDropHandler : MonoBehaviour
             {
                 ItemName = itemName,
                 ItemID = itemId,
-                DropChance = dropChance,
+                DropChance = dropRateDecreased ? (dropChance * 0.1f) : dropChance,
+                Unique = dropRateDecreased,
             });
         }
     }
-}
 
-public enum DropType
-{
-    Standard,
-    StandardGuaranteed,
-    MagicReward,
-    MagicRewardGuaranteed
-}
-
-[Serializable]
-public class ItemDrop
-{
-    public string ItemID;
-    public string ItemName;
-
-    [Range(0.0001f, 1f)]
-    public float DropChance;
+    struct AllocatedItemDrop
+    {
+        public PlayerController Player;
+        public RavenNest.Models.Item Item;
+    }
 }

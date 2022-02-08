@@ -267,6 +267,8 @@ public class DungeonController : MonoBehaviour
         {
             player.Dungeon.OnEnter();
         }
+
+        gameManager.Ferry.AssignBestCaptain();
     }
 
     private void Exit()
@@ -290,25 +292,24 @@ public class DungeonController : MonoBehaviour
         }
     }
 
-    internal void RewardPlayer(PlayerController player, bool generateMagicAttributes)
+    public void AddExperienceReward(PlayerController player)
+    {
+        var factor = Math.Min(50, Math.Max(bossCombatLevel / player.Stats.CombatLevel, 10d));
+        player.AddExp(Skill.Slayer, factor);
+        player.AddExp(Math.Max(5, factor * 0.5));
+    }
+
+    public void RewardItemDrops(List<PlayerController> joinedPlayers)
     {
         if (!ItemDrops) return;
-
-        var exp = GameMath.CombatExperience(bossCombatLevel / 5);
-
-        var yieldExp = exp / 2d;
-        player.AddExp(yieldExp, Skill.Slayer);
-        player.AddExpToActiveSkillStat(yieldExp);
-
-        //if (!player.AddExpToCurrentSkill(yieldExp))
-        //    player.AddExp(yieldExp, Skill.Slayer);
-
-        var type = generateMagicAttributes ? DropType.MagicRewardGuaranteed : DropType.StandardGuaranteed;
-        for (var i = 0; i < itemRewardCount; ++i)
+        var collection = ItemDrops.DropItems(joinedPlayers, DropType.Guaranteed);
+        gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain and yielded " + collection.Count + " item treasures!");
+        foreach (var msg in collection.Messages)
         {
-            ItemDrops.DropItem(player, type);
+            gameManager.RavenBot.Announce(msg);
         }
     }
+
     internal void DisableContainer()
     {
         dungeonContainer.SetActive(false);
@@ -326,4 +327,5 @@ public class DungeonController : MonoBehaviour
             room.ResetRoom();
         }
     }
+
 }

@@ -53,6 +53,15 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<VillageInfo> GetAsync()
+        {
+            return request.Create()
+               .Build()
+               .SendAsync<VillageInfo>(
+                   ApiRequestTarget.Village,
+                   ApiRequestType.Get);
+        }
+
         public Task<bool> RemoveHouseAsync(int slot)
         {
             return request.Create()

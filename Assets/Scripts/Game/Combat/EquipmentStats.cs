@@ -11,6 +11,18 @@ public class EquipmentStats : IComparable
     public int RangedPower;
     public int RangedAim;
 
+    public int ArmorPowerBonus;
+    public int WeaponAimBonus;
+    public int WeaponPowerBonus;
+    public int MagicPowerBonus;
+    public int MagicAimBonus;
+    public int RangedPowerBonus;
+    public int RangedAimBonus;
+
+    public int WeaponBonus => WeaponAimBonus + WeaponPowerBonus;
+    public int RangedBonus=> RangedAimBonus + RangedPowerBonus;
+    public int MagicBonus => MagicAimBonus + MagicPowerBonus;
+
     public static EquipmentStats Zero => new EquipmentStats();
 
     public int CompareTo(object obj)

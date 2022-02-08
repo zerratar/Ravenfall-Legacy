@@ -92,6 +92,10 @@ public class TavernHandler : MonoBehaviour
             case 12:
                 SetTheme(christmasTheme);
                 break;
+            case 1:
+                if (dateNow.Year == 2022) // Special year. As christmas was late, we allow it to exist for whole of january too.
+                    SetTheme(christmasTheme);
+                break;
             default:
                 SetTheme(defaultTheme);
                 break;

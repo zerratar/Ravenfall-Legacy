@@ -80,7 +80,7 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
             var player = targetPlayers[i];
             if (i >= instantiatedPlayerRows.Count)
             {
-                UnityEngine.Debug.LogError("Unable to assign all player slot rows properly.");
+                UnityEngine.Debug.LogWarning("Unable to assign all player slot rows properly.");
                 break;
             }
 
@@ -100,7 +100,9 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
                     player,
                     townHouseManager.IsHouseOwner(player),
                     townHouse);
+#if DEBUG
                 UnityEngine.Debug.Log("Set Player Row with player: " + player.Name);
+#endif
             }
         }
     }

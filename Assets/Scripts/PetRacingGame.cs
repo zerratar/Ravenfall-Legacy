@@ -69,13 +69,13 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
             return;
         }
 
-        if (string.IsNullOrEmpty(pet.GenericPrefab))
+        if (string.IsNullOrEmpty(pet.Item.GenericPrefab))
         {
             gameManager.RavenBot.SendMessage(player.Name, "PET IS BROKEN?!?");
             return;
         }
 
-        var petPrefab = Resources.Load<GameObject>(pet.GenericPrefab);
+        var petPrefab = Resources.Load<GameObject>(pet.Item.GenericPrefab);
         var petObj = Instantiate(petPrefab, playersContainer.transform);
 
         petObj.transform.localScale *= 0.1f;

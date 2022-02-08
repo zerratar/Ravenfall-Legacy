@@ -55,11 +55,11 @@ public abstract class JsonBasedRepository<T> : IRepository<T>
 
     public async Task SaveAsync()
     {
-        if (!System.IO.Directory.Exists(repoFolder))
-            System.IO.Directory.CreateDirectory(repoFolder);
+        if (!Shinobytes.IO.Directory.Exists(repoFolder))
+            Shinobytes.IO.Directory.CreateDirectory(repoFolder);
         var json = JsonConvert.SerializeObject(items.Values.ToList());
         var repoFile = System.IO.Path.Combine(repoFolder, "repository.json");
-        using (var stream = System.IO.File.OpenWrite(repoFile))
+        using (var stream = Shinobytes.IO.File.OpenWrite(repoFile))
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             await stream.WriteAsync(bytes, 0, bytes.Length);
@@ -69,23 +69,23 @@ public abstract class JsonBasedRepository<T> : IRepository<T>
     public void Load()
     {
         var repoFile = System.IO.Path.Combine(repoFolder, "repository.json");
-        if (!System.IO.File.Exists(repoFile))
+        if (!Shinobytes.IO.File.Exists(repoFile))
         {
             return;
         }
 
-        var readAllText = System.IO.File.ReadAllText(repoFile);
+        var readAllText = Shinobytes.IO.File.ReadAllText(repoFile);
         var values = JsonConvert.DeserializeObject<List<T>>(readAllText);
         values.ForEach(x => Update(x));
     }
 
     public void Save()
     {
-        if (!System.IO.Directory.Exists(repoFolder))
-            System.IO.Directory.CreateDirectory(repoFolder);
+        if (!Shinobytes.IO.Directory.Exists(repoFolder))
+            Shinobytes.IO.Directory.CreateDirectory(repoFolder);
         var json = JsonConvert.SerializeObject(items.Values.ToList());
         var repoFile = System.IO.Path.Combine(repoFolder, "repository.json");
-        System.IO.File.WriteAllText(repoFile, json);
+        Shinobytes.IO.File.WriteAllText(repoFile, json);
         Shinobytes.Debug.Log(repoFile + " saved.");
     }
 }

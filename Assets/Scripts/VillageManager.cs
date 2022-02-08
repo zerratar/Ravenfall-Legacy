@@ -17,6 +17,8 @@ namespace Assets.Scripts
 
         private readonly Dictionary<int, TownHouseExpBonus> expBonusBySlot = new Dictionary<int, TownHouseExpBonus>();
         private readonly Dictionary<TownHouseSlotType, TownHouseExpBonus> expBonusByType = new Dictionary<TownHouseSlotType, TownHouseExpBonus>();
+        private LoadingState state = LoadingState.None;
+        private DateTime lastVillageLoad = DateTime.MinValue;
         public TownHallManager TownHall => townHallManager;
         public TownHouseManager TownHouses => townHouseManager;
 
@@ -29,6 +31,47 @@ namespace Assets.Scripts
             if (!info) info = FindObjectOfType<TownHallInfoManager>();
             if (!townHallManager) townHallManager = FindObjectOfType<TownHallManager>();
             if (!townHouseManager) townHouseManager = FindObjectOfType<TownHouseManager>();
+
+            //if (!gameManager) return;
+            //gameManager.SetLoadingState("village", state);
+        }
+
+        private void Update()
+        {
+            if (gameManager == null || gameManager.RavenNest == null)
+            {
+                return;
+            }
+
+            if (state == LoadingState.None && gameManager && gameManager.RavenNest.SessionStarted)
+            {
+                LoadVillageAsync();
+            }
+        }
+
+        private async void LoadVillageAsync()
+        {
+            state = LoadingState.Loading;
+            try
+            {
+                if (DateTime.UtcNow - lastVillageLoad >= TimeSpan.FromSeconds(5))
+                {
+                    lastVillageLoad = DateTime.UtcNow;
+                    var data = await gameManager.RavenNest.Village.GetAsync();
+                    if (data != null)
+                    {
+                        SetTierByLevel(data.Level);
+                        if (!HousesAreUpdating)
+                        {
+                            SetHouses(data.Houses);
+                        }
+                        TownHall.SetExp(data.Experience);
+                    }
+                    state = LoadingState.Loaded;
+                }
+            }
+            catch { state = LoadingState.None; }
+            //gameManager.SetLoadingState("village", state);
         }
 
         public void SetHouses(IReadOnlyList<VillageHouseInfo> houses)

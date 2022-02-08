@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public static class GameMath
@@ -10,7 +11,6 @@ public static class GameMath
     public const int OldMaxLevel = 170;
     public const float MaxExpBonusPerSlot = 50f;
     private static decimal[] OldExperienceArray = new decimal[OldMaxLevel];
-    public const double ExpScale = 1d;
     #endregion
 
     static GameMath()
@@ -32,6 +32,12 @@ public static class GameMath
             var expForLevel = Math.Floor(300D * Math.Pow(2D, (double)(level / 7M)));
             ExperienceArray[levelIndex] = Math.Round(expForLevel / 4d, 0, MidpointRounding.ToEven);
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static double Lerp(double v1, double v2, double t)
+    {
+        return v1 + (v2 - v1) * t;
     }
 
     public static float CalculateHealing(IAttackable attacker, IAttackable defender)
@@ -342,18 +348,18 @@ public static class GameMath
     private static float CalculateCastDamage(IAttackable attacker, IAttackable defender, int level, double power)
     {
         var rangeLvl = level;
-        var armour = defender.GetEquipmentStats().ArmorPower;
+        var armor = defender.GetEquipmentStats().ArmorPower;
         var rangeEquip = 15f;
-        int armourRatio = (int)(60D + ((double)((rangeEquip * 3D) - armour) / 300D) * 40D);
+        int armorRatio = (int)(60D + ((double)((rangeEquip * 3D) - armor) / 300D) * 40D);
 
-        if (UnityEngine.Random.value * 100f > armourRatio
+        if (UnityEngine.Random.value * 100f > armorRatio
                 && UnityEngine.Random.value <= 0.5)
         {
             return 0;
         }
 
         int max = (int)((rangeLvl * 0.15D) + 0.85D + power);
-        int peak = (int)(max / 100D * armourRatio);
+        int peak = (int)(max / 100D * armorRatio);
         int dip = (int)(peak / 3D * 2D);
         return RandomWeighted(dip, peak, max);
     }
@@ -406,11 +412,11 @@ public static class GameMath
         return 0;
     }
 
-    public static int MaxHit(int strength, int weaponPower)
+    public static int MaxHit(int level, int power)
     {
-        var w1 = weaponPower * 0.00175D;
+        var w1 = power * 0.00175D;
         var w2 = w1 + 0.1d;
-        var w3 = (strength + 3) * w2 + 1.05D;
+        var w3 = (level + 3) * w2 + 1.05D;
         return (int)(w3 * 0.95d);
     }
 
@@ -480,6 +486,7 @@ public static class GameMath
          */
         return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
     }
+
     public static double GetWoodcuttingExperience(int level)
     {
         return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
@@ -491,6 +498,146 @@ public static class GameMath
         {
             case RockType.Rune: return 100;
             default: return 5d;
+        }
+    }
+
+    public static class Exp
+    {
+        public const double IncrementMins = 14.0;
+        public const double IncrementHours = IncrementMins / 60.0;
+        public const double IncrementDays = IncrementHours / 24.0;
+        public const double MaxLevelDays = IncrementDays * MaxLevel;
+        public const double MultiEffectiveness = 1.375d;
+
+
+        /// <summary>
+        /// Calculates the amount of exp that should be yielded given the current skill and level.
+        /// </summary>
+        /// <param name="nextLevel"></param>
+        /// <param name="skill"></param>
+        /// <param name="factor"></param>
+        /// <param name="boost"></param>
+        /// <param name="multiplierFactor"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double CalculateExperience(int nextLevel, Skill skill, double factor = 1, double boost = 1, double multiplierFactor = 1)
+        {
+            var bTicksForLevel = GetTotalTicksForLevel(nextLevel, skill, boost);
+            var expForNextLevel = ExperienceForLevel(nextLevel);
+            var maxExpGain = expForNextLevel / bTicksForLevel;
+            var minExpGainPercent = GetMinExpGainPercent(nextLevel, skill);
+            var minExpGain = ExperienceForLevel(nextLevel) * minExpGainPercent;
+            return Lerp(0, Lerp(minExpGain, maxExpGain, multiplierFactor), factor);
+        }
+
+        /// <summary>
+        /// Gets the total amount of "Ticks" to level up to the given target level after applying the exp boost.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="skill"></param>
+        /// <param name="multiplier"></param>
+        /// <param name="playersInArea"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetTotalTicksForLevel(int level, Skill skill, double multiplier = 1, int playersInArea = 100)
+        {
+            return GetTotalTicksForLevel(level, skill, playersInArea) / GetEffectiveExpMultiplier(level, multiplier);
+        }
+
+        /// <summary>
+        /// Gets the total amount of "Ticks" to level up to the given target level. Without applying any exp boost.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="skill"></param>
+        /// <param name="playersInArea"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetTotalTicksForLevel(int level, Skill skill, int playersInArea = 100)
+        {
+            return GetMaxMinutesForLevel(level) * GetTicksPerMinute(skill, playersInArea);
+        }
+
+        /// <summary>
+        /// Gets the effective exp multiplier given the current multiplier and player level; 
+        /// This is multiplied by the exp given by one "Tick"
+        /// </summary>
+        /// <param name="multiplier">Expected to be in full form (100 and not 1.0)</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetEffectiveExpMultiplier(int level, double multiplier = 1)
+        {
+            return Math.Max(Math.Min((((MaxLevel * MultiEffectiveness) - (level - 1)) / (MaxLevel * MultiEffectiveness)) * multiplier, multiplier), 1.0);
+        }
+
+        /// <summary>
+        /// Gets the minimum exp gain in percent towards the next skill level. Is to boost up exp gains for higher levels.
+        /// </summary>
+        /// <param name="nextLevel"></param>
+        /// <param name="skill"></param>
+        /// <param name="playersInArea"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetMinExpGainPercent(int nextLevel, Skill skill, int playersInArea = 100)
+        {
+            return 1d / (GetTicksPerMinute(skill, playersInArea) * GetMaxMinutesForLevel(nextLevel));
+        }
+
+        /// <summary>
+        /// Gets the maximum possible time needed to level up from level-1 to target level.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetMaxMinutesForLevel(int level)
+        {
+            return (level - 1) * IncrementMins;
+        }
+
+        /// <summary>
+        /// Gets the expected exp ticks per minutes the target skill and players training the same thing in the area.
+        /// These values are taken from real world cases and used as an estimate.
+        /// </summary>
+        /// <param name="skill"></param>
+        /// <param name="playersInArea"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetTicksPerMinute(Skill skill, int playersInArea = 100)
+        {
+            return GetTicksPerSeconds(skill, playersInArea) * 60;
+        }
+
+        /// <summary>
+        /// Get the expected exp ticks per seconds given the target skill and players training the same thing in the area.
+        /// These values are taken from real world cases and used as an estimate.
+        /// </summary>
+        /// <param name="skill"></param>
+        /// <param name="playersInArea"></param>
+        /// <returns></returns>
+        public static double GetTicksPerSeconds(Skill skill, int playersInArea = 100)
+        {
+            switch (skill)
+            {
+                case Skill.Woodcutting when playersInArea < 100: return 0.15;
+                case Skill.Woodcutting when playersInArea >= 100: return 0.33;
+                case Skill.Farming:
+                case Skill.Crafting:
+                case Skill.Cooking:
+                case Skill.Fishing:
+                    return 1d / 3d;
+
+                case Skill.Mining:
+                    return 0.5;
+
+                case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 100:
+                    return 0.75;
+
+                case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea >= 100:
+                    return 1.25;
+
+                case Skill.Healing: return 0.5d;
+                case Skill.Sailing: return 0.4d;
+                default: return 0.5;
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 [Serializable]
@@ -185,10 +186,10 @@ public class Skills : IComparable
         return Array.IndexOf(skills.SkillList, activeSkill);
     }
 
-    public SkillStat this[int index]
-    {
-        get => this.skillList[index];
-    }
+    //public SkillStat this[int index]
+    //{
+    //    get => this.skillList[index];
+    //}
 
     public SkillStat this[Skill skill]
     {
@@ -239,6 +240,39 @@ public class Skills : IComparable
         }
 
         return null;
+    }
+
+    public RavenNest.Models.Skills ToServerModel()
+    {
+        var output = new RavenNest.Models.Skills();
+        foreach (var prop in output
+            .GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (prop.Name.Contains("Id"))
+            {
+                continue;
+            }
+
+            if (prop.Name.Contains("Level"))
+            {
+                var skill = GetSkillByName(prop.Name.Replace("Level", ""));
+                if (skill != null)
+                {
+                    prop.SetValue(output, skill.Level);
+                }
+            }
+            else
+            {
+                var skill = GetSkillByName(prop.Name);
+                if (skill != null)
+                {
+                    prop.SetValue(output, skill.Experience);
+                }
+            }
+        }
+
+        return output;
     }
 
     public static Skills operator *(Skills srcSkills, float num)

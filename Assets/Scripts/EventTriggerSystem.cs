@@ -55,90 +55,101 @@ public class EventTriggerSystem : IDisposable
     {
         while (!disposed)
         {
-            var newTriggers = false;
-            lock (triggerMutex)
+            try
             {
-                while (activeInputs.TryDequeue(out var input))
+                var newTriggers = false;
+                lock (triggerMutex)
                 {
-                    if (input == null || string.IsNullOrEmpty(input.Source))
-                    {
-                        continue;
-                    }
 
-                    var alreadyTriggered = false;
-                    var triggered = false;
-                    foreach (var activeEvent in activeEvents)
+                    while (activeInputs.TryDequeue(out var input))
                     {
-                        if (!activeEvent.Triggered.Add(input.Source))
+                        if (input == null || string.IsNullOrEmpty(input.Source))
                         {
-                            alreadyTriggered = true;
                             continue;
                         }
-                        if (!activeEvent.IsAlive)
-                            continue;
 
-                        if (activeEvent.Created > input.Sent)
-                            continue; // input has to be after event
 
-                        if (CheckTrigger(activeEvent, input))
+                        var alreadyTriggered = false;
+                        var triggered = false;
+                        foreach (var activeEvent in activeEvents)
                         {
-                            var triggerDelay = input.Sent - activeEvent.Created;
-                            newTriggers = true;
-                            triggered = true;
+                            if (!activeEvent.Triggered.Add(input.Source))
+                            {
+                                alreadyTriggered = true;
+                                continue;
+                            }
+                            if (!activeEvent.IsAlive)
+                                continue;
+
+                            if (activeEvent.Created > input.Sent)
+                                continue; // input has to be after event
+
+                            if (CheckTrigger(activeEvent, input))
+                            {
+                                var triggerDelay = input.Sent - activeEvent.Created;
+                                newTriggers = true;
+                                triggered = true;
+                                if (!sourceStatistics.TryGetValue(input.Source, out var stats))
+                                    sourceStatistics[input.Source] = stats = new SysEventStats(input.Source);
+                                stats.TriggerCount.TryGetValue(input.Input, out var tc);
+                                stats.TriggerCount[input.Input] = tc + 1;
+                                stats.InputCount.TryGetValue(input.Input, out var ic);
+                                stats.InputCount[input.Input] = ic + 1;
+                                ++stats.TriggerStreak;
+                                stats.HighestTriggerStreak = Math.Max(stats.TriggerStreak, stats.HighestTriggerStreak);
+                                if (stats.FirstTrigger == DateTime.MinValue)
+                                    stats.FirstTrigger = DateTime.UtcNow;
+                                if (stats.TriggerStreakStart == DateTime.MinValue)
+                                    stats.TriggerStreakStart = DateTime.UtcNow;
+                                stats.TriggerTime.TryGetValue(input.Input, out var tt);
+                                stats.TriggerTime[input.Input] = tt + triggerDelay;
+                                stats.TotalTriggerTime += triggerDelay;
+                                stats.LastTriggerDelay = triggerDelay;
+                                stats.LastTrigger = DateTime.UtcNow;
+                                stats.TriggerRangeMin.TryGetValue(input.Input, out var trmin);
+                                stats.TriggerRangeMin[input.Input] = trmin > 0 ? Math.Min(trmin, triggerDelay.TotalSeconds) : triggerDelay.TotalSeconds;
+                                stats.TriggerRangeMax.TryGetValue(input.Input, out var trmax);
+                                stats.TriggerRangeMax[input.Input] = Math.Max(trmax, triggerDelay.TotalSeconds);
+                            }
+                        }
+
+                        if (!triggered)
+                        {
                             if (!sourceStatistics.TryGetValue(input.Source, out var stats))
                                 sourceStatistics[input.Source] = stats = new SysEventStats(input.Source);
-                            stats.TriggerCount.TryGetValue(input.Input, out var tc);
-                            stats.TriggerCount[input.Input] = tc + 1;
-                            stats.InputCount.TryGetValue(input.Input, out var ic);
-                            stats.InputCount[input.Input] = ic + 1;
-                            ++stats.TriggerStreak;
+                            stats.InputCount.TryGetValue(input.Input, out var count);
+                            stats.InputCount[input.Input] = count + 1;
+                        }
+
+                        var triggerStreak = false;
+                        foreach (var deadEvent in activeEvents.Where(x => !x.IsAlive))
+                            triggerStreak = triggerStreak || CheckTrigger(deadEvent, input);
+
+                        if (!triggerStreak && !triggered)// && !alreadyTriggered)
+                        {
+                            if (!sourceStatistics.TryGetValue(input.Source, out var stats))
+                                sourceStatistics[input.Source] = stats = new SysEventStats(input.Source);
                             stats.HighestTriggerStreak = Math.Max(stats.TriggerStreak, stats.HighestTriggerStreak);
-                            if (stats.FirstTrigger == DateTime.MinValue)
-                                stats.FirstTrigger = DateTime.UtcNow;
-                            if (stats.TriggerStreakStart == DateTime.MinValue)
-                                stats.TriggerStreakStart = DateTime.UtcNow;
-                            stats.TriggerTime.TryGetValue(input.Input, out var tt);
-                            stats.TriggerTime[input.Input] = tt + triggerDelay;
-                            stats.TotalTriggerTime += triggerDelay;
-                            stats.LastTriggerDelay = triggerDelay;
-                            stats.LastTrigger = DateTime.UtcNow;
-                            stats.TriggerRangeMin.TryGetValue(input.Input, out var trmin);
-                            stats.TriggerRangeMin[input.Input] = trmin > 0 ? Math.Min(trmin, triggerDelay.TotalSeconds) : triggerDelay.TotalSeconds;
-                            stats.TriggerRangeMax.TryGetValue(input.Input, out var trmax);
-                            stats.TriggerRangeMax[input.Input] = Math.Max(trmax, triggerDelay.TotalSeconds);
+                            stats.TriggerStreakBreak = DateTime.UtcNow;
+                            ++stats.TriggerStreakBreakCount;
+                            stats.TriggerStreak = 0;
+                            stats.TriggerStreakStart = DateTime.MinValue;
                         }
                     }
-
-                    if (!triggered)
-                    {
-                        if (!sourceStatistics.TryGetValue(input.Source, out var stats))
-                            sourceStatistics[input.Source] = stats = new SysEventStats(input.Source);
-                        stats.InputCount.TryGetValue(input.Input, out var count);
-                        stats.InputCount[input.Input] = count + 1;
-                    }
-
-                    var triggerStreak = false;
-                    foreach (var deadEvent in activeEvents.Where(x => !x.IsAlive))
-                        triggerStreak = triggerStreak || CheckTrigger(deadEvent, input);
-
-                    if (!triggerStreak && !triggered && !alreadyTriggered)
-                    {
-                        if (!sourceStatistics.TryGetValue(input.Source, out var stats))
-                            sourceStatistics[input.Source] = stats = new SysEventStats(input.Source);
-                        stats.HighestTriggerStreak = Math.Max(stats.TriggerStreak, stats.HighestTriggerStreak);
-                        stats.TriggerStreakBreak = DateTime.UtcNow;
-                        ++stats.TriggerStreakBreakCount;
-                        stats.TriggerStreak = 0;
-                        stats.TriggerStreakStart = DateTime.MinValue;
-                    }
+                    activeEvents.RemoveAll(x => !x.IsAlive);
                 }
-                activeEvents.RemoveAll(x => !x.IsAlive);
+
+                if (newTriggers)
+                    ReinvalidateAndInspectSuspects();
+
+
+                System.Threading.Thread.Sleep(50);
             }
+            catch
+            {
 
-            if (newTriggers)
-                ReinvalidateAndInspectSuspects();
-
-            System.Threading.Thread.Sleep(10);
+                System.Threading.Thread.Sleep(1000);
+            }
         }
     }
 

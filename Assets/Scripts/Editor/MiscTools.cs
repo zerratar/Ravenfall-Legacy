@@ -10,7 +10,7 @@ namespace Assets.Scripts.Editor
 {
     public class MiscTools
     {
-        [MenuItem("Ravenfall/Tools/Group Selection")]
+        [MenuItem("Ravenfall/Tools/Hierarchy/Group Selection")]
         static void GroupSelection()
         {
             var go = new GameObject();
@@ -44,7 +44,7 @@ namespace Assets.Scripts.Editor
             }
         }
 
-        [MenuItem("Ravenfall/Tools/Remove Missing Script Entries")]
+        [MenuItem("Ravenfall/Tools/Scripts/Remove Missing Script Entries")]
         public static void RemoveMissingScriptEntries()
         {
             foreach (Transform t in Selection.transforms)
@@ -65,7 +65,7 @@ namespace Assets.Scripts.Editor
             }
         }
 
-        [MenuItem("Ravenfall/Tools/Log Missing Script Entries")]
+        [MenuItem("Ravenfall/Tools/Scripts/Log Missing Script Entries")]
         public static void LogMissingScriptEntries()
         {
             foreach (Transform t in Selection.transforms)
@@ -86,7 +86,7 @@ namespace Assets.Scripts.Editor
             }
         }
 
-        [MenuItem("Ravenfall/Tools/Select Missing Scripts")]
+        [MenuItem("Ravenfall/Tools/Scripts/Select Missing Scripts")]
         static void SelectMissing(MenuCommand command)
         {
             Transform[] ts = GameObject.FindObjectsOfType<Transform>();

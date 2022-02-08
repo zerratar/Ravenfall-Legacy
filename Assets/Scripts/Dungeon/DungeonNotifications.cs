@@ -16,14 +16,22 @@ public class DungeonNotifications : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI lblDungeonLevel;
     [SerializeField] private TMPro.TextMeshProUGUI lblDungeonTimer;
 
+    [SerializeField] private TMPro.TextMeshProUGUI lblDungeonJoin;
+    [SerializeField] private TMPro.TextMeshProUGUI lblDungeonJoin2;
+
+
     [SerializeField] private TMPro.TextMeshProUGUI lblDungeonActiveTimer;
     [SerializeField] private TMPro.TextMeshProUGUI lblPlayers;
     [SerializeField] private TMPro.TextMeshProUGUI lblEnemies;
 
     [SerializeField] private GameObject dungeonDetailsObject;
 
-    private float timer = 0;
 
+    private string lblDungeonJoinFormat;
+    private string lblDungeonJoin2Format;
+
+    private float timer = 0;
+    private int dungeonCount;
     private AudioSource audioSource;
     private string lblDungeonActiveTimerFormat;
     private string lblPlayersFormat;
@@ -33,6 +41,8 @@ public class DungeonNotifications : MonoBehaviour
     private string dungeonSound = "dungeon.mp3";
 
     private GameManager gameManager;
+
+    private StreamLabel amountOfDungeonsRunLabel;
     private StreamLabel playersLeftLabel;
     private StreamLabel enemiesLeftLabel;
     private StreamLabel runTimeLabel;
@@ -47,6 +57,9 @@ public class DungeonNotifications : MonoBehaviour
 
     private void Awake()
     {
+        this.lblDungeonJoinFormat = lblDungeonJoin.text;
+        this.lblDungeonJoin2Format = lblDungeonJoin2.text;
+
         timer = timeBeforeTimer;
 
         if (!audioSource) audioSource = GetComponent<AudioSource>();
@@ -80,8 +93,11 @@ public class DungeonNotifications : MonoBehaviour
         timerObject.Reset();
     }
 
-    public void ShowDungeonActivated()
+    public void ShowDungeonActivated(string code)
     {
+        lblDungeonJoin.text = string.Format(lblDungeonJoinFormat, code).Replace("  ", " ");
+        lblDungeonJoin2.text = string.Format(lblDungeonJoin2Format, code).Replace("  ", " ");
+
         if (audioSource)
         {
             var o = ExternalResources.GetAudioClip(dungeonSound);
@@ -91,6 +107,7 @@ public class DungeonNotifications : MonoBehaviour
         timerObject.gameObject.SetActive(false);
         dungeonBossHealth.gameObject.SetActive(false);
         activatedObject.gameObject.SetActive(true);
+        ++dungeonCount;
     }
 
     public void SetLevel(int level)
@@ -173,9 +190,14 @@ public class DungeonNotifications : MonoBehaviour
         lblPlayers.text = string.Format(lblPlayersFormat, alivePlayerCount);
         lblEnemies.text = string.Format(lblEnemiesFormat, aliveEnemyCount);
 
+        if (this.amountOfDungeonsRunLabel == null)
+            this.amountOfDungeonsRunLabel = gameManager.StreamLabels.Register("dungeon-count", () => this.dungeonCount.ToString());
+        this.amountOfDungeonsRunLabel.Update();
+
         if (this.playersLeftLabel == null)
             this.playersLeftLabel = gameManager.StreamLabels.Register("dungeon-players-left", () => alivePlayerCount.ToString());
         this.playersLeftLabel.Update();
+
 
         if (this.enemiesLeftLabel == null)
             this.enemiesLeftLabel = gameManager.StreamLabels.Register("dungeon-enemies-left", () => aliveEnemyCount.ToString());

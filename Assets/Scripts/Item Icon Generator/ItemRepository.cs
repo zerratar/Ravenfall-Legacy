@@ -38,7 +38,7 @@ public class ItemRepository : MonoBehaviour
     {
         QualitySettings.antiAliasing = 0;
 
-        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall-Legacy-new\Data\Repositories\items.json");
+        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall Legacy\Data\Repositories\items.json");
         items = JsonConvert.DeserializeObject<Item[]>(json);
 
         if (renderCameras == null || renderCameras.Length == 0)
@@ -209,15 +209,16 @@ public class ItemRepository : MonoBehaviour
     {
         var item = transform.GetComponent<ItemHolder>().Item;
         var camera = renderCameras.FirstOrDefault(x => x.Item == transform.name);
+        var isGenericItem = !string.IsNullOrEmpty(item.GenericPrefab);
 
         if (!camera)
         {
-            camera = renderCameras.FirstOrDefault(x => x.Type == item.Type && string.IsNullOrEmpty(x.Item));
+            camera = renderCameras.FirstOrDefault(x => (x.IsGenericItem ? isGenericItem : true) && x.Type == item.Type && string.IsNullOrEmpty(x.Item));
         }
 
         if (!camera)
         {
-            camera = renderCameras.FirstOrDefault(x => x.Category == item.Category && string.IsNullOrEmpty(x.Item));
+            camera = renderCameras.FirstOrDefault(x => (x.IsGenericItem ? isGenericItem : true) && x.Category == item.Category && string.IsNullOrEmpty(x.Item));
         }
 
         if (camera)
@@ -258,14 +259,14 @@ public class ItemRepository : MonoBehaviour
         var oldRT = RenderTexture.active;
         var tex = new Texture2D(rt.width, rt.height, TextureFormat.ARGB32, false, false);
 
-        if (rt.sRGB)
-        {
-            Shinobytes.Debug.Log("WUP WUP! sRGB!");
-        }
-        else
-        {
-            Shinobytes.Debug.LogError("No sRGB :<");
-        }
+        //if (rt.sRGB)
+        //{
+        //    Shinobytes.Debug.Log("WUP WUP! sRGB!");
+        //}
+        //else
+        //{
+        //    Shinobytes.Debug.LogError("No sRGB :<");
+        //}
 
         RenderTexture.active = rt;
         //tex.alphaIsTransparency = true;

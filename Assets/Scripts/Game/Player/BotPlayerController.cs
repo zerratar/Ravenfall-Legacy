@@ -25,16 +25,25 @@ public class BotPlayerController : MonoBehaviour
             return;
         }
 
+        if (!gameManager)
+        {
+            return;
+        }
+
         if (gameManager.Raid.Started && gameManager.Raid.CanJoin(playerController) == RaidJoinResult.CanJoin)
         {
             joiningEvent = true;
             StartCoroutine(JoinRaid());
         }
 
-        if (gameManager.Dungeons.Active && gameManager.Dungeons.CanJoin(playerController))
+        if (gameManager.Dungeons.Active)
         {
-            joiningEvent = true;
-            StartCoroutine(JoinDungeon());
+            var result = gameManager.Dungeons.CanJoin(playerController);
+            if (result == DungeonJoinResult.CanJoin)
+            {
+                joiningEvent = true;
+                StartCoroutine(JoinDungeon());
+            }
         }
     }
 

@@ -1,4 +1,9 @@
 ﻿using Assets.Scripts;
+
+#if UNITY_EDITOR
+using Sirenix.OdinInspector;
+#endif
+
 using UnityEngine;
 
 public class PetController : MonoBehaviour
@@ -16,6 +21,107 @@ public class PetController : MonoBehaviour
     private Light lightSource;
     private bool playerWasMoving;
 
+    //[SerializeField] private bool hasGearStats;
+    //[SerializeField] private int gearStat;
+
+
+
+#if UNITY_EDITOR
+    [Button("Generate Animation Controller")]
+    public void GenerateAnimationController()
+    {
+
+        var itemName = gameObject.name;
+        var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath("Assets/Animations/Pets/" + itemName.Replace(" ", "") + ".controller");
+
+        // Add parameters
+        controller.AddParameter("Run", AnimatorControllerParameterType.Float);
+        controller.AddParameter("Walk", AnimatorControllerParameterType.Float);
+        controller.AddParameter("Sleeping", AnimatorControllerParameterType.Bool);
+
+
+        // Add StateMachines
+        var rootStateMachine = controller.layers[0].stateMachine;
+
+        var stateIdle = rootStateMachine.AddState("Idle");
+        var stateRun = rootStateMachine.AddState("Run");
+        var stateSleeping = rootStateMachine.AddState("Sleeping");
+
+        rootStateMachine.AddEntryTransition(stateIdle);
+
+        // Idle to Run
+        var idleTransitionToRun = stateIdle.AddTransition(stateRun);
+        idleTransitionToRun.AddCondition(UnityEditor.Animations.AnimatorConditionMode.Greater, 0, "Run");
+        idleTransitionToRun.duration = 0;
+
+        // Idle to Sleeping
+        var idleTransitionToSleep = stateIdle.AddTransition(stateSleeping);
+        idleTransitionToSleep.AddCondition(UnityEditor.Animations.AnimatorConditionMode.If, 0, "Sleeping");
+        idleTransitionToSleep.duration = 0;
+
+        // Sleeping to Run
+        var sleepingTransitionToRun = stateSleeping.AddTransition(stateRun);
+        sleepingTransitionToRun.AddCondition(UnityEditor.Animations.AnimatorConditionMode.Greater, 0, "Run");
+        sleepingTransitionToRun.AddCondition(UnityEditor.Animations.AnimatorConditionMode.IfNot, 0, "Sleeping");
+        sleepingTransitionToRun.duration = 0;
+
+        // Sleeping to Idle
+        var sleepingTransitionToIdle = stateSleeping.AddTransition(stateIdle);
+        sleepingTransitionToIdle.AddCondition(UnityEditor.Animations.AnimatorConditionMode.IfNot, 0, "Sleeping");
+        sleepingTransitionToIdle.AddCondition(UnityEditor.Animations.AnimatorConditionMode.Less, 0.1f, "Run");
+        sleepingTransitionToIdle.duration = 0;
+
+
+        // Run to Sleeping
+        var runTransitionToSleeping = stateRun.AddTransition(stateSleeping);
+        runTransitionToSleeping.AddCondition(UnityEditor.Animations.AnimatorConditionMode.Less, 0.1f, "Run");
+        runTransitionToSleeping.AddCondition(UnityEditor.Animations.AnimatorConditionMode.If, 0, "Sleeping");
+        runTransitionToSleeping.duration = 0;
+
+        // Run to Idle
+        var runTransitionToIdle = stateRun.AddTransition(stateIdle);
+        runTransitionToIdle.AddCondition(UnityEditor.Animations.AnimatorConditionMode.Less, 0.1f, "Run");
+        runTransitionToIdle.AddCondition(UnityEditor.Animations.AnimatorConditionMode.IfNot, 0, "Sleeping");
+        runTransitionToIdle.duration = 0;
+
+    }
+
+    [Button("Generate Item Row")]
+    public void GenerateItemRow()
+    {
+        //UnityEngine.Debug.Log("Button for " + gameObject.name);
+        var itemId = System.Guid.NewGuid();
+        var itemName = gameObject.name;
+
+        var itemRow = new RavenNest.Models.Item
+        {
+            Id = itemId,
+            Name = itemName,
+            Category = RavenNest.Models.ItemCategory.Pet,
+            Type = RavenNest.Models.ItemType.Pet,
+            IsGenericModel = true,
+            GenericPrefab = "Pets/" + itemName.Replace(" ", ""),
+            Level = 1,
+            RequiredCraftingLevel = 10000,
+            ShopSellPrice = 35000,
+        };
+
+        var resx = Resources.Load<GameObject>(itemRow.GenericPrefab);
+        if (!resx)
+        {
+            UnityEngine.Debug.LogWarning(itemRow.GenericPrefab + " does not exist. Saving a copy");
+            var instance = Instantiate(this.gameObject);
+            instance.transform.position = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            UnityEditor.PrefabUtility.SaveAsPrefabAsset(instance, "Assets/Resources/" + itemRow.GenericPrefab + ".prefab");
+            DestroyImmediate(instance);
+        }
+        var data = Newtonsoft.Json.JsonConvert.SerializeObject(itemRow);
+        GUIUtility.systemCopyBuffer = data;
+        UnityEngine.Debug.Log(data);
+    }
+
+#endif
     void Start()
     {
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
@@ -34,12 +140,13 @@ public class PetController : MonoBehaviour
             return;
         }
 
-        if (lightSource)
+        if (!animator) 
+            return;
+
+        if (lightSource && Overlay.IsGame)
         {
             lightSource.enabled = !gameManager.PotatoMode;
         }
-
-        if (!animator) return;
 
         var playerIsMoving = player.IsMoving;
         if (playerIsMoving)

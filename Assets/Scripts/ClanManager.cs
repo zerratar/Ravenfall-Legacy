@@ -29,6 +29,24 @@ namespace Assets.Scripts
             return skills.ToList();
         }
 
+        internal void UpdateClanSkill(Guid clanId, Guid skillId, int gainedLevels, double gainedExperience)
+        {
+            if (!clans.TryGetValue(clanId, out var clan))
+                return;
+            var skill = clan.ClanSkills.FirstOrDefault(x => x.Id == skillId);
+            if (skill == null)
+                return;
+
+            if (clanSkills.TryGetValue(clanId, out var skills))
+            {
+                var targetSkill = skills.FirstOrDefault(x => x.Name.Equals(skill.Name, StringComparison.OrdinalIgnoreCase));
+                if (targetSkill != null)
+                {
+                    targetSkill.Set(targetSkill.Level + gainedLevels, gainedExperience + targetSkill.Experience);
+                }
+            }
+        }
+
         internal void UpdateClanSkill(ClanSkillLevelChanged data)
         {
             if (!clans.TryGetValue(data.ClanId, out var clan))

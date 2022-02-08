@@ -28,6 +28,6 @@
 
         client.SendFormat(player.PlayerName, Localization.MSG_VALUE_ITEM,
             item.Item.Name,
-            item.Item.ShopSellPrice);
+            item.Item.Item.ShopSellPrice);
     }
 }

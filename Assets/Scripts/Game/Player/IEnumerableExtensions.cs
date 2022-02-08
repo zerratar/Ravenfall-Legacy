@@ -57,7 +57,7 @@ public class ExternalResources
                 // if the file has been loaded before. Most likely they are 
                 // trying to rename the file. lets wait a couple of seconds
                 // 
-                if (wasLoadedBefore && !System.IO.File.Exists(file))
+                if (wasLoadedBefore && !Shinobytes.IO.File.Exists(file))
                 {
                     if (++retries >= 5)
                     {
@@ -66,7 +66,7 @@ public class ExternalResources
 
                     await Task.Delay(1000);
 
-                    if (!System.IO.File.Exists(file))
+                    if (!Shinobytes.IO.File.Exists(file))
                     {
                         continue;
                     }
@@ -149,44 +149,6 @@ public class ExternalResource<T>
             return originalSize != fi.Length || originalWriteTime != fi.LastWriteTime || originalWriteTime != fi.CreationTime;
         }
     }
-}
-public static class AudioSourceExtensions
-{
-    private readonly static Dictionary<string, string> audioFileLookup = new Dictionary<string, string>();
-    public static IEnumerator LoadAudioClipFromFile(this AudioSource audioSource, string fileName)
-    {
-        if (!audioFileLookup.TryGetValue(fileName, out var raidMp3Override))
-        {
-            var dataFolder = new System.IO.DirectoryInfo(Application.dataPath);
-            var soundsFolder = System.IO.Path.Combine(dataFolder.Parent.FullName, @"data\sounds\");
-            if (!System.IO.Directory.Exists(soundsFolder))
-            {
-                Debug.Log("No sounds folder found in: " + soundsFolder + ". Ignoring");
-                yield break;
-            }
-
-            raidMp3Override = System.IO.Directory.GetFiles(soundsFolder, fileName).FirstOrDefault();
-            if (raidMp3Override == null || !System.IO.File.Exists(raidMp3Override))
-            {
-                Debug.Log("No " + fileName + " found. Ignoring");
-                yield break;
-            }
-        }
-
-        using (UnityWebRequest web = UnityWebRequestMultimedia.GetAudioClip("file://" + raidMp3Override, AudioType.MPEG))
-        {
-            yield return web.SendWebRequest();
-            if (web.result == UnityWebRequest.Result.Success)
-            {
-                var clip = DownloadHandlerAudioClip.GetContent(web);
-                if (clip != null)
-                {
-                    audioSource.clip = clip;
-                }
-            }
-        }
-    }
-
 }
 
 public static class IEnumerableExtensions

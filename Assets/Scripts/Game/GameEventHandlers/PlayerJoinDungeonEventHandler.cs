@@ -22,7 +22,7 @@ public class PlayerJoinDungeonEventHandler : GameEventHandler<PlayerId>
         if (gameManager.Dungeons.Started)
             return;
 
-        if (gameManager.Dungeons.CanJoin(player))
+        if (gameManager.Dungeons.CanJoin(player) == DungeonJoinResult.CanJoin)
             gameManager.Dungeons.Join(player);
     }
 }

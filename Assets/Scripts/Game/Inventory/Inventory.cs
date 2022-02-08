@@ -8,15 +8,52 @@ using UnityEngine;
 
 public class GameInventoryItem
 {
-    public RavenNest.Models.Item Item { get; set; }
-    public string Tag { get; set; }
-    public double Amount { get; set; }
+    public RavenNest.Models.Item Item { get; }
+    public IReadOnlyList<ItemEnchantment> Enchantments { get; }
+    public InventoryItem InventoryItem { get; }
+    public PlayerController Player { get; }
+
+    public GameInventoryItem(PlayerController owner, InventoryItem instance, Item item)
+    {
+        this.Player = owner;
+        this.InventoryItem = instance;
+        this.Item = item;
+        this.Enchantments = Inventory.GetItemEnchantments(instance.Enchantment) ?? new List<ItemEnchantment>();
+    }
+    public bool Soulbound => InventoryItem.Soulbound ?? Item.Soulbound ?? false;
+    public int RequiredDefenseLevel => Item.RequiredDefenseLevel;
+    public int RequiredAttackLevel => Item.RequiredAttackLevel;
+    public int RequiredSlayerLevel => Item.RequiredSlayerLevel;
+    public int RequiredMagicLevel => Item.RequiredMagicLevel;
+    public int RequiredRangedLevel => Item.RequiredRangedLevel;
+    public string Name => InventoryItem.Name ?? Item.Name;
+    public Guid InstanceId { get => InventoryItem.Id; set => InventoryItem.Id = value; }
+    public Guid ItemId => Item.Id;
+    public ItemCategory Category
+    {
+        get => Item.Category;
+        set => Item.Category = value;
+    }
+
+    public ItemType Type
+    {
+        get => Item.Type;
+        set => Item.Type = value;
+    }
+
+    public long Amount
+    {
+        get => InventoryItem.Amount;
+        set => InventoryItem.Amount = value;
+    }
+    //public string Tag { get; set; }
+    //public double Amount { get; set; }
 }
 
 public class Inventory : MonoBehaviour
 {
     private List<GameInventoryItem> backpack = new List<GameInventoryItem>();
-    private List<Item> equipped = new List<Item>();
+    private List<GameInventoryItem> equipped = new List<GameInventoryItem>();
     private PlayerController player;
     private PlayerEquipment equipment;
     private GameManager gameManager;
@@ -28,7 +65,7 @@ public class Inventory : MonoBehaviour
         equipment = GetComponent<PlayerEquipment>();
     }
 
-    public void Remove(Guid itemId, long amount)
+    public void RemoveByItemId(Guid itemId, long amount)
     {
         var target = backpack.FirstOrDefault(x => x.Item.Id == itemId);
         if (target == null)
@@ -36,8 +73,8 @@ public class Inventory : MonoBehaviour
             return;
         }
 
-        target.Amount -= amount;
-        if (target.Amount <= 0)
+        target.InventoryItem.Amount -= amount;
+        if (target.InventoryItem.Amount <= 0)
         {
             backpack.Remove(target);
         }
@@ -46,7 +83,8 @@ public class Inventory : MonoBehaviour
     {
         if (removeEquipped)
         {
-            var eqItem = equipped.FirstOrDefault(x => x.Id == item.Id);
+            // NOT GOOD!! We need to check with InventoryItem not actual item!!
+            var eqItem = equipped.FirstOrDefault(x => x.Item.Id == item.Id);
             if (eqItem != null)
             {
                 equipped.Remove(eqItem);
@@ -58,13 +96,37 @@ public class Inventory : MonoBehaviour
         var target = backpack.FirstOrDefault(x => x.Item.Id == item.Id);
         if (target != null)
         {
-            target.Amount -= amount;
-            if (target.Amount <= 0)
+            target.InventoryItem.Amount -= (long)amount;
+            if (target.InventoryItem.Amount <= 0)
             {
                 backpack.Remove(target);
             }
         }
 
+    }
+
+    internal void RemoveByInventoryId(Guid inventoryItemId, long amount)
+    {
+        var equippedItem = this.equipped.FirstOrDefault(x => x.InstanceId == inventoryItemId);
+        if (equippedItem != null)
+        {
+            this.equipped.Remove(equippedItem);
+            EquipAll();
+        }
+        var backpackItem = this.backpack.FirstOrDefault(x => x.InstanceId == inventoryItemId);
+        if (backpackItem != null)
+        {
+
+            if (amount >= backpackItem.Amount)
+            {
+                this.backpack.Remove(backpackItem);
+            }
+            else
+            {
+                backpackItem.Amount -= amount;
+            }
+        }
+        //this.equipped
     }
 
     public void Create(IReadOnlyList<InventoryItem> inventoryItems, IReadOnlyList<RavenNest.Models.Item> availableItems)
@@ -75,19 +137,16 @@ public class Inventory : MonoBehaviour
         {
             var loadedItem = availableItems.FirstOrDefault(x => x.Id == item.ItemId);
             if (loadedItem == null) continue;
+
+            var gameItem = new GameInventoryItem(this.player, item, loadedItem);
+
             if (item.Equipped)
             {
-
-                Equip(loadedItem, false);
+                Equip(gameItem, false);
             }
             else
             {
-                backpack.Add(new GameInventoryItem
-                {
-                    Item = loadedItem,
-                    Amount = item.Amount,
-                    Tag = item.Tag
-                });
+                backpack.Add(gameItem);
             }
         }
 
@@ -107,7 +166,7 @@ public class Inventory : MonoBehaviour
             var scrollItem = gameManager.Items.Get(s.ItemId);
             if (scrollItem != null)
             {
-                Add(scrollItem, s.Amount);
+                AddToBackpack(scrollItem, s.Amount);
             }
         }
     }
@@ -118,36 +177,226 @@ public class Inventory : MonoBehaviour
         var s = scrolls.FirstOrDefault(x => x.Item.Name.IndexOf(scroll.ToString(), StringComparison.OrdinalIgnoreCase) >= 0);
         if (s != null)
         {
-            if (--s.Amount <= 0)
+            if (--s.InventoryItem.Amount <= 0)
             {
                 backpack.Remove(s);
             }
 
-            return (long)s.Amount;
+            return s.InventoryItem.Amount;
         }
         return 0L;
     }
 
-    public void Add(RavenNest.Models.Item item, double amount = 1)
+
+    public static IReadOnlyList<ItemEnchantment> GetItemEnchantments(InventoryItem item)
+    {
+        return GetItemEnchantments(item.Enchantment);
+    }
+
+    public static IReadOnlyList<ItemEnchantment> GetItemEnchantments(string enchantmentString)
+    {
+        var enchantments = new List<ItemEnchantment>();
+        if (!string.IsNullOrEmpty(enchantmentString))
+        {
+            var en = enchantmentString.Split(';');
+            foreach (var e in en)
+            {
+                var data = e.Split(':');
+                var key = data[0];
+                var value = GetValue(data[1], out var type);
+
+                //var attr = availableAttributes.FirstOrDefault(x => x.Name == key);
+
+                var description = "";
+
+                if (type == AttributeValueType.Percent)
+                {
+                    //if (attr != null)
+                    //{
+                    //    description = attr.Description.Replace(attr.MaxValue, value + "%");
+                    //}
+
+                    description = "Increases " + key.ToLower() + " by " + value + "%";
+                    value = value / 100d;
+                }
+                else
+                {
+                    description = "Increases " + key.ToLower() + " by " + value;
+                    //if (attr != null)
+                    //{
+                    //    description = attr.Description.Replace(attr.MaxValue, value.ToString());
+                    //}
+                }
+
+                enchantments.Add(new ItemEnchantment
+                {
+                    Name = (key[0] + key.ToLower().Substring(1)),
+                    Value = value,
+                    ValueType = type,
+                    Description = description,
+                });
+            }
+        }
+        return enchantments;
+    }
+
+    public static double GetValue(string val, out AttributeValueType valueType)
+    {
+        valueType = AttributeValueType.Number;
+        val = val.Replace(',', '.');
+        if (string.IsNullOrEmpty(val))
+        {
+            return 0d;
+        }
+        else
+        {
+            if (val.EndsWith("%"))
+            {
+                if (TryParse(val.Replace("%", ""), out var value))
+                {
+                    valueType = AttributeValueType.Percent;
+                    //return value / 100d;
+                    return value;
+                }
+            }
+
+            TryParse(val, out var number);
+            return number;
+        }
+    }
+
+    private static bool TryParse(string val, out double value)
+    {
+        if (double.TryParse(val, out value))
+            return true;
+
+        if (double.TryParse(val.Replace(',', '.'), out value))
+            return true;
+
+        return double.TryParse(val.Replace('.', ','), out value);
+    }
+
+    public GameInventoryItem AddToBackpack(RavenNest.Models.InventoryItem item, long amount = 1)
+    {
+        var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == item.Id);
+        if (existing != null)
+        {
+            if (item.Soulbound.GetValueOrDefault() || !string.IsNullOrEmpty(item.Enchantment) || item.TransmogrificationId != null)
+            {
+                existing.Amount -= amount;
+                return CreateInstance(item, amount);
+            }
+
+            existing.InventoryItem.Amount += amount;
+            return existing;
+        }
+
+        return CreateInstance(item, amount);
+    }
+
+    private GameInventoryItem CreateInstance(InventoryItem item, long amount)
+    {
+        var instance = new GameInventoryItem(this.player, new InventoryItem
+        {
+            Amount = amount,
+            ItemId = item.ItemId,
+            Id = item.Id,
+            Tag = item.Tag,
+            TransmogrificationId = item.TransmogrificationId,
+            Enchantment = item.Enchantment,
+            Name = item.Name,
+            Flags = item.Flags,
+            Soulbound = item.Soulbound,
+        }, gameManager.Items.Get(item.ItemId));
+
+        backpack.Add(instance);
+        return instance;
+    }
+
+    public GameInventoryItem AddToBackpack(RavenNest.Models.ItemAdd item)
+    {
+        var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == item.InventoryItemId);
+        if (existing != null)
+        {
+            existing.InventoryItem.Amount += (long)item.Amount;
+            return existing;
+        }
+
+        var instance = new GameInventoryItem(this.player, new InventoryItem
+        {
+            Amount = item.Amount,
+            ItemId = item.ItemId,
+            Id = item.InventoryItemId,
+            Tag = item.Tag,
+            TransmogrificationId = item.TransmogrificationId,
+            Enchantment = item.Enchantment,
+            Name = item.Name,
+            Flags = item.Flags,
+            Soulbound = item.Soulbound,
+        }, gameManager.Items.Get(item.ItemId));
+
+        backpack.Add(instance);
+        return instance;
+    }
+
+    public void AddToBackpack(GameInventoryItem item, double amount = 1)
     {
         if (item == null)
         {
             return;
         }
 
-        var existing = backpack.FirstOrDefault(x => x.Item.Id == item.Id);
+        var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == item.InventoryItem.Id);
         if (existing != null)
         {
-            existing.Amount += amount;
+            existing.InventoryItem.Amount += (long)amount;
         }
         else
         {
-            backpack.Add(new GameInventoryItem
+            var ii = item.InventoryItem;
+            var instance = new GameInventoryItem(this.player, new InventoryItem
             {
-                Item = item,
-                Amount = amount,
-            });
+                Amount = (long)amount,
+                ItemId = item.Item.Id,
+                Id = ii.Id,
+                Tag = ii.Tag,
+                TransmogrificationId = ii.TransmogrificationId,
+                Enchantment = ii.Enchantment,
+                Name = ii.Name,
+                Flags = ii.Flags,
+                Soulbound = ii.Soulbound,
+            }, item.Item);
+
+            backpack.Add(instance);
         }
+    }
+
+    public GameInventoryItem AddToBackpack(RavenNest.Models.Item item, double amount = 1)
+    {
+        if (item == null)
+        {
+            return null;
+        }
+
+        GameInventoryItem result = null;
+        var existing = backpack.FirstOrDefault(x => x.Item.Id == item.Id);
+        if (existing != null)
+        {
+            existing.InventoryItem.Amount += (long)amount;
+            result = existing;
+        }
+        else
+        {
+            result = new GameInventoryItem(this.player, new InventoryItem
+            {
+                Id = Guid.NewGuid(),
+                Amount = (long)amount,
+                ItemId = item.Id,
+            }, item);
+            backpack.Add(result);
+        }
+
+        return result;
     }
 
     internal void AddStreamerTokens(int amount)
@@ -155,7 +404,7 @@ public class Inventory : MonoBehaviour
         var token = gameManager.Items.GetStreamerToken();
         if (token != null)
         {
-            Add(token, amount);
+            AddToBackpack(token, amount);
         }
     }
 
@@ -173,14 +422,14 @@ public class Inventory : MonoBehaviour
         equipment.EquipAll(equipped);
     }
 
-    public void Unequip(Item item)
+    public void Unequip(GameInventoryItem item)
     {
-        var targetItem = this.equipped.FirstOrDefault(x => x.Id == item.Id);
+        var targetItem = this.equipped.FirstOrDefault(x => x.InventoryItem.Id == item.InventoryItem.Id);
         if (targetItem != null)
         {
-            Add(targetItem);
+            AddToBackpack(targetItem);
             equipped.Remove(targetItem);
-            equipment.Unequip(targetItem.Id);
+            equipment.UnequipByItemId(targetItem.Item.Id);
         }
     }
 
@@ -189,52 +438,53 @@ public class Inventory : MonoBehaviour
         var equip = GetEquipmentOfType(category, type);
         if (equip != null)
         {
-            Add(equip);
+            AddToBackpack(equip);
             equipped.Remove(equip);
-            equipment.Unequip(equip.Id);
+            equipment.UnequipByItemId(equip.Item.Id);
         }
     }
 
     public bool Equip(ItemController i, bool updateAppearance = true)
     {
-        var item = gameManager.Items.Get(i.Id);
-        return Equip(item, updateAppearance);
+        //var item = gameManager.Items.Get(i.Id);
+        //return Equip(item, updateAppearance);
+        return Equip(i.Definition, updateAppearance);
     }
 
     public bool Equip(Guid itemId, bool updateAppearance = true)
     {
-        var item = gameManager.Items.Get(itemId);
+        var item = this.GetInventoryItems(itemId).FirstOrDefault();
         return Equip(item, updateAppearance);
     }
 
-    public bool Equip(Item item, bool updateAppearance = true)
+    public bool Equip(GameInventoryItem item, bool updateAppearance = true)
     {
         if (item == null || !player || player == null || !player.transform || player.transform == null || !CanEquipItem(item))
             return false;
 
         player.transform.localScale = Vector3.one;
 
-        if (item.Type == ItemType.TwoHandedAxe || item.Type == ItemType.TwoHandedSword)
+        if (item.Item.Type == ItemType.TwoHandedAxe || item.Item.Type == ItemType.TwoHandedSword)
         {
             var shield = GetEquipmentOfType(ItemCategory.Armor, ItemType.Shield);
             if (shield != null)
             {
-                Add(shield);
+                AddToBackpack(shield);
                 equipped.Remove(shield);
-                equipment.Unequip(shield.Id);
+                equipment.UnequipByItemId(shield.Item.Id);
             }
         }
 
-        var equip = GetEquipmentOfType(item.Category, item.Type);
+        var equip = GetEquipmentOfType(item.Item.Category, item.Item.Type);
         if (equip != null)
         {
-            Add(equip);
+            AddToBackpack(equip);
             equipped.Remove(equip);
-            equipment.Unequip(equip.Id);
+            equipment.UnequipByItemId(equip.Item.Id);
         }
 
         equipped.Add(item);
-        Remove(item, 1);
+        RemoveByItemId(item.Item.Id, 1);
 
         if (updateAppearance)
         {
@@ -255,7 +505,7 @@ public class Inventory : MonoBehaviour
         player.UpdateCombatStats(equipped);
     }
 
-    public RavenNest.Models.Item GetEquipmentOfCategory(ItemCategory itemCategory)
+    public GameInventoryItem GetEquipmentOfCategory(ItemCategory itemCategory)
     {
         // always default to melee weapon when no type is used.
         if (itemCategory == ItemCategory.Weapon)
@@ -271,14 +521,14 @@ public class Inventory : MonoBehaviour
         for (var i = 0; i < equipped.Count; ++i)
         {
             var item = equipped[i];
-            if (item.Category == itemCategory) return item;
+            if (item.Item.Category == itemCategory) return item;
         }
         return null;
     }
 
-    public IReadOnlyList<RavenNest.Models.Item> GetEquipmentsOfCategory(ItemCategory itemCategory)
+    public IReadOnlyList<GameInventoryItem> GetEquipmentsOfCategory(ItemCategory itemCategory)
     {
-        return equipped.Where(x => x.Category == itemCategory).ToList();
+        return equipped.Where(x => x.Item.Category == itemCategory).ToList();
     }
 
     public IReadOnlyList<GameInventoryItem> GetInventoryItemsOfType(ItemCategory itemCategory, RavenNest.Models.ItemType type)
@@ -291,6 +541,10 @@ public class Inventory : MonoBehaviour
         return backpack.Where(x => x.Item.Category == itemCategory).ToList();
     }
 
+    public IEnumerable<GameInventoryItem> GetAllItems() => backpack.Concat(equipped);
+    public List<GameInventoryItem> GetBackpackItems() => backpack;
+    public List<GameInventoryItem> GetEquippedItems() => equipped;
+
     internal IReadOnlyList<InventoryItem> GetInventoryItems()
     {
         var i = new List<InventoryItem>();
@@ -300,18 +554,25 @@ public class Inventory : MonoBehaviour
             {
                 Amount = 1,
                 Equipped = true,
-                Id = Guid.NewGuid(),
-                ItemId = eq.Id
+                Id = eq.InventoryItem.Id,
+                ItemId = eq.Item.Id,
+                Soulbound = eq.Item.Soulbound,
+                Enchantment = eq.InventoryItem.Enchantment,
+                Flags = eq.InventoryItem.Flags,
             });
         }
         foreach (var eq in backpack)
         {
             i.Add(new InventoryItem
             {
-                Amount = (long)eq.Amount,
+                Amount = (long)eq.InventoryItem.Amount,
                 Equipped = false,
-                Id = Guid.NewGuid(),
-                ItemId = eq.Item.Id
+                Id = eq.InventoryItem.Id,
+                ItemId = eq.Item.Id,
+                Soulbound = eq.Item.Soulbound,
+                Enchantment = eq.InventoryItem.Enchantment,
+                Flags = eq.InventoryItem.Flags,
+
             });
         }
         return i;
@@ -321,22 +582,22 @@ public class Inventory : MonoBehaviour
         return backpack.Where(x => x.Item.Id == itemId).ToList();
     }
 
-    public Item GetEquippedItem(Guid itemId)
+    public GameInventoryItem GetEquippedItem(Guid itemId)
     {
-        return equipped.FirstOrDefault(x => x.Id == itemId);
+        return equipped.FirstOrDefault(x => x.Item.Id == itemId);
     }
 
-    public RavenNest.Models.Item GetEquipmentOfType(ItemCategory itemCategory, RavenNest.Models.ItemType type)
+    public GameInventoryItem GetEquipmentOfType(ItemCategory itemCategory, RavenNest.Models.ItemType type)
     {
         if (itemCategory == ItemCategory.Weapon && IsMeleeWeapon(type))
         {
             return equipped.FirstOrDefault(IsMeleeWeapon);
         }
 
-        return equipped.FirstOrDefault(x => x.Category == itemCategory && x.Type == type);
+        return equipped.FirstOrDefault(x => x.Item.Category == itemCategory && x.Item.Type == type);
     }
 
-    public RavenNest.Models.Item GetMeleeWeapon()
+    public GameInventoryItem GetMeleeWeapon()
     {
         return equipped.FirstOrDefault(IsMeleeWeapon);
     }
@@ -390,8 +651,6 @@ public class Inventory : MonoBehaviour
     {
         EquipBestItem(ItemCategory.Amulet);
         EquipBestItem(ItemCategory.Ring);
-        EquipBestItem(ItemCategory.Weapon);
-
         EquipBestItem(ItemCategory.Weapon, ItemType.TwoHandedStaff);
         EquipBestItem(ItemCategory.Weapon, ItemType.TwoHandedBow);
         EquipBestItem(ItemCategory.Armor, ItemType.Helmet);
@@ -405,6 +664,8 @@ public class Inventory : MonoBehaviour
         EquipBestItem(ItemCategory.Armor, ItemType.Boots);
         EquipBestItem(ItemCategory.Armor, ItemType.Chest);
         EquipBestItem(ItemCategory.Armor, ItemType.Shield);
+
+        EquipBestItem(ItemCategory.Weapon);
 
         equipment.EquipAll(equipped);
     }
@@ -428,7 +689,7 @@ public class Inventory : MonoBehaviour
             return;
         }
 
-        RavenNest.Models.Item bestItem = null;
+        GameInventoryItem bestItem = null;
         foreach (var item in type != null
             ? backpack.Where(x => x.Item.Category == category && x.Item.Type == type)
             : backpack.Where(x => x.Item.Category == category))
@@ -436,13 +697,13 @@ public class Inventory : MonoBehaviour
             var itemValue = GetItemValue(item);
             var canEquip = CanEquipItem(item);
 
-            if (equippedItem != null && equippedItem.Name == item.Item.Name)
-                continue;
+            //if (equippedItem != null && equippedItem.Item.Name == item.Item.Name)
+            //    continue;
 
             if (bestValue < itemValue && canEquip)
             {
                 bestValue = itemValue;
-                bestItem = item.Item;
+                bestItem = item;
             }
         }
 
@@ -485,6 +746,12 @@ public class Inventory : MonoBehaviour
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsMeleeWeapon(GameInventoryItem item)
+    {
+        return item.Item.Category == ItemCategory.Weapon && IsMeleeWeapon(item.Item.Type);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsMeleeWeapon(ItemType type)
     {
         return type != ItemType.TwoHandedBow && type != ItemType.TwoHandedStaff;
@@ -499,4 +766,11 @@ public class Inventory : MonoBehaviour
             return stats1 - stats2;
         }
     }
+    //public class ItemEnchantment
+    //{
+    //    public string Name { get; set; }
+    //    public string Description { get; set; }
+    //    public AttributeValueType ValueType { get; set; }
+    //    public double Value { get; set; }
+    //}
 }

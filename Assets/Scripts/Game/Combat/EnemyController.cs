@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts;
+using Sirenix.OdinInspector;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -32,6 +33,8 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     public bool HandleFightBack = true;
     public bool RotationLocked = false;
+
+
     public bool AutomaticRespawn = true;
 
     private float noDamageDropTargetTimer;
@@ -59,8 +62,18 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     internal Vector3 PositionInternal;
     private float hitRangeRadius;
+    
+    public bool Removed;
 
     public Vector3 Position => PositionInternal;
+
+
+    [Button("Adjust Placement")]
+    public void AdjustPlacement()
+    {
+        PlacementUtility.PlaceOnGround(this.gameObject);
+    }
+
     public int GetAttackerCountExcluding(PlayerController player)
     {
         if (AttackerNames.Contains(player.Name))
@@ -72,6 +85,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     void OnDestroy()
     {
+        Removed = true;
         attackerAggro.Clear();
         Attackers.Clear();
         AttackerNames.Clear();
@@ -199,7 +213,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             SetDestination(Target.position);
         }
     }
-
+    
     private void AttackTarget(PlayerController targetPlayer)
     {
         if (!targetPlayer) return;
@@ -560,31 +574,31 @@ public class EnemyController : MonoBehaviour, IAttackable
         yield return new WaitForSeconds(forcedRespawnTime != -1
             ? forcedRespawnTime
             : respawnTime);
-
         gameObject.SetActive(true);
-
         yield return null;
-
         if (movement) movement.Revive();
-
         RespawnImpl();
     }
 
     private void RespawnImpl()
     {
         Lock();
-
         gameObject.SetActive(true);
-        if (movement) movement.Revive();
-
         ClearAttackers();
         attackerAggro.Clear();
-
         transform.position = spawnPoint;
         //transform.rotation = spawnRotation;
         Stats.Health.Reset();
-
+        if (movement) movement.Revive();
         Unlock();
+    }
+
+    internal void ResetState()
+    {
+        ClearAttackers();
+        attackerAggro.Clear();
+        Stats.Health.Reset();
+        if (movement) movement.ResetVisibility();
     }
 
     public void Lock()

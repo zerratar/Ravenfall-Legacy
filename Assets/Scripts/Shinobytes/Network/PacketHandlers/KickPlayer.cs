@@ -77,7 +77,15 @@ public class KickPlayer : PacketHandler<TwitchPlayerInfo>
         }
         else
         {
-            client.SendMessage(data.Username, "No players with the name '{player}' is playing.", data.Username);
+            var similarPlayerName = PlayerManager.GetAllPlayers().FirstOrDefault(x => x.Name.ToLower().StartsWith(data.Username));
+            if (similarPlayerName != null)
+            {
+                client.SendMessage(data.Username, "No players with the name '{player}' is playing. Did you mean " + similarPlayerName.Name + "?", data.Username);
+            }
+            else
+            {
+                client.SendMessage(data.Username, "No players with the name '{player}' is playing.", data.Username);
+            }
         }
     }
 }

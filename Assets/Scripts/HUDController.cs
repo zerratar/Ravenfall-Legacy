@@ -6,8 +6,14 @@ public class HUDController : MonoBehaviour
 {
     [SerializeField] private GameObject all2d;
     [SerializeField] private GameObject playerList;
-
+    [SerializeField] private Canvas GameUICanvas;
     private UIState state;
+
+    private void Awake()
+    {
+        GameUICanvas.worldCamera = Camera.main;
+        GameUICanvas.renderMode = RenderMode.ScreenSpaceCamera;
+    }
 
     // Update is called once per frame
     void Update()

@@ -45,7 +45,7 @@ public class HealthBarManager : MonoBehaviour
             catch (System.Exception exc)
             {
 #if DEBUG
-                Shinobytes.Debug.Log("Warning: Unable to remove healthbar properly. This can be ignored. ");
+                Shinobytes.Debug.Log("Warning: Unable to remove healthbar properly. This can be ignored. " + exc.Message);
 #endif
             }
         }

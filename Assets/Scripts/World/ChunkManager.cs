@@ -12,6 +12,8 @@ public class ChunkManager : MonoBehaviour
 
     private Chunk[] chunks;
 
+    private Dictionary<TaskType, List<IChunk>> chunksByType = new Dictionary<TaskType, List<IChunk>>();
+
     void Start()
     {
         if (!islandManager) islandManager = FindObjectOfType<IslandManager>();
@@ -127,7 +129,30 @@ public class ChunkManager : MonoBehaviour
 
     public IReadOnlyList<IChunk> GetChunks()
     {
-        return chunks.ToList();
+        return chunks;
+    }
+
+
+
+    public List<IChunk> GetChunksOfType(TaskType type)
+    {
+        if (chunksByType.TryGetValue(type, out var value))
+            return value;
+
+        // cache miss, slow.
+        var c = new List<IChunk>();
+        var isCookingOrCrafting = type == TaskType.Cooking || type == TaskType.Crafting;
+        var cl = this.chunks.OrderBy(x => x.RequiredCombatLevel + x.RequiredSkilllevel).ToArray();
+        for (var i = 0; i < this.chunks.Length; i++)
+        {
+            var chunk = cl[i];
+            if (chunk.ChunkType == type || (isCookingOrCrafting && (chunk.ChunkType == TaskType.Cooking || chunk.ChunkType == TaskType.Crafting)))
+            {
+                c.Add(chunk);
+            }
+        }
+        
+        return chunksByType[type] = c;
     }
 
     private IslandController FindPlayerIsland(PlayerController player)

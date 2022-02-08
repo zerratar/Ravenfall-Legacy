@@ -254,6 +254,18 @@ public class WalkyWalkyScript : MonoBehaviour
         attackAnimationTimer = attackAnimationLength;
     }
 
+    public void ResetVisibility()
+    {
+        if (meshRenderer) meshRenderer.enabled = true;
+        if (animator.enabled)
+        {
+            if (!string.IsNullOrEmpty(deathAnimation))
+            {
+                animator.SetBool(deathAnimation, false);
+            }
+        }
+    }
+
     public void Revive()
     {
         if (meshRenderer) meshRenderer.enabled = true;

@@ -21,9 +21,9 @@ public class FerryTravel : PacketHandler<FerryTravelRequest>
 
         var islandName = data.Destination;
         var island = Game.Islands.Find(islandName);
-        if (!island)
+        if (!island || !island.Sailable)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_NO_SUCH_ISLAND, islandName, string.Join(", ", Game.Islands.All.Select(x => x.Identifier)));
+            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_NO_SUCH_ISLAND, islandName, string.Join(", ", Game.Islands.All.Where(x => x.Sailable).Select(x => x.Identifier)));
             return;
         }
 

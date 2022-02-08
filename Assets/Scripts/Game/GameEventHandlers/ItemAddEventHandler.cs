@@ -11,6 +11,7 @@ public class ItemAddEventHandler : GameEventHandler<ItemAdd>
             Shinobytes.Debug.Log("No player with userid " + data.UserId + " when adding item.");
             return;
         }
+
         var item = gameManager.Items.GetItem(data.ItemId);
         if (item == null)
         {
@@ -18,11 +19,11 @@ public class ItemAddEventHandler : GameEventHandler<ItemAdd>
             return;
         }
 
-        player.AddItem(item, false);
+        var result = player.Inventory.AddToBackpack(data);
 
         if (item.Category != ItemCategory.Resource)
         {
-            player.EquipIfBetter(item);
+            player.EquipIfBetter(result);
             player.Inventory.EquipAll();
         }
     }

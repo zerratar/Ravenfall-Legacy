@@ -23,5 +23,6 @@ namespace RavenNest.SDK.Endpoints
         Task<ScrollUseResult> ActivateExpMultiplierAsync(PlayerController player);
         Task<int> ActivateExpMultiplierAsync(PlayerController plr, int usageCount = 1);
         Task<bool> ClearLogoAsync(string twitchUserId);
+        Task<ExpMultiplier> GetExpMultiplierAsync();
     }
 }

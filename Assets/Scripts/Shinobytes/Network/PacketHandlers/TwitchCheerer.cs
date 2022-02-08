@@ -7,8 +7,10 @@
        : base(game, server, playerManager)
     {
     }
+
     public override void Handle(TwitchCheer data, GameClient client)
     {
+        Game.RavenNest.EnqueueLoyaltyUpdate(data);
         Game.Twitch.OnCheer(data);
     }
 }

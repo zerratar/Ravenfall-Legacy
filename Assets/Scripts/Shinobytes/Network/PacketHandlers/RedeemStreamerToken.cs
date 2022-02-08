@@ -38,43 +38,50 @@ public class RedeemStreamerToken : PacketHandler<TradeItemRequest>
             NoSuchRedeemableItem(player, client, itemQuery);
             return;
         }
+        try
+        {
+            var redeemable = Game.Items.GetRedeemables().FirstOrDefault(x =>
+                    x.ItemId == item.Id ||
+                    (x.Name?.Equals(item.Item.Name, StringComparison.OrdinalIgnoreCase)).GetValueOrDefault());
 
-        var redeemable = Game.Items.Redeemable.FirstOrDefault(x =>
-                x.ItemId == item.Item.Id ||
-                (x.Name?.Equals(item.Item.Name, StringComparison.OrdinalIgnoreCase)).GetValueOrDefault());
+            if (redeemable.ItemId == Guid.Empty && string.IsNullOrEmpty(redeemable.Name))
+            {
+                NoSuchRedeemableItem(player, client, itemQuery);
+                return;
+            }
 
-        if (redeemable.ItemId == Guid.Empty && string.IsNullOrEmpty(redeemable.Name))
+            if (redeemable.Cost <= 0)
+            {
+                ItemUnavailable(player, client);
+                return;
+            }
+
+            var result = await Game.RavenNest.Players.RedeemItemAsync(player.Id, item.Id);
+            switch (result.Code)
+            {
+                case RavenNest.Models.RedeemItemResultCode.Success:
+                    player.Inventory.RemoveByItemId(result.CurrencyItemId, result.CurrencyCost);
+                    client.SendFormat(player.PlayerName, "You have successefully redeemed a {itemName} for {amount} {currencyName} and now have {amountLeft} left.",
+                        Game.Items.Find(x => x.Id == result.RedeemedItemId)?.Name,
+                        result.CurrencyCost,
+                        Game.Items.Find(x => x.Id == result.CurrencyItemId)?.Name,
+                        result.CurrencyLeft);
+                    break;
+
+                case RavenNest.Models.RedeemItemResultCode.InsufficientCurrency:
+                    client.SendFormat(player.PlayerName, "Unable to redeem {itemName}. " + result.ErrorMessage, Game.Items.Find(x => x.Id == result.RedeemedItemId)?.Name);
+                    break;
+
+                case RavenNest.Models.RedeemItemResultCode.NoSuchItem:
+                case RavenNest.Models.RedeemItemResultCode.Error:
+                    client.SendFormat(player.PlayerName, "Unable to redeem {itemName} right now.", item.Item.Name);
+                    break;
+            }
+        }
+        catch (Exception exc)
         {
             NoSuchRedeemableItem(player, client, itemQuery);
-            return;
-        }
-
-        if (redeemable.Cost <= 0)
-        {
-            ItemUnavailable(player, client);
-            return;
-        }
-
-        var result = await Game.RavenNest.Players.RedeemItemAsync(player.Id, item.Item.Id);
-        switch (result.Code)
-        {
-            case RavenNest.Models.RedeemItemResultCode.Success:
-                player.Inventory.Remove(result.CurrencyItemId, result.CurrencyCost);
-                client.SendFormat(player.PlayerName, "You have successefully redeemed a {itemName} for {amount} {currencyName} and now have {amountLeft} left.",
-                    Game.Items.Find(x => x.Id == result.RedeemedItemId)?.Name,
-                    result.CurrencyCost,
-                    Game.Items.Find(x => x.Id == result.CurrencyItemId)?.Name,
-                    result.CurrencyLeft);
-                break;
-
-            case RavenNest.Models.RedeemItemResultCode.InsufficientCurrency:
-                client.SendFormat(player.PlayerName, "Unable to redeem {itemName}. " + result.ErrorMessage, Game.Items.Find(x => x.Id == result.RedeemedItemId)?.Name);
-                break;
-
-            case RavenNest.Models.RedeemItemResultCode.NoSuchItem:
-            case RavenNest.Models.RedeemItemResultCode.Error:
-                client.SendFormat(player.PlayerName, "Unable to redeem {itemName} right now.", item.Item.Name);
-                break;
+            Shinobytes.Debug.LogError("Failed to redeem tokens: " + exc);
         }
     }
 

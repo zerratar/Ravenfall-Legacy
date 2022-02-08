@@ -9,5 +9,6 @@ namespace RavenNest.SDK.Endpoints
         Task<bool> AssignPlayerAsync(int slot, Guid characterId);
         Task<bool> BuildHouseAsync(int slot, int type);
         Task<bool> RemoveHouseAsync(int slot);
+        Task<VillageInfo> GetAsync();
     }
 }

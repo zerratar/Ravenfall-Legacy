@@ -67,15 +67,6 @@ namespace RavenNest.SDK.Endpoints
 
         public async Task<bool> UpdateAsync()
         {
-            if (client.Desynchronized)
-            {
-                if (connection.IsReady)
-                {
-                    connection.Close();
-                }
-
-                return false;
-            }
             if (connection.IsReady)
             {
                 return true;
@@ -91,9 +82,13 @@ namespace RavenNest.SDK.Endpoints
 
         public Task UpdatePlayerEventStatsAsync(EventTriggerSystem.SysEventStats e)
         {
-            if (client.Desynchronized) return Task.CompletedTask;
             try
             {
+                if (e.TotalTriggerCount <= 1)
+                {
+                    return Task.CompletedTask;
+                }
+
                 var player = this.gameManager.Players.GetPlayerByUserId(e.Source);
                 if (!player) return Task.CompletedTask;
                 var avgSecPerTrigger = e.TotalTriggerTime.TotalSeconds / e.TotalTriggerCount;
@@ -134,16 +129,6 @@ namespace RavenNest.SDK.Endpoints
             {
                 try
                 {
-
-                    // TODO(zerratar): since this will be invoked much more frequently than the
-                    //                 save all stats; plus this one blocks that from being called
-                    //                 there is a slight risk you will never sync "all" stats for this player
-                    //  Option 1. We save ALL skills that has been modified here.
-                    //  Option 2. We change how and when these functions are called by enqueueing them instead.
-                    //      They will then be dequeued every 0.5s or perhaps even more frequently. Then Every
-                    //      10th-tick or enqueued item should be "Save All" and every enqueued item other than that one
-                    //      is for saving the active one.
-
                     var activeSkill = player.GetActiveSkillStat();
                     if (activeSkill == null)
                     {
@@ -157,14 +142,6 @@ namespace RavenNest.SDK.Endpoints
                         Experience = activeSkill.Experience,
                         CharacterId = player.Id
                     };
-
-                    if (lastSavedExp.TryGetValue(player.Id, out var lastUpdate))
-                    {
-                        if (!RequiresUpdate(lastUpdate, characterUpdate))
-                        {
-                            return true; // return true so we dont get a red name in the player list just because the exp hasnt changed.
-                        }
-                    }
 
                     connection.SendNoAwait("update_character_exp", characterUpdate);
                     lastSavedExp[player.Id] = characterUpdate;
@@ -180,6 +157,11 @@ namespace RavenNest.SDK.Endpoints
         }
         public async Task<bool> SavePlayerSkillsAsync(PlayerController player)
         {
+            if (player == null || string.IsNullOrEmpty(player.UserId))
+            {
+                return false;
+            }
+
             if (player.IsBot && player.UserId.StartsWith("#"))
             {
                 return true;
@@ -204,14 +186,13 @@ namespace RavenNest.SDK.Endpoints
                         CharacterId = state.CharacterId
                     };
 
-                    if (lastSavedSkills.TryGetValue(player.UserId, out var lastUpdate))
-                    {
-                        if (!RequiresUpdate(lastUpdate, characterUpdate))
-                        {
-                            //Shinobytes.Debug.LogWarning("Saving " + player?.Name + " skipped. No changes to stats.");
-                            return true; // return true so we dont get a red name in the player list just because the exp hasnt changed.
-                        }
-                    }
+                    //if (lastSavedSkills.TryGetValue(player.UserId, out var lastUpdate))
+                    //{
+                    //    if (!RequiresUpdate(lastUpdate, characterUpdate))
+                    //    {
+                    //        return true;
+                    //    }
+                    //}
 
                     connection.SendNoAwait("update_character_skills", characterUpdate);
                     //if (response != null && response.TryGetValue<bool>(out var result) && result)
@@ -232,68 +213,59 @@ namespace RavenNest.SDK.Endpoints
             });
         }
 
-        public void SendPlayerLoyaltyData(TwitchCheer d)
-        {
-            if (client.Desynchronized) return;
-            var data = new UserLoyaltyUpdate
-            {
-                IsModerator = d.IsModerator,
-                IsSubscriber = d.IsSubscriber,
-                NewCheeredBits = d.Bits,
-                UserName = d.UserName,
-                IsVip = d.IsVip,
-                NewGiftedSubs = 0,
-                UserId = d.UserId
-            };
+        //public void SendPlayerLoyaltyData(TwitchCheer d)
+        //{
+        //    var data = new UserLoyaltyUpdate
+        //    {
+        //        IsModerator = d.IsModerator,
+        //        IsSubscriber = d.IsSubscriber,
+        //        NewCheeredBits = d.Bits,
+        //        UserName = d.UserName,
+        //        IsVip = d.IsVip,
+        //        NewGiftedSubs = 0,
+        //        UserId = d.UserId
+        //    };
+        //    connection.SendNoAwait("update_user_loyalty", data);
+        //}
 
-            connection.SendNoAwait("update_user_loyalty", data);
-        }
+        //public void SendPlayerLoyaltyData(TwitchSubscription d)
+        //{
+        //    var data = new UserLoyaltyUpdate
+        //    {
+        //        IsModerator = d.IsModerator,
+        //        IsSubscriber = d.IsSubscriber,
+        //        NewCheeredBits = 0,
+        //        UserName = d.UserName,
+        //        NewGiftedSubs = d.ReceiverUserId == null || d.ReceiverUserId == d.UserId ? 0 : 1,
+        //        UserId = d.UserId
+        //    };
+        //    connection.SendNoAwait("update_user_loyalty", data);
+        //}
 
-        public void SendPlayerLoyaltyData(TwitchSubscription d)
-        {
-            if (client.Desynchronized) return;
-            var data = new UserLoyaltyUpdate
-            {
-                IsModerator = d.IsModerator,
-                IsSubscriber = d.IsSubscriber,
-                NewCheeredBits = 0,
-                UserName = d.UserName,
-                NewGiftedSubs = d.ReceiverUserId == null || d.ReceiverUserId == d.UserId ? 0 : 1,
-                UserId = d.UserId
-            };
-
-            connection.SendNoAwait("update_user_loyalty", data);
-        }
-
-        public void SendPlayerLoyaltyData(PlayerController player)
-        {
-            if (client.Desynchronized) return;
-            if (player == null || !player)
-            {
-                return;
-            }
-
-            if (player.IsBot && player.UserId.StartsWith("#"))
-            {
-                return;
-            }
-
-            var data = new UserLoyaltyUpdate
-            {
-                CharacterId = player.Id,
-                IsModerator = player.IsModerator,
-                IsSubscriber = player.IsSubscriber,
-                IsVip = player.IsVip,
-                NewCheeredBits = player.BitsCheered,
-                NewGiftedSubs = player.GiftedSubs,
-                UserId = player.UserId
-            };
-
-            player.GiftedSubs = 0;
-            player.BitsCheered = 0;
-
-            connection.SendNoAwait("update_user_loyalty", data);
-        }
+        //public void SendPlayerLoyaltyData(PlayerController player)
+        //{
+        //    if (player == null || !player)
+        //    {
+        //        return;
+        //    }
+        //    if (player.IsBot && player.UserId.StartsWith("#"))
+        //    {
+        //        return;
+        //    }
+        //    var data = new UserLoyaltyUpdate
+        //    {
+        //        CharacterId = player.Id,
+        //        IsModerator = player.IsModerator,
+        //        IsSubscriber = player.IsSubscriber,
+        //        IsVip = player.IsVip,
+        //        NewCheeredBits = player.BitsCheered,
+        //        NewGiftedSubs = player.GiftedSubs,
+        //        UserId = player.UserId
+        //    };
+        //    player.GiftedSubs = 0;
+        //    player.BitsCheered = 0;
+        //    connection.SendNoAwait("update_user_loyalty", data);
+        //}
 
         public void SyncTimeAsync(TimeSpan delta, DateTime time, DateTime serverTime)
         {
@@ -302,7 +274,6 @@ namespace RavenNest.SDK.Endpoints
 
         public async Task<bool> SavePlayerStateAsync(PlayerController player)
         {
-            if (client.Desynchronized) return false;
             if (player == null || !player || string.IsNullOrEmpty(player.UserId))
                 return false;
 
@@ -385,23 +356,23 @@ namespace RavenNest.SDK.Endpoints
             return oldState.DuelOpponent != newState.DuelOpponent;
         }
 
-        private bool RequiresUpdate(CharacterSkillUpdate oldState, CharacterSkillUpdate newState)
-        {
-            if (!lastSavedSkillsTime.TryGetValue(oldState.UserId, out var date))
-                return true;
+        //private bool RequiresUpdate(CharacterSkillUpdate oldState, CharacterSkillUpdate newState)
+        //{
+        //    if (!lastSavedSkillsTime.TryGetValue(oldState.UserId, out var date))
+        //        return true;
 
-            if (DateTime.UtcNow - date < TimeSpan.FromSeconds(ForceSaveInterval))
-                return false; // don't save yet or we will be saving on each update.
+        //    if (DateTime.UtcNow - date < TimeSpan.FromSeconds(ForceSaveInterval))
+        //        return false; // don't save yet or we will be saving on each update.
 
-            for (var i = 0; i < oldState.Experience.Length; ++i)
-            {
-                var oldExp = oldState.Experience[i];
-                var newExp = newState.Experience[i];
-                if (oldExp != newExp) return true;
-            }
+        //    for (var i = 0; i < oldState.Experience.Length; ++i)
+        //    {
+        //        var oldExp = oldState.Experience[i];
+        //        var newExp = newState.Experience[i];
+        //        if (oldExp != newExp) return true;
+        //    }
 
-            return false;
-        }
+        //    return false;
+        //}
 
         public void Close()
         {
@@ -410,7 +381,6 @@ namespace RavenNest.SDK.Endpoints
 
         public void Reconnect()
         {
-            if (client.Desynchronized) return;
             ForceReconnecting = true;
             connection.Reconnect();
         }

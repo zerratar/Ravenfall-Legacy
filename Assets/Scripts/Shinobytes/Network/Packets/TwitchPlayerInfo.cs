@@ -3,6 +3,8 @@ using System.Linq;
 
 public class TwitchPlayerInfo
 {
+    public TwitchPlayerInfo() { }
+
     public TwitchPlayerInfo(
         string userId,
         string username,
@@ -33,16 +35,15 @@ public class TwitchPlayerInfo
         //if (Identifier[0] == '󠀀')
         //{
         //}
-
     }
 
-    public string Username { get; }
-    public string UserId { get; }
-    public string DisplayName { get; }
-    public string Color { get; }
+    public string Username { get; set; }
+    public string UserId { get; set; }
+    public string DisplayName { get; set; }
+    public string Color { get; set; }
     public bool IsBroadcaster { get; set; }
     public bool IsModerator { get; set; }
     public bool IsSubscriber { get; set; }
     public bool IsVip { get; set; }
-    public string Identifier { get; }
+    public string Identifier { get; set; }
 }

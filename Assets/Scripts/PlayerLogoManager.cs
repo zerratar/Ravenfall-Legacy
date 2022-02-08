@@ -14,7 +14,8 @@ public class PlayerLogoManager : MonoBehaviour
     [SerializeField] private Sprite replacementLogo;
 
     private GameManager gameManager;
-    public string TwitchLogoUrl => gameManager.ServerAddress + "twitch/clan-logo/";
+    private const string logoPath = "twitch/clan-logo/";
+    public string TwitchLogoUrl => (gameManager?.ServerAddress ?? "https://www.ravenfall.stream/api/") + logoPath;
 
     private void Awake()
     {
@@ -26,7 +27,7 @@ public class PlayerLogoManager : MonoBehaviour
         if (userId == null || onLogoDownloaded == null)
             return;
 
-        if (gameManager.LogoCensor)
+        if (gameManager && gameManager.LogoCensor)
         {
             onLogoDownloaded(replacementLogo);
             return;
@@ -47,7 +48,7 @@ public class PlayerLogoManager : MonoBehaviour
         if (userId == null || onLogoDownloaded == null)
             return;
 
-        if (gameManager.LogoCensor)
+        if (gameManager && gameManager.LogoCensor)
         {
             onLogoDownloaded(replacementLogo);
             return;
@@ -65,7 +66,7 @@ public class PlayerLogoManager : MonoBehaviour
     public Sprite GetLogo(string raiderUserId)
     {
         //ClearCache();
-        if (gameManager.LogoCensor)
+        if (gameManager && gameManager.LogoCensor)
             return replacementLogo;
 
         if (TryGetLogo(raiderUserId, out var sprite))
@@ -77,6 +78,8 @@ public class PlayerLogoManager : MonoBehaviour
 
     internal async void ClearCache()
     {
+        if (!gameManager) return;
+
         if (gameManager.RavenNest.Authenticated)
         {
             await gameManager.RavenNest.ClearLogoAsync(gameManager.RavenNest.TwitchUserId);

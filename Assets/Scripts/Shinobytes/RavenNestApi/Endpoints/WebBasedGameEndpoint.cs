@@ -74,6 +74,14 @@ namespace RavenNest.SDK.Endpoints
                    .SendAsync<ScrollUseResult>(ApiRequestTarget.Game, ApiRequestType.Get);
         }
 
+        public Task<ExpMultiplier> GetExpMultiplierAsync()
+        {
+            return request.Create()
+                  .Method("exp-multiplier")
+                  .Build()
+                  .SendAsync<ExpMultiplier>(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
+
         public Task<ScrollUseResult> ActivateExpMultiplierAsync(PlayerController plr)
         {
             return request.Create()

@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Assets.Scripts
@@ -25,6 +26,21 @@ namespace Assets.Scripts
             BuildState();
             SaveState();
         }
+
+
+        internal void SetState(GameCacheState? cacheState)
+        {
+            this.stateCache = cacheState;
+            if (this.stateCache != null)
+            {
+                this.stateCache = new GameCacheState
+                {
+                    Created = System.DateTime.UtcNow,
+                    Players = cacheState.Value.Players
+                };
+            }
+        }
+
         internal void SetPlayersState(IReadOnlyList<PlayerController> players)
         {
             Shinobytes.Debug.Log("Updating Player State.");
@@ -48,7 +64,7 @@ namespace Assets.Scripts
                         item.TwitchUser = player.TwitchUser;
                         item.CharacterId = player.Id;
                         item.CharacterIndex = player.CharacterIndex;
-                        
+
                         if (item.TwitchUser == null)
                         {
                             item.TwitchUser = new TwitchPlayerInfo(
@@ -96,28 +112,46 @@ namespace Assets.Scripts
             return state;
         }
 
-        internal void LoadState()
+        public enum LoadStateResult
         {
-            if (System.IO.File.Exists(PlayerStateCacheFileName))
+            Success,
+            Error,
+            Expired
+        }
+
+        internal LoadStateResult LoadState()
+        {
+            if (Shinobytes.IO.File.Exists(PlayerStateCacheFileName))
             {
                 try
                 {
-                    var state = Newtonsoft.Json.JsonConvert.DeserializeObject<GameCacheState>(System.IO.File.ReadAllText(PlayerStateCacheFileName));
+                    var expiryTime = SettingsMenuView.GetPlayerCacheExpiryTime();
+                    if (expiryTime == TimeSpan.Zero) return LoadStateResult.Success;
+#if DEBUG
+                    Shinobytes.Debug.Log("Loading state file: " + Shinobytes.IO.Path.GetFilePath(PlayerStateCacheFileName));
+#endif
+                    var state = Newtonsoft.Json.JsonConvert.DeserializeObject<GameCacheState>(Shinobytes.IO.File.ReadAllText(PlayerStateCacheFileName));
 
-                    if ((System.DateTime.UtcNow - state.Created) > SettingsMenuView.GetPlayerCacheExpiryTime())
+                    if ((System.DateTime.UtcNow - state.Created) > expiryTime)
                     {
-                        return;
+                        Shinobytes.Debug.LogWarning("State Cache File has expired and will not be loaded.");
+                        return LoadStateResult.Expired;
                     }
 
                     stateCache = state;
 
                     IsAwaitingGameRestore = true;
+
+                    Shinobytes.Debug.Log("Loading Player State file...");
                 }
                 catch (System.Exception exc)
                 {
                     Shinobytes.Debug.LogError("Failed to load player state: " + exc.Message);
+                    return LoadStateResult.Error;
                 }
             }
+
+            return LoadStateResult.Success;
         }
 
         internal void SaveState()
@@ -126,12 +160,14 @@ namespace Assets.Scripts
             {
                 try
                 {
+
+                    Shinobytes.Debug.Log("Saving Player State file... (" + (stateCache?.Players?.Count ?? 0) + " players)");
                     var stateData = Newtonsoft.Json.JsonConvert.SerializeObject(stateCache);
                     // To ensure we dont accidently overwrite the state-data with half written data.
                     // in case the game crashes and saving in progress.
-                    System.IO.File.WriteAllText(TempPlayerStateCacheFileName, stateData);
-                    System.IO.File.Copy(TempPlayerStateCacheFileName, PlayerStateCacheFileName, true);
-                    System.IO.File.Delete(TempPlayerStateCacheFileName);
+                    Shinobytes.IO.File.WriteAllText(TempPlayerStateCacheFileName, stateData);
+                    Shinobytes.IO.File.Copy(TempPlayerStateCacheFileName, PlayerStateCacheFileName, true);
+                    Shinobytes.IO.File.Delete(TempPlayerStateCacheFileName);
                 }
                 catch (System.Exception exc)
                 {

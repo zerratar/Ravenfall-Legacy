@@ -48,6 +48,8 @@ public class FerryController : MonoBehaviour
 
     public float CaptainSpeedAdjustment { get; private set; }
 
+    public PlayerController Captain { get; private set; }
+
     // Use this for initialization
 
     void Start()
@@ -153,10 +155,13 @@ public class FerryController : MonoBehaviour
         return transform && (transform == playerPositions[0] || transform.position == playerPositions[0].position);
     }
 
-    public Transform GetNextPlayerPoint()
+    public Transform GetNextPlayerPoint(bool includeCaptainPosition = true)
     {
-        var captainPosition = playerPositions[0];
-        if (captainPosition.childCount == 0) return captainPosition;
+        if (includeCaptainPosition)
+        {
+            var captainPosition = playerPositions[0];
+            if (captainPosition.childCount == 0) return captainPosition;
+        }
 
         return playerPositions
             .Skip(1)
@@ -179,15 +184,34 @@ public class FerryController : MonoBehaviour
         emission.rateOverTime = rateOverTime.constant * v;
     }
 
-    internal void SetCaptain(PlayerController currentCaptain)
+    internal void AssignBestCaptain()
     {
-        if (currentCaptain != null)
+        var players = GetComponentsInChildren<PlayerController>();
+        if (players.Length == 0) return;
+        var nextCaptain = players.OrderByDescending(x => x.Stats.Sailing.CurrentValue).FirstOrDefault();
+        if (nextCaptain != null)
         {
-            CaptainSpeedAdjustment = currentCaptain.Stats.Sailing.CurrentValue;
+            PromoteToCaptain(nextCaptain);
+        }
+    }
+
+    private void PromoteToCaptain(PlayerController nextCaptain)
+    {
+        nextCaptain.transform.SetParent(playerPositions[0]);
+        SetCaptain(nextCaptain);
+    }
+
+    internal void SetCaptain(PlayerController newCaptain)
+    {
+        if (newCaptain != null)
+        {
+            CaptainSpeedAdjustment = newCaptain.Stats.Sailing.CurrentValue;
         }
         else
         {
             CaptainSpeedAdjustment = 0;
         }
+
+        this.Captain = newCaptain;
     }
 }

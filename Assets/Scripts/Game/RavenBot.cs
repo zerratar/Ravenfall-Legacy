@@ -45,8 +45,9 @@ public class RavenBot : MonoBehaviour
         Connection.Register<RestartGame>("restart");
         Connection.Register<SetPet>("set_pet");
         Connection.Register<GetPet>("get_pet");
-        Connection.Register<EquipItem>("equip");
+        Connection.Register<EquipItem>("equip");        
         Connection.Register<UnequipItem>("unequip");
+        Connection.Register<EnchantItem>("enchant");
         Connection.Register<PlayerStats>("player_stats");
         Connection.Register<PlayerResources>("player_resources");
         Connection.Register<Highscore>("highscore");

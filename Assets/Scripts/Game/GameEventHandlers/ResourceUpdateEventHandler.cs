@@ -8,10 +8,13 @@ public class ResourceUpdateEventHandler : GameEventHandler<ResourceUpdate>
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player)
         {
-            Shinobytes.Debug.LogWarning("No player with userid " + data.UserId + " when updating resources.");
+            if (gameManager.Players.TryGetPlayerName(data.UserId, out var name))
+            {
+                Shinobytes.Debug.LogWarning("Server sent resource update for player: " + name + " (" + data.UserId + ") but the player is no longer in the game.");
+            }
             return;
         }
-        
+
         //Debug.Log("Got resource update for player: " + player.Name);
 
         player.Resources.Fish = data.FishAmount;

@@ -12,7 +12,7 @@ public static class ItemTypeExtensions
 
         return item.Type.GetAnimation();
     }
-
+    public static int GetAnimation(this GameInventoryItem item) => GetAnimation(item.Item);
     public static int GetAnimation(this ItemType type)
     {
         switch (type)
@@ -26,6 +26,11 @@ public static class ItemTypeExtensions
         }
 
         return 0;
+    }
+
+    public static int GetAnimationCount(this GameInventoryItem item)
+    {
+        return item.Item.GetAnimationCount();
     }
 
     public static int GetAnimationCount(this Item item)

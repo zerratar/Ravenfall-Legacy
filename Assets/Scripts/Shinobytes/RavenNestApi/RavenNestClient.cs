@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -9,6 +11,7 @@ using RavenNest.SDK.Endpoints;
 
 namespace RavenNest.SDK
 {
+
     public class RavenNestClient : IRavenNestClient
     {
         private readonly ILogger logger;
@@ -26,6 +29,11 @@ namespace RavenNest.SDK
 
         private readonly BotPlayerGenerator botPlayerGenerator;
         public bool BadClientVersion => Volatile.Read(ref badClientVersion) == 1;
+
+        private readonly ConcurrentQueue<LoyaltyUpdate> loyaltyUpdateQueue
+            = new ConcurrentQueue<LoyaltyUpdate>();
+
+        private SemaphoreSlim loyaltyUpdateLock = new SemaphoreSlim(1);
 
         public RavenNestClient(
             ILogger logger,
@@ -81,15 +89,53 @@ namespace RavenNest.SDK
         public string TwitchDisplayName { get; private set; }
         public string TwitchUserId { get; private set; }
 
-        public bool Desynchronized { get; set; }
-        public async void Update()
+        public void EnqueueLoyaltyUpdate(TwitchCheer data)
         {
-            if (Desynchronized) return;
-            if (!SessionStarted)
+            loyaltyUpdateLock.Wait();
+
+            loyaltyUpdateQueue.Enqueue(new LoyaltyUpdate
             {
-                return;
+                BitsCount = data.Bits,
+                UserId = data.UserId,
+                UserName = data.UserName,
+                Date = DateTime.UtcNow
+            });
+
+            loyaltyUpdateLock.Release();
+        }
+
+        public void EnqueueLoyaltyUpdate(TwitchSubscription data)
+        {
+            loyaltyUpdateLock.Wait();
+
+            var items = loyaltyUpdateQueue.ToArray();
+            var existingSubGift = items.FirstOrDefault(x => x.UserId == data.UserId && x.SubsCount > 0);
+            if (existingSubGift != null)
+            {
+                existingSubGift.SubsCount++;
+
+                loyaltyUpdateQueue.Clear();
+                foreach (var item in items)
+                {
+                    loyaltyUpdateQueue.Enqueue(item);
+                }
+            }
+            else
+            {
+                loyaltyUpdateQueue.Enqueue(new LoyaltyUpdate
+                {
+                    SubsCount = 1,
+                    UserId = data.UserId,
+                    UserName = data.UserName,
+                    Date = DateTime.UtcNow
+                });
             }
 
+            loyaltyUpdateLock.Release();
+        }
+
+        public async void Update()
+        {
             if (Interlocked.CompareExchange(ref updateCounter, 1, 0) == 1)
             {
                 return;
@@ -100,33 +146,36 @@ namespace RavenNest.SDK
                 logger.Debug("Reconnecting to server...");
             }
 
+            if (Authenticated && SessionStarted)
+            {
+                try
+                {
+                    await loyaltyUpdateLock.WaitAsync();
+
+                    if (loyaltyUpdateQueue.TryDequeue(out var req))
+                    {
+                        if (!await Players.SendLoyaltyUpdateAsync(req))
+                        {
+                            loyaltyUpdateQueue.Enqueue(req);
+                            await Task.Delay(2000);
+                        }
+                    }
+                }
+                catch (Exception exc)
+                {
+                    logger.Error("Failed to send loyualty data to server: " + exc);
+                }
+                finally
+                {
+                    loyaltyUpdateLock.Release();
+                }
+            }
+
             Interlocked.Decrement(ref updateCounter);
-        }
-        public void SendPlayerLoyaltyData(PlayerController player)
-        {
-            if (Desynchronized) return;
-
-            if (!player || player == null)
-            {
-                return;
-            }
-
-            if (!SessionStarted)
-            {
-                return;
-            }
-
-            if (player.IsBot && player.UserId.StartsWith("#"))
-            {
-                return;
-            }
-
-            Stream.SendPlayerLoyaltyData(player);
         }
 
         public Task<bool> SaveTrainingSkill(PlayerController player)
         {
-            if (Desynchronized) return Task.FromResult(false);
             if (!player || player == null)
             {
                 return Task.FromResult(false);
@@ -142,7 +191,6 @@ namespace RavenNest.SDK
 
         public async Task<bool> SavePlayerAsync(PlayerController player)
         {
-            if (Desynchronized) return false;
             if (!player || player == null)
             {
                 return false;
@@ -155,7 +203,7 @@ namespace RavenNest.SDK
 
             if (!SessionStarted)
             {
-                Shinobytes.Debug.LogWarning("Trying to save player " + player.PlayerName + " but session has not been started.");
+                //Shinobytes.Debug.Log("Trying to save player " + player.PlayerName + " but session has not been started.");
                 return false;
             }
 
@@ -163,9 +211,9 @@ namespace RavenNest.SDK
             await Stream.SavePlayerStateAsync(player);
             return saveResult;
         }
+
         public async Task<bool> SavePlayerStateAsync(PlayerController player)
         {
-            if (Desynchronized) return false;
             if (!player || player == null)
             {
                 return false;
@@ -178,15 +226,15 @@ namespace RavenNest.SDK
 
             if (!SessionStarted)
             {
-                Shinobytes.Debug.LogWarning("Trying to save player " + player.PlayerName + " but session has not been started.");
+                //Shinobytes.Debug.Log("Trying to save player " + player.PlayerName + " but session has not been started.");
                 return false;
             }
 
             return await Stream.SavePlayerStateAsync(player);
         }
+
         public async Task<bool> LoginAsync(string username, string password)
         {
-            if (Desynchronized) return false;
             try
             {
                 Interlocked.Increment(ref activeRequestCount);
@@ -213,7 +261,6 @@ namespace RavenNest.SDK
 
         public async Task<bool> StartSessionAsync(string clientVersion, string accessKey, bool useLocalPlayers)
         {
-            if (Desynchronized) return false;
             try
             {
                 Interlocked.Increment(ref activeRequestCount);
@@ -249,7 +296,6 @@ namespace RavenNest.SDK
 
         internal async void PlayerRemoveAsync(PlayerController player)
         {
-            if (Desynchronized) return;
             try
             {
                 if (player.IsBot && player.UserId.StartsWith("#"))
@@ -272,7 +318,6 @@ namespace RavenNest.SDK
 
         public async Task<RavenNest.Models.PlayerJoinResult> PlayerJoinAsync(PlayerJoinData joinData, int retry = 0)
         {
-            if (Desynchronized) return null;
             try
             {
                 // way to fake a bot here.
@@ -291,18 +336,17 @@ namespace RavenNest.SDK
 
                 var playerResult = await Players.PlayerJoinAsync(joinData);
 
-#if DEBUG
+                //#if DEBUG
                 if (retry > 0 && playerResult.Success)
                 {
                     logger.Debug(joinData.UserName + " was successfully added to the game after " + retry + " tries.");
                 }
-#endif
-
+                //#endif
                 return playerResult;
             }
             catch (Exception exc)
             {
-                logger.Error("Failed to add player (" + joinData.UserName + "). " + exc.Message + "\r\n retrying (Try: " + (retry + 1) + ")...");
+                logger.Debug("Failed to add player (" + joinData.UserName + "). " + exc.Message + ". retrying (Try: " + (retry + 1) + ")...");
 
                 if (exc is System.Net.WebException)
                 {

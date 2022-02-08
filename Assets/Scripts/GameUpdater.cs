@@ -8,6 +8,8 @@ using TMPro;
 
 using UnityEngine;
 using System.Linq;
+using Assets.Scripts.Overlay;
+
 public class GameUpdater : MonoBehaviour
 {
     public string CheckUpdateUri = "https://localhost:5001/";
@@ -16,20 +18,34 @@ public class GameUpdater : MonoBehaviour
     [SerializeField] private TextMeshProUGUI label;
     [SerializeField] private GameProgressBar progressBar;
 
+    public bool EditorOnlyStartAsOverlay;
+
     private GameUpdateHandler gameUpdater;
     private UpdateResult updateResult;
     private bool startingPatcher = false;
     private bool loadingScene;
+    private int lastAcceptedVersion;
 
     private void Start()
     {
-        var startupArgs = System.Environment.GetCommandLineArgs();
-        var forceUpdate = startupArgs.Select(x => x.ToLower()).Any(x => x.Contains("forceupdate") || x.Contains("force-update") || x.Contains("reinstall"));
-        gameUpdater = new GameUpdateHandler(CheckUpdateUri);
-        gameUpdater.UpdateAsync(forceUpdate).ContinueWith(async res =>
+        var startupArgs = System.Environment.GetCommandLineArgs().Select(x => x.ToLower()).ToArray();
+        var forceUpdate = startupArgs.Any(x => x.Contains("forceupdate") || x.Contains("force-update") || x.Contains("reinstall"));
+
+        this.lastAcceptedVersion = PlayerPrefs.GetInt(CodeOfConductController.CoCLastAcceptedVersion_SettingsName, CodeOfConductController.CoCLastAcceptedVersion_DefaultValue);
+
+        if (Application.isEditor)
         {
-            updateResult = await res;
-        });
+            Overlay.IsGame = !EditorOnlyStartAsOverlay;
+            StartUpdate(forceUpdate);
+        }
+        else
+        {
+            CheckIfGameAsync(startupArgs).ContinueWith(async x =>
+            {
+                Overlay.IsGame = await x;
+                StartUpdate(forceUpdate);
+            });
+        }
 
         if (progressBar)
         {
@@ -37,8 +53,59 @@ public class GameUpdater : MonoBehaviour
         }
     }
 
+    private void StartUpdate(bool forceUpdate)
+    {
+        gameUpdater = new GameUpdateHandler(CheckUpdateUri);
+        gameUpdater.UpdateAsync(forceUpdate, lastAcceptedVersion).ContinueWith(async res =>
+        {
+            updateResult = await res;
+        });
+    }
+
+    private async Task<bool> CheckIfGameAsync(string[] args)
+    {
+        // if we contain the "overlay" argument
+        // we should always start as an overlay.
+
+        // if we dont contain it. We should assume we start as a game.
+        // However, if there already is an instance running. We will assume it is an overlay as well.
+
+        // Note: Final check could be to see whether or not its possible to connect to the overlay server.
+        // if its not possible, we can only assume that the existing one is a game otherwise its an overlay.
+        // 
+
+        // We don't do that check for now, so players will have to close down both instances if they f' things up.        
+
+        var isGame = args.Length == 0 || args.All(x => !x.Contains("overlay"));
+
+        if (isGame)
+        {
+            try
+            {
+                isGame = System.Diagnostics.Process.GetProcesses().Count(x => x.ProcessName.ToLower().Contains("ravenfall") || x.ProcessName.ToLower().Contains("unity editor")) == 1;
+            }
+            catch { }
+
+            if (!isGame)
+            {
+                var canConnectToServer = await OverlayClient.TestServerAvailabilityAsync();
+                // finally, check 
+                // if we can't connect to a server, assume the game is not running.
+                return !canConnectToServer;
+
+            }
+        }
+
+        return isGame;
+    }
+
     private void Update()
     {
+        if (gameUpdater == null)
+        {
+            return;
+        }
+
         if (loadingScene)
         {
             return;
@@ -49,10 +116,32 @@ public class GameUpdater : MonoBehaviour
             versionText.text = "VERSION " + Application.version;
         }
 
+        if (updateResult == UpdateResult.CodeOfConductModified)
+        {
+            loadingScene = true;
+
+            if (Overlay.IsGame)
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(3);
+                return;
+            }
+
+
+            UnityEngine.SceneManagement.SceneManager.LoadScene(2);
+            return;
+        }
+
         if (updateResult == UpdateResult.UpToDate)
         {
             loadingScene = true;
-            UnityEngine.SceneManagement.SceneManager.LoadScene(1);
+
+            if (Overlay.IsGame)
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(1);
+                return;
+            }
+
+            UnityEngine.SceneManagement.SceneManager.LoadScene(2);
             return;
         }
 
@@ -176,7 +265,7 @@ public class GameUpdater : MonoBehaviour
         }
 
         // 2. start patcher
-        if (System.IO.File.Exists("RavenWeave.exe"))
+        if (Shinobytes.IO.File.Exists("RavenWeave.exe"))
         {
             System.Diagnostics.Process.Start("RavenWeave.exe");
         }
@@ -219,7 +308,7 @@ public class GameUpdater : MonoBehaviour
             Version = Application.version
         };
         var metadataContent = JsonConvert.SerializeObject(metadata);
-        File.WriteAllText("metadata.json", metadataContent);
+        Shinobytes.IO.File.WriteAllText("metadata.json", metadataContent);
     }
 }
 
@@ -233,6 +322,7 @@ public enum UpdateResult
 {
     None,
     UpToDate,
+    CodeOfConductModified,
     Success,
     Failed_NoInternet,
     Failed
@@ -251,7 +341,7 @@ public class GameUpdateHandler
         if (!this.host.EndsWith("/")) this.host += "/";
     }
 
-    public async Task<UpdateResult> UpdateAsync(bool forceUpdate = false)
+    public async Task<UpdateResult> UpdateAsync(bool forceUpdate = false, int lastAcceptedCoCVersion = -1)
     {
         latestUpdate = await DownloadUpdateInfoAsync();
         if (latestUpdate == null)
@@ -259,7 +349,17 @@ public class GameUpdateHandler
             return UpdateResult.Failed_NoInternet;
         }
 
-        if (latestUpdate.Version == version && !forceUpdate)
+        var coc = latestUpdate.CodeOfConduct;
+        if (coc != null && lastAcceptedCoCVersion != coc.Revision)
+        {
+            if (Application.isEditor || coc.VisibleInClient)
+            {
+                CodeOfConductController.CodeOfConduct = coc;
+                return UpdateResult.CodeOfConductModified;
+            }
+        }
+
+        if (GameVersion.GetApplicationVersion() >= latestUpdate.GetVersion() && !forceUpdate)
         {
             return UpdateResult.UpToDate;
         }
@@ -268,6 +368,7 @@ public class GameUpdateHandler
         {
             return UpdateResult.Success;
         }
+
 
         return UpdateResult.Failed;
     }
@@ -303,9 +404,9 @@ public class GameUpdateHandler
                 Directory.CreateDirectory("update");
             }
 
-            if (File.Exists(updateFile))
+            if (Shinobytes.IO.File.Exists(updateFile))
             {
-                File.Delete(updateFile);
+                Shinobytes.IO.File.Delete(updateFile);
             }
 
             var start = DateTime.Now;
@@ -356,12 +457,12 @@ public class GameUpdateHandler
 
                 try
                 {
-                    if (!Directory.Exists("update"))
+                    if (!Shinobytes.IO.Directory.Exists("update"))
                     {
-                        Directory.CreateDirectory("update");
+                        Shinobytes.IO.Directory.CreateDirectory("update");
                     }
 
-                    File.WriteAllText("update/update.json", update);
+                    Shinobytes.IO.File.WriteAllText("update/update.json", update);
                 }
                 catch (Exception exc)
                 {
@@ -393,4 +494,31 @@ public class UpdateData
     public bool IsAlpha => Version?.IndexOf("a", StringComparison.OrdinalIgnoreCase) >= 0;
     public bool IsBeta => Version?.IndexOf("b", StringComparison.OrdinalIgnoreCase) >= 0;
     public DateTime Released { get; set; }
+    public RavenNest.Models.CodeOfConduct CodeOfConduct { get; set; }
+    public Version GetVersion()
+    {
+        if (GameVersion.TryParse(Version, out var version))
+            return version;
+
+        return new Version();
+    }
+}
+
+public static class GameVersion
+{
+    public static Version GetApplicationVersion()
+    {
+        if (TryParse(UnityEngine.Application.version, out var version))
+        {
+            return version;
+        }
+        return new Version();
+    }
+
+    public static bool TryParse(string input, out Version version)
+    {
+        var versionToLower = input.ToLower();
+        var versionString = versionToLower.Replace("a", "");
+        return System.Version.TryParse(versionString, out version);
+    }
 }

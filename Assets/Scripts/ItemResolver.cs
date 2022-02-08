@@ -11,7 +11,8 @@ internal class ItemResolver : IItemResolver
     private ItemManager itemManager;
     private PlayerManager playerManager;
 
-    public TradeItem Resolve(string itemTradeQuery, bool parsePrice = true, bool parseUsername = false, bool parseAmount = true)
+    public TradeItem Resolve(string itemTradeQuery, bool parsePrice = true,
+        bool parseUsername = false, bool parseAmount = true, PlayerController playerToSearch = null)
     {
         try
         {
@@ -71,13 +72,29 @@ internal class ItemResolver : IItemResolver
             }
 
             var itemQuery = modifiedQuery.Trim();
+
+            if (playerToSearch != null)
+            {
+                var targetItem = playerToSearch.Inventory.GetBackpackItems().FirstOrDefault(x => IsMatch(x.Name, itemQuery));
+                if (targetItem != null)
+                {
+                    return new TradeItem(targetItem, amount, price, player ?? playerToSearch);
+                }
+
+                targetItem = playerToSearch.Inventory.GetEquippedItems().FirstOrDefault(x => IsMatch(x.Name, itemQuery));
+                if (targetItem != null)
+                {
+                    return new TradeItem(targetItem, amount, price, player ?? playerToSearch);
+                }
+            }
+
             var item = itemManager.GetItems().FirstOrDefault(x => IsMatch(x.Name, itemQuery));
             if (item == null)
             {
                 return null;
             }
 
-            return new TradeItem(item, amount, price, player);
+            return new TradeItem(item, amount, price, player ?? playerToSearch);
         }
         catch (Exception exc)
         {

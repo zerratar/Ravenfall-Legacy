@@ -16,10 +16,15 @@ public class IslandController : MonoBehaviour
 
     private SphereCollider sphereCollider;
     private float radius;
+
+    private int ferryArriveCount;
+    private int raidBossCount;
+
     //private readonly Dictionary<Guid, PlayerController> players = new Dictionary<Guid, PlayerController>();
     private readonly List<PlayerController> players = new List<PlayerController>();
-
     public Vector3 SpawnPosition => SpawnPositionTransform ? SpawnPositionTransform.position : transform.position;
+
+    public bool Sailable => this.DockingArea != null;
 
     public bool InsideIsland(Vector3 position)
     {
@@ -39,6 +44,7 @@ public class IslandController : MonoBehaviour
         if (raidBoss)
         {
             raidBoss.IslandEnter(this);
+            ++this.raidBossCount;
             return;
         }
 
@@ -46,6 +52,7 @@ public class IslandController : MonoBehaviour
         if (ferry)
         {
             ferry.IslandEnter(this);
+            ++this.ferryArriveCount;
             return;
         }
     }

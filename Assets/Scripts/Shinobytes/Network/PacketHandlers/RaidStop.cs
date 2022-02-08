@@ -7,7 +7,7 @@
      : base(game, server, playerManager)
     {
     }
-    public override async void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(TwitchPlayerInfo data, GameClient client)
     {
         Shinobytes.Debug.Log("Raid Stop Received");
         try

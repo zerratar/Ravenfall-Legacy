@@ -8,14 +8,10 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
         if (gameManager.Players.Contains(data.UserId))
         {
             var existing = gameManager.Players.GetPlayerByUserId(data.UserId);
-            if (existing == null)
+            if (existing != null)
             {
-                UnityEngine.Debug.LogWarning("Unable to add player: " + data.UserName + " (" + data.UserId + "). A character of the same user is already in the game.");
-                return;
+                gameManager.RemovePlayer(existing, false);
             }
-
-            gameManager.RemovePlayer(existing, false);
-
             //return;
         }
 
@@ -30,11 +26,13 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
 
         if (playerInfo == null)
         {
+            Shinobytes.Debug.LogError("Unable to add player: " + data.UserName + " " + (playerInfo != null ? playerInfo.ErrorMessage : ""));
             return;
         }
 
         if (!playerInfo.Success)
         {
+            Shinobytes.Debug.LogError("Unable to add player: " + data.UserName + " " + (playerInfo != null ? playerInfo.ErrorMessage : ""));
             return;
         }
 

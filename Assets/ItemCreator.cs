@@ -75,7 +75,7 @@ public class ItemCreator : MonoBehaviour
                 this.generateMeleeGear = false;
             }
         });
-        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall-Legacy-new\Data\Repositories\items.json");
+        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall Legacy\Data\Repositories\items.json");
         gameItems = JsonConvert.DeserializeObject<Item[]>(json);
 
         if (itemButtonContainer)

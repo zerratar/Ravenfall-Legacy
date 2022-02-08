@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class DungeonJoin : PacketHandler<TwitchPlayerInfo>
+public class DungeonJoin : PacketHandler<EventJoinRequest>
 {
     public DungeonJoin(
         GameManager game,
@@ -10,26 +10,27 @@ public class DungeonJoin : PacketHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(EventJoinRequest data, GameClient client)
     {
         try
         {
-            var player = PlayerManager.GetPlayer(data);
+            var username = data.Player.Username;
+            var player = PlayerManager.GetPlayer(data.Player);
             if (player == null)
             {
-                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+                client.SendMessage(username, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             if (Game.StreamRaid.IsWar)
             {
-                client.SendMessage(data.Username, "Dungeon is unavailable during wars. Please wait for it to be over.");
+                client.SendMessage(username, "Dungeon is unavailable during wars. Please wait for it to be over.");
                 return;
             }
 
             if (player.Ferry.OnFerry)
             {
-                client.SendMessage(data.Username, "You cannot join the dungeon while on the ferry. Please !disembark before you can join.");
+                client.SendMessage(username, "You cannot join the dungeon while on the ferry. Please !disembark before you can join.");
                 return;
             }
 
@@ -41,25 +42,30 @@ public class DungeonJoin : PacketHandler<TwitchPlayerInfo>
 
             if (!Game.Dungeons.Active)
             {
-                client.SendMessage(data.Username, "No active dungeons available, sorry.");
+                client.SendMessage(username, "No active dungeons available, sorry.");
                 return;
             }
 
             if (Game.Dungeons.Started)
             {
-                client.SendMessage(data.Username, "The dungeon has already started. You will have to wait for the next one!");
+                client.SendMessage(username, "The dungeon has already started. You will have to wait for the next one!");
                 return;
             }
-            if (Game.Dungeons.CanJoin(player))
-            {
-                Game.Dungeons.Join(player);
-                client.SendMessage(data.Username, "You have joined the dungeon. Good luck!");
-            }
-            else
-            {
-                client.SendMessage(data.Username, "You have already joined the dungeon.");
-            }
+            var result = Game.Dungeons.CanJoin(player, data.Code);
 
+            switch (result)
+            {
+                case DungeonJoinResult.CanJoin:
+                    Game.Dungeons.Join(player);
+                    client.SendMessage(username, "You have joined the dungeon. Good luck!");
+                    break;
+                case DungeonJoinResult.AlreadyJoined:
+                    client.SendMessage(username, "You have already joined the dungeon.");
+                    break;
+                case DungeonJoinResult.WrongCode:
+                    client.SendMessage(username, "You have used incorrect command for joining the dungeon. Use !dungeon [word seen on stream] to join.");
+                    break;
+            }
         }
         catch (Exception exc)
         {

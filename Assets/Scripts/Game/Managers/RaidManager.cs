@@ -40,6 +40,8 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public bool IsBusy { get; internal set; }
 
+    public string RequiredCode;
+
     private void Start()
     {
         nextRaidTimer = UnityEngine.Random.Range(minTimeBetweenRaids, maxTimeBetweenRaids);
@@ -70,6 +72,17 @@ public class RaidManager : MonoBehaviour, IEvent
         return RaidJoinResult.CanJoin;
     }
 
+    public RaidJoinResult CanJoin(PlayerController player, string code)
+    {
+        var canJoin = CanJoin(player);
+        if (canJoin == RaidJoinResult.CanJoin && !string.IsNullOrEmpty(this.RequiredCode) && code != this.RequiredCode)
+        {
+            return RaidJoinResult.WrongCode;
+        }
+
+        return canJoin;
+    }
+
     public void Join(PlayerController player)
     {
         if (!Started)
@@ -94,7 +107,10 @@ public class RaidManager : MonoBehaviour, IEvent
 
         player.Raid.OnEnter();
 
-        //gameManager.EventTriggerSystem.SendInput(player.UserId, "raid");
+        if (this.gameManager.EventTriggerSystem != null)
+        {
+            gameManager.EventTriggerSystem.SendInput(player.UserId, "raid");
+        }
     }
 
     public void Leave(PlayerController player, bool reward = false, bool timeout = false)
@@ -112,6 +128,9 @@ public class RaidManager : MonoBehaviour, IEvent
     {
         if (gameManager.Events.TryStart(this))
         {
+            if (gameManager.RequireCodeForDungeonOrRaid)
+                RequiredCode = EventCode.New();
+
             notifications.OnBeforeRaidStart();
 
             gameManager.Music.PlayRaidBossMusic();
@@ -124,19 +143,21 @@ public class RaidManager : MonoBehaviour, IEvent
 
             SpawnRaidBoss();
 
-            notifications.ShowRaidBossAppeared();
+            notifications.ShowRaidBossAppeared(RequiredCode);
 
-            gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
+            if (gameManager.RequireCodeForDungeonOrRaid)
+            {
+                gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_CODE, Boss.Enemy.Stats.CombatLevel.ToString());
+            }
+            else
+            {
+                gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
+            }
+            if (this.gameManager.EventTriggerSystem != null)
+            {
+                this.gameManager.EventTriggerSystem.TriggerEvent("raid", TimeSpan.FromSeconds(10));
+            }
 
-            //var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
-            //if (ioc)
-            //{
-            //    var evt = ioc.Resolve<EventTriggerSystem>();
-            //    if (evt != null)
-            //    {
-            //        evt.TriggerEvent("raid", TimeSpan.FromSeconds(10));
-            //    }
-            //}
             return;
         }
         else if (!string.IsNullOrEmpty(initiator))
@@ -159,6 +180,11 @@ public class RaidManager : MonoBehaviour, IEvent
         lock (mutex)
         {
             var playersToLeave = raidingPlayers.ToList();
+            if (bossKilled)
+            {
+                RewardItemDrops(playersToLeave);
+            }
+
             foreach (var player in playersToLeave)
             {
                 Leave(player, bossKilled, timeout);
@@ -167,8 +193,27 @@ public class RaidManager : MonoBehaviour, IEvent
 
         Destroy(Boss.gameObject);
         Boss = null;
-
+        RequiredCode = null;
         gameManager.Events.End(this);
+        gameManager.Ferry.AssignBestCaptain();
+    }
+
+    public void RewardItemDrops(List<PlayerController> players)
+    {
+        // only players within at least 20% participation time will have chance for item drop.
+        var result = Boss.ItemDrops.DropItems(players.Where(x => x.Raid.GetParticipationPercentage() >= 0.2), DropType.Maybe);
+        if (result.Count > 0)
+        {
+            gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded " + result.Count + " item treasures!");
+        }
+        else
+        {
+            gameManager.RavenBot.Announce("Victorious!! The raid boss was slain but did not yield any treasure.");
+        }
+        foreach (var msg in result.Messages)
+        {
+            gameManager.RavenBot.Announce(msg);
+        }
     }
 
     private void ScheduleNextRaid()
@@ -282,5 +327,6 @@ public enum RaidJoinResult
     CanJoin,
     MinHealthReached,
     AlreadyJoined,
-    NoActiveRaid
+    NoActiveRaid,
+    WrongCode
 }

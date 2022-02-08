@@ -41,6 +41,17 @@ namespace RavenNest.SDK.Endpoints
                     playerData);
         }
 
+        public Task<RavenNest.Models.PlayerRestoreResult> RestoreAsync(PlayerRestoreData playerData)
+        {
+            return request.Create()
+                .Method("restore")
+                .Build()
+                .SendAsync<PlayerRestoreResult, PlayerRestoreData>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Post,
+                    playerData);
+        }
+
         //[Obsolete]
         //public Task<RavenNest.Models.PlayerJoinResult> PlayerJoinAsync(
         //    string userId, string username, string identifier)
@@ -66,9 +77,20 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<Guid> AddItemInstanceAsync(string userId, GameInventoryItem item)
+        {
+            return request.Create()
+                .Identifier(userId)
+                .Method("item-instance")
+                .Build()
+                .SendAsync<Guid, InventoryItem>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Post,
+                    item.InventoryItem);
+        }
+
         public Task<AddItemResult> AddItemAsync(string userId, Guid item)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("item")
@@ -80,7 +102,6 @@ namespace RavenNest.SDK.Endpoints
         }
         public Task<AddItemResult> CraftItemAsync(string userId, Guid item)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("craft")
@@ -92,7 +113,6 @@ namespace RavenNest.SDK.Endpoints
         }
         public Task<CraftItemResult> CraftItemsAsync(string userId, Guid item, int amount = 1)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("craft-many")
@@ -106,7 +126,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<RedeemItemResult> RedeemItemAsync(Guid characterId, Guid itemId)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(characterId.ToString())
                 .Method("redeem-item")
@@ -119,7 +138,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<int> RedeemTokensAsync(string userId, int amount, bool exact)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("redeem-tokens")
@@ -133,7 +151,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> AddTokensAsync(string userId, int amount)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("add-tokens")
@@ -147,7 +164,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> UnequipItemAsync(string userId, Guid item)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("unequip")
@@ -158,9 +174,32 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<ItemEnchantmentResult> EnchantItemAsync(string userId, Guid inventoryItem)
+        {
+            return request.Create()
+                .Identifier(userId)
+                .Method("enchant-item")
+                .AddParameter(inventoryItem.ToString())
+                .Build()
+                .SendAsync<ItemEnchantmentResult>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
+        public Task<bool> UnequipItemInstanceAsync(string userId, Guid inventoryItem)
+        {
+            return request.Create()
+                .Identifier(userId)
+                .Method("unequip-instance")
+                .AddParameter(inventoryItem.ToString())
+                .Build()
+                .SendAsync<bool>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
         public Task<bool> UnequipAllItemsAsync(string userId)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("unequipall")
@@ -170,9 +209,20 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<bool> EquipItemInstanceAsync(string userId, Guid inventoryItem)
+        {
+            return request.Create()
+                .Identifier(userId)
+                .Method("equip-instance")
+                .AddParameter(inventoryItem.ToString())
+                .Build()
+                .SendAsync<bool>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
         public Task<bool> EquipItemAsync(string userId, Guid item)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("equip")
@@ -182,10 +232,8 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestTarget.Players,
                     ApiRequestType.Get);
         }
-
         public Task<bool> EquipBestItemsAsync(string userId)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("equipall")
@@ -197,7 +245,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> ToggleHelmetAsync(string userId)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("toggle-helmet")
@@ -208,7 +255,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("appearance")
@@ -219,7 +265,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> UpdateAppearanceAsync(string userId, int[] appearance)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("appearance")
@@ -230,7 +275,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> UpdateStatisticsAsync(string userId, decimal[] statistics)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("statistics")
@@ -241,7 +285,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> UpdateResourcesAsync(string userId, decimal[] resources)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("resources")
@@ -252,7 +295,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<long> GiftItemAsync(string userId, string receiverUserId, Guid itemId, long amount)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("gift")
@@ -264,7 +306,6 @@ namespace RavenNest.SDK.Endpoints
         }
         public Task<long> VendorItemAsync(string userId, Guid itemId, long amount)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Identifier(userId)
                 .Method("vendor")
@@ -276,7 +317,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool[]> UpdateManyAsync(PlayerState[] states)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                 .Method("update")
                 .AddParameter("values", states)
@@ -286,13 +326,20 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<int> GetHighscoreAsync(Guid id, string skill)
         {
-            if (client.Desynchronized) return null;
             return request.Create()
                .Method("highscore")
                .AddParameter(id.ToString())
                .AddParameter(skill)
                .Build()
                .SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
+        }
+
+        public Task<bool> SendLoyaltyUpdateAsync(LoyaltyUpdate req)
+        {
+            return request.Create()
+               .Method("loyalty")
+               .Build()
+               .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post, req);
         }
     }
 }
