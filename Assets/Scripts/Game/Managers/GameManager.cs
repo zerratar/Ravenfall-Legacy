@@ -160,10 +160,11 @@ public class GameManager : MonoBehaviour, IGameManager
     public StreamLabel villageBoostLabel;
     public StreamLabel playerCountLabel;
 
-    public int PlayerBoostRequirement { get; set; } = 0;
-
     public Permissions Permissions { get; set; } = new Permissions();
     public bool LogoCensor { get; set; }
+    public bool AlertExpiredStateCacheInChat { get; set; } = true;
+    public PlayerItemDropMessageSettings ItemDropMessageSettings { get; set; } = PlayerItemDropMessageSettings.OneItemPerRow;
+    public int PlayerBoostRequirement { get; set; } = 0;
 
     public bool PotatoMode
     {
@@ -321,6 +322,10 @@ public class GameManager : MonoBehaviour, IGameManager
         PotatoMode = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_PotatoMode, 0) > 0;
         RealtimeDayNightCycle = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_RealTimeDayNightCycle, 0) > 0;
         PlayerBoostRequirement = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_PlayerBoostRequirement);
+
+        AlertExpiredStateCacheInChat = PlayerPrefs.GetInt(SettingsMenuView.SettingsName_AlertExpiredStateCacheInChat, 1) == 1;
+        ItemDropMessageSettings = (PlayerItemDropMessageSettings)PlayerPrefs.GetInt(SettingsMenuView.SettingsName_ItemDropMessageType, (int)ItemDropMessageSettings);
+
 
         PlayerList.Bottom = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_PlayerListSize, PlayerList.Bottom);
         PlayerList.Scale = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_PlayerListScale, PlayerList.Scale);
@@ -560,7 +565,11 @@ public class GameManager : MonoBehaviour, IGameManager
              RavenBot.IsConnected &&
             !stateFileStatusReported && gameCacheStateFileLoadResult == GameCache.LoadStateResult.Expired)
         {
-            RavenBot.Announce("Player restore state file has expired. No players has been added back.");
+            if (AlertExpiredStateCacheInChat)
+            {
+                RavenBot.Announce("Player restore state file has expired. No players has been added back.");
+            }
+
             stateFileStatusReported = true;
         }
 

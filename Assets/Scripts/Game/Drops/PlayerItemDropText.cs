@@ -4,18 +4,17 @@ using System.Text;
 
 public class PlayerItemDropText
 {
-    private readonly Dictionary<string, List<string>> droppedItems;
-    private readonly bool newMessagePerItem;
     private readonly IReadOnlyList<string> messages;
+    private readonly PlayerItemDropMessageSettings settings;
+
     public int Count { get; private set; }
     public IReadOnlyList<string> Messages => messages;
     public PlayerItemDropText(
         Dictionary<string, List<string>> droppedItems,
-        bool newMessagePerItem = false)
+        PlayerItemDropMessageSettings settings)
     {
-        this.droppedItems = droppedItems;
-        this.newMessagePerItem = newMessagePerItem;
         this.messages = this.Process(droppedItems);
+        this.settings = settings;
     }
 
     private IReadOnlyList<string> Process(Dictionary<string, List<string>> items)
@@ -54,33 +53,49 @@ public class PlayerItemDropText
             var playersRef = kvp.Value;
             if (string.IsNullOrEmpty(itemName))
                 continue;
-
-            Append((IsVocal(itemName[0]) ? "An " : "A ") + itemName);
-            Append(" was found by ");
-
-            for (int i = 0; i < playersRef.Count; i++)
+            try
             {
-                // last player in list
-                var lastInList = playersRef.Count - 1 == i;
-                var player = playersRef[i];
-                if (i > 0)
+                if (settings == PlayerItemDropMessageSettings.OnePlayerPerRow)
                 {
-                    Append(lastInList ? " and " : ", ");
+                    for (int i = 0; i < playersRef.Count; i++)
+                    {
+                        Append(playersRef[i] + " you found " + (IsVocal(itemName[0]) ? "an " : "a ") + itemName);
+                        Next();
+                    }
+                    continue;
                 }
-                Append(player);
+
+                Append((IsVocal(itemName[0]) ? "An " : "A ") + itemName);
+                Append(" was found by ");
+
+                for (int i = 0; i < playersRef.Count; i++)
+                {
+                    // last player in list
+                    var lastInList = playersRef.Count - 1 == i;
+                    var player = playersRef[i];
+                    if (i > 0)
+                    {
+                        Append(lastInList ? " and " : ", ");
+                    }
+                    Append(player);
+                }
+                Append(". ");
+
+                if (settings == PlayerItemDropMessageSettings.OneItemPerRow)
+                    Next();
             }
-            Append(". ");
-
-            if (newMessagePerItem)
-                Next();
-
-            count += playersRef.Count;
+            finally
+            {
+                count += playersRef.Count;
+            }
         }
+
 
         var remaining = sb.ToString();
         if (!string.IsNullOrEmpty(remaining))
             output.Add(remaining);
 
+        Count = count;
         return output;
     }
 
@@ -90,4 +105,11 @@ public class PlayerItemDropText
         c = char.ToLower(c);
         return c == 'a' || c == 'i' || c == 'e' || c == 'u' || c == 'o';
     }
+}
+
+public enum PlayerItemDropMessageSettings : int
+{
+    OneItemPerRow = 0,
+    OnePlayerPerRow = 1,
+    Minimal = 2
 }

@@ -210,6 +210,7 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot.Announce("Victorious!! The raid boss was slain but did not yield any treasure.");
         }
+
         foreach (var msg in result.Messages)
         {
             gameManager.RavenBot.Announce(msg);

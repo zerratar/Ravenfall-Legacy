@@ -16,7 +16,8 @@ public class SettingsMenuView : MenuView
 
     public const string SettingsName_PlayerBoostRequirement = "PlayerBoostRequirement";
     public const string SettingsName_PlayerCacheExpiryTime = "PlayerCacheExpiryTime";
-
+    public const string SettingsName_AlertExpiredStateCacheInChat = "AlertExpiredStateCacheInChat";
+    public const string SettingsName_ItemDropMessageType = "ItemDropMessageType";
 
     //[SerializeField] private Slider playerObserverScaleSlider = null;
 
@@ -44,6 +45,9 @@ public class SettingsMenuView : MenuView
     [SerializeField] private GameObject game;
     [SerializeField] private TMPro.TMP_Dropdown boostRequirementDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown playerCacheExpiryTimeDropdown = null;
+    [SerializeField] private TMPro.TMP_Dropdown itemDropMessageDropdown = null;
+    [SerializeField] private Toggle alertPlayerCacheExpirationToggle = null;
+    [SerializeField] private TMPro.TextMeshProUGUI[] itemDropMessageExamples = null;
 
     public static readonly TimeSpan[] PlayerCacheExpiry = new TimeSpan[]
     {
@@ -55,7 +59,7 @@ public class SettingsMenuView : MenuView
         TimeSpan.FromHours(24), // [5]
         TimeSpan.FromHours(36), // [6]
         TimeSpan.FromHours(48), // [7]
-        TimeSpan.FromDays(30)   // [8]
+        TimeSpan.FromDays(9999) // [8]
     };
 
     public static TimeSpan GetPlayerCacheExpiryTime()
@@ -77,14 +81,32 @@ public class SettingsMenuView : MenuView
         raidHornVolumeSlider.value = PlayerPrefs.GetFloat(SettingsName_RaidHornVolume, gameManager.Raid.Notifications.volume);
         musicVolumeSlider.value = PlayerPrefs.GetFloat(SettingsName_MusicVolume, gameManager.Music.volume);
 
-
-
         playerCacheExpiryTimeDropdown.value = PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1);
         boostRequirementDropdown.value = PlayerPrefs.GetInt(SettingsName_PlayerBoostRequirement, gameManager.PlayerBoostRequirement);
+
+        alertPlayerCacheExpirationToggle.isOn = PlayerPrefs.GetInt(SettingsName_AlertExpiredStateCacheInChat, gameManager.AlertExpiredStateCacheInChat ? 1 : 0) == 1;
+        itemDropMessageDropdown.value = PlayerPrefs.GetInt(SettingsName_ItemDropMessageType, (int)gameManager.ItemDropMessageSettings);
 
         //QualitySettings.resolutionScalingFixedDPIFactor = dpiSlider.value;
         SetResolutionScale(dpiSlider.value);
         ShowSoundSettings();
+
+        ShowItemDropExample();
+    }
+
+    private void ShowItemDropExample()
+    {
+        if (itemDropMessageExamples == null)
+            return;
+
+        var index = itemDropMessageDropdown.value;
+        if (index >= itemDropMessageExamples.Length)
+            return;
+
+        for (var i = 0; i < itemDropMessageExamples.Length; ++i)
+        {
+            itemDropMessageExamples[i].gameObject.SetActive(i == index);
+        }
     }
 
     protected override void OnChangesApplied()
@@ -100,6 +122,9 @@ public class SettingsMenuView : MenuView
 
         PlayerPrefs.SetInt(SettingsName_PlayerBoostRequirement, boostRequirementDropdown.value);
         PlayerPrefs.SetInt(SettingsName_PlayerCacheExpiryTime, playerCacheExpiryTimeDropdown.value);
+
+        PlayerPrefs.SetInt(SettingsName_AlertExpiredStateCacheInChat, alertPlayerCacheExpirationToggle.isOn ? 1 : 0);
+        PlayerPrefs.SetInt(SettingsName_ItemDropMessageType, itemDropMessageDropdown.value);
     }
 
     public void DisconnectFromServer()
@@ -149,6 +174,18 @@ public class SettingsMenuView : MenuView
     {
         gameManager.PlayerBoostRequirement = boostRequirementDropdown.value;
     }
+
+    public void OnItemDropMessageChanged()
+    {
+        gameManager.ItemDropMessageSettings = (PlayerItemDropMessageSettings)itemDropMessageDropdown.value;
+        ShowItemDropExample();
+    }
+
+    public void OnAlertExpiryCacheFileChanged()
+    {
+        gameManager.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
+    }
+
     public void OnSliderValueChanged()
     {
         if (dpiSlider != null)

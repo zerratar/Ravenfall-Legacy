@@ -45,7 +45,7 @@ public class ItemDropHandler : MonoBehaviour
             }
         }
 
-        return new PlayerItemDropText(droppedItems, true);
+        return new PlayerItemDropText(droppedItems, gameManager.ItemDropMessageSettings);
     }
 
     private AllocatedItemDrop DropItem(
