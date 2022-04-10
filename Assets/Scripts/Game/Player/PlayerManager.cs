@@ -4,7 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,10 +14,7 @@ using UnityEngine;
 public class PlayerManager : MonoBehaviour
 {
     private const string CacheDirectory = "data/";
-
     private const string CacheFileNameOld = "statcache.json";
-
-
     private const string CacheFileName = "data/statcache.bin";
     private const string CacheKey = "Ahgjkeaweg12!2KJAHgkhjeAhgegaeegjasdgauyEGIUM";
 
@@ -50,16 +47,32 @@ public class PlayerManager : MonoBehaviour
 
     private ConcurrentQueue<Func<PlayerController>> addPlayerQueue = new ConcurrentQueue<Func<PlayerController>>();
 
-    private void Update()
+    public bool LoadingPlayers;
+
+    public PlayerController LastAddedPlayer;
+
+    private void LateUpdate()
     {
-        if (this.gameManager == null || !this.gameManager.RavenNest.Authenticated || !this.gameManager.RavenNest.SessionStarted) return;
+        if (this.gameManager == null || this.gameManager.RavenNest == null || !this.gameManager.RavenNest.Authenticated || !this.gameManager.RavenNest.SessionStarted)
+            return;
+
         if (addPlayerQueue.Count > 0)
         {
-            if (addPlayerQueue.TryDequeue(out var addPlayer))
+            LoadingPlayers = true;
+            if (GameSystems.frameCount % 2 == 0)
             {
-                addPlayer();
+                if (addPlayerQueue.TryDequeue(out var addPlayer))
+                {
+                    addPlayer();
+                }
+            }
+
+            if (addPlayerQueue.Count == 0)
+            {
+                gameManager.PostGameRestore();
             }
         }
+        else { LoadingPlayers = false; }
     }
 
     void Start()
@@ -95,7 +108,7 @@ public class PlayerManager : MonoBehaviour
                 {
                     if (userTriggered)
                     {
-                        client.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_LOADED);
+                        client?.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_LOADED);
                     }
 
                     Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Game not finished loading.");
@@ -107,7 +120,7 @@ public class PlayerManager : MonoBehaviour
                     var alreadyInGameMessage = addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.";
                     if (userTriggered)
                     {
-                        client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
+                        client?.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                         Shinobytes.Debug.Log(alreadyInGameMessage);
                         return null;
                     }
@@ -151,7 +164,7 @@ public class PlayerManager : MonoBehaviour
                 {
                     if (userTriggered)
                     {
-                        client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED);
+                        client?.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED);
                     }
                     Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Missing PlayerInfo");
                     return null;
@@ -161,7 +174,7 @@ public class PlayerManager : MonoBehaviour
                 {
                     if (userTriggered)
                     {
-                        client.SendMessage(addPlayerRequest.Username, playerInfo.ErrorMessage);
+                        client?.SendMessage(addPlayerRequest.Username, playerInfo.ErrorMessage);
                     }
 
                     Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. " + playerInfo.ErrorMessage);
@@ -175,7 +188,7 @@ public class PlayerManager : MonoBehaviour
                     {
                         userIdToNameLookup[playerInfo.Player.UserId] = playerInfo.Player.UserName;
                         gameManager.SavePlayerStates();
-                        client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_WELCOME);
+                        client?.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_WELCOME);
                     }
                     return player;
                 }
@@ -183,7 +196,7 @@ public class PlayerManager : MonoBehaviour
                 {
                     if (userTriggered)
                     {
-                        client.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
+                        client?.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                     }
                     Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
                 }
@@ -191,7 +204,7 @@ public class PlayerManager : MonoBehaviour
             else
             {
                 if (userTriggered)
-                    client.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_READY);
+                    client?.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_READY);
             }
         }
         catch (Exception exc)
@@ -201,10 +214,10 @@ public class PlayerManager : MonoBehaviour
         return null;
     }
 
-    private PlayerController AddPlayer(bool isBot, TwitchPlayerInfo twitchPlayerInfo, RavenNest.Models.Player ravenfallPlayerInfo)
+    private PlayerController AddPlayer(bool isBot, TwitchPlayerInfo twitchPlayerInfo, RavenNest.Models.Player ravenfallPlayerInfo, bool isGameRestore = false)
     {
         var Game = gameManager;
-        var player = Game.SpawnPlayer(ravenfallPlayerInfo, twitchPlayerInfo);
+        var player = Game.SpawnPlayer(ravenfallPlayerInfo, twitchPlayerInfo, isGameRestore: isGameRestore);
         if (player)
         {
             player.Unlock();
@@ -223,7 +236,7 @@ public class PlayerManager : MonoBehaviour
             {
                 Game.EventTriggerSystem.TriggerEvent("join", TimeSpan.FromSeconds(1));
             }
-
+            LastAddedPlayer = player;
             // receiver:cmd|arg1|arg2|arg3|
             return player;
         }
@@ -285,7 +298,7 @@ public class PlayerManager : MonoBehaviour
 
     public IReadOnlyList<PlayerController> GetAllBots()
     {
-        return playerList.Where(x => x.IsBot).ToList();
+        return playerList.AsList(x => x.IsBot);
     }
     public IReadOnlyList<PlayerController> GetAllPlayers()
     {
@@ -320,6 +333,10 @@ public class PlayerManager : MonoBehaviour
     {
         return playerTwitchIdLookup.Values.Where(x => x.IsModerator).ToList();
     }
+    internal IReadOnlyList<PlayerController> GetAllGameAdmins()
+    {
+        return playerTwitchIdLookup.Values.Where(x => x.IsGameAdmin).ToList();
+    }
 
     public PlayerController GetPlayer(TwitchPlayerInfo twitchUser)
     {
@@ -341,7 +358,7 @@ public class PlayerManager : MonoBehaviour
 
         if (playerTwitchIdLookup.TryGetValue(userId, out var plr))
         {
-            if (plr.Removed)
+            if (plr.isDestroyed || plr.Removed)
             {
                 playerTwitchIdLookup.Remove(plr.UserId);
                 playerNameLookup.Remove(plr.Name.ToLower());
@@ -363,7 +380,7 @@ public class PlayerManager : MonoBehaviour
 
         if (playerNameLookup.TryGetValue(playerName.ToLower(), out var plr))
         {
-            if (plr.Removed)
+            if (plr.isDestroyed || plr.Removed)
             {
                 playerTwitchIdLookup.Remove(plr.UserId);
                 playerNameLookup.Remove(plr.Name.ToLower());
@@ -390,7 +407,7 @@ public class PlayerManager : MonoBehaviour
 
         if (playerIdLookup.TryGetValue(characterId, out var plr))
         {
-            if (plr.Removed)
+            if (plr.isDestroyed || plr.Removed)
             {
                 playerTwitchIdLookup.Remove(plr.UserId);
                 playerNameLookup.Remove(plr.Name.ToLower());
@@ -417,7 +434,7 @@ public class PlayerManager : MonoBehaviour
     {
         if (playerTwitchIdLookup.TryGetValue(player.UserId, out var plrToRemove))
         {
-            gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
+            gameManager.Village.TownHouses.InvalidateOwnership(player);
         }
 
         if (player)
@@ -443,14 +460,14 @@ public class PlayerManager : MonoBehaviour
         TwitchPlayerInfo twitchUser,
         StreamRaidInfo raidInfo)
     {
-        
+
         player.SetPlayer(def, twitchUser, raidInfo, gameManager);
         playerTwitchIdLookup[player.UserId] = player;
         playerNameLookup[player.PlayerName.ToLower()] = player;
         playerIdLookup[player.Id] = player;
         playerList.Add(player);
 
-        gameManager.Village.TownHouses.InvalidateOwnershipOfHouses();
+        gameManager.Village.TownHouses.InvalidateOwnership(player);
         return player;
     }
 
@@ -489,7 +506,7 @@ public class PlayerManager : MonoBehaviour
                         continue;
                     }
 
-                    addPlayerQueue.Enqueue(() => AddPlayer(false, requested.TwitchUser, playerInfo.Player));
+                    addPlayerQueue.Enqueue(() => AddPlayer(false, requested.TwitchUser, playerInfo.Player, true));
 
                     //var player = AddPlayer(false, requested.TwitchUser, playerInfo.Player);
                     //if (!player)
@@ -590,43 +607,43 @@ public static class StringCipher
         }
     }
 
-    public static string Decrypt(string cipherText, string passPhrase)
-    {
-        // Get the complete stream of bytes that represent:
-        // [32 bytes of Salt] + [32 bytes of IV] + [n bytes of CipherText]
-        var cipherTextBytesWithSaltAndIv = Convert.FromBase64String(cipherText);
-        // Get the saltbytes by extracting the first 32 bytes from the supplied cipherText bytes.
-        var saltStringBytes = cipherTextBytesWithSaltAndIv.Take(Keysize / 8).ToArray();
-        // Get the IV bytes by extracting the next 32 bytes from the supplied cipherText bytes.
-        var ivStringBytes = cipherTextBytesWithSaltAndIv.Skip(Keysize / 8).Take(Keysize / 8).ToArray();
-        // Get the actual cipher text bytes by removing the first 64 bytes from the cipherText string.
-        var cipherTextBytes = cipherTextBytesWithSaltAndIv.Skip((Keysize / 8) * 2).Take(cipherTextBytesWithSaltAndIv.Length - ((Keysize / 8) * 2)).ToArray();
+    //public static string Decrypt(string cipherText, string passPhrase)
+    //{
+    //    // Get the complete stream of bytes that represent:
+    //    // [32 bytes of Salt] + [32 bytes of IV] + [n bytes of CipherText]
+    //    var cipherTextBytesWithSaltAndIv = Convert.FromBase64String(cipherText);
+    //    // Get the saltbytes by extracting the first 32 bytes from the supplied cipherText bytes.
+    //    var saltStringBytes = cipherTextBytesWithSaltAndIv.Slice(0, Keysize / 8).ToArray();
+    //    // Get the IV bytes by extracting the next 32 bytes from the supplied cipherText bytes.
+    //    var ivStringBytes = cipherTextBytesWithSaltAndIv.Slice(Keysize / 8, Keysize / 8).ToArray();
+    //    // Get the actual cipher text bytes by removing the first 64 bytes from the cipherText string.
+    //    var cipherTextBytes = cipherTextBytesWithSaltAndIv.Slice((Keysize / 8) * 2, cipherTextBytesWithSaltAndIv.Length - ((Keysize / 8) * 2)).ToArray();
 
-        using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations))
-        {
-            var keyBytes = password.GetBytes(Keysize / 8);
-            using (var symmetricKey = new RijndaelManaged())
-            {
-                symmetricKey.BlockSize = 256;
-                symmetricKey.Mode = CipherMode.CBC;
-                symmetricKey.Padding = PaddingMode.PKCS7;
-                using (var decryptor = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
-                {
-                    using (var memoryStream = new MemoryStream(cipherTextBytes))
-                    {
-                        using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
-                        {
-                            var plainTextBytes = new byte[cipherTextBytes.Length];
-                            var decryptedByteCount = cryptoStream.Read(plainTextBytes, 0, plainTextBytes.Length);
-                            memoryStream.Close();
-                            cryptoStream.Close();
-                            return Encoding.UTF8.GetString(plainTextBytes, 0, decryptedByteCount);
-                        }
-                    }
-                }
-            }
-        }
-    }
+    //    using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations))
+    //    {
+    //        var keyBytes = password.GetBytes(Keysize / 8);
+    //        using (var symmetricKey = new RijndaelManaged())
+    //        {
+    //            symmetricKey.BlockSize = 256;
+    //            symmetricKey.Mode = CipherMode.CBC;
+    //            symmetricKey.Padding = PaddingMode.PKCS7;
+    //            using (var decryptor = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
+    //            {
+    //                using (var memoryStream = new MemoryStream(cipherTextBytes))
+    //                {
+    //                    using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+    //                    {
+    //                        var plainTextBytes = new byte[cipherTextBytes.Length];
+    //                        var decryptedByteCount = cryptoStream.Read(plainTextBytes, 0, plainTextBytes.Length);
+    //                        memoryStream.Close();
+    //                        cryptoStream.Close();
+    //                        return Encoding.UTF8.GetString(plainTextBytes, 0, decryptedByteCount);
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 
     private static byte[] Generate256BitsOfRandomEntropy()
     {

@@ -9,9 +9,9 @@ namespace RavenNest.SDK.Endpoints
         bool IsReady { get; }
         bool ForceReconnecting { get; }
         Task<bool> UpdateAsync();
-        Task<bool> SavePlayerStateAsync(PlayerController player);
-        Task<bool> SavePlayerSkillsAsync(PlayerController player);
-        Task<bool> SaveActiveSkillAsync(PlayerController player);
+        bool SavePlayerState(PlayerController player);
+        bool SavePlayerSkills(PlayerController player);
+        bool SaveActiveSkill(PlayerController player);
         //void SendPlayerLoyaltyData(PlayerController player);
         //void SendPlayerLoyaltyData(TwitchSubscription data);
         //void SendPlayerLoyaltyData(TwitchCheer data);

@@ -299,6 +299,7 @@ public static class GameMath
     {
         switch (skill)
         {
+            //case Skill.All:
             case Skill.Attack:
             case Skill.Defense:
             case Skill.Strength:
@@ -310,36 +311,6 @@ public static class GameMath
         }
         return false;
     }
-    public static Skill AsSkill(this CombatSkill skill)
-    {
-        switch (skill)
-        {
-            case CombatSkill.Attack: return Skill.Attack;
-            case CombatSkill.Defense: return Skill.Defense;
-            case CombatSkill.Strength: return Skill.Strength;
-            case CombatSkill.Health: return Skill.Health;
-            case CombatSkill.Ranged: return Skill.Ranged;
-            case CombatSkill.Magic: return Skill.Magic;
-            case CombatSkill.Healing: return Skill.Healing;
-            default: return Skill.Health;
-        }
-    }
-    public static Skill AsSkill(this TaskSkill skill)
-    {
-        switch (skill)
-        {
-            case TaskSkill.Cooking: return Skill.Cooking;
-            case TaskSkill.Crafting: return Skill.Crafting;
-            case TaskSkill.Farming: return Skill.Farming;
-            case TaskSkill.Mining: return Skill.Mining;
-            case TaskSkill.Sailing: return Skill.Sailing;
-            case TaskSkill.Slayer: return Skill.Slayer;
-            case TaskSkill.Woodcutting: return Skill.Woodcutting;
-            case TaskSkill.Fishing: return Skill.Fishing;
-            default: return Skill.Woodcutting;
-        }
-    }
-
     internal static float CalculateExplosionDamage(IAttackable enemy, IAttackable player, float scale = 0.75f)
     {
         return CalculateMeleeDamage(enemy, player) * scale;
@@ -503,12 +474,18 @@ public static class GameMath
 
     public static class Exp
     {
+        /// <summary>
+        /// The level where time between level has peaked at <see cref="IncrementMins"/>.
+        /// </summary>
+        public const double EasyLevel = 75.0;
+
         public const double IncrementMins = 14.0;
         public const double IncrementHours = IncrementMins / 60.0;
         public const double IncrementDays = IncrementHours / 24.0;
         public const double MaxLevelDays = IncrementDays * MaxLevel;
         public const double MultiEffectiveness = 1.375d;
 
+        public const double MaxExpFactorFromIsland = 1d;
 
         /// <summary>
         /// Calculates the amount of exp that should be yielded given the current skill and level.
@@ -590,6 +567,11 @@ public static class GameMath
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetMaxMinutesForLevel(int level)
         {
+            if (level <= EasyLevel)
+            {
+                return (level - 1) * GameMath.Lerp(IncrementMins / 4.0d, IncrementMins, level / EasyLevel);
+            }
+
             return (level - 1) * IncrementMins;
         }
 

@@ -23,10 +23,19 @@ public class GetVillageBoost : PacketHandler<TwitchPlayerInfo>
     private void GetBonusMessage(ICollection<TownHouseExpBonus> bonuses, out string format, out string bonus)
     {
         // Village is level 100, active boosts TYPE VAL%, TYPE        
-        format = Localization.MSG_VILLAGE_BOOST;
+
         bonus = string.Join(", ", bonuses.Where(x => x.Bonus > 0).GroupBy(x => x.SlotType)
             .Where(x => x.Key != TownHouseSlotType.Empty && x.Key != TownHouseSlotType.Undefined)
             .Select(x => $"{x.Key} {x.Sum(y => y.Bonus)}%"));
+
+        if (!string.IsNullOrEmpty(bonus))
+        {
+            format = Localization.MSG_VILLAGE_BOOST;
+        }
+        else
+        {
+            format = Localization.MSG_VILLAGE_BOOST_NO_BOOST;
+        }
     }
 }
 

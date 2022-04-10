@@ -54,14 +54,14 @@ public class ItemController : MonoBehaviour
         var stats2 = item.GetTotalStats();
         return stats1 - stats2;
     }
-    //public void FixedUpdate()
-    //{
-    //    if (Time.frameCount % 30 == 0 && transform.localPosition.x != 0)
-    //    {
-    //        transform.localPosition = Vector3.zero;
-    //        transform.localRotation = Quaternion.identity;
-    //    }
-    //}
+    public void FixedUpdate()
+    {
+        if (GameSystems.frameCount % 30 == 0 && transform.localPosition.x != 0)
+        {
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+        }
+    }
     internal void EnablePickup(DropEventManager dropEventManager)
     {
         this.dropEventManager = dropEventManager;

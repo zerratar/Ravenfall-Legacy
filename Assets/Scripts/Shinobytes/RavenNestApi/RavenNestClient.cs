@@ -30,10 +30,7 @@ namespace RavenNest.SDK
         private readonly BotPlayerGenerator botPlayerGenerator;
         public bool BadClientVersion => Volatile.Read(ref badClientVersion) == 1;
 
-        private readonly ConcurrentQueue<LoyaltyUpdate> loyaltyUpdateQueue
-            = new ConcurrentQueue<LoyaltyUpdate>();
-
-        private SemaphoreSlim loyaltyUpdateLock = new SemaphoreSlim(1);
+        private readonly ConcurrentQueue<LoyaltyUpdate> loyaltyUpdateQueue = new ConcurrentQueue<LoyaltyUpdate>();
 
         public RavenNestClient(
             ILogger logger,
@@ -91,8 +88,6 @@ namespace RavenNest.SDK
 
         public void EnqueueLoyaltyUpdate(TwitchCheer data)
         {
-            loyaltyUpdateLock.Wait();
-
             loyaltyUpdateQueue.Enqueue(new LoyaltyUpdate
             {
                 BitsCount = data.Bits,
@@ -100,38 +95,17 @@ namespace RavenNest.SDK
                 UserName = data.UserName,
                 Date = DateTime.UtcNow
             });
-
-            loyaltyUpdateLock.Release();
         }
 
         public void EnqueueLoyaltyUpdate(TwitchSubscription data)
         {
-            loyaltyUpdateLock.Wait();
-
-            var items = loyaltyUpdateQueue.ToArray();
-            var existingSubGift = items.FirstOrDefault(x => x.UserId == data.UserId && x.SubsCount > 0);
-            if (existingSubGift != null)
+            loyaltyUpdateQueue.Enqueue(new LoyaltyUpdate
             {
-                existingSubGift.SubsCount++;
-
-                loyaltyUpdateQueue.Clear();
-                foreach (var item in items)
-                {
-                    loyaltyUpdateQueue.Enqueue(item);
-                }
-            }
-            else
-            {
-                loyaltyUpdateQueue.Enqueue(new LoyaltyUpdate
-                {
-                    SubsCount = 1,
-                    UserId = data.UserId,
-                    UserName = data.UserName,
-                    Date = DateTime.UtcNow
-                });
-            }
-
-            loyaltyUpdateLock.Release();
+                SubsCount = 1,
+                UserId = data.UserId,
+                UserName = data.UserName,
+                Date = DateTime.UtcNow
+            });
         }
 
         public async void Update()
@@ -150,8 +124,6 @@ namespace RavenNest.SDK
             {
                 try
                 {
-                    await loyaltyUpdateLock.WaitAsync();
-
                     if (loyaltyUpdateQueue.TryDequeue(out var req))
                     {
                         if (!await Players.SendLoyaltyUpdateAsync(req))
@@ -163,33 +135,17 @@ namespace RavenNest.SDK
                 }
                 catch (Exception exc)
                 {
-                    logger.Error("Failed to send loyualty data to server: " + exc);
+                    logger.Error("Failed to send loyalty data to server: " + exc);
                 }
                 finally
                 {
-                    loyaltyUpdateLock.Release();
                 }
             }
 
             Interlocked.Decrement(ref updateCounter);
         }
 
-        public Task<bool> SaveTrainingSkill(PlayerController player)
-        {
-            if (!player || player == null)
-            {
-                return Task.FromResult(false);
-            }
-
-            if (player.IsBot && player.UserId.StartsWith("#"))
-            {
-                return Task.FromResult(true);
-            }
-
-            return Stream.SaveActiveSkillAsync(player);
-        }
-
-        public async Task<bool> SavePlayerAsync(PlayerController player)
+        public bool SaveTrainingSkill(PlayerController player)
         {
             if (!player || player == null)
             {
@@ -201,18 +157,12 @@ namespace RavenNest.SDK
                 return true;
             }
 
-            if (!SessionStarted)
-            {
-                //Shinobytes.Debug.Log("Trying to save player " + player.PlayerName + " but session has not been started.");
-                return false;
-            }
-
-            var saveResult = await Stream.SavePlayerSkillsAsync(player);
-            await Stream.SavePlayerStateAsync(player);
+            var saveResult = Stream.SaveActiveSkill(player);
+            Stream.SavePlayerState(player);
             return saveResult;
         }
 
-        public async Task<bool> SavePlayerStateAsync(PlayerController player)
+        public bool SavePlayer(PlayerController player)
         {
             if (!player || player == null)
             {
@@ -230,8 +180,31 @@ namespace RavenNest.SDK
                 return false;
             }
 
-            return await Stream.SavePlayerStateAsync(player);
+            var saveResult = Stream.SavePlayerSkills(player);
+            Stream.SavePlayerState(player);
+            return saveResult;
         }
+
+        //public async Task<bool> SavePlayerStateAsync(PlayerController player)
+        //{
+        //    if (!player || player == null)
+        //    {
+        //        return false;
+        //    }
+
+        //    if (player.IsBot && player.UserId.StartsWith("#"))
+        //    {
+        //        return true;
+        //    }
+
+        //    if (!SessionStarted)
+        //    {
+        //        //Shinobytes.Debug.Log("Trying to save player " + player.PlayerName + " but session has not been started.");
+        //        return false;
+        //    }
+
+        //    return Stream.SavePlayerState(player);
+        //}
 
         public async Task<bool> LoginAsync(string username, string password)
         {

@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using Shinobytes.Linq;
 using Debug = Shinobytes.Debug;
 public class ArenaController : MonoBehaviour, IEvent
 {
@@ -24,7 +24,7 @@ public class ArenaController : MonoBehaviour, IEvent
     public bool Activated => state >= ArenaState.WaitingForPlayers;
     public bool Started => state == ArenaState.Started;
     public IReadOnlyList<PlayerController> JoinedPlayers => joinedPlayers;
-    public IReadOnlyList<PlayerController> AvailablePlayers => joinedPlayers.Except(deadPlayers).Where(InsideArena).ToList();
+    public IReadOnlyList<PlayerController> AvailablePlayers => joinedPlayers.Except(deadPlayers).AsList(InsideArena);
 
     // Start is called before the first frame update
     void Start()
@@ -80,7 +80,7 @@ public class ArenaController : MonoBehaviour, IEvent
 
     private void RemoveKickedPlayers()
     {
-        var playersToKick = JoinedPlayers.Where(x => x.gameObject == null).ToList();
+        var playersToKick = JoinedPlayers.AsList(x => x.gameObject == null);
         foreach (var player in playersToKick)
         {
             if (player && player.Arena)

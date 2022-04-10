@@ -53,6 +53,18 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<bool> AssignVillageAsync(int type, Guid[] characterIds)
+        {
+            return request.Create()
+                .Method("assign-village")
+                .Build()
+                .SendAsync<bool>(ApiRequestTarget.Village, ApiRequestType.Post, new VillageAssignRequest
+                {
+                    Type = type,
+                    CharacterIds = characterIds
+                });
+        }
+
         public Task<VillageInfo> GetAsync()
         {
             return request.Create()
@@ -116,5 +128,11 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestTarget.Marketplace,
                     ApiRequestType.Get);
         }
+    }
+
+    public class VillageAssignRequest
+    {
+        public int Type { get; set; }
+        public Guid[] CharacterIds { get; set; }
     }
 }

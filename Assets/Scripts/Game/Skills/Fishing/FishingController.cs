@@ -15,6 +15,12 @@ public class FishingController : MonoBehaviour
     [ReadOnly]
     public float MaxActionDistance = 5;
 
+    [Button("Adjust Placement")]
+    public void AdjustPlacement()
+    {
+        PlacementUtility.PlaceOnGround(this.gameObject);
+    }
+
     void Start()
     {
         this.Island = GetComponentInParent<IslandController>();

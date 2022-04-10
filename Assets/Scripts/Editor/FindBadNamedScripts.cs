@@ -5,7 +5,8 @@ using UnityEditor;
 using UnityEngine;
 
 namespace Assets
-{
+{    
+
     public class FindBadNamedScripts : EditorWindow
     {
         [MenuItem("Ravenfall/Tools/Scripts/Find Bad Named Scripts")]

@@ -22,9 +22,10 @@ public class MenuView : MonoBehaviour
         gameObject.SetActive(true);
     }
 
-    public void Hide()
+    public void Hide(bool saveSettings = true)
     {
-        OnChangesApplied();
+        if (saveSettings)
+            OnChangesApplied();
         gameObject.SetActive(false);
         if (onHide != null) onHide();
     }

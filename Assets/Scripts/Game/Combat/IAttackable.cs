@@ -15,7 +15,6 @@ public interface IAttackable
     Transform Target { get; }
     Transform Transform { get; }
     Vector3 Position { get; }
-    double GetExperience();
     float HealthBarOffset { get; }
     float GetHitRange();
 }

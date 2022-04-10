@@ -5,15 +5,19 @@ using UnityEngine;
 
 public class TavernGameHighscore
 {
+    private const string HighscoreFile = "tavern-highscore.json";
+
     private readonly string gameName;
     private readonly string storageKeyName;
+    private readonly JsonStore<List<TavernGameHighscoreItem>> store;
     private List<TavernGameHighscoreItem> records = new List<TavernGameHighscoreItem>();
     private bool loaded;
 
     public TavernGameHighscore(string gameName)
     {
         this.gameName = gameName;
-        this.storageKeyName = "highscore_" + gameName;
+        this.storageKeyName = "tavern-highscore-" + gameName;
+        this.store = JsonStore<List<TavernGameHighscoreItem>>.Create(this.storageKeyName);
     }
 
     public bool IsLoaded => loaded;
@@ -23,16 +27,13 @@ public class TavernGameHighscore
         if (!loaded)
         {
             loaded = true;
-            var highscoreData = PlayerPrefs.GetString(storageKeyName, "[]");
-            records = JsonConvert.DeserializeObject<List<TavernGameHighscoreItem>>(highscoreData);
+            records = store.Get();
         }
     }
 
     public void Save()
     {
-        var highscoreData = JsonConvert.SerializeObject(records);
-        PlayerPrefs.SetString(storageKeyName, highscoreData);
-        PlayerPrefs.Save();
+        store.Save(records);
     }
 
     public TavernGameHighscoreItem Add(TavernGameHighscoreItem item)

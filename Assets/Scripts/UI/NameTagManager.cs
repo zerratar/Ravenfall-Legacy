@@ -7,7 +7,7 @@ using UnityEngine.Networking;
 
 public class NameTagManager : MonoBehaviour
 {
-    private readonly object mutex = new object();
+    //private readonly object mutex = new object();
     private readonly List<NameTag> nameTags = new List<NameTag>();
 
     [SerializeField] private GameObject nameTagPrefab;
@@ -22,7 +22,7 @@ public class NameTagManager : MonoBehaviour
 
     public void Remove(PlayerController player)
     {
-        lock (mutex)
+        //lock (mutex)
         {
             var nameTag = nameTags.FirstOrDefault(x => x.TargetPlayer == player);
             if (nameTag)
@@ -33,9 +33,18 @@ public class NameTagManager : MonoBehaviour
         }
     }
 
+    public void Remove(NameTag nameTag)
+    {
+        if (nameTag)
+        {
+            Destroy(nameTag.gameObject);
+            nameTags.Remove(nameTag);
+        }
+    }
+
     public void Remove(Transform transform)
     {
-        lock (mutex)
+        //lock (mutex)
         {
             var nameTag = nameTags.FirstOrDefault(x => x.TargetTransform.GetInstanceID() == transform.GetInstanceID());
             if (nameTag)
@@ -51,14 +60,14 @@ public class NameTagManager : MonoBehaviour
         if (!transform) return null;
         if (!nameTagPrefab) return null;
         var targetName = transform.name;
-        lock (mutex)
-        {
-            if (nameTags.Any(x => x.TargetTransform.GetInstanceID() == transform.GetInstanceID()))
-            {
-                Shinobytes.Debug.LogWarning($"{targetName} already have an assigned name tag.");
-                return null;
-            }
-        }
+        //lock (mutex)
+        //{
+        //    if (nameTags.Any(x => x.TargetTransform.GetInstanceID() == transform.GetInstanceID()))
+        //    {
+        //        Shinobytes.Debug.LogWarning($"{targetName} already have an assigned name tag.");
+        //        return null;
+        //    }
+        //}
         return AddNameTag(null, targetName, transform);
     }
 
@@ -67,7 +76,7 @@ public class NameTagManager : MonoBehaviour
         if (!player) return null;
         if (!nameTagPrefab) return null;
 
-        lock (mutex)
+        //lock (mutex)
         {
             if (nameTags.Any(x => x.TargetPlayer == player))
             {
@@ -97,7 +106,7 @@ public class NameTagManager : MonoBehaviour
         nameTag.Manager = this;
         nameTag.HasTargetPlayer = true;
 
-        lock (mutex)
+        //lock (mutex)
         {
             nameTags.Add(nameTag);
         }

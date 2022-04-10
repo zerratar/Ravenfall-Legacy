@@ -119,6 +119,7 @@ public class PlayerList : MonoBehaviour
 
         var item = Instantiate(playerListItem, transform);
         var listItem = item.GetComponent<PlayerListItem>();
+        listItem.List = this;
         listItem.ExpProgressHelpState = expHelpState;
         listItem.UpdatePlayerInfo(player, gameCamera);
         instantiatedPlayerListItems.Add(listItem);
@@ -142,6 +143,19 @@ public class PlayerList : MonoBehaviour
                 instantiatedPlayerListItems.Remove(li);
             }
         }
+    }
+
+    public void Remove(PlayerListItem item)
+    {
+        try
+        {
+            if (item != null)
+            {
+                instantiatedPlayerListItems.Remove(item);
+                Destroy(item.gameObject);
+            }
+        }
+        catch { }
     }
 
     public void ClearFocus()

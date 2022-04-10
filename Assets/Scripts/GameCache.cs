@@ -119,7 +119,7 @@ namespace Assets.Scripts
             Expired
         }
 
-        internal LoadStateResult LoadState()
+        internal LoadStateResult LoadState(bool forceReload = false)
         {
             if (Shinobytes.IO.File.Exists(PlayerStateCacheFileName))
             {
@@ -132,7 +132,7 @@ namespace Assets.Scripts
 #endif
                     var state = Newtonsoft.Json.JsonConvert.DeserializeObject<GameCacheState>(Shinobytes.IO.File.ReadAllText(PlayerStateCacheFileName));
 
-                    if ((System.DateTime.UtcNow - state.Created) > expiryTime)
+                    if (!forceReload && (System.DateTime.UtcNow - state.Created) > expiryTime)
                     {
                         Shinobytes.Debug.LogWarning("State Cache File has expired and will not be loaded.");
                         return LoadStateResult.Expired;

@@ -1,0 +1,16 @@
+{
+    "name": "Shinobytes.Linq",
+    "rootNamespace": "Shinobytes.Linq",
+    "references": [
+        "GUID:0c4b1287c10e2eb46aa766cbaf9c2595"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

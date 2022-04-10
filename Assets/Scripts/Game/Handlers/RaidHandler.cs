@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -16,7 +15,7 @@ public class RaidHandler : MonoBehaviour
     private IslandController previousIsland;
     private Vector3 prevPosition;
     private string[] prevTaskArgs;
-    private IChunk prevChunk;
+    private Chunk prevChunk;
 
     public bool InRaid { get; private set; }
     public IslandController PreviousIsland => previousIsland;
@@ -157,7 +156,7 @@ public class RaidHandler : MonoBehaviour
         InRaid = false;
         if (raidWon)
         {
-            ++player.Statistics.RaidsWon;
+            //++player.Statistics.RaidsWon;
 
             var proc = gameManager.Raid.GetParticipationPercentage(RaidEnterTime);
             var raidBossCombatLevel = (double)gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
@@ -169,10 +168,10 @@ public class RaidHandler : MonoBehaviour
             player.AddExp(Math.Max(5 * proc, factor * 0.5));
         }
 
-        if (raidTimedOut)
-        {
-            ++player.Statistics.RaidsLost;
-        }
+        //if (raidTimedOut)
+        //{
+        //    ++player.Statistics.RaidsLost;
+        //}
 
         if (raidTimedOut || raidWon)
         {

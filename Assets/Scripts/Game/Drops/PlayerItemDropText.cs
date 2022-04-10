@@ -5,7 +5,6 @@ using System.Text;
 public class PlayerItemDropText
 {
     private readonly IReadOnlyList<string> messages;
-    private readonly PlayerItemDropMessageSettings settings;
 
     public int Count { get; private set; }
     public IReadOnlyList<string> Messages => messages;
@@ -13,11 +12,10 @@ public class PlayerItemDropText
         Dictionary<string, List<string>> droppedItems,
         PlayerItemDropMessageSettings settings)
     {
-        this.messages = this.Process(droppedItems);
-        this.settings = settings;
+        this.messages = this.Process(droppedItems, settings);
     }
 
-    private IReadOnlyList<string> Process(Dictionary<string, List<string>> items)
+    private IReadOnlyList<string> Process(Dictionary<string, List<string>> items, PlayerItemDropMessageSettings settings)
     {
         // no need for linq here since we need to enumerate everything anyway.
         //Count = items.Values.Sum(x => x.Count);

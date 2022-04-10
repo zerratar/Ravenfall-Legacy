@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
+using Shinobytes.Linq;
 using System.Threading;
 
 public class EventTriggerSystem : IDisposable
@@ -60,7 +60,8 @@ public class EventTriggerSystem : IDisposable
                 var newTriggers = false;
                 lock (triggerMutex)
                 {
-
+                    var utcNow = DateTime.UtcNow;
+                    var minVal = DateTime.MinValue;
                     while (activeInputs.TryDequeue(out var input))
                     {
                         if (input == null || string.IsNullOrEmpty(input.Source))
@@ -97,15 +98,15 @@ public class EventTriggerSystem : IDisposable
                                 stats.InputCount[input.Input] = ic + 1;
                                 ++stats.TriggerStreak;
                                 stats.HighestTriggerStreak = Math.Max(stats.TriggerStreak, stats.HighestTriggerStreak);
-                                if (stats.FirstTrigger == DateTime.MinValue)
-                                    stats.FirstTrigger = DateTime.UtcNow;
-                                if (stats.TriggerStreakStart == DateTime.MinValue)
-                                    stats.TriggerStreakStart = DateTime.UtcNow;
+                                if (stats.FirstTrigger == minVal)
+                                    stats.FirstTrigger = utcNow;
+                                if (stats.TriggerStreakStart == minVal)
+                                    stats.TriggerStreakStart = utcNow;
                                 stats.TriggerTime.TryGetValue(input.Input, out var tt);
                                 stats.TriggerTime[input.Input] = tt + triggerDelay;
                                 stats.TotalTriggerTime += triggerDelay;
                                 stats.LastTriggerDelay = triggerDelay;
-                                stats.LastTrigger = DateTime.UtcNow;
+                                stats.LastTrigger = utcNow;
                                 stats.TriggerRangeMin.TryGetValue(input.Input, out var trmin);
                                 stats.TriggerRangeMin[input.Input] = trmin > 0 ? Math.Min(trmin, triggerDelay.TotalSeconds) : triggerDelay.TotalSeconds;
                                 stats.TriggerRangeMax.TryGetValue(input.Input, out var trmax);
@@ -130,10 +131,10 @@ public class EventTriggerSystem : IDisposable
                             if (!sourceStatistics.TryGetValue(input.Source, out var stats))
                                 sourceStatistics[input.Source] = stats = new SysEventStats(input.Source);
                             stats.HighestTriggerStreak = Math.Max(stats.TriggerStreak, stats.HighestTriggerStreak);
-                            stats.TriggerStreakBreak = DateTime.UtcNow;
+                            stats.TriggerStreakBreak = utcNow;
                             ++stats.TriggerStreakBreakCount;
                             stats.TriggerStreak = 0;
-                            stats.TriggerStreakStart = DateTime.MinValue;
+                            stats.TriggerStreakStart = minVal;
                         }
                     }
                     activeEvents.RemoveAll(x => !x.IsAlive);

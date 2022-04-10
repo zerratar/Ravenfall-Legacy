@@ -38,7 +38,19 @@ public class ItemRepository : MonoBehaviour
     {
         QualitySettings.antiAliasing = 0;
 
-        var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall Legacy\Data\Repositories\items.json");
+        var itemsRepo = @"C:\git\Ravenfall Legacy\Data\Repositories\items.json";
+
+        System.Net.WebClient cl = new System.Net.WebClient();
+        try
+        {
+            cl.DownloadFile("https://www.ravenfall.stream/api/items", itemsRepo);
+            UnityEngine.Debug.Log("Downloaded new items repo");
+        }
+        catch { }
+
+        var json = System.IO.File.ReadAllText(itemsRepo);
+
+        //var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall Legacy\Data\Repositories\items.json");
         items = JsonConvert.DeserializeObject<Item[]>(json);
 
         if (renderCameras == null || renderCameras.Length == 0)
@@ -290,6 +302,8 @@ public class ItemRepository : MonoBehaviour
             return;
         }
 
+        var isNew = !System.IO.File.Exists(pngOutPath);
+
         try
         {
             Shinobytes.Debug.Log("Saving " + pngOutPath + ", " + tex.name + ", " + tex.width + "x" + tex.height);
@@ -301,6 +315,10 @@ public class ItemRepository : MonoBehaviour
             }
 
             System.IO.File.WriteAllBytes(pngOutPath, pngData);
+            if (isNew)
+            {
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(pngOutPath), "new", System.IO.Path.GetFileName(pngOutPath)), pngData);
+            }
         }
         catch (Exception exc)
         {

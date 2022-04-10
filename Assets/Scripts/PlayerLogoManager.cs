@@ -124,7 +124,7 @@ public class PlayerLogoManager : MonoBehaviour
         {
             Shinobytes.Debug.Log(www.error);
             userLogos.TryRemove(userId, out _);
-            onLogoDownloaded?.Invoke(null);
+            onLogoDownloaded?.Invoke(replacementLogo);
         }
         else
         {
@@ -137,7 +137,7 @@ public class PlayerLogoManager : MonoBehaviour
             }
             catch
             {
-                onLogoDownloaded?.Invoke(null);
+                onLogoDownloaded?.Invoke(replacementLogo);
             }
         }
     }

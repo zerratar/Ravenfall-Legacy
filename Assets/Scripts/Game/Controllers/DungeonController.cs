@@ -1,8 +1,7 @@
-﻿using System;
+﻿using Shinobytes.Linq;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class DungeonController : MonoBehaviour
@@ -255,7 +254,7 @@ public class DungeonController : MonoBehaviour
         }
         else
         {
-            this.cameraTargets = GetComponentsInChildren<RoomCenter>().Select(x => x.transform).ToArray();
+            this.cameraTargets = GetComponentsInChildren<RoomCenter>().SelectArray(x => x.transform);
             // This is an automatic generated dungeon. No need to do anything atm?
         }
     }
@@ -299,7 +298,7 @@ public class DungeonController : MonoBehaviour
         player.AddExp(Math.Max(5, factor * 0.5));
     }
 
-    public void RewardItemDrops(List<PlayerController> joinedPlayers)
+    public void RewardItemDrops(IReadOnlyList<PlayerController> joinedPlayers)
     {
         if (!ItemDrops) return;
         var collection = ItemDrops.DropItems(joinedPlayers, DropType.Guaranteed);

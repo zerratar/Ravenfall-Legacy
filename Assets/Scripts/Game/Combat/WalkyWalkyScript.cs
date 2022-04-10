@@ -1,8 +1,8 @@
 ﻿using Assets.Scripts;
+using Shinobytes.Linq;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -19,6 +19,8 @@ public class WalkyWalkyScript : MonoBehaviour
     //private AIPath aiPathAgent;
 
     private SkinnedMeshRenderer meshRenderer;
+    private LODGroup lodGroup;
+
     private bool hasMoveAnimation;
     private AnimatorControllerParameter moveAnimation;
 
@@ -64,6 +66,7 @@ public class WalkyWalkyScript : MonoBehaviour
         //}
 
         meshRenderer = GetComponentInChildren<SkinnedMeshRenderer>();
+        lodGroup = GetComponent<LODGroup>();
 
         moveAnimation = animator.parameters
             .Where(x => x.name.IndexOf("Walking", StringComparison.OrdinalIgnoreCase) >= 0 || x.name.IndexOf("Movement", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -236,7 +239,7 @@ public class WalkyWalkyScript : MonoBehaviour
     private IEnumerator Hide()
     {
         yield return new WaitForSeconds(deathAnimationLength);
-        if (meshRenderer) meshRenderer.enabled = false;
+        SetVisibility(false);
     }
 
 
@@ -256,7 +259,7 @@ public class WalkyWalkyScript : MonoBehaviour
 
     public void ResetVisibility()
     {
-        if (meshRenderer) meshRenderer.enabled = true;
+        SetVisibility(true);
         if (animator.enabled)
         {
             if (!string.IsNullOrEmpty(deathAnimation))
@@ -268,7 +271,7 @@ public class WalkyWalkyScript : MonoBehaviour
 
     public void Revive()
     {
-        if (meshRenderer) meshRenderer.enabled = true;
+        SetVisibility(true);
         if (animator.enabled)
         {
             if (!string.IsNullOrEmpty(deathAnimation))
@@ -283,6 +286,22 @@ public class WalkyWalkyScript : MonoBehaviour
         }
 
         Unlock();
+    }
+
+    private void SetVisibility(bool value)
+    {
+        if (lodGroup)
+        {
+            // lodGroup.enabled = value;
+            foreach (var lod in lodGroup.GetLODs())
+            {
+                foreach (var renderer in lod.renderers)
+                {
+                    renderer.enabled = value;
+                }
+            }
+        }
+        if (meshRenderer) meshRenderer.enabled = value;
     }
 
     private bool HasParameter(string attackAnimation)

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using Shinobytes.Linq;
 using UnityEngine;
 
 public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>

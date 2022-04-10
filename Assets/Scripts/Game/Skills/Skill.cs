@@ -17,6 +17,10 @@
     Healing = 14,
 
 
+    ///// <summary>
+    ///// Refeers to training Attack Defense and Strength
+    ///// </summary>
+    //All = 100,
 
     None = 999,
 }

@@ -1,19 +1,25 @@
-﻿using System.Runtime.Remoting.Messaging;
+﻿using System.Linq;
 using UnityEngine;
 
 public class OnsenManager : MonoBehaviour
 {
-    [SerializeField] private OnsenController onsen;
+    [SerializeField] private OnsenController[] restingAreas;
     [SerializeField] private GameManager game;
 
-    public Vector3 EntryPoint => onsen.EntryPoint;
+    private Vector3[] entryPoints;
+    public Vector3[] EntryPoint => entryPoints;//.EntryPoint;
+
     private void Start()
     {
         if (!game) game = FindObjectOfType<GameManager>();
+        this.entryPoints = restingAreas.Select(x => x.EntryPoint).ToArray();
     }
+
     public bool Join(PlayerController player)
     {
-        if (player.Island?.Identifier != onsen.Island.Identifier)
+        var restingArea = restingAreas.FirstOrDefault(x => x.Island.Identifier == player.Island?.Identifier);
+
+        if (!restingArea)
         {
             if (!player.Island)
             {
@@ -21,26 +27,25 @@ public class OnsenManager : MonoBehaviour
                 return false;
             }
 
+#if DEBUG
+            if (!game.admin_controlPlayers)
+            {
+                game.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_WRONG_ISLAND, player.Island.Identifier);
+            }
+#else
             game.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_WRONG_ISLAND, player.Island.Identifier);
+#endif
             return false;
         }
 
-        var spot = onsen.GetNextAvailableSpot();
-        if (spot == null)
-        {
-            game.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_FULL);
-            return false;
-        }
 
-        player.Onsen.Enter(spot.Type, spot.Target);
+        player.Onsen.Enter(restingArea);
         //player.Teleporter.
 
-        onsen.UpdateDetailsLabel();
         return true;
     }
     public void Leave(PlayerController player)
     {
-        player.Onsen.Exit(onsen.EntryPoint);
-        onsen.UpdateDetailsLabel();
+        player.Onsen.Exit();
     }
 }

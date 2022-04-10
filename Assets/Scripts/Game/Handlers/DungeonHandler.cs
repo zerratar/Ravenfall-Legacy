@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using Shinobytes.Linq;
 using UnityEngine;
 
 public class DungeonHandler : MonoBehaviour
@@ -161,7 +161,7 @@ public class DungeonHandler : MonoBehaviour
             }
             else
             {
-                var chunk = player.Game.Chunks.GetStarterChunk();
+                var chunk = player.GameManager.Chunks.GetStarterChunk();
                 previousPosition = chunk.GetPlayerSpawnPoint();
             }
             player.transform.parent = null;
@@ -174,8 +174,8 @@ public class DungeonHandler : MonoBehaviour
         if (player.Onsen.InOnsen)
         {
             //previousPosition = player.Game.Onsen.
-            previousPosition = player.Game.Onsen.EntryPoint;
-            player.Game.Onsen.Leave(player);
+            previousPosition = player.Onsen.EntryPoint;
+            player.GameManager.Onsen.Leave(player);
             player.transform.parent = null;
         }
 

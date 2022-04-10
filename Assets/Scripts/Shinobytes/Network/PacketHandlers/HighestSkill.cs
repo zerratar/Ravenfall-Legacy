@@ -1,5 +1,5 @@
-﻿using System;
-using System.Linq;
+﻿using Shinobytes.Linq;
+using System;
 public class HighestSkill : PacketHandler<HighestSkillRequest>
 {
     public HighestSkill(
@@ -13,25 +13,28 @@ public class HighestSkill : PacketHandler<HighestSkillRequest>
     public override void Handle(HighestSkillRequest data, GameClient client)
     {
         var players = PlayerManager.GetAllPlayers();
-        var isCombatSkill = false;
-        var anySkill = true;
-        var skillName = data.Skill;
+        if (players.Count == 0)
+        {
+            client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_SKILL_NO_PLAYERS);
+            return;
+        }
 
+        var skillName = data.Skill;
         if (skillName.Equals("all", StringComparison.OrdinalIgnoreCase) || skillName.Equals("overall", StringComparison.OrdinalIgnoreCase))
         {
-            var highestAll = players.OrderByDescending(x => x.Stats.LevelList.Sum()).FirstOrDefault();
+            var highestAll = players.Highest(x => x.Stats.GetLevelList().Sum());
             if (highestAll != null)
             {
                 client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_TOTAL,
                     highestAll.PlayerName,
-                    highestAll.Stats.LevelList.Sum());
+                    highestAll.Stats.GetLevelList().Sum());
                 return;
             }
         }
 
         if (skillName.Equals("combat", StringComparison.OrdinalIgnoreCase) || skillName.Equals("level", StringComparison.OrdinalIgnoreCase))
         {
-            var highestAll = players.OrderByDescending(x => x.Stats.CombatLevel).FirstOrDefault();
+            var highestAll = players.Highest(x => x.Stats.CombatLevel);
             if (highestAll != null)
             {
                 client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_COMBAT,
@@ -41,38 +44,19 @@ public class HighestSkill : PacketHandler<HighestSkillRequest>
             }
         }
 
-        if (Enum.TryParse<CombatSkill>(skillName, true, out var combat))
-        {
-            isCombatSkill = true;
-        }
-
-        if (Enum.TryParse<TaskSkill>(skillName, true, out var skill))
-        {
-            anySkill = false;
-        }
+        var s = SkillUtilities.ParseSkill(skillName);
+        if (s == Skill.None) return;
 
         // get the player with highest exp on any skill.
         SkillStat highest = null;
         PlayerController p = null;
         foreach (var player in players)
         {
-            if (isCombatSkill)
+            var skill = player.GetSkill(s);
+            if (highest == null || (highest.Level <= skill.Level && highest.Experience < skill.Experience))
             {
-                var combatSkill = player.GetCombatSkill(combat);
-                if (highest == null || (highest.Level <= combatSkill.Level && highest.Experience < combatSkill.Experience))
-                {
-                    p = player;
-                    highest = combatSkill;
-                }
-            }
-            else if (!anySkill)
-            {
-                var secondary = player.GetSkill(skill);
-                if (highest == null || (highest.Level <= secondary.Level && highest.Experience < secondary.Experience))
-                {
-                    p = player;
-                    highest = secondary;
-                }
+                p = player;
+                highest = skill;
             }
         }
 

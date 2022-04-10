@@ -25,8 +25,8 @@ namespace RavenNest.SDK
         Task<bool> EndSessionAsync();
         Task<bool> EndSessionAndRaidAsync(string username, bool war);
         Task<RavenNest.Models.PlayerJoinResult> PlayerJoinAsync(PlayerJoinData data, int retry = 0);
-        Task<bool> SavePlayerAsync(PlayerController player);
-        Task<bool> SaveTrainingSkill(PlayerController player);
+        bool SavePlayer(PlayerController player);
+        bool SaveTrainingSkill(PlayerController player);
         Guid SessionId { get; }
         string TwitchUserName { get; }
         string TwitchDisplayName { get; }

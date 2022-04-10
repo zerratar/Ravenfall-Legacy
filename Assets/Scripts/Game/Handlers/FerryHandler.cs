@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using Assets.Scripts.Game;
+using System.Text;
+using UnityEngine;
 
 public class FerryHandler : MonoBehaviour
 {
@@ -75,7 +77,7 @@ public class FerryHandler : MonoBehaviour
             if (!player.Island.DockingArea) return;
             if (!player.Island.DockingArea.OnDock(player))
             {
-                player.GotoPosition(player.Island.DockingArea.DockPosition, Time.frameCount % 30 == 0);
+                player.GotoPosition(player.Island.DockingArea.DockPosition);
             }
             else
             {
@@ -91,7 +93,7 @@ public class FerryHandler : MonoBehaviour
         {
             if (!OnFerry)
             {
-                RemovePlayerFromFerry(destination);
+                RemovePlayerFromFerry(destination, false);
                 return;
             }
 
@@ -116,7 +118,8 @@ public class FerryHandler : MonoBehaviour
                 if (destination == ferry.Island)
                 {
                     // disembark!
-                    RemovePlayerFromFerry(destination);
+                    RemovePlayerFromFerry(destination, true);
+
                 }
 
             }
@@ -182,29 +185,81 @@ public class FerryHandler : MonoBehaviour
         return false;
     }
 
-    private void RemovePlayerFromFerry(IslandController island)
+    private void RemovePlayerFromFerry(IslandController island, bool notifyPlayerOfDisembark = true)
     {
-        state = PlayerFerryState.None;
-
-        var onFerry = OnFerry;
-
-        player.Animations.SetCaptainState(false);
-
-        if (RemoveFromFerry())
+        try
         {
-            player.transform.position = island.DockingArea.DockPosition;
+            if (player == null || !player || player.isDestroyed)
+            {
+                return;
+            }
+
+            if (!gameManager)
+                gameManager = GameObject.FindObjectOfType<GameManager>();
+
+            if (!gameManager)
+            {
+                Shinobytes.Debug.LogError("Unable to remove player from ferry, gameManager obj cannot be found.");
+                return;
+            }
+
+            state = PlayerFerryState.None;
+
+            var onFerry = OnFerry;
+
+            player.Animations.SetCaptainState(false);
+
+            var targetIsland = island ?? gameManager.Islands.FindPlayerIsland(player) ?? ferry.Island;
+
+            if (targetIsland == null || !targetIsland)
+            {
+                Shinobytes.Debug.LogError("Unable to remove player from ferry, we don't have a target island.");
+                return;
+            }
+
+            if (RemoveFromFerry())
+            {
+                player.transform.position = targetIsland.DockingArea.DockPosition;
+                player.AdjustPlayerPositionToNavmesh();
+            }
+
+            isOnFerry = false;
+            player.Island = targetIsland;
+            player.taskTarget = null;
+            //player.Unlock();
+
+            var task = player.GetTask();
+            if (task != TaskType.None)
+            {
+                player.GotoClosest(task);
+            }
+
+#if DEBUG
+            if (notifyPlayerOfDisembark && !player.GameManager.admin_controlPlayers)
+            {
+                gameManager.RavenBot?.SendMessage(player.PlayerName, "You have arrived at your destination, {islandName}!", player.Island.Identifier);
+            }
+#else
+            if (notifyPlayerOfDisembark)
+            {
+                gameManager.RavenBot?.SendMessage(player.PlayerName, "You have arrived at your destination, {islandName}!", player.Island.Identifier);
+            }
+#endif
+
         }
-        isOnFerry = false;
-        player.Island = island ?? gameManager.Islands.FindPlayerIsland(player);
-        player.taskTarget = null;
-        //player.Unlock();
-
-        var task = player.GetTask();
-        if (task != TaskType.None)
+        catch (System.Exception exc)
         {
-            player.GotoClosest(task);
+            var err = "Unable to remove player from ferry: ";
+            if (exc is System.NullReferenceException nexc)
+            {
+                Shinobytes.Debug.LogError(err + nexc + ": " + GameUtilities.Validate(player, gameManager));
+                return;
+            }
+
+            Shinobytes.Debug.LogError(err + exc);
         }
     }
+
 
     private void LateUpdate()
     {
@@ -234,12 +289,12 @@ public class FerryHandler : MonoBehaviour
         lastFerryPoint = ferry.GetNextPlayerPoint(canBeCaptain);
         if (lastFerryPoint)
         {
+            player.Lock();
             state = PlayerFerryState.Embarked;
             player.transform.SetParent(lastFerryPoint);
             player.transform.localPosition = Vector3.zero;
             player.transform.rotation = lastFerryPoint.rotation;
             player.Island = null;
-
             if (ferry.IsCaptainPosition(lastFerryPoint))
             {
                 ferry.SetCaptain(this.player);

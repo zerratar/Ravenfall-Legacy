@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using Shinobytes.Linq;
 using UnityEngine;
 
 public class ItemDropHandler : MonoBehaviour
 {
     [SerializeField] private ItemDropList dropList;
     [SerializeField] private ItemDrop[] items;
+    [SerializeField] private float dropchanceScale = 1f;
 
     private GameManager gameManager;
 
@@ -91,12 +92,13 @@ public class ItemDropHandler : MonoBehaviour
                 return new
                 {
                     Item = item,
-                    x.DropChance,
+                    DropChance = x.DropChance * dropchanceScale,
                     x.Unique,
                 };
             })
                 .Where(x => x.Item != null)
-                .OrderByDescending(x => x.DropChance).ToList();
+                .OrderByDescending(x => x.DropChance)
+                .ToList();
 
             foreach (var item in droppableItems)
             {

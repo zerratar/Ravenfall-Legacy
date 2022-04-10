@@ -1,5 +1,4 @@
 ﻿using Assets.Scripts;
-using System.Linq;
 using UnityEngine;
 
 public class TownHallInfoManager : MonoBehaviour
@@ -25,16 +24,17 @@ public class TownHallInfoManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var nextLevel = GameMath.OLD_LevelToExperience(Level + 1);
-
-        var currentLevelExp = GameMath.OLD_LevelToExperience(Level);
-        var expNow = Experience - currentLevelExp;
-        var expNext = nextLevel - currentLevelExp;
-
-        var progress = Experience > 0 && nextLevel > 0 ? System.Math.Round((float)(expNow / expNext) * 100f, 2) : 0;
-        lblLevel.text = "Level: " + Level + " (" + progress + "%)";
-        lblSlots.text = "Slots: " + UsedSlots + "/" + Slots;
-        lblTier.text = "Tier: " + Tier;
+        if (GameSystems.frameCount % 4 == 0)
+        {
+            var nextLevel = GameMath.OLD_LevelToExperience(Level + 1);
+            var currentLevelExp = GameMath.OLD_LevelToExperience(Level);
+            var expNow = Experience - currentLevelExp;
+            var expNext = nextLevel - currentLevelExp;
+            var progress = Experience > 0 && nextLevel > 0 ? System.Math.Round((float)(expNow / expNext) * 100f, 2) : 0;
+            lblLevel.text = "Level: " + Level + " (" + progress + "%)";
+            lblSlots.text = "Slots: " + UsedSlots + "/" + Slots;
+            lblTier.text = "Tier: " + Tier;
+        }
 
         //if (Time.frameCount % 30 == 0)
         //{
@@ -53,7 +53,10 @@ public class TownHallInfoManager : MonoBehaviour
                 if (bonus.SlotType == TownHouseSlotType.Empty || bonus.SlotType == TownHouseSlotType.Undefined)
                     continue;
 
-                lblTotalExpBonus.text += bonus.SlotType + ": " + Mathf.RoundToInt(bonus.Bonus) + "%\r\n";
+                if (bonus.Bonus > 0)
+                {
+                    lblTotalExpBonus.text += bonus.SlotType + ": " + Mathf.RoundToInt(bonus.Bonus) + "%\r\n";
+                }
             }
         }
         else

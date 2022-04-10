@@ -11,6 +11,7 @@ public class SkillStat
     public int CurrentValue;
     public int Level;
     public double Experience;
+    public Skill Type;
 
     private float refreshRate = 60f;
     private double totalEarnedExperience;
@@ -19,10 +20,12 @@ public class SkillStat
 
     public SkillStat() { }
     public SkillStat(
+        Skill type,
         string name,
         int level,
         double exp)
     {
+        Type = type;
         CurrentValue = level;//GameMath.ExperienceToLevel(exp);
         Level = level;//GameMath.ExperienceToLevel(exp);
         Experience = exp;
@@ -74,6 +77,11 @@ public class SkillStat
     public void AddExp(double exp)
     {
         AddExp(exp, out _);
+    }
+
+    internal void ResetExpPerHour()
+    {
+        lastExperienceGain = 0;
     }
 
     public bool AddExp(double exp, out int newLevels)
@@ -136,4 +144,5 @@ public class SkillStat
     {
         return HashCode.Combine(Name, CurrentValue, Level, Experience);
     }
+
 }

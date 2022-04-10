@@ -1,6 +1,6 @@
 ﻿using Assets.Scripts;
 using System;
-using System.Linq;
+using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -230,14 +230,14 @@ public class RaidBossController : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool WithinActivateRange(PlayerController player)
     {
-        if (!player || player.Removed || player.gameObject == null && !ReferenceEquals(player.gameObject, null)) return false;
+        if (!player || player.isDestroyed || player.Removed || player.gameObject == null && !ReferenceEquals(player.gameObject, null)) return false;
         return Vector3.Distance(enemyController.Position, player.Position) <= activateRadiusCollider.radius;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool WithinAttackRange(PlayerController player)
     {
-        if (!player || player.Removed || player.gameObject == null && !ReferenceEquals(player.gameObject, null)) return false;
+        if (!player || player.isDestroyed || player.Removed || player.gameObject == null && !ReferenceEquals(player.gameObject, null)) return false;
         return Vector3.Distance(enemyController.Position, player.Position) <= activateRadiusCollider.radius;
     }
 

@@ -1,7 +1,5 @@
 ﻿using RavenNest.Models;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 public class GetScrollsCount : PacketHandler<TwitchPlayerInfo>
 {
@@ -31,9 +29,7 @@ public class GetScrollsCount : PacketHandler<TwitchPlayerInfo>
         }
         catch
         {
-            scrolls = new ScrollInfoCollection(player.Inventory
-                      .GetInventoryItemsOfCategory(ItemCategory.Scroll)
-                      .Select(x => new ScrollInfo(x.Item.Id, x.Item.Name, x.Amount)));
+            scrolls = GetScrollInfoCollection(player);
         }
 
         if (scrolls.Count == 0)
@@ -44,7 +40,16 @@ public class GetScrollsCount : PacketHandler<TwitchPlayerInfo>
 
         SendScrollCount(data, client, scrolls);
     }
-
+    private static ScrollInfoCollection GetScrollInfoCollection(PlayerController player)
+    {
+        var scrolls = player.Inventory.GetInventoryItemsOfCategory(ItemCategory.Scroll);
+        var res = new List<ScrollInfo>();
+        foreach (var scroll in scrolls)
+        {
+            res.Add(new ScrollInfo(scroll.Item.Id, scroll.Item.Name, scroll.Amount));
+        }
+        return new ScrollInfoCollection(res);
+    }
     private static void SendScrollCount(TwitchPlayerInfo data, GameClient client, ScrollInfoCollection scrolls)
     {
         var parameters = new List<object>();

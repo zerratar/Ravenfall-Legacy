@@ -1,5 +1,5 @@
-﻿using System;
-using System.Linq;
+﻿using Shinobytes.Linq;
+using System;
 using UnityEngine;
 
 public class ArenaHandler : MonoBehaviour
@@ -8,13 +8,13 @@ public class ArenaHandler : MonoBehaviour
     [SerializeField] private GameManager gameManager;
     [SerializeField] private ChunkManager chunkManager;
 
-    private IChunk arenaChunk;
+    private Chunk arenaChunk;
     private bool fightStarted;
-    private IChunk previousChunk;
+    private Chunk previousChunk;
 
     public bool InArena { get; private set; }
 
-    private IChunk ArenaChunk
+    private Chunk ArenaChunk
     {
         get
         {
@@ -65,7 +65,7 @@ public class ArenaHandler : MonoBehaviour
 
     public void OnWin(bool wonByDraw)
     {
-        ++player.Statistics.ArenaFightsWon;
+        //++player.Statistics.ArenaFightsWon;
 
         player.Stats.Health.Reset();
 
@@ -147,8 +147,7 @@ public class ArenaHandler : MonoBehaviour
     private PlayerController GetTarget()
     {
         var target = player.GetAttackers()
-            .OfType<PlayerController>()
-            .Where(atk => atk != null && atk && !atk.Stats.IsDead)
+            .WhereOfType(x => x as PlayerController, atk => atk != null && atk && !atk.Stats.IsDead)
             .OrderBy(atk => Vector3.Distance(player.Position, atk.Position))
             .FirstOrDefault();
 
@@ -159,8 +158,7 @@ public class ArenaHandler : MonoBehaviour
 
         return gameManager.Arena
             .AvailablePlayers
-            .Where(x => x != null && x)
-            .Except(player)
+            .Where(x => x != null && x && x != player)
             .OrderBy(x => Vector3.Distance(player.Position, x.Position))
             .FirstOrDefault();
     }

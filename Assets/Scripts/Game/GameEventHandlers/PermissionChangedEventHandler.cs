@@ -4,5 +4,7 @@
     {
         //UnityEngine.Debug.LogWarning("User Permission Update received.");
         gameManager.Permissions = data;
+
+        ChunkManager.StrictLevelRequirements = data.StrictLevelRequirements;
     }
 }

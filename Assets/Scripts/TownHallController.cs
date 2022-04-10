@@ -20,29 +20,41 @@ public class TownHallController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (gameManager && !gameManager.RavenNest.Authenticated)
+        try
         {
-            return;
-        }
-
-        if (hitCollider && Input.GetMouseButtonUp(0))
-        {
-            var activeCamera = Camera.main;
-            if (!activeCamera)
+            if (!gameManager || gameManager == null || manager == null || !manager)
             {
                 return;
             }
 
-            var ray = activeCamera.ScreenPointToRay(Input.mousePosition);
-            var result = Physics.RaycastAll(ray);
-            foreach (var res in result)
+            if (gameManager && (gameManager.RavenNest == null || !gameManager.RavenNest.Authenticated))
             {
-                if (res.collider.GetInstanceID() == hitCollider.GetInstanceID())
+                return;
+            }
+
+            if (hitCollider && Input.GetMouseButtonUp(0))
+            {
+                var activeCamera = Camera.main;
+                if (!activeCamera || activeCamera == null)
                 {
-                    manager.OpenVillageDialog();
                     return;
                 }
+
+                var ray = activeCamera.ScreenPointToRay(Input.mousePosition);
+                var result = Physics.RaycastAll(ray);
+                foreach (var res in result)
+                {
+                    if (res.collider.GetInstanceID() == hitCollider.GetInstanceID())
+                    {
+                        manager.OpenVillageDialog();
+                        return;
+                    }
+                }
             }
+        }
+        catch (System.Exception exc)
+        {
+            Shinobytes.Debug.LogError(exc.ToString());
         }
     }
 }

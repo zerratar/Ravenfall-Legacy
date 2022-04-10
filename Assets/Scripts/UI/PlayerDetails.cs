@@ -82,7 +82,7 @@ public class PlayerDetails : MonoBehaviour
             return;
         }
 
-        if (!observedPlayer || observedPlayer.gameObject == null || observedPlayer.Removed)
+        if (!observedPlayer || observedPlayer.isDestroyed || observedPlayer.gameObject == null || observedPlayer.Removed)
         {
             if (gameManager.Players.GetPlayerCount() == 0)
             {
@@ -173,10 +173,10 @@ public class PlayerDetails : MonoBehaviour
 
     private string GetTimeLeftForLevelFormatted()
     {
-        var skill = observedPlayer.GetActiveTaskSkillStat();
-        if (skill == null) return "";
+        var s = observedPlayer.ActiveSkill;
+        if (s == Skill.None) return "";
 
-        var s = observedPlayer.GetActiveSkill();
+        var skill = observedPlayer.Stats[s];
         var f = observedPlayer.GetExpFactor();
         var expPerTick = ObservedPlayer.GetExperience(s, f);
         var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;

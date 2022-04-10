@@ -1,6 +1,6 @@
 ﻿using Assets.Scripts;
 using System;
-using System.Linq;
+using Shinobytes.Linq;
 using UnityEngine;
 
 public enum FerryState
@@ -165,8 +165,8 @@ public class FerryController : MonoBehaviour
 
         return playerPositions
             .Skip(1)
-            .OrderBy(x => x.transform.childCount)
-            .ThenBy(x => UnityEngine.Random.value)
+            .OrderBy(x => x.transform.childCount + UnityEngine.Random.value)
+            //.ThenBy(x => UnityEngine.Random.value)
             .FirstOrDefault();
     }
 

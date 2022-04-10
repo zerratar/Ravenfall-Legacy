@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Shinobytes.Linq;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -101,7 +101,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public IReadOnlyList<EnemyController> GetAliveEnemies()
     {
-        return dungeonEnemyPool.HasLeasedEnemies ? dungeonEnemyPool.GetLeasedEnemies().Where(IsAlive).ToList() : new List<EnemyController>();
+        return dungeonEnemyPool.HasLeasedEnemies ? dungeonEnemyPool.GetLeasedEnemies().AsList(IsAlive) : new List<EnemyController>();
     }
     internal EnemyController GetNextEnemyTarget(PlayerController player)
     {
@@ -218,7 +218,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                 return new List<PlayerController>();
             }
 
-            return joinedPlayers.Where(x => this.deadPlayers.All(y => y.Id != x.Id)).ToList();
+            return joinedPlayers.Where(x => this.deadPlayers.All(y => y.Id != x.Id)).AsList();
         }
     }
 
@@ -303,7 +303,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             return null;
         }
 
-        return enemies.Where(x => Vector3.Distance(position, x.Position) <= x.AggroRange).ToList();
+        return enemies.AsList(x => Vector3.Distance(position, x.Position) <= x.AggroRange);
     }
 
     private void HideDungeonUI()
@@ -433,7 +433,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         ResetDungeon();
     }
 
-    public void EndDungeonFailed()
+    public void EndDungeonFailed(bool notifyChat = true)
     {
         var players = GetPlayers();
         foreach (var player in players)
@@ -444,6 +444,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         //Debug.LogWarning("EndDungeonFailed");
         // 1. show sad UI
         ResetDungeon();
+
+        if (notifyChat)
+        {
+            gameManager.RavenBot.Announce("The dungeon has ended without any surviving players.");
+        }
     }
 
     private bool SpawnDungeonBoss()
@@ -515,7 +520,6 @@ public class DungeonManager : MonoBehaviour, IEvent
                 var starting = lowestStats;
                 var high = lowestStats + highestStats;
                 enemy.Stats = Skills.Max(starting, Skills.Lerp(starting, high, lerpAmount) * mobsCombatStatsScale);
-                enemy.SetExperience(GameMath.CombatExperience(enemy.Stats.CombatLevel) * 1.5d);
             }
         }
     }
@@ -550,6 +554,8 @@ public class DungeonManager : MonoBehaviour, IEvent
             return healthScale * (playerCount / (float)MinPlayerCountForHealthScaling);
         }
     }
+
+
 
     private void RewardPlayers()
     {

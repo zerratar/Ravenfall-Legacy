@@ -2,11 +2,8 @@
 using Sirenix.OdinInspector;
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.AI;
 
 public class EnemyController : MonoBehaviour, IAttackable
 {
@@ -21,7 +18,9 @@ public class EnemyController : MonoBehaviour, IAttackable
     [SerializeField] private HealthBarManager healthBarManager;
     [SerializeField] private float healthBarOffset = 0f;
     [SerializeField] private float attackRange = 2.88f;
-    [SerializeField] private double experience;
+    //[SerializeField] private double experience;
+
+
 
     [SerializeField] private float attackTimer;
     [SerializeField] private float attackInterval = 0.22f;
@@ -29,11 +28,11 @@ public class EnemyController : MonoBehaviour, IAttackable
     [SerializeField] public EquipmentStats EquipmentStats;
     [SerializeField] public Skills Stats;
 
-    public float AggroRange = 7.5f;
+    public double ExpFactor = 1d;
 
+    public float AggroRange = 7.5f;
     public bool HandleFightBack = true;
     public bool RotationLocked = false;
-
 
     public bool AutomaticRespawn = true;
 
@@ -62,7 +61,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     internal Vector3 PositionInternal;
     private float hitRangeRadius;
-    
+
     public bool Removed;
 
     public Vector3 Position => PositionInternal;
@@ -182,7 +181,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         var targetPlayer = Target.GetComponent<PlayerController>();
         if (!targetPlayer) return;
 
-        if (targetPlayer.Stats.IsDead || targetPlayer.Removed)
+        if (targetPlayer.Stats.IsDead || targetPlayer.isDestroyed || targetPlayer.Removed)
         {
             Target = null;
             InCombat = false;
@@ -213,7 +212,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             SetDestination(Target.position);
         }
     }
-    
+
     private void AttackTarget(PlayerController targetPlayer)
     {
         if (!targetPlayer) return;
@@ -294,11 +293,6 @@ public class EnemyController : MonoBehaviour, IAttackable
     }
 
     public Transform Transform => gameObject.transform;
-
-    public double GetExperience()
-    {
-        return experience;
-    }
 
     public bool GivesExperienceWhenKilled { get; set; } = true;
 
@@ -525,11 +519,6 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             healthBar.UpdateHealth();
         }
-    }
-
-    internal void SetExperience(double v)
-    {
-        this.experience = v;
     }
 
     public IReadOnlyList<IAttackable> GetAttackers()

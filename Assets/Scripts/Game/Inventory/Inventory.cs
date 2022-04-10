@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using RavenNest.Models;
 using UnityEngine;
@@ -57,6 +57,7 @@ public class Inventory : MonoBehaviour
     private PlayerController player;
     private PlayerEquipment equipment;
     private GameManager gameManager;
+    private GameInventoryItem equippedMeleeWeapon;
 
     private void Awake()
     {
@@ -475,6 +476,12 @@ public class Inventory : MonoBehaviour
             }
         }
 
+        if (IsMeleeWeapon(item))
+        {
+            this.equippedMeleeWeapon = item;
+        }
+
+
         var equip = GetEquipmentOfType(item.Item.Category, item.Item.Type);
         if (equip != null)
         {
@@ -528,20 +535,20 @@ public class Inventory : MonoBehaviour
 
     public IReadOnlyList<GameInventoryItem> GetEquipmentsOfCategory(ItemCategory itemCategory)
     {
-        return equipped.Where(x => x.Item.Category == itemCategory).ToList();
+        return equipped.AsList(x => x.Item.Category == itemCategory);
     }
 
     public IReadOnlyList<GameInventoryItem> GetInventoryItemsOfType(ItemCategory itemCategory, RavenNest.Models.ItemType type)
     {
-        return backpack.Where(x => x.Item.Category == itemCategory && x.Item.Type == type).ToList();
+        return backpack.AsList(x => x.Item.Category == itemCategory && x.Item.Type == type);
     }
 
     public IReadOnlyList<GameInventoryItem> GetInventoryItemsOfCategory(ItemCategory itemCategory)
     {
-        return backpack.Where(x => x.Item.Category == itemCategory).ToList();
+        return backpack.AsList(x => x.Item.Category == itemCategory);
     }
 
-    public IEnumerable<GameInventoryItem> GetAllItems() => backpack.Concat(equipped);
+    public IReadOnlyList<GameInventoryItem> GetAllItems() => backpack.Concat(equipped);
     public List<GameInventoryItem> GetBackpackItems() => backpack;
     public List<GameInventoryItem> GetEquippedItems() => equipped;
 
@@ -579,7 +586,7 @@ public class Inventory : MonoBehaviour
     }
     internal IReadOnlyList<GameInventoryItem> GetInventoryItems(Guid itemId)
     {
-        return backpack.Where(x => x.Item.Id == itemId).ToList();
+        return backpack.AsList(x => x.Item.Id == itemId);
     }
 
     public GameInventoryItem GetEquippedItem(Guid itemId)
@@ -599,7 +606,12 @@ public class Inventory : MonoBehaviour
 
     public GameInventoryItem GetMeleeWeapon()
     {
-        return equipped.FirstOrDefault(IsMeleeWeapon);
+        if (equippedMeleeWeapon == null)
+        {
+            equippedMeleeWeapon = equipped.FirstOrDefault(IsMeleeWeapon);
+        }
+
+        return equippedMeleeWeapon;
     }
 
     public void UnequipArmor()

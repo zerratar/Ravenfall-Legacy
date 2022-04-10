@@ -16,7 +16,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
     private float tokenWinChance = 0.10f;
 
     private readonly List<string> players = new List<string>();
-    private readonly TavernGameHighscore highscore = new TavernGameHighscore("tictactoe");
+    private TavernGameHighscore highscore;
 
     private TavernGameState state;
 
@@ -46,6 +46,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
 
     void Start()
     {
+        highscore = new TavernGameHighscore("tictactoe");
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
         if (!itemDropHandler) itemDropHandler = FindObjectOfType<ItemDropHandler>();
 

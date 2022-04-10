@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Networking;
-
 public class DungeonNotifications : MonoBehaviour
 {
     [SerializeField] private AutoHideUI activatedObject;
@@ -205,7 +200,7 @@ public class DungeonNotifications : MonoBehaviour
 
         if (this.runTimeLabel == null)
             this.runTimeLabel = gameManager.StreamLabels.Register("dungeon-run-time", () => runTime.ToString());
-        if (Time.frameCount % 30 == 0)
+        if (GameSystems.frameCount % 30 == 0)
         {
             this.runTimeLabel.Update();
         }

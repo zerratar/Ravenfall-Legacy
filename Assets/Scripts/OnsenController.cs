@@ -25,9 +25,12 @@ public class OnsenController : MonoBehaviour
         this.island = GetComponentInParent<IslandController>();
 
         this.transforms = new List<Transform>();
-        transforms.AddRange(sittingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
-        transforms.AddRange(swimmingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
-        transforms.AddRange(meditatingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
+        if (sittingSpots != null)
+            transforms.AddRange(sittingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
+        if (swimmingSpots != null)
+            transforms.AddRange(swimmingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
+        if (meditatingSpots != null)
+            transforms.AddRange(meditatingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
 
         UpdateDetailsLabel();
     }

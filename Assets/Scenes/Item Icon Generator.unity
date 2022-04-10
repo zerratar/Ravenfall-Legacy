@@ -2633,6 +2633,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: acfbe98dc2365364eb95e493110f50a2, type: 2}
   - {fileID: 2100000, guid: 9c6d370655653aa41a1d71284c1123dc, type: 2}
   - {fileID: 2100000, guid: 6d9ff9bfd6001ff49a038d33a3622088, type: 2}
+  - {fileID: 2100000, guid: fcd482b8175e57d4898e0eb504c6ca5f, type: 2}
   redeemableItems: []
 --- !u!4 &1768508603
 Transform:
@@ -3062,7 +3063,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 393015
 --- !u!114 &2100302653
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10923,6 +10924,8 @@ MonoBehaviour:
   ScarColor: {r: 0, g: 0, b: 0, a: 0}
   EyeColor: {r: 0, g: 0, b: 0, a: 0}
   HelmetVisible: 0
+  gameManager: {fileID: 0}
+  player: {fileID: 0}
 --- !u!1 &6346279979759587127
 GameObject:
   m_ObjectHideFlags: 0

@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
+using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Assets.Scripts
@@ -26,7 +26,7 @@ namespace Assets.Scripts
         {
             if (!clanSkills.TryGetValue(clanId, out var skills))
                 return new List<SkillStat>();
-            return skills.ToList();
+            return skills.AsList();
         }
 
         internal void UpdateClanSkill(Guid clanId, Guid skillId, int gainedLevels, double gainedExperience)

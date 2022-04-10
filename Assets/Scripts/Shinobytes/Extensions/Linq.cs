@@ -1,0 +1,1121 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
+namespace Shinobytes.Linq
+{
+    public static class Enums
+    {
+        public static IEnumerable<T> GetValues<T>() where T : System.Enum
+        {
+            foreach (T item in Enum.GetValues(typeof(T)))
+            {
+                yield return item;
+            }
+        }
+    }
+    public static class LinqExtensions
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<TSource> Concat<TSource>(this List<TSource> source, IEnumerable<TSource> items)
+        {
+            var res = new List<TSource>();
+            res.AddRange(source);
+            res.AddRange(items);
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IReadOnlyList<TSource> Concat<TSource>(this IReadOnlyList<TSource> source, IEnumerable<TSource> items)
+        {
+            var res = new List<TSource>();
+            res.AddRange(source);
+            res.AddRange(items);
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TSource Highest<TSource, TCompare>(this IEnumerable<TSource> source, Func<TSource, TCompare> comp) where TCompare : IComparable
+        {
+            using (IEnumerator<TSource> e = source.GetEnumerator())
+            {
+                if (!e.MoveNext()) return default(TSource);//throw Error.NoElements();
+                TSource highest = e.Current;
+                while (e.MoveNext())
+                {
+                    var a = comp(highest);
+                    var b = comp(e.Current);
+                    if (b.CompareTo(a) > 0)
+                        highest = e.Current;
+                }
+                return highest;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TSource Lowest<TSource, TCompare>(this IEnumerable<TSource> source, Func<TSource, TCompare> comp) where TCompare : IComparable
+        {
+            using (IEnumerator<TSource> e = source.GetEnumerator())
+            {
+                if (!e.MoveNext()) return default(TSource);//throw Error.NoElements();
+                TSource lowest = e.Current;
+                while (e.MoveNext())
+                {
+                    var a = comp(lowest);
+                    var b = comp(e.Current);
+                    if (b.CompareTo(a) < 0)
+                        lowest = e.Current;
+                }
+                return lowest;
+            }
+        }
+        #region aggregate
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TSource Aggregate<TSource>(this IEnumerable<TSource> source, Func<TSource, TSource, TSource> aggr)
+        {
+            //var result = default(T);
+            //foreach (var i in src)
+            //{
+            //    result = aggr(result, i);
+            //}
+            //return result;
+
+            using (IEnumerator<TSource> e = source.GetEnumerator())
+            {
+                if (!e.MoveNext()) return default(TSource);//throw Error.NoElements();
+                TSource result = e.Current;
+                while (e.MoveNext()) result = aggr(result, e.Current);
+                return result;
+            }
+
+        }
+        #endregion
+
+        #region distinct
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryParse<T>(string value, out T v) where T : System.Enum
+        {
+            v = default(T);
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> Distinct<T>(this IEnumerable<T> src)
+        {
+            if (src is HashSet<T> set) return set;
+            return new HashSet<T>(src);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> DistinctBy<T, T2>(this IEnumerable<T> src, Func<T, T2> predicate)
+        {
+            var set = new HashSet<T2>();
+            foreach (var i in src)
+            {
+                var item = predicate(i);
+                if (set.Add(item)) yield return i;
+            }
+        }
+
+
+        #endregion
+
+        #region sum
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Sum(this IEnumerable<int> src)
+        {
+            int sum = 0;
+            foreach (var i in src) checked { sum += i; }
+            return sum;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Sum(this IEnumerable<int> src, Func<int, int> sumOf)
+        {
+            int sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Sum<T>(this IEnumerable<T> src, Func<T, int?> sumOf)
+        {
+            int sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i) ?? 0; }
+            return sum;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long Sum<T>(this IEnumerable<T> src, Func<T, long?> sumOf)
+        {
+            long sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i) ?? 0; }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Sum<T>(this IEnumerable<T> src, Func<T, double?> sumOf)
+        {
+            double sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i) ?? 0; }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short Sum<T>(this IEnumerable<T> src, Func<T, short?> sumOf)
+        {
+            short sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i) ?? 0; }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte Sum<T>(this IEnumerable<T> src, Func<T, byte?> sumOf)
+        {
+            byte sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i) ?? 0; }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Sum<T>(this IEnumerable<T> src, Func<T, int> sumOf)
+        {
+            int sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Sum<T>(this IEnumerable<T> src, Func<T, uint> sumOf)
+        {
+            uint sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong Sum<T>(this IEnumerable<T> src, Func<T, ulong> sumOf)
+        {
+            ulong sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long Sum<T>(this IEnumerable<T> src, Func<T, long> sumOf)
+        {
+            long sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Sum<T>(this IEnumerable<T> src, Func<T, double> sumOf)
+        {
+            double sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Sum<T>(this IEnumerable<T> src, Func<T, float> sumOf)
+        {
+            float sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal Sum<T>(this IEnumerable<T> src, Func<T, decimal> sumOf)
+        {
+            decimal sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short Sum<T>(this IEnumerable<T> src, Func<T, short> sumOf)
+        {
+            short sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort Sum<T>(this IEnumerable<T> src, Func<T, ushort> sumOf)
+        {
+            ushort sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static sbyte Sum<T>(this IEnumerable<T> src, Func<T, sbyte> sumOf)
+        {
+            sbyte sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte Sum<T>(this IEnumerable<T> src, Func<T, byte> sumOf)
+        {
+            byte sum = 0;
+            foreach (var i in src) checked { sum += sumOf(i); }
+            return sum;
+        }
+
+        #endregion
+
+        #region min max
+        public static T2 Max<T, T2>(this IEnumerable<T> src, Func<T, T2> predicate) where T2 : IComparable
+        {
+            var items = src.AsList();
+            if (items.Count == 0) return default(T2);
+            if (items.Count == 1) return predicate(items[0]);
+            T2 max = predicate(items[0]);
+            for (var i = 1; i < items.Count; ++i)
+            {
+                var a = predicate(items[i]);
+                if (a.CompareTo(max) > 0)
+                {
+                    max = a;
+                }
+            }
+            return max;
+        }
+
+        public static T2 Min<T, T2>(this IEnumerable<T> src, Func<T, T2> predicate) where T2 : IComparable
+        {
+            var items = src.AsList();
+            if (items.Count == 0) return default(T2);
+            if (items.Count == 1) return predicate(items[0]);
+            T2 min = predicate(items[0]);
+            for (var i = 1; i < items.Count; ++i)
+            {
+                var a = predicate(items[i]);
+                if (a.CompareTo(min) < 0)
+                {
+                    min = a;
+                }
+            }
+            return min;
+        }
+        #endregion
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Count<T>(this IEnumerable<T> src, Func<T, bool> predicate = null)
+        {
+            if (src == null) return 0;
+            if (predicate == null)
+            {
+                if (src is ICollection<T> collection) return collection.Count;
+                if (src is T[] array) return array.Length;
+                if (src is IReadOnlyCollection<T> roCollection) return roCollection.Count;
+                if (src is IReadOnlyList<T> roList) return roList.Count;
+            }
+
+            var c = 0;
+            foreach (var i in src) if (predicate == null || predicate(i)) ++c;
+            return c;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool All<T>(this IEnumerable<T> src, Func<T, bool> predicate)
+        {
+            foreach (var i in src)
+            {
+                if (!predicate(i)) return false;
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ElementAt<T>(this IEnumerable<T> src, int index)
+        {
+            var j = 0;
+            foreach (var i in src)
+            {
+                if (j++ == index)
+                {
+                    return i;
+                }
+            }
+            return default(T);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T First<T>(this IEnumerable<T> src)
+        {
+            var enumerator = src.GetEnumerator();
+            return enumerator.Current;
+        }
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public static bool Contains<T>(this IEnumerable<T> src, T item)
+        //{
+        //    if (item == null) return false;
+        //    foreach (var i in src)
+        //    {
+        //        if (i == item) return true;
+        //    }
+        //    return false;
+        //}
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Contains<T>(this IEnumerable<T> src, T item)
+        {
+            //if (item.Equals(default(T))) return false;
+            foreach (var i in src)
+            {
+                if (object.Equals(i, item) || object.ReferenceEquals(i, item) || i.Equals(item))
+                    return true;
+            }
+
+            return false;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> WhereNotNull<T>(this List<T> src)
+        {
+            var items = new List<T>();
+            foreach (var i in src) if (i != null) items.Add(i);
+            return items;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T> src)
+        {
+            var items = new List<T>();
+            foreach (var i in src) if (i != null) items.Add(i);
+            return items;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<TResult> SelectMany<TSource, TResult>(this IEnumerable<TSource> src, Func<TSource, IEnumerable<TResult>> predicate)
+        {
+            foreach (var a in src)
+            {
+                foreach (var b in predicate(a))
+                {
+                    yield return b;
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Dictionary<TKey, List<TValue>> GroupBy<TKey, TValue>(
+            this IEnumerable<TValue> src,
+            Func<TValue, TKey> keySelector)
+        {
+            var result = new Dictionary<TKey, List<TValue>>();
+            foreach (var item in src)
+            {
+                var key = keySelector(item);
+                if (!result.TryGetValue(key, out var list))
+                {
+                    result[key] = list = new List<TValue>();
+                }
+                list.Add(item);
+            }
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Dictionary<TKey, TValue> ToDictionary<TSource, TKey, TValue>(
+                this IEnumerable<TSource> src,
+                Func<TSource, TKey> keySelector,
+                Func<TSource, TValue> valueSelector)
+        {
+            var result = new Dictionary<TKey, TValue>();
+            foreach (var item in src)
+            {
+                var key = keySelector(item);
+                var value = valueSelector(item);
+                result[key] = value;
+            }
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(
+                this IEnumerable<TValue> src,
+                Func<TValue, TKey> keySelector)
+        {
+            var result = new Dictionary<TKey, TValue>();
+            foreach (var item in src)
+            {
+                var key = keySelector(item);
+                var value = item;
+                result[key] = value;
+            }
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Any<T>(this IEnumerable<T> src, Func<T, bool> predicate)
+        {
+            foreach (var i in src)
+            {
+                if (predicate(i)) return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Any<T>(this IEnumerable<T> src)
+        {
+            return src.AsList().Count > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Last<T>(this IEnumerable<T> src)
+        {
+            var collection = src.AsList();
+            if (collection.Count == 0) return default(T);
+            return collection[collection.Count - 1];
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<TResult> OfType<TResult>(this IEnumerable source)
+        {
+            foreach (object obj in source)
+            {
+                if (obj is TResult res) yield return res;
+            }
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<TResult> WhereOfType<TSource, TResult>(this IEnumerable<TSource> source, Func<TResult, bool> predicate)
+        {
+            foreach (object obj in source)
+            {
+                if (obj is TResult res && predicate(res))
+                    yield return res;
+            }
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<TResult> WhereOfType<TSource, TResult>(
+            this IEnumerable<TSource> source,
+            Func<TSource, TResult> select,
+            Func<TResult, bool> predicate)
+        {
+            foreach (var obj in source)
+            {
+                var a = select(obj);
+                if (a != null && predicate(a)) yield return a;
+            }
+        }
+
+
+        /// <summary>
+        /// Gets a list of the enumeration with the least allocation possible.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> AsList<T>(this IEnumerable<T> items)
+        {
+            if (items is List<T> list) return list;
+            return items.ToList();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> AsList<T>(this IEnumerable<T> items, Func<T, bool> predicateWhere)
+        {
+            var result = new List<T>();
+            foreach (var item in items)
+            {
+                if (predicateWhere(item))
+                {
+                    result.Add(item);
+                }
+            }
+            return result;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T2> SelectWhere<T, T2>(this IEnumerable<T> items, Func<T, bool> predicateWhere, Func<T, T2> select)
+        {
+            var result = new List<T2>();
+            foreach (var item in items)
+            {
+                if (predicateWhere(item))
+                {
+                    result.Add(select(item));
+                }
+            }
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T[] Skip<T>(this T[] src, int skip)
+        {
+            var result = new T[src.Length - skip];
+            System.Array.Copy(src, skip, result, 0, result.Length);
+            //for (int i = skip; i < src.Length; ++i)
+            //{
+            //    result[i - skip] = src[i];
+            //}
+            return result;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T[] Skip<T>(this ICollection<T> src, int skip)
+        {
+            var result = new T[src.Count - skip];
+            var index = 0;
+            foreach (var item in src)
+            {
+                if (index >= skip)
+                {
+                    result[index - skip] = item;
+                }
+                index++;
+            }
+
+            return result;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> Slice<T>(this T[] src, int skip, int take)
+        {
+            var result = new List<T>();
+            for (int i = skip, j = 0; i < src.Length && j < take; ++i, ++j)
+            {
+                result.Add(src[i]);
+            }
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> Slice<T>(this IReadOnlyList<T> src, int skip, int take)
+        {
+            var result = new List<T>();
+            for (int i = skip, j = 0; i < src.Count && j < take; ++i, ++j)
+            {
+                result.Add(src[i]);
+            }
+            return result;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> Slice<T>(this IEnumerable<T> src, int skip, int take)
+        {
+            var result = new List<T>();
+            var j = 0;
+            foreach (var item in src)
+            {
+                if (result.Count >= take)
+                {
+                    break;
+                }
+                if (skip <= j)
+                {
+                    result.Add(item);
+                }
+                ++j;
+            }
+            return result;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> SliceAs<T, T2>(this IReadOnlyList<T2> src, int skip, int take, Func<T2, T> select)
+        {
+            var result = new List<T>();
+            for (int i = skip, j = 0; i < src.Count && j < take; ++i, ++j)
+            {
+                result.Add(select(src[i]));
+            }
+            return result;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T[] SelectAsArray<T, T2>(this IReadOnlyList<T2> src, Func<T2, T> select)
+        {
+            var result = new T[src.Count];
+            for (var i = 0; i < src.Count; ++i)
+            {
+                result[i] = select(src[i]);
+            }
+            return result;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IReadOnlyList<T> SelectAsReadOnly<T, T2>(this IReadOnlyList<T2> src, Func<T2, T> select)
+        {
+            var result = new List<T>(src.Count);
+            for (var i = 0; i < src.Count; ++i)
+            {
+                result.Add(select(src[i]));
+            }
+            return result;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IReadOnlyList<T> AsReadOnlyList<T>(this IEnumerable<T> items)
+        {
+            if (items is T[] array) return array;
+            if (items is IReadOnlyList<T> list) return list;
+            return items.AsList();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ForEach<T>(this IEnumerable<T> items, Action<T> forEach)
+        {
+            foreach (var item in items)
+            {
+                forEach(item);
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> Select<TSrc, T>(this IEnumerable<TSrc> src, Func<TSrc, T> select)
+        {
+            foreach (var i in src)
+            {
+                yield return select(i);
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> Select<TSrc, T>(this IEnumerable<TSrc> src, Func<TSrc, int, T> select)
+        {
+            var index = 0;
+            foreach (var i in src)
+            {
+                yield return select(i, index++);
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> Where<T>(this IEnumerable<T> src, Func<T, bool> res)
+        {
+            foreach (var i in src)
+            {
+                if (res(i)) yield return i;
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable IsNot<TType>(this IEnumerable src)
+        {
+            foreach (var i in src)
+            {
+                if (!(i is TType)) yield return i;
+            }
+        }
+
+        /// <summary>
+        /// Makes a copy of the current list with elements that is not of provided type.
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <typeparam name="TType"></typeparam>
+        /// <param name="src"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<TResult> IsNot<TResult, TType>(this List<TResult> src)
+        {
+            var newList = new List<TResult>();
+
+            foreach (var i in src)
+            {
+                if (!(i is TType))
+                {
+                    newList.Add(i);
+                }
+            }
+            return newList;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<TResult> IsNot<TResult, TType>(this TResult[] src)
+        {
+            foreach (var i in src)
+            {
+                if (!(i is TType))
+                {
+                    yield return i;
+                }
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T FirstOrDefault<T>(this T[] src, Func<T, bool> res = null)
+        {
+            if (src == null || src.Length == 0)
+                return default(T);
+
+            if (res == null)
+            {
+                return src[0];
+            }
+
+            foreach (var i in src)
+            {
+                if (res == null || res(i)) return i;
+            }
+
+            return default(T);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T FirstOrDefault<T>(this IReadOnlyList<T> src, Func<T, bool> res = null)
+        {
+            if (src == null || src.Count == 0)
+                return default(T);
+
+            if (res == null)
+            {
+                return src[0];
+            }
+
+            foreach (var i in src)
+            {
+                if (res == null || res(i)) return i;
+            }
+
+            return default(T);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T FirstOrDefault<T>(this IEnumerable<T> src, Func<T, bool> res = null)
+        {
+            foreach (var i in src)
+            {
+                if (res == null || res(i)) return i;
+            }
+
+            return default(T);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TOut[] SelectArray<TIn, TOut>(this IReadOnlyList<TIn> collection, Func<TIn, TOut> select)
+        {
+            var result = new TOut[collection.Count];
+            for (var i = 0; i < result.Length; ++i)
+            {
+                result[i] = select(collection[i]);
+            }
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T[] ToArray<T>(this ICollection<T> collection)
+        {
+            if (collection is T[] arr) return arr;
+            var items = new T[collection.Count];
+            collection.CopyTo(items, 0);
+            return items;
+        }
+
+        /// <summary>
+        /// EEEW! We need to enumerate the list twice and then make a copy. Don't use IEnumerable!!!
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection"></param>
+        /// <returns></returns>
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T[] ToArray<T>(this IEnumerable<T> collection)
+        {
+            var c = collection.Count();
+            var res = new T[c];
+            var i = 0;
+            foreach (var item in collection)
+            {
+                res[i++] = item;
+            }
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> ToList<T>(this IEnumerable<T> src)
+        {
+            if (src is List<T> list) return list;
+            if (src is IReadOnlyList<T> readOnlyList) return new List<T>(readOnlyList);
+            if (src is ICollection<T> collection) return new List<T>(collection);
+            if (src is T[] array) return new List<T>(array);
+            if (src is ISet<T> set) return new List<T>(set);
+
+            var res = new List<T>();
+            foreach (var i in src)
+            {
+                res.Add(i);
+            }
+
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        {
+            return new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        {
+            return new OrderedEnumerable<TSource, TKey>(source, keySelector, null, true);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<KeyValuePair<TKey, TValue>> ToKeyValuePair<TKey, TValue>(this IEnumerable<TValue> values, Func<TValue, TKey> keySelector, Func<TValue, TValue> valueSelector)
+        {
+            return values.Select(x => new KeyValuePair<TKey, TValue>(keySelector(x), valueSelector(x)));
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IReadOnlyList<double> Delta(this IList<double> newValue, IReadOnlyList<double> oldValue)
+        {
+            if (oldValue == null)
+            {
+                return new List<double>(newValue.Count);
+            }
+            if (newValue.Count != oldValue.Count)
+            {
+                return new List<double>(newValue.Count);
+            }
+
+            return newValue.Select((x, i) => x - oldValue[i]).ToList();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> Except<T>(this IEnumerable<T> items, T except)
+        {
+            return items.Where(x => !x.Equals(except));
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> Except<T>(this IEnumerable<T> items, IEnumerable<T> except)
+        {
+            foreach (var a in items)
+            {
+                foreach (var b in except)
+                {
+                    if (!a.Equals(b))
+                        yield return a;
+                }
+            }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Random<T>(this T[] items)
+        {
+            return items[UnityEngine.Random.Range(0, items.Length)];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Random<T>(this IReadOnlyList<T> items)
+        {
+            return items[UnityEngine.Random.Range(0, items.Count)];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Random<T>(this IEnumerable<T> items)
+        {
+            var selections = items.AsList();
+            return selections[UnityEngine.Random.Range(0, selections.Count)];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Weighted<T, T2>(this IReadOnlyList<T> items, Func<T, T2> weight)
+           where T2 : struct
+        {
+            var selections = items;
+
+            foreach (var sel in selections)
+            {
+                var ran = UnityEngine.Random.value;
+                var w = weight(sel);
+
+                if (w is float f && ran <= f)
+                {
+                    return sel;
+                }
+
+                if (w is int i && ran <= i)
+                {
+                    return sel;
+                }
+
+                if (w is short s && ran <= s)
+                {
+                    return sel;
+                }
+
+                if (w is decimal de && ran <= (double)de)
+                {
+                    return sel;
+                }
+
+                if (w is byte b && ran <= b)
+                {
+                    return sel;
+                }
+
+                if (w is double d && ran <= d)
+                {
+                    return sel;
+                }
+            }
+
+            return selections[UnityEngine.Random.Range(0, selections.Count)];
+        }
+
+        public abstract class OrderedEnumerable<TElement> : IEnumerable<TElement>
+        {
+            internal IEnumerable<TElement> source;
+            public IEnumerator<TElement> GetEnumerator()
+            {
+                Buffer<TElement> buffer = new Buffer<TElement>(source);
+                if (buffer.count > 0)
+                {
+                    EnumerableSorter<TElement> sorter = GetEnumerableSorter(null);
+                    int[] map = sorter.Sort(buffer.items, buffer.count);
+                    sorter = null;
+                    for (int i = 0; i < buffer.count; i++) yield return buffer.items[map[i]];
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement> next);
+        }
+
+        public class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
+        {
+            internal OrderedEnumerable<TElement> parent;
+            internal Func<TElement, TKey> keySelector;
+            internal IComparer<TKey> comparer;
+            internal bool descending;
+
+            public OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending)
+            {
+                this.source = source;
+                this.parent = null;
+                this.keySelector = keySelector;
+                this.comparer = comparer != null ? comparer : Comparer<TKey>.Default;
+                this.descending = descending;
+            }
+
+            public override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement> next)
+            {
+                EnumerableSorter<TElement> sorter = new EnumerableSorter<TElement, TKey>(keySelector, comparer, descending, next);
+                if (parent != null) sorter = parent.GetEnumerableSorter(sorter);
+                return sorter;
+            }
+        }
+
+        public abstract class EnumerableSorter<TElement>
+        {
+            public abstract void ComputeKeys(TElement[] elements, int count);
+
+            public abstract int CompareKeys(int index1, int index2);
+
+            public int[] Sort(TElement[] elements, int count)
+            {
+                ComputeKeys(elements, count);
+                int[] map = new int[count];
+                for (int i = 0; i < count; i++) map[i] = i;
+                QuickSort(map, 0, count - 1);
+                return map;
+            }
+
+            void QuickSort(int[] map, int left, int right)
+            {
+                do
+                {
+                    int i = left;
+                    int j = right;
+                    int x = map[i + ((j - i) >> 1)];
+                    do
+                    {
+                        while (i < map.Length && CompareKeys(x, map[i]) > 0) i++;
+                        while (j >= 0 && CompareKeys(x, map[j]) < 0) j--;
+                        if (i > j) break;
+                        if (i < j)
+                        {
+                            int temp = map[i];
+                            map[i] = map[j];
+                            map[j] = temp;
+                        }
+                        i++;
+                        j--;
+                    } while (i <= j);
+                    if (j - left <= right - i)
+                    {
+                        if (left < j) QuickSort(map, left, j);
+                        left = i;
+                    }
+                    else
+                    {
+                        if (i < right) QuickSort(map, i, right);
+                        right = j;
+                    }
+                } while (left < right);
+            }
+        }
+
+        public class EnumerableSorter<TElement, TKey> : EnumerableSorter<TElement>
+        {
+            internal Func<TElement, TKey> keySelector;
+            internal IComparer<TKey> comparer;
+            internal bool descending;
+            internal EnumerableSorter<TElement> next;
+            internal TKey[] keys;
+
+            public EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, EnumerableSorter<TElement> next)
+            {
+                this.keySelector = keySelector;
+                this.comparer = comparer;
+                this.descending = descending;
+                this.next = next;
+            }
+
+            public override void ComputeKeys(TElement[] elements, int count)
+            {
+                keys = new TKey[count];
+                for (int i = 0; i < count; i++) keys[i] = keySelector(elements[i]);
+                if (next != null) next.ComputeKeys(elements, count);
+            }
+
+            public override int CompareKeys(int index1, int index2)
+            {
+                int c = comparer.Compare(keys[index1], keys[index2]);
+                if (c == 0)
+                {
+                    if (next == null) return index1 - index2;
+                    return next.CompareKeys(index1, index2);
+                }
+                return descending ? -c : c;
+            }
+        }
+
+        public struct Buffer<TElement>
+        {
+            internal TElement[] items;
+            internal int count;
+
+            internal Buffer(IEnumerable<TElement> source)
+            {
+                TElement[] items = null;
+                int count = 0;
+                ICollection<TElement> collection = source as ICollection<TElement>;
+                if (collection != null)
+                {
+                    count = collection.Count;
+                    if (count > 0)
+                    {
+                        items = new TElement[count];
+                        collection.CopyTo(items, 0);
+                    }
+                }
+                else
+                {
+                    foreach (TElement item in source)
+                    {
+                        if (items == null)
+                        {
+                            items = new TElement[4];
+                        }
+                        else if (items.Length == count)
+                        {
+                            TElement[] newItems = new TElement[checked(count * 2)];
+                            Array.Copy(items, 0, newItems, 0, count);
+                            items = newItems;
+                        }
+                        items[count] = item;
+                        count++;
+                    }
+                }
+                this.items = items;
+                this.count = count;
+            }
+
+            internal TElement[] ToArray()
+            {
+                if (count == 0) return new TElement[0];
+                if (items.Length == count) return items;
+                TElement[] result = new TElement[count];
+                Array.Copy(items, 0, result, 0, count);
+                return result;
+            }
+        }
+    }
+}

@@ -14,11 +14,11 @@ public class TeleportHandler : MonoBehaviour
         if (!player) player = GetComponent<PlayerController>();
     }
 
-    public void Teleport(Vector3 position, bool ignoreParent)
+    public void Teleport(Vector3 position, bool ignoreParent, bool adjustPlayerToNavmesh)
     {
         if (!ignoreParent)
         {
-            Teleport(position);
+            Teleport(position, adjustPlayerToNavmesh);
             return;
         }
 
@@ -28,10 +28,10 @@ public class TeleportHandler : MonoBehaviour
         parent = null;
         player.transform.parent = null;
         player.transform.localPosition = Vector3.zero;
-        player.SetPosition(position);
+        player.SetPosition(position, adjustPlayerToNavmesh);
     }
 
-    public void Teleport(Vector3 position)
+    public void Teleport(Vector3 position, bool adjustPlayerToNavmesh = true)
     {
         // check if player has been removed
         // could have been kicked. *Looks at Solunae*
@@ -46,8 +46,7 @@ public class TeleportHandler : MonoBehaviour
         }
 
         player.taskTarget = null;
-
-        player.SetPosition(position);
+        player.SetPosition(position, adjustPlayerToNavmesh);
         player.GotoPosition(position);
         player.Lock();
 
@@ -63,5 +62,6 @@ public class TeleportHandler : MonoBehaviour
         player.InCombat = false;
         player.ClearAttackers();
         player.Island = islandManager.FindPlayerIsland(player);
+
     }
 }

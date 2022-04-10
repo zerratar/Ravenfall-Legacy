@@ -6,10 +6,10 @@ namespace RavenNest.SDK.Endpoints
     internal interface IGameServerConnection
     {
         event EventHandler OnReconnected;
-        Task<GamePacket> SendAsync(GamePacket packet);
-        Task<GamePacket> SendAsync(string id, object model);
-        void SendNoAwait(string id, object model);
-        void SendNoAwait(GamePacket packet);
+        Task<GamePacket> SendAsync(PlayerGamePacketRef packet);
+        Task<GamePacket> SendAsync(Guid sender, string id, object model);
+        void SendNoAwait(Guid sender, string id, object model, string type);
+        void SendNoAwait(PlayerGamePacketRef packet);
 
         void Register<TPacketHandler>(string packetId, TPacketHandler packetHandler)
             where TPacketHandler : GamePacketHandler;

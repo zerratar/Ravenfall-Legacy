@@ -7,7 +7,7 @@ public class ItemRemoveEventHandler : GameEventHandler<ItemRemove>
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player)
         {
-            Shinobytes.Debug.Log("No player with userid " + data.UserId + " when adding item.");
+            Shinobytes.Debug.Log("No player with userid " + data.UserId + " when removing item. (" + data.ItemId + ", " + data.Amount + ")");
             return;
         }
 

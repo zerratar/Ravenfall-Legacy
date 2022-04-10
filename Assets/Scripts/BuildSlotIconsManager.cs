@@ -31,7 +31,7 @@ public class BuildSlotIconsManager : MonoBehaviour
 
     private void Update()
     {
-        if (Time.frameCount % 15 == 0)
+        if (GameSystems.frameCount % 15 == 0)
         {
             UpdatePlayerState();
         }

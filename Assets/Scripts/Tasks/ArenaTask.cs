@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using Shinobytes.Linq;
 using UnityEngine;
 
 public class ArenaTask : ChunkTask
@@ -39,7 +39,7 @@ public class ArenaTask : ChunkTask
 
         var attackers = player.GetAttackers();
         var attackerTarget = attackers
-            .Cast<PlayerController>()
+            .OfType<PlayerController>()
             .Where(atk => !atk.GetStats().IsDead)
             .OrderBy(atk => Vector3.Distance(player.Position, atk.Position))
             .FirstOrDefault();

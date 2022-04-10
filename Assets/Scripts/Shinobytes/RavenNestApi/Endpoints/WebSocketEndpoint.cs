@@ -1,29 +1,28 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
 
 namespace RavenNest.SDK.Endpoints
 {
+    public class Update<T>
+    {
+        public T Data;
+        public DateTime Updated;
+        public Update(T data)
+        {
+            Data = data;
+            Updated = DateTime.UtcNow;
+        }
+    }
+
     public class WebSocketEndpoint : IWebSocketEndpoint
     {
-        private ConcurrentDictionary<string, CharacterStateUpdate> lastSavedState
-            = new ConcurrentDictionary<string, CharacterStateUpdate>();
-
-        private ConcurrentDictionary<string, CharacterSkillUpdate> lastSavedSkills
-            = new ConcurrentDictionary<string, CharacterSkillUpdate>();
-
-        private ConcurrentDictionary<Guid, CharacterExpUpdate> lastSavedExp
-            = new ConcurrentDictionary<Guid, CharacterExpUpdate>();
-
-        private ConcurrentDictionary<string, DateTime> lastSavedStateTime
-            = new ConcurrentDictionary<string, DateTime>();
-        private ConcurrentDictionary<string, DateTime> lastSavedSkillsTime
-            = new ConcurrentDictionary<string, DateTime>();
-
-        private const double ForceSaveInterval = 5d;
+        private Dictionary<Guid, Update<CharacterStateUpdate>> lastSavedState = new Dictionary<Guid, Update<CharacterStateUpdate>>();
+        private Dictionary<Guid, Update<CharacterSkillUpdate>> lastSavedSkills = new Dictionary<Guid, Update<CharacterSkillUpdate>>();
+        private Dictionary<Guid, Update<CharacterExpUpdate>> lastSavedExp = new Dictionary<Guid, Update<CharacterExpUpdate>>();
 
         private readonly IGameServerConnection connection;
         private readonly IRavenNestClient client;
@@ -57,7 +56,7 @@ namespace RavenNest.SDK.Endpoints
 
             try
             {
-                connection.SendNoAwait("sync_client", new ClientSyncUpdate { ClientVersion = Application.version });
+                connection.SendNoAwait(Guid.Empty, "sync_client", new ClientSyncUpdate { ClientVersion = Application.version }, nameof(ClientSyncUpdate));
             }
             catch
             {
@@ -109,7 +108,7 @@ namespace RavenNest.SDK.Endpoints
                     Tripped = e.Flagged,
                     UserName = player.TwitchUser.Username
                 };
-                connection.SendNoAwait("update_user_session_stats", data);
+                connection.SendNoAwait(player.Id, "update_user_session_stats", data, nameof(PlayerSessionActivity));
                 return Task.CompletedTask;
             }
             catch
@@ -118,44 +117,48 @@ namespace RavenNest.SDK.Endpoints
             }
         }
 
-        public async Task<bool> SaveActiveSkillAsync(PlayerController player)
+        public bool SaveActiveSkill(PlayerController player)
         {
             if (player.IsBot && player.UserId.StartsWith("#"))
             {
                 return true;
             }
 
-            return await Task.Run(() =>
+            try
             {
-                try
+                var activeSkill = player.GetActiveSkillStat();
+                if (activeSkill == null)
                 {
-                    var activeSkill = player.GetActiveSkillStat();
-                    if (activeSkill == null)
+                    return true;
+                }
+
+                var characterUpdate = new Update<CharacterExpUpdate>(new CharacterExpUpdate
+                {
+                    SkillIndex = Skills.IndexOf(player.Stats, activeSkill), // (int)activeSkill.Type
+                    Level = activeSkill.Level,
+                    Experience = activeSkill.Experience,
+                    CharacterId = player.Id
+                });
+
+                if (lastSavedExp.TryGetValue(player.Id, out var lastUpdate))
+                {
+                    if (!RequiresUpdate(lastUpdate, characterUpdate))
                     {
                         return true;
                     }
-
-                    var characterUpdate = new CharacterExpUpdate
-                    {
-                        SkillIndex = Skills.IndexOf(player.Stats, activeSkill),
-                        Level = activeSkill.Level,
-                        Experience = activeSkill.Experience,
-                        CharacterId = player.Id
-                    };
-
-                    connection.SendNoAwait("update_character_exp", characterUpdate);
-                    lastSavedExp[player.Id] = characterUpdate;
-                    return true;
                 }
-                catch (Exception exc)
-                {
-                    Shinobytes.Debug.LogError("Saving " + player?.Name + " failed. " + exc.Message);
-                    return false;
-                }
-            });
 
+                connection.SendNoAwait(player.Id, "update_character_exp", characterUpdate, nameof(CharacterExpUpdate));
+                lastSavedExp[player.Id] = characterUpdate;
+                return true;
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("Saving " + player?.Name + " failed. " + exc.Message);
+                return false;
+            }
         }
-        public async Task<bool> SavePlayerSkillsAsync(PlayerController player)
+        public bool SavePlayerSkills(PlayerController player)
         {
             if (player == null || string.IsNullOrEmpty(player.UserId))
             {
@@ -172,107 +175,42 @@ namespace RavenNest.SDK.Endpoints
             {
                 return false;
             }
-
-            return await Task.Run(() =>
+            try
             {
-                try
+                //if (client.Desynchronized) return false;
+                var characterUpdate = new Update<CharacterSkillUpdate>(new CharacterSkillUpdate
                 {
-                    //if (client.Desynchronized) return false;
-                    var characterUpdate = new CharacterSkillUpdate
+                    Level = state.Level,
+                    Experience = state.Experience,
+                    UserId = state.UserId,
+                    CharacterId = state.CharacterId
+                });
+
+                if (lastSavedSkills.TryGetValue(player.Id, out var lastUpdate))
+                {
+                    if (!RequiresUpdate(lastUpdate, characterUpdate))
                     {
-                        Level = state.Level,
-                        Experience = state.Experience,
-                        UserId = state.UserId,
-                        CharacterId = state.CharacterId
-                    };
-
-                    //if (lastSavedSkills.TryGetValue(player.UserId, out var lastUpdate))
-                    //{
-                    //    if (!RequiresUpdate(lastUpdate, characterUpdate))
-                    //    {
-                    //        return true;
-                    //    }
-                    //}
-
-                    connection.SendNoAwait("update_character_skills", characterUpdate);
-                    //if (response != null && response.TryGetValue<bool>(out var result) && result)
-                    //{
-                    //    lastSavedSkills[player.UserId] = characterUpdate;
-                    //    lastSavedSkillsTime[player.UserId] = DateTime.UtcNow;
-                    //    return true;
-                    //}
-                    lastSavedSkills[player.UserId] = characterUpdate;
-                    lastSavedSkillsTime[player.UserId] = DateTime.UtcNow;
-                    return true;
+                        return true;
+                    }
                 }
-                catch (Exception exc)
-                {
-                    Shinobytes.Debug.LogError("Saving " + player?.Name + " failed. " + exc.Message);
-                    return false;
-                }
-            });
+
+                connection.SendNoAwait(player.Id, "update_character_skills", characterUpdate, nameof(CharacterSkillUpdate));
+                lastSavedSkills[player.Id] = characterUpdate;
+                return true;
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("Saving " + player?.Name + " failed. " + exc.Message);
+                return false;
+            }
         }
-
-        //public void SendPlayerLoyaltyData(TwitchCheer d)
-        //{
-        //    var data = new UserLoyaltyUpdate
-        //    {
-        //        IsModerator = d.IsModerator,
-        //        IsSubscriber = d.IsSubscriber,
-        //        NewCheeredBits = d.Bits,
-        //        UserName = d.UserName,
-        //        IsVip = d.IsVip,
-        //        NewGiftedSubs = 0,
-        //        UserId = d.UserId
-        //    };
-        //    connection.SendNoAwait("update_user_loyalty", data);
-        //}
-
-        //public void SendPlayerLoyaltyData(TwitchSubscription d)
-        //{
-        //    var data = new UserLoyaltyUpdate
-        //    {
-        //        IsModerator = d.IsModerator,
-        //        IsSubscriber = d.IsSubscriber,
-        //        NewCheeredBits = 0,
-        //        UserName = d.UserName,
-        //        NewGiftedSubs = d.ReceiverUserId == null || d.ReceiverUserId == d.UserId ? 0 : 1,
-        //        UserId = d.UserId
-        //    };
-        //    connection.SendNoAwait("update_user_loyalty", data);
-        //}
-
-        //public void SendPlayerLoyaltyData(PlayerController player)
-        //{
-        //    if (player == null || !player)
-        //    {
-        //        return;
-        //    }
-        //    if (player.IsBot && player.UserId.StartsWith("#"))
-        //    {
-        //        return;
-        //    }
-        //    var data = new UserLoyaltyUpdate
-        //    {
-        //        CharacterId = player.Id,
-        //        IsModerator = player.IsModerator,
-        //        IsSubscriber = player.IsSubscriber,
-        //        IsVip = player.IsVip,
-        //        NewCheeredBits = player.BitsCheered,
-        //        NewGiftedSubs = player.GiftedSubs,
-        //        UserId = player.UserId
-        //    };
-        //    player.GiftedSubs = 0;
-        //    player.BitsCheered = 0;
-        //    connection.SendNoAwait("update_user_loyalty", data);
-        //}
 
         public void SyncTimeAsync(TimeSpan delta, DateTime time, DateTime serverTime)
         {
-            connection.SendNoAwait("sync_time", new TimeSyncUpdate { Delta = delta, LocalTime = time, ServerTime = serverTime });
+            connection.SendNoAwait(Guid.Empty, "sync_time", new TimeSyncUpdate { Delta = delta, LocalTime = time, ServerTime = serverTime }, nameof(TimeSyncUpdate));
         }
 
-        public async Task<bool> SavePlayerStateAsync(PlayerController player)
+        public bool SavePlayerState(PlayerController player)
         {
             if (player == null || !player || string.IsNullOrEmpty(player.UserId))
                 return false;
@@ -303,76 +241,93 @@ namespace RavenNest.SDK.Endpoints
                 }
             }
 
-            return await Task.Run(() =>
+            if (player.Ferry.OnFerry)
             {
-                var characterUpdate = new CharacterStateUpdate(
-                    player.UserId,
-                    player.Id,
-                    player.Stats.Health.CurrentValue,
-                    island,
-                    player.Duel.InDuel ? player.Duel.Opponent?.UserId ?? "" : "",
-                    player.Raid.InRaid,
-                    player.Arena.InArena,
-                    player.Dungeon.InDungeon,
-                    player.Onsen.InOnsen,
-                    player.GetTask().ToString(),
-                    string.Join(",", player.GetTaskArguments()),
-                    pos.x,
-                    pos.y,
-                    pos.z);
+                island = null;
+            }
 
-                if (lastSavedState.TryGetValue(player.UserId, out var lastUpdate))
+            var characterUpdate = new Update<CharacterStateUpdate>(
+               new CharacterStateUpdate(
+                           player.UserId,
+                           player.Id,
+                           player.Stats.Health.CurrentValue,
+                           island,
+                           player.Duel.InDuel ? player.Duel.Opponent?.UserId ?? "" : "",
+                           player.Raid.InRaid,
+                           player.Arena.InArena,
+                           player.Dungeon.InDungeon,
+                           player.Onsen.InOnsen && !player.InCombat && !player.Ferry.OnFerry,
+                           player.CurrentTaskName,
+                           player.taskArgument,//string.Join(",", player.GetTaskArguments()),
+                           pos.x,
+                           pos.y,
+                           pos.z)
+            );
+
+            if (lastSavedState.TryGetValue(player.Id, out var lastUpdate))
+            {
+                if (!RequiresUpdate(lastUpdate, characterUpdate))
                 {
-                    if (!RequiresUpdate(lastUpdate, characterUpdate))
-                    {
-                        return false;
-                    }
+                    return true;
                 }
+            }
 
-                connection.SendNoAwait("update_character_state", characterUpdate);
-                lastSavedState[player.UserId] = characterUpdate;
-                lastSavedStateTime[player.UserId] = DateTime.UtcNow;
-                return true;
-            });
+            connection.SendNoAwait(player.Id, "update_character_state", characterUpdate, nameof(CharacterStateUpdate));
+            lastSavedState[player.Id] = characterUpdate;
+            return true;
         }
 
-        private bool RequiresUpdate(CharacterExpUpdate a, CharacterExpUpdate b)
+        private bool RequiresUpdate(Update<CharacterExpUpdate> v0, Update<CharacterExpUpdate> v1)
         {
-            return b.Level > a.Level || b.Experience > a.Experience;
+            var a = v0.Data;
+            var b = v1.Data;
+
+            return (v1.Updated - v0.Updated) >= TimeSpan.FromSeconds(5) || b.Level > a.Level || b.Experience > a.Experience || a.SkillIndex != b.SkillIndex;
         }
 
-        private bool RequiresUpdate(CharacterStateUpdate oldState, CharacterStateUpdate newState)
+        private bool RequiresUpdate(Update<CharacterStateUpdate> v0, Update<CharacterStateUpdate> v1)
         {
-            if (!lastSavedStateTime.TryGetValue(oldState.UserId, out var date) ||
-                DateTime.UtcNow - date > TimeSpan.FromSeconds(ForceSaveInterval))
-                return true;
-
+            var oldState = v0.Data;
+            var newState = v1.Data;
             if (oldState.Health != newState.Health) return true;
             if (oldState.InArena != newState.InArena) return true;
             if (oldState.InRaid != newState.InRaid) return true;
             if (oldState.Island != newState.Island) return true;
-            if (oldState.Task != newState.Task) return true;
-            if (oldState.TaskArgument != newState.TaskArgument) return true;
-            return oldState.DuelOpponent != newState.DuelOpponent;
+            if (oldState.InOnsen != newState.InOnsen) return true;
+            if (NotEquals(oldState.Task, newState.Task)) return true;
+            if (NotEquals(oldState.TaskArgument, newState.TaskArgument)) return true;
+            if (NotEquals(oldState.DuelOpponent, newState.DuelOpponent)) return true;
+            if (v1.Updated - v0.Updated >= TimeSpan.FromSeconds(5)) return true;
+            return false;
+            //return !lastSavedStateTime.TryGetValue(oldState.CharacterId, out var date) || DateTime.UtcNow - date >= TimeSpan.FromSeconds(ForceSaveInterval);
         }
 
-        //private bool RequiresUpdate(CharacterSkillUpdate oldState, CharacterSkillUpdate newState)
-        //{
-        //    if (!lastSavedSkillsTime.TryGetValue(oldState.UserId, out var date))
-        //        return true;
 
-        //    if (DateTime.UtcNow - date < TimeSpan.FromSeconds(ForceSaveInterval))
-        //        return false; // don't save yet or we will be saving on each update.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Equals(string a, string b)
+        {
+            return string.CompareOrdinal(a, b) == 0;
+        }
 
-        //    for (var i = 0; i < oldState.Experience.Length; ++i)
-        //    {
-        //        var oldExp = oldState.Experience[i];
-        //        var newExp = newState.Experience[i];
-        //        if (oldExp != newExp) return true;
-        //    }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool NotEquals(string a, string b)
+        {
+            return string.CompareOrdinal(a, b) != 0;
+        }
+        private bool RequiresUpdate(Update<CharacterSkillUpdate> v0, Update<CharacterSkillUpdate> v1)
+        {
+            var oldState = v0.Data;
+            var newState = v1.Data;
+            var osExp = oldState.Experience;
+            var nsExp = newState.Experience;
+            for (var i = 0; i < osExp.Length; ++i)
+            {
+                if (osExp[i] != nsExp[i]) return true;
+            }
 
-        //    return false;
-        //}
+            //return !lastSavedSkillsTime.TryGetValue(oldState.CharacterId, out var date) || DateTime.UtcNow - date >= TimeSpan.FromSeconds(ForceSaveInterval);
+            return true;
+        }
 
         public void Close()
         {
@@ -383,12 +338,6 @@ namespace RavenNest.SDK.Endpoints
         {
             ForceReconnecting = true;
             connection.Reconnect();
-        }
-        public class Position
-        {
-            public float X { get; set; }
-            public float Y { get; set; }
-            public float Z { get; set; }
         }
     }
 }

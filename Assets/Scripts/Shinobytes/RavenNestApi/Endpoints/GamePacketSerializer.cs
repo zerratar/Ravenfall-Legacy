@@ -46,6 +46,37 @@ namespace RavenNest.SDK.Endpoints
             return packet;
         }
 
+        public void Serialize(BinaryWriter bw, GamePacket packet)
+        {
+            bw.Write(packet.Id);
+            bw.Write(packet.Type);
+
+            var correlationBytes = packet.CorrelationId.ToByteArray();
+            bw.Write(correlationBytes.Length);
+            bw.Write(correlationBytes);
+
+            var body = binarySerializer.Serialize(packet.Data);
+            bw.Write(body.Length);
+            bw.Write(body);
+            bw.Flush();
+        }
+
+        public byte[] SerializeMany(IReadOnlyList<GamePacket> packetsToSend)
+        {
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter(ms))
+            {
+                bw.Write("collection");
+                bw.Write(packetsToSend.Count);
+                foreach (var packet in packetsToSend)
+                {
+                    Serialize(bw, packet);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
         public byte[] Serialize(GamePacket packet)
         {
             using (var ms = new MemoryStream())

@@ -1,6 +1,4 @@
 ﻿using System.Linq;
-using System.Text;
-using UnityEngine;
 
 public class PlayerStats : PacketHandler<PlayerStatsRequest>
 {
@@ -30,22 +28,14 @@ public class PlayerStats : PacketHandler<PlayerStatsRequest>
                 return;
             }
 
-            SkillStat skill = null;
-            var csi = player.GetCombatTypeFromArgs(data.Skill);
-            if (csi != -1)
+            var s = SkillUtilities.ParseSkill(data.Skill.ToLower());
+            if (s == Skill.None)
             {
-                skill = player.GetCombatSkill(csi);
+                client.SendMessage(player.PlayerName, "No skill found matching: {skillName}", data.Skill);
+                return;
             }
 
-            if (skill == null)
-            {
-                var cs = player.GetSkillTypeFromArgs(data.Skill);
-                if (cs != -1)
-                {
-                    skill = player.GetSkill((TaskSkill)cs);
-                }
-            }
-
+            var skill = player.GetSkill(s);
             if (skill != null)
             {
                 var expRequired = GameMath.ExperienceForLevel(skill.Level + 1);

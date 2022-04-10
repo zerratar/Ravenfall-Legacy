@@ -5,8 +5,8 @@ public class FadeInOut : MonoBehaviour
 {
     [SerializeField] private float fadeTime = 1f;
     [SerializeField] private AnimationCurve fadeCurve;
+    [SerializeField] private CanvasGroup canvasGroup;
 
-    private CanvasGroup canvasGroup;
     private float fadeTimer;
     private bool sentMidPoint;
     private bool sentCompleted;
@@ -24,7 +24,7 @@ public class FadeInOut : MonoBehaviour
         fadeTimer = 0;
         try
         {
-            canvasGroup = GetComponent<CanvasGroup>();
+            if (!canvasGroup) canvasGroup = GetComponent<CanvasGroup>();
             if (canvasGroup != null && fadeCurve != null && canvasGroup)
             {
                 canvasGroup.alpha = fadeCurve.Evaluate(0);
@@ -41,6 +41,7 @@ public class FadeInOut : MonoBehaviour
         if (broken || !canvasGroup || canvasGroup == null || fadeCurve == null)
             return;
 
+        gameObject.SetActive(true);
         FadeActive = true;
         sentMidPoint = false;
         sentCompleted = false;

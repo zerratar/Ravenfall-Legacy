@@ -16,6 +16,6 @@ public class PetRacingContender : MonoBehaviour
     public void OnDestroy()
     {
         if (!nameTagManager) return;
-        nameTagManager.Remove(this.transform);
+        nameTagManager.Remove(this.nameTag);
     }
 }

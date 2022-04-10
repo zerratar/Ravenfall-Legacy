@@ -155,11 +155,15 @@
     public const string MSG_TRAVEL_ARENA = "You cannot travel when participating in the arena.";
     public const string MSG_TRAVEL_DUNGEON = "You cannot travel when in the dungeon.";
 
+
+    public const string MSG_HIGHEST_SKILL_NO_PLAYERS = "Seems like no one is playing.";
+
     public const string MSG_HIGHEST_SKILL = "{player} has the highest level {skillName} with level {level}.";
     public const string MSG_HIGHEST_COMBAT = "{player} has the highest combat level with {combatLevel}.";
     public const string MSG_HIGHEST_TOTAL = "{player} has the highest total level with {level}.";
 
     public const string MSG_VILLAGE_BOOST = "Village is level {townHallLevel}, active boosts {activeBoosts}";
+    public const string MSG_VILLAGE_BOOST_NO_BOOST = "Village is level {townHallLevel}, without any active boost.";
     public const string MSG_VILLAGE_UPDATED = "You've changed the village target to {targetType}, active boosts {activeBoosts}";
 
     public const string MSG_HIGHSCORE_RANK = "You're at rank #{rank}";

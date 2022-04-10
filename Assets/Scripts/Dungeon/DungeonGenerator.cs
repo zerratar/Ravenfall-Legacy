@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using Shinobytes.Linq;
 using Tessera;
 using UnityEngine;
 using UnityEngine.AI;
@@ -346,7 +346,7 @@ public class DungeonGenerator : MonoBehaviour
         // 2. The Boss Room connector cannot be used after the L Shape
         //    So the last shape must be the cube
 
-        var rooms = availableRooms.Where(x => x.RoomType == DungeonRoomType.Room && !x.BossConnector).ToList();
+        var rooms = availableRooms.AsList(x => x.RoomType == DungeonRoomType.Room && !x.BossConnector);
         var lastWasL = false;
         var lastExitPoint = start.ExitPoint.position;
         var lastRotation = Vector3.zero;

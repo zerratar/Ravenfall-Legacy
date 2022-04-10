@@ -5,6 +5,7 @@ using System.Text;
 
 public static class Utility
 {
+  
     public static string AddSpacesToSentence(string text)
     {
         if (string.IsNullOrEmpty(text))

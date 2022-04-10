@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class SettingsMenuView : MenuView
 {
+    public const string SettingsName_PostProcessing = "PostProcessing";
     public const string SettingsName_PotatoMode = "PotatoMode";
     public const string SettingsName_AutoPotatoMode = "AutoPotatoMode";
     public const string SettingsName_RealTimeDayNightCycle = "RealTimeDayNightCycle";
@@ -37,6 +38,7 @@ public class SettingsMenuView : MenuView
     [Header("Graphics Settings")]
     [SerializeField] private GraphicsSettings graphics;
     [SerializeField] private Toggle potatoModeToggle = null;
+    [SerializeField] private Toggle postProcessingToggle = null;
     [SerializeField] private Toggle autoPotatoModeToggle = null;
     [SerializeField] private Toggle realtimeDayNightCycle = null;
     [SerializeField] private Slider dpiSlider = null;
@@ -64,28 +66,42 @@ public class SettingsMenuView : MenuView
 
     public static TimeSpan GetPlayerCacheExpiryTime()
     {
-        return PlayerCacheExpiry[PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1)];
+        return PlayerCacheExpiry[PlayerSettings.Instance.PlayerCacheExpiryTime ?? 2]; // PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1)
     }
 
     private void Awake()
     {
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
 
-        potatoModeToggle.isOn = PlayerPrefs.GetInt(SettingsName_PotatoMode, gameManager.PotatoMode && !gameManager.AutoPotatoMode ? 1 : 0) > 0;
-        autoPotatoModeToggle.isOn = PlayerPrefs.GetInt(SettingsName_AutoPotatoMode, gameManager.AutoPotatoMode ? 1 : 0) > 0;
-        realtimeDayNightCycle.isOn = PlayerPrefs.GetInt(SettingsName_RealTimeDayNightCycle, gameManager.RealtimeDayNightCycle ? 1 : 0) > 0;
-        playerListSizeSlider.value = PlayerPrefs.GetFloat(SettingsName_PlayerListSize, gameManager.PlayerList.Bottom);
-        playerListScaleSlider.value = PlayerPrefs.GetFloat(SettingsName_PlayerListScale, gameManager.PlayerList.Scale);
+        var settings = PlayerSettings.Instance;
 
-        dpiSlider.value = PlayerPrefs.GetFloat(SettingsName_DPIScale, 1f);
-        raidHornVolumeSlider.value = PlayerPrefs.GetFloat(SettingsName_RaidHornVolume, gameManager.Raid.Notifications.volume);
-        musicVolumeSlider.value = PlayerPrefs.GetFloat(SettingsName_MusicVolume, gameManager.Music.volume);
+        postProcessingToggle.isOn = settings.PostProcessing.GetValueOrDefault(gameManager.UsePostProcessingEffects);
+        potatoModeToggle.isOn = settings.PotatoMode.GetValueOrDefault(gameManager.PotatoMode && !gameManager.AutoPotatoMode);
+        autoPotatoModeToggle.isOn = settings.AutoPotatoMode.GetValueOrDefault(gameManager.AutoPotatoMode);
+        realtimeDayNightCycle.isOn = settings.RealTimeDayNightCycle.GetValueOrDefault(gameManager.RealtimeDayNightCycle);
+        playerListSizeSlider.value = settings.PlayerListSize.GetValueOrDefault(gameManager.PlayerList.Bottom);
+        playerListScaleSlider.value = settings.PlayerListScale.GetValueOrDefault(gameManager.PlayerList.Scale);
+        dpiSlider.value = settings.DPIScale.GetValueOrDefault(1f);
+        raidHornVolumeSlider.value = settings.RaidHornVolume.GetValueOrDefault(gameManager.Raid.Notifications.volume);
+        musicVolumeSlider.value = settings.MusicVolume.GetValueOrDefault(gameManager.Music.volume);
+        playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(1);
+        boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
+        alertPlayerCacheExpirationToggle.isOn = settings.AlertExpiredStateCacheInChat.GetValueOrDefault(gameManager.AlertExpiredStateCacheInChat);
+        itemDropMessageDropdown.value = settings.ItemDropMessageType.GetValueOrDefault((int)gameManager.ItemDropMessageSettings);
 
-        playerCacheExpiryTimeDropdown.value = PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1);
-        boostRequirementDropdown.value = PlayerPrefs.GetInt(SettingsName_PlayerBoostRequirement, gameManager.PlayerBoostRequirement);
-
-        alertPlayerCacheExpirationToggle.isOn = PlayerPrefs.GetInt(SettingsName_AlertExpiredStateCacheInChat, gameManager.AlertExpiredStateCacheInChat ? 1 : 0) == 1;
-        itemDropMessageDropdown.value = PlayerPrefs.GetInt(SettingsName_ItemDropMessageType, (int)gameManager.ItemDropMessageSettings);
+        //postProcessingToggle.isOn = PlayerPrefs.GetInt(SettingsName_PostProcessing, gameManager.UsePostProcessingEffects ? 1 : 0) > 0;
+        //potatoModeToggle.isOn = PlayerPrefs.GetInt(SettingsName_PotatoMode, gameManager.PotatoMode && !gameManager.AutoPotatoMode ? 1 : 0) > 0;
+        //autoPotatoModeToggle.isOn = PlayerPrefs.GetInt(SettingsName_AutoPotatoMode, gameManager.AutoPotatoMode ? 1 : 0) > 0;
+        //realtimeDayNightCycle.isOn = PlayerPrefs.GetInt(SettingsName_RealTimeDayNightCycle, gameManager.RealtimeDayNightCycle ? 1 : 0) > 0;
+        //playerListSizeSlider.value = PlayerPrefs.GetFloat(SettingsName_PlayerListSize, gameManager.PlayerList.Bottom);
+        //playerListScaleSlider.value = PlayerPrefs.GetFloat(SettingsName_PlayerListScale, gameManager.PlayerList.Scale);
+        //dpiSlider.value = PlayerPrefs.GetFloat(SettingsName_DPIScale, 1f);
+        //raidHornVolumeSlider.value = PlayerPrefs.GetFloat(SettingsName_RaidHornVolume, gameManager.Raid.Notifications.volume);
+        //musicVolumeSlider.value = PlayerPrefs.GetFloat(SettingsName_MusicVolume, gameManager.Music.volume);
+        //playerCacheExpiryTimeDropdown.value = PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1);
+        //boostRequirementDropdown.value = PlayerPrefs.GetInt(SettingsName_PlayerBoostRequirement, gameManager.PlayerBoostRequirement);
+        //alertPlayerCacheExpirationToggle.isOn = PlayerPrefs.GetInt(SettingsName_AlertExpiredStateCacheInChat, gameManager.AlertExpiredStateCacheInChat ? 1 : 0) == 1;
+        //itemDropMessageDropdown.value = PlayerPrefs.GetInt(SettingsName_ItemDropMessageType, (int)gameManager.ItemDropMessageSettings);
 
         //QualitySettings.resolutionScalingFixedDPIFactor = dpiSlider.value;
         SetResolutionScale(dpiSlider.value);
@@ -111,20 +127,39 @@ public class SettingsMenuView : MenuView
 
     protected override void OnChangesApplied()
     {
-        PlayerPrefs.SetInt(SettingsName_PotatoMode, potatoModeToggle.isOn ? 1 : 0);
-        PlayerPrefs.SetInt(SettingsName_AutoPotatoMode, autoPotatoModeToggle.isOn ? 1 : 0);
-        PlayerPrefs.SetInt(SettingsName_RealTimeDayNightCycle, realtimeDayNightCycle.isOn ? 1 : 0);
-        PlayerPrefs.SetFloat(SettingsName_PlayerListSize, playerListSizeSlider.value);
-        PlayerPrefs.SetFloat(SettingsName_PlayerListScale, playerListScaleSlider.value);
-        PlayerPrefs.SetFloat(SettingsName_RaidHornVolume, raidHornVolumeSlider.value);
-        PlayerPrefs.SetFloat(SettingsName_MusicVolume, musicVolumeSlider.value);
-        PlayerPrefs.SetFloat(SettingsName_DPIScale, dpiSlider.value);
+        var settings = PlayerSettings.Instance;
 
-        PlayerPrefs.SetInt(SettingsName_PlayerBoostRequirement, boostRequirementDropdown.value);
-        PlayerPrefs.SetInt(SettingsName_PlayerCacheExpiryTime, playerCacheExpiryTimeDropdown.value);
+        settings.PotatoMode = potatoModeToggle.isOn;
+        settings.PostProcessing = postProcessingToggle.isOn;
+        settings.AutoPotatoMode = autoPotatoModeToggle.isOn;
+        settings.RealTimeDayNightCycle = realtimeDayNightCycle.isOn;
+        settings.PlayerListSize = playerListSizeSlider.value;
+        settings.PlayerListScale = playerListScaleSlider.value;
+        settings.RaidHornVolume = raidHornVolumeSlider.value;
+        settings.MusicVolume = musicVolumeSlider.value;
+        settings.DPIScale = dpiSlider.value;
+        settings.PlayerBoostRequirement = boostRequirementDropdown.value;
+        settings.PlayerCacheExpiryTime = playerCacheExpiryTimeDropdown.value;
+        settings.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
+        settings.ItemDropMessageType = itemDropMessageDropdown.value;
 
-        PlayerPrefs.SetInt(SettingsName_AlertExpiredStateCacheInChat, alertPlayerCacheExpirationToggle.isOn ? 1 : 0);
-        PlayerPrefs.SetInt(SettingsName_ItemDropMessageType, itemDropMessageDropdown.value);
+        PlayerSettings.Save();
+
+        //PlayerPrefs.SetInt(SettingsName_PotatoMode, potatoModeToggle.isOn ? 1 : 0);
+        //PlayerPrefs.SetInt(SettingsName_PostProcessing, postProcessingToggle.isOn ? 1 : 0);
+        //PlayerPrefs.SetInt(SettingsName_AutoPotatoMode, autoPotatoModeToggle.isOn ? 1 : 0);
+        //PlayerPrefs.SetInt(SettingsName_RealTimeDayNightCycle, realtimeDayNightCycle.isOn ? 1 : 0);
+        //PlayerPrefs.SetFloat(SettingsName_PlayerListSize, playerListSizeSlider.value);
+        //PlayerPrefs.SetFloat(SettingsName_PlayerListScale, playerListScaleSlider.value);
+        //PlayerPrefs.SetFloat(SettingsName_RaidHornVolume, raidHornVolumeSlider.value);
+        //PlayerPrefs.SetFloat(SettingsName_MusicVolume, musicVolumeSlider.value);
+        //PlayerPrefs.SetFloat(SettingsName_DPIScale, dpiSlider.value);
+        //PlayerPrefs.SetInt(SettingsName_PlayerBoostRequirement, boostRequirementDropdown.value);
+        //PlayerPrefs.SetInt(SettingsName_PlayerCacheExpiryTime, playerCacheExpiryTimeDropdown.value);
+        //PlayerPrefs.SetInt(SettingsName_AlertExpiredStateCacheInChat, alertPlayerCacheExpirationToggle.isOn ? 1 : 0);
+        //PlayerPrefs.SetInt(SettingsName_ItemDropMessageType, itemDropMessageDropdown.value);
+        //PlayerPrefs.Save();
+
     }
 
     public void DisconnectFromServer()
@@ -169,6 +204,10 @@ public class SettingsMenuView : MenuView
     public void OnRealTimeDayNightCycleChanged()
     {
         gameManager.RealtimeDayNightCycle = realtimeDayNightCycle.isOn;
+    }
+    public void OnPostProcessingEffectsChanged()
+    {
+        gameManager.UsePostProcessingEffects = postProcessingToggle.isOn;
     }
     public void OnBoostRequirementChanged(int val)
     {

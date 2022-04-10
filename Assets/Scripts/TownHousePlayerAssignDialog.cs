@@ -31,7 +31,7 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
 
     private void Update()
     {
-        if (Time.frameCount % 10 == 0)
+        if (GameSystems.frameCount % 10 == 0)
         {
             var players = gameManager.Players.GetAllPlayers();
             if (lastPlayerCount != players.Count)

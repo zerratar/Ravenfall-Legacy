@@ -17,31 +17,19 @@
             return;
         }
 
-        var taskType = player.GetTask();
-        if (taskType != TaskType.None)
-        {
-            string skill = "";
-            if (taskType == TaskType.Fighting)
-            {
-                var args = player.GetTaskArguments();
-                var skillIndex = player.GetCombatTypeFromArgs(args);
-                if (skillIndex == 3)
-                {
-                    skill = "all";
-                }
-                else if (skillIndex >= 0)
-                {
-                    skill = player.GetCombatSkill(skillIndex)?.Name;
-                }
-            }
-            else
-            {
-                skill = taskType.ToString();
-            }
+        //var taskType = player.GetTask();
+        //if (taskType != TaskType.None)
 
-            if (!string.IsNullOrEmpty(skill))
+        var skill = player.GetActiveSkillStat();
+        if (skill != null)
+        {
+            var skillName = skill.Name;
+            if (skill.Type == Skill.Health)
+                skillName = "All";
+
+            if (!string.IsNullOrEmpty(skillName))
             {
-                client.SendMessage(data.Username, Localization.MSG_TRAINING, skill);
+                client.SendMessage(data.Username, Localization.MSG_TRAINING, skillName);
                 return;
             }
         }

@@ -170,6 +170,11 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public void EndRaid(bool bossKilled, bool timeout)
     {
+        if (!bossKilled && timeout)
+        {
+            gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
+        }
+
         gameManager.Music.PlayBackgroundMusic();
 
         raidEndedTime = Time.time;
@@ -248,13 +253,13 @@ public class RaidManager : MonoBehaviour, IEvent
 
         if (Started && players.Count == 0)
         {
-            EndRaid(false, true);
+            EndRaid(false, false);
             return;
         }
 
         if (!Boss && Started)
         {
-            EndRaid(true, true);
+            EndRaid(true, false);
             return;
         }
 
@@ -262,7 +267,7 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             if (Boss.Enemy.Stats.Health.CurrentValue <= 0)
             {
-                EndRaid(true, true);
+                EndRaid(true, false);
                 return;
             }
 

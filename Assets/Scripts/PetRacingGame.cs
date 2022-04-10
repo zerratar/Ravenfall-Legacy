@@ -15,7 +15,7 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
 
     private float startTimer;
     private readonly List<PetRacingPlayer> players = new List<PetRacingPlayer>();
-    private readonly TavernGameHighscore highscore = new TavernGameHighscore("petracing");
+    private TavernGameHighscore highscore;
 
     private TavernGameState state = TavernGameState.None;
     private string infoTextColor = "<color=#444444>";
@@ -26,6 +26,11 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
     public bool IsGameOver => State == TavernGameState.GameOver;
     public bool Started => State != TavernGameState.None;
     public bool Playing => State == TavernGameState.Playing;
+
+    private void Start()
+    {
+        highscore = new TavernGameHighscore("petracing");
+    }
 
     public void Activate()
     {

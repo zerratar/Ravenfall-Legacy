@@ -15,8 +15,9 @@ namespace Assets.Scripts
         [SerializeField] private TownHallInfoManager info;
         [SerializeField] private GameManager gameManager;
 
-        private readonly Dictionary<int, TownHouseExpBonus> expBonusBySlot = new Dictionary<int, TownHouseExpBonus>();
-        private readonly Dictionary<TownHouseSlotType, TownHouseExpBonus> expBonusByType = new Dictionary<TownHouseSlotType, TownHouseExpBonus>();
+        private readonly ConcurrentDictionary<int, TownHouseExpBonus> expBonusBySlot = new ConcurrentDictionary<int, TownHouseExpBonus>();
+        private readonly ConcurrentDictionary<TownHouseSlotType, TownHouseExpBonus> expBonusByType = new ConcurrentDictionary<TownHouseSlotType, TownHouseExpBonus>();
+
         private LoadingState state = LoadingState.None;
         private DateTime lastVillageLoad = DateTime.MinValue;
         public TownHallManager TownHall => townHallManager;
@@ -110,8 +111,17 @@ namespace Assets.Scripts
         {
             expBonusBySlot[slot] = new TownHouseExpBonus(slotType, bonus);
             expBonusByType[slotType] = new TownHouseExpBonus(slotType, expBonusBySlot.Values.Where(x => slotType == x.SlotType).Sum(x => x.Bonus));
+            UpdateBoostPerType();
 
             if (info) info.UpdateExpBonusTexts();
+        }
+
+        private void UpdateBoostPerType()
+        {
+            foreach (var i in expBonusByType.Keys)
+            {
+                expBonusByType[i] = new TownHouseExpBonus(i, expBonusBySlot.Values.Where(x => i == x.SlotType).Sum(x => x.Bonus));
+            }
         }
 
         internal async Task SetVillageBoostTarget(TownHouseSlotType slotType)
@@ -135,13 +145,15 @@ namespace Assets.Scripts
                     assignablePlayers = players.OrderByDescending(x => GameMath.GetSkillByHouseType(x.Stats, slotType).Level).Take(houses.Length).ToList();
                 }
 
+                var toAssign = new List<Guid>();
+
                 for (var i = 0; i < houses.Length; ++i)
                 {
-                    if (!await gameManager.RavenNest.Village.BuildHouseAsync(i, (int)slotType))
-                    {
-                        gameManager.RavenBot.SendMessage("", failedToUpdate);
-                        return;
-                    }
+                    //if (!await gameManager.RavenNest.Village.BuildHouseAsync(i, (int)slotType))
+                    //{
+                    //    gameManager.RavenBot.SendMessage("", failedToUpdate);
+                    //    return;
+                    //}
 
                     var ownerUserId = i < assignablePlayers.Count ? assignablePlayers[i].UserId : null;
                     houses[i] = new VillageHouseInfo()
@@ -153,11 +165,19 @@ namespace Assets.Scripts
 
                     if (!string.IsNullOrEmpty(ownerUserId))
                     {
-                        await gameManager.RavenNest.Village.AssignPlayerAsync(i, assignablePlayers[i].Id);
+                        toAssign.Add(assignablePlayers[i].Id);
+                        //await gameManager.RavenNest.Village.AssignPlayerAsync(i, assignablePlayers[i].Id);
                     }
                 }
 
-                SetHouses(houses);
+                if (await gameManager.RavenNest.Village.AssignVillageAsync((int)slotType, toAssign.ToArray()))
+                {
+                    SetHouses(houses);
+                }
+                else
+                {
+                    gameManager.RavenBot.SendMessage("", failedToUpdate);
+                }
             }
             finally
             {
@@ -205,24 +225,6 @@ namespace Assets.Scripts
         public ICollection<TownHouseExpBonus> GetExpBonuses()
         {
             return expBonusBySlot.Values;
-        }
-
-        public float GetExpBonusBySkill(CombatSkill skill)
-        {
-            if (expBonusByType.TryGetValue(GameMath.GetHouseTypeBySkill(skill), out var bonus))
-            {
-                return bonus.Bonus / 100f;
-            }
-            return 0;
-        }
-
-        public float GetExpBonusBySkill(TaskSkill skill)
-        {
-            if (expBonusByType.TryGetValue(GameMath.GetHouseTypeBySkill(skill), out var bonus))
-            {
-                return bonus.Bonus / 100f;
-            }
-            return 0;
         }
 
         public float GetExpBonusBySkill(Skill skill)

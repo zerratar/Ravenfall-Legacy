@@ -33,61 +33,66 @@ public class GameMenuHandler : MonoBehaviour
         if (!loginScreen) loginScreen = FindObjectOfType<LoginHandler>();
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
 
+        settingsView.Hide(false);
+
         Hide();
     }
 
     private void Update()
     {
-        if (activeMenu != menuView)
-        {
-            if (!activeMenu.Visible)
-            {
-                ShowMenu();
-            }
+        //if (activeMenu != menuView)
+        //{
+        //    if (!activeMenu.Visible)
+        //    {
+        //        ShowMenu();
+        //    }
+        //    return;
+        //}
 
-            return;
-        }
-
-        if (!activeMenu.Visible)
-        {
-            ShowMenu();
-        }
+        //if (!activeMenu.Visible)
+        //{
+        //    ShowMenu();
+        //}
 
         if (Input.GetKeyUp(KeyCode.Escape))
         {
             Hide();
         }
     }
+
+    public void Back()
+    {
+        settingsView.Hide();
+        ShowMenu();
+    }
+
     public void ClearClanFlagCache()
     {
         gameManager.PlayerLogo.ClearCache();
     }
+
     public void ShowMenu()
     {
         ActivateMenu(menuView);
     }
 
-    public void Show(bool hideActiveMenu = false)
+    public void Show()
     {
-        if (Visible)
-        {
-            Hide();
-        }
-        else
-        {
-            signOutButton.gameObject.SetActive(gameManager.RavenNest.Authenticated);
-            gameObject.SetActive(true);
+        gameObject.SetActive(true);
+        signOutButton.gameObject.SetActive(gameManager.RavenNest.Authenticated);
 
-            //if (activeMenu && hideActiveMenu)
-            //{
-            //    activeMenu.gameObject.SetActive(false);
-            //}
-        }
+        ActivateMenu(menuView);
+
+        //if (activeMenu)
+        //{
+        //    activeMenu.gameObject.SetActive(false);
+        //}
     }
 
     public void Hide()
     {
         gameObject.SetActive(false);
+
         if (loginScreen && !IsAuthenticated)
         {
             loginScreen.gameObject.SetActive(true);
@@ -121,13 +126,7 @@ public class GameMenuHandler : MonoBehaviour
             Show();
         }
 
-        var oldMenu = activeMenu;
-
-        menuView.Show();
-
-        activeMenu = menuView;
-
-        StartCoroutine(ToggleMenu(oldMenu, activeMenu));
+        StartCoroutine(ToggleMenu(activeMenu, menuView));
     }
 
     private IEnumerator ToggleMenu(MenuView hide, MenuView show)
@@ -139,7 +138,10 @@ public class GameMenuHandler : MonoBehaviour
         }
 
         yield return null;
+
         show.Show();
+
+        activeMenu = show;
     }
 
     public void Logout()

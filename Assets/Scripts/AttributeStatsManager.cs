@@ -1,6 +1,5 @@
-﻿using System.Linq;
-using UnityEngine;
-
+﻿using UnityEngine;
+using Shinobytes.Linq;
 public class AttributeStatsManager : MonoBehaviour
 {
     [SerializeField] private AttributeStats armor;

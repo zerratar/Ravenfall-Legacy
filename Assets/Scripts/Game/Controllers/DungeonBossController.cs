@@ -1,6 +1,6 @@
 ﻿using Assets.Scripts;
 using System;
-using System.Linq;
+using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -39,6 +39,7 @@ public class DungeonBossController : MonoBehaviour
         room = null;
         destroyed = true;
     }
+
     void Awake()
     {
         if (!room) room = GetComponentInParent<DungeonRoomController>();

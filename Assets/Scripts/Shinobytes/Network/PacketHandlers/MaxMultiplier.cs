@@ -31,36 +31,38 @@ public class MaxMultiplier : PacketHandler<TwitchPlayerInfo>
 
         if (player.Ferry.OnFerry)
         {
-            var skillIndex = player.GetSkillTypeFromArgs("sail");
-            if (skillIndex != -1)
-            {
-                hutMulti = Game.Village.GetExpBonusBySkill((TaskSkill)skillIndex);
-                multi += hutMulti;
-            }
+            hutMulti = Game.Village.GetExpBonusBySkill(Skill.Sailing);
+            multi += hutMulti;
         }
         else
         {
-            var taskArgs = player.GetTaskArguments();
-            var combatType = PlayerController.GetCombatTypeFromArg(taskArgs.FirstOrDefault());
-            if (combatType != -1)
+            if (player.ActiveSkill != Skill.None)
             {
-                hutMulti = Game.Village.GetExpBonusBySkill((CombatSkill)combatType);
+                hutMulti = Game.Village.GetExpBonusBySkill(player.ActiveSkill);
                 multi += hutMulti;
-            }
-            else
-            {
-                var skillIndex = player.GetSkillTypeFromArgs(taskArgs);
-                if (skillIndex != -1)
-                {
-                    hutMulti = Game.Village.GetExpBonusBySkill((TaskSkill)skillIndex);
-                    multi += hutMulti;
-                }
+
+                //var taskArgs = player.GetTaskArguments();
+                //var combatType = PlayerController.GetCombatTypeFromArg(taskArgs.FirstOrDefault());
+                //if (combatType != -1)
+                //{
+                //    hutMulti = Game.Village.GetExpBonusBySkill((CombatSkill)combatType);
+                //    multi += hutMulti;
+                //}
+                //else
+                //{
+                //    var skillIndex = player.GetSkillTypeFromArgs(taskArgs);
+                //    if (skillIndex != -1)
+                //    {
+                //        hutMulti = Game.Village.GetExpBonusBySkill((TaskSkill)skillIndex);
+                //        multi += hutMulti;
+                //    }
+                //}
             }
         }
 
         if (player.Raid.InRaid || player.Dungeon.InDungeon)
         {
-            var slayerBonus = Game.Village.GetExpBonusBySkill(TaskSkill.Slayer);
+            var slayerBonus = Game.Village.GetExpBonusBySkill(Skill.Slayer);
             hutMulti += slayerBonus;
             multi += slayerBonus;
         }

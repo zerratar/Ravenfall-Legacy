@@ -1,4 +1,5 @@
-﻿public class IslandInfo : PacketHandler<TwitchPlayerInfo>
+﻿using Shinobytes.Linq;
+public class IslandInfo : PacketHandler<TwitchPlayerInfo>
 {
     public IslandInfo(
        GameManager game,

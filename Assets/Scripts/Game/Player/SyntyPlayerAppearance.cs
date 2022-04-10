@@ -3,7 +3,7 @@ using RavenNest.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using Shinobytes.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -13,6 +13,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     private readonly Dictionary<ItemType, Transform> equipmentSlots = new Dictionary<ItemType, Transform>();
     private readonly Dictionary<ItemType, GameObject> equippedObjects = new Dictionary<ItemType, GameObject>();
     private readonly Dictionary<ItemType, ItemController> equippedItems = new Dictionary<ItemType, ItemController>();
+
+    private bool useMeshCombiner = true;
 
     [Header("Editor")]
     [SerializeField] private bool PhotoMode;
@@ -271,7 +273,10 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         }
 
         UpdateAppearance();
-        Optimize();
+
+        if (useMeshCombiner)
+            Optimize();
+
         onReady?.Invoke();
         UpdateClanCape();
     }
@@ -312,18 +317,19 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     public void ResetAppearance()
     {
-        var allModels = GetAll();
-        foreach (var model in allModels)
+        foreach (var model in GetAll())
         {
             model?.SetActive(false);
         }
-        if (meshCombiner?.isMeshesCombineds ?? false)
+
+        if (useMeshCombiner && (meshCombiner?.isMeshesCombineds ?? false))
             meshCombiner?.UndoCombineMeshes();
     }
 
     public void Optimize(Action afterUndo = null)
     {
-        StartCoroutine(OptimizeAppearance(afterUndo));
+        if (useMeshCombiner)
+            StartCoroutine(OptimizeAppearance(afterUndo));
     }
 
     private IEnumerator OptimizeAppearance(Action afterUndo)
@@ -331,18 +337,22 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         yield return new WaitForSeconds(0.1f);
 
         int meshLayer = -1;
-        var cm = GetCombinedMesh();
-        if (cm)
+        Transform cm = null;
+        if (useMeshCombiner)
         {
-            meshLayer = meshCombiner.gameObject.layer;
-            meshCombiner.UndoCombineMeshes();
+            cm = GetCombinedMesh();
+            if (cm)
+            {
+                meshLayer = meshCombiner.gameObject.layer;
+                meshCombiner.UndoCombineMeshes();
+            }
         }
 
         afterUndo?.Invoke();
 
         yield return new WaitForFixedUpdate();
 
-        if (meshCombiner)
+        if (useMeshCombiner && meshCombiner)
         {
             meshCombiner.meshesToIgnore.Clear();
             var petControllers = gameObject.transform.GetComponentsInChildren<PetController>();
@@ -516,8 +526,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         {
             appearanceFields = GetType()
                 .GetFields(BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => x.FieldType == typeof(int) || x.FieldType == typeof(int[]))
-                .ToList();
+                .AsList(x => x.FieldType == typeof(int) || x.FieldType == typeof(int[]));
         }
 
         capeLogoMaterials.Clear();
@@ -527,17 +536,19 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             // Exclude certain ones, such as head attachments, coverings and masks
 
             var field = appearanceFields[i];
+            var fName = field.Name;
+            var nameSearch = Gender.ToString() + fName;
             var items = models.Where(x =>
-           !x.Key.Contains(nameof(headCoverings)) &&
-           !x.Key.Contains(nameof(masks)) &&
-           !x.Key.Contains(nameof(hats)) &&
-           x.Key.StartsWith(field.Name, StringComparison.OrdinalIgnoreCase) ||
-           x.Key.StartsWith(Gender.ToString() + field.Name, StringComparison.OrdinalIgnoreCase));
+               !x.Key.Contains(nameof(headCoverings)) &&
+               !x.Key.Contains(nameof(masks)) &&
+               !x.Key.Contains(nameof(hats)) &&
+               x.Key.StartsWith(fName, StringComparison.OrdinalIgnoreCase) ||
+               x.Key.StartsWith(nameSearch, StringComparison.OrdinalIgnoreCase));
 
             if (field.FieldType == typeof(int[]))
             {
                 var indices = (int[])field.GetValue(this);
-                if (indices.Length == 0) return;
+                if (indices.Length == 0) continue;
                 foreach (var item in items)
                 {
                     foreach (var index in indices)
@@ -556,7 +567,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
             else
             {
                 var index = (int)field.GetValue(this);
-                if (index == -1) return;
+                if (index == -1) continue;
                 foreach (var item in items)
                 {
                     try
@@ -996,20 +1007,20 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
         return item;
     }
 
-    private GameObject[] GetAll()
+    private IEnumerable<GameObject> GetAll()
     {
-        return GetAllModels().SelectMany(x => x.Value).ToArray();
+        return GetAllModels().SelectMany(x => x.Value);
     }
+
+    private static IReadOnlyList<FieldInfo> ModelFields = typeof(SyntyPlayerAppearance)
+                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+                .AsList(x => x.FieldType == typeof(GameObject[]));
 
     private IReadOnlyDictionary<string, GameObject[]> GetAllModels()
     {
         if (modelObjects == null)
         {
-            modelObjects = GetType()
-                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(x => x.FieldType == typeof(GameObject[]))
-                .Select(x => new { Key = x.Name, Value = x.GetValue(this) as GameObject[] })
-                .ToDictionary(x => x.Key, x => x.Value);
+            modelObjects = ModelFields.ToDictionary(x => x.Name, x => x.GetValue(this) as GameObject[]);
         }
 
         return modelObjects;
@@ -1017,7 +1028,8 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
 
     public void RandomizeCharacter()
     {
-        Gender = Enum.GetValues(typeof(Gender)).Cast<Gender>().Random();
+        Gender = Enums.GetValues<Gender>().Random();
+
         //var models = GetAllModels();
         //var fields = GetType()
         //    .GetFields(BindingFlags.Public | BindingFlags.Instance)
@@ -1078,7 +1090,11 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
     public void ToggleHelmVisibility()
     {
         HelmetVisible = !HelmetVisible;
-        Optimize(UpdateHelmetVisibility);
+
+        if (useMeshCombiner)
+            Optimize(UpdateHelmetVisibility);
+        else
+            UpdateHelmetVisibility();
     }
 
     public void UpdateHelmetVisibility()

@@ -158,7 +158,7 @@ public class DuelHandler : MonoBehaviour
     private void LostDuel()
     {
         RemoveDuelCamera();
-        ++player.Statistics.DuelsLost;
+        //++player.Statistics.DuelsLost;
         Reset();
     }
 
@@ -171,7 +171,7 @@ public class DuelHandler : MonoBehaviour
             gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_WON, Opponent.PlayerName);
         }
 
-        ++player.Statistics.DuelsWon;
+        //++player.Statistics.DuelsWon;
         player.Stats.Health.Reset();
         Reset();
     }

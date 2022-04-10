@@ -45,6 +45,6 @@ public class RestedStatus : PacketHandler<TwitchPlayerInfo>
     {
         var hours = player.Rested.RestedTime / 60f / 60f;
         var restedTime = Utility.FormatTime(hours);
-        client.SendMessage(player.PlayerName, Localization.MSG_RESTING, player.Rested.ExpBoost.ToString(), restedTime);
+        client.SendMessage(player.PlayerName, Localization.MSG_RESTING, System.Math.Max(2, player.Rested.ExpBoost).ToString(), restedTime);
     }
 }

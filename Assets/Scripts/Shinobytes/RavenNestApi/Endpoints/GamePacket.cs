@@ -25,4 +25,13 @@ namespace RavenNest.SDK.Endpoints
             return false;
         }
     }
+
+    public class PlayerGamePacketRef
+    {
+        public GamePacket Packet { get; set; }
+        public string Key { get; set; }
+        public Guid Sender { get; set; }
+        public DateTime Created { get; set; }
+        public int SendIndex { get; set; }
+    }
 }

@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using Shinobytes.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class EventCode
@@ -21,7 +21,7 @@ public class EventCode
 
                 if (txt != null)
                 {
-                    wordList = txt.text.Split('\n').Select(x => x.Trim('\r')).Where(x => !string.IsNullOrEmpty(x)).ToList();
+                    wordList = txt.text.Split('\n').Select(x => x.Trim('\r')).AsList(x => !string.IsNullOrEmpty(x));
                     isLoaded = true;
                     return;
                 }

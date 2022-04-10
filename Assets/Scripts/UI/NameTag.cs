@@ -53,19 +53,31 @@ public class NameTag : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!isVisible || !HasTargetPlayer)
+        if (!isVisible || !HasTargetPlayer || !Init())
         {
             return;
         }
 
-        if (!nameTagSet || oldScale != Scale || string.IsNullOrEmpty(label.text))
-        {
-            SetupNameTagLabel();
-            return;
-        }
+        if (!targetCamera)
+            targetCamera = Camera.main.transform;
 
+        //+ (Vector3.up * TargetTransform.localScale.y * YOffset * Scale)
+        //+ (Vector3.up * YMinDistance * Scale);
+
+        transform.SetPositionAndRotation(TargetPlayer.Position + this.offset, targetCamera.rotation);
+        oldCensor = gameManager.LogoCensor;
+    }
+
+    private bool Init()
+    {
         if (!hasInitialized)
         {
+            if (!nameTagSet || oldScale != Scale || string.IsNullOrEmpty(label.text))
+            {
+                SetupNameTagLabel();
+                return false;
+            }
+
             if (clanName && TargetPlayer.Clan.InClan && lastSetClanName != TargetPlayer.Clan.ClanInfo.Name)
             {
                 clanName.text = "<" + TargetPlayer.Clan.ClanInfo.Name + ">";
@@ -87,19 +99,8 @@ public class NameTag : MonoBehaviour
 
             hasInitialized = true;
         }
-        
-        if (!targetCamera)
-            targetCamera = Camera.main.transform;
 
-        if (!targetCamera)
-            return;
-
-        var t = transform;
-        t.position = TargetPlayer.Position + this.offset;
-        //+ (Vector3.up * TargetTransform.localScale.y * YOffset * Scale)
-        //+ (Vector3.up * YMinDistance * Scale);
-        t.rotation = targetCamera.rotation;
-        oldCensor = gameManager.LogoCensor;
+        return hasInitialized;
     }
 
     private void SetupNameTagLabel()
@@ -139,7 +140,7 @@ public class NameTag : MonoBehaviour
     }
 
     public static Color GetColorFromHex(string hex)
-    {        
+    {
         if (ColorUtility.TryParseHtmlString(hex, out var color))
             return color;
         return Color.white;

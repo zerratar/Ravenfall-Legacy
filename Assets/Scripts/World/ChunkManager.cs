@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
+using Shinobytes.Linq;
 using UnityEngine;
 
 public class ChunkManager : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public static bool StrictLevelRequirements = true;
 
+    // Start is called before the first frame update
     [SerializeField] private IslandManager islandManager;
 
     private Chunk[] chunks;
 
-    private Dictionary<TaskType, List<IChunk>> chunksByType = new Dictionary<TaskType, List<IChunk>>();
+    private Dictionary<TaskType, List<Chunk>> chunksByType = new Dictionary<TaskType, List<Chunk>>();
 
     void Start()
     {
@@ -23,43 +22,46 @@ public class ChunkManager : MonoBehaviour
                     .ToArray();
     }
 
-    public IChunk GetChunkAt(int x, int y)
+    public Chunk GetChunkAt(int x, int y)
     {
         return null;
     }
 
-    public IChunk GetStarterChunk()
+    public Chunk GetStarterChunk()
     {
-        return chunks?.SingleOrDefault(x => x.IsStarterArea);
+        return chunks?.FirstOrDefault(x => x.IsStarterArea);
     }
 
-    public IReadOnlyList<IChunk> GetChunksOfType(PlayerController playerRef, TaskType type)
+    public IReadOnlyList<Chunk> GetChunksOfType(PlayerController playerRef, TaskType type)
     {
         if (chunks == null || chunks.Length == 0)
             return null;
 
         return chunks
-            .Where(x => (x.Island == playerRef.Island || x.Island == FindPlayerIsland(playerRef)) && (x.Type == type || x.SecondaryType == type))
+            .Where(x => (x.Island == playerRef.Island || x.Island == FindPlayerIsland(playerRef)) && (x.Type == type /*|| x.SecondaryType == type*/))
             .OrderByDescending(x => x.RequiredCombatLevel + x.RequiredSkilllevel)
-            .Select(x => x.SecondaryType == type ? x.CreateSecondary() : x).ToList();
+            //.Select(x => x.SecondaryType == type ? x.CreateSecondary() : x)
+            .ToList();
     }
 
-    public IReadOnlyList<IChunk> GetChunksOfType(IslandController island, TaskType type)
+    public IReadOnlyList<Chunk> GetChunksOfType(IslandController island, TaskType type)
     {
         if (chunks == null || chunks.Length == 0)
             return null;
 
         return chunks
-            .Where(x => x.Island == island && (x.Type == type || x.SecondaryType == type))
+            .Where(x => x.Island == island && (x.Type == type /*|| x.SecondaryType == type*/))
             .OrderByDescending(x => x.RequiredCombatLevel + x.RequiredSkilllevel)
-            .Select(x => x.SecondaryType == type ? x.CreateSecondary() : x).ToList();
+            //.Select(x => x.SecondaryType == type ? x.CreateSecondary() : x)
+            .ToList();
     }
 
-    public IChunk GetChunkOfType(PlayerController playerRef, TaskType type)
+    public Chunk GetChunkOfType(PlayerController playerRef, TaskType type)
     {
         if (chunks == null || chunks.Length == 0)
             return null;
 
+        var strictCombatLevel = StrictLevelRequirements;
         var refIsland = playerRef.Island;
         var refCombatLevel = playerRef.Stats.CombatLevel;
         var chunk = chunks
@@ -69,48 +71,68 @@ public class ChunkManager : MonoBehaviour
                 {
                     return false;
                 }
-                if (x.Type != type && x.SecondaryType != type)
+                if (x.Type != type /*&& x.SecondaryType != type*/)
                 {
                     return false;
                 }
 
-                if (x.RequiredCombatLevel > refCombatLevel)
-                {
-                    return false;
-                }
+                var activeSkill = playerRef.ActiveSkill;
+                var skillStat = activeSkill.IsCombatSkill() ? playerRef.Stats[activeSkill] : null;
 
-                if (type == TaskType.Fighting && x.RequiredSkilllevel > 1)
+                if (strictCombatLevel)
                 {
-                    if (playerRef.TrainingAll)
+                    if (x.RequiredCombatLevel > refCombatLevel)
                     {
-                        var attack = playerRef.Stats.GetCombatSkill(CombatSkill.Attack);
-                        var defense = playerRef.Stats.GetCombatSkill(CombatSkill.Defense);
-                        var strength = playerRef.Stats.GetCombatSkill(CombatSkill.Strength);
-                        var req = x.RequiredSkilllevel;
-                        return attack.Level >= req && defense.Level >= req && strength.Level >= req;
+                        return false;
+                    }
+                    if (type == TaskType.Fighting && x.RequiredSkilllevel > 1)
+                    {
+                        if (playerRef.TrainingAll)
+                        {
+                            var attack = playerRef.Stats.GetCombatSkill(CombatSkill.Attack);
+                            var defense = playerRef.Stats.GetCombatSkill(CombatSkill.Defense);
+                            var strength = playerRef.Stats.GetCombatSkill(CombatSkill.Strength);
+                            var req = x.RequiredSkilllevel;
+                            return attack.Level >= req && defense.Level >= req && strength.Level >= req;
+                        }
+                        if (skillStat != null)
+                        {
+                            return x.RequiredSkilllevel <= skillStat.Level;
+                        }
+                    }
+                }
+                else
+                {
+
+                    if (type == TaskType.Fighting)
+                    {
+                        var requirement = Mathf.Max(x.RequiredCombatLevel, x.RequiredSkilllevel);
+                        if (skillStat != null)
+                        {
+                            var level = Mathf.Max(playerRef.Stats.CombatLevel, skillStat.Level);
+                            return level >= requirement;
+                        }
                     }
 
-                    var skill = playerRef.GetActiveCombatSkillStat();
-                    if (skill != null)
-                    {
-                        return x.RequiredSkilllevel <= skill.Level;
-                    }
                 }
+
 
                 return x.RequiredSkilllevel <= GetSkillLevel(playerRef, type);
             })
-            .OrderByDescending(x => x.RequiredCombatLevel + x.RequiredSkilllevel)
-            .ThenBy(x => Vector3.Distance(x.transform.position, playerRef.transform.position))
-            .FirstOrDefault();
+            .Highest(x => x.RequiredCombatLevel + x.RequiredSkilllevel);
+        //.OrderByDescending(x => x.RequiredCombatLevel + x.RequiredSkilllevel)
+        //.ThenBy(x => Vector3.Distance(x.transform.position, playerRef.transform.position))
+        //.FirstOrDefault();
 
         if (chunk == null)
         {
             return null;
         }
 
-        return chunk.SecondaryType == type
-            ? chunk.CreateSecondary()
-            : chunk;
+        return chunk;
+        //return chunk.SecondaryType == type
+        //    ? chunk.CreateSecondary()
+        //    : chunk;
     }
 
     private int GetSkillLevel(PlayerController playerRef, TaskType type)
@@ -127,20 +149,18 @@ public class ChunkManager : MonoBehaviour
         return 1;
     }
 
-    public IReadOnlyList<IChunk> GetChunks()
+    public IReadOnlyList<Chunk> GetChunks()
     {
         return chunks;
     }
 
-
-
-    public List<IChunk> GetChunksOfType(TaskType type)
+    public List<Chunk> GetChunksOfType(TaskType type)
     {
         if (chunksByType.TryGetValue(type, out var value))
             return value;
 
         // cache miss, slow.
-        var c = new List<IChunk>();
+        var c = new List<Chunk>();
         var isCookingOrCrafting = type == TaskType.Cooking || type == TaskType.Crafting;
         var cl = this.chunks.OrderBy(x => x.RequiredCombatLevel + x.RequiredSkilllevel).ToArray();
         for (var i = 0; i < this.chunks.Length; i++)
@@ -151,7 +171,7 @@ public class ChunkManager : MonoBehaviour
                 c.Add(chunk);
             }
         }
-        
+
         return chunksByType[type] = c;
     }
 

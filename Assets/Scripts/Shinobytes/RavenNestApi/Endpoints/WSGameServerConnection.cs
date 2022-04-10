@@ -2,6 +2,8 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading;
@@ -17,14 +19,9 @@ namespace RavenNest.SDK.Endpoints
         private readonly ITokenProvider tokenProvider;
         private readonly IGamePacketSerializer packetSerializer;
         private readonly GameManager gameManager;
-        private readonly ConcurrentDictionary<string, GamePacketHandler> packetHandlers
-            = new ConcurrentDictionary<string, GamePacketHandler>();
-
-        private readonly ConcurrentQueue<GamePacket> sendQueue
-            = new ConcurrentQueue<GamePacket>();
-
-        private readonly ConcurrentDictionary<Guid, TaskCompletionSource<GamePacket>> awaitedReplies
-            = new ConcurrentDictionary<Guid, TaskCompletionSource<GamePacket>>();
+        private readonly Dictionary<string, GamePacketHandler> packetHandlers = new Dictionary<string, GamePacketHandler>();
+        private readonly Queue<PlayerGamePacketRef> sendQueue = new Queue<PlayerGamePacketRef>();
+        private readonly Dictionary<Guid, TaskCompletionSource<GamePacket>> awaitedReplies = new Dictionary<Guid, TaskCompletionSource<GamePacket>>();
 
         private Thread sendProcessThread;
         private Thread readProcessThread;
@@ -160,9 +157,10 @@ namespace RavenNest.SDK.Endpoints
         {
             while (!disposed)
             {
-                if (!await ReceiveDataAsync())
+                if (!await ReceiveDataAsync().ConfigureAwait(false))
                 {
-                    await Task.Delay(1000);
+                    await Task.Delay(10);
+                    //System.Threading.Thread.Sleep(10);
                 }
             }
         }
@@ -171,36 +169,66 @@ namespace RavenNest.SDK.Endpoints
         {
             while (!disposed)
             {
-                if (!await SendDataAsync())
+                if (!await SendDataAsync().ConfigureAwait(false))
                 {
-                    await Task.Delay(1000);
+                    await Task.Delay(10);
+                    //System.Threading.Thread.Sleep(10);
                 }
             }
         }
 
         private async Task<bool> SendDataAsync()
         {
-            if (!IsReady) return false;
-            if (GameCache.Instance.IsAwaitingGameRestore) return false;
-            if (sendQueue.TryPeek(out var packet))
+            if (!IsReady)
             {
-                try
-                {
-                    var packetData = packetSerializer.Serialize(packet);
-                    var buffer = new ArraySegment<byte>(packetData);
-                    await webSocket.SendAsync(
-                        buffer,
-                        WebSocketMessageType.Binary, true, CancellationToken.None);
+                sendQueue.Clear();
+                return false;
+            }
 
-                    sendQueue.TryDequeue(out _);
-                    return true;
-                }
-                catch (Exception exc)
+            if (GameCache.Instance.IsAwaitingGameRestore) return false;
+            if (sendQueue.Count == 0) return false;
+
+            var packetsToSend = new List<GamePacket>();
+            var packetMerge = new Dictionary<string, PlayerGamePacketRef>();
+            var packetQueueCount = sendQueue.Count;
+
+            while (sendQueue.TryDequeue(out var packet))
+            {
+                if (packet.Sender == Guid.Empty)
                 {
-                    Disconnect();
-                    logger.Error(exc.Message);
+                    packetsToSend.Add(packet.Packet);
+                }
+                else
+                {
+                    var key = packet.Sender + packet.Key;
+                    if (!packetMerge.TryGetValue(key, out var prev))
+                    {
+                        prev = packet;
+                        packetMerge[key] = prev;
+                        prev.SendIndex = packetsToSend.Count;
+                        packetsToSend.Add(prev.Packet);
+                    }
+
+                    if (prev.Created < packet.Created)
+                    {
+                        packetsToSend[prev.SendIndex] = packet.Packet;
+                    }
                 }
             }
+
+            try
+            {
+                // if it fails, we can skip it since it does not include important information that cannot be sent again later with a new update.
+                byte[] data = packetSerializer.SerializeMany(packetsToSend);
+                await webSocket.SendAsync(data, WebSocketMessageType.Binary, true, CancellationToken.None);
+                return true;
+            }
+            catch (Exception exc)
+            {
+                logger.Error("Error sending data to server: " + exc.ToString());
+                Disconnect();
+            }
+
             return false;
         }
 
@@ -247,6 +275,7 @@ namespace RavenNest.SDK.Endpoints
                         GamePacket packet = null;
                         if (unfinishedPacket != null)
                         {
+                            unfinishedPacket.Append(segment.Array, result.Count);
                             packet = unfinishedPacket.Build();
                             unfinishedPacket = null;
                         }
@@ -354,11 +383,11 @@ namespace RavenNest.SDK.Endpoints
             packetHandlers[packetId] = packetHandler;
         }
 
-        public async Task<GamePacket> SendAsync(GamePacket packet)
+        public async Task<GamePacket> SendAsync(PlayerGamePacketRef packet)
         {
             var completionSource = new TaskCompletionSource<GamePacket>();
 
-            awaitedReplies[packet.CorrelationId] = completionSource;
+            awaitedReplies[packet.Packet.CorrelationId] = completionSource;
 
             sendQueue.Enqueue(packet);
 
@@ -371,30 +400,44 @@ namespace RavenNest.SDK.Endpoints
 
             return null;
         }
-        public void SendNoAwait(GamePacket packet)
+        public void SendNoAwait(PlayerGamePacketRef packet)
         {
             sendQueue.Enqueue(packet);
         }
 
-        public Task<GamePacket> SendAsync(string id, object model)
+        public Task<GamePacket> SendAsync(Guid sender, string id, object model)
         {
-            return SendAsync(new GamePacket()
-            {
-                CorrelationId = Guid.NewGuid(),
-                Data = model,
-                Id = id,
-                Type = model.GetType().Name
-            });
+            return SendAsync(
+                new PlayerGamePacketRef()
+                {
+                    Key = id,
+                    Sender = sender,
+                    Created = DateTime.UtcNow,
+
+                    Packet = new GamePacket()
+                    {
+                        CorrelationId = Guid.NewGuid(),
+                        Data = model,
+                        Id = id,
+                        Type = model.GetType().Name
+                    }
+                });
         }
 
-        public void SendNoAwait(string id, object model)
+        public void SendNoAwait(Guid sender, string id, object model, string type)
         {
-            SendNoAwait(new GamePacket()
+            SendNoAwait(new PlayerGamePacketRef()
             {
-                CorrelationId = Guid.NewGuid(),
-                Data = model,
-                Id = id,
-                Type = model.GetType().Name
+                Key = id,
+                Sender = sender,
+                Created = DateTime.UtcNow,
+                Packet = new GamePacket()
+                {
+                    CorrelationId = Guid.NewGuid(),
+                    Data = model,
+                    Id = id,
+                    Type = type ?? model.GetType().Name
+                }
             });
         }
 

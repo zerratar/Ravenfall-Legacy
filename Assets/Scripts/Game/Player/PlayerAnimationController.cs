@@ -344,6 +344,9 @@ public class PlayerAnimationController : MonoBehaviour
 
     private bool EnsureAnimator()
     {
+        if (appearance == null)
+            appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
+
         if (appearance is MonoBehaviour behaviour)
         {
             //  && !appearance.AppearanceUpdated()

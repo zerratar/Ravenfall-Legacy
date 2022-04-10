@@ -1,4 +1,5 @@
-﻿using RavenNest.Models;
+﻿using Assets.Scripts;
+using RavenNest.Models;
 using UnityEngine;
 
 public class ItemAddEventHandler : GameEventHandler<ItemAdd>
@@ -8,7 +9,10 @@ public class ItemAddEventHandler : GameEventHandler<ItemAdd>
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player)
         {
-            Shinobytes.Debug.Log("No player with userid " + data.UserId + " when adding item.");
+            if (!GameCache.Instance.IsAwaitingGameRestore)
+            {
+                Shinobytes.Debug.Log("No player with userid " + data.UserId + " when adding item. (" + data.ItemId + ", " + data.Amount + ")");
+            }
             return;
         }
 

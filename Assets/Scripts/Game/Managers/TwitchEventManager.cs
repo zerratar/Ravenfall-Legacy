@@ -191,68 +191,80 @@ public class TwitchEventManager : MonoBehaviour
 
     public void OnCheer(TwitchCheer cheer)
     {
-        var player = gameManager.Players.GetPlayerByUserId(cheer.UserId);
-        if (!player) player = gameManager.Players.GetPlayerByName(cheer.UserName);
-        if (player)
+        try
         {
-            var subscriberMultiplier = player.IsSubscriber ? 2f : 1f;
-            var observeTime = Mathf.Min(MaxObserveTime, (cheer.Bits / (float)BitsForMultiplier)
-                * MaxObserveTime
-                * subscriberMultiplier);
-
-            if (observeTime >= 1)
+            var player = gameManager.Players.GetPlayerByUserId(cheer.UserId);
+            if (!player) player = gameManager.Players.GetPlayerByName(cheer.UserName);
+            if (player)
             {
-                gameManager.Camera.ObservePlayer(player, observeTime);
+                var subscriberMultiplier = player.IsSubscriber ? 2f : 1f;
+                var observeTime = Mathf.Min(MaxObserveTime, (cheer.Bits / (float)BitsForMultiplier)
+                    * MaxObserveTime
+                    * subscriberMultiplier);
+
+                if (observeTime >= 1)
+                {
+                    gameManager.Camera.ObservePlayer(player, observeTime);
+                }
+
+                player.Cheer();
+                //player.AddBitCheer(cheer.Bits);
             }
-
-            player.Cheer();
-            //player.AddBitCheer(cheer.Bits);
         }
-
-        AddCheer(cheer, CurrentBoost.Active);
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Error resolving twitch cheer: " + exc);
+        }
+        //AddCheer(cheer, CurrentBoost.Active);
     }
 
     public void OnSubscribe(TwitchSubscription subscribe)
     {
-        var player = gameManager.Players.GetPlayerByUserId(subscribe.UserId);
-        if (!player) player = gameManager.Players.GetPlayerByName(subscribe.UserName);
-
-        var receiverName = player?.Name;
-
-        if (subscribe.ReceiverUserId != null)
+        try
         {
-            var receiver = gameManager.Players.GetPlayerByUserId(subscribe.ReceiverUserId);
-            if (receiver)
-            {
-                receiver.IsSubscriber = true;
-                receiverName = receiver.Name;
-            }
-        }
+            var player = gameManager.Players.GetPlayerByUserId(subscribe.UserId);
+            if (!player) player = gameManager.Players.GetPlayerByName(subscribe.UserName);
 
-        if (player)
-        {
-            if (subscribe.ReceiverUserId == null)
+            var receiverName = player?.Name;
+
+            if (subscribe.ReceiverUserId != null)
             {
-                player.IsSubscriber = true;
+                var receiver = gameManager.Players.GetPlayerByUserId(subscribe.ReceiverUserId);
+                if (receiver)
+                {
+                    receiver.IsSubscriber = true;
+                    receiverName = receiver.Name;
+                }
             }
 
-            gameManager.Camera.ObservePlayer(player, MaxObserveTime);
-        }
+            if (player)
+            {
+                if (subscribe.ReceiverUserId == null)
+                {
+                    player.IsSubscriber = true;
+                }
 
-        if (!string.IsNullOrEmpty(receiverName))
+                gameManager.Camera.ObservePlayer(player, MaxObserveTime);
+            }
+
+            if (!string.IsNullOrEmpty(receiverName))
+            {
+                gameManager.RavenBot?.Send(receiverName, Localization.MSG_SUB_CREW,
+                        gameManager.RavenNest.TwitchDisplayName,
+                        TierExpMultis[gameManager.Permissions.SubscriberTier]);
+            }
+
+            var activePlayers = gameManager.Players.GetAllPlayers();
+            foreach (var plr in activePlayers)
+            {
+                plr.Cheer();
+            }
+        }
+        catch (Exception exc)
         {
-            gameManager.RavenBot?.Send(receiverName, Localization.MSG_SUB_CREW,
-                    gameManager.RavenNest.TwitchDisplayName,
-                    TierExpMultis[gameManager.Permissions.SubscriberTier]);
+            Shinobytes.Debug.LogError("Error resolving twitch subscription: " + exc);
         }
-
-        var activePlayers = gameManager.Players.GetAllPlayers();
-        foreach (var plr in activePlayers)
-        {
-            plr.Cheer();
-        }
-
-        AddSubscriber(subscribe, CurrentBoost.Active);
+        //AddSubscriber(subscribe, CurrentBoost.Active);
     }
 
 

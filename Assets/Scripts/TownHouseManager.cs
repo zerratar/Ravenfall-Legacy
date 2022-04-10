@@ -20,7 +20,7 @@ public class TownHouseManager : MonoBehaviour
     private int activeSlotCount;
 
     public TownHouse[] TownHouses => buildableTownHouses;
-    
+
     public int SlotCount => activeSlotCount;
     public void EnsureAssignPlayerRows(int count)
     {
@@ -146,6 +146,24 @@ public class TownHouseManager : MonoBehaviour
         }
     }
 
+    internal void InvalidateOwnership(PlayerController player)
+    {
+        var wasInvalidated = false;
+        foreach (var slot in slots)
+        {
+            if (slot.OwnerUserId == player.UserId)
+            {
+                slot.InvalidateOwner();
+                wasInvalidated = true;
+            }
+        }
+
+        if (wasInvalidated)
+        {
+            gameManager.villageBoostLabel.Update();
+        }
+    }
+
     internal void InvalidateOwnershipOfHouses()
     {
         foreach (var slot in slots)
@@ -257,4 +275,5 @@ public class TownHouseManager : MonoBehaviour
         EventSystem.current.RaycastAll(eventData, raysastResults);
         return raysastResults;
     }
+
 }

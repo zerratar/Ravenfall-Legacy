@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+//using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -268,7 +268,7 @@ public static class IEnumeratorAwaitExtensions
                     // adding that to the exception output
                     var objectTrace = GenerateObjectTrace(_processStack);
 
-                    if (objectTrace.Any())
+                    if (objectTrace.Count > 0)
                     {
                         _awaiter.Complete(
                             default(T), new Exception(
@@ -351,7 +351,7 @@ public static class IEnumeratorAwaitExtensions
 
                 var objType = obj.GetType();
 
-                if (!objTrace.Any() || objType != objTrace.Last())
+                if (objTrace.Count == 0 || objType != objTrace[objTrace.Count - 1])
                 {
                     objTrace.Add(objType);
                 }

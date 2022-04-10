@@ -7,19 +7,31 @@ namespace Shinobytes.IO
 {
     public static class Path
     {
-        public readonly static string GameFolder;
+        public static string GameFolder;
+        private static bool initFailed;
         static Path()
         {
-            var dataFolder = new System.IO.DirectoryInfo(Application.dataPath);
-            GameFolder = dataFolder.Parent.FullName;
+            Init();
         }
 
-
+        private static void Init()
+        {
+            try
+            {
+                var dataFolder = new System.IO.DirectoryInfo(Application.dataPath);
+                GameFolder = dataFolder.Parent.FullName;
+                initFailed = false;
+            }
+            catch
+            {
+                initFailed = true;
+            }
+        }
         public static string GameFolderAsRoot(string path)
         {
-            if (System.IO.Path.IsPathFullyQualified(path))
-                return path;
-
+            if (initFailed) Init();
+            if (System.IO.Path.IsPathFullyQualified(path)) return path;
+            if (initFailed) return System.IO.Path.GetFullPath(path);
             return System.IO.Path.GetFullPath(System.IO.Path.Combine(GameFolder, path));
         }
 

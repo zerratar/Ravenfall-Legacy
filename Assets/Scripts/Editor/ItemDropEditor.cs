@@ -13,6 +13,7 @@ public class ItemDropEditor : Editor
     private List<Item> loadedItems;
     private string[] itemNames;
     private SerializedProperty items;
+    private SerializedProperty dropchanceScale;
     private SerializedProperty dropList;
     private JsonBasedItemRepository itemManager;
     void OnEnable()
@@ -23,7 +24,8 @@ public class ItemDropEditor : Editor
             this.itemManager = new JsonBasedItemRepository();
         }
 
-        if (this.itemManager == null) {             
+        if (this.itemManager == null)
+        {
             return;
         }
 
@@ -34,13 +36,14 @@ public class ItemDropEditor : Editor
             Debug.LogError("items.json repository file could not be found.");
             return;
         }
-            
+
 
         itemNames = loadedItems.Select(x => x.Name).OrderBy(x => x).ToArray();
 
         if (serializedObject == null)
             return;
 
+        dropchanceScale = serializedObject.FindProperty("dropchanceScale");
         items = serializedObject.FindProperty("items");
         dropList = serializedObject.FindProperty("dropList");
     }
@@ -57,12 +60,12 @@ public class ItemDropEditor : Editor
             EditorGUILayout.PropertyField(dropList);
         }
 
+        EditorGUILayout.PropertyField(dropchanceScale);
+
         items.isExpanded = EditorGUILayout.Foldout(items.isExpanded, "Droppable Items");
         if (items.isExpanded)
         {
             items.arraySize = EditorGUILayout.IntField("Size", items.arraySize);
-
-
 
             List<PropVal> sorted = new List<PropVal>();
             for (int i = 0; i < items.arraySize; ++i)
@@ -93,7 +96,7 @@ public class ItemDropEditor : Editor
             }
 
             //for (int i = 0; i < items.arraySize; ++i)
-            foreach (var i in sorted.OrderBy(x => x.Name))
+            foreach (var i in sorted)//.OrderBy(x => x.Name))
             {
                 SerializedProperty item = i.Prop;// items.GetArrayElementAtIndex(i);
                                                  //SerializedProperty item = items.GetArrayElementAtIndex(i);

@@ -29,7 +29,7 @@
                 return;
             }
 
-            Game.Dungeons.EndDungeonFailed();
+            Game.Dungeons.EndDungeonFailed(false);
             client.SendMessage(data.Username, "Dungeon has been forcibly stopped.");
         }
         catch { }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Sirenix.OdinInspector;
+using UnityEngine;
 public class FarmController : MonoBehaviour
 {
     public int Level = 1;
@@ -21,4 +22,11 @@ public class FarmController : MonoBehaviour
     {
         return true;
     }
+
+    [Button("Adjust Placement")]
+    public void AdjustPlacement()
+    {
+        PlacementUtility.PlaceOnGround(this.gameObject);
+    }
+
 }
