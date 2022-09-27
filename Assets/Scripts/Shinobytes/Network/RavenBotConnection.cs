@@ -22,8 +22,9 @@ public class RavenBotConnection : IDisposable
     private readonly ConcurrentDictionary<string, Type> packetHandlers = new ConcurrentDictionary<string, Type>();
     private GameClient remoteClient;
     private int reconnectionTimer = 1500;
-    private bool allowReconnect = true;
+    private bool allowAutomaticReconnect = true;
     private bool connectionInProgress;
+    private float connectionAttemptStart;
 
     public event EventHandler<string> DataSent;
     public event EventHandler<GameClient> LocalConnected;
@@ -92,11 +93,11 @@ public class RavenBotConnection : IDisposable
         HandlePacket(packet, args);
     }
 
-    public void Stop()
+    public void Stop(bool allowReconnect)
     {
         try
         {
-            allowReconnect = false;
+            this.allowAutomaticReconnect = allowReconnect;
             if (ActiveClient.Connected)
             {
                 ActiveClient.Disconnect();
@@ -141,7 +142,7 @@ public class RavenBotConnection : IDisposable
 
     public void Dispose()
     {
-        Stop();
+        Stop(false);
     }
 
     public void DataReceived(GameClient gameClient, string rawCommand)
@@ -229,13 +230,18 @@ public class RavenBotConnection : IDisposable
         packetHandler.Handle(packet);
     }
 
-    internal void Connect(BotConnectionType type)
+    internal void ConnectInternal(BotConnectionType type)
     {
-        if (!allowReconnect)
+        if (!allowAutomaticReconnect)
         {
             return;
         }
 
+        Connect(type);
+    }
+
+    public void Connect(BotConnectionType type)
+    {
         if (type == BotConnectionType.Local)
         {
             if (server == null || !server.Server.IsBound)
@@ -245,12 +251,14 @@ public class RavenBotConnection : IDisposable
         }
         else if (!IsConnectedToRemote && UseRemoteBot)
         {
-            if (connectionInProgress)
+            var sinceLastConnectionAttempt = UnityEngine.Time.time - connectionAttemptStart;
+            if (connectionInProgress && sinceLastConnectionAttempt < 2)
             {
                 return;
             }
 
             connectionInProgress = true;
+            connectionAttemptStart = UnityEngine.Time.time;
             try
             {
 
@@ -277,7 +285,7 @@ public class RavenBotConnection : IDisposable
         connectionInProgress = false;
         ravenbot.State = BotState.Disconnected;
 
-        if (!allowReconnect)
+        if (!allowAutomaticReconnect)
         {
             return;
         }
@@ -306,13 +314,12 @@ public class RavenBotConnection : IDisposable
         if (type == BotConnectionType.Local)
         {
             // disconnecting local means stopping the server.
-            Stop();
+            Stop(false);
         }
         else if (remoteClient != null)
         {
             remoteClient.Disconnect();
             remoteClient.Dispose();
-            //remoteClient.SendCommand("", "leave", game.RavenNest.TwitchUserId + "$" + game.RavenNest.TwitchUserName);
             remoteClient = null;
         }
     }

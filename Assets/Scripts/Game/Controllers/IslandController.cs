@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class IslandController : MonoBehaviour
 {
+    public RavenNest.Models.TcpApi.Island Island;
+
     public string Identifier;
     public DockController DockingArea;
     public Transform SpawnPositionTransform;
@@ -25,15 +27,18 @@ public class IslandController : MonoBehaviour
 
     public bool InsideIsland(Vector3 position)
     {
+        if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
         var pos = sphereCollider.center + transform.position;
         return Vector3.Distance(position, pos) <= radius;
     }
 
-    private void Awake()
+    public void Awake()
     {
-        sphereCollider = GetComponent<SphereCollider>();
+        if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
         radius = sphereCollider.radius;
     }
+
+
 
     private void OnTriggerEnter(Collider other)
     {

@@ -4,12 +4,12 @@ using UnityEngine;
 
 public class ItemAddEventHandler : GameEventHandler<ItemAdd>
 {
-    protected override void Handle(GameManager gameManager, ItemAdd data)
+    public override void Handle(GameManager gameManager, ItemAdd data)
     {
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player)
         {
-            if (!GameCache.Instance.IsAwaitingGameRestore)
+            if (!GameCache.IsAwaitingGameRestore)
             {
                 Shinobytes.Debug.Log("No player with userid " + data.UserId + " when adding item. (" + data.ItemId + ", " + data.Amount + ")");
             }

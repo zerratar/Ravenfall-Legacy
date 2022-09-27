@@ -19,7 +19,6 @@ public class RavenBot : MonoBehaviour
     public void Initialize(GameManager gameManager)
     {
         if (!this.gameManager) this.gameManager = gameManager;
-
         Connection = new RavenBotConnection(gameManager, this, RemoteServer);
         Connection.Register<KickPlayer>("kick");
         Connection.Register<PlayerLeave>("leave");
@@ -45,7 +44,7 @@ public class RavenBot : MonoBehaviour
         Connection.Register<RestartGame>("restart");
         Connection.Register<SetPet>("set_pet");
         Connection.Register<GetPet>("get_pet");
-        Connection.Register<EquipItem>("equip");        
+        Connection.Register<EquipItem>("equip");
         Connection.Register<UnequipItem>("unequip");
         Connection.Register<EnchantItem>("enchant");
         Connection.Register<PlayerStats>("player_stats");
@@ -151,7 +150,9 @@ public class RavenBot : MonoBehaviour
         }
 
         if (e.IsLocal && Connection.IsConnectedToRemote)
+        {
             Connection.Disconnect(BotConnectionType.Remote);
+        }
 
         UpdateSessionInfo();
     }
@@ -174,7 +175,7 @@ public class RavenBot : MonoBehaviour
 
     private void OnDestroy()
     {
-        this.Connection.Stop();
+        this.Connection.Stop(false);
     }
 }
 

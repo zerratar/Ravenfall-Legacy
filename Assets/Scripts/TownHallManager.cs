@@ -8,7 +8,7 @@ public class TownHallManager : MonoBehaviour
 
     private int tier = -1;
     private int level;
-    private decimal exp;
+    private double exp;
 
     private TownHallController activeTownHall;
 
@@ -23,10 +23,10 @@ public class TownHallManager : MonoBehaviour
             activeTownHall = townHallBuildings[0];
     }
 
-    public decimal Experience => exp;
+    public double Experience => exp;
     public int Level => level;
     public int Tier => tier;
-    public decimal ExperienceToLevel => GameMath.OLD_LevelToExperience(Level + 1);
+    //public decimal ExperienceToLevel => GameMath.VillageLevelToExperience(Level + 1);
 
     public void SetTierByLevel(int level)
     {
@@ -85,7 +85,7 @@ public class TownHallManager : MonoBehaviour
         }
     }
 
-    internal void SetExp(decimal experience)
+    internal void SetExp(double experience)
     {
         this.exp = experience;
         if (info)

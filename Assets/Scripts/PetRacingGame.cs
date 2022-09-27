@@ -21,7 +21,7 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
     private string infoTextColor = "<color=#444444>";
     private string infoTextSize = "<size=13>";
 
-    public string GameStartCommand => "racing";
+    public string GameStartCommand => Localization.PETRACE_START_COMMAND;
     public TavernGameState State => state;
     public bool IsGameOver => State == TavernGameState.GameOver;
     public bool Started => State != TavernGameState.None;
@@ -34,7 +34,7 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
 
     public void Activate()
     {
-        this.helpText.text = "!racing\r\n" + infoTextColor + infoTextSize + "JOIN AND PLAY";
+        this.helpText.text = "!" + Localization.PETRACE_START_COMMAND + "\r\n" + infoTextColor + infoTextSize + "JOIN AND PLAY";
         this.state = TavernGameState.WaitingForPlayers;
 
         DestroyContenderObjects();
@@ -44,14 +44,14 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
     {
         players.Clear();
         DestroyContenderObjects();
-        helpText.text = "!racing\r\n" + infoTextColor + infoTextSize + "START GAME";
+        helpText.text = "!" + Localization.PETRACE_START_COMMAND + "\r\n" + infoTextColor + infoTextSize + "START GAME";
         state = TavernGameState.None;
     }
 
     internal void EndGame()
     {
         state = TavernGameState.GameOver;
-        helpText.text = "!racing reset\r\n" + infoTextColor + infoTextSize + "END GAME";
+        helpText.text = "!" + Localization.PETRACE_START_COMMAND + " reset\r\n" + infoTextColor + infoTextSize + "END GAME";
     }
 
     internal void Play(PlayerController player)
@@ -63,20 +63,20 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
 
         if (this.players.FirstOrDefault(x => x.Player.UserId == player.UserId) != null)
         {
-            gameManager.RavenBot.SendMessage(player.Name, "You're already playing.");
+            gameManager.RavenBot.SendMessage(player.Name, Localization.PETRACE_ALREADY_PLAYING);
             return;
         }
 
         var pet = player.Inventory.GetEquipmentOfCategory(RavenNest.Models.ItemCategory.Pet);
         if (pet == null)
         {
-            gameManager.RavenBot.SendMessage(player.Name, "You need to equip a pet to play.");
+            gameManager.RavenBot.SendMessage(player.Name, Localization.PETRACE_NO_PET);
             return;
         }
 
         if (string.IsNullOrEmpty(pet.Item.GenericPrefab))
         {
-            gameManager.RavenBot.SendMessage(player.Name, "PET IS BROKEN?!?");
+            //gameManager.RavenBot.SendMessage(player.Name, "PET IS BROKEN?!?");
             return;
         }
 

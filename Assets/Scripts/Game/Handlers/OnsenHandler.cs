@@ -77,7 +77,7 @@ public class OnsenHandler : MonoBehaviour
                 break;
         }
 
-        player.Lock();
+        player.Movement.Lock();
         InOnsen = true;
 
         var target = spot.Target;
@@ -101,7 +101,7 @@ public class OnsenHandler : MonoBehaviour
 
         if (InOnsen)
         {
-            player.Unlock();
+            player.Movement.Unlock();
             player.transform.SetParent(null);
             player.Teleporter.Teleport(prevOnsen.EntryPoint, true, true);
         }

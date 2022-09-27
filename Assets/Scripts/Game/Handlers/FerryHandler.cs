@@ -54,6 +54,7 @@ public class FerryHandler : MonoBehaviour
 
         if (OnFerry)
         {
+            player.Movement.Lock();
             player.Animations.SetCaptainState(IsCaptain);
 
             expTimer -= Time.deltaTime;
@@ -77,11 +78,11 @@ public class FerryHandler : MonoBehaviour
             if (!player.Island.DockingArea) return;
             if (!player.Island.DockingArea.OnDock(player))
             {
-                player.GotoPosition(player.Island.DockingArea.DockPosition);
+                player.SetDestination(player.Island.DockingArea.DockPosition);
             }
             else
             {
-                player.Lock();
+                player.Movement.Lock();
 
                 if (ferry.Docked && ferry.Island == player.Island)
                 {
@@ -139,7 +140,7 @@ public class FerryHandler : MonoBehaviour
         EnsureReferences();
 
         state = PlayerFerryState.None;
-        player.GotoPosition(player.Position);
+        player.SetDestination(player.Position);
         this.destination = null;
     }
 
@@ -170,7 +171,9 @@ public class FerryHandler : MonoBehaviour
     {
         var onFerry = OnFerry;
         isOnFerry = false;
-        if (onFerry)
+        state = PlayerFerryState.None;
+        var parent = player.transform.parent;
+        if (onFerry || (parent && parent.name == "PlayerPoint"))
         {
             player.transform.SetParent(null);
 
@@ -203,11 +206,8 @@ public class FerryHandler : MonoBehaviour
                 return;
             }
 
-            state = PlayerFerryState.None;
-
             var onFerry = OnFerry;
 
-            player.Animations.SetCaptainState(false);
 
             var targetIsland = island ?? gameManager.Islands.FindPlayerIsland(player) ?? ferry.Island;
 
@@ -219,14 +219,16 @@ public class FerryHandler : MonoBehaviour
 
             if (RemoveFromFerry())
             {
-                player.transform.position = targetIsland.DockingArea.DockPosition;
-                player.AdjustPlayerPositionToNavmesh();
+                player.Movement.SetPosition(targetIsland.DockingArea.DockPosition, true, true);
             }
+
+            state = PlayerFerryState.None;
+
+            player.Animations.SetCaptainState(false);
 
             isOnFerry = false;
             player.Island = targetIsland;
             player.taskTarget = null;
-            //player.Unlock();
 
             var task = player.GetTask();
             if (task != TaskType.None)
@@ -235,9 +237,9 @@ public class FerryHandler : MonoBehaviour
             }
 
 #if DEBUG
-            if (notifyPlayerOfDisembark && !player.GameManager.admin_controlPlayers)
+            if (notifyPlayerOfDisembark && !AdminControlData.ControlPlayers)
             {
-                gameManager.RavenBot?.SendMessage(player.PlayerName, "You have arrived at your destination, {islandName}!", player.Island.Identifier);
+                gameManager.RavenBot?.SendMessage(player.PlayerName, Localization.MSG_FERRY_ARRIVED, player.Island.Identifier);
             }
 #else
             if (notifyPlayerOfDisembark)
@@ -289,7 +291,7 @@ public class FerryHandler : MonoBehaviour
         lastFerryPoint = ferry.GetNextPlayerPoint(canBeCaptain);
         if (lastFerryPoint)
         {
-            player.Lock();
+            player.Movement.Lock();
             state = PlayerFerryState.Embarked;
             player.transform.SetParent(lastFerryPoint);
             player.transform.localPosition = Vector3.zero;

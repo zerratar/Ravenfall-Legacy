@@ -128,7 +128,7 @@ public class TwitchEventManager : MonoBehaviour
         }
         else
         {
-            this.Reset();
+            ResetMultiplier();
         }
     }
 
@@ -152,20 +152,23 @@ public class TwitchEventManager : MonoBehaviour
         SaveState();
     }
 
-    public void Reset()
+    public void ResetMultiplier()
     {
-        if (CurrentBoost.Multiplier != 0)
+        if (CurrentBoost.Multiplier > 1)
         {
             Shinobytes.Debug.Log("Global Exp Multiplier have been reset.");
         }
 
-        CurrentBoost.BoostTime = TimeSpan.Zero;
-        CurrentBoost.EndTime = DateTime.MinValue;
-        CurrentBoost.StartTime = DateTime.MinValue;
-        CurrentBoost.Active = false;
-        CurrentBoost.Multiplier = 0;
-        CurrentBoost.Elapsed = Duration;
-        SaveState();
+        if (CurrentBoost.Active || CurrentBoost.BoostTime > TimeSpan.Zero)
+        {
+            CurrentBoost.BoostTime = TimeSpan.Zero;
+            CurrentBoost.EndTime = DateTime.MinValue;
+            CurrentBoost.StartTime = DateTime.MinValue;
+            CurrentBoost.Active = false;
+            CurrentBoost.Multiplier = 0;
+            CurrentBoost.Elapsed = Duration;
+            SaveState();
+        }
     }
 
     private void SaveState()
@@ -362,7 +365,7 @@ public class TwitchEventManager : MonoBehaviour
         var multi = Mathf.Min(multiplier, ExpMultiplierLimit);
         if (multi <= 1)
         {
-            Reset();
+            ResetMultiplier();
             return;
         }
 

@@ -113,7 +113,14 @@ public class GameUpdater : MonoBehaviour
 
         if (versionText)
         {
-            versionText.text = "VERSION " + Application.version;
+            versionText.text = "VERSION " + Ravenfall.Version;
+        }
+
+        if (!UnityEngine.Application.isEditor && Debug.isDebugBuild)
+        {
+            loadingScene = true;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(1);
+            return;
         }
 
         if (updateResult == UpdateResult.CodeOfConductModified)
@@ -305,7 +312,7 @@ public class GameUpdater : MonoBehaviour
     {
         var metadata = new MetaData
         {
-            Version = Application.version
+            Version = Ravenfall.Version
         };
         var metadataContent = JsonConvert.SerializeObject(metadata);
         Shinobytes.IO.File.WriteAllText("metadata.json", metadataContent);
@@ -337,7 +344,7 @@ public class GameUpdateHandler
     public GameUpdateHandler(string host)
     {
         this.host = host;
-        version = Application.version;
+        version = Ravenfall.Version;
         if (!this.host.EndsWith("/")) this.host += "/";
     }
 
@@ -508,7 +515,7 @@ public static class GameVersion
 {
     public static Version GetApplicationVersion()
     {
-        if (TryParse(UnityEngine.Application.version, out var version))
+        if (TryParse(Ravenfall.Version, out var version))
         {
             return version;
         }

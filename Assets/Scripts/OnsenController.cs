@@ -12,7 +12,7 @@ public class OnsenController : MonoBehaviour
     [SerializeField] private Transform swimmingSpots;
     [SerializeField] private Transform meditatingSpots;
 
-    [SerializeField] private TextMeshPro detailsLabel;
+    [SerializeField] private TextMeshProUGUI detailsLabel;
 
     private IslandController island;
 

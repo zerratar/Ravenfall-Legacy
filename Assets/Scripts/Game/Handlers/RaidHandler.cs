@@ -16,6 +16,9 @@ public class RaidHandler : MonoBehaviour
     private Vector3 prevPosition;
     private string[] prevTaskArgs;
     private Chunk prevChunk;
+    private bool wasResting;
+
+    private FerryState ferryState;
 
     public bool InRaid { get; private set; }
     public IslandController PreviousIsland => previousIsland;
@@ -76,7 +79,7 @@ public class RaidHandler : MonoBehaviour
 
             if (!player.IsReadyForAction)
             {
-                player.Lock();
+                player.Movement.Lock();
                 return;
             }
 
@@ -91,7 +94,7 @@ public class RaidHandler : MonoBehaviour
         }
         else
         {
-            player.GotoPosition(target.position);
+            player.SetDestination(target.position);
         }
     }
 
@@ -107,6 +110,24 @@ public class RaidHandler : MonoBehaviour
         {
             StartCoroutine(WaitForStart());
             return;
+        }
+
+        wasResting = player.Onsen.InOnsen;
+
+        ferryState = new()
+        { 
+            OnFerry = player.Ferry.OnFerry,
+            HasDestination = !!player.Ferry.Destination
+        };
+
+        if (wasResting)
+        {
+            player.GameManager.Onsen.Leave(player);
+        }
+
+        if (ferryState.OnFerry)
+        {
+            player.Ferry.RemoveFromFerry();
         }
 
         var boss = gameManager.Raid.Boss;
@@ -165,7 +186,18 @@ public class RaidHandler : MonoBehaviour
 
             var factor = Math.Min(50, Math.Max(raidBossCombatLevel / player.Stats.CombatLevel, 10d)) * proc;
             player.AddExp(Skill.Slayer, factor);
-            player.AddExp(Math.Max(5 * proc, factor * 0.5));
+
+            var expFactor = Math.Max(5 * proc, factor * 0.5);
+
+            // only if you don't have a destination is it considered as sailing for exp
+            if (ferryState.OnFerry && !ferryState.HasDestination)
+            {
+                player.AddExp(Skill.Sailing, expFactor);
+            }
+            else
+            {
+                player.AddExp(expFactor);
+            }
         }
 
         //if (raidTimedOut)
@@ -191,8 +223,31 @@ public class RaidHandler : MonoBehaviour
             }
             player.taskTarget = null;
         }
+
+        if (wasResting)
+        {
+            player.GameManager.Onsen.Join(player);
+        }
+        else if (ferryState.OnFerry)
+        {
+            player.Movement.Lock();
+            player.Ferry.AddPlayerToFerry();
+            ferryState.HasReturned = true;
+        }
+
+        wasResting = false;
+
 #if DEBUG
         Shinobytes.Debug.Log($"{player.PlayerName} left the raid");
 #endif
     }
+
+
+    public struct FerryState
+    {
+        public bool OnFerry;
+        public bool HasDestination;
+        public bool HasReturned;
+    }
+
 }

@@ -2,7 +2,7 @@
 
 public class PlayerRemoveEventHandler : GameEventHandler<PlayerRemove>
 {
-    protected override void Handle(GameManager gameManager, PlayerRemove data)
+    public override void Handle(GameManager gameManager, PlayerRemove data)
     {
         var player = gameManager.Players.GetPlayerById(data.CharacterId);
         if (!player)

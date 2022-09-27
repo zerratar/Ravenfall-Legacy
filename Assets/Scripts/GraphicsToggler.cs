@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class GraphicsToggler : MonoBehaviour
 {
@@ -26,10 +27,12 @@ public class GraphicsToggler : MonoBehaviour
     private int previousTargetFramerate;
     private int previousVsyncCount;
     private bool graphicsEnabled = true;
+    private int renderFrameInterval = 10;
+    private int targetFramesPerSeconds = 6;
     private HashSet<int> ignoreList = new HashSet<int>();
 
-    private readonly SemaphoreSlim mutex = new SemaphoreSlim(1);
-
+    //private readonly SemaphoreSlim mutex = new SemaphoreSlim(1);
+    public static bool GraphicsEnabled = true;
     public bool IsGraphicsEnabled => graphicsEnabled;
 
     // Start is called before the first frame update
@@ -41,9 +44,8 @@ public class GraphicsToggler : MonoBehaviour
 
         if (Application.isBatchMode)
         {
-            //ToggleAllGraphics();
-            Application.targetFrameRate = 30;
-            QualitySettings.vSyncCount = 2;
+            //ToggleAllGraphics();            
+            ReduceRenderTarget();
         }
     }
 
@@ -52,7 +54,9 @@ public class GraphicsToggler : MonoBehaviour
     {
         if (Application.isBatchMode)
         {
-            mutex.Wait(TimeSpan.FromMilliseconds(10));
+            GraphicsEnabled = false;
+
+            //mutex.Wait(TimeSpan.FromMilliseconds(10));
             return;
         }
 
@@ -61,13 +65,7 @@ public class GraphicsToggler : MonoBehaviour
             ToggleAllGraphics();
         }
 
-        if (!graphicsEnabled)
-        {
-            //uiCamera.enabled = Time.frameCount % 90 == 0;
-            //System.Threading.Thread.Sleep(5);
-
-            mutex.Wait(TimeSpan.FromMilliseconds(10));
-        }
+        GraphicsEnabled = graphicsEnabled;
     }
 
     private void ToggleAllGraphics()
@@ -102,18 +100,14 @@ public class GraphicsToggler : MonoBehaviour
 
         if (graphicsEnabled)
         {
-            mutex.Release();
             uiCamera.enabled = false;
-            Application.targetFrameRate = previousTargetFramerate;
-            QualitySettings.vSyncCount = previousVsyncCount;
+
+            RestoreRenderTarget();
         }
         else
         {
             uiCamera.enabled = true;
-            previousTargetFramerate = Application.targetFrameRate;
-            previousVsyncCount = QualitySettings.vSyncCount;
-            Application.targetFrameRate = 30;
-            QualitySettings.vSyncCount = 2;
+            ReduceRenderTarget();
         }
 
         yield return null;
@@ -132,6 +126,24 @@ public class GraphicsToggler : MonoBehaviour
         }
         yield return null;
 
+    }
+
+    private void RestoreRenderTarget()
+    {
+        Physics.autoSimulation = true;
+        OnDemandRendering.renderFrameInterval = 0;
+        Application.targetFrameRate = previousTargetFramerate;
+        QualitySettings.vSyncCount = previousVsyncCount;
+    }
+
+    private void ReduceRenderTarget()
+    {
+        Physics.autoSimulation = false;
+        OnDemandRendering.renderFrameInterval = renderFrameInterval;
+        previousTargetFramerate = Application.targetFrameRate;
+        previousVsyncCount = QualitySettings.vSyncCount;
+        Application.targetFrameRate = targetFramesPerSeconds;
+        QualitySettings.vSyncCount = 2;
     }
     private void ToggleBehaviours(Behaviour[] renderer)
     {

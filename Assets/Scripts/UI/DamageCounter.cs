@@ -50,7 +50,7 @@ public class DamageCounter : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (GameCache.Instance.IsAwaitingGameRestore) return;
+        if (GameCache.IsAwaitingGameRestore) return;
         if (this.transform.position.y - 0.0001 <= OutOfScreen.y)
         {
             return;

@@ -45,13 +45,13 @@ public class DuelHandler : MonoBehaviour
             var distance = Vector3.Distance(player.Position, Opponent.Position);
             if (distance > player.AttackRange)
             {
-                player.GotoPosition(Opponent.Position);
+                player.SetDestination(Opponent.Position);
             }
             else
             {
                 StartFight();
                 Opponent.Duel.StartFight();
-                player.Lock();
+                player.Movement.Lock();
             }
         }
 

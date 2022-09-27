@@ -10,7 +10,7 @@ public class TownHallInfoManager : MonoBehaviour
     [SerializeField] private TMPro.TextMeshPro lblTotalExpBonus;
 
     public int Tier { get; set; }
-    public decimal Experience { get; set; }
+    public double Experience { get; set; }
     public int Level { get; set; }
     public int Slots { get; set; }
     public int UsedSlots { get; set; }
@@ -26,11 +26,10 @@ public class TownHallInfoManager : MonoBehaviour
     {
         if (GameSystems.frameCount % 4 == 0)
         {
-            var nextLevel = GameMath.OLD_LevelToExperience(Level + 1);
-            var currentLevelExp = GameMath.OLD_LevelToExperience(Level);
-            var expNow = Experience - currentLevelExp;
-            var expNext = nextLevel - currentLevelExp;
-            var progress = Experience > 0 && nextLevel > 0 ? System.Math.Round((float)(expNow / expNext) * 100f, 2) : 0;
+            var nextLevel = Level + 1;
+            var nextLevelExperience = GameMath.ExperienceForLevel(nextLevel);
+            var progress = Experience > 0 && nextLevel > 0 ? System.Math.Round((float)(Experience / nextLevelExperience) * 100f, 2) : 0;
+
             lblLevel.text = "Level: " + Level + " (" + progress + "%)";
             lblSlots.text = "Slots: " + UsedSlots + "/" + Slots;
             lblTier.text = "Tier: " + Tier;

@@ -33,10 +33,13 @@ public class Chunk : MonoBehaviour
     public virtual int GetRequiredCombatLevel() => RequiredCombatLevel;
     public virtual int GetRequiredSkillLevel() => RequiredSkilllevel;
 
+    [System.NonSerialized] private bool started;
+
     // Start is called before the first frame update
-    void Start()
+    public void Start()
     {
         //var arena = GetComponentInChildren<ArenaController>();
+        if (started) return;
         if (!Game) Game = FindObjectOfType<GameManager>();
         Island = GetComponentInParent<IslandController>();
         task = GetChunkTask(Type); // arena
@@ -81,6 +84,7 @@ public class Chunk : MonoBehaviour
         {
             farmingPatches = farmingPatchesContainer.GetComponentsInChildren<FarmController>();
         }
+        started = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -154,6 +158,15 @@ public class Chunk : MonoBehaviour
             case TaskType.Fighting:
                 {
                     var skill = playerController.GetActiveSkillStat();
+
+                    if (skill == playerController.Stats.Health)
+                    {
+                        // training all. We can't use combat level. Use average of atk,def,str?
+                        var st = playerController.Stats;
+                        var lv = (st.Strength.Level + st.Defense.Level + st.Attack.Level) / 3;
+                        return CalculateExpFactor(System.Math.Min(lv, secondary), requirement, nextRequirement);
+                    }
+
                     return CalculateExpFactor(System.Math.Min(skill.Level, secondary), requirement, nextRequirement);
                 }
             case TaskType.Mining:
@@ -186,8 +199,8 @@ public class Chunk : MonoBehaviour
                        // Example, if current level requirement is 100, next is 200.
                        // Then you will gain full exp all the way to level 150.
 
-        // if the current level is more than 50% of the required next place. You don't receive any more exp.
-        var upperBounds = nextRequirement * 1.5;
+        // if the current level is more than 2x of the required next place. You don't receive any more exp.
+        var upperBounds = nextRequirement * 2.0;
         if (level >= upperBounds) return 0;
 
         // Imagine this:

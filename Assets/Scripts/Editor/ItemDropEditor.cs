@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using RavenNest.Models;
+using Sirenix.OdinInspector.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -101,8 +102,6 @@ public class ItemDropEditor : Editor
                 SerializedProperty item = i.Prop;// items.GetArrayElementAtIndex(i);
                                                  //SerializedProperty item = items.GetArrayElementAtIndex(i);
 
-
-
                 var idProp = item.FindPropertyRelative("ItemID");
                 var nameProp = item.FindPropertyRelative("ItemName");
                 var dropChanceProp = item.FindPropertyRelative("DropChance");
@@ -113,23 +112,30 @@ public class ItemDropEditor : Editor
                 {
                     var selectedItemName = !string.IsNullOrEmpty(nameProp.stringValue) ? nameProp.stringValue : idProp.stringValue;
                     var selectedItemIndex = System.Array.IndexOf(itemNames, selectedItemName);
-                    selectedItemIndex = EditorGUILayout.Popup(selectedItemIndex, itemNames, GUILayout.Width(320));
-
-                    if (itemNames == null || selectedItemIndex >= itemNames.Length)
+                    if (selectedItemIndex != -1)
                     {
-                        continue;
+                        selectedItemIndex = EditorGUILayout.Popup(selectedItemIndex, itemNames, GUILayout.Width(320));
+
+                        if (itemNames == null || selectedItemIndex >= itemNames.Length)
+                        {
+                            continue;
+                        }
+
+                        if (selectedItemIndex < itemNames.Length)
+                        {
+                            nameProp.stringValue = selectedItemIndex < itemNames.Length ? itemNames[selectedItemIndex] : "";
+                            idProp.stringValue = loadedItems.FirstOrDefault(x => x.Name == nameProp.stringValue)?.Id.ToString();
+                        }
                     }
-
-                    if (selectedItemIndex < itemNames.Length)
+                    else
                     {
-                        nameProp.stringValue = itemNames[selectedItemIndex];
-                        idProp.stringValue = loadedItems.FirstOrDefault(x => x.Name == nameProp.stringValue)?.Id.ToString();
+
+                        EditorGUILayout.LabelField(selectedItemName, GUILayout.Width(320));
                     }
                 }
 
-                EditorGUILayout.LabelField("Drop Chance", GUILayout.Width(200));
                 //dropChanceProp.floatValue = EditorGUILayout.Slider(dropChanceProp.floatValue, 0.0001f, 1f);
-
+                EditorGUILayout.LabelField("Drop Chance", GUILayout.Width(200));
                 var val = EditorGUILayout.Slider(dropChanceProp.floatValue * 100f, 0.01f, 100f);
 
                 dropChanceProp.floatValue = val / 100f;
@@ -143,7 +149,6 @@ public class ItemDropEditor : Editor
                 }
 
                 EditorGUILayout.EndHorizontal();
-
                 //EditorGUILayout.PropertyField(item);
                 //EditorGUILayout.PropertyField(itemId);
                 //EditorGUILayout.PropertyField(dropChance);

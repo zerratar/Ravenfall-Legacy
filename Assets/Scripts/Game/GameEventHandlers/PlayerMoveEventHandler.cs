@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerMoveEventHandler : GameEventHandler<PlayerMove>
 {
-    protected override void Handle(GameManager gameManager, PlayerMove data)
+    public override void Handle(GameManager gameManager, PlayerMove data)
     {
         Shinobytes.Debug.Log($"PlayerMoveEventHandler " + data.UserId);
     }

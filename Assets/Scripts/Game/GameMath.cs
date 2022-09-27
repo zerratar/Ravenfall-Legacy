@@ -5,27 +5,13 @@ using UnityEngine;
 public static class GameMath
 {
     public const int MaxLevel = 999;
-    public readonly static double[] ExperienceArray = new double[MaxLevel];
+    public const int MaxVillageLevel = 300;
 
-    #region old stuff
-    public const int OldMaxLevel = 170;
+    public readonly static double[] ExperienceArray = new double[MaxLevel];
     public const float MaxExpBonusPerSlot = 50f;
-    private static decimal[] OldExperienceArray = new decimal[OldMaxLevel];
-    #endregion
 
     static GameMath()
     {
-        #region old stuff
-        var totalExp = 0L;
-        for (var levelIndex = 0; levelIndex < OldMaxLevel; levelIndex++)
-        {
-            var level = levelIndex + 1M;
-            var levelExp = (long)(level + (decimal)(300D * Math.Pow(2D, (double)(level / 7M))));
-            totalExp += levelExp;
-            OldExperienceArray[levelIndex] = (decimal)((totalExp & 0xffffffffc) / 4d);
-        }
-        #endregion
-
         for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
         {
             var level = levelIndex + 1M;
@@ -211,9 +197,8 @@ public static class GameMath
     public static float CalculateHouseExpBonus(this SkillStat skill)
     {
         // up to 50% exp bonus
-        return (skill.Level / (float)OldMaxLevel) * MaxExpBonusPerSlot;
+        return (skill.Level / (float)MaxVillageLevel) * MaxExpBonusPerSlot;
     }
-
     public static SkillStat GetSkillByHouseType(this Skills stats, TownHouseSlotType type)
     {
         if (type == TownHouseSlotType.Melee)
@@ -248,6 +233,7 @@ public static class GameMath
             default: return stats.Mining;
         }
     }
+
     public static TownHouseSlotType GetHouseTypeBySkill(this Skill skill)
     {
         switch (skill)
@@ -267,34 +253,6 @@ public static class GameMath
         }
     }
 
-    [Obsolete("Please use GetHouseTypeBySkill instead.")]
-    public static TownHouseSlotType GetHouseTypeBySkill(this TaskSkill skill)
-    {
-        switch (skill)
-        {
-            case TaskSkill.Cooking: return TownHouseSlotType.Cooking;
-            case TaskSkill.Crafting: return TownHouseSlotType.Crafting;
-            case TaskSkill.Farming: return TownHouseSlotType.Farming;
-            case TaskSkill.Mining: return TownHouseSlotType.Mining;
-            case TaskSkill.Sailing: return TownHouseSlotType.Sailing;
-            case TaskSkill.Slayer: return TownHouseSlotType.Slayer;
-            case TaskSkill.Woodcutting: return TownHouseSlotType.Woodcutting;
-            case TaskSkill.Fishing: return TownHouseSlotType.Fishing;
-            default: return TownHouseSlotType.Empty;
-        }
-    }
-
-    [Obsolete("Please use GetHouseTypeBySkill instead.")]
-    public static TownHouseSlotType GetHouseTypeBySkill(this CombatSkill skill)
-    {
-        switch (skill)
-        {
-            case CombatSkill.Healing: return TownHouseSlotType.Healing;
-            case CombatSkill.Ranged: return TownHouseSlotType.Ranged;
-            case CombatSkill.Magic: return TownHouseSlotType.Magic;
-            default: return TownHouseSlotType.Melee;
-        }
-    }
     public static bool IsCombatSkill(this Skill skill)
     {
         switch (skill)
@@ -419,24 +377,6 @@ public static class GameMath
         return (level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
     }
 
-    [Obsolete]
-    public static int OLD_ExperienceToLevel(decimal exp)
-    {
-        for (int level = 0; level < OldMaxLevel - 1; level++)
-        {
-            if (exp >= OldExperienceArray[level])
-                continue;
-            return (level + 1);
-        }
-        return OldMaxLevel;
-    }
-
-    [Obsolete]
-    public static decimal OLD_LevelToExperience(int level)
-    {
-        return level - 2 < 0 ? 0 : OldExperienceArray[level - 2];
-    }
-
     public static double GetFishingExperience(int level)
     {
         return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
@@ -477,7 +417,7 @@ public static class GameMath
         /// <summary>
         /// The level where time between level has peaked at <see cref="IncrementMins"/>.
         /// </summary>
-        public const double EasyLevel = 75.0;
+        public const double EasyLevel = 70.0;
 
         public const double IncrementMins = 14.0;
         public const double IncrementHours = IncrementMins / 60.0;
@@ -569,7 +509,7 @@ public static class GameMath
         {
             if (level <= EasyLevel)
             {
-                return (level - 1) * GameMath.Lerp(IncrementMins / 4.0d, IncrementMins, level / EasyLevel);
+                return (level - 1) * GameMath.Lerp(IncrementMins / 8.0d, IncrementMins, level / EasyLevel);
             }
 
             return (level - 1) * IncrementMins;

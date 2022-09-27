@@ -20,6 +20,9 @@ public class SettingsMenuView : MenuView
     public const string SettingsName_AlertExpiredStateCacheInChat = "AlertExpiredStateCacheInChat";
     public const string SettingsName_ItemDropMessageType = "ItemDropMessageType";
 
+    public const string SettingsName_PathfindingQualitySettings = "PathfindingQualitySettings";
+
+
     //[SerializeField] private Slider playerObserverScaleSlider = null;
 
     [SerializeField] private GameManager gameManager;
@@ -50,6 +53,7 @@ public class SettingsMenuView : MenuView
     [SerializeField] private TMPro.TMP_Dropdown itemDropMessageDropdown = null;
     [SerializeField] private Toggle alertPlayerCacheExpirationToggle = null;
     [SerializeField] private TMPro.TextMeshProUGUI[] itemDropMessageExamples = null;
+    [SerializeField] private TMPro.TMP_Dropdown pathfindingQuality = null;
 
     public static readonly TimeSpan[] PlayerCacheExpiry = new TimeSpan[]
     {
@@ -62,6 +66,22 @@ public class SettingsMenuView : MenuView
         TimeSpan.FromHours(36), // [6]
         TimeSpan.FromHours(48), // [7]
         TimeSpan.FromDays(9999) // [8]
+    };
+
+    public static readonly int[] PathfindingQualityMin = new int[]
+    {
+        50,  // [0] Low
+        100, // [1] Normal
+        100, // [2] High
+        100, // [3] Ultra
+    };
+
+    public static readonly int[] PathfindingQualityMax = new int[]
+    {
+        100,  // [0] Low
+        200,  // [1] Normal
+        500,  // [2] High
+        1000, // [3] Ultra
     };
 
     public static TimeSpan GetPlayerCacheExpiryTime()
@@ -84,26 +104,14 @@ public class SettingsMenuView : MenuView
         dpiSlider.value = settings.DPIScale.GetValueOrDefault(1f);
         raidHornVolumeSlider.value = settings.RaidHornVolume.GetValueOrDefault(gameManager.Raid.Notifications.volume);
         musicVolumeSlider.value = settings.MusicVolume.GetValueOrDefault(gameManager.Music.volume);
+
+        pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
+
         playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(1);
         boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
         alertPlayerCacheExpirationToggle.isOn = settings.AlertExpiredStateCacheInChat.GetValueOrDefault(gameManager.AlertExpiredStateCacheInChat);
         itemDropMessageDropdown.value = settings.ItemDropMessageType.GetValueOrDefault((int)gameManager.ItemDropMessageSettings);
 
-        //postProcessingToggle.isOn = PlayerPrefs.GetInt(SettingsName_PostProcessing, gameManager.UsePostProcessingEffects ? 1 : 0) > 0;
-        //potatoModeToggle.isOn = PlayerPrefs.GetInt(SettingsName_PotatoMode, gameManager.PotatoMode && !gameManager.AutoPotatoMode ? 1 : 0) > 0;
-        //autoPotatoModeToggle.isOn = PlayerPrefs.GetInt(SettingsName_AutoPotatoMode, gameManager.AutoPotatoMode ? 1 : 0) > 0;
-        //realtimeDayNightCycle.isOn = PlayerPrefs.GetInt(SettingsName_RealTimeDayNightCycle, gameManager.RealtimeDayNightCycle ? 1 : 0) > 0;
-        //playerListSizeSlider.value = PlayerPrefs.GetFloat(SettingsName_PlayerListSize, gameManager.PlayerList.Bottom);
-        //playerListScaleSlider.value = PlayerPrefs.GetFloat(SettingsName_PlayerListScale, gameManager.PlayerList.Scale);
-        //dpiSlider.value = PlayerPrefs.GetFloat(SettingsName_DPIScale, 1f);
-        //raidHornVolumeSlider.value = PlayerPrefs.GetFloat(SettingsName_RaidHornVolume, gameManager.Raid.Notifications.volume);
-        //musicVolumeSlider.value = PlayerPrefs.GetFloat(SettingsName_MusicVolume, gameManager.Music.volume);
-        //playerCacheExpiryTimeDropdown.value = PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1);
-        //boostRequirementDropdown.value = PlayerPrefs.GetInt(SettingsName_PlayerBoostRequirement, gameManager.PlayerBoostRequirement);
-        //alertPlayerCacheExpirationToggle.isOn = PlayerPrefs.GetInt(SettingsName_AlertExpiredStateCacheInChat, gameManager.AlertExpiredStateCacheInChat ? 1 : 0) == 1;
-        //itemDropMessageDropdown.value = PlayerPrefs.GetInt(SettingsName_ItemDropMessageType, (int)gameManager.ItemDropMessageSettings);
-
-        //QualitySettings.resolutionScalingFixedDPIFactor = dpiSlider.value;
         SetResolutionScale(dpiSlider.value);
         ShowSoundSettings();
 
@@ -140,31 +148,16 @@ public class SettingsMenuView : MenuView
         settings.DPIScale = dpiSlider.value;
         settings.PlayerBoostRequirement = boostRequirementDropdown.value;
         settings.PlayerCacheExpiryTime = playerCacheExpiryTimeDropdown.value;
+        settings.PathfindingQualitySettings = pathfindingQuality.value;
         settings.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
         settings.ItemDropMessageType = itemDropMessageDropdown.value;
 
         PlayerSettings.Save();
-
-        //PlayerPrefs.SetInt(SettingsName_PotatoMode, potatoModeToggle.isOn ? 1 : 0);
-        //PlayerPrefs.SetInt(SettingsName_PostProcessing, postProcessingToggle.isOn ? 1 : 0);
-        //PlayerPrefs.SetInt(SettingsName_AutoPotatoMode, autoPotatoModeToggle.isOn ? 1 : 0);
-        //PlayerPrefs.SetInt(SettingsName_RealTimeDayNightCycle, realtimeDayNightCycle.isOn ? 1 : 0);
-        //PlayerPrefs.SetFloat(SettingsName_PlayerListSize, playerListSizeSlider.value);
-        //PlayerPrefs.SetFloat(SettingsName_PlayerListScale, playerListScaleSlider.value);
-        //PlayerPrefs.SetFloat(SettingsName_RaidHornVolume, raidHornVolumeSlider.value);
-        //PlayerPrefs.SetFloat(SettingsName_MusicVolume, musicVolumeSlider.value);
-        //PlayerPrefs.SetFloat(SettingsName_DPIScale, dpiSlider.value);
-        //PlayerPrefs.SetInt(SettingsName_PlayerBoostRequirement, boostRequirementDropdown.value);
-        //PlayerPrefs.SetInt(SettingsName_PlayerCacheExpiryTime, playerCacheExpiryTimeDropdown.value);
-        //PlayerPrefs.SetInt(SettingsName_AlertExpiredStateCacheInChat, alertPlayerCacheExpirationToggle.isOn ? 1 : 0);
-        //PlayerPrefs.SetInt(SettingsName_ItemDropMessageType, itemDropMessageDropdown.value);
-        //PlayerPrefs.Save();
-
     }
 
     public void DisconnectFromServer()
     {
-        gameManager.RavenNest.Stream.Reconnect();
+        gameManager.RavenNest.WebSocket.Reconnect();
     }
 
     public void ShowSoundSettings()
@@ -212,6 +205,14 @@ public class SettingsMenuView : MenuView
     public void OnBoostRequirementChanged(int val)
     {
         gameManager.PlayerBoostRequirement = boostRequirementDropdown.value;
+    }
+
+    public void OnNavigationQualityChanged(int val)
+    {
+        var settings = PlayerSettings.Instance;
+        //gameManager.PlayerBoostRequirement = boostRequirementDropdown.value;
+        settings.PathfindingQualitySettings = pathfindingQuality.value;
+        gameManager.UpdatePathfindingIterations();
     }
 
     public void OnItemDropMessageChanged()

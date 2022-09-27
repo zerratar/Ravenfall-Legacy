@@ -2,6 +2,7 @@ using Shinobytes.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using Debug = Shinobytes.Debug;
+
 public class EnemyPool : ComponentPool<EnemyController>
 {
     private readonly List<EnemyController> leasedEnemies = new List<EnemyController>();
@@ -10,23 +11,39 @@ public class EnemyPool : ComponentPool<EnemyController>
     {
         return leasedEnemies;
     }
+
     public void ReturnAll()
     {
         foreach (var leased in leasedEnemies.ToArray())
         {
-            Return(leased);
+            Release(leased);
+        }
+
+        if (DestroyOnReturn)
+        {
+            return;
+        }
+
+        pool.Clear();
+        foreach (var enemy in GetComponentsInChildren<EnemyController>(true))
+        {
+            pool.Push(enemy);
+            enemy.gameObject.SetActive(false);
         }
     }
+
     protected override EnemyController OnLeasedFromPool(EnemyController component)
     {
         // Do any reset necessary as well or preperations before we can use this enemy.
         // then activate the component
         leasedEnemies.Add(component);
-        component.ResetState();
+
         component.Lock();
+        component.ResetState();
 
         return component;
     }
+
     protected override EnemyController OnReturnedToPool(EnemyController component)
     {
         // Reset enemy status, etc. Move it into the pool container if it isnt already and 
@@ -34,29 +51,50 @@ public class EnemyPool : ComponentPool<EnemyController>
         leasedEnemies.Remove(component);
 
         component.Lock();
-        component.transform.localPosition = Vector3.zero;
         component.ResetState();
+
+        component.transform.SetParent(objectContainer);
+        component.transform.localPosition = Vector3.zero;
         component.gameObject.SetActive(false);
 
         return component;
     }
 }
 
-public abstract class ComponentPool<T> : MonoBehaviour where T : Component
+public abstract class ComponentPool<T> : MonoBehaviour where T : MonoBehaviour
 {
     [SerializeField] private GameObject[] poolableObjects;
-    [SerializeField] private Transform objectContainer;
-    private readonly Stack<T> objects = new Stack<T>();
+    [SerializeField] protected Transform objectContainer;
+    protected readonly Stack<T> pool = new Stack<T>();
 
     protected abstract T OnLeasedFromPool(T component);
     protected abstract T OnReturnedToPool(T component);
 
-    public T Lease()
+    public bool DestroyOnReturn;
+
+    public T Get()
     {
-        if (objects.Count > 0)
+        if (!DestroyOnReturn && pool.Count > 0)
         {
-            return OnLeasedFromPool(objects.Pop());
+            return OnLeasedFromPool(pool.Pop());
         }
+
+        return OnLeasedFromPool(CreateInstance());
+    }
+
+    public void Release(T comp)
+    {
+        if (DestroyOnReturn)
+        {
+            Destroy(OnReturnedToPool(comp).gameObject);
+            return;
+        }
+
+        pool.Push(OnReturnedToPool(comp));
+    }
+
+    private T CreateInstance()
+    {
 
         var obj = Instantiate(poolableObjects.Random(), objectContainer);
         var comp = obj.GetComponent<T>();
@@ -66,12 +104,7 @@ public abstract class ComponentPool<T> : MonoBehaviour where T : Component
             return null;
         }
 
-        return OnLeasedFromPool(comp);
+        return comp;
     }
 
-    public void Return(T comp)
-    {
-        objects.Push(OnReturnedToPool(comp));
-    }
 }
-

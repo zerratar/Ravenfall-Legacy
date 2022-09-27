@@ -130,7 +130,7 @@ public class GameClient : IDisposable
 
                 while (client.Connected)
                 {
-                    if (disposed || (GameCache.Instance.IsAwaitingGameRestore && server.Game.RavenNest.Authenticated))
+                    if (disposed || (GameCache.IsAwaitingGameRestore && server.Game.RavenNest.Authenticated))
                         return;
 
                     try
@@ -210,7 +210,7 @@ public class GameClient : IDisposable
 
                 while (client.Connected)
                 {
-                    if (writer == null || disposed || GameCache.Instance.IsAwaitingGameRestore)
+                    if (writer == null || disposed || GameCache.IsAwaitingGameRestore)
                         return;
 
                     try
@@ -228,7 +228,7 @@ public class GameClient : IDisposable
                                 continue;
                             }
                         }
-                     
+
                         //await Task.Delay(10);
                         System.Threading.Thread.Sleep(10);
                     }
@@ -296,6 +296,9 @@ public class GameClient : IDisposable
 
     public void SendCommand(string playerName, string identifier, string format, params string[] args)
     {
+        if (AdminControlData.NoChatBotMessages && identifier == "message")
+            return;
+
         Write(new GamePacket(playerName, identifier, format, args));
     }
 

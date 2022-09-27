@@ -11,8 +11,7 @@ using RavenNest.SDK.Endpoints;
 
 namespace RavenNest.SDK
 {
-
-    public class RavenNestClient : IRavenNestClient
+    public class RavenNestClient : IDisposable
     {
         private readonly ILogger logger;
         private readonly IAppSettings appSettings;
@@ -30,7 +29,14 @@ namespace RavenNest.SDK
         private readonly BotPlayerGenerator botPlayerGenerator;
         public bool BadClientVersion => Volatile.Read(ref badClientVersion) == 1;
 
-        private readonly ConcurrentQueue<LoyaltyUpdate> loyaltyUpdateQueue = new ConcurrentQueue<LoyaltyUpdate>();
+        private readonly ConcurrentQueue<LoyaltyUpdate> loyaltyUpdateQueue = new();
+        private readonly ConcurrentQueue<Func<Task>> pendingAsyncRequests = new();
+
+        private Thread thread;
+        private bool terminated;
+        private bool disposed;
+        internal bool AwaitingSessionStart;
+        private float SessionStartTime;
 
         public RavenNestClient(
             ILogger logger,
@@ -49,25 +55,31 @@ namespace RavenNest.SDK
             tokenProvider = new TokenProvider();
             var request = new WebApiRequestBuilderProvider(appSettings, tokenProvider);
 
-            Stream = new WebSocketEndpoint(this, gameManager, logger, settings, tokenProvider, new GamePacketSerializer(binarySerializer));
-            Auth = new WebBasedAuthEndpoint(this, logger, request);
-            Game = new WebBasedGameEndpoint(this, logger, request);
-            Items = new WebBasedItemsEndpoint(this, logger, request);
-            Players = new WebBasedPlayersEndpoint(this, logger, request);
-            Marketplace = new WebBasedMarketplaceEndpoint(this, logger, request);
-            Village = new WebBasedVillageEndpoint(this, logger, request);
+            WebSocket = new WebSocketApi(this, gameManager, logger, settings, tokenProvider, new GamePacketSerializer(binarySerializer));
+            Tcp = new TcpApi(gameManager, appSettings.TcpApiEndpoint, tokenProvider);
+
+            Auth = new AuthApi(this, logger, request);
+            Game = new GameApi(this, logger, request);
+            Items = new ItemsApi(this, logger, request);
+            Players = new PlayersApi(this, logger, request);
+            Marketplace = new MarketplaceApi(this, logger, request);
+            Village = new VillageApi(this, logger, request);
 
             botPlayerGenerator = new BotPlayerGenerator();
+
+            thread = new System.Threading.Thread(UpdateThread);
+            thread.Start();
         }
 
-        public IWebSocketEndpoint Stream { get; }
-        public IAuthEndpoint Auth { get; }
-        public IGameEndpoint Game { get; }
-        public IItemEndpoint Items { get; }
-        public IPlayerEndpoint Players { get; }
-        public IMarketplaceEndpoint Marketplace { get; }
+        public WebSocketApi WebSocket { get; }
+        public TcpApi Tcp { get; }
+        public AuthApi Auth { get; }
+        public GameApi Game { get; }
+        public ItemsApi Items { get; }
+        public PlayersApi Players { get; }
+        public MarketplaceApi Marketplace { get; }
 
-        public IVillageEndpoint Village { get; }
+        public VillageApi Village { get; }
 
 
         public bool Authenticated => currentAuthToken != null &&
@@ -80,7 +92,7 @@ namespace RavenNest.SDK
 
         public bool HasActiveRequest => activeRequestCount > 0;
 
-        public string ServerAddress => appSettings.ApiEndpoint;
+        public string ServerAddress => appSettings.WebApiEndpoint;
         public Guid SessionId { get; private set; }
         public string TwitchUserName { get; private set; }
         public string TwitchDisplayName { get; private set; }
@@ -108,41 +120,45 @@ namespace RavenNest.SDK
             });
         }
 
-        public async void Update()
+        private async void UpdateThread()
         {
-            if (Interlocked.CompareExchange(ref updateCounter, 1, 0) == 1)
+            while (!disposed)
             {
-                return;
-            }
-
-            if (!await Stream.UpdateAsync())
-            {
-                logger.Debug("Reconnecting to server...");
-            }
-
-            if (Authenticated && SessionStarted)
-            {
-                try
+                if (!await WebSocket.UpdateAsync())
                 {
-                    if (loyaltyUpdateQueue.TryDequeue(out var req))
+                    logger.Debug("Reconnecting to server...");
+                }
+
+                if (pendingAsyncRequests.TryDequeue(out var pendingAsyncRequest))
+                {
+                    await pendingAsyncRequest();
+                }
+
+                if (Authenticated && SessionStarted)
+                {
+                    try
                     {
-                        if (!await Players.SendLoyaltyUpdateAsync(req))
+                        if (loyaltyUpdateQueue.TryDequeue(out var req))
                         {
-                            loyaltyUpdateQueue.Enqueue(req);
-                            await Task.Delay(2000);
+                            if (!await Players.SendLoyaltyUpdateAsync(req))
+                            {
+                                loyaltyUpdateQueue.Enqueue(req);
+
+                                System.Threading.Thread.Sleep(2000);
+                            }
                         }
                     }
+                    catch (Exception exc)
+                    {
+                        logger.Error("Failed to send loyalty data to server: " + exc);
+                    }
+                    finally
+                    {
+                    }
                 }
-                catch (Exception exc)
-                {
-                    logger.Error("Failed to send loyalty data to server: " + exc);
-                }
-                finally
-                {
-                }
-            }
 
-            Interlocked.Decrement(ref updateCounter);
+                System.Threading.Thread.Sleep(16);
+            }
         }
 
         public bool SaveTrainingSkill(PlayerController player)
@@ -152,13 +168,20 @@ namespace RavenNest.SDK
                 return false;
             }
 
-            if (player.IsBot && player.UserId.StartsWith("#"))
+            if (player.IsBot)
             {
                 return true;
             }
 
-            var saveResult = Stream.SaveActiveSkill(player);
-            Stream.SavePlayerState(player);
+            // if we are connected to the Tcp Api, we will use that instead.
+            if (Tcp.Connected)
+            {
+                Tcp.UpdatePlayer(player);
+                return true;
+            }
+
+            var saveResult = WebSocket.SaveActiveSkill(player);
+            WebSocket.SavePlayerState(player);
             return saveResult;
         }
 
@@ -169,7 +192,7 @@ namespace RavenNest.SDK
                 return false;
             }
 
-            if (player.IsBot && player.UserId.StartsWith("#"))
+            if (player.IsBot)
             {
                 return true;
             }
@@ -180,8 +203,16 @@ namespace RavenNest.SDK
                 return false;
             }
 
-            var saveResult = Stream.SavePlayerSkills(player);
-            Stream.SavePlayerState(player);
+            // if we are connected to the Tcp Api, we will use that instead.
+            if (Tcp.Connected)
+            {
+                Tcp.UpdatePlayer(player);
+                return true;
+            }
+
+
+            var saveResult = WebSocket.SavePlayerSkills(player);
+            WebSocket.SavePlayerState(player);
             return saveResult;
         }
 
@@ -232,29 +263,31 @@ namespace RavenNest.SDK
             return false;
         }
 
-        public async Task<bool> StartSessionAsync(string clientVersion, string accessKey, bool useLocalPlayers)
+        public async Task<bool> StartSessionAsync(string clientVersion, string accessKey)
         {
             try
             {
                 Interlocked.Increment(ref activeRequestCount);
-                var sessionToken = await Game.BeginSessionAsync(clientVersion, accessKey, useLocalPlayers, UnityEngine.Time.time);
-                if (sessionToken != null)
-                {
-                    tokenProvider.SetSessionToken(sessionToken);
-                    currentSessionToken = sessionToken;
-                    SessionId = currentSessionToken.SessionId;
-                    TwitchUserName = currentSessionToken.TwitchUserName;
-                    TwitchDisplayName = currentSessionToken.TwitchDisplayName;
-                    TwitchUserId = currentSessionToken.TwitchUserId;
-                    gameManager.OnSessionStart();
-                    return true;
-                }
-                else
+                var result = await Game.BeginSessionAsync(clientVersion, accessKey, SessionStartTime);
+
+                if (result == null || result.State != BeginSessionResultState.Success || result.SessionToken == null)
                 {
                     Interlocked.CompareExchange(ref badClientVersion, 1, 0);
+                    await Task.Delay(250);
+                    return false;
                 }
 
-                await Task.Delay(250);
+                tokenProvider.SetSessionToken(result.SessionToken);
+                currentSessionToken = result.SessionToken;
+                TwitchUserName = currentSessionToken.TwitchUserName;
+                TwitchDisplayName = currentSessionToken.TwitchDisplayName;
+                TwitchUserId = currentSessionToken.TwitchUserId;
+                AwaitingSessionStart = false;
+                gameManager.OnSessionStart();
+                gameManager.HandleGameEvent(result.Village);
+                gameManager.HandleGameEvent(result.Permissions);
+                gameManager.HandleGameEvent(result.ExpMultiplier);
+                return true;
             }
             catch (Exception exc)
             {
@@ -370,7 +403,7 @@ namespace RavenNest.SDK
             }
             finally
             {
-                Stream.Close();
+                WebSocket.Close();
                 Interlocked.Decrement(ref activeRequestCount);
                 currentSessionToken = null;
                 tokenProvider.SetSessionToken(null);
@@ -384,6 +417,35 @@ namespace RavenNest.SDK
         public Task<bool> ClearLogoAsync(string twitchUserId)
         {
             return this.Game.ClearLogoAsync(twitchUserId);
+        }
+
+        internal async void Terminate()
+        {
+            Dispose();
+            await EndSessionAsync();
+            this.terminated = true;
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                Tcp.Dispose();
+            }
+            catch { }
+            try
+            {
+                WebSocket.Close();
+            }
+            catch { }
+            disposed = true;
+        }
+
+        internal void StartSession(string version, string accessKey)
+        {
+            AwaitingSessionStart = true;
+            SessionStartTime = UnityEngine.Time.time;
+            pendingAsyncRequests.Enqueue(() => StartSessionAsync(version, accessKey));
         }
     }
 }

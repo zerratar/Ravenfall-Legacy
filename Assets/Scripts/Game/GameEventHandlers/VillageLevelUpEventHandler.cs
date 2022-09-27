@@ -1,6 +1,6 @@
 ﻿public class VillageLevelUpEventHandler : GameEventHandler<VillageLevelUp>
 {
-    protected override void Handle(GameManager gameManager, VillageLevelUp data)
+    public override void Handle(GameManager gameManager, VillageLevelUp data)
     {
         if (data.Experience > 0)
             gameManager.Village.TownHall.SetExp(data.Experience);

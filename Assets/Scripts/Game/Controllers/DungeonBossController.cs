@@ -11,10 +11,9 @@ public class DungeonBossController : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private SphereCollider activateRadiusCollider;
     [SerializeField] private SphereCollider attackRadiusCollider;
-    [SerializeField] private float attackInterval = 1.5f;
     [SerializeField] private float deathTimer = 5f;
+    [SerializeField] private float hitRange = 3f;
 
-    private float attackTimer = 0f;
     private Animator modelAnimator;
     private DungeonManager dungeonManager;
     private GameObject modelObject;
@@ -71,7 +70,7 @@ public class DungeonBossController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (GameCache.Instance.IsAwaitingGameRestore) return;
+        if (GameCache.IsAwaitingGameRestore) return;
         if (destroyed)
         {
             return;
@@ -88,17 +87,22 @@ public class DungeonBossController : MonoBehaviour
             return;
         }
 
-        if (UpdateAction())
-        {
-            HandleAttack();
-        }
+        //if (UpdateAction())
+        //{
+        //    HandleAttack();
+        //}
 
+        UpdateHealthBar();
+    }
+
+    public void UpdateHealthBar()
+    {
         var proc = (float)Enemy.Stats.Health.CurrentValue / Enemy.Stats.Health.Level;
 
         dungeonManager.Notifications.SetHealthBarValue(proc, Enemy.Stats.Health.Level);
     }
 
-    private bool UpdateAction()
+    public bool UpdateAction()
     {
         if (enemyController.Stats.IsDead)
         {
@@ -125,61 +129,71 @@ public class DungeonBossController : MonoBehaviour
         return true;
     }
 
-    private void HandleAttack()
-    {
-        target = GetAttackableTarget();
+    //private void HandleAttack()
+    //{
+    //    target = GetAttackableTarget();
+    //    attackTimer -= Time.deltaTime;
 
-        if (!target)
-        {
-            return;
-        }
+    //    if (!target)
+    //    {
+    //        return;
+    //    }
 
-        attackTimer -= Time.deltaTime;
-        if (attackTimer <= 0f)
-        {
-            Attack();
-        }
-    }
+    //    var dist = Vector3.Distance(Enemy.Position, target.Position);
+    //    if (dist >= hitRange)
+    //    {
+    //        Enemy.SetDestination(target.Position);
+    //        return;
+    //    }
+        
+    //    if (attackTimer <= 0f)
+    //    {
+    //        Enemy.Lock();
+    //        Attack();
+    //    }
+    //}
 
-    private void Attack()
-    {
-        if (destroyed)
-        {
-            return;
-        }
+    //private void Attack()
+    //{
+    //    if (destroyed)
+    //    {
+    //        return;
+    //    }
 
-        attackTimer = attackInterval;
+    //    attackTimer = attackInterval;
 
-        if (this == null || enemyController == null)
-        {
-            return;
-        }
+    //    if (this == null || enemyController == null)
+    //    {
+    //        return;
+    //    }
 
-        var damage = GameMath.CalculateMeleeDamage(enemyController, target);
+    //    var damage = GameMath.CalculateMeleeDamage(enemyController, target);
 
-        if (animator)
-        {
-            animator.SetInteger("AttackType", UnityEngine.Random.Range(0, 4));
-            animator.SetTrigger("AttackTrigger");
-        }
+    //    if (animator)
+    //    {
+    //        animator.SetInteger("AttackType", UnityEngine.Random.Range(0, 4));
+    //        animator.SetTrigger("AttackTrigger");
+    //    }
 
-        target.TakeDamage(enemyController, (int)damage);
-    }
+    //    target.TakeDamage(enemyController, (int)damage);
+    //}
 
-    private PlayerController GetAttackableTarget()
+    public PlayerController GetAttackableTarget()
     {
         var players = dungeonManager.GetPlayers();
         if (players.Count == 0) return null;
+        var hasAliveEnemies = dungeonManager.HasAliveEnemies();
+        if (hasAliveEnemies) return null;
+
         try
         {
-
-            if ((players.Count == 1 || players.All(x => x.TrainingHealing)) && !dungeonManager.HasAliveEnemies())
+            if ((players.Count == 1 || players.All(x => x.TrainingHealing)))
             {
                 return players.FirstOrDefault(x => x != null && x && !x.Stats.IsDead);
             }
 
             return players
-                .Where(x => x != null && x && !x.Stats.IsDead && Vector3.Distance(x.PositionInternal, enemyController.PositionInternal) <= attackRadiusCollider.radius)
+                .Where(x => x != null && x && !x.Stats.IsDead && Vector3.Distance(x.Movement.Position, enemyController.PositionInternal) <= attackRadiusCollider.radius)
                 .OrderByDescending(x =>
                 {
                     enemyController.Aggro.TryGetValue(x.Name, out var aggro);

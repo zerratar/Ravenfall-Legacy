@@ -28,7 +28,7 @@ public class OnsenManager : MonoBehaviour
             }
 
 #if DEBUG
-            if (!game.admin_controlPlayers)
+            if (!AdminControlData.ControlPlayers)
             {
                 game.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_WRONG_ISLAND, player.Island.Identifier);
             }

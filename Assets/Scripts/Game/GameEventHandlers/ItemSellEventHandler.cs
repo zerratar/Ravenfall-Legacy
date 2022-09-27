@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class ItemSellEventHandler : GameEventHandler<ItemTradeUpdate>
 {
-    protected override void Handle(GameManager gameManager, ItemTradeUpdate data)
+    public override void Handle(GameManager gameManager, ItemTradeUpdate data)
     {
         var player = gameManager.Players.GetPlayerByUserId(data.SellerId);
         if (player)

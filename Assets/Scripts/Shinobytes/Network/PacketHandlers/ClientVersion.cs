@@ -6,6 +6,6 @@
     }
     public override void Handle(TwitchPlayerInfo data, GameClient client)
     {
-        client.SendFormat(data.Username, "The streamer is currently running Ravenfall v{version}", UnityEngine.Application.version);
+        client.SendFormat(data.Username, "The streamer is currently running Ravenfall v{version}", Ravenfall.Version);
     }
 }

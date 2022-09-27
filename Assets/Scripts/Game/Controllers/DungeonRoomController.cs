@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Shinobytes.Linq;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 public class DungeonRoomController : MonoBehaviour
@@ -8,6 +9,7 @@ public class DungeonRoomController : MonoBehaviour
     [SerializeField] private DungeonController dungeon;
     [SerializeField] private Transform cameraPoint;
     [SerializeField] private Transform exitPoint;
+    [SerializeField] private Transform enemyContainer;
 
     public int Width = 1;
     public int Height = 1;
@@ -28,8 +30,26 @@ public class DungeonRoomController : MonoBehaviour
     public bool InProgress => state == DungeonRoomState.InProgress;
     public bool IsCompleted => state == DungeonRoomState.Completed;
     public Transform CameraPoint => cameraPoint;
-
+    public EnemyController[] Enemies => enemies;
     public Transform ExitPoint => exitPoint;
+
+    [Button("Assign Room to spawn points")]
+    private void FixMissingSpawnPointRoom()
+    {
+        var spawnPoints = GetComponentsInChildren<EnemySpawnPoint>();
+        foreach (var spawnPoint in spawnPoints)
+        {
+            spawnPoint.Room = this;
+        }
+    }
+
+
+    [Button("Assign Enemy Container")]
+    private void AssignEnemyContainer()
+    {
+        this.enemyContainer = transform.Find("Enemies");
+    }
+
 
     // Start is called before the first frame update
     void Start()
@@ -49,7 +69,13 @@ public class DungeonRoomController : MonoBehaviour
             }
         }
 
-        var enemyContainer = transform.Find("Enemies");
+        if (!enemyContainer) this.enemyContainer = transform.Find("Enemies");
+        ReloadEnemies();
+    }
+
+    public Transform EnemyContainer => enemyContainer;
+    public void ReloadEnemies()
+    {
         if (!enemyContainer)
             return;
 
@@ -115,6 +141,14 @@ public class DungeonRoomController : MonoBehaviour
     {
         state = DungeonRoomState.Completed;
 
+
+        var alivePlayers = dungeon.DungeonManager.GetAlivePlayers();
+        foreach (var player in alivePlayers)
+        {
+            player.ClearTarget();
+        }
+
+
         if (gate)
             gate.Open();
     }
@@ -138,7 +172,7 @@ public static class TargetExtensions
                 continue;
             }
 
-            var dist = Vector3.Distance(x.PositionInternal, player.PositionInternal);
+            var dist = Vector3.Distance(x.PositionInternal, player.Movement.Position);
             if (dist < maxDist)
             {
                 maxDist = dist;
@@ -164,7 +198,7 @@ public static class TargetExtensions
                 continue;
             }
 
-            var dist = Vector3.Distance(x.PositionInternal, player.PositionInternal);
+            var dist = Vector3.Distance(x.PositionInternal, player.Movement.Position);
             if (dist < maxDist)
             {
                 maxDist = dist;
@@ -182,8 +216,7 @@ public static class TargetExtensions
         return
             enemies
             .Where(x => !x.Stats.IsDead && (filter == null || filter(x)))
-            //.OrderBy(x => x.GetAttackerCountExcluding(player))
-            .OrderBy(x => Vector3.Distance(x.PositionInternal, player.PositionInternal))
+            .OrderBy(x => Vector3.Distance(x.PositionInternal, player.Movement.Position))
             .FirstOrDefault();
     }
 }

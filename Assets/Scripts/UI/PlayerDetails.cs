@@ -143,7 +143,8 @@ public class PlayerDetails : MonoBehaviour
             var activeSkill = observedPlayer.GetActiveSkillStat();
             if (activeSkill != null)
             {
-                var name = activeSkill == observedPlayer.GetSkill(Skill.Health) ? "All" : activeSkill.Name;
+                var trainingAll = activeSkill == observedPlayer.GetSkill(Skill.Health);
+                var name = trainingAll ? "All" : activeSkill.Name;
                 if (playerTask == TaskType.None || observedPlayer.Chunk == null)
                 {
                     SetActive(timeforlevelPanel, false);
@@ -153,7 +154,7 @@ public class PlayerDetails : MonoBehaviour
                 {
                     SetActive(timeforlevelPanel, true);
                     lblTrainingSkill.text = name;
-                    lblTimeForLevel.text = GetTimeLeftForLevelFormatted();
+                    lblTimeForLevel.text = trainingAll ? "N/A" : GetTimeLeftForLevelFormatted();
                 }
             }
         }
@@ -193,6 +194,7 @@ public class PlayerDetails : MonoBehaviour
         {
             timeLeft = System.TimeSpan.FromHours(hours);
         }
+
         if (timeLeft.Days >= 365 * 10_000)
         {
             return "<color=red>When hell freezes over</color>";

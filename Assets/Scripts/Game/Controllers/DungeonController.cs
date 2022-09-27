@@ -24,6 +24,10 @@ public class DungeonController : MonoBehaviour
     [Range(0.01f, 1f)]
     public float SpawnRate = 0.5f;
 
+    [Range(1f, 10f)] public float MobsDifficultyScale = 1f;
+    [Range(1f, 10f)] public float BossCombatScale = 1f;
+    [Range(1f, 10f)] public float BossHealthScale = 1f;
+
     private DungeonRoomController[] rooms;
     private DungeonRoomController currentRoom;
 
@@ -37,7 +41,8 @@ public class DungeonController : MonoBehaviour
 
     public DungeonRoomController BossRoom => rooms.FirstOrDefault(x => x.RoomType == DungeonRoomType.Boss);
     public DungeonRoomController Room => currentRoom;
-
+    public DungeonRoomController[] Rooms => rooms;
+    public DungeonManager DungeonManager => dungeonManager;
     // Start is called before the first frame update
     public bool HasPredefinedRooms => (rooms != null && rooms.Length > 0) || (!Application.isPlaying && (rooms = GetComponentsInChildren<DungeonRoomController>()).Length > 0);
 
@@ -114,6 +119,8 @@ public class DungeonController : MonoBehaviour
                 return;
             }
 
+            var players = dungeonManager.GetAlivePlayers();
+
             // DO NOT DO THIS EVERY UPDATE!!!!!!
             if (Time.time - lastCameraChange >= 10)
             {
@@ -141,10 +148,9 @@ public class DungeonController : MonoBehaviour
                 {
                     if (cameraTargets != null && cameraTargets.Length > 0)
                     {
-                        var players = dungeonManager.GetAlivePlayers();
+
                         if (players.Count > 0)
                         {
-
                             var maxDistance = float.MaxValue;
                             this.activeCameraPoint = null;
 
@@ -293,9 +299,17 @@ public class DungeonController : MonoBehaviour
 
     public void AddExperienceReward(PlayerController player)
     {
-        var factor = Math.Min(50, Math.Max(bossCombatLevel / player.Stats.CombatLevel, 10d));
-        player.AddExp(Skill.Slayer, factor);
-        player.AddExp(Math.Max(5, factor * 0.5));
+        var slayerFactor = Math.Min(50, Math.Max(bossCombatLevel / player.Stats.CombatLevel, 10d));
+        player.AddExp(Skill.Slayer, slayerFactor);
+
+        var skillFactor = Math.Max(5, slayerFactor * 0.5);
+        if (player.Dungeon.Ferry.HasReturned && !player.Dungeon.Ferry.HasDestination)
+        {
+            player.AddExp(Skill.Sailing, skillFactor);
+            return;
+        }
+
+        player.AddExp(skillFactor);
     }
 
     public void RewardItemDrops(IReadOnlyList<PlayerController> joinedPlayers)

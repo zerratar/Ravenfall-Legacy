@@ -15,7 +15,7 @@ public class EnchantItem : PacketHandler<TradeItemRequest>
     public override async void Handle(TradeItemRequest data, GameClient client)
     {
         // Only game admins can use enchant in this version.
-        if (!GameVersion.TryParse("0.7.8.8a", out var minVersion))
+        if (!GameVersion.TryParse("0.7.9.2a", out var minVersion))
         {
             return;
         }

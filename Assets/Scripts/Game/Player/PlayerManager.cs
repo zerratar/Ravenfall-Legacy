@@ -181,7 +181,7 @@ public class PlayerManager : MonoBehaviour
                     return null;
                 }
 
-                var player = AddPlayer(isBot, addPlayerRequest, playerInfo.Player);
+                var player = AddPlayer(addPlayerRequest, playerInfo.Player, isBot);
                 if (player)
                 {
                     if (userTriggered && !player.IsBot)
@@ -214,24 +214,25 @@ public class PlayerManager : MonoBehaviour
         return null;
     }
 
-    private PlayerController AddPlayer(bool isBot, TwitchPlayerInfo twitchPlayerInfo, RavenNest.Models.Player ravenfallPlayerInfo, bool isGameRestore = false)
+    private PlayerController AddPlayer(TwitchPlayerInfo twitchUser, RavenNest.Models.Player playerInfo, bool isBot, bool isGameRestore = false)
     {
         var Game = gameManager;
-        var player = Game.SpawnPlayer(ravenfallPlayerInfo, twitchPlayerInfo, isGameRestore: isGameRestore);
+        var player = Game.SpawnPlayer(playerInfo, twitchUser, isGameRestore: isGameRestore);
         if (player)
         {
-            player.Unlock();
+            player.Movement.Unlock();
             player.IsBot = isBot;
             if (player.IsBot)
             {
                 player.Bot = this.gameObject.AddComponent<BotPlayerController>();
+                player.Bot.playerController = player;
                 if (player.UserId != null && !player.UserId.StartsWith("#"))
                 {
                     player.UserId = "#" + player.UserId;
                 }
             }
 
-            player.PlayerNameHexColor = twitchPlayerInfo.Color;
+            player.PlayerNameHexColor = twitchUser.Color;
             if (player.IsBroadcaster && !player.IsBot)
             {
                 Game.EventTriggerSystem.TriggerEvent("join", TimeSpan.FromSeconds(1));
@@ -481,11 +482,20 @@ public class PlayerManager : MonoBehaviour
 
     internal async Task RestoreAsync(List<GameCachePlayerItem> players)
     {
-        if (players.Count == 0) return;
+        // even if players count is 0, do the request.
+        // it will ensure the server later removes players not being recovered.
+        //if (players.Count == 0) return;
 
         var failed = new List<GameCachePlayerItem>();
         try
         {
+            UnityEngine.Debug.Log("Send Restore to server with " + players.Count + " players.");
+            if (players.Count == 0)
+            {
+                await gameManager.RavenNest.Players.RestoreAsync(new PlayerRestoreData { Characters = new Guid[0] });
+                return;
+            }
+
             var id = players.Select(x => x.CharacterId).ToArray();
             var result = await gameManager.RavenNest.Players.RestoreAsync(new PlayerRestoreData
             {
@@ -506,7 +516,7 @@ public class PlayerManager : MonoBehaviour
                         continue;
                     }
 
-                    addPlayerQueue.Enqueue(() => AddPlayer(false, requested.TwitchUser, playerInfo.Player, true));
+                    addPlayerQueue.Enqueue(() => AddPlayer(requested.TwitchUser, playerInfo.Player, false, true));
 
                     //var player = AddPlayer(false, requested.TwitchUser, playerInfo.Player);
                     //if (!player)

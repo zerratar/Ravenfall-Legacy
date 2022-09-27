@@ -71,7 +71,7 @@ public class TreeController : MonoBehaviour
     //// Update is called once per frame
     //void Update()
     //{
-    //    if (GameCache.Instance.IsAwaitingGameRestore) return;
+    //    if (GameCache.IsAwaitingGameRestore) return;
     //    if (treeShakeTimer > 0)
     //    {
     //        treeShakeTimer -= Time.deltaTime;

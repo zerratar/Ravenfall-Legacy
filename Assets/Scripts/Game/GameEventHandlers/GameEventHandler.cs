@@ -1,9 +1,9 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-public abstract class GameEventHandler<TEventData> : IGameEventHandler
+public abstract class GameEventHandler<TEventData> : IGameEventHandler<TEventData>
 {
-    protected abstract void Handle(GameManager gameManager, TEventData data);
+    public abstract void Handle(GameManager gameManager, TEventData data);
     public void Handle(GameManager gameManager, string data)
     {
         try

@@ -2,9 +2,10 @@
 {
     public interface IAppSettings
     {
-        string ApiEndpoint { get; }
-        string ApiAuthEndpoint { get; }
+        string WebApiEndpoint { get; }
+        string WebApiAuthEndpoint { get; }
         string WebSocketEndpoint { get; }
+        string TcpApiEndpoint { get; }
     }
 
     //

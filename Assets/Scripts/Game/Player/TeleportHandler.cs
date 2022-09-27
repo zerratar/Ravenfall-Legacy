@@ -46,9 +46,10 @@ public class TeleportHandler : MonoBehaviour
         }
 
         player.taskTarget = null;
+        
         player.SetPosition(position, adjustPlayerToNavmesh);
-        player.GotoPosition(position);
-        player.Lock();
+        player.SetDestination(position);
+        player.Movement.Lock();
 
         if (!hasParent && parent)
         {

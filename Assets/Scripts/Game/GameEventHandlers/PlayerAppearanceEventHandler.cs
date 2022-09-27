@@ -2,7 +2,7 @@
 
 public class PlayerAppearanceEventHandler : GameEventHandler<SyntyAppearanceUpdate>
 {
-    protected override void Handle(GameManager gameManager, SyntyAppearanceUpdate data)
+    public override void Handle(GameManager gameManager, SyntyAppearanceUpdate data)
     {
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (player)

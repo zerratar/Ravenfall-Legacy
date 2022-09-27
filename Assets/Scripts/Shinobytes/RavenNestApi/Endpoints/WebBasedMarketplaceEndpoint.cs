@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Threading.Tasks;
-using RavenNest.Models;
 
 namespace RavenNest.SDK.Endpoints
 {
-    internal class WebBasedVillageEndpoint : IVillageEndpoint
+    public class VillageApi
     {
         private readonly IApiRequestBuilderProvider request;
-        private readonly IRavenNestClient client;
+        private readonly RavenNestClient client;
         private readonly ILogger logger;
-        public WebBasedVillageEndpoint(
-            IRavenNestClient client,
+        public VillageApi(
+            RavenNestClient client,
             ILogger logger,
             IApiRequestBuilderProvider request)
         {
@@ -82,50 +81,6 @@ namespace RavenNest.SDK.Endpoints
                 .Build()
                 .SendAsync<bool>(
                     ApiRequestTarget.Village,
-                    ApiRequestType.Get);
-        }
-    }
-
-    internal class WebBasedMarketplaceEndpoint : IMarketplaceEndpoint
-    {
-        private readonly IApiRequestBuilderProvider request;
-        private readonly IRavenNestClient client;
-        private readonly ILogger logger;
-        public WebBasedMarketplaceEndpoint(
-            IRavenNestClient client,
-            ILogger logger,
-            IApiRequestBuilderProvider request)
-        {
-            this.client = client;
-            this.logger = logger;
-            this.request = request;
-        }
-
-        public Task<ItemSellResult> SellItemAsync(string userId, Guid itemId, long amount, long pricePerItem)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("sell")
-                .AddParameter(itemId.ToString())
-                .AddParameter((amount).ToString())
-                .AddParameter((pricePerItem).ToString())
-                .Build()
-                .SendAsync<ItemSellResult>(
-                    ApiRequestTarget.Marketplace,
-                    ApiRequestType.Get);
-        }
-
-        public Task<ItemBuyResult> BuyItemAsync(string userId, Guid itemId, long amount, long maxPricePerItem)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("buy")
-                .AddParameter(itemId.ToString())
-                .AddParameter((amount).ToString())
-                .AddParameter((maxPricePerItem).ToString())
-                .Build()
-                .SendAsync<ItemBuyResult>(
-                    ApiRequestTarget.Marketplace,
                     ApiRequestType.Get);
         }
     }

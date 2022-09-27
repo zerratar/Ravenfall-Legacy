@@ -22,16 +22,21 @@ public class RaidJoin : PacketHandler<EventJoinRequest>
                 return;
             }
 
-            if (player.Ferry.OnFerry)
+            if (player.Dungeon.InDungeon)
             {
-                client.SendMessage(username, Localization.MSG_JOIN_RAID_FERRY);
+                client.SendMessage(username, Localization.MSG_JOIN_RAID_DUNGEON);
                 return;
             }
+            //if (player.Ferry.OnFerry)
+            //{
+            //    client.SendMessage(username, Localization.MSG_JOIN_RAID_FERRY);
+            //    return;
+            //}
 
-            if (player.Ferry.Active)
-            {
-                player.Ferry.Disembark();
-            }
+            //if (player.Ferry.Active)
+            //{
+            //    player.Ferry.Disembark();
+            //}
 
             if (player.Arena.InArena && Game.Arena.Started)
             {
@@ -62,10 +67,7 @@ public class RaidJoin : PacketHandler<EventJoinRequest>
                     break;
             }
 
-            if (player.Onsen.InOnsen)
-            {
-                Game.Onsen.Leave(player);
-            }
+
 
             Game.Arena.Leave(player);
             Game.Raid.Join(player);

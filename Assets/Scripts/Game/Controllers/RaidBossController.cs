@@ -67,7 +67,7 @@ public class RaidBossController : MonoBehaviour
     void Update()
     {
 
-        if (GameCache.Instance.IsAwaitingGameRestore) return;
+        if (GameCache.IsAwaitingGameRestore) return;
 
         if (activated)
         {

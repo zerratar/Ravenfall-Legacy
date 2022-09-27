@@ -2,7 +2,7 @@
 
 public class PlayerRestedUpdateEventHandler : GameEventHandler<PlayerRestedUpdate>
 {
-    protected override void Handle(GameManager gameManager, PlayerRestedUpdate data)
+    public override void Handle(GameManager gameManager, PlayerRestedUpdate data)
     {
         gameManager.Players.UpdateRestedState(data);
     }

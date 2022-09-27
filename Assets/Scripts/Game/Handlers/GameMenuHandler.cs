@@ -27,7 +27,7 @@ public class GameMenuHandler : MonoBehaviour
 
         if (lblVersion)
         {
-            lblVersion.text = "v" + Application.version;
+            lblVersion.text = "v" + Ravenfall.Version;//Application.version;
         }
 
         if (!loginScreen) loginScreen = FindObjectOfType<LoginHandler>();

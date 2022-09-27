@@ -6,6 +6,9 @@ namespace RavenNest.SDK.Endpoints
     {
         void SetAuthToken(AuthToken token);
         void SetSessionToken(SessionToken token);
+        bool HasAuthToken { get; }
+        bool HasSessionToken { get; }
+
         AuthToken GetAuthToken();
         SessionToken GetSessionToken();
     }
@@ -19,6 +22,8 @@ namespace RavenNest.SDK.Endpoints
 
         public SessionToken GetSessionToken() => sessionToken;
 
+        public bool HasAuthToken => authToken != null;
+        public bool HasSessionToken => sessionToken != null;
         public void SetAuthToken(AuthToken token)
         {
             authToken = token;

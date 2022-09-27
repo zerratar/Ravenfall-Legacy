@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerNameUpdateEventHandler : GameEventHandler<PlayerNameUpdate>
 {
-    protected override void Handle(GameManager gameManager, PlayerNameUpdate data)
+    public override void Handle(GameManager gameManager, PlayerNameUpdate data)
     {
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player) return;

@@ -36,6 +36,12 @@ public class NameTag : MonoBehaviour
         if (!logo) logo = GetComponentInChildren<Image>();
         gameManager = FindObjectOfType<GameManager>();
         originalFontSize = label.fontSize;
+
+        // if graphics are disabled, main camera does not exist.
+
+        if (!GraphicsToggler.GraphicsEnabled)
+            return;
+
         if (Camera.main)
             targetCamera = Camera.main.transform;
     }
@@ -53,13 +59,22 @@ public class NameTag : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!GraphicsToggler.GraphicsEnabled)
+            return;
+
         if (!isVisible || !HasTargetPlayer || !Init())
         {
             return;
         }
 
         if (!targetCamera)
-            targetCamera = Camera.main.transform;
+        {
+            var mainCamera = Camera.main;
+            if (!mainCamera)
+                return;
+
+            targetCamera = mainCamera.transform;
+        }
 
         //+ (Vector3.up * TargetTransform.localScale.y * YOffset * Scale)
         //+ (Vector3.up * YMinDistance * Scale);

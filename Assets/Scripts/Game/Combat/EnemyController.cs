@@ -3,6 +3,7 @@ using Sirenix.OdinInspector;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class EnemyController : MonoBehaviour, IAttackable
@@ -19,8 +20,6 @@ public class EnemyController : MonoBehaviour, IAttackable
     [SerializeField] private float healthBarOffset = 0f;
     [SerializeField] private float attackRange = 2.88f;
     //[SerializeField] private double experience;
-
-
 
     [SerializeField] private float attackTimer;
     [SerializeField] private float attackInterval = 0.22f;
@@ -39,9 +38,9 @@ public class EnemyController : MonoBehaviour, IAttackable
     private float noDamageDropTargetTimer;
     private float highestAttackerAggroValue;
     private HealthBar healthBar;
-    private WalkyWalkyScript movement;
+    private EnemyMovementController movement;
     private DamageCounterManager damageCounterManager;
-    //private NavMeshAgent agent;
+
     private bool isVisbile = true;
     private bool spawnPositionSet;
 
@@ -60,12 +59,16 @@ public class EnemyController : MonoBehaviour, IAttackable
     public bool IsDungeonBoss { get; private set; }
 
     internal Vector3 PositionInternal;
+
     private float hitRangeRadius;
 
     public bool Removed;
 
     public Vector3 Position => PositionInternal;
 
+    float showDebugInfoTime;
+
+    public PlayerController TargetPlayer;
 
     [Button("Adjust Placement")]
     public void AdjustPlacement()
@@ -80,6 +83,58 @@ public class EnemyController : MonoBehaviour, IAttackable
             return Attackers.Count - 1;
         }
         return Attackers.Count;
+    }
+
+    public void OnDrawGizmosSelected()
+    {
+        showDebugInfoTime = 1f;
+        if (this.Target)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(this.transform.position, this.Target.position);
+        }
+
+        if (this.movement.isMovingInternal)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(this.transform.position, this.movement.Destination);
+        }
+    }
+
+    void OnGUI()
+    {
+        if (showDebugInfoTime > 0f)
+        {
+            showDebugInfoTime -= Time.deltaTime;
+            var w = 300f;
+            var h = 20f;
+            var x = (Screen.width / 2f) - (w / 2f);
+            var y = (Screen.height / 2f) - (h / 2f);
+            var spacing = 5;
+
+            if (this.Target)
+            {
+                GUI.Label(new Rect(x, y, w, h), "Target: " + Target.name);
+                y += h + spacing;
+            }
+            else if (InCombat)
+            {
+                GUI.Label(new Rect(x, y, w, h), "In combat, no target");
+                y += h + spacing;
+            }
+            else
+            {
+                GUI.Label(new Rect(x, y, w, h), "Not in combat");
+                y += h + spacing;
+            }
+
+            GUI.Label(new Rect(x, y, w, h), "Destination dist: " + Vector3.Distance(transform.position, movement.Destination));
+            y += h + spacing;
+
+            GUI.Label(new Rect(x, y, w, h), "Destination Changed: " + movement.DestinationChangeTime);
+            y += h + spacing;
+
+        }
     }
 
     void OnDestroy()
@@ -116,7 +171,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         //if (!wander) wander = this.GetComponent<WanderScript>();                
         if (!damageCounterManager) damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
         if (!healthBarManager) healthBarManager = GameObject.FindObjectOfType<HealthBarManager>();
-        if (!movement) movement = GetComponent<WalkyWalkyScript>();
+        if (!movement) movement = GetComponent<EnemyMovementController>();
 
         PositionInternal = this.transform.position;
 
@@ -158,40 +213,76 @@ public class EnemyController : MonoBehaviour, IAttackable
     }
     void Update()
     {
+        if (GameCache.IsAwaitingGameRestore)
+        {
+            return;
+        }
+
+
         PositionInternal = this.transform.position;
-        if (GameCache.Instance.IsAwaitingGameRestore) return;
-        if (!InCombat || !Target)
+
+        //if (SpawnPoint && Mathf.Abs(SpawnPoint.transform.position.y - PositionInternal.y) >= 5)
+        //{
+        //    SetPosition(SpawnPoint.transform.position);
+        //    //this.transform.position = ;
+        //}
+
+        if ((!InCombat || !Target) && !IsDungeonBoss)
         {
             return;
         }
 
-        if (noDamageDropTargetTimer >= 0)
+        if (!IsDungeonBoss)
         {
-            noDamageDropTargetTimer += Time.deltaTime;
+            if (noDamageDropTargetTimer >= 0)
+            {
+                noDamageDropTargetTimer += Time.deltaTime;
+            }
+
+            if (noDamageDropTargetTimer >= 5.0f)
+            {
+                noDamageDropTargetTimer = -1f;
+                ClearTarget();
+                SetDestination(spawnPoint);
+                return;
+            }
+
+            if (!TargetPlayer)
+            {
+                TargetPlayer = Target.GetComponent<PlayerController>();
+                if (!TargetPlayer)
+                    return;
+            }
         }
 
-        if (noDamageDropTargetTimer >= 5.0f)
+        if (IsDungeonBoss)
         {
-            noDamageDropTargetTimer = -1f;
-            Target = null;
-            SetDestination(spawnPoint);
-            return;
+            if (!dungeonBossController.UpdateAction())
+            {
+                return;
+            }
+
+            SetTarget(dungeonBossController.GetAttackableTarget());
+
+            if (!TargetPlayer)
+            {
+                return;
+            }
+            //dungeonBossController.UpdateHealthBar();
         }
-
-        var targetPlayer = Target.GetComponent<PlayerController>();
-        if (!targetPlayer) return;
-
-        if (targetPlayer.Stats.IsDead || targetPlayer.isDestroyed || targetPlayer.Removed)
+        else
         {
-            Target = null;
-            InCombat = false;
-            //SetDestination(transform.position);
-            Lock();
-            return;
+            if (TargetPlayer.Stats.IsDead || TargetPlayer.isDestroyed || TargetPlayer.Removed || this.Island != TargetPlayer.Island)
+            {
+                ClearTarget();
+                InCombat = false;
+                Lock();
+                return;
+            }
         }
 
         var dist = Vector3.Distance(Position, Target.position);
-        if (dist >= (attackRange + targetPlayer.GetAttackRange()))
+        if (dist >= (attackRange + TargetPlayer.GetAttackRange()) && !IsDungeonBoss)
         {
             Lock();
             return;
@@ -204,7 +295,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
             if (HandleFightBack)
             {
-                AttackTarget(targetPlayer);
+                AttackTarget(TargetPlayer);
             }
         }
         else
@@ -213,11 +304,10 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
     }
 
-    private void AttackTarget(PlayerController targetPlayer)
+    public void AttackTarget(PlayerController targetPlayer)
     {
         if (!targetPlayer) return;
         if (!movement) return;
-
         attackTimer -= Time.deltaTime;
         if (attackTimer <= 0f)
         {
@@ -230,19 +320,19 @@ public class EnemyController : MonoBehaviour, IAttackable
 
                 if (!Target && targetPlayer)
                 {
-                    Target = targetPlayer.transform;
+                    SetTarget(targetPlayer);
                 }
 
                 if (Stats.IsDead || !Target || !targetPlayer)
                 {
-                    Target = null;
+                    ClearTarget();
                     return;
                 }
 
                 var damage = GameMath.CalculateMeleeDamage(this, targetPlayer);
                 if (targetPlayer.TakeDamage(this, (int)damage))
                 {
-                    Target = null;
+                    ClearTarget();
                 }
             });
 
@@ -250,7 +340,23 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
     }
 
-    private void SetDestination(Vector3 position)
+    private void SetTarget(PlayerController targetPlayer)
+    {
+        TargetPlayer = targetPlayer;
+        if (targetPlayer)
+        {
+            Target = targetPlayer.transform;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ClearTarget()
+    {
+        TargetPlayer = null;
+        Target = null;
+    }
+
+    public void SetDestination(Vector3 position)
     {
         Unlock();
         movement.SetDestination(position);
@@ -286,7 +392,6 @@ public class EnemyController : MonoBehaviour, IAttackable
         if (Target)
         {
             transform.LookAt(Target);
-
             var euler = transform.rotation.eulerAngles;
             transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
         }
@@ -297,6 +402,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     public bool GivesExperienceWhenKilled { get; set; } = true;
 
     public Transform Target { get; private set; }
+    public EnemySpawnPoint SpawnPoint;
 
     public void ClearAttackers()
     {
@@ -338,7 +444,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             if (Attackers.Count == 0)
             {
-                Target = player.transform;
+                SetTarget(player);
                 transform.LookAt(player.transform);
             }
 
@@ -364,8 +470,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             if (highestAttackerAggroValue <= totalAggro || Target == null)
             {
                 highestAttackerAggroValue = totalAggro;
-
-                Target = attacker.Transform;
+                SetTarget(attacker as PlayerController);
             }
 
             UpdateHealthbar();
@@ -382,7 +487,9 @@ public class EnemyController : MonoBehaviour, IAttackable
             noDamageDropTargetTimer = -1f;
             InCombat = false;
             highestAttackerAggroValue = 0;
-            Target = null;
+
+            ClearTarget();
+
             Unlock();
 
             if (movement) movement.Die();
@@ -428,7 +535,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             if (Attackers.Count == 0)
             {
-                Target = player.transform;
+                SetTarget(player);
                 transform.LookAt(player.transform);
             }
 
@@ -465,8 +572,7 @@ public class EnemyController : MonoBehaviour, IAttackable
                 if (highestAttackerAggroValue <= totalAggro || Target == null)
                 {
                     highestAttackerAggroValue = totalAggro;
-
-                    Target = attacker.Transform;
+                    SetTarget(attacker as PlayerController);
                 }
             }
 
@@ -485,7 +591,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             noDamageDropTargetTimer = -1f;
             InCombat = false;
             highestAttackerAggroValue = 0;
-            Target = null;
+            ClearTarget();
             Unlock();
 
             if (movement) movement.Die();
@@ -587,21 +693,29 @@ public class EnemyController : MonoBehaviour, IAttackable
         ClearAttackers();
         attackerAggro.Clear();
         Stats.Health.Reset();
+        ClearTarget();
         if (movement) movement.ResetVisibility();
     }
 
     public void Lock()
     {
-        if (!movement) movement = GetComponent<WalkyWalkyScript>();
+        if (!movement) movement = GetComponent<EnemyMovementController>();
         if (!movement) return;
         movement.Lock();
     }
 
     public void Unlock()
     {
-        if (!movement) movement = GetComponent<WalkyWalkyScript>();
+        if (!movement) movement = GetComponent<EnemyMovementController>();
         if (!movement) return;
         movement.Unlock();
+    }
+
+    internal void SetPosition(Vector3 position)
+    {
+        if (!movement) movement = GetComponent<EnemyMovementController>();
+        if (!movement) return;
+        movement.SetPosition(position);
     }
 
     public void AddAttacker(PlayerController player)
@@ -611,4 +725,5 @@ public class EnemyController : MonoBehaviour, IAttackable
             Attackers.Add(player);
         }
     }
+
 }

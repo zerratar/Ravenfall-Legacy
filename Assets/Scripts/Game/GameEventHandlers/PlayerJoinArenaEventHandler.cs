@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerJoinArenaEventHandler : GameEventHandler<PlayerId>
 {
-    protected override void Handle(GameManager gameManager, PlayerId data)
+    public override void Handle(GameManager gameManager, PlayerId data)
     {
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (player == null)

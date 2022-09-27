@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
 {
-    protected override async void Handle(GameManager gameManager, PlayerAdd data)
+    public override async void Handle(GameManager gameManager, PlayerAdd data)
     {
         if (gameManager.Players.Contains(data.UserId))
         {

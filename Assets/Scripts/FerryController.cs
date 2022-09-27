@@ -50,6 +50,8 @@ public class FerryController : MonoBehaviour
 
     public PlayerController Captain { get; private set; }
 
+
+
     // Use this for initialization
 
     void Start()
@@ -123,7 +125,7 @@ public class FerryController : MonoBehaviour
     // Update is called once per frame
     private void LateUpdate()
     {
-        if (GameCache.Instance.IsAwaitingGameRestore || !isVisible) return;
+        if (GameCache.IsAwaitingGameRestore || !isVisible) return;
         UpdateAnimation();
     }
 

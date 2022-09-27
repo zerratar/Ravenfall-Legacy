@@ -9,7 +9,7 @@ public class Overlay : MonoBehaviour
 {
     #region Fields and Properties
 
-    private static bool isGame;
+    public static bool IsGame;
 
     public static float CharacterRotationSpeed = 12;
 
@@ -38,19 +38,20 @@ public class Overlay : MonoBehaviour
     private int skyboxIndex;
 
     public static bool IsOverlay => !IsGame;
-    public static bool IsGame
-    {
-        get => isGame || SceneManager.GetActiveScene().buildIndex == 1;
-        set
-        {
-            isGame = value;
-        }
-    }
 
     #endregion
 
     #region Game / Server
+    private void Start()
+    {
+        CheckIfGame();
+    }
 
+    public static void CheckIfGame()
+    {
+        if (!IsGame)
+            IsGame = IsGame || SceneManager.GetActiveScene().buildIndex == 1;
+    }
 
     public void SendRedeemables(IReadOnlyList<RavenNest.Models.RedeemableItem> redeemables)
     {
@@ -185,6 +186,7 @@ public class Overlay : MonoBehaviour
 
     public void Awake()
     {
+        CheckIfGame();
         this.gameManager = FindObjectOfType<GameManager>();
         this.Players = new OverlayPlayerManager(playerControllerPrefab);
         this.packetManager = new OverlayPacketManager(this);

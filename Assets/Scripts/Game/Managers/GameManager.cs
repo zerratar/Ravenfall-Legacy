@@ -17,8 +17,7 @@ using Debug = Shinobytes.Debug;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.PostProcessing;
 using Shinobytes.Linq;
-
-//using UnityEngine.Experimental.Rendering.HDPipeline;
+using UnityEngine.AI;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
@@ -46,7 +45,6 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private DungeonManager dungeonManager;
 
     [SerializeField] private VillageManager villageManager;
-
     [SerializeField] private OnsenManager onsen;
 
     [SerializeField] private PlayerLogoManager playerLogoManager;
@@ -64,8 +62,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
     [SerializeField] private Volume postProcessingEffects;
 
-    private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers
-    = new ConcurrentDictionary<GameEventType, IGameEventHandler>();
+    private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers = new();
+    private readonly ConcurrentDictionary<Type, IGameEventHandler> typedGameEventHandlers = new();
 
     private readonly ConcurrentQueue<GameEvent> gameEventQueue = new ConcurrentQueue<GameEvent>();
     private readonly Queue<PlayerController> playerKickQueue = new Queue<PlayerController>();
@@ -82,7 +80,6 @@ public class GameManager : MonoBehaviour, IGameManager
     private StreamRaidManager streamRaidManager;
     private ArenaController arenaController;
     private ItemManager itemManager;
-    private GraphicsToggler graphics;
 
     private int lastButtonIndex = 0;
     public float playerRequestTime = 1f;
@@ -91,8 +88,8 @@ public class GameManager : MonoBehaviour, IGameManager
     public string ServerAddress;
 
     public bool UsePostProcessingEffects = true;
-    public GraphicsToggler Graphics => graphics;
-    public IRavenNestClient RavenNest => ravenNest;
+    public GraphicsToggler Graphics;
+    public RavenNestClient RavenNest;
     public ClanManager Clans => clanManager ?? (clanManager = new ClanManager(this));
 
     public VillageManager Village => villageManager;
@@ -130,7 +127,6 @@ public class GameManager : MonoBehaviour, IGameManager
     private float saveFrequency = 5f;
     private int saveCounter;
 
-    private RavenNestClient ravenNest;
     private RavenNest.SDK.UnityLogger logger;
     private bool gameSessionActive;
     private float expBoostTimerUpdate = 0.5f;
@@ -145,6 +141,9 @@ public class GameManager : MonoBehaviour, IGameManager
     private float savingPlayersTimeDuration = 60000f;
     private float uptimeSaveTimerInterval = 5f;
     private float uptimeSaveTimer = 5f;
+
+    private int spawnedBots;
+    private bool useManualExpMultiplierCheck;
 
     private bool potatoMode;
     private bool forcedPotatoMode;
@@ -164,7 +163,19 @@ public class GameManager : MonoBehaviour, IGameManager
     public StreamLabel villageBoostLabel;
     public StreamLabel playerCountLabel;
 
-    public Permissions Permissions { get; set; } = new Permissions();
+    private Permissions permissions = new Permissions();
+    public Permissions Permissions
+    {
+        get { return permissions; }
+        set
+        {
+            permissions = value;
+            if (value != null)
+            {
+                AdminControlData.IsAdmin = permissions.IsAdministrator;
+            }
+        }
+    }
     public bool LogoCensor { get; set; }
     public bool AlertExpiredStateCacheInChat { get; set; } = true;
     public PlayerItemDropMessageSettings ItemDropMessageSettings { get; set; }
@@ -207,7 +218,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!settings) settings = GetComponent<GameSettings>();
         this.StreamLabels = new StreamLabels(settings);
         gameReloadUIPanel.SetActive(false);
-
+        Overlay.CheckIfGame();
         GameSystems.Awake();
     }
 
@@ -229,11 +240,11 @@ public class GameManager : MonoBehaviour, IGameManager
 
         this.SetupStreamLabels();
 
-        GameCache.Instance.IsAwaitingGameRestore = false;
+        GameCache.IsAwaitingGameRestore = false;
         ioc = GetComponent<IoCContainer>();
 
         gameReloadMessage.SetActive(false);
-        if (!graphics) graphics = FindObjectOfType<GraphicsToggler>();
+        if (!Graphics) Graphics = FindObjectOfType<GraphicsToggler>();
         if (!nametagManager) nametagManager = FindObjectOfType<NameTagManager>();
         if (!dayNightCycle) dayNightCycle = GetComponent<DayNightCycle>();
         if (!onsen) onsen = GetComponent<OnsenManager>();
@@ -303,19 +314,19 @@ public class GameManager : MonoBehaviour, IGameManager
 
         this.EventTriggerSystem.SourceTripped += OnSourceTripped;
 
-        gameCacheStateFileLoadResult = GameCache.Instance.LoadState();
+        gameCacheStateFileLoadResult = GameCache.LoadState();
 
         GameSystems.Start();
     }
 
     private void OnSourceTripped(object sender, EventTriggerSystem.SysEventStats e)
     {
-        if (!ravenNest.Authenticated || !ravenNest.Stream.IsReady)
+        if (!RavenNest.Authenticated || !RavenNest.WebSocket.IsReady)
         {
             return;
         }
 
-        ravenNest.Stream.UpdatePlayerEventStatsAsync(e);
+        RavenNest.WebSocket.UpdatePlayerEventStatsAsync(e);
     }
 
     private void SetupStreamLabels()
@@ -367,7 +378,10 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void RegisterGameEventHandler<T>(GameEventType type) where T : IGameEventHandler, new()
     {
-        gameEventHandlers[type] = new T();
+        var value = new T();
+        var targetType = typeof(T);
+        gameEventHandlers[type] = value;
+        typedGameEventHandlers[targetType] = value;
     }
     private IGameEventHandler GetEventHandler(GameEventType type)
     {
@@ -377,6 +391,28 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         return null;
+    }
+
+    private IGameEventHandler<T> GetEventHandler<T>()
+    {
+        // a little bit more expensive, but it will do.
+        var targetType = typeof(T);
+        if (typedGameEventHandlers.TryGetValue(targetType, out var handler) && handler is IGameEventHandler<T> typed)
+        {
+            return typed;
+        }
+
+        foreach (var value in gameEventHandlers.Values)
+        {
+            var t = value as IGameEventHandler<T>;
+            if (t != null)
+            {
+                typedGameEventHandlers[targetType] = t;
+                return t;
+            }
+        }
+
+        return default;
     }
 
     public void SaveStateAndShutdownGame(bool activateTempLogin = true)
@@ -392,9 +428,9 @@ public class GameManager : MonoBehaviour, IGameManager
     }
     public void SavePlayerStates()
     {
-        GameCache.Instance.SavePlayersState(this.playerManager.GetAllPlayers());
+        GameCache.SavePlayersState(this.playerManager.GetAllPlayers());
 
-        //var gc = GameCache.Instance;
+        //var gc = GameCache;
         //var players = ;
 
         //gc.SetPlayersState(players);
@@ -404,8 +440,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public void ReloadScene()
     {
-        ravenNest.Stream.Close();
-        RavenBot.Stop();
+        RavenNest.WebSocket.Close();
+        RavenBot.Stop(false);
         SceneManager.LoadScene(1, LoadSceneMode.Single);
     }
 
@@ -418,10 +454,11 @@ public class GameManager : MonoBehaviour, IGameManager
 
         SavePlayerStates();
 
-        GameCache.Instance.IsAwaitingGameRestore = true;
+        GameCache.IsAwaitingGameRestore = true;
 
-        ravenNest.Stream.Close();
-        RavenBot.Stop();
+        RavenNest.WebSocket.Close();
+        RavenNest.Tcp.Dispose();
+        RavenBot.Dispose();
 
         gameReloadMessage.SetActive(true);
 
@@ -430,7 +467,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private IEnumerator RestoreGameState(GameCacheState state)
     {
-        GameCache.Instance.IsAwaitingGameRestore = false;
+        GameCache.IsAwaitingGameRestore = false;
 
         gameReloadUIPanel.SetActive(true);
         try
@@ -444,17 +481,17 @@ public class GameManager : MonoBehaviour, IGameManager
 
             var waitTime = 0;
             // if we got disconnected or something
-            while ((!RavenNest.Authenticated || !RavenNest.SessionStarted || !RavenNest.Stream.IsReady) && waitTime < 100)
+            while ((!RavenNest.Authenticated || !RavenNest.SessionStarted || (!RavenNest.WebSocket.IsReady && !RavenNest.Tcp.Connected)) && waitTime < 100)
             {
                 yield return new WaitForSeconds(1);
                 waitTime++;
             }
 
             // still not connected? retry later.
-            if (!RavenNest.Authenticated || !RavenNest.SessionStarted || !RavenNest.Stream.IsReady)
+            if (!RavenNest.Authenticated || !RavenNest.SessionStarted || (!RavenNest.WebSocket.IsReady && !RavenNest.Tcp.Connected))
             {
                 Shinobytes.Debug.LogWarning("No conneciton to server when trying to restore players. Retrying");
-                GameCache.Instance.SetState(state);
+                GameCache.SetState(state);
                 yield break;
             }
 
@@ -544,9 +581,16 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.F12))
+        var f12Down = Input.GetKeyDown(KeyCode.F12);
+        if (f12Down && Input.GetKey(KeyCode.LeftShift))
         {
-            RavenNest.Stream.Reconnect();
+            RavenNest.Tcp.Enabled = !RavenNest.Tcp.Enabled;
+            return;
+        }
+        else if (f12Down)
+        {
+            RavenNest.WebSocket.Reconnect();
+            RavenNest.Tcp.Disconnect();
             return;
         }
 
@@ -568,7 +612,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         UpdateApiCommunication();
 
-        if (ravenNest == null || !ravenNest.Authenticated)
+        if (RavenNest == null || !RavenNest.Authenticated)
         {
             return;
         }
@@ -578,14 +622,14 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (GameCache.Instance.IsAwaitingGameRestore
-            && ravenNest.Authenticated
-            && ravenNest.SessionStarted
-            && ravenNest.Stream.IsReady
+        if (GameCache.IsAwaitingGameRestore
+            && RavenNest.Authenticated
+            && RavenNest.SessionStarted
+            && RavenNest.WebSocket.IsReady
             && Items.Loaded)
         {
-            GameCache.Instance.IsAwaitingGameRestore = false;
-            var reloadState = GameCache.Instance.GetReloadState();
+            GameCache.IsAwaitingGameRestore = false;
+            var reloadState = GameCache.GetReloadState();
             if (reloadState != null)
             {
                 StartCoroutine(RestoreGameState(reloadState.Value));
@@ -593,8 +637,8 @@ public class GameManager : MonoBehaviour, IGameManager
             }
         }
         else if (
-             ravenNest.Authenticated &&
-             ravenNest.SessionStarted &&
+             RavenNest.Authenticated &&
+             RavenNest.SessionStarted &&
              RavenBot.IsConnected &&
             !stateFileStatusReported && gameCacheStateFileLoadResult == GameCache.LoadStateResult.Expired)
         {
@@ -652,7 +696,10 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         // update exp multiplier
-        UpdateExpMultiplierAsync();
+        if (useManualExpMultiplierCheck)
+        {
+            UpdateExpMultiplierAsync();
+        }
 
         return true;
     }
@@ -673,7 +720,7 @@ public class GameManager : MonoBehaviour, IGameManager
             }
 
             var expMultiplierSinceLastUpdate = now - Twitch.LastUpdated;
-            if (expMultiplierSinceLastUpdate.TotalSeconds >= 5)
+            if (expMultiplierSinceLastUpdate.TotalSeconds >= 10)
             {
                 expMultiplierUpdating = true;
                 var multiplier = await RavenNest.Game.GetExpMultiplierAsync();
@@ -774,7 +821,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (notifyServer)
         {
-            ravenNest.PlayerRemoveAsync(player);
+            RavenNest.PlayerRemoveAsync(player);
         }
 
         player.Removed = true;
@@ -789,8 +836,18 @@ public class GameManager : MonoBehaviour, IGameManager
         villageBoostLabel.Update();
         playerCountLabel.Update();
         SavePlayerStates();
+        UpdatePathfindingIterations();
     }
-    private int spawnedBots;
+
+    public void UpdatePathfindingIterations()
+    {
+        var qualitySettingsIndex = PlayerSettings.Instance.PathfindingQualitySettings.GetValueOrDefault(1);
+        var min = SettingsMenuView.PathfindingQualityMin[qualitySettingsIndex];
+        var max = SettingsMenuView.PathfindingQualityMax[qualitySettingsIndex];
+        var value = playerManager.GetPlayerCount() * 2;
+        NavMesh.pathfindingIterationsPerFrame = Mathf.Min(Mathf.Max(min, value), max);
+    }
+
     public async void SpawnManyBotPlayers(int count)
     {
         for (var i = 0; i < count; ++i)
@@ -800,10 +857,28 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
+    public async Task SpawnBotPlayerOnFerry()
+    {
+        BotPlayerGenerator.Instance.NextOnFerry = true;
+        var playerInfo = await GenerateBotInfoAsync();
+        var player = await Players.JoinAsync(playerInfo, RavenBot.ActiveClient, false, true);
+        if (player)
+            await player.EquipBestItemsAsync();
+        ++spawnedBots;
+    }
+
     public async Task SpawnBotPlayer()
     {
-        var id = Random.Range(10000, 99999);
+        var playerInfo = await GenerateBotInfoAsync();
+        var player = await Players.JoinAsync(playerInfo, RavenBot.ActiveClient, false, true);
+        if (player)
+            await player.EquipBestItemsAsync();
+        ++spawnedBots;
+    }
 
+    private async Task<TwitchPlayerInfo> GenerateBotInfoAsync()
+    {
+        var id = Random.Range(10000, 99999);
         var userId = "#" + id;
 
         while (playerManager.GetPlayerByUserId(userId))
@@ -814,15 +889,7 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         var userName = "Bot" + id;
-
-        //var uid = 1000 + (botSpawnIndex++);
-        var playerInfo = new TwitchPlayerInfo(userId, userName, userName, "#ffffff", false, false, false, false, "1");
-        var player = await Players.JoinAsync(playerInfo, RavenBot.ActiveClient, false, true);
-        if (player)
-        {
-            await player.EquipBestItemsAsync();
-        }
-        ++spawnedBots;
+        return new TwitchPlayerInfo(userId, userName, userName, "#ffffff", false, false, false, false, "1");
     }
 
     public PlayerController SpawnPlayer(
@@ -852,7 +919,7 @@ public class GameManager : MonoBehaviour, IGameManager
         //    spawnPoint = island.SpawnPosition;
         //}
 
-        var vector3 = Random.insideUnitSphere * 1f;
+        var vector3 = Random.insideUnitSphere + (Vector3.up * 2f);
         var player = playerManager.Spawn(spawnPoint + vector3, playerDefinition, streamUser, raidInfo);
 
         if (!player)
@@ -877,6 +944,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (dropEventManager.IsActive)
             player.BeginItemDropEvent();
 
+        UpdatePathfindingIterations();
         return player;
     }
 
@@ -910,6 +978,19 @@ public class GameManager : MonoBehaviour, IGameManager
         if (handler != null)
         {
             handler.Handle(this, gameEvent.Data);
+            return;
+        }
+    }
+
+    public void HandleGameEvent<TEventData>(TEventData gameEvent)
+    {
+        if (gameEvent == null)
+            return;
+
+        var handler = GetEventHandler<TEventData>();
+        if (handler != null)
+        {
+            handler.Handle(this, gameEvent);
             return;
         }
     }
@@ -949,9 +1030,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void OnApplicationQuit()
     {
-        RavenBot.Stop();
-
-        //this.EventTriggerSystem.Dispose();
+        RavenBot.Dispose();
 
         StopRavenNestSession();
 
@@ -960,7 +1039,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void HandleRavenNestConnection()
     {
-        var client = ravenNest;
+        var client = RavenNest;
         if (logger == null)
             logger = new RavenNest.SDK.UnityLogger();
 
@@ -973,47 +1052,60 @@ public class GameManager : MonoBehaviour, IGameManager
             //new UnsecureLocalRavenNestStreamSettings()
             );
 
-            ravenNest = client;
+            RavenNest = client;
         }
 
         if (client != null)
         {
-            ravenNest.Update();
-            ServerAddress = ravenNest.ServerAddress;
+            //ravenNest.Update();
+            if (!string.IsNullOrEmpty(RavenNest.ServerAddress))
+                ServerAddress = RavenNest.ServerAddress;
         }
     }
 
     public async Task<bool> RavenNestLoginAsync(string username, string password)
     {
-        if (ravenNest == null) return false;
-        if (ravenNest.Authenticated) return true;
-        return await ravenNest.LoginAsync(username, password);
+        if (RavenNest == null) return false;
+        if (RavenNest.Authenticated) return true;
+        return await RavenNest.LoginAsync(username, password);
     }
 
-    private async void RavenNestUpdate()
+    private void RavenNestUpdate()
     {
-        if (ravenNest.HasActiveRequest)
+        if (RavenNest.HasActiveRequest)
         {
             return;
         }
 
-        if (ravenNest.BadClientVersion)
+        if (RavenNest.BadClientVersion)
         {
             return;
         }
 
-        if (ravenNest.Authenticated && !ravenNest.SessionStarted)
-        {
-            if (await ravenNest.StartSessionAsync(Application.version, accessKey, false))
-            {
-                gameSessionActive = true;
-                lastGameEventRecevied = DateTime.UtcNow;
-            }
-        }
-
-        if (!ravenNest.Authenticated || !ravenNest.SessionStarted)
+        if (RavenNest.AwaitingSessionStart)
         {
             return;
+        }
+
+        if (RavenNest.Authenticated && !RavenNest.SessionStarted)
+        {
+            RavenNest.StartSession(Ravenfall.Version, accessKey);
+            //if (await ravenNest.StartSessionAsync(Ravenfall.Version, accessKey, false))
+            //{
+            //    gameSessionActive = true;
+            //    lastGameEventRecevied = DateTime.UtcNow;
+            //}
+        }
+
+        if (!RavenNest.Authenticated || !RavenNest.SessionStarted)
+        {
+            return;
+        }
+
+        if (!gameSessionActive)
+        {
+            gameSessionActive = true;
+            lastGameEventRecevied = DateTime.UtcNow;
         }
 
         if (updateSessionInfoTime > 0)
@@ -1066,13 +1158,13 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-    public async void StopRavenNestSession()
+    public void StopRavenNestSession()
     {
         if (gameSessionActive)
         {
             SavePlayers();
-            await ravenNest.EndSessionAsync();
-            Debug.Log("Saving complete!");
+
+            RavenNest.Terminate();
         }
     }
 
@@ -1083,8 +1175,12 @@ public class GameManager : MonoBehaviour, IGameManager
             var players = playerManager.GetAllPlayers();
             var now = Time.realtimeSinceStartup;
             var failCount = 0;
-            foreach (var player in players)
+
+            for (var playerIndex = 0; playerIndex < players.Count; ++playerIndex)
             {
+                var player = players[playerIndex];
+                if (player.IsBot)
+                    continue;
                 if (player.RequestQueue.TryDequeue(out var req))
                 {
                     if (!req.Invoke())
@@ -1095,6 +1191,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 player.UpdateRequestQueue();
             }
+
             if (failCount > 0)
             {
                 Debug.LogError("Failed to send player requests for " + failCount + " out of " + players.Count + " players.");
@@ -1123,7 +1220,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 // Save using websocket
                 foreach (var player in players)
                 {
-                    ravenNest.SavePlayer(player);
+                    RavenNest.SavePlayer(player);
                     //if (await ravenNest.SavePlayerAsync(player))
                     //{
                     //    player.SavedSucceseful();
@@ -1463,10 +1560,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
 #if DEBUG
 
-    public bool admin_teleportationVisible;
-    public bool admin_botSpawnVisible;
-    public bool admin_botTrainingVisible;
-    public bool admin_controlPlayers;
+
 
     private void OnGUI()
     {
@@ -1484,26 +1578,107 @@ public class GameManager : MonoBehaviour, IGameManager
 
         var buttonIndex = 0;
 
-        if (admin_controlPlayers)
+        if (GUI.Button(GetButtonRect(buttonIndex++), AdminControlData.NoChatBotMessages ? "Chat Notifications OFF" : "Chat Notifications ON"))
+        {
+            AdminControlData.NoChatBotMessages = !AdminControlData.NoChatBotMessages;
+        }
+
+        if (AdminControlData.ControlPlayers)
         {
             if (GUI.Button(GetButtonRect(buttonIndex++), "Control Bots"))
             {
-                admin_controlPlayers = false;
+                AdminControlData.ControlPlayers = false;
             }
         }
         else
         {
             if (GUI.Button(GetButtonRect(buttonIndex++), "Control Players"))
             {
-                admin_controlPlayers = true;
+                AdminControlData.ControlPlayers = true;
             }
         }
 
-        if (!admin_teleportationVisible && !admin_botTrainingVisible && !admin_controlPlayers)
+        if (raidManager.Started)
         {
-            if (admin_botSpawnVisible)
+            if (GUI.Button(GetButtonRect(buttonIndex++), "Kill raid boss"))
             {
+                var randomPlayer = raidManager.Raiders.Random();
+                if (raidManager.Boss && randomPlayer)
+                {
+                    raidManager.Boss.Enemy.TakeDamage(randomPlayer, raidManager.Boss.Enemy.Stats.Health.CurrentValue);
+                }
+            }
+        }
+        else
+        {
 
+            if (GUI.Button(GetButtonRect(buttonIndex++), "Start Raid"))
+            {
+                raidManager.StartRaid();
+            }
+
+        }
+
+        if (GUI.Button(GetButtonRect(buttonIndex++), "Toggle Dungeon"))
+        {
+            dungeonManager.ToggleDungeon();
+        }
+
+        if (dungeonManager.Active)
+        {
+            if (GUI.Button(GetButtonRect(buttonIndex++), "Advance to next room"))
+            {
+                var players = dungeonManager.GetPlayers();
+                foreach (var enemy in dungeonManager.Dungeon.Room.Enemies)
+                {
+                    var randomPlayer = players.Random();
+                    if (!enemy.Stats.IsDead)
+                    {
+                        enemy.TakeDamage(randomPlayer, enemy.Stats.Health.Level);
+                    }
+                }
+
+                foreach (var player in players)
+                {
+                    player.ClearTarget();
+                }
+            }
+
+            if (!dungeonManager.Started)
+            {
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Start dungeon now"))
+                {
+                    dungeonManager.ForceStartDungeon();
+                }
+            }
+
+            if (GUI.Button(GetButtonRect(buttonIndex++), "Damage Boss (-25% HP)"))
+            {
+                var randomPlayer = dungeonManager.GetPlayers().Random();
+                if (randomPlayer && dungeonManager.Boss)
+                {
+                    var boss = dungeonManager.Boss.Enemy;
+                    boss.TakeDamage(randomPlayer, (int)(boss.Stats.Health.Level * 0.25f));
+                }
+            }
+
+
+            if (GUI.Button(GetButtonRect(buttonIndex++), "Kill Boss (-100% HP)"))
+            {
+                var randomPlayer = dungeonManager.GetPlayers().Random();
+                if (randomPlayer && dungeonManager.Boss)
+                {
+                    var boss = dungeonManager.Boss.Enemy;
+                    boss.TakeDamage(randomPlayer, boss.Stats.Health.Level);
+                }
+            }
+
+        }
+
+        if (!AdminControlData.TeleportationVisible && !AdminControlData.BotTrainingVisible && !AdminControlData.ControlPlayers)
+        {
+            if (AdminControlData.BotSpawnVisible)
+            {
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 300 Bots"))
                 {
                     SpawnManyBotPlayers(300);
@@ -1518,9 +1693,10 @@ public class GameManager : MonoBehaviour, IGameManager
                 {
                     SpawnManyBotPlayers(100);
                 }
-                if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 99 Bots"))
+
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 10 Bots"))
                 {
-                    SpawnManyBotPlayers(99);
+                    SpawnManyBotPlayers(10);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn a bot"))
@@ -1528,9 +1704,14 @@ public class GameManager : MonoBehaviour, IGameManager
                     SpawnBotPlayer();
                 }
 
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn a bot on ferry"))
+                {
+                    SpawnBotPlayerOnFerry();
+                }
+
                 if (GUI.Button(GetButtonRect(buttonIndex++), "<< Back"))
                 {
-                    admin_botSpawnVisible = false;
+                    AdminControlData.BotSpawnVisible = false;
                 }
 
             }
@@ -1538,19 +1719,19 @@ public class GameManager : MonoBehaviour, IGameManager
             {
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn Bots"))
                 {
-                    admin_botSpawnVisible = true;
+                    AdminControlData.BotSpawnVisible = true;
                 }
             }
         }
 
-        if (!admin_teleportationVisible && !admin_botSpawnVisible && (spawnedBots > 0 || playerManager.GetPlayerCount() > 0))
+        if (!AdminControlData.TeleportationVisible && !AdminControlData.BotSpawnVisible && (spawnedBots > 0 || playerManager.GetPlayerCount() > 0))
         {
-            if (admin_botTrainingVisible)
+            if (AdminControlData.BotTrainingVisible)
             {
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Combat"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         bot.SetTask("fighting", new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic" }).Random() });
@@ -1558,7 +1739,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Healing"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         bot.SetTask("fighting", new string[] { (new string[] { "healing" }).Random() });
@@ -1567,7 +1748,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Fishing"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         bot.SetTask("fishing", new string[0]);
@@ -1575,7 +1756,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Woodcutting"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         bot.SetTask("woodcutting", new string[0]);
@@ -1584,7 +1765,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Mining"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         bot.SetTask((new string[] { "mining" }).Random(), new string[0]);
@@ -1593,7 +1774,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Farming"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         bot.SetTask((new string[] { "farming" }).Random(), new string[0]);
@@ -1602,7 +1783,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Crafting"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         bot.SetTask((new string[] { "Crafting" }).Random(), new string[0]);
@@ -1610,7 +1791,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Gathering"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         bot.SetTask((new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting" }).Random(), new string[0]);
@@ -1619,7 +1800,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Healing 50/Combat 50"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var c = bots.Count / 2;
                     var i = 0;
                     foreach (var bot in bots)
@@ -1636,7 +1817,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Random"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         var s = (new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting", "fighting" }).Random();
@@ -1653,7 +1834,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Rest"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
                         Onsen.Join(bot);
@@ -1662,102 +1843,102 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "<< Back"))
                 {
-                    admin_botTrainingVisible = false;
+                    AdminControlData.BotTrainingVisible = false;
                 }
             }
             else
             {
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Training"))
                 {
-                    admin_botTrainingVisible = true;
+                    AdminControlData.BotTrainingVisible = true;
                 }
             }
         }
 
-        if (!admin_botSpawnVisible && !admin_botTrainingVisible && (spawnedBots > 0 || playerManager.GetPlayerCount() > 0))
+        if (!AdminControlData.BotSpawnVisible && !AdminControlData.BotTrainingVisible && (spawnedBots > 0 || playerManager.GetPlayerCount() > 0))
         {
-            if (admin_teleportationVisible)
+            if (AdminControlData.TeleportationVisible)
             {
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Home"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Home");
                     foreach (var bot in bots) bot.Ferry.Embark(island);
                 }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Away"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Away");
                     foreach (var bot in bots) bot.Ferry.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Ironhill"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Ironhill");
                     foreach (var bot in bots) bot.Ferry.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Kyo"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Kyo");
                     foreach (var bot in bots) bot.Ferry.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Heim"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Heim");
                     foreach (var bot in bots) bot.Ferry.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Home"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Home");
                     foreach (var bot in bots) bot.Ferry.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Away"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Away");
                     foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Ironhill"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Ironhill");
                     foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Kyo"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Kyo");
                     foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Heim"))
                 {
-                    var bots = admin_controlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Heim");
                     foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "<< Back"))
                 {
-                    admin_teleportationVisible = false;
+                    AdminControlData.TeleportationVisible = false;
                 }
             }
             else
             {
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Traveling"))
                 {
-                    admin_teleportationVisible = true;
+                    AdminControlData.TeleportationVisible = true;
                 }
             }
         }
@@ -1866,7 +2047,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         HandleRavenNestConnection();
 
-        if (ravenNest != null)
+        if (RavenNest != null)
         {
             RavenNestUpdate();
         }
@@ -1901,7 +2082,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
                 if (Math.Abs(cs - ss) > margin || Math.Abs(us - cs) > margin || Math.Abs(us - ss) > margin)
                 {
-                    RavenNest.Stream.SyncTimeAsync(nowDelta, now, timeUtc);
+                    RavenNest.WebSocket.SyncTimeAsync(nowDelta, now, timeUtc);
                     //RavenNest.Desynchronized = true;
 
                     // Things will not be saved properly.

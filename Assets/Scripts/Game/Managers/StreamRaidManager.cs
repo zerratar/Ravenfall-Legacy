@@ -18,6 +18,9 @@ public class StreamRaidManager : MonoBehaviour, IEvent
 
     public bool Started;
     public bool IsWar;
+    private StreamRaidInfo raiderInfo;
+
+    public StreamRaidInfo Raider => raiderInfo;
 
     public StreamRaidNotifications Notifications => streamRaidNotifications;
 
@@ -155,6 +158,9 @@ public class StreamRaidManager : MonoBehaviour, IEvent
             defenders.Clear();
             raiders.Clear();
             oldPlayerPosition.Clear();
+
+
+            this.raiderInfo = null;
         }
 
         gameManager.Music.PlayBackgroundMusic();
@@ -174,6 +180,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
 
     public void AnnounceRaid(StreamRaidInfo raidInfo, bool raidWar)
     {
+        this.raiderInfo = raidInfo;
         if (raidWar)
         {
             IsWar = true;

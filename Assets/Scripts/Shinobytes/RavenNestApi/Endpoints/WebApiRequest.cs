@@ -163,7 +163,7 @@ namespace RavenNest.SDK.Endpoints
 
         private string GetTargetUrl(ApiRequestTarget reqTarget)
         {
-            var url = reqTarget == ApiRequestTarget.Auth ? settings.ApiAuthEndpoint : settings.ApiEndpoint;
+            var url = reqTarget == ApiRequestTarget.Auth ? settings.WebApiAuthEndpoint : settings.WebApiEndpoint;
             if (!url.EndsWith("/")) url += "/";
             url += reqTarget + "/";
             if (!string.IsNullOrEmpty(identifier)) url += $"{identifier}/";

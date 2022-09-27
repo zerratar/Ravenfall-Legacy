@@ -62,6 +62,7 @@ public class PlayerSettings
     public int? PlayerBoostRequirement;
     public int? PlayerCacheExpiryTime;
     public int? ItemDropMessageType;
+    public int? PathfindingQualitySettings;
 
     static PlayerSettings()
     {

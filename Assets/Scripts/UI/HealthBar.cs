@@ -42,7 +42,7 @@ public class HealthBar : MonoBehaviour
             this.targetCamera = Camera.main.transform;
         }
 
-        if (GameCache.Instance.IsAwaitingGameRestore) return;
+        if (GameCache.IsAwaitingGameRestore) return;
         if (Target == null || !((MonoBehaviour)Target))
         {
             if (Manager)

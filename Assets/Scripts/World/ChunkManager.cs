@@ -15,11 +15,23 @@ public class ChunkManager : MonoBehaviour
 
     void Start()
     {
-        if (!islandManager) islandManager = FindObjectOfType<IslandManager>();
+        Init();
+    }
 
-        chunks = GameObject.FindGameObjectsWithTag("WorldChunk")
-                    .Select(x => x.GetComponent<Chunk>())
-                    .ToArray();
+    public void Init()
+    {
+        if (!islandManager) islandManager = FindObjectOfType<IslandManager>();
+        if (chunks == null || chunks.Length == 0)
+        {
+            chunks = GameObject.FindGameObjectsWithTag("WorldChunk")
+                        .Select(x => x.GetComponent<Chunk>())
+                        .ToArray();
+        }
+
+        foreach (var chunk in chunks)
+        {
+            chunk.Start();
+        }
     }
 
     public Chunk GetChunkAt(int x, int y)

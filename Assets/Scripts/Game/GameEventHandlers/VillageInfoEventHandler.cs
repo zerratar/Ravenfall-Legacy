@@ -1,6 +1,6 @@
 ﻿public class VillageInfoEventHandler : GameEventHandler<VillageInfo>
 {
-    protected override void Handle(GameManager gameManager, VillageInfo data)
+    public override void Handle(GameManager gameManager, VillageInfo data)
     {
         if (gameManager.Village && gameManager.Village != null)
         {

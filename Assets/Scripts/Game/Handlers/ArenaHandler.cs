@@ -44,7 +44,7 @@ public class ArenaHandler : MonoBehaviour
 
         InArena = true;
 
-        player.GotoPosition(arena.CenterPointWorld);
+        player.SetDestination(arena.CenterPointWorld);
     }
 
     public void OnFightStart()
@@ -122,7 +122,7 @@ public class ArenaHandler : MonoBehaviour
 
             if (Vector3.Distance(player.Position, target.Position) > player.AttackRange)
             {
-                player.GotoPosition(target.Position);
+                player.SetDestination(target.Position);
                 return;
             }
 
@@ -140,7 +140,7 @@ public class ArenaHandler : MonoBehaviour
         }
         else
         {
-            player.GotoPosition(ArenaChunk.CenterPointWorld);
+            player.SetDestination(ArenaChunk.CenterPointWorld);
         }
     }
 

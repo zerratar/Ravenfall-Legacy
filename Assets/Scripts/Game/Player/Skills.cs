@@ -91,9 +91,9 @@ public class Skills : IComparable
             Crafting.Experience,
             Cooking.Experience,
             Farming.Experience,
+            Slayer.Experience,
             Magic.Experience,
             Ranged.Experience,
-            Slayer.Experience,
             Sailing.Experience,
             Healing.Experience
         };
@@ -114,9 +114,9 @@ public class Skills : IComparable
             Crafting.Level,
             Cooking.Level,
             Farming.Level,
+            Slayer.Level,
             Magic.Level,
             Ranged.Level,
-            Slayer.Level,
             Sailing.Level,
             Healing.Level
         };
@@ -125,21 +125,21 @@ public class Skills : IComparable
     public SkillStat[] SkillList => skillList ??
         (skillList = new SkillStat[]
         {
-                Attack,
-                Defense,
-                Strength,
-                Health,
-                Woodcutting,
-                Fishing,
-                Mining,
-                Crafting,
-                Cooking,
-                Farming,
-                Slayer,
-                Magic,
-                Ranged,
-                Sailing,
-                Healing
+            Attack,
+            Defense,
+            Strength,
+            Health,
+            Woodcutting,
+            Fishing,
+            Mining,
+            Crafting,
+            Cooking,
+            Farming,
+            Slayer,
+            Magic,
+            Ranged,
+            Sailing,
+            Healing
         });
 
     public int CompareTo(object obj)

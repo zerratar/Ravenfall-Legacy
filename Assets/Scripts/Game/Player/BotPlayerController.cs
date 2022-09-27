@@ -4,7 +4,7 @@ using UnityEngine;
 public class BotPlayerController : MonoBehaviour
 {
     private GameManager gameManager;
-    private PlayerController playerController;
+    public PlayerController playerController;
     private bool joiningEvent;
 
     private void Start()
@@ -12,6 +12,7 @@ public class BotPlayerController : MonoBehaviour
         this.gameManager = FindObjectOfType<GameManager>();
         this.playerController = GetComponent<PlayerController>();
     }
+
     private void Update()
     {
         if (joiningEvent)
@@ -21,7 +22,6 @@ public class BotPlayerController : MonoBehaviour
 
         if (!this.playerController)
         {
-            this.playerController = GetComponent<PlayerController>();
             return;
         }
 

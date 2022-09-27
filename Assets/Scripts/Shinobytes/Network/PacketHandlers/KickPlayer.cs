@@ -23,7 +23,13 @@ public class KickPlayer : PacketHandler<TwitchPlayerInfo>
 
             foreach (var plr in players)
             {
-                if (plr.IdleTime < 30f)
+                if (plr.Movement.IdleTime < 30f)
+                    continue;
+
+                if (plr.Onsen.InOnsen)
+                    continue;
+
+                if (plr.Raid.InRaid)
                     continue;
 
                 if (plr.Ferry.OnFerry)

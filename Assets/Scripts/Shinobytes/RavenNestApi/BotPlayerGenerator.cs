@@ -7,6 +7,13 @@ namespace RavenNest.SDK
 {
     public class BotPlayerGenerator
     {
+        public static BotPlayerGenerator Instance;
+        public BotPlayerGenerator()
+        {
+            Instance = this;
+        }
+
+        internal bool NextOnFerry;
 
 #if UNITY_EDITOR
         private GameManager gameManager;
@@ -98,7 +105,8 @@ namespace RavenNest.SDK
             var equippable = gameItems.Where(x => x.RequiredAttackLevel <= skills.AttackLevel && x.RequiredDefenseLevel <= skills.DefenseLevel && x.RequiredRangedLevel <= skills.RangedLevel && x.RequiredMagicLevel <= skills.MagicLevel);
             foreach (var eq in equippable)
             {
-                items.Add(new InventoryItem { 
+                items.Add(new InventoryItem
+                {
                     ItemId = eq.Id,
                     Id = Guid.NewGuid(),
                     Amount = 1,
@@ -144,6 +152,21 @@ namespace RavenNest.SDK
         }
         private CharacterState GenerateState(Models.Skills skills)
         {
+            if (NextOnFerry)
+            {
+                NextOnFerry = false;
+
+                var ferry = UnityEngine.GameObject.FindObjectOfType<FerryController>();
+                var ferryPosition = ferry.GetNextPlayerPoint().position;
+                return new CharacterState
+                {
+                    Health = skills.HealthLevel,
+                    X = ferryPosition.x,
+                    Y = ferryPosition.y,
+                    Z = ferryPosition.z,
+                };
+            }
+
             return new CharacterState
             {
                 Health = skills.HealthLevel,

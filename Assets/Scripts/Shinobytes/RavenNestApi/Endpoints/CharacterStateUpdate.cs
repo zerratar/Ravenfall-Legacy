@@ -1,11 +1,11 @@
 ﻿
 using System;
-using static RavenNest.SDK.Endpoints.WebSocketEndpoint;
+using static RavenNest.SDK.Endpoints.WebSocketApi;
 
 namespace RavenNest.SDK.Endpoints
 {
 
-    public struct CharacterSkillUpdate
+    public class CharacterSkillUpdate
     {
         public Guid CharacterId;
         public string UserId;
@@ -13,7 +13,7 @@ namespace RavenNest.SDK.Endpoints
         public int[] Level;
     }
 
-    public struct CharacterExpUpdate
+    public class CharacterExpUpdate
     {
         public Guid CharacterId;
         public int SkillIndex;
@@ -21,19 +21,19 @@ namespace RavenNest.SDK.Endpoints
         public double Experience;
     }
 
-    public struct ClientSyncUpdate
+    public class ClientSyncUpdate
     {
         public string ClientVersion;
     }
 
-    public struct TimeSyncUpdate
+    public class TimeSyncUpdate
     {
         public TimeSpan Delta;
         public DateTime LocalTime;
         public DateTime ServerTime;
     }
 
-    public struct CharacterStateUpdate
+    public class CharacterStateUpdate
     {
         public CharacterStateUpdate(
             string userId,

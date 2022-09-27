@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Rendering;
 
 public class LookAt : MonoBehaviour
 {
@@ -16,21 +17,24 @@ public class LookAt : MonoBehaviour
         {
             this.transform.localScale = new Vector3(localScale.x * -1, localScale.y, localScale.z);
         }
-
-        if (!Camera.main)
-        {
-            return;
-        }
-        if (!Target && Camera.main) Target = Camera.main.transform;
     }
 
     // Update is called once per frame
     void Update()
     {
-        //if (!Target && Camera.main) Target = Camera.main.transform;
-        //if (!Target) return;
-        //this.transform.rotation = Target.rotation;
-        //return;
+        if (OnDemandRendering.renderFrameInterval > 2)
+        {
+            return;
+        }
+
+        if (!Target)
+        {
+            if (!Camera.main)
+            {
+                return;
+            }
+            if (!Target && Camera.main) Target = Camera.main.transform;
+        }
 
         this.transform.rotation = Target.rotation;
     }

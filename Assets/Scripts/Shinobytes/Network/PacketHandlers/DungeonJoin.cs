@@ -28,17 +28,16 @@ public class DungeonJoin : PacketHandler<EventJoinRequest>
                 return;
             }
 
-            if (player.Ferry.OnFerry)
-            {
-                client.SendMessage(username, "You cannot join the dungeon while on the ferry. Please !disembark before you can join.");
-                return;
-            }
+            //if (player.Ferry.OnFerry)
+            //{
+            //    client.SendMessage(username, "You cannot join the dungeon while on the ferry. Please !disembark before you can join.");
+            //    return;
+            //}
 
-
-            if (player.Ferry.Active)
-            {
-                player.Ferry.Disembark();
-            }
+            //if (player.Ferry.Active)
+            //{
+            //    player.Ferry.Disembark();
+            //}
 
             if (!Game.Dungeons.Active)
             {

@@ -34,6 +34,14 @@ public class SkillStat
 
     public void Set(int newLevel, double newExp, bool updateExpPerHour = true)
     {
+        if (newLevel >= GameMath.MaxLevel)
+        {
+            newLevel = GameMath.MaxLevel;
+            var maxExp = GameMath.ExperienceForLevel(GameMath.MaxLevel);
+            if (newExp >= maxExp)
+                newExp = maxExp;
+        }
+
         if (!updateExpPerHour)
         {
             Level = newLevel;
@@ -107,6 +115,14 @@ public class SkillStat
             Experience -= expForNextLevel;
             CurrentValue = Level;
             expForNextLevel = GameMath.ExperienceForLevel(Level + 1);
+        }
+
+        if (Level >= GameMath.MaxLevel)
+        {
+            Level = GameMath.MaxLevel;
+            var maxExp = GameMath.ExperienceForLevel(GameMath.MaxLevel);
+            if (Experience >= maxExp)
+                Experience = maxExp;
         }
 
         return newLevels > 0;

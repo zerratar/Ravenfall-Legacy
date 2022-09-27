@@ -33,13 +33,21 @@ public class StatObserver : MonoBehaviour
         var value = observedStat.CurrentValue;
         var max = observedStat.Level;
         var nextLevel = observedStat.Level + 1;
+        var reachedMaxLevel = observedStat.Level == GameMath.MaxLevel;
 
-        label.text = value == max ? $"{value}" : value > max ? $"<color=#00ff00>{value}" : $"<color=#ff0000>{value}";
+        label.text =
+            value == max 
+            ?  (reachedMaxLevel ? "<color=#d4af37>" + value + "</color>" : $"{value}") 
+            : value > max 
+                ? $"<color=#00ff00>{value}</color>/{max}" 
+                : $"<color=#ff0000>{value}</color>/{max}";
+
+
+
         var thisLevelExp = observedStat.Experience;
         var nextLevelExp = GameMath.ExperienceForLevel(nextLevel);
 
         bar.Progress = thisLevelExp > 0 && nextLevelExp > 0 ? (float)(thisLevelExp / nextLevelExp) : 0;
-
         lastCurrentValue = observedStat.CurrentValue;
         lastExperience = observedStat.Experience;
     }

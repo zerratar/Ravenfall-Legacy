@@ -34,7 +34,7 @@ public class ConnectionChecker : MonoBehaviour
             return;
         }
 
-        if ((gameManager.RavenNest.Stream.IsReady) && Graphics.activeSelf)
+        if ((gameManager.RavenNest.WebSocket.IsReady) && Graphics.activeSelf)
         {
             SetVisibility(false);
             return;
@@ -56,7 +56,7 @@ public class ConnectionChecker : MonoBehaviour
             SetVisibility(true);
         }
 
-        if (!gameManager.RavenNest.SessionStarted || gameManager.RavenNest.Stream.IsReady)
+        if (!gameManager.RavenNest.SessionStarted || gameManager.RavenNest.WebSocket.IsReady)
         {
             return;
         }

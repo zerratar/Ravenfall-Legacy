@@ -58,7 +58,7 @@ public class StreamRaidHandler : MonoBehaviour
 
             if (!player.IsReadyForAction)
             {
-                player.Lock();
+                player.Movement.Lock();
                 return;
             }
 
@@ -66,7 +66,7 @@ public class StreamRaidHandler : MonoBehaviour
         }
         else
         {
-            player.GotoPosition(target.Position);
+            player.SetDestination(target.Position);
         }
     }
 

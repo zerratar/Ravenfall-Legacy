@@ -1,6 +1,6 @@
 ﻿public class PubSubTokenReceivedEventHandler : GameEventHandler<PubSubToken>
 {
-    protected override void Handle(GameManager gameManager, PubSubToken data)
+    public override void Handle(GameManager gameManager, PubSubToken data)
     {
         if (gameManager.RavenBot.IsConnectedToLocal)
         {

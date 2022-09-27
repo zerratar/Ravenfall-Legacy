@@ -185,7 +185,7 @@ namespace RavenNest.SDK.Endpoints
                 return false;
             }
 
-            if (GameCache.Instance.IsAwaitingGameRestore) return false;
+            if (GameCache.IsAwaitingGameRestore) return false;
             if (sendQueue.Count == 0) return false;
 
             var packetsToSend = new List<GamePacket>();
@@ -234,7 +234,7 @@ namespace RavenNest.SDK.Endpoints
 
         private async Task<bool> ReceiveDataAsync()
         {
-            if (GameCache.Instance.IsAwaitingGameRestore) return false;
+            if (GameCache.IsAwaitingGameRestore) return false;
             if (!IsReady)
             {
                 //if (!await CreateAsync())

@@ -97,7 +97,7 @@ public class ItemDropHandler : MonoBehaviour
                 };
             })
                 .Where(x => x.Item != null)
-                .OrderByDescending(x => x.DropChance)
+                .OrderByDescending(x => UnityEngine.Random.value)//x.DropChance)
                 .ToList();
 
             foreach (var item in droppableItems)

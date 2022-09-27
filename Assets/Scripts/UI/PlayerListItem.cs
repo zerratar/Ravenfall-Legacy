@@ -105,12 +105,20 @@ public class PlayerListItem : MonoBehaviour
             SetActive(pbSkillObj, true);
             try
             {
-                var skill = TargetPlayer.GetActiveSkillStat();                
+                var skill = TargetPlayer.GetActiveSkillStat();
                 if (skill != null)
                 {
                     string skillName = skill != null ? skillNames[(int)TargetPlayer.ActiveSkill] : "";
 
-                    SetText(lblSkillLevel, skillName + ":<b> " + skill.Level);
+                    if (TargetPlayer.ActiveSkill == Skill.Health)
+                    {
+                        SetText(lblSkillLevel, skillName);
+                    }
+                    else
+                    {
+                        SetText(lblSkillLevel, skillName + ":<b> " + skill.Level);
+                    }
+
                     UpdateSkillProgressBar(skill);
                     this.lastSkillTrained = skill;
                     this.lastSkillTrainedLevel = skill.Level;
@@ -146,6 +154,12 @@ public class PlayerListItem : MonoBehaviour
     {
         if (skill == null || TargetPlayer == null || !TargetPlayer || TargetPlayer.isDestroyed)
         {
+            return;
+        }
+
+        if (skill.Type == Skill.Health)
+        {
+            SetText(lblExpPerHour, "");
             return;
         }
 

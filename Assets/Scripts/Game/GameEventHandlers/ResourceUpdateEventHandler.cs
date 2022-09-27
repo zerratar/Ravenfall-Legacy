@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class ResourceUpdateEventHandler : GameEventHandler<ResourceUpdate>
 {
-    protected override void Handle(GameManager gameManager, ResourceUpdate data)
+    public override void Handle(GameManager gameManager, ResourceUpdate data)
     {
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (!player)

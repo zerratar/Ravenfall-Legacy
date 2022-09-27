@@ -8,19 +8,17 @@ namespace Assets.Scripts
     {
         private const string PlayerStateCacheFileName = "state-data.json";
         private const string TempPlayerStateCacheFileName = "tmp-state-data.json";
-        private static GameCache instance;
-        public static GameCache Instance => instance ?? (instance = new GameCache());
+        //private static GameCache instance;
+        //public static GameCache Instance => instance ?? (instance = new GameCache());
         //private readonly ConcurrentQueue<GameCacheState> stateCache = new ConcurrentQueue<GameCacheState>();
 
-        private readonly object mutex = new object();
+        private static readonly object mutex = new object();
+        private static GameCacheState? stateCache;
+        private static List<GameCachePlayerItem> playerCache;
+        public static bool IsAwaitingGameRestore;
+        public static readonly TwitchUserStore TwitchUserStore = new TwitchUserStore();
 
-        private GameCacheState? stateCache;
-
-        private List<GameCachePlayerItem> playerCache;
-        public bool IsAwaitingGameRestore { get; set; }
-        public TwitchUserStore TwitchUserStore { get; } = new TwitchUserStore();
-
-        internal void SavePlayersState(IReadOnlyList<PlayerController> players)
+        internal static void SavePlayersState(IReadOnlyList<PlayerController> players)
         {
             SetPlayersState(players);
             BuildState();
@@ -28,12 +26,12 @@ namespace Assets.Scripts
         }
 
 
-        internal void SetState(GameCacheState? cacheState)
+        internal static void SetState(GameCacheState? cacheState)
         {
-            this.stateCache = cacheState;
-            if (this.stateCache != null)
+            stateCache = cacheState;
+            if (stateCache != null)
             {
-                this.stateCache = new GameCacheState
+                stateCache = new GameCacheState
                 {
                     Created = System.DateTime.UtcNow,
                     Players = cacheState.Value.Players
@@ -41,7 +39,7 @@ namespace Assets.Scripts
             }
         }
 
-        internal void SetPlayersState(IReadOnlyList<PlayerController> players)
+        internal static void SetPlayersState(IReadOnlyList<PlayerController> players)
         {
             Shinobytes.Debug.Log("Updating Player State.");
             lock (mutex)
@@ -102,7 +100,7 @@ namespace Assets.Scripts
             }
         }
 
-        internal GameCacheState BuildState()
+        internal static GameCacheState BuildState()
         {
             var state = new GameCacheState();
             state.Created = System.DateTime.UtcNow;
@@ -119,7 +117,7 @@ namespace Assets.Scripts
             Expired
         }
 
-        internal LoadStateResult LoadState(bool forceReload = false)
+        internal static LoadStateResult LoadState(bool forceReload = false)
         {
             if (Shinobytes.IO.File.Exists(PlayerStateCacheFileName))
             {
@@ -154,7 +152,7 @@ namespace Assets.Scripts
             return LoadStateResult.Success;
         }
 
-        internal void SaveState()
+        internal static void SaveState()
         {
             if (stateCache != null)
             {
@@ -176,7 +174,7 @@ namespace Assets.Scripts
             }
         }
 
-        internal GameCacheState? GetReloadState()
+        internal static GameCacheState? GetReloadState()
         {
             try
             {

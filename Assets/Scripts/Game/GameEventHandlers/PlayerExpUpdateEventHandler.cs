@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerExpUpdateEventHandler : GameEventHandler<PlayerExpUpdate>
 {
-    protected override void Handle(GameManager gameManager, PlayerExpUpdate data)
+    public override void Handle(GameManager gameManager, PlayerExpUpdate data)
     {
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (player == null)

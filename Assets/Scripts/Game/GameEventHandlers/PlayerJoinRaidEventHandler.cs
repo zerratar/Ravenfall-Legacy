@@ -3,18 +3,23 @@ using UnityEngine;
 
 public class PlayerJoinRaidEventHandler : GameEventHandler<PlayerId>
 {
-    protected override void Handle(GameManager gameManager, PlayerId data)
+    public override void Handle(GameManager gameManager, PlayerId data)
     {
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
-        if (!player) return;
+        if (!player) 
+            return;
+
         if (player.StreamRaid.InWar)
             return;
 
-        if (player.Ferry.OnFerry)
-            return;
+        //if (player.Ferry.OnFerry)
+        //    return;
 
-        if (player.Ferry.Active)
-            player.Ferry.Disembark();
+        //if (player.Ferry.Active)
+        //    player.Ferry.Disembark();
+
+        if (player.Dungeon.InDungeon)
+            return;
 
         if (player.Arena.InArena && gameManager.Arena.Started)
             return;

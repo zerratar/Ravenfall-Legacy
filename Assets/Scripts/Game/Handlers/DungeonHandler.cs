@@ -14,6 +14,13 @@ public class DungeonHandler : MonoBehaviour
 
     private Vector3 previousPosition;
     private IslandController previousIsland;
+
+    public bool ReturnedToOnsen;
+
+    public FerryState Ferry;
+
+    private bool wasResting;
+
     public IslandController PreviousIsland => previousIsland;
     public Vector3 PreviousPosition => previousPosition;
     public bool InDungeon { get; private set; }
@@ -108,8 +115,8 @@ public class DungeonHandler : MonoBehaviour
                 }
                 else if (possibleTarget != enemyTarget)
                 {
-                    var distA = Vector3.Distance(possibleTarget.PositionInternal, player.PositionInternal);
-                    var distB = Vector3.Distance(enemyTarget.PositionInternal, player.PositionInternal);
+                    var distA = Vector3.Distance(possibleTarget.PositionInternal, player.Movement.Position);
+                    var distB = Vector3.Distance(enemyTarget.PositionInternal, player.Movement.Position);
                     if (distA < distB)
                     {
                         enemyTarget = possibleTarget;
@@ -125,7 +132,9 @@ public class DungeonHandler : MonoBehaviour
     }
 
     public void OnEnter()
-    {
+    {        
+        ReturnedToOnsen = false;
+
         enemyTarget = null;
         healTarget = null;
 
@@ -152,24 +161,33 @@ public class DungeonHandler : MonoBehaviour
 
         this.previousTaskArgs = this.player.GetTaskArguments().ToArray();
 
-        if (this.player.Ferry.OnFerry)
+        Ferry = new()
         {
-            var wasCaptainOfFerry = this.player.Ferry.IsCaptain;
-            if (player.Ferry.Destination)
-            {
-                previousPosition = player.Ferry.Destination.SpawnPosition;
-            }
-            else
-            {
-                var chunk = player.GameManager.Chunks.GetStarterChunk();
-                previousPosition = chunk.GetPlayerSpawnPoint();
-            }
-            player.transform.parent = null;
+            OnFerry = player.Ferry.OnFerry,
+            HasDestination = !!player.Ferry.Destination
+        };
+
+        if (Ferry.OnFerry)
+        {
+            //var wasCaptainOfFerry = this.player.Ferry.IsCaptain;
+            //if (player.Ferry.Destination)
+            //{
+            //    previousPosition = player.Ferry.Destination.SpawnPosition;
+            //}
+            //else
+            //{
+            //    var chunk = player.GameManager.Chunks.GetStarterChunk();
+            //    previousPosition = chunk.GetPlayerSpawnPoint();
+            //}
+
+            player.Ferry.RemoveFromFerry();
         }
         else
         {
             previousPosition = player.Position;
         }
+
+        wasResting = this.player.Onsen.InOnsen;
 
         if (player.Onsen.InOnsen)
         {
@@ -190,24 +208,46 @@ public class DungeonHandler : MonoBehaviour
 
     public void OnExit()
     {
-        enemyTarget = null;
-        healTarget = null;
-
         if (!InDungeon)
             return;
 
-        player.Teleporter.Teleport(previousPosition);
-        player.taskTarget = null;
-        player.attackTarget = null;
+        enemyTarget = null;
+        healTarget = null;
+
         InDungeon = false;
 
-        this.player.SetTaskArguments(previousTaskArgs);
+        if (Ferry.OnFerry)
+        {
+            player.Movement.Lock();
+            player.Ferry.AddPlayerToFerry();
+            Ferry.HasReturned = true;
+        }
+        else
+        {
+            player.Teleporter.Teleport(previousPosition);
+        }
+
+        if (wasResting)
+        {
+            player.GameManager.Onsen.Join(player);
+            ReturnedToOnsen = true;
+        }
+
+        player.taskTarget = null;
+        player.attackTarget = null;
+
+        if (previousTaskArgs != null && previousTaskArgs.Length > 0)
+        {
+            this.player.SetTaskArguments(previousTaskArgs);
+        }
 
         var currentTask = player.GetTask();
-        if (currentTask != TaskType.None)
+        if (!Ferry.OnFerry && currentTask != TaskType.None)
         {
             player.GotoClosest(currentTask);
         }
+
+        wasResting = false;
     }
 
     public void Died()
@@ -245,7 +285,7 @@ public class DungeonHandler : MonoBehaviour
 
             if (!player.IsReadyForAction)
             {
-                player.Lock();
+                player.Movement.Lock();
                 return;
             }
 
@@ -256,7 +296,7 @@ public class DungeonHandler : MonoBehaviour
         }
         else
         {
-            player.GotoPosition(healTarget.Position);
+            player.SetDestination(healTarget.Position);
             healTarget = null;
         }
     }
@@ -275,13 +315,12 @@ public class DungeonHandler : MonoBehaviour
         {
             if (!player.IsReadyForAction)
             {
-                player.Lock();
+                player.Movement.Lock();
                 return;
             }
 
             // Aggro more enemies that are close to the one being attacked if it doesnt have an attacker.
-
-            if (!dungeon.Dungeon.HasPredefinedRooms)
+            //if (!dungeon.Dungeon.HasPredefinedRooms)
             {
                 var enemies = dungeon.GetEnemiesNear(enemyTarget.transform.position);
                 if (enemies != null)
@@ -302,9 +341,18 @@ public class DungeonHandler : MonoBehaviour
         }
         else
         {
-            player.GotoPosition(enemyTarget.transform.position);
+            player.SetDestination(enemyTarget.transform.position);
 
             enemyTarget = null;
         }
     }
+
+
+    public struct FerryState
+    {
+        public bool OnFerry;
+        public bool HasDestination;
+        public bool HasReturned;
+    }
+
 }

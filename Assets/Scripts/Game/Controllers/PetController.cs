@@ -133,7 +133,7 @@ public class PetController : MonoBehaviour
 
     void Update()
     {
-        if (GameCache.Instance.IsAwaitingGameRestore) return;
+        if (GameCache.IsAwaitingGameRestore) return;
         if (!player)
         {
             player = GetComponentInParent<PlayerController>();
@@ -148,7 +148,7 @@ public class PetController : MonoBehaviour
             lightSource.enabled = !gameManager.PotatoMode;
         }
 
-        var playerIsMoving = player.IsMoving;
+        var playerIsMoving = player.Movement.IsMoving;
         if (playerIsMoving)
         {
             lastPlayerMove = Time.time;
