@@ -64,21 +64,15 @@ public class KickPlayer : ChatBotCommandHandler<TwitchPlayerInfo>
             {
                 Game.Arena.Leave(player);
             }
-            else if (!Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+            else if (player.Duel.InDuel || !Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
             {
-                client.SendMessage(data.Username, "{player} cannot be kicked as they are participating in the arena that has already started and may break it. Player has been queued up to be kicked after the arena has been finished.", player.PlayerName);
                 Game.QueueRemovePlayer(player);
-                return;
+            }
+            else
+            {
+                Game.RemovePlayer(player);
             }
 
-            if (player.Duel.InDuel)
-            {
-                client.SendMessage(data.Username, "{player} cannot be kicked while fighting a duel. Player has been queued up to be kicked after the duel has been finished.", player.PlayerName);
-                Game.QueueRemovePlayer(player);
-                return;
-            }
-
-            Game.RemovePlayer(player);
             client.SendMessage(data.Username, "{player} was kicked from the game.", player.PlayerName);
         }
         else

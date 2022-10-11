@@ -2355,6 +2355,13 @@ public class PlayerController : MonoBehaviour, IAttackable
         StartCoroutine(Respawn());
     }
 
+    public void OnKicked()
+    {
+        if (arena) arena.Died(this);
+        if (duelHandler.InDuel) duelHandler.Died();
+        if (streamRaidHandler) streamRaidHandler.Died();
+    }
+
     public IReadOnlyList<IAttackable> GetAttackers()
     {
         return Attackers;

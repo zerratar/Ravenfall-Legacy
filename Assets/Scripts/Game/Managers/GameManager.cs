@@ -760,6 +760,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public void QueueRemovePlayer(PlayerController player)
     {
         playerKickQueue.Enqueue(player);
+        player.OnKicked();
     }
     public void RemovePlayer(PlayerController player, bool notifyServer = true)
     {
@@ -1959,11 +1960,11 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         var player = playerKickQueue.Dequeue();
-        if (player.Duel.InDuel)
-        {
-            playerKickQueue.Enqueue(player);
-            return;
-        }
+        //if (player.Duel.InDuel)
+        //{
+        //    playerKickQueue.Enqueue(player);
+        //    return;
+        //}
 
         RemovePlayer(player);
     }

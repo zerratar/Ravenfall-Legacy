@@ -24,16 +24,8 @@ public class PlayerLeave : ChatBotCommandHandler<TwitchPlayerInfo>
             {
                 Game.Arena.Leave(player);
             }
-            else if (!Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
-            {
-                client.SendMessage(data.Username, "You cannot leave as you are participating in the arena that has already started and may break it. You have been queued up to leave after the arena has been finished.");
-                Game.QueueRemovePlayer(player);
-                return;
-            }
-
-            if (player.Duel.InDuel)
-            {
-                client.SendMessage(data.Username, "You cannot leave while fighting a duel. You have been queued up to leave after the duel has ended.");
+            else if (player.Duel.InDuel||!Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+            {                
                 Game.QueueRemovePlayer(player);
                 return;
             }

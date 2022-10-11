@@ -48,7 +48,7 @@ public class TwitchEventManager : MonoBehaviour
         }
 
         var now = DateTime.UtcNow;
-        if (now >= CurrentBoost.EndTime)
+        if (CurrentBoost?.Multiplier <= 1 || now >= CurrentBoost.EndTime)
         {
             ResetMultiplier();
             return;
@@ -199,6 +199,7 @@ public class TwitchEventManager : MonoBehaviour
 
         var now = DateTime.UtcNow;
         CurrentBoost.EndTime = endTime;
+        CurrentBoost.Multiplier = multi;
         CurrentBoost.StartTime = startTime;
         CurrentBoost.Elapsed = now - startTime;
         CurrentBoost.Duration = endTime - startTime;
@@ -238,5 +239,4 @@ public class TwitchSubscriberBoost
     public TimeSpan TimeLeft;
     public DateTime EndTime;
     public DateTime StartTime;
-    public TimeSpan BoostTime;
 }

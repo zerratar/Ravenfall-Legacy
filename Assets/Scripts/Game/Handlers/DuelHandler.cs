@@ -9,6 +9,7 @@ public class DuelHandler : MonoBehaviour
 
     private float duelRequestTime = 30f;
     private float duelRequestTimer = 0f;
+    private bool wasInOnsen;
     private DuelState state = DuelState.NotStarted;
     private bool isDuelCameraOwner;
 
@@ -151,6 +152,11 @@ public class DuelHandler : MonoBehaviour
     public void StartFight()
     {
         if (!InDuel) return;
+        if (player.Onsen.InOnsen)
+        {
+            player.Onsen.Exit();
+        }
+
         player.Stats.Health.Reset();
         state = DuelState.Fighting;
     }
@@ -158,12 +164,19 @@ public class DuelHandler : MonoBehaviour
     private void LostDuel()
     {
         RemoveDuelCamera();
+
+        if (wasInOnsen)
+        {
+            player.GameManager.Onsen.Join(player);
+        }
+
         //++player.Statistics.DuelsLost;
         Reset();
     }
 
     private void WonDuel()
     {
+        
         RemoveDuelCamera();
 
         if (gameManager.RavenBot.IsConnected)
@@ -173,6 +186,12 @@ public class DuelHandler : MonoBehaviour
 
         //++player.Statistics.DuelsWon;
         player.Stats.Health.Reset();
+
+        if (wasInOnsen)
+        {
+            player.GameManager.Onsen.Join(player);
+        }
+
         Reset();
     }
 
@@ -180,11 +199,11 @@ public class DuelHandler : MonoBehaviour
     {
         if (isDuelCameraOwner)
         {
-            StartCoroutine(_RemoveDuelCamear());
+            StartCoroutine(_RemoveDuelCamera());
         }
     }
 
-    private IEnumerator _RemoveDuelCamear()
+    private IEnumerator _RemoveDuelCamera()
     {
         yield return new WaitForSeconds(2f);
         duelCamera.RemoveTarget(this);
@@ -192,6 +211,10 @@ public class DuelHandler : MonoBehaviour
 
     private void StartDuel()
     {
+        wasInOnsen = player.Onsen.InOnsen;
+        if (wasInOnsen)
+            player.Onsen.Exit();
+
         state = DuelState.Started;
         duelRequestTimer = 0f;
         player.Stats.Health.Reset();
@@ -199,6 +222,7 @@ public class DuelHandler : MonoBehaviour
 
     private void Reset()
     {
+        wasInOnsen = false;
         state = DuelState.NotStarted;
         Opponent = null;
         Requester = null;
