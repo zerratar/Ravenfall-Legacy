@@ -1,4 +1,4 @@
-﻿public class ClientVersion : PacketHandler<TwitchPlayerInfo>
+﻿public class ClientVersion : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ClientVersion(GameManager game, RavenBotConnection server, PlayerManager playerManager)
        : base(game, server, playerManager)

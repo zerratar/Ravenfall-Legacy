@@ -1,5 +1,5 @@
 ﻿
-public class ReloadGame : PacketHandler<TwitchPlayerInfo>
+public class ReloadGame : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ReloadGame(
         GameManager game,
@@ -28,7 +28,7 @@ public class ReloadGame : PacketHandler<TwitchPlayerInfo>
     }
 }
 
-public class RestartGame : PacketHandler<TwitchPlayerInfo>
+public class RestartGame : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public RestartGame(
         GameManager game,

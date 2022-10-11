@@ -1,4 +1,4 @@
-﻿public class DuelAccept : PacketHandler<TwitchPlayerInfo>
+﻿public class DuelAccept : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public DuelAccept(
         GameManager game,

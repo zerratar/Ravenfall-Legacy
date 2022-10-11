@@ -1,7 +1,7 @@
 ﻿using RavenNest.Models;
 using System.Threading;
 
-public class RaidForce : PacketHandler<TwitchPlayerInfo>
+public class RaidForce : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     private int scrollActive;
     public RaidForce(

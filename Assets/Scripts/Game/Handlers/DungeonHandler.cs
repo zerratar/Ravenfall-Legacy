@@ -95,13 +95,10 @@ public class DungeonHandler : MonoBehaviour
         if (enemyTarget && enemyTarget.Stats.IsDead)
             enemyTarget = null;
 
-        if (dungeon.Dungeon.HasPredefinedRooms)
-        {
-            var room = dungeon.Dungeon.Room;
-            var roomType = room.RoomType;
-            if (roomType == DungeonRoomType.Start)
-                return;
-        }
+        var room = dungeon.Dungeon.Room;
+        var roomType = room.RoomType;
+        if (roomType == DungeonRoomType.Start)
+            return;
 
         if (!enemyTarget)
         {
@@ -132,7 +129,7 @@ public class DungeonHandler : MonoBehaviour
     }
 
     public void OnEnter()
-    {        
+    {
         ReturnedToOnsen = false;
 
         enemyTarget = null;
@@ -320,20 +317,17 @@ public class DungeonHandler : MonoBehaviour
             }
 
             // Aggro more enemies that are close to the one being attacked if it doesnt have an attacker.
-            //if (!dungeon.Dungeon.HasPredefinedRooms)
+            var enemies = dungeon.GetEnemiesNear(enemyTarget.transform.position);
+            if (enemies != null)
             {
-                var enemies = dungeon.GetEnemiesNear(enemyTarget.transform.position);
-                if (enemies != null)
+                foreach (var enemy in enemies)
                 {
-                    foreach (var enemy in enemies)
+                    if (enemy.Attackers.Count > 0)
                     {
-                        if (enemy.Attackers.Count > 0)
-                        {
-                            continue;
-                        }
-
-                        enemy.Attack(this.player);
+                        continue;
                     }
+
+                    enemy.Attack(this.player);
                 }
             }
 

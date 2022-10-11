@@ -1,4 +1,4 @@
-﻿public class VendorItem : PacketHandler<TradeItemRequest>
+﻿public class VendorItem : ChatBotCommandHandler<TradeItemRequest>
 {
     public VendorItem(
        GameManager game,

@@ -1,4 +1,4 @@
-﻿public class OnsenLeave : PacketHandler<TwitchPlayerInfo>
+﻿public class OnsenLeave : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public OnsenLeave(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)

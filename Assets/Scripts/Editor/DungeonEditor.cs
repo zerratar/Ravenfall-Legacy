@@ -57,32 +57,22 @@ public class DungeonEditor : Editor
         if (target is DungeonController dungeon)
         {
             var noItemDrop = !dungeon.GetComponent<ItemDropHandler>();
+            var style = new GUIStyle(EditorStyles.label);
             if (noItemDrop)
             {
-                var s = new GUIStyle(EditorStyles.label);
-                s.normal.textColor = Color.red;
-                GUILayout.Label("No ItemDropHandler found!! Make sure to add one.", s);
+                style.normal.textColor = Color.red;
+                GUILayout.Label("No ItemDropHandler found!! Make sure to add one.", style);
             }
 
-            if (dungeon.HasPredefinedRooms)
+            if (!dungeon.BossRoom)
             {
-                var s = new GUIStyle(EditorStyles.label);
-                if (!dungeon.BossRoom)
-                {
-                    s.normal.textColor = Color.red;
-                    GUILayout.Label("No boss room found. Make sure to add one.", s);
-                }
-                else
-                {
-                    s.normal.textColor = Color.cyan;
-                    GUILayout.Label("This dungeon has been manually created and is ready to go!", s);
-                }
+                style.normal.textColor = Color.red;
+                GUILayout.Label("No boss room found. Make sure to add one.", style);
             }
             else
             {
-                var s = new GUIStyle(EditorStyles.label);
-                s.normal.textColor = Color.green;
-                GUILayout.Label("This dungeon will be automatically generated and is ready to go!", s);
+                style.normal.textColor = Color.cyan;
+                GUILayout.Label("This dungeon has been manually created and is ready to go!", style);
             }
         }
 

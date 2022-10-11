@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class RestedStatus : PacketHandler<TwitchPlayerInfo>
+public class RestedStatus : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public RestedStatus(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)

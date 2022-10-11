@@ -1,4 +1,4 @@
-﻿public class ToggleItemRequirements : PacketHandler<TwitchPlayerInfo>
+﻿public class ToggleItemRequirements : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ToggleItemRequirements(
       GameManager game,

@@ -1,4 +1,4 @@
-﻿public class TwitchCheerer : PacketHandler<TwitchCheer>
+﻿public class TwitchCheerer : ChatBotCommandHandler<TwitchCheer>
 {
     public TwitchCheerer(
        GameManager game,

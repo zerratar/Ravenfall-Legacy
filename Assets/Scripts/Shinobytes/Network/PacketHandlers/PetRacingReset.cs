@@ -1,4 +1,4 @@
-﻿public class PetRacingReset : PacketHandler<TwitchPlayerInfo>
+﻿public class PetRacingReset : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public PetRacingReset(
      GameManager game,

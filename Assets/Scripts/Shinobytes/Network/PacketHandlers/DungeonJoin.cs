@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class DungeonJoin : PacketHandler<EventJoinRequest>
+public class DungeonJoin : ChatBotCommandHandler<EventJoinRequest>
 {
     public DungeonJoin(
         GameManager game,

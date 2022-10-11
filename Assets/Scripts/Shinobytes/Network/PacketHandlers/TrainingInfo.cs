@@ -1,4 +1,4 @@
-﻿public class TrainingInfo : PacketHandler<TwitchPlayerInfo>
+﻿public class TrainingInfo : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public TrainingInfo(
        GameManager game,

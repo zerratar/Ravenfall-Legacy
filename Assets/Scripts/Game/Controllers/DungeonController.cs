@@ -39,21 +39,14 @@ public class DungeonController : MonoBehaviour
 
     public ItemDropHandler ItemDrops => itemDropHandler;
 
-    public DungeonRoomController BossRoom => rooms.FirstOrDefault(x => x.RoomType == DungeonRoomType.Boss);
+    public DungeonRoomController BossRoom => Rooms.FirstOrDefault(x => x.RoomType == DungeonRoomType.Boss);
     public DungeonRoomController Room => currentRoom;
-    public DungeonRoomController[] Rooms => rooms;
-    public DungeonManager DungeonManager => dungeonManager;
-    // Start is called before the first frame update
-    public bool HasPredefinedRooms => (rooms != null && rooms.Length > 0) || (!Application.isPlaying && (rooms = GetComponentsInChildren<DungeonRoomController>()).Length > 0);
+    public DungeonRoomController[] Rooms => ((rooms == null || rooms.Length == 0) ? (rooms = GetRooms()) : rooms);
 
+    public DungeonManager DungeonManager => dungeonManager;
     public Transform CameraPoint => activeCameraPoint;
 
     private Transform activeCameraPoint;
-    private float lastCameraChange;
-    private Transform[] cameraTargets;
-
-    private bool UsePlayerCamera = true;
-
     public bool HasStartingPoint => !!startingPoint;
 
     void Start()
@@ -63,13 +56,7 @@ public class DungeonController : MonoBehaviour
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
         if (!dungeonManager) dungeonManager = FindObjectOfType<DungeonManager>();
 
-        rooms = GetComponentsInChildren<DungeonRoomController>();
-
-        if (rooms.Length > 0)
-        {
-            currentRoom = rooms.FirstOrDefault(x => x.RoomType == DungeonRoomType.Start);
-            currentRoomIndex = Array.IndexOf(rooms, currentRoom);
-        }
+        rooms = GetRooms();
 
         if (dungeonContainer)
         {
@@ -99,86 +86,23 @@ public class DungeonController : MonoBehaviour
             }
         }
 
-        if (HasPredefinedRooms)
+        this.activeCameraPoint = Room.CameraPoint;
+
+        if (this.dungeonManager.Started && (!dungeonManager.Boss || dungeonManager.Boss.Enemy.Stats.IsDead))
         {
-            this.activeCameraPoint = Room.CameraPoint;
+            Exit();
+            return;
         }
-        else
+    }
+    private DungeonRoomController[] GetRooms()
+    {
+        var r = GetComponentsInChildren<DungeonRoomController>(true);
+        if (r.Length > 0)
         {
-
-            if (this.dungeonManager.Started && (!dungeonManager.Boss || dungeonManager.Boss.Enemy.Stats.IsDead))
-            {
-                Exit();
-                return;
-            }
-
-            if (UsePlayerCamera && Input.GetKeyDown(KeyCode.Tab))
-            {
-                ObserveNextPlayer();
-                this.lastCameraChange = Time.time;
-                return;
-            }
-
-            var players = dungeonManager.GetAlivePlayers();
-
-            // DO NOT DO THIS EVERY UPDATE!!!!!!
-            if (Time.time - lastCameraChange >= 10)
-            {
-
-                // 1. Use the center room emitter to place target camera transform
-                // 2. Find out which camera transforms/rooms that has players in them
-                // 3. Toggle between these transforms every 5s
-
-                // var players = dungeonManager.GetPlayers();
-                // get the room that has most players closest to it.
-                // means, we have to weight the room with most players with smallest distance numbers.
-                // First, get all rooms. Sort the list by distance  to each room.
-                // compare each room where same player or player index has smaller distance than the other one.
-                // take the room with most players with shorterst distance.
-                // voila. Active Camera Point Found.
-
-                // this is low though, better alternatives?
-                // first player joined that is not dead / room?
-
-                if (UsePlayerCamera)
-                {
-                    ObserveNextPlayer();
-                }
-                else
-                {
-                    if (cameraTargets != null && cameraTargets.Length > 0)
-                    {
-
-                        if (players.Count > 0)
-                        {
-                            var maxDistance = float.MaxValue;
-                            this.activeCameraPoint = null;
-
-                            foreach (var cam in cameraTargets)
-                            {
-                                // get average distance to camera target
-                                var avgDistance = players.Sum(x => Vector3.Distance(cam.position, x.transform.position)) / players.Count;
-                                if (avgDistance < maxDistance)
-                                {
-                                    maxDistance = avgDistance;
-                                    this.activeCameraPoint = cam;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            this.activeCameraPoint = cameraTargets.FirstOrDefault();
-                        }
-                    }
-                    else
-                    {
-                        this.activeCameraPoint = this.transform;
-                    }
-                }
-
-                this.lastCameraChange = Time.time;
-            }
+            currentRoom = r.FirstOrDefault(x => x.RoomType == DungeonRoomType.Start);
+            currentRoomIndex = Array.IndexOf(r, currentRoom);
         }
+        return r;
     }
 
     private void ObserveNextPlayer()
@@ -209,7 +133,7 @@ public class DungeonController : MonoBehaviour
     public void ResetRooms()
     {
         currentRoomIndex = 0;
-        foreach (var room in rooms)
+        foreach (var room in Rooms)
         {
             room.ResetRoom();
         }
@@ -218,27 +142,27 @@ public class DungeonController : MonoBehaviour
     public void NextRoom()
     {
         currentRoom.Exit();
-        currentRoomIndex = (currentRoomIndex + 1) % rooms.Length;
+        currentRoomIndex = (currentRoomIndex + 1) % Rooms.Length;
         if (currentRoomIndex == 0)
         {
             Exit();
             return;
         }
 
-        currentRoom = rooms[currentRoomIndex];
+        currentRoom = Rooms[currentRoomIndex];
         currentRoom.Enter();
     }
 
     public void Enter()
     {
 
-        if (this.HasPredefinedRooms && !currentRoom)
+        if (!currentRoom)
         {
             Shinobytes.Debug.LogError("No starting room was found!");
             return;
         }
 
-        if (HasPredefinedRooms && dungeonContainer)
+        if (dungeonContainer)
         {
             dungeonContainer.SetActive(true);
         }
@@ -253,16 +177,8 @@ public class DungeonController : MonoBehaviour
 
         TeleportPlayers();
 
-        if (this.HasPredefinedRooms)
-        {
-            currentRoom.Enter();
-            NextRoom(); // Skip the starting room so we can get going!
-        }
-        else
-        {
-            this.cameraTargets = GetComponentsInChildren<RoomCenter>().SelectArray(x => x.transform);
-            // This is an automatic generated dungeon. No need to do anything atm?
-        }
+        currentRoom.Enter();
+        NextRoom(); // Skip the starting room so we can get going!
     }
 
     private void TeleportPlayers()
@@ -330,12 +246,12 @@ public class DungeonController : MonoBehaviour
     internal void EnableContainer()
     {
         dungeonContainer.SetActive(true);
-        if (rooms == null || rooms.Length == 0)
+        if (Rooms == null || Rooms.Length == 0)
         {
             return;
         }
 
-        foreach (var room in rooms)
+        foreach (var room in Rooms)
         {
             room.ResetRoom();
         }

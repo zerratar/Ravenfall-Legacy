@@ -1,4 +1,4 @@
-﻿public class ToggleDiaperMode : PacketHandler<TwitchPlayerInfo>
+﻿public class ToggleDiaperMode : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ToggleDiaperMode(
     GameManager game,

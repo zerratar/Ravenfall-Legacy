@@ -1,4 +1,4 @@
-﻿public class ValueItem : PacketHandler<TradeItemRequest>
+﻿public class ValueItem : ChatBotCommandHandler<TradeItemRequest>
 {
     public ValueItem(
        GameManager game,

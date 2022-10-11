@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-public class FerryTravel : PacketHandler<FerryTravelRequest>
+public class FerryTravel : ChatBotCommandHandler<FerryTravelRequest>
 {
     public FerryTravel(
          GameManager game,

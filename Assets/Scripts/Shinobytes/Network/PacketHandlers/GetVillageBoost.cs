@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-public class GetVillageBoost : PacketHandler<TwitchPlayerInfo>
+public class GetVillageBoost : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public GetVillageBoost(
          GameManager game,
@@ -39,7 +39,7 @@ public class GetVillageBoost : PacketHandler<TwitchPlayerInfo>
     }
 }
 
-public class SetVillageHuts : PacketHandler<PlayerStringRequest>
+public class SetVillageHuts : ChatBotCommandHandler<PlayerStringRequest>
 {
     public SetVillageHuts(
          GameManager game,

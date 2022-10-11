@@ -1,4 +1,4 @@
-﻿public class OnsenJoin : PacketHandler<TwitchPlayerInfo>
+﻿public class OnsenJoin : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public OnsenJoin(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)

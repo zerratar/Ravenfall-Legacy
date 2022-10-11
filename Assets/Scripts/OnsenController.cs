@@ -14,6 +14,12 @@ public class OnsenController : MonoBehaviour
 
     [SerializeField] private TextMeshProUGUI detailsLabel;
 
+    /// <summary>
+    ///     Whether or not there is a limited amount of seats/spots in the onsen.
+    /// </summary>
+    [SerializeField] private bool limitedSpots = false;
+
+
     private IslandController island;
 
     private List<Transform> transforms;
@@ -43,7 +49,11 @@ public class OnsenController : MonoBehaviour
             return null;
         }
 
-        var spot = transforms.Where(x => x.childCount == 0).OrderBy(x => UnityEngine.Random.value).FirstOrDefault();
+        var spot =
+            limitedSpots 
+            ? transforms.Where(x => x.childCount == 0).OrderBy(x => UnityEngine.Random.value).FirstOrDefault()
+            : transforms.OrderBy(x => x.childCount + UnityEngine.Random.value).FirstOrDefault();
+
         if (spot)
         {
             return new OnsenPosition
@@ -74,6 +84,13 @@ public class OnsenController : MonoBehaviour
         }
 
         var usedCount = GetUsedSpotCount();
+
+        if (!limitedSpots)
+        {
+            detailsLabel.text = usedCount.ToString();
+            return;
+        }
+
         var totalCount = GetSpotCount();
         if (usedCount >= totalCount)
         {

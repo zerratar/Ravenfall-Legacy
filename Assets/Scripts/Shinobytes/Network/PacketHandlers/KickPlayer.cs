@@ -1,7 +1,7 @@
 ﻿
 using System.Linq;
 
-public class KickPlayer : PacketHandler<TwitchPlayerInfo>
+public class KickPlayer : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public KickPlayer(
         GameManager game,

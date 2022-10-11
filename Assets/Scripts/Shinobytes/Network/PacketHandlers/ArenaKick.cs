@@ -1,4 +1,4 @@
-﻿public class ArenaKick : PacketHandler<ArenaKickRequest>
+﻿public class ArenaKick : ChatBotCommandHandler<ArenaKickRequest>
 {
     public ArenaKick(
         GameManager game,

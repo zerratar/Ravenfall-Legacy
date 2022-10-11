@@ -1,5 +1,5 @@
 ﻿
-public class TicTacToeActivate : PacketHandler<TwitchPlayerInfo>
+public class TicTacToeActivate : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public TicTacToeActivate(
       GameManager game,

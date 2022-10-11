@@ -1,4 +1,4 @@
-﻿public class MonsterPlayer : PacketHandler<TwitchPlayerInfo>
+﻿public class MonsterPlayer : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public MonsterPlayer(
         GameManager game,

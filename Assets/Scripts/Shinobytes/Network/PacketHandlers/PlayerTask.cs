@@ -4,7 +4,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using UnityEngine;
 
-public class PlayerTask : PacketHandler
+public class PlayerTask : ChatBotCommandHandler
 {
     public PlayerTask(
         GameManager game,

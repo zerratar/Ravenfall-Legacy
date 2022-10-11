@@ -1,4 +1,4 @@
-﻿public class PlayerResources : PacketHandler<TwitchPlayerInfo>
+﻿public class PlayerResources : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public PlayerResources(
         GameManager game,

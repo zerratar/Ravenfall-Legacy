@@ -1,4 +1,4 @@
-﻿public class ToggleHelmetVisibility : PacketHandler<TwitchPlayerInfo>
+﻿public class ToggleHelmetVisibility : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ToggleHelmetVisibility(
         GameManager game,

@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 using System.Threading;
-public class DungeonForce : PacketHandler<TwitchPlayerInfo>
+public class DungeonForce : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     private int scrollActive;
     public DungeonForce(

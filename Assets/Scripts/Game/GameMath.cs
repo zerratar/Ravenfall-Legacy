@@ -8,7 +8,7 @@ public static class GameMath
     public const int MaxVillageLevel = 300;
 
     public readonly static double[] ExperienceArray = new double[MaxLevel];
-    public const float MaxExpBonusPerSlot = 50f;
+    public const float MaxExpBonusPerSlot = 200f;
 
     static GameMath()
     {
@@ -197,7 +197,7 @@ public static class GameMath
     public static float CalculateHouseExpBonus(this SkillStat skill)
     {
         // up to 50% exp bonus
-        return (skill.Level / (float)MaxVillageLevel) * MaxExpBonusPerSlot;
+        return (skill.Level / (float)MaxLevel) * MaxExpBonusPerSlot;
     }
     public static SkillStat GetSkillByHouseType(this Skills stats, TownHouseSlotType type)
     {

@@ -1,4 +1,4 @@
-﻿public class CycleEquippedPet : PacketHandler<TwitchPlayerInfo>
+﻿public class CycleEquippedPet : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public CycleEquippedPet(
         GameManager game,

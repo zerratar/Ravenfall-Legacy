@@ -1,4 +1,4 @@
-﻿public class ArenaLeave : PacketHandler<TwitchPlayerInfo>
+﻿public class ArenaLeave : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ArenaLeave(
         GameManager game,

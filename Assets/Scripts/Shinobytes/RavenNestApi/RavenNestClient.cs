@@ -93,7 +93,7 @@ namespace RavenNest.SDK
         public bool HasActiveRequest => activeRequestCount > 0;
 
         public string ServerAddress => appSettings.WebApiEndpoint;
-        public Guid SessionId { get; private set; }
+        public Guid SessionId => currentSessionToken?.SessionId ?? Guid.Empty;
         public string TwitchUserName { get; private set; }
         public string TwitchDisplayName { get; private set; }
         public string TwitchUserId { get; private set; }

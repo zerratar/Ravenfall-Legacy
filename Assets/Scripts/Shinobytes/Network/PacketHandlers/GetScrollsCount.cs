@@ -1,7 +1,7 @@
 ﻿using RavenNest.Models;
 using System.Collections.Generic;
 
-public class GetScrollsCount : PacketHandler<TwitchPlayerInfo>
+public class GetScrollsCount : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public GetScrollsCount(
           GameManager game,

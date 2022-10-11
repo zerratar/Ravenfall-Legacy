@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 
-public class SellItem : PacketHandler<TradeItemRequest>
+public class SellItem : ChatBotCommandHandler<TradeItemRequest>
 {
     public SellItem(
         GameManager game,

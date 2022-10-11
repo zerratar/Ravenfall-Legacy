@@ -1,4 +1,4 @@
-﻿public class ConnectionPing : PacketHandler<PlayerAndNumber>
+﻿public class ConnectionPing : ChatBotCommandHandler<PlayerAndNumber>
 {
     public ConnectionPing(
      GameManager game,

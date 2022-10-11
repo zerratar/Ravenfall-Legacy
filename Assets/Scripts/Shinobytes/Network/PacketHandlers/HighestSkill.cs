@@ -1,6 +1,6 @@
 ﻿using Shinobytes.Linq;
 using System;
-public class HighestSkill : PacketHandler<HighestSkillRequest>
+public class HighestSkill : ChatBotCommandHandler<HighestSkillRequest>
 {
     public HighestSkill(
         GameManager game,

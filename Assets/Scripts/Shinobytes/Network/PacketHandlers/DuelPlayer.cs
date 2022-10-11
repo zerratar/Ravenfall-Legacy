@@ -1,4 +1,4 @@
-﻿public class DuelPlayer : PacketHandler<DuelPlayerRequest>
+﻿public class DuelPlayer : ChatBotCommandHandler<DuelPlayerRequest>
 {
     public DuelPlayer(
         GameManager game,

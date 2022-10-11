@@ -2,7 +2,7 @@
 using System.Linq;
 using RavenNest.Models;
 
-public class BuyItem : PacketHandler<TradeItemRequest>
+public class BuyItem : ChatBotCommandHandler<TradeItemRequest>
 {
     public BuyItem(
         GameManager game,

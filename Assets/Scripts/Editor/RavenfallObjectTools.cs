@@ -8,119 +8,119 @@ public class RavenfallObjectTools
 
     private static List<GameObject> tmpDisabledGameObjects = new List<GameObject>();
 
-    [MenuItem("Ravenfall/Navigation/Generate Temporary Boxes under Docks", priority = 0)]
-    public static void GenerateTempBoxesUnderDock()
-    {
-        if (tmpDisabledGameObjects.Count != 0)
-        {
-            DestroyTempBoxesUnderDock();
-        }
+    //[MenuItem("Ravenfall/Navigation/Generate Temporary Boxes under Docks", priority = 0)]
+    //public static void GenerateTempBoxesUnderDock()
+    //{
+    //    if (tmpDisabledGameObjects.Count != 0)
+    //    {
+    //        DestroyTempBoxesUnderDock();
+    //    }
 
-        var tmpNavObj = "Navigation Objects (Temp)";
-        var temp = GameObject.Find(tmpNavObj);
-        if (!temp)
-        {
-            temp = new GameObject(tmpNavObj);
-        }
+    //    var tmpNavObj = "Navigation Objects (Temp)";
+    //    var temp = GameObject.Find(tmpNavObj);
+    //    if (!temp)
+    //    {
+    //        temp = new GameObject(tmpNavObj);
+    //    }
 
-        var docks = GameObject.FindObjectsOfType<DockController>();
-        foreach (var dock in docks)
-        {
-            var colliders = dock.transform.GetComponentsInChildren<BoxCollider>();
-            foreach (var c in colliders)
-            {
-                if (c.isTrigger || !c.gameObject.activeInHierarchy)
-                {
-                    continue;
-                }
+    //    var docks = GameObject.FindObjectsOfType<DockController>();
+    //    foreach (var dock in docks)
+    //    {
+    //        var colliders = dock.transform.GetComponentsInChildren<BoxCollider>();
+    //        foreach (var c in colliders)
+    //        {
+    //            if (c.isTrigger || !c.gameObject.activeInHierarchy)
+    //            {
+    //                continue;
+    //            }
 
-                var t = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                t.transform.SetParent(temp.transform);
-                t.transform.localScale = Vector3.Scale(c.size, c.transform.lossyScale);
-                t.transform.rotation = c.transform.rotation;
-                t.transform.position = (c.transform.position + c.center);
+    //            var t = GameObject.CreatePrimitive(PrimitiveType.Cube);
+    //            t.transform.SetParent(temp.transform);
+    //            t.transform.localScale = Vector3.Scale(c.size, c.transform.lossyScale);
+    //            t.transform.rotation = c.transform.rotation;
+    //            t.transform.position = (c.transform.position + c.center);
 
-                // check if we have a parent with a MeshCollider or MeshRenderer, then we want to disable that one instead.
+    //            // check if we have a parent with a MeshCollider or MeshRenderer, then we want to disable that one instead.
 
-                var parent = c.transform.parent;
-                var pHasMeshCollider = HasComponent<MeshCollider>(parent);
-                var pHasMeshRenderer = HasComponent<MeshRenderer>(parent);
-                var pIsNotDock = parent.name != "Dock";
+    //            var parent = c.transform.parent;
+    //            var pHasMeshCollider = HasComponent<MeshCollider>(parent);
+    //            var pHasMeshRenderer = HasComponent<MeshRenderer>(parent);
+    //            var pIsNotDock = parent.name != "Dock";
 
-                if (pIsNotDock && (pHasMeshCollider || pHasMeshRenderer))
-                {
-                    parent.gameObject.SetActive(false);
-                    tmpDisabledGameObjects.Add(parent.gameObject);
-                }
-                else
-                {
-                    c.gameObject.SetActive(false);
-                    tmpDisabledGameObjects.Add(c.gameObject);
-                }
-            }
-        }
-    }
-
-
-    [MenuItem("Ravenfall/Navigation/Generate NavMesh (A*)", priority = 0)]
-    public static void GenerateNavMesh()
-    {
-        var astar = GameObject.FindObjectOfType<AstarPath>();
-        if (!astar)
-        {
-            return;
-        }
-
-        Pathfinding.AstarPathEditor.MenuScan();
-    }
+    //            if (pIsNotDock && (pHasMeshCollider || pHasMeshRenderer))
+    //            {
+    //                parent.gameObject.SetActive(false);
+    //                tmpDisabledGameObjects.Add(parent.gameObject);
+    //            }
+    //            else
+    //            {
+    //                c.gameObject.SetActive(false);
+    //                tmpDisabledGameObjects.Add(c.gameObject);
+    //            }
+    //        }
+    //    }
+    //}
 
 
-    [MenuItem("Ravenfall/Navigation/Destroy Temporary Boxes under Docks", priority = 0)]
-    public static void DestroyTempBoxesUnderDock()
-    {
-        var tmpNavObj = "Navigation Objects (Temp)";
-        var temp = GameObject.Find(tmpNavObj);
-        if (!temp)
-        {
-            return;
-        }
-        GameObject.DestroyImmediate(temp);
-        //var childs = temp.GetComponentsInChildren<Transform>();
-        //foreach (var c in childs)
-        //{
-        //    GameObject.DestroyImmediate(c.gameObject);
-        //}
-        try
-        {
-            if (tmpDisabledGameObjects.Count != 0)
-            {
-                foreach (var c in tmpDisabledGameObjects)
-                {
-                    c.gameObject.SetActive(true);
-                }
-                return;
-            }
+    //[MenuItem("Ravenfall/Navigation/Generate NavMesh (A*)", priority = 0)]
+    //public static void GenerateNavMesh()
+    //{
+    //    var astar = GameObject.FindObjectOfType<AstarPath>();
+    //    if (!astar)
+    //    {
+    //        return;
+    //    }
 
-            var docks = GameObject.FindObjectsOfType<DockController>();
-            foreach (var dock in docks)
-            {
-                var colliders = dock.transform.GetComponentsInChildren<BoxCollider>(true);
-                foreach (var c in colliders)
-                {
-                    if (c.isTrigger || !c.transform.parent.gameObject.activeInHierarchy || c.gameObject.activeInHierarchy)
-                    {
-                        continue;
-                    }
+    //    Pathfinding.AstarPathEditor.MenuScan();
+    //}
 
-                    c.gameObject.SetActive(true);
-                }
-            }
-        }
-        finally
-        {
-            tmpDisabledGameObjects.Clear();
-        }
-    }
+
+    //[MenuItem("Ravenfall/Navigation/Destroy Temporary Boxes under Docks", priority = 0)]
+    //public static void DestroyTempBoxesUnderDock()
+    //{
+    //    var tmpNavObj = "Navigation Objects (Temp)";
+    //    var temp = GameObject.Find(tmpNavObj);
+    //    if (!temp)
+    //    {
+    //        return;
+    //    }
+    //    GameObject.DestroyImmediate(temp);
+    //    //var childs = temp.GetComponentsInChildren<Transform>();
+    //    //foreach (var c in childs)
+    //    //{
+    //    //    GameObject.DestroyImmediate(c.gameObject);
+    //    //}
+    //    try
+    //    {
+    //        if (tmpDisabledGameObjects.Count != 0)
+    //        {
+    //            foreach (var c in tmpDisabledGameObjects)
+    //            {
+    //                c.gameObject.SetActive(true);
+    //            }
+    //            return;
+    //        }
+
+    //        var docks = GameObject.FindObjectsOfType<DockController>();
+    //        foreach (var dock in docks)
+    //        {
+    //            var colliders = dock.transform.GetComponentsInChildren<BoxCollider>(true);
+    //            foreach (var c in colliders)
+    //            {
+    //                if (c.isTrigger || !c.transform.parent.gameObject.activeInHierarchy || c.gameObject.activeInHierarchy)
+    //                {
+    //                    continue;
+    //                }
+
+    //                c.gameObject.SetActive(true);
+    //            }
+    //        }
+    //    }
+    //    finally
+    //    {
+    //        tmpDisabledGameObjects.Clear();
+    //    }
+    //}
     private static bool HasComponent<T>(Transform obj)
     {
         return obj.GetComponent<T>() != null;

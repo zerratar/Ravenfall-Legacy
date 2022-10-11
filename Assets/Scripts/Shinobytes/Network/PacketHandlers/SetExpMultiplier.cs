@@ -1,5 +1,5 @@
 ﻿
-public class SetExpMultiplier : PacketHandler<SetExpMultiplierRequest>
+public class SetExpMultiplier : ChatBotCommandHandler<SetExpMultiplierRequest>
 {
     public SetExpMultiplier(
        GameManager game,

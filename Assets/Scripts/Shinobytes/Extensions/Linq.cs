@@ -453,7 +453,6 @@ namespace Shinobytes.Linq
             return collection[collection.Count - 1];
         }
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerable<TResult> OfType<TResult>(this IEnumerable source)
         {
@@ -462,7 +461,6 @@ namespace Shinobytes.Linq
                 if (obj is TResult res) yield return res;
             }
         }
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerable<TResult> WhereOfType<TSource, TResult>(this IEnumerable<TSource> source, Func<TResult, bool> predicate)
@@ -473,7 +471,6 @@ namespace Shinobytes.Linq
                     yield return res;
             }
         }
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerable<TResult> WhereOfType<TSource, TResult>(
@@ -487,7 +484,6 @@ namespace Shinobytes.Linq
                 if (a != null && predicate(a)) yield return a;
             }
         }
-
 
         /// <summary>
         /// Gets a list of the enumeration with the least allocation possible.
@@ -515,6 +511,7 @@ namespace Shinobytes.Linq
             }
             return result;
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T2> SelectWhere<T, T2>(this IEnumerable<T> items, Func<T, bool> predicateWhere, Func<T, T2> select)
         {

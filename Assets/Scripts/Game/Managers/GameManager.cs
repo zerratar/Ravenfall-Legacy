@@ -203,8 +203,6 @@ public class GameManager : MonoBehaviour, IGameManager
     public StreamLabels StreamLabels { get; private set; }
 
     private Overlay overlay;
-    private bool expMultiplierUpdating;
-    private DateTime waitBeforeExpMultiplierCheck;
 
     public bool RequireCodeForDungeonOrRaid;
     private GameCache.LoadStateResult gameCacheStateFileLoadResult;
@@ -622,6 +620,8 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
+        ExpMultiplierChecker.RunAsync(this);
+
         if (GameCache.IsAwaitingGameRestore
             && RavenNest.Authenticated
             && RavenNest.SessionStarted
@@ -695,49 +695,9 @@ public class GameManager : MonoBehaviour, IGameManager
             HandleGameEvent(ge);
         }
 
-        // update exp multiplier
-        if (useManualExpMultiplierCheck)
-        {
-            UpdateExpMultiplierAsync();
-        }
-
         return true;
     }
 
-    private async void UpdateExpMultiplierAsync()
-    {
-        try
-        {
-            if (expMultiplierUpdating)
-            {
-                return;
-            }
-
-            var now = DateTime.UtcNow;
-            if (waitBeforeExpMultiplierCheck > now)
-            {
-                return;
-            }
-
-            var expMultiplierSinceLastUpdate = now - Twitch.LastUpdated;
-            if (expMultiplierSinceLastUpdate.TotalSeconds >= 10)
-            {
-                expMultiplierUpdating = true;
-                var multiplier = await RavenNest.Game.GetExpMultiplierAsync();
-                Twitch.SetExpMultiplier(
-                    multiplier.EventName,
-                    multiplier.Multiplier,
-                    multiplier.StartTime,
-                    multiplier.EndTime);
-            }
-        }
-        catch
-        {
-            // ignore, but wait some time before we try this again.
-            waitBeforeExpMultiplierCheck = DateTime.UtcNow.AddSeconds(10);
-        }
-        finally { expMultiplierUpdating = false; }
-    }
 
     public bool UpdateExitView()
     {
@@ -2020,24 +1980,27 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (subEventManager.CurrentBoost.Active)
         {
-            var secondsLeft = Mathf.FloorToInt(subEventManager.Duration - subEventManager.CurrentBoost.Elapsed);
-            var timeLeft = $"{secondsLeft} sec";
-            if (secondsLeft > 3600)
+            var duration = subEventManager.Duration ?? TimeSpan.Zero;
+            var remainingTime = subEventManager.TimeLeft ?? TimeSpan.Zero;
+            var secondsLeft = (float)remainingTime.TotalSeconds;
+            var secondsLeftInt = Mathf.FloorToInt(secondsLeft);
+            var secondsTotal = (float)duration.TotalSeconds;
+            var timeLeft = $"{secondsLeftInt} sec";
+            if (secondsLeftInt > 3600)
             {
-                timeLeft = $"{Mathf.FloorToInt(secondsLeft / 3600f)} hours";
-                var minutes = secondsLeft / 60;
+                timeLeft = $"{Mathf.FloorToInt(secondsLeftInt / 3600f)} hours";
+                var minutes = secondsLeftInt / 60;
                 minutes = (int)(minutes % 60);
                 if (minutes > 0)
                 {
                     timeLeft += " " + (int)+minutes + "min";
                 }
             }
-            else if (secondsLeft > 60)
-                timeLeft = $"{Mathf.FloorToInt(secondsLeft / 60f)} mins";
+            else if (secondsLeftInt > 60)
+                timeLeft = $"{Mathf.FloorToInt(secondsLeftInt / 60f)} mins";
             boostTimer.SetSubscriber(subEventManager.CurrentBoost.LastSubscriber, !subEventManager.CurrentBoost.LastSubscriber.Contains(" "));
-            boostTimer.SetText(
-                $"EXP Multiplier x{subEventManager.CurrentBoost.Multiplier} - {timeLeft}");
-            boostTimer.SetTime(subEventManager.CurrentBoost.Elapsed, subEventManager.Duration);
+            boostTimer.SetText($"EXP Multiplier x{subEventManager.CurrentBoost.Multiplier} - {timeLeft}");
+            boostTimer.SetTime(secondsLeft, secondsTotal);
         }
 
         expBoostTimerUpdate = 0.5f;

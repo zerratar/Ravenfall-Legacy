@@ -1,4 +1,4 @@
-﻿public class TicTacToePlay : PacketHandler<PlayerAndNumber>
+﻿public class TicTacToePlay : ChatBotCommandHandler<PlayerAndNumber>
 {
     public TicTacToePlay(
       GameManager game,

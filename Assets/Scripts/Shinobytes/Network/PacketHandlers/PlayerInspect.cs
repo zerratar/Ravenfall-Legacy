@@ -1,4 +1,4 @@
-﻿public class PlayerInspect : PacketHandler<TwitchPlayerInfo>
+﻿public class PlayerInspect : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public PlayerInspect(
          GameManager game,

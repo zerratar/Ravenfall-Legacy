@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class RaidJoin : PacketHandler<EventJoinRequest>
+public class RaidJoin : ChatBotCommandHandler<EventJoinRequest>
 {
     public RaidJoin(
         GameManager game,

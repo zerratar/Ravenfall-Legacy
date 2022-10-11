@@ -1,5 +1,5 @@
 ﻿
-public class TwitchSubscriber : PacketHandler<TwitchSubscription>
+public class TwitchSubscriber : ChatBotCommandHandler<TwitchSubscription>
 {
     public TwitchSubscriber(
         GameManager game,

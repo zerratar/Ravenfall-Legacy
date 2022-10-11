@@ -1,4 +1,4 @@
-﻿public class PlayerScale : PacketHandler<SetScaleRequest>
+﻿public class PlayerScale : ChatBotCommandHandler<SetScaleRequest>
 {
     public PlayerScale(
          GameManager game,

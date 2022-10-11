@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class ItemDropEvent : PacketHandler<TradeItemRequest>
+public class ItemDropEvent : ChatBotCommandHandler<TradeItemRequest>
 {
     public ItemDropEvent(
         GameManager game,

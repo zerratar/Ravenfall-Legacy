@@ -1,5 +1,5 @@
 ﻿
-public class PlayerLeave : PacketHandler<TwitchPlayerInfo>
+public class PlayerLeave : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public PlayerLeave(
     GameManager game,

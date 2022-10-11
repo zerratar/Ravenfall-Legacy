@@ -1,4 +1,4 @@
-﻿public class PlayerUnstuck : PacketHandler<TwitchPlayerInfo>
+﻿public class PlayerUnstuck : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public PlayerUnstuck(
         GameManager game,

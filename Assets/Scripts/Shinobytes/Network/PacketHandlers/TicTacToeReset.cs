@@ -1,4 +1,4 @@
-﻿public class TicTacToeReset : PacketHandler<TwitchPlayerInfo>
+﻿public class TicTacToeReset : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public TicTacToeReset(
       GameManager game,

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-public class RedeemStreamerToken : PacketHandler<TradeItemRequest>
+public class RedeemStreamerToken : ChatBotCommandHandler<TradeItemRequest>
 {
     public RedeemStreamerToken(
       GameManager game,

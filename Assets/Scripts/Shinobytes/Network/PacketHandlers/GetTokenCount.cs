@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-public class GetTokenCount : PacketHandler<TwitchPlayerInfo>
+public class GetTokenCount : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public GetTokenCount(
          GameManager game,

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 
-public class CraftRequirement : PacketHandler<TradeItemRequest>
+public class CraftRequirement : ChatBotCommandHandler<TradeItemRequest>
 {
     public CraftRequirement(
         GameManager game,

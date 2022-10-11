@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-public class Highscore : PacketHandler<HighestSkillRequest>
+public class Highscore : ChatBotCommandHandler<HighestSkillRequest>
 {
     public Highscore(
         GameManager game,

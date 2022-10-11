@@ -26,6 +26,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     [SerializeField] public EquipmentStats EquipmentStats;
     [SerializeField] public Skills Stats;
+    [SerializeField] public DungeonRoomController DungeonRoom;
 
     public double ExpFactor = 1d;
 

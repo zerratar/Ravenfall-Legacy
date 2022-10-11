@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-public class EnchantItem : PacketHandler<TradeItemRequest>
+public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
 {
     public EnchantItem(
         GameManager game,

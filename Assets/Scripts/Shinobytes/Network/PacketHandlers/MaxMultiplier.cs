@@ -1,7 +1,6 @@
-﻿using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class MaxMultiplier : PacketHandler<TwitchPlayerInfo>
+public class MaxMultiplier : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public MaxMultiplier(
       GameManager game,
@@ -11,7 +10,7 @@ public class MaxMultiplier : PacketHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override async void Handle(TwitchPlayerInfo data, GameClient client)
     {
         var player = PlayerManager.GetPlayer(data);
         if (!player)
@@ -19,6 +18,8 @@ public class MaxMultiplier : PacketHandler<TwitchPlayerInfo>
             client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
             return;
         }
+
+        await ExpMultiplierChecker.RunAsync(Game);
 
         var hutMulti = 0f;
         var tierSub = player.GetTierExpMultiplier();

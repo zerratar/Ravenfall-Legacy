@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-public class PlayerStats : PacketHandler<PlayerStatsRequest>
+public class PlayerStats : ChatBotCommandHandler<PlayerStatsRequest>
 {
     public PlayerStats(
         GameManager game,

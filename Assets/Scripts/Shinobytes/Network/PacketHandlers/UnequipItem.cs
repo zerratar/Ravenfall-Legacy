@@ -1,4 +1,4 @@
-﻿public class UnequipItem : PacketHandler<TradeItemRequest>
+﻿public class UnequipItem : ChatBotCommandHandler<TradeItemRequest>
 {
     public UnequipItem(
         GameManager game,

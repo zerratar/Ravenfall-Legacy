@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class RaidStreamer : PacketHandler<StreamerRaid>
+public class RaidStreamer : ChatBotCommandHandler<StreamerRaid>
 {
     public RaidStreamer(
         GameManager game,

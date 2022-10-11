@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 
-public class SetPet : PacketHandler<SetPetRequest>
+public class SetPet : ChatBotCommandHandler<SetPetRequest>
 {
     public SetPet(
         GameManager game,

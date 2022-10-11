@@ -1,4 +1,4 @@
-﻿public class RaidStop : PacketHandler<TwitchPlayerInfo>
+﻿public class RaidStop : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public RaidStop(
          GameManager game,

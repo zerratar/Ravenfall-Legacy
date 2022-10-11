@@ -1,4 +1,4 @@
-﻿public class DungeonStart : PacketHandler<TwitchPlayerInfo>
+﻿public class DungeonStart : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public DungeonStart(
          GameManager game,

@@ -338,7 +338,7 @@ public class RavenBotConnection : IDisposable
         }
     }
 
-    private PacketHandler InstantiateHandler(Type packetHandlerType, params object[] args)
+    private ChatBotCommandHandler InstantiateHandler(Type packetHandlerType, params object[] args)
     {
         var ctors = packetHandlerType.GetConstructors(
             BindingFlags.CreateInstance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
@@ -357,7 +357,7 @@ public class RavenBotConnection : IDisposable
             return null;
         }
 
-        return (PacketHandler)ctor.Invoke(args);
+        return (ChatBotCommandHandler)ctor.Invoke(args);
     }
 
     private void OnAcceptTcpClient(IAsyncResult ar)

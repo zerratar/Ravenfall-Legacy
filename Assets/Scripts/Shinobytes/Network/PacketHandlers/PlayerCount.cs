@@ -1,4 +1,4 @@
-﻿public class PlayerCount : PacketHandler<TwitchPlayerInfo>
+﻿public class PlayerCount : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public PlayerCount(
        GameManager game,

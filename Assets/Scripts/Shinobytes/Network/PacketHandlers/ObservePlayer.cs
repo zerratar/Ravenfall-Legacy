@@ -1,4 +1,4 @@
-﻿public class ObservePlayer : PacketHandler<TwitchPlayerInfo>
+﻿public class ObservePlayer : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ObservePlayer(
     GameManager game,

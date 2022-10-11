@@ -1,5 +1,5 @@
 ﻿using Shinobytes.Linq;
-public class IslandInfo : PacketHandler<TwitchPlayerInfo>
+public class IslandInfo : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public IslandInfo(
        GameManager game,

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text;
 using RavenNest.Models;
 
-public class Craft : PacketHandler<TradeItemRequest>
+public class Craft : ChatBotCommandHandler<TradeItemRequest>
 {
     public const int MaxCraftingCount = 50_000_000;
 

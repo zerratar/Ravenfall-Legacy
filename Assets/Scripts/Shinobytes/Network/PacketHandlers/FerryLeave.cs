@@ -1,4 +1,4 @@
-﻿public class FerryLeave : PacketHandler<TwitchPlayerInfo>
+﻿public class FerryLeave : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public FerryLeave(
        GameManager game,

@@ -1,11 +1,9 @@
-using Pathfinding;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class PlayerMovementController : MonoBehaviour
 {
-    [SerializeField] private RichAI richAI;
     [SerializeField] private NavMeshAgent navMeshAgent;
     [SerializeField] private PlayerAnimationController playerAnimations;
 
@@ -24,11 +22,9 @@ public class PlayerMovementController : MonoBehaviour
     /// Used to always have a slight offset to target destinations.
     /// </summary>
     private Vector3 positionJitter;
-    private bool useAStarPathfinding;
     private MovementLockState movementLockState;
     private bool firstUnlock = true;
     private NavigationAgent navAgentState;
-
 
     public enum MovementLockState
     {
@@ -40,10 +36,6 @@ public class PlayerMovementController : MonoBehaviour
 
     void Start()
     {
-        if (!richAI) richAI = GetComponent<RichAI>();
-
-        useAStarPathfinding = richAI && richAI.enabled;
-
         if (!navMeshAgent) navMeshAgent = GetComponent<NavMeshAgent>();
         if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
         SetupNavigationAgent();
@@ -225,15 +217,7 @@ public class PlayerMovementController : MonoBehaviour
     {
         if (navAgentState == null)
         {
-            if (useAStarPathfinding)
-            {
-                navAgentState = new NavigationAgent(Position, richAI);
-            }
-            else
-            {
-                navAgentState = new NavigationAgent(Position, navMeshAgent);
-            }
-            return navAgentState;
+            return navAgentState = new NavigationAgent(Position, navMeshAgent);
         }
         return navAgentState.Update(Position);
     }
@@ -257,120 +241,60 @@ public class NavigationAgent
     public Vector3 Destination;
     public Vector3 Velocity;
 
-    private NavMeshAgent nAgent;
-    private RichAI rAgent;
+    private NavMeshAgent agent;
 
     private Vector3 currentPosition;
-
-    public NavigationAgent(Vector3 currentPosition, RichAI agent)
-    {
-        this.currentPosition = currentPosition;
-        nAgent = null;
-        rAgent = agent;
-
-        Update(currentPosition);
-    }
 
     public NavigationAgent(Vector3 currentPosition, NavMeshAgent agent)
     {
         this.currentPosition = currentPosition;
-        rAgent = null;
-        nAgent = agent;
-
+        this.agent = agent;
         Update(currentPosition);
     }
 
     internal NavigationAgent Update(Vector3 currentPosition)
     {
         this.currentPosition = currentPosition;
-        if (rAgent)
-        {
-            Enabled = rAgent && rAgent.enabled;
-            Destination = rAgent.destination;
-            Velocity = rAgent.velocity;
-            HasPath = rAgent.hasPath;
-            ActiveAndEnabled = rAgent.isActiveAndEnabled;
-            PathPending = rAgent.pathPending;
-            ReachedDestination = rAgent.reachedDestination;
-            OnNavMesh = true;
-        }
 
-        if (nAgent)
-        {
-            Enabled = nAgent && nAgent.enabled;
-            Destination = nAgent.destination;
-            Velocity = nAgent.velocity;
-            OnNavMesh = nAgent.isOnNavMesh;
-            HasPath = nAgent.hasPath;
-            PathPending = nAgent.pathPending;
-            ActiveAndEnabled = nAgent.isActiveAndEnabled;
-            ReachedDestination = nAgent.isOnNavMesh ? nAgent.remainingDistance > 1f : true;
-        }
+        Enabled = agent && agent.enabled;
+        Destination = agent.destination;
+        Velocity = agent.velocity;
+        OnNavMesh = agent.isOnNavMesh;
+        HasPath = agent.hasPath;
+        PathPending = agent.pathPending;
+        ActiveAndEnabled = agent.isActiveAndEnabled;
+        ReachedDestination = agent.isOnNavMesh ? agent.remainingDistance > 1f : true;
         return this;
     }
 
     internal void Enable()
     {
-        if (nAgent)
-        {
-            nAgent.enabled = true;
-            if (nAgent.isOnNavMesh)
-                nAgent.isStopped = false;
-        }
-
-        if (rAgent)
-        {
-            rAgent.enabled = true;
-            rAgent.canMove = true;
-            rAgent.isStopped = false;
-        }
+        agent.enabled = true;
+        if (agent.isOnNavMesh)
+            agent.isStopped = false;
     }
 
     public void Stop()
     {
-        if (nAgent)
+        var agent = this.agent;
+        agent.velocity = Vector3.zero;
+        if (agent.isOnNavMesh)
         {
-            var agent = nAgent;
-            agent.velocity = Vector3.zero;
-            if (agent.isOnNavMesh)
-            {
-                agent.SetDestination(currentPosition);
-                agent.isStopped = true;
-                agent.ResetPath();
-            }
-            agent.enabled = false;
+            agent.SetDestination(currentPosition);
+            agent.isStopped = true;
+            agent.ResetPath();
         }
-        if (rAgent)
-        {
-            rAgent.isStopped = true;
-            rAgent.destination = currentPosition;
-            rAgent.canMove = false;
-        }
+        agent.enabled = false;
     }
 
     public void Teleport(Vector3 position)
     {
-        if (nAgent)
-        {
-            nAgent.Warp(position);
-        }
-        else
-        {
-            rAgent.Teleport(position);
-        }
+        agent.Warp(position);
     }
 
     internal void SetDestination(Vector3 position)
     {
-        if (nAgent)
-        {
-            nAgent.SetDestination(position);
-        }
-
-        if (rAgent)
-        {
-            rAgent.destination = position;
-        }
+        agent.SetDestination(position);
     }
 }
 

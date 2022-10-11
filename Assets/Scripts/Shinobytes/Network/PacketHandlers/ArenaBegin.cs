@@ -1,4 +1,4 @@
-﻿public class ArenaBegin : PacketHandler<TwitchPlayerInfo>
+﻿public class ArenaBegin : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ArenaBegin(
         GameManager game,

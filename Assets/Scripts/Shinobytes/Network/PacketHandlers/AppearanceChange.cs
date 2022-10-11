@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Runtime.Remoting.Messaging;
 
-public class AppearanceChange : PacketHandler<PlayerAppearanceRequest>
+public class AppearanceChange : ChatBotCommandHandler<PlayerAppearanceRequest>
 {
     public AppearanceChange(
         GameManager game,

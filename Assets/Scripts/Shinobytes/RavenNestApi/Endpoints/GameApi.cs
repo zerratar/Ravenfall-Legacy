@@ -112,6 +112,15 @@ namespace RavenNest.SDK.Endpoints
                    .SendAsync<int>(ApiRequestTarget.Game, ApiRequestType.Get);
         }
 
+        public Task<UseExpScrollResult> UseExpScrollAsync(PlayerController plr, int usageCount)
+        {
+            return request.Create()
+                   .Method("use-exp-scroll-new")
+                   .AddParameter(plr.Id.ToString())
+                   .AddParameter(usageCount.ToString())
+                   .Build()
+                   .SendAsync<UseExpScrollResult>(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
         //public Task<bool> EndSessionAndRaidAsync(string username, bool war)
         //{
         //    return request.Create()

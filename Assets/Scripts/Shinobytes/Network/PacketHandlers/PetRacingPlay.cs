@@ -1,4 +1,4 @@
-﻿public class PetRacingPlay : PacketHandler<TwitchPlayerInfo>
+﻿public class PetRacingPlay : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public PetRacingPlay(
      GameManager game,

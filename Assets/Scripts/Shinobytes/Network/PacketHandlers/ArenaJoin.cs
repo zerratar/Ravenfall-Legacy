@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class ArenaJoin : PacketHandler<TwitchPlayerInfo>
+public class ArenaJoin : ChatBotCommandHandler<TwitchPlayerInfo>
 {
     public ArenaJoin(
         GameManager game,
