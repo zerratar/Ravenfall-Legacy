@@ -3,76 +3,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
-//public static class JsonStore
-//{
-//    public static JsonStore<T> Get<T>(string name)
-//    {
-//        return new JsonStore<T>(name);
-//    }
-//}
-
-public class JsonStore<T> where T : new()
-{
-    private readonly string storeFile;
-    private readonly string name;
-    public JsonStore(string name)
-    {
-        this.name = name;
-        this.storeFile = Shinobytes.IO.Path.GetFilePath(System.IO.Path.GetFileNameWithoutExtension(name) + ".json");
-    }
-
-    public static JsonStore<T> Create(string name)
-    {
-        return new JsonStore<T>(name);
-    }
-
-    public T Get()
-    {
-        if (Shinobytes.IO.File.Exists(storeFile))
-        {
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(Shinobytes.IO.File.ReadAllText(storeFile));
-        }
-
-        return new T();
-    }
-
-    public void Save(T obj)
-    {
-        Shinobytes.IO.File.WriteAllText(storeFile, Newtonsoft.Json.JsonConvert.SerializeObject(obj));
-    }
-}
-
-public class PlayerSettings
-{
-    private readonly static JsonStore<PlayerSettings> store;
-    public readonly static PlayerSettings Instance;
-
-    public bool? PotatoMode;
-    public bool? AutoPotatoMode;
-    public bool? PostProcessing;
-    public bool? RealTimeDayNightCycle;
-    public bool? AlertExpiredStateCacheInChat;
-
-    public float? PlayerListSize;
-    public float? PlayerListScale;
-    public float? RaidHornVolume;
-    public float? MusicVolume;
-    public float? DPIScale;
-
-    public int? PlayerBoostRequirement;
-    public int? PlayerCacheExpiryTime;
-    public int? ItemDropMessageType;
-    public int? PathfindingQualitySettings;
-
-    static PlayerSettings()
-    {
-        store = JsonStore<PlayerSettings>.Create("game-settings");
-        Instance = store.Get();
-    }
-
-    public static void Save() => store.Save(Instance);
-}
-
 public class ExternalResources
 {
     private static ConcurrentDictionary<string, ExternalResource<AudioClip>> audioResources;
@@ -88,7 +18,7 @@ public class ExternalResources
         string soundsFolder = GetSoundFolder();
         if (!System.IO.Directory.Exists(soundsFolder))
         {
-            UnityEngine.Debug.Log("No sounds folder found in: " + soundsFolder + ". Ignoring");
+            Shinobytes.Debug.Log("No sounds folder found in: " + soundsFolder + ". Ignoring");
             return;
         }
 

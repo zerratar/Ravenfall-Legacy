@@ -54,13 +54,13 @@ public class SetVillageHuts : ChatBotCommandHandler<PlayerStringRequest>
         var player = PlayerManager.GetPlayer(data.Player);
         if (!player || (!player.IsBroadcaster && !player.IsGameAdmin && !player.IsGameModerator))
         {
-            UnityEngine.Debug.LogWarning(data.Player?.Username + " tried to set the village boost but does not have permission to do so.");
+            Shinobytes.Debug.LogWarning(data.Player?.Username + " tried to set the village boost but does not have permission to do so.");
             return;
         }
 
         if (string.IsNullOrEmpty(data.Value))
         {
-            UnityEngine.Debug.LogWarning(data.Player?.Username + " tried to set the village boost forgot to enter a target skill.");
+            Shinobytes.Debug.LogWarning(data.Player?.Username + " tried to set the village boost forgot to enter a target skill.");
             return;
         }
 

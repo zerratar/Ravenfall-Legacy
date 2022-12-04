@@ -89,7 +89,7 @@ public class PetController : MonoBehaviour
     [Button("Generate Item Row")]
     public void GenerateItemRow()
     {
-        //UnityEngine.Debug.Log("Button for " + gameObject.name);
+        //Shinobytes.Debug.Log("Button for " + gameObject.name);
         var itemId = System.Guid.NewGuid();
         var itemName = gameObject.name;
 
@@ -109,7 +109,7 @@ public class PetController : MonoBehaviour
         var resx = Resources.Load<GameObject>(itemRow.GenericPrefab);
         if (!resx)
         {
-            UnityEngine.Debug.LogWarning(itemRow.GenericPrefab + " does not exist. Saving a copy");
+            Shinobytes.Debug.LogWarning(itemRow.GenericPrefab + " does not exist. Saving a copy");
             var instance = Instantiate(this.gameObject);
             instance.transform.position = Vector3.zero;
             instance.transform.localRotation = Quaternion.identity;
@@ -118,7 +118,7 @@ public class PetController : MonoBehaviour
         }
         var data = Newtonsoft.Json.JsonConvert.SerializeObject(itemRow);
         GUIUtility.systemCopyBuffer = data;
-        UnityEngine.Debug.Log(data);
+        Shinobytes.Debug.Log(data);
     }
 
 #endif

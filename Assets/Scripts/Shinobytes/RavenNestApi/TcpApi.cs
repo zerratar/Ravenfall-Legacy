@@ -11,7 +11,7 @@ namespace RavenNest.SDK
 {
     public class TcpApi : IDisposable
     {
-        public const int MaxMessageSize = 16 * 1024;
+        public const int MaxMessageSize = 128 * 1024;
         public const int ServerPort = 3920;
         public const int MinDelayBetweenSaveSeconds = 2;
         private readonly GameManager gameManager;

@@ -38,7 +38,7 @@ public class Highscore : ChatBotCommandHandler<HighestSkillRequest>
         if (result == -2)
         {
             // Admin or moderators dont get to use this.
-            UnityEngine.Debug.Log("Game Admin or Game Moderators cant use !hs command.");
+            Shinobytes.Debug.Log("Game Admin or Game Moderators cant use !hs command.");
             return;
         }
 

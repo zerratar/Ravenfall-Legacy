@@ -489,7 +489,7 @@ public class PlayerManager : MonoBehaviour
         var failed = new List<GameCachePlayerItem>();
         try
         {
-            UnityEngine.Debug.Log("Send Restore to server with " + players.Count + " players.");
+            Shinobytes.Debug.Log("Send Restore to server with " + players.Count + " players.");
             if (players.Count == 0)
             {
                 await gameManager.RavenNest.Players.RestoreAsync(new PlayerRestoreData { Characters = new Guid[0] });

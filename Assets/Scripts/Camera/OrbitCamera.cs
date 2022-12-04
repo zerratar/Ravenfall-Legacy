@@ -4,6 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(Camera))]
 public class OrbitCamera : MonoBehaviour
 {
+    public static float RotationSpeed = 5f;
 
     [Range(1f, 30f)]
     public float Distance = 5f;
@@ -13,9 +14,6 @@ public class OrbitCamera : MonoBehaviour
 
     [SerializeField, Range(0f, 1f)]
     private float focusCentering = 0.5f;
-
-    [SerializeField, Range(1f, 360f)]
-    private float rotationSpeed = 90f;
 
     [SerializeField]
     private Transform targetTransform;
@@ -58,7 +56,7 @@ public class OrbitCamera : MonoBehaviour
 
     private void UpdateRotation()
     {
-        orbitAngles += rotationSpeed * Time.unscaledDeltaTime * orbitAxis;
+        orbitAngles += RotationSpeed * Time.unscaledDeltaTime * orbitAxis;
     }
 
     private void UpdateFocusPoint()

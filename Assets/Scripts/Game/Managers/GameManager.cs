@@ -195,6 +195,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 dayNightCycle.UseRealTime = value;
         }
     }
+
     public bool AutoPotatoMode { get; set; }
     public bool IsLoaded { get; private set; }
     public bool DungeonStartEnabled { get; internal set; } = true;
@@ -349,6 +350,8 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         var settings = PlayerSettings.Instance;
 
+        TwitchEventManager.AnnouncementTimersSeconds = settings.ExpMultiplierAnnouncements ?? TwitchEventManager.AnnouncementTimersSeconds;
+
         UsePostProcessingEffects = settings.PostProcessing.GetValueOrDefault();
         AutoPotatoMode = settings.AutoPotatoMode.GetValueOrDefault();
         PotatoMode = settings.PotatoMode.GetValueOrDefault();
@@ -361,6 +364,7 @@ public class GameManager : MonoBehaviour, IGameManager
         Raid.Notifications.volume = settings.RaidHornVolume.GetValueOrDefault(Raid.Notifications.volume);
         Music.volume = settings.MusicVolume.GetValueOrDefault(Music.volume);
 
+        OrbitCamera.RotationSpeed = settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed);
         SettingsMenuView.SetResolutionScale(settings.DPIScale.GetValueOrDefault(1f));
     }
 

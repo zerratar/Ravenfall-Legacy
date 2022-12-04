@@ -25,6 +25,7 @@
     public const string MSG_PLAYER_INSPECT_URL = "https://www.ravenfall.stream/inspect/{characterId}";
     public const string MSG_PLAYERS_ONLINE = "There are currently {playerCount} players in the game.";
     public const string MSG_MULTIPLIER_ENDS = "The current exp multiplier (x{multiplier}) will end in {minutes}{seconds}.";
+    public const string MSG_MULTIPLIER_ENDED = "The exp multiplier has expired.";
     public const string MSG_MULTIPLIER_LIMIT = "The exp multiplier limit has been set to {expMultiplier}!";
     public const string MSG_MULTIPLIER_INCREASE = "You have increased the exp multiplier with {added}. It is now at {multiplier}!";
     public const string MSG_MULTIPLIER_RESET = "You have reset the exp multiplier! NotLikeThis";

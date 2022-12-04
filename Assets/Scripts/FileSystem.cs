@@ -59,13 +59,13 @@ namespace Shinobytes.IO
     {
         public static string[] ReadAllLines(string path)
         {
-            UnityEngine.Debug.Log("Loading: " + path);
+            Shinobytes.Debug.Log("Loading: " + path);
             return System.IO.File.ReadAllLines(Shinobytes.IO.Path.GameFolderAsRoot(path));
         }
 
         public static string[] ReadAllLines(string path, Encoding encoding)
         {
-            UnityEngine.Debug.Log("Loading: " + path);
+            Shinobytes.Debug.Log("Loading: " + path);
             return System.IO.File.ReadAllLines(Shinobytes.IO.Path.GameFolderAsRoot(path), encoding);
         }
 
@@ -81,7 +81,7 @@ namespace Shinobytes.IO
 
         public static void Delete(string path)
         {
-            UnityEngine.Debug.Log("Deleting: " + path);
+            Shinobytes.Debug.Log("Deleting: " + path);
             System.IO.File.Delete(Shinobytes.IO.Path.GameFolderAsRoot(path));
         }
 

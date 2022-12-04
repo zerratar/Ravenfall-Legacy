@@ -209,7 +209,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private IEnumerator DoBadThings()
     {
-        //UnityEngine.Debug.LogWarning("Generating 100 dungeons...");
+        //Shinobytes.Debug.LogWarning("Generating 100 dungeons...");
         //var start = DateTime.Now;
         //for (var i = 0; i < 100; ++i)
         //{
@@ -224,7 +224,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
         //}
 
-        //UnityEngine.Debug.LogWarning("Took " + (DateTime.Now - start).TotalSeconds + " seconds.");
+        //Shinobytes.Debug.LogWarning("Took " + (DateTime.Now - start).TotalSeconds + " seconds.");
     }
 
     private void UpdateDungeon()
@@ -238,7 +238,9 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
 
         if (!Active || !Started)
+        {
             return;
+        }
 
         if (Input.GetKeyDown(KeyCode.Tab))
         {
@@ -263,6 +265,25 @@ public class DungeonManager : MonoBehaviour, IEvent
             {
                 EndDungeonFailed();
                 return;
+            }
+
+            foreach (var alive in alivePlayers)
+            {
+                if (!alive.TrainingHealing)
+                {
+                    continue;
+                }
+
+                if (alive.Attackers.Count > 0)
+                {
+                    continue;
+                }
+
+                var enemy = GetNextEnemyTarget(alive);
+                if (enemy != null && !enemy.TargetPlayer)
+                {
+                    enemy.SetTarget(alive);
+                }
             }
         }
     }
@@ -683,12 +704,6 @@ public class DungeonManager : MonoBehaviour, IEvent
         Notifications.SetLevel(Boss.Enemy.Stats.CombatLevel);
         Notifications.ShowDungeonActivated(code);
 
-        var prefix = "";
-        if (currentDungeon.Name.Contains("Heroic"))
-        {
-            prefix = "Heroic ";
-        }
-
         if (currentDungeon.Tier == DungeonTier.Dynamic)
         {
             var bossMesh = Boss.transform.GetChild(0);
@@ -710,11 +725,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         // 1. announce dungeon event
         if (gameManager.RequireCodeForDungeonOrRaid)
         {
-            gameManager.RavenBot.Announce(prefix + currentDungeon.Name + " is available. Type '!dungeon code' to join. Find the code on the stream.");
+            gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type '!dungeon code' to join. Find the code on the stream.");
         }
         else
         {
-            gameManager.RavenBot.Announce(prefix + currentDungeon.Name + " is available. Type !dungeon to join.");
+            gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
         }
     }
     private void SelectRandomDungeon()

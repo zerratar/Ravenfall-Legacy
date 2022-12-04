@@ -169,12 +169,12 @@ public class OverlayPlayerManager
     {
         if (src == null)
         {
-            UnityEngine.Debug.LogWarning("Unable to update Twitch Player Info, source is null.");
+            Shinobytes.Debug.LogWarning("Unable to update Twitch Player Info, source is null.");
             return;
         }
         if (newValues == null)
         {
-            UnityEngine.Debug.LogWarning("Unable to update Twitch Player Info, new Values is null.");
+            Shinobytes.Debug.LogWarning("Unable to update Twitch Player Info, new Values is null.");
             return;
         }
 

@@ -39,11 +39,11 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<SetExpMultiplierRequ
 
                 if (used > 1)
                 {
-                    client.SendFormat(data.Player.Username, "You have used {scrollCount} Exp Multiplier Scrolls. The multiplier is now at {multiplier}.", result.Used, result.Multiplier);
+                    client.SendFormat(data.Player.Username, "You have used {scrollCount} Exp Multiplier Scrolls. The multiplier is now at {multiplier}.", result.Used, result.Multiplier.Multiplier);
                 }
                 else
                 {
-                    client.SendFormat(data.Player.Username, "You have used an Exp Multiplier Scroll. The multiplier is now at {multiplier}.", result.Multiplier);
+                    client.SendFormat(data.Player.Username, "You have used an Exp Multiplier Scroll. The multiplier is now at {multiplier}.", result.Multiplier.Multiplier);
                 }
 
                 return;

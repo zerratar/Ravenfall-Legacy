@@ -137,7 +137,7 @@ public class FightingTask : ChunkTask
             //if (!enemy || enemy == null)
             //{
             //    GetEnemies(true);
-            //    UnityEngine.Debug.LogError("All enemies are dead, cannot find new target");
+            //    Shinobytes.Debug.LogError("All enemies are dead, cannot find new target");
             //}
 
             return enemy;

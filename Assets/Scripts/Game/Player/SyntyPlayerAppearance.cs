@@ -478,7 +478,7 @@ public class SyntyPlayerAppearance : MonoBehaviour, IPlayerAppearance
                     }
                 }
                 field.SetValue(this, value.ToArray());
-                //UnityEngine.Debug.LogWarning("Setting Appearance Data from Active objects not supporting arrays yet. (" + field.Name + ")");
+                //Shinobytes.Debug.LogWarning("Setting Appearance Data from Active objects not supporting arrays yet. (" + field.Name + ")");
             }
             else
             {

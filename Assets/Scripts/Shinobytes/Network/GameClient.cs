@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 
 public class GameClient : IDisposable
 {
-    private const float PingPongTimeoutSeconds = 30;
-
     private readonly DateTime created;
     private readonly RavenBotConnection server;
     private readonly TcpClient client;
@@ -106,7 +104,7 @@ public class GameClient : IDisposable
         }
         catch (Exception exc)
         {
-            UnityEngine.Debug.LogError(exc);
+            Shinobytes.Debug.LogError(exc);
         }
     }
 
@@ -238,6 +236,10 @@ public class GameClient : IDisposable
                     }
                 }
             }
+            catch (Exception exc)
+            {
+                server.LogError("BeginWrite exit early. exception: " + exc);
+            }
             finally
             {
                 writeActive = false;
@@ -269,7 +271,7 @@ public class GameClient : IDisposable
     {
         if (string.IsNullOrEmpty(userId) || sessionId == Guid.Empty || string.IsNullOrEmpty(username))
         {
-            //UnityEngine.Debug.Log("Oh my! We tried to send session details to the bot without having anything. A bit hasty arnt we?");
+            //Shinobytes.Debug.Log("Oh my! We tried to send session details to the bot without having anything. A bit hasty arnt we?");
             return;
         }
 

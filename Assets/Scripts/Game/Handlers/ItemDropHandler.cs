@@ -63,18 +63,28 @@ public class ItemDropHandler : MonoBehaviour
         }
 
         var guaranteedDrop = dropType == DropType.Guaranteed;
-
         var dropitems = this.items.ToList();
-        var now = DateTime.UtcNow;
-
         var invItems = player.Inventory.GetInventoryItems();
 
+        var now = DateTime.UtcNow;
         var santaHat = "Santa Hat";
         var santaHatId = Guid.Parse("cfb510cb-7916-4b2c-a17f-6048f5c6b282");
         var existingSantaHat = invItems.FirstOrDefault(x => x.ItemId == santaHatId) != null;
-        AddMonthDrop(dropitems, now.Year == 2022 ? 1 : 12, 1, santaHat, santaHatId.ToString(), 0.05f, 0.0175f, existingSantaHat);
-        AddMonthDrop(dropitems, now.Year == 2022 ? 1 : 12, 1, "Christmas Token", "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f);
-        AddMonthDrop(dropitems, 10, now.Year == 2021 ? 2 : 1, "Halloween Token", "91fc824a-0ede-4104-96d1-531cdf8d56a6", 0.05f, 0.0175f);
+
+
+        if (now.Year == 2023)
+        {
+            // special xmas extension 2023
+            var start = new DateTime(2023, 1, 1);
+            var stop = start.AddDays(14);
+
+            AddMonthDrop(dropitems, start, stop, santaHat, santaHatId.ToString(), 0.05f, 0.0175f, existingSantaHat);
+            AddMonthDrop(dropitems, start, stop, "Christmas Token", "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f);
+        }
+
+        AddMonthDrop(dropitems, 12, 1, santaHat, santaHatId.ToString(), 0.05f, 0.0175f, existingSantaHat);
+        AddMonthDrop(dropitems, 12, 1, "Christmas Token", "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f);
+        AddMonthDrop(dropitems, 10, 1, "Halloween Token", "91fc824a-0ede-4104-96d1-531cdf8d56a6", 0.05f, 0.0175f);
 
         do
         {
@@ -128,6 +138,12 @@ public class ItemDropHandler : MonoBehaviour
         var now = DateTime.UtcNow;
         var start = new DateTime(now.Year, monthStart, 1);
         var end = start.AddMonths(monthsLength);
+        AddMonthDrop(droplist, start, end, itemName, itemId, maxDropRate, minDropRate, dropRateDecreased);
+    }
+
+    private static void AddMonthDrop(List<ItemDrop> droplist, DateTime start, DateTime end, string itemName, string itemId, float maxDropRate, float minDropRate, bool dropRateDecreased = false)
+    {
+        DateTime now = DateTime.UtcNow;
         if (now >= start && now < end)
         {
             var dropChance = now.Date == start || now.Date >= end.AddDays(-1)

@@ -82,7 +82,7 @@ public class ItemCreator : MonoBehaviour
         try
         {
             cl.DownloadFile("https://www.ravenfall.stream/api/items", itemsRepo);
-            UnityEngine.Debug.Log("Downloaded new items repo");
+            Shinobytes.Debug.Log("Downloaded new items repo");
         }
         catch { }
 
@@ -99,7 +99,7 @@ public class ItemCreator : MonoBehaviour
         }
         else
         {
-            UnityEngine.Debug.LogError("No item button container set.");
+            Shinobytes.Debug.LogError("No item button container set.");
         }
 
         this.usedMaterials = appearance.FromActive();
@@ -128,7 +128,7 @@ public class ItemCreator : MonoBehaviour
         {
             foreach (var mat in usedMaterials)
             {
-                UnityEngine.Debug.Log(mat);
+                Shinobytes.Debug.Log(mat);
                 var i = strMaterialOptions.IndexOf(mat);
                 if (i >= 0)
                 {
@@ -186,18 +186,18 @@ public class ItemCreator : MonoBehaviour
             if (isKatana)
             {
                 item = MakeKatana(selectedMaterial);
-                UnityEngine.Debug.LogError(FormatItem(item));
+                Shinobytes.Debug.LogError(FormatItem(item));
                 return;
             }
 
             if (Enum.TryParse<ItemType>(type, true, out var result))
             {
                 item = MakeItem(result, false);
-                UnityEngine.Debug.LogError(FormatItem(item));
+                Shinobytes.Debug.LogError(FormatItem(item));
             }
             else
             {
-                UnityEngine.Debug.LogError(type + " BAD");
+                Shinobytes.Debug.LogError(type + " BAD");
             }
         }
         finally
@@ -207,7 +207,7 @@ public class ItemCreator : MonoBehaviour
                 var prefab = UnityEngine.Resources.Load(item.GenericPrefab);
                 if (!prefab)
                 {
-                    UnityEngine.Debug.LogError(item.GenericPrefab + ".prefab does not exist. Make sure it exists before adding the item to the server.");
+                    Shinobytes.Debug.LogError(item.GenericPrefab + ".prefab does not exist. Make sure it exists before adding the item to the server.");
                 }
             }
         }

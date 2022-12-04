@@ -17,6 +17,6 @@ public class SetExpMultiplier : ChatBotCommandHandler<SetExpMultiplierRequest>
             return;
         }
 
-        Game.Twitch.SetExpMultiplier(player.Name, data.ExpMultiplier);
+        //Game.Twitch.SetExpMultiplier(player.Name, data.ExpMultiplier);
     }
 }

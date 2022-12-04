@@ -118,7 +118,7 @@ public class FreeCamera : MonoBehaviour
             if (pc)
             {
                 gameManager.Camera.ObservePlayer(pc);
-                //UnityEngine.Debug.LogError("You've clicked on: " + pc.Name);
+                //Shinobytes.Debug.LogError("You've clicked on: " + pc.Name);
                 return;
             }
         }

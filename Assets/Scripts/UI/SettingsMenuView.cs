@@ -48,6 +48,8 @@ public class SettingsMenuView : MenuView
 
     [Header("Game Settings")]
     [SerializeField] private GameObject game;
+    [SerializeField] private Slider observerCameraRotationSlider = null;
+    [SerializeField] private TMPro.TextMeshProUGUI observerCameraRotationLabel = null;
     [SerializeField] private TMPro.TMP_Dropdown boostRequirementDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown playerCacheExpiryTimeDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown itemDropMessageDropdown = null;
@@ -105,6 +107,8 @@ public class SettingsMenuView : MenuView
         raidHornVolumeSlider.value = settings.RaidHornVolume.GetValueOrDefault(gameManager.Raid.Notifications.volume);
         musicVolumeSlider.value = settings.MusicVolume.GetValueOrDefault(gameManager.Music.volume);
 
+        observerCameraRotationSlider.value = settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed * -1);
+
         pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
 
         playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(1);
@@ -114,8 +118,46 @@ public class SettingsMenuView : MenuView
 
         SetResolutionScale(dpiSlider.value);
         ShowSoundSettings();
-
         ShowItemDropExample();
+
+        UpdateCameraRotationLabelText();
+    }
+
+    private void ApplyCameraRotationSpeed()
+    {
+        // negative value is rotating to the right
+        // positive value is rotating to the left
+        // but since slider shows left as negative and right as positive
+        // we have to invert the value.
+
+        OrbitCamera.RotationSpeed = observerCameraRotationSlider.value * -1;
+    }
+
+    private void UpdateCameraRotationLabelText()
+    {
+        var currentValue = observerCameraRotationSlider.value;
+        var displayText = currentValue.ToString();
+        if (currentValue == 0)
+        {
+            displayText = "No rotation";
+        }
+        if (currentValue > 10)
+        {
+            displayText += " >>";
+        }
+        else if (currentValue > 0)
+        {
+            displayText += " >";
+        }
+        if (currentValue < -10)
+        {
+            displayText = "<< " + currentValue;
+        }
+        else if (currentValue < 0)
+        {
+            displayText = "< " + currentValue;
+        }
+        observerCameraRotationLabel.text = displayText;
     }
 
     private void ShowItemDropExample()
@@ -145,12 +187,14 @@ public class SettingsMenuView : MenuView
         settings.PlayerListScale = playerListScaleSlider.value;
         settings.RaidHornVolume = raidHornVolumeSlider.value;
         settings.MusicVolume = musicVolumeSlider.value;
+        settings.CameraRotationSpeed = observerCameraRotationSlider.value;
         settings.DPIScale = dpiSlider.value;
         settings.PlayerBoostRequirement = boostRequirementDropdown.value;
         settings.PlayerCacheExpiryTime = playerCacheExpiryTimeDropdown.value;
         settings.PathfindingQualitySettings = pathfindingQuality.value;
         settings.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
         settings.ItemDropMessageType = itemDropMessageDropdown.value;
+        settings.CameraRotationSpeed = observerCameraRotationSlider.value * -1;
 
         PlayerSettings.Save();
     }
@@ -253,6 +297,12 @@ public class SettingsMenuView : MenuView
         if (playerListScaleSlider != null)
         {
             gameManager.PlayerList.Scale = playerListScaleSlider.value;
+        }
+
+        if (observerCameraRotationSlider != null)
+        {
+            ApplyCameraRotationSpeed();
+            UpdateCameraRotationLabelText();
         }
     }
 

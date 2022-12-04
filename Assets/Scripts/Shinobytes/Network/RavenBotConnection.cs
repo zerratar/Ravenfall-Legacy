@@ -272,7 +272,7 @@ public class RavenBotConnection : IDisposable
             catch (Exception exc)
             {
                 connectionInProgress = false;
-                UnityEngine.Debug.LogError("Error Connecting to Remote Bot: " + exc.Message);
+                Shinobytes.Debug.LogError("Error Connecting to Remote Bot: " + exc.Message);
             }
             finally
             {

@@ -208,15 +208,32 @@ public static class TargetExtensions
 
         return target;
     }
+
     public static EnemyController GetNextEnemyTarget(this EnemyController[] enemies, PlayerController player, Func<EnemyController, bool> filter = null)
     {
         if (enemies == null || enemies.Length == 0)
             return null;
 
+        // normally we would just get the next possible enemy ordered by the distance. However,
+        // since healers are now attacked by enemies in dungeons.
+        // We have to always focus on enemies that are attacking a healer.
+
         return
             enemies
             .Where(x => !x.Stats.IsDead && (filter == null || filter(x)))
-            .OrderBy(x => Vector3.Distance(x.PositionInternal, player.Movement.Position))
+            .OrderBy(x =>
+            {
+                var distance = Vector3.Distance(x.PositionInternal, player.Movement.Position);
+
+                // We want it to sort by distance still, but to ensure we can protect our players
+                // we will add distance+constant so that healers are always prioritized.
+                if (x.HasValidTarget && x.TargetPlayer.TrainingHealing)
+                {
+                    return distance;
+                }
+
+                return distance + 100f;
+            })
             .FirstOrDefault();
     }
 }

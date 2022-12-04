@@ -525,7 +525,7 @@ public static class GameVersion
     public static bool TryParse(string input, out Version version)
     {
         var versionToLower = input.ToLower();
-        var versionString = versionToLower.Replace("a", "");
+        var versionString = versionToLower.Replace("a-alpha", "").Replace("v", "").Replace("a", "").Replace("b", "");
         return System.Version.TryParse(versionString, out version);
     }
 }

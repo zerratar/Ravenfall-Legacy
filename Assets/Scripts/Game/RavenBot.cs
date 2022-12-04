@@ -125,7 +125,7 @@ public class RavenBot : MonoBehaviour
         }
 
         //#if UNITY_EDITOR
-        //        UnityEngine.Debug.Log("Sent to Bot: " + data);
+        //        Shinobytes.Debug.Log("Sent to Bot: " + data);
         //#endif
         //if (State != BotState.Disconnected)
         //{

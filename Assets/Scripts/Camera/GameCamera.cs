@@ -253,16 +253,62 @@ public class GameCamera : MonoBehaviour
         if (forcedFreeCamera) return;
         ObserveNextPlayer();
     }
+    public void EnsureObserverCamera()
+    {
+        observeCamera.UpdatePlayerLayer();
+    }
+
 
     public void ObservePlayer(PlayerController player)
     {
         if (!player) return;
         if (forcedFreeCamera) return;
-        var subMultiplier = player.IsSubscriber ? 3f : 1f;
-        ObservePlayer(player, ObserverJumpTimer * subMultiplier);
+        ObservePlayer(player, ObserveEvent.Automatic);
     }
 
-    public void ObservePlayer(PlayerController player, float time)
+
+    public void ObservePlayer(PlayerController player, ObserveEvent @event, int data = 1)
+    {
+        var settings = PlayerSettings.Instance;
+        var times = settings.PlayerObserveSeconds;
+        var observeTime = times.Default;
+
+        if (player.IsVip)
+        {
+            observeTime = Mathf.Max(observeTime, times.Vip);
+        }
+
+        if (player.IsModerator)
+        {
+            observeTime = Mathf.Max(observeTime, times.Moderator);
+        }
+
+        if (player.IsSubscriber)
+        {
+            observeTime = Mathf.Max(observeTime, times.Subscriber);
+        }
+
+        if (player.IsBroadcaster)
+        {
+            observeTime = Mathf.Max(observeTime, times.Broadcaster);
+        }
+
+        var eventTime = 0f;
+        switch (@event)
+        {
+            case ObserveEvent.Bits:
+                eventTime = times.OnCheeredBits;
+                break;
+
+            case ObserveEvent.Subscription:
+                eventTime = times.OnSubcription;
+                break;
+        }
+
+        ObservePlayer(player, Mathf.Max(observeTime, eventTime));
+    }
+
+    private void ObservePlayer(PlayerController player, float time)
     {
         if (forcedFreeCamera) return;
         if (!CanObservePlayer(player)) return;
@@ -273,11 +319,6 @@ public class GameCamera : MonoBehaviour
         freeCamera.enabled = false;
         orbitCamera.TargetTransform = player.transform;
         orbitCamera.enabled = true;
-    }
-
-    public void EnsureObserverCamera()
-    {
-        observeCamera.UpdatePlayerLayer();
     }
 
     private void EnableFocusTargetCamera(Transform transform)
@@ -294,6 +335,13 @@ public class GameCamera : MonoBehaviour
     {
         return !forcedFreeCamera && !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.StreamRaid.InWar;
     }
+}
+
+public enum ObserveEvent
+{
+    Automatic,
+    Bits,
+    Subscription
 }
 
 public enum GameCameraType

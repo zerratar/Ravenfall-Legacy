@@ -34,7 +34,7 @@
         }
         catch (System.Exception exc)
         {
-            UnityEngine.Debug.LogError("Unable to force stop raid: " + exc.Message);
+            Shinobytes.Debug.LogError("Unable to force stop raid: " + exc.Message);
         }
     }
 }

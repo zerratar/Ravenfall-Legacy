@@ -26,7 +26,7 @@ public class CodeOfConductController : MonoBehaviour
 
         if (Application.isBatchMode)
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(1);
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
         }
     }
 
@@ -37,7 +37,7 @@ public class CodeOfConductController : MonoBehaviour
             PlayerPrefs.SetInt(CodeOfConductController.CoCLastAcceptedVersion_SettingsName, CodeOfConduct.Revision);
         }
 
-        UnityEngine.SceneManagement.SceneManager.LoadScene(1);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
     }
     public void Decline()
     {

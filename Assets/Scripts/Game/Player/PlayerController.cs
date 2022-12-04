@@ -1191,7 +1191,10 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         UpdateTwitchUser(twitchUser);
+        
         var joinOnsenAfterInitialize = false;
+        var joinFerryAfterInitialize = false;
+
         //if (Raider != null)
         if (player.State != null)
         {
@@ -1232,7 +1235,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                             {
                                 newPosition = targetIsland.SpawnPosition;
                             }
-                            
+
                             this.Teleporter.Teleport(newPosition);
                         }
                     }
@@ -1245,10 +1248,10 @@ public class PlayerController : MonoBehaviour, IAttackable
                     Mathf.Abs((float)player.State.Y.GetValueOrDefault()) > 0.01 ||
                     Mathf.Abs((float)player.State.Z.GetValueOrDefault()) > 0.01))
                 {
-                    setTask = false;
+                    //setTask = false;
                     // most likely on the ferry, bub!
-                    Movement.Lock();
-                    Ferry.AddPlayerToFerry();
+                    joinFerryAfterInitialize = true;
+
                 }
                 else
                 {
@@ -1256,7 +1259,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
                     if (player.State.InOnsen && onsenHandler)
                     {
-                        setTask = false;
+                        //setTask = false;
                         joinOnsenAfterInitialize = true;
                         // Attach player to the onsen...                                        
                     }
@@ -1291,6 +1294,12 @@ public class PlayerController : MonoBehaviour, IAttackable
             if (joinOnsenAfterInitialize)
             {
                 GameManager.Onsen.Join(this);
+            }
+
+            if (joinFerryAfterInitialize)
+            {
+                Movement.Lock();
+                Ferry.AddPlayerToFerry();
             }
         });
     }

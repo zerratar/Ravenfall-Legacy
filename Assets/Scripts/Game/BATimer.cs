@@ -33,11 +33,11 @@ public class BATimer : MonoBehaviour
         label.text = text;
     }
 
-    public void SetTime(float elapsed, float total)
+    public void SetTime(float timeLeftSeconds, float totalDurationSeconds)
     {
         if (!timeProgressBar) return;
         timeProgressBar.displayProgress = false;
-        timeProgressBar.Progress = 1f - (elapsed / total);
+        timeProgressBar.Progress = timeLeftSeconds / totalDurationSeconds;
     }
 
     public void SetActive(bool currentBoostActive)

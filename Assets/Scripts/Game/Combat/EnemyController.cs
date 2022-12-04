@@ -47,6 +47,7 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     private DungeonBossController dungeonBossController;
     private RaidBossController raidBossController;
+    private DungeonController dungeon;
     private SphereCollider hitRangeCollider;
 
     private GameManager game;
@@ -58,7 +59,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     public float HealthBarOffset => healthBarOffset;
     public bool IsRaidBoss { get; private set; }
     public bool IsDungeonBoss { get; private set; }
-
+    public bool IsDungeonEnemy;
     internal Vector3 PositionInternal;
 
     private float hitRangeRadius;
@@ -163,11 +164,22 @@ public class EnemyController : MonoBehaviour, IAttackable
 
         this.dungeonBossController = GetComponent<DungeonBossController>();
         this.raidBossController = GetComponent<RaidBossController>();
+        this.dungeon = GetComponentInParent<DungeonController>();
+
+        if (dungeon && !DungeonRoom)
+        {
+            DungeonRoom = GetComponentInParent<DungeonRoomController>();
+        }
 
         this.game = FindObjectOfType<GameManager>();
 
         this.IsDungeonBoss = !!this.dungeonBossController;
         this.IsRaidBoss = !!raidBossController;
+
+        if (IsDungeonBoss || Island == null || dungeon || DungeonRoom)
+        {
+            IsDungeonEnemy = true;
+        }
 
         //if (!wander) wander = this.GetComponent<WanderScript>();                
         if (!damageCounterManager) damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
@@ -228,7 +240,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         //    //this.transform.position = ;
         //}
 
-        if ((!InCombat || !Target) && !IsDungeonBoss)
+        if ((!InCombat || !Target) && !IsDungeonEnemy)
         {
             return;
         }
@@ -248,7 +260,7 @@ public class EnemyController : MonoBehaviour, IAttackable
                 return;
             }
 
-            if (!TargetPlayer)
+            if (!TargetPlayer && Target)
             {
                 TargetPlayer = Target.GetComponent<PlayerController>();
                 if (!TargetPlayer)
@@ -271,19 +283,16 @@ public class EnemyController : MonoBehaviour, IAttackable
             }
             //dungeonBossController.UpdateHealthBar();
         }
-        else
+        else if (!HasValidTarget)
         {
-            if (TargetPlayer.Stats.IsDead || TargetPlayer.isDestroyed || TargetPlayer.Removed || this.Island != TargetPlayer.Island)
-            {
-                ClearTarget();
-                InCombat = false;
-                Lock();
-                return;
-            }
+            ClearTarget();
+            InCombat = false;
+            Lock();
+            return;
         }
 
         var dist = Vector3.Distance(Position, Target.position);
-        if (dist >= (attackRange + TargetPlayer.GetAttackRange()) && !IsDungeonBoss)
+        if (dist >= (attackRange + TargetPlayer.GetAttackRange()) && !IsDungeonEnemy)
         {
             Lock();
             return;
@@ -302,6 +311,14 @@ public class EnemyController : MonoBehaviour, IAttackable
         else
         {
             SetDestination(Target.position);
+        }
+    }
+
+    public bool HasValidTarget
+    {
+        get
+        {
+            return TargetPlayer && !TargetPlayer.Stats.IsDead && !TargetPlayer.isDestroyed && !TargetPlayer.Removed && (this.Island == TargetPlayer.Island || !IsDungeonEnemy);
         }
     }
 
@@ -341,7 +358,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
     }
 
-    private void SetTarget(PlayerController targetPlayer)
+    public void SetTarget(PlayerController targetPlayer)
     {
         TargetPlayer = targetPlayer;
         if (targetPlayer)

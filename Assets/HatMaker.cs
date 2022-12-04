@@ -31,7 +31,7 @@ public class HatMaker : MonoBehaviour
 
         System.IO.File.WriteAllText(System.IO.Path.Combine(targetDirectory, itemName + ".json"), Newtonsoft.Json.JsonConvert.SerializeObject(item));
 
-        UnityEngine.Debug.Log(path);
+        Shinobytes.Debug.Log(path);
     }
 #endif
 

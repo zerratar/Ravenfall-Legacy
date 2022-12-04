@@ -111,7 +111,9 @@ public class OnsenController : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetAvailableSpotCount()
     {
-        return transforms.Count(x => x.childCount == 0);
+        return transforms.Count(x => 
+            !limitedSpots || x.childCount == 0
+        );
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
