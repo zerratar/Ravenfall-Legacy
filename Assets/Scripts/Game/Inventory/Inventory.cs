@@ -521,11 +521,11 @@ public class Inventory : MonoBehaviour
         equipment.EquipAll(equipped);
     }
 
-    public void Unequip(GameInventoryItem item)
+    public void Unequip(Guid instanceId)
     {
         lock (mutex)
         {
-            var targetItem = this.equipped.FirstOrDefault(x => x.InventoryItem.Id == item.InventoryItem.Id);
+            var targetItem = this.equipped.FirstOrDefault(x => x.InventoryItem.Id == instanceId);
             if (targetItem != null)
             {
                 AddToBackpack(targetItem);
@@ -533,6 +533,11 @@ public class Inventory : MonoBehaviour
                 equipment.Unequip(targetItem);
             }
         }
+    }
+
+    public void Unequip(GameInventoryItem item)
+    {
+        Unequip(item.InstanceId);
     }
 
     public void Unequip(ItemCategory category, ItemType type)
@@ -556,10 +561,22 @@ public class Inventory : MonoBehaviour
         return Equip(i.Definition, updateAppearance);
     }
 
-    public bool Equip(Guid itemId, bool updateAppearance = true)
+    public bool EquipByItemId(Guid itemId, bool updateAppearance = true)
     {
-        var item = this.GetInventoryItems(itemId).FirstOrDefault();
+        var item = this.GetInventoryItemsByItemId(itemId).FirstOrDefault();
         return Equip(item, updateAppearance);
+    }
+
+    public void Equip(Guid instanceId, bool updateAppearance = true)
+    {
+        lock (mutex)
+        {
+            var targetItem = this.backpack.FirstOrDefault(x => x.InventoryItem.Id == instanceId);
+            if (targetItem != null)
+            {
+                Equip(targetItem, updateAppearance);
+            }
+        }
     }
 
     public bool Equip(GameInventoryItem item, bool updateAppearance = true, bool updateEquipmentEffect = true)
@@ -720,7 +737,7 @@ public class Inventory : MonoBehaviour
             return i;
         }
     }
-    internal IReadOnlyList<GameInventoryItem> GetInventoryItems(Guid itemId)
+    internal IReadOnlyList<GameInventoryItem> GetInventoryItemsByItemId(Guid itemId)
     {
         lock (mutex)
         {

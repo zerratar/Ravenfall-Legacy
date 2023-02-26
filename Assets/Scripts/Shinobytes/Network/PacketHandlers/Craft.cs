@@ -178,7 +178,7 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
             {
                 var requiredItem = Game.Items.Get(req.ResourceItemId);
                 var ownedNumber = 0L;
-                var items = player.Inventory.GetInventoryItems(req.ResourceItemId);
+                var items = player.Inventory.GetInventoryItemsByItemId(req.ResourceItemId);
                 if (items != null)
                 {
                     ownedNumber = (long)items.Sum(x => x.Amount);
@@ -249,7 +249,7 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
                     foreach (var req in item.CraftingRequirements)
                     {
                         var amount = req.Amount * amountToCraft;
-                        var stacks = player.Inventory.GetInventoryItems(req.ResourceItemId);
+                        var stacks = player.Inventory.GetInventoryItemsByItemId(req.ResourceItemId);
                         foreach (GameInventoryItem stack in stacks)
                         {
                             if (stack.Amount < amount)

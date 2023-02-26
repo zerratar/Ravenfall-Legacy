@@ -21,3 +21,34 @@ public class ItemRemoveEventHandler : GameEventHandler<ItemRemove>
         player.Inventory.RemoveByInventoryId(data.InventoryItemId, data.Amount);
     }
 }
+
+public class ItemEquipEventHandler : GameEventHandler<ItemEquip>
+{
+    public override void Handle(GameManager gameManager, ItemEquip data)
+    {
+
+        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        if (!player)
+        {
+            Shinobytes.Debug.Log("No player with userid " + data.UserId + " when trying to equip item. (" + data.InventoryItemId + ")");
+            return;
+        }
+
+        player.Inventory.Equip(data.InventoryItemId);
+    }
+}
+
+public class ItemUnequipEventHandler : GameEventHandler<ItemEquip>
+{
+    public override void Handle(GameManager gameManager, ItemEquip data)
+    {
+        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        if (!player)
+        {
+            Shinobytes.Debug.Log("No player with userid " + data.UserId + " when trying to unequip item. (" + data.InventoryItemId + ")");
+            return;
+        }
+
+        player.Inventory.Unequip(data.InventoryItemId);
+    }
+}

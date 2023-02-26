@@ -7,11 +7,19 @@ Assets/AssetStoreTools*
 
 # Visual Studio cache directory
 .vs/
+game-settings.json
+state-data.json
+__state-data.json
+Script Generator/SyntyAppearanceMapGenerator/bin/*
+Debug Build/*
 Logs/*
 Assets/Toon/*
+Assets/EpiXR_PolygonHats/*
+Assets/Heureka/*
 Assets/Ventuar/*
 Assets/Tessera/*
 Assets/Stylized*/*
+Assets/RoomGen/*
 Assets/Standard Assets/*
 Assets/Polygon*/*
 Assets/Plugins/*

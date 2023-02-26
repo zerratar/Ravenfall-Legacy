@@ -311,6 +311,10 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ItemBuyEventHandler>(GameEventType.ItemBuy);
         RegisterGameEventHandler<ItemSellEventHandler>(GameEventType.ItemSell);
 
+        RegisterGameEventHandler<ItemRemoveEventHandler>(GameEventType.ItemRemove);
+        RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);
+        RegisterGameEventHandler<ItemEquipEventHandler>(GameEventType.ItemEquip);
+
         commandServer.Initialize(this);
 
         LoadGameSettings();

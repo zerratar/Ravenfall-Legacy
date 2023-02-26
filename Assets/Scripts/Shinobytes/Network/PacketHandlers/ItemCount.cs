@@ -51,7 +51,7 @@ public class ItemCount : ChatBotCommandHandler<TradeItemRequest>
         if (item.Enchantments?.Count == 0)
         {
             // good, no enchantments, then we should check all our stacks of this type
-            itemAmount = player.Inventory.GetInventoryItems(item.Item.Id).AsList(x => x.Enchantments?.Count == 0).Sum(x => x.Amount);
+            itemAmount = player.Inventory.GetInventoryItemsByItemId(item.Item.Id).AsList(x => x.Enchantments?.Count == 0).Sum(x => x.Amount);
         }
 
         client.SendFormat(data.Player.Username, "You have {itemCount}x {itemName}(s).", itemAmount, item.Name);

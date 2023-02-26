@@ -1159,7 +1159,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
-        var equipped = Inventory.Equip(item.Id);
+        var equipped = Inventory.EquipByItemId(item.Id);
         if (!equipped)
         {
             var requirement = "You require level ";

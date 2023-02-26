@@ -62,7 +62,7 @@ public class CraftRequirement : ChatBotCommandHandler<TradeItemRequest>
             {
                 var requiredItem = Game.Items.Get(req.ResourceItemId);
                 var ownedNumber = 0L;
-                var items = player.Inventory.GetInventoryItems(req.ResourceItemId);
+                var items = player.Inventory.GetInventoryItemsByItemId(req.ResourceItemId);
                 if (items != null)
                 {
                     ownedNumber = (long)items.Sum(x => x.Amount);

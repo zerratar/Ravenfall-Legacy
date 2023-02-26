@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v3.1",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v3.1": {
+      "RavenNest.Models/1.0.0": {
+        "runtime": {
+          "RavenNest.Models.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "RavenNest.Models/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
