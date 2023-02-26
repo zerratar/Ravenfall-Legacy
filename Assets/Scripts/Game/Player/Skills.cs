@@ -48,8 +48,8 @@ public class Skills : IComparable
         Sailing = new SkillStat(Skill.Sailing, nameof(Sailing), 1, 0);
         Healing = new SkillStat(Skill.Healing, nameof(Healing), 1, 0);
 
-        skills = new ConcurrentDictionary<string, SkillStat>(
-            SkillList.ToDictionary(x => x.Name.ToLower(), x => x));
+        this.skills = new ConcurrentDictionary<string, SkillStat>();
+        SetupSkillLookup();
     }
 
     public Skills(RavenNest.Models.Skills skills)
@@ -70,11 +70,25 @@ public class Skills : IComparable
         Sailing = new SkillStat(Skill.Sailing, nameof(Sailing), skills.SailingLevel, skills.Sailing);
         Healing = new SkillStat(Skill.Healing, nameof(Healing), skills.HealingLevel, skills.Healing);
 
-        this.skills = new ConcurrentDictionary<string, SkillStat>(
-            SkillList.ToDictionary(x => x.Name.ToLower(), x => x));
+
+        this.skills = new ConcurrentDictionary<string, SkillStat>();
+        SetupSkillLookup();
     }
+
+    private void SetupSkillLookup()
+    {
+        for(var i = 0; i < SkillList.Length; ++i)
+        {
+            var s = SkillList[i];
+            this.skills[s.Name.ToLower()] = s;
+        }
+    }
+
     public bool IsDead => Health.CurrentValue <= 0;
-    public int CombatLevel => (int)((Attack.Level + Defense.Level + Strength.Level + Health.Level) / 4f + (Ranged.Level + Magic.Level + Healing.Level) / 8f);
+    public int CombatLevel => (int)(
+        (Attack.Level + Defense.Level + Strength.Level + Health.Level) / 4f 
+        + (Ranged.Level + Magic.Level + Healing.Level) / 8f);
+
     public double TotalExperience => SkillList.Sum(x => x.Experience);
     public double[] GetExperienceList()
     {
@@ -121,7 +135,7 @@ public class Skills : IComparable
             Healing.Level
         };
     }
-    public float HealthPercent => Health.CurrentValue / (float)Health.Level;
+    public float HealthPercent => Health.CurrentValue / (float)Health.MaxLevel;
     public SkillStat[] SkillList => skillList ??
         (skillList = new SkillStat[]
         {

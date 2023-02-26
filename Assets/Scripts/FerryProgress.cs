@@ -36,7 +36,7 @@ public class FerryProgress : MonoBehaviour
     private void UpdateFerryETA()
     {
         if (updateETATimer > 0)
-            updateETATimer -= Time.deltaTime;
+            updateETATimer -= GameTime.deltaTime;
 
         if (updateETATimer <= 0)
         {

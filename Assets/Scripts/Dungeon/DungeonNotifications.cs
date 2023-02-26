@@ -70,7 +70,7 @@ public class DungeonNotifications : MonoBehaviour
     {
         if (activatedObject.gameObject.activeSelf)
         {
-            timeBeforeTimer -= Time.deltaTime;
+            timeBeforeTimer -= GameTime.deltaTime;
             if (timeBeforeTimer <= 0f)
             {
                 StartTimer();
@@ -179,7 +179,7 @@ public class DungeonNotifications : MonoBehaviour
                 lblEnemiesFormat = lblEnemies.text;
         }
 
-        runTime += Time.deltaTime;
+        runTime += GameTime.deltaTime;
 
         lblDungeonActiveTimer.text = string.Format(lblDungeonActiveTimerFormat, Utility.FormatTime(runTime / 60f / 60f));
         lblPlayers.text = string.Format(lblPlayersFormat, alivePlayerCount);

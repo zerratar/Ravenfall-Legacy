@@ -6,7 +6,10 @@ public class TownHallController : MonoBehaviour
     [SerializeField] private TownHallManager manager;
     [SerializeField] private BoxCollider hitCollider;
     [SerializeField] private Transform infoPos;
+
     private GameManager gameManager;
+    private MeshRenderer meshRenderer;
+    private int instanceID;
 
     // Start is called before the first frame update
     void Start()
@@ -15,6 +18,9 @@ public class TownHallController : MonoBehaviour
         if (!resources) resources = GetComponentInChildren<TownHallResource>();
         if (!hitCollider) hitCollider = GetComponent<BoxCollider>();
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+
+        this.meshRenderer = GetComponentInChildren<MeshRenderer>();
+        this.instanceID = hitCollider.GetInstanceID();
     }
 
     // Update is called once per frame
@@ -22,7 +28,7 @@ public class TownHallController : MonoBehaviour
     {
         try
         {
-            if (!gameManager || gameManager == null || manager == null || !manager)
+            if (!meshRenderer.isVisible||!gameManager || gameManager == null || manager == null || !manager)
             {
                 return;
             }
@@ -44,7 +50,7 @@ public class TownHallController : MonoBehaviour
                 var result = Physics.RaycastAll(ray);
                 foreach (var res in result)
                 {
-                    if (res.collider.GetInstanceID() == hitCollider.GetInstanceID())
+                    if (res.collider.GetInstanceID() == instanceID)
                     {
                         manager.OpenVillageDialog();
                         return;

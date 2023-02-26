@@ -41,7 +41,7 @@ public class ArenaController : MonoBehaviour, IEvent
         if (state == ArenaState.WaitingForStart)
         {
             if (arenaStartTimer > 0)
-                arenaStartTimer -= Time.deltaTime;
+                arenaStartTimer -= GameTime.deltaTime;
 
             RemoveKickedPlayers();
 

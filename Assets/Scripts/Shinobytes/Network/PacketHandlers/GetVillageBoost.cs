@@ -15,9 +15,15 @@ public class GetVillageBoost : ChatBotCommandHandler<TwitchPlayerInfo>
 
     public override void Handle(TwitchPlayerInfo data, GameClient client)
     {
+        var experience = Game.Village.TownHall.Experience;
+        var level = Game.Village.TownHall.Level;
+        var nextLevel = level + 1;
+        var nextLevelExperience = GameMath.ExperienceForLevel(nextLevel);
+        var remainingExp = nextLevelExperience - experience;
+
         var bonuses = Game.Village.GetExpBonuses();
         GetBonusMessage(bonuses, out var bonusString, out var bonusValue);
-        client.SendFormat(data.Username, bonusString, Game.Village.TownHall.Level, bonusValue);
+        client.SendFormat(data.Username, bonusString, Game.Village.TownHall.Level, remainingExp, bonusValue);
     }
 
     private void GetBonusMessage(ICollection<TownHouseExpBonus> bonuses, out string format, out string bonus)

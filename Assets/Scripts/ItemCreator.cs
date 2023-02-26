@@ -171,12 +171,7 @@ public class ItemCreator : MonoBehaviour
         appearance.HeadAttachments = attachments.ToArray();
         UpdateDetails();
     }
-
-    public void OnGUI()
-    {
-        //GUI.
-    }
-
+    
     private void MakeItem(string type)
     {
         Item item = null;

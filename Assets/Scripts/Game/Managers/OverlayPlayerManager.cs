@@ -57,7 +57,7 @@ public class OverlayPlayerManager
             return null;
         }
         playerController.IsBot = true;
-        playerController.SetPlayer(data.Character, data.Twitch, null, null);
+        playerController.SetPlayer(data.Character, data.Twitch, null, null, false);
 
         var rotation = player.AddComponent<AutoRotate>();
         rotation.rotationSpeed = new Vector3(0, Overlay.CharacterRotationSpeed, 0);

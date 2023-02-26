@@ -35,6 +35,8 @@ public class GameCamera : MonoBehaviour
     private bool allowJoinObserve = true;
     private bool forcedFreeCamera;
 
+    public static Quaternion Rotation;
+
     public PlayerDetails Observer => playerObserver;
     public bool ForcedFreeCamera => forcedFreeCamera;
     public bool AllowJoinObserve
@@ -68,6 +70,11 @@ public class GameCamera : MonoBehaviour
         {
             return;
         }
+
+
+        LookAt.HasGameCameraRotation = true;
+        Rotation = LookAt.GameCameraRotation = transform.rotation;
+
 
         if (gameManager.PotatoMode)
         {
@@ -130,7 +137,7 @@ public class GameCamera : MonoBehaviour
             else if (state == GameCameraType.Observe)
             {
                 AllowJoinObserve = true;
-                observeNextPlayerTimer -= Time.deltaTime;
+                observeNextPlayerTimer -= GameTime.deltaTime;
                 if (observeNextPlayerTimer <= 0)
                 {
                     ObserveNextPlayer();
@@ -321,7 +328,7 @@ public class GameCamera : MonoBehaviour
         orbitCamera.enabled = true;
     }
 
-    private void EnableFocusTargetCamera(Transform transform)
+    public void EnableFocusTargetCamera(Transform transform)
     {
         if (forcedFreeCamera) return;
         freeCamera.enabled = false;

@@ -101,10 +101,10 @@ public class FreeCamera : MonoBehaviour
         lastMousePosition = newMousePosition;
         var vertical = Input.GetAxis("Vertical");
         var horizontal = Input.GetAxis("Horizontal");
-        var moveUp = Input.GetKey(KeyCode.E) ? transform.up * Time.deltaTime * speed : Vector3.zero;
-        var moveDown = Input.GetKey(KeyCode.Q) ? transform.up * -1 * Time.deltaTime * speed : Vector3.zero;
-        var moveSides = transform.right * horizontal * Time.deltaTime * speed;
-        var moveForward = transform.forward * vertical * Time.deltaTime * speed;
+        var moveUp = Input.GetKey(KeyCode.E) ? transform.up * GameTime.deltaTime * speed : Vector3.zero;
+        var moveDown = Input.GetKey(KeyCode.Q) ? transform.up * -1 * GameTime.deltaTime * speed : Vector3.zero;
+        var moveSides = transform.right * horizontal * GameTime.deltaTime * speed;
+        var moveForward = transform.forward * vertical * GameTime.deltaTime * speed;
         transform.position += moveForward + moveSides + moveUp + moveDown;
     }
 

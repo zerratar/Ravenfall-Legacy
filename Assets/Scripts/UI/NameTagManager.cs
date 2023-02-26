@@ -13,11 +13,26 @@ public class NameTagManager : MonoBehaviour
     [SerializeField] private GameObject nameTagPrefab;
     [SerializeField] private PlayerLogoManager logoManager;
 
+    private bool? nameTagsWasEnabled = null;
+    internal bool NameTagsEnabled;
     public PlayerLogoManager LogoManager => logoManager;
 
     private void Awake()
     {
         if (!logoManager) logoManager = FindObjectOfType<PlayerLogoManager>();
+    }
+
+    private void Update()
+    {
+        if (nameTagsWasEnabled != NameTagsEnabled)
+        {
+            foreach (var nt in nameTags)
+            {
+                nt.gameObject.SetActive(NameTagsEnabled);
+            }
+        }
+
+        nameTagsWasEnabled = NameTagsEnabled;
     }
 
     public void Remove(PlayerController player)
@@ -71,18 +86,21 @@ public class NameTagManager : MonoBehaviour
         return AddNameTag(null, targetName, transform);
     }
 
+    public NameTag Get(PlayerController player)
+    {
+        if (!player) return null;
+        return nameTags.FirstOrDefault(x => x.TargetPlayer?.Id == player.Id);
+    }
+
     public NameTag Add(PlayerController player)
     {
         if (!player) return null;
         if (!nameTagPrefab) return null;
 
-        //lock (mutex)
+        if (nameTags.Any(x => x.TargetPlayer == player))
         {
-            if (nameTags.Any(x => x.TargetPlayer == player))
-            {
-                Shinobytes.Debug.LogWarning($"{player.PlayerName} already have an assigned name tag.");
-                return null;
-            }
+            Shinobytes.Debug.LogWarning($"{player.PlayerName} already have an assigned name tag.");
+            return null;
         }
 
         var targetName = player.PlayerName;
@@ -106,10 +124,9 @@ public class NameTagManager : MonoBehaviour
         nameTag.Manager = this;
         nameTag.HasTargetPlayer = true;
 
-        //lock (mutex)
-        {
-            nameTags.Add(nameTag);
-        }
+        nameTags.Add(nameTag);
+
+        nameTag.gameObject.SetActive(NameTagsEnabled);
 
         return nameTag;
     }

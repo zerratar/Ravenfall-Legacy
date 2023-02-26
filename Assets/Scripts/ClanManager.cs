@@ -22,6 +22,37 @@ namespace Assets.Scripts
             this.gameManager = gameManager;
         }
 
+        internal Clan Get(Guid id)
+        {
+            clans.TryGetValue(id, out var clan);
+            return clan;
+        }
+
+        internal Clan Get(string ownerUserId)
+        {
+            foreach (var c in clans)
+            {
+                if (c.Value.Owner.Equals(ownerUserId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return c.Value;
+                }
+            }
+
+            return null;
+        }
+
+        public Clan GetByName(string clanName)
+        {
+            foreach (var c in clans)
+            {
+                if (c.Value.Name.Equals(clanName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return c.Value;
+                }
+            }
+            return null;
+        }
+
         internal IReadOnlyList<SkillStat> GetClanSkills(Guid clanId)
         {
             if (!clanSkills.TryGetValue(clanId, out var skills))

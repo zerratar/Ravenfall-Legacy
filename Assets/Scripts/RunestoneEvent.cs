@@ -79,7 +79,7 @@ public class RunestoneEvent : MonoBehaviour
         {
             yield return null;
 
-            progress += Time.deltaTime;
+            progress += GameTime.deltaTime;
             var opacity = Mathf.Lerp(start, targetOpacity, progress / duration);
             eventText.color = new Color(1f, 1f, 1f, opacity);
         }

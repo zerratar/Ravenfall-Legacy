@@ -24,18 +24,26 @@ public class BuyItem : ChatBotCommandHandler<TradeItemRequest>
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery);
-        if (item == null)
+
+        if (item.SuggestedItemNames.Length > 0)
+        {
+            client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+            return;
+        }
+
+        if (item.Item == null)
         {
             client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_NOT_FOUND, data.ItemQuery);
             return;
         }
+
         try
         {
-            var amount = item.Amount;
+            var amount = item.Count;
             if (amount > long.MaxValue)
                 amount = long.MaxValue;
 
-            var pricePerItem = item.PricePerItem;
+            var pricePerItem = item.Price;
             if (pricePerItem > long.MaxValue)
                 pricePerItem = long.MaxValue;
 
@@ -64,7 +72,7 @@ public class BuyItem : ChatBotCommandHandler<TradeItemRequest>
                     break;
 
                 case ItemTradeState.Success:
-                    var instance = player.Inventory.AddToBackpack(item.Item.Item, item.Amount);
+                    var instance = player.Inventory.AddToBackpack(item.Item, item.Count);
                     var msg = "";
                     var arg0 = "";
                     var arg1 = "";

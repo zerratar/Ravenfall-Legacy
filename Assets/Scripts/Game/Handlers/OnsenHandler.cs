@@ -16,21 +16,22 @@ public class OnsenHandler : MonoBehaviour
 
     private void Update()
     {
-        if (player.Rested.RestedTime > 0)
+        var rested = player.Rested;
+        if (rested.RestedTime > 0)
         {
-            if (player.Rested.ExpBoost == 0)
-                player.Rested.ExpBoost = 2;
+            if (rested.ExpBoost == 0)
+                rested.ExpBoost = 2;
         }
-        else if (player.Rested.ExpBoost > 0)
+        else if (rested.ExpBoost > 0)
         {
-            player.Rested.ExpBoost = 0;
+            rested.ExpBoost = 0;
         }
 
         if (!InOnsen)
         {
-            if (player.Rested.RestedTime > 0)
+            if (rested.RestedTime > 0)
             {
-                player.Rested.RestedTime -= Time.deltaTime * RestedDrainFactor;
+                rested.RestedTime -= GameTime.deltaTime * RestedDrainFactor;
             }
             return;
         }
@@ -47,7 +48,7 @@ public class OnsenHandler : MonoBehaviour
             return;
         }
 
-        player.Rested.RestedTime += Time.deltaTime * RestedGainFactor;
+        rested.RestedTime += GameTime.deltaTime * RestedGainFactor;
     }
 
     public void Enter(OnsenController onsen)

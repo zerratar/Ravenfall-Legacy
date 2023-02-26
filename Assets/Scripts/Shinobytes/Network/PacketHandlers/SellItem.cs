@@ -24,24 +24,30 @@ public class SellItem : ChatBotCommandHandler<TradeItemRequest>
             var ioc = Game.gameObject.GetComponent<IoCContainer>();
             var itemResolver = ioc.Resolve<IItemResolver>();
             var item = itemResolver.Resolve(data.ItemQuery);
+            
+            if (item.SuggestedItemNames.Length > 0)
+            {
+                client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+                return;
+            }
 
-            if (item == null)
+            if (item.Item == null)
             {
                 client.SendMessage(player.PlayerName, Localization.MSG_SELL_ITEM_NOT_FOUND, data.ItemQuery);
                 return;
             }
 
-            if (item.Amount >= long.MaxValue)
+            if (item.Count >= long.MaxValue)
             {
                 client.SendFormat(player.PlayerName, Localization.MSG_SELL_TOO_MANY,
-                    item.Amount,
+                    item.Count,
                     item.Item.Name,
                     long.MaxValue);
                 return;
             }
 
-            var itemAmount = item.Amount;
-            var pricePerItem = item.PricePerItem;
+            var itemAmount = item.Count;
+            var pricePerItem = item.Price;
 
             if (itemAmount > long.MaxValue)
             {
@@ -78,11 +84,11 @@ public class SellItem : ChatBotCommandHandler<TradeItemRequest>
                     client.SendMessage(player.PlayerName, Localization.MSG_SELL_MARKETPLACE_ERROR);
                     break;
                 case ItemTradeState.Success:
-                    player.Inventory.Remove(item.Item.Item, item.Amount);
+                    player.Inventory.Remove(item.InventoryItem, item.Count);
                     client.SendMessage(player.PlayerName, Localization.MSG_SELL,
-                        item.Amount.ToString(),
+                        item.Count.ToString(),
                         item.Item.Name,
-                        Utility.FormatValue(item.PricePerItem));
+                        Utility.FormatValue(item.Price));
                     break;
             }
         }

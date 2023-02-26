@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using RavenNest.Models;
 
@@ -181,5 +182,20 @@ namespace RavenNest.SDK.Endpoints
             }
         }
 
+        internal async Task<bool> ReportExceptionAsync(string arguments, Exception exc, [CallerMemberName] string caller = null)
+        {
+            try
+            {
+                return await request.Create()
+                    .Method("report-exception")
+                    .AddParameter("error", caller + "(" + arguments + "): " + exc)
+                    .Build()
+                    .SendAsync<bool>(ApiRequestTarget.Game, ApiRequestType.Post);
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

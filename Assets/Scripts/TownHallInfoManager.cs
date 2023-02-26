@@ -4,10 +4,10 @@ using UnityEngine;
 public class TownHallInfoManager : MonoBehaviour
 {
     [SerializeField] private VillageManager villageManager;
-    [SerializeField] private TMPro.TextMeshPro lblTier;
-    [SerializeField] private TMPro.TextMeshPro lblLevel;
-    [SerializeField] private TMPro.TextMeshPro lblSlots;
-    [SerializeField] private TMPro.TextMeshPro lblTotalExpBonus;
+    [SerializeField] private TMPro.TextMeshProUGUI lblTier;
+    [SerializeField] private TMPro.TextMeshProUGUI lblLevel;
+    [SerializeField] private TMPro.TextMeshProUGUI lblSlots;
+    [SerializeField] private TMPro.TextMeshProUGUI lblTotalExpBonus;
 
     public int Tier { get; set; }
     public double Experience { get; set; }

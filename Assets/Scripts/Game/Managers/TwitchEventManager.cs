@@ -210,7 +210,7 @@ public class TwitchEventManager : MonoBehaviour
     {
         if (multiplier != CurrentBoost.Multiplier || endTime != CurrentBoost.EndTime)
         {
-            Shinobytes.Debug.Log($"Updating Exp Multiplier. (Old Multi: " + CurrentBoost.Multiplier + ", Old EndTime: " + CurrentBoost.EndTime + ")\n{{\"multiplier\": \"{multiplier}\", \"name\": \"{eventName}\", \"start-time\": \"{startTime}\", \"end-time\": \"{endTime}\"}}\nCurrent UTC Time is: {DateTime.UtcNow}");
+            Shinobytes.Debug.Log($"Updating Exp Multiplier. (Old Multi: " + CurrentBoost.Multiplier + ", Old EndTime: " + CurrentBoost.EndTime + $")\n{{\"multiplier\": \"{multiplier}\", \"name\": \"{eventName}\", \"start-time\": \"{startTime}\", \"end-time\": \"{endTime}\"}}\nCurrent UTC Time is: {DateTime.UtcNow}");
         }
 
         LastUpdated = DateTime.UtcNow;

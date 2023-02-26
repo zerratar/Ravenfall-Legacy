@@ -118,7 +118,7 @@ public class DungeonBossController : MonoBehaviour
                 return false;
             }
 
-            deathTimer -= Time.deltaTime;
+            deathTimer -= GameTime.deltaTime;
             if (deathTimer <= 0f)
             {
                 Die();
@@ -180,7 +180,7 @@ public class DungeonBossController : MonoBehaviour
 
     public PlayerController GetAttackableTarget()
     {
-        var players = dungeonManager.GetPlayers();
+        var players = dungeonManager.GetAlivePlayers();
         if (players.Count == 0) return null;
         var hasAliveEnemies = dungeonManager.HasAliveEnemies();
         if (hasAliveEnemies) return null;
@@ -193,7 +193,7 @@ public class DungeonBossController : MonoBehaviour
             }
 
             return players
-                .Where(x => x != null && x && !x.Stats.IsDead && Vector3.Distance(x.Movement.Position, enemyController.PositionInternal) <= attackRadiusCollider.radius)
+                .Where(x => x != null && x && !x.Stats.IsDead)
                 .OrderByDescending(x =>
                 {
                     enemyController.Aggro.TryGetValue(x.Name, out var aggro);

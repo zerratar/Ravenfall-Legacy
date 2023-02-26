@@ -57,7 +57,7 @@ public class FadeInOut : MonoBehaviour
             return;
         }
 
-        fadeTimer += Time.deltaTime;
+        fadeTimer += GameTime.deltaTime;
         fadeTimer = Math.Min(fadeTimer, fadeTime);
         var t = fadeTimer / fadeTime;
         canvasGroup.alpha = fadeCurve.Evaluate(t);

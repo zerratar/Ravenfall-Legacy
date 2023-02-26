@@ -414,13 +414,19 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     public void PlayerDied(PlayerController player)
     {
+        alivePlayers.Remove(player);
         if (deadPlayers.Contains(player)) return;
         deadPlayers.Add(player);
-        alivePlayers.Remove(player);
     }
 
     public void EndDungeonSuccess()
     {
+        var players = GetPlayers();
+        foreach (var player in players)
+        {
+            player.Dungeon.OnExit();
+        }
+
         //Debug.LogWarning("EndDungeonSuccess");
         // 1. reward all players
         RewardPlayers();
@@ -651,15 +657,15 @@ public class DungeonManager : MonoBehaviour, IEvent
         notificationTimer = notificationUpdate;
     }
 
-    private async void UpdateDungeonTimer()
+    private void UpdateDungeonTimer()
     {
         if (Started) return;
         if (nextDungeonTimer > 0f)
         {
-            nextDungeonTimer -= Time.deltaTime;
+            nextDungeonTimer -= GameTime.deltaTime;
             if (nextDungeonTimer <= 0f)
             {
-                await ActivateDungeon();
+                ActivateDungeon();
             }
         }
     }
@@ -668,7 +674,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         if (timer > 0f)
         {
-            timer -= Time.deltaTime;
+            timer -= GameTime.deltaTime;
             if (timer <= 0f)
             {
                 action();

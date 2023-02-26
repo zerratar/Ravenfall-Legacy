@@ -26,25 +26,28 @@
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: false, parseAmount: false);
+        var queriedItem = itemResolver.ResolveTradeQuery(data.ItemQuery, parsePrice: false, parseUsername: false, parseAmount: false);
 
-        if (queriedItem == null)
-            queriedItem = itemResolver.Resolve(data.ItemQuery + " pet", parsePrice: false, parseUsername: false, parseAmount: false);
+        if (queriedItem.SuggestedItemNames.Length > 0)
+        {
+            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+            return;
+        }
 
-        if (queriedItem == null)
+        if (queriedItem.Item == null)
         {
             client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, data.ItemQuery);
             return;
         }
 
-        var item = player.Inventory.GetEquippedItem(queriedItem.Id);
-        if (item == null)
+
+        if (queriedItem.InventoryItem == null || !queriedItem.InventoryItem.InventoryItem.Equipped)
         {
             client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_EQUIPPED, queriedItem.Item.Name);
             return;
         }
 
-        await player.UnequipAsync(item);
+        await player.UnequipAsync(queriedItem.InventoryItem);
         client.SendMessage(data.Player.Username, Localization.MSG_UNEQUIPPED, queriedItem.Item.Name);
     }
 }

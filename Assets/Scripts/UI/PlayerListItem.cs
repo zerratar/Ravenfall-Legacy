@@ -64,7 +64,7 @@ public class PlayerListItem : MonoBehaviour
     {
         if (isRotatingSkill)
         {
-            lastSkillCheckTimer -= Time.deltaTime;
+            lastSkillCheckTimer -= GameTime.deltaTime;
             if (lastSkillCheckTimer <= 0)
             {
                 skillIndex = (skillIndex + 1) % 3;

@@ -121,7 +121,7 @@ public class DamageCounter : MonoBehaviour
 
     private void FadeOut()
     {
-        fadeoutTimer -= Time.deltaTime;
+        fadeoutTimer -= GameTime.deltaTime;
 
         if (fadeoutTimer <= 0f)
         {

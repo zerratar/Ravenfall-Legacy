@@ -9,6 +9,7 @@ public class SettingsMenuView : MenuView
     public const string SettingsName_PotatoMode = "PotatoMode";
     public const string SettingsName_AutoPotatoMode = "AutoPotatoMode";
     public const string SettingsName_RealTimeDayNightCycle = "RealTimeDayNightCycle";
+    public const string SettingsName_PlayerName = "PlayerName";
     public const string SettingsName_PlayerListSize = "PlayerListSize";
     public const string SettingsName_PlayerListScale = "PlayerListScale";
     public const string SettingsName_RaidHornVolume = "RaidHornVolume";
@@ -37,6 +38,7 @@ public class SettingsMenuView : MenuView
     [SerializeField] private UISettings ui;
     [SerializeField] private Slider playerListSizeSlider = null;
     [SerializeField] private Slider playerListScaleSlider = null;
+    [SerializeField] private Toggle playerNameToggle;
 
     [Header("Graphics Settings")]
     [SerializeField] private GraphicsSettings graphics;
@@ -114,6 +116,7 @@ public class SettingsMenuView : MenuView
         playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(1);
         boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
         alertPlayerCacheExpirationToggle.isOn = settings.AlertExpiredStateCacheInChat.GetValueOrDefault(gameManager.AlertExpiredStateCacheInChat);
+        playerNameToggle.isOn = settings.PlayerNamesVisible.GetValueOrDefault(gameManager.PlayerNamesVisible);
         itemDropMessageDropdown.value = settings.ItemDropMessageType.GetValueOrDefault((int)gameManager.ItemDropMessageSettings);
 
         SetResolutionScale(dpiSlider.value);
@@ -195,7 +198,7 @@ public class SettingsMenuView : MenuView
         settings.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
         settings.ItemDropMessageType = itemDropMessageDropdown.value;
         settings.CameraRotationSpeed = observerCameraRotationSlider.value * -1;
-
+        settings.PlayerNamesVisible =  playerNameToggle.isOn;
         PlayerSettings.Save();
     }
 
@@ -245,6 +248,10 @@ public class SettingsMenuView : MenuView
     public void OnPostProcessingEffectsChanged()
     {
         gameManager.UsePostProcessingEffects = postProcessingToggle.isOn;
+    }
+    public void OnPlayerNamesToggle()
+    {
+        gameManager.PlayerNamesVisible = playerNameToggle.isOn;
     }
     public void OnBoostRequirementChanged(int val)
     {

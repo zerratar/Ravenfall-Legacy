@@ -86,7 +86,14 @@ public class DungeonController : MonoBehaviour
             }
         }
 
-        this.activeCameraPoint = Room.CameraPoint;
+        if (currentRoom && currentRoom.RoomType == DungeonRoomType.Boss && dungeonManager.Boss)
+        {
+            this.activeCameraPoint = dungeonManager.Boss?.transform;
+        }
+        else
+        {
+            this.activeCameraPoint = Room.CameraPoint;
+        }
 
         if (this.dungeonManager.Started && (!dungeonManager.Boss || dungeonManager.Boss.Enemy.Stats.IsDead))
         {
@@ -103,31 +110,6 @@ public class DungeonController : MonoBehaviour
             currentRoomIndex = Array.IndexOf(r, currentRoom);
         }
         return r;
-    }
-
-    private void ObserveNextPlayer()
-    {
-        if (!dungeonManager || dungeonManager == null)
-        {
-            return;
-        }
-
-        try
-        {
-            var players = dungeonManager.GetAlivePlayers();
-            if (players != null && players.Count > 0)
-            {
-                this.activeCameraPoint = players.Random().transform;
-            }
-            else
-            {
-                this.activeCameraPoint = dungeonManager.Boss?.transform;
-            }
-        }
-        catch
-        {
-            // ignored
-        }
     }
 
     public void ResetRooms()
@@ -194,12 +176,6 @@ public class DungeonController : MonoBehaviour
 
     private void Exit()
     {
-        var players = dungeonManager.GetPlayers();
-        foreach (var player in players)
-        {
-            player.Dungeon.OnExit();
-        }
-
         dungeonManager.EndDungeonSuccess();
         HideDungeon(2);
     }
@@ -215,7 +191,7 @@ public class DungeonController : MonoBehaviour
 
     public void AddExperienceReward(PlayerController player)
     {
-        var slayerFactor = Math.Min(50, Math.Max(bossCombatLevel / player.Stats.CombatLevel, 10d));
+        var slayerFactor = Mathf.Max(bossCombatLevel / 1000f, 70);
         player.AddExp(Skill.Slayer, slayerFactor);
 
         var skillFactor = Math.Max(5, slayerFactor * 0.5);
@@ -231,7 +207,7 @@ public class DungeonController : MonoBehaviour
     public void RewardItemDrops(IReadOnlyList<PlayerController> joinedPlayers)
     {
         if (!ItemDrops) return;
-        var collection = ItemDrops.DropItems(joinedPlayers, DropType.Guaranteed);
+        var collection = ItemDrops.DropItems(joinedPlayers, DropType.Higher);
         gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain and yielded " + collection.Count + " item treasures!");
         foreach (var msg in collection.Messages)
         {

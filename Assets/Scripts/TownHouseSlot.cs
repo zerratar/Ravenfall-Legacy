@@ -37,9 +37,9 @@ public class TownHouseSlot : MonoBehaviour
         if (!meshRenderer) meshRenderer = GetComponentInChildren<MeshRenderer>();
     }
 
-    public void SetHouse(VillageHouseInfo houseInfo, TownHouse townHouse)
+    public void SetHouse(VillageHouseInfo houseInfo, TownHouse townHouse, bool updateExpBonus = true)
     {
-        if (SlotType == (TownHouseSlotType)houseInfo.Type && OwnerUserId == houseInfo.Owner)
+        if (SlotType == (TownHouseSlotType)houseInfo.Type && OwnerUserId == houseInfo.Owner && updateExpBonus)
         {
             UpdateExpBonus();
             return;
@@ -93,11 +93,11 @@ public class TownHouseSlot : MonoBehaviour
         }
         finally
         {
-            UpdateExpBonus();
+            UpdateExpBonus(updateExpBonus);
         }
     }
 
-    public void UpdateExpBonus()
+    public void UpdateExpBonus(bool notify = true)
     {
         float bonus = 0;
         try
@@ -112,11 +112,26 @@ public class TownHouseSlot : MonoBehaviour
             {
                 var existingSkill = GameMath.GetSkillByHouseType(playerSkills, SlotType);
                 bonus = GameMath.CalculateHouseExpBonus(existingSkill);
-                gameManager?.Village?.SetBonus(Slot, SlotType, bonus);
+                if (notify)
+                {
+                    gameManager?.Village?.SetBonus(Slot, SlotType, bonus);
+                }
+                else
+                {
+                    gameManager?.Village?.SetBonusWithoutNotify(Slot, SlotType, bonus);
+                }
                 return;
             }
 
-            gameManager?.Village?.SetBonus(Slot, SlotType, 0);
+            if (notify)
+            {
+                gameManager?.Village?.SetBonus(Slot, SlotType, 0);
+            }
+            else
+            {
+                gameManager?.Village?.SetBonusWithoutNotify(Slot, SlotType, 0);
+            }
+
         }
         catch (Exception exc)
         {

@@ -5,19 +5,26 @@ using System.Linq;
 using UnityEngine;
 
 using Shinobytes.Core.ScriptParser;
+using RavenNest.Models;
 
-internal class ItemResolver : IItemResolver
+public class ItemResolver : IItemResolver
 {
     private ItemManager itemManager;
     private PlayerManager playerManager;
 
-    public TradeItem Resolve(string itemTradeQuery, bool parsePrice = true,
-        bool parseUsername = false, bool parseAmount = true, PlayerController playerToSearch = null)
+    public ItemResolveResult ResolveTradeQuery(
+        string query,
+        bool parsePrice = true,
+        bool parseUsername = false,
+        bool parseAmount = true,
+        PlayerController playerToSearch = null)
     {
         try
         {
-            if (string.IsNullOrEmpty(itemTradeQuery)) return null;
-            itemTradeQuery = itemTradeQuery.Trim();
+            if (string.IsNullOrEmpty(query))
+                return ItemResolveResult.Empty;
+
+            query = query.Trim();
 
             if (!itemManager)
                 itemManager = GameObject.FindObjectOfType<ItemManager>();
@@ -25,20 +32,22 @@ internal class ItemResolver : IItemResolver
             if (!playerManager)
                 playerManager = GameObject.FindObjectOfType<PlayerManager>();
 
-            if (!itemManager || !itemManager.Loaded) return null;
+            if (!itemManager || !itemManager.Loaded)
+                return ItemResolveResult.Empty;
 
             PlayerController player = null;
             if (parseUsername)
             {
-                var username = itemTradeQuery.Split(' ')[0];
+                var username = query.Split(' ')[0];
                 player = playerManager.GetPlayerByName(username);
-                itemTradeQuery = itemTradeQuery.Substring(username.Length).Trim();
+                query = query.Substring(username.Length).Trim();
             }
 
-            if (string.IsNullOrEmpty(itemTradeQuery)) return null;
+            if (string.IsNullOrEmpty(query))
+                return ItemResolveResult.Empty;
 
             var lexer = new Lexer();
-            var tokens = lexer.Tokenize(itemTradeQuery, true);
+            var tokens = lexer.Tokenize(query, true);
             var index = tokens.Count - 1;
 
             var amount = 1L;
@@ -75,32 +84,184 @@ internal class ItemResolver : IItemResolver
 
             if (playerToSearch != null)
             {
-                var targetItem = playerToSearch.Inventory.GetBackpackItems().FirstOrDefault(x => IsMatch(x.Name, itemQuery));
-                if (targetItem != null)
-                {
-                    return new TradeItem(targetItem, amount, price, player ?? playerToSearch);
-                }
-
-                targetItem = playerToSearch.Inventory.GetEquippedItems().FirstOrDefault(x => IsMatch(x.Name, itemQuery));
-                if (targetItem != null)
-                {
-                    return new TradeItem(targetItem, amount, price, player ?? playerToSearch);
-                }
+                var result = ResolveInventoryItem(playerToSearch, itemQuery);
+                result.Count = amount;
+                result.Price = price;
+                result.Player = player;
+                return result;
             }
-
-            var item = itemManager.GetItems().FirstOrDefault(x => IsMatch(x.Name, itemQuery));
-            if (item == null)
+            else
             {
-                return null;
+                var result = Resolve(itemQuery, 5);
+                result.Count = amount;
+                result.Price = price;
+                result.Player = player;
+                return result;
             }
-
-            return new TradeItem(item, amount, price, player ?? playerToSearch);
         }
         catch (Exception exc)
         {
             Shinobytes.Debug.LogError(exc);
             return null;
         }
+    }
+
+    public ItemResolveResult ResolveInventoryItem(PlayerController player, string query, int maxSuggestions = 5)
+    {
+        var itemQuery = query.Trim();
+
+        var items = player.Inventory.GetAllItems();
+
+        var matches = items
+            .Select(x => new { Item = x, Match = Match(x.Name, x.Item.Type, itemQuery) })
+            .Where(x => x.Match.IsCloseMatch)
+            .OrderBy(x => LevenshteinDistance(x.Item.Name, itemQuery))
+            .ToArray();
+
+        var exactMatches = matches.Where(x => x.Match.IsExactMatch).ToArray();
+        var invItem = exactMatches.Length == 1 ? exactMatches[0].Item : null;
+        var suggestedItemNames = new string[0];
+
+        if (invItem == null && matches.Length > 0)
+        {
+            var startingCases = matches.Where(x => x.Item.Name.StartsWith(query, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (startingCases.Length > 0)
+            {
+                matches = startingCases;
+            }
+
+            var m = matches.Where(x => x.Match.IsMatch).ToList();
+            if (m.Count > 0)
+            {
+                invItem = m[0].Item;
+                suggestedItemNames = m.Select(x => x.Item.Name).Distinct().Take(maxSuggestions).ToArray();
+            }
+            else
+            {
+                suggestedItemNames = matches.Where(x => x.Match.IsCloseMatch).Select(x => x.Item.Name).Distinct().Take(maxSuggestions).ToArray();
+            }
+        }
+        else if (invItem == null)
+        {
+            suggestedItemNames = items
+                .Where(x => IsCloseMatch(x.Name, x.Item.Type, itemQuery))
+                .Select(x => x.Name)
+                .Distinct()
+                .Take(maxSuggestions)
+                .ToArray();
+        }
+
+        // if we didnt find an inventory item, lets do a final search for the item at least.
+        Item targetItem = null;
+        if (invItem == null)
+        {
+            var itemResolve = Resolve(query);
+            targetItem = itemResolve.Item;
+        }
+        else
+        {
+            targetItem = invItem.Item;
+        }
+
+        return new ItemResolveResult
+        {
+            Item = targetItem,
+            Count = 1,
+            Price = -1,
+            Query = query,
+            SuggestedItemNames = suggestedItemNames,
+            InventoryItem = invItem
+        };
+    }
+
+    public ItemResolveResult Resolve(string query, int maxSuggestions = 5)
+    {
+        var itemQuery = query.Trim();
+        var items = itemManager.GetItems();
+        var matches = items
+            .Select(x => new { Item = x, Match = Match(x.Name, x.Type, itemQuery) })
+            .Where(x => x.Match.IsCloseMatch)
+            .OrderBy(x => LevenshteinDistance(x.Item.Name, itemQuery))
+            .ToArray();
+
+        var exactMatches = matches.Where(x => x.Match.IsExactMatch).ToArray();
+        var item = exactMatches.Length == 1 ? exactMatches[0].Item : null;
+        var suggestedItemNames = new string[0];
+
+        if (item == null && matches.Length > 0)
+        {
+            var startingCases = matches.Where(x => x.Item.Name.StartsWith(query, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (startingCases.Length > 0)
+            {
+                matches = startingCases;
+            }
+
+            var m = matches.Where(x => x.Match.IsMatch).ToList();
+            if (m.Count > 0)
+            {
+                item = m[0].Item;
+                suggestedItemNames = m.Select(x => x.Item.Name).Distinct().Take(maxSuggestions).ToArray();
+            }
+            else
+            {
+                suggestedItemNames = matches
+                    .Where(x => x.Match.IsCloseMatch)
+                    .Select(x => x.Item.Name)
+                    .Distinct()
+                    .Take(maxSuggestions)
+                    .ToArray();
+            }
+        }
+        else if (item == null)
+        {
+            suggestedItemNames = items
+                .Where(x => IsCloseMatch(x.Name, x.Type, itemQuery))
+                .Select(x => x.Name)
+                .Distinct()
+                .Take(maxSuggestions)
+                .ToArray();
+        }
+
+        return new ItemResolveResult
+        {
+            Item = item,
+            Count = 1,
+            Price = item != null ? item.ShopSellPrice : 0,
+            Query = query,
+            SuggestedItemNames = suggestedItemNames
+        };
+    }
+
+    static int LevenshteinDistance(string s, string t)
+    {
+        int[,] d = new int[s.Length + 1, t.Length + 1];
+
+        for (int i = 0; i <= s.Length; i++)
+        {
+            d[i, 0] = i;
+        }
+
+        for (int j = 0; j <= t.Length; j++)
+        {
+            d[0, j] = j;
+        }
+
+        for (int j = 1; j <= t.Length; j++)
+        {
+            for (int i = 1; i <= s.Length; i++)
+            {
+                if (s[i - 1] == t[j - 1])
+                {
+                    d[i, j] = d[i - 1, j - 1];
+                }
+                else
+                {
+                    d[i, j] = Math.Min(d[i - 1, j] + 1, Math.Min(d[i, j - 1] + 1, d[i - 1, j - 1] + 1));
+                }
+            }
+        }
+
+        return d[s.Length, t.Length];
     }
 
     private static bool TryParsePrice(Token token, out double price)
@@ -173,17 +334,286 @@ internal class ItemResolver : IItemResolver
 
         return false;
     }
-
-    private static bool IsMatch(string name, string itemQuery)
+    private bool IsCloseMatch(string name, ItemType type, string itemQuery)
     {
-        //if (name.Equals(itemQuery, StringComparison.OrdinalIgnoreCase))
-        //{
-        //    return true;
-        //}
-        return name.Equals(itemQuery, StringComparison.OrdinalIgnoreCase);
-        //return GetItemNameAbbreviations(name)
-        //    .Any(abbr => abbr.Equals(itemQuery, StringComparison.OrdinalIgnoreCase));
+        if (name.Contains(itemQuery, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!IsEnchanted(name) && IsEnchanted(itemQuery))
+        {
+            return false;
+        }
+
+        if (itemQuery.Contains(' '))
+        {
+            var items = itemQuery.Split(' ');
+
+            if (!MaterialMatch(name.ToLower(), items[0].ToLower()))
+            {
+                return false;
+            }
+
+            foreach (var item in items)
+            {
+                if (!name.Contains(item, StringComparison.OrdinalIgnoreCase))
+                {
+                    return MaterialMatch(name, items[0]);
+                }
+            }
+
+            return true;
+        }
+
+        if (MaterialMatch(name.ToLower(), itemQuery.Trim().ToLower()))
+        {
+            return true;
+        }
+
+        return false;
     }
+
+    private ItemMatchResult Match(string testItemName, ItemType testItemType, string itemQuery)
+    {
+        var name = testItemName.ToLower();
+        if (name.Equals(itemQuery, StringComparison.OrdinalIgnoreCase))
+            return ItemMatchResult.ExactMatch;
+
+        var target = itemQuery.ToLower();
+        if (target == "r2h" && name == "rune 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "s2h" && name == "steel 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "i2h" && name == "iron 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "a2h" && name == "adamantite 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "d2h" && name == "dragon 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "p2h" && name == "phantom 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "at2h" && name == "atlarus 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "ax2h" && name == "abraxas 2h sword") return ItemMatchResult.ExactMatch;
+
+        var q = itemQuery.ToLower();
+
+        if (q.IndexOf("staff") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedStaff);
+        }
+
+        if (q.IndexOf(" 2h") > 0 || q.IndexOf(" two-h") > 0 || q.IndexOf(" two h") > 0 || (q.IndexOf(" 2 ") > 0 && q.IndexOf("sword") > 0) || q.IndexOf(" 2 h") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedSword);
+        }
+
+        if (q.IndexOf(" kat") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedSword, true);
+        }
+
+        if (q.IndexOf(" sword") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.OneHandedSword);
+        }
+
+        if (q.IndexOf(" bow") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedBow);
+        }
+
+        if (q.IndexOf(" helm") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.Helmet);
+        }
+
+        if (q.IndexOf(" plate") > 0 || q.IndexOf(" chest") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.Chest);
+        }
+
+        if (q.IndexOf(" glove") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.Gloves);
+        }
+
+        if (q.IndexOf(" leg") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.Leggings);
+        }
+
+        if (q.EndsWith("foot") || q.EndsWith("feet") || q.IndexOf(" boot") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.Boots);
+        }
+        if (q.IndexOf(" ammy") > 0 || q.IndexOf("amulet") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.Amulet);
+        }
+        if (q.IndexOf(" shield") > 0 || q.IndexOf(" kite") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.Shield);
+        }
+        if (q.IndexOf(" ring") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.Ring);
+        }
+
+        if (name.Equals(itemQuery, StringComparison.OrdinalIgnoreCase))
+        {
+            return ItemMatchResult.ExactMatch;
+        }
+
+        if (IsCloseMatch(name, testItemType, itemQuery))
+        {
+            return ItemMatchResult.CloseMatch;
+        }
+
+        return ItemMatchResult.NoMatch;
+    }
+
+    private bool IsEnchanted(string a)
+    {
+        return a.Contains("+") || a.Contains("enchanted", StringComparison.OrdinalIgnoreCase) || a.Trim().Contains(" of ", StringComparison.OrdinalIgnoreCase) || a.EndsWith(" of", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private ItemMatchResult Match(string testItemName, ItemType testItemType, string itemQuery, ItemType type, bool isKatana = false)
+    {
+        if (testItemType != type) return ItemMatchResult.NoMatch;
+        var queryParts = itemQuery.Split(' ');
+        var firstQueryPart = queryParts[0].ToLower();
+        var name = testItemName.ToLower();
+
+        var nameContainsKatana = name.Contains("katana");
+        if ((!isKatana && nameContainsKatana) || (isKatana && !nameContainsKatana))
+        {
+            return ItemMatchResult.NoMatch;
+        }
+
+        if (name.Equals(itemQuery, StringComparison.OrdinalIgnoreCase))
+        {
+            return ItemMatchResult.ExactMatch;
+        }
+
+        // searching for enchanted item.
+        if (IsEnchanted(itemQuery) && !IsEnchanted(name))
+        {
+            return ItemMatchResult.NoMatch;
+        }
+
+        if (ResolveAliasName(itemQuery).Equals(name, StringComparison.OrdinalIgnoreCase) || firstQueryPart == name)
+        {
+            return ItemMatchResult.ExactMatch;
+        }
+
+        // filter out anything that has no material match
+
+        var matchCount = 0;
+        foreach (var q in queryParts)
+        {
+            var mat = ResolveAliasName(q);
+            if (name.IndexOf(mat) != -1)
+            {
+                matchCount++;
+            }
+        }
+
+        if (matchCount == 0)
+        {
+            return ItemMatchResult.NoMatch;
+        }
+
+        if (MaterialMatch(name, firstQueryPart))
+        {
+            return ItemMatchResult.Match;
+        }
+
+        if (IsCloseMatch(name, testItemType, itemQuery))
+        {
+            return ItemMatchResult.CloseMatch;
+        }
+
+        if (name.StartsWith(firstQueryPart))
+        {
+            return ItemMatchResult.CloseMatch;
+        }
+
+        return ItemMatchResult.NoMatch;
+    }
+
+    private string ResolveAliasName(string query)
+    {
+        return query
+            .Replace("addy", "adamantite")
+            .Replace("legs", "leggings")
+            .Replace("legs", "leggings")
+            .Replace("ammy", "amulet");
+    }
+
+    private bool MaterialMatch(string name, string target)
+    {
+        if (target == "b" || target.StartsWith("arc"))
+        {
+            return name.StartsWith("arch", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target == "b" || target.StartsWith("bron"))
+        {
+            return name.StartsWith("bronze", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target == "i" || target.StartsWith("iron"))
+        {
+            return name.StartsWith("iron", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target.StartsWith("black"))
+        {
+            return name.StartsWith("black", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target == "s" || target.StartsWith("steel"))
+        {
+            return name.StartsWith("steel", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target == "m" || target.StartsWith("mith"))
+        {
+            return name.StartsWith("mithril");
+        }
+
+        if (target == "a" || target == "addy" || target.StartsWith("adam"))
+        {
+            return name.StartsWith("adama");
+        }
+
+        if (target == "r" || target == "runite" || target.StartsWith("rune"))
+        {
+            return name.StartsWith("rune", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target == "d" || target.StartsWith("dragon"))
+        {
+            return name.StartsWith("dragon", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target == "an" || target.StartsWith("anc"))
+        {
+            return name.StartsWith("ancient", StringComparison.OrdinalIgnoreCase);
+        }
+        if (target == "at" || target.StartsWith("atla"))
+        {
+            return name.StartsWith("atlarus", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target == "ax" || target.StartsWith("abra"))
+        {
+            return name.StartsWith("abraxas", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (target == "p" || target.StartsWith("phant"))
+        {
+            return name.StartsWith("phantom", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
+    }
+
 
     private static string[] GetItemNameAbbreviations(string name)
     {
@@ -235,4 +665,36 @@ internal class ItemResolver : IItemResolver
         return nameList.ToArray();
     }
 
+}
+
+
+public class ItemMatchResult
+{
+    public bool IsExactMatch { get; set; }
+    public bool IsMatch { get; set; }
+    public bool IsCloseMatch { get; set; }
+
+    public static ItemMatchResult NoMatch => new ItemMatchResult();
+    public static ItemMatchResult ExactMatch => new ItemMatchResult { IsExactMatch = true, IsCloseMatch = true, IsMatch = true };
+    public static ItemMatchResult Match => new ItemMatchResult { IsExactMatch = false, IsMatch = true, IsCloseMatch = true };
+    public static ItemMatchResult CloseMatch => new ItemMatchResult { IsExactMatch = false, IsMatch = false, IsCloseMatch = true };
+}
+
+public class ItemResolveResult
+{
+    private Item item;
+
+    public string Query { get; set; }
+    public long Count { get; set; }
+    public double Price { get; set; }
+    public string[] SuggestedItemNames { get; set; }
+    public Guid Id => Item?.Id ?? Guid.Empty;
+    public Item Item { get => item ?? InventoryItem?.Item; set => item = value; }
+    public GameInventoryItem InventoryItem { get; set; }
+    public PlayerController Player { get; set; }
+
+    public static ItemResolveResult Empty { get; } = new ItemResolveResult
+    {
+        SuggestedItemNames = new string[0]
+    };
 }

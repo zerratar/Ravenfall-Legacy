@@ -39,7 +39,7 @@ public class DungeonGateController : MonoBehaviour
         var timer = 0f;
         while (timer < openAnimationDuration)
         {
-            timer += Time.deltaTime;
+            timer += GameTime.deltaTime;
             var progress = timer / openAnimationDuration;
             var newPosition = Vector3.Lerp(closeStatePosition, openStatePosition, progress);
             gate.position = newPosition;

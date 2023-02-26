@@ -7,8 +7,7 @@ public class PlayerAppearanceEventHandler : GameEventHandler<SyntyAppearanceUpda
         var player = gameManager.Players.GetPlayerByUserId(data.UserId);
         if (player)
         {
-            player.Appearance.SetAppearance(data.Value, 
-                () => player.Inventory.EquipAll());
+            player.Appearance.SetAppearance(data.Value, () => player.Inventory.EquipAll(), true);
         }
     }
 }

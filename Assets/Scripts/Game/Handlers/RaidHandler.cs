@@ -48,7 +48,7 @@ public class RaidHandler : MonoBehaviour
                 healTarget = raiders
                     .Where(x => x != null && x.Stats != null && !x.Stats.IsDead && x.Raid.InRaid)
                     .OrderByDescending(x =>
-                        x.Stats.Health.Level - x.Stats.Health.CurrentValue)
+                        x.Stats.Health.MaxLevel - x.Stats.Health.CurrentValue)
                     .FirstOrDefault();
 
                 if (healTarget && healTarget != null)

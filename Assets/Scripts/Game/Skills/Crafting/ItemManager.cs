@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using RavenNest.Models;
 using UnityEngine;
 
@@ -21,8 +22,14 @@ public class ItemManager : MonoBehaviour
     // to make it easier for ourselves here.
     private List<RavenNest.Models.Item> items = new List<Item>();
     private List<RavenNest.Models.RedeemableItem> redeemables = new List<RavenNest.Models.RedeemableItem>();
+    private Dictionary<Guid, RavenNest.Models.Item> itemLookup = new Dictionary<Guid, Item>();
 
-    private readonly object mutex = new object();
+    private Dictionary<Guid, (int, int[])> femaleModelId = new Dictionary<Guid, (int, int[])>();
+    private Dictionary<Guid, (int, int[])> maleModelId = new Dictionary<Guid, (int, int[])>();
+
+    private Dictionary<string, GameObject> loadedItemPrefabs = new Dictionary<string, GameObject>();
+
+    //private readonly object mutex = new object();
     private LoadingState state = LoadingState.None;
 
     [Header("Item Material Setup")]
@@ -32,6 +39,16 @@ public class ItemManager : MonoBehaviour
     private DateTime redeemablesLastUpdate;
     private TimeSpan redeemablesUpdateInterval = TimeSpan.FromMinutes(0.5);
     private bool updatingRedeemables;
+
+    public bool TryGetPrefab(string path, out GameObject prefab)
+    {
+        return loadedItemPrefabs.TryGetValue(path, out prefab);
+    }
+
+    public ((int, int[]), (int, int[])) GetModelIndices(Guid itemId)
+    {
+        return (maleModelId[itemId], femaleModelId[itemId]);
+    }
 
     void Start()
     {
@@ -64,6 +81,7 @@ public class ItemManager : MonoBehaviour
     public void SetItems(IEnumerable<RavenNest.Models.Item> items)
     {
         this.items = items.ToList();
+        this.itemLookup = items.ToDictionary(x => x.Id, x => x);
         this.state = LoadingState.Loaded;
     }
 
@@ -75,17 +93,12 @@ public class ItemManager : MonoBehaviour
 
     public Item Find(Func<Item, bool> predicate)
     {
-        lock (mutex)
-        {
-            return items.FirstOrDefault(predicate);
-        }
+        return items.FirstOrDefault(predicate);
+
     }
     public Item GetStreamerToken()
     {
-        lock (mutex)
-        {
-            return items.FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
-        }
+        return items.FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
     }
 
     public IReadOnlyList<RedeemableItem> GetRedeemables()
@@ -134,35 +147,24 @@ public class ItemManager : MonoBehaviour
     public ItemController Create(Item item, bool useMalePrefab)
     {
         var itemController = Instantiate(baseItemPrefab).GetComponent<ItemController>();
-        return itemController.Create(item, useMalePrefab);
+        return itemController.Create(this, item, useMalePrefab);
     }
     public ItemController Create(GameInventoryItem item, bool useMalePrefab)
     {
         var itemController = Instantiate(baseItemPrefab).GetComponent<ItemController>();
-        return itemController.Create(item, useMalePrefab);
+        return itemController.Create(this, item, useMalePrefab);
     }
 
     public bool Loaded => state == LoadingState.Loaded;
 
-    public RavenNest.Models.Item GetItem(Guid itemId)
-    {
-        lock (mutex) return items.FirstOrDefault(x => x.Id == itemId);
-    }
-
     public IReadOnlyList<RavenNest.Models.RedeemableItem> GetRedeemableItems()
     {
-        lock (mutex)
-        {
-            return redeemables;
-        }
+        return redeemables;
     }
 
     public IReadOnlyList<RavenNest.Models.Item> GetItems()
     {
-        lock (mutex)
-        {
-            return items;
-        }
+        return items;
     }
 
     private async void LoadItemsAsync()
@@ -173,19 +175,89 @@ public class ItemManager : MonoBehaviour
         var loadedItems = await game.RavenNest.Items.GetAsync();
         var redeemableItems = await game.RavenNest.Items.GetRedeemablesAsync();
 
-        lock (mutex)
+        items = loadedItems.ToList();
+        itemLookup = items.ToDictionary(x => x.Id, x => x);
+        Shinobytes.Debug.Log(items.Count + " items loaded!");
+        game.Overlay.SendItems(items);
+        if (redeemableItems != null && redeemableItems.Count > 0)
         {
-            items = loadedItems.ToList();
-            Shinobytes.Debug.Log(items.Count + " items loaded!");
-            game.Overlay.SendItems(items);
-            if (redeemableItems != null && redeemableItems.Count > 0)
+            redeemables = redeemableItems.ToList();
+            this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
+            game.Overlay.SendRedeemables(redeemables);
+        }
+
+        Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
+
+        foreach (var item in items)
+        {
+            var FemaleModelID = -1;
+            var MaleModelID = -1;
+            int[] MaleAdditionalIndex = new int[0];
+            int[] FemaleAdditionalIndex = new int[0];
+
+            if (!string.IsNullOrEmpty(item.FemaleModelId))
             {
-                redeemables = redeemableItems.ToList();
-                this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
-                game.Overlay.SendRedeemables(redeemables);
+                if (item.FemaleModelId.Contains(","))
+                {
+                    var indices = item.FemaleModelId.Split(',');
+                    FemaleModelID = int.Parse(indices[0]);
+                    FemaleAdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
+                }
+                else
+                {
+                    FemaleModelID = int.Parse(item.FemaleModelId);
+                }
             }
 
-            Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
+            if (!string.IsNullOrEmpty(item.MaleModelId))
+            {
+                if (item.MaleModelId.Contains(","))
+                {
+                    var indices = item.MaleModelId.Split(',');
+                    MaleModelID = int.Parse(indices[0]);
+                    MaleAdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
+                }
+                else
+                {
+                    MaleModelID = int.Parse(item.MaleModelId);
+                }
+            }
+
+            femaleModelId[item.Id] = (FemaleModelID, FemaleAdditionalIndex);
+            maleModelId[item.Id] = (MaleModelID, MaleAdditionalIndex);
+
+            var Category = item.Category;
+            var GenericPrefabPath = item.GenericPrefab;
+            var MalePrefabPath = item.MalePrefab;
+            var FemalePrefabPath = item.FemalePrefab;
+            var IsGenericModel = item.IsGenericModel.GetValueOrDefault() || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
+
+            if (!IsGenericModel && string.IsNullOrEmpty(FemalePrefabPath) && string.IsNullOrEmpty(MalePrefabPath))
+            {
+                continue;
+            }
+
+            if (IsGenericModel)
+            {
+                if (!loadedItemPrefabs.TryGetValue(GenericPrefabPath, out var prefab) || !prefab)
+                {
+                    prefab = UnityEngine.Resources.Load<GameObject>(GenericPrefabPath);
+                    loadedItemPrefabs[GenericPrefabPath] = prefab;
+                }
+            }
+            else
+            {
+
+                if (!string.IsNullOrEmpty(FemalePrefabPath) && (!loadedItemPrefabs.TryGetValue(FemalePrefabPath, out var fe) || !fe))
+                {
+                    loadedItemPrefabs[FemalePrefabPath] = UnityEngine.Resources.Load<GameObject>(FemalePrefabPath);
+                }
+
+                if (!string.IsNullOrEmpty(MalePrefabPath) && (!loadedItemPrefabs.TryGetValue(MalePrefabPath, out var ma) || !ma))
+                {
+                    loadedItemPrefabs[MalePrefabPath] = UnityEngine.Resources.Load<GameObject>(MalePrefabPath);
+                }
+            }
         }
 
         state = LoadingState.Loaded;
@@ -208,12 +280,9 @@ public class ItemManager : MonoBehaviour
             var items = await game.RavenNest.Items.GetRedeemablesAsync();
             if (items != null && items.Count > 0)
             {
-                lock (mutex)
-                {
-                    this.redeemables = items.ToList();
-                    this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
-                    game.Overlay.SendRedeemables(redeemables);
-                }
+                this.redeemables = items.ToList();
+                this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
+                game.Overlay.SendRedeemables(redeemables);
             }
         }
         catch (Exception exc)
@@ -248,7 +317,7 @@ public class ItemManager : MonoBehaviour
         {
             ItemId = src.ItemId,
             Cost = src.Cost,
-            Name = GetItem(src.ItemId)?.Name,
+            Name = Get(src.ItemId)?.Name,
             YearStart = startDate.Year,
             MonthStart = startDate.Month,
             DayStart = startDate.Day,
@@ -260,7 +329,12 @@ public class ItemManager : MonoBehaviour
 
     public Item Get(Guid id)
     {
-        return items.FirstOrDefault(x => x.Id == id);
+        if (itemLookup.TryGetValue(id, out var value))
+        {
+            return value;
+        }
+
+        return null;
     }
 
     private Date Parse(string str)
@@ -310,6 +384,11 @@ public class MaterialProvider
 {
     public static readonly MaterialProvider Instance = new MaterialProvider();
     private readonly Dictionary<ItemMaterial, Material> baseMaterials = new Dictionary<ItemMaterial, Material>();
+
+    // make sure we can only use the Instance
+    private MaterialProvider()
+    {
+    }
 
     internal void RegisterBaseMaterials(Material[] itemMaterials)
     {

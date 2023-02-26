@@ -12,7 +12,7 @@ public class NameTag : MonoBehaviour
     private bool nameTagSet;
     private GameManager gameManager;
     private float originalFontSize;
-    private Transform targetCamera;
+    //private Transform targetCamera;
     private bool oldCensor;
     private string lastSetClanName;
     private float oldScale = 1f;
@@ -42,8 +42,8 @@ public class NameTag : MonoBehaviour
         if (!GraphicsToggler.GraphicsEnabled)
             return;
 
-        if (Camera.main)
-            targetCamera = Camera.main.transform;
+        //if (Camera.main)
+        //    targetCamera = Camera.main.transform;
     }
 
     private void OnBecameInvisible()
@@ -67,55 +67,61 @@ public class NameTag : MonoBehaviour
             return;
         }
 
-        if (!targetCamera)
-        {
-            var mainCamera = Camera.main;
-            if (!mainCamera)
-                return;
+        //if (!targetCamera)
+        //{
+        //    var mainCamera = Camera.main;
+        //    if (!mainCamera)
+        //        return;
 
-            targetCamera = mainCamera.transform;
-        }
+        //    targetCamera = mainCamera.transform;
+        //}
 
         //+ (Vector3.up * TargetTransform.localScale.y * YOffset * Scale)
         //+ (Vector3.up * YMinDistance * Scale);
 
-        transform.SetPositionAndRotation(TargetPlayer.Position + this.offset, targetCamera.rotation);
+        transform.SetPositionAndRotation(TargetPlayer.Position + this.offset, GameCamera.Rotation); //targetCamera.rotation);
         oldCensor = gameManager.LogoCensor;
     }
 
     private bool Init()
     {
-        if (!hasInitialized)
+        if (hasInitialized)
         {
-            if (!nameTagSet || oldScale != Scale || string.IsNullOrEmpty(label.text))
-            {
-                SetupNameTagLabel();
-                return false;
-            }
-
-            if (clanName && TargetPlayer.Clan.InClan && lastSetClanName != TargetPlayer.Clan.ClanInfo.Name)
-            {
-                clanName.text = "<" + TargetPlayer.Clan.ClanInfo.Name + ">";
-                lastSetClanName = TargetPlayer.Clan.ClanInfo.Name;
-            }
-            else if (!TargetPlayer.Clan.InClan && !string.IsNullOrEmpty(lastSetClanName))
-            {
-                clanName.text = "";
-                lastSetClanName = "";
-            }
-            if (TargetPlayer.Raider != null && (RaiderLogo == null || !logo.gameObject.activeSelf || oldCensor != gameManager.LogoCensor))
-            {
-                SetupRaiderTag();
-            }
-            else if (!RaiderLogo && logo && logo.gameObject.activeSelf)
-            {
-                logo.gameObject.SetActive(false);
-            }
-
-            hasInitialized = true;
+            return true;
         }
 
-        return hasInitialized;
+        if (!nameTagSet || oldScale != Scale || string.IsNullOrEmpty(label.text))
+        {
+            SetupNameTagLabel();
+            return false;
+        }
+
+        Refresh();
+
+        hasInitialized = true;
+        return true;
+    }
+
+    public void Refresh()
+    {
+        if (clanName && TargetPlayer.Clan.InClan && lastSetClanName != TargetPlayer.Clan.ClanInfo.Name)
+        {
+            clanName.text = "<" + TargetPlayer.Clan.ClanInfo.Name + ">";
+            lastSetClanName = TargetPlayer.Clan.ClanInfo.Name;
+        }
+        else if (!TargetPlayer.Clan.InClan && !string.IsNullOrEmpty(lastSetClanName))
+        {
+            clanName.text = "";
+            lastSetClanName = "";
+        }
+        if (TargetPlayer.Raider != null && (RaiderLogo == null || !logo.gameObject.activeSelf || oldCensor != gameManager.LogoCensor))
+        {
+            SetupRaiderTag();
+        }
+        else if (!RaiderLogo && logo && logo.gameObject.activeSelf)
+        {
+            logo.gameObject.SetActive(false);
+        }
     }
 
     private void SetupNameTagLabel()

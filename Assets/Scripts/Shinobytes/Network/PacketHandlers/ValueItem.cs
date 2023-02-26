@@ -20,7 +20,14 @@
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery);
-        if (item == null)
+
+        if (item.SuggestedItemNames.Length > 0)
+        {
+            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+            return;
+        }
+
+        if (item.Item == null)
         {
             client.SendMessage(player, Localization.MSG_VALUE_ITEM_NOT_FOUND, data.ItemQuery);
             return;
@@ -28,6 +35,6 @@
 
         client.SendFormat(player.PlayerName, Localization.MSG_VALUE_ITEM,
             item.Item.Name,
-            item.Item.Item.ShopSellPrice);
+            item.Item.ShopSellPrice);
     }
 }

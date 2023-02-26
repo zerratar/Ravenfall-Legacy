@@ -21,7 +21,7 @@ public class ArenaGateController : MonoBehaviour
     {
         if (state == ArenaGateState.Closing)
         {
-            animationTimer += Time.deltaTime;
+            animationTimer += GameTime.deltaTime;
             var proc = animationTimer / closeSpeed;
             if (proc >= 1)
             {
@@ -32,7 +32,7 @@ public class ArenaGateController : MonoBehaviour
         }
         else if (state == ArenaGateState.Opening)
         {
-            animationTimer += Time.deltaTime;
+            animationTimer += GameTime.deltaTime;
             var proc = animationTimer / closeSpeed;
             if (proc >= 1)
             {

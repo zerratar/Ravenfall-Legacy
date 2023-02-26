@@ -11,4 +11,6 @@ public class ItemDrop
     public float DropChance;
 
     public bool Unique;
+
+    public RavenNest.Models.Item Item;
 }

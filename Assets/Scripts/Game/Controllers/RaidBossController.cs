@@ -109,7 +109,7 @@ public class RaidBossController : MonoBehaviour
                 return;
             }
 
-            deathTimer -= Time.deltaTime;
+            deathTimer -= GameTime.deltaTime;
             if (deathTimer <= 0f)
             {
                 Die();
@@ -125,15 +125,24 @@ public class RaidBossController : MonoBehaviour
             return;
         }
 
-        if (attackTimer <= 0f)
+        if (Vector3.Distance(target.Position, enemyController.Position) <= attackRadiusCollider.radius)
         {
-            return;
-        }
+            if (attackTimer <= 0f)
+            {
+                return;
+            }
 
-        attackTimer -= Time.deltaTime;
-        if (attackTimer <= 0f)
+            Enemy.Lock();
+
+            attackTimer -= GameTime.deltaTime;
+            if (attackTimer <= 0f)
+            {
+                Attack();
+            }
+        }
+        else
         {
-            Attack();
+            Enemy.SetDestination(target.Position);
         }
     }
 
@@ -159,7 +168,7 @@ public class RaidBossController : MonoBehaviour
         try
         {
             return raiders
-                .Where(x => x != null && x && !x.Stats.IsDead && Vector3.Distance(x.Position, enemyController.Position) <= attackRadiusCollider.radius)
+                .Where(x => x != null && x && !x.Stats.IsDead)
                 .OrderByDescending(x =>
                 {
                     enemyController.Aggro.TryGetValue(x.Name, out var aggro);

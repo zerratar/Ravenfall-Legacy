@@ -29,7 +29,7 @@ public class AttributeStatsManager : MonoBehaviour
 
         if (nextUpdate > 0f)
         {
-            nextUpdate -= Time.deltaTime;
+            nextUpdate -= GameTime.deltaTime;
             if (nextUpdate <= 0f)
             {
                 UpdateTexts(observedPlayer);

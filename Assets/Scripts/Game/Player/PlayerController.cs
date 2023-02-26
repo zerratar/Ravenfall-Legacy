@@ -311,17 +311,17 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    private void EquipBestItems()
+    public void EquipBestItems()
     {
         Inventory.EquipBestItems();
     }
 
-    private void UnequipAllArmor()
+    public void UnequipAllArmor()
     {
         Inventory.UnequipArmor();
     }
 
-    private void UnequipAllItems()
+    public void UnequipAllItems()
     {
         Inventory.UnequipAll();
     }
@@ -457,10 +457,10 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!clanHandler) clanHandler = GetComponent<ClanHandler>();
         if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
         if (!Inventory) Inventory = GetComponent<Inventory>();
+        if (!GameManager) GameManager = FindObjectOfType<GameManager>();
+        if (!chunkManager) chunkManager = GameManager.Chunks; ;
         if (!healthBarManager) healthBarManager = FindObjectOfType<HealthBarManager>();
         if (!agent) agent = GetComponent<NavMeshAgent>();
-        if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
-        if (!GameManager) GameManager = FindObjectOfType<GameManager>();
 
         if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
         //if (!rbody) rbody = GetComponent<Rigidbody>();
@@ -543,18 +543,18 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     void Update()
     {
-        if (IsBot && !Overlay.IsGame)
+        if ((IsBot && !Overlay.IsGame) || GameCache.IsAwaitingGameRestore)
         {
             return;
         }
 
-        if (GameCache.IsAwaitingGameRestore) return;
-        var deltaTime = Time.deltaTime;
+        if (!hasBeenInitialized)
+        {
+            return;
+        }
 
-
+        var deltaTime = GameTime.deltaTime;
         this.Movement.UpdateIdle(this.Ferry.OnFerry);
-
-        if (!hasBeenInitialized) return;
 
         //HandleRested();
 
@@ -646,7 +646,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     //    // we do this locally until we get the server update.
     //    if (!this.Onsen.InOnsen && Rested.RestedTime > 0)
     //    {
-    //        Rested.RestedTime -= Time.deltaTime;
+    //        Rested.RestedTime -= GameTime.deltaTime;
     //    }
     //}
 
@@ -712,16 +712,16 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             if ((Chunk?.ChunkType != TaskType.Fighting) && !InCombat)
             {
-                regenTimer += Time.deltaTime;
+                regenTimer += GameTime.deltaTime;
             }
             if (regenTimer >= RegenTime)
             {
-                var amount = this.Stats.Health.Level * RegenRate * Time.deltaTime;
+                var amount = this.Stats.Health.MaxLevel * RegenRate * GameTime.deltaTime;
                 regenAmount += amount;
                 var add = Mathf.FloorToInt(regenAmount);
                 if (add > 0)
                 {
-                    Stats.Health.CurrentValue = Mathf.Min(this.Stats.Health.Level, Stats.Health.CurrentValue + add);
+                    Stats.Health.CurrentValue = Mathf.Min(this.Stats.Health.MaxLevel, Stats.Health.CurrentValue + add);
 
                     if (healthBar && healthBar != null)
                     {
@@ -731,7 +731,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                     regenAmount -= add;
                 }
 
-                if (Stats.Health.CurrentValue == Stats.Health.Level)
+                if (Stats.Health.CurrentValue == Stats.Health.MaxLevel)
                 {
                     regenTimer = 0;
                 }
@@ -991,7 +991,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         // in case we change what we train.
         // we don't want shield armor to be added to magic, ranged or healing.
-        Inventory.UpdateCombatStats();
+        Inventory.UpdateEquipmentEffect();
 
         var skillStat = GetActiveSkillStat();
         if (skillStat != null)
@@ -1037,6 +1037,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             Inventory.Equip(pet);
             return pet;
         }
+
         if (!IsBot)
         {
             await GameManager.RavenNest.Players.EquipItemAsync(UserId, petToEquip.Item.Id);
@@ -1054,22 +1055,80 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    internal async Task EquipBestItemsAsync()
-    {
-        EquipBestItems();
-        if (!IsBot)
-        {
-            await GameManager.RavenNest.Players.EquipBestItemsAsync(UserId);
-        }
-    }
-
     internal async Task UnequipAsync(GameInventoryItem item)
     {
         Inventory.Unequip(item);
         if (!IsBot)
         {
-            await GameManager.RavenNest.Players.UnequipItemInstanceAsync(UserId, item.InstanceId);
+            await GameManager.RavenNest.Players.UnequipInventoryItemAsync(UserId, item.InstanceId);
         }
+    }
+
+    internal void Unequip(GameInventoryItem item)
+    {
+        Inventory.Unequip(item);
+    }
+
+    public void Equip(GameInventoryItem item, bool reportShieldWarning = true)
+    {
+        if (item.Type == ItemType.Shield)
+        {
+            var thw = Inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedSword); // we will get either.
+            if (thw != null && (thw.Type == ItemType.TwoHandedAxe || thw.Type == ItemType.TwoHandedSword))
+            {
+                if (reportShieldWarning)
+                {
+                    GameManager.RavenBot.SendMessage(this.TwitchUser.Username, Localization.EQUIP_SHIELD_AND_TWOHANDED);
+                }
+                return;
+            }
+        }
+
+        if (item.Type == ItemType.OneHandedAxe || item.Type == ItemType.OneHandedMace || item.Type == ItemType.OneHandedSword)
+        {
+            var eqShield = Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Shield);
+            if (eqShield == null)
+            {
+                var shields = Inventory.GetInventoryItemsOfType(ItemCategory.Armor, ItemType.Shield);
+                var shield = shields.OrderByDescending(Inventory.GetItemValue)
+                    .FirstOrDefault(Inventory.CanEquipItem);
+
+                if (shield != null)
+                {
+                    Inventory.Equip(shield);
+                }
+            }
+        }
+
+        var equipped = Inventory.Equip(item);
+        if (!equipped)
+        {
+            var requirement = "You require level ";
+            if (item.RequiredAttackLevel > 0) requirement += item.RequiredAttackLevel + " Attack.";
+            if (item.RequiredDefenseLevel > 0) requirement += item.RequiredAttackLevel + " Defense.";
+            if (item.RequiredMagicLevel > 0) requirement += item.RequiredAttackLevel + " Magic/Healing.";
+            if (item.RequiredRangedLevel > 0) requirement += item.RequiredAttackLevel + " Ranged.";
+            if (item.RequiredSlayerLevel > 0) requirement += item.RequiredAttackLevel + " Slayer.";
+            GameManager.RavenBot.SendMessage(this.TwitchUser.Username, "You do not meet the requirements to equip " + item.Name + ". " + requirement);
+            return;
+        }
+    }
+
+    internal async Task<bool> EquipAsync(GameInventoryItem item)
+    {
+        Equip(item);
+
+        if (IsBot)
+        {
+            return true;
+        }
+
+        if (await GameManager.RavenNest.Players.EquipInventoryItemAsync(UserId, item.InstanceId))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     internal async Task<bool> EquipAsync(Item item)
@@ -1145,7 +1204,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         RavenNest.Models.Player player,
         TwitchPlayerInfo twitchUser,
         StreamRaidInfo raidInfo,
-        GameManager gm)
+        GameManager gm,
+        bool prepareForCamera)
     {
         gameObject.name = player.Name;
 
@@ -1164,10 +1224,10 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         Movement.SetAvoidancePriority(UnityEngine.Random.Range(1, 99));
 
-        if (UserId.StartsWith("#") || this.IsBot)
+        if (UserId[0] == '#' || this.IsBot)
         {
             this.IsBot = true;
-            this.Bot = this.gameObject.AddComponent<BotPlayerController>();
+            this.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();
             this.Bot.playerController = this;
         }
 
@@ -1191,7 +1251,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         UpdateTwitchUser(twitchUser);
-        
+
         var joinOnsenAfterInitialize = false;
         var joinFerryAfterInitialize = false;
 
@@ -1289,7 +1349,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         this.Appearance.gameManager = GameManager;
         Appearance.SetAppearance(player.Appearance, () =>
         {
-            Inventory.Create(player.InventoryItems, itemManager.GetItems());
+            Inventory.Create(player.InventoryItems);
             hasBeenInitialized = true;
             if (joinOnsenAfterInitialize)
             {
@@ -1301,7 +1361,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                 Movement.Lock();
                 Ferry.AddPlayerToFerry();
             }
-        });
+        }, prepareForCamera, false); // Inventory.Create will update the appearance.
     }
 
     public void SetTask(TaskType task, string[] arg)
@@ -2101,7 +2161,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     //private void AddTimeExp()
     //{
-    //    timeExpTimer -= Time.deltaTime;
+    //    timeExpTimer -= GameTime.deltaTime;
     //    if (timeExpTimer <= 0)
     //    {
     //        if (AddExpToActiveSkillStat(ExpOverTime, true))
@@ -2178,7 +2238,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
                     if (reason == TaskExecutionStatus.InsufficientResources)
                     {
-                        outOfResourcesAlertTimer -= Time.deltaTime;
+                        outOfResourcesAlertTimer -= GameTime.deltaTime;
                         if (outOfResourcesAlertTimer <= 0f)
                         {
                             Shinobytes.Debug.LogWarning(PlayerName + " is out of resources and won't gain any crafting exp.");
@@ -2351,7 +2411,6 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void Die()
     {
-        //++Statistics.DeathCount;
         if (!arena) arena = FindObjectOfType<ArenaController>();
         if (dungeonHandler.InDungeon) dungeonHandler.Died();
         if (arena) arena.Died(this);
@@ -2475,7 +2534,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         hasQueuedItemAdd = queuedItemAdd.Count > 0;
     }
 
-    public void UpdateCombatStats(List<GameInventoryItem> equipped)
+    public void UpdateEquipmentEffect(List<GameInventoryItem> equipped)
     {
         EquipmentStats.ArmorPower = 0;
         EquipmentStats.WeaponAim = 0;
@@ -2496,6 +2555,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         foreach (var e in equipped)
         {
             // Ignore shield when training ranged or magic.
+            // potentially, allow shields for mages. see whats the best option here...
+
             if ((TrainingHealing || TrainingMagic || TrainingRanged) && e.Item.Type == ItemType.Shield)
                 continue;
 
@@ -2504,18 +2565,33 @@ public class PlayerController : MonoBehaviour, IAttackable
             EquipmentStats.ArmorPower += stats.ArmorPower;
             EquipmentStats.WeaponAim += stats.WeaponAim;
             EquipmentStats.WeaponPower += stats.WeaponPower;
+
             EquipmentStats.MagicPower += stats.MagicPower;
             EquipmentStats.MagicAim += stats.MagicAim;
+
             EquipmentStats.RangedPower += stats.RangedPower;
             EquipmentStats.RangedAim += stats.RangedAim;
 
             EquipmentStats.ArmorPowerBonus += stats.ArmorPower.Bonus;
             EquipmentStats.WeaponAimBonus += stats.WeaponAim.Bonus;
             EquipmentStats.WeaponPowerBonus += stats.WeaponPower.Bonus;
+
             EquipmentStats.MagicPowerBonus += stats.MagicPower.Bonus;
             EquipmentStats.MagicAimBonus += stats.MagicAim.Bonus;
+
             EquipmentStats.RangedPowerBonus += stats.RangedPower.Bonus;
             EquipmentStats.RangedAimBonus += stats.RangedAim.Bonus;
+
+            var skillBonus = e.GetSkillBonuses();
+            foreach (var sb in skillBonus)
+            {
+                sb.Skill.Bonus = (float)sb.Bonus;
+                if (sb.Skill == this.Stats.Health)
+                {
+                    continue;
+                }
+                sb.Skill.CurrentValue = Mathf.FloorToInt(sb.Skill.Level + (float)sb.Bonus);
+            }
         }
 
         if (GameManager)
@@ -2637,10 +2713,10 @@ public class PlayerController : MonoBehaviour, IAttackable
 
 public class CharacterRestedState
 {
-    public double ExpBoost { get; internal set; }
-    public double RestedPercent { get; internal set; }
-    public double RestedTime { get; internal set; }
-    public double CombatStatsBoost { get; internal set; }
+    public double ExpBoost;
+    public double RestedPercent;
+    public double RestedTime;
+    public double CombatStatsBoost;
 }
 
 public class AsyncPlayerRequest

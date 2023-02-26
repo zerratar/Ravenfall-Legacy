@@ -17,7 +17,7 @@ public class AutoHideUI : MonoBehaviour
     {
         if (timer > 0)
         {
-            timer -= Time.deltaTime;
+            timer -= GameTime.deltaTime;
             if (timer <= 0f)
             {
                 gameObject.SetActive(false);

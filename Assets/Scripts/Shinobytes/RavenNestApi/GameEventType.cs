@@ -36,5 +36,8 @@
         ServerTime = 31,
         PlayerRestedUpdate = 32,
         PubSubToken = 33,
+
+
+        StreamerPvP = 34,
     }
 }

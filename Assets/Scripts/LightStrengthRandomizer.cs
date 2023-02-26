@@ -25,7 +25,7 @@ public class LightStrengthRandomizer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        nextUpdate -= Time.deltaTime;
+        nextUpdate -= GameTime.deltaTime;
         if (nextUpdate <= 0)
         {
             nextUpdate = 10000;
@@ -41,7 +41,7 @@ public class LightStrengthRandomizer : MonoBehaviour
         while (time < smoothTime)
         {
             yield return null;
-            time += Time.deltaTime;
+            time += GameTime.deltaTime;
             var progress = time / smoothTime;
             if (progress > 1) progress = 1f;
             light.intensity = Mathf.Lerp(intensityStart, targetIntensity, progress);

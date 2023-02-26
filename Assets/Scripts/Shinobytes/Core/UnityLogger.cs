@@ -39,54 +39,35 @@ namespace Shinobytes
         {
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.Log(date + message);
-
-            if (UnityEngine.Application.isBatchMode)
-            {
-                console.WriteLine(date + message);
-            }
+            console.WriteLine(date + message);
         }
 
         public static void Log(object message)
         {
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.Log(date + message);
-            if (UnityEngine.Application.isBatchMode)
-            {
-                console.WriteLine(date + message);
-            }
+            console.WriteLine(date + message);
         }
 
         public static void LogWarning(string message)
         {
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.LogWarning(date + message);
-
-            if (UnityEngine.Application.isBatchMode)
-            {
-                console.WriteLine(date + " @yel@[WRN] #yel#@bla@" + message);
-            }
+            console.WriteLine(date + " @yel@[WRN] #yel#@bla@" + message);
         }
 
         public static void LogError(string message)
         {
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.LogError(date + message);
-
-            if (UnityEngine.Application.isBatchMode)
-            {
-                console.WriteLine(date + " @red@[ERR] " + message);
-            }
+            console.WriteLine(date + " @red@[ERR] " + message);
         }
 
         public static void LogError(Exception message)
         {
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.LogError(date + message.Message);
-
-            if (UnityEngine.Application.isBatchMode)
-            {
-                console.WriteLine(date + "@red@[EXC] #red#@bla@" + message.Message);
-            }
+            console.WriteLine(date + "@red@[EXC] #red#@bla@" + message.Message);
         }
     }
 
@@ -152,7 +133,7 @@ namespace Shinobytes
             var backgroundColor = Console.BackgroundColor;
             while (tokenIndex < tokens.Count)
             {
-                var token = tokens[tokenIndex];                
+                var token = tokens[tokenIndex];
                 switch (token.Type)
                 {
                     case TextTokenType.At:

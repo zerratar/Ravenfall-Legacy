@@ -76,7 +76,7 @@ public class PathSelector : MonoBehaviour
             stop = 3;
         }
 
-        if (leaveTimer > 0f) leaveTimer -= Time.deltaTime;
+        if (leaveTimer > 0f) leaveTimer -= GameTime.deltaTime;
         if (leaveTimer <= 0)
         {
             // check for players embarking the ferry.

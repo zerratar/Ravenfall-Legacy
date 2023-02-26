@@ -36,15 +36,16 @@ public class StreamLabels
 public class StreamLabel
 {
     private readonly Func<string> valueGenerator;
-    private readonly GameSettings settings;
-    private readonly string name;
+    private readonly string fileName;
     private string lastSavedValue;
 
     public StreamLabel(GameSettings settings, string name, Func<string> valueGenerator)
     {
         this.valueGenerator = valueGenerator;
-        this.settings = settings;
-        this.name = name;
+        this.fileName = System.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt");
+        if (!System.IO.Directory.Exists(settings.StreamLabelsFolder))
+            System.IO.Directory.CreateDirectory(settings.StreamLabelsFolder);
+
     }
     public void Update()
     {
@@ -63,10 +64,7 @@ public class StreamLabel
             }
 
             lastSavedValue = Value;
-            if (!System.IO.Directory.Exists(settings.StreamLabelsFolder))
-                System.IO.Directory.CreateDirectory(settings.StreamLabelsFolder);
-
-            Shinobytes.IO.File.WriteAllText(System.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt"), Value);
+            Shinobytes.IO.File.WriteAllText(fileName, Value);
         }
         catch
         {

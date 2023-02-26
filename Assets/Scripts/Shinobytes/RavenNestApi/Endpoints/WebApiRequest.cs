@@ -62,7 +62,7 @@ namespace RavenNest.SDK.Endpoints
 
             // string target, string method, 
             var target = GetTargetUrl(reqTarget);
-            var request = (HttpWebRequest)WebRequest.CreateDefault(new Uri(target, UriKind.Absolute));
+            var request = (HttpWebRequest)WebRequest.CreateDefault(new Uri(target, UriKind.Absolute));            
             var requestData = "";
             //request.Accept = "application/json";
 
@@ -71,6 +71,7 @@ namespace RavenNest.SDK.Endpoints
                 request.Timeout = 25000;
             }
 
+            request.ServicePoint.ConnectionLimit = 100;
             request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36";
             request.Method = GetMethod(type);
             request.CookieContainer = cookieContainer;

@@ -25,6 +25,12 @@ public class ItemDropEvent : ChatBotCommandHandler<TradeItemRequest>
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery);
+
+        if (item.SuggestedItemNames.Length > 0)
+        {
+            return;
+        }
+
         if (item == null)
         {
             //client.SendMessage(player.PlayerName, "Could not find an item matching the query '{query}'", data.ItemQuery);
@@ -35,7 +41,7 @@ public class ItemDropEvent : ChatBotCommandHandler<TradeItemRequest>
         if (dropEventManager)
         {
             var itemCount = Game.Players.GetPlayerCount() * 2;
-            dropEventManager.Drop(item.Item.Item, itemCount);
+            dropEventManager.Drop(item.Item, itemCount);
         }
     }
 }

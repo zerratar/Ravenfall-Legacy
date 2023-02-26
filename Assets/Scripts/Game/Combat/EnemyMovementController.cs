@@ -121,7 +121,7 @@ public class EnemyMovementController : MonoBehaviour
         }
 
         if (attackAnimationTimer > 0f)
-            attackAnimationTimer -= Time.deltaTime;
+            attackAnimationTimer -= GameTime.deltaTime;
 
         if (attackAnimationTimer < 0f)
         {

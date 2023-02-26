@@ -96,12 +96,11 @@ public class OverlayPlayer
         };
     }
 
-    private static SyntyAppearance GetAppearance(IPlayerAppearance appearance)
+    private static SyntyAppearance GetAppearance(SyntyPlayerAppearance appearance)
     {
-        var playerAppearance = appearance as SyntyPlayerAppearance;
-        if (playerAppearance != null)
+        if (appearance != null)
         {
-            return playerAppearance.ToSyntyAppearanceData();
+            return appearance.ToSyntyAppearanceData();
         }
 
         throw new NotImplementedException();

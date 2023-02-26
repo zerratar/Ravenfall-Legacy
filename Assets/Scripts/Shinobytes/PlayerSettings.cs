@@ -9,6 +9,7 @@
     public bool? RealTimeDayNightCycle;
     public bool? AlertExpiredStateCacheInChat;
     public bool? PlayerListVisible;
+    public bool? PlayerNamesVisible;
 
     public float? PlayerListSize;
     public float? PlayerListScale;

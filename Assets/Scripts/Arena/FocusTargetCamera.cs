@@ -19,7 +19,7 @@ public class FocusTargetCamera : MonoBehaviour
 
         //this.transform.RotateAround(target.position);
         var radiansToDegrees = 180f / Mathf.PI;
-        var degrees = radiansToDegrees * (angle += Time.deltaTime * rotationSpeed);
+        var degrees = radiansToDegrees * (angle += GameTime.deltaTime * rotationSpeed);
 
         var x = Mathf.Sin(degrees) * radius;
         var z = Mathf.Cos(degrees) * radius;

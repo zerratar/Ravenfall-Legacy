@@ -57,7 +57,7 @@ public class FerryHandler : MonoBehaviour
             player.Movement.Lock();
             player.Animations.SetCaptainState(IsCaptain);
 
-            expTimer -= Time.deltaTime;
+            expTimer -= GameTime.deltaTime;
             if (expTimer <= 0f)
             {
                 expTimer = expTime;

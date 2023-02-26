@@ -63,7 +63,7 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         var currentHealth = (float)Boss.Enemy.Stats.Health.CurrentValue;
-        var maxHealth = Boss.Enemy.Stats.Health.Level;
+        var maxHealth = Boss.Enemy.Stats.Health.MaxLevel;
         if (currentHealth / maxHealth < minHealthToJoin)
         {
             return RaidJoinResult.MinHealthReached;
@@ -93,7 +93,7 @@ public class RaidManager : MonoBehaviour, IEvent
         lock (mutex)
         {
             var bossHealth = Boss.Enemy.Stats.Health;
-            if (raidingPlayers.Count == 0 || bossHealth.CurrentValue == bossHealth.Level)
+            if (raidingPlayers.Count == 0 || bossHealth.CurrentValue == bossHealth.MaxLevel)
             {
                 // reset the start time until someone joins or boss health is the same.
                 raidStartedTime = Time.time;
@@ -244,7 +244,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
         if (nextRaidTimer > 0f)
         {
-            nextRaidTimer -= Time.deltaTime;
+            nextRaidTimer -= GameTime.deltaTime;
             if (nextRaidTimer <= 0f)
             {
                 StartRaid();
@@ -271,14 +271,14 @@ public class RaidManager : MonoBehaviour, IEvent
                 return;
             }
 
-            timeoutTimer -= Time.deltaTime;
+            timeoutTimer -= GameTime.deltaTime;
             if (timeoutTimer <= 0f && Boss.Enemy.Stats.Health.CurrentValue > 0)
             {
                 EndRaid(false, true);
                 return;
             }
 
-            var proc = (float)Boss.Enemy.Stats.Health.CurrentValue / Boss.Enemy.Stats.Health.Level;
+            var proc = (float)Boss.Enemy.Stats.Health.CurrentValue / Boss.Enemy.Stats.Health.MaxLevel;
             if (proc < minHealthToJoin)
             {
                 notifications.HideRaidJoinInfo();

@@ -8,9 +8,10 @@ public class Torch : MonoBehaviour
 {
     [SerializeField] private DayNightCycle dayNightCycle;
     [SerializeField] private ParticleSystem fire;
+    [SerializeField] private GameManager gameManager;
+
     private GameObject fobj;
     private bool wasActivated;
-    private GameManager gameManager;
 
 
     [Button("Adjust Placement")]
@@ -19,10 +20,19 @@ public class Torch : MonoBehaviour
         PlacementUtility.PlaceOnGround(this.gameObject);
     }
 
+
+    [Button("Assign Dependencies")]
+    public void AssignDependencies()
+    {
+        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!dayNightCycle) dayNightCycle = FindObjectOfType<DayNightCycle>();
+        if (!fire) fire = GetComponentInChildren<ParticleSystem>();
+    }
+
     // Start is called before the first frame update
     void Start()
     {
-        gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
         if (!dayNightCycle) dayNightCycle = FindObjectOfType<DayNightCycle>();
         if (!fire) fire = GetComponentInChildren<ParticleSystem>();
         if (fire)

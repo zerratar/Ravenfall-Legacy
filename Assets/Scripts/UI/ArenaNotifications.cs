@@ -34,7 +34,7 @@ public class ArenaNotifications : MonoBehaviour
     {
         if (activeTimer >= 0f)
         {
-            activeTimer -= Time.deltaTime;
+            activeTimer -= GameTime.deltaTime;
             if (activeTimer > -100f && activeTimer <= 0f)
             {
                 activeTimer = float.MinValue;

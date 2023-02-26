@@ -35,7 +35,7 @@ public class ServerNotifications : MonoBehaviour
             return;
 
         notificationPanel.gameObject.SetActive(true);
-        messageLife += Time.deltaTime;
+        messageLife += GameTime.deltaTime;
         var prog = messageLife / GetMessageTime();
         progress.sizeDelta = new Vector2(2560f * prog, progress.sizeDelta.y);
     }

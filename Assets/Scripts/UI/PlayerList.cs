@@ -74,11 +74,11 @@ public class PlayerList : MonoBehaviour
         {
             if (stickyTimer > 0f)
             {
-                stickyTimer -= Time.deltaTime;
+                stickyTimer -= GameTime.deltaTime;
                 return;
             }
 
-            var speed = scrollSpeed * Time.deltaTime;
+            var speed = scrollSpeed * GameTime.deltaTime;
             speed /= instantiatedPlayerListItems.Count * 0.25f;
             scrollPosition += speed;
             scrollPosition = Math.Min(1f, scrollPosition);
@@ -102,9 +102,10 @@ public class PlayerList : MonoBehaviour
             return;
         }
 
-        //lock (mutex)
+        for (var i = 0; i < instantiatedPlayerListItems.Count; ++i)
         {
-            if (instantiatedPlayerListItems.Any(x => x.TargetPlayer && x.TargetPlayer.PlayerName == player.PlayerName))
+            var x = instantiatedPlayerListItems[i];
+            if (x.TargetPlayer && x.TargetPlayer.PlayerName == player.PlayerName)
             {
                 Shinobytes.Debug.LogWarning("Unable to add Player " + player.Name + " to the player list. It is already in there :o");
                 return;

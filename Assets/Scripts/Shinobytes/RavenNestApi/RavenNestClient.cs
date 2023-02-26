@@ -43,7 +43,7 @@ namespace RavenNest.SDK
             GameManager gameManager,
             IAppSettings settings)
         {
-            ServicePointManager.DefaultConnectionLimit = 1000;
+            ServicePointManager.DefaultConnectionLimit = 2000;
             ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(ValidateCertificate);
             //ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy();
 
@@ -64,7 +64,7 @@ namespace RavenNest.SDK
             Players = new PlayersApi(this, logger, request);
             Marketplace = new MarketplaceApi(this, logger, request);
             Village = new VillageApi(this, logger, request);
-
+            Clan = new ClanApi(this, logger, request);
             botPlayerGenerator = new BotPlayerGenerator();
 
             thread = new System.Threading.Thread(UpdateThread);
@@ -79,6 +79,7 @@ namespace RavenNest.SDK
         public PlayersApi Players { get; }
         public MarketplaceApi Marketplace { get; }
 
+        public ClanApi Clan { get; }
         public VillageApi Village { get; }
 
 
@@ -127,6 +128,8 @@ namespace RavenNest.SDK
                 if (!await WebSocket.UpdateAsync())
                 {
                     logger.Debug("Reconnecting to server...");
+                    await Task.Delay(200);
+                    continue;
                 }
 
                 if (pendingAsyncRequests.TryDequeue(out var pendingAsyncRequest))
@@ -143,8 +146,7 @@ namespace RavenNest.SDK
                             if (!await Players.SendLoyaltyUpdateAsync(req))
                             {
                                 loyaltyUpdateQueue.Enqueue(req);
-
-                                System.Threading.Thread.Sleep(2000);
+                                await Task.Delay(2000);
                             }
                         }
                     }
@@ -156,8 +158,7 @@ namespace RavenNest.SDK
                     {
                     }
                 }
-
-                System.Threading.Thread.Sleep(16);
+                await Task.Delay(16);
             }
         }
 

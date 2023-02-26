@@ -16,7 +16,6 @@
             return;
         }
 
-
         var result = await targetPlayer.CycleEquippedPetAsync();
         if (result == null)
         {

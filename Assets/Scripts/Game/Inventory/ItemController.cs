@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RavenNest.Models;
 using UnityEngine;
@@ -34,7 +35,8 @@ public class ItemController : MonoBehaviour
     public int MaleModelID;
     public int FemaleModelID;
 
-    public int[] AdditionalIndex;
+    public int[] MaleAdditionalIndex;
+    public int[] FemaleAdditionalIndex;
 
     public string GenericPrefabPath;
     public string MalePrefabPath;
@@ -71,12 +73,12 @@ public class ItemController : MonoBehaviour
         pickupCollider.isTrigger = true;
     }
 
-    public ItemController Create(RavenNest.Models.Item item, bool useMalePrefab)
+    public ItemController Create(ItemManager itemManager, RavenNest.Models.Item item, bool useMalePrefab)
     {
-        return Create(new GameInventoryItem(null, new InventoryItem { Id = Guid.NewGuid(), ItemId = item.Id }, item), useMalePrefab);
+        return Create(itemManager, new GameInventoryItem(null, new InventoryItem { Id = Guid.NewGuid(), ItemId = item.Id }, item), useMalePrefab);
     }
 
-    public ItemController Create(GameInventoryItem item, bool useMalePrefab)
+    public ItemController Create(ItemManager itemManager, GameInventoryItem item, bool useMalePrefab)
     {
         Definition = item;
 
@@ -86,8 +88,8 @@ public class ItemController : MonoBehaviour
         transform.localRotation = Quaternion.identity;
 
         Id = item.InventoryItem.Id;
-        ItemId = item.Item.Id;
-        Name = item.InventoryItem.Name ?? item.Item.Name;
+        ItemId = item.ItemId;
+        Name = item.Name;
         Level = item.Item.Level;
 
         WeaponAim = item.Item.WeaponAim;
@@ -110,42 +112,49 @@ public class ItemController : MonoBehaviour
         Type = item.Item.Type;
         Material = item.Item.Material;
 
+        var indices = itemManager.GetModelIndices(ItemId);
 
-        if (!string.IsNullOrEmpty(item.Item.FemaleModelId))
-        {
-            if (item.Item.FemaleModelId.Contains(","))
-            {
-                var indices = item.Item.FemaleModelId.Split(',');
-                FemaleModelID = int.Parse(indices[0]);
-                AdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
-            }
-            else
-            {
-                FemaleModelID = int.Parse(item.Item.FemaleModelId);
-            }
-        }
-        else
-        {
-            FemaleModelID = -1;
-        }
+        MaleModelID = indices.Item1.Item1;
+        MaleAdditionalIndex = indices.Item1.Item2;
 
-        if (!string.IsNullOrEmpty(item.Item.MaleModelId))
-        {
-            if (item.Item.MaleModelId.Contains(","))
-            {
-                var indices = item.Item.MaleModelId.Split(',');
-                MaleModelID = int.Parse(indices[0]);
-                AdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
-            }
-            else
-            {
-                MaleModelID = int.Parse(item.Item.MaleModelId);
-            }
-        }
-        else
-        {
-            MaleModelID = -1;
-        }
+        FemaleModelID = indices.Item2.Item1;
+        FemaleAdditionalIndex = indices.Item2.Item2;
+
+        //if (!string.IsNullOrEmpty(item.Item.FemaleModelId))
+        //{
+        //    if (item.Item.FemaleModelId.Contains(","))
+        //    {
+        //        var indices = item.Item.FemaleModelId.Split(',');
+        //        FemaleModelID = int.Parse(indices[0]);
+        //        MaleAdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
+        //    }
+        //    else
+        //    {
+        //        FemaleModelID = int.Parse(item.Item.FemaleModelId);
+        //    }
+        //}
+        //else
+        //{
+        //    FemaleModelID = -1;
+        //}
+
+        //if (!string.IsNullOrEmpty(item.Item.MaleModelId))
+        //{
+        //    if (item.Item.MaleModelId.Contains(","))
+        //    {
+        //        var indices = item.Item.MaleModelId.Split(',');
+        //        MaleModelID = int.Parse(indices[0]);
+        //        FemaleAdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
+        //    }
+        //    else
+        //    {
+        //        MaleModelID = int.Parse(item.Item.MaleModelId);
+        //    }
+        //}
+        //else
+        //{
+        //    MaleModelID = -1;
+        //}
 
         GenericPrefabPath = item.Item.GenericPrefab;
         MalePrefabPath = item.Item.MalePrefab;
@@ -165,14 +174,12 @@ public class ItemController : MonoBehaviour
                 return this;
             }
 
-            prefab = Resources.Load<GameObject>(path);
-            if (!prefab)
+            if (!itemManager.TryGetPrefab(path, out var prefab))
             {
-                //Debug.LogError(this.name + " failed to load prefab: " + path);
                 return this;
             }
 
-            model = Instantiate(prefab, transform) as GameObject;            
+            model = Instantiate(prefab, transform) as GameObject;
         }
 
         transform.localPosition = Vector3.zero;

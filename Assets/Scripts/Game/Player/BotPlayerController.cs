@@ -5,27 +5,24 @@ public class BotPlayerController : MonoBehaviour
 {
     private GameManager gameManager;
     public PlayerController playerController;
+    private bool initialized;
     private bool joiningEvent;
 
     private void Start()
     {
         this.gameManager = FindObjectOfType<GameManager>();
         this.playerController = GetComponent<PlayerController>();
+        initialized = true;
     }
 
     private void Update()
     {
+        if (!initialized)
+        {
+            return;
+        }
+
         if (joiningEvent)
-        {
-            return;
-        }
-
-        if (!this.playerController)
-        {
-            return;
-        }
-
-        if (!gameManager)
         {
             return;
         }

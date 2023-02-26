@@ -16,7 +16,7 @@ public class ItemAddEventHandler : GameEventHandler<ItemAdd>
             return;
         }
 
-        var item = gameManager.Items.GetItem(data.ItemId);
+        var item = gameManager.Items.Get(data.ItemId);
         if (item == null)
         {
             Shinobytes.Debug.Log("No item with id " + data.ItemId + " was found.");

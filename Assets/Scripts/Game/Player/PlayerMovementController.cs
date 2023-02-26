@@ -88,15 +88,21 @@ public class PlayerMovementController : MonoBehaviour
 
     internal void UpdateIdle(bool onFerry)
     {
-        if (onFerry || (Position - lastPosition).magnitude < 0.01f)
+        var a = Position;
+        var b = lastPosition;
+        var x = a.x - b.x;
+        var y = a.y - b.y;
+        var z = a.z - b.z;
+
+        if (onFerry || System.Math.Sqrt(x * x + y * y + z * z) < 0.01f)
         {
-            IdleTime += Time.deltaTime;
+            IdleTime += GameTime.deltaTime;
             MovementTime = 0;
         }
         else
         {
             IdleTime = 0;
-            MovementTime += Time.deltaTime;
+            MovementTime += GameTime.deltaTime;
         }
 
         lastPosition = Position;

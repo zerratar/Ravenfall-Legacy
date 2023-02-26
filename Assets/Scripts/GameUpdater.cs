@@ -28,6 +28,13 @@ public class GameUpdater : MonoBehaviour
 
     private void Start()
     {
+
+#if UNITY_STANDALONE_LINUX
+        Overlay.IsGame = true;
+        UnityEngine.SceneManagement.SceneManager.LoadScene(1);
+        return;
+#endif
+
         var startupArgs = System.Environment.GetCommandLineArgs().Select(x => x.ToLower()).ToArray();
         var forceUpdate = startupArgs.Any(x => x.Contains("forceupdate") || x.Contains("force-update") || x.Contains("reinstall"));
 

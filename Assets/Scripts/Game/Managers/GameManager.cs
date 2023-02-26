@@ -18,6 +18,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.PostProcessing;
 using Shinobytes.Linq;
 using UnityEngine.AI;
+using System.Diagnostics;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
@@ -178,6 +179,7 @@ public class GameManager : MonoBehaviour, IGameManager
     }
     public bool LogoCensor { get; set; }
     public bool AlertExpiredStateCacheInChat { get; set; } = true;
+    public bool PlayerNamesVisible { get; set; } = true;
     public PlayerItemDropMessageSettings ItemDropMessageSettings { get; set; }
     public int PlayerBoostRequirement { get; set; } = 0;
 
@@ -209,10 +211,13 @@ public class GameManager : MonoBehaviour, IGameManager
     private GameCache.LoadStateResult gameCacheStateFileLoadResult;
     private bool stateFileStatusReported;
 
+    public static bool BatchPlayerAddInProgress;
+
     void Awake()
     {
+        GameTime.deltaTime = Time.deltaTime;
         //Physics.autoSimulation = false;
-
+        BatchPlayerAddInProgress = false;
         overlay = gameObject.AddComponent<Overlay>();
         if (!settings) settings = GetComponent<GameSettings>();
         this.StreamLabels = new StreamLabels(settings);
@@ -229,7 +234,7 @@ public class GameManager : MonoBehaviour, IGameManager
     // Start is called before the first frame update   
     void Start()
     {
-
+        GameTime.deltaTime = Time.deltaTime;
 #if DEBUG
         Application.SetStackTraceLogType(LogType.Assert | LogType.Error | LogType.Exception | LogType.Log | LogType.Warning, StackTraceLogType.Full);
 #else 
@@ -298,6 +303,7 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<PlayerNameUpdateEventHandler>(GameEventType.PlayerNameUpdate);
         RegisterGameEventHandler<PlayerTaskEventHandler>(GameEventType.PlayerTask);
 
+        RegisterGameEventHandler<StreamerPvPEventHandler>(GameEventType.StreamerPvP);
 
         RegisterGameEventHandler<StreamerWarRaidEventHandler>(GameEventType.WarRaid);
         RegisterGameEventHandler<StreamerRaidEventHandler>(GameEventType.Raid);
@@ -524,6 +530,8 @@ public class GameManager : MonoBehaviour, IGameManager
     // Update is called once per frame
     void Update()
     {
+        GameTime.deltaTime = Time.deltaTime;
+
         if (isReloadingScene)
         {
             return;
@@ -574,6 +582,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
             EnablePostProcessingEffects();
         }
+
+        nametagManager.NameTagsEnabled = PlayerNamesVisible;
 
         UpdateIntegrityCheck();
 
@@ -655,7 +665,7 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         if (uptimeSaveTimer > 0)
-            uptimeSaveTimer -= Time.deltaTime;
+            uptimeSaveTimer -= GameTime.deltaTime;
 
         if (uptimeSaveTimer <= 0)
         {
@@ -694,11 +704,23 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private bool UpdateGameEvents()
     {
-        if (gameEventQueue.TryDequeue(out var ge))
+#if DEBUG
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+#endif
+
+        while (gameEventQueue.TryDequeue(out var ge))
         {
             HandleGameEvent(ge);
         }
 
+#if DEBUG
+        sw.Stop();
+        if (sw.ElapsedMilliseconds > 30)
+        {
+            Shinobytes.Debug.LogError("UpdateGameEvents took a long time! " + sw.ElapsedMilliseconds + "ms!");
+        }
+#endif
         return true;
     }
 
@@ -712,7 +734,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (exitViewText && exitView.activeSelf)
         {
-            streamerRaidTimer -= Time.deltaTime;
+            streamerRaidTimer -= GameTime.deltaTime;
             exitViewText.text = string.Format(
                 exitViewTextFormat,
                 streamerRaid,
@@ -778,7 +800,6 @@ public class GameManager : MonoBehaviour, IGameManager
             raidManager.Leave(player);
         }
 
-
         if (player.Ferry.OnFerry)
         {
             player.Ferry.RemoveFromFerry();
@@ -815,11 +836,15 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public async void SpawnManyBotPlayers(int count)
     {
+        BeginBatchedPlayerAdd();
+
         for (var i = 0; i < count; ++i)
         {
             await SpawnBotPlayer();
             await Task.Delay(10);
         }
+
+        EndBatchedPlayerAdd(true);
     }
 
     public async Task SpawnBotPlayerOnFerry()
@@ -828,7 +853,7 @@ public class GameManager : MonoBehaviour, IGameManager
         var playerInfo = await GenerateBotInfoAsync();
         var player = await Players.JoinAsync(playerInfo, RavenBot.ActiveClient, false, true);
         if (player)
-            await player.EquipBestItemsAsync();
+            player.EquipBestItems();
         ++spawnedBots;
     }
 
@@ -837,7 +862,7 @@ public class GameManager : MonoBehaviour, IGameManager
         var playerInfo = await GenerateBotInfoAsync();
         var player = await Players.JoinAsync(playerInfo, RavenBot.ActiveClient, false, true);
         if (player)
-            await player.EquipBestItemsAsync();
+            player.EquipBestItems();
         ++spawnedBots;
     }
 
@@ -885,7 +910,7 @@ public class GameManager : MonoBehaviour, IGameManager
         //}
 
         var vector3 = Random.insideUnitSphere + (Vector3.up * 2f);
-        var player = playerManager.Spawn(spawnPoint + vector3, playerDefinition, streamUser, raidInfo);
+        var player = playerManager.Spawn(spawnPoint + vector3, playerDefinition, streamUser, raidInfo, !isGameRestore && !streamUser.UserId.StartsWith("#"));
 
         if (!player)
         {
@@ -895,7 +920,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         playerList.AddPlayer(player);
 
-        if (!isGameRestore)
+        if (!isGameRestore && !BatchPlayerAddInProgress)
         {
             Village.TownHouses.EnsureAssignPlayerRows(Players.GetPlayerCount());
 
@@ -913,15 +938,25 @@ public class GameManager : MonoBehaviour, IGameManager
         return player;
     }
 
-    public void PostGameRestore()
+    public void BeginBatchedPlayerAdd()
     {
-        Village.TownHouses.EnsureAssignPlayerRows(Players.GetPlayerCount());
-        playerCountLabel.Update();
-        villageBoostLabel.Update();
+        GameManager.BatchPlayerAddInProgress = true;
+    }
 
-        var player = playerManager.LastAddedPlayer;
-        if (player && gameCamera && gameCamera.AllowJoinObserve)
-            gameCamera.ObservePlayer(player);
+    public void EndBatchedPlayerAdd(bool botsAdded = false)
+    {
+        GameManager.BatchPlayerAddInProgress = false;
+
+        if (!botsAdded)
+        {
+            Village.TownHouses.EnsureAssignPlayerRows(Players.GetPlayerCount());
+            playerCountLabel.Update();
+            villageBoostLabel.Update();
+
+            var player = playerManager.LastAddedPlayer;
+            if (player && gameCamera && gameCamera.AllowJoinObserve)
+                gameCamera.ObservePlayer(player);
+        }
     }
 
     public void HandleGameEvents(EventList gameEvents)
@@ -975,24 +1010,6 @@ public class GameManager : MonoBehaviour, IGameManager
         return SpawnPlayer(playerInfo.Player, raidInfo: raiderInfo);
     }
 
-    //internal async Task<PlayerController> AddPlayerByUserIdAsync(string userId, StreamRaidInfo raiderInfo)
-    //{
-    //    var playerInfo = await RavenNest.PlayerJoinAsync(new PlayerJoinData
-    //    {
-    //        UserId = userId,
-    //        UserName = "",
-    //        Identifier = "1"
-    //    });
-
-    //    if (playerInfo == null || !playerInfo.Success)
-    //    {
-
-    //        return null;
-    //    }
-
-    //    return SpawnPlayer(playerInfo.Player, raidInfo: raiderInfo);
-    //}
-
     private void OnApplicationQuit()
     {
         RavenBot.Dispose();
@@ -1011,9 +1028,9 @@ public class GameManager : MonoBehaviour, IGameManager
         if (client == null)
         {
             client = new RavenNestClient(logger, this,
-            new ProductionRavenNestStreamSettings()
+            //new ProductionRavenNestStreamSettings()
             //new StagingRavenNestStreamSettings()
-            //new LocalRavenNestStreamSettings()
+            new LocalRavenNestStreamSettings()
             //new UnsecureLocalRavenNestStreamSettings()
             );
 
@@ -1022,7 +1039,6 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (client != null)
         {
-            //ravenNest.Update();
             if (!string.IsNullOrEmpty(RavenNest.ServerAddress))
                 ServerAddress = RavenNest.ServerAddress;
         }
@@ -1075,7 +1091,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (updateSessionInfoTime > 0)
         {
-            updateSessionInfoTime -= Time.deltaTime;
+            updateSessionInfoTime -= GameTime.deltaTime;
         }
 
         if (RavenBot.UseRemoteBot && !RavenBot.IsConnectedToRemote && !RavenBot.IsConnectedToLocal)
@@ -1097,7 +1113,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (playerRequestTime >= 0)
             {
-                playerRequestTime -= Time.deltaTime;
+                playerRequestTime -= GameTime.deltaTime;
                 if (playerRequestTime < 0f)
                 {
                     SendPlayerRequests();
@@ -1119,7 +1135,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (savingPlayersTime > 0)
         {
-            savingPlayersTime -= Time.deltaTime;
+            savingPlayersTime -= GameTime.deltaTime;
         }
     }
 
@@ -1264,7 +1280,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void UpdateChatBotCommunication()
     {
-        if (RavenBot == null || !RavenBot.IsBound)
+        if (RavenBot == null || !RavenBot.IsConnected)
         {
             return;
         }
@@ -1599,7 +1615,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var randomPlayer = players.Random();
                     if (!enemy.Stats.IsDead)
                     {
-                        enemy.TakeDamage(randomPlayer, enemy.Stats.Health.Level);
+                        enemy.TakeDamage(randomPlayer, enemy.Stats.Health.MaxLevel);
                     }
                 }
 
@@ -1977,7 +1993,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         if (!boostTimer) return;
 
-        expBoostTimerUpdate -= Time.deltaTime;
+        expBoostTimerUpdate -= GameTime.deltaTime;
         if (expBoostTimerUpdate > 0f) return;
 
         boostTimer.SetActive(subEventManager.CurrentBoost.Active);
@@ -2057,6 +2073,10 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
             }
         }
-
     }
+}
+
+public class GameTime
+{
+    public static float deltaTime;
 }

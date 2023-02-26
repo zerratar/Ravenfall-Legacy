@@ -21,7 +21,7 @@ public class CombatSkillObserver : MonoBehaviour
 
         if (nextUpdate > 0)
         {
-            nextUpdate -= Time.deltaTime;
+            nextUpdate -= GameTime.deltaTime;
             if (nextUpdate <= 0)
             {
                 UpdateStats();

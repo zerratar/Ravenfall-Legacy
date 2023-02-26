@@ -29,7 +29,7 @@ public class DuelHandler : MonoBehaviour
     {
         if (duelRequestTimer > 0f)
         {
-            duelRequestTimer -= Time.deltaTime;
+            duelRequestTimer -= GameTime.deltaTime;
             if (duelRequestTimer <= 0f)
             {
                 DeclineDuel(true);

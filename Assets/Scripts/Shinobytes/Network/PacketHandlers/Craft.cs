@@ -38,12 +38,18 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
 
         Item item = null;
         var amountToCraft = 1d;
-        var queriedItem = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: false);
+        var queriedItem = itemResolver.ResolveTradeQuery(data.ItemQuery, parsePrice: false, parseUsername: false);
 
-        if (queriedItem != null && queriedItem.Item != null)
+        if (queriedItem.SuggestedItemNames.Length > 0)
         {
-            item = queriedItem.Item.Item;
-            amountToCraft = Math.Min(MaxCraftingCount, queriedItem.Amount);
+            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+            return;
+        }
+
+        if (queriedItem.Item != null)
+        {
+            item = queriedItem.Item;
+            amountToCraft = Math.Min(MaxCraftingCount, queriedItem.Count);
         }
         else
         {
@@ -223,9 +229,21 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
                 if (craftResult.Status == CraftItemResultStatus.Success || craftResult.Status == CraftItemResultStatus.PartialSuccess)
                 {
                     amountToCraft = craftResult.Value;
-                    for (var i = 0; i < amountToCraft; ++i)
+
+                    var existingStack = player.Inventory.GetAllItems().FirstOrDefault(x => x.InstanceId == craftResult.InventoryItemId);
+
+                    if (existingStack != null)
                     {
-                        player.Inventory.AddToBackpack(item);
+                        existingStack.Amount += amountToCraft;
+                    }
+                    else
+                    {
+                        var added = player.Inventory.AddToBackpack(craftResult);
+                        if (added == null)
+                        {
+                            client.SendMessage(data.Player.Username, "Problem when trying to add the item after crafting. You can try and !leave !join and see if the crafted item was added properly.", item.Name);
+                            return false;
+                        }
                     }
 
                     foreach (var req in item.CraftingRequirements)
@@ -237,13 +255,13 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
                             if (stack.Amount < amount)
                             {
                                 var toRemove = amount - stack.Amount;
-                                player.Inventory.Remove(stack.Item, toRemove);
+                                player.Inventory.Remove(stack, toRemove);
                                 amount -= (int)toRemove;
                             }
 
                             if (stack.Amount >= amount)
                             {
-                                player.Inventory.Remove(stack.Item, amount);
+                                player.Inventory.Remove(stack, amount);
                             }
                         }
                     }
@@ -277,7 +295,10 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
         }
         catch (System.Exception exc)
         {
-            client.SendMessage(data.Player.Username, "Crafting failed. Server did not respond. Try again later");
+            client.SendMessage(data.Player.Username, "Error occurred when handling the response from the server.");
+
+            Game.RavenNest.Game.ReportExceptionAsync($"{player.UserId}, {item.Name} ({item.Id}), {amountToCraft}", exc);
+
             Shinobytes.Debug.LogError("Error when trying to craft an item: " + exc);
             return false;
         }

@@ -40,7 +40,7 @@ public class DungeonHandler : MonoBehaviour
 
         if (waitForDungeon > 0f)
         {
-            waitForDungeon -= Time.deltaTime;
+            waitForDungeon -= GameTime.deltaTime;
             OnEnter();
             return;
         }
@@ -55,7 +55,7 @@ public class DungeonHandler : MonoBehaviour
 
             if (!healTarget || healTarget == null || healTarget.Id == player.Id || healTarget.TrainingHealing || healTarget.Stats.HealthPercent > 0.9 || !healTarget.Dungeon.InDungeon)
             {
-                var players = dungeon.GetPlayers();
+                var players = dungeon.GetAlivePlayers();//GetPlayers();
                 var healthDif = 100f;
                 var healthSmol = int.MaxValue;
                 for (var i = 0; i < players.Count; ++i)
@@ -154,6 +154,7 @@ public class DungeonHandler : MonoBehaviour
 
         waitForDungeon = 0;
         InDungeon = true;
+
         var startingPoint = dungeon.StartingPoint;
 
         this.previousTaskArgs = this.player.GetTaskArguments().ToArray();

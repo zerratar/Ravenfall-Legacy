@@ -158,9 +158,38 @@ public class ToggleTMProTypeWindow : OdinEditorWindow
     [Button("Make into TMPro Text Mesh GUI (UI)")]
     public void ChangeToUI()
     {
-        AddToComponents<TMPro.TextMeshPro, CanvasRenderer>(Source);
-        ReplaceComponents<TMPro.TextMeshPro, TMPro.TextMeshProUGUI>(Source, true, "renderer", "mesh", "meshfilter", "name", "tag", "layer");
-        DestroyComponents<TMPro.TextMeshProUGUI, MeshRenderer>(Source);
+
+        var meshRenderer = Source.GetComponent<MeshRenderer>();
+        var old = Source.GetComponent<TMPro.TextMeshPro>();
+
+        var text = old.text;
+        var style = old.textStyle;
+        var size = old.fontSize;
+        var color = old.color;
+        var alignment = old.alignment;
+        var horAlign = old.horizontalAlignment;
+        var vertAlign = old.verticalAlignment;
+
+        var wrap = old.enableWordWrapping;
+
+        GameObject.DestroyImmediate(old);
+        GameObject.DestroyImmediate(meshRenderer);
+
+        //var canvasRenderer = Source.AddComponent<CanvasRenderer>();
+        var newText = Source.AddComponent<TMPro.TextMeshProUGUI>();
+
+        newText.text = text;
+        newText.textStyle = style;
+        newText.fontSize = size / 10f;
+        newText.color = color;
+        newText.alignment = alignment;
+        newText.horizontalAlignment = horAlign;
+        newText.verticalAlignment = vertAlign;
+        newText.enableWordWrapping = wrap;
+
+        //AddToComponents<TMPro.TextMeshPro, CanvasRenderer>(Source);
+        //ReplaceComponents<TMPro.TextMeshPro, TMPro.TextMeshProUGUI>(Source, true, "renderer", "mesh", "meshfilter", "name", "tag", "layer");
+        //DestroyComponents<TMPro.TextMeshProUGUI, MeshRenderer>(Source);
     }
 
     //[ShowIf("Source")]

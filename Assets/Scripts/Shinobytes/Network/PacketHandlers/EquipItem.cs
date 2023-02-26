@@ -24,34 +24,37 @@
 
         if (data.ItemQuery.Equals("all", System.StringComparison.OrdinalIgnoreCase))
         {
-            await player.EquipBestItemsAsync();
+            player.EquipBestItems();
+            await Game.RavenNest.Players.EquipBestItemsAsync(player.UserId);
             client.SendMessage(data.Player.Username, Localization.MSG_EQUIPPED_ALL);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: false, parseAmount: false, playerToSearch: player);
+        var queriedItem = itemResolver.ResolveTradeQuery(data.ItemQuery, parsePrice: false, parseUsername: false, parseAmount: false, playerToSearch: player);
 
-        if (queriedItem == null)
-            queriedItem = itemResolver.Resolve(data.ItemQuery + " pet", parsePrice: false, parseUsername: false, parseAmount: false);
+        if (queriedItem.SuggestedItemNames.Length > 0)
+        {
+            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+            return;
+        }
 
-        if (queriedItem == null)
+        if (queriedItem.Item == null)
         {
             client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, data.ItemQuery);
             return;
         }
 
-        var item = player.Inventory.GetInventoryItems(queriedItem.Id);
-        if (item == null || item.Count == 0)
+        if (queriedItem.InventoryItem == null)
         {
             client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
             return;
         }
 
-        if (await player.EquipAsync(queriedItem.Item.Item))
+        if (await player.EquipAsync(queriedItem.InventoryItem))
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_EQUIPPED, queriedItem.Item.Name);
+            client.SendMessage(data.Player.Username, Localization.MSG_EQUIPPED, queriedItem.InventoryItem.Name);
         }
     }
 }

@@ -53,7 +53,7 @@ public class DuelCameraScript : MonoBehaviour
 
         if (targetObserverTimer > 0f)
         {
-            targetObserverTimer -= Time.deltaTime;
+            targetObserverTimer -= GameTime.deltaTime;
             if (targetObserverTimer <= 0f)
             {
                 targetObserverTimer = targetTime;

@@ -6,6 +6,7 @@ using MessagePack;
 using RavenNest.Models.TcpApi;
 using RavenNest.SDK.Endpoints;
 using System.Threading;
+using Shinobytes.Linq;
 
 namespace RavenNest.SDK
 {
@@ -125,20 +126,12 @@ namespace RavenNest.SDK
 
                 try
                 {
-                    //if (Ravenfall.Version == "0.8.0.0a")
-                    //{
-                    //    // currently, we are only expecting PlayerRestedUpdate
-                    //    // but we may change this in the future.
-                    //    var data = MessagePackSerializer.Deserialize<Models.PlayerRestedUpdate>(obj, MessagePack.Resolvers.ContractlessStandardResolver.Options);
-                    //    gameManager.Players.UpdateRestedState(data);
-                    //    return;
-                    //}
-
                     var eventList = MessagePackSerializer.Deserialize<Models.EventList>(obj, MessagePack.Resolvers.ContractlessStandardResolver.Options);
-                    
                     gameManager.HandleGameEvents(eventList);
                 }
-                catch { }
+                catch (Exception exc)
+                {
+                }
             }
         }
 

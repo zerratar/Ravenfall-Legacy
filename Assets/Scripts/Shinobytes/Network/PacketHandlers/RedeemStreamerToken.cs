@@ -33,11 +33,12 @@ public class RedeemStreamerToken : ChatBotCommandHandler<TradeItemRequest>
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(itemQuery);
 
-        if (item == null)
+        if (item.Item == null || item.SuggestedItemNames.Length > 0)
         {
             NoSuchRedeemableItem(player, client, itemQuery);
             return;
         }
+
         try
         {
             var redeemable = Game.Items.GetRedeemables().FirstOrDefault(x =>

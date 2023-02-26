@@ -74,18 +74,15 @@ public class RavenBotConnection : IDisposable
 
     public Packet ReadPacket()
     {
-        if (availablePackets.TryDequeue(out var packet))
-        {
-            //game.Log("Read packet: " + packet.JsonDataType);
-            return packet;
-        }
-        return null;
+        availablePackets.TryDequeue(out var packet);
+        return packet;
     }
 
     public void HandleNextPacket(params object[] args)
     {
         var packet = ReadPacket();
-        if (string.IsNullOrEmpty(packet?.JsonDataType))
+
+        if (string.IsNullOrEmpty(packet.JsonDataType))
         {
             return;
         }

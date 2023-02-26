@@ -158,7 +158,7 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
 
         if (startTimer > 0)
         {
-            startTimer -= Time.deltaTime;
+            startTimer -= GameTime.deltaTime;
             if (startTimer <= 0)
             {
                 StartGame();

@@ -25,13 +25,20 @@ public class CraftRequirement : ChatBotCommandHandler<TradeItemRequest>
 
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(data.ItemQuery);
-        if (item == null)
+
+        if (item.SuggestedItemNames.Length > 0)
+        {
+            client.SendMessage(player.PlayerName, Localization.MSG_CRAFT_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+            return;
+        }
+
+        if (item.Item == null)
         {
             client.SendMessage(player, Localization.MSG_CRAFT_ITEM_NOT_FOUND, data.ItemQuery);
             return;
         }
 
-        var msg = GetItemCraftingRequirements(player, client, item.Item.Item);
+        var msg = GetItemCraftingRequirements(player, client, item.Item);
         client.SendMessage(player, msg);
     }
 

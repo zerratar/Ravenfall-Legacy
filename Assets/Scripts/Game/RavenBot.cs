@@ -47,6 +47,7 @@ public class RavenBot : MonoBehaviour
         Connection.Register<EquipItem>("equip");
         Connection.Register<UnequipItem>("unequip");
         Connection.Register<EnchantItem>("enchant");
+        Connection.Register<DisenchantItem>("disenchant");
         Connection.Register<PlayerStats>("player_stats");
         Connection.Register<PlayerResources>("player_resources");
         Connection.Register<Highscore>("highscore");
@@ -79,6 +80,18 @@ public class RavenBot : MonoBehaviour
         Connection.Register<RaidStreamer>("raid_streamer");
         Connection.Register<RaidStop>("raid_stop");
         Connection.Register<Craft>("craft");
+
+        Connection.Register<ClanInfoHandler>("clan_info");
+        Connection.Register<ClanStatsHandler>("clan_stats");
+        Connection.Register<ClanJoin>("clan_join");
+        Connection.Register<ClanRemove>("clan_remove");
+        Connection.Register<ClanLeave>("clan_leave");
+        Connection.Register<ClanInvite>("clan_invite");
+        Connection.Register<ClanAccept>("clan_accept");
+        Connection.Register<ClanDecline>("clan_decline");
+        Connection.Register<ClanPromote>("clan_promote");
+        Connection.Register<ClanDemote>("clan_demote");
+
         Connection.Register<FerryEnter>("ferry_enter");
         Connection.Register<FerryLeave>("ferry_leave");
         Connection.Register<FerryTravel>("ferry_travel");
@@ -96,10 +109,15 @@ public class RavenBot : MonoBehaviour
         Connection.Register<PetRacingReset>("pet_race_reset");
         Connection.Register<ConnectionPing>("ping");
 
+        Connection.Register<ItemCount>("get_item_count");
+
         Connection.Register<OnsenJoin>("onsen_join");
         Connection.Register<OnsenLeave>("onsen_leave");
         Connection.Register<RestedStatus>("rested_status");
         Connection.Register<ClientVersion>("client_version");
+
+
+
 
 
         Connection.LocalConnected -= BotConnected;

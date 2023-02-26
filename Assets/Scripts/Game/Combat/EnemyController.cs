@@ -78,6 +78,16 @@ public class EnemyController : MonoBehaviour, IAttackable
         PlacementUtility.PlaceOnGround(this.gameObject);
     }
 
+    [Button("Assign Dependencies")]
+    public void AssignDependencies()
+    {
+        if (!this.game) this.game = FindObjectOfType<GameManager>();
+        if (!damageCounterManager) damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
+        if (!healthBarManager) healthBarManager = GameObject.FindObjectOfType<HealthBarManager>();
+        if (!movement) movement = GetComponent<EnemyMovementController>();
+    }
+
+
     public int GetAttackerCountExcluding(PlayerController player)
     {
         if (AttackerNames.Contains(player.Name))
@@ -89,53 +99,24 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     public void OnDrawGizmosSelected()
     {
-        showDebugInfoTime = 1f;
-        if (this.Target)
+        try
         {
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(this.transform.position, this.Target.position);
-        }
-
-        if (this.movement.isMovingInternal)
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawLine(this.transform.position, this.movement.Destination);
-        }
-    }
-
-    void OnGUI()
-    {
-        if (showDebugInfoTime > 0f)
-        {
-            showDebugInfoTime -= Time.deltaTime;
-            var w = 300f;
-            var h = 20f;
-            var x = (Screen.width / 2f) - (w / 2f);
-            var y = (Screen.height / 2f) - (h / 2f);
-            var spacing = 5;
-
+            showDebugInfoTime = 1f;
             if (this.Target)
             {
-                GUI.Label(new Rect(x, y, w, h), "Target: " + Target.name);
-                y += h + spacing;
+                Gizmos.color = Color.red;
+                Gizmos.DrawLine(this.transform.position, this.Target.position);
             }
-            else if (InCombat)
+
+            if (this.movement && this.movement.isMovingInternal)
             {
-                GUI.Label(new Rect(x, y, w, h), "In combat, no target");
-                y += h + spacing;
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(this.transform.position, this.movement.Destination);
             }
-            else
-            {
-                GUI.Label(new Rect(x, y, w, h), "Not in combat");
-                y += h + spacing;
-            }
-
-            GUI.Label(new Rect(x, y, w, h), "Destination dist: " + Vector3.Distance(transform.position, movement.Destination));
-            y += h + spacing;
-
-            GUI.Label(new Rect(x, y, w, h), "Destination Changed: " + movement.DestinationChangeTime);
-            y += h + spacing;
-
+        }
+        catch (System.Exception exc)
+        {
+            // ignored
         }
     }
 
@@ -171,7 +152,8 @@ public class EnemyController : MonoBehaviour, IAttackable
             DungeonRoom = GetComponentInParent<DungeonRoomController>();
         }
 
-        this.game = FindObjectOfType<GameManager>();
+        if (!this.game)
+            this.game = FindObjectOfType<GameManager>();
 
         this.IsDungeonBoss = !!this.dungeonBossController;
         this.IsRaidBoss = !!raidBossController;
@@ -249,7 +231,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         {
             if (noDamageDropTargetTimer >= 0)
             {
-                noDamageDropTargetTimer += Time.deltaTime;
+                noDamageDropTargetTimer += GameTime.deltaTime;
             }
 
             if (noDamageDropTargetTimer >= 5.0f)
@@ -292,11 +274,11 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
 
         var dist = Vector3.Distance(Position, Target.position);
-        if (dist >= (attackRange + TargetPlayer.GetAttackRange()) && !IsDungeonEnemy)
-        {
-            Lock();
-            return;
-        }
+        //if (dist >= (attackRange + TargetPlayer.GetAttackRange()) && !IsDungeonEnemy)
+        //{
+        //    Lock();
+        //    return;
+        //}
 
         if (dist <= attackRange)
         {
@@ -326,7 +308,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     {
         if (!targetPlayer) return;
         if (!movement) return;
-        attackTimer -= Time.deltaTime;
+        attackTimer -= GameTime.deltaTime;
         if (attackTimer <= 0f)
         {
             movement.Attack(() =>

@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Assets.Scripts;
+using System.Runtime.CompilerServices;
 using TMPro;
 using UnityEngine;
 
@@ -47,7 +48,7 @@ public class PlayerDetails : MonoBehaviour
     private float observedPlayerTimeout;
     private RectTransform rectTransform;
     private bool visible = true;
-
+    
     void Start()
     {
         if (!dragscript) dragscript = GetComponent<Dragscript>();
@@ -113,7 +114,7 @@ public class PlayerDetails : MonoBehaviour
 
         SetActive(broadcasterBadge, observedPlayer.IsBroadcaster);
 
-        observedPlayerTimeout -= Time.deltaTime;
+        observedPlayerTimeout -= GameTime.deltaTime;
         SetText(lblObserving, $"({Mathf.FloorToInt(observedPlayerTimeout) + 1}s)");
         SetText(lblPlayerlevel, $"LV : <b>{observedPlayer.Stats.CombatLevel}");
 
@@ -243,6 +244,11 @@ public class PlayerDetails : MonoBehaviour
 
     public void ForceUpdate()
     {
+        //if (GameManager.BatchPlayerAddInProgress)
+        //{
+        //    return;
+        //}
+
         attributeStatsManager.Observe(observedPlayer);
         equipmentSlotManager.Observe(observedPlayer);
         clanSkillObserver.Observe(observedPlayer);

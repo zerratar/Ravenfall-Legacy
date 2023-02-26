@@ -68,7 +68,7 @@ public class DayNightCycle : MonoBehaviour
     {
         if (freezeTimer > 0)
         {
-            freezeTimer -= Time.deltaTime;
+            freezeTimer -= GameTime.deltaTime;
         }
         else if (gameManager.PotatoMode)
         {
@@ -78,7 +78,7 @@ public class DayNightCycle : MonoBehaviour
         else
         {
             skyLight.shadows = LightShadows.Soft;
-            TotalTime += Time.deltaTime;
+            TotalTime += GameTime.deltaTime;
         }
 
         var cycle = 0f;

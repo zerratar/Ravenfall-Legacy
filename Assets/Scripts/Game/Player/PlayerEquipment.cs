@@ -26,7 +26,7 @@ public class PlayerEquipment : MonoBehaviour
     private List<ItemController> equippedObjects;
 
     private PlayerController player;
-    private IPlayerAppearance appearance;
+    private SyntyPlayerAppearance appearance;
 
     private GameObject woodcuttingHatchet;
     private GameObject miningPickaxe;
@@ -52,7 +52,7 @@ public class PlayerEquipment : MonoBehaviour
         gameManager = FindObjectOfType<GameManager>();
         itemManager = gameManager?.Items ?? FindObjectOfType<ItemManager>();
         equippedObjects = new List<ItemController>();
-        appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
+        appearance = GetComponent<SyntyPlayerAppearance>();
         player = GetComponent<PlayerController>();
     }
 
@@ -275,9 +275,16 @@ public class PlayerEquipment : MonoBehaviour
         return false;
     }
 
-    public void UnequipByItemId(Guid itemId)
+    public void Unequip(GameInventoryItem item)
     {
-        var equipped = equippedObjects.FirstOrDefault(x => x.ItemId == itemId);
+        var equipped = equippedObjects.FirstOrDefault(x => x.Id == item.InstanceId);
+
+        if (equipped == null)
+        {
+            // fallback to old search
+            equipped = equippedObjects.FirstOrDefault(x => x.ItemId == item.ItemId);
+        }
+
         var removed = false;
         if (equipped != null)
         {
@@ -292,11 +299,11 @@ public class PlayerEquipment : MonoBehaviour
 
         if (!removed)
         {
-            Shinobytes.Debug.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. ID {itemId}");
+            Shinobytes.Debug.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. {item.Name}");
         }
     }
 
-    public void Equip(GameInventoryItem item)
+    public void Equip(GameInventoryItem item, bool updateAppearance = true)
     {
         if (!baseItemPrefab)
         {
@@ -316,7 +323,11 @@ public class PlayerEquipment : MonoBehaviour
         itemController.gameObject.layer = player.gameObject.layer;
 
         equippedObjects.Add(itemController);
-        appearance.Equip(itemController);
+
+        if (updateAppearance)
+        {
+            appearance.Equip(itemController);
+        }
 
         if (itemController.Type == ItemType.Shield)
         {

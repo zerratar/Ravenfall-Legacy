@@ -20,7 +20,7 @@ public class TownHouseManager : MonoBehaviour
     private int activeSlotCount;
 
     public TownHouse[] TownHouses => buildableTownHouses;
-
+    public TownHouseSlot[] Slots => slots;
     public int SlotCount => activeSlotCount;
     public void EnsureAssignPlayerRows(int count)
     {
@@ -181,13 +181,16 @@ public class TownHouseManager : MonoBehaviour
         {
             var house = houses[i];
             var prefab = buildableTownHouses.FirstOrDefault(x => x.Type == (TownHouseSlotType)house.Type);
-            slots[i].SetHouse(house, prefab);
+            slots[i].SetHouse(house, prefab, false);
         }
 
         if (slots != null && slots.Length > 0)
         {
             info.UsedSlots = slots.Count(x => x != null && x.SlotType != TownHouseSlotType.Empty && x.SlotType != TownHouseSlotType.Undefined);
         }
+        var village = gameManager.Village;
+        village.UpdateBoostPerType();
+        village.UpdateExpBonusText();
     }
 
     internal void SetHouse(TownHouseSlot slot, TownHouseSlotType type)

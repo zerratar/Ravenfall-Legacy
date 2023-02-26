@@ -126,6 +126,16 @@ public class RavenfallObjectTools
         return obj.GetComponent<T>() != null;
     }
 
+
+    [MenuItem("Ravenfall/Enemies/Assign Dependencies", priority = 0)]
+    public static void AssignEnemyDependencies()
+    {
+        foreach(var enemy in GameObject.FindObjectsOfType<EnemyController>())
+        {
+            enemy.AssignDependencies();
+        }
+    }
+
     [MenuItem("Ravenfall/Objects/Adjust Placements/All", priority = 0)]
     public static void AdjustPlacementsOnAllOobjects()
     {

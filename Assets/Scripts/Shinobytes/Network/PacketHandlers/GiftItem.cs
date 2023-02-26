@@ -19,9 +19,15 @@
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var item = itemResolver.Resolve(data.ItemQuery, parsePrice: false, parseUsername: true);
+        var item = itemResolver.ResolveTradeQuery(data.ItemQuery, parsePrice: false, parseUsername: true, parseAmount: true, playerToSearch: player);
 
-        if (item == null || item.Item == null)
+        if (item.SuggestedItemNames.Length > 0)
+        {
+            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+            return;
+        }
+
+        if (item.Item == null)
         {
             client.SendMessage(player, Localization.MSG_GIFT_PLAYER_NOT_FOUND, data.ItemQuery);
             return;
@@ -39,22 +45,22 @@
             return;
         }
 
-        var amount = item.Amount;
+        var amount = item.Count;
         if (amount > long.MaxValue)
             amount = long.MaxValue;
 
-        var giftCount = await Game.RavenNest.Players.GiftItemAsync(player.UserId, item.Player.UserId, item.Id, (long)amount);
+        var giftCount = await Game.RavenNest.Players.GiftInventoryItemAsync(player.UserId, item.Player.UserId, item.InventoryItem.InstanceId, (long)amount);
         if (giftCount > 0)
         {
             // Update game client with the changes
             // this is done locally to avoid sending additional data from server to client and visa versa.
-            item.Player.Inventory.AddToBackpack(item.Item, item.Amount);
-            player.Inventory.Remove(item.Item.Item, item.Amount, true);
+            item.Player.Inventory.AddToBackpack(item.Item, item.Count);
+            player.Inventory.Remove(item.InventoryItem, item.Count, true);
             client.SendFormat(player.PlayerName, Localization.MSG_GIFT, giftCount, item.Item.Name, item.Player.PlayerName);
         }
         else
         {
-            client.SendFormat(player.PlayerName, Localization.MSG_GIFT_ERROR, item.Amount, item.Item.Name, item.Player.PlayerName);
+            client.SendFormat(player.PlayerName, Localization.MSG_GIFT_ERROR, item.Count, item.Item.Name, item.Player.PlayerName);
         }
     }
 }

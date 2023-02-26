@@ -93,19 +93,20 @@ namespace RavenNest.SDK.Endpoints
             {
                 return true;
             }
+
             if (connected)
             {
                 return false;
             }
 
+            var sessionToken = tokenProvider.GetSessionToken();
+            if (sessionToken == null)
+                return true;
+
             connecting = true;
             try
             {
                 //logger.Debug("Connecting to the server...");
-
-                var sessionToken = tokenProvider.GetSessionToken();
-                if (sessionToken == null)
-                    return true;
 
                 var token = JsonConvert.SerializeObject(sessionToken);
                 var sessionTokenData = token.Base64Encode();
@@ -138,6 +139,8 @@ namespace RavenNest.SDK.Endpoints
                     reconnecting = false;
                     OnReconnected?.Invoke(this, EventArgs.Empty);
                 }
+
+                logger.Debug("Connected to RavenNest WebSocket API!");
 
                 return true;
             }

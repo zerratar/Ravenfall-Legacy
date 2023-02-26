@@ -31,7 +31,7 @@ public class Resize : MonoBehaviour
     {
         if (timer > 0f)
         {
-            timer -= Time.deltaTime;
+            timer -= GameTime.deltaTime;
         }
         else
         {

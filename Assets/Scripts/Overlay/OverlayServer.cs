@@ -47,8 +47,13 @@ namespace Assets.Scripts.Overlay
             this.packetManager = packetManager;
         }
 
+
         public void Update()
         {
+#if UNITY_STANDALONE_LINUX
+            return;
+#endif
+
             if (!started)
             {
                 if (DateTime.UtcNow - lastStartTry >= TimeSpan.FromSeconds(StartRetryTimeSeconds))
@@ -114,7 +119,10 @@ namespace Assets.Scripts.Overlay
             catch (Exception exc)
             {
 #if DEBUG
-                Shinobytes.Debug.LogError("Failed to start overlay server: " + exc);
+                if (failureTries == 0)
+                {
+                    Shinobytes.Debug.LogError("Failed to start overlay server: " + exc);
+                }
 #endif
                 failureTries++;
                 lastFailureTime = DateTime.UtcNow;

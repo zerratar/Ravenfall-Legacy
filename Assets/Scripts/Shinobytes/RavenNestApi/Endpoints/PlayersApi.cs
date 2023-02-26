@@ -52,21 +52,6 @@ namespace RavenNest.SDK.Endpoints
                     playerData);
         }
 
-        //[Obsolete]
-        //public Task<RavenNest.Models.PlayerJoinResult> PlayerJoinAsync(
-        //    string userId, string username, string identifier)
-        //{
-        //    if (client.Desynchronized) return null;
-        //    return request.Create()
-        //        .Identifier(userId)
-        //        .Method(identifier)
-        //        .AddParameter("value", username)
-        //        .Build()
-        //        .SendAsync<RavenNest.Models.PlayerJoinResult>(
-        //            ApiRequestTarget.Players,
-        //            ApiRequestType.Post);
-        //}
-
         public Task<RavenNest.Models.Player> GetPlayerAsync(string userId)
         {
             return request.Create()
@@ -112,6 +97,7 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestTarget.Players,
                     ApiRequestType.Get);
         }
+
         public Task<AddItemResult> CraftItemAsync(string userId, Guid item)
         {
             return request.Create()
@@ -123,6 +109,7 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestTarget.Players,
                     ApiRequestType.Get);
         }
+
         public Task<CraftItemResult> CraftItemsAsync(string userId, Guid item, int amount = 1)
         {
             return request.Create()
@@ -173,24 +160,11 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-
-        public Task<bool> UnequipItemAsync(string userId, Guid item)
+        public Task<ItemEnchantmentResult> EnchantInventoryItemAsync(string userId, Guid inventoryItem)
         {
             return request.Create()
                 .Identifier(userId)
-                .Method("unequip")
-                .AddParameter(item.ToString())
-                .Build()
-                .SendAsync<bool>(
-                    ApiRequestTarget.Players,
-                    ApiRequestType.Get);
-        }
-
-        public Task<ItemEnchantmentResult> EnchantItemAsync(string userId, Guid inventoryItem)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("enchant-item")
+                .Method("enchant-instance")
                 .AddParameter(inventoryItem.ToString())
                 .Build()
                 .SendAsync<ItemEnchantmentResult>(
@@ -198,7 +172,19 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<bool> UnequipItemInstanceAsync(string userId, Guid inventoryItem)
+        public Task<ItemEnchantmentResult> DisenchantInventoryItemAsync(string userId, Guid inventoryItem)
+        {
+            return request.Create()
+                .Identifier(userId)
+                .Method("disenchant-instance")
+                .AddParameter(inventoryItem.ToString())
+                .Build()
+                .SendAsync<ItemEnchantmentResult>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
+        public Task<bool> UnequipInventoryItemAsync(string userId, Guid inventoryItem)
         {
             return request.Create()
                 .Identifier(userId)
@@ -221,7 +207,7 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<bool> EquipItemInstanceAsync(string userId, Guid inventoryItem)
+        public Task<bool> EquipInventoryItemAsync(string userId, Guid inventoryItem)
         {
             return request.Create()
                 .Identifier(userId)
@@ -233,6 +219,7 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        [Obsolete]
         public Task<bool> EquipItemAsync(string userId, Guid item)
         {
             return request.Create()
@@ -244,6 +231,7 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestTarget.Players,
                     ApiRequestType.Get);
         }
+
         public Task<bool> EquipBestItemsAsync(string userId)
         {
             return request.Create()
@@ -295,33 +283,24 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
         }
 
-        public Task<bool> UpdateResourcesAsync(string userId, decimal[] resources)
+        public Task<long> GiftInventoryItemAsync(string userId, string receiverUserId, Guid inventoryItemId, long amount)
         {
             return request.Create()
                 .Identifier(userId)
-                .Method("resources")
-                .AddParameter("values", resources)
-                .Build()
-                .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
-        }
-
-        public Task<long> GiftItemAsync(string userId, string receiverUserId, Guid itemId, long amount)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("gift")
+                .Method("gift-instance")
                 .AddParameter(receiverUserId)
-                .AddParameter(itemId.ToString())
+                .AddParameter(inventoryItemId.ToString())
                 .AddParameter(amount.ToString())
                 .Build()
                 .SendAsync<long>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
-        public Task<long> VendorItemAsync(string userId, Guid itemId, long amount)
+
+        public Task<long> VendorInventoryItemAsync(string userId, Guid inventoryItemId, long amount)
         {
             return request.Create()
                 .Identifier(userId)
-                .Method("vendor")
-                .AddParameter(itemId.ToString())
+                .Method("vendor-instance")
+                .AddParameter(inventoryItemId.ToString())
                 .AddParameter(amount.ToString())
                 .Build()
                 .SendAsync<long>(ApiRequestTarget.Players, ApiRequestType.Get);

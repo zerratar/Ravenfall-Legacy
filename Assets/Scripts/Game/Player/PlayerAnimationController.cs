@@ -3,19 +3,20 @@ using UnityEngine;
 
 public class PlayerAnimationController : MonoBehaviour
 {
-    private IPlayerAppearance appearance;
+    private SyntyPlayerAppearance appearance;
     private Animator defaultAnimator;
     private Animator activeAnimator;
     private PlayerAnimationState animationState;
     private float idleTimer;
 
     public bool IsMoving;
+    private bool hasAnimator;
 
     // Use this for initialization
     void Start()
     {
         if (appearance == null)
-            appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
+            appearance = GetComponent<SyntyPlayerAppearance>();
     }
 
     // Update is called once per frame
@@ -26,7 +27,7 @@ public class PlayerAnimationController : MonoBehaviour
             return;
         }
 
-        idleTimer += Time.deltaTime;
+        idleTimer += GameTime.deltaTime;
 
         if (animationState != PlayerAnimationState.Idle)
         {
@@ -344,8 +345,13 @@ public class PlayerAnimationController : MonoBehaviour
 
     private bool EnsureAnimator()
     {
+        if (hasAnimator)
+        {
+            return true;
+        }
+
         if (appearance == null)
-            appearance = (IPlayerAppearance)GetComponent<SyntyPlayerAppearance>();
+            appearance = GetComponent<SyntyPlayerAppearance>();
 
         if (appearance is MonoBehaviour behaviour)
         {
@@ -355,7 +361,7 @@ public class PlayerAnimationController : MonoBehaviour
             activeAnimator = behaviour.transform.GetComponentInChildren<Animator>();
             defaultAnimator = activeAnimator;
         }
-
+        hasAnimator = activeAnimator != null;
         return activeAnimator;
     }
 

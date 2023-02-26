@@ -69,7 +69,7 @@ public class PlayerManager : MonoBehaviour
 
             if (addPlayerQueue.Count == 0)
             {
-                gameManager.PostGameRestore();
+                gameManager.EndBatchedPlayerAdd();
             }
         }
         else { LoadingPlayers = false; }
@@ -224,7 +224,7 @@ public class PlayerManager : MonoBehaviour
             player.IsBot = isBot;
             if (player.IsBot)
             {
-                player.Bot = this.gameObject.AddComponent<BotPlayerController>();
+                player.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();
                 player.Bot.playerController = player;
                 if (player.UserId != null && !player.UserId.StartsWith("#"))
                 {
@@ -310,7 +310,8 @@ public class PlayerManager : MonoBehaviour
         Vector3 position,
         RavenNest.Models.Player playerDefinition,
         TwitchPlayerInfo twitchUser,
-        StreamRaidInfo raidInfo)
+        StreamRaidInfo raidInfo,
+        bool playerInitiatedJoin)
     {
 
         if (playerTwitchIdLookup.ContainsKey(playerDefinition.UserId))
@@ -327,7 +328,7 @@ public class PlayerManager : MonoBehaviour
 
         player.transform.position = position;
 
-        return Add(player.GetComponent<PlayerController>(), playerDefinition, twitchUser, raidInfo);
+        return Add(player.GetComponent<PlayerController>(), playerDefinition, twitchUser, raidInfo, playerInitiatedJoin);
     }
 
     internal IReadOnlyList<PlayerController> GetAllModerators()
@@ -369,7 +370,7 @@ public class PlayerManager : MonoBehaviour
             return plr;
         }
 
-        return playerTwitchIdLookup.Values.FirstOrDefault(x => x.Id.ToString().Equals(userId, StringComparison.InvariantCultureIgnoreCase));
+        return null;// playerTwitchIdLookup.Values.FirstOrDefault(x => x.Id.ToString().Equals(userId, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public PlayerController GetPlayerByName(string playerName)
@@ -396,7 +397,19 @@ public class PlayerManager : MonoBehaviour
 
     public int GetPlayerCount(bool includeNpc = false)
     {
-        return playerTwitchIdLookup.Values.Count(x => includeNpc || !x.IsNPC);
+        if (includeNpc)
+        {
+            return playerTwitchIdLookup.Count;
+        }
+        int count = 0;
+        foreach (var item in playerTwitchIdLookup.Values)
+        {
+            if (!item.IsNPC)
+            {
+                ++count;
+            }
+        }
+        return count;
     }
 
     public PlayerController GetPlayerById(Guid characterId)
@@ -459,10 +472,11 @@ public class PlayerManager : MonoBehaviour
         PlayerController player,
         RavenNest.Models.Player def,
         TwitchPlayerInfo twitchUser,
-        StreamRaidInfo raidInfo)
+        StreamRaidInfo raidInfo,
+        bool playerInitiatedJoin)
     {
 
-        player.SetPlayer(def, twitchUser, raidInfo, gameManager);
+        player.SetPlayer(def, twitchUser, raidInfo, gameManager, playerInitiatedJoin);
         playerTwitchIdLookup[player.UserId] = player;
         playerNameLookup[player.PlayerName.ToLower()] = player;
         playerIdLookup[player.Id] = player;
@@ -503,6 +517,9 @@ public class PlayerManager : MonoBehaviour
             });
 
             var i = 0;
+
+            gameManager.BeginBatchedPlayerAdd();
+
             foreach (var playerInfo in result.Players)
             {
                 var requested = players[i++];

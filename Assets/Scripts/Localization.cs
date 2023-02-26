@@ -73,6 +73,8 @@
     public const string MSG_ARENA_JOIN_ERROR = "You cannot join the arena at this time.";
     public const string MSG_ARENA_JOIN = "You have joined the arena. Good luck!";
     public const string MSG_BUY_ITEM_NOT_FOUND = "Could not find an item matching the query '{query}'";
+    public const string MSG_BUY_ITEM_NOT_FOUND_SUGGEST = "Could not find an item matching the query '{query}', did you mean: {suggestion}?";
+
     public const string MSG_BUY_ITEM_NOT_IN_MARKET = "Could not find any {itemName} in the marketplace.";
     public const string MSG_BUY_ITEM_INSUFFICIENT_COIN = "You do not have enough coins to buy the {itemName}.";
     public const string MSG_BUY_ITEM_MARKETPLACE_ERROR = "Error accessing marketplace right now.";
@@ -98,6 +100,7 @@
     public const string MSG_CRAFT_FAILED_RES = "Insufficient resources to craft {itemName}";
     public const string MSG_CRAFT_EQUIPPED = "You crafted and equipped a {itemName}!";
     public const string MSG_CRAFT_ITEM_NOT_FOUND = "Could not find an item matching the query '{query}'";
+    public const string MSG_CRAFT_ITEM_NOT_FOUND_SUGGEST = "Could not find an item matching the query '{query}', did you mean {suggestion}?";
     public const string MSG_CRAFT_ITEM_NOT_FOUND_MEAN = "Could not find an item matching the query '{query}', did you mean '{itemName}'?";
     public const string MSG_CRAFT = "You crafted a {itemName}!";
     public const string MSG_CRAFT_MANY = "You crafted x{amount} {itemName}!";
@@ -107,20 +110,31 @@
     public const string MSG_GIFT_ERROR = "Error gifting {giftCount}x {itemName} to {player}. FeelsBadMan";
     public const string MSG_EQUIPPED = "You have equipped {itemName}.";
     public const string MSG_EQUIPPED_ALL = "You have equipped all of your best items.";
+
+    public const string MSG_ITEM_COUNT_MISSING_ARGS = "You must specify an item. Use !items (item name) or !count (item name)";
+
     public const string MSG_ENCHANT_MISSING_ARGS = "You must specify an item to enchant. Use !enchant (item name)";
     public const string MSG_ENCHANT_CLAN_SKILL = "Enchanting is a clan skill. Join a clan to be able to use it!";
     public const string MSG_ENCHANT_UNKNOWN_ERROR = "Enchanting failed. Unknown reason. Please try again later.";
+
     public const string MSG_ENCHANT_COOLDOWN = "You have to wait {timeLeft} before you can try to enchant something again.";
     public const string MSG_ENCHANT_FAILED = "You failed to enchant {itemName}. You may try again in {cooldown}";
+    public const string MSG_ENCHANT_NOT_AVAILABLE = "You need to be part of a clan to use enchanting.";
     public const string MSG_ENCHANT_NOT_ENCHANTABLE = "{itemName} can't be enchanted. Only weapon, armor, amulet and rings can be enchanted.";
     public const string MSG_ENCHANT_SUCCESS = "You have successfully enchanted {oldItemName} into {newItemName}. You must now wait {cooldown} before you can enchant something again.";
-    public const string MSG_ENCHANT_REPLACE = "You have successfully replaced the enchantment on {newItemName}. You must now wait {cooldown} before you can enchant something again.";
+    public const string MSG_ENCHANT_REPLACE = "You have successfully replaced the enchantment on {oldItemName}. It has now  become {newItemName}. You must now wait {cooldown} before you can enchant something again.";
     public const string MSG_ENCHANT_WARN_REPLACE = "{itemName} is already enchanted with {stats}. If you want to replace the enchantment, use !enchant replace {itemName}";
     public const string MSG_ENCHANT_STATS = "{enchantmentStats} was added to {enchantedItemName}";
+
+    public const string MSG_DISENCHANT_NOT_ENCHANTED = "You cannot disenchant {itemName} as it is not enchanted.";
+    public const string MSG_DISENCHANT_UNKNOWN_ERROR = "Disenchanting {itemName} failed. Please try again later.";
+    public const string MSG_DISENCHANT_SUCCESS = "You have successfully removed the enchantment from {oldItemName}.";
+
     public const string MSG_UNEQUIPPED = "You have unequipped {itemName}.";
     public const string MSG_UNEQUIPPED_ALL = "You have unequipped all of your items.";
     public const string MSG_SET_PET = "You have changed your active pet to {itemName}";
     public const string MSG_ITEM_NOT_FOUND = "Could not find an item matching the name: {query}";
+    public const string MSG_ITEM_NOT_FOUND_SUGGEST = "Could not find an item matching the name: {query}, did you mean {suggestion}?";
     public const string MSG_SET_PET_NOT_PET = "{itemName} is not a pet.";
     public const string MSG_SET_PET_NOT_OWNED = "You do not have any {itemName}.";
     public const string MSG_ITEM_NOT_EQUIPPED = "You do not have {itemName} equipped.";
@@ -138,8 +152,10 @@
     public const string MSG_HIGHEST_SKILL = "{player} has the highest level {skillName} with level {level}.";
     public const string MSG_HIGHEST_COMBAT = "{player} has the highest combat level with {combatLevel}.";
     public const string MSG_HIGHEST_TOTAL = "{player} has the highest total level with {level}.";
-    public const string MSG_VILLAGE_BOOST = "Village is level {townHallLevel}, active boosts {activeBoosts}";
-    public const string MSG_VILLAGE_BOOST_NO_BOOST = "Village is level {townHallLevel}, without any active boost.";
+
+    public const string MSG_VILLAGE_BOOST = "Village is level {townHallLevel}, it needs {remainingExp} xp to level up. Active boosts {activeBoosts}";
+    public const string MSG_VILLAGE_BOOST_NO_BOOST = "Village is level {townHallLevel}, it needs {remainingExp} xp to level up. Without any active boost.";
+
     public const string MSG_VILLAGE_UPDATED = "You've changed the village target to {targetType}, active boosts {activeBoosts}";
     public const string MSG_HIGHSCORE_RANK = "You're at rank #{rank}";
     public const string MSG_HIGHSCORE_MAIN_ONLY = "Only your main character is listed on the highscore right now.";
@@ -163,6 +179,7 @@
     public const string MSG_VALUE_ITEM_NOT_FOUND = "Could not find an item matching the name: {query}";
     public const string MSG_VENDOR_ITEM = "You sold {vendorCount}x {itemName} to the vendor for {cost} coins!";
     public const string MSG_VENDOR_ITEM_NOT_FOUND = "Could not find an item matching the name: {query}";
+    public const string MSG_VENDOR_ITEM_NOT_OWNED = "You do not own a {itemName}.";
     public const string MSG_VENDOR_ITEM_FAILED = "Error selling {vendorCount}x {itemName} to the vendor. FeelsBadMan";
     public const string MSG_DUNGEON_START_FAILED_WAR = "Unable to start a dungeon during a war. Please wait for it to be over.";
     public const string MSG_DUNGEON_START_FAILED_RAID = "Unable to start a dungeon during a raid. Please wait for it to be over.";
@@ -170,7 +187,7 @@
     public const string MSG_TICTACTOE_STARTED = "A game of Tic Tac Toe has started! Use !tictactoe 1-9 to play!";
     public const string MSG_TICTACTOE_JOINED = "You have joined team {teamName}!";
     public const string MSG_TICTACTOE_REJECT_GAMEOVER = "Your action was rejected because the game is over.";
-    public const string MSG_TICTACTOE_REJECT_TURN = "Your action was rejected as it is not their turn yet.";
+    public const string MSG_TICTACTOE_REJECT_TURN = "Your action was rejected as it is not your turn yet.";
     public const string MSG_TICTACTOE_REJECT_NUMBER = "Your action was rejected because the number was not part of the grid.";
     public const string MSG_TICTACTOE_REJECT_PLAYED = "Your action was rejected because someone else already played this number.";
     public const string MSG_TICTACTOE_END_DRAW = "The game ended in a draw. No one wins.";
@@ -191,4 +208,10 @@
     public const string MSG_JOIN_RAID_ARENA = "You cannot join the raid while in the arena.";
     public const string MSG_JOIN_RAID_DUEL = "You cannot join the raid while in a duel.";
     public const string MSG_JOIN_RAID_NO_RAID = "There are no active raids at the moment.";
+
+    public const string MSG_ALREADY_IN_CLAN = "You cannot join a clan as you're already in one. Please leave your clan first using '!clan leave'";
+    public const string MSG_NOT_IN_CLAN = "You need to join a clan to use this command.";
+    public const string MSG_CLAN_NOT_FOUND = "Could not find a suitable clan using '{clanSearch}'. There must be atleast one player in the game with the target clan.";
+    public const string MSG_CLAN_INFO_UNKNOWN_ERROR = "Unable to get clan info at this time, please try again later.";
+    public const string MSG_CLAN_STATS_UNKNOWN_ERROR = "Unable to get clan stats at this time, please try again later.";
 }

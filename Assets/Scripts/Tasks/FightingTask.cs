@@ -69,7 +69,7 @@ public class FightingTask : ChunkTask
                     continue;
                 }
 
-                var hd = x.Stats.Health.Level - x.Stats.Health.CurrentValue;
+                var hd = x.Stats.Health.MaxLevel - x.Stats.Health.CurrentValue;
                 if (hd >= healthDif)
                 {
                     healthDif = hd;

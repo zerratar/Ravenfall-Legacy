@@ -41,6 +41,53 @@ public static class ItemExtension
             + stats.RangedPower;
     }
 
+    public static IReadOnlyList<SkillBonus> GetSkillBonuses(this GameInventoryItem i)
+    {
+        List<SkillBonus> result = new List<SkillBonus>();
+        var player = i.Player;
+
+        if (i.Enchantments != null)
+        {
+            foreach (var e in i.Enchantments)
+            {
+                var value = e.Value;
+                var key = e.Name.ToUpper();
+                SkillStat targetSkill = null;
+                foreach (var skill in player.Stats.SkillList)
+                {
+                    if (skill.Name.ToUpper() == key)
+                    {
+                        targetSkill = skill;
+                        break;
+                    }
+                }
+
+                if (targetSkill == null)
+                {
+                    continue;
+                }
+
+                double skillBonus = 0;
+                if (e.ValueType == AttributeValueType.Percent)
+                {
+                    if (value >= 1)
+                    {
+                        value = value / 100d;
+                    }
+
+                    skillBonus = (targetSkill.Level * value);
+                }
+                else
+                {
+                    skillBonus = value;
+                }
+
+                result.Add(new SkillBonus { Enchantment = e, Bonus = skillBonus, Skill = targetSkill });
+            }
+        }
+        return result;
+    }
+
     public static ItemStatsCollection GetItemStats(this GameInventoryItem i)
     {
         int aimBonus = 0;
@@ -51,50 +98,53 @@ public static class ItemExtension
         ItemEnchantment aimEnchantment = null;
         ItemEnchantment armorEnchantment = null;
 
-        foreach (var e in i.Enchantments)
+        if (i.Enchantments != null)
         {
-            var value = e.Value;
-            var key = e.Name.ToUpper();
-            if (e.ValueType == AttributeValueType.Percent)
+            foreach (var e in i.Enchantments)
             {
-                if (value >= 1)
+                var value = e.Value;
+                var key = e.Name.ToUpper();
+                if (e.ValueType == AttributeValueType.Percent)
                 {
-                    value = value / 100d;
-                }
+                    if (value >= 1)
+                    {
+                        value = value / 100d;
+                    }
 
-                if (key == "POWER")
-                {
-                    powerEnchantment = e;
-                    powerBonus = (int)(i.Item.WeaponPower * value) + (int)(i.Item.MagicPower * value) + (int)(i.Item.RangedPower * value);
-                }
+                    if (key == "POWER")
+                    {
+                        powerEnchantment = e;
+                        powerBonus = (int)(i.Item.WeaponPower * value) + (int)(i.Item.MagicPower * value) + (int)(i.Item.RangedPower * value);
+                    }
 
-                if (key == "AIM")
-                {
-                    aimEnchantment = e;
-                    aimBonus = (int)(i.Item.WeaponAim * value) + (int)(i.Item.MagicAim * value) + (int)(i.Item.RangedAim * value);
+                    if (key == "AIM")
+                    {
+                        aimEnchantment = e;
+                        aimBonus = (int)(i.Item.WeaponAim * value) + (int)(i.Item.MagicAim * value) + (int)(i.Item.RangedAim * value);
+                    }
+                    if (key == "ARMOUR" || key == "ARMOR")
+                    {
+                        armorEnchantment = e;
+                        armorBonus = (int)(i.Item.ArmorPower * value);
+                    }
                 }
-                if (key == "ARMOUR" || key == "ARMOR")
+                else
                 {
-                    armorEnchantment = e;
-                    armorBonus = (int)(i.Item.ArmorPower * value);
-                }
-            }
-            else
-            {
-                if (key == "POWER")
-                {
-                    powerEnchantment = e;
-                    powerBonus = (int)value;
-                }
-                if (key == "AIM")
-                {
-                    aimEnchantment = e;
-                    aimBonus = (int)value;
-                }
-                if (key == "ARMOUR" || key == "ARMOR")
-                {
-                    armorEnchantment = e;
-                    armorBonus = (int)value;
+                    if (key == "POWER")
+                    {
+                        powerEnchantment = e;
+                        powerBonus = (int)value;
+                    }
+                    if (key == "AIM")
+                    {
+                        aimEnchantment = e;
+                        aimBonus = (int)value;
+                    }
+                    if (key == "ARMOUR" || key == "ARMOR")
+                    {
+                        armorEnchantment = e;
+                        armorBonus = (int)value;
+                    }
                 }
             }
         }
@@ -109,6 +159,13 @@ public static class ItemExtension
         if (i.Item.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.Item.ArmorPower, armorBonus, armorEnchantment));
         return new ItemStatsCollection(stats);
     }
+}
+
+public class SkillBonus
+{
+    public ItemEnchantment Enchantment { get; set; }
+    public SkillStat Skill { get; set; }
+    public double Bonus { get; set; }
 }
 
 public class ItemStatsCollection : IReadOnlyList<ItemStat>

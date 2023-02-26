@@ -55,6 +55,10 @@ public class Overlay : MonoBehaviour
 
     public void SendRedeemables(IReadOnlyList<RavenNest.Models.RedeemableItem> redeemables)
     {
+#if UNITY_STANDALONE_LINUX        
+        return;
+#endif
+
         if (!IsGame)
         {
             Shinobytes.Debug.LogError("Redeemables data can only be sent from the Game.");
@@ -72,6 +76,10 @@ public class Overlay : MonoBehaviour
 
     public void SendItems(IReadOnlyList<RavenNest.Models.Item> items)
     {
+#if UNITY_STANDALONE_LINUX
+        return;
+#endif
+
         if (!IsGame)
         {
             Shinobytes.Debug.LogError("Items data can only be sent from the Game.");
@@ -83,6 +91,10 @@ public class Overlay : MonoBehaviour
 
     public void SendObservePlayer(PlayerController player)
     {
+
+#if UNITY_STANDALONE_LINUX
+        return;
+#endif
         if (!IsGame)
         {
             Shinobytes.Debug.LogError("Observe player data can only be sent from the Game.");
@@ -227,6 +239,10 @@ public class Overlay : MonoBehaviour
 
     private void Update()
     {
+#if UNITY_STANDALONE_LINUX
+        return;
+#endif
+
         if (IsOverlay)
         {
             if (Input.GetKeyDown(KeyCode.F1))
@@ -270,13 +286,13 @@ public class Overlay : MonoBehaviour
                 }
                 if (Input.GetKey(KeyCode.W))
                 {
-                    renderCamera.transform.position -= renderCamera.transform.forward * Time.deltaTime;
+                    renderCamera.transform.position -= renderCamera.transform.forward * GameTime.deltaTime;
                     valuesUpdated = true;
                 }
 
                 if (Input.GetKey(KeyCode.S))
                 {
-                    renderCamera.transform.position += renderCamera.transform.forward * Time.deltaTime;
+                    renderCamera.transform.position += renderCamera.transform.forward * GameTime.deltaTime;
                     valuesUpdated = true;
                 }
                 if (Input.GetKey(KeyCode.A))
@@ -293,12 +309,12 @@ public class Overlay : MonoBehaviour
 
                 if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.Q))
                 {
-                    CharacterRotationSpeed += Time.deltaTime * rotationSpeedDelta * (shiftDown ? 3 : 1);
+                    CharacterRotationSpeed += GameTime.deltaTime * rotationSpeedDelta * (shiftDown ? 3 : 1);
                     valuesUpdated = true;
                 }
                 if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.E))
                 {
-                    CharacterRotationSpeed -= Time.deltaTime * rotationSpeedDelta * (shiftDown ? 3 : 1);
+                    CharacterRotationSpeed -= GameTime.deltaTime * rotationSpeedDelta * (shiftDown ? 3 : 1);
                     valuesUpdated = true;
                 }
 

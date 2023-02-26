@@ -13,12 +13,26 @@ namespace RavenNest.SDK.Endpoints
         public GamePacketSerializer(IBinarySerializer binarySerializer)
         {
             this.binarySerializer = binarySerializer;
-            loadedTypes = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(x => x.GetTypes())
-                .Where(x => x.IsPublic)
-                .GroupBy(x => x.Name)
-                .Select(x => x.FirstOrDefault())
-                .ToDictionary(x => x.Name, x => x);
+
+            loadedTypes = new Dictionary<string, Type>();
+
+            // load assemblies from this project and all shinobytes projects.
+
+            LoadPacketTypes(typeof(GamePacketSerializer).Assembly.GetTypes());  // this assembly
+            LoadPacketTypes(typeof(RavenNest.Models.Item).Assembly.GetTypes()); // RavenNest Models
+        }
+
+        private void LoadPacketTypes(Type[] types)
+        {
+            foreach (var type in types)
+            {
+                if (!type.IsPublic)
+                {
+                    continue;
+                }
+
+                loadedTypes[type.Name] = type;
+            }
         }
 
         public GamePacket Deserialize(byte[] data)

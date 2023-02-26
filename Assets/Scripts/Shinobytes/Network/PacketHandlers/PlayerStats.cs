@@ -65,9 +65,14 @@ public class PlayerStats : ChatBotCommandHandler<PlayerStatsRequest>
         var eq = player.EquipmentStats;
         var combatLevel = ps.CombatLevel;
         var skills = "";
-        var total = ps.SkillList
-            .Select(x => { skills += x + ", "; return x; })
-            .Sum(x => x.Level);
+
+
+        var total = 0;
+        foreach(var s in ps.SkillList)
+        {
+            skills += s + ", ";
+            total += s.Level;
+        }
 
         client.SendMessage(player.PlayerName, Localization.MSG_STATS,
             combatLevel.ToString(),

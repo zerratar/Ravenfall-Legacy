@@ -26,6 +26,7 @@ namespace RavenNest.SDK.Endpoints
         Auth,
         Marketplace,
         Village,
-        Twitch
+        Twitch,
+        Clan,
     }
 }

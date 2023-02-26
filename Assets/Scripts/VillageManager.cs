@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -80,8 +81,13 @@ namespace Assets.Scripts
             // TODO: Check if this is the same data as before, if it is. (not changed) then ignore it.
             //              Even better; maybe dont even send the update from the server.
 
+            if (!RequireUpdate(houses))
+            {
+                return;
+            }
+
             townHouseManager.SetHouses(houses);
-            townHallManager.SetSlotCount(houses.Count(x => x.Type != (int)TownHouseSlotType.Empty && x.Type != -1), houses.Count);
+            townHallManager.SetSlotCount(GetUsedSlotCount(houses), houses.Count);
 
             gameManager.villageBoostLabel.Update();
         }
@@ -107,16 +113,29 @@ namespace Assets.Scripts
             townHallManager.SetTier(tier);
         }
 
-        public void SetBonus(int slot, TownHouseSlotType slotType, float bonus)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetBonusWithoutNotify(int slot, TownHouseSlotType slotType, float bonus)
         {
             expBonusBySlot[slot] = new TownHouseExpBonus(slotType, bonus);
             expBonusByType[slotType] = new TownHouseExpBonus(slotType, expBonusBySlot.Values.Where(x => slotType == x.SlotType).Sum(x => x.Bonus));
-            UpdateBoostPerType();
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetBonus(int slot, TownHouseSlotType slotType, float bonus)
+        {
+            SetBonusWithoutNotify(slot, slotType, bonus);
+            UpdateBoostPerType();
+            UpdateExpBonusText();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void UpdateExpBonusText()
+        {
             if (info) info.UpdateExpBonusTexts();
         }
 
-        private void UpdateBoostPerType()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void UpdateBoostPerType()
         {
             foreach (var i in expBonusByType.Keys)
             {
@@ -234,6 +253,42 @@ namespace Assets.Scripts
                 return bonus.Bonus / 100f;
             }
             return 0;
+        }
+
+        private int GetUsedSlotCount(IReadOnlyList<VillageHouseInfo> houses)
+        {
+            var count = 0;
+            for (var i = 0; i < houses.Count; i++)
+            {
+                var x = houses[i];
+                if (x.Type != (int)TownHouseSlotType.Empty && x.Type != -1)
+                {
+                    ++count;
+                }
+            }
+            return count;
+            // houses.Count(x => x.Type != (int)TownHouseSlotType.Empty && x.Type != -1)
+        }
+
+        private bool RequireUpdate(IReadOnlyList<VillageHouseInfo> newHouses)
+        {
+            var slots = townHouseManager.Slots;
+            if (newHouses.Count != slots.Length)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < newHouses.Count; ++i)
+            {
+                var house = newHouses[i];
+                var slot = slots[i];
+                if (slot.OwnerUserId != house.Owner || slot.SlotType != (TownHouseSlotType)house.Type)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

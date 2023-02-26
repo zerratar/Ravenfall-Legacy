@@ -1,4 +1,4 @@
-﻿public class Packet
+﻿public struct Packet
 {
     public Packet(GameClient client, string jsonDataType, string jsonData)
     {

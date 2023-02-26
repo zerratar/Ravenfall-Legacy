@@ -684,8 +684,9 @@ namespace Shinobytes.Linq
         {
             var newList = new List<TResult>();
 
-            foreach (var i in src)
+            for (int j = 0; j < src.Count; j++)
             {
+                TResult i = src[j];
                 if (!(i is TType))
                 {
                     newList.Add(i);
@@ -697,8 +698,9 @@ namespace Shinobytes.Linq
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerable<TResult> IsNot<TResult, TType>(this TResult[] src)
         {
-            foreach (var i in src)
+            for (int j = 0; j < src.Length; j++)
             {
+                TResult i = src[j];
                 if (!(i is TType))
                 {
                     yield return i;
@@ -716,9 +718,10 @@ namespace Shinobytes.Linq
                 return src[0];
             }
 
-            foreach (var i in src)
+            for (var i = 0; i < src.Length; i++)
             {
-                if (res == null || res(i)) return i;
+                var item = src[i];
+                if (res == null || res(item)) return item;
             }
 
             return default(T);
@@ -735,9 +738,10 @@ namespace Shinobytes.Linq
                 return src[0];
             }
 
-            foreach (var i in src)
+            for (var i = 0; i < src.Count; i++)
             {
-                if (res == null || res(i)) return i;
+                var item = src[i];
+                if (res == null || res(item)) return item;
             }
 
             return default(T);
@@ -863,58 +867,49 @@ namespace Shinobytes.Linq
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Random<T>(this T[] items)
         {
+            if (items == null || items.Length == 0)
+            {
+                return default;
+            }
+
             return items[UnityEngine.Random.Range(0, items.Length)];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Random<T>(this IReadOnlyList<T> items)
         {
+            if (items == null || items.Count == 0)
+            {
+                return default;
+            }
+
             return items[UnityEngine.Random.Range(0, items.Count)];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Random<T>(this IEnumerable<T> items)
         {
-            var selections = items.AsList();
+            var selections = items?.AsList();
+            if (selections == null || selections.Count == 0)
+            {
+                return default;
+            }
+
             return selections[UnityEngine.Random.Range(0, selections.Count)];
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Weighted<T, T2>(this IReadOnlyList<T> items, Func<T, T2> weight)
-           where T2 : struct
+        public static T Weighted<T>(this IReadOnlyList<T> items, Func<T, double> weight)
         {
             var selections = items;
+            var totalWeight = selections.Sum(weight);
+            var randomWeight = UnityEngine.Random.value * totalWeight;
+            var weightSum = 0d;
 
-            foreach (var sel in selections)
+            for (int i = 0; i < selections.Count; i++)
             {
-                var ran = UnityEngine.Random.value;
-                var w = weight(sel);
-
-                if (w is float f && ran <= f)
+                weightSum += weight(selections[i]);
+                if (randomWeight < weightSum)
                 {
-                    return sel;
-                }
-
-                if (w is int i && ran <= i)
-                {
-                    return sel;
-                }
-
-                if (w is short s && ran <= s)
-                {
-                    return sel;
-                }
-
-                if (w is decimal de && ran <= (double)de)
-                {
-                    return sel;
-                }
-
-                if (w is byte b && ran <= b)
-                {
-                    return sel;
-                }
-
-                if (w is double d && ran <= d)
-                {
-                    return sel;
+                    return selections[i];
                 }
             }
 

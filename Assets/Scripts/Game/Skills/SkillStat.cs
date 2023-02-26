@@ -12,6 +12,9 @@ public class SkillStat
     public int Level;
     public double Experience;
     public Skill Type;
+    public float Bonus;
+
+    public int MaxLevel => Mathf.FloorToInt(Level + Bonus);
 
     private float refreshRate = 60f;
     private double totalEarnedExperience;
@@ -138,7 +141,7 @@ public class SkillStat
 
     public void Reset()
     {
-        CurrentValue = Level;
+        CurrentValue = Mathf.FloorToInt(Level + Bonus);
     }
 
     public void Add(int value)
@@ -152,6 +155,12 @@ public class SkillStat
     {
         var expForNextLevel = GameMath.ExperienceForLevel(Level + 1);
         var proc = Mathf.FloorToInt((float)(Experience / expForNextLevel) * 100);
+
+        if (Bonus > 0)
+        {
+            return $"{Name} {Level} [+{Bonus}] ({proc}%)";
+        }
+
         return $"{Name} {Level} ({proc}%)";
     }
 
