@@ -1,4 +1,4 @@
-﻿public class ToggleHelmetVisibility : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class ToggleHelmetVisibility : ChatBotCommandHandler
 {
     public ToggleHelmetVisibility(
         GameManager game,
@@ -7,12 +7,12 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var targetPlayer = PlayerManager.GetPlayer(data);
+        var targetPlayer = PlayerManager.GetPlayer(gm.Sender);
         if (!targetPlayer)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 

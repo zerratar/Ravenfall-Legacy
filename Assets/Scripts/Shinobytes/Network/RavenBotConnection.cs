@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using RavenNest.SDK;
 using UnityEngine;
 
 public class RavenBotConnection : IDisposable
@@ -18,7 +19,7 @@ public class RavenBotConnection : IDisposable
     private readonly RavenBot ravenbot;
     private readonly TcpListener server;
     private readonly List<GameClient> connectedClients = new List<GameClient>();
-    private readonly ConcurrentQueue<Packet> availablePackets = new ConcurrentQueue<Packet>();
+    private readonly ConcurrentQueue<BotMessage> availablePackets = new ConcurrentQueue<BotMessage>();
     private readonly ConcurrentDictionary<string, Type> packetHandlers = new ConcurrentDictionary<string, Type>();
     private GameClient remoteClient;
     private int reconnectionTimer = 1500;
@@ -33,12 +34,13 @@ public class RavenBotConnection : IDisposable
     public event EventHandler<GameClient> RemoteDisconnected;
 
     public GameManager Game => game;
-    public RavenBotConnection(GameManager game, RavenBot ravenbot, string remoteBotServer)
+    public RavenBotConnection(GameManager game, RavenBot ravenbot)
     {
         this.game = game;
         this.ravenbot = ravenbot;
         server = new TcpListener(new IPEndPoint(IPAddress.Any, ServerPort));
 
+        string remoteBotServer = RavenNestClient.Settings.RavenbotEndpoint;
         if (string.IsNullOrEmpty(remoteBotServer))
             remoteBotServer = "127.0.0.1";
 
@@ -72,7 +74,7 @@ public class RavenBotConnection : IDisposable
     public string RemoteBotHost { get; internal set; }
     public bool UseRemoteBot { get; internal set; } = true;
 
-    public Packet ReadPacket()
+    public BotMessage ReadPacket()
     {
         availablePackets.TryDequeue(out var packet);
         return packet;
@@ -81,9 +83,15 @@ public class RavenBotConnection : IDisposable
     public void HandleNextPacket(params object[] args)
     {
         var packet = ReadPacket();
-
-        if (string.IsNullOrEmpty(packet.JsonDataType))
+        if (packet == null)
         {
+            // no new packet received.
+            return;
+        }
+
+        if (packet.Message == null || string.IsNullOrEmpty(packet.Message.Identifier))
+        {
+            UnityEngine.Debug.LogError("Received message from bot that was not properly deserialized. Message is null. ");
             return;
         }
 
@@ -149,15 +157,15 @@ public class RavenBotConnection : IDisposable
             return;
         }
 
-        var index = rawCommand.IndexOf(':');
-        if (index == -1)
-        {
-            return;
-        }
+        var msg = JsonConvert.DeserializeObject<GameMessage>(rawCommand);
+        var cmd = new BotMessage(gameClient, msg);
 
-        var jsonDataType = rawCommand.Remove(index);
-        var jsonData = rawCommand.Substring(index + 1);
-        availablePackets.Enqueue(new Packet(gameClient, jsonDataType, jsonData));
+#if DEBUG
+        UnityEngine.Debug.Log(rawCommand);
+#endif
+
+
+        availablePackets.Enqueue(cmd);
     }
 
     public void Register<T>(string packetCommand)
@@ -165,46 +173,32 @@ public class RavenBotConnection : IDisposable
         packetHandlers[packetCommand.ToLower()] = typeof(T);
     }
 
-    public void SendCommand(string receiver, string identifier, string message, params string[] args)
+    public void SendReply(PlayerController receiver, string format, params object[] args)
     {
         var client = ActiveClient;
         if (client == null) return;
-        client.SendCommand(receiver, identifier, message, args);
+        client.SendReply(receiver, format, args);
     }
 
-    public void SendMessage(string receiver, string format, params string[] args)
+    public void Announce(string format, params object[] args)
     {
         var client = ActiveClient;
         if (client == null) return;
-        client.SendMessage(receiver, format, args);
-    }
-    public void Send(string receiver, string format, params object[] args)
-    {
-        var client = ActiveClient;
-        if (client == null) return;
-        var a = args == null ? new string[0] : args.Select(x => x.ToString()).ToArray();
-        client.SendMessage(receiver, format, a);
-    }
-    public void Broadcast(string format, params object[] args)
-    {
-        var client = ActiveClient;
-        if (client == null) return;
-        var a = args == null ? new string[0] : args.Select(x => x.ToString()).ToArray();
-        client.SendMessage(string.Empty, format, a);
+        client.Announce(format, args);
     }
 
-    private void HandlePacket(Packet packet, params object[] packetHandlerArgs)
+    private void HandlePacket(BotMessage msg, params object[] packetHandlerArgs)
     {
         try
         {
-            var type = packet.JsonDataType;
+            var type = msg.Message.Identifier;
             if (!packetHandlers.TryGetValue(type.ToLower(), out var handlerType))
             {
                 Shinobytes.Debug.LogError($"'{type}' is not a known command. :(");
                 return;
             }
 
-            HandlePacket(handlerType, packetHandlerArgs, packet);
+            HandlePacket(handlerType, packetHandlerArgs, msg);
         }
         catch (Exception exc)
         {
@@ -215,7 +209,7 @@ public class RavenBotConnection : IDisposable
     private void HandlePacket(
         Type packetHandlerType,
         object[] packetHandlerArgs,
-        Packet packet)
+        BotMessage packet)
     {
         var packetHandler = InstantiateHandler(packetHandlerType, packetHandlerArgs);
         if (packetHandler == null)
@@ -335,7 +329,7 @@ public class RavenBotConnection : IDisposable
         }
     }
 
-    private ChatBotCommandHandler InstantiateHandler(Type packetHandlerType, params object[] args)
+    private ChatBotCommandHandlerBase InstantiateHandler(Type packetHandlerType, params object[] args)
     {
         var ctors = packetHandlerType.GetConstructors(
             BindingFlags.CreateInstance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
@@ -354,7 +348,7 @@ public class RavenBotConnection : IDisposable
             return null;
         }
 
-        return (ChatBotCommandHandler)ctor.Invoke(args);
+        return (ChatBotCommandHandlerBase)ctor.Invoke(args);
     }
 
     private void OnAcceptTcpClient(IAsyncResult ar)
@@ -391,7 +385,7 @@ public class RavenBotConnection : IDisposable
 
         if (game.RavenNest.Authenticated && game.RavenNest.SessionStarted)
         {
-            SendSessionOwner(game.RavenNest.TwitchUserId, game.RavenNest.TwitchUserName, game.RavenNest.SessionId);
+            SendSessionOwner();
         }
     }
 
@@ -455,29 +449,14 @@ public class RavenBotConnection : IDisposable
 
     public void Log(string message) => Shinobytes.Debug.Log(message);
 
-    public void Announce(string message, params string[] args)
-    {
-        if (!IsConnected) return;
-        ActiveClient.SendMessage("", message, args);
-    }
-
-    internal void SendPubSubToken(string twitchUserId, string twitchUserName, string token)
-    {
-        if (!IsConnected)
-        {
-            return;
-        }
-
-        ActiveClient.SendPubSubToken(twitchUserId, twitchUserName, token);
-    }
-    internal bool SendSessionOwner(string twitchUserId, string twitchUserName, Guid sessionId)
+    internal bool SendSessionOwner()
     {
         if (!IsConnected)
         {
             return false;
         }
 
-        ActiveClient.SendSessionOwner(twitchUserId, twitchUserName, sessionId);
+        ActiveClient.SendSessionOwner(game.RavenNest.SessionId, game.RavenNest.UserId);
 
         return true;
     }

@@ -1,4 +1,4 @@
-﻿public class SetExpMultiplierLimit : ChatBotCommandHandler<SetExpMultiplierRequest>
+﻿public class SetExpMultiplierLimit : ChatBotCommandHandler<int>
 {
     public SetExpMultiplierLimit(
        GameManager game,
@@ -8,14 +8,14 @@
     {
     }
 
-    public override void Handle(SetExpMultiplierRequest data, GameClient client)
+    public override void Handle(int data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (player == null || !player || !player.IsGameAdmin)
         {
             return;
         }
 
-        Game.Twitch.SetExpMultiplierLimit(player.Name, data.ExpMultiplier);
+        Game.Twitch.SetExpMultiplierLimit(player.Name, data);
     }
 }

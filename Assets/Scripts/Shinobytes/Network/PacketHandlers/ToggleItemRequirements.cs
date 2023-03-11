@@ -1,4 +1,4 @@
-﻿public class ToggleItemRequirements : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class ToggleItemRequirements : ChatBotCommandHandler<User>
 {
     public ToggleItemRequirements(
       GameManager game,
@@ -8,7 +8,7 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(User data, GameMessage gm, GameClient client)
     {
         //var player = PlayerManager.GetPlayer(data);
         //if (player == null || !player || !player.IsGameAdmin)

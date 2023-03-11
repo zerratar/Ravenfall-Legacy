@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-public class Highscore : ChatBotCommandHandler<HighestSkillRequest>
+public class Highscore : ChatBotCommandHandler<string>
 {
     public Highscore(
         GameManager game,
@@ -10,15 +10,15 @@ public class Highscore : ChatBotCommandHandler<HighestSkillRequest>
     {
     }
 
-    public override async void Handle(HighestSkillRequest data, GameClient client)
+    public override async void Handle(string data, GameMessage gm, GameClient client)
     {
-        var skillName = data.Skill;
-        var player = PlayerManager.GetPlayer(data.Player);
+        var skillName = data;
+        var player = PlayerManager.GetPlayer(gm.Sender);
         int result;
 
         if (player == null)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -44,10 +44,10 @@ public class Highscore : ChatBotCommandHandler<HighestSkillRequest>
 
         if (result <= 0)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_HIGHSCORE_BAD_SKILL, skillName);
+            client.SendReply(gm, Localization.MSG_HIGHSCORE_BAD_SKILL, skillName);
             return;
         }
 
-        client.SendFormat(data.Player.Username, Localization.MSG_HIGHSCORE_RANK, result);
+        client.SendReply(gm, Localization.MSG_HIGHSCORE_RANK, result);
     }
 }

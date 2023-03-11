@@ -1,4 +1,4 @@
-﻿public class DungeonStop : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class DungeonStop : ChatBotCommandHandler
 {
     public DungeonStop(
          GameManager game,
@@ -7,15 +7,15 @@
      : base(game, server, playerManager)
     {
     }
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
         Shinobytes.Debug.Log("Dungeon Stop Received");
         try
         {
-            var plr = PlayerManager.GetPlayer(data);
+            var plr = PlayerManager.GetPlayer(gm.Sender);
             if (!plr)
             {
-                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
@@ -30,7 +30,7 @@
             }
 
             Game.Dungeons.EndDungeonFailed(false);
-            client.SendMessage(data.Username, "Dungeon has been forcibly stopped.");
+            client.SendReply(gm, "Dungeon has been forcibly stopped.");
         }
         catch { }
     }

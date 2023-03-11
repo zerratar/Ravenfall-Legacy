@@ -58,24 +58,24 @@ namespace Assets.Scripts.Game
 
                 if (!player.IsBot)
                 {
-                    if (string.IsNullOrEmpty(player.UserId))
+                    if (string.IsNullOrEmpty(player.PlatformId))
                     {
-                        sb.AppendLine(nameof(player.UserId) + " is null.");
+                        sb.AppendLine(nameof(player.PlatformId) + " is null.");
                     }
 
-                    if (player.TwitchUser == null)
+                    if (player.User == null)
                     {
-                        sb.AppendLine(nameof(player.TwitchUser) + " is null.");
+                        sb.AppendLine(nameof(player.User) + " is null.");
                     }
                     else
                     {
-                        if (string.IsNullOrEmpty(player.TwitchUser.UserId))
+                        if (string.IsNullOrEmpty(player.User.PlatformId))
                         {
-                            sb.AppendLine(nameof(player.TwitchUser.UserId) + " is null.");
+                            sb.AppendLine(nameof(player.User.PlatformId) + " is null.");
                         }
-                        if (string.IsNullOrEmpty(player.TwitchUser.Username))
+                        if (string.IsNullOrEmpty(player.User.Username))
                         {
-                            sb.AppendLine(nameof(player.TwitchUser.Username) + " is null.");
+                            sb.AppendLine(nameof(player.User.Username) + " is null.");
                         }
                     }
                 }

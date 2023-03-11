@@ -1,6 +1,6 @@
 ﻿using Shinobytes.Linq;
 using System;
-public class HighestSkill : ChatBotCommandHandler<HighestSkillRequest>
+public class HighestSkill : ChatBotCommandHandler<string>
 {
     public HighestSkill(
         GameManager game,
@@ -10,22 +10,22 @@ public class HighestSkill : ChatBotCommandHandler<HighestSkillRequest>
     {
     }
 
-    public override void Handle(HighestSkillRequest data, GameClient client)
+    public override void Handle(string data, GameMessage gm, GameClient client)
     {
         var players = PlayerManager.GetAllPlayers();
         if (players.Count == 0)
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_SKILL_NO_PLAYERS);
+            client.SendReply(gm, Localization.MSG_HIGHEST_SKILL_NO_PLAYERS);
             return;
         }
 
-        var skillName = data.Skill;
+        var skillName = data;
         if (skillName.Equals("all", StringComparison.OrdinalIgnoreCase) || skillName.Equals("overall", StringComparison.OrdinalIgnoreCase))
         {
             var highestAll = players.Highest(x => x.Stats.GetLevelList().Sum());
             if (highestAll != null)
             {
-                client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_TOTAL,
+                client.SendReply(gm, Localization.MSG_HIGHEST_TOTAL,
                     highestAll.PlayerName,
                     highestAll.Stats.GetLevelList().Sum());
                 return;
@@ -37,7 +37,7 @@ public class HighestSkill : ChatBotCommandHandler<HighestSkillRequest>
             var highestAll = players.Highest(x => x.Stats.CombatLevel);
             if (highestAll != null)
             {
-                client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_COMBAT,
+                client.SendReply(gm, Localization.MSG_HIGHEST_COMBAT,
                     highestAll.PlayerName,
                     highestAll.Stats.CombatLevel);
                 return;
@@ -65,7 +65,7 @@ public class HighestSkill : ChatBotCommandHandler<HighestSkillRequest>
             return;
         }
 
-        client.SendFormat(data.Player.Username, Localization.MSG_HIGHEST_SKILL,
+        client.SendReply(gm, Localization.MSG_HIGHEST_SKILL,
             p.PlayerName,
             skillName,
             highest.Level);

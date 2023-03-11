@@ -2,7 +2,7 @@
 using System.Linq;
 using RavenNest.Models;
 
-public class BuyItem : ChatBotCommandHandler<TradeItemRequest>
+public class BuyItem : ChatBotCommandHandler<string>
 {
     public BuyItem(
         GameManager game,
@@ -12,28 +12,28 @@ public class BuyItem : ChatBotCommandHandler<TradeItemRequest>
     {
     }
 
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var item = itemResolver.Resolve(data.ItemQuery);
+        var item = itemResolver.ResolveTradeQuery(inputQuery);
 
         if (item.SuggestedItemNames.Length > 0)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_BUY_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", item.SuggestedItemNames));
             return;
         }
 
         if (item.Item == null)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_NOT_FOUND, data.ItemQuery);
+            client.SendReply(gm, Localization.MSG_BUY_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 
@@ -47,19 +47,19 @@ public class BuyItem : ChatBotCommandHandler<TradeItemRequest>
             if (pricePerItem > long.MaxValue)
                 pricePerItem = long.MaxValue;
 
-            var result = await Game.RavenNest.Marketplace.BuyItemAsync(player.UserId, item.Id, (long)amount, (long)pricePerItem);
+            var result = await Game.RavenNest.Marketplace.BuyItemAsync(player.Id, item.Id, (long)amount, (long)pricePerItem);
 
             switch (result.State)
             {
                 case ItemTradeState.DoesNotExist:
-                    client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_NOT_IN_MARKET, item.Item.Name);
+                    client.SendReply(gm, Localization.MSG_BUY_ITEM_NOT_IN_MARKET, item.Item.Name);
                     break;
                 case ItemTradeState.InsufficientCoins:
-                    client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_INSUFFICIENT_COIN, item.Item.Name);
+                    client.SendReply(gm, Localization.MSG_BUY_ITEM_INSUFFICIENT_COIN, item.Item.Name);
                     break;
 
                 case ItemTradeState.Failed:
-                    client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_MARKETPLACE_ERROR);
+                    client.SendReply(gm, Localization.MSG_BUY_ITEM_MARKETPLACE_ERROR);
                     break;
 
                 case ItemTradeState.RequestToLow:
@@ -68,7 +68,7 @@ public class BuyItem : ChatBotCommandHandler<TradeItemRequest>
                         .OrderBy(x => x)
                         .FirstOrDefault();
 
-                    client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_TOO_LOW, item.Item.Name, Utility.FormatValue(cheapest));
+                    client.SendReply(gm, Localization.MSG_BUY_ITEM_TOO_LOW, item.Item.Name, Utility.FormatValue(cheapest));
                     break;
 
                 case ItemTradeState.Success:
@@ -102,14 +102,14 @@ public class BuyItem : ChatBotCommandHandler<TradeItemRequest>
                         msg += "for {price} coins.";
                     }
 
-                    client.SendMessage(player.PlayerName, msg, arg0, arg1, arg2);
+                    client.SendReply(gm, msg, arg0, arg1, arg2);
                     break;
             }
 
         }
         catch
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_BUY_ITEM_ERROR, item.Item.Name);
+            client.SendReply(gm, Localization.MSG_BUY_ITEM_ERROR, item.Item.Name);
         }
     }
 }

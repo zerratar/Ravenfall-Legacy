@@ -1,5 +1,5 @@
 ﻿
-public class PlayerLeave : ChatBotCommandHandler<TwitchPlayerInfo>
+public class PlayerLeave : ChatBotCommandHandler
 {
     public PlayerLeave(
     GameManager game,
@@ -9,9 +9,9 @@ public class PlayerLeave : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (player)
         {
 
@@ -24,18 +24,18 @@ public class PlayerLeave : ChatBotCommandHandler<TwitchPlayerInfo>
             {
                 Game.Arena.Leave(player);
             }
-            else if (player.Duel.InDuel||!Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
-            {                
+            else if (player.Duel.InDuel || !Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+            {
                 Game.QueueRemovePlayer(player);
                 return;
             }
 
             Game.RemovePlayer(player);
-            client.SendMessage(data.Username, "You have left the game.");
+            client.SendReply(gm, "You have left the game.");
         }
         else
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿public class RaidStop : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class RaidStop : ChatBotCommandHandler
 {
     public RaidStop(
          GameManager game,
@@ -7,15 +7,15 @@
      : base(game, server, playerManager)
     {
     }
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
         Shinobytes.Debug.Log("Raid Stop Received");
         try
         {
-            var plr = PlayerManager.GetPlayer(data);
+            var plr = PlayerManager.GetPlayer(gm.Sender);
             if (!plr)
             {
-                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
@@ -30,7 +30,7 @@
             }
 
             Game.Raid.EndRaid(false, true);
-            client.SendMessage(data.Username, "Raid has been forcibly stopped.");
+            client.SendReply(gm, "Raid has been forcibly stopped.");
         }
         catch (System.Exception exc)
         {

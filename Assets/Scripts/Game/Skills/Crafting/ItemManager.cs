@@ -108,35 +108,7 @@ public class ItemManager : MonoBehaviour
         if (redeemableItems == null)
             return items;
 
-        foreach (var redeemable in redeemableItems)
-        {
-            if (redeemable.YearStart > 0 || redeemable.YearEnd > 0)
-            {
-                if ((redeemable.YearEnd > 0 && date.Year > redeemable.YearEnd) || date.Year < redeemable.YearStart)
-                {
-                    continue;
-                }
-            }
-
-            if (redeemable.MonthStart > 0 || redeemable.MonthEnd > 0)
-            {
-                if ((redeemable.MonthEnd > 0 && date.Month > redeemable.MonthEnd) || date.Month < redeemable.MonthStart)
-                {
-                    continue;
-                }
-            }
-
-            if (redeemable.DayStart > 0 || redeemable.DayEnd > 0)
-            {
-                if ((redeemable.DayEnd > 0 && date.Day > redeemable.DayEnd) || date.Day < redeemable.DayStart)
-                {
-                    continue;
-                }
-            }
-
-            items.Add(redeemable);
-        }
-        return items;
+        return redeemableItems;
     }
 
     public Material GetMaterial(int material)
@@ -367,6 +339,12 @@ public class ItemManager : MonoBehaviour
     }
 }
 
+public struct DateRange
+{
+    public DateTime Start;
+    public DateTime End;
+}
+
 [Serializable]
 public struct RedeemableItem
 {
@@ -379,6 +357,55 @@ public struct RedeemableItem
     public int MonthEnd;
     public int DayStart;
     public int DayEnd;
+
+    public DateRange GetRedeemableDateRange()
+    {
+        var min = DateTime.MinValue;
+        var max = DateTime.MaxValue;
+
+        var yStart = YearStart > 0 ? YearStart : min.Year;
+        var yEnd = YearEnd > 0 ? YearEnd : max.Year;
+        var mStart = MonthStart > 0 ? MonthStart : min.Month;
+        var mEnd = MonthEnd > 0 ? MonthEnd : max.Month;
+        var dStart = DayStart > 0 ? DayStart : min.Day;
+        var dEnd = DayEnd > 0 ? DayEnd : max.Day;
+
+        return new DateRange
+        {
+            Start = new DateTime(yStart, mStart, dStart),
+            End = new DateTime(yEnd, mEnd, dEnd)
+        };
+    }
+
+    public bool IsRedeemable()
+    {
+        var date = DateTime.UtcNow;
+        if (YearStart > 0 || YearEnd > 0)
+        {
+            if ((YearEnd > 0 && date.Year > YearEnd) || date.Year < YearStart)
+            {
+                return false;
+            }
+        }
+
+        if (MonthStart > 0 || MonthEnd > 0)
+        {
+            if ((MonthEnd > 0 && date.Month > MonthEnd) || date.Month < MonthStart)
+            {
+                return false;
+            }
+        }
+
+        if (DayStart > 0 || DayEnd > 0)
+        {
+            if ((DayEnd > 0 && date.Day > DayEnd) || date.Day < DayStart)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 public class MaterialProvider
 {

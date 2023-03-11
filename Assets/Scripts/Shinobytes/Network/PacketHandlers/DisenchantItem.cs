@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-public class DisenchantItem : ChatBotCommandHandler<TradeItemRequest>
+public class DisenchantItem : ChatBotCommandHandler<string>
 {
     public DisenchantItem(
         GameManager game,
@@ -12,22 +12,22 @@ public class DisenchantItem : ChatBotCommandHandler<TradeItemRequest>
     {
     }
 
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
-        if (string.IsNullOrEmpty(data.ItemQuery))
+        if (string.IsNullOrEmpty(inputQuery))
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_ENCHANT_MISSING_ARGS);
+            client.SendReply(gm, Localization.MSG_ENCHANT_MISSING_ARGS);
             return;
         }
 
-        var query = data.ItemQuery;
+        var query = inputQuery;
         var isReplace = query.ToLower().IndexOf("replace") >= 0;
         if (isReplace) query = query.Replace("replace", "");
 
@@ -39,31 +39,31 @@ public class DisenchantItem : ChatBotCommandHandler<TradeItemRequest>
         {
             if (queriedItem != null && queriedItem.SuggestedItemNames != null && queriedItem.SuggestedItemNames.Length > 0)
             {
-                client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+                client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", queriedItem.SuggestedItemNames));
                 return;
             }
-            client.SendFormat(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, data.ItemQuery);
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 
         var item = queriedItem.InventoryItem;
         if (item == null)
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
             return;
         }
 
         var inventoryItem = item;
         if ((inventoryItem.Enchantments == null || inventoryItem.Enchantments.Count == 0) || string.IsNullOrEmpty(inventoryItem.InventoryItem.Enchantment))
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_DISENCHANT_NOT_ENCHANTED, inventoryItem.Name);
+            client.SendReply(gm, Localization.MSG_DISENCHANT_NOT_ENCHANTED, inventoryItem.Name);
             return;
         }
 
         var result = await Game.RavenNest.Players.DisenchantInventoryItemAsync(player.UserId, inventoryItem.InstanceId);
         if (result == null || result.Result == ItemEnchantmentResultValue.Error || !result.Success)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_DISENCHANT_UNKNOWN_ERROR);
+            client.SendReply(gm, Localization.MSG_DISENCHANT_UNKNOWN_ERROR);
             return;
         }
 
@@ -85,6 +85,6 @@ public class DisenchantItem : ChatBotCommandHandler<TradeItemRequest>
             player.Equip(addedItem, false);
         }
 
-        client.SendFormat(data.Player.Username, Localization.MSG_DISENCHANT_SUCCESS, oldItemName);
+        client.SendReply(gm, Localization.MSG_DISENCHANT_SUCCESS, oldItemName);
     }
 }

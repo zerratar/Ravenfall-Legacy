@@ -15,7 +15,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
 
     private float tokenWinChance = 0.10f;
 
-    private readonly List<string> players = new List<string>();
+    private readonly List<Guid> players = new List<Guid>();
     private TavernGameHighscore highscore;
 
     private TavernGameState state;
@@ -96,7 +96,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
             this.players.Add(player.UserId);
             state = TavernGameState.Playing;
             teamIndex = this.players.IndexOf(player.UserId) % 2;
-            gameManager.RavenBot.SendMessage(player.Name, Localization.MSG_TICTACTOE_JOINED, teamNames[teamIndex]);
+            gameManager.RavenBot.SendReply(player, Localization.MSG_TICTACTOE_JOINED, teamNames[teamIndex]);
             UpdateTeamListing();
         }
         else
@@ -287,7 +287,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
             if (result)
             {
                 player.Inventory.AddStreamerTokens(1);
-                gameManager.RavenBot.SendMessage(player.Name, Localization.MSG_TICTACTOE_WON_TOKEN, tokenName);
+                gameManager.RavenBot.SendReply(player, Localization.MSG_TICTACTOE_WON_TOKEN, tokenName);
             }
         }
     }
@@ -363,7 +363,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
         {
             var color = placement == 1 ? highscoreTopPlayerColor : "";
             var number = placement + ". ";
-            var name = (item.UserName ?? item.UserId) + " ";
+            var name = item.UserName + " ";
             var score = item.Score + " wins";
             boardText.text += color + number + name + score + "\r\n";
             ++placement;
@@ -372,19 +372,19 @@ public class TicTacToe : MonoBehaviour, ITavernGame
 
     private void RejectPlay(PlayerController player, string message)
     {
-        gameManager.RavenBot.SendMessage(player.Name, message);
+        gameManager.RavenBot.SendReply(player, message);
         Shinobytes.Debug.Log(message);
     }
 
-    private Dictionary<int, List<string>> GetTeamPlayers()
+    private Dictionary<int, List<Guid>> GetTeamPlayers()
     {
-        var teamPlayers = new Dictionary<int, List<string>>();
+        var teamPlayers = new Dictionary<int, List<Guid>>();
         for (var i = 0; i < players.Count; ++i)
         {
             var team = i % 2;
             if (!teamPlayers.TryGetValue(team, out var list))
             {
-                teamPlayers[team] = list = new List<string>();
+                teamPlayers[team] = list = new List<Guid>();
             }
 
             list.Add(players[i]);

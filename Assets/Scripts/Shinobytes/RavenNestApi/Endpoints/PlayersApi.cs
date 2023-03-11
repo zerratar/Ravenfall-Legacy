@@ -52,33 +52,11 @@ namespace RavenNest.SDK.Endpoints
                     playerData);
         }
 
-        public Task<RavenNest.Models.Player> GetPlayerAsync(string userId)
+        public Task<AddItemInstanceResult> AddItemAsync(Guid characterId, GameInventoryItem item)
         {
             return request.Create()
-                .Identifier(userId)
-                .Build()
-                .SendAsync<RavenNest.Models.Player>(
-                    ApiRequestTarget.Players,
-                    ApiRequestType.Get);
-        }
-
-        public Task<Guid> AddItemInstanceAsync(string userId, GameInventoryItem item)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("item-instance")
-                .Build()
-                .SendAsync<Guid, InventoryItem>(
-                    ApiRequestTarget.Players,
-                    ApiRequestType.Post,
-                    item.InventoryItem);
-        }
-
-        public Task<AddItemInstanceResult> AddItemInstanceDetailedAsync(string userId, GameInventoryItem item)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("item-instance-detailed")
+                .Identifier("v2/" + characterId)
+                .Method("item")
                 .Build()
                 .SendAsync<AddItemInstanceResult, InventoryItem>(
                     ApiRequestTarget.Players,
@@ -86,10 +64,10 @@ namespace RavenNest.SDK.Endpoints
                     item.InventoryItem);
         }
 
-        public Task<AddItemResult> AddItemAsync(string userId, Guid item)
+        public Task<AddItemResult> AddItemAsync(Guid characterId, Guid item)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("item")
                 .AddParameter(item.ToString())
                 .Build()
@@ -98,23 +76,11 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<AddItemResult> CraftItemAsync(string userId, Guid item)
+        public Task<CraftItemResult> CraftItemsAsync(Guid characterId, Guid item, int amount = 1)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("craft")
-                .AddParameter(item.ToString())
-                .Build()
-                .SendAsync<AddItemResult>(
-                    ApiRequestTarget.Players,
-                    ApiRequestType.Get);
-        }
-
-        public Task<CraftItemResult> CraftItemsAsync(string userId, Guid item, int amount = 1)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("craft-many")
                 .AddParameter(item.ToString())
                 .AddParameter(amount.ToString())
                 .Build()
@@ -135,23 +101,10 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<int> RedeemTokensAsync(string userId, int amount, bool exact)
+        public Task<bool> AddTokensAsync(Guid characterId, int amount)
         {
             return request.Create()
-                .Identifier(userId)
-                .Method("redeem-tokens")
-                .AddParameter(amount.ToString())
-                .AddParameter(exact.ToString())
-                .Build()
-                .SendAsync<int>(
-                    ApiRequestTarget.Players,
-                    ApiRequestType.Get);
-        }
-
-        public Task<bool> AddTokensAsync(string userId, int amount)
-        {
-            return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("add-tokens")
                 .AddParameter(amount.ToString())
                 .Build()
@@ -160,10 +113,10 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<ItemEnchantmentResult> EnchantInventoryItemAsync(string userId, Guid inventoryItem)
+        public Task<ItemEnchantmentResult> EnchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("enchant-instance")
                 .AddParameter(inventoryItem.ToString())
                 .Build()
@@ -172,10 +125,10 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<ItemEnchantmentResult> DisenchantInventoryItemAsync(string userId, Guid inventoryItem)
+        public Task<ItemEnchantmentResult> DisenchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("disenchant-instance")
                 .AddParameter(inventoryItem.ToString())
                 .Build()
@@ -184,10 +137,10 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<bool> UnequipInventoryItemAsync(string userId, Guid inventoryItem)
+        public Task<bool> UnequipInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("unequip-instance")
                 .AddParameter(inventoryItem.ToString())
                 .Build()
@@ -196,10 +149,10 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<bool> UnequipAllItemsAsync(string userId)
+        public Task<bool> UnequipAllItemsAsync(Guid characterId)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("unequipall")
                 .Build()
                 .SendAsync<bool>(
@@ -207,10 +160,10 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<bool> EquipInventoryItemAsync(string userId, Guid inventoryItem)
+        public Task<bool> EquipInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("equip-instance")
                 .AddParameter(inventoryItem.ToString())
                 .Build()
@@ -219,11 +172,11 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        [Obsolete]
-        public Task<bool> EquipItemAsync(string userId, Guid item)
+        [Obsolete("Use EquipInventoryItemAsync instead")]
+        public Task<bool> EquipItemAsync(Guid characterId, Guid item)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("equip")
                 .AddParameter(item.ToString())
                 .Build()
@@ -232,10 +185,10 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<bool> EquipBestItemsAsync(string userId)
+        public Task<bool> EquipBestItemsAsync(Guid characterId)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("equipall")
                 .Build()
                 .SendAsync<bool>(
@@ -243,76 +196,47 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<bool> ToggleHelmetAsync(string userId)
+        public Task<bool> ToggleHelmetAsync(Guid characterId)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("toggle-helmet")
                 .Build()
                 .SendAsync<bool>(ApiRequestTarget.Players,
                     ApiRequestType.Get);
         }
 
-        public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
+        public Task<bool> UpdateAppearanceAsync(Guid characterId, int[] appearance)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("appearance")
                 .AddParameter("values", appearance)
                 .Build()
                 .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
         }
 
-        public Task<bool> UpdateAppearanceAsync(string userId, int[] appearance)
+        public Task<long> GiftItemAsync(Guid characterId, Guid receiverUserId, Guid inventoryItemId, long amount)
         {
             return request.Create()
-                .Identifier(userId)
-                .Method("appearance")
-                .AddParameter("values", appearance)
-                .Build()
-                .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
-        }
-
-        public Task<bool> UpdateStatisticsAsync(string userId, decimal[] statistics)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("statistics")
-                .AddParameter("values", statistics)
-                .Build()
-                .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
-        }
-
-        public Task<long> GiftInventoryItemAsync(string userId, string receiverUserId, Guid inventoryItemId, long amount)
-        {
-            return request.Create()
-                .Identifier(userId)
-                .Method("gift-instance")
-                .AddParameter(receiverUserId)
+                .Identifier("v2/" + characterId)
+                .Method("gift")
+                .AddParameter(receiverUserId.ToString())
                 .AddParameter(inventoryItemId.ToString())
                 .AddParameter(amount.ToString())
                 .Build()
                 .SendAsync<long>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
 
-        public Task<long> VendorInventoryItemAsync(string userId, Guid inventoryItemId, long amount)
+        public Task<long> VendorInventoryItemAsync(Guid characterId, Guid inventoryItemId, long amount)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("vendor-instance")
                 .AddParameter(inventoryItemId.ToString())
                 .AddParameter(amount.ToString())
                 .Build()
                 .SendAsync<long>(ApiRequestTarget.Players, ApiRequestType.Get);
-        }
-
-        public Task<bool[]> UpdateManyAsync(PlayerState[] states)
-        {
-            return request.Create()
-                .Method("update")
-                .AddParameter("values", states)
-                .Build()
-                .SendAsync<bool[]>(ApiRequestTarget.Players, ApiRequestType.Post);
         }
 
         public Task<int> GetHighscoreAsync(Guid id, string skill)

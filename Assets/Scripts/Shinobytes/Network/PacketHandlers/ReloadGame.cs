@@ -1,5 +1,5 @@
 ﻿
-public class ReloadGame : ChatBotCommandHandler<TwitchPlayerInfo>
+public class ReloadGame : ChatBotCommandHandler
 {
     public ReloadGame(
         GameManager game,
@@ -9,12 +9,12 @@ public class ReloadGame : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -28,7 +28,7 @@ public class ReloadGame : ChatBotCommandHandler<TwitchPlayerInfo>
     }
 }
 
-public class RestartGame : ChatBotCommandHandler<TwitchPlayerInfo>
+public class RestartGame : ChatBotCommandHandler
 {
     public RestartGame(
         GameManager game,
@@ -38,12 +38,12 @@ public class RestartGame : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 

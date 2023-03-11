@@ -4,7 +4,7 @@ public class PlayerJoinDungeonEventHandler : GameEventHandler<PlayerId>
 {
     public override void Handle(GameManager gameManager, PlayerId data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.Id);
         if (!player) return;
 
         if (gameManager.StreamRaid.IsWar)

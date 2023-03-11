@@ -181,18 +181,18 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
         return bonusPlus;
     }
 
-    private void SetPlayerLogo(string userId)
+    private void SetPlayerLogo(System.Guid? ownerUserId)
     {
-        var hasOwner = !string.IsNullOrEmpty(userId);
+        var hasOwner = ownerUserId != null;
         noOwnerAssigned.SetActive(!hasOwner);
         ownerLogoLoading.SetActive(false);
         ownerLogoImage.gameObject.SetActive(false);
         if (hasOwner)
         {
             ownerLogoLoading.gameObject.SetActive(true);
-            gameManager.PlayerLogo.GetLogo(userId, logo =>
+            gameManager.PlayerLogo.GetLogo(ownerUserId.Value, logo =>
             {
-                var owner = gameManager.Players.GetPlayerByUserId(userId);
+                var owner = gameManager.Players.GetPlayerByUserId(ownerUserId.Value);
                 ownerDisconnected.SetActive(!owner);
                 ownerLogoLoading.gameObject.SetActive(false);
                 ownerLogoImage.gameObject.SetActive(true);

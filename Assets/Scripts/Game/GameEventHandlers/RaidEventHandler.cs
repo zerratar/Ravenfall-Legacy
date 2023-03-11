@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using RavenNest.Models;
 using Shinobytes.Linq;
 using UnityEngine;
 
@@ -29,15 +30,15 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
 
         if (raidWar)
         {
-            gameManager.RavenBot.Broadcast("{raiderName} is declaring war with an army of {raiderPlayerCount}!",
+            gameManager.RavenBot.Announce("{raiderName} is declaring war with an army of {raiderPlayerCount}!",
                 raidInfo.RaiderUserName,
-                raiderPlayerCount.ToString());
+                (object)raiderPlayerCount.ToString());
         }
         else
         {
-            gameManager.RavenBot.Broadcast("{raiderName} is raiding with {raiderPlayerCount} players!",
+            gameManager.RavenBot.Announce("{raiderName} is raiding with {raiderPlayerCount} players!",
                 raidInfo.RaiderUserName,
-                raiderPlayerCount.ToString());
+                (object)raiderPlayerCount.ToString());
         }
 
         var raiders = new List<PlayerController>();
@@ -87,10 +88,10 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
             }
 
             gameManager.StreamRaid.StartRaidWar();
-            gameManager.RavenBot.Broadcast("The raid war from {raiderName} is starting. {myPlayerCount} vs {raiderPlayerCount}!",
+            gameManager.RavenBot.Announce("The raid war from {raiderName} is starting. {myPlayerCount} vs {raiderPlayerCount}!",
                 raidInfo.RaiderUserName,
                 myPlayerCount.ToString(),
-                raiderPlayerCount.ToString());
+                (object)raiderPlayerCount.ToString());
         }
         else
         {

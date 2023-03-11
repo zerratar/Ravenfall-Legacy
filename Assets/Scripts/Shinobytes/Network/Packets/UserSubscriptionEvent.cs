@@ -1,6 +1,8 @@
-﻿public class TwitchSubscription
+﻿public class UserSubscriptionEvent
 {
+    public string Channel { get; }
     public string UserId { get; }
+    public string Platform { get; }
     public string ReceiverUserId { get; }
     public bool IsModerator { get; }
     public bool IsSubscriber { get; }
@@ -9,7 +11,9 @@
     public int Months { get; }
     public bool IsNew { get; }
 
-    public TwitchSubscription(
+    public UserSubscriptionEvent(
+        string platform,
+        string channel,
         string userId,
         string userName,
         string displayName,
@@ -19,6 +23,8 @@
         int months,
         bool isNew)
     {
+        Platform = platform;
+        Channel = channel;
         UserId = userId;
         ReceiverUserId = receiverUserId;
         IsModerator = isModerator;
@@ -28,9 +34,4 @@
         Months = months;
         IsNew = isNew;
     }
-}
-
-public class TwitchHypeTrain
-{
-
 }

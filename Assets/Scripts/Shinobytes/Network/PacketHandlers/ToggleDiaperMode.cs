@@ -1,4 +1,4 @@
-﻿public class ToggleDiaperMode : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class ToggleDiaperMode : ChatBotCommandHandler
 {
     public ToggleDiaperMode(
     GameManager game,
@@ -8,16 +8,16 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (player == null || !player)
         {
-            client.SendMessage(data, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         player.ToggleDiaperMode();
-        client.SendMessage(data, player.IsDiaperModeEnabled ? Localization.MSG_DIAPER_ON : Localization.MSG_DIAPER_OFF);
+        client.SendReply(gm, player.IsDiaperModeEnabled ? Localization.MSG_DIAPER_ON : Localization.MSG_DIAPER_OFF);
     }
 }

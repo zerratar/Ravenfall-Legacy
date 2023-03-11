@@ -173,12 +173,13 @@ namespace Assets.Scripts
                     //    gameManager.RavenBot.SendMessage("", failedToUpdate);
                     //    return;
                     //}
-
-                    var ownerUserId = i < assignablePlayers.Count ? assignablePlayers[i].UserId : null;
+                    var plr = i < assignablePlayers.Count ? assignablePlayers[i] : null;
+                    var ownerUserId = plr?.PlatformId;
                     houses[i] = new VillageHouseInfo()
                     {
                         Slot = i,
                         Type = (int)slotType,
+                        OwnerUserId = plr?.UserId,
                         Owner = ownerUserId
                     };
 
@@ -195,7 +196,7 @@ namespace Assets.Scripts
                 }
                 else
                 {
-                    gameManager.RavenBot.SendMessage("", failedToUpdate);
+                    gameManager.RavenBot.Announce(failedToUpdate);
                 }
             }
             finally
@@ -212,7 +213,7 @@ namespace Assets.Scripts
             {
                 if (!await gameManager.RavenNest.Village.RemoveHouseAsync(i))
                 {
-                    gameManager.RavenBot.SendMessage("", failedToUpdate);
+                    gameManager.RavenBot.Announce(failedToUpdate);
                     return;
                 }
 
@@ -282,7 +283,7 @@ namespace Assets.Scripts
             {
                 var house = newHouses[i];
                 var slot = slots[i];
-                if (slot.OwnerUserId != house.Owner || slot.SlotType != (TownHouseSlotType)house.Type)
+                if (slot.OwnerUserId != house.OwnerUserId || slot.SlotType != (TownHouseSlotType)house.Type)
                 {
                     return true;
                 }

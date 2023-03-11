@@ -1,4 +1,4 @@
-﻿public class ValueItem : ChatBotCommandHandler<TradeItemRequest>
+﻿public class ValueItem : ChatBotCommandHandler<string>
 {
     public ValueItem(
        GameManager game,
@@ -8,32 +8,32 @@
     {
     }
 
-    public override void Handle(TradeItemRequest data, GameClient client)
+    public override void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var item = itemResolver.Resolve(data.ItemQuery);
+        var item = itemResolver.Resolve(inputQuery);
 
         if (item.SuggestedItemNames.Length > 0)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", item.SuggestedItemNames));
             return;
         }
 
         if (item.Item == null)
         {
-            client.SendMessage(player, Localization.MSG_VALUE_ITEM_NOT_FOUND, data.ItemQuery);
+            client.SendReply(player, Localization.MSG_VALUE_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 
-        client.SendFormat(player.PlayerName, Localization.MSG_VALUE_ITEM,
+        client.SendReply(gm, Localization.MSG_VALUE_ITEM,
             item.Item.Name,
             item.Item.ShopSellPrice);
     }

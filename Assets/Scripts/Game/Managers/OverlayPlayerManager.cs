@@ -165,7 +165,7 @@ public class OverlayPlayerManager
         src.Statistics = newValues.Statistics;
     }
 
-    private void Update(TwitchPlayerInfo src, TwitchPlayerInfo newValues)
+    private void Update(User src, User newValues)
     {
         if (src == null)
         {

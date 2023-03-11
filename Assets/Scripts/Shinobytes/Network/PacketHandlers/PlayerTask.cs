@@ -10,19 +10,19 @@ public class PlayerTask : ChatBotCommandHandler<PlayerTaskRequest>
     {
     }
 
-    public override async void Handle(PlayerTaskRequest task, GameClient client)//(Packet packet)
+    public override async void Handle(PlayerTaskRequest task, GameMessage gm, GameClient client)
     {
         try
         {
             //var task = JsonConvert.DeserializeObject<PlayerTaskRequest>(packet.JsonData);
-            var player = PlayerManager.GetPlayer(task.Player);
+            var player = PlayerManager.GetPlayer(gm.Sender);
             if (player == null || !player)
             {
                 // player is not in game, try to add the player.
                 //player = await Game.Players.JoinAsync(task.Player, client, true);
                 //if (player == null)
                 {
-                    client.SendMessage(task.Player.Username, Localization.MSG_NOT_PLAYING);
+                    client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                     return;
                 }
             }

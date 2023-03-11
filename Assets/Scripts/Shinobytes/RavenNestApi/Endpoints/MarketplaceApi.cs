@@ -19,10 +19,10 @@ namespace RavenNest.SDK.Endpoints
             this.request = request;
         }
 
-        public Task<ItemSellResult> SellItemAsync(string userId, Guid itemId, long amount, long pricePerItem)
+        public Task<ItemSellResult> SellItemAsync(Guid characterId, Guid itemId, long amount, long pricePerItem)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("sell")
                 .AddParameter(itemId.ToString())
                 .AddParameter((amount).ToString())
@@ -33,10 +33,10 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<ItemBuyResult> BuyItemAsync(string userId, Guid itemId, long amount, long maxPricePerItem)
+        public Task<ItemBuyResult> BuyItemAsync(Guid characterId, Guid itemId, long amount, long maxPricePerItem)
         {
             return request.Create()
-                .Identifier(userId)
+                .Identifier("v2/" + characterId)
                 .Method("buy")
                 .AddParameter(itemId.ToString())
                 .AddParameter((amount).ToString())

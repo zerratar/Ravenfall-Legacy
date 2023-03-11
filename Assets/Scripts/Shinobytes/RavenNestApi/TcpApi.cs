@@ -167,7 +167,7 @@ namespace RavenNest.SDK
         private bool CanBeUpdated(PlayerController player, out Update<CharacterUpdate, Skills> lastUpdate)
         {
             lastUpdate = null;
-            var bad = player == null || !player || string.IsNullOrEmpty(player.UserId) || player.Id == Guid.Empty || player.IsBot || player.UserId.StartsWith("#");
+            var bad = player == null || !player || player.UserId == Guid.Empty || string.IsNullOrEmpty(player.PlatformId) || player.Id == Guid.Empty || player.IsBot || player.PlatformId.StartsWith("#");
             if (bad) return false;
             if (lastSaved.TryGetValue(player.Id, out lastUpdate) && DateTime.UtcNow - lastUpdate.Updated < TimeSpan.FromSeconds(MinDelayBetweenSaveSeconds))
             {
@@ -352,12 +352,12 @@ namespace RavenNest.SDK
             else if (player.Duel.InDuel)
             {
                 state = CharacterState.Duel;
-                stateData = player.Duel.Opponent?.UserId;
+                stateData = player.Duel.Opponent?.Id.ToString();
             }
             else if (player.StreamRaid.InWar)
             {
                 state = CharacterState.StreamRaidWar;
-                stateData = player.GameManager.StreamRaid.Raider?.RaiderUserId;
+                stateData = player.GameManager.StreamRaid.Raider?.RaiderUserId.ToString();
             }
             else if (player.Arena.InArena)
             {

@@ -75,8 +75,8 @@ public class DropEventManager : MonoBehaviour
             player.BeginItemDropEvent();
         }
 
-        gameManager.RavenBot.Send(
-            "", "Great news everyone! {amount}x {itemName} was dropped in the world!",
+        gameManager.RavenBot.Announce(
+            "Great news everyone! {amount}x {itemName} was dropped in the world!",
             amount.ToString(),
             item.Name);
     }

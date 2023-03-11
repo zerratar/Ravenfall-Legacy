@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class ArenaJoin : ChatBotCommandHandler<TwitchPlayerInfo>
+public class ArenaJoin : ChatBotCommandHandler<Empty>
 {
     public ArenaJoin(
         GameManager game,
@@ -10,32 +10,32 @@ public class ArenaJoin : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(Empty _, GameMessage gm, GameClient client)
     {
         try
         {
-            var player = PlayerManager.GetPlayer(data);
+            var player = PlayerManager.GetPlayer(gm.Sender);
             if (player == null)
             {
-                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             if (Game.StreamRaid.IsWar)
             {
-                client.SendMessage(data.Username, Localization.MSG_ARENA_UNAVAILABLE_WAR);
+                client.SendReply(gm, Localization.MSG_ARENA_UNAVAILABLE_WAR);
                 return;
             }
 
             if (Game.Arena.Island != player.Island)
             {
-                client.SendMessage(data.Username, Localization.MSG_ARENA_WRONG_ISLAND);
+                client.SendReply(gm, Localization.MSG_ARENA_WRONG_ISLAND);
                 return;
             }
 
             if (player.Ferry.OnFerry)
             {
-                client.SendMessage(data.Username, Localization.MSG_ARENA_FERRY);
+                client.SendReply(gm, Localization.MSG_ARENA_FERRY);
                 return;
             }
 
@@ -85,14 +85,14 @@ public class ArenaJoin : ChatBotCommandHandler<TwitchPlayerInfo>
                 {
                     errorMessage = Localization.MSG_ARENA_JOIN_ERROR;
                 }
-             
-                client.SendMessage(data.Username, errorMessage);
+
+                client.SendReply(gm, errorMessage);
                 return;
             }
 
             Game.Arena.Join(player);
 
-            client.SendMessage(player.PlayerName, Localization.MSG_ARENA_JOIN);
+            client.SendReply(gm, Localization.MSG_ARENA_JOIN);
         }
         catch (Exception exc)
         {

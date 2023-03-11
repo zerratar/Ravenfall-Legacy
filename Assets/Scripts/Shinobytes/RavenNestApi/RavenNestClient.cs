@@ -13,6 +13,14 @@ namespace RavenNest.SDK
 {
     public class RavenNestClient : IDisposable
     {
+
+        public static IAppSettings Settings =
+                //new ProductionEndpoint(),
+                //new StagingRavenNestStreamSettings(),
+                //new LocalServerRemoteBotEndpoint()
+                new LocalEndpoint()
+            ;
+
         private readonly ILogger logger;
         private readonly IAppSettings appSettings;
         private readonly ITokenProvider tokenProvider;
@@ -40,8 +48,7 @@ namespace RavenNest.SDK
 
         public RavenNestClient(
             ILogger logger,
-            GameManager gameManager,
-            IAppSettings settings)
+            GameManager gameManager)
         {
             ServicePointManager.DefaultConnectionLimit = 2000;
             ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(ValidateCertificate);
@@ -50,12 +57,12 @@ namespace RavenNest.SDK
             this.logger = logger ?? new UnityLogger();
             this.gameManager = gameManager;
             var binarySerializer = new CompressedJsonSerializer();//new BinarySerializer();
-            appSettings = settings ?? new ProductionRavenNestStreamSettings();
+            appSettings = Settings ?? new ProductionEndpoint();
 
             tokenProvider = new TokenProvider();
             var request = new WebApiRequestBuilderProvider(appSettings, tokenProvider);
 
-            WebSocket = new WebSocketApi(this, gameManager, logger, settings, tokenProvider, new GamePacketSerializer(binarySerializer));
+            WebSocket = new WebSocketApi(this, gameManager, logger, appSettings, tokenProvider, new GamePacketSerializer(binarySerializer));
             Tcp = new TcpApi(gameManager, appSettings.TcpApiEndpoint, tokenProvider);
 
             Auth = new AuthApi(this, logger, request);
@@ -95,11 +102,14 @@ namespace RavenNest.SDK
 
         public string ServerAddress => appSettings.WebApiEndpoint;
         public Guid SessionId => currentSessionToken?.SessionId ?? Guid.Empty;
-        public string TwitchUserName { get; private set; }
-        public string TwitchDisplayName { get; private set; }
-        public string TwitchUserId { get; private set; }
+        public Guid UserId => currentSessionToken?.UserId ?? Guid.Empty;
 
-        public void EnqueueLoyaltyUpdate(TwitchCheer data)
+
+        [Obsolete] public string TwitchUserName { get; private set; }
+        [Obsolete] public string TwitchDisplayName { get; private set; }
+        [Obsolete] public string TwitchUserId { get; private set; }
+
+        public void EnqueueLoyaltyUpdate(CheerBitsEvent data)
         {
             loyaltyUpdateQueue.Enqueue(new LoyaltyUpdate
             {
@@ -110,7 +120,7 @@ namespace RavenNest.SDK
             });
         }
 
-        public void EnqueueLoyaltyUpdate(TwitchSubscription data)
+        public void EnqueueLoyaltyUpdate(UserSubscriptionEvent data)
         {
             loyaltyUpdateQueue.Enqueue(new LoyaltyUpdate
             {
@@ -305,7 +315,7 @@ namespace RavenNest.SDK
         {
             try
             {
-                if (player.IsBot && player.UserId.StartsWith("#"))
+                if (player.IsBot && player.PlatformId.StartsWith("#"))
                 {
                     return;
                 }
@@ -328,7 +338,7 @@ namespace RavenNest.SDK
             try
             {
                 // way to fake a bot here.
-                if (joinData.UserId != null && joinData.UserId.StartsWith("#"))
+                if (joinData.UserId != null && joinData.PlatformId.StartsWith("#"))
                 {
                     return botPlayerGenerator.Generate(joinData);
                 }

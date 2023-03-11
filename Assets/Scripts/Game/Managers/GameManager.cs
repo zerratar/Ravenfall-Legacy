@@ -117,8 +117,6 @@ public class GameManager : MonoBehaviour, IGameManager
     public PlayerList PlayerList => playerList;
     public ServerNotificationManager ServerNotifications => serverNotificationManager;
 
-    private EventTriggerSystem eventTriggerSystem;
-    public EventTriggerSystem EventTriggerSystem => eventTriggerSystem ?? (eventTriggerSystem = ioc.Resolve<EventTriggerSystem>());
     public OnsenManager Onsen => onsen;
     public TavernHandler Tavern => tavern;
     public Overlay Overlay => overlay;
@@ -290,8 +288,6 @@ public class GameManager : MonoBehaviour, IGameManager
 
         RegisterGameEventHandler<PlayerRestedUpdateEventHandler>(GameEventType.PlayerRestedUpdate);
 
-        RegisterGameEventHandler<PubSubTokenReceivedEventHandler>(GameEventType.PubSubToken);
-
         RegisterGameEventHandler<ExpMultiplierEventHandler>(GameEventType.ExpMultiplier);
 
         RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
@@ -321,21 +317,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
         musicManager.PlayBackgroundMusic();
 
-        this.EventTriggerSystem.SourceTripped += OnSourceTripped;
-
         gameCacheStateFileLoadResult = GameCache.LoadState();
 
         GameSystems.Start();
-    }
-
-    private void OnSourceTripped(object sender, EventTriggerSystem.SysEventStats e)
-    {
-        if (!RavenNest.Authenticated || !RavenNest.WebSocket.IsReady)
-        {
-            return;
-        }
-
-        RavenNest.WebSocket.UpdatePlayerEventStatsAsync(e);
     }
 
     private void SetupStreamLabels()
@@ -384,7 +368,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (RavenBot.UseRemoteBot && RavenBot.IsConnectedToRemote)
         {
-            RavenBot.SendSessionOwner(this.RavenNest.TwitchUserId, this.RavenNest.TwitchUserName, this.RavenNest.SessionId);
+            RavenBot.SendSessionOwner();
         }
     }
 
@@ -855,7 +839,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         BotPlayerGenerator.Instance.NextOnFerry = true;
         var playerInfo = await GenerateBotInfoAsync();
-        var player = await Players.JoinAsync(playerInfo, RavenBot.ActiveClient, false, true);
+        var player = await Players.JoinAsync(null, playerInfo, RavenBot.ActiveClient, false, true, null);
         if (player)
             player.EquipBestItems();
         ++spawnedBots;
@@ -864,18 +848,18 @@ public class GameManager : MonoBehaviour, IGameManager
     public async Task SpawnBotPlayer()
     {
         var playerInfo = await GenerateBotInfoAsync();
-        var player = await Players.JoinAsync(playerInfo, RavenBot.ActiveClient, false, true);
+        var player = await Players.JoinAsync(null, playerInfo, RavenBot.ActiveClient, false, true, null);
         if (player)
             player.EquipBestItems();
         ++spawnedBots;
     }
 
-    private async Task<TwitchPlayerInfo> GenerateBotInfoAsync()
+    private async Task<User> GenerateBotInfoAsync()
     {
         var id = Random.Range(10000, 99999);
         var userId = "#" + id;
 
-        while (playerManager.GetPlayerByUserId(userId))
+        while (playerManager.GetPlayerByPlatformId(userId, "system"))
         {
             id = Random.Range(10000, 99999);
             userId = "#" + id;
@@ -883,12 +867,12 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         var userName = "Bot" + id;
-        return new TwitchPlayerInfo(userId, userName, userName, "#ffffff", false, false, false, false, "1");
+        return new User(Guid.NewGuid(), userName, userName, "#ffffff", "system", userId, false, false, false, false, "1");
     }
 
     public PlayerController SpawnPlayer(
         RavenNest.Models.Player playerDefinition,
-        TwitchPlayerInfo streamUser = null,
+        User streamUser = null,
         StreamRaidInfo raidInfo = null,
         bool isGameRestore = false)
     {
@@ -914,7 +898,9 @@ public class GameManager : MonoBehaviour, IGameManager
         //}
 
         var vector3 = Random.insideUnitSphere + (Vector3.up * 2f);
-        var player = playerManager.Spawn(spawnPoint + vector3, playerDefinition, streamUser, raidInfo, !isGameRestore && !streamUser.UserId.StartsWith("#"));
+        var player = playerManager.Spawn(spawnPoint + vector3,
+            playerDefinition, streamUser, raidInfo,
+            !isGameRestore && !streamUser.PlatformId.StartsWith("#"));
 
         if (!player)
         {
@@ -1031,13 +1017,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (client == null)
         {
-            client = new RavenNestClient(logger, this,
-            //new ProductionRavenNestStreamSettings()
-            //new StagingRavenNestStreamSettings()
-            new LocalRavenNestStreamSettings()
-            //new UnsecureLocalRavenNestStreamSettings()
-            );
-
+            client = new RavenNestClient(logger, this);
             RavenNest = client;
         }
 
@@ -1181,8 +1161,6 @@ public class GameManager : MonoBehaviour, IGameManager
             {
                 Debug.LogError("Failed to send player requests for " + failCount + " out of " + players.Count + " players.");
             }
-            var elapsed = Time.realtimeSinceStartup - now;
-            //Shinobytes.Debug.Log("SendPlayerRequests: " + players.Count + " players, took " + (elapsed * 1000) + "ms");
         }
         catch (Exception exc)
         {
@@ -1198,7 +1176,6 @@ public class GameManager : MonoBehaviour, IGameManager
             var players = playerManager.GetAllPlayers();
             var failedToSave = new List<PlayerController>();
             if (players.Count == 0) return;
-            //Debug.Log($"Saving {players.Count} players...");
             try
             {
                 savingPlayersTime = savingPlayersTimeDuration;
@@ -1206,16 +1183,6 @@ public class GameManager : MonoBehaviour, IGameManager
                 foreach (var player in players)
                 {
                     RavenNest.SavePlayer(player);
-                    //if (await ravenNest.SavePlayerAsync(player))
-                    //{
-                    //    player.SavedSucceseful();
-                    //}
-                    //else
-                    //{
-                    //    player.FailedToSave();
-                    //    failedToSave.Add(player);
-                    //}
-                    //await Task.Delay(5);
                 }
             }
             catch (Exception exc)
@@ -1223,10 +1190,6 @@ public class GameManager : MonoBehaviour, IGameManager
                 Debug.LogError(exc);
             }
 
-            //if (failedToSave.Count > 0)
-            //{
-            //    await SavePlayersUsingHTTP(failedToSave);
-            //}
         }
         catch (Exception exc)
         {
@@ -1235,52 +1198,6 @@ public class GameManager : MonoBehaviour, IGameManager
 
         savingPlayersTime = 0;
     }
-
-    //private async Task SavePlayersUsingHTTP(IReadOnlyList<PlayerController> players)
-    //{
-    //    Debug.LogWarning($"Fallbacking to HTTP Endpoint Saving {players.Count} players...");
-    //    var states = players
-    //        .Select(x => x.BuildPlayerState())
-    //        .ToArray();
-
-    //    // fall back to HTTPS Post Save
-    //    var batchSize = 20;
-    //    for (var i = 0; i < states.Length;)
-    //    {
-    //        var toUpdate = states.Skip(i * batchSize).Take(batchSize).ToArray();
-    //        var remaining = states.Length - i;
-    //        i += remaining < batchSize ? remaining : batchSize;
-
-    //        var result = await ravenNest.Players.UpdateManyAsync(toUpdate);
-    //        if (result == null)
-    //        {
-    //            Debug.LogWarning($"Saving gave null result. Data may not have been saved.");
-    //            continue;
-    //        }
-
-    //        for (var playerIndex = 0; playerIndex < result.Length; ++playerIndex)
-    //        {
-    //            if (players.Count <= playerIndex)
-    //            {
-    //                Debug.LogWarning($"Player at index {playerIndex} did not exist ingame. Skipping");
-    //                continue;
-    //            }
-
-    //            var playerResult = new { Player = players[playerIndex], Successeful = result[playerIndex] };
-    //            if (playerResult.Successeful)
-    //            {
-    //                playerResult.Player.SavedSucceseful();
-    //            }
-    //            else
-    //            {
-    //                playerResult.Player.FailedToSave();
-    //                Debug.LogWarning($"{playerResult.Player.Name} was not saved. In another session?");
-    //            }
-    //        }
-
-    //        await Task.Delay(1000);
-    //    }
-    //}
 
     private void UpdateChatBotCommunication()
     {
@@ -1292,125 +1209,125 @@ public class GameManager : MonoBehaviour, IGameManager
         RavenBot.HandleNextPacket(this, RavenBot, playerManager);
     }
 
-    private IEnumerator TestSubsAndCheers()
-    {
-        const string userIdZerratar = "72424639";
-        const string userIdAbby = "39575045";
+    //private IEnumerator TestSubsAndCheers()
+    //{
+    //    const string userIdZerratar = "72424639";
+    //    const string userIdAbby = "39575045";
 
-        string[] randomUserIds = new string[] {
-            "559852513",
-            "244495308",
-            "269415137",
-            "51961033",
-            "21747441",
-            "38809039",
-            "119132738",
-            "97907194",
-            "120241807",
-            "244444961"
-        };
-
-
-        // Test cheer bits, not in game
-        {
-            Shinobytes.Debug.Log("Test 1: Cheering bits without being in game");
-            var cheer = new TwitchCheer(userIdZerratar, "zerratar", "Zerratar", true, true, true, 10);
-            RavenNest.EnqueueLoyaltyUpdate(cheer);
-            Twitch.OnCheer(cheer);
-        }
-
-        // Subscriber, no Receiver, not ingame
-        yield return new WaitForSecondsRealtime(1.0f);
-        {
-            Shinobytes.Debug.Log("Test 2: Subscribe, no receiver, not in game");
-            var sub_noReceiver = new TwitchSubscription(userIdZerratar, "zerratar", "Zerratar", null, true, true, 1, true);
-            RavenNest.EnqueueLoyaltyUpdate(sub_noReceiver);
-            Twitch.OnSubscribe(sub_noReceiver);
-        }
+    //    string[] randomUserIds = new string[] {
+    //        "559852513",
+    //        "244495308",
+    //        "269415137",
+    //        "51961033",
+    //        "21747441",
+    //        "38809039",
+    //        "119132738",
+    //        "97907194",
+    //        "120241807",
+    //        "244444961"
+    //    };
 
 
-        // Gift sub to player not in game (neither players in game)
-        yield return new WaitForSecondsRealtime(1.0f);
-        {
-            Shinobytes.Debug.Log("Test 3: Gift sub, neither in game");
-            var sub_notInGame = new TwitchSubscription(userIdZerratar, "zerratar", "Zerratar", userIdAbby, true, true, 1, true);
-            RavenNest.EnqueueLoyaltyUpdate(sub_notInGame);
-            Twitch.OnSubscribe(sub_notInGame);
-        }
+    //    // Test cheer bits, not in game
+    //    {
+    //        Shinobytes.Debug.Log("Test 1: Cheering bits without being in game");
+    //        var cheer = new TwitchCheer(userIdZerratar, "zerratar", "Zerratar", true, true, true, 10);
+    //        RavenNest.EnqueueLoyaltyUpdate(cheer);
+    //        Twitch.OnCheer(cheer);
+    //    }
 
-        // Subscriber, no Receiver, in game
-        yield return new WaitForSecondsRealtime(1.0f);
-        {
-            Shinobytes.Debug.Log("Test 4: Subscribe, no receiver, in game");
-            Shinobytes.Debug.Log(" -1/2-: Adding player....");
+    //    // Subscriber, no Receiver, not ingame
+    //    yield return new WaitForSecondsRealtime(1.0f);
+    //    {
+    //        Shinobytes.Debug.Log("Test 2: Subscribe, no receiver, not in game");
+    //        var sub_noReceiver = new TwitchSubscription(userIdZerratar, "zerratar", "Zerratar", null, true, true, 1, true);
+    //        RavenNest.EnqueueLoyaltyUpdate(sub_noReceiver);
+    //        Twitch.OnSubscribe(sub_noReceiver);
+    //    }
 
-            Players.JoinAsync(
-                new TwitchPlayerInfo(userIdZerratar, "zerratar", "Zerratar", "", true, true, false, true, "1")
-                , null, false);
 
-            while (!Players.Contains(userIdZerratar))
-            {
-                yield return new WaitForSecondsRealtime(0.5f);
-            }
+    //    // Gift sub to player not in game (neither players in game)
+    //    yield return new WaitForSecondsRealtime(1.0f);
+    //    {
+    //        Shinobytes.Debug.Log("Test 3: Gift sub, neither in game");
+    //        var sub_notInGame = new TwitchSubscription(userIdZerratar, "zerratar", "Zerratar", userIdAbby, true, true, 1, true);
+    //        RavenNest.EnqueueLoyaltyUpdate(sub_notInGame);
+    //        Twitch.OnSubscribe(sub_notInGame);
+    //    }
 
-            Shinobytes.Debug.Log(" -2/2-: Subscribe....");
-            var sub_noReceiver = new TwitchSubscription(userIdZerratar, "zerratar", "Zerratar", null, true, true, 1, true);
-            RavenNest.EnqueueLoyaltyUpdate(sub_noReceiver);
-            Twitch.OnSubscribe(sub_noReceiver);
-        }
+    //    // Subscriber, no Receiver, in game
+    //    yield return new WaitForSecondsRealtime(1.0f);
+    //    {
+    //        Shinobytes.Debug.Log("Test 4: Subscribe, no receiver, in game");
+    //        Shinobytes.Debug.Log(" -1/2-: Adding player....");
 
-        // Test cheer bits, in game
-        yield return new WaitForSecondsRealtime(1.0f);
-        {
-            Shinobytes.Debug.Log("Test 5: Cheering bits when in game");
-            var cheer = new TwitchCheer(userIdZerratar, "zerratar", "Zerratar", true, true, true, 10);
-            RavenNest.EnqueueLoyaltyUpdate(cheer);
-            Twitch.OnCheer(cheer);
-        }
+    //        Players.JoinAsync(
+    //            new ViewerIdentity(userIdZerratar, "zerratar", "Zerratar", "", true, true, false, true, "1")
+    //            , null, false);
 
-        // Gift sub to a player in game (gifter not in game)
-        yield return new WaitForSecondsRealtime(1.0f);
-        {
-            Shinobytes.Debug.Log("Test 6: Gift sub when not in game to a player");
-            var sub_notInGame = new TwitchSubscription(userIdAbby, "abbycottontail", "AbbyCottontail", userIdZerratar, true, true, 1, true);
-            RavenNest.EnqueueLoyaltyUpdate(sub_notInGame);
-            Twitch.OnSubscribe(sub_notInGame);
-        }
+    //        while (!Players.Contains(userIdZerratar))
+    //        {
+    //            yield return new WaitForSecondsRealtime(0.5f);
+    //        }
 
-        // Gift 10 sub to random players
-        yield return new WaitForSecondsRealtime(1.0f);
-        {
-            Shinobytes.Debug.Log("Test 7: Gift " + randomUserIds.Length + " subs");
-            for (var i = 0; i < randomUserIds.Length; ++i)
-            {
-                Shinobytes.Debug.Log(" Gift " + (i + 1) + "/" + randomUserIds.Length);
-                var sub_notInGame = new TwitchSubscription(userIdAbby, "abbycottontail", "AbbyCottontail", randomUserIds[i], true, true, 1, true);
-                RavenNest.EnqueueLoyaltyUpdate(sub_notInGame);
-                Twitch.OnSubscribe(sub_notInGame);
-                yield return new WaitForSecondsRealtime(0.2f);
-            }
-        }
+    //        Shinobytes.Debug.Log(" -2/2-: Subscribe....");
+    //        var sub_noReceiver = new TwitchSubscription(userIdZerratar, "zerratar", "Zerratar", null, true, true, 1, true);
+    //        RavenNest.EnqueueLoyaltyUpdate(sub_noReceiver);
+    //        Twitch.OnSubscribe(sub_noReceiver);
+    //    }
 
-        // Gift sub to a player in game (both in game)
-        yield return new WaitForSecondsRealtime(1.0f);
-        {
-            Shinobytes.Debug.Log("Test 8: Gift sub when both in game");
-            Shinobytes.Debug.Log(" -1/2-: Adding player....");
-            Players.JoinAsync(
-                new TwitchPlayerInfo(userIdAbby, "abbycottontail", "AbbyCottontail", "", true, true, false, true, "1")
-                , null, false);
+    //    // Test cheer bits, in game
+    //    yield return new WaitForSecondsRealtime(1.0f);
+    //    {
+    //        Shinobytes.Debug.Log("Test 5: Cheering bits when in game");
+    //        var cheer = new TwitchCheer(userIdZerratar, "zerratar", "Zerratar", true, true, true, 10);
+    //        RavenNest.EnqueueLoyaltyUpdate(cheer);
+    //        Twitch.OnCheer(cheer);
+    //    }
 
-            while (!Players.Contains(userIdAbby))
-            {
-                yield return new WaitForSecondsRealtime(0.5f);
-            }
+    //    // Gift sub to a player in game (gifter not in game)
+    //    yield return new WaitForSecondsRealtime(1.0f);
+    //    {
+    //        Shinobytes.Debug.Log("Test 6: Gift sub when not in game to a player");
+    //        var sub_notInGame = new TwitchSubscription(userIdAbby, "abbycottontail", "AbbyCottontail", userIdZerratar, true, true, 1, true);
+    //        RavenNest.EnqueueLoyaltyUpdate(sub_notInGame);
+    //        Twitch.OnSubscribe(sub_notInGame);
+    //    }
 
-            Shinobytes.Debug.Log(" -2/2-: Gift sub....");
-            var sub_notInGame = new TwitchSubscription(userIdAbby, "abbycottontail", "AbbyCottontail", userIdZerratar, true, true, 1, true);
-            RavenNest.EnqueueLoyaltyUpdate(sub_notInGame);
-            Twitch.OnSubscribe(sub_notInGame);
-        }
-    }
+    //    // Gift 10 sub to random players
+    //    yield return new WaitForSecondsRealtime(1.0f);
+    //    {
+    //        Shinobytes.Debug.Log("Test 7: Gift " + randomUserIds.Length + " subs");
+    //        for (var i = 0; i < randomUserIds.Length; ++i)
+    //        {
+    //            Shinobytes.Debug.Log(" Gift " + (i + 1) + "/" + randomUserIds.Length);
+    //            var sub_notInGame = new TwitchSubscription(userIdAbby, "abbycottontail", "AbbyCottontail", randomUserIds[i], true, true, 1, true);
+    //            RavenNest.EnqueueLoyaltyUpdate(sub_notInGame);
+    //            Twitch.OnSubscribe(sub_notInGame);
+    //            yield return new WaitForSecondsRealtime(0.2f);
+    //        }
+    //    }
+
+    //    // Gift sub to a player in game (both in game)
+    //    yield return new WaitForSecondsRealtime(1.0f);
+    //    {
+    //        Shinobytes.Debug.Log("Test 8: Gift sub when both in game");
+    //        Shinobytes.Debug.Log(" -1/2-: Adding player....");
+    //        Players.JoinAsync(
+    //            new TwitchPlayerInfo(userIdAbby, "abbycottontail", "AbbyCottontail", "", true, true, false, true, "1")
+    //            , null, false);
+
+    //        while (!Players.Contains(userIdAbby))
+    //        {
+    //            yield return new WaitForSecondsRealtime(0.5f);
+    //        }
+
+    //        Shinobytes.Debug.Log(" -2/2-: Gift sub....");
+    //        var sub_notInGame = new TwitchSubscription(userIdAbby, "abbycottontail", "AbbyCottontail", userIdZerratar, true, true, 1, true);
+    //        RavenNest.EnqueueLoyaltyUpdate(sub_notInGame);
+    //        Twitch.OnSubscribe(sub_notInGame);
+    //    }
+    //}
 
     //private IslandController lastIslandToggle = null;
     private void HandleKeyDown()
@@ -1456,13 +1373,13 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (isControlDown && Input.GetKeyUp(KeyCode.C))
             {
-                Twitch.OnCheer(new TwitchCheer("72424639", "zerratar", "Zerratar", true, true, true, 10));
+                Twitch.OnCheer(new CheerBitsEvent("twitch", "zerratar", "72424639", "zerratar", "Zerratar", true, true, true, 10));
                 return;
             }
 
             if (isControlDown && Input.GetKeyUp(KeyCode.X))
             {
-                Twitch.OnSubscribe(new TwitchSubscription("72424639", "zerratar", "Zerratar", null, true, true, 1, true));
+                Twitch.OnSubscribe(new UserSubscriptionEvent("twitch", "zerratar", "72424639", "zerratar", "Zerratar", null, true, true, 1, true));
                 return;
             }
 

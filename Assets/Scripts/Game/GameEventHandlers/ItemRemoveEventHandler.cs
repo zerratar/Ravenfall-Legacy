@@ -4,10 +4,9 @@ public class ItemRemoveEventHandler : GameEventHandler<ItemRemove>
 {
     public override void Handle(GameManager gameManager, ItemRemove data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.PlayerId);
         if (!player)
         {
-            Shinobytes.Debug.Log("No player with userid " + data.UserId + " when removing item. (" + data.ItemId + ", " + data.Amount + ")");
             return;
         }
 
@@ -26,11 +25,9 @@ public class ItemEquipEventHandler : GameEventHandler<ItemEquip>
 {
     public override void Handle(GameManager gameManager, ItemEquip data)
     {
-
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.PlayerId);
         if (!player)
         {
-            Shinobytes.Debug.Log("No player with userid " + data.UserId + " when trying to equip item. (" + data.InventoryItemId + ")");
             return;
         }
 
@@ -42,10 +39,9 @@ public class ItemUnequipEventHandler : GameEventHandler<ItemEquip>
 {
     public override void Handle(GameManager gameManager, ItemEquip data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.PlayerId);
         if (!player)
         {
-            Shinobytes.Debug.Log("No player with userid " + data.UserId + " when trying to unequip item. (" + data.InventoryItemId + ")");
             return;
         }
 

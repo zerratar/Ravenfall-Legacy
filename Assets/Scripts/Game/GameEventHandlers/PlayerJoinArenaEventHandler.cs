@@ -5,7 +5,7 @@ public class PlayerJoinArenaEventHandler : GameEventHandler<PlayerId>
 {
     public override void Handle(GameManager gameManager, PlayerId data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.Id);
         if (player == null)
             return;
 
@@ -28,7 +28,7 @@ public class PlayerJoinArenaEventHandler : GameEventHandler<PlayerId>
 
         gameManager.Arena.Join(player);
 
-        Shinobytes.Debug.Log($"PlayerJoinArenaEventHandler " + data.UserId);
+        Shinobytes.Debug.Log($"PlayerJoinArenaEventHandler " + data.Id);
     }
 }
 

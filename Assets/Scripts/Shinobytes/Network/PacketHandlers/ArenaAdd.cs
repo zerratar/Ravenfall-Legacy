@@ -1,4 +1,4 @@
-﻿public class ArenaAdd : ChatBotCommandHandler<ArenaAddRequest>
+﻿public class ArenaAdd : ChatBotCommandHandler<User>
 {
     public ArenaAdd(
         GameManager game,
@@ -8,8 +8,7 @@
     {
     }
 
-    public override void Handle(ArenaAddRequest data, GameClient client)
+    public override void Handle(User data, GameMessage gm, GameClient client)
     {
-        
     }
 }

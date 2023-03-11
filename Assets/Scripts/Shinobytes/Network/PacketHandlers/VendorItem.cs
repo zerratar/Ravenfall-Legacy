@@ -1,4 +1,4 @@
-﻿public class VendorItem : ChatBotCommandHandler<TradeItemRequest>
+﻿public class VendorItem : ChatBotCommandHandler<string>
 {
     public VendorItem(
        GameManager game,
@@ -7,34 +7,34 @@
        : base(game, server, playerManager)
     {
     }
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var item = itemResolver.ResolveTradeQuery(data.ItemQuery, parsePrice: false, playerToSearch: player);
+        var item = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, playerToSearch: player);
 
         if (item.SuggestedItemNames.Length > 0)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", item.SuggestedItemNames));
             return;
         }
 
         if (item.Item == null)
         {
-            client.SendMessage(player, Localization.MSG_VENDOR_ITEM_NOT_FOUND, data.ItemQuery);
+            client.SendReply(player, Localization.MSG_VENDOR_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 
         if (item.InventoryItem == null)
         {
-            client.SendMessage(player, Localization.MSG_VENDOR_ITEM_NOT_OWNED, item.Item.Name);
+            client.SendReply(player, Localization.MSG_VENDOR_ITEM_NOT_OWNED, item.Item.Name);
             return;
         }
 
@@ -49,14 +49,14 @@
 
              player.Inventory.Remove(item.InventoryItem, vendorCount); 
             
-            client.SendFormat(player.PlayerName, Localization.MSG_VENDOR_ITEM,
+            client.SendReply(gm, Localization.MSG_VENDOR_ITEM,
                 vendorCount,
                 item.Item.Name,
                 Utility.FormatValue(item.Item.ShopSellPrice * vendorCount));
         }
         else
         {
-            client.SendFormat(player.PlayerName, Localization.MSG_VENDOR_ITEM_FAILED,
+            client.SendReply(gm, Localization.MSG_VENDOR_ITEM_FAILED,
                 item.Count,
                 item.Item.Name);
         }

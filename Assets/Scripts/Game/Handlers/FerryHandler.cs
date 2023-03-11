@@ -239,12 +239,12 @@ public class FerryHandler : MonoBehaviour
 #if DEBUG
             if (notifyPlayerOfDisembark && !AdminControlData.ControlPlayers)
             {
-                gameManager.RavenBot?.SendMessage(player.PlayerName, Localization.MSG_FERRY_ARRIVED, player.Island.Identifier);
+                gameManager.RavenBot?.SendReply(player, Localization.MSG_FERRY_ARRIVED, player.Island.Identifier);
             }
 #else
             if (notifyPlayerOfDisembark)
             {
-                gameManager.RavenBot?.SendMessage(player.PlayerName, "You have arrived at your destination, {islandName}!", player.Island.Identifier);
+                gameManager.RavenBot?.SendReply(player, "You have arrived at your destination, {islandName}!", player.Island.Identifier);
             }
 #endif
 

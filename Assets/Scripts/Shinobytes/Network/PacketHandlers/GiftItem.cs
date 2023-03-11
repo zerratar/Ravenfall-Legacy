@@ -1,4 +1,4 @@
-﻿public class GiftItem : ChatBotCommandHandler<TradeItemRequest>
+﻿public class GiftItem : ChatBotCommandHandler<string>
 {
     public GiftItem(
        GameManager game,
@@ -8,40 +8,40 @@
     {
     }
 
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var item = itemResolver.ResolveTradeQuery(data.ItemQuery, parsePrice: false, parseUsername: true, parseAmount: true, playerToSearch: player);
+        var item = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, parseUsername: true, parseAmount: true, playerToSearch: player);
 
         if (item.SuggestedItemNames.Length > 0)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", item.SuggestedItemNames));
             return;
         }
 
         if (item.Item == null)
         {
-            client.SendMessage(player, Localization.MSG_GIFT_PLAYER_NOT_FOUND, data.ItemQuery);
+            client.SendReply(player, Localization.MSG_GIFT_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 
         if (item.Player == null)
         {
-            client.SendMessage(player, Localization.MSG_GIFT_ITEM_NOT_FOUND, data.ItemQuery);
+            client.SendReply(player, Localization.MSG_GIFT_PLAYER_NOT_FOUND, inputQuery);
             return;
         }
 
         if (item.Item?.Soulbound ?? false)
         {
-            client.SendMessage(player, Localization.MSG_ITEM_SOULBOUND, item.Item.Name);
+            client.SendReply(player, Localization.MSG_ITEM_SOULBOUND, item.Item.Name);
             return;
         }
 
@@ -49,18 +49,18 @@
         if (amount > long.MaxValue)
             amount = long.MaxValue;
 
-        var giftCount = await Game.RavenNest.Players.GiftInventoryItemAsync(player.UserId, item.Player.UserId, item.InventoryItem.InstanceId, (long)amount);
+        var giftCount = await Game.RavenNest.Players.GiftItemAsync(player.UserId, item.Player.UserId, item.InventoryItem.InstanceId, (long)amount);
         if (giftCount > 0)
         {
             // Update game client with the changes
             // this is done locally to avoid sending additional data from server to client and visa versa.
             item.Player.Inventory.AddToBackpack(item.Item, item.Count);
             player.Inventory.Remove(item.InventoryItem, item.Count, true);
-            client.SendFormat(player.PlayerName, Localization.MSG_GIFT, giftCount, item.Item.Name, item.Player.PlayerName);
+            client.SendReply(gm, Localization.MSG_GIFT, giftCount, item.Item.Name, item.Player.PlayerName);
         }
         else
         {
-            client.SendFormat(player.PlayerName, Localization.MSG_GIFT_ERROR, item.Count, item.Item.Name, item.Player.PlayerName);
+            client.SendReply(gm, Localization.MSG_GIFT_ERROR, item.Count, item.Item.Name, item.Player.PlayerName);
         }
     }
 }

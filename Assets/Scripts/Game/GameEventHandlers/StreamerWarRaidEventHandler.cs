@@ -1,4 +1,6 @@
-﻿public class StreamerWarRaidEventHandler : RaidEventHandler
+﻿using RavenNest.Models;
+
+public class StreamerWarRaidEventHandler : RaidEventHandler
 {
     public override void Handle(GameManager gameManager, StreamRaidInfo data)
     {

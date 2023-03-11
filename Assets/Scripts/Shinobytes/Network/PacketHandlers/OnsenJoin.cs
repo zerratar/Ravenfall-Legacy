@@ -1,17 +1,17 @@
-﻿public class OnsenJoin : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class OnsenJoin : ChatBotCommandHandler
 {
     public OnsenJoin(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)
     {
     }
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
         try
         {
-            var player = PlayerManager.GetPlayer(data);
+            var player = PlayerManager.GetPlayer(gm.Sender);
             if (player == null)
             {
-                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
@@ -54,7 +54,7 @@
 
             if (Game.Onsen.Join(player))
             {
-                //Game.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_ENTRY);
+                //Game.RavenBot.SendReply(player, Localization.MSG_ONSEN_ENTRY);
             }
         }
         catch { }

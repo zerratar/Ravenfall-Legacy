@@ -11,20 +11,20 @@ public class AppearanceChange : ChatBotCommandHandler<PlayerAppearanceRequest>
     {
     }
 
-    public override async void Handle(PlayerAppearanceRequest data, GameClient client)
+    public override async void Handle(PlayerAppearanceRequest data, GameMessage gm, GameClient client)
     {
         if (Game.RavenNest.SessionStarted)
         {
-            var player = PlayerManager.GetPlayer(data.Player);
+            var player = PlayerManager.GetPlayer(gm.Sender);
             if (!player)
             {
-                client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             if (string.IsNullOrEmpty(data.Appearance))
             {
-                client.SendMessage(data.Player.Username, Localization.MSG_APPEARANCE_INVALID);
+                client.SendReply(gm, Localization.MSG_APPEARANCE_INVALID);
                 return;
             }
 
@@ -38,7 +38,7 @@ public class AppearanceChange : ChatBotCommandHandler<PlayerAppearanceRequest>
         }
         else
         {
-            client.SendMessage(data.Player.Username, Localization.GAME_NOT_READY);
+            client.SendReply(gm, Localization.GAME_NOT_READY);
         }
     }
 }

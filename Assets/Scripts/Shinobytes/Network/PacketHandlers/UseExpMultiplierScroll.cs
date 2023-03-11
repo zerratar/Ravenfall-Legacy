@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 
-public class UseExpMultiplierScroll : ChatBotCommandHandler<SetExpMultiplierRequest>
+public class UseExpMultiplierScroll : ChatBotCommandHandler<int>
 {
     public UseExpMultiplierScroll(
          GameManager game,
@@ -10,16 +10,16 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<SetExpMultiplierRequ
     {
     }
 
-    public override async void Handle(SetExpMultiplierRequest data, GameClient client)
+    public override async void Handle(int data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (player == null || !player)
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
-        var scrollCount = data.ExpMultiplier;
+        var scrollCount = data;
         if (scrollCount < 0) scrollCount = 1;
         if (scrollCount > 100) scrollCount = 100;
 
@@ -30,7 +30,7 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<SetExpMultiplierRequ
             {
                 if (result.Used == 0 || Game.Boost.Multiplier >= 100 || Game.Boost.Active && Game.Boost.Multiplier >= Game.Twitch.ExpMultiplierLimit)
                 {
-                    client.SendFormat(data.Player.Username, "The maximum multiplier has already been reached. Please try again later.");
+                    client.SendReply(gm, "The maximum multiplier has already been reached. Please try again later.");
                     return;
                 }
 
@@ -39,11 +39,11 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<SetExpMultiplierRequ
 
                 if (used > 1)
                 {
-                    client.SendFormat(data.Player.Username, "You have used {scrollCount} Exp Multiplier Scrolls. The multiplier is now at {multiplier}.", result.Used, result.Multiplier.Multiplier);
+                    client.SendReply(gm, "You have used {scrollCount} Exp Multiplier Scrolls. The multiplier is now at {multiplier}.", result.Used, result.Multiplier.Multiplier);
                 }
                 else
                 {
-                    client.SendFormat(data.Player.Username, "You have used an Exp Multiplier Scroll. The multiplier is now at {multiplier}.", result.Multiplier.Multiplier);
+                    client.SendReply(gm, "You have used an Exp Multiplier Scroll. The multiplier is now at {multiplier}.", result.Multiplier.Multiplier);
                 }
 
                 return;
@@ -51,11 +51,11 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<SetExpMultiplierRequ
 
             if (result.Result == ScrollUseResult.InsufficientScrolls)
             {
-                client.SendFormat(data.Player.Username, "You do not have any Exp Multiplier Scrolls! Redeem them under streamer loyalty on the website.");
+                client.SendReply(gm, "You do not have any Exp Multiplier Scrolls! Redeem them under streamer loyalty on the website.");
                 return;
             }
 
-            client.SendFormat(data.Player.Username, "Unable to use any scrolls at this time, game may be out of sync. Try again later.");
+            client.SendReply(gm, "Unable to use any scrolls at this time, game may be out of sync. Try again later.");
         }
         finally
         {

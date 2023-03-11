@@ -1,4 +1,4 @@
-﻿public class DuelDecline : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class DuelDecline : ChatBotCommandHandler
 {
     public DuelDecline(
         GameManager game,
@@ -8,9 +8,9 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
 
         if (!player.Duel.HasActiveRequest)
         {

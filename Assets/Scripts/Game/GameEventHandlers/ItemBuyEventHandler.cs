@@ -5,7 +5,7 @@ public class ItemBuyEventHandler : GameEventHandler<ItemTradeUpdate>
 {
     public override void Handle(GameManager gameManager, ItemTradeUpdate data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.BuyerId);
+        var player = gameManager.Players.GetPlayerById(data.BuyerPlayerId);
         if (player)
         {
             var coinsBefore = player.Resources.Coins;

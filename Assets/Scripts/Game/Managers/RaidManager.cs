@@ -106,11 +106,6 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         player.Raid.OnEnter();
-
-        if (this.gameManager.EventTriggerSystem != null)
-        {
-            gameManager.EventTriggerSystem.SendInput(player.UserId, "raid");
-        }
     }
 
     public void Leave(PlayerController player, bool reward = false, bool timeout = false)
@@ -152,10 +147,6 @@ public class RaidManager : MonoBehaviour, IEvent
             else
             {
                 gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
-            }
-            if (this.gameManager.EventTriggerSystem != null)
-            {
-                this.gameManager.EventTriggerSystem.TriggerEvent("raid", TimeSpan.FromSeconds(10));
             }
 
             return;

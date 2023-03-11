@@ -12,6 +12,15 @@ public class ItemResolver : IItemResolver
     private ItemManager itemManager;
     private PlayerManager playerManager;
 
+    private void EnsureManagers()
+    {
+        if (!itemManager)
+            itemManager = GameObject.FindObjectOfType<ItemManager>();
+
+        if (!playerManager)
+            playerManager = GameObject.FindObjectOfType<PlayerManager>();
+    }
+
     public ItemResolveResult ResolveTradeQuery(
         string query,
         bool parsePrice = true,
@@ -25,13 +34,7 @@ public class ItemResolver : IItemResolver
                 return ItemResolveResult.Empty;
 
             query = query.Trim();
-
-            if (!itemManager)
-                itemManager = GameObject.FindObjectOfType<ItemManager>();
-
-            if (!playerManager)
-                playerManager = GameObject.FindObjectOfType<PlayerManager>();
-
+            EnsureManagers();
             if (!itemManager || !itemManager.Loaded)
                 return ItemResolveResult.Empty;
 
@@ -108,6 +111,8 @@ public class ItemResolver : IItemResolver
 
     public ItemResolveResult ResolveInventoryItem(PlayerController player, string query, int maxSuggestions = 5)
     {
+        EnsureManagers();
+
         var itemQuery = query.Trim();
 
         var items = player.Inventory.GetAllItems();
@@ -119,7 +124,7 @@ public class ItemResolver : IItemResolver
             .ToArray();
 
         var exactMatches = matches.Where(x => x.Match.IsExactMatch).ToArray();
-        var invItem = exactMatches.Length == 1 ? exactMatches[0].Item : null;
+        var invItem = exactMatches.FirstOrDefault()?.Item;
         var suggestedItemNames = new string[0];
 
         if (invItem == null && matches.Length > 0)
@@ -163,6 +168,13 @@ public class ItemResolver : IItemResolver
             targetItem = invItem.Item;
         }
 
+        if (suggestedItemNames.Length == 1 && invItem != null && invItem.Name.Equals(suggestedItemNames[0], StringComparison.OrdinalIgnoreCase))
+        {
+            // if there is only one item and the suggested item was found.
+            // then its an exact match? So why wasnt it chosen?
+            suggestedItemNames = new string[0];
+        }
+
         return new ItemResolveResult
         {
             Item = targetItem,
@@ -174,8 +186,42 @@ public class ItemResolver : IItemResolver
         };
     }
 
+    public ItemResolveResult ResolveAny(params string[] query)
+    {
+        if (query == null || query.Length == 0)
+        {
+            return new();
+        }
+
+        EnsureManagers();
+        HashSet<string> suggestions = new HashSet<string>();
+        foreach (var q in query)
+        {
+            var result = Resolve(q);
+            if (result != null)
+            {
+                // return exact match directly.
+                if (result.Item != null)
+                    return result;
+
+                // keep suggestions in mind
+                if (result.SuggestedItemNames != null && result.SuggestedItemNames.Length > 0)
+                {
+                    foreach (var s in result.SuggestedItemNames)
+                        suggestions.Add(s);
+                }
+            }
+        }
+
+        return new ItemResolveResult
+        {
+            SuggestedItemNames = suggestions.ToArray()
+        };
+    }
     public ItemResolveResult Resolve(string query, int maxSuggestions = 5)
     {
+        EnsureManagers();
+
         var itemQuery = query.Trim();
         var items = itemManager.GetItems();
         var matches = items

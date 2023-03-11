@@ -1,4 +1,4 @@
-﻿public class FerryEnter : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class FerryEnter : ChatBotCommandHandler
 {
     public FerryEnter(
        GameManager game,
@@ -8,12 +8,12 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -24,16 +24,16 @@
 
         if (player.Ferry.Embarking)
         {
-            client.SendMessage(data.Username, Localization.MSG_FERRY_ALREADY_WAITING);
+            client.SendReply(gm, Localization.MSG_FERRY_ALREADY_WAITING);
             return;
         }
         if (player.Ferry.OnFerry)
         {
-            client.SendMessage(data.Username, Localization.MSG_FERRY_ALREADY_ON);
+            client.SendReply(gm, Localization.MSG_FERRY_ALREADY_ON);
             return;
         }
 
         player.Ferry.Embark();
-        client.SendMessage(data.Username, Localization.MSG_FERRY_TRAIN_SAIL);
+        client.SendReply(gm, Localization.MSG_FERRY_TRAIN_SAIL);
     }
 }

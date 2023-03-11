@@ -1,4 +1,4 @@
-﻿public class ArenaBegin : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class ArenaBegin : ChatBotCommandHandler<User>
 {
     public ArenaBegin(
         GameManager game,
@@ -8,7 +8,7 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(User data, GameMessage gm, GameClient client)
     {
     }
 }

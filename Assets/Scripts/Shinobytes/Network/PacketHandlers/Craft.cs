@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text;
 using RavenNest.Models;
 
-public class Craft : ChatBotCommandHandler<TradeItemRequest>
+public class Craft : ChatBotCommandHandler<string>
 {
     public const int MaxCraftingCount = 50_000_000;
 
@@ -11,22 +11,22 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
         : base(game, server, playerManager)
     {
     }
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         if (player.Ferry && player.Ferry.Active)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_FAILED_FERRY);
+            client.SendReply(gm, Localization.MSG_CRAFT_FAILED_FERRY);
             return;
         }
 
-        if (string.IsNullOrEmpty(data.ItemQuery))
+        if (string.IsNullOrEmpty(inputQuery))
         {
             // Player perhaps intended to train crafting.
             player.SetTask("crafting", new string[0]);
@@ -38,11 +38,11 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
 
         Item item = null;
         var amountToCraft = 1d;
-        var queriedItem = itemResolver.ResolveTradeQuery(data.ItemQuery, parsePrice: false, parseUsername: false);
+        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, parseUsername: false);
 
         if (queriedItem.SuggestedItemNames.Length > 0)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", queriedItem.SuggestedItemNames));
             return;
         }
 
@@ -53,7 +53,7 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
         }
         else
         {
-            var (category, typeStr) = GetCraftingTarget(data.ItemQuery);
+            var (category, typeStr) = GetCraftingTarget(inputQuery);
 
             var type = ItemType.None;
 
@@ -68,23 +68,23 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
             {
                 if (item != null)
                 {
-                    client.SendFormat(data.Player.Username, Localization.MSG_CRAFT_ITEM_NOT_FOUND_MEAN, data.ItemQuery, item.Name);
+                    client.SendReply(gm, Localization.MSG_CRAFT_ITEM_NOT_FOUND_MEAN, inputQuery, item.Name);
                     return;
                 }
 
-                client.SendFormat(data.Player.Username, Localization.MSG_CRAFT_ITEM_NOT_FOUND, data.ItemQuery);
+                client.SendReply(gm, Localization.MSG_CRAFT_ITEM_NOT_FOUND, inputQuery);
                 return;
             }
 
             if (item == null)
             {
-                client.SendFormat(data.Player.Username, Localization.MSG_CRAFT_FAILED, category, type);
+                client.SendReply(gm, Localization.MSG_CRAFT_FAILED, category, type);
                 return;
             }
 
             if (category != ItemCategory.Armor && category != ItemCategory.Weapon)
             {
-                client.SendFormat(data.Player.Username, Localization.MSG_CRAFT_ITEM_NOT_FOUND_MEAN, data.ItemQuery, item.Name);
+                client.SendReply(gm, Localization.MSG_CRAFT_ITEM_NOT_FOUND_MEAN, inputQuery, item.Name);
                 return; // don't actually craft atm
             }
         }
@@ -94,16 +94,16 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
         switch (status)
         {
             case CraftValidationStatus.OK:
-                await CraftItemAsync(data, client, player, item, toCraft);
+                await CraftItemAsync(inputQuery, gm, client, player, item, toCraft);
                 return;
             case CraftValidationStatus.NeedCraftingStation:
-                client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_FAILED_STATION);
+                client.SendReply(gm, Localization.MSG_CRAFT_FAILED_STATION);
                 return;
             case CraftValidationStatus.NotEnoughSkill:
-                client.SendFormat(data.Player.Username, Localization.MSG_CRAFT_FAILED_LEVEL, item.RequiredCraftingLevel);
+                client.SendReply(gm, Localization.MSG_CRAFT_FAILED_LEVEL, item.RequiredCraftingLevel);
                 return;
             case CraftValidationStatus.NotEnoughResources:
-                InsufficientResources(player, data, client, item, toCraft);
+                InsufficientResources(player, gm, inputQuery, client, item, toCraft);
                 return;
         }
     }
@@ -158,7 +158,11 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
         return (ItemCategory.Potion, null);
     }
 
-    private void InsufficientResources(PlayerController player, TradeItemRequest data, GameClient client, Item item, double amount = 1)
+    private void InsufficientResources(
+        PlayerController player,
+        GameMessage gm,
+        string inputQuery,
+        GameClient client, Item item, double amount = 1)
     {
         if (item != null)
         {
@@ -193,16 +197,17 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
             {
                 requiredItemsStr.Append("to craft " + item.Name);
             }
-            client.SendMessage(data.Player.Username, requiredItemsStr.ToString());
+            client.SendReply(gm, requiredItemsStr.ToString());
         }
         else
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_FAILED_RES, item.Name);
+            client.SendReply(gm, Localization.MSG_CRAFT_FAILED_RES, item.Name);
         }
     }
 
     private async System.Threading.Tasks.Task<bool> CraftItemAsync(
-        TradeItemRequest data,
+        string inputQuery,
+        GameMessage gm,
         GameClient client,
         PlayerController player,
         Item item,
@@ -215,13 +220,13 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
             {
                 if (craftResult.Status == CraftItemResultStatus.InsufficientResources)
                 {
-                    InsufficientResources(player, data, client, item, amountToCraft);
+                    InsufficientResources(player, gm, inputQuery, client, item, amountToCraft);
                     return false;
                 }
 
                 if (craftResult.Status == CraftItemResultStatus.LevelTooLow)
                 {
-                    client.SendMessage(data.Player.Username, "Your crafting level is too low. You need to be level {reqCraftingLevel}. You are currently level {craftingLevel}.",
+                    client.SendReply(gm, "Your crafting level is too low. You need to be level {reqCraftingLevel}. You are currently level {craftingLevel}.",
                         item.RequiredCraftingLevel.ToString(), player.Stats.Crafting.Level.ToString());
                     return false;
                 }
@@ -241,7 +246,7 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
                         var added = player.Inventory.AddToBackpack(craftResult);
                         if (added == null)
                         {
-                            client.SendMessage(data.Player.Username, "Problem when trying to add the item after crafting. You can try and !leave !join and see if the crafted item was added properly.", item.Name);
+                            client.SendReply(gm, "Problem when trying to add the item after crafting. You can try and !leave !join and see if the crafted item was added properly.", item.Name);
                             return false;
                         }
                     }
@@ -272,22 +277,22 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
                     if (amountToCraft > 1)
                     {
                         var msgAddS = item.Name.EndsWith("s") ? "" : "s";
-                        client.SendMessage(data.Player.Username, Localization.MSG_CRAFT_MANY, amountToCraft.ToString(), item.Name + msgAddS);
+                        client.SendReply(gm, Localization.MSG_CRAFT_MANY, amountToCraft.ToString(), item.Name + msgAddS);
                     }
-                    else client.SendMessage(data.Player.Username, Localization.MSG_CRAFT, item.Name);
+                    else client.SendReply(gm, Localization.MSG_CRAFT, item.Name);
                     return true;
                 }
             }
 
             if (craftResult == null)
             {
-                client.SendMessage(data.Player.Username, "Crafting failed. Server did not respond. Try again later");
+                client.SendReply(gm, "Crafting failed. Server did not respond. Try again later");
                 return false;
             }
 
             if (craftResult.Status == CraftItemResultStatus.Error || craftResult.Status == CraftItemResultStatus.UncraftableItem || craftResult.Status == CraftItemResultStatus.UnknownItem)
             {
-                client.SendMessage(data.Player.Username, "Server returned an error when trying to craft the item: {serverResponseResult}", craftResult.Status.ToString());
+                client.SendReply(gm, "Server returned an error when trying to craft the item: {serverResponseResult}", craftResult.Status.ToString());
                 return false;
             }
 
@@ -295,7 +300,7 @@ public class Craft : ChatBotCommandHandler<TradeItemRequest>
         }
         catch (System.Exception exc)
         {
-            client.SendMessage(data.Player.Username, "Error occurred when handling the response from the server.");
+            client.SendReply(gm, "Error occurred when handling the response from the server.");
 
             Game.RavenNest.Game.ReportExceptionAsync($"{player.UserId}, {item.Name} ({item.Id}), {amountToCraft}", exc);
 

@@ -48,13 +48,13 @@ public class StreamerFlag : MonoBehaviour
         flagUpdateTimer -= Time.deltaTime;
         if (flagUpdateTimer <= 0)
         {
-            if (string.IsNullOrEmpty(gameManager.RavenNest.TwitchUserId))
+            if (gameManager.RavenNest.UserId == System.Guid.Empty || string.IsNullOrEmpty(gameManager.RavenNest.TwitchUserId))
             {
                 return;
             }
 
             flagUpdateTimer = flagUpdateInterval;
-            logoManager.GetLogo(gameManager.RavenNest.TwitchUserId, logo =>
+            logoManager.GetLogo(gameManager.RavenNest.UserId, logo =>
             {
                 if (logo != null)
                 {

@@ -14,7 +14,8 @@ public class TownHouseSlot : MonoBehaviour
     public TownHouseController House;
     public Skills PlayerSkills { get; private set; }
     public string PlayerName { get; private set; }
-    public string OwnerUserId { get; private set; }
+    public string OwnerPlatformId { get; private set; }
+    public Guid? OwnerUserId { get; private set; }
     public PlayerController Player { get; private set; }
     public TownHouseSlotType SlotType { get; set; }
     public int Slot { get; set; }
@@ -39,14 +40,14 @@ public class TownHouseSlot : MonoBehaviour
 
     public void SetHouse(VillageHouseInfo houseInfo, TownHouse townHouse, bool updateExpBonus = true)
     {
-        if (SlotType == (TownHouseSlotType)houseInfo.Type && OwnerUserId == houseInfo.Owner && updateExpBonus)
+        if (SlotType == (TownHouseSlotType)houseInfo.Type && OwnerUserId == houseInfo.OwnerUserId && updateExpBonus)
         {
             UpdateExpBonus();
             return;
         }
 
-        OwnerUserId = houseInfo.Owner;
-        Player = playerManager.GetPlayerByUserId(houseInfo.Owner);
+        OwnerUserId = houseInfo.OwnerUserId;
+        Player = houseInfo.OwnerUserId != null ? playerManager.GetPlayerByUserId(houseInfo.OwnerUserId.Value) : null;
 
         if (Player)
         {
@@ -141,7 +142,7 @@ public class TownHouseSlot : MonoBehaviour
 
     public void InvalidateOwner()
     {
-        Player = playerManager.GetPlayerByUserId(OwnerUserId);
+        Player = OwnerUserId != null ? playerManager.GetPlayerByUserId(OwnerUserId.Value) : null;
         if (Player)
         {
             PlayerSkills = Player.Stats;
@@ -152,7 +153,7 @@ public class TownHouseSlot : MonoBehaviour
             PlayerSkills = null;
         }
 
-        if (string.IsNullOrEmpty(OwnerUserId))
+        if (OwnerUserId == null)
         {
             PlayerSkills = null;
             PlayerName = null;
@@ -161,7 +162,7 @@ public class TownHouseSlot : MonoBehaviour
         UpdateExpBonus();
     }
 
-    internal void SetOwner(string userId)
+    internal void SetOwner(Guid? userId)
     {
         this.OwnerUserId = userId;
         InvalidateOwner();

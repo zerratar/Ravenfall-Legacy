@@ -41,7 +41,7 @@ public class TwitchEventManager : MonoBehaviour
     internal void SetExpMultiplierLimit(string name, int expMultiplier)
     {
         limitOverride = expMultiplier;
-        gameManager.RavenBot?.SendMessage(name, Localization.MSG_MULTIPLIER_LIMIT, expMultiplier.ToString());
+        //gameManager.RavenBot?.SendMessage(name, Localization.MSG_MULTIPLIER_LIMIT, expMultiplier.ToString());
     }
 
     private void Update()
@@ -94,11 +94,11 @@ public class TwitchEventManager : MonoBehaviour
 
         if (timeLeft.Seconds >= 1)
         {
-            gameManager.RavenBot.SendMessage("", Localization.MSG_MULTIPLIER_ENDS, CurrentBoost.Multiplier.ToString(), minutesStr, secondsStr);
+            gameManager.RavenBot.Announce(Localization.MSG_MULTIPLIER_ENDS, CurrentBoost.Multiplier.ToString(), minutesStr, secondsStr);
         }
         else
         {
-            gameManager.RavenBot.SendMessage("", Localization.MSG_MULTIPLIER_ENDED);
+            gameManager.RavenBot.Announce(Localization.MSG_MULTIPLIER_ENDED);
         }
     }
 
@@ -124,11 +124,11 @@ public class TwitchEventManager : MonoBehaviour
         //}
     }
 
-    public void OnCheer(TwitchCheer cheer)
+    public void OnCheer(CheerBitsEvent cheer)
     {
         try
         {
-            var player = gameManager.Players.GetPlayerByUserId(cheer.UserId);
+            var player = gameManager.Players.GetPlayerByPlatformId(cheer.UserId, cheer.Platform);
             if (!player) player = gameManager.Players.GetPlayerByName(cheer.UserName);
             if (player)
             {
@@ -154,22 +154,27 @@ public class TwitchEventManager : MonoBehaviour
         //AddCheer(cheer, CurrentBoost.Active);
     }
 
-    public void OnSubscribe(TwitchSubscription subscribe)
+    public void OnSubscribe(UserSubscriptionEvent subscribe)
     {
         try
         {
-            var player = gameManager.Players.GetPlayerByUserId(subscribe.UserId);
+            var player = gameManager.Players.GetPlayerByPlatformId(subscribe.UserId, subscribe.Platform);
             if (!player) player = gameManager.Players.GetPlayerByName(subscribe.UserName);
 
             var receiverName = player?.Name;
 
             if (subscribe.ReceiverUserId != null)
             {
-                var receiver = gameManager.Players.GetPlayerByUserId(subscribe.ReceiverUserId);
+                var receiver = gameManager.Players.GetPlayerByPlatformId(subscribe.ReceiverUserId, subscribe.Platform);
                 if (receiver)
                 {
                     receiver.IsSubscriber = true;
                     receiverName = receiver.Name;
+
+                    gameManager.RavenBot?.SendReply(receiver, 
+                        Localization.MSG_SUB_CREW,
+                        gameManager.RavenNest.TwitchDisplayName,
+                        TierExpMultis[gameManager.Permissions.SubscriberTier]);
                 }
             }
 
@@ -183,12 +188,6 @@ public class TwitchEventManager : MonoBehaviour
                 gameManager.Camera.ObservePlayer(player, ObserveEvent.Subscription);
             }
 
-            if (!string.IsNullOrEmpty(receiverName))
-            {
-                gameManager.RavenBot?.Send(receiverName, Localization.MSG_SUB_CREW,
-                        gameManager.RavenNest.TwitchDisplayName,
-                        TierExpMultis[gameManager.Permissions.SubscriberTier]);
-            }
 
             var activePlayers = gameManager.Players.GetAllPlayers();
             foreach (var plr in activePlayers)

@@ -1,7 +1,7 @@
 ﻿using RavenNest.Models;
 using System.Collections.Generic;
 
-public class GetScrollsCount : ChatBotCommandHandler<TwitchPlayerInfo>
+public class GetScrollsCount : ChatBotCommandHandler
 {
     public GetScrollsCount(
           GameManager game,
@@ -11,12 +11,12 @@ public class GetScrollsCount : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override async void Handle(TwitchPlayerInfo data, GameClient client)
+    public override async void Handle(GameMessage gm, GameClient client)
     {        //token_count
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -34,11 +34,11 @@ public class GetScrollsCount : ChatBotCommandHandler<TwitchPlayerInfo>
 
         if (scrolls.Count == 0)
         {
-            client.SendFormat(data.Username, "You do not have any scrolls. You can redeem them under streamer loyalty on the website");
+            client.SendReply(gm, "You do not have any scrolls. You can redeem them under streamer loyalty on the website");
             return;
         }
 
-        SendScrollCount(data, client, scrolls);
+        SendScrollCount(gm, client, scrolls);
     }
     private static ScrollInfoCollection GetScrollInfoCollection(PlayerController player)
     {
@@ -50,7 +50,10 @@ public class GetScrollsCount : ChatBotCommandHandler<TwitchPlayerInfo>
         }
         return new ScrollInfoCollection(res);
     }
-    private static void SendScrollCount(TwitchPlayerInfo data, GameClient client, ScrollInfoCollection scrolls)
+    private static void SendScrollCount(
+        GameMessage gm, 
+        GameClient client, 
+        ScrollInfoCollection scrolls)
     {
         var parameters = new List<object>();
         var messages = new List<string>();
@@ -64,6 +67,6 @@ public class GetScrollsCount : ChatBotCommandHandler<TwitchPlayerInfo>
             ++i;
         }
         message += string.Join(", ", messages);
-        client.SendFormat(data.Username, message, parameters.ToArray());
+        client.SendReply(gm, message, parameters.ToArray());
     }
 }

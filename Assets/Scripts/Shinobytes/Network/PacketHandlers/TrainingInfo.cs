@@ -1,4 +1,4 @@
-﻿public class TrainingInfo : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class TrainingInfo : ChatBotCommandHandler
 {
     public TrainingInfo(
        GameManager game,
@@ -8,12 +8,12 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -29,11 +29,11 @@
 
             if (!string.IsNullOrEmpty(skillName))
             {
-                client.SendMessage(data.Username, Localization.MSG_TRAINING, skillName);
+                client.SendReply(gm, Localization.MSG_TRAINING, skillName);
                 return;
             }
         }
 
-        client.SendMessage(data.Username, Localization.MSG_TRAINING_NOTHING);
+        client.SendReply(gm, Localization.MSG_TRAINING_NOTHING);
     }
 }

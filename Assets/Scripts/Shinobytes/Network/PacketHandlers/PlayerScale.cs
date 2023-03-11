@@ -1,4 +1,4 @@
-﻿public class PlayerScale : ChatBotCommandHandler<SetScaleRequest>
+﻿public class PlayerScale : ChatBotCommandHandler<float>
 {
     public PlayerScale(
          GameManager game,
@@ -8,15 +8,15 @@
     {
     }
 
-    public override void Handle(SetScaleRequest data, GameClient client)
+    public override void Handle(float scale, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.DisplayName, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
-        player.SetScale(data.Scale);
+        player.SetScale(scale);
     }
 }

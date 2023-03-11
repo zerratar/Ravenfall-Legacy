@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-public class FerryTravel : ChatBotCommandHandler<FerryTravelRequest>
+public class FerryTravel : ChatBotCommandHandler<string>
 {
     public FerryTravel(
          GameManager game,
@@ -10,32 +10,32 @@ public class FerryTravel : ChatBotCommandHandler<FerryTravelRequest>
     {
     }
 
-    public override void Handle(FerryTravelRequest data, GameClient client)
+    public override void Handle(string data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
-        var islandName = data.Destination;
+        var islandName = data;
         var island = Game.Islands.Find(islandName);
         if (!island || !island.Sailable)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_NO_SUCH_ISLAND, islandName, string.Join(", ", Game.Islands.All.Where(x => x.Sailable).Select(x => x.Identifier)));
+            client.SendReply(gm, Localization.MSG_TRAVEL_NO_SUCH_ISLAND, islandName, string.Join(", ", Game.Islands.All.Where(x => x.Sailable).Select(x => x.Identifier)));
             return;
         }
 
         if (island == player.Island)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_ALREADY_ON_ISLAND);
+            client.SendReply(gm, Localization.MSG_TRAVEL_ALREADY_ON_ISLAND);
             return;
         }
 
         if (player.StreamRaid.InWar)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_WAR);
+            client.SendReply(gm, Localization.MSG_TRAVEL_WAR);
             return;
         }
 
@@ -43,20 +43,20 @@ public class FerryTravel : ChatBotCommandHandler<FerryTravelRequest>
         {
             if (!Game.Arena.Leave(player))
             {
-                client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_ARENA);
+                client.SendReply(gm, Localization.MSG_TRAVEL_ARENA);
                 return;
             }
         }
 
         if (player.Duel.InDuel)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_DUEL);
+            client.SendReply(gm, Localization.MSG_TRAVEL_DUEL);
             return;
         }
 
         if (player.Dungeon.InDungeon)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_TRAVEL_DUNGEON);
+            client.SendReply(gm, Localization.MSG_TRAVEL_DUNGEON);
             return;
         }
 

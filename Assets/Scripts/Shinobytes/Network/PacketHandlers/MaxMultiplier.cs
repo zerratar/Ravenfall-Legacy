@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class MaxMultiplier : ChatBotCommandHandler<TwitchPlayerInfo>
+public class MaxMultiplier : ChatBotCommandHandler
 {
     public MaxMultiplier(
       GameManager game,
@@ -10,12 +10,12 @@ public class MaxMultiplier : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override async void Handle(TwitchPlayerInfo data, GameClient client)
+    public override async void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -81,11 +81,11 @@ public class MaxMultiplier : ChatBotCommandHandler<TwitchPlayerInfo>
             {
                 if (tierSub > 0)
                 {
-                    client.SendFormat(data.Username, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon, {hutMulti}x from huts and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, hutMulti, (float)player.Rested.ExpBoost);
+                    client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon, {hutMulti}x from huts and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, hutMulti, (float)player.Rested.ExpBoost);
                 }
                 else
                 {
-                    client.SendFormat(data.Username, "Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts and the total is multiplied by {restedMulti}x from being rested.", multi, hutMulti, (float)player.Rested.ExpBoost);
+                    client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts and the total is multiplied by {restedMulti}x from being rested.", multi, hutMulti, (float)player.Rested.ExpBoost);
                 }
 
                 return;
@@ -93,11 +93,11 @@ public class MaxMultiplier : ChatBotCommandHandler<TwitchPlayerInfo>
 
             if (tierSub > 0)
             {
-                client.SendFormat(data.Username, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, (float)player.Rested.ExpBoost);
+                client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, (float)player.Rested.ExpBoost);
             }
             else
             {
-                client.SendFormat(data.Username, "You're gaining {expMulti}x more exp for being rested.", multi);
+                client.SendReply(gm, "You're gaining {expMulti}x more exp for being rested.", multi);
             }
             return;
         }
@@ -106,22 +106,22 @@ public class MaxMultiplier : ChatBotCommandHandler<TwitchPlayerInfo>
         {
             if (tierSub > 0)
             {
-                client.SendFormat(data.Username, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and {hutMulti}x from huts.", multi, tierSub, hutMulti);
+                client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and {hutMulti}x from huts.", multi, tierSub, hutMulti);
             }
             else
             {
-                client.SendFormat(data.Username, "Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts.", multi, hutMulti);
+                client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts.", multi, hutMulti);
             }
             return;
         }
 
         if (tierSub > 0)
         {
-            client.SendFormat(data.Username, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon.", multi, tierSub);
+            client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon.", multi, tierSub);
         }
         else
         {
-            client.SendFormat(data.Username, "Your current exp boost: {expMulti}x.", multi);
+            client.SendReply(gm, "Your current exp boost: {expMulti}x.", multi);
         }
     }
 }

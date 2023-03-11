@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-public class PlayerStats : ChatBotCommandHandler<PlayerStatsRequest>
+public class PlayerStats : ChatBotCommandHandler<string>
 {
     public PlayerStats(
         GameManager game,
@@ -10,28 +10,28 @@ public class PlayerStats : ChatBotCommandHandler<PlayerStatsRequest>
     {
     }
 
-    public override void Handle(PlayerStatsRequest data, GameClient client)
+    public override void Handle(string skillName, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
-        if (!string.IsNullOrEmpty(data.Skill))
+        if (!string.IsNullOrEmpty(skillName))
         {
-            var targetPlayer = PlayerManager.GetPlayerByName(data.Skill);
+            var targetPlayer = PlayerManager.GetPlayerByName(skillName);
             if (targetPlayer != null)
             {
-                SendPlayerStats(targetPlayer, client);
+                SendPlayerStats(gm, targetPlayer, client);
                 return;
             }
 
-            var s = SkillUtilities.ParseSkill(data.Skill.ToLower());
+            var s = SkillUtilities.ParseSkill(skillName.ToLower());
             if (s == Skill.None)
             {
-                client.SendMessage(player.PlayerName, "No skill found matching: {skillName}", data.Skill);
+                client.SendReply(gm, "No skill found matching: {skillName}", skillName);
                 return;
             }
 
@@ -41,7 +41,7 @@ public class PlayerStats : ChatBotCommandHandler<PlayerStatsRequest>
                 var expRequired = GameMath.ExperienceForLevel(skill.Level + 1);
                 var expReq = (long)expRequired;
                 var curExp = (long)skill.Experience;
-                client.SendMessage(data.Player.Username, Localization.MSG_SKILL,
+                client.SendReply(gm, Localization.MSG_SKILL,
                     skill.ToString(),
                     FormatValue(curExp),
                     FormatValue(expReq));
@@ -49,7 +49,7 @@ public class PlayerStats : ChatBotCommandHandler<PlayerStatsRequest>
             return;
         }
 
-        SendPlayerStats(player, client);
+        SendPlayerStats(gm, player, client);
     }
     private static string FormatValue(long num)
     {
@@ -59,7 +59,7 @@ public class PlayerStats : ChatBotCommandHandler<PlayerStatsRequest>
             str = str.Insert(i, " ");
         return str;
     }
-    private void SendPlayerStats(PlayerController player, GameClient client)
+    private void SendPlayerStats(GameMessage gm, PlayerController player, GameClient client)
     {
         var ps = player.Stats;
         var eq = player.EquipmentStats;
@@ -68,13 +68,13 @@ public class PlayerStats : ChatBotCommandHandler<PlayerStatsRequest>
 
 
         var total = 0;
-        foreach(var s in ps.SkillList)
+        foreach (var s in ps.SkillList)
         {
             skills += s + ", ";
             total += s.Level;
         }
 
-        client.SendMessage(player.PlayerName, Localization.MSG_STATS,
+        client.SendReply(gm, Localization.MSG_STATS,
             combatLevel.ToString(),
             skills,
             total.ToString(),

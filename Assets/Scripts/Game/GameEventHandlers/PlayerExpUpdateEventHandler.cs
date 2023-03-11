@@ -5,7 +5,7 @@ public class PlayerExpUpdateEventHandler : GameEventHandler<PlayerExpUpdate>
 {
     public override void Handle(GameManager gameManager, PlayerExpUpdate data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.PlayerId);
         if (player == null)
             return;
 
@@ -15,7 +15,7 @@ public class PlayerExpUpdateEventHandler : GameEventHandler<PlayerExpUpdate>
             skill.SetExp(data.Experience);
         }
 
-        Shinobytes.Debug.Log($"PlayerExpUpdateEventHandler " + data.UserId);
+        Shinobytes.Debug.Log($"PlayerExpUpdateEventHandler " + data.PlayerId);
     }
 }
 

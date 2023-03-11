@@ -1,4 +1,4 @@
-﻿public class TicTacToePlay : ChatBotCommandHandler<PlayerAndNumber>
+﻿public class TicTacToePlay : ChatBotCommandHandler<int>
 {
     public TicTacToePlay(
       GameManager game,
@@ -7,12 +7,12 @@
       : base(game, server, playerManager)
     {
     }
-    public override void Handle(PlayerAndNumber data, GameClient client)
+    public override void Handle(int data, GameMessage gm, GameClient client)
     {        
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (player == null)
         {
-            client.SendMessage(data.Player, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -26,7 +26,7 @@
             Game.Tavern.TicTacToe.Activate();
         }
 
-        Game.Tavern.TicTacToe.Play(player, data.Number);
+        Game.Tavern.TicTacToe.Play(player, data);
     }
 }
 

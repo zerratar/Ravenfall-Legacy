@@ -50,7 +50,7 @@ public class BuildSlotIconsManager : MonoBehaviour
         {
             case TownHouseSlotType.Undefined:
             case TownHouseSlotType.Empty:
-                SetPlayerLogo(null);
+                ClearPlayerLogo();
                 buttonBuildHouse.gameObject.SetActive(true);
                 buttonEraseHouse.gameObject.SetActive(false);
                 buttonSwitchPlayer.gameObject.SetActive(false);
@@ -61,8 +61,8 @@ public class BuildSlotIconsManager : MonoBehaviour
                 SetPlayerLogo(slot.OwnerUserId);
                 buttonBuildHouse.gameObject.SetActive(false);
                 buttonEraseHouse.gameObject.SetActive(true);
-                buttonSwitchPlayer.gameObject.SetActive(!string.IsNullOrEmpty(slot.OwnerUserId));
-                buttonAssignPlayer.gameObject.SetActive(!slot.Player && string.IsNullOrEmpty(slot.OwnerUserId));
+                buttonSwitchPlayer.gameObject.SetActive(slot.OwnerUserId.HasValue);
+                buttonAssignPlayer.gameObject.SetActive(!slot.Player && slot.OwnerUserId.HasValue);
                 break;
         }
 
@@ -80,18 +80,24 @@ public class BuildSlotIconsManager : MonoBehaviour
         SetPlayerLogo(activeSlot.OwnerUserId);
     }
 
-    private void SetPlayerLogo(string userId)
+    private void ClearPlayerLogo()
     {
-        var hasOwner = !string.IsNullOrEmpty(userId);
+        ownerLogoContainer.SetActive(false);
+        ownerLogoLoading.SetActive(false);
+        ownerLogoImage.gameObject.SetActive(false);
+    }
+    private void SetPlayerLogo(Guid? ownerUserId)
+    {
+        var hasOwner = ownerUserId != null;
         ownerLogoContainer.SetActive(hasOwner);
         ownerLogoLoading.SetActive(false);
         ownerLogoImage.gameObject.SetActive(false);
         if (hasOwner)
         {
             ownerLogoLoading.gameObject.SetActive(true);
-            gameManager.PlayerLogo.GetLogo(userId, logo =>
+            gameManager.PlayerLogo.GetLogo(ownerUserId.Value, logo =>
             {
-                var owner = gameManager.Players.GetPlayerByUserId(userId);
+                var owner = gameManager.Players.GetPlayerByUserId(ownerUserId.Value);
                 ownerDisconnected.SetActive(!owner);
                 ownerLogoLoading.gameObject.SetActive(false);
                 ownerLogoImage.gameObject.SetActive(true);
@@ -101,6 +107,7 @@ public class BuildSlotIconsManager : MonoBehaviour
             });
         }
     }
+
 
     public void Hide()
     {
@@ -169,7 +176,7 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
         }
 
-        if ((newOwner.IsBot && newOwner.UserId.StartsWith("#")) || await gameManager.RavenNest.Village.AssignPlayerAsync(activeSlot.Slot, newOwner.UserId))
+        if ((newOwner.IsBot || newOwner.PlatformId.StartsWith("#")) || await gameManager.RavenNest.Village.AssignPlayerAsync(activeSlot.Slot, newOwner.Id))
         {
             gameManager.Village.TownHouses.SetOwner(activeSlot, newOwner);
             Hide();

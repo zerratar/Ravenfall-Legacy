@@ -1,4 +1,4 @@
-﻿public class PlayerResources : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class PlayerResources : ChatBotCommandHandler
 {
     public PlayerResources(
         GameManager game,
@@ -8,18 +8,18 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var res = player.Resources;
 
-        client.SendMessage(data.Username, Localization.MSG_RESOURCES,
+        client.SendReply(gm, Localization.MSG_RESOURCES,
             Utility.FormatValue(res.Wood),
             Utility.FormatValue(res.Ore),
             Utility.FormatValue(res.Fish),

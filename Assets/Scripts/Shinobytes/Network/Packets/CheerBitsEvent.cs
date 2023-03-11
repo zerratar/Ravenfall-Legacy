@@ -1,6 +1,8 @@
-﻿public class TwitchCheer
+﻿public class CheerBitsEvent
 {
+    public string Channel { get; }
     public string UserId { get; }
+    public string Platform { get; }
     public string UserName { get; }
     public string DisplayName { get; }
     public bool IsModerator { get; }
@@ -8,7 +10,9 @@
     public bool IsVip { get; }
     public int Bits { get; }
 
-    public TwitchCheer(
+    public CheerBitsEvent(
+        string platform,
+        string channel,
         string userId,
         string userName,
         string displayName,
@@ -17,6 +21,8 @@
         bool isVip,
         int bits)
     {
+        Platform = platform;
+        Channel = channel;
         UserId = userId;
         UserName = userName;
         IsModerator = isModerator;

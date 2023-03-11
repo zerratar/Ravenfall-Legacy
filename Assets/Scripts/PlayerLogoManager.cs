@@ -9,20 +9,22 @@ public class PlayerLogoManager : MonoBehaviour
 {
     //public const string TwitchLogoUrl = "https://www.ravenfall.stream/api/twitch/clan-logo/";
 
-    private readonly ConcurrentDictionary<string, Logo> userLogos = new ConcurrentDictionary<string, Logo>();
+    private readonly ConcurrentDictionary<Guid, Logo> userLogos = new ConcurrentDictionary<Guid, Logo>();
 
     [SerializeField] private Sprite replacementLogo;
 
     private GameManager gameManager;
-    private const string logoPath = "twitch/clan-logo/";
-    public string TwitchLogoUrl => (gameManager?.ServerAddress ?? "https://www.ravenfall.stream/api/") + logoPath;
+    private const string logoPath = "players/logo/";
+    private const string clanLogoPath = "clan/logo/";
+    public string LogoUrl => (gameManager?.ServerAddress ?? "https://www.ravenfall.stream/api/") + logoPath;
+    public string ClanLogoUrl => (gameManager?.ServerAddress ?? "https://www.ravenfall.stream/api/") + clanLogoPath;
 
     private void Awake()
     {
         gameManager = FindObjectOfType<GameManager>();
     }
 
-    public void GetLogo(string userId, string url, Action<Sprite> onLogoDownloaded)
+    public void GetLogo(Guid userId, string url, Action<Sprite> onLogoDownloaded)
     {
         if (userId == null || onLogoDownloaded == null)
             return;
@@ -43,7 +45,7 @@ public class PlayerLogoManager : MonoBehaviour
         StartCoroutine(DownloadTexture(userId, url, onLogoDownloaded));
     }
 
-    public void GetLogo(string userId, Action<Sprite> onLogoDownloaded)
+    public void GetLogo(Guid userId, Action<Sprite> onLogoDownloaded)
     {
         if (userId == null || onLogoDownloaded == null)
             return;
@@ -60,10 +62,10 @@ public class PlayerLogoManager : MonoBehaviour
             return;
         }
 
-        StartCoroutine(DownloadTexture(userId, TwitchLogoUrl + userId, onLogoDownloaded));
+        StartCoroutine(DownloadTexture(userId, LogoUrl + userId, onLogoDownloaded));
     }
 
-    public Sprite GetLogo(string raiderUserId)
+    public Sprite GetLogo(Guid raiderUserId)
     {
         //ClearCache();
         if (gameManager && gameManager.LogoCensor)
@@ -72,7 +74,7 @@ public class PlayerLogoManager : MonoBehaviour
         if (TryGetLogo(raiderUserId, out var sprite))
             return sprite.Sprite;
 
-        StartCoroutine(DownloadTexture(raiderUserId, TwitchLogoUrl + raiderUserId));
+        StartCoroutine(DownloadTexture(raiderUserId, LogoUrl + raiderUserId));
         return null;
     }
 
@@ -93,7 +95,7 @@ public class PlayerLogoManager : MonoBehaviour
         }
     }
 
-    private bool TryGetLogo(string userId, out Logo logo)
+    private bool TryGetLogo(Guid userId, out Logo logo)
     {
         if (userLogos.TryGetValue(userId, out var sprite) && sprite != null && !sprite.Expired && sprite.Sprite != null)
         {
@@ -104,7 +106,7 @@ public class PlayerLogoManager : MonoBehaviour
         return false;
     }
 
-    private IEnumerator DownloadTexture(string userId, string url, Action<Sprite> onLogoDownloaded = null)
+    private IEnumerator DownloadTexture(Guid userId, string url, Action<Sprite> onLogoDownloaded = null)
     {
         if (userLogos.ContainsKey(userId))
         {

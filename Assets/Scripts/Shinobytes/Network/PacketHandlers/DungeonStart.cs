@@ -1,4 +1,4 @@
-﻿public class DungeonStart : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class DungeonStart : ChatBotCommandHandler<User>
 {
     public DungeonStart(
          GameManager game,
@@ -8,7 +8,7 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(User data, GameMessage gm, GameClient client)
     { 
     }
 }

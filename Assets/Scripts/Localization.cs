@@ -8,7 +8,7 @@
     public const string EQUIP_SHIELD_AND_TWOHANDED = "You cannot equip a shield while having a 2-handed weapon equipped.";
 
     public const string CANT_TRAIN_HERE = "You cannot train {type} here.";
-    public const string NOT_HIGH_ENOUGH_SKILL = "You are not high enough You need to have at least level {reqSkill} {type} to train this skill on this island.";
+    public const string NOT_HIGH_ENOUGH_SKILL = "You need to have at least level {reqSkill} {type} to train this skill on this island.";
     public const string NOT_HIGH_ENOUGH_COMBAT = "You are not high enough combat level to train {skillName} here. Your combat level needs to be at least {reqCombat}.";
     public const string NOT_HIGH_ENOUGH_SKILL_OR_COMBAT = "You are not high enough level to train {skillName} here. Your skill or combat level needs to be at least {reqCombat}.";
     public const string NOT_HIGH_ENOUGH_SKILL_AND_COMBAT = "You need to be at least combat level {reqCombat} and skill level {reqSkill} to train this skill on this island.";
@@ -87,7 +87,8 @@
     public const string MSG_IN_DUNGEON = "You're currently in the dungeon.";
     public const string MSG_STREAMRAID_NO_PLAYERS = "{raiderName} raided but without any players. Kappa";
     public const string MSG_STREAMRAID_WAR_NO_PLAYERS = "{raiderName} raided with intent of war but we don't have any players. FeelsBadMan";
-    public const string MSG_JOIN_WELCOME = "Welcome to the game!";
+    public const string MSG_JOIN_WELCOME = "Welcome to Ravenfall!";
+    public const string MSG_JOIN_WELCOME_FIRST_TIME = "Welcome to Ravenfall, {playerName}! You can get started by using the !train command. Why don't you try using !train all to train your Attack, Defense, and Strength all at once?";
     public const string MSG_JOIN_FAILED = "Unable to join the game right now, server may be down and not responding.";
     public const string MSG_JOIN_FAILED_ALREADY_PLAYING = "You're already playing!";
     public const string MSG_REQ_RAID = "Requesting {raidType} on {streamer}s stream!";
@@ -169,6 +170,7 @@
     public const string MSG_REDEEM_INSUFFICIENT_TOKENS = "Not enough tokens to redeem this item. You have {tokenCount} but need {tokenCost}.";
     public const string MSG_REDEEM_NOT_REDEEMABLE = "This item can not be redeemed yet.";
     public const string MSG_REDEEM_ITEM_NOT_FOUND = "Could not find a redeemable item matching the query '{query}'";
+    public const string MSG_REDEEM_ITEM_NOT_FOUND_SUGGEST = "No such redeemable item, did you mean {query}?";
     public const string MSG_SELL_TOO_MANY = "You cannot sell {itemAmount}x {itemName}. Max is {maxValue}.";
     public const string MSG_SELL_ITEM_NOT_FOUND = "Could not find an item matching the name: {query}";
     public const string MSG_SELL_ITEM_NOT_OWNED = "You do not have any {itemName} in your inventory.";

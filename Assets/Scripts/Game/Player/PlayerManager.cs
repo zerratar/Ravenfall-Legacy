@@ -23,10 +23,10 @@ public class PlayerManager : MonoBehaviour
     // Do not clear out this one. the rest of the dictionaries can be cleared. but this is for debugging purposes    
     private readonly Dictionary<string, string> userIdToNameLookup = new Dictionary<string, string>();
 
-
-    private readonly Dictionary<string, PlayerController> playerTwitchIdLookup = new Dictionary<string, PlayerController>();
+    private readonly Dictionary<string, PlayerController> platformIdLookup = new Dictionary<string, PlayerController>();
     private readonly Dictionary<string, PlayerController> playerNameLookup = new Dictionary<string, PlayerController>();
     private readonly Dictionary<Guid, PlayerController> playerIdLookup = new Dictionary<Guid, PlayerController>();
+    private readonly Dictionary<Guid, PlayerController> userIdLookup = new Dictionary<Guid, PlayerController>();
 
     private readonly List<PlayerController> playerList = new List<PlayerController>();
 
@@ -84,43 +84,43 @@ public class PlayerManager : MonoBehaviour
         //LoadStatCache();
     }
 
-    internal bool TryGetPlayerName(string userId, out string name)
-    {
-        return userIdToNameLookup.TryGetValue(userId, out name);
-    }
-
-    internal async Task<PlayerController> JoinAsync(TwitchPlayerInfo data, GameClient client, bool userTriggered, bool isBot = false, Guid? characterId = null)
+    internal async Task<PlayerController> JoinAsync(GameMessage command, User user, GameClient client, bool userTriggered, bool isBot, Guid? characterId)
     {
         var Game = gameManager;
         try
         {
-
-            if (string.IsNullOrEmpty(data.UserId))
+            if (user == null)
             {
-                Shinobytes.Debug.LogError("A user tried to join the game but had no UserId.");
+                Shinobytes.Debug.LogError("A user tried to join the game but no user details available. Argument '" + nameof(user) + "' is null.");
                 return null;
             }
 
-            var addPlayerRequest = data;
+            if (string.IsNullOrEmpty(user.PlatformId))
+            {
+                Shinobytes.Debug.LogError("A user tried to join the game but had no Id.");
+                return null;
+            }
+
+            var addPlayerRequest = user;
             if (Game.RavenNest.SessionStarted)
             {
                 if (!Game.Items.Loaded)
                 {
+
                     if (userTriggered)
                     {
-                        client?.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_LOADED);
+                        client.SendReplyUseMessageIfNotNull(command, user, Localization.GAME_NOT_LOADED);
                     }
 
                     Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Game not finished loading.");
                     return null;
                 }
-
-                if (Contains(addPlayerRequest.UserId))
+                if (Contains(addPlayerRequest.PlatformId, user.Platform) || Contains(user.Id))
                 {
                     var alreadyInGameMessage = addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.";
                     if (userTriggered)
                     {
-                        client?.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
+                        client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                         Shinobytes.Debug.Log(alreadyInGameMessage);
                         return null;
                     }
@@ -129,7 +129,7 @@ public class PlayerManager : MonoBehaviour
                         // Try remove the player. this will replace current player with the new one if it has a characterId
                         // Note: this may be a potential bug later if you have one character in and then it get replaced by another.
                         //       the risk of this happening is extremely slim though.
-                        var existingPlayer = GetPlayerByUserId(addPlayerRequest.UserId);
+                        var existingPlayer = GetPlayerByPlatformId(addPlayerRequest.PlatformId, addPlayerRequest.Platform) ?? GetPlayerByUserId(user.Id);
                         if (existingPlayer && (characterId == null || existingPlayer.Id == characterId))
                         {
                             Remove(existingPlayer);
@@ -141,12 +141,6 @@ public class PlayerManager : MonoBehaviour
                         }
                     }
                 }
-
-                if (!isBot)
-                {
-                    Game.EventTriggerSystem.SendInput(addPlayerRequest.UserId, "join");
-                }
-
                 var playerInfo = await Game.RavenNest.PlayerJoinAsync(
                     new RavenNest.Models.PlayerJoinData
                     {
@@ -154,41 +148,47 @@ public class PlayerManager : MonoBehaviour
                         CharacterId = characterId ?? Guid.Empty,
                         Moderator = addPlayerRequest.IsModerator,
                         Subscriber = addPlayerRequest.IsSubscriber,
+                        PlatformId = addPlayerRequest.PlatformId,
+                        Platform = addPlayerRequest.Platform,
                         Vip = addPlayerRequest.IsVip,
-                        UserId = addPlayerRequest.UserId,
+                        UserId = addPlayerRequest.Id,
                         UserName = addPlayerRequest.Username,
                         IsGameRestore = !userTriggered
                     });
-
                 if (playerInfo == null)
                 {
                     if (userTriggered)
                     {
-                        client?.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED);
+                        client.SendReplyUseMessageIfNotNull(command, addPlayerRequest, Localization.MSG_JOIN_FAILED);
                     }
                     Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Missing PlayerInfo");
                     return null;
                 }
-
                 if (!playerInfo.Success)
                 {
                     if (userTriggered)
                     {
-                        client?.SendMessage(addPlayerRequest.Username, playerInfo.ErrorMessage);
+                        client.SendReplyUseMessageIfNotNull(command, addPlayerRequest, playerInfo.ErrorMessage);
                     }
 
                     Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. " + playerInfo.ErrorMessage);
                     return null;
                 }
-
                 var player = AddPlayer(addPlayerRequest, playerInfo.Player, isBot);
                 if (player)
                 {
                     if (userTriggered && !player.IsBot)
                     {
-                        userIdToNameLookup[playerInfo.Player.UserId] = playerInfo.Player.UserName;
                         gameManager.SavePlayerStates();
-                        client?.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_WELCOME);
+
+                        if (playerInfo.IsNewUser)
+                        {
+                            client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_WELCOME_FIRST_TIME, addPlayerRequest.Username);
+                        }
+                        else
+                        {
+                            client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_WELCOME);
+                        }
                     }
                     return player;
                 }
@@ -196,7 +196,7 @@ public class PlayerManager : MonoBehaviour
                 {
                     if (userTriggered)
                     {
-                        client?.SendMessage(addPlayerRequest.Username, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
+                        client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                     }
                     Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
                 }
@@ -204,7 +204,7 @@ public class PlayerManager : MonoBehaviour
             else
             {
                 if (userTriggered)
-                    client?.SendMessage(addPlayerRequest.Username, Localization.GAME_NOT_READY);
+                    client.SendReplyUseMessageIfNotNull(command, user, Localization.GAME_NOT_READY);
             }
         }
         catch (Exception exc)
@@ -214,10 +214,11 @@ public class PlayerManager : MonoBehaviour
         return null;
     }
 
-    private PlayerController AddPlayer(TwitchPlayerInfo twitchUser, RavenNest.Models.Player playerInfo, bool isBot, bool isGameRestore = false)
+    private PlayerController AddPlayer(User twitchUser, RavenNest.Models.Player playerInfo, bool isBot, bool isGameRestore = false)
     {
         var Game = gameManager;
         var player = Game.SpawnPlayer(playerInfo, twitchUser, isGameRestore: isGameRestore);
+
         if (player)
         {
             player.Movement.Unlock();
@@ -226,77 +227,29 @@ public class PlayerManager : MonoBehaviour
             {
                 player.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();
                 player.Bot.playerController = player;
-                if (player.UserId != null && !player.UserId.StartsWith("#"))
+                if (player.PlatformId != null && !player.PlatformId.StartsWith("#"))
                 {
-                    player.UserId = "#" + player.UserId;
+                    player.PlatformId = "#" + player.PlatformId;
                 }
             }
 
             player.PlayerNameHexColor = twitchUser.Color;
-            if (player.IsBroadcaster && !player.IsBot)
-            {
-                Game.EventTriggerSystem.TriggerEvent("join", TimeSpan.FromSeconds(1));
-            }
             LastAddedPlayer = player;
             // receiver:cmd|arg1|arg2|arg3|
+
             return player;
         }
         return null;
     }
 
-    //private void LoadStatCache()
-    //{
-    //    if (Shinobytes.IO.File.Exists(CacheFileName))
-    //    {
-    //        var data = Shinobytes.IO.File.ReadAllText(CacheFileName);
-    //        var json = StringCipher.Decrypt(data, CacheKey);
-    //        LoadStatCache(Newtonsoft.Json.JsonConvert.DeserializeObject<List<StatCacheData>>(json));
-    //    }
-    //}
-
-    //private void LoadStatCache(List<StatCacheData> lists)
-    //{
-    //    foreach (var l in lists)
-    //    {
-    //        StoredStats[l.Id] = l.Skills;
-    //    }
-    //}
-
-    //private void SaveStatCache()
-    //{
-    //    if (!System.IO.Directory.Exists(CacheDirectory))
-    //        System.IO.Directory.CreateDirectory(CacheDirectory);
-
-    //    var list = new List<StatCacheData>();
-    //    foreach (var k in StoredStats.Keys)
-    //    {
-    //        list.Add(new StatCacheData
-    //        {
-    //            Id = k,
-    //            Skills = StoredStats[k]
-    //        });
-    //    }
-
-    //    var json = Newtonsoft.Json.JsonConvert.SerializeObject(list);
-    //    var data = StringCipher.Encrypt(json, CacheKey);
-    //    Shinobytes.IO.File.WriteAllText(CacheFileName, data);
-    //}
-
-    public bool Contains(string userId)
+    public bool Contains(Guid userId)
     {
         return GetPlayerByUserId(userId);
     }
-
-    //void Update()
-    //{
-    //    //var sinceLastSave = DateTime.UtcNow - lastCacheSave;
-    //    //if (sinceLastSave >= TimeSpan.FromSeconds(10))
-    //    //{
-    //    //    SaveStatCache();
-    //    //    lastCacheSave = DateTime.UtcNow;
-    //    //}
-    //}
-
+    public bool Contains(string userId, string platform)
+    {
+        return GetPlayerByPlatformId(userId, platform);
+    }
     public IReadOnlyList<PlayerController> GetAllBots()
     {
         return playerList.AsList(x => x.IsBot);
@@ -308,61 +261,88 @@ public class PlayerManager : MonoBehaviour
 
     public PlayerController Spawn(
         Vector3 position,
-        RavenNest.Models.Player playerDefinition,
-        TwitchPlayerInfo twitchUser,
+        Player player,
+        User user,
         StreamRaidInfo raidInfo,
         bool playerInitiatedJoin)
     {
-
-        if (playerTwitchIdLookup.ContainsKey(playerDefinition.UserId))
+        var key = (user.Platform + "_" + user.PlatformId).ToLower();
+        if (platformIdLookup.ContainsKey(key) || playerIdLookup.ContainsKey(player.Id))
         {
             return null;
         }
 
-        var player = Instantiate(playerControllerPrefab);
-        if (!player)
+        var controller = Instantiate(playerControllerPrefab);
+        if (!controller)
         {
             Shinobytes.Debug.LogError("Player Prefab not found!!!");
             return null;
         }
 
-        player.transform.position = position;
+        controller.transform.position = position;
 
-        return Add(player.GetComponent<PlayerController>(), playerDefinition, twitchUser, raidInfo, playerInitiatedJoin);
+        return Add(controller.GetComponent<PlayerController>(), player, user, raidInfo, playerInitiatedJoin);
     }
 
     internal IReadOnlyList<PlayerController> GetAllModerators()
     {
-        return playerTwitchIdLookup.Values.Where(x => x.IsModerator).ToList();
+        return platformIdLookup.Values.Where(x => x.IsModerator).ToList();
     }
     internal IReadOnlyList<PlayerController> GetAllGameAdmins()
     {
-        return playerTwitchIdLookup.Values.Where(x => x.IsGameAdmin).ToList();
+        return platformIdLookup.Values.Where(x => x.IsGameAdmin).ToList();
     }
 
-    public PlayerController GetPlayer(TwitchPlayerInfo twitchUser)
+    public PlayerController GetPlayer(User user)
     {
-        var player = GetPlayerByUserId(twitchUser.UserId);
-        if (!player) player = GetPlayerByName(twitchUser.Username);
+        var player = user.Id != Guid.Empty
+            ? GetPlayerById(user.Id)
+            : GetPlayerByPlatformId(user.PlatformId, user.Platform);
+
+        if (!player) player = GetPlayerByName(user.Username);
         if (player)
         {
-            player.UpdateTwitchUser(twitchUser);
+            player.UpdateUser(user);
         }
         return player;
     }
 
-    public PlayerController GetPlayerByUserId(string userId)
+
+    public PlayerController GetPlayerByUserId(Guid userId)
+    {
+        if (userId == Guid.Empty)
+        {
+            return null;
+        }
+
+        if (playerIdLookup.TryGetValue(userId, out var plr))
+        {
+            if (plr.isDestroyed || plr.Removed)
+            {
+                var key = (plr.Platform + "_" + plr.PlatformId).ToLower();
+                platformIdLookup.Remove(key);
+                playerNameLookup.Remove(plr.Name.ToLower());
+                playerIdLookup.Remove(plr.Id);
+                return null;
+            }
+            return plr;
+        }
+
+        return null;// playerTwitchIdLookup.Values.FirstOrDefault(x => x.Id.ToString().Equals(userId, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    public PlayerController GetPlayerByPlatformId(string userId, string platform)
     {
         if (string.IsNullOrEmpty(userId))
         {
             return null;
         }
-
-        if (playerTwitchIdLookup.TryGetValue(userId, out var plr))
+        var key = (platform + "_" + userId).ToLower();
+        if (platformIdLookup.TryGetValue(key, out var plr))
         {
             if (plr.isDestroyed || plr.Removed)
             {
-                playerTwitchIdLookup.Remove(plr.UserId);
+                platformIdLookup.Remove(key);
                 playerNameLookup.Remove(plr.Name.ToLower());
                 playerIdLookup.Remove(plr.Id);
                 return null;
@@ -384,7 +364,8 @@ public class PlayerManager : MonoBehaviour
         {
             if (plr.isDestroyed || plr.Removed)
             {
-                playerTwitchIdLookup.Remove(plr.UserId);
+                var platformKey = (plr.Platform + "_" + plr.PlatformId).ToLower();
+                platformIdLookup.Remove(platformKey);
                 playerNameLookup.Remove(plr.Name.ToLower());
                 playerIdLookup.Remove(plr.Id);
                 return null;
@@ -399,12 +380,13 @@ public class PlayerManager : MonoBehaviour
     {
         if (includeNpc)
         {
-            return playerTwitchIdLookup.Count;
+            return platformIdLookup.Count;
         }
+
         int count = 0;
-        foreach (var item in playerTwitchIdLookup.Values)
+        foreach (var item in platformIdLookup.Values)
         {
-            if (!item.IsNPC)
+            if (!item.IsBot)
             {
                 ++count;
             }
@@ -414,7 +396,7 @@ public class PlayerManager : MonoBehaviour
 
     public PlayerController GetPlayerById(Guid characterId)
     {
-        if (playerTwitchIdLookup == null)
+        if (platformIdLookup == null)
         {
             return null;
         }
@@ -423,7 +405,8 @@ public class PlayerManager : MonoBehaviour
         {
             if (plr.isDestroyed || plr.Removed)
             {
-                playerTwitchIdLookup.Remove(plr.UserId);
+                var platformKey = (plr.Platform + "_" + plr.PlatformId).ToLower();
+                platformIdLookup.Remove(platformKey);
                 playerNameLookup.Remove(plr.Name.ToLower());
                 playerIdLookup.Remove(plr.Id);
                 return null;
@@ -431,7 +414,7 @@ public class PlayerManager : MonoBehaviour
             return plr;
         }
 
-        return null;
+        return playerList.FirstOrDefault(x => x.Id == characterId);
     }
 
     public PlayerController GetPlayerByIndex(int index)
@@ -446,14 +429,15 @@ public class PlayerManager : MonoBehaviour
 
     public void Remove(PlayerController player)
     {
-        if (playerTwitchIdLookup.TryGetValue(player.UserId, out var plrToRemove))
+        var platformKey = (player.Platform + "_" + player.PlatformId).ToLower();
+        if (platformIdLookup.TryGetValue(platformKey, out var plrToRemove) || playerIdLookup.ContainsKey(player.Id))
         {
             gameManager.Village.TownHouses.InvalidateOwnership(player);
         }
 
         if (player)
         {
-            playerTwitchIdLookup.Remove(player.UserId);
+            platformIdLookup.Remove(platformKey);
             playerNameLookup.Remove(player.PlayerName.ToLower());
             playerIdLookup.Remove(player.Id);
             playerList.Remove(player);
@@ -469,27 +453,28 @@ public class PlayerManager : MonoBehaviour
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private PlayerController Add(
-        PlayerController player,
-        RavenNest.Models.Player def,
-        TwitchPlayerInfo twitchUser,
+        PlayerController controller,
+        Player player,
+        User user,
         StreamRaidInfo raidInfo,
         bool playerInitiatedJoin)
     {
+        var platformKey = (controller.Platform + "_" + controller.PlatformId).ToLower();
 
-        player.SetPlayer(def, twitchUser, raidInfo, gameManager, playerInitiatedJoin);
-        playerTwitchIdLookup[player.UserId] = player;
-        playerNameLookup[player.PlayerName.ToLower()] = player;
-        playerIdLookup[player.Id] = player;
-        playerList.Add(player);
+        controller.SetPlayer(player, user, raidInfo, gameManager, playerInitiatedJoin);
+        platformIdLookup[platformKey] = controller;
+        playerNameLookup[controller.PlayerName.ToLower()] = controller;
+        playerIdLookup[controller.Id] = controller;
+        playerList.Add(controller);
 
-        gameManager.Village.TownHouses.InvalidateOwnership(player);
-        return player;
+        gameManager.Village.TownHouses.InvalidateOwnership(controller);
+        return controller;
     }
 
     internal void UpdateRestedState(RavenNest.Models.PlayerRestedUpdate data)
     {
         if (data == null) return;
-        var player = GetPlayerById(data.CharacterId);
+        var player = GetPlayerById(data.PlayerId);
         if (player == null) return;
         player.SetRestedState(data);
     }
@@ -529,11 +514,11 @@ public class PlayerManager : MonoBehaviour
                     if (!playerInfo.Success || playerInfo.Player == null)
                     {
                         failed.Add(requested);
-                        Shinobytes.Debug.LogError("Failed to restore player (" + requested.TwitchUser.Username + "): " + playerInfo.ErrorMessage);
+                        Shinobytes.Debug.LogError("Failed to restore player (" + requested.User.Username + "): " + playerInfo.ErrorMessage);
                         continue;
                     }
 
-                    addPlayerQueue.Enqueue(() => AddPlayer(requested.TwitchUser, playerInfo.Player, false, true));
+                    addPlayerQueue.Enqueue(() => AddPlayer(requested.User, playerInfo.Player, false, true));
 
                     //var player = AddPlayer(false, requested.TwitchUser, playerInfo.Player);
                     //if (!player)
@@ -562,7 +547,7 @@ public class PlayerManager : MonoBehaviour
             }
             else
             {
-                gameManager.RavenBot.Announce(failed.Count + " players failed to be added back: " + String.Join(", ", failed.Select(x => x.TwitchUser.Username)));
+                gameManager.RavenBot.Announce(failed.Count + " players failed to be added back: " + String.Join(", ", failed.Select(x => x.User.Username)));
             }
         }
         else

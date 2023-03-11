@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
+public class EnchantItem : ChatBotCommandHandler<string>
 {
     public EnchantItem(
         GameManager game,
@@ -12,7 +12,7 @@ public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
     {
     }
 
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
         //// Only game admins can use enchant in this version.
         //if (!GameVersion.TryParse("0.7.9.2a", out var minVersion))
@@ -20,26 +20,26 @@ public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
         //    return;
         //}
 
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         if (player.Clan == null || !player.Clan.InClan)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_ENCHANT_CLAN_SKILL);
+            client.SendReply(gm, Localization.MSG_ENCHANT_CLAN_SKILL);
             return;
         }
 
-        if (string.IsNullOrEmpty(data.ItemQuery))
+        if (string.IsNullOrEmpty(inputQuery))
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_ENCHANT_MISSING_ARGS);
+            client.SendReply(gm, Localization.MSG_ENCHANT_MISSING_ARGS);
             return;
         }
 
-        var query = data.ItemQuery;
+        var query = inputQuery;
         var isReplace = query.ToLower().IndexOf("replace") >= 0;
         if (isReplace) query = query.Replace("replace", "");
 
@@ -51,20 +51,20 @@ public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
 
         if (queriedItem.SuggestedItemNames.Length > 0)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, query, string.Join(", ", queriedItem.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, query, string.Join(", ", queriedItem.SuggestedItemNames));
             return;
         }
 
         if (queriedItem.Item == null)
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, query);
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, query);
             return;
         }
 
         var item = queriedItem.InventoryItem;
         if (item == null)
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
             return;
         }
 
@@ -73,7 +73,7 @@ public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
         {
             if (!isReplace)
             {
-                client.SendMessage(data.Player.Username, Localization.MSG_ENCHANT_WARN_REPLACE, inventoryItem.Name, FormatEnchantmentValues(inventoryItem.Enchantments));
+                client.SendReply(gm, Localization.MSG_ENCHANT_WARN_REPLACE, inventoryItem.Name, FormatEnchantmentValues(inventoryItem.Enchantments));
                 return;
             }
         }
@@ -81,7 +81,7 @@ public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
         var result = await Game.RavenNest.Players.EnchantInventoryItemAsync(player.UserId, inventoryItem.InstanceId);
         if (result == null || result.Result == ItemEnchantmentResultValue.Error)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_ENCHANT_UNKNOWN_ERROR);
+            client.SendReply(gm, Localization.MSG_ENCHANT_UNKNOWN_ERROR);
             return;
         }
 
@@ -92,31 +92,31 @@ public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
 
             if (result.Result == ItemEnchantmentResultValue.NotAvailable)
             {
-                client.SendFormat(data.Player.Username, Localization.MSG_ENCHANT_NOT_AVAILABLE);
+                client.SendReply(gm, Localization.MSG_ENCHANT_NOT_AVAILABLE);
                 return;
             }
 
             if (result.Result == ItemEnchantmentResultValue.NotEnchantable)
             {
-                client.SendFormat(data.Player.Username, Localization.MSG_ENCHANT_NOT_ENCHANTABLE, inventoryItem.Name);
+                client.SendReply(gm, Localization.MSG_ENCHANT_NOT_ENCHANTABLE, inventoryItem.Name);
                 return;
             }
 
             if (result.Result == ItemEnchantmentResultValue.Failed)
             {
-                client.SendFormat(data.Player.Username, Localization.MSG_ENCHANT_FAILED, inventoryItem.Name, cooldownString);
+                client.SendReply(gm, Localization.MSG_ENCHANT_FAILED, inventoryItem.Name, cooldownString);
                 return;
             }
 
-            client.SendFormat(data.Player.Username, Localization.MSG_ENCHANT_COOLDOWN, cooldownString);
+            client.SendReply(gm, Localization.MSG_ENCHANT_COOLDOWN, cooldownString);
             return;
         }
 
-        if (result.GainedExperience > 0 || result.GainedLevels > 0)
-        {
-            var clanSkill = player.Clan.ClanInfo.ClanSkills.FirstOrDefault(x => x.Name.ToLower() == "enchanting");
-            Game.Clans.UpdateClanSkill(player.Clan.ClanInfo.Id, clanSkill.Id, result.GainedLevels, result.GainedExperience);
-        }
+        //if (result.GainedExperience > 0 || result.GainedLevels > 0)
+        //{
+        //    var clanSkill = player.Clan.ClanInfo.ClanSkills.FirstOrDefault(x => x.Name.ToLower() == "enchanting");
+        //    Game.Clans.UpdateClanSkill(player.Clan.ClanInfo.Id, clanSkill.Id, result.GainedLevels, result.GainedExperience);
+        //}
 
         var enchantedItem = result.EnchantedItem;
         var oldItemName = result.OldItemStack.Name ?? Game.Items.Get(result.OldItemStack.ItemId)?.Name;
@@ -147,14 +147,14 @@ public class EnchantItem : ChatBotCommandHandler<TradeItemRequest>
 
         if (string.IsNullOrEmpty(result.OldItemStack.Enchantment))
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_ENCHANT_SUCCESS, oldItemName, addedItem.Name, cooldownString);
+            client.SendReply(gm, Localization.MSG_ENCHANT_SUCCESS, oldItemName, addedItem.Name, cooldownString);
         }
         else
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_ENCHANT_REPLACE, oldItemName, addedItem.Name, cooldownString);
+            client.SendReply(gm, Localization.MSG_ENCHANT_REPLACE, oldItemName, addedItem.Name, cooldownString);
         }
 
-        client.SendFormat(data.Player.Username, Localization.MSG_ENCHANT_STATS, FormatEnchantmentValues(addedItem.Enchantments), addedItem.Name);
+        client.SendReply(gm, Localization.MSG_ENCHANT_STATS, FormatEnchantmentValues(addedItem.Enchantments), addedItem.Name);
     }
 
     private string FormatEnchantmentValues(IReadOnlyList<ItemEnchantment> enchantments)

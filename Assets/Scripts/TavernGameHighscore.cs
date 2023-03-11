@@ -43,7 +43,7 @@ public class TavernGameHighscore
         return item;
     }
 
-    public TavernGameHighscoreItem Get(string userId, string username = null)
+    public TavernGameHighscoreItem Get(System.Guid userId, string username = null)
     {
         var item = records.FirstOrDefault(x => x.UserId == userId);
         if (item != null)

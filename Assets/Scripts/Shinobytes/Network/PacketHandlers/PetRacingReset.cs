@@ -1,5 +1,4 @@
-﻿public class PetRacingReset : ChatBotCommandHandler<TwitchPlayerInfo>
-{
+﻿public class PetRacingReset : ChatBotCommandHandler{
     public PetRacingReset(
      GameManager game,
      RavenBotConnection server,
@@ -8,7 +7,7 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
         //return;
 

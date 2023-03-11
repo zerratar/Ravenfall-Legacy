@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-public class GetTokenCount : ChatBotCommandHandler<TwitchPlayerInfo>
+public class GetTokenCount : ChatBotCommandHandler
 {
     public GetTokenCount(
          GameManager game,
@@ -9,12 +9,12 @@ public class GetTokenCount : ChatBotCommandHandler<TwitchPlayerInfo>
      : base(game, server, playerManager)
     {
     }
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {        //token_count
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
@@ -29,7 +29,7 @@ public class GetTokenCount : ChatBotCommandHandler<TwitchPlayerInfo>
 
         if (tokens.Count == 0)
         {
-            client.SendFormat(data.Username, "You do not have any seasonal tokens. Join Raids or Dungeons during seasonal events to get some!");
+            client.SendReply(gm, "You do not have any seasonal tokens. Join Raids or Dungeons during seasonal events to get some!");
             return;
         }
 
@@ -52,6 +52,6 @@ public class GetTokenCount : ChatBotCommandHandler<TwitchPlayerInfo>
             parameters.Add(token.Item.Name);
         }
 
-        client.SendFormat(data.Username, format, parameters.ToArray());
+        client.SendReply(gm, format, parameters.ToArray());
     }
 }

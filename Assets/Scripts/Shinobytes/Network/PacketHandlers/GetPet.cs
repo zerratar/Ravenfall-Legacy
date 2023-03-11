@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 
-public class GetPet : ChatBotCommandHandler<GetPetRequest>
+public class GetPet : ChatBotCommandHandler<string>
 {
     public GetPet(
         GameManager game,
@@ -10,22 +10,22 @@ public class GetPet : ChatBotCommandHandler<GetPetRequest>
     {
     }
 
-    public override void Handle(GetPetRequest data, GameClient client)
+    public override void Handle(string data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var equippedPet = player.Inventory.GetEquipmentOfCategory(ItemCategory.Pet);
         if (equippedPet == null)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_GET_PET_NO_PET);
+            client.SendReply(gm, Localization.MSG_GET_PET_NO_PET);
             return;
         }
 
-        client.SendMessage(data.Player.Username, Localization.MSG_GET_PET, equippedPet.Name);
+        client.SendReply(gm, Localization.MSG_GET_PET, equippedPet.Name);
     }
 }

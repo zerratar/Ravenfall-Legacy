@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 
-public class SellItem : ChatBotCommandHandler<TradeItemRequest>
+public class SellItem : ChatBotCommandHandler<string>
 {
     public SellItem(
         GameManager game,
@@ -10,36 +10,36 @@ public class SellItem : ChatBotCommandHandler<TradeItemRequest>
     {
     }
 
-    public override async void Handle(TradeItemRequest data, GameClient client)
+    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
         try
         {
-            var player = PlayerManager.GetPlayer(data.Player);
+            var player = PlayerManager.GetPlayer(gm.Sender);
             if (!player)
             {
-                client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             var ioc = Game.gameObject.GetComponent<IoCContainer>();
             var itemResolver = ioc.Resolve<IItemResolver>();
-            var item = itemResolver.Resolve(data.ItemQuery);
+            var item = itemResolver.ResolveTradeQuery(inputQuery);
             
             if (item.SuggestedItemNames.Length > 0)
             {
-                client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", item.SuggestedItemNames));
+                client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", item.SuggestedItemNames));
                 return;
             }
 
             if (item.Item == null)
             {
-                client.SendMessage(player.PlayerName, Localization.MSG_SELL_ITEM_NOT_FOUND, data.ItemQuery);
+                client.SendReply(gm, Localization.MSG_SELL_ITEM_NOT_FOUND, inputQuery);
                 return;
             }
 
             if (item.Count >= long.MaxValue)
             {
-                client.SendFormat(player.PlayerName, Localization.MSG_SELL_TOO_MANY,
+                client.SendReply(gm, Localization.MSG_SELL_TOO_MANY,
                     item.Count,
                     item.Item.Name,
                     long.MaxValue);
@@ -61,31 +61,31 @@ public class SellItem : ChatBotCommandHandler<TradeItemRequest>
 
             if (item.Item?.Soulbound ?? false)
             {
-                client.SendMessage(player.PlayerName, Localization.MSG_ITEM_SOULBOUND, item.Item.Name);
+                client.SendReply(gm, Localization.MSG_ITEM_SOULBOUND, item.Item.Name);
                 return;
             }
 
-            var sellResult = await Game.RavenNest.Marketplace.SellItemAsync(player.UserId, item.Id, (long)itemAmount, (long)pricePerItem);
+            var sellResult = await Game.RavenNest.Marketplace.SellItemAsync(player.Id, item.Id, (long)itemAmount, (long)pricePerItem);
 
             if (sellResult == null)
             {
-                client.SendMessage(player.PlayerName, Localization.MSG_SELL_MARKETPLACE_ERROR);
+                client.SendReply(gm, Localization.MSG_SELL_MARKETPLACE_ERROR);
             }
 
             switch (sellResult.State)
             {
                 case ItemTradeState.DoesNotExist:
-                    client.SendMessage(player.PlayerName, Localization.MSG_SELL_ITEM_NOT_FOUND, data.ItemQuery);
+                    client.SendReply(gm, Localization.MSG_SELL_ITEM_NOT_FOUND, inputQuery);
                     break;
                 case ItemTradeState.DoesNotOwn:
-                    client.SendMessage(player.PlayerName, Localization.MSG_SELL_ITEM_NOT_OWNED, item.Item.Name);
+                    client.SendReply(gm, Localization.MSG_SELL_ITEM_NOT_OWNED, item.Item.Name);
                     break;
                 case ItemTradeState.Failed:
-                    client.SendMessage(player.PlayerName, Localization.MSG_SELL_MARKETPLACE_ERROR);
+                    client.SendReply(gm, Localization.MSG_SELL_MARKETPLACE_ERROR);
                     break;
                 case ItemTradeState.Success:
                     player.Inventory.Remove(item.InventoryItem, item.Count);
-                    client.SendMessage(player.PlayerName, Localization.MSG_SELL,
+                    client.SendReply(gm, Localization.MSG_SELL,
                         item.Count.ToString(),
                         item.Item.Name,
                         Utility.FormatValue(item.Price));

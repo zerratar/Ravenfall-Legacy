@@ -3,7 +3,6 @@ using UnityEngine;
 
 public class RavenBot : MonoBehaviour
 {
-    public string RemoteServer;
     public bool UseRemoteBot = true;
     public RavenBotConnection Connection { get; private set; }
 
@@ -19,7 +18,7 @@ public class RavenBot : MonoBehaviour
     public void Initialize(GameManager gameManager)
     {
         if (!this.gameManager) this.gameManager = gameManager;
-        Connection = new RavenBotConnection(gameManager, this, RemoteServer);
+        Connection = new RavenBotConnection(gameManager, this);
         Connection.Register<KickPlayer>("kick");
         Connection.Register<PlayerLeave>("leave");
         Connection.Register<IslandInfo>("island_info");
@@ -184,10 +183,7 @@ public class RavenBot : MonoBehaviour
 
         if (this.Connection != null && gameManager.RavenNest != null)
         {
-            this.Connection.SendSessionOwner(
-                gameManager.RavenNest.TwitchUserId,
-                gameManager.RavenNest.TwitchUserName,
-                gameManager.RavenNest.SessionId);
+            this.Connection.SendSessionOwner();
         }
     }
 

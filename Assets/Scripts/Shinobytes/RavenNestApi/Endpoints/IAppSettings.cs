@@ -6,6 +6,7 @@
         string WebApiAuthEndpoint { get; }
         string WebSocketEndpoint { get; }
         string TcpApiEndpoint { get; }
+        string RavenbotEndpoint { get; }
     }
 
     //

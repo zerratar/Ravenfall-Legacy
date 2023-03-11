@@ -13,13 +13,13 @@ public class OverlayPlayer
     }
 
     public Player Character { get; set; }
-    public TwitchPlayerInfo Twitch { get; set; }
+    public User Twitch { get; set; }
 
-    private static TwitchPlayerInfo BuildTwitchUser(PlayerController source)
+    private static User BuildTwitchUser(PlayerController source)
     {
-        if (source.TwitchUser == null)
+        if (source.User == null)
         {
-            return new TwitchPlayerInfo
+            return new User
             {
                 Color = source.PlayerNameHexColor,
                 DisplayName = source.PlayerName,
@@ -28,12 +28,14 @@ public class OverlayPlayer
                 IsModerator = source.IsModerator,
                 IsSubscriber = source.IsSubscriber,
                 IsVip = source.IsVip,
-                UserId = source.UserId,
+                Id = source.UserId,
+                Platform = source.Platform,
+                PlatformId = source.PlatformId,
                 Username = source.Name
             };
         }
 
-        return source.TwitchUser; // we will assume its always up to date.
+        return source.User; // we will assume its always up to date.
     }
 
     private static Player RebuildDefinition(PlayerController source)
@@ -81,7 +83,7 @@ public class OverlayPlayer
         return new CharacterState
         {
             RestedTime = source.Rested.RestedTime,
-            DuelOpponent = source.Duel.InDuel ? source.Duel.Opponent?.UserId : null,
+            DuelOpponent = source.Duel.InDuel ? source.Duel.Opponent?.Id.ToString() : null,
             Health = source.Stats.Health.CurrentValue,
             InArena = source.Arena.InArena,
             InDungeon = source.Dungeon.InDungeon,

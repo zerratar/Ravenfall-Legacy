@@ -1,13 +1,13 @@
 ﻿public class StreamerRaid
 {
     public StreamerRaid(
-        TwitchPlayerInfo player,
+        User player,
         bool war)
     {
         Player = player;
         War = war;
     }
 
-    public TwitchPlayerInfo Player { get; }
+    public User Player { get; }
     public bool War { get; }
 }

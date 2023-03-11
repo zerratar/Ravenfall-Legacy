@@ -122,15 +122,6 @@ namespace RavenNest.SDK.Endpoints
                    .Build()
                    .SendAsync<UseExpScrollResult>(ApiRequestTarget.Game, ApiRequestType.Get);
         }
-        //public Task<bool> EndSessionAndRaidAsync(string username, bool war)
-        //{
-        //    return request.Create()
-        //        .Method("raid")
-        //        .AddParameter(username)
-        //        .AddParameter("value", war)
-        //        .Build()
-        //        .SendAsync<bool>(ApiRequestTarget.Game, ApiRequestType.Post);
-        //}
 
         public Task<bool> EndSessionAndRaidAsync(string username, bool war)
         {

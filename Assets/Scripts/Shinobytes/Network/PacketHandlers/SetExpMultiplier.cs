@@ -1,5 +1,5 @@
 ﻿
-public class SetExpMultiplier : ChatBotCommandHandler<SetExpMultiplierRequest>
+public class SetExpMultiplier : ChatBotCommandHandler<int>
 {
     public SetExpMultiplier(
        GameManager game,
@@ -9,9 +9,9 @@ public class SetExpMultiplier : ChatBotCommandHandler<SetExpMultiplierRequest>
     {
     }
 
-    public override void Handle(SetExpMultiplierRequest data, GameClient client)
+    public override void Handle(int data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (player == null || !player || !player.IsGameAdmin)
         {
             return;

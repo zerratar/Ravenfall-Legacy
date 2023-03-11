@@ -1,5 +1,6 @@
 ﻿using Shinobytes.Linq;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
@@ -77,7 +78,7 @@ public class Skills : IComparable
 
     private void SetupSkillLookup()
     {
-        for(var i = 0; i < SkillList.Length; ++i)
+        for (var i = 0; i < SkillList.Length; ++i)
         {
             var s = SkillList[i];
             this.skills[s.Name.ToLower()] = s;
@@ -86,7 +87,7 @@ public class Skills : IComparable
 
     public bool IsDead => Health.CurrentValue <= 0;
     public int CombatLevel => (int)(
-        (Attack.Level + Defense.Level + Strength.Level + Health.Level) / 4f 
+        (Attack.Level + Defense.Level + Strength.Level + Health.Level) / 4f
         + (Ranged.Level + Magic.Level + Healing.Level) / 8f);
 
     public double TotalExperience => SkillList.Sum(x => x.Experience);

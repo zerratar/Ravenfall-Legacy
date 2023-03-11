@@ -13,8 +13,5 @@ public class IoCContainerRegistry
     {
         ioc.RegisterShared<ILogger, UnityLogger>();
         ioc.RegisterShared<IItemResolver, ItemResolver>();
-        ioc.RegisterShared<EventTriggerSystem, EventTriggerSystem>();
-        //this.ioc.RegisterShared<IItemRepository, RavenNestItemRepository>();
-        //this.ioc.RegisterShared<IPlayerRepository, PlayerRepository>();
     }
 }

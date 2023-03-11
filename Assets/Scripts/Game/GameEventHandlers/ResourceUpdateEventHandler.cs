@@ -5,13 +5,9 @@ public class ResourceUpdateEventHandler : GameEventHandler<ResourceUpdate>
 {
     public override void Handle(GameManager gameManager, ResourceUpdate data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.CharacterId);
         if (!player)
         {
-            if (gameManager.Players.TryGetPlayerName(data.UserId, out var name))
-            {
-                Shinobytes.Debug.LogWarning("Server sent resource update for player: " + name + " (" + data.UserId + ") but the player is no longer in the game.");
-            }
             return;
         }
 

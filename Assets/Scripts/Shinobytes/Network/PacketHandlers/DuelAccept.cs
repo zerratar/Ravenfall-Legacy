@@ -1,4 +1,4 @@
-﻿public class DuelAccept : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class DuelAccept : ChatBotCommandHandler
 {
     public DuelAccept(
         GameManager game,
@@ -8,37 +8,37 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
 
         if (player.Ferry.OnFerry)
         {
-            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_FERRY);
+            client.SendReply(gm, Localization.MSG_DUEL_ACCEPT_FERRY);
             return;
         }
 
         if (player.Duel.InDuel)
         {
-            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_IN_DUEL);
+            client.SendReply(gm, Localization.MSG_DUEL_ACCEPT_IN_DUEL);
             return;
         }
 
         if (player.Arena.InArena)
         {
-            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_IN_ARENA);
+            client.SendReply(gm, Localization.MSG_DUEL_ACCEPT_IN_ARENA);
             return;
         }
 
         if (player.Raid.InRaid)
         {
-            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_IN_RAID);
+            client.SendReply(gm, Localization.MSG_DUEL_ACCEPT_IN_RAID);
             return;
         }
 
         if (!player.Duel.HasActiveRequest)
         {
-            client.SendMessage(data.Username, Localization.MSG_DUEL_ACCEPT_NO_REQ);
+            client.SendReply(gm, Localization.MSG_DUEL_ACCEPT_NO_REQ);
             return;
         }
 

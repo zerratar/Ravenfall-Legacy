@@ -6,13 +6,9 @@ public class ItemAddEventHandler : GameEventHandler<ItemAdd>
 {
     public override void Handle(GameManager gameManager, ItemAdd data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.PlayerId);
         if (!player)
         {
-            if (!GameCache.IsAwaitingGameRestore)
-            {
-                Shinobytes.Debug.Log("No player with userid " + data.UserId + " when adding item. (" + data.ItemId + ", " + data.Amount + ")");
-            }
             return;
         }
 

@@ -158,7 +158,7 @@ public class SkillStat
 
         if (Bonus > 0)
         {
-            return $"{Name} {Level} [+{Bonus}] ({proc}%)";
+            return $"{Name} {Level} [+{Bonus:0}] ({proc}%)";
         }
 
         return $"{Name} {Level} ({proc}%)";

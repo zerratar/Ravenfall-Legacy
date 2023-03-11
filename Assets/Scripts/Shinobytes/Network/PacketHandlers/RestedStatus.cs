@@ -1,50 +1,50 @@
 ﻿using System;
 
-public class RestedStatus : ChatBotCommandHandler<TwitchPlayerInfo>
+public class RestedStatus : ChatBotCommandHandler
 {
     public RestedStatus(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)
     {
     }
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
         try
         {
-            var player = PlayerManager.GetPlayer(data);
+            var player = PlayerManager.GetPlayer(gm.Sender);
             if (player == null)
             {
-                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             if (player.Onsen.InOnsen)
             {
-                SendOnsenStatusMessage(player, client);
+                SendOnsenStatusMessage(gm, player, client);
                 return;
             }
 
-            SendRestedStatusMessage(player, client);
+            SendRestedStatusMessage(gm, player, client);
         }
         catch { }
     }
-    private void SendRestedStatusMessage(PlayerController player, GameClient client)
+    private void SendRestedStatusMessage(GameMessage gm, PlayerController player, GameClient client)
     {
         if (player.Rested.RestedTime > 0)
         {
             var hours = player.Rested.RestedTime / 60f / 60f;
             var restedTime = Utility.FormatTime(hours);
-            client.SendMessage(player.PlayerName, Localization.MSG_RESTED, (player.Rested.ExpBoost).ToString(), restedTime);
+            client.SendReply(gm, Localization.MSG_RESTED, (player.Rested.ExpBoost).ToString(), restedTime);
         }
         else
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_NOT_RESTED);
+            client.SendReply(gm, Localization.MSG_NOT_RESTED);
         }
     }
 
-    private void SendOnsenStatusMessage(PlayerController player, GameClient client)
+    private void SendOnsenStatusMessage(GameMessage gm, PlayerController player, GameClient client)
     {
         var hours = player.Rested.RestedTime / 60f / 60f;
         var restedTime = Utility.FormatTime(hours);
-        client.SendMessage(player.PlayerName, Localization.MSG_RESTING, System.Math.Max(2, player.Rested.ExpBoost).ToString(), restedTime);
+        client.SendReply(gm, Localization.MSG_RESTING, System.Math.Max(2, player.Rested.ExpBoost).ToString(), restedTime);
     }
 }

@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 
-public class SetPet : ChatBotCommandHandler<SetPetRequest>
+public class SetPet : ChatBotCommandHandler<string>
 {
     public SetPet(
         GameManager game,
@@ -10,41 +10,41 @@ public class SetPet : ChatBotCommandHandler<SetPetRequest>
     {
     }
 
-    public override async void Handle(SetPetRequest data, GameClient client)
+    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var query = (data.Pet + " pet").ToLower().Replace(" pet pet", " pet");
-        var item = itemResolver.ResolveTradeQuery(query, parsePrice: false, parseUsername: false, parseAmount: false);
+        var itemQuery = inputQuery;
+        var item = itemResolver.ResolveAny(itemQuery, itemQuery + " pet");
        
         if (item.SuggestedItemNames.Length > 0)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, query, string.Join(", ", item.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, itemQuery, string.Join(", ", item.SuggestedItemNames));
             return;
         }
 
         if (item.Item == null)
         {
-           client.SendMessage(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, data.Pet);
+           client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 
         if (item.InventoryItem == null)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_SET_PET_NOT_OWNED, item.Item.Name);
+            client.SendReply(gm, Localization.MSG_SET_PET_NOT_OWNED, item.Item.Name);
             return;
         }
 
         if (item.Item.Type != ItemType.Pet)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_SET_PET_NOT_PET, item.Item.Name);
+            client.SendReply(gm, Localization.MSG_SET_PET_NOT_PET, item.Item.Name);
             return;
         }
 
@@ -54,7 +54,7 @@ public class SetPet : ChatBotCommandHandler<SetPetRequest>
         {
             if (equippedPet == null || equippedPet.ItemId != item.Id)
             {
-                client.SendMessage(data.Player.Username, Localization.MSG_SET_PET_NOT_OWNED, item.Item.Name);
+                client.SendReply(gm, Localization.MSG_SET_PET_NOT_OWNED, item.Item.Name);
                 return;
             }
         }
@@ -64,6 +64,6 @@ public class SetPet : ChatBotCommandHandler<SetPetRequest>
             await player.EquipAsync(item.Item);
         }
 
-        client.SendMessage(data.Player.Username, Localization.MSG_SET_PET, item.Item.Name);
+        client.SendReply(gm, Localization.MSG_SET_PET, item.Item.Name);
     }
 }

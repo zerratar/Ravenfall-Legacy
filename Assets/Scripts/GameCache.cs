@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -59,17 +60,19 @@ namespace Assets.Scripts
 
                         var item = new GameCachePlayerItem();
                         item.NameTagHexColor = player.PlayerNameHexColor;
-                        item.TwitchUser = player.TwitchUser;
+                        item.User = player.User;
                         item.CharacterId = player.Id;
                         item.CharacterIndex = player.CharacterIndex;
 
-                        if (item.TwitchUser == null)
+                        if (item.User == null)
                         {
-                            item.TwitchUser = new TwitchPlayerInfo(
-                                    def.UserId,
+                            item.User = new User(
+                                    player.UserId,
                                     def.UserName,
                                     def.Name,
                                     player.PlayerNameHexColor,
+                                    player.Platform,
+                                    player.PlatformId,
                                     player.IsBroadcaster,
                                     player.IsModerator,
                                     player.IsSubscriber,
@@ -79,10 +82,10 @@ namespace Assets.Scripts
                         }
                         else
                         {
-                            item.TwitchUser.IsVip = player.IsVip;
-                            item.TwitchUser.IsModerator = player.IsModerator;
-                            item.TwitchUser.IsBroadcaster = player.IsBroadcaster;
-                            item.TwitchUser.IsSubscriber = player.IsSubscriber;
+                            item.User.IsVip = player.IsVip;
+                            item.User.IsModerator = player.IsModerator;
+                            item.User.IsBroadcaster = player.IsBroadcaster;
+                            item.User.IsSubscriber = player.IsSubscriber;
                         }
 
                         //item.Definition = player.Definition;
@@ -195,7 +198,8 @@ namespace Assets.Scripts
 
     public class GameCachePlayerItem
     {
-        public TwitchPlayerInfo TwitchUser { get; set; }
+        [JsonProperty("TwitchUser")]
+        public User User { get; set; }
         public System.Guid CharacterId { get; set; }
         public string NameTagHexColor { get; set; }
         public int CharacterIndex { get; set; }

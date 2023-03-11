@@ -1,4 +1,4 @@
-﻿public class TicTacToeReset : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class TicTacToeReset : ChatBotCommandHandler
 {
     public TicTacToeReset(
       GameManager game,
@@ -8,14 +8,14 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
         if (!Game.Tavern.IsActivated)
         {
             return;
         }
 
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (player != null)
         {
             if (player.IsModerator || player.IsGameAdmin || player.IsGameModerator || player.IsBroadcaster || Game.Tavern.TicTacToe.State == TavernGameState.GameOver)

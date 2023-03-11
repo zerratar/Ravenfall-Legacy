@@ -1,5 +1,5 @@
 ﻿using Shinobytes.Linq;
-public class IslandInfo : ChatBotCommandHandler<TwitchPlayerInfo>
+public class IslandInfo : ChatBotCommandHandler
 {
     public IslandInfo(
        GameManager game,
@@ -9,24 +9,24 @@ public class IslandInfo : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         if (player.Dungeon.InDungeon)
         {
-            client.SendMessage(data.Username, $"You're currently in the dungeon.");
+            client.SendReply(gm, $"You're currently in the dungeon.");
             return;
         }
 
         if (player.StreamRaid.InWar)
         {
-            client.SendMessage(data.Username, $"You're currently in a streamer raid war.");
+            client.SendReply(gm, $"You're currently in a streamer raid war.");
             return;
         }
 
@@ -38,11 +38,11 @@ public class IslandInfo : ChatBotCommandHandler<TwitchPlayerInfo>
                 var dest = player.Ferry.Destination;
                 if (dest != null)
                 {
-                    client.SendMessage(data.Username, Localization.MSG_ISLAND_ON_FERRY_DEST, dest.Identifier);
+                    client.SendReply(gm, Localization.MSG_ISLAND_ON_FERRY_DEST, dest.Identifier);
                 }
                 else
                 {
-                    client.SendMessage(data.Username, Localization.MSG_ISLAND_ON_FERRY);
+                    client.SendReply(gm, Localization.MSG_ISLAND_ON_FERRY);
                 }
             }
             else
@@ -60,18 +60,18 @@ public class IslandInfo : ChatBotCommandHandler<TwitchPlayerInfo>
                     moderatorMessage = " {moderatorName}, could you please use !show @{player} to see if player is stuck?";
                 }
 
-                client.SendMessage(data.Username, $"Uh oh. Your character may be stuck." + moderatorMessage, arg0, arg1);
+                client.SendReply(gm, $"Uh oh. Your character may be stuck." + moderatorMessage, arg0, arg1);
             }
         }
         else
         {
             if (player.Dungeon.InDungeon)
             {
-                client.SendMessage(data.Username, $"You are currently inside the dungeon.");
+                client.SendReply(gm, $"You are currently inside the dungeon.");
                 return;
             }
 
-            client.SendMessage(data.Username, Localization.MSG_ISLAND, islandName);
+            client.SendReply(gm, Localization.MSG_ISLAND, islandName);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿public class PlayerCount : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class PlayerCount : ChatBotCommandHandler<User>
 {
     public PlayerCount(
        GameManager game,
@@ -7,9 +7,9 @@
        : base(game, server, playerManager)
     {
     }
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(User data, GameMessage gm, GameClient client)
     {
         var playerCount = PlayerManager.GetPlayerCount();
-        client.SendFormat(data.Username, Localization.MSG_PLAYERS_ONLINE, playerCount);
+        client.SendReply(gm, Localization.MSG_PLAYERS_ONLINE, playerCount);
     }
 }

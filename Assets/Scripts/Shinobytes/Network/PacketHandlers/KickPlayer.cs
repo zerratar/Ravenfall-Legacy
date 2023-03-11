@@ -1,7 +1,7 @@
 ﻿
 using System.Linq;
 
-public class KickPlayer : ChatBotCommandHandler<TwitchPlayerInfo>
+public class KickPlayer : ChatBotCommandHandler<User>
 {
     public KickPlayer(
         GameManager game,
@@ -11,7 +11,7 @@ public class KickPlayer : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(User data, GameMessage gm, GameClient client)
     {
         if (data.Username.Equals("afk", System.StringComparison.OrdinalIgnoreCase))
         {
@@ -48,43 +48,43 @@ public class KickPlayer : ChatBotCommandHandler<TwitchPlayerInfo>
                 Game.RemovePlayer(plr);
             }
 
-            client.SendMessage(data.Username, "{kickedPlayerCount} players was kicked from the game.", kickedPlayerCount.ToString());
+            client.SendReply(gm, "{kickedPlayerCount} players was kicked from the game.", kickedPlayerCount.ToString());
             return;
         }
 
-        var player = PlayerManager.GetPlayer(data);
-        if (player)
+        var playerToKick = PlayerManager.GetPlayer(data);
+        if (playerToKick)
         {
-            if (Game.Dungeons.JoinedDungeon(player))
+            if (Game.Dungeons.JoinedDungeon(playerToKick))
             {
-                Game.Dungeons.Remove(player);
+                Game.Dungeons.Remove(playerToKick);
             }
 
-            if (!Game.Arena.Started && Game.Arena.Activated && player.Arena.InArena)
+            if (!Game.Arena.Started && Game.Arena.Activated && playerToKick.Arena.InArena)
             {
-                Game.Arena.Leave(player);
+                Game.Arena.Leave(playerToKick);
             }
-            else if (player.Duel.InDuel || !Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+            else if (playerToKick.Duel.InDuel || !Game.Arena.CanJoin(playerToKick, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
             {
-                Game.QueueRemovePlayer(player);
+                Game.QueueRemovePlayer(playerToKick);
             }
             else
             {
-                Game.RemovePlayer(player);
+                Game.RemovePlayer(playerToKick);
             }
 
-            client.SendMessage(data.Username, "{player} was kicked from the game.", player.PlayerName);
+            client.SendReply(gm, "{player} was kicked from the game.", playerToKick.PlayerName);
         }
         else
         {
             var similarPlayerName = PlayerManager.GetAllPlayers().FirstOrDefault(x => x.Name.ToLower().StartsWith(data.Username));
             if (similarPlayerName != null)
             {
-                client.SendMessage(data.Username, "No players with the name '{player}' is playing. Did you mean " + similarPlayerName.Name + "?", data.Username);
+                client.SendReply(gm, "No players with the name '{player}' is playing. Did you mean " + similarPlayerName.Name + "?", data.Username);
             }
             else
             {
-                client.SendMessage(data.Username, "No players with the name '{player}' is playing.", data.Username);
+                client.SendReply(gm, "No players with the name '{player}' is playing.", data.Username);
             }
         }
     }

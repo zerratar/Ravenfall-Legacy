@@ -1,49 +1,49 @@
 ﻿using Shinobytes.Linq;
 
-public class ItemCount : ChatBotCommandHandler<TradeItemRequest>
+public class ItemCount : ChatBotCommandHandler<string>
 {
     public ItemCount(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)
     {
     }
 
-    public override void Handle(TradeItemRequest data, GameClient client)
+    public override void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
-        if (string.IsNullOrEmpty(data.ItemQuery))
+        if (string.IsNullOrEmpty(inputQuery))
         {
-            client.SendMessage(data.Player.Username, Localization.MSG_ITEM_COUNT_MISSING_ARGS);
+            client.SendReply(gm, Localization.MSG_ITEM_COUNT_MISSING_ARGS);
             return;
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.ResolveTradeQuery(data.ItemQuery,
+        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery,
             parsePrice: false, parseUsername: false, parseAmount: false, playerToSearch: player);
 
 
         if (queriedItem.SuggestedItemNames.Length > 0)
         {
-            client.SendMessage(player.PlayerName, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, data.ItemQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", queriedItem.SuggestedItemNames));
             return;
         }
 
         if (queriedItem.Item == null)
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_ITEM_NOT_FOUND, data.ItemQuery);
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 
         var item = queriedItem.InventoryItem;
         if (item == null)
         {
-            client.SendFormat(data.Player.Username, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
             return;
         }
 
@@ -54,6 +54,6 @@ public class ItemCount : ChatBotCommandHandler<TradeItemRequest>
             itemAmount = player.Inventory.GetInventoryItemsByItemId(item.Item.Id).AsList(x => x.Enchantments?.Count == 0).Sum(x => x.Amount);
         }
 
-        client.SendFormat(data.Player.Username, "You have {itemCount}x {itemName}(s).", itemAmount, item.Name);
+        client.SendReply(gm, "You have {itemCount}x {itemName}(s).", itemAmount, item.Name);
     }
 }

@@ -63,20 +63,20 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
 
         if (this.players.FirstOrDefault(x => x.Player.UserId == player.UserId) != null)
         {
-            gameManager.RavenBot.SendMessage(player.Name, Localization.PETRACE_ALREADY_PLAYING);
+            gameManager.RavenBot.SendReply(player, Localization.PETRACE_ALREADY_PLAYING);
             return;
         }
 
         var pet = player.Inventory.GetEquipmentOfCategory(RavenNest.Models.ItemCategory.Pet);
         if (pet == null)
         {
-            gameManager.RavenBot.SendMessage(player.Name, Localization.PETRACE_NO_PET);
+            gameManager.RavenBot.SendReply(player, Localization.PETRACE_NO_PET);
             return;
         }
 
         if (string.IsNullOrEmpty(pet.Item.GenericPrefab))
         {
-            //gameManager.RavenBot.SendMessage(player.Name, "PET IS BROKEN?!?");
+            //gameManager.RavenBot.SendReply(player, "PET IS BROKEN?!?");
             return;
         }
 

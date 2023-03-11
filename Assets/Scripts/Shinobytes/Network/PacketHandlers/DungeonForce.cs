@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 using System.Threading;
-public class DungeonForce : ChatBotCommandHandler<TwitchPlayerInfo>
+public class DungeonForce : ChatBotCommandHandler
 {
     private int scrollActive;
     public DungeonForce(
@@ -11,38 +11,38 @@ public class DungeonForce : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override async void Handle(TwitchPlayerInfo data, GameClient client)
+    public override async void Handle(GameMessage gm, GameClient client)
     {
         try
         {
-            var plr = PlayerManager.GetPlayer(data);
+            var plr = PlayerManager.GetPlayer(gm.Sender);
             if (!plr)
             {
-                client.SendMessage(data.Username, Localization.MSG_NOT_PLAYING);
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
                 return;
             }
 
             if (Game.Dungeons.IsBusy)
             {
-                client.SendMessage(data.Username, "Someone just used a dungeon scroll.");
+                client.SendReply(gm, "Someone just used a dungeon scroll.");
                 return;
             }
 
             if (Game.Raid.IsBusy)
             {
-                client.SendMessage(data.Username, "Someone tried to use a raid scroll. Please wait before using a dungeon scroll.");
+                client.SendReply(gm, "Someone tried to use a raid scroll. Please wait before using a dungeon scroll.");
                 return;
             }
 
             if (Game.Raid.Started)
             {
-                client.SendMessage(data.Username, Localization.MSG_DUNGEON_START_FAILED_RAID);
+                client.SendReply(gm, Localization.MSG_DUNGEON_START_FAILED_RAID);
                 return;
             }
 
             if (Game.StreamRaid.IsWar)
             {
-                client.SendMessage(data.Username, Localization.MSG_DUNGEON_START_FAILED_WAR);
+                client.SendReply(gm, Localization.MSG_DUNGEON_START_FAILED_WAR);
                 return;
             }
 
@@ -50,7 +50,7 @@ public class DungeonForce : ChatBotCommandHandler<TwitchPlayerInfo>
             {
                 if (Game.Events.IsActive)
                 {
-                    client.SendFormat(data.Username, "Dungeon cannot be started right now. Please try again later");
+                    client.SendReply(gm, "Dungeon cannot be started right now. Please try again later");
                     return;
                 }
 
@@ -63,11 +63,11 @@ public class DungeonForce : ChatBotCommandHandler<TwitchPlayerInfo>
                     if (await Game.Dungeons.ActivateDungeon())
                     {
                         var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Dungeon);
-                        client.SendFormat(data.Username, "You have used a Dungeon Scroll.");
+                        client.SendReply(gm, "You have used a Dungeon Scroll.");
                     }
                     else
                     {
-                        client.SendFormat(data.Username, "Dungeon could not be started. Try again later");
+                        client.SendReply(gm, "Dungeon could not be started. Try again later");
                         var dungeonScroll = Game.Items.Find(x => x.Name.ToLower().Contains("dungeon") && x.Category == ItemCategory.Scroll);
                         if (dungeonScroll != null)
                         {
@@ -80,10 +80,10 @@ public class DungeonForce : ChatBotCommandHandler<TwitchPlayerInfo>
                     switch (result)
                     {
                         case ScrollUseResult.InsufficientScrolls:
-                            client.SendFormat(data.Username, "You do not have any Dungeon Scrolls! Redeem them under streamer loyalty on the website.");
+                            client.SendReply(gm, "You do not have any Dungeon Scrolls! Redeem them under streamer loyalty on the website.");
                             return;
                         case ScrollUseResult.Error:
-                            client.SendFormat(data.Username, "Server was not able to give back a valid response. Uh oh.. BUG!");
+                            client.SendReply(gm, "Server was not able to give back a valid response. Uh oh.. BUG!");
                             return;
                     }
                 }

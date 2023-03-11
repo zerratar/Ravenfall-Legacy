@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class PlayerJoin : ChatBotCommandHandler<TwitchPlayerInfo>
+public class PlayerJoin : ChatBotCommandHandler
 {
     public PlayerJoin(
         GameManager game,
@@ -10,8 +10,8 @@ public class PlayerJoin : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override async void Handle(TwitchPlayerInfo data, GameClient client)
+    public override async void Handle(GameMessage gm, GameClient client)
     {
-        await Game.Players.JoinAsync(data, client, true);
+        await Game.Players.JoinAsync(gm, gm.Sender, client, true, false, null);
     }
 }

@@ -13,6 +13,8 @@ using UnityEngine;
 using UnityEngine.AI;
 using Resources = RavenNest.Models.Resources;
 using Debug = Shinobytes.Debug;
+using Newtonsoft.Json;
+
 public class PlayerController : MonoBehaviour, IAttackable
 {
     private static readonly ConcurrentDictionary<string, int> combatTypeArgLookup
@@ -106,8 +108,12 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public string PlayerNameHexColor = "#FFFFFF";
 
-    public string UserId;
     public Guid Id;
+    public Guid UserId;
+
+    public string Platform;
+    public string PlatformId;
+
     public float AttackRange = 1.8f;
     public float RangedAttackRange = 15F;
     public float MagicAttackRange = 15f;
@@ -127,7 +133,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     //public int GiftedSubs;
     //public int TotalBitsCheered;
     //public int TotalGiftedSubs;
-    public TwitchPlayerInfo TwitchUser { get; private set; }
+    public User User { get; private set; }
     public int CharacterIndex { get; private set; }
 
     public bool IsGameAdmin;
@@ -776,7 +782,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         var wasEquipped = EquipIfBetter(itemInstance);
         if (alertInChat && !IsBot)
         {
-            GameManager.RavenBot.Send(PlayerName, wasEquipped
+            GameManager.RavenBot.SendReply(this, wasEquipped
                 ? "You found and equipped a {itemName}!"
                 : "You found a {itemName}!", item.Name);
         }
@@ -787,27 +793,10 @@ public class PlayerController : MonoBehaviour, IAttackable
     public PlayerState BuildPlayerState()
     {
         var state = new PlayerState();
-
-        state.CharacterId = this.Id;
+        state.PlayerId = this.Id;
         state.SyncTime = GameSystems.time;
-        state.UserId = UserId;
-
-        //var statistics = Statistics.ToList()
-        //    .Delta(lastSavedStatistics?.ToList())
-        //    .ToArray();
-
-        //if (statistics.Any(x => x != 0))
-        //{
-        //    state.Statistics = statistics;
-        //}
-
         state.Experience = Stats.GetExperienceList();
         state.Level = Stats.GetLevelList();
-
-        //if (currentTask != TaskType.None)
-        //{
-        //    state.CurrentTask = CurrentTaskName + ":" + taskArgument;//taskArguments.FirstOrDefault();
-        //}
 
         return state;
     }
@@ -861,65 +850,88 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             if (Chunk == null)
             {
-                var chunks = chunkManager.GetChunksOfType(Island, type);
-                if (chunks.Count > 0)
+                if (IsBot)
                 {
-                    if (IsBot)
-                    {
-                        return;
-                    }
-
-                    var lowestReq = chunks.Lowest(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel());//chunks.OrderBy(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel()).FirstOrDefault();
-                    var reqCombat = lowestReq.GetRequiredCombatLevel();
-                    var reqSkill = lowestReq.GetRequiredSkillLevel();
-
-                    var arg0 = "";
-                    var arg1 = "";
-                    var msg = "";
-
-                    if (ChunkManager.StrictLevelRequirements && reqCombat > 1 && reqSkill > 1)
-                    {
-                        msg = Localization.NOT_HIGH_ENOUGH_SKILL_AND_COMBAT;
-                        arg0 = reqCombat.ToString();
-                        arg1 = reqSkill.ToString();
-                    }
-                    else if (reqCombat > 1)
-                    {
-                        if (ChunkManager.StrictLevelRequirements)
-                        {
-                            msg = Localization.NOT_HIGH_ENOUGH_COMBAT;
-                        }
-                        else
-                        {
-                            msg = Localization.NOT_HIGH_ENOUGH_SKILL_OR_COMBAT;
-                        }
-
-                        arg0 = type.ToString();
-                        arg1 = reqCombat.ToString();
-
-                    }
-                    else if (reqSkill > 1)
-                    {
-                        msg = Localization.NOT_HIGH_ENOUGH_SKILL;
-                        arg0 = reqSkill.ToString();
-                        arg1 = type.ToString();
-
-                        if (type == TaskType.Fighting)
-                        {
-                            arg1 = ActiveSkill.ToString();
-                        }
-                    }
-
-                    GameManager.RavenBot.Send(PlayerName, msg, arg0, arg1);
                     return;
                 }
 
-                GameManager.RavenBot.Send(PlayerName, Localization.CANT_TRAIN_HERE, type);
+                var chunks = chunkManager.GetChunksOfType(Island, type);
+                var skill = GetSkill(type) ?? GetActiveSkillStat(); // if its null, then its a combat skill
+
+                // but if its still null, we can't do any extra step checks. Not a valid task to skill
+                if (skill != null)
+                {
+                    foreach (var chunk in chunks)
+                    {
+                        var reqCombat = chunk.GetRequiredCombatLevel();
+                        var reqSkill = chunk.GetRequiredSkillLevel();
+
+                        if (Stats.CombatLevel >= reqCombat && skill.Level >= reqSkill)
+                        {
+                            Chunk = chunk;
+                            break;
+                        }
+                    }
+                }
+
+                // still null? well..
+                if (Chunk == null)
+                {
+                    if (chunks.Count > 0)
+                    {
+                        var lowestReq = chunks.Lowest(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel());//chunks.OrderBy(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel()).FirstOrDefault();
+                        var reqCombat = lowestReq.GetRequiredCombatLevel();
+                        var reqSkill = lowestReq.GetRequiredSkillLevel();
+
+                        var arg0 = "";
+                        var arg1 = "";
+                        var msg = "";
+
+                        if (ChunkManager.StrictLevelRequirements && reqCombat > 1 && reqSkill > 1)
+                        {
+                            msg = Localization.NOT_HIGH_ENOUGH_SKILL_AND_COMBAT;
+                            arg0 = reqCombat.ToString();
+                            arg1 = reqSkill.ToString();
+                        }
+                        else if (reqCombat > 1)
+                        {
+                            if (ChunkManager.StrictLevelRequirements)
+                            {
+                                msg = Localization.NOT_HIGH_ENOUGH_COMBAT;
+                            }
+                            else
+                            {
+                                msg = Localization.NOT_HIGH_ENOUGH_SKILL_OR_COMBAT;
+                            }
+
+                            arg0 = type.ToString();
+                            arg1 = reqCombat.ToString();
+
+                        }
+                        else if (reqSkill > 1)
+                        {
+                            msg = Localization.NOT_HIGH_ENOUGH_SKILL;
+                            arg0 = reqSkill.ToString();
+                            arg1 = type.ToString();
+
+                            if (type == TaskType.Fighting)
+                            {
+                                arg1 = ActiveSkill.ToString();
+                            }
+                        }
+
+                        GameManager.RavenBot.SendReply(this, msg, arg0, arg1);
+                        return;
+                    }
+
+                    GameManager.RavenBot.SendReply(this, Localization.CANT_TRAIN_HERE, type);
 #if UNITY_EDITOR
-                Shinobytes.Debug.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
+                    Shinobytes.Debug.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
 #endif
-                return;
+                    return;
+                }
             }
+
         }
         finally
         {
@@ -1040,7 +1052,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (!IsBot)
         {
-            await GameManager.RavenNest.Players.EquipItemAsync(UserId, petToEquip.Item.Id);
+            await GameManager.RavenNest.Players.EquipInventoryItemAsync(Id, petToEquip.InstanceId);
         }
         Inventory.Equip(petToEquip);
         return petToEquip;
@@ -1051,7 +1063,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         UnequipAllItems();
         if (!IsBot)
         {
-            await GameManager.RavenNest.Players.UnequipAllItemsAsync(UserId);
+            await GameManager.RavenNest.Players.UnequipAllItemsAsync(Id);
         }
     }
 
@@ -1060,7 +1072,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         Inventory.Unequip(item);
         if (!IsBot)
         {
-            await GameManager.RavenNest.Players.UnequipInventoryItemAsync(UserId, item.InstanceId);
+            await GameManager.RavenNest.Players.UnequipInventoryItemAsync(Id, item.InstanceId);
         }
     }
 
@@ -1078,7 +1090,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             {
                 if (reportShieldWarning)
                 {
-                    GameManager.RavenBot.SendMessage(this.TwitchUser.Username, Localization.EQUIP_SHIELD_AND_TWOHANDED);
+                    GameManager.RavenBot.SendReply(this, Localization.EQUIP_SHIELD_AND_TWOHANDED);
                 }
                 return;
             }
@@ -1109,7 +1121,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             if (item.RequiredMagicLevel > 0) requirement += item.RequiredAttackLevel + " Magic/Healing.";
             if (item.RequiredRangedLevel > 0) requirement += item.RequiredAttackLevel + " Ranged.";
             if (item.RequiredSlayerLevel > 0) requirement += item.RequiredAttackLevel + " Slayer.";
-            GameManager.RavenBot.SendMessage(this.TwitchUser.Username, "You do not meet the requirements to equip " + item.Name + ". " + requirement);
+            GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement);
             return;
         }
     }
@@ -1123,7 +1135,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return true;
         }
 
-        if (await GameManager.RavenNest.Players.EquipInventoryItemAsync(UserId, item.InstanceId))
+        if (await GameManager.RavenNest.Players.EquipInventoryItemAsync(Id, item.InstanceId))
         {
             return false;
         }
@@ -1138,7 +1150,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             var thw = Inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedSword); // we will get either.
             if (thw != null && (thw.Type == ItemType.TwoHandedAxe || thw.Type == ItemType.TwoHandedSword))
             {
-                GameManager.RavenBot.SendMessage(this.TwitchUser.Username, Localization.EQUIP_SHIELD_AND_TWOHANDED);
+                GameManager.RavenBot.SendReply(this, Localization.EQUIP_SHIELD_AND_TWOHANDED);
                 return false;
             }
         }
@@ -1168,7 +1180,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             if (item.RequiredMagicLevel > 0) requirement += item.RequiredAttackLevel + " Magic/Healing.";
             if (item.RequiredRangedLevel > 0) requirement += item.RequiredAttackLevel + " Ranged.";
             if (item.RequiredSlayerLevel > 0) requirement += item.RequiredAttackLevel + " Slayer.";
-            GameManager.RavenBot.SendMessage(this.TwitchUser.Username, "You do not meet the requirements to equip " + item.Name + ". " + requirement);
+            GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement);
             return false;
         }
 
@@ -1177,7 +1189,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return true;
         }
 
-        if (await GameManager.RavenNest.Players.EquipItemAsync(UserId, item.Id))
+        if (await GameManager.RavenNest.Players.EquipItemAsync(Id, item.Id))
         {
             return false;
         }
@@ -1185,28 +1197,34 @@ public class PlayerController : MonoBehaviour, IAttackable
         return true;
     }
 
-    public void UpdateTwitchUser(TwitchPlayerInfo twitchUser)
+    public void UpdateUser(User user)
     {
-        if (twitchUser == null)
+        if (user == null)
         {
             return;
         }
 
+        if (user.Id == Guid.Empty)
+        {
+            user.Id = UserId;
+        }
+
         // you can never not be broadcaster, but if for any reason you were not before, make sure you are now.
-        IsBroadcaster = IsBroadcaster || twitchUser.IsBroadcaster;
-        IsModerator = twitchUser.IsModerator;
-        IsSubscriber = twitchUser.IsSubscriber;
-        IsVip = twitchUser.IsVip;
-        TwitchUser = twitchUser;
+        IsBroadcaster = IsBroadcaster || user.IsBroadcaster;
+        IsModerator = user.IsModerator;
+        IsSubscriber = user.IsSubscriber;
+        IsVip = user.IsVip;
+        User = user;
     }
 
     public void SetPlayer(
-        RavenNest.Models.Player player,
-        TwitchPlayerInfo twitchUser,
+        Player player,
+        User user,
         StreamRaidInfo raidInfo,
         GameManager gm,
         bool prepareForCamera)
     {
+
         gameObject.name = player.Name;
 
         GameManager = gm;
@@ -1222,14 +1240,33 @@ public class PlayerController : MonoBehaviour, IAttackable
         Id = player.Id;
         UserId = player.UserId;
 
-        Movement.SetAvoidancePriority(UnityEngine.Random.Range(1, 99));
+        if (user == null)
+        {
+            user = new User(
+                player.UserId,
+                player.UserName,
+                player.Name,
+                PlayerNameHexColor,
+                "ravenfall",
+                player.Id.ToString(),
+                false, false, false, false, player.Identifier);
+        }
+        if (user.Id == Guid.Empty)
+        {
+            user.Id = UserId;
+        }
 
-        if (UserId[0] == '#' || this.IsBot)
+        PlatformId = user.PlatformId;
+        Platform = user.Platform;
+
+        if (user.PlatformId[0] == '#' || this.IsBot)
         {
             this.IsBot = true;
             this.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();
             this.Bot.playerController = this;
         }
+
+        Movement.SetAvoidancePriority(UnityEngine.Random.Range(1, 99));
 
         PatreonTier = player.PatreonTier;
         PlayerName = player.Name;
@@ -1240,17 +1277,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         Raider = raidInfo;
 
-        if (twitchUser == null)
-        {
-            twitchUser = new TwitchPlayerInfo(
-                player.UserId,
-                player.UserName,
-                player.Name,
-                PlayerNameHexColor,
-                false, false, false, false, player.Identifier);
-        }
-
-        UpdateTwitchUser(twitchUser);
+        UpdateUser(user);
 
         var joinOnsenAfterInitialize = false;
         var joinFerryAfterInitialize = false;
@@ -1300,6 +1327,8 @@ public class PlayerController : MonoBehaviour, IAttackable
                         }
                     }
                 }
+
+
                 // could it be? are we on the ferry??
                 // ... Let scheck?
 
@@ -1324,6 +1353,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                         // Attach player to the onsen...                                        
                     }
                 }
+
             }
 
             if (setTask && !string.IsNullOrEmpty(player.State.Task))
@@ -2247,7 +2277,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                                 ? "You're out of resources, you wont gain any cooking exp. Use !train farming or !train fishing to get some resources."
                                 : "You're out of resources, you wont gain any crafting exp. Use !train woodcutting or !train mining to get some resources.";
 
-                            GameManager.RavenBot.SendMessage(PlayerName, message);
+                            GameManager.RavenBot.SendReply(this, message);
                             outOfResourcesAlertTimer = ++outOfResourcesAlertCounter > 3 ? outOfResourcesAlertTime * 10F : outOfResourcesAlertTime;
                         }
                     }
@@ -2330,6 +2360,20 @@ public class PlayerController : MonoBehaviour, IAttackable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SkillStat GetSkill(Skill skill) => Stats[skill];
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SkillStat GetSkill(TaskType type)
+    {
+        switch (type)
+        {
+            case TaskType.Cooking: return Stats.Cooking;
+            case TaskType.Crafting: return Stats.Crafting;
+            case TaskType.Farming: return Stats.Farming;
+            case TaskType.Fishing: return Stats.Fishing;
+            case TaskType.Woodcutting: return Stats.Woodcutting;
+            case TaskType.Mining: return Stats.Mining;
+        }
+        return null;
+    }
 
     internal SkillStat GetActiveSkillStat()
     {
@@ -2502,14 +2546,14 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             try
             {
-                var result = await GameManager.RavenNest.Players.AddItemInstanceDetailedAsync(UserId, item);
+                var result = await GameManager.RavenNest.Players.AddItemAsync(Id, item);
 
                 if (result == null || result.Result == AddItemResult.Failed)
                 {
                     // this needs to give a better response.
                     // empty guid? are we Okay not to retry?
                     // if player is not in the client. Ignore this
-                    if (GameManager.Players.Contains(UserId))
+                    if (GameManager.Players.Contains(Id))
                     {
                         queuedItemAdd.Enqueue(item);
                         //Shinobytes.Debug.LogError("Item add for user: " + UserId + ", item: " + item + ", result: " + result);
@@ -2552,6 +2596,17 @@ public class PlayerController : MonoBehaviour, IAttackable
         EquipmentStats.RangedPowerBonus = 0;
         EquipmentStats.RangedAimBonus = 0;
 
+        foreach (var s in Stats.SkillList)
+        {
+            s.Bonus = 0;
+            if (s == this.Stats.Health)
+            {
+                continue;
+            }
+
+            s.CurrentValue = Mathf.FloorToInt(s.Level + (float)s.Bonus);
+        }
+
         foreach (var e in equipped)
         {
             // Ignore shield when training ranged or magic.
@@ -2585,12 +2640,12 @@ public class PlayerController : MonoBehaviour, IAttackable
             var skillBonus = e.GetSkillBonuses();
             foreach (var sb in skillBonus)
             {
-                sb.Skill.Bonus = (float)sb.Bonus;
+                sb.Skill.Bonus += (float)sb.Bonus;
                 if (sb.Skill == this.Stats.Health)
                 {
                     continue;
                 }
-                sb.Skill.CurrentValue = Mathf.FloorToInt(sb.Skill.Level + (float)sb.Bonus);
+                sb.Skill.CurrentValue = Mathf.FloorToInt(sb.Skill.Level + (float)sb.Skill.Bonus);
             }
         }
 

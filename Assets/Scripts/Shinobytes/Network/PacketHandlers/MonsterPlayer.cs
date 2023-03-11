@@ -1,4 +1,4 @@
-﻿public class MonsterPlayer : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class MonsterPlayer : ChatBotCommandHandler
 {
     public MonsterPlayer(
         GameManager game,
@@ -8,18 +8,18 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
-            client.SendMessage(data.DisplayName, Localization.MSG_NOT_PLAYING);
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
 
         if (!player.TurnIntoMonster(5f * 60f))
         {
-            client.SendFormat(data.DisplayName, "Player could not be turned into a monster right now :(");
+            client.SendReply(gm, "Player could not be turned into a monster right now :(");
         }
     }
 }

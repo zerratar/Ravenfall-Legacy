@@ -407,8 +407,6 @@ public class DungeonManager : MonoBehaviour, IEvent
 
             AdjustBossStats();
             AdjustEnemyStats();
-
-            gameManager.EventTriggerSystem.SendInput(player.UserId, "dungeon");
         }
     }
 
@@ -467,7 +465,6 @@ public class DungeonManager : MonoBehaviour, IEvent
             var lowestStats = players.Min(x => x.Stats);
             var rngLowEq = players.Min(x => x.EquipmentStats);
             var rngHighEq = players.Max(x => x.EquipmentStats);
-
 
             Dungeon.BossRoom.Boss =
                   Instantiate(dungeonBossPrefab, Dungeon.BossSpawnPoint, Quaternion.identity)
@@ -653,7 +650,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         var secondsLeft = timeLeft.Seconds;
         var minutesLeft = timeLeft.Minutes;
 
-        gameManager.RavenBot.Broadcast("{minutes}m{seconds}s until dungeon starts.", minutesLeft.ToString("00"), secondsLeft.ToString("00"));
+        gameManager.RavenBot.Announce("{minutes}m{seconds}s until dungeon starts.", minutesLeft.ToString("00"), (object)secondsLeft.ToString("00"));
         notificationTimer = notificationUpdate;
     }
 

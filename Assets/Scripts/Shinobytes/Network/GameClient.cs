@@ -21,7 +21,7 @@ public class GameClient : IDisposable
     private bool writeActive = false;
 
 
-    private readonly ConcurrentQueue<GamePacket> toWrite = new ConcurrentQueue<GamePacket>();
+    private readonly ConcurrentQueue<GameMessageResponse> toWrite = new ConcurrentQueue<GameMessageResponse>();
 
     private bool disposed;
     private bool canReconnect;
@@ -75,7 +75,8 @@ public class GameClient : IDisposable
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            await Task.Delay(1000);
+
             onConnectFailed?.Invoke();
         }
     }
@@ -216,15 +217,12 @@ public class GameClient : IDisposable
                         if (toWrite.TryDequeue(out var cmd))
                         {
                             //server.Log(cmd);
-                            if (cmd != null)
-                            {
-                                var json = JsonConvert.SerializeObject(cmd);
-                                writer.WriteLine(json);
-                                writer.Flush();
+                            var json = JsonConvert.SerializeObject(cmd);
+                            writer.WriteLine(json);
+                            writer.Flush();
 
-                                onDataSent?.Invoke(json);
-                                continue;
-                            }
+                            onDataSent?.Invoke(json);
+                            continue;
                         }
 
                         //await Task.Delay(10);
@@ -247,64 +245,73 @@ public class GameClient : IDisposable
         }).Start();
     }
 
-    public void SendMessage(PlayerController player, string format, params string[] args)
+    public void SendReplyUseMessageIfNotNull(GameMessage sourceMessage, User player, string format, params object[] args)
     {
-        SendCommand(player.PlayerName, "message", format, args);
-    }
-
-    public void SendMessage(TwitchPlayerInfo player, string format, params string[] args)
-    {
-        SendCommand(player.Username, "message", format, args);
-    }
-
-    public void SendMessage(string playerName, string format, params string[] args)
-    {
-        SendCommand(playerName, "message", format, args);
-    }
-
-    //public void SendSessionOwner(string userId, string username)
-    //{
-    //    SendCommand("", "session_owner", "", userId, username);
-    //}
-
-    public void SendSessionOwner(string userId, string username, Guid sessionId)
-    {
-        if (string.IsNullOrEmpty(userId) || sessionId == Guid.Empty || string.IsNullOrEmpty(username))
+        if (sourceMessage != null)
         {
-            //Shinobytes.Debug.Log("Oh my! We tried to send session details to the bot without having anything. A bit hasty arnt we?");
+            SendReply(sourceMessage, format, args);
             return;
         }
 
-        SendCommand("", "session_owner", "", userId, username, sessionId.ToString(), created.ToString());
+        SendReply(GameMessageRecipent.Create(player), "message", format, args);
+    }
+
+    public void Announce(string format, object[] args, string category = null, params string[] tags)
+    {        
+        Write(new GameMessageResponse(
+            "message",
+            GameMessageRecipent.System,
+            format,
+            args, tags, category, string.Empty));
+    }
+
+    public void SendReply(PlayerController player, string format, params object[] args)
+    {
+        SendReply(GameMessageRecipent.Create(player.User), "message", format, args);
+    }
+
+    public void SendReply(User player, string format, params object[] args)
+    {
+        SendReply(GameMessageRecipent.Create(player), "message", format, args);
+    }
+
+    public void SendReply(GameMessageRecipent recipent, string format, params object[] args)
+    {
+        Write(GameMessageResponse.CreateReply("message", recipent, format, args, string.Empty));
+    }
+
+    public void SendReply(GameMessage sourceMessage, string format, params object[] args)
+    {
+        Write(GameMessageResponse.CreateReply("message",
+            GameMessageRecipent.Create(sourceMessage.Sender),
+            format,
+            args,
+            sourceMessage.CorrelationId));
+    }
+
+
+
+    public void SendSessionOwner(Guid sid, Guid uid)
+    {
+        if (sid == Guid.Empty || uid == Guid.Empty)
+            return;
+
+        Write(GameMessageResponse.CreateArgs("session", sid.ToString(), uid.ToString(), created.ToString()));
     }
 
     public void SendPubSubToken(string userId, string username, string token)
     {
-        SendCommand("", "pubsub_token", "", userId, username, token);
+        Write(GameMessageResponse.CreateArgs("pubsub_token", userId, username, token));
     }
 
-    public void SendPong(int correlationId)
+    public void SendPong(string correlationId)
     {
         lastPongSent = DateTime.UtcNow;
         lastPongSentTime = UnityEngine.Time.realtimeSinceStartup;
-        SendCommand("", "pong", "", correlationId.ToString());
+        Write(GameMessageResponse.CreateEmptyReply("pong", correlationId));
     }
 
-    public void SendFormat(string receiver, string format, params object[] args)
-    {
-        var a = args == null ? new string[0] : args.Select(x => x.ToString()).ToArray();
-        SendMessage(receiver, format, a);
-    }
-
-    public void SendCommand(string playerName, string identifier, string format, params string[] args)
-    {
-        if (AdminControlData.NoChatBotMessages && identifier == "message")
-            return;
-
-        Write(new GamePacket(playerName, identifier, format, args));
-    }
-
-    public void Write(GamePacket cmd)
+    public void Write(GameMessageResponse cmd)
     {
         toWrite.Enqueue(cmd);
         Update();

@@ -23,17 +23,17 @@ public class OnsenManager : MonoBehaviour
         {
             if (!player.Island)
             {
-                game.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_FERRY);
+                game.RavenBot.SendReply(player, Localization.MSG_ONSEN_FERRY);
                 return false;
             }
 
 #if DEBUG
             if (!AdminControlData.ControlPlayers)
             {
-                game.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_WRONG_ISLAND, player.Island.Identifier);
+                game.RavenBot.SendReply(player, Localization.MSG_ONSEN_WRONG_ISLAND, player.Island.Identifier);
             }
 #else
-            game.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_WRONG_ISLAND, player.Island.Identifier);
+            game.RavenBot.SendReply(player, Localization.MSG_ONSEN_WRONG_ISLAND, player.Island.Identifier);
 #endif
             return false;
         }

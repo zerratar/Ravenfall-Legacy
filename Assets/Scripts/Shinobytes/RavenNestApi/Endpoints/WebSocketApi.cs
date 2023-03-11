@@ -98,47 +98,9 @@ namespace RavenNest.SDK.Endpoints
             return await connection.CreateAsync();
         }
 
-        public Task UpdatePlayerEventStatsAsync(EventTriggerSystem.SysEventStats e)
-        {
-            try
-            {
-                if (e.TotalTriggerCount <= 1)
-                {
-                    return Task.CompletedTask;
-                }
-
-                var player = this.gameManager.Players.GetPlayerByUserId(e.Source);
-                if (!player) return Task.CompletedTask;
-                var avgSecPerTrigger = e.TotalTriggerTime.TotalSeconds / e.TotalTriggerCount;
-                var maxResponse = e.TriggerRangeMax.Select(x => x.Value).OrderByDescending(x => x).FirstOrDefault();
-                var minResponse = e.TriggerRangeMin.Select(x => x.Value).OrderBy(x => x).FirstOrDefault();
-                var data = new PlayerSessionActivity
-                {
-                    UserId = e.Source,
-                    CharacterId = player.Id,
-                    AvgResponseTime = TimeSpan.FromSeconds(avgSecPerTrigger),
-                    MaxResponseTime = TimeSpan.FromSeconds(maxResponse),
-                    MinResponseTime = TimeSpan.FromSeconds(minResponse),
-                    MaxResponseStreak = (int)e.HighestTriggerStreak,
-                    ResponseStreak = (int)e.TriggerStreak,
-                    TotalInputCount = (int)e.InputCount.Sum(x => x.Value),
-                    TotalTriggerCount = (int)e.TriggerCount.Sum(x => x.Value),
-                    TripCount = (int)e.InspectCount,
-                    Tripped = e.Flagged,
-                    UserName = player.TwitchUser.Username
-                };
-                connection.SendNoAwait(player.Id, "update_user_session_stats", data, nameof(PlayerSessionActivity));
-                return Task.CompletedTask;
-            }
-            catch
-            {
-                return Task.CompletedTask;
-            }
-        }
-
         public bool SaveActiveSkill(PlayerController player)
         {
-            if (player.IsBot || player.UserId.StartsWith("#"))
+            if (player.IsBot || player.PlatformId.StartsWith("#"))
             {
                 return true;
             }
@@ -179,18 +141,18 @@ namespace RavenNest.SDK.Endpoints
         }
         public bool SavePlayerSkills(PlayerController player)
         {
-            if (player == null || string.IsNullOrEmpty(player.UserId))
+            if (player == null || string.IsNullOrEmpty(player.PlatformId))
             {
                 return false;
             }
 
-            if (player.IsBot || player.UserId.StartsWith("#"))
+            if (player.IsBot || player.PlatformId.StartsWith("#"))
             {
                 return true;
             }
 
             var state = player.BuildPlayerState();
-            if (state == null || string.IsNullOrEmpty(state.UserId))
+            if (state == null || state.PlayerId == Guid.Empty)
             {
                 return false;
             }
@@ -201,8 +163,7 @@ namespace RavenNest.SDK.Endpoints
                 {
                     Level = state.Level,
                     Experience = state.Experience,
-                    UserId = state.UserId,
-                    CharacterId = state.CharacterId
+                    CharacterId = state.PlayerId,
                 });
 
                 if (lastSavedSkills.TryGetValue(player.Id, out var lastUpdate))
@@ -231,10 +192,10 @@ namespace RavenNest.SDK.Endpoints
 
         public bool SavePlayerState(PlayerController player)
         {
-            if (player == null || !player || string.IsNullOrEmpty(player.UserId))
+            if (player == null || !player || string.IsNullOrEmpty(player.PlatformId))
                 return false;
 
-            if (player.IsBot && player.UserId.StartsWith("#"))
+            if (player.IsBot && player.PlatformId.StartsWith("#"))
             {
                 return true;
             }
@@ -267,11 +228,10 @@ namespace RavenNest.SDK.Endpoints
 
             var characterUpdate = new Update<CharacterStateUpdate>(
                new CharacterStateUpdate(
-                           player.UserId,
                            player.Id,
                            player.Stats.Health.CurrentValue,
                            island,
-                           player.Duel.InDuel ? player.Duel.Opponent?.UserId ?? "" : "",
+                           player.Duel.InDuel ? player.Duel.Opponent?.Id.ToString() ?? "" : "",
                            player.Raid.InRaid,
                            player.Arena.InArena,
                            player.Dungeon.InDungeon,

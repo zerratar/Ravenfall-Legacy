@@ -1,4 +1,4 @@
-﻿public class PetRacingPlay : ChatBotCommandHandler<TwitchPlayerInfo>
+﻿public class PetRacingPlay : ChatBotCommandHandler
 {
     public PetRacingPlay(
      GameManager game,
@@ -8,7 +8,7 @@
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(GameMessage gm, GameClient client)
     {
         //return;
 

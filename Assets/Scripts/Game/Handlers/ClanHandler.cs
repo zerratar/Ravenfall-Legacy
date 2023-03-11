@@ -28,7 +28,7 @@ public class ClanHandler : MonoBehaviour
         Role = role;
 
         if (InClan && !string.IsNullOrEmpty(clan.Owner))
-            Logo = clan.Logo ?? (plm?.TwitchLogoUrl + clan.Owner);
+            Logo = clan.Logo ?? (plm?.ClanLogoUrl + clan.Owner);
         else
             Logo = null;
 

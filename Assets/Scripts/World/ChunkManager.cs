@@ -75,6 +75,19 @@ public class ChunkManager : MonoBehaviour
 
         var strictCombatLevel = StrictLevelRequirements;
         var refIsland = playerRef.Island;
+
+        /* In case we are in a dungeon or raid when using this method. 
+           Use the previous island as reference */
+        if (!refIsland && playerRef.Dungeon.InDungeon)
+        {
+            refIsland = playerRef.Dungeon.PreviousIsland;
+        }
+
+        if (!refIsland && playerRef.Raid.InRaid)
+        {
+            refIsland = playerRef.Raid.PreviousIsland;
+        }
+
         var refCombatLevel = playerRef.Stats.CombatLevel;
         var chunk = chunks
             .Where(x =>
@@ -136,15 +149,7 @@ public class ChunkManager : MonoBehaviour
         //.ThenBy(x => Vector3.Distance(x.transform.position, playerRef.transform.position))
         //.FirstOrDefault();
 
-        if (chunk == null)
-        {
-            return null;
-        }
-
         return chunk;
-        //return chunk.SecondaryType == type
-        //    ? chunk.CreateSecondary()
-        //    : chunk;
     }
 
     private int GetSkillLevel(PlayerController playerRef, TaskType type)

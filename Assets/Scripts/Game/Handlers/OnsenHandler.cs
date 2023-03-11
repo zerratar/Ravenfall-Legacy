@@ -56,7 +56,7 @@ public class OnsenHandler : MonoBehaviour
         var spot = onsen.GetNextAvailableSpot();
         if (spot == null)
         {
-            player.GameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_ONSEN_FULL);
+            player.GameManager.RavenBot.SendReply(player, Localization.MSG_ONSEN_FULL);
             return;
         }
 

@@ -98,7 +98,7 @@ public class DuelHandler : MonoBehaviour
         state = DuelState.RequestReceived;
         if (gameManager.RavenBot.Local != null && gameManager.RavenBot.IsConnected)
         {
-            gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ, Opponent.PlayerName);
+            gameManager.RavenBot.SendReply(player, Localization.MSG_DUEL_REQ, Opponent.PlayerName);
         }
     }
 
@@ -110,11 +110,11 @@ public class DuelHandler : MonoBehaviour
             {
                 if (timedOut)
                 {
-                    gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_TIMEOUT, Requester.PlayerName);
+                    gameManager.RavenBot.SendReply(player, Localization.MSG_DUEL_REQ_TIMEOUT, Requester.PlayerName);
                 }
                 else
                 {
-                    gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_DECLINE, Requester.PlayerName);
+                    gameManager.RavenBot.SendReply(player, Localization.MSG_DUEL_REQ_DECLINE, Requester.PlayerName);
                 }
             }
 
@@ -130,7 +130,7 @@ public class DuelHandler : MonoBehaviour
     {
         if (gameManager.RavenBot.IsConnected)
         {
-            gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_REQ_ACCEPT, Requester.PlayerName);
+            gameManager.RavenBot.SendReply(player, Localization.MSG_DUEL_REQ_ACCEPT, Requester.PlayerName);
         }
 
         Opponent = Requester;
@@ -181,7 +181,7 @@ public class DuelHandler : MonoBehaviour
 
         if (gameManager.RavenBot.IsConnected)
         {
-            gameManager.RavenBot.SendMessage(player.PlayerName, Localization.MSG_DUEL_WON, Opponent.PlayerName);
+            gameManager.RavenBot.SendReply(player, Localization.MSG_DUEL_WON, Opponent.PlayerName);
         }
 
         //++player.Statistics.DuelsWon;

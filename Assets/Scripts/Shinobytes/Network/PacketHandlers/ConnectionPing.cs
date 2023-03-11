@@ -1,4 +1,4 @@
-﻿public class ConnectionPing : ChatBotCommandHandler<PlayerAndNumber>
+﻿public class ConnectionPing : ChatBotCommandHandler<Empty>
 {
     public ConnectionPing(
      GameManager game,
@@ -7,10 +7,9 @@
      : base(game, server, playerManager)
     {
     }
-    public override void Handle(PlayerAndNumber data, GameClient client)
+    public override void Handle(Empty _, GameMessage gm, GameClient client)
     {
-        var correlationId = data.Number;
-        client.SendPong(correlationId);
+        client.SendPong(gm.CorrelationId);
 
         Game.RavenBotController.State = BotState.Ready;
     }

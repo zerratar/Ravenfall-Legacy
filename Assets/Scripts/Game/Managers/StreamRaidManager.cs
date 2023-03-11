@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
     private readonly object mutex = new object();
     private readonly List<PlayerController> defenders = new List<PlayerController>();
     private readonly List<PlayerController> raiders = new List<PlayerController>();
-    private readonly ConcurrentDictionary<string, Vector3> oldPlayerPosition = new ConcurrentDictionary<string, Vector3>();
+    private readonly ConcurrentDictionary<Guid, Vector3> oldPlayerPosition = new ConcurrentDictionary<Guid, Vector3>();
 
     [SerializeField] private StreamRaidNotifications streamRaidNotifications;
 

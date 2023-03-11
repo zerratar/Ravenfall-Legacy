@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class TwitchPlayerInfo
+public class User
 {
     private static readonly HashSet<char> allowedCharacters = new HashSet<char>(new[] { '_', '=', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'å', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö', 'ä', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
-    public TwitchPlayerInfo() { }
+    public User() { }
 
-    public TwitchPlayerInfo(
-        string userId,
+    public User(
+        Guid id,
         string username,
         string displayName,
         string color,
+        string platform,
+        string platformId,
         bool isBroadcaster,
         bool isModerator,
         bool isSubscriber,
@@ -18,8 +20,11 @@ public class TwitchPlayerInfo
         string identifier)
     {
         if (string.IsNullOrEmpty(username)) throw new ArgumentNullException(nameof(username));
+
+        Id = id;
         Username = username.StartsWith("@") ? username.Substring(1) : username;
-        UserId = userId;
+        PlatformId = platformId;
+        Platform = platform;
         DisplayName = displayName;
         Color = color;
         IsBroadcaster = isBroadcaster;
@@ -32,7 +37,6 @@ public class TwitchPlayerInfo
         {
             //var allowedCharacters = "_=qwertyuiopåasdfghjklöäzxcvbnm1234567890".ToArray();
             //Identifier = string.Join("", Identifier.ToArray().Where(x => allowedCharacters.Contains(Char.ToLower(x))));
-
 
             if (Identifier != null && Identifier.Length > 0)
             {
@@ -54,13 +58,17 @@ public class TwitchPlayerInfo
         //}
     }
 
+    public Guid Id { get; set; }
+    public string Platform { get; set; }
+    public string PlatformId { get; set; }
     public string Username { get; set; }
-    public string UserId { get; set; }
     public string DisplayName { get; set; }
     public string Color { get; set; }
     public bool IsBroadcaster { get; set; }
     public bool IsModerator { get; set; }
     public bool IsSubscriber { get; set; }
     public bool IsVip { get; set; }
+    public int SubTier { get; set; }
     public string Identifier { get; set; }
+
 }

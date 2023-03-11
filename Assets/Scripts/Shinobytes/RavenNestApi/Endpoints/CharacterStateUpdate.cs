@@ -1,14 +1,11 @@
 ﻿
 using System;
-using static RavenNest.SDK.Endpoints.WebSocketApi;
 
 namespace RavenNest.SDK.Endpoints
 {
-
     public class CharacterSkillUpdate
     {
         public Guid CharacterId;
-        public string UserId;
         public double[] Experience;
         public int[] Level;
     }
@@ -36,7 +33,6 @@ namespace RavenNest.SDK.Endpoints
     public class CharacterStateUpdate
     {
         public CharacterStateUpdate(
-            string userId,
             Guid characterId,
             int health,
             string island,
@@ -49,7 +45,6 @@ namespace RavenNest.SDK.Endpoints
             string taskArgument,
             float x, float y, float z)
         {
-            UserId = userId;
             CharacterId = characterId;
             Health = health;
             Island = island;
@@ -66,7 +61,6 @@ namespace RavenNest.SDK.Endpoints
             Z = z;
         }
         public Guid CharacterId;
-        public string UserId;
         public int Health;
         public string Island;
         public string DuelOpponent;

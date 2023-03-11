@@ -91,11 +91,12 @@ namespace RavenNest.SDK.Endpoints
                 .Build().SendAsync<ClanLeaveResult>(ApiRequestTarget.Clan, ApiRequestType.Get);
         }
 
-        internal Task<JoinClanResult> JoinAsync(string clanOwnerId, Guid characterId)
+        internal Task<JoinClanResult> JoinAsync(Guid clanOwnerUserId, Guid characterId)
         {
             return request.Create()
+                .Identifier("v2")
                 .Method("join")
-                .AddParameter(clanOwnerId)
+                .AddParameter(clanOwnerUserId.ToString())
                 .AddParameter(characterId.ToString())
                 .Build().SendAsync<JoinClanResult>(ApiRequestTarget.Clan, ApiRequestType.Get);
         }
@@ -108,15 +109,5 @@ namespace RavenNest.SDK.Endpoints
                 .AddParameter(targetCharacterId.ToString())
                 .Build().SendAsync<bool>(ApiRequestTarget.Clan, ApiRequestType.Get);
         }
-
-        //public Task<bool> UpdateStatisticsAsync(string userId, decimal[] statistics)
-        //{
-        //    return request.Create()
-        //        .Identifier(userId)
-        //        .Method("statistics")
-        //        .AddParameter("values", statistics)
-        //        .Build()
-        //        .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
-        //}
     }
 }

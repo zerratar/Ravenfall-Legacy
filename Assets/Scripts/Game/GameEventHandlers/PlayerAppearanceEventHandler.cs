@@ -4,7 +4,7 @@ public class PlayerAppearanceEventHandler : GameEventHandler<SyntyAppearanceUpda
 {
     public override void Handle(GameManager gameManager, SyntyAppearanceUpdate data)
     {
-        var player = gameManager.Players.GetPlayerByUserId(data.UserId);
+        var player = gameManager.Players.GetPlayerById(data.PlayerId);
         if (player)
         {
             player.Appearance.SetAppearance(data.Value, () => player.Inventory.EquipAll(), true);

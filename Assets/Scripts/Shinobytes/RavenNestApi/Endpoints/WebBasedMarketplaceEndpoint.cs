@@ -18,17 +18,6 @@ namespace RavenNest.SDK.Endpoints
             this.request = request;
         }
 
-        public Task<bool> AssignPlayerAsync(int slot, string userId)
-        {
-            return request.Create()
-                    .Identifier(slot.ToString())
-                    .Method("assign")
-                    .AddParameter(userId)
-                    .Build()
-                    .SendAsync<bool>(
-                        ApiRequestTarget.Village,
-                        ApiRequestType.Get);
-        }
         public Task<bool> AssignPlayerAsync(int slot, Guid characterId)
         {
             return request.Create()

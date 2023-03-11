@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class ItemDropEvent : ChatBotCommandHandler<TradeItemRequest>
+public class ItemDropEvent : ChatBotCommandHandler<string>
 {
     public ItemDropEvent(
         GameManager game,
@@ -9,9 +9,9 @@ public class ItemDropEvent : ChatBotCommandHandler<TradeItemRequest>
         : base(game, server, playerManager)
     {
     }
-    public override void Handle(TradeItemRequest data, GameClient client)
+    public override void Handle(string inputQuery, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
             return;
@@ -24,7 +24,7 @@ public class ItemDropEvent : ChatBotCommandHandler<TradeItemRequest>
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var item = itemResolver.Resolve(data.ItemQuery);
+        var item = itemResolver.Resolve(inputQuery);
 
         if (item.SuggestedItemNames.Length > 0)
         {
@@ -33,7 +33,7 @@ public class ItemDropEvent : ChatBotCommandHandler<TradeItemRequest>
 
         if (item == null)
         {
-            //client.SendMessage(player.PlayerName, "Could not find an item matching the query '{query}'", data.ItemQuery);
+            //client.SendReply(player, "Could not find an item matching the query '{query}'", data.ItemQuery);
             return;
         }
 

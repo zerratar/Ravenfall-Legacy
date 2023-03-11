@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-public class GetVillageBoost : ChatBotCommandHandler<TwitchPlayerInfo>
+public class GetVillageBoost : ChatBotCommandHandler<User>
 {
     public GetVillageBoost(
          GameManager game,
@@ -13,7 +13,7 @@ public class GetVillageBoost : ChatBotCommandHandler<TwitchPlayerInfo>
     {
     }
 
-    public override void Handle(TwitchPlayerInfo data, GameClient client)
+    public override void Handle(User data, GameMessage gm, GameClient client)
     {
         var experience = Game.Village.TownHall.Experience;
         var level = Game.Village.TownHall.Level;
@@ -23,7 +23,7 @@ public class GetVillageBoost : ChatBotCommandHandler<TwitchPlayerInfo>
 
         var bonuses = Game.Village.GetExpBonuses();
         GetBonusMessage(bonuses, out var bonusString, out var bonusValue);
-        client.SendFormat(data.Username, bonusString, Game.Village.TownHall.Level, remainingExp, bonusValue);
+        client.SendReply(gm, bonusString, Game.Village.TownHall.Level, remainingExp, bonusValue);
     }
 
     private void GetBonusMessage(ICollection<TownHouseExpBonus> bonuses, out string format, out string bonus)
@@ -45,7 +45,7 @@ public class GetVillageBoost : ChatBotCommandHandler<TwitchPlayerInfo>
     }
 }
 
-public class SetVillageHuts : ChatBotCommandHandler<PlayerStringRequest>
+public class SetVillageHuts : ChatBotCommandHandler<string>
 {
     public SetVillageHuts(
          GameManager game,
@@ -55,22 +55,22 @@ public class SetVillageHuts : ChatBotCommandHandler<PlayerStringRequest>
     {
     }
 
-    public override async void Handle(PlayerStringRequest data, GameClient client)
+    public override async void Handle(string data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player || (!player.IsBroadcaster && !player.IsGameAdmin && !player.IsGameModerator))
         {
-            Shinobytes.Debug.LogWarning(data.Player?.Username + " tried to set the village boost but does not have permission to do so.");
+            Shinobytes.Debug.LogWarning(gm.Sender.Username + " tried to set the village boost but does not have permission to do so.");
             return;
         }
 
-        if (string.IsNullOrEmpty(data.Value))
+        if (string.IsNullOrEmpty(data))
         {
-            Shinobytes.Debug.LogWarning(data.Player?.Username + " tried to set the village boost forgot to enter a target skill.");
+            Shinobytes.Debug.LogWarning(gm.Sender.Username + " tried to set the village boost forgot to enter a target skill.");
             return;
         }
 
-        var str = data.Value.ToLower().Trim();
+        var str = data.ToLower().Trim();
         var result = TownHouseSlotType.Empty;
 
         if (str.StartsWith("str") || str.StartsWith("def") || str.StartsWith("health") || str.StartsWith("atk") || str.StartsWith("att"))
@@ -80,17 +80,17 @@ public class SetVillageHuts : ChatBotCommandHandler<PlayerStringRequest>
         else if (!System.Enum.TryParse<TownHouseSlotType>(str, true, out result))
         {
             // meh, we will be a little bit harsh here. They have to spell it correctly
-            client.SendFormat(data.Player.Username, "{targetName} is not a valid skill name for the huts. Make sure you use the full and proper names. Ex. Healing and not heal.", str);
+            client.SendReply(gm, "{targetName} is not a valid skill name for the huts. Make sure you use the full and proper names. Ex. Healing and not heal.", str);
             return;
         }
 
-        client.SendFormat(data.Player.Username, "Updating village to target {targetName}. Please wait..", str);
+        client.SendReply(gm, "Updating village to target {targetName}. Please wait..", str);
 
         await Game.Village.SetVillageBoostTarget(result);
 
         var bonuses = Game.Village.GetExpBonuses();
-        GetBonusMessage(bonuses, out var bonusString, out var bonusValue);
-        client.SendFormat("", bonusString, str, bonusValue);
+        GetBonusMessage(bonuses, out var formatString, out var bonusValue);
+        client.SendReply(gm, formatString, str, bonusValue);
     }
 
     private void GetBonusMessage(ICollection<TownHouseExpBonus> bonuses, out string format, out string bonus)

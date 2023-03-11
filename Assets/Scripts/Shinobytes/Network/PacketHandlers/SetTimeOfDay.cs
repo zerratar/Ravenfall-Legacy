@@ -8,9 +8,9 @@
     {
     }
 
-    public override void Handle(SetTimeOfDayRequest data, GameClient client)
+    public override void Handle(SetTimeOfDayRequest data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(data.Player);
+        var player = PlayerManager.GetPlayer(gm.Sender);
         if (player == null || !player || !player.IsBroadcaster)
         {
             return;
