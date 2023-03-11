@@ -33,7 +33,7 @@ public class AppearanceChange : ChatBotCommandHandler<PlayerAppearanceRequest>
                     .Split(',')
                     .Select(x => int.TryParse(x, out var value) ? value : 0).ToArray()))
             {
-                await Game.RavenNest.Players.UpdateAppearanceAsync(player.UserId, player.Appearance.ToAppearanceData());
+                await Game.RavenNest.Players.UpdateAppearanceAsync(player.Id, player.Appearance.ToAppearanceData());
             }
         }
         else

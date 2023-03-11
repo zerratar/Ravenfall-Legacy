@@ -78,7 +78,7 @@ public class EnchantItem : ChatBotCommandHandler<string>
             }
         }
 
-        var result = await Game.RavenNest.Players.EnchantInventoryItemAsync(player.UserId, inventoryItem.InstanceId);
+        var result = await Game.RavenNest.Players.EnchantInventoryItemAsync(player.Id, inventoryItem.InstanceId);
         if (result == null || result.Result == ItemEnchantmentResultValue.Error)
         {
             client.SendReply(gm, Localization.MSG_ENCHANT_UNKNOWN_ERROR);

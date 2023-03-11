@@ -176,7 +176,8 @@ public class BuildSlotIconsManager : MonoBehaviour
             return;
         }
 
-        if ((newOwner.IsBot || newOwner.PlatformId.StartsWith("#")) || await gameManager.RavenNest.Village.AssignPlayerAsync(activeSlot.Slot, newOwner.Id))
+        if ((newOwner.IsBot || newOwner.PlatformId.StartsWith("#")) ||
+            await gameManager.RavenNest.Village.AssignPlayerAsync(activeSlot.Slot, newOwner.Id))
         {
             gameManager.Village.TownHouses.SetOwner(activeSlot, newOwner);
             Hide();

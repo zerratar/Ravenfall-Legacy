@@ -60,7 +60,7 @@ public class DisenchantItem : ChatBotCommandHandler<string>
             return;
         }
 
-        var result = await Game.RavenNest.Players.DisenchantInventoryItemAsync(player.UserId, inventoryItem.InstanceId);
+        var result = await Game.RavenNest.Players.DisenchantInventoryItemAsync(player.Id, inventoryItem.InstanceId);
         if (result == null || result.Result == ItemEnchantmentResultValue.Error || !result.Success)
         {
             client.SendReply(gm, Localization.MSG_DISENCHANT_UNKNOWN_ERROR);

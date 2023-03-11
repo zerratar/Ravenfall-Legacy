@@ -49,7 +49,7 @@
         if (amount > long.MaxValue)
             amount = long.MaxValue;
 
-        var giftCount = await Game.RavenNest.Players.GiftItemAsync(player.UserId, item.Player.UserId, item.InventoryItem.InstanceId, (long)amount);
+        var giftCount = await Game.RavenNest.Players.GiftItemAsync(player.Id, item.Player.Id, item.InventoryItem.InstanceId, (long)amount);
         if (giftCount > 0)
         {
             // Update game client with the changes

@@ -25,7 +25,7 @@
         if (inputQuery.Equals("all", System.StringComparison.OrdinalIgnoreCase))
         {
             player.EquipBestItems();
-            await Game.RavenNest.Players.EquipBestItemsAsync(player.UserId);
+            await Game.RavenNest.Players.EquipBestItemsAsync(player.Id);
             client.SendReply(gm, Localization.MSG_EQUIPPED_ALL);
             return;
         }

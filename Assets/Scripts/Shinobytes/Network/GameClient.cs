@@ -253,7 +253,7 @@ public class GameClient : IDisposable
             return;
         }
 
-        SendReply(GameMessageRecipent.Create(player), "message", format, args);
+        SendReply(GameMessageRecipent.Create(player), format, args);
     }
 
     public void Announce(string format, object[] args, string category = null, params string[] tags)
@@ -267,22 +267,25 @@ public class GameClient : IDisposable
 
     public void SendReply(PlayerController player, string format, params object[] args)
     {
-        SendReply(GameMessageRecipent.Create(player.User), "message", format, args);
+        var recipent = GameMessageRecipent.Create(player.User);
+        SendReply(recipent, format, args);
     }
 
     public void SendReply(User player, string format, params object[] args)
     {
-        SendReply(GameMessageRecipent.Create(player), "message", format, args);
+        var recipent = GameMessageRecipent.Create(player);
+        SendReply(recipent, format, args);
     }
 
-    public void SendReply(GameMessageRecipent recipent, string format, params object[] args)
+    public void SendReply(GameMessageRecipent recipent, string format, object[] args)
     {
         Write(GameMessageResponse.CreateReply("message", recipent, format, args, string.Empty));
     }
 
     public void SendReply(GameMessage sourceMessage, string format, params object[] args)
     {
-        Write(GameMessageResponse.CreateReply("message",
+        Write(
+            GameMessageResponse.CreateReply("message",
             GameMessageRecipent.Create(sourceMessage.Sender),
             format,
             args,

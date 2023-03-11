@@ -215,7 +215,7 @@ public class Craft : ChatBotCommandHandler<string>
     {
         try
         {
-            var craftResult = await Game.RavenNest.Players.CraftItemsAsync(player.UserId, item.Id, amountToCraft);
+            var craftResult = await Game.RavenNest.Players.CraftItemsAsync(player.Id, item.Id, amountToCraft);
             if (craftResult != null)
             {
                 if (craftResult.Status == CraftItemResultStatus.InsufficientResources)

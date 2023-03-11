@@ -71,7 +71,7 @@ public class DungeonForce : ChatBotCommandHandler
                         var dungeonScroll = Game.Items.Find(x => x.Name.ToLower().Contains("dungeon") && x.Category == ItemCategory.Scroll);
                         if (dungeonScroll != null)
                         {
-                            await Game.RavenNest.Players.AddItemAsync(plr.UserId, dungeonScroll.Id);
+                            await Game.RavenNest.Players.AddItemAsync(plr.Id, dungeonScroll.Id);
                         }
                     }
                 }

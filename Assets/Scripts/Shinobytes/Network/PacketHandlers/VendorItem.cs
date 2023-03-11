@@ -39,7 +39,7 @@
         }
 
         var toVendor = item.Count >= int.MaxValue ? int.MaxValue : (int)item.Count;
-        var vendorCount = await Game.RavenNest.Players.VendorInventoryItemAsync(player.UserId, item.InventoryItem.InstanceId, toVendor);
+        var vendorCount = await Game.RavenNest.Players.VendorInventoryItemAsync(player.Id, item.InventoryItem.InstanceId, toVendor);
         if (vendorCount > 0)
         {
             if (item.InventoryItem.InventoryItem.Equipped)

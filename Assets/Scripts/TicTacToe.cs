@@ -283,7 +283,7 @@ public class TicTacToe : MonoBehaviour, ITavernGame
             if (UnityEngine.Random.value > tokenWinChance)
                 continue;
 
-            var result = await gameManager.RavenNest.Players.AddTokensAsync(player.UserId, 1);
+            var result = await gameManager.RavenNest.Players.AddTokensAsync(player.Id, 1);
             if (result)
             {
                 player.Inventory.AddStreamerTokens(1);

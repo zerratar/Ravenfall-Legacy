@@ -459,9 +459,9 @@ public class PlayerManager : MonoBehaviour
         StreamRaidInfo raidInfo,
         bool playerInitiatedJoin)
     {
-        var platformKey = (controller.Platform + "_" + controller.PlatformId).ToLower();
-
         controller.SetPlayer(player, user, raidInfo, gameManager, playerInitiatedJoin);
+
+        var platformKey = (controller.Platform + "_" + controller.PlatformId).ToLower();
         platformIdLookup[platformKey] = controller;
         playerNameLookup[controller.PlayerName.ToLower()] = controller;
         playerIdLookup[controller.Id] = controller;

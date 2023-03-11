@@ -96,7 +96,7 @@ public class DuelHandler : MonoBehaviour
         Opponent = duelHandler.player;
         duelRequestTimer = duelRequestTime;
         state = DuelState.RequestReceived;
-        if (gameManager.RavenBot.Local != null && gameManager.RavenBot.IsConnected)
+        if (gameManager.RavenBot.IsConnected)
         {
             gameManager.RavenBot.SendReply(player, Localization.MSG_DUEL_REQ, Opponent.PlayerName);
         }
