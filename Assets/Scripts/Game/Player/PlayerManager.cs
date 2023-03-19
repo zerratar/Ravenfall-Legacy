@@ -183,11 +183,11 @@ public class PlayerManager : MonoBehaviour
 
                         if (playerInfo.IsNewUser)
                         {
-                            client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_WELCOME_FIRST_TIME, addPlayerRequest.Username);
+                            client.SendReply(command, player, Localization.MSG_JOIN_WELCOME_FIRST_TIME, addPlayerRequest.Username);
                         }
                         else
                         {
-                            client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_WELCOME);
+                            client.SendReply(command, player, Localization.MSG_JOIN_WELCOME);
                         }
                     }
                     return player;
@@ -315,14 +315,11 @@ public class PlayerManager : MonoBehaviour
             return null;
         }
 
-        if (playerIdLookup.TryGetValue(userId, out var plr))
+        if (userIdLookup.TryGetValue(userId, out var plr))
         {
             if (plr.isDestroyed || plr.Removed)
             {
-                var key = (plr.Platform + "_" + plr.PlatformId).ToLower();
-                platformIdLookup.Remove(key);
-                playerNameLookup.Remove(plr.Name.ToLower());
-                playerIdLookup.Remove(plr.Id);
+                RemoveLookup(plr);
                 return null;
             }
             return plr;
@@ -343,8 +340,8 @@ public class PlayerManager : MonoBehaviour
             if (plr.isDestroyed || plr.Removed)
             {
                 platformIdLookup.Remove(key);
-                playerNameLookup.Remove(plr.Name.ToLower());
-                playerIdLookup.Remove(plr.Id);
+
+                RemoveLookup(plr);
                 return null;
             }
             return plr;
@@ -364,16 +361,22 @@ public class PlayerManager : MonoBehaviour
         {
             if (plr.isDestroyed || plr.Removed)
             {
-                var platformKey = (plr.Platform + "_" + plr.PlatformId).ToLower();
-                platformIdLookup.Remove(platformKey);
-                playerNameLookup.Remove(plr.Name.ToLower());
-                playerIdLookup.Remove(plr.Id);
+                RemoveLookup(plr);
                 return null;
             }
             return plr;
         }
 
         return null;
+    }
+
+    private void RemoveLookup(PlayerController plr)
+    {
+        var platformKey = (plr.Platform + "_" + plr.PlatformId).ToLower();
+        platformIdLookup.Remove(platformKey);
+        playerNameLookup.Remove(plr.Name.ToLower());
+        playerIdLookup.Remove(plr.Id);
+        userIdLookup.Remove(plr.UserId);
     }
 
     public int GetPlayerCount(bool includeNpc = false)
@@ -405,10 +408,7 @@ public class PlayerManager : MonoBehaviour
         {
             if (plr.isDestroyed || plr.Removed)
             {
-                var platformKey = (plr.Platform + "_" + plr.PlatformId).ToLower();
-                platformIdLookup.Remove(platformKey);
-                playerNameLookup.Remove(plr.Name.ToLower());
-                playerIdLookup.Remove(plr.Id);
+                RemoveLookup(plr);
                 return null;
             }
             return plr;
@@ -436,10 +436,8 @@ public class PlayerManager : MonoBehaviour
         }
 
         if (player)
-        {
-            platformIdLookup.Remove(platformKey);
-            playerNameLookup.Remove(player.PlayerName.ToLower());
-            playerIdLookup.Remove(player.Id);
+        {            
+            RemoveLookup(player);
             playerList.Remove(player);
             player.OnRemoved();
             Destroy(player.gameObject);
@@ -465,6 +463,7 @@ public class PlayerManager : MonoBehaviour
         platformIdLookup[platformKey] = controller;
         playerNameLookup[controller.PlayerName.ToLower()] = controller;
         playerIdLookup[controller.Id] = controller;
+        userIdLookup[controller.UserId] = controller;
         playerList.Add(controller);
 
         gameManager.Village.TownHouses.InvalidateOwnership(controller);

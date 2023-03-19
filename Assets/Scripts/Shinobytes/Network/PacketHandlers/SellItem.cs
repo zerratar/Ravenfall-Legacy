@@ -65,6 +65,13 @@ public class SellItem : ChatBotCommandHandler<string>
                 return;
             }
 
+
+            if (item.InventoryItem == null)
+            {
+                client.SendReply(player, Localization.MSG_SELL_ITEM_NOT_OWNED, item.Item.Name);
+                return;
+            }
+
             var sellResult = await Game.RavenNest.Marketplace.SellItemAsync(player.Id, item.Id, (long)itemAmount, (long)pricePerItem);
 
             if (sellResult == null)

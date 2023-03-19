@@ -29,24 +29,27 @@ public class ClanStatsHandler : ChatBotCommandHandler<string>
             return;
         }
 
-        client.SendReply(gm, GenerateStringPresentation(clanData));
+        GenerateStringPresentation(client, gm, clanData);
     }
 
-    private string GenerateStringPresentation(ClanStats data)
+    private void GenerateStringPresentation(GameClient client, GameMessage gm, ClanStats data)
     {
-        var msg = $"Your clan is {data.Name} led by {data.OwnerName} and is currently level {data.Level}.";
+        var msg = "Your clan is {clanName} led by {ownerName} and is currently level {clanLevel}.";
         if (data.ClanSkills != null)
         {
             if (data.ClanSkills.Count == 1)
             {
                 var ench = data.ClanSkills[0];
-                return msg + $" Your clan has an enchanting level of {ench.Level}.";
+                msg += $" Your clan has an enchanting level of {ench.Level}.";
             }
+            else
+            {
+                var skills = string.Join(", ", data.ClanSkills.Select(x => x.Name + " level " + x.Level));
 
-            var skills = string.Join(", ", data.ClanSkills.Select(x => x.Name + " level " + x.Level));
-
-            return msg + $" Your clan has the following skills {skills}.";
+                msg += $" Your clan has the following skills {skills}.";
+            }
         }
-        return msg;
+
+        client.SendReply(gm, msg, data.Name, data.OwnerName, data.Level);
     }
 }

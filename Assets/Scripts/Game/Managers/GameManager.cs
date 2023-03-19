@@ -867,7 +867,7 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         var userName = "Bot" + id;
-        return new User(Guid.NewGuid(), userName, userName, "#ffffff", "system", userId, false, false, false, false, "1");
+        return new User(Guid.NewGuid(), Guid.NewGuid(), userName, userName, "#ffffff", "system", userId, false, false, false, false, "1");
     }
 
     public PlayerController SpawnPlayer(

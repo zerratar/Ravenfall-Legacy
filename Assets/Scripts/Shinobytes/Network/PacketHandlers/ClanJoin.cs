@@ -54,7 +54,7 @@
                 return;
             }
 
-            client.SendReply(gm, $"You have joined {result.Clan.Name} as a {result.Role.Name}!");
+            client.SendReply(gm, "You have joined {clanName} as a {roleName}!", result.Clan.Name, result.Role.Name);
             return;
         }
 

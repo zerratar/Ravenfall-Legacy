@@ -33,6 +33,12 @@
             return;
         }
 
+        if (item.InventoryItem == null)
+        {
+            client.SendReply(player, Localization.MSG_GIFT_ITEM_NOT_OWNED, item.Item.Name);
+            return;
+        }
+
         if (item.Player == null)
         {
             client.SendReply(player, Localization.MSG_GIFT_PLAYER_NOT_FOUND, inputQuery);

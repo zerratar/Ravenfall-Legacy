@@ -1215,6 +1215,21 @@ public class PlayerController : MonoBehaviour, IAttackable
         IsSubscriber = user.IsSubscriber;
         IsVip = user.IsVip;
         User = user;
+
+        if (!string.IsNullOrEmpty(user.Platform))
+        {
+            Platform = user.Platform;
+        }
+
+        if (!string.IsNullOrEmpty(user.PlatformId))
+        {
+            PlatformId = user.PlatformId;
+        }
+
+        if (Id != Guid.Empty)
+        {
+            user.CharacterId = Id;
+        }
     }
 
     public void SetPlayer(
@@ -1244,6 +1259,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             user = new User(
                 player.UserId,
+                player.Id,
                 player.UserName,
                 player.Name,
                 PlayerNameHexColor,
@@ -1259,7 +1275,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         PlatformId = user.PlatformId;
         Platform = user.Platform;
 
-        if (user.PlatformId[0] == '#' || this.IsBot)
+        if ((!string.IsNullOrEmpty(user.PlatformId) && user.PlatformId[0] == '#') || this.IsBot)
         {
             this.IsBot = true;
             this.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();

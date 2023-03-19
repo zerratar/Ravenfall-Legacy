@@ -8,6 +8,7 @@ public class User
 
     public User(
         Guid id,
+        Guid characterId,
         string username,
         string displayName,
         string color,
@@ -22,6 +23,7 @@ public class User
         if (string.IsNullOrEmpty(username)) throw new ArgumentNullException(nameof(username));
 
         Id = id;
+        CharacterId = characterId;
         Username = username.StartsWith("@") ? username.Substring(1) : username;
         PlatformId = platformId;
         Platform = platform;
@@ -59,6 +61,7 @@ public class User
     }
 
     public Guid Id { get; set; }
+    public Guid CharacterId { get; set; }
     public string Platform { get; set; }
     public string PlatformId { get; set; }
     public string Username { get; set; }

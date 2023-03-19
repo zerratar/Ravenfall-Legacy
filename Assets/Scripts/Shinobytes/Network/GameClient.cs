@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -245,6 +246,12 @@ public class GameClient : IDisposable
         }).Start();
     }
 
+    public void SendReply(GameMessage sourceMessage, PlayerController player, string format, params object[] args)
+    {
+        var recipent = GameMessageRecipent.Create(player);
+        Write(GameMessageResponse.CreateReply("message", recipent, format, args, sourceMessage.CorrelationId));
+    }
+
     public void SendReplyUseMessageIfNotNull(GameMessage sourceMessage, User player, string format, params object[] args)
     {
         if (sourceMessage != null)
@@ -257,7 +264,7 @@ public class GameClient : IDisposable
     }
 
     public void Announce(string format, object[] args, string category = null, params string[] tags)
-    {        
+    {
         Write(new GameMessageResponse(
             "message",
             GameMessageRecipent.System,
@@ -266,12 +273,6 @@ public class GameClient : IDisposable
     }
 
     public void SendReply(PlayerController player, string format, params object[] args)
-    {
-        var recipent = GameMessageRecipent.Create(player.User);
-        SendReply(recipent, format, args);
-    }
-
-    public void SendReply(User player, string format, params object[] args)
     {
         var recipent = GameMessageRecipent.Create(player);
         SendReply(recipent, format, args);
@@ -294,12 +295,12 @@ public class GameClient : IDisposable
 
 
 
-    public void SendSessionOwner(Guid sid, Guid uid)
+    public void SendSessionOwner(Guid sessionId, Guid userId, Dictionary<string, object> userSettings)
     {
-        if (sid == Guid.Empty || uid == Guid.Empty)
+        if (sessionId == Guid.Empty || userId == Guid.Empty)
             return;
 
-        Write(GameMessageResponse.CreateArgs("session", sid.ToString(), uid.ToString(), created.ToString()));
+        Write(GameMessageResponse.CreateArgs("session", sessionId.ToString(), userId.ToString(), created.ToString(), userSettings));
     }
 
     public void SendPubSubToken(string userId, string username, string token)

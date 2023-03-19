@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
@@ -15,10 +16,10 @@ namespace RavenNest.SDK
     {
 
         public static IAppSettings Settings =
-                //new ProductionEndpoint(),
-                //new StagingRavenNestStreamSettings(),
-                //new LocalServerRemoteBotEndpoint()
-                new LocalEndpoint()
+            new ProductionEndpoint()
+            //new StagingRavenNestStreamSettings()
+            //new LocalServerRemoteBotEndpoint()
+            //new LocalEndpoint()
             ;
 
         private readonly ILogger logger;
@@ -103,6 +104,8 @@ namespace RavenNest.SDK
         public string ServerAddress => appSettings.WebApiEndpoint;
         public Guid SessionId => currentSessionToken?.SessionId ?? Guid.Empty;
         public Guid UserId => currentSessionToken?.UserId ?? Guid.Empty;
+
+        public Dictionary<string, object> UserSettings { get; private set; }
 
 
         [Obsolete] public string TwitchUserName { get; private set; }
@@ -293,6 +296,9 @@ namespace RavenNest.SDK
                 TwitchUserName = currentSessionToken.TwitchUserName;
                 TwitchDisplayName = currentSessionToken.TwitchDisplayName;
                 TwitchUserId = currentSessionToken.TwitchUserId;
+
+                UserSettings = result.UserSettings;
+
                 AwaitingSessionStart = false;
                 gameManager.OnSessionStart();
                 gameManager.HandleGameEvent(result.Village);

@@ -68,6 +68,7 @@ namespace Assets.Scripts
                         {
                             item.User = new User(
                                     player.UserId,
+                                    player.Id,
                                     def.UserName,
                                     def.Name,
                                     player.PlayerNameHexColor,
@@ -131,7 +132,14 @@ namespace Assets.Scripts
 #if DEBUG
                     Shinobytes.Debug.Log("Loading state file: " + Shinobytes.IO.Path.GetFilePath(PlayerStateCacheFileName));
 #endif
-                    var state = Newtonsoft.Json.JsonConvert.DeserializeObject<GameCacheState>(Shinobytes.IO.File.ReadAllText(PlayerStateCacheFileName));
+
+                    var stateContent = Shinobytes.IO.File.ReadAllText(PlayerStateCacheFileName);
+
+                    // backward compatibility
+                    stateContent = stateContent.Replace("\"TwitchUser\"", "\"User\"");
+                    stateContent = stateContent.Replace("\"UserId\"", "\"Platform\":\"twitch\",\"PlatformId\"");
+
+                    var state = Newtonsoft.Json.JsonConvert.DeserializeObject<GameCacheState>(stateContent);
 
                     if (!forceReload && (System.DateTime.UtcNow - state.Created) > expiryTime)
                     {
@@ -198,7 +206,6 @@ namespace Assets.Scripts
 
     public class GameCachePlayerItem
     {
-        [JsonProperty("TwitchUser")]
         public User User { get; set; }
         public System.Guid CharacterId { get; set; }
         public string NameTagHexColor { get; set; }

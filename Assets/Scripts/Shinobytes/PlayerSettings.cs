@@ -23,6 +23,9 @@
     public int? ItemDropMessageType;
     public int? PathfindingQualitySettings;
 
+    public bool? LocalBotServerDisabled;
+    public string RavenBotServer;
+
     public float[] ExpMultiplierAnnouncements;
 
     public ObserverTimes PlayerObserveSeconds;
@@ -39,6 +42,19 @@
     private static void SetDefaultValues()
     {
         var wasUpdated = false;
+
+        if (Instance.LocalBotServerDisabled == null)
+        {
+            Instance.LocalBotServerDisabled = false;
+            wasUpdated = true;
+        }
+
+        if (Instance.RavenBotServer == null)
+        {
+            Instance.RavenBotServer = "ravenbot.ravenfall.stream:4041";
+            wasUpdated = true;
+        }
+
         if (Instance.PlayerObserveSeconds == null)
         {
             Instance.PlayerObserveSeconds = ObserverTimes.DefaultTimes;

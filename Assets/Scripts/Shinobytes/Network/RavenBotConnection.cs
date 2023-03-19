@@ -15,6 +15,7 @@ public class RavenBotConnection : IDisposable
     public const int ServerPort = 4040;
     public readonly int RemoteBotPort = 4041;
 
+    private readonly bool localBotServerEnabled;
     private readonly GameManager game;
     private readonly RavenBot ravenbot;
     private readonly TcpListener server;
@@ -38,17 +39,36 @@ public class RavenBotConnection : IDisposable
     {
         this.game = game;
         this.ravenbot = ravenbot;
-        server = new TcpListener(new IPEndPoint(IPAddress.Any, ServerPort));
 
-        string remoteBotServer = RavenNestClient.Settings.RavenbotEndpoint;
+        this.localBotServerEnabled = !(PlayerSettings.Instance.LocalBotServerDisabled ?? false);
+
+        if (localBotServerEnabled)
+        {
+            server = new TcpListener(new IPEndPoint(IPAddress.Any, ServerPort));
+        }
+
+        string remoteBotServer = PlayerSettings.Instance.RavenBotServer;
+
+        if (Application.isEditor || string.IsNullOrEmpty(PlayerSettings.Instance.RavenBotServer))
+        {
+            remoteBotServer = RavenNestClient.Settings.RavenbotEndpoint;
+        }
+
         if (string.IsNullOrEmpty(remoteBotServer))
+        {
             remoteBotServer = "127.0.0.1";
+        }
+
+        if (remoteBotServer.Contains(":"))
+        {
+            var parts = remoteBotServer.Split(":");
+            if (int.TryParse(parts[^1], out var newRemoteBotPort))
+                RemoteBotPort = newRemoteBotPort;
+            remoteBotServer = parts[0];
+        }
 
         RemoteBotHost = remoteBotServer;
     }
-
-    public bool IsBound => server.Server.IsBound;
-
 
     public GameClient Local => connectedClients.Count > 0
             ? connectedClients.FirstOrDefault(x => x.Connected)
@@ -134,14 +154,17 @@ public class RavenBotConnection : IDisposable
 
         connectedClients.Clear();
 
-        if (server.Server.IsBound)
+        if (localBotServerEnabled)
         {
-            server.Stop();
-        }
+            if (server.Server.IsBound)
+            {
+                server.Stop();
+            }
 
-        if (!server.Server.IsBound)
-        {
-            Shinobytes.Debug.Log("Bot Server stopped.");
+            if (!server.Server.IsBound)
+            {
+                Shinobytes.Debug.Log("Bot Server stopped.");
+            }
         }
     }
 
@@ -235,7 +258,7 @@ public class RavenBotConnection : IDisposable
     {
         if (type == BotConnectionType.Local)
         {
-            if (server == null || !server.Server.IsBound)
+            if (localBotServerEnabled && (server == null || !server.Server.IsBound))
             {
                 ListenForLocalBot();
             }
@@ -317,6 +340,11 @@ public class RavenBotConnection : IDisposable
 
     private void ListenForLocalBot()
     {
+        if (!localBotServerEnabled)
+        {
+            return;
+        }
+
         try
         {
             server.Start(0x1000);
@@ -353,6 +381,11 @@ public class RavenBotConnection : IDisposable
 
     private void OnAcceptTcpClient(IAsyncResult ar)
     {
+        if (!localBotServerEnabled)
+        {
+            return;
+        }
+
         try
         {
             var tcpClient = server.EndAcceptTcpClient(ar);
@@ -456,7 +489,7 @@ public class RavenBotConnection : IDisposable
             return false;
         }
 
-        ActiveClient.SendSessionOwner(game.RavenNest.SessionId, game.RavenNest.UserId);
+        ActiveClient.SendSessionOwner(game.RavenNest.SessionId, game.RavenNest.UserId, game.RavenNest.UserSettings);
 
         return true;
     }

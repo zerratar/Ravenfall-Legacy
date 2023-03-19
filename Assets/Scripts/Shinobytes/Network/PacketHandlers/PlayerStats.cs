@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 public class PlayerStats : ChatBotCommandHandler<string>
 {
@@ -80,6 +81,116 @@ public class PlayerStats : ChatBotCommandHandler<string>
             total.ToString(),
             eq.WeaponPower.ToString(),
             eq.WeaponAim.ToString(),
-            eq.ArmorPower.ToString());
+            eq.ArmorPower.ToString(),
+            Inspect(player, ps.SkillList)
+        );
+    }
+
+    private static PlayerInspect Inspect(PlayerController player, SkillStat[] stats)
+    {
+        var s = player.ActiveSkill;
+        double expLeft = 0;
+        double expPerHour = 0;
+        DateTime nextLevel = DateTime.MaxValue;
+
+        if (s != Skill.None)
+        {
+            var skill = player.GetActiveSkillStat();
+            var f = player.GetExpFactor();
+            var expPerTick = player.GetExperience(s, f);
+            var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
+            var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
+            expPerHour = System.Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
+            expLeft = nextLevelExp - skill.Experience;
+            var hours = (double)(expLeft / expPerHour);
+            if (hours < System.TimeSpan.MaxValue.TotalHours)
+            {
+                var left = TimeSpan.FromHours(hours);
+                if (left.TotalDays < 365)
+                {
+                    nextLevel = DateTime.UtcNow.Add(left);
+                }
+            }
+        }
+
+        return new PlayerInspect
+        {
+            Id = player.Id,
+            Name = player.Name,
+            Island = player.Island?.name,
+            Rested = player.Rested.RestedTime,
+            Location = GetLocation(player),
+            Skills = GetSkills(stats),
+            Training = s,
+            ExpLeft = expLeft,
+            ExpPerHour = expPerHour,
+            NextLevelUtc = nextLevel,
+            EquipmentStats = player.EquipmentStats ?? new EquipmentStats()
+        };
+    }
+
+    private static SkillInfo[] GetSkills(SkillStat[] stats)
+    {
+        var si = new SkillInfo[stats.Length];
+        for (var i = 0; i < stats.Length; i++)
+        {
+            var stat = stats[i];
+
+            si[i] = new SkillInfo
+            {
+                Name = stat.Name,
+                Level = stat.Level,
+                Progress = stat.Experience / GameMath.ExperienceForLevel(stat.Level + 1),
+                CurrentValue = stat.CurrentValue,
+                MaxLevel = stat.MaxLevel,
+                Bonus = stat.Bonus,
+            };
+        }
+        return si;
+    }
+
+    private static PlayerLocation GetLocation(PlayerController player)
+    {
+        if (player.Dungeon.InDungeon) return PlayerLocation.Dungeon;
+        if (player.Raid.InRaid) return PlayerLocation.Raid;
+        if (player.StreamRaid.InWar) return PlayerLocation.War;
+        if (player.Onsen.InOnsen) return PlayerLocation.Resting;
+        if (player.Island?.name == null) return PlayerLocation.Ferry;
+        return PlayerLocation.Island;
+    }
+
+    public class PlayerInspect
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public double Rested { get; set; }
+        public string Island { get; set; }
+        public Skill Training { get; set; }
+        public SkillInfo[] Skills { get; set; }
+        public PlayerLocation Location { get; set; }
+        public double ExpLeft { get; set; }
+        public double ExpPerHour { get; set; }
+        public DateTime NextLevelUtc { get; set; }
+        public EquipmentStats EquipmentStats { get; set; }
+    }
+
+    public class SkillInfo
+    {
+        public string Name { get; set; }
+        public int Level { get; set; }
+        public double Progress { get; set; }
+        public int CurrentValue { get; set; }
+        public int MaxLevel { get; set; }
+        public float Bonus { get; set; }
+    }
+
+    public enum PlayerLocation
+    {
+        Island,
+        Ferry,
+        Resting,
+        Raid,
+        Dungeon,
+        War
     }
 }
