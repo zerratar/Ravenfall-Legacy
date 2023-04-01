@@ -62,7 +62,8 @@ public class BuildSlotIconsManager : MonoBehaviour
                 buttonBuildHouse.gameObject.SetActive(false);
                 buttonEraseHouse.gameObject.SetActive(true);
                 buttonSwitchPlayer.gameObject.SetActive(slot.OwnerUserId.HasValue);
-                buttonAssignPlayer.gameObject.SetActive(!slot.Player && slot.OwnerUserId.HasValue);
+                var assignPlayerButtonEnabled = !slot.Player && !slot.OwnerUserId.HasValue;
+                buttonAssignPlayer.gameObject.SetActive(assignPlayerButtonEnabled);
                 break;
         }
 

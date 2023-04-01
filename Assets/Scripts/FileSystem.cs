@@ -40,6 +40,19 @@ namespace Shinobytes.IO
         {
             return GameFolderAsRoot(playerStateCacheFileName);
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string Combine(params string[] paths)
+        {
+            if (paths == null || paths.Length == 0)
+            {
+                return GameFolderAsRoot("./");
+            }
+
+            paths[0] = GameFolderAsRoot(paths[0]);
+            return System.IO.Path.Combine(paths);
+        }
     }
 
     public static class Directory

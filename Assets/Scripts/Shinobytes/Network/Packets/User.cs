@@ -37,9 +37,6 @@ public class User
 
         if (Identifier != null && Identifier.Length > 0)
         {
-            //var allowedCharacters = "_=qwertyuiopåasdfghjklöäzxcvbnm1234567890".ToArray();
-            //Identifier = string.Join("", Identifier.ToArray().Where(x => allowedCharacters.Contains(Char.ToLower(x))));
-
             if (Identifier != null && Identifier.Length > 0)
             {
                 var newIdentifier = "";
@@ -55,9 +52,6 @@ public class User
                 Identifier = newIdentifier;
             }
         }
-        //if (Identifier[0] == '󠀀')
-        //{
-        //}
     }
 
     public Guid Id { get; set; }

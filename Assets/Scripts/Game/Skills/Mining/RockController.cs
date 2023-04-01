@@ -4,10 +4,6 @@ using UnityEngine;
 
 public class RockController : MonoBehaviour
 {
-    public int Level;
-    public double Experience => GameMath.GetWoodcuttingExperience(Level);
-    public double Resource => 1;
-
     public IslandController Island { get; private set; }
 
     [ReadOnly]

@@ -269,6 +269,7 @@ public static class GameMath
         }
         return false;
     }
+
     internal static float CalculateExplosionDamage(IAttackable enemy, IAttackable player, float scale = 0.75f)
     {
         return CalculateMeleeDamage(enemy, player) * scale;
@@ -349,23 +350,6 @@ public static class GameMath
         return (int)(w3 * 0.95d);
     }
 
-    public static double AddPrayers(bool first, bool second, bool third)
-    {
-        if (third) return 1.15d;
-        if (second) return 1.1d;
-        if (first) return 1.05d;
-        return 1.0d;
-    }
-
-    public static int CombatExperience(Skills mob)
-    {
-        return (int)((mob.CombatLevel * 10 + 10) * 1.5D);
-    }
-
-    public static int CombatExperience(int level)
-    {
-        return (int)((level * 10 + 10) * 1.5D);
-    }
 
     public static double ExperienceForLevel(int level)
     {
@@ -375,41 +359,6 @@ public static class GameMath
         }
 
         return (level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
-    }
-
-    public static double GetFishingExperience(int level)
-    {
-        return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
-    }
-
-    public static double GetFarmingExperience(int level)
-    {
-        /*
-            Following formula will generate:
-            Level   Exp
-            15		24,15
-            30		61,8
-            45		112,95
-            60		177,6
-            75		255,75
-            90		347,4
-            110		490,6
-         */
-        return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
-    }
-
-    public static double GetWoodcuttingExperience(int level)
-    {
-        return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
-    }
-
-    public static double GetMiningExperienceFromType(RockType type)
-    {
-        switch (type)
-        {
-            case RockType.Rune: return 100;
-            default: return 5d;
-        }
     }
 
     public static class Exp

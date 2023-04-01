@@ -42,9 +42,9 @@ public class StreamLabel
     public StreamLabel(GameSettings settings, string name, Func<string> valueGenerator)
     {
         this.valueGenerator = valueGenerator;
-        this.fileName = System.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt");
-        if (!System.IO.Directory.Exists(settings.StreamLabelsFolder))
-            System.IO.Directory.CreateDirectory(settings.StreamLabelsFolder);
+        this.fileName = Shinobytes.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt");
+        if (!Shinobytes.IO.Directory.Exists(settings.StreamLabelsFolder))
+            Shinobytes.IO.Directory.CreateDirectory(settings.StreamLabelsFolder);
 
     }
     public void Update()

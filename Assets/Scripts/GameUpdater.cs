@@ -410,18 +410,21 @@ public class GameUpdateHandler
         Shinobytes.Debug.Log("Downloading update file: " + downloadUrl);
         try
         {
+
             var fileName = downloadUrl.Split('/').LastOrDefault();
             var updateFile = "update/" + fileName;
 
-            if (!Directory.Exists("update"))
+            if (!Shinobytes.IO.Directory.Exists("update"))
             {
-                Directory.CreateDirectory("update");
+                Shinobytes.IO.Directory.CreateDirectory("update");
             }
 
             if (Shinobytes.IO.File.Exists(updateFile))
             {
                 Shinobytes.IO.File.Delete(updateFile);
             }
+
+            updateFile = Shinobytes.IO.Path.GetFilePath(updateFile);
 
             var start = DateTime.Now;
             WebRequest.DefaultWebProxy = null;

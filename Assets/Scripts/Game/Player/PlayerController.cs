@@ -924,7 +924,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                         return;
                     }
 
-                    GameManager.RavenBot.SendReply(this, Localization.CANT_TRAIN_HERE, type);
+                    GameManager.RavenBot.SendReply(this, Localization.CANT_TRAIN_HERE, type.ToString());
 #if UNITY_EDITOR
                     Shinobytes.Debug.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
 #endif

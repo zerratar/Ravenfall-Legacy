@@ -1,18 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 namespace Assets.Scripts.Editor
 {
     public class MiscTools
     {
-
-
-
         [MenuItem("Ravenfall/Tools/Hierarchy/Group Selection")]
         static void GroupSelection()
         {
@@ -22,7 +14,7 @@ namespace Assets.Scripts.Editor
             var sel = Selection.gameObjects;
 
             Transform parent = null;
-            
+
             //var parentMatchCount = 0;
 
             var lowestDepth = int.MaxValue;

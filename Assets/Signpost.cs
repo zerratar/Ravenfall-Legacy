@@ -75,7 +75,7 @@ public class Signpost : MonoBehaviour
 
         var chunkManager = FindObjectOfType<ChunkManager>();
 
-        chunkManager.Init();
+        chunkManager.Init(true);
 
         var chunks = chunkManager.GetChunksOfType(Island, Type);
         if (chunks == null || chunks.Count == 0) return;
@@ -106,18 +106,20 @@ public class Signpost : MonoBehaviour
             Label.verticalAlignment = TMPro.VerticalAlignmentOptions.Middle;
         }
         var reqCombatLevel = Chunk.RequiredCombatLevel;
-        if (reqCombatLevel > 1 && lastCombatLevel != reqCombatLevel)
+        if (reqCombatLevel > 1)
         {
             Label.text = "Lv. " + reqCombatLevel;
             this.lastCombatLevel = reqCombatLevel;
+            this.name = "Lv." + reqCombatLevel + " Combat";
             return;
         }
 
         var reqSkillLevel = Chunk.RequiredSkilllevel;
-        if (reqSkillLevel > 1 && lastReqSkillLevel != reqSkillLevel)
+        if (reqSkillLevel > 1)
         {
             Label.text = "Lv. " + reqSkillLevel;
             lastReqSkillLevel = reqSkillLevel;
+            this.name = "Lv." + reqSkillLevel + " " + Type;
         }
     }
 

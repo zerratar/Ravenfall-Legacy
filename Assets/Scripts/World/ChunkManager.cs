@@ -13,15 +13,17 @@ public class ChunkManager : MonoBehaviour
 
     private Dictionary<TaskType, List<Chunk>> chunksByType = new Dictionary<TaskType, List<Chunk>>();
 
+
+
     void Start()
     {
         Init();
     }
 
-    public void Init()
+    public void Init(bool forceReInit = false)
     {
         if (!islandManager) islandManager = FindObjectOfType<IslandManager>();
-        if (chunks == null || chunks.Length == 0)
+        if (forceReInit || chunks == null || chunks.Length == 0)
         {
             chunks = GameObject.FindGameObjectsWithTag("WorldChunk")
                         .Select(x => x.GetComponent<Chunk>())
@@ -89,67 +91,97 @@ public class ChunkManager : MonoBehaviour
         }
 
         var refCombatLevel = playerRef.Stats.CombatLevel;
-        var chunk = chunks
-            .Where(x =>
+
+        var trainableChunks = GetTrainableChunks(playerRef, type, strictCombatLevel, refIsland, refCombatLevel);
+        var activeSkill = playerRef.ActiveSkill;
+        if (trainableChunks.Count > 1 && activeSkill.IsCombatSkill() && type == TaskType.Fighting && activeSkill != Skill.Healing)
+        {
+            // if level requirement is combat level, we should make sure that the skill we are training are in good shape.
+            // if we are training Atk, Def or Strength, we can use the avg of Atk, Def, Str and Health to determine a score
+            // if its ranged or magic we take health and Skill / 2 for the average score.
+            var health = playerRef.Stats.GetCombatSkill(CombatSkill.Health);
+            var score = 0f;
+
+            if (activeSkill == Skill.Ranged)
             {
-                if (x.Island != refIsland && x.Island != FindPlayerIsland(playerRef))
+                var skill = playerRef.Stats.GetCombatSkill(CombatSkill.Ranged);
+                score = (health.Level + skill.Level) / 2f;
+            }
+            else if (activeSkill == Skill.Magic)
+            {
+                var skill = playerRef.Stats.GetCombatSkill(CombatSkill.Magic);
+                score = (health.Level + skill.Level) / 2f;
+            }
+            else
+            {
+                var attack = playerRef.Stats.GetCombatSkill(CombatSkill.Attack);
+                var defense = playerRef.Stats.GetCombatSkill(CombatSkill.Defense);
+                var strength = playerRef.Stats.GetCombatSkill(CombatSkill.Strength);
+                score = (health.Level + attack.Level + defense.Level + strength.Level) / 4f;
+            }
+
+            return trainableChunks.OrderBy(x => Mathf.Abs(Mathf.Max(x.RequiredCombatLevel, x.RequiredSkilllevel) - score)).FirstOrDefault();
+        }
+
+        return trainableChunks.Highest(x => x.RequiredCombatLevel + x.RequiredSkilllevel);
+    }
+
+    private List<Chunk> GetTrainableChunks(PlayerController playerRef, TaskType type, bool strictCombatLevel, IslandController refIsland, int refCombatLevel)
+    {
+        return chunks.AsList(x =>
+        {
+            if (x.Island != refIsland && x.Island != FindPlayerIsland(playerRef))
+            {
+                return false;
+            }
+            if (x.Type != type /*&& x.SecondaryType != type*/)
+            {
+                return false;
+            }
+
+            var activeSkill = playerRef.ActiveSkill;
+            var skillStat = activeSkill.IsCombatSkill() ? playerRef.Stats[activeSkill] : null;
+
+            if (strictCombatLevel)
+            {
+                if (x.RequiredCombatLevel > refCombatLevel)
                 {
                     return false;
                 }
-                if (x.Type != type /*&& x.SecondaryType != type*/)
+                if (type == TaskType.Fighting && x.RequiredSkilllevel > 1)
                 {
-                    return false;
-                }
-
-                var activeSkill = playerRef.ActiveSkill;
-                var skillStat = activeSkill.IsCombatSkill() ? playerRef.Stats[activeSkill] : null;
-
-                if (strictCombatLevel)
-                {
-                    if (x.RequiredCombatLevel > refCombatLevel)
+                    if (playerRef.TrainingAll)
                     {
-                        return false;
+                        var attack = playerRef.Stats.GetCombatSkill(CombatSkill.Attack);
+                        var defense = playerRef.Stats.GetCombatSkill(CombatSkill.Defense);
+                        var strength = playerRef.Stats.GetCombatSkill(CombatSkill.Strength);
+                        var req = x.RequiredSkilllevel;
+                        return attack.Level >= req && defense.Level >= req && strength.Level >= req;
                     }
-                    if (type == TaskType.Fighting && x.RequiredSkilllevel > 1)
+                    if (skillStat != null)
                     {
-                        if (playerRef.TrainingAll)
-                        {
-                            var attack = playerRef.Stats.GetCombatSkill(CombatSkill.Attack);
-                            var defense = playerRef.Stats.GetCombatSkill(CombatSkill.Defense);
-                            var strength = playerRef.Stats.GetCombatSkill(CombatSkill.Strength);
-                            var req = x.RequiredSkilllevel;
-                            return attack.Level >= req && defense.Level >= req && strength.Level >= req;
-                        }
-                        if (skillStat != null)
-                        {
-                            return x.RequiredSkilllevel <= skillStat.Level;
-                        }
+                        return x.RequiredSkilllevel <= skillStat.Level;
                     }
                 }
-                else
+            }
+            else
+            {
+
+                if (type == TaskType.Fighting)
                 {
-
-                    if (type == TaskType.Fighting)
+                    var requirement = Mathf.Max(x.RequiredCombatLevel, x.RequiredSkilllevel);
+                    if (skillStat != null)
                     {
-                        var requirement = Mathf.Max(x.RequiredCombatLevel, x.RequiredSkilllevel);
-                        if (skillStat != null)
-                        {
-                            var level = Mathf.Max(playerRef.Stats.CombatLevel, skillStat.Level);
-                            return level >= requirement;
-                        }
+                        var level = Mathf.Max(playerRef.Stats.CombatLevel, skillStat.Level);
+                        return level >= requirement;
                     }
-
                 }
 
+            }
 
-                return x.RequiredSkilllevel <= GetSkillLevel(playerRef, type);
-            })
-            .Highest(x => x.RequiredCombatLevel + x.RequiredSkilllevel);
-        //.OrderByDescending(x => x.RequiredCombatLevel + x.RequiredSkilllevel)
-        //.ThenBy(x => Vector3.Distance(x.transform.position, playerRef.transform.position))
-        //.FirstOrDefault();
 
-        return chunk;
+            return x.RequiredSkilllevel <= GetSkillLevel(playerRef, type);
+        });
     }
 
     private int GetSkillLevel(PlayerController playerRef, TaskType type)
