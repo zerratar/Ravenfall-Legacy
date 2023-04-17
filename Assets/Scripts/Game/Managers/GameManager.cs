@@ -19,6 +19,7 @@ using UnityEngine.Rendering.PostProcessing;
 using Shinobytes.Linq;
 using UnityEngine.AI;
 using System.Diagnostics;
+using System.Text;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
@@ -53,15 +54,15 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private LoginHandler loginHandler;
 
     [SerializeField] private GameObject gameReloadMessage;
-
     [SerializeField] private TavernHandler tavern;
-
     [SerializeField] private DayNightCycle dayNightCycle;
 
-
     [SerializeField] private GameObject gameReloadUIPanel;
-
     [SerializeField] private Volume postProcessingEffects;
+
+    [Header("Graphics Settings")]
+    public RenderPipelineAsset URP_LowQuality;
+    public RenderPipelineAsset URP_DefaultQuality;
 
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers = new();
     private readonly ConcurrentDictionary<Type, IGameEventHandler> typedGameEventHandlers = new();
@@ -73,14 +74,15 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private readonly GameEventManager events = new GameEventManager();
     private IoCContainer ioc;
-    private FerryController ferryController;
-    private ChunkManager chunkManager;
-    private PlayerManager playerManager;
-    private CraftingManager craftingManager;
-    private RaidManager raidManager;
-    private StreamRaidManager streamRaidManager;
-    private ArenaController arenaController;
-    private ItemManager itemManager;
+
+    [SerializeField] private FerryController ferryController;
+    [SerializeField] private ChunkManager chunkManager;
+    [SerializeField] private PlayerManager playerManager;
+    [SerializeField] private CraftingManager craftingManager;
+    [SerializeField] private RaidManager raidManager;
+    [SerializeField] private StreamRaidManager streamRaidManager;
+    [SerializeField] private ArenaController arenaController;
+    [SerializeField] private ItemManager itemManager;
 
     private int lastButtonIndex = 0;
     public float playerRequestTime = 1f;
@@ -338,7 +340,91 @@ public class GameManager : MonoBehaviour, IGameManager
             return string.Join(", ", value);
         });
         playerCountLabel = StreamLabels.Register("online-player-count", () => playerManager.GetPlayerCount().ToString());
+
+        StreamLabels.Register("level-requirements", () => GetLevelRequirementsString()).Update();
+        StreamLabels.Register("level-requirements-json", () => GetLevelRequirementsJson()).Update();
+
     }
+    private List<IslandTaskCollection> GetLevelRequirements()
+    {
+        var items = new List<IslandTaskCollection>();
+
+        Chunks.Init();
+
+        var chunks = this.Chunks.GetChunks();
+        var grouped = chunks.GroupBy(x => x.Island.Identifier);
+        foreach (var island in grouped.OrderBy(x => x.Value.Sum(y => y.RequiredCombatLevel + y.RequiredSkilllevel)))
+        {
+            var collection = new IslandTaskCollection();
+            collection.Island = island.Key;
+            collection.Skills = new List<IslandTaskCollection.IslandTask>();
+            foreach (var chunk in island.Value.OrderBy(x => x.ChunkType.ToString()))
+            {
+                collection.Skills.Add(new IslandTaskCollection.IslandTask
+                {
+                    SkillLevelRequirement = chunk.RequiredSkilllevel,
+                    CombatLevelRequirement = chunk.RequiredCombatLevel,
+                    Name = chunk.ChunkType.ToString(),
+                });
+            }
+            items.Add(collection);
+        }
+
+        return items;
+    }
+
+    private string GetLevelRequirementsJson()
+    {
+        List<IslandTaskCollection> items = GetLevelRequirements();
+
+        return Newtonsoft.Json.JsonConvert.SerializeObject(items);
+    }
+
+
+    private string GetLevelRequirementsString()
+    {
+        var sb = new StringBuilder();
+
+        var requirements = GetLevelRequirements();
+
+        foreach (var island in requirements)
+        {
+            sb.AppendLine(island.Island);
+
+            foreach (var chunk in island.Skills)
+            {
+                if (chunk.SkillLevelRequirement > 1)
+                {
+                    sb.AppendLine(chunk.Name + " - Requires Level " + chunk.SkillLevelRequirement);
+                }
+                else if (chunk.CombatLevelRequirement > 1)
+                {
+                    sb.AppendLine(chunk.Name + " - Requires Combat Level " + chunk.CombatLevelRequirement);
+                }
+                else
+                {
+                    sb.AppendLine(chunk.Name + " - No Requirement");
+                }
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private class IslandTaskCollection
+    {
+        public string Island { get; set; }
+
+        public List<IslandTask> Skills { get; set; }
+
+        public class IslandTask
+        {
+            public string Name { get; set; }
+            public int SkillLevelRequirement { get; set; }
+            public int CombatLevelRequirement { get; set; }
+        }
+    }
+
 
     private void LoadGameSettings()
     {
@@ -558,14 +644,23 @@ public class GameManager : MonoBehaviour, IGameManager
                 QualitySettings.SetQualityLevel(0);
             }
 
+            if (URP_LowQuality)
+            {
+                GraphicsSettings.renderPipelineAsset = URP_LowQuality;
+            }
+
             DisablePostProcessingEffects();
         }
         else
         {
-
             if (currentQualityLevel != 1)
             {
                 QualitySettings.SetQualityLevel(1);
+            }
+
+            if (URP_DefaultQuality)
+            {
+                GraphicsSettings.renderPipelineAsset = URP_DefaultQuality;
             }
 
             EnablePostProcessingEffects();

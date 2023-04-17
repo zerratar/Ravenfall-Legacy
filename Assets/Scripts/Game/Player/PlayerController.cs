@@ -17,17 +17,7 @@ using Newtonsoft.Json;
 
 public class PlayerController : MonoBehaviour, IAttackable
 {
-    private static readonly ConcurrentDictionary<string, int> combatTypeArgLookup
-        = new ConcurrentDictionary<string, int>();
-
-    private static readonly ConcurrentDictionary<string, int> skillTypeArgLookup
-        = new ConcurrentDictionary<string, int>();
-
-    private static readonly ConcurrentDictionary<string, Skill> skillLookup
-        = new ConcurrentDictionary<string, Skill>();
-
     private readonly HashSet<Guid> pickedItems = new HashSet<Guid>();
-
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
 
@@ -595,6 +585,13 @@ public class PlayerController : MonoBehaviour, IAttackable
             {
                 ResetFullBodySkin();
             }
+        }
+
+        if (lateGotoClosestType != null)
+        {
+            var t = lateGotoClosestType.Value;
+            lateGotoClosestType = null;
+            GotoClosest(t);
         }
 
         //if (fullbodyPlayerSkinActive)

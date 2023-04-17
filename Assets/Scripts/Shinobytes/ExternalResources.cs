@@ -71,11 +71,18 @@ public class ExternalResources
                 await web.SendWebRequest();
                 if (web.result == UnityWebRequest.Result.Success)
                 {
+                    var name = System.IO.Path.GetFileName(file);
                     var clip = DownloadHandlerAudioClip.GetContent(web);
                     if (clip != null)
                     {
-                        audioResources[System.IO.Path.GetFileName(file)] =
-                            new ExternalResource<AudioClip>(file, clip);
+                        clip.name = name;
+
+                        if (audioResources.TryGetValue(name, out var existing) && existing.Resource)
+                        {
+                            GameObject.Destroy(existing.Resource);
+                        }
+
+                        audioResources[name] = new ExternalResource<AudioClip>(file, clip);
                     }
                 }
                 return;
@@ -92,6 +99,10 @@ public class ExternalResources
 
         if (resx.HasBeenModified)
         {
+
+#if UNITY_EDITOR
+            Shinobytes.Debug.LogWarning("Reloading External Resource as it has been modified. Key: " + key);
+#endif
             await LoadSoundFileAsync(resx.FullPath);
         }
     }

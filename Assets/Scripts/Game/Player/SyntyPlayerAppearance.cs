@@ -14,7 +14,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     private readonly Dictionary<ItemType, GameObject> equippedObjects = new Dictionary<ItemType, GameObject>();
     private readonly Dictionary<ItemType, ItemController> equippedItems = new Dictionary<ItemType, ItemController>();
 
-    private bool useMeshCombiner = true;
+    public bool useMeshCombiner = true;
 
     [Header("Editor")]
     [SerializeField] private bool PhotoMode;
