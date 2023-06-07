@@ -140,13 +140,13 @@ namespace RavenNest.SDK.Endpoints
                     OnReconnected?.Invoke(this, EventArgs.Empty);
                 }
 
-                logger.Debug("Connected to RavenNest WebSocket API!");
+                logger.WriteDebug("Connected to RavenNest WebSocket API!");
 
                 return true;
             }
             catch (Exception exc)
             {
-                logger.Error("Connection failed: " + exc.Message);
+                logger.WriteError("Connection failed: " + exc.Message);
                 connected = false;
             }
             finally
@@ -228,7 +228,7 @@ namespace RavenNest.SDK.Endpoints
             }
             catch (Exception exc)
             {
-                logger.Error("Error sending data to server: " + exc.ToString());
+                logger.WriteError("Error sending data to server: " + exc.ToString());
                 Disconnect();
             }
 
@@ -314,7 +314,7 @@ namespace RavenNest.SDK.Endpoints
             {
                 if (socketExc.WebSocketErrorCode != WebSocketError.ConnectionClosedPrematurely)
                 {
-                    logger.Error(socketExc.Message);
+                    logger.WriteError(socketExc.Message);
                 }
 
                 //gameManager.ForceGameSessionUpdate();
@@ -324,7 +324,7 @@ namespace RavenNest.SDK.Endpoints
             }
             catch (Exception exc)
             {
-                logger.Error(exc.Message);
+                logger.WriteError(exc.Message);
                 Disconnect();
                 return false;
             }
@@ -359,7 +359,7 @@ namespace RavenNest.SDK.Endpoints
 
         private void Disconnect()
         {
-            logger.Debug("Disconnected from server");
+            logger.WriteDebug("Disconnected from server");
 
             connecting = false;
             connected = false;

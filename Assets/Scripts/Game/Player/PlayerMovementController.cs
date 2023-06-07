@@ -24,7 +24,7 @@ public class PlayerMovementController : MonoBehaviour
     private Vector3 positionJitter;
     private MovementLockState movementLockState;
     private bool firstUnlock = true;
-    private NavigationAgent navAgentState;
+    //private NavigationAgent navAgentState;
 
     public enum MovementLockState
     {
@@ -83,7 +83,7 @@ public class PlayerMovementController : MonoBehaviour
 
     internal Vector3 GetAgentVelocity()
     {
-        return GetNavigationAgent().Velocity;
+        return navMeshAgent.velocity;
     }
 
     internal void UpdateIdle(bool onFerry)
@@ -121,10 +121,10 @@ public class PlayerMovementController : MonoBehaviour
         playerAnimations.StartMoving();
         NextDestination = Vector3.zero;
 
-        var agent = GetNavigationAgent();
+        var agent = navMeshAgent;
 
-        if ((!agent.HasPath || Vector3.Distance(position, LastDestination) >= 1
-               || Vector3.Distance(agent.Destination, position) >= 10) && agent.ActiveAndEnabled && agent.OnNavMesh && !agent.PathPending)
+        if ((!agent.hasPath || Vector3.Distance(position, LastDestination) >= 1
+               || Vector3.Distance(agent.destination, position) >= 10) && agent.isActiveAndEnabled && agent.isOnNavMesh && !agent.pathPending)
         {
             LastDestination = position;
 
@@ -138,15 +138,18 @@ public class PlayerMovementController : MonoBehaviour
 
     internal void Lock()
     {
-        var agent = GetNavigationAgent();
-        //if (movementLockState == MovementLockState.Unlocked && !agent.Enabled)
-        //{
-        //    return;
-        //}
-
         var currentPosition = Position;
 
-        agent.Stop();
+        //agent.Stop();
+        var agent = this.navMeshAgent;
+        agent.velocity = Vector3.zero;
+        if (agent.isOnNavMesh)
+        {
+            agent.SetDestination(currentPosition);
+            agent.isStopped = true;
+            agent.ResetPath();
+        }
+        agent.enabled = false;
 
         if (playerAnimations)
             playerAnimations.StopMoving();
@@ -160,19 +163,14 @@ public class PlayerMovementController : MonoBehaviour
 
     internal void Unlock()
     {
-        //if (movementLockState == MovementLockState.Unlocked)
-        //{
-        //    return;
-        //}
-
-        var agent = GetNavigationAgent();
-        if (!agent.OnNavMesh && firstUnlock)
+        var agent = navMeshAgent;
+        if (!agent.isOnNavMesh && firstUnlock)
         {
             AdjustPlayerPositionToNavmesh();
             firstUnlock = false;
         }
 
-        agent.Enable();
+        agent.enabled = true;
 
         movementLockState = MovementLockState.Unlocked;
     }
@@ -185,10 +183,10 @@ public class PlayerMovementController : MonoBehaviour
 
     internal void SetPosition(Vector3 position, bool adjustToNavmesh = true)
     {
-        var agent = GetNavigationAgent();
-        if (agent.Enabled)
+        var agent = navMeshAgent;
+        if (agent.enabled)
         {
-            agent.Teleport(position);
+            agent.Warp(position);
         }
         else
         {
@@ -207,10 +205,10 @@ public class PlayerMovementController : MonoBehaviour
         if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMesh.AllAreas))
         {
             var pos = closestHit.position;
-            var agent = GetNavigationAgent();
-            if (agent.Enabled)
+            var agent = navMeshAgent;
+            if (agent.enabled)
             {
-                agent.Teleport(pos);
+                agent.Warp(pos);
             }
             else
             {
@@ -219,88 +217,10 @@ public class PlayerMovementController : MonoBehaviour
         }
     }
 
-    internal NavigationAgent GetNavigationAgent()
-    {
-        if (navAgentState == null)
-        {
-            return navAgentState = new NavigationAgent(Position, navMeshAgent);
-        }
-        return navAgentState.Update(Position);
-    }
-
     internal void SetAvoidancePriority(int v)
     {
         if (navMeshAgent)
             navMeshAgent.avoidancePriority = v;
-    }
-}
-
-public class NavigationAgent
-{
-    public bool Enabled;
-    public bool OnNavMesh;
-    public bool HasPath;
-    public bool PathPending;
-    public bool ReachedDestination;
-
-    public bool ActiveAndEnabled;
-    public Vector3 Destination;
-    public Vector3 Velocity;
-
-    private NavMeshAgent agent;
-
-    private Vector3 currentPosition;
-
-    public NavigationAgent(Vector3 currentPosition, NavMeshAgent agent)
-    {
-        this.currentPosition = currentPosition;
-        this.agent = agent;
-        Update(currentPosition);
-    }
-
-    internal NavigationAgent Update(Vector3 currentPosition)
-    {
-        this.currentPosition = currentPosition;
-
-        Enabled = agent && agent.enabled;
-        Destination = agent.destination;
-        Velocity = agent.velocity;
-        OnNavMesh = agent.isOnNavMesh;
-        HasPath = agent.hasPath;
-        PathPending = agent.pathPending;
-        ActiveAndEnabled = agent.isActiveAndEnabled;
-        ReachedDestination = agent.isOnNavMesh ? agent.remainingDistance > 1f : true;
-        return this;
-    }
-
-    internal void Enable()
-    {
-        agent.enabled = true;
-        if (agent.isOnNavMesh)
-            agent.isStopped = false;
-    }
-
-    public void Stop()
-    {
-        var agent = this.agent;
-        agent.velocity = Vector3.zero;
-        if (agent.isOnNavMesh)
-        {
-            agent.SetDestination(currentPosition);
-            agent.isStopped = true;
-            agent.ResetPath();
-        }
-        agent.enabled = false;
-    }
-
-    public void Teleport(Vector3 position)
-    {
-        agent.Warp(position);
-    }
-
-    internal void SetDestination(Vector3 position)
-    {
-        agent.SetDestination(position);
     }
 }
 

@@ -26,7 +26,7 @@
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, parseUsername: false, parseAmount: false);
+        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, parseAmount: false, playerToSearch: player);
 
         if (queriedItem.SuggestedItemNames.Length > 0)
         {

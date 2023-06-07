@@ -16,6 +16,8 @@ public class RavenBotConnection : IDisposable
     public readonly int RemoteBotPort = 4041;
 
     private readonly bool localBotServerEnabled;
+    private readonly RavenNest.SDK.ILogger logger;
+    private readonly RavenNestClient ravenNest;
     private readonly GameManager game;
     private readonly RavenBot ravenbot;
     private readonly TcpListener server;
@@ -35,11 +37,12 @@ public class RavenBotConnection : IDisposable
     public event EventHandler<GameClient> RemoteDisconnected;
 
     public GameManager Game => game;
-    public RavenBotConnection(GameManager game, RavenBot ravenbot)
+    public RavenBotConnection(RavenNest.SDK.ILogger logger, RavenNestClient ravenNest, GameManager game, RavenBot ravenbot)
     {
+        this.logger = logger;
+        this.ravenNest = ravenNest;
         this.game = game;
         this.ravenbot = ravenbot;
-
         this.localBotServerEnabled = !(PlayerSettings.Instance.LocalBotServerDisabled ?? false);
 
         if (localBotServerEnabled)
@@ -51,7 +54,7 @@ public class RavenBotConnection : IDisposable
 
         if (Application.isEditor || string.IsNullOrEmpty(PlayerSettings.Instance.RavenBotServer))
         {
-            remoteBotServer = RavenNestClient.Settings.RavenbotEndpoint;
+            remoteBotServer = ravenNest.Settings.RavenbotEndpoint;
         }
 
         if (string.IsNullOrEmpty(remoteBotServer))
@@ -111,7 +114,7 @@ public class RavenBotConnection : IDisposable
 
         if (packet.Message == null || string.IsNullOrEmpty(packet.Message.Identifier))
         {
-            UnityEngine.Debug.LogError("Received message from bot that was not properly deserialized. Message is null. ");
+            logger.WriteError("Received message from bot that was not properly deserialized. Message is null. ");
             return;
         }
 
@@ -163,7 +166,7 @@ public class RavenBotConnection : IDisposable
 
             if (!server.Server.IsBound)
             {
-                Shinobytes.Debug.Log("Bot Server stopped.");
+                logger.WriteError("Bot Server stopped.");
             }
         }
     }
@@ -184,7 +187,7 @@ public class RavenBotConnection : IDisposable
         var cmd = new BotMessage(gameClient, msg);
 
 #if DEBUG
-        UnityEngine.Debug.Log(rawCommand);
+        logger.WriteMessage(rawCommand);
 #endif
 
 
@@ -217,7 +220,7 @@ public class RavenBotConnection : IDisposable
             var type = msg.Message.Identifier;
             if (!packetHandlers.TryGetValue(type.ToLower(), out var handlerType))
             {
-                Shinobytes.Debug.LogError($"'{type}' is not a known command. :(");
+                logger.WriteError($"'{type}' is not a known command. :(");
                 return;
             }
 
@@ -225,7 +228,7 @@ public class RavenBotConnection : IDisposable
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            logger.WriteError(exc.ToString());
         }
     }
 
@@ -239,6 +242,24 @@ public class RavenBotConnection : IDisposable
         {
             throw new Exception(
                 $"Nooo! Packet handler for {packetHandlerType.FullName} could not be instantiated. Plz fix!");
+        }
+
+        // if this packet was from a ingame player, then set last activity to now
+        try
+        {
+            if (game?.Players != null && packet?.Message?.Sender != null)
+            {
+                var targetPlayer = game.Players.GetPlayer(packet.Message.Sender);
+                if (targetPlayer != null)
+                {
+                    // this will help determining afk players.
+                    targetPlayer.LastActivityUtc = DateTime.UtcNow;
+                }
+            }
+        }
+        catch
+        {
+            // ignored.
         }
 
         packetHandler.Handle(packet);
@@ -276,7 +297,7 @@ public class RavenBotConnection : IDisposable
             try
             {
 
-                Shinobytes.Debug.Log("Connecting to remote bot...");
+                logger.WriteMessage("Connecting to remote bot...");
                 remoteClient?.Dispose();
                 remoteClient = new GameClient(this, OnClientConnected, OnRemoteConnectionFailed, str =>
                 {
@@ -286,7 +307,7 @@ public class RavenBotConnection : IDisposable
             catch (Exception exc)
             {
                 connectionInProgress = false;
-                Shinobytes.Debug.LogError("Error Connecting to Remote Bot: " + exc.Message);
+                logger.WriteError("Error Connecting to Remote Bot: " + exc.Message);
             }
             finally
             {
@@ -304,14 +325,14 @@ public class RavenBotConnection : IDisposable
             return;
         }
 
-        Shinobytes.Debug.Log("Failed to connect to remote bot. Retrying");
+        logger.WriteWarning("Failed to connect to remote bot. Retrying");
 
         await Task.Delay(reconnectionTimer);
 
         if (IsConnectedToLocal)
         {
             //reconnectionTimer = 1000;
-            Shinobytes.Debug.Log("Connected to local bot, remote reconnection tries cancelled.");
+            logger.WriteMessage("Connected to local bot, remote reconnection tries cancelled.");
             return;
         }
 
@@ -349,11 +370,11 @@ public class RavenBotConnection : IDisposable
         {
             server.Start(0x1000);
             server.BeginAcceptTcpClient(OnAcceptTcpClient, null);
-            Shinobytes.Debug.Log("Bot Server started");
+            logger.WriteMessage("Bot Server started");
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError("Unable to start bot server. If using centralized bot, this can be ignored. " + exc.Message);
+            logger.WriteError("Unable to start bot server. If using centralized bot, this can be ignored. " + exc.Message);
         }
     }
 
@@ -365,14 +386,14 @@ public class RavenBotConnection : IDisposable
         var ctor = ctors.FirstOrDefault();
         if (ctor == null)
         {
-            Shinobytes.Debug.LogError($"InstantiateHandler: No public constructor found!");
+            logger.WriteError($"InstantiateHandler: No public constructor found!");
             return null;
         }
 
         var parameters = ctor.GetParameters();
         if (parameters.Length != args.Length)
         {
-            Shinobytes.Debug.LogError($"InstantiateHandler: Unexpected amount of parameters for ctor: {parameters.Length}, expected: {args.Length}");
+            logger.WriteError($"InstantiateHandler: Unexpected amount of parameters for ctor: {parameters.Length}, expected: {args.Length}");
             return null;
         }
 
@@ -404,7 +425,7 @@ public class RavenBotConnection : IDisposable
     {
         connectionInProgress = false;
 
-        Shinobytes.Debug.Log("Connected to remote bot");
+        logger.WriteMessage("Connected to remote bot");
         RemoteConnected?.Invoke(this, client);
         reconnectionTimer = 1000;
         if (ravenbot.State == BotState.Disconnected)
@@ -424,7 +445,7 @@ public class RavenBotConnection : IDisposable
 
     public void OnClientConnected(TcpClient client)
     {
-        Shinobytes.Debug.Log("Bot connected");
+        logger.WriteMessage("Bot connected");
         var gameClient = new GameClient(this, client, str =>
         {
             DataSent?.Invoke(this, str);
@@ -442,13 +463,13 @@ public class RavenBotConnection : IDisposable
     {
         if (connectedClients.Remove(gameClient))
         {
-            Shinobytes.Debug.Log("Bot disconnected");
+            logger.WriteMessage("Bot disconnected");
             connectedClients.Remove(gameClient);
             LocalDisconnected?.Invoke(this, gameClient);
         }
         else if (gameClient.IsRemote)
         {
-            Shinobytes.Debug.Log("Disconnected from remote bot");
+            logger.WriteMessage("Disconnected from remote bot");
             RemoteDisconnected?.Invoke(this, gameClient);
         }
     }

@@ -57,11 +57,18 @@ public class SetVillageHuts : ChatBotCommandHandler<string>
 
     public override async void Handle(string data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(gm.Sender);
-        if (!player || (!player.IsBroadcaster && !player.IsGameAdmin && !player.IsGameModerator))
+        var user = gm.Sender;
+        if (!user.IsModerator && !user.IsBroadcaster)
         {
-            Shinobytes.Debug.LogWarning(gm.Sender.Username + " tried to set the village boost but does not have permission to do so.");
-            return;
+            var player = PlayerManager.GetPlayer(gm.Sender);
+            if (!player)
+            {
+                return;
+            }
+            if (!player.IsGameAdmin && !player.IsGameModerator)
+            {
+                return;
+            }
         }
 
         if (string.IsNullOrEmpty(data))

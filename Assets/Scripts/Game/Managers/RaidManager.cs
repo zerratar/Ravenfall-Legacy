@@ -42,6 +42,10 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public string RequiredCode;
 
+    private RaidDifficultySystem difficultySystem = new RaidDifficultySystem();
+
+    private int raidIndex = 0;
+
     private void Start()
     {
         nextRaidTimer = UnityEngine.Random.Range(minTimeBetweenRaids, maxTimeBetweenRaids);
@@ -106,6 +110,11 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         player.Raid.OnEnter();
+
+        // whenever a player joins, we take the sum of all combat skills and equipment
+        // this needs to be recorded for every raid that occurs
+        difficultySystem.Track(raidIndex, player);
+
     }
 
     public void Leave(PlayerController player, bool reward = false, bool timeout = false)
@@ -119,7 +128,7 @@ public class RaidManager : MonoBehaviour, IEvent
         }
     }
 
-    public void StartRaid(string initiator = null)
+    public bool StartRaid(string initiator = null)
     {
         if (gameManager.Events.TryStart(this))
         {
@@ -149,7 +158,7 @@ public class RaidManager : MonoBehaviour, IEvent
                 gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
             }
 
-            return;
+            return true;
         }
         else if (!string.IsNullOrEmpty(initiator))
         {
@@ -157,10 +166,13 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         nextRaidTimer = gameManager.Events.RescheduleTime;
+        return false;
     }
 
     public void EndRaid(bool bossKilled, bool timeout)
     {
+        gameManager.Events.End(this);
+
         if (!bossKilled && timeout)
         {
             gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
@@ -172,6 +184,8 @@ public class RaidManager : MonoBehaviour, IEvent
         camera.DisableFocusCamera();
         ScheduleNextRaid();
         notifications.HideRaidInfo();
+
+        raidIndex++;
 
         lock (mutex)
         {
@@ -188,16 +202,23 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         Destroy(Boss.gameObject);
+
         Boss = null;
         RequiredCode = null;
-        gameManager.Events.End(this);
         gameManager.Ferry.AssignBestCaptain();
+        difficultySystem.Next();
     }
 
     public void RewardItemDrops(List<PlayerController> players)
     {
         // only players within at least 20% participation time will have chance for item drop.
-        var result = Boss.ItemDrops.DropItems(players.Where(x => x.Raid.GetParticipationPercentage() >= 0.2), DropType.Maybe);
+        if (players.Count == 0)
+        {
+            return;
+        }
+
+        var playersInRaid = players.Where(x => x.Raid.GetParticipationPercentage() >= 0.2);
+        var result = Boss.ItemDrops.DropItems(playersInRaid, DropType.Maybe);
         if (result.Count > 0)
         {
             gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded " + result.Count + " item treasures!");
@@ -228,8 +249,11 @@ public class RaidManager : MonoBehaviour, IEvent
     private void Update()
     {
         var players = playerManager.GetAllPlayers();
-        if (!Started && players.Count == 0)
+
+        if (!Started && players.Count == 0 && !Boss)
         {
+            // try force ending the event if it's still active
+            gameManager.Events.End(this);
             return;
         }
 
@@ -303,19 +327,21 @@ public class RaidManager : MonoBehaviour, IEvent
             }
         }
 
-        var players = playerManager.GetAllPlayers();
-        var highestStats = players.Max(x => x.Stats);
-        var lowestStats = players.Min(x => x.Stats);
-        var rngLowEq = players.Min(x => x.EquipmentStats);
-        var rngHighEq = players.Max(x => x.EquipmentStats);
+        var difficulty = difficultySystem.GetDifficulty(raidIndex);
 
+        /* old logic
+            var players = playerManager.GetAllPlayers();
+            var highestStats = players.Max(x => x.Stats);
+            var lowestStats = players.Min(x => x.Stats);
+            var rngLowEq = players.Min(x => x.EquipmentStats);
+            var rngHighEq = players.Max(x => x.EquipmentStats) * 0.75f;
+        */
         Boss = Instantiate(raidBossPrefab, spawnPosition, Quaternion.identity).GetComponent<RaidBossController>();
-
-        Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq * 0.75f);
+        //Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
+        Boss.Create(difficulty.BossSkills, difficulty.BossEquipmentStats);
+        Boss.UnlockMovement();
 
         timeoutTimer = Mathf.Min(maxTimeoutSeconds, Mathf.Max(minTimeoutSeconds, Boss.Enemy.Stats.CombatLevel * 0.8249123f));
-
-        Boss.Enemy.Unlock();
     }
 }
 

@@ -1,24 +1,22 @@
-﻿using System;
-using UnityEngine;
+﻿using RavenNest.SDK;
 
-public class RavenBot : MonoBehaviour
+public class RavenBot : System.IDisposable
 {
     public bool UseRemoteBot = true;
     public RavenBotConnection Connection { get; private set; }
 
-    private GameManager gameManager;
+    private readonly GameManager gameManager;
+
+    private readonly RavenNest.SDK.ILogger logger;
 
     public BotState State { get; set; }
 
-    public void Start()
-    {
-        if (!this.gameManager) gameManager = FindObjectOfType<GameManager>();
-    }
-
-    public void Initialize(GameManager gameManager)
+    public RavenBot(RavenNest.SDK.ILogger logger, RavenNestClient ravenNest, GameManager gameManager)
     {
         if (!this.gameManager) this.gameManager = gameManager;
-        Connection = new RavenBotConnection(gameManager, this);
+        this.logger = logger;
+
+        Connection = new RavenBotConnection(logger, ravenNest, gameManager, this);
         Connection.Register<KickPlayer>("kick");
         Connection.Register<PlayerLeave>("leave");
         Connection.Register<IslandInfo>("island_info");
@@ -39,8 +37,11 @@ public class RavenBot : MonoBehaviour
         Connection.Register<ValueItem>("value_item");
         Connection.Register<CraftRequirement>("req_item");
         Connection.Register<MaxMultiplier>("multiplier");
+
+        Connection.Register<UpdateGame>("update");
         Connection.Register<ReloadGame>("reload");
         Connection.Register<RestartGame>("restart");
+
         Connection.Register<SetPet>("set_pet");
         Connection.Register<GetPet>("get_pet");
         Connection.Register<EquipItem>("equip");
@@ -115,10 +116,6 @@ public class RavenBot : MonoBehaviour
         Connection.Register<RestedStatus>("rested_status");
         Connection.Register<ClientVersion>("client_version");
 
-
-
-
-
         Connection.LocalConnected -= BotConnected;
         Connection.LocalConnected += BotConnected;
         Connection.LocalDisconnected -= BotDisconnected;
@@ -187,14 +184,23 @@ public class RavenBot : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
+    public void Dispose()
     {
-        this.Connection.Stop(false);
+        try
+        {
+            if (this.Connection != null)
+                this.Connection.Stop(false);
+        }
+        catch
+        {
+            // ignored
+        }
     }
 }
 
 public enum BotState
 {
+    NotSet,
     Disconnected,
     Connected,
     Ready

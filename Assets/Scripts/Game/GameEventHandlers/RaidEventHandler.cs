@@ -60,7 +60,7 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
             }
         }
 
-        gameManager.SavePlayerStates();
+        gameManager.SaveStateFile();
 
         if (raidWar)
         {

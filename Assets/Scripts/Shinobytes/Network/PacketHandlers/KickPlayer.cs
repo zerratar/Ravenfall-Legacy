@@ -13,16 +13,38 @@ public class KickPlayer : ChatBotCommandHandler<User>
 
     public override void Handle(User data, GameMessage gm, GameClient client)
     {
+        var user = gm.Sender;
+        if (!user.IsModerator && !user.IsBroadcaster)
+        {
+            var player = PlayerManager.GetPlayer(gm.Sender);
+            if (!player)
+            {
+                return;
+            }
+            if (!player.IsGameAdmin && !player.IsGameModerator)
+            {
+                return;
+            }
+        }
+
         if (data.Username.Equals("afk", System.StringComparison.OrdinalIgnoreCase))
         {
             var kickedPlayerCount = 0;
             var players = PlayerManager
                 .GetAllPlayers()
-                .Where(x => x.GetTask() == TaskType.None)
+                .Where(x => x.GetTask() == TaskType.None || x.IsAfk)
                 .ToList();
 
             foreach (var plr in players)
             {
+                var isAfk = plr.IsAfk;
+                if (isAfk)
+                {
+                    ++kickedPlayerCount;
+                    Game.QueueRemovePlayer(plr);
+                    continue;
+                }
+
                 if (plr.Movement.IdleTime < 30f)
                     continue;
 

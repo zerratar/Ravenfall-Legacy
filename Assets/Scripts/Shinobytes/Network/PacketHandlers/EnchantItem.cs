@@ -45,8 +45,7 @@ public class EnchantItem : ChatBotCommandHandler<string>
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.ResolveTradeQuery(query,
-            parsePrice: false, parseUsername: false, parseAmount: false, playerToSearch: player);
+        var queriedItem = itemResolver.ResolveTradeQuery(query, parsePrice: false, parseAmount: false, playerToSearch: player);
 
 
         if (queriedItem.SuggestedItemNames.Length > 0)

@@ -61,9 +61,9 @@ public class AttributeStatsManager : MonoBehaviour
 
         var eqStats = observedPlayer.EquipmentStats;
 
-        armor.Text = (eqStats.ArmorPowerBonus > 0 ? "<color=green>" : "") + eqStats.ArmorPower.ToString();
-        melee.Text = (eqStats.WeaponBonus > 0 ? "<color=green>" : "") + eqStats.WeaponAim + "\n" + eqStats.WeaponPower;
-        ranged.Text = (eqStats.RangedBonus > 0 ? "<color=green>" : "") + eqStats.RangedAim + "\n" + eqStats.RangedPower;
-        magic.Text = (eqStats.MagicBonus > 0 ? "<color=green>" : "") + eqStats.MagicAim + "\n" + eqStats.MagicPower;
+        armor.Text = (eqStats.ArmorPowerBonus > 0 ? "<color=green>" : "") + eqStats.BaseArmorPower.ToString();
+        melee.Text = (eqStats.WeaponBonus > 0 ? "<color=green>" : "") + eqStats.BaseWeaponAim + "\n" + eqStats.BaseWeaponPower;
+        ranged.Text = (eqStats.RangedBonus > 0 ? "<color=green>" : "") + eqStats.BaseRangedAim + "\n" + eqStats.BaseRangedPower;
+        magic.Text = (eqStats.MagicBonus > 0 ? "<color=green>" : "") + eqStats.BaseMagicAim + "\n" + eqStats.BaseMagicPower;
     }
 }

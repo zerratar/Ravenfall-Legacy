@@ -263,9 +263,9 @@ public class DungeonBossController : MonoBehaviour
     {
         return new EquipmentStats
         {
-            ArmorPower = UnityEngine.Random.Range(rngLowEq.ArmorPower, rngHighEq.ArmorPower),
-            WeaponPower = UnityEngine.Random.Range(rngLowEq.WeaponPower, rngHighEq.WeaponPower),
-            WeaponAim = UnityEngine.Random.Range(rngLowEq.WeaponAim, rngHighEq.WeaponAim)
+            BaseArmorPower = UnityEngine.Random.Range(rngLowEq.BaseArmorPower, rngHighEq.BaseArmorPower),
+            BaseWeaponPower = UnityEngine.Random.Range(rngLowEq.BaseWeaponPower, rngHighEq.BaseWeaponPower),
+            BaseWeaponAim = UnityEngine.Random.Range(rngLowEq.BaseWeaponAim, rngHighEq.BaseWeaponAim)
         };
     }
 }

@@ -89,7 +89,6 @@ public class OnsenHandler : MonoBehaviour
         this.onsenParentID = target.GetInstanceID();
 
         onsen.UpdateDetailsLabel();
-        player.GameManager.SaveNow();
     }
 
     public void Exit()
@@ -109,6 +108,5 @@ public class OnsenHandler : MonoBehaviour
 
         prevOnsen.UpdateDetailsLabel();
         InOnsen = false;
-        player.GameManager.SaveNow();
     }
 }

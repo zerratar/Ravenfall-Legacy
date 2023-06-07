@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEngine;
 
 namespace RavenNest.SDK
 {
-
     public class ConsoleLogger : ILogger
     {
         private readonly object writelock = new object();
@@ -21,21 +19,26 @@ namespace RavenNest.SDK
             WriteOperations(ParseMessageOperations(" " + message));
         }
 
-        public void WriteLine(string message)
+        public void WriteMessage(string message)
         {
             WriteLineOperations(ParseMessageOperations(" " + message));
         }
 
-        public void Debug(string message)
+        public void WriteDebug(string message)
         {
 #if DEBUG
-            WriteLine($"[@{ConsoleColor.Cyan}@DBG@{ConsoleColor.Gray}@] {message}");
+            WriteMessage($"[@{ConsoleColor.Cyan}@DBG@{ConsoleColor.Gray}@] {message}");
 #endif
         }
 
-        public void Error(string errorMessage)
+        public void WriteWarning(string message)
         {
-            WriteLine($"@{ConsoleColor.Red}@{errorMessage}");
+            WriteMessage($"@{ConsoleColor.Yellow}@{message}");
+        }
+
+        public void WriteError(string errorMessage)
+        {
+            WriteMessage($"@{ConsoleColor.Red}@{errorMessage}");
         }
 
         private void WriteLineOperations(IReadOnlyList<ConsoleWriteOperation> operations)
@@ -78,30 +81,30 @@ namespace RavenNest.SDK
                 switch (token.Type)
                 {
                     case TextTokenType.At:
-                    {
-                        var prev = tokens[tokenIndex - 1];
-                        var prevOp = ops[ops.Count - 1];
-                        if (prev.Text.EndsWith("\\"))
                         {
-                            ops[ops.Count - 1] = new ConsoleWriteOperation(prevOp.Text.Remove(prevOp.Text.Length - 1), prevOp.ForegroundColor, prevOp.BackgroundColor);
-                            goto default;
+                            var prev = tokens[tokenIndex - 1];
+                            var prevOp = ops[ops.Count - 1];
+                            if (prev.Text.EndsWith("\\"))
+                            {
+                                ops[ops.Count - 1] = new ConsoleWriteOperation(prevOp.Text.Remove(prevOp.Text.Length - 1), prevOp.ForegroundColor, prevOp.BackgroundColor);
+                                goto default;
+                            }
+                            foregroundColor = ParseColor(tokens[++tokenIndex].Text);
+                            ++tokenIndex;// var endToken = tokens[++tokenIndex];                            
                         }
-                        foregroundColor = ParseColor(tokens[++tokenIndex].Text);
-                        ++tokenIndex;// var endToken = tokens[++tokenIndex];                            
-                    }
                         break;
                     case TextTokenType.Hash:
-                    {
-                        var prev = tokens[tokenIndex - 1];
-                        var prevOp = ops[ops.Count - 1];
-                        if (prev.Text.EndsWith("\\"))
                         {
-                            ops[ops.Count - 1] = new ConsoleWriteOperation(prevOp.Text.Remove(prevOp.Text.Length - 1), prevOp.ForegroundColor, prevOp.BackgroundColor);
-                            goto default;
+                            var prev = tokens[tokenIndex - 1];
+                            var prevOp = ops[ops.Count - 1];
+                            if (prev.Text.EndsWith("\\"))
+                            {
+                                ops[ops.Count - 1] = new ConsoleWriteOperation(prevOp.Text.Remove(prevOp.Text.Length - 1), prevOp.ForegroundColor, prevOp.BackgroundColor);
+                                goto default;
+                            }
+                            backgroundColor = ParseColor(tokens[++tokenIndex].Text);
+                            ++tokenIndex;// var endToken = tokens[++tokenIndex];                            
                         }
-                        backgroundColor = ParseColor(tokens[++tokenIndex].Text);
-                        ++tokenIndex;// var endToken = tokens[++tokenIndex];                            
-                    }
                         break;
                     default:
                         ops.Add(new ConsoleWriteOperation(token.Text, foregroundColor, backgroundColor));
@@ -157,17 +160,17 @@ namespace RavenNest.SDK
                         tokens.Add(new TextToken(TextTokenType.Hash, "#"));
                         break;
                     default:
-                    {
-                        var str = token.ToString();
-                        while (index + 1 < message.Length)
                         {
-                            var next = message[index + 1];
-                            if (next == '@' || next == '#') break;
-                            str += message[++index];
+                            var str = token.ToString();
+                            while (index + 1 < message.Length)
+                            {
+                                var next = message[index + 1];
+                                if (next == '@' || next == '#') break;
+                                str += message[++index];
+                            }
+                            tokens.Add(new TextToken(TextTokenType.Text, str));
+                            break;
                         }
-                        tokens.Add(new TextToken(TextTokenType.Text, str));
-                        break;
-                    }
                 }
 
                 index++;

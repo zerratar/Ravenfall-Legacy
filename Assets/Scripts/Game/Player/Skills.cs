@@ -29,7 +29,7 @@ public class Skills : IComparable
     public SkillStat Woodcutting;
     public SkillStat Slayer;
     public SkillStat Sailing;
-    public static Skills Zero => new Skills();
+    public static readonly Skills Zero = new Skills();
 
     public Skills()
     {
@@ -82,6 +82,7 @@ public class Skills : IComparable
         {
             var s = SkillList[i];
             this.skills[s.Name.ToLower()] = s;
+            s.Index = i;
         }
     }
 
@@ -480,6 +481,9 @@ public static class SkillUtilities
             SkillLookup["heal"] = Skill.Healing;
             SkillLookup["mage"] = Skill.Magic;
             SkillLookup["atk"] = Skill.Attack;
+            SkillLookup["cook"] = Skill.Cooking;
+            SkillLookup["wood"] = Skill.Woodcutting;
+            SkillLookup["craft"] = Skill.Crafting;
             SkillLookup["mine"] = Skill.Mining;
         }
     }

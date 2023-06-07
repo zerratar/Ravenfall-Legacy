@@ -2,7 +2,7 @@
 
 public interface IGameEventHandler
 {
-    void Handle(GameManager gameManager, string data);
+    void Handle(GameManager gameManager, byte[] data);
 }
 
 public interface IGameEventHandler<TEventData> : IGameEventHandler

@@ -63,7 +63,7 @@ namespace Assets.Scripts
                         item.User = player.User;
                         item.CharacterId = player.Id;
                         item.CharacterIndex = player.CharacterIndex;
-
+                        item.LastActivityUtc = player.LastActivityUtc;
                         if (item.User == null)
                         {
                             item.User = new User(
@@ -210,5 +210,6 @@ namespace Assets.Scripts
         public System.Guid CharacterId { get; set; }
         public string NameTagHexColor { get; set; }
         public int CharacterIndex { get; set; }
+        public DateTime LastActivityUtc { get; set; }
     }
 }

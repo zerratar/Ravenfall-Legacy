@@ -16,7 +16,7 @@ public class IslandController : MonoBehaviour
     private SphereCollider sphereCollider;
     private float radius;
 
-    private int ferryArriveCount;
+    //private int ferryArriveCount;
     private int raidBossCount;
 
     //private readonly Dictionary<Guid, PlayerController> players = new Dictionary<Guid, PlayerController>();
@@ -50,13 +50,13 @@ public class IslandController : MonoBehaviour
             return;
         }
 
-        var ferry = other.gameObject.GetComponent<FerryController>();
-        if (ferry)
-        {
-            ferry.IslandEnter(this);
-            ++this.ferryArriveCount;
-            return;
-        }
+        //var ferry = other.gameObject.GetComponent<FerryController>();
+        //if (ferry)
+        //{
+        //    ferry.IslandEnter(this);
+        //    ++this.ferryArriveCount;
+        //    return;
+        //}
     }
 
     private void OnTriggerExit(Collider other)
@@ -68,12 +68,12 @@ public class IslandController : MonoBehaviour
             return;
         }
 
-        var ferry = other.gameObject.GetComponent<FerryController>();
-        if (ferry)
-        {
-            ferry.IslandExit();
-            return;
-        }
+        //var ferry = other.gameObject.GetComponent<FerryController>();
+        //if (ferry)
+        //{
+        //    ferry.IslandExit();
+        //    return;
+        //}
     }
     public IReadOnlyList<PlayerController> GetPlayers() => players;//players.Values.ToList();
     internal void AddPlayer(PlayerController playerController)

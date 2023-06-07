@@ -79,9 +79,9 @@ public class PlayerStats : ChatBotCommandHandler<string>
             combatLevel.ToString(),
             skills,
             total.ToString(),
-            eq.WeaponPower.ToString(),
-            eq.WeaponAim.ToString(),
-            eq.ArmorPower.ToString(),
+            eq.BaseWeaponPower.ToString(),
+            eq.BaseWeaponAim.ToString(),
+            eq.BaseArmorPower.ToString(),
             Inspect(player, ps.SkillList)
         );
     }

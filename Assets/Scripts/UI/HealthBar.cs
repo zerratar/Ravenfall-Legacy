@@ -19,6 +19,8 @@ public class HealthBar : MonoBehaviour
     private Transform targetTransform;
     private Transform targetCamera;
     private Vector3 targetOffset;
+    private bool hasTarget;
+    private bool isActive;
 
     // Start is called before the first frame update
     void Start()
@@ -69,9 +71,9 @@ public class HealthBar : MonoBehaviour
         var stats = Target.GetStats();
         if (stats.IsDead || !Target.InCombat)
         {
-            this.gameObject.SetActive(false);
+            this.SetActive(false);
 
-            if (canvasGroup && canvasGroup.alpha > 0f)
+            if (canvasGroup.alpha > 0f)
             {
                 canvasGroup.alpha = 0f;
 
@@ -80,8 +82,8 @@ public class HealthBar : MonoBehaviour
         }
         else
         {
-            this.gameObject.SetActive(true);
-            if (canvasGroup && canvasGroup.alpha <= 0f)
+            this.SetActive(true);
+            if (canvasGroup.alpha <= 0f)
             {
                 canvasGroup.alpha = 1f;
             }
@@ -93,7 +95,7 @@ public class HealthBar : MonoBehaviour
             return;
         }
 
-        if (targetTransform)
+        if (hasTarget)
         {
             float proc = stats.Health.CurrentValue > 0 ? 100f * ((float)stats.Health.CurrentValue / stats.Health.Level) : 0f;
             this.transform.position = targetTransform.position + targetOffset;
@@ -101,12 +103,21 @@ public class HealthBar : MonoBehaviour
             progress.sizeDelta = new Vector2(proc, 100f);
         }
     }
+    private void SetActive(bool value)
+    {
+        if (this.isActive != value)
+        {
+            this.isActive = value;
+            this.gameObject.SetActive(value);
+        }
+    }
+
 
     internal void SetTarget(IAttackable target)
     {
         Target = target;
 
-        this.gameObject.SetActive(true);
+        SetActive(true);
 
         var behaviour = (MonoBehaviour)target;
         this.capsuleCollider = behaviour.GetComponent<CapsuleCollider>();
@@ -116,11 +127,11 @@ public class HealthBar : MonoBehaviour
         this.isDungeonBoss = !!dungeonBoss;
 
         this.targetTransform = behaviour.transform;
-
+        this.hasTarget = false;
         if (this.targetTransform)
         {
             Vector3 pos;
-
+            this.hasTarget = true;
             if (isPlayer && capsuleCollider)
             {
                 pos = (Vector3.up * (capsuleCollider.height * targetTransform.localScale.y))

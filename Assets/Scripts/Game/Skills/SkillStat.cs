@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
 public class SkillStat
 {
-    private static readonly Dictionary<int, double> expScaleCache = new Dictionary<int, double>();
-
     public string Name;
     public int CurrentValue;
     public int Level;
@@ -14,7 +11,9 @@ public class SkillStat
     public Skill Type;
     public float Bonus;
 
-    public int MaxLevel => Mathf.FloorToInt(Level + Bonus);
+    public int MaxLevel;
+
+    public int Index;
 
     private float refreshRate = 60f;
     private double totalEarnedExperience;
@@ -22,6 +21,14 @@ public class SkillStat
     private float lastExperienceGain;
 
     public SkillStat() { }
+
+    public SkillStat(int level)
+    {
+        this.Level = level;
+        this.CurrentValue = level;
+        this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
+    }
+
     public SkillStat(
         Skill type,
         string name,
@@ -33,6 +40,7 @@ public class SkillStat
         Level = level;//GameMath.ExperienceToLevel(exp);
         Experience = exp;
         Name = name;
+        MaxLevel = Mathf.FloorToInt(Level + Bonus);
     }
 
     public void Set(int newLevel, double newExp, bool updateExpPerHour = true)
@@ -50,6 +58,7 @@ public class SkillStat
             Level = newLevel;
             CurrentValue = newLevel;
             Experience = newExp;
+            MaxLevel = Mathf.FloorToInt(Level + Bonus);
             return;
         }
 
@@ -127,7 +136,7 @@ public class SkillStat
             if (Experience >= maxExp)
                 Experience = maxExp;
         }
-
+        MaxLevel = Mathf.FloorToInt(Level + Bonus);
         return newLevels > 0;
     }
 
@@ -141,7 +150,7 @@ public class SkillStat
 
     public void Reset()
     {
-        CurrentValue = Mathf.FloorToInt(Level + Bonus);
+        MaxLevel = CurrentValue = Mathf.FloorToInt(Level + Bonus);
     }
 
     public void Add(int value)

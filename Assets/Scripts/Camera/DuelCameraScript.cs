@@ -48,6 +48,7 @@ public class DuelCameraScript : MonoBehaviour
             {
                 image.enabled = false;
             }
+            this.gameObject.SetActive(false);
             return;
         }
 
@@ -88,6 +89,7 @@ public class DuelCameraScript : MonoBehaviour
 
         targetObserverTimer = targetTime;
         targets.Add(duelHandler);
+        this.gameObject.SetActive(true);
         return true;
     }
 

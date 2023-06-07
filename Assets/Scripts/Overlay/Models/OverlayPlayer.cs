@@ -83,7 +83,6 @@ public class OverlayPlayer
         return new CharacterState
         {
             RestedTime = source.Rested.RestedTime,
-            DuelOpponent = source.Duel.InDuel ? source.Duel.Opponent?.Id.ToString() : null,
             Health = source.Stats.Health.CurrentValue,
             InArena = source.Arena.InArena,
             InDungeon = source.Dungeon.InDungeon,

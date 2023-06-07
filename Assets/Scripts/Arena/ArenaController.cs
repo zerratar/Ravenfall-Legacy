@@ -76,6 +76,12 @@ public class ArenaController : MonoBehaviour, IEvent
         {
             End();
         }
+
+        // try force ending the event if it's still active
+        if (state == ArenaState.NotStarted || state == ArenaState.Finished)
+        {
+            gameManager.Events.End(this);
+        }
     }
 
     private void RemoveKickedPlayers()

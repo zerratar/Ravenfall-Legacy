@@ -16,9 +16,9 @@ public class RaidBossController : MonoBehaviour
     [SerializeField] private SphereCollider attackRadiusCollider;
     [SerializeField] private float attackInterval = 1.5f;
     [SerializeField] private float deathTimer = 5f;
+    [SerializeField] private int healthMultiplier = 100;
 
     [SerializeField] private Rigidbody rb;
-
     public bool RaidBossControlsDestroy = false;
     public ItemDropHandler ItemDrops;
 
@@ -31,6 +31,7 @@ public class RaidBossController : MonoBehaviour
     private bool activated;
     private bool playingDeathAnimation;
     private IslandController island;
+    private GameManager gameManager;
 
     public EnemyController Enemy => enemyController;
 
@@ -60,14 +61,35 @@ public class RaidBossController : MonoBehaviour
         }
         name = "___RAID__BOSS___";
         EnsureRaidManager();
+
+        this.gameManager = FindObjectOfType<GameManager>();
+
+        AssignIsland();
+
         //this.Enemy.Unlock();
+    }
+
+    public void UnlockMovement()
+    {
+        this.enemyController.Unlock();
+    }
+
+    private void AssignIsland()
+    {
+        if (gameManager && !island)
+        {
+            var newIsland = gameManager.Islands.FindIsland(this.transform.position);
+            if (newIsland)
+                IslandEnter(newIsland);
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-
         if (GameCache.IsAwaitingGameRestore) return;
+
+        AssignIsland();
 
         if (activated)
         {
@@ -197,8 +219,8 @@ public class RaidBossController : MonoBehaviour
         attackTimer = attackInterval;
         Enemy.Unlock();
     }
-    public void Create(
-        Skills rngLowStats, Skills rngHighStats, EquipmentStats rngLowEq, EquipmentStats rngHighEq)
+
+    public void Create(Skills stats, EquipmentStats equipmentStats)
     {
         EnsureRaidManager();
         var model = models.OrderBy(x => UnityEngine.Random.value).FirstOrDefault();
@@ -208,9 +230,8 @@ public class RaidBossController : MonoBehaviour
             return;
         }
 
-        enemyController.Stats = GenerateCombatStats(rngLowStats ?? new Skills(), rngHighStats ?? new Skills());
-        enemyController.EquipmentStats = GenerateEquipmentStats(rngLowEq ?? new EquipmentStats(), rngHighEq ?? new EquipmentStats());
-
+        enemyController.Stats = stats;
+        enemyController.EquipmentStats = equipmentStats;
 
         modelObject = Instantiate(model, transform);
         modelAnimator = modelObject.GetComponent<Animator>();
@@ -225,6 +246,13 @@ public class RaidBossController : MonoBehaviour
         Enemy.Unlock();
     }
 
+    public void Create(Skills rngLowStats, Skills rngHighStats, EquipmentStats rngLowEq, EquipmentStats rngHighEq)
+    {
+        var characterStats = GenerateCombatStats(rngLowStats ?? new Skills(), rngHighStats ?? new Skills());
+        var equipmentStats = GenerateEquipmentStats(rngLowEq ?? new EquipmentStats(), rngHighEq ?? new EquipmentStats());
+
+        Create(characterStats, equipmentStats);
+    }
 
     public void Die()
     {
@@ -251,58 +279,33 @@ public class RaidBossController : MonoBehaviour
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
+    private Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
     {
-        var health = Math.Max(100, (int)(Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * 100));
-        var strength = Math.Max(1, (int)(Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue)));
-        var defense = Math.Max(1, (int)(Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue)));
-        var attack = Math.Max(1, (int)(Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue)));
-
-        var magic = Math.Max(1, (int)(Random.Range(rngLowStats.Magic.CurrentValue, rngHighStats.Magic.CurrentValue)));
-        var ranged = Math.Max(1, (int)(Random.Range(rngLowStats.Ranged.CurrentValue, rngHighStats.Ranged.CurrentValue)));
+        var health = Math.Max(healthMultiplier, Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * healthMultiplier);
+        var strength = Math.Max(1, Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue));
+        var defense = Math.Max(1, Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue));
+        var attack = Math.Max(1, Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue));
+        var magic = Math.Max(1, Random.Range(rngLowStats.Magic.CurrentValue, rngHighStats.Magic.CurrentValue));
+        var ranged = Math.Max(1, Random.Range(rngLowStats.Ranged.CurrentValue, rngHighStats.Ranged.CurrentValue));
 
         return new Skills
         {
-            Attack = new SkillStat
-            {
-                CurrentValue = attack,
-                Level = attack,
-            },
-            Defense = new SkillStat
-            {
-                CurrentValue = defense,
-                Level = defense
-            },
-            Strength = new SkillStat
-            {
-                CurrentValue = strength,
-                Level = strength
-            },
-            Health = new SkillStat
-            {
-                CurrentValue = health,
-                Level = health
-            },
-            Magic = new SkillStat
-            {
-                CurrentValue = magic,
-                Level = magic
-            },
-            Ranged = new SkillStat
-            {
-                CurrentValue = ranged,
-                Level = ranged
-            }
+            Attack = new(attack),
+            Defense = new(defense),
+            Strength = new(strength),
+            Health = new(health),
+            Magic = new(magic),
+            Ranged = new(ranged)
         };
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static EquipmentStats GenerateEquipmentStats(EquipmentStats rngLowEq, EquipmentStats rngHighEq)
+    private EquipmentStats GenerateEquipmentStats(EquipmentStats rngLowEq, EquipmentStats rngHighEq)
     {
         return new EquipmentStats
         {
-            ArmorPower = Random.Range(rngLowEq.ArmorPower, rngHighEq.ArmorPower),
-            WeaponPower = Random.Range(rngLowEq.WeaponPower, rngHighEq.WeaponPower),
-            WeaponAim = Random.Range(rngLowEq.WeaponAim, rngHighEq.WeaponAim)
+            BaseArmorPower = Random.Range(rngLowEq.BaseArmorPower, rngHighEq.BaseArmorPower),
+            BaseWeaponPower = Random.Range(rngLowEq.BaseWeaponPower, rngHighEq.BaseWeaponPower),
+            BaseWeaponAim = Random.Range(rngLowEq.BaseWeaponAim, rngHighEq.BaseWeaponAim)
         };
     }
 }

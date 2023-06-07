@@ -10,10 +10,18 @@
 
     public override void Handle(SetTimeOfDayRequest data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(gm.Sender);
-        if (player == null || !player || !player.IsBroadcaster)
+        var user = gm.Sender;
+        if (!user.IsModerator && !user.IsBroadcaster)
         {
-            return;
+            var player = PlayerManager.GetPlayer(gm.Sender);
+            if (!player)
+            {
+                return;
+            }
+            if (!player.IsGameAdmin && !player.IsGameModerator)
+            {
+                return;
+            }
         }
 
         Game.SetTimeOfDay(data.TotalTime, data.FreezeTime);

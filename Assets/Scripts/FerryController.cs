@@ -175,6 +175,20 @@ public class FerryController : MonoBehaviour
     internal void SetState(FerryState newState)
     {
         this.state = newState;
+
+        if (state == FerryState.Docked)
+        {
+            var newIsland = gameManager.Islands.FindIsland(this.transform.position);
+            if (newIsland)
+            {
+                IslandEnter(newIsland);
+            }
+        } 
+        else
+        {
+            IslandExit();
+        }
+
         if (ferryStateLabel != null)
         {
             ferryStateLabel.Update();

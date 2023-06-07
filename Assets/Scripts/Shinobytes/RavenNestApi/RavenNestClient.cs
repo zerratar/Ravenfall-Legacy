@@ -14,16 +14,8 @@ namespace RavenNest.SDK
 {
     public class RavenNestClient : IDisposable
     {
-
-        public static IAppSettings Settings =
-            new ProductionEndpoint()
-            //new StagingRavenNestStreamSettings()
-            //new LocalServerRemoteBotEndpoint()
-            //new LocalEndpoint()
-            ;
-
+        public readonly IAppSettings Settings;
         private readonly ILogger logger;
-        private readonly IAppSettings appSettings;
         private readonly ITokenProvider tokenProvider;
 
         private readonly GameManager gameManager;
@@ -31,26 +23,32 @@ namespace RavenNest.SDK
         private SessionToken currentSessionToken;
 
         private int activeRequestCount;
-        private int updateCounter;
-        private int revision;
         private int badClientVersion;
 
         private readonly BotPlayerGenerator botPlayerGenerator;
         public bool BadClientVersion => Volatile.Read(ref badClientVersion) == 1;
 
         private readonly ConcurrentQueue<LoyaltyUpdate> loyaltyUpdateQueue = new();
-        private readonly ConcurrentQueue<Func<Task>> pendingAsyncRequests = new();
 
         private Thread thread;
-        private bool terminated;
         private bool disposed;
         internal bool AwaitingSessionStart;
         private float SessionStartTime;
+        private Task<bool> startSessionTask;
 
         public RavenNestClient(
             ILogger logger,
             GameManager gameManager)
         {
+
+            Settings =
+                        new ProductionEndpoint()
+                        //new StagingRavenNestStreamSettings()
+                        //new LocalServerRemoteBotEndpoint()
+                        //new DevServerRemoteBotEndpoint()
+                        //new LocalEndpoint()
+                        ;
+
             ServicePointManager.DefaultConnectionLimit = 2000;
             ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(ValidateCertificate);
             //ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy();
@@ -58,13 +56,11 @@ namespace RavenNest.SDK
             this.logger = logger ?? new UnityLogger();
             this.gameManager = gameManager;
             var binarySerializer = new CompressedJsonSerializer();//new BinarySerializer();
-            appSettings = Settings ?? new ProductionEndpoint();
 
             tokenProvider = new TokenProvider();
-            var request = new WebApiRequestBuilderProvider(appSettings, tokenProvider);
+            var request = new WebApiRequestBuilderProvider(Settings, tokenProvider);
 
-            WebSocket = new WebSocketApi(this, gameManager, logger, appSettings, tokenProvider, new GamePacketSerializer(binarySerializer));
-            Tcp = new TcpApi(gameManager, appSettings.TcpApiEndpoint, tokenProvider);
+            Tcp = new TcpApi(gameManager, Settings.TcpApiEndpoint, tokenProvider);
 
             Auth = new AuthApi(this, logger, request);
             Game = new GameApi(this, logger, request);
@@ -75,11 +71,10 @@ namespace RavenNest.SDK
             Clan = new ClanApi(this, logger, request);
             botPlayerGenerator = new BotPlayerGenerator();
 
-            thread = new System.Threading.Thread(UpdateThread);
+            thread = new System.Threading.Thread(UpdateProcess);
             thread.Start();
         }
 
-        public WebSocketApi WebSocket { get; }
         public TcpApi Tcp { get; }
         public AuthApi Auth { get; }
         public GameApi Game { get; }
@@ -101,7 +96,7 @@ namespace RavenNest.SDK
 
         public bool HasActiveRequest => activeRequestCount > 0;
 
-        public string ServerAddress => appSettings.WebApiEndpoint;
+        public string ServerAddress => Settings.WebApiEndpoint;
         public Guid SessionId => currentSessionToken?.SessionId ?? Guid.Empty;
         public Guid UserId => currentSessionToken?.UserId ?? Guid.Empty;
 
@@ -134,50 +129,59 @@ namespace RavenNest.SDK
             });
         }
 
-        private async void UpdateThread()
+        private async void UpdateProcess()
         {
             while (!disposed)
             {
-                if (!await WebSocket.UpdateAsync())
+                if (startSessionTask != null)
                 {
-                    logger.Debug("Reconnecting to server...");
-                    await Task.Delay(200);
-                    continue;
-                }
-
-                if (pendingAsyncRequests.TryDequeue(out var pendingAsyncRequest))
-                {
-                    await pendingAsyncRequest();
+                    await startSessionTask;
+                    startSessionTask = null;
                 }
 
                 if (Authenticated && SessionStarted)
                 {
+                    var failedRequest = false;
                     try
                     {
                         if (loyaltyUpdateQueue.TryDequeue(out var req))
                         {
-                            if (!await Players.SendLoyaltyUpdateAsync(req))
+                            if (!await (Players.SendLoyaltyUpdateAsync(req).ConfigureAwait(false)))
                             {
+                                failedRequest = true;
                                 loyaltyUpdateQueue.Enqueue(req);
-                                await Task.Delay(2000);
                             }
                         }
                     }
                     catch (Exception exc)
                     {
-                        logger.Error("Failed to send loyalty data to server: " + exc);
+                        logger.WriteError("Failed to send loyalty data to server: " + exc);
                     }
                     finally
                     {
                     }
+                    Thread.Sleep(failedRequest ? 200 : 16);
+                    continue;
                 }
-                await Task.Delay(16);
+
+                System.Threading.Thread.Sleep(200);
             }
         }
 
-        public bool SaveTrainingSkill(PlayerController player)
+        internal void SavePlayerExperience(IReadOnlyList<PlayerController> players, bool saveAllSkills = false)
         {
-            if (!player || player == null)
+            Tcp.SavePlayerExperience(players, saveAllSkills);
+        }
+
+        internal void SavePlayerState(IReadOnlyList<PlayerController> players)
+        {
+            Tcp.SavePlayerState(players);
+        }
+
+
+        public bool SavePlayer(PlayerController player, PlayerUpdateType updateType)
+        {
+            if (!player || player == null || !SessionStarted || !Tcp.IsReady)
             {
                 return false;
             }
@@ -187,69 +191,14 @@ namespace RavenNest.SDK
                 return true;
             }
 
-            // if we are connected to the Tcp Api, we will use that instead.
-            if (Tcp.Connected)
+            if (!TcpApi.IsValidPlayer(player))
             {
-                Tcp.UpdatePlayer(player);
                 return true;
             }
 
-            var saveResult = WebSocket.SaveActiveSkill(player);
-            WebSocket.SavePlayerState(player);
-            return saveResult;
+            Tcp.UpdatePlayer(player, updateType);
+            return true;
         }
-
-        public bool SavePlayer(PlayerController player)
-        {
-            if (!player || player == null)
-            {
-                return false;
-            }
-
-            if (player.IsBot)
-            {
-                return true;
-            }
-
-            if (!SessionStarted)
-            {
-                //Shinobytes.Debug.Log("Trying to save player " + player.PlayerName + " but session has not been started.");
-                return false;
-            }
-
-            // if we are connected to the Tcp Api, we will use that instead.
-            if (Tcp.Connected)
-            {
-                Tcp.UpdatePlayer(player);
-                return true;
-            }
-
-
-            var saveResult = WebSocket.SavePlayerSkills(player);
-            WebSocket.SavePlayerState(player);
-            return saveResult;
-        }
-
-        //public async Task<bool> SavePlayerStateAsync(PlayerController player)
-        //{
-        //    if (!player || player == null)
-        //    {
-        //        return false;
-        //    }
-
-        //    if (player.IsBot && player.UserId.StartsWith("#"))
-        //    {
-        //        return true;
-        //    }
-
-        //    if (!SessionStarted)
-        //    {
-        //        //Shinobytes.Debug.Log("Trying to save player " + player.PlayerName + " but session has not been started.");
-        //        return false;
-        //    }
-
-        //    return Stream.SavePlayerState(player);
-        //}
 
         public async Task<bool> LoginAsync(string username, string password)
         {
@@ -267,7 +216,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.Message);
+                logger.WriteError(exc.Message);
 
             }
             finally
@@ -308,7 +257,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.Message);
+                logger.WriteError(exc.Message);
             }
             finally
             {
@@ -331,7 +280,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.Message);
+                logger.WriteError(exc.Message);
             }
             finally
             {
@@ -351,7 +300,7 @@ namespace RavenNest.SDK
 
                 if (retry >= 5)
                 {
-                    logger.Error("Unable to add the player: " + joinData.UserName + ", tried " + (retry) + " times.");
+                    logger.WriteError("Unable to add the player: " + joinData.UserName + ", tried " + (retry) + " times.");
                     return null;
                 }
 
@@ -362,14 +311,14 @@ namespace RavenNest.SDK
                 //#if DEBUG
                 if (retry > 0 && playerResult.Success)
                 {
-                    logger.Debug(joinData.UserName + " was successfully added to the game after " + retry + " tries.");
+                    logger.WriteDebug(joinData.UserName + " was successfully added to the game after " + retry + " tries.");
                 }
                 //#endif
                 return playerResult;
             }
             catch (Exception exc)
             {
-                logger.Debug("Failed to add player (" + joinData.UserName + "). " + exc.Message + ". retrying (Try: " + (retry + 1) + ")...");
+                logger.WriteDebug("Failed to add player (" + joinData.UserName + "). " + exc.Message + ". retrying (Try: " + (retry + 1) + ")...");
 
                 if (exc is System.Net.WebException)
                 {
@@ -394,7 +343,7 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.Message);
+                logger.WriteError(exc.Message);
                 return false;
             }
             finally
@@ -415,12 +364,11 @@ namespace RavenNest.SDK
             }
             catch (Exception exc)
             {
-                logger.Error(exc.Message);
+                logger.WriteError(exc.Message);
                 return false;
             }
             finally
             {
-                WebSocket.Close();
                 Interlocked.Decrement(ref activeRequestCount);
                 currentSessionToken = null;
                 tokenProvider.SetSessionToken(null);
@@ -440,7 +388,6 @@ namespace RavenNest.SDK
         {
             Dispose();
             await EndSessionAsync();
-            this.terminated = true;
         }
 
         public void Dispose()
@@ -450,11 +397,6 @@ namespace RavenNest.SDK
                 Tcp.Dispose();
             }
             catch { }
-            try
-            {
-                WebSocket.Close();
-            }
-            catch { }
             disposed = true;
         }
 
@@ -462,7 +404,7 @@ namespace RavenNest.SDK
         {
             AwaitingSessionStart = true;
             SessionStartTime = UnityEngine.Time.time;
-            pendingAsyncRequests.Enqueue(() => StartSessionAsync(version, accessKey));
+            startSessionTask = StartSessionAsync(version, accessKey);
         }
     }
 }

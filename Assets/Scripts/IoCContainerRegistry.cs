@@ -11,7 +11,7 @@ public class IoCContainerRegistry
 
     private void SetupIoCContainer()
     {
-        ioc.RegisterShared<ILogger, UnityLogger>();
+        ioc.RegisterShared<RavenNest.SDK.ILogger, RavenNest.SDK.UnityLogger>();
         ioc.RegisterShared<IItemResolver, ItemResolver>();
     }
 }

@@ -102,7 +102,7 @@ public class FightingTask : ChunkTask
                 {
                     continue;
                 }
-                if (instanceLookup.TryGetValue(enemyController.GetInstanceID(), out var existingTarget) && enemyController && !enemyController.Stats.IsDead)
+                if (instanceLookup.ContainsKey(enemyController.GetInstanceID()) && !enemyController.Stats.IsDead)
                 {
                     return enemyController;
                 }

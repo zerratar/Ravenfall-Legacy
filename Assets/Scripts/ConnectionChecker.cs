@@ -34,7 +34,7 @@ public class ConnectionChecker : MonoBehaviour
             return;
         }
 
-        if ((gameManager.RavenNest.WebSocket.IsReady) && Graphics.activeSelf)
+        if ((gameManager.RavenNest.Tcp.IsReady) && Graphics.activeSelf)
         {
             SetVisibility(false);
             return;
@@ -45,18 +45,13 @@ public class ConnectionChecker : MonoBehaviour
             return;
         }
 
-        //if (gameManager.RavenNest.Desynchronized)
-        //{
-        //    Label.text = "CLIENT CANNOT SYNCHRONIZE WITH SERVER. PLEASE RESTART OR USE !RELOAD";
-        //    SetVisibility(true);
-        //} else 
         if (!gameManager.RavenNest.SessionStarted && gameManager.RavenNest.BadClientVersion)
         {
             Label.text = "CLIENT IS OUT OF DATE. RESTART RAVENFALL TO UPDATE";
             SetVisibility(true);
         }
 
-        if (!gameManager.RavenNest.SessionStarted || gameManager.RavenNest.WebSocket.IsReady)
+        if (!gameManager.RavenNest.SessionStarted || gameManager.RavenNest.Tcp.IsReady)
         {
             return;
         }

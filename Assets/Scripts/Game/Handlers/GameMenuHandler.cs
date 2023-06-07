@@ -147,7 +147,7 @@ public class GameMenuHandler : MonoBehaviour
     public void Logout()
     {
         //fadeToBlack.StartFade();
-        gameManager.SavePlayerStates();
+        gameManager.SaveStateFile();
         loginScreen.ClearPassword();
         gameManager.ReloadScene();
     }

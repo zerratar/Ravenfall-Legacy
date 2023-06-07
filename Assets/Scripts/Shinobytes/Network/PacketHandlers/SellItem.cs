@@ -23,7 +23,7 @@ public class SellItem : ChatBotCommandHandler<string>
 
             var ioc = Game.gameObject.GetComponent<IoCContainer>();
             var itemResolver = ioc.Resolve<IItemResolver>();
-            var item = itemResolver.ResolveTradeQuery(inputQuery);
+            var item = itemResolver.ResolveTradeQuery(inputQuery, playerToSearch: player);
             
             if (item.SuggestedItemNames.Length > 0)
             {

@@ -12,19 +12,14 @@
         Shinobytes.Debug.Log("Raid Stop Received");
         try
         {
-            var plr = PlayerManager.GetPlayer(gm.Sender);
-            if (!plr)
-            {
-                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
-                return;
-            }
+            var user = gm.Sender;
 
             if (Game.Raid && !Game.Raid.Started)
             {
                 return;
             }
 
-            if (!plr.IsBroadcaster && !plr.IsModerator)
+            if (!user.IsBroadcaster && !user.IsModerator)
             {
                 return;
             }

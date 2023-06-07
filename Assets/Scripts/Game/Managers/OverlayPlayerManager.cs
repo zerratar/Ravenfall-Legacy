@@ -56,6 +56,7 @@ public class OverlayPlayerManager
             Shinobytes.Debug.LogError("No PlayerController found on the player prefab: " + playerPrefab.name);
             return null;
         }
+
         playerController.IsBot = true;
         playerController.SetPlayer(data.Character, data.Twitch, null, null, false);
 

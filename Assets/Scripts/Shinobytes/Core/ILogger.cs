@@ -2,9 +2,10 @@
 {
     public interface ILogger
     {
+        void WriteWarning(string message);
         void Write(string message);
-        void WriteLine(string message);
-        void Debug(string message);
-        void Error(string errorMessage);
+        void WriteMessage(string message);
+        void WriteDebug(string message);
+        void WriteError(string errorMessage);
     }
 }

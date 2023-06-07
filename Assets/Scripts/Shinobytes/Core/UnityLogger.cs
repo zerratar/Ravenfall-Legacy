@@ -7,22 +7,26 @@ namespace RavenNest.SDK
 {
     public class UnityLogger : ILogger
     {
-        public void Debug(string message)
+        public void WriteDebug(string message)
         {
             Shinobytes.Debug.Log(message);
         }
 
-        public void Error(string message)
+        public void WriteError(string message)
         {
             Shinobytes.Debug.LogError(message);
         }
 
+        public void WriteWarning(string message)
+        {
+            Shinobytes.Debug.LogWarning(message);
+        }
         public void Write(string message)
         {
             Shinobytes.Debug.Log(message);
         }
 
-        public void WriteLine(string message)
+        public void WriteMessage(string message)
         {
             Shinobytes.Debug.Log(message);
         }

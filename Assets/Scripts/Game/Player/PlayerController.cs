@@ -2,18 +2,16 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.Common;
 using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Assets.Scripts;
 using RavenNest.Models;
-using RavenNest.SDK;
 using UnityEngine;
 using UnityEngine.AI;
 using Resources = RavenNest.Models.Resources;
 using Debug = Shinobytes.Debug;
-using Newtonsoft.Json;
+using RavenNest.Models.TcpApi;
 
 public class PlayerController : MonoBehaviour, IAttackable
 {
@@ -125,6 +123,8 @@ public class PlayerController : MonoBehaviour, IAttackable
     //public int TotalGiftedSubs;
     public User User { get; private set; }
     public int CharacterIndex { get; private set; }
+
+    public DateTime LastActivityUtc;
 
     public bool IsGameAdmin;
     public bool IsGameModerator;
@@ -254,45 +254,32 @@ public class PlayerController : MonoBehaviour, IAttackable
     public bool IsDiaperModeEnabled { get; private set; }
     public bool IsBot { get; internal set; }
     public BotPlayerController Bot { get; internal set; }
-
-    public readonly ConcurrentQueue<Func<bool>> RequestQueue = new ConcurrentQueue<Func<bool>>();
-
-    private long createdRequests = 0;
-    private bool hasGameManager;
-
-
-    public void UpdateRequestQueue()
+    public bool IsAfk
     {
-        // for bots, this is not neccessary.
-        // but it could be nice to have it triggered to simulate same usage.
-
-
-        // every 10th request is a "save everything"
-        if (createdRequests % 10 == 0)
+        get
         {
-            EnqueueRequest(() => GameManager.RavenNest.SavePlayer(this));
-        }
-        //// every 3rd is a state update
-        //if (createdRequests % 3 == 0)
-        //{
-        //    EnqueueRequest(async () => await gameManager.RavenNest.SavePlayerStateAsync(this));
-        //}
-        // otherwise, save active skill
-        else
-        {
-            EnqueueRequest(() => GameManager.RavenNest.SaveTrainingSkill(this));
+            var hours = PlayerSettings.Instance.PlayerAfkHours;
+
+            if (hours.HasValue && hours.Value > 0)
+            {
+                return hours.Value < (DateTime.UtcNow - LastActivityUtc).TotalHours;
+            }
+
+            return false;
         }
     }
+
+    public SkillUpdate LastSailingSaved { get; internal set; }
+    public SkillUpdate LastSlayerSaved { get; internal set; }
+
+    public CharacterStateUpdate LastSavedState;
+
+    private bool hasGameManager;
 
     internal void ClearTarget()
     {
         this.attackTarget = null;
         this.taskTarget = null;
-    }
-    public void EnqueueRequest(Func<bool> action)
-    {
-        RequestQueue.Enqueue(action); // new AsyncPlayerRequest(action)
-        ++createdRequests;
     }
     internal void ToggleDiaperMode()
     {
@@ -337,26 +324,6 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (TrainingRanged) return RangedAttackRange;
         return AttackRange;
     }
-
-    //internal void AddBitCheer(int bits)
-    //{
-    //    this.BitsCheered += bits;
-    //    this.TotalBitsCheered += bits;
-    //    //gameManager.RavenNest.SendPlayerLoyaltyData(this);
-    //}
-
-    //internal void AddSubscribe(bool gifted)
-    //{
-    //    if (gifted)
-    //    {
-    //        this.GiftedSubs++;
-    //        this.TotalGiftedSubs++;
-    //    }
-    //    // in case of multiple gifted subs at the same time. we delay this 
-    //    // by 500ms for each time an added subscription
-    //    // and send it as a bulk. instead of having it send 1 per sub
-    //    //loyaltyUpdateTimer = 0.5f;
-    //}
 
     public bool HasTaskArgument(string args) => taskArguments.Contains(args);
     internal void SetScale(float scale)
@@ -587,12 +554,6 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
-        if (lateGotoClosestType != null)
-        {
-            var t = lateGotoClosestType.Value;
-            lateGotoClosestType = null;
-            GotoClosest(t);
-        }
 
         //if (fullbodyPlayerSkinActive)
         //{
@@ -623,6 +584,13 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             UpdateDropEvent();
             return;
+        }
+
+        if (lateGotoClosestType != null)
+        {
+            var t = lateGotoClosestType.Value;
+            lateGotoClosestType = null;
+            GotoClosest(t);
         }
 
         if (Chunk != null)
@@ -1019,7 +987,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         TrainingMagic = HasTaskArgument("magic");
         TrainingHealing = HasTaskArgument("heal") || HasTaskArgument("healing");
         TrainingResourceChangingSkill =
-            HasTaskArgument("woodcutting") || HasTaskArgument("mining")
+            HasTaskArgument("wood") || HasTaskArgument("farm") || HasTaskArgument("craft")
+            || HasTaskArgument("woodcutting") || HasTaskArgument("mining")
             || HasTaskArgument("fishing") || HasTaskArgument("cooking")
             || HasTaskArgument("crafting") || HasTaskArgument("farming");
     }
@@ -1236,6 +1205,10 @@ public class PlayerController : MonoBehaviour, IAttackable
         GameManager gm,
         bool prepareForCamera)
     {
+        if (prepareForCamera)
+        {
+            LastActivityUtc = DateTime.UtcNow;
+        }
 
         gameObject.name = player.Name;
 
@@ -1341,7 +1314,6 @@ public class PlayerController : MonoBehaviour, IAttackable
                     }
                 }
 
-
                 // could it be? are we on the ferry??
                 // ... Let scheck?
 
@@ -1366,12 +1338,11 @@ public class PlayerController : MonoBehaviour, IAttackable
                         // Attach player to the onsen...                                        
                     }
                 }
-
             }
 
             if (setTask && !string.IsNullOrEmpty(player.State.Task))
             {
-                SetTask(player.State.Task, new string[] { player.State.TaskArgument });
+                SetTask(player.State.Task, new string[] { player.State.TaskArgument ?? player.State.Task });
             }
         }
 
@@ -1781,7 +1752,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             if (target == null || !target.Transform || target.GetStats().IsDead)
                 return true;
 
-            var maxHeal = GameMath.MaxHit(Stats.Healing.CurrentValue, EquipmentStats.MagicPower);
+            var maxHeal = GameMath.MaxHit(Stats.Healing.CurrentValue, EquipmentStats.BaseMagicPower);
             var heal = CalculateDamage(target);
             if (!target.Heal(this, heal))
                 return true;
@@ -2390,7 +2361,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     internal SkillStat GetActiveSkillStat()
     {
-        var skill = ActiveSkill; ;//GetActiveSkill();
+        var skill = ActiveSkill;//GetActiveSkill();
         if (skill == Skill.None) return null;
         return Stats[skill];
     }
@@ -2550,7 +2521,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
-        if (!GameManager.RavenNest.WebSocket.IsReady)
+        if (!GameManager.RavenNest.Tcp.IsReady)
         {
             return;
         }
@@ -2593,13 +2564,13 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void UpdateEquipmentEffect(List<GameInventoryItem> equipped)
     {
-        EquipmentStats.ArmorPower = 0;
-        EquipmentStats.WeaponAim = 0;
-        EquipmentStats.WeaponPower = 0;
-        EquipmentStats.MagicPower = 0;
-        EquipmentStats.MagicAim = 0;
-        EquipmentStats.RangedPower = 0;
-        EquipmentStats.RangedAim = 0;
+        EquipmentStats.BaseArmorPower = 0;
+        EquipmentStats.BaseWeaponAim = 0;
+        EquipmentStats.BaseWeaponPower = 0;
+        EquipmentStats.BaseMagicPower = 0;
+        EquipmentStats.BaseMagicAim = 0;
+        EquipmentStats.BaseRangedPower = 0;
+        EquipmentStats.BaseRangedAim = 0;
 
         EquipmentStats.ArmorPowerBonus = 0;
         EquipmentStats.WeaponAimBonus = 0;
@@ -2630,15 +2601,15 @@ public class PlayerController : MonoBehaviour, IAttackable
 
             var stats = e.GetItemStats();
 
-            EquipmentStats.ArmorPower += stats.ArmorPower;
-            EquipmentStats.WeaponAim += stats.WeaponAim;
-            EquipmentStats.WeaponPower += stats.WeaponPower;
+            EquipmentStats.BaseArmorPower += stats.ArmorPower;
+            EquipmentStats.BaseWeaponAim += stats.WeaponAim;
+            EquipmentStats.BaseWeaponPower += stats.WeaponPower;
 
-            EquipmentStats.MagicPower += stats.MagicPower;
-            EquipmentStats.MagicAim += stats.MagicAim;
+            EquipmentStats.BaseMagicPower += stats.MagicPower;
+            EquipmentStats.BaseMagicAim += stats.MagicAim;
 
-            EquipmentStats.RangedPower += stats.RangedPower;
-            EquipmentStats.RangedAim += stats.RangedAim;
+            EquipmentStats.BaseRangedPower += stats.RangedPower;
+            EquipmentStats.BaseRangedAim += stats.RangedAim;
 
             EquipmentStats.ArmorPowerBonus += stats.ArmorPower.Bonus;
             EquipmentStats.WeaponAimBonus += stats.WeaponAim.Bonus;

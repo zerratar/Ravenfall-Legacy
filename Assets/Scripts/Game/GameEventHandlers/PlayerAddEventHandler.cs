@@ -37,7 +37,7 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
         }
 
         gameManager.SpawnPlayer(playerInfo.Player);
-        gameManager.SavePlayerStates();
+        gameManager.SaveStateFile();
 
         Shinobytes.Debug.Log($"PlayerAddEventHandler " + data.UserId + ", " + data.UserName);
     }

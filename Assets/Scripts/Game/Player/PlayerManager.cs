@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using RavenNest.SDK;
 
 public class PlayerManager : MonoBehaviour
 {
@@ -29,6 +30,7 @@ public class PlayerManager : MonoBehaviour
     private readonly Dictionary<Guid, PlayerController> userIdLookup = new Dictionary<Guid, PlayerController>();
 
     private readonly List<PlayerController> playerList = new List<PlayerController>();
+    private readonly List<PlayerController> realPlayers = new List<PlayerController>();
 
     //private readonly object mutex = new object();
 
@@ -179,7 +181,7 @@ public class PlayerManager : MonoBehaviour
                 {
                     if (userTriggered && !player.IsBot)
                     {
-                        gameManager.SavePlayerStates();
+                        gameManager.SaveStateFile();
 
                         if (playerInfo.IsNewUser)
                         {
@@ -258,6 +260,10 @@ public class PlayerManager : MonoBehaviour
     {
         return playerList;
     }
+    public IReadOnlyList<PlayerController> GetAllRealPlayers()
+    {
+        return realPlayers;
+    }
 
     public PlayerController Spawn(
         Vector3 position,
@@ -269,6 +275,7 @@ public class PlayerManager : MonoBehaviour
         var key = (user.Platform + "_" + user.PlatformId).ToLower();
         if (platformIdLookup.ContainsKey(key) || playerIdLookup.ContainsKey(player.Id))
         {
+            Shinobytes.Debug.LogWarning("Player '" + player.Name + "' not added to the game, a player with same id or platform key exists. Key: '" + key + "'");
             return null;
         }
 
@@ -436,9 +443,11 @@ public class PlayerManager : MonoBehaviour
         }
 
         if (player)
-        {            
+        {
             RemoveLookup(player);
             playerList.Remove(player);
+            realPlayers.Remove(player);
+
             player.OnRemoved();
             Destroy(player.gameObject);
         }
@@ -465,6 +474,11 @@ public class PlayerManager : MonoBehaviour
         playerIdLookup[controller.Id] = controller;
         userIdLookup[controller.UserId] = controller;
         playerList.Add(controller);
+
+        if (TcpApi.IsValidPlayer(controller))
+        {
+            realPlayers.Add(controller);
+        }
 
         gameManager.Village.TownHouses.InvalidateOwnership(controller);
         return controller;
@@ -517,7 +531,17 @@ public class PlayerManager : MonoBehaviour
                         continue;
                     }
 
-                    addPlayerQueue.Enqueue(() => AddPlayer(requested.User, playerInfo.Player, false, true));
+                    addPlayerQueue.Enqueue(() =>
+                    {
+                        var p = AddPlayer(requested.User, playerInfo.Player, false, true);
+                        p.LastActivityUtc = requested.LastActivityUtc;
+                        if (p.LastActivityUtc == DateTime.MinValue)
+                        {
+                            p.LastActivityUtc = DateTime.UtcNow;
+                        }
+
+                        return p;
+                    });
 
                     //var player = AddPlayer(false, requested.TwitchUser, playerInfo.Player);
                     //if (!player)

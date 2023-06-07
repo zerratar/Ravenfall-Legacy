@@ -4,7 +4,7 @@
 [Bb]uild/
 [Bb]uilds/
 Assets/AssetStoreTools*
-
+state-data.json
 # Visual Studio cache directory
 .vs/
 game-settings.json

@@ -410,8 +410,12 @@ public class GameUpdateHandler
         Shinobytes.Debug.Log("Downloading update file: " + downloadUrl);
         try
         {
-
             var fileName = downloadUrl.Split('/').LastOrDefault();
+
+#if UNITY_STANDALONE_LINUX
+            downloadUrl = downloadUrl.Replace("update.7z", "linux-update.7z");
+#endif
+
             var updateFile = "update/" + fileName;
 
             if (!Shinobytes.IO.Directory.Exists("update"))

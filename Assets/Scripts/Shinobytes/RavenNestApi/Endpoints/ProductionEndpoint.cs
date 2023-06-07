@@ -38,6 +38,14 @@
         public string TcpApiEndpoint => "127.0.0.1";
         public string RavenbotEndpoint => "ravenbot.ravenfall.stream";
     }
+    public class DevServerRemoteBotEndpoint : IAppSettings
+    {
+        public string WebApiEndpoint => "https://92.35.43.91:5001/api/";
+        public string WebApiAuthEndpoint => "https://92.35.43.91:5001/api/";
+        public string WebSocketEndpoint => "wss://92.35.43.91:5001/api/stream";
+        public string TcpApiEndpoint => "92.35.43.91";
+        public string RavenbotEndpoint => "ravenbot.ravenfall.stream";
+    }
     public class LocalEndpoint : IAppSettings
     {
         public string WebApiEndpoint => "https://localhost:5001/api/";

@@ -97,6 +97,12 @@ public class SettingsMenuView : MenuView
     {
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
 
+        UpdateSettingsUI();
+        ShowSoundSettings();
+    }
+
+    public void UpdateSettingsUI()
+    {
         var settings = PlayerSettings.Instance;
 
         postProcessingToggle.isOn = settings.PostProcessing.GetValueOrDefault(gameManager.UsePostProcessingEffects);
@@ -108,11 +114,8 @@ public class SettingsMenuView : MenuView
         dpiSlider.value = settings.DPIScale.GetValueOrDefault(1f);
         raidHornVolumeSlider.value = settings.RaidHornVolume.GetValueOrDefault(gameManager.Raid.Notifications.volume);
         musicVolumeSlider.value = settings.MusicVolume.GetValueOrDefault(gameManager.Music.volume);
-
         observerCameraRotationSlider.value = settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed * -1);
-
         pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
-
         playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(1);
         boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
         alertPlayerCacheExpirationToggle.isOn = settings.AlertExpiredStateCacheInChat.GetValueOrDefault(gameManager.AlertExpiredStateCacheInChat);
@@ -120,9 +123,7 @@ public class SettingsMenuView : MenuView
         itemDropMessageDropdown.value = settings.ItemDropMessageType.GetValueOrDefault((int)gameManager.ItemDropMessageSettings);
 
         SetResolutionScale(dpiSlider.value);
-        ShowSoundSettings();
         ShowItemDropExample();
-
         UpdateCameraRotationLabelText();
     }
 
@@ -198,13 +199,13 @@ public class SettingsMenuView : MenuView
         settings.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
         settings.ItemDropMessageType = itemDropMessageDropdown.value;
         settings.CameraRotationSpeed = observerCameraRotationSlider.value * -1;
-        settings.PlayerNamesVisible =  playerNameToggle.isOn;
+        settings.PlayerNamesVisible = playerNameToggle.isOn;
         PlayerSettings.Save();
     }
 
     public void DisconnectFromServer()
     {
-        gameManager.RavenNest.WebSocket.Reconnect();
+        gameManager.RavenNest.Tcp.Disconnect();
     }
 
     public void ShowSoundSettings()

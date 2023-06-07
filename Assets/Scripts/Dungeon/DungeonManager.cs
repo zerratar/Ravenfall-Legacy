@@ -237,8 +237,15 @@ public class DungeonManager : MonoBehaviour, IEvent
             }
         }
 
-        if (!Active || !Started)
+        if (!Started)
         {
+            return;
+        }
+
+        if (!Active)
+        {
+            // try force ending the event if it's still active
+            gameManager.Events.End(this);
             return;
         }
 

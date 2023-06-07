@@ -6,6 +6,16 @@ public class OrbitCamera : MonoBehaviour
 {
     public static float RotationSpeed = 5f;
 
+
+    public float zoomChangeSpeed = 20f;
+    public float orbitChangeSpeed = -30f;
+    public float rotateChangeSpeed = 100f;
+
+    public float MaxZoom = 30f;
+    public float MinZoom = 5f;
+    public float MaxAngle = 85f;
+    public float MinAngle = 5f;
+
     [Range(1f, 30f)]
     public float Distance = 5f;
 
@@ -37,6 +47,32 @@ public class OrbitCamera : MonoBehaviour
                 focusPoint = targetTransform.position;
             }
         }
+    }
+
+    private void Update()
+    {
+        if (Input.GetKey(KeyCode.DownArrow))
+        {
+            var newAngle = Mathf.Clamp(orbitAngles.x + (Time.deltaTime * orbitChangeSpeed), MinAngle, MaxAngle);
+            orbitAngles = new Vector2(newAngle, orbitAngles.y);
+        }
+        if (Input.GetKey(KeyCode.UpArrow))
+        {
+            var newAngle = Mathf.Clamp(orbitAngles.x + (Time.deltaTime * -orbitChangeSpeed), MinAngle, MaxAngle);
+            orbitAngles = new Vector2(newAngle, orbitAngles.y);
+        }
+        if (Input.GetKey(KeyCode.LeftArrow))
+        {
+            orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (Time.deltaTime * -rotateChangeSpeed));
+        }
+        if (Input.GetKey(KeyCode.RightArrow))
+        {
+            orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (Time.deltaTime * rotateChangeSpeed));
+        }
+
+        var scrollValue = Input.mouseScrollDelta.y * Time.deltaTime * zoomChangeSpeed;
+        
+        Distance = Mathf.Clamp(Distance + scrollValue, MinZoom, MaxZoom);
     }
 
     private void LateUpdate()

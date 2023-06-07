@@ -38,7 +38,7 @@ public class Craft : ChatBotCommandHandler<string>
 
         Item item = null;
         var amountToCraft = 1d;
-        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, parseUsername: false);
+        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false);
 
         if (queriedItem.SuggestedItemNames.Length > 0)
         {

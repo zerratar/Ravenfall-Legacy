@@ -10,6 +10,8 @@
     public bool? AlertExpiredStateCacheInChat;
     public bool? PlayerListVisible;
     public bool? PlayerNamesVisible;
+    public bool? LocalBotServerDisabled;
+    public bool? AutoKickAfkPlayers;
 
     public float? PlayerListSize;
     public float? PlayerListScale;
@@ -23,9 +25,8 @@
     public int? ItemDropMessageType;
     public int? PathfindingQualitySettings;
 
-    public bool? LocalBotServerDisabled;
+    public double? PlayerAfkHours;
     public string RavenBotServer;
-
     public float[] ExpMultiplierAnnouncements;
 
     public ObserverTimes PlayerObserveSeconds;
@@ -70,6 +71,18 @@
         if (Instance.PlayerListVisible == null)
         {
             Instance.PlayerListVisible = true;
+            wasUpdated = true;
+        }
+
+        //if (Instance.PlayerAfkHours == null)
+        //{
+        //    Instance.PlayerAfkHours = -1;
+        //    wasUpdated = true;
+        //}
+
+        if (Instance.AutoKickAfkPlayers == null)
+        {
+            Instance.AutoKickAfkPlayers = false;
             wasUpdated = true;
         }
 

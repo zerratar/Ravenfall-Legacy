@@ -172,6 +172,7 @@ namespace Assets.Scripts
             {
                 CurrentValue = s.Level,
                 Level = s.Level,
+                MaxLevel = s.Level,
                 Experience = s.Experience,
                 Name = s.Name
             };
