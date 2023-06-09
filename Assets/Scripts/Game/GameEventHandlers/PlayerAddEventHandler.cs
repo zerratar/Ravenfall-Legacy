@@ -12,7 +12,6 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
             {
                 gameManager.RemovePlayer(existing, false);
             }
-            //return;
         }
 
         var playerInfo = await gameManager.RavenNest.PlayerJoinAsync(
@@ -21,7 +20,9 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
                 UserId = data.UserId,
                 UserName = data.UserName,
                 Identifier = data.Identifier,
-                CharacterId = data.CharacterId
+                CharacterId = data.CharacterId,
+                PlatformId = data.PlatformId,
+                Platform = data.Platform,
             });
 
         if (playerInfo == null)
@@ -36,7 +37,11 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
             return;
         }
 
-        gameManager.SpawnPlayer(playerInfo.Player);
+        var user = new User(playerInfo.Player, gameManager.RavenNest.UserId);
+        user.Platform = data.Platform;
+        user.PlatformId = data.PlatformId;
+
+        gameManager.SpawnPlayer(playerInfo.Player, user);
         gameManager.SaveStateFile();
 
         Shinobytes.Debug.Log($"PlayerAddEventHandler " + data.UserId + ", " + data.UserName);

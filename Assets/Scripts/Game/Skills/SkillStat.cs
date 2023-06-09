@@ -22,6 +22,11 @@ public class SkillStat
 
     public SkillStat() { }
 
+    public SkillStat(float level) 
+        : this(Mathf.CeilToInt(level))
+    {
+    }
+
     public SkillStat(int level)
     {
         this.Level = level;

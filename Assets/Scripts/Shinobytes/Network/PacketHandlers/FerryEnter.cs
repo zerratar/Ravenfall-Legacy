@@ -34,6 +34,7 @@
         }
 
         player.Ferry.Embark();
+        player.ClearTask();
         client.SendReply(gm, Localization.MSG_FERRY_TRAIN_SAIL);
     }
 }

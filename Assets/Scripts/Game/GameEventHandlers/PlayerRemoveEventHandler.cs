@@ -11,7 +11,8 @@ public class PlayerRemoveEventHandler : GameEventHandler<PlayerRemove>
             return;
         }
 
-        gameManager.QueueRemovePlayer(player);
+        gameManager.RemovePlayer(player, false);
+
         Shinobytes.Debug.LogWarning($"{player.PlayerName} removed from the game. Reason: " + data.Reason);
     }
 }

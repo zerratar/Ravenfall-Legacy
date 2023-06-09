@@ -855,39 +855,51 @@ public class GameManager : MonoBehaviour, IGameManager
     }
     public void RemovePlayer(PlayerController player, bool notifyServer = true)
     {
-        if (player.Dungeon.InDungeon)
+        var playerName = player?.Name;
+        try
         {
-            dungeonManager.Remove(player);
-        }
+            if (player.Dungeon.InDungeon)
+            {
+                dungeonManager.Remove(player);
+            }
 
-        if (player.Raid.InRaid)
+            if (player.Raid.InRaid)
+            {
+                raidManager.Leave(player);
+            }
+
+            if (player.Ferry.OnFerry)
+            {
+                player.Ferry.RemoveFromFerry();
+            }
+
+            if (notifyServer)
+            {
+                RavenNest.PlayerRemoveAsync(player);
+            }
+
+            player.Removed = true;
+            playerList.RemovePlayer(player);
+            playerManager.Remove(player);
+
+            if (gameCamera.Observer != null && gameCamera.Observer.ObservedPlayer == player)
+            {
+                gameCamera.ObservePlayer(null);
+            }
+
+            villageBoostLabel.Update();
+            playerCountLabel.Update();
+            SaveStateFile();
+            UpdatePathfindingIterations();
+        }
+        catch (Exception exc)
         {
-            raidManager.Leave(player);
+            Shinobytes.Debug.LogError("Failed to remove player (" + playerName + "): " + exc.ToString() + "\nPlayer instead queued up for removal");
+            if (player != null && !player.isDestroyed)
+            {
+                QueueRemovePlayer(player);
+            }
         }
-
-        if (player.Ferry.OnFerry)
-        {
-            player.Ferry.RemoveFromFerry();
-        }
-
-        if (notifyServer)
-        {
-            RavenNest.PlayerRemoveAsync(player);
-        }
-
-        player.Removed = true;
-        playerList.RemovePlayer(player);
-        playerManager.Remove(player);
-
-        if (gameCamera.Observer != null && gameCamera.Observer.ObservedPlayer == player)
-        {
-            gameCamera.ObservePlayer(null);
-        }
-
-        villageBoostLabel.Update();
-        playerCountLabel.Update();
-        SaveStateFile();
-        UpdatePathfindingIterations();
     }
 
     public void UpdatePathfindingIterations()
@@ -975,9 +987,14 @@ public class GameManager : MonoBehaviour, IGameManager
         //}
 
         var vector3 = Random.insideUnitSphere + (Vector3.up * 2f);
+
+        var playerInitiatedJoin = !isGameRestore;
+        if (streamUser != null && streamUser.PlatformId != null && streamUser.PlatformId.StartsWith("#"))
+            playerInitiatedJoin = false;
+
         var player = playerManager.Spawn(spawnPoint + vector3,
             playerDefinition, streamUser, raidInfo,
-            !isGameRestore && !streamUser.PlatformId.StartsWith("#"));
+            playerInitiatedJoin);
 
         if (player == null || !player)
         {
@@ -1238,10 +1255,10 @@ public class GameManager : MonoBehaviour, IGameManager
         try
         {
             var players = playerManager.GetAllRealPlayers();
+            if (players.Count == 0) return;
 #if UNITY_EDITOR
             Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player Experience: saveAllSkills=" + saveAllSkills);
 #endif
-            if (players.Count == 0) return;
             RavenNest.SavePlayerExperience(players, saveAllSkills);
         }
         catch (Exception exc)
@@ -1255,10 +1272,10 @@ public class GameManager : MonoBehaviour, IGameManager
         try
         {
             var players = playerManager.GetAllRealPlayers();
+            if (players.Count == 0) return;
 #if UNITY_EDITOR
             Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player States");
 #endif
-            if (players.Count == 0) return;
             RavenNest.SavePlayerState(players);
         }
         catch (Exception exc)

@@ -32,7 +32,7 @@ public class KickPlayer : ChatBotCommandHandler<User>
             var kickedPlayerCount = 0;
             var players = PlayerManager
                 .GetAllPlayers()
-                .Where(x => x.GetTask() == TaskType.None || x.IsAfk)
+                .Where(x => (!x.Ferry.OnFerry && x.GetTask() == TaskType.None) || x.IsAfk)
                 .ToList();
 
             foreach (var plr in players)

@@ -272,6 +272,21 @@ public class PlayerManager : MonoBehaviour
         StreamRaidInfo raidInfo,
         bool playerInitiatedJoin)
     {
+        // if user is null, then we should use the player's connections instead. Pick the first one to decide which platform they come from.
+        if (user == null || string.IsNullOrEmpty(user.PlatformId))
+        {
+            var platform = player.Connections.FirstOrDefault();
+            if (platform != null)
+            {
+                user = new User(player, gameManager.RavenNest.UserId);
+            }
+            else
+            {
+                Shinobytes.Debug.LogWarning("Player '" + player.Name + "' not added to the game, missing platform details.");
+                return null;
+            }
+        }
+
         var key = (user.Platform + "_" + user.PlatformId).ToLower();
         if (platformIdLookup.ContainsKey(key) || playerIdLookup.ContainsKey(player.Id))
         {
@@ -508,7 +523,7 @@ public class PlayerManager : MonoBehaviour
                 return;
             }
 
-            var id = players.Select(x => x.CharacterId).ToArray();
+            var id = players.Where(x => x != null).Select(x => x.CharacterId).ToArray();
             var result = await gameManager.RavenNest.Players.RestoreAsync(new PlayerRestoreData
             {
                 Characters = id,
@@ -520,6 +535,11 @@ public class PlayerManager : MonoBehaviour
 
             foreach (var playerInfo in result.Players)
             {
+                if (playerInfo == null)
+                {
+                    continue;
+                }
+
                 var requested = players[i++];
 
                 try

@@ -24,53 +24,86 @@ public class RaidDifficultySystem
         // we will get the stats to use for our raid boss
         // create a temporary RaidDifficultyContext to store our data in
         var tmp = new RaidDifficultyContext();
+        var d = new RaidDifficulty();
 
-        // if we don't have enough data, we will fill it up using the lowest levels on the stream active in the game
-        if (contexts.Count < MAX_RAID_HISTORY)
+        if (gameManager == null)
         {
-            var generateCount = MAX_RAID_HISTORY - contexts.Count;
-            if (gameManager == null)
+            gameManager = GameObject.FindObjectOfType<GameManager>();
+        }
+        var players = gameManager.Players.GetAllPlayers();
+        try
+        {
+            // if we don't have enough data, we will fill it up using the lowest levels on the stream active in the game
+            if (contexts.Count < MAX_RAID_HISTORY)
             {
-                gameManager = GameObject.FindObjectOfType<GameManager>();
-            }
-            for (var i = 0; i < generateCount; ++i)
-            {
-                var fillers = GetLowLevelPlayers(gameManager.Players.GetAllPlayers());
-                foreach (var filler in fillers)
+                var generateCount = MAX_RAID_HISTORY - contexts.Count;
+
+                for (var i = 0; i < generateCount; ++i)
                 {
-                    tmp.Add(filler);
+                    var fillers = GetLowLevelPlayers(players);
+                    foreach (var filler in fillers)
+                    {
+                        tmp.Add(filler);
+                    }
                 }
             }
+
+            foreach (var c in contexts)
+            {
+                tmp.Append(c.Value);
+            }
+
+            var pCount = (float)Mathf.Max(tmp.PlayerCount, 1f);
+            d.BossSkills = new Skills
+            {
+                Attack = new(tmp.TotalAttack / pCount),
+                Defense = new(tmp.TotalDefense / pCount),
+                Strength = new(tmp.TotalStrength / pCount),
+                Health = new((tmp.TotalHealth / pCount) * 100),
+                Ranged = new(tmp.TotalRanged / pCount),
+                Magic = new(tmp.TotalMagic / pCount)
+            };
+
+            d.BossEquipmentStats = new EquipmentStats
+            {
+                BaseWeaponPower = Mathf.CeilToInt(tmp.TotalWeaponPower / pCount),
+                BaseWeaponAim = Mathf.CeilToInt(tmp.TotalWeaponAim / pCount),
+                BaseArmorPower = Mathf.CeilToInt(tmp.TotalArmorPower / pCount),
+            };
         }
-
-        foreach (var c in contexts)
+        catch
         {
-            tmp.Append(c.Value);
+            if (players.Count == 0) { return null; }
+            // failed to generate a difficulty setting? pick random stats.
+            d.BossSkills = new Skills
+            {
+                Attack = new(Random(players, x => x.Stats.Attack.Level)),
+                Defense = new(Random(players, x => x.Stats.Defense.Level)),
+                Strength = new(Random(players, x => x.Stats.Strength.Level)),
+                Health = new(Random(players, x => x.Stats.Health.Level) * 100),
+                Ranged = new(Random(players, x => x.Stats.Ranged.Level)),
+                Magic = new(Random(players, x => x.Stats.Magic.Level))
+            };
+
+            d.BossEquipmentStats = new EquipmentStats
+            {
+                BaseWeaponPower = Random(players, x => x.EquipmentStats.WeaponPower),
+                BaseWeaponAim = Random(players, x => x.EquipmentStats.WeaponAim),
+                BaseArmorPower = Random(players, x => x.EquipmentStats.ArmorPower),
+            };
         }
-
-        var d = new RaidDifficulty();
-        var pCount = tmp.PlayerCount;
-        d.BossSkills = new Skills
-        {
-            Attack = new(tmp.TotalAttack / pCount),
-            Defense = new(tmp.TotalDefense / pCount),
-            Strength = new(tmp.TotalStrength / pCount),
-            Health = new((tmp.TotalHealth / pCount) * 100),
-            Ranged = new(tmp.TotalRanged / pCount),
-            Magic = new(tmp.TotalMagic / pCount)
-        };
-
-        d.BossEquipmentStats = new EquipmentStats
-        {
-            BaseWeaponPower = tmp.TotalWeaponPower / pCount,
-            BaseWeaponAim = tmp.TotalWeaponAim / pCount,
-            BaseArmorPower = tmp.TotalArmorPower / pCount,
-        };
 
         // TODO: Need to implement an algorithm to track difficulty ratings over time, what is the best way to calculate?
-        d.Rating = 0;
+        d.Rating = d.BossSkills.CombatLevel;
 
         return d;
+    }
+
+    private static int Random<T>(IReadOnlyList<T> input, System.Func<T, int> selector)
+    {
+        var min = input.Min(selector);
+        var max = input.Max(selector);
+        return UnityEngine.Random.Range(min, max);
     }
 
     private List<PlayerController> GetLowLevelPlayers(IReadOnlyList<PlayerController> playerControllers)

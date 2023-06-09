@@ -1,10 +1,26 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public class User
 {
     private static readonly HashSet<char> allowedCharacters = new HashSet<char>(new[] { '_', '=', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'å', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö', 'ä', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
     public User() { }
+
+    public User(Player player, Guid broadcasterUserId)
+    {
+        var isBroadcaster = broadcasterUserId == player.UserId;
+        var platform = player.Connections.FirstOrDefault();
+        if (platform != null)
+        {
+            SetValues(player.UserId, player.Id, player.UserName, player.UserName, "", platform.Platform, platform.PlatformId, isBroadcaster, false, false, false, player.Identifier);
+        }
+        else
+        {
+            SetValues(player.UserId, player.Id, player.UserName, player.UserName, "", "", "", isBroadcaster, false, false, false, player.Identifier);
+        }
+    }
 
     public User(
         Guid id,
@@ -19,6 +35,11 @@ public class User
         bool isSubscriber,
         bool isVip,
         string identifier)
+    {
+        SetValues(id, characterId, username, displayName, color, platform, platformId, isBroadcaster, isModerator, isSubscriber, isVip, identifier);
+    }
+
+    private void SetValues(Guid id, Guid characterId, string username, string displayName, string color, string platform, string platformId, bool isBroadcaster, bool isModerator, bool isSubscriber, bool isVip, string identifier)
     {
         if (string.IsNullOrEmpty(username)) throw new ArgumentNullException(nameof(username));
 

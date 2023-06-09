@@ -1325,7 +1325,6 @@ public class PlayerController : MonoBehaviour, IAttackable
                     //setTask = false;
                     // most likely on the ferry, bub!
                     joinFerryAfterInitialize = true;
-
                 }
                 else
                 {
@@ -1464,6 +1463,24 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             GotoClosest(type);
         }
+    }
+
+    public void ClearTask()
+    {
+        currentTask = TaskType.None;
+        CurrentTaskName = null;
+
+        taskArguments = new HashSet<string>();
+        taskArgument = null;//taskArguments.First();
+        taskTarget = null;
+
+        ActiveSkill = Skill.None;
+
+        UpdateTrainingFlags();
+
+        // in case we change what we train.
+        // we don't want shield armor to be added to magic, ranged or healing.
+        Inventory.UpdateEquipmentEffect();
     }
 
     public bool Fish(FishingController fishingSpot)

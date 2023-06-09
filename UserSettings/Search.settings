@@ -1,6 +1,7 @@
 trackSelection = true
+refreshSearchWindowsInPlayMode = false
 fetchPreview = true
-wantsMore = false
+defaultFlags = 0
 keepOpen = false
 queryFolder = "Assets"
 onBoardingDoNotAskAgain = true
@@ -14,6 +15,15 @@ scopes = {
 	"InspectorPreview.7F95D817" = "0"
 	"currentGroup.7F95D817" = "scene"
 	"OpenInspectorPreview.83F126EB" = "0"
+	"last_search.304ACD21" = "torch"
+	"OpenInspectorPreview.304ACD21" = "0"
+	"currentGroup.304ACD21" = "asset"
+	"last_search.CC2E33DD" = "torch"
+	"OpenInspectorPreview.CC2E33DD" = "0"
+	"currentGroup.CC2E33DD" = "scene"
+	"last_search.1FDCCCAA" = "Stylized Surface Cutout t:Shader"
+	"OpenInspectorPreview.1FDCCCAA" = "0"
+	"currentGroup.1FDCCCAA" = "asset"
 }
 providers = {
 	asset = {
@@ -62,6 +72,8 @@ providers = {
 		defaultAction = null
 	}
 }
+objectSelectors = {
+}
 recentSearches = [
 	"cl"
 	"chair-idle"
@@ -71,9 +83,12 @@ searchItemFavorites = [
 ]
 savedSearchesSortOrder = 0
 showSavedSearchPanel = false
+hideTabs = false
 expandedQueries = [
 ]
 queryBuilder = false
 ignoredProperties = "id;name;classname;imagecontentshash"
 helperWidgetCurrentArea = "all"
 disabledIndexers = ""
+minIndexVariations = 2
+findProviderIndexHelper = true

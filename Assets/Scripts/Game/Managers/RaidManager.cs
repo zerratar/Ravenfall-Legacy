@@ -135,6 +135,13 @@ public class RaidManager : MonoBehaviour, IEvent
             if (gameManager.RequireCodeForDungeonOrRaid)
                 RequiredCode = EventCode.New();
 
+            var raidBossSpawned = SpawnRaidBoss();
+            if (!raidBossSpawned)
+            {
+                gameManager.Events.End(this);
+                return false;
+            }
+
             notifications.OnBeforeRaidStart();
 
             gameManager.Music.PlayRaidBossMusic();
@@ -144,8 +151,6 @@ public class RaidManager : MonoBehaviour, IEvent
             nextRaidTimer = -1f;
             raidStartedTime = Time.time;
             camera.EnableRaidCamera();
-
-            SpawnRaidBoss();
 
             notifications.ShowRaidBossAppeared(RequiredCode);
 
@@ -305,43 +310,56 @@ public class RaidManager : MonoBehaviour, IEvent
         }
     }
 
-    private void SpawnRaidBoss()
+    private bool SpawnRaidBoss()
     {
-        if (!raidBossPrefab)
+        try
         {
-            Shinobytes.Debug.LogError("NO RAID BOSS PREFAB SET!!!");
-            return;
-        }
-
-        var spawnPosition = Vector3.zero;
-        if (chunkManager)
-        {
-            var randomChunk = chunkManager
-                .GetChunks()
-                .OrderBy(x => UnityEngine.Random.value)
-                .FirstOrDefault();
-
-            if (randomChunk != null)
+            if (!raidBossPrefab)
             {
-                spawnPosition = randomChunk.CenterPointWorld + (Vector3.up * 3.4f);
+                Shinobytes.Debug.LogError("NO RAID BOSS PREFAB SET!!!");
+                return false;
             }
+
+            var spawnPosition = Vector3.zero;
+            if (chunkManager)
+            {
+                var randomChunk = chunkManager
+                    .GetChunks()
+                    .OrderBy(x => UnityEngine.Random.value)
+                    .FirstOrDefault();
+
+                if (randomChunk != null)
+                {
+                    spawnPosition = randomChunk.CenterPointWorld + (Vector3.up * 3.4f);
+                }
+            }
+
+            var difficulty = difficultySystem.GetDifficulty(raidIndex);
+            if (difficulty == null)
+            {
+                return false;
+            }
+
+            /* old logic
+                var players = playerManager.GetAllPlayers();
+                var highestStats = players.Max(x => x.Stats);
+                var lowestStats = players.Min(x => x.Stats);
+                var rngLowEq = players.Min(x => x.EquipmentStats);
+                var rngHighEq = players.Max(x => x.EquipmentStats) * 0.75f;
+            */
+            Boss = Instantiate(raidBossPrefab, spawnPosition, Quaternion.identity).GetComponent<RaidBossController>();
+            //Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
+            Boss.Create(difficulty.BossSkills, difficulty.BossEquipmentStats);
+            Boss.UnlockMovement();
+
+            timeoutTimer = Mathf.Min(maxTimeoutSeconds, Mathf.Max(minTimeoutSeconds, Boss.Enemy.Stats.CombatLevel * 0.8249123f));
+            return true;
         }
-
-        var difficulty = difficultySystem.GetDifficulty(raidIndex);
-
-        /* old logic
-            var players = playerManager.GetAllPlayers();
-            var highestStats = players.Max(x => x.Stats);
-            var lowestStats = players.Min(x => x.Stats);
-            var rngLowEq = players.Min(x => x.EquipmentStats);
-            var rngHighEq = players.Max(x => x.EquipmentStats) * 0.75f;
-        */
-        Boss = Instantiate(raidBossPrefab, spawnPosition, Quaternion.identity).GetComponent<RaidBossController>();
-        //Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
-        Boss.Create(difficulty.BossSkills, difficulty.BossEquipmentStats);
-        Boss.UnlockMovement();
-
-        timeoutTimer = Mathf.Min(maxTimeoutSeconds, Mathf.Max(minTimeoutSeconds, Boss.Enemy.Stats.CombatLevel * 0.8249123f));
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Failed to spawn raid boss: " + exc);
+            return false;
+        }
     }
 }
 

@@ -42,9 +42,9 @@ namespace RavenNest.SDK
         {
 
             Settings =
-                        new ProductionEndpoint()
+                        //new ProductionEndpoint()
                         //new StagingRavenNestStreamSettings()
-                        //new LocalServerRemoteBotEndpoint()
+                        new LocalServerRemoteBotEndpoint()
                         //new DevServerRemoteBotEndpoint()
                         //new LocalEndpoint()
                         ;
@@ -293,7 +293,9 @@ namespace RavenNest.SDK
             try
             {
                 // way to fake a bot here.
-                if (joinData.UserId != null && joinData.PlatformId.StartsWith("#"))
+                // we dont need platformId if we have a character id
+
+                if (joinData.UserId != null && joinData.PlatformId != null && joinData.PlatformId.StartsWith("#"))
                 {
                     return botPlayerGenerator.Generate(joinData);
                 }

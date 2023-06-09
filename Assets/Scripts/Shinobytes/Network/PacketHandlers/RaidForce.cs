@@ -61,7 +61,16 @@ public class RaidForce : ChatBotCommandHandler
                 {
                     var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Raid);
                     client.SendReply(gm, "You have used a Raid Scroll.");
-                    Game.Raid.StartRaid(plr.Name);
+                    if (!Game.Raid.StartRaid(plr.Name))
+                    {
+                        var raidScroll = Game.Items.Find(x => x.Name.Contains("raid", System.StringComparison.OrdinalIgnoreCase) && x.Type == ItemType.Scroll);
+                        if (raidScroll != null)
+                        {
+                            client.SendReply(gm, "Raid could not be started. Scroll will be refunded.");
+                            await Game.RavenNest.Players.AddItemAsync(plr.Id, raidScroll.Id);
+                            plr.Inventory.AddToBackpack(raidScroll);
+                        }
+                    }
                 }
                 else
                 {
