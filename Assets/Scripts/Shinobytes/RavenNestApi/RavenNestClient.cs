@@ -40,7 +40,6 @@ namespace RavenNest.SDK
             ILogger logger,
             GameManager gameManager)
         {
-
             Settings =
                         //new ProductionEndpoint()
                         //new StagingRavenNestStreamSettings()
@@ -168,14 +167,19 @@ namespace RavenNest.SDK
             }
         }
 
+        internal void SendGameState()
+        {
+            if (Tcp != null) Tcp.SendGameState();
+        }
+
         internal void SavePlayerExperience(IReadOnlyList<PlayerController> players, bool saveAllSkills = false)
         {
-            Tcp.SavePlayerExperience(players, saveAllSkills);
+            if (Tcp != null) Tcp.SavePlayerExperience(players, saveAllSkills);
         }
 
         internal void SavePlayerState(IReadOnlyList<PlayerController> players)
         {
-            Tcp.SavePlayerState(players);
+            if (Tcp != null) Tcp.SavePlayerState(players);
         }
 
 

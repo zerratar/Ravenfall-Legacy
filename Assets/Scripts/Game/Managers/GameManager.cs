@@ -216,6 +216,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public static bool BatchPlayerAddInProgress;
     private int experienceSaveIndex;
+    private bool sessionPlayersCleared;
+    private float gameStateTime;
 
     void Awake()
     {
@@ -296,6 +298,14 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<PlayerJoinRaidEventHandler>(GameEventType.PlayerJoinRaid);
         RegisterGameEventHandler<PlayerNameUpdateEventHandler>(GameEventType.PlayerNameUpdate);
         RegisterGameEventHandler<PlayerTaskEventHandler>(GameEventType.PlayerTask);
+        RegisterGameEventHandler<PlayerTravelEventHandler>(GameEventType.PlayerTravel);
+
+        RegisterGameEventHandler<PlayerBeginRestEventHandler>(GameEventType.PlayerBeginRest);
+        RegisterGameEventHandler<PlayerEndRestEventHandler>(GameEventType.PlayerEndRest);
+
+
+        RegisterGameEventHandler<PlayerStartRaidEventHandler>(GameEventType.PlayerStartRaid);
+        RegisterGameEventHandler<PlayerStartDungeonEventHandler>(GameEventType.PlayerStartDungeon);
 
         RegisterGameEventHandler<StreamerPvPEventHandler>(GameEventType.StreamerPvP);
 
@@ -696,33 +706,44 @@ public class GameManager : MonoBehaviour, IGameManager
 
         ExpMultiplierChecker.RunAsync(this);
 
-        if (GameCache.IsAwaitingGameRestore
-            && RavenNest.Authenticated
-            && RavenNest.SessionStarted
-            && RavenNest.Tcp.IsReady
-            && Items.Loaded)
+        if (RavenNest.Authenticated &&
+            RavenNest.SessionStarted &&
+            RavenNest.Tcp.IsReady)
         {
-            GameCache.IsAwaitingGameRestore = false;
-            var reloadState = GameCache.GetReloadState();
-            if (reloadState != null)
+            if (Items.Loaded && GameCache.IsAwaitingGameRestore)
             {
-                StartCoroutine(RestoreGameState(reloadState.Value));
-                return;
-            }
-        }
-        else if (
-             RavenNest.Authenticated &&
-             RavenNest.SessionStarted &&
-             RavenBot.IsConnected &&
-            !stateFileStatusReported && gameCacheStateFileLoadResult == GameCache.LoadStateResult.Expired)
-        {
-            if (AlertExpiredStateCacheInChat)
-            {
-                RavenBot.Announce("Player restore state file has expired. No players has been added back.");
+                GameCache.IsAwaitingGameRestore = false;
+                var reloadState = GameCache.GetReloadState();
+                if (reloadState != null)
+                {
+                    StartCoroutine(RestoreGameState(reloadState.Value));
+                    return;
+                }
             }
 
-            stateFileStatusReported = true;
+            if (!stateFileStatusReported && RavenBot.IsConnected && gameCacheStateFileLoadResult == GameCache.LoadStateResult.Expired)
+            {
+                if (AlertExpiredStateCacheInChat)
+                {
+                    RavenBot.Announce("Player restore state file has expired. No players has been added back.");
+                }
+
+                stateFileStatusReported = true;
+            }
+
+            if (!sessionPlayersCleared & gameCacheStateFileLoadResult == GameCache.LoadStateResult.NoPlayersRestored)
+            {
+                if (AlertExpiredStateCacheInChat)
+                {
+                    RavenBot.Announce("Player restore state file has expired. No players has been added back.");
+                }
+
+                RavenNest.Game.ClearPlayersAsync();
+
+                sessionPlayersCleared = true;
+            }
         }
+
 
         if (uptimeSaveTimer > 0)
             uptimeSaveTimer -= GameTime.deltaTime;
@@ -1193,6 +1214,21 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             var saveIntervalScale = Players.LoadingPlayers ? 5 : 1;
 
+            if (gameStateTime >= 0)
+            {
+                if (!Players.LoadingPlayers && gameStateTime > stateSaveInterval)
+                {
+                    gameStateTime = stateSaveInterval;
+                }
+
+                gameStateTime -= GameTime.deltaTime;
+                if (gameStateTime < 0f)
+                {
+                    SendGameState();
+                    gameStateTime = stateSaveInterval * saveIntervalScale;
+                }
+            }
+
             if (experienceSaveTime >= 0)
             {
                 // if we are no longer loading any players, we have to make sure our saveTimer is returned back to normal.
@@ -1250,15 +1286,40 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
+    private void SendGameState()
+    {
+        try
+        {
+            if (RavenNest == null)
+            {
+                return;
+            }
+
+//#if UNITY_EDITOR
+//            Shinobytes.Debug.LogWarning("Sending Game State");
+//#endif
+            RavenNest.SendGameState();
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError(exc);
+        }
+    }
+
     private void SavePlayerExperience(bool saveAllSkills = false)
     {
         try
         {
+            if (RavenNest == null)
+            {
+                return;
+            }
+
             var players = playerManager.GetAllRealPlayers();
             if (players.Count == 0) return;
-#if UNITY_EDITOR
-            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player Experience: saveAllSkills=" + saveAllSkills);
-#endif
+//#if UNITY_EDITOR
+//            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player Experience: saveAllSkills=" + saveAllSkills);
+//#endif
             RavenNest.SavePlayerExperience(players, saveAllSkills);
         }
         catch (Exception exc)
@@ -1271,11 +1332,12 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         try
         {
+            if (playerManager == null) return;//not loaded yet?
             var players = playerManager.GetAllRealPlayers();
-            if (players.Count == 0) return;
-#if UNITY_EDITOR
-            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player States");
-#endif
+            if (players==null||players.Count == 0) return;
+//#if UNITY_EDITOR
+//            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player States");
+//#endif
             RavenNest.SavePlayerState(players);
         }
         catch (Exception exc)

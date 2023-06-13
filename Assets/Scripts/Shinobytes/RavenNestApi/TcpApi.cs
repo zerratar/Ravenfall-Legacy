@@ -116,7 +116,9 @@ namespace RavenNest.SDK
                     }
 
                     if (leftToProcess == 0)
-                        System.Threading.Thread.Sleep(16);
+                    {
+                        System.Threading.Thread.Sleep(5);
+                    }
                 }
                 catch
                 {
@@ -185,6 +187,80 @@ namespace RavenNest.SDK
             return player != null && player && player.UserId != Guid.Empty && !string.IsNullOrEmpty(player.PlatformId) && player.Id != Guid.Empty && !player.IsBot && !player.PlatformId.StartsWith("#");
         }
 
+        internal void SendGameState()
+        {
+            if (client == null || gameManager == null || gameManager.Players == null || gameManager.Dungeons == null || gameManager.Raid == null)
+                return;
+
+            try
+            {
+                var now = DateTime.UtcNow;
+                var players = gameManager.Players.GetAllRealPlayers();
+                var gameStateRequest = new GameStateRequest();
+                gameStateRequest.SessionToken = this.sessionToken;
+                gameStateRequest.PlayerCount = players.Count;
+
+                var r = gameStateRequest.Raid = new RaidState();
+                r.NextRaid = now.AddSeconds(gameManager.Raid.SecondsUntilNextRaid);
+
+                if (gameManager.Raid.Started)
+                {
+                    r.IsActive = true;
+                    r.EndTime = now.AddSeconds(gameManager.Raid.SecondsLeft);
+
+                    var boss = gameManager.Raid.Boss;
+                    if (boss && !boss.Enemy.Stats.IsDead)
+                    {
+                        var health = boss.Enemy.Stats.Health;
+                        r.CurrentBossHealth = health.CurrentValue;
+                        r.MaxBossHealth = health.Level;
+                        r.BossCombatLevel = boss.Enemy.Stats.CombatLevel;
+                        r.PlayersJoined = gameManager.Raid.Raiders.Count;
+                    }
+                }
+
+                var manager = gameManager.Dungeons;
+                var d = gameStateRequest.Dungeon = new DungeonState();
+
+                d.NextDungeon = now.AddSeconds(manager.SecondsUntilStart);
+
+                if (gameManager.Dungeons.Active)
+                {
+                    var dungeon = manager.Dungeon;
+                    d.IsActive = true;
+                    d.Name = dungeon.Name;
+                    d.HasStarted = manager.Started;
+                    d.StartTime = now.AddSeconds(manager.SecondsUntilStart);
+
+                    d.PlayersAlive = manager.GetAlivePlayerCount();
+                    d.PlayersJoined = d.PlayersAlive + manager.GetDeadPlayerCount();
+                    d.EnemiesLeft = manager.GetAliveEnemies().Count;
+                    var boss = manager.Boss;
+                    if (boss)
+                    {
+                        var health = boss.Enemy.Stats.Health;
+                        d.CurrentBossHealth = health.CurrentValue;
+                        d.MaxBossHealth = health.Level;
+                        d.BossCombatLevel = boss.Enemy.Stats.CombatLevel;
+                    }
+                }
+
+                var packetData = MessagePackSerializer.Serialize(gameStateRequest, MessagePack.Resolvers.ContractlessStandardResolver.Options);
+                if (packetData != null && packetData.Length > 0)
+                {
+                    client.Send(packetData);
+                }
+                else
+                {
+                    Shinobytes.Debug.LogError("Could not save game state, serialized packet data returned 0 in size.");
+                }
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("Could not save game state: " + exc);
+            }
+        }
+
         public void SavePlayerExperience(IReadOnlyList<PlayerController> players, bool saveAllSkills = true)
         {
             var saveRequest = new SaveExperienceRequest();
@@ -234,17 +310,24 @@ namespace RavenNest.SDK
                 (CharacterState state, string stateData) = GetState(player);
 
                 update.CharacterId = player.Id;
-                update.TrainingSkillIndex = GetTrainingSkillIndex(player);
+
+                var skill = player.GetActiveSkillStat();
+
+                update.TrainingSkillIndex = skill != null ? skill.Index : -1; ;
+                update.ExpPerHour = skill != null ? (long)skill.GetExperiencePerHour() : 0L;
+                update.EstimatedTimeForLevelUp = GetEstimatedTimeForLevelUp(update.ExpPerHour, skill.Level, skill.Experience);
                 update.Health = (short)player.Stats.Health.CurrentValue;
                 update.Island = island;
                 update.State = state;
                 update.X = (short)position.x;
                 update.Y = (short)position.y;
                 update.Z = (short)position.z;
+                update.Destination = player.Ferry.Destination?.Island ?? Island.Ferry;
 
-                if (player.LastSavedState == null || RequiresUpdate(update, player.LastSavedState))
+                if (player.LastSavedState == null || RequiresUpdate(update, player.LastSavedState, player.LastSavedStateTime))
                 {
                     states.Add(update);
+                    player.LastSavedStateTime = DateTime.UtcNow;
                     player.LastSavedState = update;
                 }
             }
@@ -266,14 +349,27 @@ namespace RavenNest.SDK
             }
         }
 
-        private bool RequiresUpdate(Models.TcpApi.CharacterStateUpdate a, Models.TcpApi.CharacterStateUpdate b)
+        private DateTime GetEstimatedTimeForLevelUp(long expPerHour, int level, double experience)
+        {
+            if (expPerHour <= 0 || level >= GameMath.MaxLevel) return DateTime.MaxValue;
+            var nextLevel = GameMath.ExperienceForLevel(level + 1);
+            var expLeft = nextLevel - experience;
+            var hoursLeft = expLeft / expPerHour;
+            return DateTime.UtcNow.AddHours(hoursLeft);
+        }
+
+        private bool RequiresUpdate(Models.TcpApi.CharacterStateUpdate a, Models.TcpApi.CharacterStateUpdate b, DateTime lastSavedStateTime)
         {
             if (a == null || b == null) return true;
+            var now = DateTime.UtcNow;
             if (a.State != b.State
                 || a.TrainingSkillIndex != b.TrainingSkillIndex
                 || a.Health != b.Health
                 || a.Island != b.Island
-                || Distance(a.X, a.Y, a.Z, b.X, b.Y, b.Z) >= 3f)
+                || Distance(a.X, a.Y, a.Z, b.X, b.Y, b.Z) >= 3f
+                || a.ExpPerHour != b.ExpPerHour
+                || a.EstimatedTimeForLevelUp != b.EstimatedTimeForLevelUp
+                || (now - lastSavedStateTime).TotalSeconds >= 5)
                 return true;
 
             return false;
@@ -560,6 +656,11 @@ namespace RavenNest.SDK
                 state = CharacterState.Dungeon;
                 stateData = player.GameManager.Dungeons.Dungeon.Name;
             }
+            else if (player.Dungeon.Joined)
+            {
+                state = CharacterState.JoinedDungeon;
+                stateData = player.GameManager.Dungeons.Dungeon.Name;
+            }
             else if (player.Duel.InDuel)
             {
                 state = CharacterState.Duel;
@@ -581,6 +682,7 @@ namespace RavenNest.SDK
 
             return (state, stateData);
         }
+
     }
 
     public enum PlayerUpdateType

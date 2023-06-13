@@ -8,7 +8,6 @@ public class OnsenManager : MonoBehaviour
 
     private Vector3[] entryPoints;
     public Vector3[] EntryPoint => entryPoints;//.EntryPoint;
-
     private void Start()
     {
         if (!game) game = FindObjectOfType<GameManager>();

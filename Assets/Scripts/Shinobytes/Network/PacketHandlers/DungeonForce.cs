@@ -2,7 +2,6 @@
 using System.Threading;
 public class DungeonForce : ChatBotCommandHandler
 {
-    private int scrollActive;
     public DungeonForce(
          GameManager game,
          RavenBotConnection server,

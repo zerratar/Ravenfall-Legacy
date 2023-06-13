@@ -116,7 +116,8 @@ namespace Assets.Scripts
 
         public enum LoadStateResult
         {
-            Success,
+            NoPlayersRestored,
+            PlayersRestored,
             Error,
             Expired
         }
@@ -128,7 +129,10 @@ namespace Assets.Scripts
                 try
                 {
                     var expiryTime = SettingsMenuView.GetPlayerCacheExpiryTime();
-                    if (expiryTime == TimeSpan.Zero) return LoadStateResult.Success;
+                    if (expiryTime == TimeSpan.Zero)
+                    {
+                        return LoadStateResult.NoPlayersRestored;
+                    }
 #if DEBUG
                     Shinobytes.Debug.Log("Loading state file: " + Shinobytes.IO.Path.GetFilePath(PlayerStateCacheFileName));
 #endif
@@ -160,7 +164,7 @@ namespace Assets.Scripts
                 }
             }
 
-            return LoadStateResult.Success;
+            return LoadStateResult.PlayersRestored;
         }
 
         internal static void SaveState()

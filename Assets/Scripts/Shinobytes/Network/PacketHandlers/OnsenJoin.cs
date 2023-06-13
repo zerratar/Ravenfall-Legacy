@@ -18,44 +18,15 @@
             if (player.Ferry.Embarking)
             {
                 player.Ferry.Cancel();
-
             }
 
-            if (player.Duel.InDuel)
+            if (player.Duel.InDuel || player.Arena.InArena || player.StreamRaid.InWar
+                || player.Dungeon.InDungeon || player.Raid.InRaid || player.Onsen.InOnsen)
             {
                 return;
             }
 
-            if (player.Arena.InArena)
-            {
-                return;
-            }
-
-            if (player.Dungeon.InDungeon)
-            {
-                return;
-            }
-
-            if (player.Raid.InRaid)
-            {
-                return;
-            }
-
-            if (player.StreamRaid.InWar)
-            {
-                return;
-            }
-
-            if (player.Onsen.InOnsen)
-            {
-                // Send Rested Status?
-                return;
-            }
-
-            if (Game.Onsen.Join(player))
-            {
-                //Game.RavenBot.SendReply(player, Localization.MSG_ONSEN_ENTRY);
-            }
+            Game.Onsen.Join(player);
         }
         catch { }
     }

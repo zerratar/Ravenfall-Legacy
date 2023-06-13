@@ -40,7 +40,8 @@ public class DungeonManager : MonoBehaviour, IEvent
     private float nextDungeonTimer;
     private float notificationTimer;
     private DungeonManagerState state;
-
+    public float SecondsUntilStart => dungeonStartTimer;
+    public float SecondsUntilNext => nextDungeonTimer;
     public DungeonNotifications Notifications => dungeonNotifications;
     public bool Active => state >= DungeonManagerState.Active;
     public bool Started => state == DungeonManagerState.Started;
@@ -168,30 +169,16 @@ public class DungeonManager : MonoBehaviour, IEvent
     internal int GetAlivePlayerCount()
     {
         return alivePlayers.Count;
-
-        //lock (mutex)
-        //{
-        //    if (this.deadPlayers.Count >= this.joinedPlayers.Count)
-        //    {
-        //        return 0;
-        //    }
-
-        //    return joinedPlayers.Count - this.deadPlayers.Count;
-        //}
     }
+
+    internal int GetDeadPlayerCount()
+    {
+        return deadPlayers.Count;
+    }
+
     internal IReadOnlyList<PlayerController> GetAlivePlayers()
     {
         return alivePlayers;
-
-        //lock (mutex)
-        //{            
-        //    if (this.deadPlayers.Count == this.joinedPlayers.Count)
-        //    {
-        //        return new List<PlayerController>();
-        //    }
-
-        //    return joinedPlayers.Where(x => this.deadPlayers.All(y => y.Id != x.Id)).AsList();
-        //}
     }
 
     // Update is called once per frame

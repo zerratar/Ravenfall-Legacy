@@ -24,7 +24,7 @@ public class DungeonHandler : MonoBehaviour
     public IslandController PreviousIsland => previousIsland;
     public Vector3 PreviousPosition => previousPosition;
     public bool InDungeon { get; private set; }
-
+    public bool Joined => dungeon != null && dungeon.JoinedDungeon(this.player);
     private void Start()
     {
         if (!player) player = GetComponent<PlayerController>();

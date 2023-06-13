@@ -15,7 +15,7 @@ public class SkillStat
 
     public int Index;
 
-    private float refreshRate = 60f;
+    private float refreshRate = 10f;
     private double totalEarnedExperience;
     private float earnedExperienceStart;
     private float lastExperienceGain;

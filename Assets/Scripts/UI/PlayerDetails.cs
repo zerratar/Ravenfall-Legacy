@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts;
+using System;
 using System.Runtime.CompilerServices;
 using TMPro;
 using UnityEngine;
@@ -173,27 +174,41 @@ public class PlayerDetails : MonoBehaviour
             gameManager.Camera.ObserveNextPlayer();
     }
 
+
+    private double GetEstimatedTimeForLevelUp(long expPerHour, int level, double experience)
+    {
+        if (expPerHour <= 0 || level >= GameMath.MaxLevel) return -1;
+        var nextLevel = GameMath.ExperienceForLevel(level + 1);
+        var expLeft = nextLevel - experience;
+        var hoursLeft = expLeft / expPerHour;
+        return hoursLeft;
+    }
+
     private string GetTimeLeftForLevelFormatted()
     {
         var s = observedPlayer.ActiveSkill;
         if (s == Skill.None) return "";
 
         var skill = observedPlayer.Stats[s];
-        var f = observedPlayer.GetExpFactor();
-        var expPerTick = ObservedPlayer.GetExperience(s, f);
-        var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
-        var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
-        var expPerHour = System.Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
-        var expLeft = nextLevelExp - skill.Experience;
 
-        if (expPerHour <= 0 || expLeft <= 0)
+        var expPerHour = (long)skill.GetExperiencePerHour();
+
+        //var f = observedPlayer.GetExpFactor();
+        //var expPerTick = ObservedPlayer.GetExperience(s, f);
+        //var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
+        //var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
+        //var expPerHour = System.Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
+        //var expLeft = nextLevelExp - skill.Experience;
+
+        var hoursLeft = GetEstimatedTimeForLevelUp(expPerHour, skill.Level, skill.Experience);
+
+        if (hoursLeft <= 0)
             return "<color=red>Unknown</color>";
 
-        var hours = (double)(expLeft / expPerHour);
         var timeLeft = System.TimeSpan.MaxValue;
-        if (hours < System.TimeSpan.MaxValue.TotalHours)
+        if (hoursLeft < System.TimeSpan.MaxValue.TotalHours)
         {
-            timeLeft = System.TimeSpan.FromHours(hours);
+            timeLeft = System.TimeSpan.FromHours(hoursLeft);
         }
 
         if (timeLeft.Days >= 365 * 10_000)

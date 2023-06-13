@@ -9,12 +9,6 @@ public class PlayerJoinDungeonEventHandler : GameEventHandler<PlayerId>
 
         if (gameManager.StreamRaid.IsWar)
             return;
-        if (player.Ferry.OnFerry)
-            return;
-
-
-        if (player.Ferry.Active)
-            player.Ferry.Disembark();
 
         if (!gameManager.Dungeons.Active)
             return;

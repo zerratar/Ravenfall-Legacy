@@ -57,6 +57,14 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync(ApiRequestTarget.Game, ApiRequestType.Post);
         }
 
+        public Task<bool> ClearPlayersAsync()
+        {
+            return request.Create()
+                 .Method("clear-players")
+                    .Build()
+                    .SendAsync<bool>(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
+
         public Task<ScrollInfoCollection> GetScrollsAsync(PlayerController plr)
         {
             return request.Create()

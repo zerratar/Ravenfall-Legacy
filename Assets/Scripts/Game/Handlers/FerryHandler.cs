@@ -144,6 +144,11 @@ public class FerryHandler : MonoBehaviour
         this.destination = null;
     }
 
+    public void ClearDestination()
+    {
+        this.destination = null;
+    }
+
     public void Embark(IslandController destination = null)
     {
         EnsureReferences();
@@ -173,6 +178,9 @@ public class FerryHandler : MonoBehaviour
         isOnFerry = false;
         state = PlayerFerryState.None;
         var parent = player.transform.parent;
+
+        ClearDestination();
+
         if (onFerry || (parent && parent.name == "PlayerPoint"))
         {
             player.transform.SetParent(null);
@@ -229,6 +237,8 @@ public class FerryHandler : MonoBehaviour
             isOnFerry = false;
             player.Island = targetIsland;
             player.taskTarget = null;
+            
+            this.ClearDestination();
 
             var task = player.GetTask();
             if (task != TaskType.None)

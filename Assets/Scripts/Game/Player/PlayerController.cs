@@ -275,6 +275,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     public CharacterStateUpdate LastSavedState;
 
     private bool hasGameManager;
+    internal DateTime LastSavedStateTime;
 
     internal void ClearTarget()
     {

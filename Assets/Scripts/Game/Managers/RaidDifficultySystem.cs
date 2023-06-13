@@ -30,6 +30,7 @@ public class RaidDifficultySystem
         {
             gameManager = GameObject.FindObjectOfType<GameManager>();
         }
+
         var players = gameManager.Players.GetAllPlayers();
         try
         {
@@ -73,36 +74,39 @@ public class RaidDifficultySystem
         }
         catch
         {
-            if (players.Count == 0) { return null; }
-            // failed to generate a difficulty setting? pick random stats.
-            d.BossSkills = new Skills
-            {
-                Attack = new(Random(players, x => x.Stats.Attack.Level)),
-                Defense = new(Random(players, x => x.Stats.Defense.Level)),
-                Strength = new(Random(players, x => x.Stats.Strength.Level)),
-                Health = new(Random(players, x => x.Stats.Health.Level) * 100),
-                Ranged = new(Random(players, x => x.Stats.Ranged.Level)),
-                Magic = new(Random(players, x => x.Stats.Magic.Level))
-            };
-
-            d.BossEquipmentStats = new EquipmentStats
-            {
-                BaseWeaponPower = Random(players, x => x.EquipmentStats.WeaponPower),
-                BaseWeaponAim = Random(players, x => x.EquipmentStats.WeaponAim),
-                BaseArmorPower = Random(players, x => x.EquipmentStats.ArmorPower),
-            };
         }
 
         // TODO: Need to implement an algorithm to track difficulty ratings over time, what is the best way to calculate?
         d.Rating = d.BossSkills.CombatLevel;
 
+        if (d.Rating == 0)
+        {
+            // failed to generate a difficulty setting? pick random stats.
+            d.BossSkills = new Skills
+            {
+                Attack = new(Random(players, x => x.Stats.Attack.Level, 1, 99)),
+                Defense = new(Random(players, x => x.Stats.Defense.Level, 1, 99)),
+                Strength = new(Random(players, x => x.Stats.Strength.Level, 1, 99)),
+                Health = new(Random(players, x => x.Stats.Health.Level, 10, 99) * 100),
+                Ranged = new(Random(players, x => x.Stats.Ranged.Level, 1, 99)),
+                Magic = new(Random(players, x => x.Stats.Magic.Level, 1, 99))
+            };
+
+            d.BossEquipmentStats = new EquipmentStats
+            {
+                BaseWeaponPower = Random(players, x => x.EquipmentStats.WeaponPower, 1, 50),
+                BaseWeaponAim = Random(players, x => x.EquipmentStats.WeaponAim, 1, 50),
+                BaseArmorPower = Random(players, x => x.EquipmentStats.ArmorPower, 1, 50),
+            };
+        }
+
         return d;
     }
 
-    private static int Random<T>(IReadOnlyList<T> input, System.Func<T, int> selector)
+    private static int Random<T>(IReadOnlyList<T> input, System.Func<T, int> selector, int defaultMin = 1, int defaultMax = 1)
     {
-        var min = input.Min(selector);
-        var max = input.Max(selector);
+        var min = input.Count > 0 ? input.Min(selector) : defaultMin;
+        var max = input.Count > 0 ? input.Max(selector) : defaultMax;
         return UnityEngine.Random.Range(min, max);
     }
 

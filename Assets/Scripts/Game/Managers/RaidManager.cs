@@ -36,6 +36,8 @@ public class RaidManager : MonoBehaviour, IEvent
 
     //private float lastRaidEndTime = 0f;
 
+    public float SecondsLeft => timeoutTimer;
+    public float SecondsUntilNextRaid => nextRaidTimer;
     public bool Started => nextRaidTimer < 0f;
 
     public bool IsBusy { get; internal set; }
