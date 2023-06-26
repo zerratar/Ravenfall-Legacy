@@ -41,9 +41,9 @@ namespace RavenNest.SDK
             GameManager gameManager)
         {
             Settings =
-                        //new ProductionEndpoint()
+                        new ProductionEndpoint()
                         //new StagingRavenNestStreamSettings()
-                        new LocalServerRemoteBotEndpoint()
+                        //new LocalServerRemoteBotEndpoint()
                         //new DevServerRemoteBotEndpoint()
                         //new LocalEndpoint()
                         ;

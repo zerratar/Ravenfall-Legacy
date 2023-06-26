@@ -11,9 +11,16 @@ public class ItemResolver : IItemResolver
 {
     private ItemManager itemManager;
     private PlayerManager playerManager;
-
+    private ItemMaterial[] itemMaterials;
     private void EnsureManagers()
     {
+        if (itemMaterials == null || itemMaterials.Length == 0)
+        {
+            itemMaterials = Enum.GetValues(typeof(ItemMaterial))
+                .Cast<ItemMaterial>()
+                .ToArray();
+        }
+
         if (!itemManager)
             itemManager = GameObject.FindObjectOfType<ItemManager>();
 
@@ -254,6 +261,7 @@ public class ItemResolver : IItemResolver
                     .Where(x => x.Match.IsCloseMatch)
                     .Select(x => x.Item.Name)
                     .Distinct()
+                    .OrderBy(x => LevenshteinDistance(x, itemQuery))
                     .Take(maxSuggestions)
                     .ToArray();
             }
@@ -264,6 +272,7 @@ public class ItemResolver : IItemResolver
                 .Where(x => IsCloseMatch(x.Name, x.Type, itemQuery))
                 .Select(x => x.Name)
                 .Distinct()
+                .OrderBy(x => LevenshteinDistance(x, itemQuery))
                 .Take(maxSuggestions)
                 .ToArray();
         }
@@ -395,21 +404,36 @@ public class ItemResolver : IItemResolver
         if (itemQuery.Contains(' '))
         {
             var items = itemQuery.Split(' ');
+            var materialName = items[0].ToLower();
+            var itemName = name.ToLower();
+            var dist = int.MaxValue;
 
-            if (!MaterialMatch(name.ToLower(), items[0].ToLower()))
+            var possibleMaterialName = "";
+
+            foreach (var mat in itemMaterials)
+            {
+                if (mat == ItemMaterial.None) continue; // skip none. that will allow certain misspelled "rune"
+                var n = mat.ToString().ToLower();
+                var d = LevenshteinDistance(n, materialName);
+                if (d < dist)
+                {
+                    dist = d;
+                    possibleMaterialName = n;
+                }
+            }
+
+            if (!MaterialMatch(name.ToLower(), materialName) && !MaterialMatch(possibleMaterialName, itemName))
             {
                 return false;
             }
 
-            foreach (var item in items)
-            {
-                if (!name.Contains(item, StringComparison.OrdinalIgnoreCase))
-                {
-                    return MaterialMatch(name, items[0]);
-                }
-            }
+            // now that we have a material match, we should check name/type match.
 
-            return true;
+            var queryItemName = itemQuery.Substring(materialName.Length).Trim();
+            if (name.Contains(queryItemName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
         }
 
         if (MaterialMatch(name.ToLower(), itemQuery.Trim().ToLower()))
@@ -642,6 +666,7 @@ public class ItemResolver : IItemResolver
         {
             return name.StartsWith("ancient", StringComparison.OrdinalIgnoreCase);
         }
+
         if (target == "at" || target.StartsWith("atla"))
         {
             return name.StartsWith("atlarus", StringComparison.OrdinalIgnoreCase);

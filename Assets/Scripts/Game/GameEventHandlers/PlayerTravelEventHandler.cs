@@ -47,6 +47,7 @@ public class PlayerTravelEventHandler : GameEventHandler<RavenNest.Models.Player
             return;
         }
 
+        player.ClearTask();
         player.Ferry.Embark();
     }
 }

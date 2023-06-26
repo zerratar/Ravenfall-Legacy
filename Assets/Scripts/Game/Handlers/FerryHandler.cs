@@ -246,17 +246,10 @@ public class FerryHandler : MonoBehaviour
                 player.GotoClosest(task);
             }
 
-#if DEBUG
             if (notifyPlayerOfDisembark && !AdminControlData.ControlPlayers)
             {
                 gameManager.RavenBot?.SendReply(player, Localization.MSG_FERRY_ARRIVED, player.Island.Identifier);
             }
-#else
-            if (notifyPlayerOfDisembark)
-            {
-                gameManager.RavenBot?.SendReply(player, "You have arrived at your destination, {islandName}!", player.Island.Identifier);
-            }
-#endif
 
         }
         catch (System.Exception exc)

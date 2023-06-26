@@ -201,12 +201,27 @@ namespace RavenNest.SDK
                 gameStateRequest.PlayerCount = players.Count;
 
                 var r = gameStateRequest.Raid = new RaidState();
-                r.NextRaid = now.AddSeconds(gameManager.Raid.SecondsUntilNextRaid);
+                if (gameManager.Raid.SecondsUntilNextRaid >= 0)
+                {
+                    r.NextRaid = now.AddSeconds(gameManager.Raid.SecondsUntilNextRaid);
+                }
+                else
+                {
+                    r.NextRaid = now;
+                }
 
                 if (gameManager.Raid.Started)
                 {
                     r.IsActive = true;
-                    r.EndTime = now.AddSeconds(gameManager.Raid.SecondsLeft);
+
+                    if (gameManager.Raid.SecondsLeft >= 0)
+                    {
+                        r.EndTime = now.AddSeconds(gameManager.Raid.SecondsLeft);
+                    }
+                    else
+                    {
+                        r.EndTime = now;
+                    }
 
                     var boss = gameManager.Raid.Boss;
                     if (boss && !boss.Enemy.Stats.IsDead)
@@ -222,7 +237,15 @@ namespace RavenNest.SDK
                 var manager = gameManager.Dungeons;
                 var d = gameStateRequest.Dungeon = new DungeonState();
 
-                d.NextDungeon = now.AddSeconds(manager.SecondsUntilStart);
+
+                if (manager.SecondsUntilStart >= 0)
+                {
+                    d.NextDungeon = now.AddSeconds(manager.SecondsUntilStart);
+                }
+                else
+                {
+                    d.NextDungeon = now;
+                }
 
                 if (gameManager.Dungeons.Active)
                 {
@@ -265,22 +288,36 @@ namespace RavenNest.SDK
         {
             var saveRequest = new SaveExperienceRequest();
             saveRequest.SessionToken = this.sessionToken;
-            saveRequest.ExpUpdates = new ExperienceUpdate[players.Count];
+
+            var toSave = new List<ExperienceUpdate>();
 
             for (var i = 0; i < players.Count; i++)
             {
-                var update = saveRequest.ExpUpdates[i] = new Models.TcpApi.ExperienceUpdate();
-                var player = players[i];
-                update.CharacterId = player.Id;
-                if (saveAllSkills)
+                var playerName = "";
+                try
                 {
-                    update.Skills = GetSkillUpdate(player);
+                    var update = new Models.TcpApi.ExperienceUpdate();
+                    var player = players[i];
+                    playerName = player.Name;
+                    update.CharacterId = player.Id;
+                    if (saveAllSkills)
+                    {
+                        update.Skills = GetSkillUpdate(player);
+                    }
+                    else
+                    {
+                        update.Skills = GetActiveTrainingSkillUpdate(player);
+                    }
+                    toSave.Add(update);
                 }
-                else
+                catch (Exception exc)
                 {
-                    update.Skills = GetActiveTrainingSkillUpdate(player);
+                    Shinobytes.Debug.LogError("Failed to save exp for player '" + playerName + "': " + exc);
                 }
             }
+
+            // not fancy as it will allocate. but it will add a better failsafe.
+            saveRequest.ExpUpdates = toSave.ToArray();
 
             var packetData = MessagePackSerializer.Serialize(saveRequest, MessagePack.Resolvers.ContractlessStandardResolver.Options);
             if (packetData != null && packetData.Length > 0)
@@ -303,32 +340,41 @@ namespace RavenNest.SDK
 
             for (var i = 0; i < players.Count; i++)
             {
-                var update = new Models.TcpApi.CharacterStateUpdate();
                 var player = players[i];
+                var playerName = player.Name;
+                var update = new Models.TcpApi.CharacterStateUpdate();
 
-                (Island island, UnityEngine.Vector3 position) = GetPosition(player);
-                (CharacterState state, string stateData) = GetState(player);
-
-                update.CharacterId = player.Id;
-
-                var skill = player.GetActiveSkillStat();
-
-                update.TrainingSkillIndex = skill != null ? skill.Index : -1; ;
-                update.ExpPerHour = skill != null ? (long)skill.GetExperiencePerHour() : 0L;
-                update.EstimatedTimeForLevelUp = GetEstimatedTimeForLevelUp(update.ExpPerHour, skill.Level, skill.Experience);
-                update.Health = (short)player.Stats.Health.CurrentValue;
-                update.Island = island;
-                update.State = state;
-                update.X = (short)position.x;
-                update.Y = (short)position.y;
-                update.Z = (short)position.z;
-                update.Destination = player.Ferry.Destination?.Island ?? Island.Ferry;
-
-                if (player.LastSavedState == null || RequiresUpdate(update, player.LastSavedState, player.LastSavedStateTime))
+                try
                 {
-                    states.Add(update);
-                    player.LastSavedStateTime = DateTime.UtcNow;
-                    player.LastSavedState = update;
+                    (Island island, UnityEngine.Vector3 position) = GetPosition(player);
+                    (CharacterState state, string stateData) = GetState(player);
+
+                    update.CharacterId = player.Id;
+
+                    var skill = player.GetActiveSkillStat();
+                    var isTraining = skill != null;
+
+                    update.TrainingSkillIndex = isTraining ? skill.Index : -1;
+                    update.ExpPerHour = isTraining ? (long)skill.GetExperiencePerHour() : 0L;
+                    update.EstimatedTimeForLevelUp = isTraining ? skill.GetEstimatedTimeToLevelUp() : DateTime.MaxValue;//GetEstimatedTimeForLevelUp(update.ExpPerHour, skill.Level, skill.Experience) : DateTime.MaxValue;
+                    update.Health = (short)player.Stats.Health.CurrentValue;
+                    update.Island = island;
+                    update.State = state;
+                    update.X = (short)position.x;
+                    update.Y = (short)position.y;
+                    update.Z = (short)position.z;
+                    update.Destination = player.Ferry.Destination?.Island ?? Island.Ferry;
+
+                    if (player.LastSavedState == null || RequiresUpdate(update, player.LastSavedState, player.LastSavedStateTime))
+                    {
+                        player.LastSavedStateTime = DateTime.UtcNow;
+                        player.LastSavedState = update;
+                        states.Add(update);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    Shinobytes.Debug.LogError("Could not save player state for '" + playerName + "': " + exc);
                 }
             }
 
@@ -352,10 +398,26 @@ namespace RavenNest.SDK
         private DateTime GetEstimatedTimeForLevelUp(long expPerHour, int level, double experience)
         {
             if (expPerHour <= 0 || level >= GameMath.MaxLevel) return DateTime.MaxValue;
+            var now = DateTime.UtcNow;
+
             var nextLevel = GameMath.ExperienceForLevel(level + 1);
             var expLeft = nextLevel - experience;
             var hoursLeft = expLeft / expPerHour;
-            return DateTime.UtcNow.AddHours(hoursLeft);
+
+            if (hoursLeft <= 0)
+            {
+                return now;
+            }
+
+            try
+            {
+                // this will throw an exception if we go past max.
+                return DateTime.UtcNow.AddHours(hoursLeft);
+            }
+            catch
+            {
+                return DateTime.MaxValue;
+            }
         }
 
         private bool RequiresUpdate(Models.TcpApi.CharacterStateUpdate a, Models.TcpApi.CharacterStateUpdate b, DateTime lastSavedStateTime)
@@ -610,30 +672,36 @@ namespace RavenNest.SDK
             var island = player.Island?.Island ?? Island.Ferry;
             var pos = player.transform.position;
 
-            if (player.Ferry.OnFerry)
+            try
             {
-                island = Island.Ferry;
-                return (island, pos);
-            }
-
-            if (player.Raid.InRaid)
-            {
-                pos = player.Raid.PreviousPosition;
-                if (player.Raid.PreviousIsland != null)
+                if (player.Ferry.OnFerry)
                 {
-                    island = player.Raid.PreviousIsland?.Island ?? Island.Ferry;
+                    island = Island.Ferry;
+                    return (island, pos);
+                }
+
+                if (player.Raid.InRaid)
+                {
+                    pos = player.Raid.PreviousPosition;
+                    if (player.Raid.PreviousIsland != null)
+                    {
+                        island = player.Raid.PreviousIsland?.Island ?? Island.Ferry;
+                    }
+                }
+
+                if (player.Dungeon.InDungeon)
+                {
+                    pos = player.Dungeon.PreviousPosition;
+                    if (player.Dungeon.PreviousIsland != null)
+                    {
+                        island = player.Dungeon.PreviousIsland?.Island ?? Island.Ferry;
+                    }
                 }
             }
-
-            if (player.Dungeon.InDungeon)
+            catch (Exception exc)
             {
-                pos = player.Dungeon.PreviousPosition;
-                if (player.Dungeon.PreviousIsland != null)
-                {
-                    island = player.Dungeon.PreviousIsland?.Island ?? Island.Ferry;
-                }
+                Shinobytes.Debug.LogError("Unable to determine player position, player name: " + player?.Name + ", error: " + exc);
             }
-
             return (island, pos);
         }
 
@@ -642,42 +710,49 @@ namespace RavenNest.SDK
             string stateData = null;
             var state = CharacterState.None;
 
-            if (player.Ferry.OnFerry)
+            try
             {
-                return (CharacterState.None, null);
-            }
+                if (player.Ferry.OnFerry)
+                {
+                    return (CharacterState.None, null);
+                }
 
-            if (player.Raid.InRaid)
-            {
-                state = CharacterState.Raid;
+                if (player.Raid.InRaid)
+                {
+                    state = CharacterState.Raid;
+                }
+                else if (player.Dungeon.InDungeon)
+                {
+                    state = CharacterState.Dungeon;
+                    stateData = player.GameManager.Dungeons.Dungeon.Name;
+                }
+                else if (player.Dungeon.Joined)
+                {
+                    state = CharacterState.JoinedDungeon;
+                    stateData = player.GameManager.Dungeons.Dungeon.Name;
+                }
+                else if (player.Duel.InDuel)
+                {
+                    state = CharacterState.Duel;
+                    stateData = player.Duel.Opponent?.Id.ToString();
+                }
+                else if (player.StreamRaid.InWar)
+                {
+                    state = CharacterState.StreamRaidWar;
+                    stateData = player.GameManager.StreamRaid.Raider?.RaiderUserId.ToString();
+                }
+                else if (player.Arena.InArena)
+                {
+                    state = CharacterState.Arena;
+                }
+                else if (player.Onsen.InOnsen && !player.InCombat)
+                {
+                    state = CharacterState.Onsen;
+                }
             }
-            else if (player.Dungeon.InDungeon)
+            catch (Exception exc)
             {
-                state = CharacterState.Dungeon;
-                stateData = player.GameManager.Dungeons.Dungeon.Name;
-            }
-            else if (player.Dungeon.Joined)
-            {
-                state = CharacterState.JoinedDungeon;
-                stateData = player.GameManager.Dungeons.Dungeon.Name;
-            }
-            else if (player.Duel.InDuel)
-            {
-                state = CharacterState.Duel;
-                stateData = player.Duel.Opponent?.Id.ToString();
-            }
-            else if (player.StreamRaid.InWar)
-            {
-                state = CharacterState.StreamRaidWar;
-                stateData = player.GameManager.StreamRaid.Raider?.RaiderUserId.ToString();
-            }
-            else if (player.Arena.InArena)
-            {
-                state = CharacterState.Arena;
-            }
-            else if (player.Onsen.InOnsen && !player.InCombat)
-            {
-                state = CharacterState.Onsen;
+                Shinobytes.Debug.LogError("Unable to determine player state, player name: " + player?.Name + ", error: " + exc);
             }
 
             return (state, stateData);

@@ -154,7 +154,10 @@ public class PlayerController : MonoBehaviour, IAttackable
         get => attackTarget ?? (taskTarget as IAttackable)?.Transform ?? (taskTarget as Transform) ?? (taskTarget as MonoBehaviour)?.transform;
         private set => attackTarget = value;
     }
-
+    public IAttackable CombatTarget
+    {
+        get => (attackTarget as IAttackable) ?? (taskTarget as IAttackable);
+    }
     public CharacterRestedState Rested { get; private set; } = new CharacterRestedState();
     public RavenNest.Models.Player Definition { get; private set; }
 
@@ -973,7 +976,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         var skillStat = GetActiveSkillStat();
         if (skillStat != null)
-            skillStat.ResetExpPerHour();
+            skillStat.ResetExperiencePerHour();
     }
 
     internal void UpdateTrainingFlags()
@@ -1468,6 +1471,17 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void ClearTask()
     {
+        // if we are fighting, we have to stop fighting.
+        var combatTarget = CombatTarget;
+        if (combatTarget != null)
+        {
+            var enemy = combatTarget as EnemyController;
+            if (enemy)
+            {
+                enemy.RemoveAttacker(this);
+            }
+        }
+
         currentTask = TaskType.None;
         CurrentTaskName = null;
 
@@ -2379,6 +2393,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     internal SkillStat GetActiveSkillStat()
     {
+        if (string.IsNullOrEmpty(taskArgument)) return null;
         var skill = ActiveSkill;//GetActiveSkill();
         if (skill == Skill.None) return null;
         return Stats[skill];

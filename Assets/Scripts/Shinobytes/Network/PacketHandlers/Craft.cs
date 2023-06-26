@@ -64,29 +64,14 @@ public class Craft : ChatBotCommandHandler<string>
 
             item = Game.Crafting.GetCraftableItemForPlayer(player, category, type);
 
-            if (typeStr == null && category == ItemCategory.Potion)
-            {
-                if (item != null)
-                {
-                    client.SendReply(gm, Localization.MSG_CRAFT_ITEM_NOT_FOUND_MEAN, inputQuery, item.Name);
-                    return;
-                }
-
-                client.SendReply(gm, Localization.MSG_CRAFT_ITEM_NOT_FOUND, inputQuery);
-                return;
-            }
-
-            if (item == null)
-            {
-                client.SendReply(gm, Localization.MSG_CRAFT_FAILED, category, type);
-                return;
-            }
-
-            if (category != ItemCategory.Armor && category != ItemCategory.Weapon)
+            if (item != null)
             {
                 client.SendReply(gm, Localization.MSG_CRAFT_ITEM_NOT_FOUND_MEAN, inputQuery, item.Name);
-                return; // don't actually craft atm
+                return;
             }
+
+            client.SendReply(gm, Localization.MSG_CRAFT_ITEM_NOT_FOUND, inputQuery);
+            return;
         }
 
         var toCraft = amountToCraft > int.MaxValue ? int.MaxValue : (int)amountToCraft;

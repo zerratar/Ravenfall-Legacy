@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
@@ -15,14 +16,12 @@ public class SkillStat
 
     public int Index;
 
-    private float refreshRate = 10f;
-    private double totalEarnedExperience;
-    private float earnedExperienceStart;
-    private float lastExperienceGain;
+    private List<ExpGain> expGains = new List<ExpGain>();
+    private float windowDuration = 300;//3600; // 1 hour
 
     public SkillStat() { }
 
-    public SkillStat(float level) 
+    public SkillStat(float level)
         : this(Mathf.CeilToInt(level))
     {
     }
@@ -104,23 +103,8 @@ public class SkillStat
         AddExp(exp, out _);
     }
 
-    internal void ResetExpPerHour()
-    {
-        lastExperienceGain = 0;
-    }
-
     public bool AddExp(double exp, out int newLevels)
     {
-        var now = UnityEngine.Time.realtimeSinceStartup;
-        if (earnedExperienceStart == 0 || now - lastExperienceGain/*earnedExperienceStart */>= refreshRate)
-        {
-            earnedExperienceStart = now;
-            totalEarnedExperience = 0d;
-        }
-
-        lastExperienceGain = now;
-        totalEarnedExperience += exp;
-
         newLevels = 0;
         Experience += exp;
 
@@ -141,16 +125,70 @@ public class SkillStat
             if (Experience >= maxExp)
                 Experience = maxExp;
         }
+
         MaxLevel = Mathf.FloorToInt(Level + Bonus);
+
+        expGains.Add(new ExpGain { Exp = exp, Time = UnityEngine.Time.realtimeSinceStartup });
+
+        var windowStart = UnityEngine.Time.realtimeSinceStartup - windowDuration;
+        while (expGains.Count > 0 && (expGains.Count > 30 || expGains[0].Time < windowStart))
+        {
+            expGains.RemoveAt(0);
+        }
+
         return newLevels > 0;
+    }
+    public void ResetExperiencePerHour()
+    {
+        expGains.Clear();
     }
 
     public double GetExperiencePerHour()
     {
-        var durationSeconds = lastExperienceGain - earnedExperienceStart;
-        if (totalEarnedExperience <= 0 || durationSeconds <= 0) return 0d;
-        var gainPerSecond = totalEarnedExperience / System.Math.Max(durationSeconds, 3);
-        return gainPerSecond * 60d * 60d;
+        var now = UnityEngine.Time.realtimeSinceStartup;
+        var expSum = 0d;
+        var windowStart = now - windowDuration;
+        var minExpPerHour = 0d;
+
+        if (expGains.Count >= 2)
+        {
+            var latestExp = expGains[expGains.Count - 1].Exp;
+            var previousExp = expGains[expGains.Count - 2].Exp;
+            var averageExp = (latestExp + previousExp) / 2d;
+            var timeDifference = expGains[expGains.Count - 1].Time - expGains[expGains.Count - 2].Time;
+
+            var expPerSecond = averageExp / timeDifference;
+            minExpPerHour = expPerSecond * 3600d;
+        }
+
+        for (int i = expGains.Count - 1; i >= 0; i--)
+        {
+            if (expGains[i].Time < windowStart)
+                break;
+
+            expSum += expGains[i].Exp;
+        }
+
+        var gainPerSecond = expSum / windowDuration;
+        return Math.Max(gainPerSecond * 3600d, minExpPerHour);
+    }
+
+    public DateTime GetEstimatedTimeToLevelUp()
+    {
+        var expPerHour = GetExperiencePerHour();
+        if (expPerHour <= 0 || this.Level >= GameMath.MaxLevel) return DateTime.MaxValue;
+        var expForNextLevel = GameMath.ExperienceForLevel(this.Level + 1) - Experience;
+        var now = DateTime.UtcNow;
+        var hoursLeft = expForNextLevel / expPerHour;
+        if (hoursLeft <= 0) return now;
+        try
+        {
+            return now.AddHours(hoursLeft);
+        }
+        catch
+        {
+            return DateTime.MaxValue;
+        }
     }
 
     public void Reset()
@@ -184,4 +222,9 @@ public class SkillStat
         return HashCode.Combine(Name, CurrentValue, Level, Experience);
     }
 
+    private struct ExpGain
+    {
+        public double Exp;
+        public float Time;
+    }
 }

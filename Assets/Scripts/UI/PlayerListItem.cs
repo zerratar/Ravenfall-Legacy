@@ -305,6 +305,10 @@ public class PlayerListItem : MonoBehaviour
             skillIndex = (int)activeSkill;
             isRotatingSkill = activeSkill == Skill.Health;
             isCombatSkill = activeSkill.IsCombatSkill();
+        } else
+        {
+            skillIndex = -1;
+            isCombatSkill = false;
         }
 
         UpdateLabels();

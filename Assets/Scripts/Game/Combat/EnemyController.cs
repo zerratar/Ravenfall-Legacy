@@ -718,6 +718,20 @@ public class EnemyController : MonoBehaviour, IAttackable
         movement.SetPosition(position);
     }
 
+    public void RemoveAttacker(PlayerController player)
+    {
+        if (AttackerNames.Remove(player.PlayerName))
+        {
+            Attackers.Remove(player);
+
+            if (Attackers.Count == 0 || TargetPlayer == player)
+            {
+                TargetPlayer = null;
+                Target = null;
+            }
+        }
+    }
+
     public void AddAttacker(PlayerController player)
     {
         if (AttackerNames.Add(player.PlayerName))
