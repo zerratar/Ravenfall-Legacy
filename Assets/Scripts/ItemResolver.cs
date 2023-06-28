@@ -348,6 +348,15 @@ public class ItemResolver : IItemResolver
         }
     }
 
+    private static readonly Dictionary<string, double> amountLookup = new Dictionary<string, double>
+    {
+        { "k", 1_000 },
+        { "m", 1_000_000 },
+        { "g", 1_000_000_000 },
+        { "b", 1_000_000_000 },
+        { "t", 1_000_000_000_000 },
+    };
+
     private static bool TryParseAmount(Token token, out long amount)
     {
         if (long.TryParse(token.Value, out amount))
@@ -355,19 +364,14 @@ public class ItemResolver : IItemResolver
             return true;
         }
 
-        var values = new Dictionary<string, decimal>
-            {
-                { "k", 1000 },
-                { "m", 1000_000 },
-                { "b", 1000_000_000 },
-            };
+        var values = amountLookup;
 
         if (token.Value.StartsWith("x", StringComparison.OrdinalIgnoreCase))
         {
             var lastChar = token.Value[token.Value.Length - 1];
             if (values.TryGetValue(char.ToLower(lastChar).ToString(), out var m))
             {
-                if (decimal.TryParse(token.Value.Remove(token.Value.Length - 1).Substring(1), NumberStyles.Any, new NumberFormatInfo(), out var p))
+                if (double.TryParse(token.Value.Remove(token.Value.Length - 1).Substring(1), NumberStyles.Any, new NumberFormatInfo(), out var p))
                 {
                     amount = (long)(p * m);
                     return true;

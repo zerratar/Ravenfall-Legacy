@@ -225,11 +225,6 @@ public class DungeonHandler : MonoBehaviour
             player.Teleporter.Teleport(previousPosition);
         }
 
-        if (wasResting)
-        {
-            player.GameManager.Onsen.Join(player);
-            ReturnedToOnsen = true;
-        }
 
         player.taskTarget = null;
         player.attackTarget = null;
@@ -243,6 +238,12 @@ public class DungeonHandler : MonoBehaviour
         if (!Ferry.OnFerry && currentTask != TaskType.None)
         {
             player.GotoClosest(currentTask);
+        }
+
+        if (wasResting)
+        {
+            player.GameManager.Onsen.Join(player);
+            ReturnedToOnsen = true;
         }
 
         wasResting = false;

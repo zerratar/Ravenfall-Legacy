@@ -17,7 +17,7 @@ public class SkillStat
     public int Index;
 
     private List<ExpGain> expGains = new List<ExpGain>();
-    private float windowDuration = 300;//3600; // 1 hour
+    private float windowDuration = 180;//3600; // 1 hour
 
     public SkillStat() { }
 
@@ -145,32 +145,26 @@ public class SkillStat
 
     public double GetExperiencePerHour()
     {
-        var now = UnityEngine.Time.realtimeSinceStartup;
-        var expSum = 0d;
-        var windowStart = now - windowDuration;
-        var minExpPerHour = 0d;
-
-        if (expGains.Count >= 2)
+        try
         {
-            var latestExp = expGains[expGains.Count - 1].Exp;
-            var previousExp = expGains[expGains.Count - 2].Exp;
-            var averageExp = (latestExp + previousExp) / 2d;
-            var timeDifference = expGains[expGains.Count - 1].Time - expGains[expGains.Count - 2].Time;
+            var now = UnityEngine.Time.realtimeSinceStartup;
+            var expSum = 0d;
+            var windowStart = now - windowDuration;
+            for (int i = expGains.Count - 1; i >= 0; i--)
+            {
+                if (expGains[i].Time < windowStart)
+                    break;
 
-            var expPerSecond = averageExp / timeDifference;
-            minExpPerHour = expPerSecond * 3600d;
+                expSum += expGains[i].Exp;
+            }
+
+            var gainPerSecond = expSum / windowDuration;
+            return gainPerSecond * 3600d;
         }
-
-        for (int i = expGains.Count - 1; i >= 0; i--)
+        catch
         {
-            if (expGains[i].Time < windowStart)
-                break;
-
-            expSum += expGains[i].Exp;
+            return double.MaxValue;
         }
-
-        var gainPerSecond = expSum / windowDuration;
-        return Math.Max(gainPerSecond * 3600d, minExpPerHour);
     }
 
     public DateTime GetEstimatedTimeToLevelUp()
@@ -183,7 +177,7 @@ public class SkillStat
         if (hoursLeft <= 0) return now;
         try
         {
-            return now.AddHours(hoursLeft);
+            return now.AddHours((double)hoursLeft);
         }
         catch
         {

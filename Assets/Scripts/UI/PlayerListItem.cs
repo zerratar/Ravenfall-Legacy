@@ -197,7 +197,10 @@ public class PlayerListItem : MonoBehaviour
             switch (ExpProgressHelpState)
             {
                 case ExpProgressHelpStates.ExpLeft:
-                    SetText(lblExpPerHour, FormatValue((long)expLeft) + " xp");
+                    {
+                        var val = expLeft < 1_000_000 ? Utility.FormatValue((long)expLeft) : Utility.FormatExp(expLeft);
+                        SetText(lblExpPerHour, val + " XP");
+                    }
                     break;
 
                 case ExpProgressHelpStates.TimeLeft:
@@ -210,13 +213,17 @@ public class PlayerListItem : MonoBehaviour
                     break;
 
                 case ExpProgressHelpStates.ExpPerHour:
-                    if (expPerHour <= 0) return;
-                    SetText(lblExpPerHour, Utility.FormatValue(expPerHour) + " xp / h");
+                    {
+                        if (expPerHour <= 0) return;
+                        var val = expPerHour < 1_000_000 ? Utility.FormatValue((long)expPerHour) : Utility.FormatExp(expPerHour);
+                        SetText(lblExpPerHour, val + " XP/H");
+                    }
                     break;
             }
             ExpPerHourUpdate = now;
         }
     }
+
     private void UpdateHealthBar(SkillStat skill)
     {
         var now = skill.CurrentValue;
@@ -228,14 +235,7 @@ public class PlayerListItem : MonoBehaviour
             oldHealthLevel = skill.Level;
         }
     }
-    private static string FormatValue(long num)
-    {
-        var str = num.ToString();
-        if (str.Length <= 3) return str;
-        for (var i = str.Length - 3; i >= 0; i -= 3)
-            str = str.Insert(i, " ");
-        return str;
-    }
+
 
     public void UpdatePlayerInfo(PlayerController player, GameCamera gameCamera)
     {
@@ -305,7 +305,8 @@ public class PlayerListItem : MonoBehaviour
             skillIndex = (int)activeSkill;
             isRotatingSkill = activeSkill == Skill.Health;
             isCombatSkill = activeSkill.IsCombatSkill();
-        } else
+        }
+        else
         {
             skillIndex = -1;
             isCombatSkill = false;

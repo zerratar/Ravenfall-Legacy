@@ -354,8 +354,24 @@ namespace RavenNest.SDK
                     var skill = player.GetActiveSkillStat();
                     var isTraining = skill != null;
 
+                    var expPerHour = 0L;
+
+                    // temporary work-around for overflowing exp per hour.
+                    if (isTraining)
+                    {
+                        var v = skill.GetExperiencePerHour();
+                        if (v > long.MaxValue)
+                        {
+                            expPerHour = long.MaxValue;
+                        }
+                        else
+                        {
+                            expPerHour = (long)v;
+                        }
+                    }
+
                     update.TrainingSkillIndex = isTraining ? skill.Index : -1;
-                    update.ExpPerHour = isTraining ? (long)skill.GetExperiencePerHour() : 0L;
+                    update.ExpPerHour = isTraining ? expPerHour : 0L;
                     update.EstimatedTimeForLevelUp = isTraining ? skill.GetEstimatedTimeToLevelUp() : DateTime.MaxValue;//GetEstimatedTimeForLevelUp(update.ExpPerHour, skill.Level, skill.Experience) : DateTime.MaxValue;
                     update.Health = (short)player.Stats.Health.CurrentValue;
                     update.Island = island;
@@ -364,7 +380,7 @@ namespace RavenNest.SDK
                     update.Y = (short)position.y;
                     update.Z = (short)position.z;
                     update.Destination = player.Ferry.Destination?.Island ?? Island.Ferry;
-
+                    update.IsCaptain = player.Ferry.IsCaptain;
                     if (player.LastSavedState == null || RequiresUpdate(update, player.LastSavedState, player.LastSavedStateTime))
                     {
                         player.LastSavedStateTime = DateTime.UtcNow;

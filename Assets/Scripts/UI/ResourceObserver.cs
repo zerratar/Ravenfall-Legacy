@@ -22,7 +22,7 @@ public class ResourceObserver : MonoBehaviour
         }
 
         var value = observedResource().GetValueOrDefault();
-        var formattedValue = Utility.FormatValue(value);
+        var formattedValue = Utility.FormatAmount(value);
 
         label.text = formattedValue;
     }

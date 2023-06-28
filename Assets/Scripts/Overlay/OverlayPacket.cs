@@ -1,4 +1,6 @@
-﻿public class OverlayPacket
+﻿using System;
+
+public class OverlayPacket
 {
     public string Name { get; private set; }
     public string Data { get; private set; }
@@ -40,5 +42,22 @@
             return default(T);
 
         return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(Data);
+    }
+
+    internal static bool TryCreate(OverlayPlayer data, out OverlayPacket packet)
+    {
+        packet = null;
+
+        try
+        {
+            packet = new OverlayPacket(data);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Shinobytes.Debug.LogError(e);
+        }
+
+        return false;
     }
 }

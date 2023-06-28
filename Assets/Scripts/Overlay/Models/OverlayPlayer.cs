@@ -53,7 +53,7 @@ public class OverlayPlayer
         player.ClanRole = source.Clan.Role;
         player.IsAdmin = source.IsGameAdmin;
         player.IsModerator = source.IsGameModerator;
-
+        player.Connections = source.Definition.Connections ?? new List<AuthServiceConnection>();
         player.Appearance = GetAppearance(source.Appearance);
         player.State = GetState(source);
         player.Skills = GetSkills(source);

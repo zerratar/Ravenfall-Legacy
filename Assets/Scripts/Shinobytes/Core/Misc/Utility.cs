@@ -5,7 +5,10 @@ using System.Text;
 
 public static class Utility
 {
-  
+    private readonly static char[] DescriberCharacters = new[] { 'a', 'i', 'o', 'u', 'e' };
+    private readonly static string[] ExpValuePostfix = new string[] {" ", "k", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q" };
+    private readonly static string[] AmountPostFix = new string[] {"", "K", "M", "B", "T", "Q" };
+
     public static string AddSpacesToSentence(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -128,37 +131,45 @@ public static class Utility
         {
             return null;
         }
-        return new[] { 'a', 'i', 'o', 'u', 'e' }.Contains(Char.ToLower(name[0])) ? "an" : "a";
+        return DescriberCharacters.Contains(Char.ToLower(name[0])) ? "an" : "a";
     }
-    public static string FormatValue(double value)
+
+    public static string FormatAmount(double value)
     {
-        if (value >= 1_000_000_000_000_000)
+        return FormatValue(value, AmountPostFix, "");
+    }
+
+    public static string FormatExp(double value)
+    {
+        return FormatValue(value, ExpValuePostfix);
+    }
+
+    public static string FormatValue(double value, string[] postfix, string secondary = "Q")
+    {
+        var thousands = 0;
+        while (value > 1000)
         {
-            var quadrillion = value / 1_000_000_000_000_000.0d;
-            return Math.Round(quadrillion, 1).ToString(CultureInfo.InvariantCulture) + "Q";
-        }
-        if (value >= 1_000_000_000_000)
-        {
-            var trillion = value / 1_000_000_000_000.0d;
-            return Math.Round(trillion, 1).ToString(CultureInfo.InvariantCulture) + "T";
-        }
-        if (value >= 1_000_000_000)
-        {
-            var billion = value / 1_000_000_000.0d;
-            return Math.Round(billion, 1).ToString(CultureInfo.InvariantCulture) + "B";
-        }
-        else if (value >= 1_000_000)
-        {
-            var mils = value / 1_000_000.0d;
-            return Math.Round(mils, 1).ToString(CultureInfo.InvariantCulture) + "M";
-        }
-        else if (value > 1000)
-        {
-            var ks = value / 1000;
-            return Math.Round(ks, 1).ToString(CultureInfo.InvariantCulture) + "K";
+            value = (value / 1000);
+            thousands++;
         }
 
-        return ((long)Math.Round(value, 0)).ToString(CultureInfo.InvariantCulture);
+        if (thousands == 0)
+        {
+            return ((long)Math.Round(value, 1)).ToString(CultureInfo.InvariantCulture);
+        }        
+        var pLen = postfix.Length - 1;
+        var p0 = ((thousands - 1) % pLen) + 1;
+        var q = thousands >= pLen ? secondary : "";
+        return Math.Round(value, 1).ToString(CultureInfo.InvariantCulture) + postfix[0] + postfix[p0] + q;
+    }
+
+    public static string FormatValue(long num)
+    {
+        var str = num.ToString();
+        if (str.Length <= 3) return str;
+        for (var i = str.Length - 3; i >= 0; i -= 3)
+            str = str.Insert(i, " ");
+        return str;
     }
 
     public static T Random<T>()

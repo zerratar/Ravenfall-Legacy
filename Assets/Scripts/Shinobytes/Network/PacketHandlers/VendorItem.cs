@@ -52,7 +52,7 @@
             client.SendReply(gm, Localization.MSG_VENDOR_ITEM,
                 vendorCount,
                 item.Item.Name,
-                Utility.FormatValue(item.Item.ShopSellPrice * vendorCount));
+                Utility.FormatAmount(item.Item.ShopSellPrice * vendorCount));
         }
         else
         {

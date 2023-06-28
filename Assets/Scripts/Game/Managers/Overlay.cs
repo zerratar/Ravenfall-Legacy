@@ -117,7 +117,11 @@ public class Overlay : MonoBehaviour
         }
 
         var data = new OverlayPlayer(player);
-        server.Send(new OverlayPacket(data));
+        if (OverlayPacket.TryCreate(data, out var packet))
+        {
+            server.Send(packet);
+        }
+        
     }
     #endregion
 

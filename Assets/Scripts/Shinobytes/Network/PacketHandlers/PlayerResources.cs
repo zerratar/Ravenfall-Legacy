@@ -20,10 +20,10 @@
         var res = player.Resources;
 
         client.SendReply(gm, Localization.MSG_RESOURCES,
-            Utility.FormatValue(res.Wood),
-            Utility.FormatValue(res.Ore),
-            Utility.FormatValue(res.Fish),
-            Utility.FormatValue(res.Wheat),
-            Utility.FormatValue(res.Coins));
+            Utility.FormatAmount(res.Wood),
+            Utility.FormatAmount(res.Ore),
+            Utility.FormatAmount(res.Fish),
+            Utility.FormatAmount(res.Wheat),
+            Utility.FormatAmount(res.Coins));
     }
 }

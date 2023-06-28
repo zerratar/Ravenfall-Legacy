@@ -95,7 +95,7 @@ public class SellItem : ChatBotCommandHandler<string>
                     client.SendReply(gm, Localization.MSG_SELL,
                         item.Count.ToString(),
                         item.Item.Name,
-                        Utility.FormatValue(item.Price));
+                        Utility.FormatExp(item.Price));
                     break;
             }
         }

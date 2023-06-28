@@ -40,12 +40,10 @@ public class PlayerStats : ChatBotCommandHandler<string>
             if (skill != null)
             {
                 var expRequired = GameMath.ExperienceForLevel(skill.Level + 1);
-                var expReq = (long)expRequired;
-                var curExp = (long)skill.Experience;
+                var expReq = Utility.FormatExp(expRequired);
+                var curExp = Utility.FormatExp(skill.Experience);
                 client.SendReply(gm, Localization.MSG_SKILL,
-                    skill.ToString(),
-                    FormatValue(curExp),
-                    FormatValue(expReq));
+                    skill.ToString(), curExp, expReq);
             }
             return;
         }
@@ -89,8 +87,8 @@ public class PlayerStats : ChatBotCommandHandler<string>
     private static PlayerInspect Inspect(PlayerController player, SkillStat[] stats)
     {
         var s = player.ActiveSkill;
-        double expLeft = 0;
-        double expPerHour = 0;
+        var expLeft = 0d;
+        var expPerHour = 0d;
         DateTime nextLevel = DateTime.MaxValue;
 
         if (s != Skill.None)
@@ -100,9 +98,9 @@ public class PlayerStats : ChatBotCommandHandler<string>
             var expPerTick = player.GetExperience(s, f);
             var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
             var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
-            expPerHour = System.Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
+            expPerHour = Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
             expLeft = nextLevelExp - skill.Experience;
-            var hours = (double)(expLeft / expPerHour);
+            var hours = expLeft / expPerHour;
             if (hours < System.TimeSpan.MaxValue.TotalHours)
             {
                 var left = TimeSpan.FromHours(hours);
@@ -123,7 +121,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
             Skills = GetSkills(stats),
             Training = s,
             ExpLeft = expLeft,
-            ExpPerHour = expPerHour,
+            ExpPerHour = (double)expPerHour,
             NextLevelUtc = nextLevel,
             EquipmentStats = player.EquipmentStats ?? new EquipmentStats()
         };

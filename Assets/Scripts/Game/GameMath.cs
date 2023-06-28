@@ -499,6 +499,9 @@ public static class GameMath
                 case Skill.Mining:
                     return 0.5;
 
+                case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 10:
+                    return 0.25;
+
                 case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 100:
                     return 0.75;
 

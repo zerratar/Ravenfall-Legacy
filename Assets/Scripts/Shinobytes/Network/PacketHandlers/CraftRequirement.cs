@@ -50,12 +50,12 @@ public class CraftRequirement : ChatBotCommandHandler<string>
             requiredItemsStr.Append("You need ");
             if (item.WoodCost > 0)
             {
-                requiredItemsStr.Append($"{Utility.FormatValue(player.Resources.Wood)}/{Utility.FormatValue(item.WoodCost)} Wood, ");
+                requiredItemsStr.Append($"{Utility.FormatAmount(player.Resources.Wood)}/{Utility.FormatAmount(item.WoodCost)} Wood, ");
             }
 
             if (item.OreCost > 0)
             {
-                requiredItemsStr.Append($"{Utility.FormatValue(player.Resources.Ore)}/{Utility.FormatValue(item.OreCost)} Ore, ");
+                requiredItemsStr.Append($"{Utility.FormatAmount(player.Resources.Ore)}/{Utility.FormatAmount(item.OreCost)} Ore, ");
             }
 
             foreach (var req in item.CraftingRequirements)
@@ -67,7 +67,7 @@ public class CraftRequirement : ChatBotCommandHandler<string>
                 {
                     ownedNumber = (long)items.Sum(x => x.Amount);
                 }
-                requiredItemsStr.Append($"{Utility.FormatValue(ownedNumber)}/{Utility.FormatValue(req.Amount)} {requiredItem.Name}, ");
+                requiredItemsStr.Append($"{Utility.FormatAmount(ownedNumber)}/{Utility.FormatAmount(req.Amount)} {requiredItem.Name}, ");
             }
             requiredItemsStr.Append($"crafting level {item.RequiredCraftingLevel} ");
             requiredItemsStr.Append("to craft " + item.Name);

@@ -68,7 +68,7 @@ public class BuyItem : ChatBotCommandHandler<string>
                         .OrderBy(x => x)
                         .FirstOrDefault();
 
-                    client.SendReply(gm, Localization.MSG_BUY_ITEM_TOO_LOW, item.Item.Name, Utility.FormatValue(cheapest));
+                    client.SendReply(gm, Localization.MSG_BUY_ITEM_TOO_LOW, item.Item.Name, Utility.FormatAmount(cheapest));
                     break;
 
                 case ItemTradeState.Success:
@@ -82,13 +82,13 @@ public class BuyItem : ChatBotCommandHandler<string>
                     {
                         arg0 = result.TotalAmount.ToString();
                         arg1 = item.Item.Name;
-                        arg2 = Utility.FormatValue(result.TotalCost);
+                        arg2 = Utility.FormatAmount(result.TotalCost);
                         msg = "{totalAmount}x ";
                     }
                     else
                     {
                         arg0 = item.Item.Name;
-                        arg1 = Utility.FormatValue(result.TotalCost);
+                        arg1 = Utility.FormatAmount(result.TotalCost);
                     }
 
                     msg += "{itemName} was bought ";
