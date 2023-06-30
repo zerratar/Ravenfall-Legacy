@@ -97,7 +97,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
             var f = player.GetExpFactor();
             var expPerTick = player.GetExperience(s, f);
             var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
-            var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
+            var nextLevelExp = GameMath.OldExperienceForLevel(skill.Level + 1);
             expPerHour = Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
             expLeft = nextLevelExp - skill.Experience;
             var hours = expLeft / expPerHour;

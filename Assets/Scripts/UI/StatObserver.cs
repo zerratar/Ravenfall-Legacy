@@ -42,8 +42,6 @@ public class StatObserver : MonoBehaviour
                 ? $"<color=#00ff00>{value}</color>/{max}" 
                 : $"<color=#ff0000>{value}</color>/{max}";
 
-
-
         var thisLevelExp = observedStat.Experience;
         var nextLevelExp = GameMath.ExperienceForLevel(nextLevel);
 

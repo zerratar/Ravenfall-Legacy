@@ -8,15 +8,32 @@ public static class GameMath
     public const int MaxVillageLevel = 300;
 
     public readonly static double[] ExperienceArray = new double[MaxLevel];
+
+    [Obsolete]
+    public readonly static double[] OldExperienceArray = new double[MaxLevel];
+
     public const float MaxExpBonusPerSlot = 200f;
 
     static GameMath()
     {
+        var expForLevel = 100d;
+        for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
+        {
+            var level = levelIndex + 1;
+
+            // new
+            var tenth = Math.Truncate(level / 10d) + 1;
+            var incrementor = tenth * 100d + Math.Pow(tenth, 3d);
+            expForLevel += Math.Truncate(incrementor);
+            ExperienceArray[levelIndex] = expForLevel;
+        }
+
+        // Old formula
         for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
         {
             var level = levelIndex + 1M;
-            var expForLevel = Math.Floor(300D * Math.Pow(2D, (double)(level / 7M)));
-            ExperienceArray[levelIndex] = Math.Round(expForLevel / 4d, 0, MidpointRounding.ToEven);
+            expForLevel = Math.Floor(300D * Math.Pow(2D, (double)(level / 7M)));
+            OldExperienceArray[levelIndex] = Math.Round(expForLevel / 4d, 0, MidpointRounding.ToEven);
         }
     }
 
@@ -350,7 +367,6 @@ public static class GameMath
         return (int)(w3 * 0.95d);
     }
 
-
     public static double ExperienceForLevel(int level)
     {
         if (level - 2 >= ExperienceArray.Length)
@@ -359,6 +375,18 @@ public static class GameMath
         }
 
         return (level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
+    }
+
+
+    [Obsolete]
+    public static double OldExperienceForLevel(int level)
+    {
+        if (level - 2 >= OldExperienceArray.Length)
+        {
+            return OldExperienceArray[OldExperienceArray.Length - 1];
+        }
+
+        return (level - 2 < 0 ? 0 : OldExperienceArray[level - 2]);
     }
 
     public static class Exp

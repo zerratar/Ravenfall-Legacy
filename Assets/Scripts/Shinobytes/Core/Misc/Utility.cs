@@ -6,8 +6,8 @@ using System.Text;
 public static class Utility
 {
     private readonly static char[] DescriberCharacters = new[] { 'a', 'i', 'o', 'u', 'e' };
-    private readonly static string[] ExpValuePostfix = new string[] {" ", "k", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q" };
-    private readonly static string[] AmountPostFix = new string[] {"", "K", "M", "B", "T", "Q" };
+    private readonly static string[] ExpValuePostfix = new string[] { " ", "k", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q" };
+    private readonly static string[] AmountPostFix = new string[] { "", "K", "M", "B", "T", "Q" };
 
     public static string AddSpacesToSentence(string text)
     {
@@ -141,7 +141,7 @@ public static class Utility
 
     public static string FormatExp(double value)
     {
-        return FormatValue(value, ExpValuePostfix);
+        return FormatValue(value, AmountPostFix, "");//ExpValuePostfix);
     }
 
     public static string FormatValue(double value, string[] postfix, string secondary = "Q")
@@ -156,7 +156,7 @@ public static class Utility
         if (thousands == 0)
         {
             return ((long)Math.Round(value, 1)).ToString(CultureInfo.InvariantCulture);
-        }        
+        }
         var pLen = postfix.Length - 1;
         var p0 = ((thousands - 1) % pLen) + 1;
         var q = thousands >= pLen ? secondary : "";

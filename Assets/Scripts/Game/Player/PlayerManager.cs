@@ -177,31 +177,26 @@ public class PlayerManager : MonoBehaviour
                     return null;
                 }
                 var player = AddPlayer(addPlayerRequest, playerInfo.Player, isBot);
-                if (player)
+                if (player == null || !player)
                 {
-                    if (userTriggered && !player.IsBot)
-                    {
-                        gameManager.SaveStateFile();
+                    Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player may already be in game.");
+                    return null;
+                }
 
-                        if (playerInfo.IsNewUser)
-                        {
-                            client.SendReply(command, player, Localization.MSG_JOIN_WELCOME_FIRST_TIME, addPlayerRequest.Username);
-                        }
-                        else
-                        {
-                            client.SendReply(command, player, Localization.MSG_JOIN_WELCOME);
-                        }
-                    }
-                    return player;
-                }
-                else
+                if (userTriggered && !player.IsBot)
                 {
-                    if (userTriggered)
+                    gameManager.SaveStateFile();
+
+                    if (playerInfo.IsNewUser)
                     {
-                        client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
+                        client.SendReply(command, player, Localization.MSG_JOIN_WELCOME_FIRST_TIME, addPlayerRequest.Username);
                     }
-                    Shinobytes.Debug.LogError(addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.");
+                    else
+                    {
+                        client.SendReply(command, player, Localization.MSG_JOIN_WELCOME);
+                    }
                 }
+                return player;
             }
             else
             {
@@ -220,28 +215,28 @@ public class PlayerManager : MonoBehaviour
     {
         var Game = gameManager;
         var player = Game.SpawnPlayer(playerInfo, twitchUser, isGameRestore: isGameRestore);
-
-        if (player)
+        if (player == null || !player)
         {
-            player.Movement.Unlock();
-            player.IsBot = isBot;
-            if (player.IsBot)
-            {
-                player.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();
-                player.Bot.playerController = player;
-                if (player.PlatformId != null && !player.PlatformId.StartsWith("#"))
-                {
-                    player.PlatformId = "#" + player.PlatformId;
-                }
-            }
-
-            player.PlayerNameHexColor = twitchUser.Color;
-            LastAddedPlayer = player;
-            // receiver:cmd|arg1|arg2|arg3|
-
-            return player;
+            return null;
         }
-        return null;
+
+        player.Movement.Unlock();
+        player.IsBot = isBot;
+        if (player.IsBot)
+        {
+            player.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();
+            player.Bot.playerController = player;
+            if (player.PlatformId != null && !player.PlatformId.StartsWith("#"))
+            {
+                player.PlatformId = "#" + player.PlatformId;
+            }
+        }
+
+        player.PlayerNameHexColor = twitchUser.Color;
+        LastAddedPlayer = player;
+        // receiver:cmd|arg1|arg2|arg3|
+
+        return player;
     }
 
     public bool Contains(Guid userId)
@@ -554,6 +549,11 @@ public class PlayerManager : MonoBehaviour
                     addPlayerQueue.Enqueue(() =>
                     {
                         var p = AddPlayer(requested.User, playerInfo.Player, false, true);
+                        if (p == null || !p)
+                        {
+                            return null;
+                        }
+
                         p.LastActivityUtc = requested.LastActivityUtc;
                         if (p.LastActivityUtc == DateTime.MinValue)
                         {

@@ -197,7 +197,7 @@ namespace Telepathy
                     //    before .Reset, which would completely ignore it until
                     //    the next Send call.
                     sendPending.Reset(); // WaitOne() blocks until .Set() again
-
+                    
                     // dequeue & serialize all
                     // a locked{} TryDequeueAll is twice as fast as
                     // ConcurrentQueue, see SafeQueue.cs!

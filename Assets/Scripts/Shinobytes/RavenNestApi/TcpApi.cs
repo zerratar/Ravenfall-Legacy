@@ -347,7 +347,7 @@ namespace RavenNest.SDK
                 try
                 {
                     (Island island, UnityEngine.Vector3 position) = GetPosition(player);
-                    (CharacterState state, string stateData) = GetState(player);
+                    (CharacterFlags state, string stateData) = GetFlags(player);
 
                     update.CharacterId = player.Id;
 
@@ -380,7 +380,7 @@ namespace RavenNest.SDK
                     update.Y = (short)position.y;
                     update.Z = (short)position.z;
                     update.Destination = player.Ferry.Destination?.Island ?? Island.Ferry;
-                    update.IsCaptain = player.Ferry.IsCaptain;
+
                     if (player.LastSavedState == null || RequiresUpdate(update, player.LastSavedState, player.LastSavedStateTime))
                     {
                         player.LastSavedStateTime = DateTime.UtcNow;
@@ -579,7 +579,7 @@ namespace RavenNest.SDK
             }
 
             (Island island, UnityEngine.Vector3 position) = GetPosition(player);
-            (CharacterState state, string stateData) = GetState(player);
+            (CharacterFlags state, string stateData) = GetFlags(player);
             var skills = GetSkillsToUpdate(player, updateType == PlayerUpdateType.Modified ? lastUpdated : null);
 
             var update = new CharacterUpdate()
@@ -721,49 +721,58 @@ namespace RavenNest.SDK
             return (island, pos);
         }
 
-        private static (RavenNest.Models.TcpApi.CharacterState, string) GetState(PlayerController player)
+        private static (CharacterFlags, string) GetFlags(PlayerController player)
         {
             string stateData = null;
-            var state = CharacterState.None;
+            var flags = CharacterFlags.None;
 
             try
             {
                 if (player.Ferry.OnFerry)
                 {
-                    return (CharacterState.None, null);
+                    flags |= CharacterFlags.OnFerry;
+
+                    if (player.Ferry.IsCaptain)
+                    {
+                        flags |= CharacterFlags.IsCaptain;
+                    }
+
+                    return (flags, null);
                 }
 
                 if (player.Raid.InRaid)
                 {
-                    state = CharacterState.Raid;
+                    flags |= CharacterFlags.InRaid;
                 }
-                else if (player.Dungeon.InDungeon)
+                if (player.Dungeon.InDungeon)
                 {
-                    state = CharacterState.Dungeon;
+                    flags |= CharacterFlags.InDungeon;
                     stateData = player.GameManager.Dungeons.Dungeon.Name;
                 }
-                else if (player.Dungeon.Joined)
+                if (player.Dungeon.Joined)
                 {
-                    state = CharacterState.JoinedDungeon;
+                    flags |= CharacterFlags.InDungeonQueue;
                     stateData = player.GameManager.Dungeons.Dungeon.Name;
                 }
-                else if (player.Duel.InDuel)
+                if (player.Duel.InDuel)
                 {
-                    state = CharacterState.Duel;
+                    flags |= CharacterFlags.InDuel;
                     stateData = player.Duel.Opponent?.Id.ToString();
                 }
-                else if (player.StreamRaid.InWar)
+                if (player.StreamRaid.InWar)
                 {
-                    state = CharacterState.StreamRaidWar;
+                    flags |= CharacterFlags.InStreamRaidWar;
                     stateData = player.GameManager.StreamRaid.Raider?.RaiderUserId.ToString();
                 }
-                else if (player.Arena.InArena)
+
+                if (player.Arena.InArena)
                 {
-                    state = CharacterState.Arena;
+                    flags |= CharacterFlags.InArena;
                 }
-                else if (player.Onsen.InOnsen && !player.InCombat)
+
+                if (player.Onsen.InOnsen && !player.InCombat)
                 {
-                    state = CharacterState.Onsen;
+                    flags |= CharacterFlags.InOnsen;
                 }
             }
             catch (Exception exc)
@@ -771,7 +780,7 @@ namespace RavenNest.SDK
                 Shinobytes.Debug.LogError("Unable to determine player state, player name: " + player?.Name + ", error: " + exc);
             }
 
-            return (state, stateData);
+            return (flags, stateData);
         }
 
     }
