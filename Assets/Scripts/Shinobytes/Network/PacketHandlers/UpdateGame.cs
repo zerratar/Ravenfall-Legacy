@@ -25,6 +25,6 @@ public class UpdateGame : ChatBotCommandHandler
             }
         }
 
-        Game.SaveStateAndUpdateGame();
+        Game.UpdateGame();
     }
 }

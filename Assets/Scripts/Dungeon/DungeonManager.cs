@@ -643,8 +643,14 @@ public class DungeonManager : MonoBehaviour, IEvent
         var timeLeft = TimeSpan.FromSeconds(dungeonStartTimer);
         var secondsLeft = timeLeft.Seconds;
         var minutesLeft = timeLeft.Minutes;
-
-        gameManager.RavenBot.Announce("{minutes}m{seconds}s until dungeon starts.", minutesLeft.ToString("00"), (object)secondsLeft.ToString("00"));
+        if (minutesLeft > 0)
+        {
+            gameManager.RavenBot.Announce("{minutes}m{seconds}s until dungeon starts.", minutesLeft.ToString("00"), secondsLeft.ToString("00"));
+        }
+        else
+        {
+            gameManager.RavenBot.Announce("{seconds}s until dungeon starts.", secondsLeft.ToString("00"));
+        }
         notificationTimer = notificationUpdate;
     }
 

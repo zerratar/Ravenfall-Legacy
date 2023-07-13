@@ -24,6 +24,7 @@ using JetBrains.Annotations;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
+    [Header("Default Settings")]
     [SerializeField] private GameCamera gameCamera;
     [SerializeField] private RavenBot ravenBot;
 
@@ -60,6 +61,10 @@ public class GameManager : MonoBehaviour, IGameManager
 
     [SerializeField] private GameObject gameReloadUIPanel;
     [SerializeField] private Volume postProcessingEffects;
+
+    [Header("Game Update Banner")]
+    [SerializeField] private GameObject goUpdateAvailable;
+    [SerializeField] private TMPro.TextMeshProUGUI lblUpdateAvailable;
 
     [Header("Graphics Settings")]
     public RenderPipelineAsset URP_LowQuality;
@@ -221,6 +226,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     void Awake()
     {
+        goUpdateAvailable.SetActive(false);
         GameTime.deltaTime = Time.deltaTime;
         //Physics.autoSimulation = false;
         BatchPlayerAddInProgress = false;
@@ -289,6 +295,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         RegisterGameEventHandler<PlayerRestedUpdateEventHandler>(GameEventType.PlayerRestedUpdate);
         RegisterGameEventHandler<ExpMultiplierEventHandler>(GameEventType.ExpMultiplier);
+        RegisterGameEventHandler<GameUpdatedEventHandler>(GameEventType.GameUpdated);
 
         RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
         RegisterGameEventHandler<PlayerAddEventHandler>(GameEventType.PlayerAdd);
@@ -513,9 +520,9 @@ public class GameManager : MonoBehaviour, IGameManager
         Application.Quit();
     }
 
-    public void SaveStateAndUpdateGame(bool activateTempLogin = true)
+    public void UpdateGame()
     {
-        ReloadGame(0);
+        SaveStateAndLoadScene(0);
     }
 
     public void SaveStateFile()
@@ -523,14 +530,7 @@ public class GameManager : MonoBehaviour, IGameManager
         GameCache.SavePlayersState(this.playerManager.GetAllPlayers());
     }
 
-    public void ReloadScene(int sceneIndex = 1)
-    {
-        RavenNest.Dispose();
-        RavenBotController.Dispose();
-        SceneManager.LoadScene(sceneIndex, LoadSceneMode.Single);
-    }
-
-    public void ReloadGame(int sceneIndex = 1)
+    public void SaveStateAndLoadScene(int sceneIndex = 1)
     {
         if (!loginHandler) return;
 
@@ -546,7 +546,14 @@ public class GameManager : MonoBehaviour, IGameManager
 
         gameReloadMessage.SetActive(true);
 
-        ReloadScene(sceneIndex);
+        LoadScene(sceneIndex);
+    }
+
+    public void LoadScene(int sceneIndex = 1)
+    {
+        RavenNest.Dispose();
+        RavenBotController.Dispose();
+        SceneManager.LoadScene(sceneIndex, LoadSceneMode.Single);
     }
 
     private IEnumerator RestoreGameState(GameCacheState state)
@@ -678,7 +685,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (Input.GetKeyDown(KeyCode.F5))
         {
-            ReloadGame();
+            SaveStateAndLoadScene();
             return;
         }
 
@@ -1295,9 +1302,9 @@ public class GameManager : MonoBehaviour, IGameManager
                 return;
             }
 
-//#if UNITY_EDITOR
-//            Shinobytes.Debug.LogWarning("Sending Game State");
-//#endif
+            //#if UNITY_EDITOR
+            //            Shinobytes.Debug.LogWarning("Sending Game State");
+            //#endif
             RavenNest.SendGameState();
         }
         catch (Exception exc)
@@ -1317,9 +1324,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
             var players = playerManager.GetAllRealPlayers();
             if (players.Count == 0) return;
-//#if UNITY_EDITOR
-//            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player Experience: saveAllSkills=" + saveAllSkills);
-//#endif
+            //#if UNITY_EDITOR
+            //            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player Experience: saveAllSkills=" + saveAllSkills);
+            //#endif
             RavenNest.SavePlayerExperience(players, saveAllSkills);
         }
         catch (Exception exc)
@@ -1334,10 +1341,10 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             if (playerManager == null) return;//not loaded yet?
             var players = playerManager.GetAllRealPlayers();
-            if (players==null||players.Count == 0) return;
-//#if UNITY_EDITOR
-//            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player States");
-//#endif
+            if (players == null || players.Count == 0) return;
+            //#if UNITY_EDITOR
+            //            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player States");
+            //#endif
             RavenNest.SavePlayerState(players);
         }
         catch (Exception exc)
@@ -1936,6 +1943,12 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             RavenNestUpdate();
         }
+    }
+
+    internal void OnUpdateAvailable(string newVersion)
+    {
+        goUpdateAvailable.SetActive(true);
+        lblUpdateAvailable.text = "New update available! <color=green>v" + newVersion;
     }
 }
 

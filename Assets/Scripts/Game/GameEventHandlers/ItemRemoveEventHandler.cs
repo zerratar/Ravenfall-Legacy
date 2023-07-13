@@ -20,31 +20,3 @@ public class ItemRemoveEventHandler : GameEventHandler<ItemRemove>
         player.Inventory.RemoveByInventoryId(data.InventoryItemId, data.Amount);
     }
 }
-
-public class ItemEquipEventHandler : GameEventHandler<ItemEquip>
-{
-    public override void Handle(GameManager gameManager, ItemEquip data)
-    {
-        var player = gameManager.Players.GetPlayerById(data.PlayerId);
-        if (!player)
-        {
-            return;
-        }
-
-        player.Inventory.Equip(data.InventoryItemId);
-    }
-}
-
-public class ItemUnequipEventHandler : GameEventHandler<ItemEquip>
-{
-    public override void Handle(GameManager gameManager, ItemEquip data)
-    {
-        var player = gameManager.Players.GetPlayerById(data.PlayerId);
-        if (!player)
-        {
-            return;
-        }
-
-        player.Inventory.Unequip(data.InventoryItemId);
-    }
-}

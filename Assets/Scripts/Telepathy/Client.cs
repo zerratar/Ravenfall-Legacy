@@ -298,7 +298,7 @@ namespace Telepathy
                 Log.Error("Client.Send: message too big: " + message.Count + ". Limit: " + MaxMessageSize);
                 return false;
             }
-            Log.Warning("Client.Send: not connected!");
+            //Log.Warning("Client.Send: not connected!");
             return false;
         }
 

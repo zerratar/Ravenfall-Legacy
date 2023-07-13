@@ -215,7 +215,7 @@ public class PlayerListItem : MonoBehaviour
                 case ExpProgressHelpStates.ExpPerHour:
                     {
                         if (expPerHour <= 0) return;
-                        var val = expPerHour < 1_000_000 ? Utility.FormatValue((long)expPerHour) : Utility.FormatExp(expPerHour);
+                        var val = expPerHour < 100_000 ? Utility.FormatValue((long)expPerHour) : Utility.FormatExp(expPerHour);
                         SetText(lblExpPerHour, val + " XP/H");
                     }
                     break;

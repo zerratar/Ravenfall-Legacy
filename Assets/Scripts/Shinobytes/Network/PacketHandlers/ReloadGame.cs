@@ -25,6 +25,6 @@ public class ReloadGame : ChatBotCommandHandler
             }
         }
 
-        Game.ReloadGame();
+        Game.SaveStateAndLoadScene();
     }
 }

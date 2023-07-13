@@ -11,8 +11,8 @@ public class HUDController : MonoBehaviour
 
     private void Awake()
     {
-        GameUICanvas.worldCamera = Camera.main;
-        GameUICanvas.renderMode = RenderMode.ScreenSpaceCamera;
+        //GameUICanvas.worldCamera = Camera.main;
+        //GameUICanvas.renderMode = RenderMode.ScreenSpaceCamera;
         var playerListVisible = PlayerSettings.Instance.PlayerListVisible.GetValueOrDefault();
         if (!playerListVisible)
         {

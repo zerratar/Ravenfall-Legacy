@@ -40,8 +40,8 @@ public class PlayerStats : ChatBotCommandHandler<string>
             if (skill != null)
             {
                 var expRequired = GameMath.ExperienceForLevel(skill.Level + 1);
-                var expReq = Utility.FormatExp(expRequired);
-                var curExp = Utility.FormatExp(skill.Experience);
+                var expReq = expRequired < 1000000 ? Utility.FormatValue((long)expRequired) : Utility.FormatExp(expRequired);
+                var curExp = skill.Experience < 1000000 ? Utility.FormatValue((long)skill.Experience) : Utility.FormatExp(skill.Experience);
                 client.SendReply(gm, Localization.MSG_SKILL,
                     skill.ToString(), curExp, expReq);
             }
@@ -50,14 +50,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
 
         SendPlayerStats(gm, player, client);
     }
-    private static string FormatValue(long num)
-    {
-        var str = num.ToString();
-        if (str.Length <= 3) return str;
-        for (var i = str.Length - 3; i >= 0; i -= 3)
-            str = str.Insert(i, " ");
-        return str;
-    }
+
     private void SendPlayerStats(GameMessage gm, PlayerController player, GameClient client)
     {
         var ps = player.Stats;
@@ -95,20 +88,26 @@ public class PlayerStats : ChatBotCommandHandler<string>
         {
             var skill = player.GetActiveSkillStat();
             var f = player.GetExpFactor();
+
+            /*
             var expPerTick = player.GetExperience(s, f);
             var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
             var nextLevelExp = GameMath.OldExperienceForLevel(skill.Level + 1);
             expPerHour = Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
-            expLeft = nextLevelExp - skill.Experience;
-            var hours = expLeft / expPerHour;
-            if (hours < System.TimeSpan.MaxValue.TotalHours)
-            {
-                var left = TimeSpan.FromHours(hours);
-                if (left.TotalDays < 365)
-                {
-                    nextLevel = DateTime.UtcNow.Add(left);
-                }
-            }
+            */
+
+            nextLevel = skill.GetEstimatedTimeToLevelUp();
+
+            //expLeft = nextLevelExp - skill.Experience;
+            //var hours = expLeft / expPerHour;
+            //if (hours < System.TimeSpan.MaxValue.TotalHours)
+            //{
+            //    var left = TimeSpan.FromHours(hours);
+            //    if (left.TotalDays < 365)
+            //    {
+            //        nextLevel = DateTime.UtcNow.Add(left);
+            //    }
+            //}
         }
 
         return new PlayerInspect

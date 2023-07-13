@@ -149,7 +149,7 @@ public class GameMenuHandler : MonoBehaviour
         //fadeToBlack.StartFade();
         gameManager.SaveStateFile();
         loginScreen.ClearPassword();
-        gameManager.ReloadScene();
+        gameManager.LoadScene();
     }
 
     public void Exit()
