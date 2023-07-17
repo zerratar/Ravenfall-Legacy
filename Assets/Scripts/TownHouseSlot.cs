@@ -1,4 +1,5 @@
-﻿using Sirenix.OdinInspector;
+﻿using RavenNest.Models;
+using Sirenix.OdinInspector;
 using System;
 using UnityEngine;
 

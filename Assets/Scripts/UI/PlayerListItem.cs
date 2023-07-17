@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerListItem : MonoBehaviour
 {
@@ -9,12 +10,12 @@ public class PlayerListItem : MonoBehaviour
     [SerializeField] private GameProgressBar pbSkill;
     [SerializeField] private RectTransform bg;
     [SerializeField] private GameObject restedObject;
-    [SerializeField] private TextMeshProUGUI lblRestedTime;
+    [SerializeField] private Text lblRestedTime;
 
-    [SerializeField] private TextMeshProUGUI lblCombatLevel;
-    [SerializeField] private TextMeshProUGUI lblSkillLevel;
-    [SerializeField] private TextMeshProUGUI lblExpPerHour;
-    [SerializeField] private TextMeshProUGUI lblPlayerName;
+    [SerializeField] private Text lblCombatLevel;
+    [SerializeField] private Text lblSkillLevel;
+    [SerializeField] private Text lblExpPerHour;
+    [SerializeField] private Text lblPlayerName;
 
     private readonly static string[] skillNames = { "Atk", "Def", "Str", "All", "Woo", "Fis", "Min", "Cra", "Coo", "Far", "Slay", "Mag", "Ran", "Sail", "Heal" };
 
@@ -46,15 +47,19 @@ public class PlayerListItem : MonoBehaviour
 
     public PlayerList List;
 
+    public int ItemIndex;
+
     //private int lastCombatLevel;
 
     // Start is called before the first frame update
     void Start()
     {
-        rectTransform = transform.GetComponent<RectTransform>();
-        if (lblPlayerName)
-            lblPlayerName.richText = true;
+        Init();
+    }
 
+    public void Init()
+    {
+        rectTransform = transform.GetComponent<RectTransform>();
         lblExpPerHourObj = lblExpPerHour.gameObject;
         pbSkillObj = pbSkill.gameObject;
     }
@@ -74,24 +79,21 @@ public class PlayerListItem : MonoBehaviour
 
         UpdateUI();
     }
+
     private void UpdateLabels()
     {
         if (TargetPlayer == null || !TargetPlayer || TargetPlayer.isDestroyed)
         {
             SetText(lblSkillLevel, "");
             SetText(lblCombatLevel, "");
-            SetText(lblPlayerName, "???");
-            if (List != null)
-            {
-                List.Remove(this);
-            }
+            lblPlayerName.text = "-";
             return;
         }
 
         var combatLevel = TargetPlayer.Stats.CombatLevel;
         if (combatLevel != lastCombatLevel)
         {
-            SetText(lblCombatLevel, "Lv:<b> " + combatLevel);
+            SetText(lblCombatLevel, "Lv:<b> " + combatLevel + "</b>");
             lastCombatLevel = combatLevel;
         }
         if (skillIndex == -1)
@@ -116,7 +118,7 @@ public class PlayerListItem : MonoBehaviour
                     }
                     else
                     {
-                        SetText(lblSkillLevel, skillName + ":<b> " + skill.Level);
+                        SetText(lblSkillLevel, skillName + ":<b> " + skill.Level + "</b>");
                     }
 
                     UpdateSkillProgressBar(skill);
@@ -237,9 +239,10 @@ public class PlayerListItem : MonoBehaviour
     }
 
 
-    public void UpdatePlayerInfo(PlayerController player, GameCamera gameCamera)
+    public void UpdatePlayerInfo(PlayerController player, GameCamera gameCamera, int index)
     {
         this.gameCamera = gameCamera;
+        this.ItemIndex = index;
 
         if (!lblExpPerHourObj) lblExpPerHourObj = lblExpPerHour.gameObject;
         if (!pbSkillObj) pbSkillObj = pbSkill.gameObject;
@@ -252,7 +255,7 @@ public class PlayerListItem : MonoBehaviour
         var combatLevel = player.Stats.CombatLevel;
         if (combatLevel != lastCombatLevel)
         {
-            SetText(lblCombatLevel, "Lv:<b> " + combatLevel);
+            SetText(lblCombatLevel, "Lv:<b> " + combatLevel + "</b>");
             lastCombatLevel = combatLevel;
         }
 
@@ -326,16 +329,51 @@ public class PlayerListItem : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SetText(TextMeshProUGUI label, string value)
     {
+        if (!string.IsNullOrEmpty(value))
+        {
+            value = value.Trim();
+        }
+
         if (label.text != value)
         {
             label.text = value;
         }
     }
 
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SetText(Text label, string value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            value = value.Trim();
+        }
+        if (label.text != value)
+        {
+            label.text = value;
+        }
+    }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SetText(TextMeshProUGUI label, string value, Color color)
     {
+        if (!string.IsNullOrEmpty(value))
+        {
+            value = value.Trim();
+        }
+        if (color == default) color = Color.white;
+        var newValue = color != Color.white ? "<color=#" + ColorUtility.ToHtmlStringRGB(color) + ">" + value : value;
+        if (label.text != newValue)
+        {
+            label.text = newValue;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SetText(Text label, string value, Color color)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            value = value.Trim();
+        }
         if (color == default) color = Color.white;
         var newValue = color != Color.white ? "<color=#" + ColorUtility.ToHtmlStringRGB(color) + ">" + value : value;
         if (label.text != newValue)

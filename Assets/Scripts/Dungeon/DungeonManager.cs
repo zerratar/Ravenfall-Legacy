@@ -146,11 +146,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         if (dungeons == null || dungeons.Length == 0)
         {
-            dungeons = GetComponentsInChildren<DungeonController>();
-            //foreach (var dungeon in dungeons)
-            //{
-            //    dungeon.gameObject.SetActive(false);
-            //}
+            dungeons = GetComponentsInChildren<DungeonController>(true);
         }
 
         ScheduleNextDungeon();
@@ -307,34 +303,43 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     public async Task<bool> ActivateDungeon()
     {
-        if (gameManager.Events.TryStart(this))
+        try
         {
-            await Notifications.OnDungeonActivated();
-
-            SelectRandomDungeon();
-
-            if (SpawnDungeonBoss())
+            if (gameManager.Events.TryStart(this))
             {
-                state = DungeonManagerState.Active;
-                dungeonStartTimer = timeForDungeonStart;
-                nextDungeonTimer = 0f;
-                if (gameManager.RequireCodeForDungeonOrRaid)
+                await Notifications.OnDungeonActivated();
+
+                SelectRandomDungeon();
+
+                if (SpawnDungeonBoss())
                 {
-                    RequiredCode = EventCode.New();
+                    state = DungeonManagerState.Active;
+                    dungeonStartTimer = timeForDungeonStart;
+                    nextDungeonTimer = 0f;
+                    if (gameManager.RequireCodeForDungeonOrRaid)
+                    {
+                        RequiredCode = EventCode.New();
+                    }
+                    AnnounceDungeon(RequiredCode);
                 }
-                AnnounceDungeon(RequiredCode);
+                else
+                {
+                    gameManager.Events.End(this);
+                    return false;
+                }
             }
             else
             {
-                gameManager.Events.End(this);
-                return false;
+                nextDungeonTimer = gameManager.Events.RescheduleTime;
             }
+            return true;
         }
-        else
+        catch (Exception exc)
         {
-            nextDungeonTimer = gameManager.Events.RescheduleTime;
+            gameManager.Events.End(this);
+            Shinobytes.Debug.LogError("Error trying to activate dungeon: " + exc);
+            return false;
         }
-        return true;
     }
 
     public void ForceStartDungeon()
@@ -735,8 +740,19 @@ public class DungeonManager : MonoBehaviour, IEvent
             gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
         }
     }
+
     private void SelectRandomDungeon()
     {
+        if (dungeons == null || dungeons.Length == 0)
+        {
+            dungeons = GetComponentsInChildren<DungeonController>(true);
+        }
+
+        if (dungeons.Length == 0)
+        {
+            throw new Exception("Unable to select a dungeon as no dungeon could be found.");
+        }
+
         currentDungeon = dungeons.Weighted(x => x.SpawnRate);
         currentDungeon.gameObject.SetActive(true);
         currentDungeon.EnableContainer();

@@ -1,9 +1,12 @@
-﻿public class VillageInfoEventHandler : GameEventHandler<VillageInfo>
+﻿using RavenNest.Models;
+
+public class VillageInfoEventHandler : GameEventHandler<VillageInfo>
 {
     public override void Handle(GameManager gameManager, VillageInfo data)
     {
         if (gameManager.Village && gameManager.Village != null)
         {
+            gameManager.Village.TownHall.SetResources(data.Coins, data.Ore, data.Wood, data.Fish, data.Wheat);
             gameManager.Village.SetTierByLevel(data.Level);
             if (!gameManager.Village.HousesAreUpdating)
             {

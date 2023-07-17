@@ -29,7 +29,7 @@ public class LookAt : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         if (OnDemandRendering.renderFrameInterval > 2)
         {

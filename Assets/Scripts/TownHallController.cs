@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class TownHallController : MonoBehaviour
 {
@@ -23,12 +24,17 @@ public class TownHallController : MonoBehaviour
         this.instanceID = hitCollider.GetInstanceID();
     }
 
+    public void SetTownHallResourceController(TownHallResource resx)
+    {
+        this.resources = resx;
+    }
+
     // Update is called once per frame
     void Update()
     {
         try
         {
-            if (!meshRenderer.isVisible||!gameManager || gameManager == null || manager == null || !manager)
+            if (!meshRenderer.isVisible || !gameManager || gameManager == null || manager == null || !manager)
             {
                 return;
             }
@@ -62,5 +68,11 @@ public class TownHallController : MonoBehaviour
         {
             Shinobytes.Debug.LogError(exc.ToString());
         }
+    }
+
+    internal void ResourcesUpdated()
+    {
+        if (!resources) resources = GetComponentInChildren<TownHallResource>();
+        if (resources) resources.ResourcesUpdated(manager);
     }
 }

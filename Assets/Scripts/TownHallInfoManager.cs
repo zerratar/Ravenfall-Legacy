@@ -9,6 +9,12 @@ public class TownHallInfoManager : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI lblSlots;
     [SerializeField] private TMPro.TextMeshProUGUI lblTotalExpBonus;
 
+    [SerializeField] private TMPro.TextMeshProUGUI lblCoins;
+    [SerializeField] private TMPro.TextMeshProUGUI lblWood;
+    [SerializeField] private TMPro.TextMeshProUGUI lblOre;
+    [SerializeField] private TMPro.TextMeshProUGUI lblFish;
+    [SerializeField] private TMPro.TextMeshProUGUI lblWheat;
+
     public int Tier { get; set; }
     public double Experience { get; set; }
     public int Level { get; set; }
@@ -33,6 +39,12 @@ public class TownHallInfoManager : MonoBehaviour
             lblLevel.text = "Level: " + Level + " (" + progress + "%)";
             lblSlots.text = "Slots: " + UsedSlots + "/" + Slots;
             lblTier.text = "Tier: " + Tier;
+
+            lblCoins.text = Utility.FormatAmount(villageManager.TownHall.Coins);
+            lblWood.text = Utility.FormatAmount(villageManager.TownHall.Wood);
+            lblOre.text = Utility.FormatAmount(villageManager.TownHall.Ore);
+            lblFish.text = Utility.FormatAmount(villageManager.TownHall.Fish);
+            lblWheat.text = Utility.FormatAmount(villageManager.TownHall.Wheat);
         }
 
         //if (Time.frameCount % 30 == 0)

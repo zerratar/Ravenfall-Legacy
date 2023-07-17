@@ -10,6 +10,12 @@ public class TownHallManager : MonoBehaviour
     private int level;
     private double exp;
 
+    private long wood;
+    private long coins;
+    private long ore;
+    private long fish;
+    private long wheat;
+
     private TownHallController activeTownHall;
 
     void Start()
@@ -26,6 +32,13 @@ public class TownHallManager : MonoBehaviour
     public double Experience => exp;
     public int Level => level;
     public int Tier => tier;
+
+    public long Coins => coins;
+    public long Wood => wood;
+    public long Wheat => wheat;
+    public long Fish => fish;
+    public long Ore => ore;
+
     //public decimal ExperienceToLevel => GameMath.VillageLevelToExperience(Level + 1);
 
     public void SetTierByLevel(int level)
@@ -117,5 +130,16 @@ public class TownHallManager : MonoBehaviour
         //}
 
         //return tier;
+    }
+
+    internal void SetResources(long coins, long ore, long wood, long fish, long wheat)
+    {
+        this.coins = coins;
+        this.ore = ore;
+        this.wood = wood;
+        this.fish = fish;
+        this.wheat = wheat;
+
+        activeTownHall.ResourcesUpdated();
     }
 }

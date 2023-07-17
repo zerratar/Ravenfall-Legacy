@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Threading.Tasks;
 
 namespace RavenNest.SDK.Endpoints

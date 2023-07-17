@@ -92,18 +92,25 @@ public class ExternalResources
 
     public static async Task ReloadIfModifiedAsync(string key)
     {
-        if (!audioResources.TryGetValue(key, out var resx))
+        try
         {
-            return;
-        }
+            if (!audioResources.TryGetValue(key, out var resx))
+            {
+                return;
+            }
 
-        if (resx.HasBeenModified)
-        {
+            if (resx.HasBeenModified)
+            {
 
 #if UNITY_EDITOR
-            Shinobytes.Debug.LogWarning("Reloading External Resource as it has been modified. Key: " + key);
+                Shinobytes.Debug.LogWarning("Reloading External Resource as it has been modified. Key: " + key);
 #endif
-            await LoadSoundFileAsync(resx.FullPath);
+                await LoadSoundFileAsync(resx.FullPath);
+            }
+        }
+        catch (System.Exception exc)
+        {
+            Shinobytes.Debug.LogError("Reloading External Resources failed. Key: " + key + ", Exception: " + exc);
         }
     }
 

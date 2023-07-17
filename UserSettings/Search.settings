@@ -24,6 +24,9 @@ scopes = {
 	"last_search.1FDCCCAA" = "Stylized Surface Cutout t:Shader"
 	"OpenInspectorPreview.1FDCCCAA" = "0"
 	"currentGroup.1FDCCCAA" = "asset"
+	"last_search.8EAB405C" = "coin"
+	"OpenInspectorPreview.8EAB405C" = "0"
+	"currentGroup.8EAB405C" = "_group_provider_Files"
 }
 providers = {
 	asset = {
@@ -67,6 +70,11 @@ providers = {
 		defaultAction = null
 	}
 	performance = {
+		active = false
+		priority = 100
+		defaultAction = null
+	}
+	profilermarkers = {
 		active = false
 		priority = 100
 		defaultAction = null
