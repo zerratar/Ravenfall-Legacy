@@ -126,7 +126,7 @@ public class PlayerDetails : MonoBehaviour
             var time = Utility.FormatTime(observedPlayer.Rested.RestedTime / 60f / 60f, false);
             if (observedPlayer.Onsen.InOnsen)
             {
-                SetText(lblRestedAmount, "<color=#FFDE00>" + time);
+                SetText(lblRestedAmount, "<color=#FFDE00>" + time + "</color>");
                 // increasing time
             }
             else

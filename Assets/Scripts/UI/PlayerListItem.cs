@@ -283,7 +283,7 @@ public class PlayerListItem : MonoBehaviour
 
             if (TargetPlayer.Onsen.InOnsen)
             {
-                SetText(lblRestedTime, "<color=#FFDE00>" + time);
+                SetText(lblRestedTime, "<color=#FFDE00>" + time + "</color>");
                 // increasing time
             }
             else

@@ -50,7 +50,7 @@ public class RaidNotifications : MonoBehaviour
     public void HideRaidJoinInfo()
     {
         lblComeJoinText.enabled = false;
-        raidTimer.rectTransform.localPosition = new Vector3(0, 15f);
+        raidTimer.rectTransform.localPosition = new Vector3(0, 112f);
     }
 
     private void ShowRaidJoinInfo(string code)
