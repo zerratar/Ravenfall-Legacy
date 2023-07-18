@@ -19,7 +19,7 @@
 
         var res = player.Resources;
 
-        client.SendReply(gm, Localization.MSG_RESOURCES,
+        client.SendReply(gm, Localization.MSG_PLAYER_RESOURCES,
             Utility.FormatAmount(res.Wood),
             Utility.FormatAmount(res.Ore),
             Utility.FormatAmount(res.Fish),

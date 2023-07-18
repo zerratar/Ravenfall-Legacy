@@ -10,6 +10,23 @@ state-data.json
 game-settings.json
 state-data.json
 __state-data.json
+
+.plastic/*
+Data/*
+*state-data*.json
+Assets/Animations/Crafting Mecanim Animation Pack/*
+Assets/Animations/Frank_*/*
+Assets/RPG Character Animation Pack/*
+Assets/SuperScrollView/*
+Assets/ASTROFISH*/*
+Assets/DamageNumbersPro/*
+Assets/Textures/Environment/Poly - Anime dirt, extra detailed*/*
+Assets/Textures/Environment/Poly - Anime*/*
+Assets/4000*/*
+Assets/NeatWolf/*
+Assets/PathCreator/*
+Assets/Polydactyl/*
+Assets/Fantasy Adventure*/*
 Script Generator/SyntyAppearanceMapGenerator/bin/*
 Debug Build/*
 Logs/*

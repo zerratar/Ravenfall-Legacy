@@ -50,6 +50,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<DisenchantItem>("disenchant");
         Connection.Register<PlayerStats>("player_stats");
         Connection.Register<PlayerResources>("player_resources");
+        Connection.Register<TownResources>("town_resources");
         Connection.Register<Highscore>("highscore");
         Connection.Register<HighestSkill>("highest_skill");
         Connection.Register<PlayerScale>("set_player_scale");
