@@ -204,7 +204,9 @@ public class FerryController : MonoBehaviour
     {
         var players = GetComponentsInChildren<PlayerController>();
         if (players.Length == 0) return;
-        var nextCaptain = players.OrderByDescending(x => x.Stats.Sailing.CurrentValue).FirstOrDefault();
+        var nextCaptain = players
+            .OrderByDescending(x => x.Stats.Sailing.MaxLevel)
+            .FirstOrDefault();
         if (nextCaptain != null)
         {
             PromoteToCaptain(nextCaptain);
@@ -221,7 +223,7 @@ public class FerryController : MonoBehaviour
     {
         if (newCaptain != null)
         {
-            CaptainSpeedAdjustment = newCaptain.Stats.Sailing.CurrentValue;
+            CaptainSpeedAdjustment = newCaptain.Stats.Sailing.MaxLevel;
         }
         else
         {

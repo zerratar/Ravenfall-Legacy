@@ -96,15 +96,15 @@ public class CraftingManager : MonoBehaviour
                 var itemDefinition = x;
                 var sameCategory = itemDefinition.Category == itemCategory;
                 var sameType = (itemType == ItemType.None || itemDefinition.Type == itemType);
-                var enoughCraftingLevel = x.RequiredCraftingLevel <= player.Stats.Crafting.CurrentValue;
+                var enoughCraftingLevel = x.RequiredCraftingLevel <= player.Stats.Crafting.MaxLevel;
                 var enoughCookingLevel =
                     true; //x.CraftingRequirements.MinCookingLevel <= player.Stats.Cooking.CurrentValue;
 
-                var enoughDefense = x.RequiredDefenseLevel <= player.Stats.Defense.CurrentValue;
-                var enoughAttack = x.RequiredAttackLevel <= player.Stats.Attack.CurrentValue;
-                var enoughRanged = x.RequiredRangedLevel <= player.Stats.Ranged.CurrentValue;
-                var enoughMagic = x.RequiredMagicLevel <= player.Stats.Magic.CurrentValue;
-                var enoughSlayer = x.RequiredSlayerLevel <= player.Stats.Slayer.CurrentValue;
+                var enoughDefense = x.RequiredDefenseLevel <= player.Stats.Defense.MaxLevel;
+                var enoughAttack = x.RequiredAttackLevel <= player.Stats.Attack.MaxLevel;
+                var enoughRanged = x.RequiredRangedLevel <= player.Stats.Ranged.MaxLevel;
+                var enoughMagic = x.RequiredMagicLevel <= player.Stats.Magic.MaxLevel;
+                var enoughSlayer = x.RequiredSlayerLevel <= player.Stats.Slayer.MaxLevel;
 
                 return sameCategory &&
                        sameType &&
@@ -117,8 +117,8 @@ public class CraftingManager : MonoBehaviour
                        enoughSlayer;
 
             }).OrderBy(x =>
-                Math.Abs(x.RequiredCraftingLevel - player.Stats.Crafting.CurrentValue) +
-                Math.Abs( /*x.CraftingRequirements.MinCookingLevel*/ 0 - player.Stats.Cooking.CurrentValue))
+                Math.Abs(x.RequiredCraftingLevel - player.Stats.Crafting.MaxLevel) +
+                Math.Abs( /*x.CraftingRequirements.MinCookingLevel*/ 0 - player.Stats.Cooking.MaxLevel))
             .ToList();
 
         if (itemType == ItemType.None)

@@ -1651,7 +1651,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
             AddExp(Skill.Farming, factor);
-            var amount = farm.Resource * Mathf.FloorToInt(Stats.Farming.CurrentValue / 10f);
+            var amount = farm.Resource * Mathf.FloorToInt(Stats.Farming.MaxLevel / 10f);
             //Statistics.TotalWheatCollected += amount;
         }
 
@@ -1784,7 +1784,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             if (target == null || !target.Transform || target.GetStats().IsDead)
                 return true;
 
-            var maxHeal = GameMath.MaxHit(Stats.Healing.CurrentValue, EquipmentStats.BaseMagicPower);
+            var maxHeal = GameMath.MaxHit(Stats.Healing.MaxLevel, EquipmentStats.BaseMagicPower);
             var heal = CalculateDamage(target);
             if (!target.Heal(this, heal))
                 return true;

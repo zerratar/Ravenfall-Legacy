@@ -282,11 +282,11 @@ public class RaidBossController : MonoBehaviour
     private Skills GenerateCombatStats(Skills rngLowStats, Skills rngHighStats)
     {
         var health = Math.Max(healthMultiplier, Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * healthMultiplier);
-        var strength = Math.Max(1, Random.Range(rngLowStats.Strength.CurrentValue, rngHighStats.Strength.CurrentValue));
-        var defense = Math.Max(1, Random.Range(rngLowStats.Defense.CurrentValue, rngHighStats.Defense.CurrentValue));
-        var attack = Math.Max(1, Random.Range(rngLowStats.Attack.CurrentValue, rngHighStats.Attack.CurrentValue));
-        var magic = Math.Max(1, Random.Range(rngLowStats.Magic.CurrentValue, rngHighStats.Magic.CurrentValue));
-        var ranged = Math.Max(1, Random.Range(rngLowStats.Ranged.CurrentValue, rngHighStats.Ranged.CurrentValue));
+        var strength = Math.Max(1, Random.Range(rngLowStats.Strength.MaxLevel, rngHighStats.Strength.MaxLevel));
+        var defense = Math.Max(1, Random.Range(rngLowStats.Defense.MaxLevel, rngHighStats.Defense.MaxLevel));
+        var attack = Math.Max(1, Random.Range(rngLowStats.Attack.MaxLevel, rngHighStats.Attack.MaxLevel));
+        var magic = Math.Max(1, Random.Range(rngLowStats.Magic.MaxLevel, rngHighStats.Magic.MaxLevel));
+        var ranged = Math.Max(1, Random.Range(rngLowStats.Ranged.MaxLevel, rngHighStats.Ranged.MaxLevel));
 
         return new Skills
         {

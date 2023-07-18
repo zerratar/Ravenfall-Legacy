@@ -87,7 +87,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
         if (s != Skill.None)
         {
             var skill = player.GetActiveSkillStat();
-            var f = player.GetExpFactor();
+            //var f = player.GetExpFactor();
 
             /*
             var expPerTick = player.GetExperience(s, f);
@@ -96,8 +96,10 @@ public class PlayerStats : ChatBotCommandHandler<string>
             expPerHour = Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
             */
 
-            nextLevel = skill.GetEstimatedTimeToLevelUp();
-
+            if (skill != null)
+            {
+                nextLevel = skill.GetEstimatedTimeToLevelUp();
+            }
             //expLeft = nextLevelExp - skill.Experience;
             //var hours = expLeft / expPerHour;
             //if (hours < System.TimeSpan.MaxValue.TotalHours)

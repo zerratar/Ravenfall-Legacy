@@ -53,8 +53,8 @@ public static class GameMath
             if (attackerStats == null || attackerEq == null) return 0;
 
             var defenderDamageSkill = 1;
-            var attackerDamageSkill = attackerStats.Healing.CurrentValue;
-            var attackerAimSkill = attackerStats.Healing.CurrentValue;
+            var attackerDamageSkill = attackerStats.Healing.MaxLevel;
+            var attackerAimSkill = attackerStats.Healing.MaxLevel;
             var attackerPower = attackerEq.MagicPower;
             var attackerAim = attackerEq.MagicAim;
 
@@ -78,9 +78,9 @@ public static class GameMath
             var defenderEq = defender.GetEquipmentStats();
             if (attackerEq == null || defenderEq == null) return 0;
 
-            var defenderDamageSkill = defenderStats.Magic.CurrentValue;
-            var attackerDamageSkill = attackerStats.Magic.CurrentValue;
-            var attackerAimSkill = attackerStats.Magic.CurrentValue;
+            var defenderDamageSkill = defenderStats.Magic.MaxLevel;
+            var attackerDamageSkill = attackerStats.Magic.MaxLevel;
+            var attackerAimSkill = attackerStats.Magic.MaxLevel;
             var attackerPower = attackerEq.MagicPower;
             var attackerAim = attackerEq.MagicAim;
 
@@ -104,9 +104,9 @@ public static class GameMath
             var defenderEq = defender.GetEquipmentStats();
             if (attackerEq == null || defenderEq == null) return 0;
 
-            var defenderDamageSkill = defenderStats.Ranged.CurrentValue;
-            var attackerDamageSkill = attackerStats.Ranged.CurrentValue;
-            var attackerAimSkill = attackerStats.Ranged.CurrentValue;
+            var defenderDamageSkill = defenderStats.Ranged.MaxLevel;
+            var attackerDamageSkill = attackerStats.Ranged.MaxLevel;
+            var attackerAimSkill = attackerStats.Ranged.MaxLevel;
             var attackerPower = attackerEq.RangedPower;
             var attackerAim = attackerEq.RangedAim;
 
@@ -130,9 +130,9 @@ public static class GameMath
             var defenderEq = defender.GetEquipmentStats();
             if (attackerEq == null || defenderEq == null) return 0;
 
-            var defenderDamageSkill = defenderStats.Strength.CurrentValue;
-            var attackerDamageSkill = attackerStats.Strength.CurrentValue;
-            var attackerAimSkill = attackerStats.Attack.CurrentValue;
+            var defenderDamageSkill = defenderStats.Strength.MaxLevel;
+            var attackerDamageSkill = attackerStats.Strength.MaxLevel;
+            var attackerAimSkill = attackerStats.Attack.MaxLevel;
             var attackerPower = attackerEq.WeaponPower;
             var attackerAim = attackerEq.WeaponAim;
 
@@ -158,7 +158,7 @@ public static class GameMath
     {
         var max = MaxHit(attackerDamageSkill, attackerPower);
         var newAtt = (int)((attackerAimSkill / 0.8D) + attackerAim + (attackerDamageSkill / 5D) + 10);
-        var newDef = (int)(((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderStats.Defense.CurrentValue) * 1.1D)
+        var newDef = (int)(((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderStats.Defense.MaxLevel) * 1.1D)
                      + ((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderEq.ArmorPower) / 2.75D)
                      + (defenderDamageSkill / 4D) + (StyleBonus(defender, 1) * 2));
 
@@ -349,7 +349,7 @@ public static class GameMath
 
     public static float CalculateSkillDamage(SkillStat skillStat, int targetLevel)
     {
-        var levelDiff = skillStat.CurrentValue - targetLevel;
+        var levelDiff = skillStat.MaxLevel - targetLevel;
         var hit = Mathf.Max(1f, Math.Abs(levelDiff));
         if (levelDiff >= 5 || UnityEngine.Random.value <= 0.5)
         {

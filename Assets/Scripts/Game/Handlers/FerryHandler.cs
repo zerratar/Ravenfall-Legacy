@@ -285,7 +285,7 @@ public class FerryHandler : MonoBehaviour
         var currentCaptain = ferry.Captain;
         if (currentCaptain)
         {
-            if (player.Stats.Sailing.CurrentValue > currentCaptain.Stats.Sailing.CurrentValue)
+            if (player.Stats.Sailing.MaxLevel > currentCaptain.Stats.Sailing.MaxLevel)
             {
                 currentCaptain.Ferry.AddPlayerToFerry(false);
             }

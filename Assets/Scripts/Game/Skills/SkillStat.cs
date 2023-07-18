@@ -12,7 +12,7 @@ public class SkillStat
     public Skill Type;
     public float Bonus;
 
-    public int MaxLevel;
+    public int MaxLevel => Mathf.FloorToInt(Level + Bonus);
 
     public int Index;
 
@@ -30,7 +30,6 @@ public class SkillStat
     {
         this.Level = level;
         this.CurrentValue = level;
-        this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
     }
 
     public SkillStat(
@@ -44,7 +43,6 @@ public class SkillStat
         Level = level;//GameMath.ExperienceToLevel(exp);
         Experience = exp;
         Name = name;
-        MaxLevel = Mathf.FloorToInt(Level + Bonus);
     }
 
     public void Set(int newLevel, double newExp, bool updateExpPerHour = true)
@@ -62,7 +60,6 @@ public class SkillStat
             Level = newLevel;
             CurrentValue = newLevel;
             Experience = newExp;
-            MaxLevel = Mathf.FloorToInt(Level + Bonus);
             return;
         }
 
@@ -126,8 +123,6 @@ public class SkillStat
                 Experience = maxExp;
         }
 
-        MaxLevel = Mathf.FloorToInt(Level + Bonus);
-
         expGains.Add(new ExpGain { Exp = exp, Time = UnityEngine.Time.realtimeSinceStartup });
 
         var windowStart = UnityEngine.Time.realtimeSinceStartup - windowDuration;
@@ -187,7 +182,7 @@ public class SkillStat
 
     public void Reset()
     {
-        MaxLevel = CurrentValue = Mathf.FloorToInt(Level + Bonus);
+        CurrentValue = Mathf.FloorToInt(Level + Bonus);
     }
 
     public void Add(int value)
