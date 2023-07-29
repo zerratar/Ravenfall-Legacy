@@ -40,13 +40,17 @@ public class EnchantItem : ChatBotCommandHandler<string>
         }
 
         var query = inputQuery;
+
+        // For later
+        var checkForCost = query.Contains("requirement") || query.IndexOf(" req ", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        if (checkForCost) query = query.Replace("requirement", "").Replace(" req ", " ", System.StringComparison.OrdinalIgnoreCase).Replace("  ", " ");
+
         var isReplace = query.ToLower().IndexOf("replace") >= 0;
         if (isReplace) query = query.Replace("replace", "");
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
         var queriedItem = itemResolver.ResolveTradeQuery(query, parsePrice: false, parseAmount: false, playerToSearch: player);
-
 
         if (queriedItem.SuggestedItemNames.Length > 0)
         {
@@ -57,6 +61,12 @@ public class EnchantItem : ChatBotCommandHandler<string>
         if (queriedItem.Item == null)
         {
             client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, query);
+            return;
+        }
+
+        if (checkForCost)
+        {
+            client.SendReply(gm, Localization.MSG_ENCHANT_COST_NO_REQ, queriedItem.Item.Name);
             return;
         }
 
@@ -143,6 +153,8 @@ public class EnchantItem : ChatBotCommandHandler<string>
         {
             player.Equip(addedItem, false);
         }
+
+        inventory.UpdateEquipmentEffect();
 
         if (string.IsNullOrEmpty(result.OldItemStack.Enchantment))
         {

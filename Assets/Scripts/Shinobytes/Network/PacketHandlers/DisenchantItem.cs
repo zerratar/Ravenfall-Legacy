@@ -28,9 +28,6 @@ public class DisenchantItem : ChatBotCommandHandler<string>
         }
 
         var query = inputQuery;
-        var isReplace = query.ToLower().IndexOf("replace") >= 0;
-        if (isReplace) query = query.Replace("replace", "");
-
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
         var queriedItem = itemResolver.ResolveInventoryItem(player, query);
@@ -85,6 +82,7 @@ public class DisenchantItem : ChatBotCommandHandler<string>
             player.Equip(addedItem, false);
         }
 
+        inventory.UpdateEquipmentEffect();
         client.SendReply(gm, Localization.MSG_DISENCHANT_SUCCESS, oldItemName);
     }
 }

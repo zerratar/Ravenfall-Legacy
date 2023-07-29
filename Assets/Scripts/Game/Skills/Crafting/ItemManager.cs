@@ -202,7 +202,7 @@ public class ItemManager : MonoBehaviour
             var GenericPrefabPath = item.GenericPrefab;
             var MalePrefabPath = item.MalePrefab;
             var FemalePrefabPath = item.FemalePrefab;
-            var IsGenericModel = item.IsGenericModel.GetValueOrDefault() || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
+            var IsGenericModel = item.IsGenericModel || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
 
             if (!IsGenericModel && string.IsNullOrEmpty(FemalePrefabPath) && string.IsNullOrEmpty(MalePrefabPath))
             {

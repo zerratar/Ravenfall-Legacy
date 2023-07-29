@@ -118,21 +118,23 @@ public class GameCamera : MonoBehaviour
                 //focusTargetCamera.enabled = false;
                 if (gameManager.Dungeons.Started)
                 {
-
                     var camPoint = gameManager.Dungeons.Dungeon.CameraPoint;
 
-                    EnableFocusTargetCamera(camPoint);
+                    SetOrbitCameraTarget(camPoint);
+
+                    //EnableFocusTargetCamera(camPoint);
                     //transform.position = camPoint.position;
                     //transform.rotation = camPoint.rotation;
                 }
             }
             else if (state == GameCameraType.Arena)
             {
-                EnableFocusTargetCamera(arena?.transform);
+                //EnableFocusTargetCamera(arena?.transform);
+                SetOrbitCameraTarget(arena?.transform);
             }
             else if (state == GameCameraType.Raid)
             {
-                EnableFocusTargetCamera(raidManager?.Boss?.transform);
+                SetOrbitCameraTarget(raidManager?.Boss?.transform);
             }
             else if (state == GameCameraType.Observe)
             {
@@ -148,6 +150,12 @@ public class GameCamera : MonoBehaviour
         {
             Shinobytes.Debug.LogWarning("GameCamera->Update: " + exc.Message);
         }
+    }
+
+    private void SetOrbitCameraTarget(Transform transform)
+    {
+        orbitCamera.enabled = true;
+        orbitCamera.TargetTransform = transform;
     }
 
     private void EnableFreeCamera()
@@ -227,7 +235,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Raid;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
-        orbitCamera.TargetTransform = null;
+        //orbitCamera.TargetTransform = raidManager?.Boss?.transform;
     }
 
     public void EnableArenaCamera()
@@ -236,7 +244,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Arena;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
-        orbitCamera.TargetTransform = null;
+        //orbitCamera.TargetTransform = null;
     }
 
     public void EnableDungeonCamera()
@@ -245,7 +253,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Dungeon;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
-        orbitCamera.TargetTransform = null;
+        //orbitCamera.TargetTransform = null;
     }
 
     public void DisableFocusCamera()

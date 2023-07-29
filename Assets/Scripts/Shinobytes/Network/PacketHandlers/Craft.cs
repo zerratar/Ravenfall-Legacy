@@ -87,6 +87,9 @@ public class Craft : ChatBotCommandHandler<string>
             case CraftValidationStatus.NotEnoughSkill:
                 client.SendReply(gm, Localization.MSG_CRAFT_FAILED_LEVEL, item.RequiredCraftingLevel);
                 return;
+            case CraftValidationStatus.NotCraftable:
+                client.SendReply(gm, Localization.MSG_CRAFT_FAILED_NOT_CRAFTABLE, item.Name);
+                return;
             case CraftValidationStatus.NotEnoughResources:
                 InsufficientResources(player, gm, inputQuery, client, item, toCraft);
                 return;

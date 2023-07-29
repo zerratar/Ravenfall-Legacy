@@ -938,62 +938,70 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
     public void UpdateHelmetVisibility()
     {
-        var helmets = Gender == Gender.Female ? femaleHelmets : maleHelmets;
-
-        if (!equippedHelmet && Helmet < 0)
+        try
         {
-            return;
-        }
+            var helmets = Gender == Gender.Female ? femaleHelmets : maleHelmets;
 
-        //var toggleHair = true;
-        //var toggleHead = true;
-        //var toggleFacials = true;
-
-        if (equippedHelmet)
-        {
-            if (equippedHelmet.name.IndexOf("no_elements", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (!equippedHelmet && Helmet < 0)
             {
-                // Toggle All off
-            }
-            else // Check if _Base_Hair (Hat), _No_FacialHair (Mask), _No_Hair (HeadCovering)
-            {
-                // ...
+                return;
             }
 
+            //var toggleHair = true;
+            //var toggleHead = true;
+            //var toggleFacials = true;
+
+            if (equippedHelmet)
+            {
+                if (equippedHelmet.name.IndexOf("no_elements", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    // Toggle All off
+                }
+                else // Check if _Base_Hair (Hat), _No_FacialHair (Mask), _No_Hair (HeadCovering)
+                {
+                    // ...
+                }
+            }
+
+            if (Gender == Gender.Male)
+            {
+                Head = Mathf.Clamp(Head, 0, maleHeads.Length - 1);
+                FacialHair = Mathf.Clamp(FacialHair, 0, maleFacialHairs.Length - 1);
+                Eyebrows = Mathf.Clamp(Eyebrows, 0, maleEyebrows.Length - 1);
+
+                if (FacialHair < maleFacialHairs.Length)
+                    maleFacialHairs[FacialHair].gameObject.SetActive(!HelmetVisible);
+
+                maleHeads[Head].gameObject.SetActive(!HelmetVisible);
+
+                if (Eyebrows < maleEyebrows.Length)
+                    maleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
+            }
+            else
+            {
+                Head = Mathf.Clamp(Head, 0, femaleHeads.Length - 1);
+                Eyebrows = Mathf.Clamp(Eyebrows, 0, femaleEyebrows.Length - 1);
+
+                femaleHeads[Head].gameObject.SetActive(!HelmetVisible);
+                if (Eyebrows < femaleEyebrows.Length)
+                    femaleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
+            }
+
+            Hair = Mathf.Clamp(Hair, 0, hairs.Length - 1);
+
+            if (Hair < hairs.Length)
+            {
+                hairs[Hair].gameObject.SetActive(!HelmetVisible);
+            }
+
+            if (equippedHelmet)
+            {
+                equippedHelmet.SetActive(HelmetVisible);
+            }
         }
-
-        if (Gender == Gender.Male)
+        catch (Exception exc)
         {
-            Head = Math.Min(Head, maleHeads.Length - 1);
-            //FacialHair = Math.Min(FacialHair, maleFacialHairs.Length - 1);
-            //Eyebrows = Math.Min(Eyebrows, maleEyebrows.Length - 1);
-
-            if (FacialHair < maleFacialHairs.Length)
-                maleFacialHairs[FacialHair].gameObject.SetActive(!HelmetVisible);
-
-            maleHeads[Head].gameObject.SetActive(!HelmetVisible);
-
-            if (Eyebrows < maleEyebrows.Length)
-                maleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
-        }
-        else
-        {
-            Head = Math.Min(Head, femaleHeads.Length - 1);
-            //Eyebrows = Math.Min(Eyebrows, femaleEyebrows.Length - 1);
-
-            femaleHeads[Head].gameObject.SetActive(!HelmetVisible);
-            if (Eyebrows < femaleEyebrows.Length)
-                femaleEyebrows[Eyebrows].gameObject.SetActive(!HelmetVisible);
-        }
-
-        if (Hair < hairs.Length)
-        {
-            hairs[Hair].gameObject.SetActive(!HelmetVisible);
-        }
-
-        if (equippedHelmet)
-        {
-            equippedHelmet.SetActive(HelmetVisible);
+            Shinobytes.Debug.LogError("Failed to toggle helmet visibility for " + this.player.Name + ": " + exc);
         }
     }
 

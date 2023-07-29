@@ -159,7 +159,7 @@ public class ItemController : MonoBehaviour
         GenericPrefabPath = item.Item.GenericPrefab;
         MalePrefabPath = item.Item.MalePrefab;
         FemalePrefabPath = item.Item.FemalePrefab;
-        IsGenericModel = item.Item.IsGenericModel.GetValueOrDefault() || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
+        IsGenericModel = item.Item.IsGenericModel || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
 
         if (!prefab)
         {

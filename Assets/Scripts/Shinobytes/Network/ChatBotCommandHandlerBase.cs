@@ -14,6 +14,17 @@ public abstract class ChatBotCommandHandlerBase
     protected PlayerManager PlayerManager { get; }
 
     public abstract void Handle(BotMessage packet);
+    
+    public bool TryGetPlayer(GameMessage gm, GameClient client, out PlayerController player)
+    {
+        player = PlayerManager.GetPlayer(gm.Sender);
+        if (!player)
+        {
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+            return false;
+        }
+        return true;
+    }
 }
 
 public abstract class ChatBotCommandHandler : ChatBotCommandHandlerBase

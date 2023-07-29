@@ -1,10 +1,11 @@
 ﻿using RavenNest.Models;
 using System;
+using System.Collections.Generic;
 
 public class GameUpdatedEventHandler : GameEventHandler<GameUpdatedRequest>
 {
-    private bool newVersionAnnounced;
-
+    private HashSet<string> versionAnnounced = new HashSet<string>();
+    private DateTime lastAnnounced = DateTime.MinValue;
     public override void Handle(GameManager gameManager, GameUpdatedRequest data)
     {
         Version expectedVersion = GetExpectedVersion(data);
@@ -13,28 +14,33 @@ public class GameUpdatedEventHandler : GameEventHandler<GameUpdatedRequest>
         // we are the expected version, do nothing.
         if (appVersion >= expectedVersion)
         {
-            newVersionAnnounced = false;
             return;
+        }
+
+        var now = DateTime.UtcNow;
+        if (lastAnnounced > DateTime.MinValue && now - lastAnnounced > TimeSpan.FromHours(3))
+        {
+            versionAnnounced.Clear();
         }
 
         gameManager.OnUpdateAvailable(data.ExpectedVersion);
 
         if (data.UpdateRequired)
         {
-            if (!newVersionAnnounced)
+            if (versionAnnounced.Add(data.ExpectedVersion))
             {
-                newVersionAnnounced = true;
                 gameManager.RavenBot.Announce("Attention! An essential update to Ravenfall, v{version}, is available. This update contains critical changes. To avoid any game disruption, restart your game immediately to apply the update. Thank you!", data.ExpectedVersion);
+                lastAnnounced = DateTime.UtcNow;
             }
 
             gameManager.SaveStateAndLoadScene();
             return;
         }
 
-        if (!newVersionAnnounced)
+        if (versionAnnounced.Add(data.ExpectedVersion))
         {
-            newVersionAnnounced = true;
             gameManager.RavenBot.Announce("Good news! Ravenfall v{version} is out now! For optimal gameplay and new features, restart your game to update. Enjoy!", data.ExpectedVersion);
+            lastAnnounced = DateTime.UtcNow;
         }
     }
 

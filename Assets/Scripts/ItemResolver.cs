@@ -33,7 +33,8 @@ public class ItemResolver : IItemResolver
         bool parsePrice = true,
         bool parseUsername = false,
         bool parseAmount = true,
-        PlayerController playerToSearch = null)
+        PlayerController playerToSearch = null,
+        EquippedState equippedState = EquippedState.Any)
     {
         try
         {
@@ -94,7 +95,7 @@ public class ItemResolver : IItemResolver
 
             if (playerToSearch != null)
             {
-                var result = ResolveInventoryItem(playerToSearch, itemQuery);
+                var result = ResolveInventoryItem(playerToSearch, itemQuery, equippedState: equippedState);
                 result.Count = amount;
                 result.Price = price;
                 result.Player = player;
@@ -116,11 +117,12 @@ public class ItemResolver : IItemResolver
         }
     }
 
-    public ItemResolveResult ResolveInventoryItem(PlayerController player, string query, int maxSuggestions = 5)
+    public ItemResolveResult ResolveInventoryItem(PlayerController player, string itemName, int maxSuggestions = 5
+        , EquippedState equippedState = EquippedState.Any)
     {
         EnsureManagers();
 
-        var itemQuery = query.Trim();
+        var itemQuery = itemName.Trim();
 
         var items = player.Inventory.GetAllItems();
 
@@ -131,12 +133,15 @@ public class ItemResolver : IItemResolver
             .ToArray();
 
         var exactMatches = matches.Where(x => x.Match.IsExactMatch).ToArray();
-        var invItem = exactMatches.FirstOrDefault()?.Item;
+        var invItem = exactMatches.FirstOrDefault(
+                x => equippedState == EquippedState.Any || (equippedState == EquippedState.Equipped && player.Inventory.IsEquipped(x.Item)) || (equippedState == EquippedState.NotEquipped && !player.Inventory.IsEquipped(x.Item))
+            )?.Item;
+
         var suggestedItemNames = new string[0];
 
         if (invItem == null && matches.Length > 0)
         {
-            var startingCases = matches.Where(x => x.Item.Name.StartsWith(query, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var startingCases = matches.Where(x => x.Item.Name.StartsWith(itemName, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (startingCases.Length > 0)
             {
                 matches = startingCases;
@@ -167,7 +172,7 @@ public class ItemResolver : IItemResolver
         Item targetItem = null;
         if (invItem == null)
         {
-            var itemResolve = Resolve(query);
+            var itemResolve = Resolve(itemName);
             targetItem = itemResolve.Item;
         }
         else
@@ -187,7 +192,7 @@ public class ItemResolver : IItemResolver
             Item = targetItem,
             Count = 1,
             Price = -1,
-            Query = query,
+            Query = itemName,
             SuggestedItemNames = suggestedItemNames,
             InventoryItem = invItem
         };

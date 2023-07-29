@@ -864,6 +864,24 @@ namespace Shinobytes.Linq
                 }
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T> TakeRandom<T>(this IReadOnlyList<T> items, int count)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return default;
+            }
+            var result = new List<T>();
+            while (result.Count < count)
+            {
+                result.Add(items[UnityEngine.Random.Range(0, items.Count)]);
+            }
+
+            return result;
+        }
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Random<T>(this T[] items)
         {
@@ -874,6 +892,7 @@ namespace Shinobytes.Linq
 
             return items[UnityEngine.Random.Range(0, items.Length)];
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Random<T>(this IReadOnlyList<T> items)
         {

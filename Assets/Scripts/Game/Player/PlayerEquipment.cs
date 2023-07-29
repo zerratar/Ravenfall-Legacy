@@ -33,6 +33,7 @@ public class PlayerEquipment : MonoBehaviour
     private GameObject hammer;
     private GameObject fishingRod;
     private GameObject rake;
+    private float appearanceRefreshTimeout;
 
     //private bool staffVisible;
     //private bool bowVisible;
@@ -246,6 +247,11 @@ public class PlayerEquipment : MonoBehaviour
     {
         appearance.UpdateAppearance();
 
+        foreach (var e in EquippedItems)
+        {
+            appearance.Equip(e);
+        }
+
         appearance.Optimize();
     }
 
@@ -275,7 +281,7 @@ public class PlayerEquipment : MonoBehaviour
         return false;
     }
 
-    public void Unequip(GameInventoryItem item)
+    public void Unequip(GameInventoryItem item, bool rebuildMeshIfNecessary = false)
     {
         var equipped = equippedObjects.FirstOrDefault(x => x.Id == item.InstanceId);
 
@@ -285,6 +291,7 @@ public class PlayerEquipment : MonoBehaviour
             equipped = equippedObjects.FirstOrDefault(x => x.ItemId == item.ItemId);
         }
 
+        var needMeshRebuild = string.IsNullOrEmpty(item.Item.GenericPrefab) && item.Item.Category == ItemCategory.Armor;
         var removed = false;
         if (equipped != null)
         {
@@ -300,6 +307,11 @@ public class PlayerEquipment : MonoBehaviour
         if (!removed)
         {
             Shinobytes.Debug.LogError($"{player.PlayerName} is trying to unequip item but item did not exist. {item.Name}");
+        }
+
+        if (rebuildMeshIfNecessary && needMeshRebuild)
+        {
+            UpdateAppearance();
         }
     }
 

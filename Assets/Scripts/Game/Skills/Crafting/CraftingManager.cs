@@ -34,6 +34,11 @@ public class CraftingManager : MonoBehaviour
             return CraftValidationStatus.NeedCraftingStation;
         }
 
+        if (!item.Craftable)
+        {
+            return CraftValidationStatus.NotCraftable;
+        }
+
         if (item.RequiredCraftingLevel > player.Stats.Crafting.Level)
         {
             return CraftValidationStatus.NotEnoughSkill;
@@ -93,6 +98,11 @@ public class CraftingManager : MonoBehaviour
         var craftables = game.Items.GetItems()
             .Where(x =>
             {
+                if (!x.Craftable)
+                {
+                    return false;
+                }
+
                 var itemDefinition = x;
                 var sameCategory = itemDefinition.Category == itemCategory;
                 var sameType = (itemType == ItemType.None || itemDefinition.Type == itemType);

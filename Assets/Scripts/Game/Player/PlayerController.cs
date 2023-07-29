@@ -1039,7 +1039,9 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     internal async Task UnequipAsync(GameInventoryItem item)
     {
-        Inventory.Unequip(item);
+        Inventory.Unequip(item, true);
+        Inventory.UpdateEquipmentEffect();
+
         if (!IsBot)
         {
             await GameManager.RavenNest.Players.UnequipInventoryItemAsync(Id, item.InstanceId);

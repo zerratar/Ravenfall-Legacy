@@ -74,11 +74,11 @@
             wasUpdated = true;
         }
 
-        //if (Instance.PlayerAfkHours == null)
-        //{
-        //    Instance.PlayerAfkHours = -1;
-        //    wasUpdated = true;
-        //}
+        if (Instance.PlayerAfkHours == null)
+        {
+            Instance.PlayerAfkHours = -1;
+            wasUpdated = true;
+        }
 
         if (Instance.AutoKickAfkPlayers == null)
         {

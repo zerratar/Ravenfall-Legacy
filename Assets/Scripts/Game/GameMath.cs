@@ -486,11 +486,14 @@ public static class GameMath
         {
             if (level <= EasyLevel)
             {
-                return (level - 1) * GameMath.Lerp(IncrementMins / 8.0d, IncrementMins, level / EasyLevel);
+                var a = Math.Max(0, (level - 2) / EasyLevel);
+                var increment = Lerp(IncrementMins / 8.0d, IncrementMins, a);
+                return (level - 1) * increment;
             }
 
             return (level - 1) * IncrementMins;
         }
+
 
         /// <summary>
         /// Gets the expected exp ticks per minutes the target skill and players training the same thing in the area.

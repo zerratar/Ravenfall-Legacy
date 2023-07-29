@@ -30,9 +30,14 @@ public class RavenBot : System.IDisposable
         Connection.Register<MonsterPlayer>("monster");
         Connection.Register<ToggleHelmetVisibility>("toggle_helmet");
         Connection.Register<CycleEquippedPet>("toggle_pet");
-        Connection.Register<BuyItem>("buy_item");
-        Connection.Register<SellItem>("sell_item");
-        Connection.Register<VendorItem>("vendor_item");
+
+        Connection.Register<BuyItemFromMarket>("buy_item");
+        Connection.Register<PutItemOnMarket>("sell_item");
+        Connection.Register<SellItemToVendorVendor>("vendor_item");
+
+        Connection.Register<UseVendor>("vendor");
+        Connection.Register<UseMarketplace>("marketplace");
+
         Connection.Register<GiftItem>("gift_item");
         Connection.Register<ValueItem>("value_item");
         Connection.Register<CraftRequirement>("req_item");
@@ -80,7 +85,13 @@ public class RavenBot : System.IDisposable
         Connection.Register<DungeonStart>("dungeon_start");
         Connection.Register<RaidStreamer>("raid_streamer");
         Connection.Register<RaidStop>("raid_stop");
+
         Connection.Register<Craft>("craft");
+        Connection.Register<Cook>("cook");
+        Connection.Register<Mine>("mine");
+        Connection.Register<Farm>("farm");
+        Connection.Register<Fish>("chop");
+        Connection.Register<Chop>("chop");
 
         Connection.Register<ClanInfoHandler>("clan_info");
         Connection.Register<ClanStatsHandler>("clan_stats");

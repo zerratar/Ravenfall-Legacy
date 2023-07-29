@@ -197,7 +197,7 @@ public class ItemCreator : MonoBehaviour
         }
         finally
         {
-            if (item != null && item.IsGenericModel.GetValueOrDefault())
+            if (item != null && item.IsGenericModel)
             {
                 var prefab = UnityEngine.Resources.Load(item.GenericPrefab);
                 if (!prefab)

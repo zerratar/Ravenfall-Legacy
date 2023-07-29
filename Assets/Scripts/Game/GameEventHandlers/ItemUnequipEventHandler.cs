@@ -10,6 +10,6 @@ public class ItemUnequipEventHandler : GameEventHandler<ItemEquip>
             return;
         }
 
-        player.Inventory.Unequip(data.InventoryItemId);
+        player.Inventory.Unequip(data.InventoryItemId, true);
     }
 }

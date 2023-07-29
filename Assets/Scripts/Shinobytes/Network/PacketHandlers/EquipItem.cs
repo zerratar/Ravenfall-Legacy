@@ -8,7 +8,7 @@
     {
     }
 
-    public override async void Handle(string inputQuery, GameMessage gm, GameClient client)
+    public override async void Handle(string targetItem, GameMessage gm, GameClient client)
     {
         var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
@@ -17,12 +17,12 @@
             return;
         }
 
-        if (string.IsNullOrEmpty(inputQuery))
+        if (string.IsNullOrEmpty(targetItem))
         {
             return;
         }
 
-        if (inputQuery.Equals("all", System.StringComparison.OrdinalIgnoreCase))
+        if (targetItem.Equals("all", System.StringComparison.OrdinalIgnoreCase))
         {
             player.EquipBestItems();
             await Game.RavenNest.Players.EquipBestItemsAsync(player.Id);
@@ -32,17 +32,17 @@
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, parseUsername: false, parseAmount: false, playerToSearch: player);
+        var queriedItem = itemResolver.ResolveInventoryItem(player, targetItem, 5, EquippedState.NotEquipped);
 
         if (queriedItem.SuggestedItemNames.Length > 0)
         {
-            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, targetItem, string.Join(", ", queriedItem.SuggestedItemNames));
             return;
         }
 
         if (queriedItem.Item == null)
         {
-            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, inputQuery);
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, targetItem);
             return;
         }
 

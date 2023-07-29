@@ -27,6 +27,16 @@ scopes = {
 	"last_search.8EAB405C" = "coin"
 	"OpenInspectorPreview.8EAB405C" = "0"
 	"currentGroup.8EAB405C" = "_group_provider_Files"
+	"picker_window_position_offset.74AD8FDB" = "-460;769,6;581,6;550,4"
+	"picker_search_text.74AD8FDB" = "white"
+	"last_search.74AD8FDB" = "white"
+	"OpenInspectorPreview.74AD8FDB" = "0"
+	"currentGroup.74AD8FDB" = "all"
+	"picker_window_position_offset.3172962C" = "-532;693,6;581,6;550,4"
+	"picker_search_text.3172962C" = "coin"
+	"last_search.3172962C" = "coin"
+	"OpenInspectorPreview.3172962C" = "0"
+	"currentGroup.3172962C" = "all"
 }
 providers = {
 	asset = {
@@ -83,6 +93,8 @@ providers = {
 objectSelectors = {
 }
 recentSearches = [
+	"coi"
+	"w"
 	"cl"
 	"chair-idle"
 	".fbx"

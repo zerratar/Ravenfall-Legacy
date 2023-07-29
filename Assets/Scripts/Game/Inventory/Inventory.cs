@@ -19,7 +19,7 @@ public class GameInventoryItem
         this.Item = item;
         this.Enchantments = Inventory.GetItemEnchantments(instance.Enchantment);
 
-        Soulbound = instance.Soulbound ?? item.Soulbound ?? false;
+        Soulbound = instance.Soulbound || item.Soulbound;
         RequiredDefenseLevel = item.RequiredDefenseLevel;
         RequiredAttackLevel = item.RequiredAttackLevel;
         RequiredSlayerLevel = item.RequiredSlayerLevel;
@@ -325,7 +325,7 @@ public class Inventory : MonoBehaviour
                 existing.Name = enchantedItem.Name;
                 existing.InventoryItem = enchantedItem;
                 existing.Enchantments = Inventory.GetItemEnchantments(enchantedItem.Enchantment);
-                existing.Soulbound = enchantedItem.Soulbound.GetValueOrDefault();
+                existing.Soulbound = enchantedItem.Soulbound;
                 return existing;
             }
 
@@ -340,7 +340,7 @@ public class Inventory : MonoBehaviour
             var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == item.Id);
             if (existing != null)
             {
-                if (item.Soulbound.GetValueOrDefault() || !string.IsNullOrEmpty(item.Enchantment) || item.TransmogrificationId != null)
+                if (item.Soulbound || !string.IsNullOrEmpty(item.Enchantment) || item.TransmogrificationId != null)
                 {
                     existing.Amount -= amount;
                     return CreateInstance(item, amount);
@@ -521,35 +521,37 @@ public class Inventory : MonoBehaviour
         equipment.EquipAll(equipped);
     }
 
-    public void Unequip(Guid instanceId)
+    public void Unequip(Guid instanceId, bool rebuildMeshIfNecessary = false)
     {
         lock (mutex)
         {
             var targetItem = this.equipped.FirstOrDefault(x => x.InventoryItem.Id == instanceId);
             if (targetItem != null)
             {
+                targetItem.InventoryItem.Equipped = false;
                 AddToBackpack(targetItem);
                 equipped.Remove(targetItem);
-                equipment.Unequip(targetItem);
+                equipment.Unequip(targetItem, rebuildMeshIfNecessary);
             }
         }
     }
 
-    public void Unequip(GameInventoryItem item)
+    public void Unequip(GameInventoryItem item, bool rebuildMeshIfNecessary = false)
     {
-        Unequip(item.InstanceId);
+        Unequip(item.InstanceId, rebuildMeshIfNecessary);
     }
 
-    public void Unequip(ItemCategory category, ItemType type)
+    public void Unequip(ItemCategory category, ItemType type, bool rebuildMesh = false)
     {
         lock (mutex)
         {
             var equip = GetEquipmentOfType(category, type);
             if (equip != null)
             {
+                equip.InventoryItem.Equipped = false;
                 AddToBackpack(equip);
                 equipped.Remove(equip);
-                equipment.Unequip(equip);
+                equipment.Unequip(equip, rebuildMesh);
             }
         }
     }
@@ -595,6 +597,7 @@ public class Inventory : MonoBehaviour
                 var shield = GetEquipmentOfType(ItemCategory.Armor, ItemType.Shield);
                 if (shield != null)
                 {
+                    shield.InventoryItem.Equipped = false;
                     AddToBackpack(shield);
                     equipped.Remove(shield);
                     equipment.Unequip(shield);
@@ -610,11 +613,13 @@ public class Inventory : MonoBehaviour
             var equip = GetEquipmentOfType(item.Item.Category, item.Item.Type);
             if (equip != null)
             {
+                equip.InventoryItem.Equipped = false;
                 AddToBackpack(equip);
                 equipped.Remove(equip);
                 equipment.Unequip(equip);
             }
 
+            item.InventoryItem.Equipped = true;
             equipped.Add(item);
 
             if (item.Amount == 1)
@@ -797,6 +802,8 @@ public class Inventory : MonoBehaviour
         equipment.UpdateAppearance();
 
         StartCoroutine(DestroyArmorMesh());
+
+        UpdateEquipmentEffect();
     }
 
 
@@ -816,6 +823,7 @@ public class Inventory : MonoBehaviour
         }
         equipment.UpdateAppearance();
         StartCoroutine(DestroyArmorMesh());
+        UpdateEquipmentEffect();
     }
 
     private IEnumerator DestroyArmorMesh()

@@ -99,6 +99,8 @@ public static class Localization
     public static readonly string MSG_CRAFT_FAILED_FERRY = Meta("crafting", "fail") + "You cannot craft while on the ferry";
     public static readonly string MSG_CRAFT_FAILED_STATION = Meta("crafting", "fail") + "You can't currently craft weapons or armor. You have to be at the crafting table by typing !train crafting";
     public static readonly string MSG_CRAFT_FAILED_LEVEL = Meta("crafting", "fail") + "You can't craft this item, it requires level {reqCraftingLevel} crafting.";
+    public static readonly string MSG_CRAFT_FAILED_NOT_CRAFTABLE = Meta("crafting", "fail") + "{itemName} is not a craftable item.";
+
     public static readonly string MSG_CRAFT_FAILED_RES = Meta("crafting", "fail") + "Insufficient resources to craft {itemName}";
     public static readonly string MSG_CRAFT_EQUIPPED = Meta("crafting", "info") + "You crafted and equipped a {itemName}!";
     public static readonly string MSG_CRAFT_ITEM_NOT_FOUND = Meta("crafting", "fail") + "Could not find an item matching the query '{query}'";
@@ -132,6 +134,7 @@ public static class Localization
     public static readonly string MSG_DISENCHANT_NOT_ENCHANTED = Meta("enchanting", "fail") + "You cannot disenchant {itemName} as it is not enchanted.";
     public static readonly string MSG_DISENCHANT_UNKNOWN_ERROR = Meta("enchanting", "fail") + "Disenchanting {itemName} failed. Please try again later.";
     public static readonly string MSG_DISENCHANT_SUCCESS = Meta("enchanting", "info") + "You have successfully removed the enchantment from {oldItemName}.";
+    public static readonly string MSG_ENCHANT_COST_NO_REQ = Meta("enchanting", "info") + "There are currently no requirements for enchanting {itemName}.";
 
     public static readonly string MSG_UNEQUIPPED = Meta("info", "equipment", "unequip") + "You have unequipped {itemName}.";
     public static readonly string MSG_UNEQUIPPED_ALL = Meta("info", "equipment", "unequip") + "You have unequipped all of your items.";
@@ -142,7 +145,10 @@ public static class Localization
     public static readonly string MSG_SET_PET_NOT_OWNED = Meta("info", "equipment", "pet", "fail") + "You do not have any {itemName}.";
     public static readonly string MSG_ITEM_NOT_EQUIPPED = Meta("info", "equipment", "unequip", "fail") + "You do not have {itemName} equipped.";
 
+
+
     // todo add more meta and review the ones added above.
+
     public static readonly string MSG_ITEM_NOT_OWNED = "You do not have any {itemName}.";
     public static readonly string MSG_GET_PET_NO_PET = "You do not have any pets equipped.";
     public static readonly string MSG_GET_PET = "You currently have {petName} equipped.";
@@ -182,12 +188,18 @@ public static class Localization
     public static readonly string MSG_SELL_MARKETPLACE_ERROR = Meta("marketplace", "fail") + "Error accessing marketplace right now.";
     public static readonly string MSG_ITEM_SOULBOUND = Meta("marketplace", "sell", "soulbound", "fail") + "{itemName} is soulbound and cannot be sold to the marketplace or gifted to another player.";
     public static readonly string MSG_SELL = Meta("marketplace", "sell", "info") + "{itemAmount}x {itemName} was put in the marketplace listing for {itemPrice} per item.";
-    public static readonly string MSG_VALUE_ITEM = Meta("info", "item", "value") + "{itemName} can be sold for {vendorPrice} in the !vendor";
+    public static readonly string MSG_VALUE_ITEM = Meta("info", "item", "value") + "{itemName} can be sold for {vendorPrice} using !vendor";
     public static readonly string MSG_VALUE_ITEM_NOT_FOUND = Meta("info", "item", "value", "fail") + "Could not find an item matching the name: {query}";
     public static readonly string MSG_VENDOR_ITEM = Meta("vendor", "info", "item") + "You sold {vendorCount}x {itemName} to the vendor for {cost} coins!";
     public static readonly string MSG_VENDOR_ITEM_NOT_FOUND = Meta("vendor", "info", "item", "fail") + "Could not find an item matching the name: {query}";
     public static readonly string MSG_VENDOR_ITEM_NOT_OWNED = Meta("vendor", "info", "item", "fail") + "You do not own a {itemName}.";
     public static readonly string MSG_VENDOR_ITEM_FAILED = Meta("vendor", "info", "item", "fail") + "Error selling {vendorCount}x {itemName} to the vendor. FeelsBadMan";
+    public static readonly string MSG_VENDOR_MISSING_ARGS = Meta("vendor", "info", "fail") + "To use the vendor, you must supply an action and item. You can use: !vendor sell itemName, !vendor buy itemName and !vendor value itemName";
+    public static readonly string MSG_VENDOR_MISSING_ACTION = Meta("vendor", "info", "fail") + "Missing required vendor action, if you inteded to sell the item to the vendor, please use !vendor sell {query}";
+
+    public static readonly string MSG_MARKET_MISSING_ARGS = Meta("marketplace", "info", "fail") + "To use the marketplace, you must supply an action and item. You can use: !market sell itemName, !market buy itemName and !market value itemName";
+    public static readonly string MSG_MARKET_MISSING_ACTION = Meta("marketplace", "info", "fail") + "Missing required market action, if you inteded to put up an item for sale on the market, please use !market sell {query}";
+
     public static readonly string MSG_DUNGEON_START_FAILED_WAR = Meta("dungeon", "start", "fail", "war") + "Unable to start a dungeon during a war. Please wait for it to be over.";
     public static readonly string MSG_DUNGEON_START_FAILED_RAID = Meta("dungeon", "start", "fail", "raid") + "Unable to start a dungeon during a raid. Please wait for it to be over.";
     public static readonly string MSG_TICTACTOE_PLAY = Meta("minigame", "tic tac toe", "info") + "Use !ttt 1-9 to play!";

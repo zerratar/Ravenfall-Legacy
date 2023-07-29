@@ -178,7 +178,17 @@ public partial class SyntyPlayerAppearance
             femaleLegsLeft[i].SetActive(false);
         }
         if (useMeshCombiner && (meshCombiner?.isMeshesCombineds ?? false))
-            meshCombiner?.UndoCombineMeshes(); 
+        {
+            //Search by gameobject containing merged meshes
+            Transform objMerged = GetComponent<Transform>().Find("Combined Mesh");
+            //Destroy the object, and clear memory
+            if (objMerged != null)
+            {
+                DestroyImmediate(objMerged.gameObject, true);
+            }
+
+            meshCombiner?.Clear();
+        }
     }
 
     /// <summary>

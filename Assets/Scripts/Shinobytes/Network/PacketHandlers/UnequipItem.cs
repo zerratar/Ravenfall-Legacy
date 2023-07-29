@@ -26,7 +26,14 @@
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, parseAmount: false, playerToSearch: player);
+
+        var queriedItem = itemResolver.ResolveTradeQuery(inputQuery,
+            parsePrice: false,
+            parseAmount: false,
+            playerToSearch: player,
+            equippedState: EquippedState.Equipped);
+
+        //var queriedItem = itemResolver.ResolveInventoryItem(player, inputQuery, 5, EquippedState.Equipped);
 
         if (queriedItem.SuggestedItemNames.Length > 0)
         {
@@ -41,7 +48,7 @@
         }
 
 
-        if (queriedItem.InventoryItem == null || !queriedItem.InventoryItem.InventoryItem.Equipped)
+        if (queriedItem.InventoryItem == null || !player.Inventory.IsEquipped(queriedItem.InventoryItem))
         {
             client.SendReply(gm, Localization.MSG_ITEM_NOT_EQUIPPED, queriedItem.Item.Name);
             return;
