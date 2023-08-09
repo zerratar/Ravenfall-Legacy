@@ -8,6 +8,9 @@
     Farming,
     Slayer,
     Sailing,
+    Gathering,
+    Alchemy,
+
 
     // KEEP LAST FFS
     Fighting

@@ -17,7 +17,10 @@ public static class Localization
 
     public static readonly string MSG_COMMAND_COOLDOWN = Meta("system", "fail") + "You must wait another {cooldown} secs to use that command.";
     public static readonly string MSG_NOT_PLAYING = Meta("system", "fail") + "You are not currently playing. Use !join to start playing!";
-    public static readonly string MSG_STATS = Meta("info", "stats") + "Combat level {combatLevel}, {skills} -- TOTAL {total} --, Eq - power {weaponPower}, aim {weaponAim}, armor {armorPower}";
+    public static readonly string MSG_EQUIP_STATS = Meta("info", "equipment") + "{armorPower} Armor, {weaponPower} Melee Weapon Power, {weaponAim} Melee Weapon Aim, {magicPower} Magic/Healing Power, {magicAim} Magic Aim, {rangedPower} Ranged Weapon Power, {rangedAim} Ranged Weapon Aim";
+    public static readonly string MSG_EQUIP_STATS_FORMAT = "{armorPower} Armor, {weaponPower} Melee Weapon Power, {weaponAim} Melee Weapon Aim, {magicPower} Magic/Healing Power, {magicAim} Magic Aim, {rangedPower} Ranged Weapon Power, {rangedAim} Ranged Weapon Aim";
+
+    public static readonly string MSG_STATS = Meta("info", "stats") + "Combat level {combatLevel}, {skills} -- TOTAL {total} --";
     public static readonly string MSG_SKILL = Meta("info", "skill") + "{skill}, {currenExp} / {requiredExp} EXP.";
     public static readonly string MSG_PLAYER_RESOURCES = Meta("info", "resources") + "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
     public static readonly string MSG_TOWN_RESOURCES = Meta("info", "resources") + "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
@@ -80,6 +83,12 @@ public static class Localization
     public static readonly string MSG_BUY_ITEM_MARKETPLACE_ERROR = Meta("marketplace", "buy", "fail") + "Error accessing marketplace right now.";
     public static readonly string MSG_BUY_ITEM_ERROR = Meta("marketplace", "buy", "fail") + "Error buying {itemName}. Server returned an error. :( Try !leave and then !join to see if buying it was successful or not.";
     public static readonly string MSG_BUY_ITEM_TOO_LOW = Meta("marketplace", "buy", "fail") + "Unable to buy any {itemName}, the cheapest asking price is {cheapestPrice}.";
+
+    public static readonly string MSG_GATHERING_SUGGEST = Meta("info", "gathering") + "Could not find a resource type matching the query '{query}', did you mean: {suggestion}?";
+    public static readonly string MSG_FISH_SUGGEST = Meta("info", "fishing") + "Could not find a fish type matching the query '{query}', did you mean: {suggestion}?";
+    public static readonly string MSG_CHOP_SUGGEST = Meta("info", "woodcutting") + "Could not find a wood type matching the query '{query}', did you mean: {suggestion}?";
+    public static readonly string MSG_MINE_SUGGEST = Meta("info", "mining") + "Could not find a ore type matching the query '{query}', did you mean: {suggestion}?";
+    public static readonly string MSG_FARM_SUGGEST = Meta("info", "farming") + "Could not find a farmable type matching the query '{query}', did you mean: {suggestion}?";
 
     public static readonly string MSG_IN_DUEL = Meta("info", "location") + "You are currently fighting in a duel.";
     public static readonly string MSG_IN_RAID = Meta("info", "location") + "You are currently fighting in the raid.";

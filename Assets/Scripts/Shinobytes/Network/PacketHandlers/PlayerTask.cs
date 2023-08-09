@@ -26,8 +26,9 @@ public class PlayerTask : ChatBotCommandHandler<PlayerTaskRequest>
                     return;
                 }
             }
-
-            player.SetTask(task.Task, task.Arguments);
+            
+            var arg = task.Arguments != null && task.Arguments.Length > 0 ? task.Arguments[0] : null;
+            player.SetTask(task.Task, arg);
         }
         catch (Exception exc)
         {

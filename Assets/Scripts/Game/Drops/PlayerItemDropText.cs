@@ -98,7 +98,7 @@ public class PlayerItemDropText
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsVocal(char c)
+    public static bool IsVocal(char c)
     {
         c = char.ToLower(c);
         return c == 'a' || c == 'i' || c == 'e' || c == 'u' || c == 'o';

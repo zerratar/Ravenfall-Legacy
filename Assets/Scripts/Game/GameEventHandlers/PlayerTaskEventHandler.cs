@@ -5,6 +5,6 @@
         var player = gameManager.Players.GetPlayerById(data.PlayerId);
         if (!player) return;
 
-        player.SetTask(data.Task, new string[] { data.TaskArgument });
+        player.SetTask(data.Task, data.TaskArgument);
     }
 }

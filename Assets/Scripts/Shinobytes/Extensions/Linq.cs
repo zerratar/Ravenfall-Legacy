@@ -893,6 +893,19 @@ namespace Shinobytes.Linq
             return items[UnityEngine.Random.Range(0, items.Length)];
         }
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T PickRandom<T>(params T[] items)
+        {
+            if (items == null || items.Length == 0)
+            {
+                return default;
+            }
+
+            return items[UnityEngine.Random.Range(0, items.Length)];
+        }
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Random<T>(this IReadOnlyList<T> items)
         {

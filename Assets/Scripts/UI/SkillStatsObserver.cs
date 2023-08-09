@@ -11,6 +11,8 @@ public class SkillStatsObserver : MonoBehaviour
     [SerializeField] private StatObserver farming;
     [SerializeField] private StatObserver slayer;
     [SerializeField] private StatObserver sailing;
+    [SerializeField] private StatObserver gathering;
+    [SerializeField] private StatObserver alchemy;
 
     private float nextUpdate = 0f;
     private float updateInterval = 1f;
@@ -47,5 +49,7 @@ public class SkillStatsObserver : MonoBehaviour
         farming.Observe(observedPlayer?.Stats?.Farming);
         slayer.Observe(observedPlayer?.Stats?.Slayer);
         sailing.Observe(observedPlayer?.Stats?.Sailing);
+        gathering.Observe(observedPlayer?.Stats?.Gathering);
+        alchemy.Observe(observedPlayer?.Stats?.Alchemy);
     }
 }

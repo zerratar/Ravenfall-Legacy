@@ -136,7 +136,7 @@ public class PlayerDetails : MonoBehaviour
             }
         }
         var playerTask = observedPlayer.GetTask();
-        var isTrainingSomething = playerTask != TaskType.None || observedPlayer.GetTaskArguments().Count > 0;
+        var isTrainingSomething = playerTask != TaskType.None || !string.IsNullOrEmpty(observedPlayer.GetTaskArgument());
         SetActive(lblTraining.gameObject, isTrainingSomething);
         SetActive(lblTrainingSkill.gameObject, isTrainingSomething);
 

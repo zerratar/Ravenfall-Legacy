@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using RavenNest.Models;
 using UnityEngine;
@@ -29,7 +28,7 @@ public class CraftingManager : MonoBehaviour
             return CraftValidationStatus.NeedCraftingStation;
         }
 
-        if (!player.GetTaskArguments().Any(x => x.ToLower().Contains("craft")))
+        if (player.GetTask() != TaskType.Crafting)
         {
             return CraftValidationStatus.NeedCraftingStation;
         }
@@ -145,6 +144,4 @@ public class CraftingManager : MonoBehaviour
 
         return craftables.FirstOrDefault();
     }
-
-
 }

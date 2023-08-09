@@ -1,7 +1,9 @@
-﻿using Shinobytes.Linq;
+﻿using RavenNest.Models;
+using Shinobytes.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class DungeonController : MonoBehaviour
@@ -48,7 +50,6 @@ public class DungeonController : MonoBehaviour
 
     private Transform activeCameraPoint;
     public bool HasStartingPoint => !!startingPoint;
-
     void Start()
     {
         itemDropHandler = GetComponent<ItemDropHandler>();
@@ -101,6 +102,7 @@ public class DungeonController : MonoBehaviour
             return;
         }
     }
+
     private DungeonRoomController[] GetRooms()
     {
         var r = GetComponentsInChildren<DungeonRoomController>(true);
@@ -204,16 +206,7 @@ public class DungeonController : MonoBehaviour
         player.AddExp(skillFactor);
     }
 
-    public void RewardItemDrops(IReadOnlyList<PlayerController> joinedPlayers)
-    {
-        if (!ItemDrops) return;
-        var collection = ItemDrops.DropItems(joinedPlayers, DropType.Higher);
-        gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain and yielded " + collection.Count + " item treasures!");
-        foreach (var msg in collection.Messages)
-        {
-            gameManager.RavenBot.Announce(msg);
-        }
-    }
+
 
     internal void DisableContainer()
     {

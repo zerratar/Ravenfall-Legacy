@@ -15,10 +15,11 @@ public class RaidHandler : MonoBehaviour
     private IslandController previousIsland;
     private Vector3 prevPosition;
     private string[] prevTaskArgs;
-    private Chunk prevChunk;
     private bool wasResting;
 
     private FerryState ferryState;
+    private TaskType previousTask;
+    private string previousTaskArgument;
 
     public bool InRaid { get; private set; }
     public IslandController PreviousIsland => previousIsland;
@@ -105,13 +106,7 @@ public class RaidHandler : MonoBehaviour
 #if DEBUG
         Shinobytes.Debug.Log($"{player.PlayerName} entered the raid");
 #endif
-        prevTaskArgs = player.GetTaskArguments().ToArray();
-        if (!gameManager || !gameManager.Raid || !gameManager.Raid.Boss)
-        {
-            StartCoroutine(WaitForStart());
-            return;
-        }
-
+       
         wasResting = player.Onsen.InOnsen;
 
         ferryState = new()
@@ -130,13 +125,21 @@ public class RaidHandler : MonoBehaviour
             player.Ferry.RemoveFromFerry();
         }
 
+        this.previousTask = this.player.GetTask();
+        this.previousTaskArgument = this.player.GetTaskArgument();
+
+        if (!gameManager || !gameManager.Raid || !gameManager.Raid.Boss)
+        {
+            StartCoroutine(WaitForStart());
+            return;
+        }
+
         var boss = gameManager.Raid.Boss;
         if (player.Island != boss.Island)
         {
             teleported = true;
             prevPosition = player.transform.position;
             previousIsland = player.Island;
-            prevChunk = player.Chunk;
             player.Teleporter.Teleport(boss.Island.SpawnPosition);
         }
     }
@@ -161,7 +164,7 @@ public class RaidHandler : MonoBehaviour
         {
             teleported = true;
             prevPosition = player.transform.position;
-            prevChunk = player.Chunk;
+            previousIsland = player.Island;
             player.Teleporter.Teleport(boss.Island.SpawnPosition);
         }
     }
@@ -216,11 +219,12 @@ public class RaidHandler : MonoBehaviour
         {
             teleported = false;
             player.Teleporter.Teleport(prevPosition);
-            player.Chunk = prevChunk;
-            if (prevChunk != null)
+
+            if (previousTask != TaskType.None)
             {
-                player.SetTask(prevChunk.ChunkType, prevTaskArgs);
+                this.player.SetTask(previousTask, previousTaskArgument);
             }
+
             player.taskTarget = null;
         }
 

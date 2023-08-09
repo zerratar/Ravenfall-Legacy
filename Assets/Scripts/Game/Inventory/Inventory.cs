@@ -766,6 +766,14 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    public GameInventoryItem GetEquipmentOfType(RavenNest.Models.ItemType type)
+    {
+        lock (mutex)
+        {
+            return equipped.FirstOrDefault(x => x.Item.Type == type);
+        }
+    }
+
     public GameInventoryItem GetEquipmentOfType(ItemCategory itemCategory, RavenNest.Models.ItemType type)
     {
         lock (mutex)

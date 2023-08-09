@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RavenNest.Models;
 using Shinobytes.Linq;
 using UnityEngine;
+using static UnityEngine.Networking.UnityWebRequest;
 
 public class ItemDropHandler : MonoBehaviour
 {
@@ -23,6 +24,7 @@ public class ItemDropHandler : MonoBehaviour
         dropList = droplist;
         items = dropList.Items;
     }
+
 
     public PlayerItemDropText DropItems(IEnumerable<PlayerController> players, DropType dropType)
     {
@@ -119,8 +121,8 @@ public class ItemDropHandler : MonoBehaviour
             if (x.Item == null || x.ItemID != x.Item.Id.ToString())
             {
                 x.Item = allItems.FirstOrDefault(y =>
-                    y.Name.StartsWith(x.ItemName ?? "", StringComparison.OrdinalIgnoreCase) ||
-                    y.Name.StartsWith(x.ItemID, StringComparison.OrdinalIgnoreCase) ||
+                    y.Name.Equals(x.ItemName ?? "", StringComparison.OrdinalIgnoreCase) ||
+                    y.Name.Equals(x.ItemID, StringComparison.OrdinalIgnoreCase) ||
                     y.Id.ToString().ToLower() == x.ItemID.ToLower());
 
                 if (x.Item == null && Guid.TryParse(x.ItemID, out var itemId))

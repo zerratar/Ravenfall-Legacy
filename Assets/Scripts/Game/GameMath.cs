@@ -247,6 +247,8 @@ public static class GameMath
             case TownHouseSlotType.Healing: return stats.Healing;
             case TownHouseSlotType.Magic: return stats.Magic;
             case TownHouseSlotType.Ranged: return stats.Ranged;
+            case TownHouseSlotType.Gathering: return stats.Gathering;
+            case TownHouseSlotType.Alchemy: return stats.Alchemy;
             default: return stats.Mining;
         }
     }
@@ -255,6 +257,8 @@ public static class GameMath
     {
         switch (skill)
         {
+            case Skill.Alchemy: return TownHouseSlotType.Alchemy;
+            case Skill.Gathering: return TownHouseSlotType.Gathering;
             case Skill.Cooking: return TownHouseSlotType.Cooking;
             case Skill.Crafting: return TownHouseSlotType.Crafting;
             case Skill.Farming: return TownHouseSlotType.Farming;
@@ -524,6 +528,8 @@ public static class GameMath
                 case Skill.Farming:
                 case Skill.Crafting:
                 case Skill.Cooking:
+                case Skill.Gathering:
+                case Skill.Alchemy:
                 case Skill.Fishing:
                     return 1d / 3d;
 

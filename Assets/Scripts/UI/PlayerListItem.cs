@@ -300,8 +300,7 @@ public class PlayerListItem : MonoBehaviour
         //progressBarHealth.offsetMax = new Vector2(-this.width, progressBarHealth.offsetMin.y);
         //progressBarSkill.offsetMax = new Vector2(-this.width, progressBarSkill.offsetMin.y);
 
-        var taskArgs = TargetPlayer.GetTaskArguments();
-        hasSkill = taskArgs != null && taskArgs.Count > 0;
+        hasSkill = TargetPlayer.GetTask() != TaskType.None;
         var activeSkill = TargetPlayer.ActiveSkill;
         if (hasSkill)
         {

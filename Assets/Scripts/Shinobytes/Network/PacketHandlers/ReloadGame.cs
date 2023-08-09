@@ -1,4 +1,6 @@
 ﻿
+using RavenNest.Models;
+
 public class ReloadGame : ChatBotCommandHandler
 {
     public ReloadGame(

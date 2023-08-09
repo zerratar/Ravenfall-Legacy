@@ -12,6 +12,7 @@ public class Chunk : MonoBehaviour
     private TreeController[] trees;
     private CraftingStation[] craftingStations;
     private FarmController[] farmingPatches;
+    private GatherController[] gatheringSpots;
 
     private ChunkTask task;
     //private ChunkTask secondaryTask;
@@ -84,6 +85,9 @@ public class Chunk : MonoBehaviour
         {
             farmingPatches = farmingPatchesContainer.GetComponentsInChildren<FarmController>();
         }
+
+        gatheringSpots = gameObject.GetComponentsInChildren<GatherController>();
+
         started = true;
     }
 
@@ -183,6 +187,10 @@ public class Chunk : MonoBehaviour
                     return CalculateExpFactor(System.Math.Min(s.Farming.Level, secondary), requirement, nextRequirement);
                 case TaskType.Cooking:
                     return CalculateExpFactor(System.Math.Min(s.Cooking.Level, secondary), requirement, nextRequirement);
+                case TaskType.Gathering:
+                    return CalculateExpFactor(System.Math.Min(s.Gathering.Level, secondary), requirement, nextRequirement);
+                case TaskType.Alchemy:
+                    return CalculateExpFactor(System.Math.Min(s.Alchemy.Level, secondary), requirement, nextRequirement);
             }
 
             return 1;
@@ -230,22 +238,15 @@ public class Chunk : MonoBehaviour
     {
         switch (type)
         {
-            case TaskType.Fighting:
-                return new FightingTask(() => enemies);
-            case TaskType.Mining:
-                return new MiningTask(() => miningSpots);
-            case TaskType.Fishing:
-                return new FishingTask(() => fishingSpots);
-            case TaskType.Woodcutting:
-                return new WoodcuttingTask(() => trees);
-            case TaskType.Crafting:
-                return new CraftingTask(() =>
-                    craftingStations.AsList(x => x.StationType == CraftingStationType.Crafting));
-            case TaskType.Farming:
-                return new FarmingTask(() => farmingPatches);
-            case TaskType.Cooking:
-                return new CookingTask(() =>
-                    craftingStations.AsList(x => x.StationType == CraftingStationType.Cooking));
+            case TaskType.Fighting: return new FightingTask(() => enemies);
+            case TaskType.Mining: return new MiningTask(() => miningSpots);
+            case TaskType.Fishing: return new FishingTask(() => fishingSpots);
+            case TaskType.Woodcutting: return new WoodcuttingTask(() => trees);
+            case TaskType.Farming: return new FarmingTask(() => farmingPatches);
+            case TaskType.Crafting: return new CraftingTask(() => craftingStations.AsList(x => x.StationType == CraftingStationType.Crafting));
+            case TaskType.Cooking: return new CookingTask(() => craftingStations.AsList(x => x.StationType == CraftingStationType.Cooking));
+            case TaskType.Alchemy: return new AlchemyTask(() => craftingStations.AsList(x => x.StationType == CraftingStationType.Brewing));
+            case TaskType.Gathering: return new GatheringTask(() => gatheringSpots);
             default: return null;
         }
     }

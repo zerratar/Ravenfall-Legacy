@@ -35,9 +35,16 @@ public class JsonBasedItemRepository
                 this.items = new List<Item>();
                 return;
             }
+            try
+            {
+                var content = System.IO.File.ReadAllText(file);
 
-            var content = System.IO.File.ReadAllText(file);
-            this.items = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Item>>(content);
+                this.items = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Item>>(content);
+            }
+            catch (System.Exception exc)
+            {
+                Shinobytes.Debug.LogError(exc);
+            }
         }
     }
 }

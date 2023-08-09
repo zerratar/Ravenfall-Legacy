@@ -54,13 +54,6 @@ public class FarmingTask : ChunkTask
             return false;
         }
 
-        //var possibleTargets = lazyTargets();
-        //if (!possibleTargets.FirstOrDefault(x => x.transform == target))
-        //{
-        //    reason = TaskExecutionStatus.InvalidTarget;
-        //    return false;
-        //}
-
         if (Vector3.Distance(player.transform.position, farm.transform.position) >= farm.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;

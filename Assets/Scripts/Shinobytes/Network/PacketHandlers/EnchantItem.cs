@@ -193,5 +193,4 @@ public class EnchantItem : ChatBotCommandHandler<string>
 
         return "a moment";
     }
-
 }

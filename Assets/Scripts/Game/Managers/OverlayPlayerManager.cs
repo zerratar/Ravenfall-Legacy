@@ -87,7 +87,7 @@ public class OverlayPlayerManager
 
             var state = player.Character.State;
 
-            playerMap.PlayerController.SetTask(state.Task, new string[] { state.TaskArgument });
+            playerMap.PlayerController.SetTask(state.Task, state.TaskArgument);
 
             Update(playerMap.OverlayPlayer, player);
 

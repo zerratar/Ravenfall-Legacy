@@ -29,6 +29,8 @@ public class Skills : IComparable
     public SkillStat Woodcutting;
     public SkillStat Slayer;
     public SkillStat Sailing;
+    public SkillStat Gathering;
+    public SkillStat Alchemy;
     public static readonly Skills Zero = new Skills();
 
     public Skills()
@@ -48,6 +50,8 @@ public class Skills : IComparable
         Slayer = new SkillStat(Skill.Slayer, nameof(Slayer), 1, 0);
         Sailing = new SkillStat(Skill.Sailing, nameof(Sailing), 1, 0);
         Healing = new SkillStat(Skill.Healing, nameof(Healing), 1, 0);
+        Gathering = new SkillStat(Skill.Gathering, nameof(Gathering), 1, 0);
+        Alchemy = new SkillStat(Skill.Alchemy, nameof(Alchemy), 1, 0);
 
         this.skills = new ConcurrentDictionary<string, SkillStat>();
         SetupSkillLookup();
@@ -70,7 +74,8 @@ public class Skills : IComparable
         Slayer = new SkillStat(Skill.Slayer, nameof(Slayer), skills.SlayerLevel, skills.Slayer);
         Sailing = new SkillStat(Skill.Sailing, nameof(Sailing), skills.SailingLevel, skills.Sailing);
         Healing = new SkillStat(Skill.Healing, nameof(Healing), skills.HealingLevel, skills.Healing);
-
+        Gathering = new SkillStat(Skill.Gathering, nameof(Gathering), skills.GatheringLevel, skills.Gathering);
+        Alchemy = new SkillStat(Skill.Alchemy, nameof(Alchemy), skills.AlchemyLevel, skills.Alchemy);
 
         this.skills = new ConcurrentDictionary<string, SkillStat>();
         SetupSkillLookup();
@@ -111,7 +116,9 @@ public class Skills : IComparable
             Magic.Experience,
             Ranged.Experience,
             Sailing.Experience,
-            Healing.Experience
+            Healing.Experience,
+            Gathering.Experience,
+            Alchemy.Experience
         };
     }
 
@@ -134,7 +141,9 @@ public class Skills : IComparable
             Magic.Level,
             Ranged.Level,
             Sailing.Level,
-            Healing.Level
+            Healing.Level,
+            Gathering.Level,
+            Alchemy.Level
         };
     }
     public float HealthPercent => Health.CurrentValue / (float)Health.MaxLevel;
@@ -155,7 +164,9 @@ public class Skills : IComparable
             Magic,
             Ranged,
             Sailing,
-            Healing
+            Healing,
+            Gathering,
+            Alchemy
         });
 
     public int CompareTo(object obj)
@@ -237,7 +248,13 @@ public class Skills : IComparable
             StrengthLevel = skills.Strength.Level,
 
             Woodcutting = skills.Woodcutting.Experience,
-            WoodcuttingLevel = skills.Woodcutting.Level
+            WoodcuttingLevel = skills.Woodcutting.Level,
+
+            Gathering = skills.Gathering.Experience,
+            GatheringLevel = skills.Gathering.Level,
+
+            Alchemy = skills.Alchemy.Experience,
+            AlchemyLevel = skills.Alchemy.Level,
         };
     }
 
@@ -296,6 +313,8 @@ public class Skills : IComparable
             case TaskSkill.Farming: return Farming;
             case TaskSkill.Slayer: return Slayer;
             case TaskSkill.Sailing: return Sailing;
+            case TaskSkill.Gathering: return Gathering;
+            case TaskSkill.Alchemy: return Alchemy;
         }
         return null;
     }
@@ -485,6 +504,8 @@ public static class SkillUtilities
             SkillLookup["wood"] = Skill.Woodcutting;
             SkillLookup["craft"] = Skill.Crafting;
             SkillLookup["mine"] = Skill.Mining;
+            SkillLookup["gather"] = Skill.Gathering;
+            SkillLookup["brew"] = Skill.Alchemy;
         }
     }
 

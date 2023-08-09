@@ -335,6 +335,41 @@ public class GameManager : MonoBehaviour, IGameManager
         GameSystems.Start();
     }
 
+    public PlayerItemDropText AddItems(EventItemReward[] rewards)
+    {
+        //DropItem(player);
+        // Does unity allow us to use C# 10?
+        //Action<string, string[]> Announce = gameManager.RavenBot.Announce;
+        var droppedItems = new Dictionary<string, List<string>>();
+
+        foreach (var reward in rewards)
+        {
+            var rewardItem = Items.Get(reward.ItemId);
+            if (rewardItem == null)
+            {
+                continue;
+            }
+
+            var player = Players.GetPlayerById(reward.CharacterId);
+            if (!player)
+            {
+                continue;
+            }
+
+            player.PickupItem(rewardItem, false, false);
+
+            var key = rewardItem.Name;
+
+            if (!droppedItems.TryGetValue(key, out var items))
+            {
+                droppedItems[key] = (items = new List<string>());
+            }
+
+            items.Add(player.PlayerName);
+        }
+        return new PlayerItemDropText(droppedItems, ItemDropMessageSettings);
+    }
+
     private void SetupStreamLabels()
     {
         uptimeLabel = StreamLabels.Register("uptime", () => Time.realtimeSinceStartup.ToString());
@@ -1414,7 +1449,7 @@ public class GameManager : MonoBehaviour, IGameManager
             if (isControlDown && Input.GetKeyUp(KeyCode.R))
             {
                 var players = Players.GetAllGameAdmins();
-                Dungeons.Dungeon.RewardItemDrops(players);
+                Dungeons.RewardItemDrops(players);
             }
 
             if (isControlDown && Input.GetKeyUp(KeyCode.O))
@@ -1610,7 +1645,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask("fighting", new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic" }).Random() });
+                        bot.SetTask("fighting", (new string[] { "all", "strength", "attack", "defense", "ranged", "magic" }).Random());
                     }
                 }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Healing"))
@@ -1618,7 +1653,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask("fighting", new string[] { (new string[] { "healing" }).Random() });
+                        bot.SetTask("fighting", (new string[] { "healing" }).Random());
                     }
                 }
 
@@ -1627,7 +1662,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask("fishing", new string[0]);
+                        bot.SetTask("fishing", null);
                     }
                 }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Woodcutting"))
@@ -1635,7 +1670,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask("woodcutting", new string[0]);
+                        bot.SetTask("woodcutting", null);
                     }
                 }
 
@@ -1644,7 +1679,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask((new string[] { "mining" }).Random(), new string[0]);
+                        bot.SetTask((new string[] { "mining" }).Random(), null);
                     }
                 }
 
@@ -1653,7 +1688,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask((new string[] { "farming" }).Random(), new string[0]);
+                        bot.SetTask((new string[] { "farming" }).Random(), null);
                     }
                 }
 
@@ -1662,7 +1697,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask((new string[] { "Crafting" }).Random(), new string[0]);
+                        bot.SetTask((new string[] { "Crafting" }).Random(), null);
                     }
                 }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Gathering"))
@@ -1670,7 +1705,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask((new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting" }).Random(), new string[0]);
+                        bot.SetTask((new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting" }).Random());
                     }
                 }
 
@@ -1687,7 +1722,7 @@ public class GameManager : MonoBehaviour, IGameManager
                         {
                             subTask = "healing";
                         }
-                        bot.SetTask(task, new string[] { subTask });
+                        bot.SetTask(task, subTask);
                     }
                 }
 
@@ -1699,11 +1734,11 @@ public class GameManager : MonoBehaviour, IGameManager
                         var s = (new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting", "fighting" }).Random();
                         if (s == "fighting")
                         {
-                            bot.SetTask(s, new string[] { (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", "healing" }).Random() });
+                            bot.SetTask(s, (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", "healing" }).Random());
                         }
                         else
                         {
-                            bot.SetTask(s, new string[0]);
+                            bot.SetTask(s);
                         }
                     }
                 }

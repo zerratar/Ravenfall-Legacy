@@ -9,7 +9,10 @@ public class DungeonHandler : MonoBehaviour
 
     private EnemyController enemyTarget;
     private PlayerController healTarget;
-    private string[] previousTaskArgs;
+
+    private TaskType previousTask;
+    private string previousTaskArgument;
+
     private float waitForDungeon;
 
     private Vector3 previousPosition;
@@ -155,9 +158,11 @@ public class DungeonHandler : MonoBehaviour
         waitForDungeon = 0;
         InDungeon = true;
 
+
         var startingPoint = dungeon.StartingPoint;
 
-        this.previousTaskArgs = this.player.GetTaskArguments().ToArray();
+        this.previousTask = this.player.GetTask();
+        this.previousTaskArgument = this.player.GetTaskArgument();
 
         Ferry = new()
         {
@@ -229,9 +234,9 @@ public class DungeonHandler : MonoBehaviour
         player.taskTarget = null;
         player.attackTarget = null;
 
-        if (previousTaskArgs != null && previousTaskArgs.Length > 0)
+        if (previousTask != TaskType.None)
         {
-            this.player.SetTaskArguments(previousTaskArgs);
+            this.player.SetTask(previousTask, previousTaskArgument);
         }
 
         var currentTask = player.GetTask();

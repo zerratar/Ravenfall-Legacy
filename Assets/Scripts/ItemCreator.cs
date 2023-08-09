@@ -171,7 +171,7 @@ public class ItemCreator : MonoBehaviour
         appearance.HeadAttachments = attachments.ToArray();
         UpdateDetails();
     }
-    
+
     private void MakeItem(string type)
     {
         Item item = null;
@@ -666,10 +666,12 @@ public class ItemCreator : MonoBehaviour
             case ItemType.StreamerToken:
                 return ItemCategory.StreamerToken;
 
-            case ItemType.Wood:
-            case ItemType.Wheat:
-            case ItemType.Fish:
-            case ItemType.Ore:
+            case ItemType.Woodcutting:
+            case ItemType.Farming:
+            case ItemType.Fishing:
+            case ItemType.Mining:
+            case ItemType.Gathering:
+
             case ItemType.Arrows:
             case ItemType.Magic:
             case ItemType.Coins:

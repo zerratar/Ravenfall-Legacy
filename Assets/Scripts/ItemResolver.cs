@@ -28,6 +28,31 @@ public class ItemResolver : IItemResolver
             playerManager = GameObject.FindObjectOfType<PlayerManager>();
     }
 
+    public IReadOnlyList<Item> GetItemSet(string setName)
+    {
+        var setItems = new List<Item>();
+
+        // since elder can match with all elder items, so skip elder if that is being used.
+        if (string.IsNullOrEmpty(setName) || setName.Trim().Equals("elder"))
+        {
+            return setItems;
+        }
+
+        foreach (var item in itemManager.GetItems())
+        {
+            if (item.Name.StartsWith(setName, StringComparison.OrdinalIgnoreCase))
+            {
+                // good start, now lets make sure its an equipment
+                if (item.Category == ItemCategory.Armor || item.Category == ItemCategory.Weapon || item.Category == ItemCategory.Ring || item.Category == ItemCategory.Amulet)
+                {
+                    setItems.Add(item);
+                }
+            }
+        }
+
+        return setItems;
+    }
+
     public ItemResolveResult ResolveTradeQuery(
         string query,
         bool parsePrice = true,
@@ -127,7 +152,7 @@ public class ItemResolver : IItemResolver
         var items = player.Inventory.GetAllItems();
 
         var matches = items
-            .Select(x => new { Item = x, Match = Match(x.Name, x.Item.Type, itemQuery) })
+            .Select(x => new ItemMatchPair<GameInventoryItem> { Item = x, Match = Match(x.Name, x.Item.Type, itemQuery) })
             .Where(x => x.Match.IsCloseMatch)
             .OrderBy(x => LevenshteinDistance(x.Item.Name, itemQuery))
             .ToArray();
@@ -230,14 +255,26 @@ public class ItemResolver : IItemResolver
             SuggestedItemNames = suggestions.ToArray()
         };
     }
+
     public ItemResolveResult Resolve(string query, int maxSuggestions = 5)
+    {
+        return Resolve(query, ItemType.None, maxSuggestions);
+    }
+
+    public ItemResolveResult Resolve(string query, ItemType expectedItemType, int maxSuggestions = 5)
     {
         EnsureManagers();
 
         var itemQuery = query.Trim();
         var items = itemManager.GetItems();
+
+        if (expectedItemType != ItemType.None)
+        {
+            items = items.Where(x => x.Type == expectedItemType).ToList();
+        }
+
         var matches = items
-            .Select(x => new { Item = x, Match = Match(x.Name, x.Type, itemQuery) })
+            .Select(x => new ItemMatchPair<RavenNest.Models.Item> { Item = x, Match = Match(x.Name, x.Type, itemQuery) })
             .Where(x => x.Match.IsCloseMatch)
             .OrderBy(x => LevenshteinDistance(x.Item.Name, itemQuery))
             .ToArray();
@@ -274,7 +311,7 @@ public class ItemResolver : IItemResolver
         else if (item == null)
         {
             suggestedItemNames = items
-                .Where(x => IsCloseMatch(x.Name, x.Type, itemQuery))
+                .Where(x => IsCloseMatch(x.Name, x.Type, itemQuery, 3)) // 3: as it will allow for 3 character deltas
                 .Select(x => x.Name)
                 .Distinct()
                 .OrderBy(x => LevenshteinDistance(x, itemQuery))
@@ -291,6 +328,7 @@ public class ItemResolver : IItemResolver
             SuggestedItemNames = suggestedItemNames
         };
     }
+
 
     static int LevenshteinDistance(string s, string t)
     {
@@ -398,7 +436,7 @@ public class ItemResolver : IItemResolver
 
         return false;
     }
-    private bool IsCloseMatch(string name, ItemType type, string itemQuery)
+    private bool IsCloseMatch(string name, ItemType type, string itemQuery, double levenshteinThreshold = 0)
     {
         if (name.Contains(itemQuery, StringComparison.OrdinalIgnoreCase))
         {
@@ -448,6 +486,11 @@ public class ItemResolver : IItemResolver
         if (MaterialMatch(name.ToLower(), itemQuery.Trim().ToLower()))
         {
             return true;
+        }
+
+        if (levenshteinThreshold > 0)
+        {
+            return LevenshteinDistance(name, itemQuery) <= levenshteinThreshold;
         }
 
         return false;
@@ -747,7 +790,11 @@ public class ItemResolver : IItemResolver
 
 }
 
-
+public class ItemMatchPair<T>
+{
+    public T Item { get; set; }
+    public ItemMatchResult Match { get; set; }
+}
 public class ItemMatchResult
 {
     public bool IsExactMatch { get; set; }

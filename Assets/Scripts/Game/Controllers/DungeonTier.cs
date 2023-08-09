@@ -1,9 +1,9 @@
 ﻿public enum DungeonTier
 {
-    Common,
-    Uncommon,
-    Rare,
-    Epic,
-    Legendary,
-    Dynamic
+    Common = 0,
+    Uncommon = 1,
+    Rare = 2,
+    Epic = 3,
+    Legendary = 4,
+    Dynamic = 5
 }

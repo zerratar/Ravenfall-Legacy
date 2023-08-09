@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using RavenNest.Models;
 using UnityEngine;
 
@@ -36,9 +37,8 @@ public class ItemManager : MonoBehaviour
     [SerializeField] private Material[] itemMaterials;
     [SerializeField] private RedeemableItem[] redeemableItems;
 
-    private DateTime redeemablesLastUpdate;
-    private TimeSpan redeemablesUpdateInterval = TimeSpan.FromMinutes(0.5);
-    private bool updatingRedeemables;
+    private DateTime itemsLastUpdate;
+    private TimeSpan itemsUpdateInterval = TimeSpan.FromMinutes(5);
 
     public bool TryGetPrefab(string path, out GameObject prefab)
     {
@@ -72,9 +72,14 @@ public class ItemManager : MonoBehaviour
         }
 
         var now = DateTime.UtcNow;
-        if (now - this.redeemablesLastUpdate >= redeemablesUpdateInterval)
+        //if (now - this.redeemablesLastUpdate >= redeemablesUpdateInterval)
+        //{
+        //    UpdateRedeemablesAsync();
+        //}
+        if (now - this.itemsLastUpdate >= itemsUpdateInterval)
         {
-            UpdateRedeemablesAsync();
+            //UpdateItemsAsync();
+            LoadItemsAsync();
         }
     }
 
@@ -143,22 +148,60 @@ public class ItemManager : MonoBehaviour
     {
         state = LoadingState.Loading;
 
-        this.redeemablesLastUpdate = DateTime.UtcNow;
-        var loadedItems = await game.RavenNest.Items.GetAsync();
-        var redeemableItems = await game.RavenNest.Items.GetRedeemablesAsync();
-
-        items = loadedItems.ToList();
-        itemLookup = items.ToDictionary(x => x.Id, x => x);
-        Shinobytes.Debug.Log(items.Count + " items loaded!");
-        game.Overlay.SendItems(items);
-        if (redeemableItems != null && redeemableItems.Count > 0)
+        try
         {
-            redeemables = redeemableItems.ToList();
-            this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
-            game.Overlay.SendRedeemables(redeemables);
+            await DownloadItemsAsync();
+
+            var redeemableItems = await game.RavenNest.Items.GetRedeemablesAsync();
+            if (redeemableItems != null && redeemableItems.Count > 0)
+            {
+                redeemables = redeemableItems.ToList();
+                this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
+                game.Overlay.SendRedeemables(redeemables);
+            }
+            Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
+
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Unable to load items: " + exc);
         }
 
-        Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
+        state = LoadingState.Loaded;
+        game.SetLoadingState("items", state);
+    }
+
+    private async Task DownloadItemsAsync()
+    {
+        this.itemsLastUpdate = DateTime.UtcNow;
+
+        if (items != null && items.Count > 0)
+        {
+            var lastModified = items.Max(x => x.Modified.GetValueOrDefault());
+            var deltas = await game.RavenNest.Items.GetDeltaAsync(lastModified);
+            foreach (var d in deltas)
+            {
+                var existing = items.FirstOrDefault(x => x.Id == d.Id);
+                if (existing != null)
+                {
+                    UpdateItem(existing, d);
+                }
+                else
+                {
+                    items.Add(d);
+                }
+            }
+        }
+        else
+        {
+            var loadedItems = await game.RavenNest.Items.GetAsync();
+            items = loadedItems.ToList();
+            Shinobytes.Debug.Log(items.Count + " items loaded!");
+        }
+
+        // rebuild lookups
+        itemLookup = items.ToDictionary(x => x.Id, x => x);
+        game.Overlay.SendItems(items);
 
         foreach (var item in items)
         {
@@ -231,40 +274,43 @@ public class ItemManager : MonoBehaviour
                 }
             }
         }
-
-        state = LoadingState.Loaded;
-        game.SetLoadingState("items", state);
     }
 
-
-    public async void UpdateRedeemablesAsync()
+    private void UpdateItem(Item existing, Item updatedItem)
     {
-        if (updatingRedeemables)
-        {
-            return;
-        }
-
-        this.redeemablesLastUpdate = DateTime.UtcNow;
-        this.updatingRedeemables = true;
-
-        try
-        {
-            var items = await game.RavenNest.Items.GetRedeemablesAsync();
-            if (items != null && items.Count > 0)
-            {
-                this.redeemables = items.ToList();
-                this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
-                game.Overlay.SendRedeemables(redeemables);
-            }
-        }
-        catch (Exception exc)
-        {
-            Shinobytes.Debug.LogError("Unable to update redeemable items. " + exc);
-        }
-
-        this.updatingRedeemables = false;
+        //existing.Id = updatedItem.Id;
+        existing.Name = updatedItem.Name;
+        existing.Level = updatedItem.Level;
+        existing.WeaponAim = updatedItem.WeaponAim;
+        existing.WeaponPower = updatedItem.WeaponPower;
+        existing.MagicAim = updatedItem.MagicAim;
+        existing.MagicPower = updatedItem.MagicPower;
+        existing.RangedAim = updatedItem.RangedAim;
+        existing.RangedPower = updatedItem.RangedPower;
+        existing.ArmorPower = updatedItem.ArmorPower;
+        existing.RequiredAttackLevel = updatedItem.RequiredAttackLevel;
+        existing.RequiredDefenseLevel = updatedItem.RequiredDefenseLevel;
+        existing.RequiredMagicLevel = updatedItem.RequiredMagicLevel;
+        existing.RequiredRangedLevel = updatedItem.RequiredRangedLevel;
+        existing.RequiredSlayerLevel = updatedItem.RequiredSlayerLevel;
+        existing.Category = updatedItem.Category;
+        existing.Type = updatedItem.Type;
+        existing.Material = updatedItem.Material;
+        existing.MaleModelId = updatedItem.MaleModelId;
+        existing.FemaleModelId = updatedItem.FemaleModelId;
+        existing.GenericPrefab = updatedItem.GenericPrefab;
+        existing.MalePrefab = updatedItem.MalePrefab;
+        existing.FemalePrefab = updatedItem.FemalePrefab;
+        existing.IsGenericModel = updatedItem.IsGenericModel;
+        existing.Craftable = updatedItem.Craftable;
+        existing.RequiredCraftingLevel = updatedItem.RequiredCraftingLevel;
+        existing.RequiredCookingLevel = updatedItem.RequiredCookingLevel;
+        existing.ShopBuyPrice = updatedItem.ShopBuyPrice;
+        existing.ShopSellPrice = updatedItem.ShopSellPrice;
+        existing.Soulbound = updatedItem.Soulbound;
+        existing.CraftingRequirements = updatedItem.CraftingRequirements;
+        existing.Modified = updatedItem.Modified;
     }
-
 
     private RedeemableItem MapRedeemable(RavenNest.Models.RedeemableItem src)
     {

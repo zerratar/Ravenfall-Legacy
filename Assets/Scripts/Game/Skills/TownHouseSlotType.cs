@@ -13,5 +13,7 @@
     Sailing = 9,
     Slayer = 10,
     Fishing = 11,
-    Healing = 12
+    Healing = 12,
+    Gathering = 13,
+    Alchemy = 14
 }

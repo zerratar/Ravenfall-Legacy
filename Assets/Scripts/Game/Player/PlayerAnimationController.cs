@@ -305,8 +305,23 @@ public class PlayerAnimationController : MonoBehaviour
         animationState = PlayerAnimationState.Idle;
         SetBool("Crafting", false);
     }
-    #endregion
 
+    #endregion
+    public void StartBrewing()
+    {
+        if (!EnsureAnimator()) return;
+        animationState = PlayerAnimationState.Brewing;
+        ResetAnimationStates();
+        SetTrigger("Start");
+        SetBool("Brewing", true);
+    }
+
+    public void EndBrewing()
+    {
+        if (!EnsureAnimator()) return;
+        animationState = PlayerAnimationState.Idle;
+        SetBool("Brewing", false);
+    }
     #region Farming
     public void StartFarming()
     {
@@ -324,6 +339,23 @@ public class PlayerAnimationController : MonoBehaviour
         SetBool("Farming", false);
     }
     #endregion
+
+    public void StartGathering()
+    {
+        if (!EnsureAnimator()) return;
+        animationState = PlayerAnimationState.Gathering;
+        ResetAnimationStates();
+        SetTrigger("Start");
+        SetBool("Gathering", true);
+    }
+
+    public void EndGathering()
+    {
+        if (!EnsureAnimator()) return;
+        animationState = PlayerAnimationState.Idle;
+        SetBool("Gathering", false);
+    }
+
 
     #region Farming
     public void StartCooking()
@@ -374,6 +406,8 @@ public class PlayerAnimationController : MonoBehaviour
         EndFishing();
         EndMining();
         EndWoodcutting();
+        EndGathering();
+        EndBrewing();
     }
 }
 
@@ -390,5 +424,9 @@ internal enum PlayerAnimationState
     Farming,
     Drinking,
     Eating,
-    Captain
+    Captain,
+    Gathering,
+    Brewing,
+    Brewing_Fail,
+    Brewing_Success
 }

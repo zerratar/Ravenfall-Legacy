@@ -52,8 +52,14 @@ public class RavenBot : System.IDisposable
         Connection.Register<EquipItem>("equip");
         Connection.Register<UnequipItem>("unequip");
         Connection.Register<EnchantItem>("enchant");
+
+        Connection.Register<ClearEnchantmentCooldown>("clear_enchantment_cooldown");
+        Connection.Register<EnchantmentCooldown>("enchantment_cooldown");
+
         Connection.Register<DisenchantItem>("disenchant");
         Connection.Register<PlayerStats>("player_stats");
+        Connection.Register<PlayerEq>("player_eq");
+
         Connection.Register<PlayerResources>("player_resources");
         Connection.Register<TownResources>("town_resources");
         Connection.Register<Highscore>("highscore");
@@ -87,11 +93,13 @@ public class RavenBot : System.IDisposable
         Connection.Register<RaidStop>("raid_stop");
 
         Connection.Register<Craft>("craft");
+        Connection.Register<Brew>("brew");
         Connection.Register<Cook>("cook");
         Connection.Register<Mine>("mine");
         Connection.Register<Farm>("farm");
-        Connection.Register<Fish>("chop");
+        Connection.Register<Fish>("fish");
         Connection.Register<Chop>("chop");
+        Connection.Register<Gather>("gather");
 
         Connection.Register<ClanInfoHandler>("clan_info");
         Connection.Register<ClanStatsHandler>("clan_stats");

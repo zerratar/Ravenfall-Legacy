@@ -26,7 +26,6 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<RedeemableItemCollection> GetRedeemablesAsync()
         {
-
             return request.Create()
                 .Method("redeemable")
                 .Build()
@@ -51,6 +50,16 @@ namespace RavenNest.SDK.Endpoints
                 .AddParameter(item.ToString())
                 .Build()
                 .SendAsync<bool>(ApiRequestTarget.Items, ApiRequestType.Remove);
+        }
+
+        internal Task<ItemCollection> GetDeltaAsync(DateTime lastModified)
+        {
+
+            return request.Create()
+                .Method("delta")
+                .AddParameter(lastModified.ToString())
+                .Build()
+                .SendAsync<ItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
         }
     }
 }

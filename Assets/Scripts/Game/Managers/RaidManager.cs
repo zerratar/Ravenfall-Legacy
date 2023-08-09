@@ -1,6 +1,8 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class RaidManager : MonoBehaviour, IEvent
@@ -47,6 +49,8 @@ public class RaidManager : MonoBehaviour, IEvent
     private RaidDifficultySystem difficultySystem = new RaidDifficultySystem();
 
     private int raidIndex = 0;
+
+    private bool isProcessingRewardQueue;
 
     private void Start()
     {
@@ -216,7 +220,9 @@ public class RaidManager : MonoBehaviour, IEvent
         difficultySystem.Next();
     }
 
-    public void RewardItemDrops(List<PlayerController> players)
+    private Queue<Func<Task>> rewardQueue = new Queue<Func<Task>>();
+
+    public async void RewardItemDrops(List<PlayerController> players)
     {
         // only players within at least 20% participation time will have chance for item drop.
         if (players.Count == 0)
@@ -225,7 +231,46 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         var playersInRaid = players.Where(x => x.Raid.GetParticipationPercentage() >= 0.2);
-        var result = Boss.ItemDrops.DropItems(playersInRaid, DropType.Maybe);
+
+        var playersToBeRewarded = playersInRaid.OrderByDescending(x => x.Raid.GetParticipationPercentage()).Select(x => x.Id).ToArray();
+
+        await RewardPlayersAsync(playersToBeRewarded);
+    }
+
+    public async Task RewardPlayersAsync(Guid[] playersToBeRewarded, int retryCount = 0)
+    {
+        if (retryCount > 0)
+        {
+            if (retryCount > 5)
+            {
+                return;
+            }
+
+            await Task.Delay((int)MathF.Min(retryCount * 2000, 10000));
+        }
+
+        // make sure we retry later when we have server connection.
+        if (!gameManager.RavenNest.Tcp.IsReady)
+        {
+            rewardQueue.Enqueue(() => RewardPlayersAsync(playersToBeRewarded, retryCount));
+            return;
+        }
+
+        var rewards = await gameManager.RavenNest.Game.GetRaidRewardsAsync(playersToBeRewarded);
+        if (rewards == null)
+        {
+            // it could be that we are offline, or temporary issue saving. Lets enqueue it for later.
+            rewardQueue.Enqueue(() => RewardPlayersAsync(playersToBeRewarded, retryCount + 1));
+            gameManager.RavenBot.Announce("Victorious!! Raid boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
+            return;
+        }
+
+        AddItems(rewards);
+    }
+
+    private void AddItems(EventItemReward[] rewards)
+    {
+        var result = gameManager.AddItems(rewards);
         if (result.Count > 0)
         {
             gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded " + result.Count + " item treasures!");
@@ -255,6 +300,8 @@ public class RaidManager : MonoBehaviour, IEvent
     // Update is called once per frame
     private void Update()
     {
+        ProcessRewardQueue();
+
         var players = playerManager.GetAllPlayers();
 
         if (!Started && players.Count == 0 && !Boss)
@@ -309,6 +356,28 @@ public class RaidManager : MonoBehaviour, IEvent
             notifications.SetRaidBossLevel(Boss.Enemy.Stats.CombatLevel);
             notifications.SetHealthBarValue(proc, Boss.Enemy.Stats.Health.Level);
             notifications.UpdateRaidTimer(timeoutTimer);
+        }
+    }
+
+    private async void ProcessRewardQueue()
+    {
+        if (isProcessingRewardQueue)
+        {
+            return;
+        }
+
+        try
+        {
+            isProcessingRewardQueue = true;
+            if (rewardQueue.TryDequeue(out var addItems))
+            {
+                await addItems();
+            }
+        }
+        catch { }
+        finally
+        {
+            isProcessingRewardQueue = false;
         }
     }
 

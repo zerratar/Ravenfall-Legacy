@@ -33,7 +33,11 @@ public class EquipmentSlot : MonoBehaviour
 
         if (!loadedItemImages.TryGetValue(item.Item.Id, out var sprite))
         {
-            sprite = UnityEngine.Resources.Load<Sprite>("Items/" + item.Item.Id);
+            if (!ExternalResources.TryGetSprite(item.Item.Id.ToString(), out sprite))
+            {
+                sprite = UnityEngine.Resources.Load<Sprite>("Items/" + item.Item.Id);
+            }
+
             loadedItemImages[item.Item.Id] = sprite;
         }
 

@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using RavenNest.Models;
+using static UnityEditor.PlayerSettings;
 
 namespace RavenNest.SDK.Endpoints
 {
@@ -55,6 +56,25 @@ namespace RavenNest.SDK.Endpoints
                 .AddParameter("values", ids)
                 .Build()
                 .SendAsync(ApiRequestTarget.Game, ApiRequestType.Post);
+        }
+
+        internal Task<EventItemReward[]> GetRaidRewardsAsync(Guid[] ids)
+        {
+            return request.Create()
+                .Method("raid-reward")
+                .AddParameter("values", ids)
+                .Build()
+                .SendAsync<EventItemReward[]>(ApiRequestTarget.Game, ApiRequestType.Post);
+        }
+
+        internal Task<EventItemReward[]> GetDungeonRewardsAsync(DungeonTier tier, Guid[] ids)
+        {
+            return request.Create()
+                .Identifier((int)tier + "")
+                .Method("dungeon-reward")
+                .AddParameter("values", ids)
+                .Build()
+                .SendAsync<EventItemReward[]>(ApiRequestTarget.Game, ApiRequestType.Post);
         }
 
         public Task<bool> ClearPlayersAsync()

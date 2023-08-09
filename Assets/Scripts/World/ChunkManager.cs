@@ -194,6 +194,8 @@ public class ChunkManager : MonoBehaviour
             case TaskType.Mining: return playerRef.Stats.Mining.Level;
             case TaskType.Crafting: return playerRef.Stats.Crafting.Level;
             case TaskType.Farming: return playerRef.Stats.Farming.Level;
+            case TaskType.Alchemy: return playerRef.Stats.Alchemy.Level;
+            case TaskType.Gathering: return playerRef.Stats.Gathering.Level;
         }
         return 1;
     }

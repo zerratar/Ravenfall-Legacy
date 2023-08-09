@@ -137,6 +137,30 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<ClearEnchantmentCooldownResult> ClearEnchantmentCooldownAsync(Guid characterId)
+        {
+            return request.Create()
+                .Identifier("" + characterId)
+                .Method("clear-enchantment-cooldown")
+                .Build()
+                .SendAsync<ClearEnchantmentCooldownResult>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
+
+        public Task<EnchantmentCooldownResult> GetEnchantmentCooldownAsync(Guid characterId)
+        {
+            return request.Create()
+                .Identifier("" + characterId)
+                .Method("enchantment-cooldown")
+                .Build()
+                .SendAsync<EnchantmentCooldownResult>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
+
         public Task<bool> UnequipInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             return request.Create()

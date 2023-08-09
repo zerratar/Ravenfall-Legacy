@@ -22,7 +22,6 @@ public class PlayerController : MonoBehaviour, IAttackable
     public GameManager GameManager;
 
     [SerializeField] private ManualPlayerController manualPlayerController;
-    [SerializeField] private HashSet<string> taskArguments = new HashSet<string>();
     [NonSerialized] public string taskArgument;
     [SerializeField] private ChunkManager chunkManager;
 
@@ -329,7 +328,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         return AttackRange;
     }
 
-    public bool HasTaskArgument(string args) => taskArguments.Contains(args);
+    public bool HasTaskArgument(string args) => taskArgument.Equals(args, StringComparison.OrdinalIgnoreCase);
     internal void SetScale(float scale)
     {
         scaleTimer = 300f;
@@ -736,14 +735,14 @@ public class PlayerController : MonoBehaviour, IAttackable
     /// <param name="item">Item to add</param>
     /// <param name="alertInChat">Whether or not player should be alerted in Twitch Chat</param>
     /// <returns></returns>
-    public GameInventoryItem PickupItem(Item item, bool alertInChat = true)
+    public GameInventoryItem PickupItem(Item item, bool alertInChat = true, bool addToServer = true)
     {
         if (item == null) return null;
 
         var itemInstance = Inventory.AddToBackpack(item);
         if (itemInstance == null) return null;
 
-        if (!IsBot)
+        if (!IsBot && addToServer)
         {
             EnqueueItemAdd(itemInstance);
         }
@@ -955,19 +954,20 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     private void LateGotoClosest(TaskType type) => lateGotoClosestType = type;
 
-    public void SetTaskArguments(string[] taskArgs)
+    private void SetTaskArgument(string taskArg)
     {
-        if (taskArgs == null || taskArgs.Length == 0 || taskArgs[0] == null)
+        if (taskArg == null || taskArg.Length == 0)
         {
-            return;
+            if (string.IsNullOrEmpty(CurrentTaskName))
+                return;
+
+            taskArg = CurrentTaskName;
         }
 
-        taskArguments = new HashSet<string>(taskArgs.Select(x => x.ToLower()));
-        taskArgument = taskArgs[0].ToLower();//taskArguments.First();
+        taskArgument = taskArg.ToLower();//taskArguments.First();
         taskTarget = null;
 
-        ActiveSkill = SkillUtilities.ParseSkill(taskArgument);
-
+        // Try to get the active skill based on the task argument.
         UpdateTrainingFlags();
 
         // in case we change what we train.
@@ -998,7 +998,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     }
 
     public TaskType GetTask() => currentTask;//Chunk?.ChunkType ?? TaskType.None;
-    public HashSet<string> GetTaskArguments() => taskArguments;
+    public string GetTaskArgument() => taskArgument;
 
     internal async Task<GameInventoryItem> CycleEquippedPetAsync()
     {
@@ -1347,7 +1347,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
             if (setTask && !string.IsNullOrEmpty(player.State.Task))
             {
-                SetTask(player.State.Task, new string[] { player.State.TaskArgument ?? player.State.Task });
+                SetTask(player.State.Task, player.State.TaskArgument ?? player.State.Task);
             }
         }
 
@@ -1383,14 +1383,22 @@ public class PlayerController : MonoBehaviour, IAttackable
         }, prepareForCamera, false); // Inventory.Create will update the appearance.
     }
 
-    public void SetTask(TaskType task, string[] arg)
+    public void SetTask(TaskType task, string arg = null)
     {
-        this.currentTask = task;
-        this.CurrentTaskName = task.ToString();
-        this.SetTaskArguments(arg);
+        SetTask(task.ToString(), arg);
+
+        //if (task != TaskType.Fighting)
+        //{
+        //    ActiveSkill = SkillUtilities.ParseSkill(this.CurrentTaskName);
+        //}
+        //else if (!string.IsNullOrEmpty(arg))
+        //{
+        //    ActiveSkill = SkillUtilities.ParseSkill(arg);
+        //}
+        //this.SetTaskArgument(arg);
     }
 
-    public void SetTask(string targetTaskName, string[] args)
+    public void SetTask(string targetTaskName, string args = null)
     {
         if (string.IsNullOrEmpty(targetTaskName))
         {
@@ -1398,23 +1406,31 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         targetTaskName = targetTaskName.Trim();
-
         if (!Enum.TryParse<TaskType>(targetTaskName, true, out var type) || type == TaskType.None)
         {
             return;
         }
 
-        var taskArgs = args == null || args.Length == 0f
-            ? new[] { type.ToString() }
-            : args;
+        if (string.IsNullOrEmpty(args))
+        {
+            args = targetTaskName.ToLower();
+        }
 
-        var a = taskArgs[0];
-        var skill = SkillUtilities.ParseSkill(a);
+        var skill = Skill.None;
+        if (type != TaskType.Fighting)
+        {
+            skill = SkillUtilities.ParseSkill(targetTaskName);
+        }
+        else if (!string.IsNullOrEmpty(args))
+        {
+            skill = SkillUtilities.ParseSkill(args);
+        }
+
         if (Overlay.IsOverlay || Duel.InDuel)
         {
             currentTask = type;
-            this.CurrentTaskName = currentTask.ToString();
-            SetTaskArguments(taskArgs);
+            CurrentTaskName = currentTask.ToString();
+            SetTaskArgument(args);
             return;
         }
 
@@ -1451,9 +1467,10 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
+        ActiveSkill = skill;
         currentTask = type;
         CurrentTaskName = currentTask.ToString();
-        SetTaskArguments(taskArgs);
+        SetTaskArgument(args);
 
         if (Raid.InRaid || Dungeon.InDungeon)
         {
@@ -1486,8 +1503,6 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         currentTask = TaskType.None;
         CurrentTaskName = null;
-
-        taskArguments = new HashSet<string>();
         taskArgument = null;//taskArguments.First();
         taskTarget = null;
 
@@ -1548,6 +1563,32 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
             AddExp(Skill.Cooking, factor);//, craftingStation.GetExperience(this));
+        }
+
+        return true;
+    }
+
+    public bool Brew(CraftingStation craftingStation)
+    {
+        actionTimer = craftingAnimationTime;
+        Movement.Lock();
+        InCombat = false;
+
+        //Equipment.ShowHammer();
+        if (lastTrainedSkill != Skill.Alchemy)
+        {
+            lastTrainedSkill = Skill.Alchemy;
+            playerAnimations.StartBrewing();
+            return true;
+        }
+
+        playerAnimations.StartBrewing();
+
+        LookAt(craftingStation.transform);
+        if (craftingStation.Craft(this))
+        {
+            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            AddExp(Skill.Alchemy, factor);//, craftingStation.GetExperience(this));
         }
 
         return true;
@@ -1654,6 +1695,34 @@ public class PlayerController : MonoBehaviour, IAttackable
             var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
             AddExp(Skill.Farming, factor);
             var amount = farm.Resource * Mathf.FloorToInt(Stats.Farming.MaxLevel / 10f);
+            //Statistics.TotalWheatCollected += amount;
+        }
+
+        return true;
+    }
+
+
+    public bool Gather(GatherController gather)
+    {
+        actionTimer = rakeAnimationTime;
+        InCombat = false;
+        Movement.Lock();
+
+        Equipment.ShowRake();
+        if (lastTrainedSkill != Skill.Gathering)
+        {
+            lastTrainedSkill = Skill.Gathering;
+            playerAnimations.StartGathering();
+            return true;
+        }
+
+        LookAt(gather.transform);
+
+        if (gather.Gather(this))
+        {
+            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            AddExp(Skill.Gathering, factor);
+            //var amount = gather.Resource * Mathf.FloorToInt(Stats.Gathering.MaxLevel / 10f);
             //Statistics.TotalWheatCollected += amount;
         }
 
@@ -2386,6 +2455,8 @@ public class PlayerController : MonoBehaviour, IAttackable
             case TaskType.Cooking: return Stats.Cooking;
             case TaskType.Crafting: return Stats.Crafting;
             case TaskType.Farming: return Stats.Farming;
+            case TaskType.Gathering: return Stats.Gathering;
+            case TaskType.Alchemy: return Stats.Alchemy;
             case TaskType.Fishing: return Stats.Fishing;
             case TaskType.Woodcutting: return Stats.Woodcutting;
             case TaskType.Mining: return Stats.Mining;
@@ -2729,24 +2800,29 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     internal void Unstuck()
     {
+        // if we are in a raid, teleport to the spawnposition of the island the player is on.
+        // this could potentially be improved by teleporting to the spawnposition of the raid instead
         if (Raid.InRaid)
         {
             this.SetPosition(this.Island.SpawnPosition);
             return;
         }
 
+        // if we are in a dungeon, teleport to the spawnposition of the dungeon
         if (Dungeon.InDungeon)
         {
             this.SetPosition(Dungeon.SpawnPosition);
             return;
         }
 
+        // if we are in a duel, interrupt the duel
         if (Duel.InDuel)
         {
             this.Duel.Interrupt();
             return;
         }
 
+        // if the player is stuck on the war island, teleport to home
         if (Island && Island.AllowRaidWar && !StreamRaid.InWar)
         {
             var homeIsland = GameManager.Islands.All.FirstOrDefault(x => x.Identifier == "home");
@@ -2758,6 +2834,10 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
+        // if we are not in an onsen, dungeon and not on the ferry but we are playing a moving animation
+        // then we are teleported to the spawnposition of the current island we are on.
+        // if no island can be detected, then telepor to home island.
+        // (this could be improved to take closest island into consideration)
         if (!Onsen.InOnsen && !Dungeon.InDungeon && Animations.IsMoving && !Ferry.OnFerry)
         {
             var i = Island;
@@ -2766,8 +2846,13 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
+        // if we have a known island, character is not moving but playing moving animation
+        // and the real island we are on is not the same island the character thinks its on
+        // teleport to the island it thinks its on.
         if ((Island && this.GameManager.Islands.FindPlayerIsland(this) != Island) ||
-            Island && agent && agent.isActiveAndEnabled && agent.isOnNavMesh && Movement.IdleTime > 2f && !Movement.IsMoving && Animations.IsMoving)
+            Island && agent && agent.isActiveAndEnabled
+            && agent.isOnNavMesh && Movement.IdleTime > 2f
+            && !Movement.IsMoving && Animations.IsMoving)
         {
             this.SetPosition(Island.SpawnPosition);
             return;
@@ -2775,6 +2860,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         Movement.AdjustPlayerPositionToNavmesh();
     }
+
     public void Destroy()
     {
         if (!isDestroyed)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 public static class Utility
@@ -8,7 +9,21 @@ public static class Utility
     private readonly static char[] DescriberCharacters = new[] { 'a', 'i', 'o', 'u', 'e' };
     private readonly static string[] ExpValuePostfix = new string[] { " ", "k", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q" };
     private readonly static string[] AmountPostFix = new string[] { "", "K", "M", "B", "T", "Q" };
+    public static string ReplaceLastOccurrence(string source, string find, string replace)
+    {
+        int place = source.LastIndexOf(find);
 
+        if (place == -1)
+            return source;
+
+        return source.Remove(place, find.Length).Insert(place, replace);
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsVocal(char c)
+    {
+        c = char.ToLower(c);
+        return c == 'a' || c == 'i' || c == 'e' || c == 'u' || c == 'o';
+    }
     public static string AddSpacesToSentence(string text)
     {
         if (string.IsNullOrEmpty(text))

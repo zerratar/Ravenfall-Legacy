@@ -89,8 +89,8 @@ public class OverlayPlayer
             InOnsen = source.Onsen.InOnsen,
             InRaid = source.Raid.InRaid,
             Island = source.Island?.name,
-            Task = source.Chunk?.ChunkType.ToString(),
-            TaskArgument = source.GetTaskArguments().FirstOrDefault(),
+            Task = source.GetTask().ToString(), //source.Chunk?.ChunkType.ToString(),
+            TaskArgument = source.GetTaskArgument(),
             X = source.Position.x,
             Y = source.Position.y,
             Z = source.Position.z

@@ -15,7 +15,8 @@
     Ranged,
     Sailing,
     Healing,
-
+    Gathering,
+    Alchemy,
 
     ///// <summary>
     ///// Refeers to training Attack Defense and Strength

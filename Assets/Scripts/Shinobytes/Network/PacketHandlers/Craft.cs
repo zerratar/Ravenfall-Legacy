@@ -29,7 +29,7 @@ public class Craft : ChatBotCommandHandler<string>
         if (string.IsNullOrEmpty(inputQuery))
         {
             // Player perhaps intended to train crafting.
-            player.SetTask("crafting", new string[0]);
+            player.SetTask("crafting");
             return;
         }
 

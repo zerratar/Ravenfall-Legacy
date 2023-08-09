@@ -1,7 +1,9 @@
-﻿using Shinobytes.Linq;
+﻿using RavenNest.Models;
+using Shinobytes.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -54,6 +56,10 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     public string RequiredCode;
 
+
+    private Queue<Func<Task>> rewardQueue = new Queue<Func<Task>>();
+
+    private bool isProcessingRewardQueue;
     public Vector3 StartingPoint
     {
         get
@@ -180,10 +186,34 @@ public class DungeonManager : MonoBehaviour, IEvent
     // Update is called once per frame
     private void Update()
     {
+        ProcessRewardQueue();
         UpdateDungeonTimer();
         UpdateDungeonStartTimer();
         UpdateDungeon();
     }
+
+    private async void ProcessRewardQueue()
+    {
+        if (isProcessingRewardQueue)
+        {
+            return;
+        }
+
+        try
+        {
+            isProcessingRewardQueue = true;
+            if (rewardQueue.TryDequeue(out var addItems))
+            {
+                await addItems();
+            }
+        }
+        catch { }
+        finally
+        {
+            isProcessingRewardQueue = false;
+        }
+    }
+
 
     public void ToggleDungeon()
     {
@@ -566,8 +596,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         lock (mutex)
         {
-
-            Dungeon.RewardItemDrops(joinedPlayers);
+            RewardItemDrops(joinedPlayers);
 
             foreach (var player in joinedPlayers)
             {
@@ -575,6 +604,62 @@ public class DungeonManager : MonoBehaviour, IEvent
             }
         }
     }
+    public async void RewardItemDrops(IReadOnlyList<PlayerController> joinedPlayers)
+    {
+        var playersToBeRewarded = joinedPlayers.Select(x => x.Id).ToArray();
+        await RewardPlayersAsync(Dungeon.Tier, playersToBeRewarded);
+    }
+
+    public async Task RewardPlayersAsync(DungeonTier tier, Guid[] playersToBeRewarded, int retryCount = 0)
+    {
+        if (retryCount > 0)
+        {
+            if (retryCount > 5)
+            {
+                return;
+            }
+
+            await Task.Delay((int)MathF.Min(retryCount * 2000, 10000));
+        }
+
+        // make sure we retry later when we have server connection.
+        if (!gameManager.RavenNest.Tcp.IsReady)
+        {
+            rewardQueue.Enqueue(() => RewardPlayersAsync(tier, playersToBeRewarded, retryCount));
+            return;
+        }
+
+        var rewards = await gameManager.RavenNest.Game.GetDungeonRewardsAsync(tier, playersToBeRewarded);
+        if (rewards == null)
+        {
+            // it could be that we are offline, or temporary issue saving. Lets enqueue it for later.
+            rewardQueue.Enqueue(() => RewardPlayersAsync(tier, playersToBeRewarded, retryCount + 1));
+            gameManager.RavenBot.Announce("Victorious!! Dungeon boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
+            return;
+        }
+
+        AddItems(rewards);
+    }
+
+    private void AddItems(EventItemReward[] rewards)
+    {
+        var result = gameManager.AddItems(rewards);
+        if (result.Count > 0)
+        {
+            gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain and yielded " + result.Count + " item treasures!");
+        }
+        else
+        {
+            gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain but did not yield any treasure.");
+        }
+
+        foreach (var msg in result.Messages)
+        {
+            gameManager.RavenBot.Announce(msg);
+        }
+    }
+
+
 
     private void ResetDungeon()
     {

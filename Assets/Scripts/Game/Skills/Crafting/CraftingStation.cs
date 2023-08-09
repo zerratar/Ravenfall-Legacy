@@ -52,5 +52,6 @@ public class CraftingStation : MonoBehaviour
 public enum CraftingStationType
 {
     Crafting,
-    Cooking
+    Cooking,
+    Brewing
 }

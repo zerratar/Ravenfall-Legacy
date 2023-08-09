@@ -28,5 +28,4 @@ public class FarmController : MonoBehaviour
     {
         PlacementUtility.PlaceOnGround(this.gameObject);
     }
-
 }
