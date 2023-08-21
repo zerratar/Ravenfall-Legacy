@@ -22,15 +22,16 @@ public class FerryController : MonoBehaviour
     [SerializeField] private float wave = 0.333f;
     [SerializeField] private float bobEffect = 0.33f;
 
+    [SerializeField] private GameManager gameManager;
     [SerializeField] private Transform[] playerPositions;
     [SerializeField] private PathSelector pathSelector;
+    [SerializeField] private FerryUI ui;
 
     public FerryState state = FerryState.Moving;
 
     private IslandController island;
 
     private Vector3 destination;
-    private GameManager gameManager;
     private ParticleSystem movementParticleSystem;
     private ParticleSystem.EmissionModule emission;
     private ParticleSystem.MinMaxCurve rateOverTime;
@@ -40,16 +41,13 @@ public class FerryController : MonoBehaviour
     private StreamLabel ferryStateLabel;
 
     public IslandController Island => island;
-    public float GetProgress() => pathSelector.GetProgress();
     public int PathIndex => pathSelector.PathIndex;
-    public float CurrentSpeed => pathSelector.CurrentSpeed;
-    public float CurrentPathETA => pathSelector.CurrentPathETA;
-    public float CurrentLeaveETA => pathSelector.CurrentLeaveETA;
-
     public float CaptainSpeedAdjustment { get; private set; }
 
     public PlayerController Captain { get; private set; }
 
+
+    private RaycastHit[] raycastHits = new RaycastHit[16];
 
 
     // Use this for initialization
@@ -183,7 +181,7 @@ public class FerryController : MonoBehaviour
             {
                 IslandEnter(newIsland);
             }
-        } 
+        }
         else
         {
             IslandExit();
@@ -192,6 +190,58 @@ public class FerryController : MonoBehaviour
         if (ferryStateLabel != null)
         {
             ferryStateLabel.Update();
+        }
+    }
+
+    private void Update()
+    {
+        if (!isVisible) return;
+        
+        if (Captain && playerPositions[0].childCount == 0)
+        {
+            SetCaptain(null);
+        }
+
+        // don't use it right now.
+        return;
+
+        try
+        {
+            if (!gameManager || gameManager == null || ui == null || !ui)
+            {
+                return;
+            }
+
+            if (gameManager && (gameManager.RavenNest == null || !gameManager.RavenNest.Authenticated))
+            {
+                return;
+            }
+
+            if (Input.GetMouseButtonUp(0))
+            {
+                var activeCamera = Camera.main;
+                if (!activeCamera || activeCamera == null)
+                {
+                    return;
+                }
+
+                var ray = activeCamera.ScreenPointToRay(Input.mousePosition);
+                var hitCount = Physics.RaycastNonAlloc(ray, raycastHits);
+                for(var i = 0; i < hitCount; ++i)
+                {
+                    var hit = raycastHits[i];
+
+                    if (hit.collider.CompareTag("Ferry"))
+                    {
+                        ui.ShowDialog();
+                        return;
+                    }
+                }
+            }
+        }
+        catch (System.Exception exc)
+        {
+            Shinobytes.Debug.LogError(exc.ToString());
         }
     }
 

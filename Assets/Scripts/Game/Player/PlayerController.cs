@@ -12,6 +12,7 @@ using UnityEngine.AI;
 using Resources = RavenNest.Models.Resources;
 using Debug = Shinobytes.Debug;
 using RavenNest.Models.TcpApi;
+using Sirenix.OdinInspector;
 
 public class PlayerController : MonoBehaviour, IAttackable
 {
@@ -328,7 +329,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         return AttackRange;
     }
 
-    public bool HasTaskArgument(string args) => taskArgument.Equals(args, StringComparison.OrdinalIgnoreCase);
+    public bool HasTaskArgument(string args) => !string.IsNullOrEmpty(taskArgument) && taskArgument.Equals(args, StringComparison.OrdinalIgnoreCase);
     internal void SetScale(float scale)
     {
         scaleTimer = 300f;
@@ -1306,17 +1307,20 @@ public class PlayerController : MonoBehaviour, IAttackable
                             (float)player.State.Y.Value,
                             (float)player.State.Z.Value);
 
+                        newPosition = PlacementUtility.FindGroundPoint(newPosition);
+
                         var targetIsland = GameManager.Islands.FindIsland(newPosition);
                         if (targetIsland)
                         {
-                            // a little bit of a ugly hack, but will ensure a player does not have to do !unstuck if terrain has been modified.
-                            if (newPosition.y < -4.5f)
+                            // check if we are under the water surface with this new position.
+                            // if so, teleport to the spawn position instead.
+                            if (newPosition.y < -3.5f)
                             {
                                 newPosition = targetIsland.SpawnPosition;
                             }
-
-                            this.Teleporter.Teleport(newPosition);
                         }
+
+                        this.Teleporter.Teleport(newPosition);
                     }
                 }
 
@@ -1582,7 +1586,8 @@ public class PlayerController : MonoBehaviour, IAttackable
             return true;
         }
 
-        playerAnimations.StartBrewing();
+        playerAnimations.Brew();
+        //playerAnimations.StartBrewing();
 
         LookAt(craftingStation.transform);
         if (craftingStation.Craft(this))
@@ -1648,32 +1653,6 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
         return true;
     }
-
-    public bool Cut(TreeController tree)
-    {
-        actionTimer = chompTreeAnimationTime;
-        InCombat = false;
-        Movement.Lock();
-
-        Equipment.ShowHatchet();
-
-        if (lastTrainedSkill != Skill.Woodcutting)
-        {
-            lastTrainedSkill = Skill.Woodcutting;
-            playerAnimations.StartWoodcutting();
-            return true;
-        }
-
-        playerAnimations.Chop(0);
-
-        //StartCoroutine(DamageTree(tree));
-        var startTime = Time.time;
-
-        ActionSystem.Run(() => DamageTree(tree, startTime));
-
-        return true;
-    }
-
     public bool Farm(FarmController farm)
     {
         actionTimer = rakeAnimationTime;
@@ -1701,6 +1680,30 @@ public class PlayerController : MonoBehaviour, IAttackable
         return true;
     }
 
+    public bool Cut(TreeController tree)
+    {
+        actionTimer = chompTreeAnimationTime;
+        InCombat = false;
+        Movement.Lock();
+
+        Equipment.ShowHatchet();
+
+        if (lastTrainedSkill != Skill.Woodcutting)
+        {
+            lastTrainedSkill = Skill.Woodcutting;
+            playerAnimations.StartWoodcutting();
+            return true;
+        }
+
+        playerAnimations.Chop(0);
+
+        //StartCoroutine(DamageTree(tree));
+        var startTime = Time.time;
+
+        ActionSystem.Run(() => DamageTree(tree, startTime));
+
+        return true;
+    }
 
     public bool Gather(GatherController gather)
     {
@@ -1708,23 +1711,14 @@ public class PlayerController : MonoBehaviour, IAttackable
         InCombat = false;
         Movement.Lock();
 
-        Equipment.ShowRake();
-        if (lastTrainedSkill != Skill.Gathering)
-        {
-            lastTrainedSkill = Skill.Gathering;
-            playerAnimations.StartGathering();
-            return true;
-        }
+        lastTrainedSkill = Skill.Gathering;
+        playerAnimations.Gather(gather.PlayKneelingAnimation);
 
         LookAt(gather.transform);
 
-        if (gather.Gather(this))
-        {
-            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
-            AddExp(Skill.Gathering, factor);
-            //var amount = gather.Resource * Mathf.FloorToInt(Stats.Gathering.MaxLevel / 10f);
-            //Statistics.TotalWheatCollected += amount;
-        }
+        var startTime = Time.time;
+
+        ActionSystem.Run(() => Gather(gather, startTime));
 
         return true;
     }
@@ -1876,34 +1870,6 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
         return true;
     }
-    //public IEnumerator HealTarget(IAttackable target, float hitTime)
-    //{
-    //    yield return new WaitForSeconds(hitTime);
-    //    try
-    //    {
-    //        if (target == null || !target.Transform || target.GetStats().IsDead) yield break;
-
-    //        var maxHeal = GameMath.MaxHit(Stats.Healing.CurrentValue, EquipmentStats.MagicPower);
-    //        var heal = CalculateDamage(target);
-    //        if (!target.Heal(this, heal))
-    //            yield break;
-
-    //        // allow for some variation in gains based on how high you heal.
-
-    //        var factor = (1 + (heal / maxHeal * 0.2)) *
-    //            ((Raid.InRaid || Dungeon.InDungeon) ? 1.0 : Chunk?.CalculateExpFactor(this) ?? 1.0);
-    //        AddExp(Skill.Healing, factor);
-    //    }
-    //    catch (Exception exc)
-    //    {
-    //        Shinobytes.Debug.LogError("Unable to heal target: " + exc.Message);
-    //    }
-    //    finally
-    //    {
-    //        InCombat = false;
-    //    }
-    //}
-
     public bool DamageEnemy(IAttackable enemy, float hitTime, float startTime)
     {
         var delta = Time.time - startTime;
@@ -1934,15 +1900,6 @@ public class PlayerController : MonoBehaviour, IAttackable
                 if (player == null || !player || player.isDestroyed)
                     continue;
 
-                //if (isPlayer)
-                //{
-                //    ++player.Statistics.PlayersKilled;
-                //}
-                //else
-                //{
-                //    ++player.Statistics.EnemiesKilled;
-                //}
-
                 //var combatExperience = enemy.GetExperience();
                 var activeSkill = player.ActiveSkill;
                 if (activeSkill.IsCombatSkill())
@@ -1966,69 +1923,29 @@ public class PlayerController : MonoBehaviour, IAttackable
         return true;
     }
 
-    //public IEnumerator DamageEnemy(IAttackable enemy, float hitTime)
-    //{
-    //    yield return new WaitForSeconds(hitTime);
-    //    if (enemy == null)
-    //        yield break;
+    private bool Gather(GatherController gather, float startTime)
+    {
+        var delta = Time.time - startTime;
+        var actionTime = chompTreeAnimationTime / 2f;
+        if (delta < actionTime)
+            return false;
 
-    //    if (TrainingRanged)
-    //    {
-    //        this.Effects.DestroyProjectile();
-    //    }
+        if (!gather.Gather(this))
+            return false;
 
-    //    var damage = CalculateDamage(enemy);
-    //    if (enemy == null || !enemy.TakeDamage(this, damage))
-    //        yield break;
+        foreach (var player in gather.Gatherers)
+        {
+            if (player == null || !player || player.isDestroyed)
+            {
+                continue;
+            }
 
-    //    Statistics.TotalDamageDone += damage;
+            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            AddExp(Skill.Gathering, factor);
+        }
 
-    //    var isPlayer = enemy is PlayerController playerController;
-    //    var enemyController = enemy as EnemyController;
-    //    try
-    //    {
-    //        if (!enemy.GivesExperienceWhenKilled)
-    //            yield break;
-
-    //        // give all attackers exp for the kill, not just the one who gives the killing blow.
-
-    //        foreach (PlayerController player in enemy.GetAttackers())
-    //        {
-    //            if (player == null || !player || player.isDestroyed)
-    //            {
-    //                continue;
-    //            }
-
-    //            if (isPlayer)
-    //            {
-    //                ++player.Statistics.PlayersKilled;
-    //            }
-    //            else
-    //            {
-    //                ++player.Statistics.EnemiesKilled;
-    //            }
-
-    //            //var combatExperience = enemy.GetExperience();
-    //            var activeSkill = player.ActiveSkill;
-    //            if (activeSkill.IsCombatSkill())
-    //            {
-    //                //activeSkill = Skill.Health; // ALL
-    //                var factor = Dungeon.InDungeon ? 1d : Chunk?.CalculateExpFactor(player) ?? 1d;
-
-    //                if (enemyController != null)
-    //                {
-    //                    factor *= System.Math.Max(1.0d, enemyController.ExpFactor);
-    //                }
-
-    //                player.AddExp(activeSkill, factor);
-    //            }
-    //        }
-    //    }
-    //    finally
-    //    {
-    //        InCombat = false;
-    //    }
-    //}
+        return true;
+    }
 
     public bool DamageTree(TreeController tree, float startTime)
     {
@@ -2057,29 +1974,6 @@ public class PlayerController : MonoBehaviour, IAttackable
             //player.Statistics.TotalWoodCollected += amount;
         }
         return true;
-    }
-
-    public IEnumerator DamageTree(TreeController tree)
-    {
-        yield return new WaitForSeconds(chompTreeAnimationTime / 2f);
-
-        var damage = CalculateDamage(tree);
-        if (!tree.DoDamage(this, damage)) yield break;
-        // give all attackers exp for the kill, not just the one who gives the killing blow.
-        foreach (var player in tree.WoodCutters)
-        {
-            if (player == null || !player || player.isDestroyed)
-            {
-                continue;
-            }
-
-            //++player.Statistics.TotalTreesCutDown;
-
-            var factor = Chunk?.CalculateExpFactor(player) ?? 1d;
-            player.AddExp(Skill.Woodcutting, factor);// tree.Experience);
-            //var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
-            //player.Statistics.TotalWoodCollected += amount;
-        }
     }
 
     #region Manage EXP/Resources
@@ -2797,6 +2691,13 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool StartsWith(string str, string arg) => str.IndexOf(arg) == 0;
+
+    [Button("Adjust Placement")]
+    public void AdjustPlacement()
+    {
+        PlacementUtility.PlaceOnGround(this.gameObject);
+    }
+
 
     internal void Unstuck()
     {

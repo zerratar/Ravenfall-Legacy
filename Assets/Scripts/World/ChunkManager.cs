@@ -212,12 +212,12 @@ public class ChunkManager : MonoBehaviour
 
         // cache miss, slow.
         var c = new List<Chunk>();
-        var isCookingOrCrafting = type == TaskType.Cooking || type == TaskType.Crafting;
+        var cookingCraftingAlchemy = type == TaskType.Cooking || type == TaskType.Crafting || type == TaskType.Alchemy;
         var cl = this.chunks.OrderBy(x => x.RequiredCombatLevel + x.RequiredSkilllevel).ToArray();
         for (var i = 0; i < this.chunks.Length; i++)
         {
             var chunk = cl[i];
-            if (chunk.ChunkType == type || (isCookingOrCrafting && (chunk.ChunkType == TaskType.Cooking || chunk.ChunkType == TaskType.Crafting)))
+            if (chunk.ChunkType == type || (cookingCraftingAlchemy && (chunk.ChunkType == TaskType.Cooking || chunk.ChunkType == TaskType.Alchemy || chunk.ChunkType == TaskType.Crafting)))
             {
                 c.Add(chunk);
             }

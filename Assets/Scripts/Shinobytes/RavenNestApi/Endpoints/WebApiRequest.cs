@@ -10,7 +10,7 @@ using RavenNest.Models;
 
 namespace RavenNest.SDK.Endpoints
 {
-    internal class WebApiRequest : IApiRequest
+    public class WebApiRequest
     {
         private readonly IAppSettings settings;
         private readonly IRequestParameter[] parameters;
@@ -38,22 +38,22 @@ namespace RavenNest.SDK.Endpoints
             this.sessionToken = sessionToken;
         }
 
-        public Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type)
+        public Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, bool throwOnError = false)
         {
-            return SendAsync<TResult, object>(reqTarget, type, null);
+            return SendAsync<TResult, object>(reqTarget, type, null, throwOnError);
         }
 
-        public Task SendAsync(ApiRequestTarget target, ApiRequestType type)
+        public Task SendAsync(ApiRequestTarget target, ApiRequestType type, bool throwOnError = false)
         {
-            return SendAsync<object>(target, type);
+            return SendAsync<object>(target, type, throwOnError);
         }
 
-        public Task<TResult> SendAsync<TResult, TModel>(ApiRequestTarget reqTarget, ApiRequestType type, TModel model)
+        public Task<TResult> SendAsync<TResult, TModel>(ApiRequestTarget reqTarget, ApiRequestType type, TModel model, bool throwOnError = false)
         {
-            return SendAsync<TResult>(reqTarget, type, model);
+            return SendAsync<TResult>(reqTarget, type, model, throwOnError);
         }
 
-        public async Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, object model)
+        public async Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, object model, bool throwOnError = false)
         {
             if (IntegrityCheck.IsCompromised)
             {
@@ -62,7 +62,7 @@ namespace RavenNest.SDK.Endpoints
 
             // string target, string method, 
             var target = GetTargetUrl(reqTarget);
-            var request = (HttpWebRequest)WebRequest.CreateDefault(new Uri(target, UriKind.Absolute));            
+            var request = (HttpWebRequest)WebRequest.CreateDefault(new Uri(target, UriKind.Absolute));
             var requestData = "";
             //request.Accept = "application/json";
 
@@ -128,6 +128,7 @@ namespace RavenNest.SDK.Endpoints
                 {
                     if (((HttpWebResponse)response).StatusCode == HttpStatusCode.Forbidden)
                     {
+                        if (throwOnError) throw new Exception("Request returned status code Forbidden");
                         return default(TResult);
                     }
 
@@ -142,6 +143,7 @@ namespace RavenNest.SDK.Endpoints
             }
             catch (Exception exc)
             {
+                if (throwOnError) throw;
                 try
                 {
                     Shinobytes.Debug.LogError(exc);

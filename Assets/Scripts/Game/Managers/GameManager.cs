@@ -391,7 +391,7 @@ public class GameManager : MonoBehaviour, IGameManager
         StreamLabels.Register("level-requirements-json", () => GetLevelRequirementsJson()).Update();
 
     }
-    private List<IslandTaskCollection> GetLevelRequirements()
+    public List<IslandTaskCollection> GetLevelRequirements()
     {
         var items = new List<IslandTaskCollection>();
 
@@ -403,10 +403,10 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             var collection = new IslandTaskCollection();
             collection.Island = island.Key;
-            collection.Skills = new List<IslandTaskCollection.IslandTask>();
+            collection.Skills = new List<IslandTask>();
             foreach (var chunk in island.Value.OrderBy(x => x.ChunkType.ToString()))
             {
-                collection.Skills.Add(new IslandTaskCollection.IslandTask
+                collection.Skills.Add(new IslandTask
                 {
                     SkillLevelRequirement = chunk.RequiredSkilllevel,
                     CombatLevelRequirement = chunk.RequiredCombatLevel,
@@ -427,7 +427,7 @@ public class GameManager : MonoBehaviour, IGameManager
     }
 
 
-    private string GetLevelRequirementsString()
+    public string GetLevelRequirementsString()
     {
         var sb = new StringBuilder();
 
@@ -455,20 +455,6 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         return sb.ToString();
-    }
-
-    private class IslandTaskCollection
-    {
-        public string Island { get; set; }
-
-        public List<IslandTask> Skills { get; set; }
-
-        public class IslandTask
-        {
-            public string Name { get; set; }
-            public int SkillLevelRequirement { get; set; }
-            public int CombatLevelRequirement { get; set; }
-        }
     }
 
 
@@ -1987,6 +1973,19 @@ public class GameManager : MonoBehaviour, IGameManager
     }
 }
 
+public class IslandTaskCollection
+{
+    public string Island { get; set; }
+
+    public List<IslandTask> Skills { get; set; }
+
+}
+public class IslandTask
+{
+    public string Name { get; set; }
+    public int SkillLevelRequirement { get; set; }
+    public int CombatLevelRequirement { get; set; }
+}
 public class GameTime
 {
     public static float deltaTime;

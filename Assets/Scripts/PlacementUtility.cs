@@ -63,11 +63,21 @@ public static class PlacementUtility
         PlaceOnGround(obj.transform);
     }
 
-    public static void PlaceOnGround(this Transform obj)
+    public static void PlaceOnGround(this Transform obj, float dropDistance = 20f)
     {
-        var pos = obj.position += Vector3.up * 10f;
-        var ray = new Ray(obj.position, Vector3.down);
-        var hits = Physics.RaycastAll(ray, 100f);
+        obj.transform.position = FindGroundPoint(obj, dropDistance);
+    }
+
+    public static Vector3 FindGroundPoint(this Transform obj, float dropDistance = 20f)
+    {
+        return FindGroundPoint(obj.position, dropDistance);
+    }
+
+    public static Vector3 FindGroundPoint(this Vector3 p, float dropDistance = 20f)
+    {
+        var pos = p += Vector3.up * dropDistance;
+        var ray = new Ray(p, Vector3.down);
+        var hits = Physics.RaycastAll(ray, Mathf.Max(dropDistance + 50f, 100f));
         foreach (var hit in hits.OrderBy(x => x.distance))
         {
             var name = hit.collider.name;
@@ -79,12 +89,17 @@ public static class PlacementUtility
                  Contains(name, "generic_ground") ||
                  Contains(name, "prop_dock") ||
                  Contains(name, "bld_dock") ||
+                 Contains(name, "sm_env_beach_") ||
+                 Contains(name, "SM_Env_Rock") ||
+                 Contains(name, "SM_Env_Ground_Grass") ||
+                 Contains(name, "SM_Bld_Base") ||
+                 Contains(name, "_Floor_") ||
                  Contains(name, "terrain"))
             {
-                obj.transform.position = new Vector3(pos.x, hit.point.y, pos.z);
-                break;
+                return new Vector3(pos.x, hit.point.y, pos.z);
             }
         }
+        return p;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

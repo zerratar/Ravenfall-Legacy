@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using RavenNest.Models;
 
 public class Craft : ChatBotCommandHandler<string>
@@ -79,6 +80,12 @@ public class Craft : ChatBotCommandHandler<string>
         switch (status)
         {
             case CraftValidationStatus.OK:
+
+                //player.BeginInterruptableAction(
+                //    action: () => CraftItemAsync(inputQuery, gm, client, player, item, toCraft),
+                //    onInterrupt: () => client.SendReply(gm, Localization.MSG_CRAFT_CANCEL),
+                //    Game.Items.GetCraftingTime(item));
+
                 await CraftItemAsync(inputQuery, gm, client, player, item, toCraft);
                 return;
             case CraftValidationStatus.NeedCraftingStation:
@@ -203,6 +210,7 @@ public class Craft : ChatBotCommandHandler<string>
     {
         try
         {
+
             var craftResult = await Game.RavenNest.Players.CraftItemsAsync(player.Id, item.Id, amountToCraft);
             if (craftResult != null)
             {

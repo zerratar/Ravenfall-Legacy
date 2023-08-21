@@ -3,14 +3,19 @@ using UnityEngine;
 
 public class OnsenManager : MonoBehaviour
 {
-    [SerializeField] private OnsenController[] restingAreas;
+    private OnsenController[] restingAreas;
+
     [SerializeField] private GameManager game;
 
     private Vector3[] entryPoints;
     public Vector3[] EntryPoint => entryPoints;//.EntryPoint;
+
     private void Start()
     {
         if (!game) game = FindObjectOfType<GameManager>();
+
+        restingAreas = FindObjectsOfType<OnsenController>();
+
         this.entryPoints = restingAreas.Select(x => x.EntryPoint).ToArray();
     }
 

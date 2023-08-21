@@ -85,6 +85,10 @@ public class RavenBot : System.IDisposable
         Connection.Register<DuelDecline>("duel_decline");
         Connection.Register<RaidJoin>("raid_join");
         Connection.Register<RaidForce>("raid_force");
+
+        Connection.Register<RaidAuto>("raid_auto");
+        Connection.Register<DungeonAuto>("dungeon_auto");
+
         Connection.Register<DungeonJoin>("dungeon_join");
         Connection.Register<DungeonForce>("dungeon_force");
         Connection.Register<DungeonStop>("dungeon_stop");

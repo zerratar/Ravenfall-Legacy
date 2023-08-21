@@ -8,17 +8,17 @@ using UnityEngine.AI;
 
 public class EnemyMovementController : MonoBehaviour
 {
-    [SerializeField] private float minDestinationDistance = 1f;
-    [SerializeField] private float attackAnimationLength = 0.22f;
-    [SerializeField] private float deathAnimationLength = 3f;
-    [SerializeField] private EnemyController enemyController;
-    [SerializeField] private NavMeshAgent navMeshAgent;
+    public float minDestinationDistance = 1f;
+    public float attackAnimationLength = 0.22f;
+    public float deathAnimationLength = 3f;
+    public EnemyController enemyController;
+    public NavMeshAgent navMeshAgent;
 
     private Animator animator;
     private DungeonBossController dungeonBoss;
     //private AIPath aiPathAgent;
 
-    private SkinnedMeshRenderer meshRenderer;
+    private Renderer[] renderers;
     private LODGroup lodGroup;
 
     private bool hasMoveAnimation;
@@ -68,7 +68,8 @@ public class EnemyMovementController : MonoBehaviour
         navMeshAgent = GetComponent<NavMeshAgent>();
         //}
 
-        meshRenderer = GetComponentInChildren<SkinnedMeshRenderer>();
+        renderers = GetComponentsInChildren<Renderer>().Where(x => x.enabled && x.gameObject.activeInHierarchy).ToArray();
+
         lodGroup = GetComponent<LODGroup>();
 
         moveAnimation = animator.parameters
@@ -331,7 +332,13 @@ public class EnemyMovementController : MonoBehaviour
                 }
             }
         }
-        if (meshRenderer) meshRenderer.enabled = value;
+        if (renderers != null && renderers.Length > 0)
+        {
+            foreach(var mr in renderers)
+            {
+                mr.enabled = value;
+            }
+        }
     }
 
     private bool HasParameter(string attackAnimation)

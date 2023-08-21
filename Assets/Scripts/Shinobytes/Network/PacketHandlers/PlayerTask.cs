@@ -21,14 +21,19 @@ public class PlayerTask : ChatBotCommandHandler<PlayerTaskRequest>
                 // player is not in game, try to add the player.
                 //player = await Game.Players.JoinAsync(task.Player, client, true);
                 //if (player == null)
-                {
-                    client.SendReply(gm, Localization.MSG_NOT_PLAYING);
-                    return;
-                }
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+                return;
             }
-            
+
+            var t = task.Task;
+            // this needs to be fixed in the bot, but lets allow it for now.
+            if (t.ToLower() == "brewing")
+            {
+                t = "Alchemy";
+            }
+
             var arg = task.Arguments != null && task.Arguments.Length > 0 ? task.Arguments[0] : null;
-            player.SetTask(task.Task, arg);
+            player.SetTask(t, arg);
         }
         catch (Exception exc)
         {

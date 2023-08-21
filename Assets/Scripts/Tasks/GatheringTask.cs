@@ -12,8 +12,8 @@ public class GatheringTask : ChunkTask
     }
     public override bool IsCompleted(PlayerController player, object target)
     {
-        var farm = target as FarmController;
-        if (!farm) return true;
+        var gather = target as GatherController;
+        if (!gather || gather.IsDepleted) return true;
         return false;
     }
     public override object GetTarget(PlayerController player)
@@ -22,7 +22,8 @@ public class GatheringTask : ChunkTask
 
         return gatherSpots
             .Where(x => !x.IsDepleted)
-            .OrderBy(x => UnityEngine.Random.value)
+            //.OrderBy(x => UnityEngine.Random.value)
+            .OrderBy(x => Vector3.Distance(player.transform.position, x.transform.position))
             //.ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
             .FirstOrDefault();
     }
@@ -38,23 +39,31 @@ public class GatheringTask : ChunkTask
         return player.Gather(gatherSpot);
     }
 
-    public override bool CanExecute(PlayerController player, object target, out TaskExecutionStatus reason)
+    public override bool CanExecute(PlayerController player, object targetObject, out TaskExecutionStatus reason)
     {
         reason = TaskExecutionStatus.NotReady;
-        var farm = target as GatherController;
+        var target = targetObject as GatherController;
 
-        if (!farm || !player || player.Stats.IsDead || !player.IsReadyForAction || target == null)
+        if (!target || !player || player.Stats.IsDead || !player.IsReadyForAction || targetObject == null)
         {
             return false;
         }
 
-        if (farm.Island != player.Island)
+        if (target.IsDepleted)
+        {
+            reason = TaskExecutionStatus.NotReady;
+            return false;
+        }
+
+        if (target.Island != player.Island)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
 
-        if (Vector3.Distance(player.transform.position, farm.transform.position) >= farm.MaxActionDistance)
+        target.AddGatherer(player);
+
+        if (Vector3.Distance(player.transform.position, target.transform.position) >= target.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;

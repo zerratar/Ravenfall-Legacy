@@ -90,7 +90,7 @@ public class SettingsMenuView : MenuView
 
     public static TimeSpan GetPlayerCacheExpiryTime()
     {
-        return PlayerCacheExpiry[PlayerSettings.Instance.PlayerCacheExpiryTime ?? 2]; // PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1)
+        return PlayerCacheExpiry[PlayerSettings.Instance.PlayerCacheExpiryTime ?? ^1]; // PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1)
     }
 
     private void Awake()
@@ -116,7 +116,7 @@ public class SettingsMenuView : MenuView
         musicVolumeSlider.value = settings.MusicVolume.GetValueOrDefault(gameManager.Music.volume);
         observerCameraRotationSlider.value = settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed * -1);
         pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
-        playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(1);
+        playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(SettingsMenuView.PlayerCacheExpiry.Length - 1);
         boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
         alertPlayerCacheExpirationToggle.isOn = settings.AlertExpiredStateCacheInChat.GetValueOrDefault(gameManager.AlertExpiredStateCacheInChat);
         playerNameToggle.isOn = settings.PlayerNamesVisible.GetValueOrDefault(gameManager.PlayerNamesVisible);

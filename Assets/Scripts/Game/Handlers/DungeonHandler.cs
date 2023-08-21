@@ -1,4 +1,5 @@
 ﻿using Shinobytes.Linq;
+using System;
 using UnityEngine;
 
 public class DungeonHandler : MonoBehaviour
@@ -23,10 +24,13 @@ public class DungeonHandler : MonoBehaviour
     public FerryState Ferry;
 
     private bool wasResting;
+    private bool autoJoining;
+    private float autoJoinRequestTimeout;
 
     public IslandController PreviousIsland => previousIsland;
     public Vector3 PreviousPosition => previousPosition;
     public bool InDungeon { get; private set; }
+    public int AutoJoinCounter { get; set; }
     public bool Joined => dungeon != null && dungeon.JoinedDungeon(this.player);
     private void Start()
     {
@@ -41,6 +45,11 @@ public class DungeonHandler : MonoBehaviour
             return;
         }
 
+        if (autoJoining)
+        {
+            return;
+        }
+
         if (waitForDungeon > 0f)
         {
             waitForDungeon -= GameTime.deltaTime;
@@ -48,8 +57,24 @@ public class DungeonHandler : MonoBehaviour
             return;
         }
 
-        if (!InDungeon || !dungeon.Active)
+        if (!dungeon.Active)
+        {
             return;
+        }
+
+        if (!InDungeon)
+        {
+            if (AutoJoinCounter > 0)
+            {
+                // try join the dungeon if possible, and dont auto join if server is not responding.
+                autoJoining = true;
+                RequestAutoJoinAsync();
+            }
+            else
+            {
+                return;
+            }
+        }
 
         if (player.TrainingHealing)
         {
@@ -129,6 +154,41 @@ public class DungeonHandler : MonoBehaviour
             return;
 
         AttackTarget();
+    }
+
+    private async void RequestAutoJoinAsync()
+    {
+        try
+        {
+            if (autoJoinRequestTimeout > 0)
+            {
+                autoJoinRequestTimeout -= Time.deltaTime;
+                return;
+            }
+
+            if (AutoJoinCounter == 0 || player.GameManager.Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin) 
+                return;
+            
+            var result = await player.GameManager.RavenNest.Players.AutoJoinDungeon(player.Id);
+            if (result)
+            {
+                AutoJoinCounter--;
+                player.GameManager.Dungeons.Join(player);
+            }
+            else
+            {
+                AutoJoinCounter = 0;
+            }
+        }
+        catch
+        {
+            // do not cancel auto-join but we don't want to retry again too quickly asking the server. Set a cooldown
+            autoJoinRequestTimeout = 2f;
+        }
+        finally
+        {
+            autoJoining = false;
+        }
     }
 
     public void OnEnter()
@@ -269,6 +329,8 @@ public class DungeonHandler : MonoBehaviour
             return this.dungeon.StartingPoint;
         }
     }
+
+
     private void HealTarget()
     {
         if (!healTarget)

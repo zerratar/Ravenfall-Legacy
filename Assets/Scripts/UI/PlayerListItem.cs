@@ -17,7 +17,7 @@ public class PlayerListItem : MonoBehaviour
     [SerializeField] private Text lblExpPerHour;
     [SerializeField] private Text lblPlayerName;
 
-    private readonly static string[] skillNames = { "Atk", "Def", "Str", "All", "Woo", "Fis", "Min", "Cra", "Coo", "Far", "Slay", "Mag", "Ran", "Sail", "Heal" };
+    private readonly static string[] skillNames = { "Atk", "Def", "Str", "All", "Woo", "Fis", "Min", "Cra", "Coo", "Far", "Slay", "Mag", "Ran", "Sail", "Heal", "Gat", "Alc"};
 
     private RectTransform rectTransform;
     private bool isRotatingSkill = false;

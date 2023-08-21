@@ -20,10 +20,15 @@ public class RaidHandler : MonoBehaviour
     private FerryState ferryState;
     private TaskType previousTask;
     private string previousTaskArgument;
+    private bool autoJoining;
+    private float autoJoinRequestTimeout;
 
     public bool InRaid { get; private set; }
     public IslandController PreviousIsland => previousIsland;
     public Vector3 PreviousPosition => prevPosition;
+
+    public int AutoJoinCounter { get; set; }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -34,9 +39,28 @@ public class RaidHandler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!InRaid || !gameManager.Raid.Started || !gameManager.Raid.Boss)
+        if (!gameManager.Raid.Started || !gameManager.Raid.Boss)
         {
             return;
+        }
+
+        if (autoJoining)
+        {
+            return;
+        }
+
+        if (!InRaid)
+        {
+            if (AutoJoinCounter > 0)
+            {
+                // try join the raid if possible 
+                autoJoining = true;
+                RequestAutoJoinAsync();
+            }
+            else
+            {
+                return;
+            }
         }
 
         var target = gameManager.Raid.Boss.transform;
@@ -99,6 +123,42 @@ public class RaidHandler : MonoBehaviour
         }
     }
 
+    private async void RequestAutoJoinAsync()
+    {
+        try
+        {
+            if (autoJoinRequestTimeout > 0)
+            {
+                autoJoinRequestTimeout -= Time.deltaTime;
+                return;
+            }
+
+            if (AutoJoinCounter == 0 || player.GameManager.Raid.CanJoin(player) != RaidJoinResult.CanJoin)
+                return;
+
+            var result = await player.GameManager.RavenNest.Players.AutoJoinRaid(player.Id);
+            if (result)
+            {
+                AutoJoinCounter--;
+                player.GameManager.Raid.Join(player);
+            }
+            else
+            {
+                AutoJoinCounter = 0;
+            }
+        }
+        catch
+        {
+            // do not cancel auto-join but we don't want to retry again too quickly asking the server. Set a cooldown
+            autoJoinRequestTimeout = 2f;
+        }
+        finally
+        {
+            autoJoining = false;
+        }
+    }
+
+
     public void OnEnter()
     {
         InRaid = true;
@@ -106,11 +166,11 @@ public class RaidHandler : MonoBehaviour
 #if DEBUG
         Shinobytes.Debug.Log($"{player.PlayerName} entered the raid");
 #endif
-       
+
         wasResting = player.Onsen.InOnsen;
 
         ferryState = new()
-        { 
+        {
             OnFerry = player.Ferry.OnFerry,
             HasDestination = !!player.Ferry.Destination
         };

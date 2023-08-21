@@ -11,6 +11,8 @@ public class TreeController : MonoBehaviour
     private readonly ConcurrentDictionary<string, PlayerController> woodCutters
         = new ConcurrentDictionary<string, PlayerController>();
 
+    private static GameObject stumpObject;
+
     [SerializeField] private GameObject[] trees;
     [SerializeField] private GameObject stump;
     [SerializeField] private float respawnTimeSeconds = 15f;
@@ -53,35 +55,15 @@ public class TreeController : MonoBehaviour
         {
             MaxActionDistance = collider.radius;
         }
-
-        //startRotation = transform.rotation;
     }
 
     void Awake()
     {
-
         this.Island = GetComponentInParent<IslandController>();
-
         if (stump) stump.SetActive(false);
         foreach (var tree in trees) tree.SetActive(false);
         ActivateRandomTree();
     }
-
-
-    //// Update is called once per frame
-    //void Update()
-    //{
-    //    if (GameCache.IsAwaitingGameRestore) return;
-    //    if (treeShakeTimer > 0)
-    //    {
-    //        treeShakeTimer -= Time.deltaTime;
-    //        transform.rotation = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-treeShakeRange / 2f, treeShakeRange / 2f));
-    //        if (treeShakeTimer <= 0)
-    //        {
-    //            transform.rotation = startRotation;
-    //        }
-    //    }
-    //}
 
     private IEnumerator Respawn()
     {
@@ -147,5 +129,85 @@ public class TreeController : MonoBehaviour
         }
 
         return false;
+    }
+
+    public void Create()
+    {
+        this.Island = GetComponentInParent<IslandController>();
+
+        if (trees == null || trees.Length == 0)
+        {
+            var t = new List<GameObject>();
+            for (var i = 0; i < this.transform.childCount; ++i)
+            {
+                var child = this.transform.GetChild(i);
+                if (child.name.ToLower() == "stump")
+                {
+                    continue;
+                }
+
+                t.Add(child.gameObject);
+            }
+
+            this.trees = t.ToArray();
+        }
+
+        if (!stump)
+        {
+            // create stump
+            // easiest way? find another tree with a stump. instantiate it.
+
+            var chunk = this.gameObject.GetComponentInParent<Chunk>();
+            if (chunk)
+            {
+                var otherTrees = chunk.GetComponentsInChildren<TreeController>();
+                foreach (var t in otherTrees)
+                {
+                    if (t.stump)
+                    {
+                        stumpObject = t.stump;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                if (!stumpObject)
+                {
+                    var otherTrees = GameObject.FindObjectsOfType<TreeController>();
+                    foreach (var t in otherTrees)
+                    {
+                        if (t.stump)
+                        {
+                            stumpObject = t.stump;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            var lp = stumpObject.transform.localPosition;
+            var lr = stumpObject.transform.localRotation;
+            var ls = stumpObject.transform.localScale;
+
+            stump = GameObject.Instantiate(stumpObject, this.transform);
+            stump.transform.localScale = ls;
+            stump.transform.SetLocalPositionAndRotation(lp, lr);
+        }
+
+        this.gameObject.EnsureComponent<SphereCollider>(x =>
+        {
+            x.isTrigger = true;
+            x.radius = 3f;
+        });
+
+        // no need to assign difficulty, we will just use a fixed one for now.
+        this.health = 30;
+        this.maxHealth = 30;
+        this.treeShakeTimer = 1;
+        this.treeShakeTime = 1;
+        this.Level = 1000;
+        this.MaxActionDistance = 6f;
+        this.respawnTimeSeconds = 20;
     }
 }

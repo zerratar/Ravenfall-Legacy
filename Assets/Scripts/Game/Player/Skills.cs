@@ -183,7 +183,7 @@ public class Skills : IComparable
         {
             SkillStat skill = SkillList[i];
             SkillStat tskill = target.SkillList[i];
-            if (tskill.Experience > skill.Experience)
+            if (tskill.Experience > skill.Experience || tskill.Level > skill.Level)
             {
                 skill.Set(tskill.Level, tskill.Experience);
                 //skill.SetExp(tskill.Experience);
@@ -389,6 +389,29 @@ public class Skills : IComparable
         return newSkills;
     }
 
+
+    public static Skills operator /(Skills valueA, float valueB)
+    {
+        var newSkills = new Skills();
+        if (valueA == null || valueB == 0) return newSkills;
+        for (int i = 0; i < newSkills.SkillList.Length; i++)
+        {
+            var newSkill = newSkills.SkillList[i];
+            var a = valueA.SkillList[i];
+            var b = valueB;
+            var level = (a.Level / b);
+            if (level < 1)
+            {
+                level = 1;
+            }
+
+            newSkill.Set((int)level, 0, false);
+        }
+
+        return newSkills;
+    }
+
+
     public static Skills operator +(Skills valueA, Skills valueB)
     {
         var newSkills = new Skills();
@@ -405,6 +428,30 @@ public class Skills : IComparable
             {
                 newSkill.AddExp(a.Experience + b.Experience);
             }
+        }
+
+        return newSkills;
+    }
+
+    public static Skills operator -(Skills valueA, Skills valueB)
+    {
+        var newSkills = new Skills();
+        if (valueA == null || valueB == null) return newSkills;
+        for (int i = 0; i < newSkills.SkillList.Length; i++)
+        {
+            var newSkill = newSkills.SkillList[i];
+            var a = valueA.SkillList[i];
+            var b = valueB.SkillList[i];
+            var level = (a.Level - b.Level);
+
+            if (level < 1)
+            {
+                level = 1;
+            }
+
+            // we will truncate exp, while it would be nice to do a reverse level up
+            // its not necessary as we only use this for monsters.
+            newSkill.Set(level, 0, false);
         }
 
         return newSkills;

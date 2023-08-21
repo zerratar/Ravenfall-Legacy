@@ -44,51 +44,21 @@ public class Chunk : MonoBehaviour
         if (!Game) Game = FindObjectOfType<GameManager>();
         Island = GetComponentInParent<IslandController>();
         task = GetChunkTask(Type); // arena
-        //if (SecondaryType != TaskType.None)
-        //{
-        //    secondaryTask = GetChunkTask(SecondaryType); // arena
-        //}
-
-        var enemyContainer = gameObject.transform.Find("Enemies");
-        if (enemyContainer)
-        {
-            enemies = enemyContainer.GetComponentsInChildren<EnemyController>();
-        }
-
-        var treeContainer = gameObject.transform.Find("Trees");
-        if (treeContainer)
-        {
-            trees = treeContainer.GetComponentsInChildren<TreeController>();
-        }
-
-        var fishingContainer = gameObject.transform.Find("Fishingspots");
-        if (fishingContainer)
-        {
-            fishingSpots = fishingContainer.GetComponentsInChildren<FishingController>();
-        }
-
-        var miningContainer = gameObject.transform.Find("Rocks");
-        if (miningContainer)
-        {
-            miningSpots = miningContainer.GetComponentsInChildren<RockController>();
-        }
-
-        //var craftingStationContainer = gameObject.transform.Find("CraftingStations");
-        //if (craftingStationContainer)
-        //{
-        //}
-
+                                   //if (SecondaryType != TaskType.None)
+                                   //{
+                                   //    secondaryTask = GetChunkTask(SecondaryType); // arena
+                                   //}
+        enemies = gameObject.GetComponentsInChildren<EnemyController>();
+        trees = gameObject.GetComponentsInChildren<TreeController>();
+        fishingSpots = gameObject.GetComponentsInChildren<FishingController>();
+        miningSpots = gameObject.GetComponentsInChildren<RockController>();
         craftingStations = gameObject.GetComponentsInChildren<CraftingStation>();
-
-        var farmingPatchesContainer = gameObject.transform.Find("FarmingPatches");
-        if (farmingPatchesContainer)
-        {
-            farmingPatches = farmingPatchesContainer.GetComponentsInChildren<FarmController>();
-        }
-
+        farmingPatches = gameObject.GetComponentsInChildren<FarmController>();
         gatheringSpots = gameObject.GetComponentsInChildren<GatherController>();
 
         started = true;
+
+        gameObject.name = $"{Type} Lv. " + Mathf.Max(RequiredSkilllevel, RequiredCombatLevel);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

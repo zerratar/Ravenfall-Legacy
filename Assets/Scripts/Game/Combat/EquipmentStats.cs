@@ -62,4 +62,66 @@ public class EquipmentStats : IComparable
             BaseHealingPower = (int)(stats.BaseHealingPower * num),
         };
     }
+    public static EquipmentStats operator +(EquipmentStats stats, EquipmentStats other)
+    {
+        if (stats == null) return new EquipmentStats();
+        return new EquipmentStats
+        {
+            BaseArmorPower = (int)(stats.BaseArmorPower + other.BaseArmorPower),
+            BaseWeaponAim = (int)(stats.BaseWeaponAim + other.BaseWeaponAim),
+            BaseWeaponPower = (int)(stats.BaseWeaponPower + other.BaseWeaponPower),
+            BaseMagicPower = (int)(stats.BaseMagicPower + other.BaseMagicPower),
+            BaseMagicAim = (int)(stats.BaseMagicAim + other.BaseMagicAim),
+            BaseRangedPower = (int)(stats.BaseRangedPower + other.BaseRangedPower),
+            BaseRangedAim = (int)(stats.BaseRangedAim + other.BaseRangedAim),
+            BaseHealingPower = (int)(stats.BaseHealingPower + other.BaseHealingPower),
+        };
+    }
+
+    public static EquipmentStats operator -(EquipmentStats stats, EquipmentStats other)
+    {
+        if (stats == null) return new EquipmentStats();
+        return new EquipmentStats
+        {
+            BaseArmorPower = (int)(stats.BaseArmorPower - other.BaseArmorPower),
+            BaseWeaponAim = (int)(stats.BaseWeaponAim - other.BaseWeaponAim),
+            BaseWeaponPower = (int)(stats.BaseWeaponPower - other.BaseWeaponPower),
+            BaseMagicPower = (int)(stats.BaseMagicPower - other.BaseMagicPower),
+            BaseMagicAim = (int)(stats.BaseMagicAim - other.BaseMagicAim),
+            BaseRangedPower = (int)(stats.BaseRangedPower - other.BaseRangedPower),
+            BaseRangedAim = (int)(stats.BaseRangedAim - other.BaseRangedAim),
+            BaseHealingPower = (int)(stats.BaseHealingPower - other.BaseHealingPower),
+        };
+    }
+
+    public static EquipmentStats operator /(EquipmentStats stats, float num)
+    {
+        if (stats == null) return new EquipmentStats();
+        return new EquipmentStats
+        {
+            BaseArmorPower = (int)(stats.BaseArmorPower / num),
+            BaseWeaponAim = (int)(stats.BaseWeaponAim / num),
+            BaseWeaponPower = (int)(stats.BaseWeaponPower / num),
+            BaseMagicPower = (int)(stats.BaseMagicPower / num),
+            BaseMagicAim = (int)(stats.BaseMagicAim / num),
+            BaseRangedPower = (int)(stats.BaseRangedPower / num),
+            BaseRangedAim = (int)(stats.BaseRangedAim / num),
+            BaseHealingPower = (int)(stats.BaseHealingPower / num),
+        };
+    }
+    public static EquipmentStats operator +(EquipmentStats stats, float num)
+    {
+        if (stats == null) return new EquipmentStats();
+        return new EquipmentStats
+        {
+            BaseArmorPower = (int)(stats.BaseArmorPower + num),
+            BaseWeaponAim = (int)(stats.BaseWeaponAim + num),
+            BaseWeaponPower = (int)(stats.BaseWeaponPower + num),
+            BaseMagicPower = (int)(stats.BaseMagicPower + num),
+            BaseMagicAim = (int)(stats.BaseMagicAim + num),
+            BaseRangedPower = (int)(stats.BaseRangedPower + num),
+            BaseRangedAim = (int)(stats.BaseRangedAim + num),
+            BaseHealingPower = (int)(stats.BaseHealingPower + num),
+        };
+    }
 }

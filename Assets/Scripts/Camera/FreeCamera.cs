@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 using UnityEngine;
 using Debug = Shinobytes.Debug;
 public class FreeCamera : MonoBehaviour
@@ -12,6 +13,8 @@ public class FreeCamera : MonoBehaviour
     [SerializeField] private float slowDownMovementScale = 0.25f;
     [SerializeField] private float slowDownLookScale = 0.35f;
 
+    private RaycastHit[] raycastHits = new RaycastHit[24];
+
     private float moveSpeedModifierDelta = 5f;
     private float moveSpeedModifier;
     private Vector3 lastMousePosition;
@@ -21,6 +24,7 @@ public class FreeCamera : MonoBehaviour
         KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7,KeyCode.Alpha8,KeyCode.Alpha9,
     };
 
+    private List<IslandInformationButton> btnDown = new List<IslandInformationButton>();
     private StoredPosition[] storedPositions = new StoredPosition[10];
 
     public bool SlowMotion = false;
@@ -66,9 +70,13 @@ public class FreeCamera : MonoBehaviour
         var mouseSpeed = slowDown ? slowDownLookScale : 1f;
         var newMousePosition = Input.mousePosition;
 
-        if (Input.GetMouseButtonUp(0))
+        if (Input.GetMouseButtonDown(0))
         {
-            CheckForClickOnPlayer();
+            OnMouseDownAction();
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            OnMouseUpAction();
         }
 
         if (Input.GetMouseButton(1)
@@ -108,12 +116,59 @@ public class FreeCamera : MonoBehaviour
         transform.position += moveForward + moveSides + moveUp + moveDown;
     }
 
-    private void CheckForClickOnPlayer()
+    private void OnMouseDownAction()
     {
         var ray = gameCamera.ScreenPointToRay(Input.mousePosition);
-        var hits = Physics.RaycastAll(ray, 100);
-        foreach (var hit in hits)
+        //var hits = Physics.RaycastAll(ray, 100);
+        var hitButton = false;
+        var hitCount = Physics.RaycastNonAlloc(ray, raycastHits, 1000);
+        for (var i = 0; i < hitCount; ++i)
         {
+            var hit = raycastHits[i];
+
+            if (hit.collider.CompareTag("Button"))
+            {
+                var btn = hit.collider.GetComponent<IslandInformationButton>();
+                if (btn)
+                {
+                    hitButton = true;
+                    btn.OnMouseDown();
+                    this.btnDown.Add(btn);
+                }
+            }
+        }
+
+        if (!hitButton)
+        {
+            foreach (var btn in this.btnDown)
+            {
+                btn.OnMouseExit();
+            }
+
+            btnDown.Clear();
+        }
+    }
+
+    private void OnMouseUpAction()
+    {
+        var ray = gameCamera.ScreenPointToRay(Input.mousePosition);
+        //var hits = Physics.RaycastAll(ray, 100);
+
+        var hitCount = Physics.RaycastNonAlloc(ray, raycastHits, 1000);
+        for (var i = 0; i < hitCount; ++i)
+        {
+            var hit = raycastHits[i];
+
+            if (hit.collider.CompareTag("Button"))
+            {
+                var btn = hit.collider.GetComponent<IslandInformationButton>();
+                if (btn)
+                {
+                    btn.OnMouseUp();
+                    this.btnDown.Remove(btn);
+                }
+            }
+
             var pc = hit.collider.gameObject.GetComponent<PlayerController>();
             if (pc)
             {

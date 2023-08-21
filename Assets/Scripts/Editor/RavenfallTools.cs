@@ -18,6 +18,118 @@ public class RavenfallMeshTools
     static ProfilerMarker smp3 = new ProfilerMarker("Create Mesh");
     static ProfilerMarker smp4 = new ProfilerMarker("Cleanup");
 
+
+    [MenuItem("Ravenfall/Fix Negative BoxColliders")]
+    public static void FixNegativeBoxColliders()
+    {
+        BoxCollider[] boxColliders = null;
+        if (Selection.activeGameObject == null)
+            boxColliders = GameObject.FindObjectsOfType<BoxCollider>();
+        else
+            boxColliders = Selection.activeGameObject.GetComponentsInChildren<BoxCollider>();
+        
+        int fixCount = 0;
+        foreach (var bc in boxColliders)
+        {
+            var ls = bc.transform.localScale;
+            var fixNeeded = false;
+
+            if (ls.x < 0)
+            {
+                // Flip the scale and adjust the local position based on the collider's center and size
+                ls.x = -ls.x;
+                bc.transform.localPosition += (bc.size.x * bc.transform.right * 0.5f) - bc.center.x * bc.transform.right;
+                bc.size = new Vector3(-bc.size.x, bc.size.y, bc.size.z);
+                fixNeeded = true;
+            }
+
+            if (ls.z < 0)
+            {
+                // Flip the scale and adjust the local position based on the collider's center and size
+                ls.z = -ls.z;
+                bc.transform.localPosition += (bc.size.z * bc.transform.forward * 0.5f) - bc.center.z * bc.transform.forward;
+                bc.size = new Vector3(bc.size.x, bc.size.y, -bc.size.z);
+                fixNeeded = true;
+            }
+
+            // Apply the changes if any fixes were made
+            if (fixNeeded)
+            {
+                bc.transform.localScale = ls;
+                fixCount++;
+            }
+        }
+        UnityEngine.Debug.LogWarning("Fixed " + fixCount + " box colliders out of " + boxColliders.Length);
+    }
+
+    [MenuItem("Ravenfall/Objects/Make selections into trees")]
+    public static void CreateTree()
+    {
+        var sel = Selection.gameObjects;
+        if (sel == null || sel.Length == 0)
+            return;
+
+        foreach (var go in sel)
+        {
+            var obj = go;            
+            if (obj.name != "Tree" || !obj.GetComponent<TreeController>())
+            {
+                obj = new GameObject("Tree");
+                obj.transform.position = go.transform.position;
+                obj.transform.localRotation = go.transform.localRotation;
+                obj.transform.SetParent(go.transform.parent, true);
+
+                // set selection to be child of the new parent.
+                go.transform.SetParent(obj.transform, true);
+            }
+
+            obj.EnsureComponent<TreeController>(x => x.Create());
+        }
+    }
+
+    [MenuItem("Ravenfall/Objects/Make selections into gathering spots")]
+    public static void CreateGather()
+    {
+        var sel = Selection.gameObjects;
+        if (sel == null || sel.Length == 0)
+            return;
+
+        foreach (var go in sel)
+        {
+            var obj = go;
+            var gatherObj = go;
+            // gather controls and trees are slightly different, we have to ensure that the object its attached on is a parent of its current object.
+            if (obj.name != "Gather Spot" || !obj.GetComponent<GatherController>())
+            {
+                obj = new GameObject("Gather Spot");
+                obj.transform.position = go.transform.position;
+                obj.transform.localRotation = go.transform.localRotation;
+                obj.transform.SetParent(go.transform.parent, true);
+
+                // set selection to be child of the new parent.
+                go.transform.SetParent(obj.transform, true);
+            }
+            else
+            {
+                gatherObj = obj.transform.GetChild(0).gameObject;
+            }
+
+            obj.EnsureComponent<GatherController>(x => x.Create(gatherObj));
+        }
+    }
+
+    [MenuItem("Ravenfall/Objects/Make selections into enemies")]
+    public static void CreateEnemy()
+    {
+        var sel = Selection.gameObjects;
+        if (sel == null || sel.Length == 0)
+            return;
+
+        foreach (var go in sel)
+        {
+            go.EnsureComponent<EnemyController>(x => x.Create());
+        }
+    }
 #if UNITY_EDITOR
     // ----------------------------------------------------------------------------------------------------------------
     // New Unity 2020.1 MeshData API
@@ -27,7 +139,8 @@ public class RavenfallMeshTools
     // - Create Mesh 47ms (mostly waiting for jobs)
     // - Prepare 8ms (89KB GC alloc)
     // - FindMeshes 2.1ms (180KB GC alloc)
-    [MenuItem("Mesh API Test/Create Mesh From Scene - New API %G")]
+
+    //[MenuItem("Mesh API Test/Create Mesh From Scene - New API %G")]
     public static void CreateMesh_MeshDataApi()
     {
         var sw = Stopwatch.StartNew();
@@ -36,7 +149,7 @@ public class RavenfallMeshTools
         smp1.Begin();
         var meshFilters = GameObject.FindObjectsOfType<MeshFilter>();
         smp1.End();
-        
+
         // Need to figure out how large the output mesh needs to be (in terms of vertex/index count),
         // as well as get transforms and vertex/index location offsets for each mesh.
         smp2.Begin();
@@ -134,9 +247,9 @@ public class RavenfallMeshTools
     {
         [ReadOnly] public Mesh.MeshDataArray meshData;
         public Mesh.MeshData outputMesh;
-        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<int> vertexStart;
-        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<int> indexStart;
-        [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<float4x4> xform;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> vertexStart;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> indexStart;
+        [DeallocateOnJobCompletion][ReadOnly] public NativeArray<float4x4> xform;
         public NativeArray<float3x2> bounds;
 
         [NativeDisableContainerSafetyRestriction] NativeArray<float3> tempVertices;

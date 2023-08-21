@@ -11,6 +11,7 @@ public class OnsenController : MonoBehaviour
     [SerializeField] private Transform sittingSpots;
     [SerializeField] private Transform swimmingSpots;
     [SerializeField] private Transform meditatingSpots;
+    [SerializeField] private Transform sleepingSpots;
 
     [SerializeField] private TextMeshProUGUI detailsLabel;
 
@@ -37,7 +38,8 @@ public class OnsenController : MonoBehaviour
             transforms.AddRange(swimmingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
         if (meditatingSpots != null)
             transforms.AddRange(meditatingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
-
+        if (sleepingSpots != null)
+            transforms.AddRange(sleepingSpots.GetComponentsInChildren<Transform>().Where(x => x.childCount == 0).ToArray());
         UpdateDetailsLabel();
     }
 
@@ -51,8 +53,8 @@ public class OnsenController : MonoBehaviour
 
         var spot =
             limitedSpots 
-            ? transforms.Where(x => x.childCount == 0).OrderBy(x => UnityEngine.Random.value).FirstOrDefault()
-            : transforms.OrderBy(x => x.childCount + UnityEngine.Random.value).FirstOrDefault();
+            ? transforms.Where(x => x.childCount == 0).OrderBy(x => Random.value).FirstOrDefault()
+            : transforms.OrderBy(x => x.childCount + Random.value).FirstOrDefault();
 
         if (spot)
         {
@@ -72,6 +74,7 @@ public class OnsenController : MonoBehaviour
         {
             case "Swim": return OnsenPositionType.Swimming;
             case "Meditate": return OnsenPositionType.Meditating;
+            case "Sleep": return OnsenPositionType.Sleeping;
             default: return OnsenPositionType.Sitting;
         }
     }
@@ -133,5 +136,6 @@ public enum OnsenPositionType
 {
     Sitting,
     Swimming,
-    Meditating
+    Meditating,
+    Sleeping
 }

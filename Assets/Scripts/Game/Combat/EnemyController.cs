@@ -3,14 +3,17 @@ using Sirenix.OdinInspector;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class EnemyController : MonoBehaviour, IAttackable
 {
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
     private readonly Dictionary<string, float> attackerAggro = new Dictionary<string, float>();
+    private static RuntimeAnimatorController humanoidEnemy;
 
     [SerializeField] private bool positionLocked = true;
     [SerializeField] private Vector3 spawnPoint;
@@ -85,8 +88,152 @@ public class EnemyController : MonoBehaviour, IAttackable
         if (!damageCounterManager) damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
         if (!healthBarManager) healthBarManager = GameObject.FindObjectOfType<HealthBarManager>();
         if (!movement) movement = GetComponent<EnemyMovementController>();
+
+        if (!this.Island)
+        {
+            var im = GameObject.FindObjectOfType<IslandManager>();
+            this.Island = im.FindIsland(this.transform.position);
+        }
     }
 
+    [Button("Rename")]
+    public void Rename()
+    {
+        this.name = "Enemy Lv. " + Stats.CombatLevel;
+    }
+
+    [Button("Make into enemy")]
+    public void Create()
+    {
+        AdjustPlacement();
+
+        this.HandleFightBack = true;
+        this.healthBarOffset = 0.25f;
+        this.attackRange = 5f;
+        this.attackTimer = 0f;
+        this.attackInterval = 0.75f;
+        this.ExpFactor = 1f;
+        this.AggroRange = 7.5f;
+        this.AutomaticRespawn = true;
+
+        this.gameObject.EnsureComponent<SphereCollider>(x =>
+        {
+            x.center = new Vector3(0.01979065f, 1.021983f, 0f);
+            x.radius = 1.796585f;
+        });
+
+        this.gameObject.EnsureComponent<CapsuleCollider>(x =>
+        {
+            x.center = new Vector3(0, 0.84f, 0);
+            x.radius = 0.24f;
+            x.height = 1.89f;
+        });
+
+        this.gameObject.EnsureComponent<Animator>(x =>
+        {
+            // set runtime controller to Humanoid Enemy. Unfortunately its not in our resources folder so we cant.
+            //x.runtimeAnimatorController = 
+            // but! we can find another enemycontroller that has one!
+
+            // default to pick humanoid Enemy, as 90%+ of the enemies are humanoids.
+            if (!humanoidEnemy)
+            {
+                foreach (var enemy in FindObjectsOfType<EnemyController>())
+                {
+                    var animator = enemy.GetComponent<Animator>();
+                    if (!animator) continue;
+                    var controller = animator.runtimeAnimatorController;
+                    if (controller && controller.name == "Humanoid Enemy")
+                    {
+                        humanoidEnemy = controller;
+                        break;
+                    }
+                }
+            }
+            if (!x.runtimeAnimatorController)
+                x.runtimeAnimatorController = humanoidEnemy;
+        });
+
+        var nma = this.gameObject.EnsureComponent<NavMeshAgent>(x =>
+        {
+            x.speed = 3.5f;
+            x.angularSpeed = 120;
+            x.acceleration = 8f;
+            x.stoppingDistance = 0;
+            x.autoBraking = true;
+            x.radius = 0.5f;
+            x.height = 2f;
+            x.avoidancePriority = 50;
+            x.baseOffset = -0.125f;
+        });
+
+        this.gameObject.EnsureComponent<EnemyMovementController>(x =>
+        {
+            x.minDestinationDistance = 1f;
+            x.attackAnimationLength = 0.5f;
+            x.deathAnimationLength = 1f;
+            x.enemyController = this;
+            x.navMeshAgent = nma;
+        });
+
+        AssignDependencies();
+
+        // reload all chunks. We may not have the latest one
+        this.game.Chunks.Init(true);
+
+        // after finding island, lets compare to other islands with fighting chunks.
+        var fightingAreas = this.game.Chunks.GetChunksOfType(TaskType.Fighting).OrderBy(x => x.RequiredCombatLevel + x.RequiredSkilllevel).ToArray();
+
+        // get previous chunk, and not the one owned by this enemy.
+        var thisChunk = GetComponentInParent<Chunk>();
+        var thisIndex = System.Array.IndexOf(fightingAreas, thisChunk);
+        if (thisIndex > 1)
+        {
+            var strongestEnemies = new List<EnemyController>();
+            var levelRequirements = new List<int>();
+            for (var i = 0; i < thisIndex; i++)
+            {
+                var chunk = fightingAreas[i];
+                levelRequirements.Add(chunk.RequiredCombatLevel + chunk.RequiredSkilllevel);
+                var enemies = chunk.gameObject.GetComponentsInChildren<EnemyController>(true);
+                strongestEnemies.Add(enemies.OrderByDescending(x => x.Stats.CombatLevel).FirstOrDefault());
+            }
+
+            if (strongestEnemies.Count < 1)
+            {
+                // didnt work.
+                return;
+            }
+
+            // lets simplify it, take first and last, delta divided by the count
+            var last = strongestEnemies[^1];
+            var first = strongestEnemies[0];
+            var statsDelta = last.Stats - first.Stats;
+            var eqDelta = last.EquipmentStats - first.EquipmentStats;
+            var statsAvg = statsDelta / strongestEnemies.Count;
+            var eqAvg = eqDelta / strongestEnemies.Count;
+
+            var avgLevelReqJump = levelRequirements.Average();
+            var thisLevelReqJump = (thisChunk.RequiredCombatLevel + thisChunk.RequiredSkilllevel) - levelRequirements[^1];
+
+            var boostLvReq = Mathf.Max(1f, (float)thisLevelReqJump / (float)avgLevelReqJump);
+
+            var levelJumpInc = Mathf.Max(1f, 1f - boostLvReq) * 0.25f;
+
+            //this.Stats = ... get stats
+            //last.Stats.CopyTo(this.Stats);
+            //this.Stats.TakeBestOf(last.Stats);
+            this.Stats = new Skills();
+            this.Stats += last.Stats + (last.Stats * levelJumpInc);
+            this.Stats += (statsAvg * boostLvReq);
+
+            this.EquipmentStats = new EquipmentStats();
+            this.EquipmentStats += last.EquipmentStats;
+            this.EquipmentStats += (eqAvg * boostLvReq);
+        }
+        if (this.name.Contains("_") || this.name.Contains(" Lv. ")) // only prefab names should be replaced. so we don't accidently rename Named enemies.
+            this.Rename();
+    }
 
     public int GetAttackerCountExcluding(PlayerController player)
     {

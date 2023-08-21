@@ -151,12 +151,19 @@ public class PlayerAnimationController : MonoBehaviour
         if (!EnsureAnimator()) return;
         SetBool("Meditating", true);
     }
+
+    internal void Sleep()
+    {
+        if (!EnsureAnimator()) return;
+        SetBool("Sleeping", true);
+    }
     internal void ClearOnsenAnimations()
     {
         if (!EnsureAnimator()) return;
         SetBool("Sitting", false);
         SetBool("Swimming", false);
         SetBool("Meditating", false);
+        SetBool("Sleeping", false);
     }
 
     public void StartMoving(bool force = false)
@@ -316,6 +323,14 @@ public class PlayerAnimationController : MonoBehaviour
         SetBool("Brewing", true);
     }
 
+    public void Brew()
+    {
+        if (!EnsureAnimator()) return;
+        animationState = PlayerAnimationState.Brewing;
+        SetBool("Brewing", true);
+    }
+
+
     public void EndBrewing()
     {
         if (!EnsureAnimator()) return;
@@ -340,13 +355,23 @@ public class PlayerAnimationController : MonoBehaviour
     }
     #endregion
 
-    public void StartGathering()
+    public void StartGathering(bool kneeling = true)
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Gathering;
         ResetAnimationStates();
+        SetInteger("Action", kneeling ? 0 : 1);
         SetTrigger("Start");
         SetBool("Gathering", true);
+    }
+
+    public void Gather(bool kneeling = true)
+    {
+        if (!EnsureAnimator()) return;
+        SetBool("Gathering", true);
+        SetInteger("Action", kneeling ? 0 : 1);
+        SetTrigger("Start");
+        SetTrigger("Gather");
     }
 
     public void EndGathering()
@@ -355,7 +380,6 @@ public class PlayerAnimationController : MonoBehaviour
         animationState = PlayerAnimationState.Idle;
         SetBool("Gathering", false);
     }
-
 
     #region Farming
     public void StartCooking()
@@ -408,6 +432,11 @@ public class PlayerAnimationController : MonoBehaviour
         EndWoodcutting();
         EndGathering();
         EndBrewing();
+    }
+
+    internal void SetGatheringType(object playKneelingAnimation)
+    {
+        throw new NotImplementedException();
     }
 }
 

@@ -48,7 +48,7 @@ namespace RavenNest.SDK.Endpoints
             return this;
         }
 
-        public IApiRequest Build()
+        public WebApiRequest Build()
         {
             return new WebApiRequest(
                 sharedCookieContainer,

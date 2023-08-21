@@ -76,6 +76,10 @@ public class OnsenHandler : MonoBehaviour
             case OnsenPositionType.Meditating:
                 player.Animations.Meditate();
                 break;
+
+            case OnsenPositionType.Sleeping:
+                player.Animations.Sleep();
+                break;
         }
 
         player.Movement.Lock();

@@ -125,6 +125,38 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        internal Task<int> GetAutoJoinDungeonCostAsync()
+        {
+            return request.Create().Method("raid-auto-cost").Build().SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
+        }
+
+        public Task<int> GetAutoJoinRaidCostAsync()
+        {
+            return request.Create().Method("dungeon-auto-cost").Build().SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
+        }
+
+        public Task<bool> AutoJoinDungeon(Guid characterId)
+        {
+            return request.Create()
+                .Identifier("" + characterId)
+                .Method("dungeon-auto")
+                .Build()
+                .SendAsync<bool>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get, true);
+        }
+
+        public Task<bool> AutoJoinRaid(Guid characterId)
+        {
+            return request.Create()
+                .Identifier("" + characterId)
+                .Method("raid-auto")
+                .Build()
+                .SendAsync<bool>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get, true);
+        }
+
         public Task<ItemEnchantmentResult> DisenchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
             return request.Create()
@@ -280,5 +312,6 @@ namespace RavenNest.SDK.Endpoints
                .Build()
                .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post, req);
         }
+
     }
 }
