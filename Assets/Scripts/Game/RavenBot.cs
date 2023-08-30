@@ -99,6 +99,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<Craft>("craft");
         Connection.Register<Brew>("brew");
         Connection.Register<Cook>("cook");
+
         Connection.Register<Mine>("mine");
         Connection.Register<Farm>("farm");
         Connection.Register<Fish>("fish");

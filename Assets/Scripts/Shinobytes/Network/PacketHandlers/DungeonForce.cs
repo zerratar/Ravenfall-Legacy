@@ -62,7 +62,16 @@ public class DungeonForce : ChatBotCommandHandler
                     if (await Game.Dungeons.ActivateDungeon())
                     {
                         var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Dungeon);
-                        client.SendReply(gm, "You have used a Dungeon Scroll.");
+
+                        if (Game.Dungeons.CanJoin(plr, string.Empty) == DungeonJoinResult.CanJoin)
+                        {
+                            client.SendReply(gm, "You have used a Dungeon Scroll and joined the dungeon. Good luck!");
+                            Game.Dungeons.Join(plr);
+                        }
+                        else
+                        {
+                            client.SendReply(gm, "You have used a Dungeon Scroll.");
+                        }
                     }
                     else
                     {

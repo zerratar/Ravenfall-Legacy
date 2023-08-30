@@ -100,6 +100,11 @@ public class RaidManager : MonoBehaviour, IEvent
             return;
         }
 
+        if (!player || player == null)
+        {
+            return;
+        }
+
         lock (mutex)
         {
             var bossHealth = Boss.Enemy.Stats.Health;
@@ -109,12 +114,13 @@ public class RaidManager : MonoBehaviour, IEvent
                 raidStartedTime = Time.time;
             }
 
-            if (!raidingPlayers.Remove(player))
+            if (!raidingPlayers.Contains(player))
             {
                 raidingPlayers.Add(player);
             }
         }
 
+        player.EnsureComponents();
         player.Raid.OnEnter();
 
         // whenever a player joins, we take the sum of all combat skills and equipment
@@ -125,10 +131,16 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public void Leave(PlayerController player, bool reward = false, bool timeout = false)
     {
+        if (!player || player == null)
+        {
+            return;
+        }
+
         lock (mutex)
         {
             if (raidingPlayers.Remove(player))
             {
+                player.EnsureComponents();
                 player.Raid.OnLeave(reward, timeout);
             }
         }
@@ -225,7 +237,7 @@ public class RaidManager : MonoBehaviour, IEvent
     public async void RewardItemDrops(List<PlayerController> players)
     {
         // only players within at least 20% participation time will have chance for item drop.
-        if (players.Count == 0)
+        if (players.Count(x => !x.IsBot) == 0)
         {
             return;
         }

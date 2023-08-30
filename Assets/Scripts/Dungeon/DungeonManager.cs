@@ -402,6 +402,11 @@ public class DungeonManager : MonoBehaviour, IEvent
     public DungeonJoinResult CanJoin(PlayerController player)
     {
         if (!Active) return DungeonJoinResult.NoActiveDungeon;
+        
+        if (!player || player == null)
+        {
+            return DungeonJoinResult.Error;
+        }
 
         lock (mutex)
         {
@@ -425,6 +430,10 @@ public class DungeonManager : MonoBehaviour, IEvent
     public void Join(PlayerController player)
     {
         if (!Active) return;
+        if (!player || player == null)
+        {
+            return;
+        }
 
         lock (mutex)
         {
@@ -885,7 +894,8 @@ public enum DungeonJoinResult
     CanJoin,
     NoActiveDungeon,
     AlreadyJoined,
-    WrongCode
+    WrongCode,
+    Error
 }
 
 public class DungeonNameGenerator

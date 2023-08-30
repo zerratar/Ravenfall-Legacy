@@ -60,8 +60,20 @@ public class RaidForce : ChatBotCommandHandler
                 if (result == ScrollUseResult.Success)
                 {
                     var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Raid);
-                    client.SendReply(gm, "You have used a Raid Scroll.");
-                    if (!Game.Raid.StartRaid(plr.Name))
+
+                    if (Game.Raid.StartRaid(plr.Name))
+                    {
+                        if (Game.Raid.CanJoin(plr, string.Empty) == RaidJoinResult.CanJoin)
+                        {
+                            client.SendReply(gm, "You have used a Raid Scroll and joined the raid. Good luck!");
+                            Game.Raid.Join(plr);
+                        }
+                        else
+                        {
+                            client.SendReply(gm, "You have used a Raid Scroll.");
+                        }
+                    }
+                    else
                     {
                         var raidScroll = Game.Items.Find(x => x.Name.Contains("raid", System.StringComparison.OrdinalIgnoreCase) && x.Type == ItemType.Scroll);
                         if (raidScroll != null)

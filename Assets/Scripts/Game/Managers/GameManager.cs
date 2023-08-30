@@ -197,6 +197,24 @@ public class GameManager : MonoBehaviour, IGameManager
         set => potatoMode = value;
     }
 
+    public float DayNightCycleProgress
+    {
+        get => dayNightCycle?.CycleProgress ?? 0; set
+        {
+            if (dayNightCycle)
+                dayNightCycle.CycleProgress = value;
+        }
+    }
+
+    public bool DayNightCycleEnabled
+    {
+        get => dayNightCycle?.IsEnabled ?? false; set
+        {
+            if (dayNightCycle)
+                dayNightCycle.IsEnabled = value;
+        }
+    }
+
     public bool RealtimeDayNightCycle
     {
         get => dayNightCycle?.UseRealTime ?? false; set
@@ -467,6 +485,10 @@ public class GameManager : MonoBehaviour, IGameManager
         UsePostProcessingEffects = settings.PostProcessing.GetValueOrDefault();
         AutoPotatoMode = settings.AutoPotatoMode.GetValueOrDefault();
         PotatoMode = settings.PotatoMode.GetValueOrDefault();
+
+        DayNightCycleEnabled = settings.DayNightCycleEnabled.GetValueOrDefault(true);
+        DayNightCycleProgress = settings.DayNightTime.GetValueOrDefault(0.5f);
+
         RealtimeDayNightCycle = settings.RealTimeDayNightCycle.GetValueOrDefault();
         PlayerBoostRequirement = settings.PlayerBoostRequirement.GetValueOrDefault();
         AlertExpiredStateCacheInChat = settings.AlertExpiredStateCacheInChat.GetValueOrDefault();

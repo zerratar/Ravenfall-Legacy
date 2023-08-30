@@ -10,8 +10,8 @@ public class BotPlayerController : MonoBehaviour
 
     private void Start()
     {
-        this.gameManager = FindObjectOfType<GameManager>();
-        this.playerController = GetComponent<PlayerController>();
+        if (!this.gameManager) this.gameManager = FindObjectOfType<GameManager>();
+        if (!this.playerController) this.playerController = GetComponent<PlayerController>();
         initialized = true;
     }
 
@@ -47,12 +47,14 @@ public class BotPlayerController : MonoBehaviour
     private IEnumerator JoinDungeon()
     {
         yield return new WaitForSeconds(0.5f + UnityEngine.Random.value);
+        if (!playerController) playerController = GetComponent<PlayerController>();
         gameManager.Dungeons.Join(playerController);
         joiningEvent = false;
     }
     private IEnumerator JoinRaid()
     {
         yield return new WaitForSeconds(0.5f + UnityEngine.Random.value);
+        if (!playerController) playerController = GetComponent<PlayerController>();
         gameManager.Raid.Join(playerController);
         joiningEvent = false;
     }

@@ -39,6 +39,7 @@ public class ItemManager : MonoBehaviour
 
     private DateTime itemsLastUpdate;
     private TimeSpan itemsUpdateInterval = TimeSpan.FromMinutes(5);
+    private List<ItemRecipe> recipes;
 
     public bool TryGetPrefab(string path, out GameObject prefab)
     {
@@ -76,7 +77,7 @@ public class ItemManager : MonoBehaviour
         //{
         //    UpdateRedeemablesAsync();
         //}
-        if (now - this.itemsLastUpdate >= itemsUpdateInterval)
+        if (state != LoadingState.Loading && now - this.itemsLastUpdate >= itemsUpdateInterval)
         {
             //UpdateItemsAsync();
             LoadItemsAsync();
@@ -94,6 +95,21 @@ public class ItemManager : MonoBehaviour
     {
         this.redeemables = redeemables.ToList();
         this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
+    }
+
+    public void SetItemRecipes(IEnumerable<RavenNest.Models.ItemRecipe> recipes)
+    {
+        this.recipes = recipes.ToList();
+    }
+
+    public ItemRecipe GetItemRecipe(Guid itemId)
+    {
+        return recipes.FirstOrDefault(x => x.ItemId == itemId);
+    }
+
+    public ItemRecipe GetItemRecipe(Item item)
+    {
+        return recipes.FirstOrDefault(x => x.ItemId == item.Id);
     }
 
     public Item Find(Func<Item, bool> predicate)
@@ -151,16 +167,8 @@ public class ItemManager : MonoBehaviour
         try
         {
             await DownloadItemsAsync();
-
-            var redeemableItems = await game.RavenNest.Items.GetRedeemablesAsync();
-            if (redeemableItems != null && redeemableItems.Count > 0)
-            {
-                redeemables = redeemableItems.ToList();
-                this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
-                game.Overlay.SendRedeemables(redeemables);
-            }
-            Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
-
+            await DownloadItemRecipesAsync();
+            await DownloadRedeemableItemsAsync();
         }
         catch (Exception exc)
         {
@@ -169,6 +177,30 @@ public class ItemManager : MonoBehaviour
 
         state = LoadingState.Loaded;
         game.SetLoadingState("items", state);
+    }
+
+    private async Task DownloadRedeemableItemsAsync()
+    {
+        var redeemableItems = await game.RavenNest.Items.GetRedeemablesAsync();
+        if (redeemableItems != null && redeemableItems.Count > 0)
+        {
+            redeemables = redeemableItems.ToList();
+            this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
+            game.Overlay.SendRedeemables(redeemables);
+        }
+        Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
+    }
+
+    private async Task DownloadItemRecipesAsync()
+    {
+        var recipes = await game.RavenNest.Items.GetRecipesAsync();
+        if (recipes != null && recipes.Count > 0)
+        {
+            this.recipes = recipes.ToList();
+            //game.Overlay.SendRecipes(recipes);
+        }
+
+        Shinobytes.Debug.Log((recipes?.Count ?? 0) + " recipes loaded!");
     }
 
     private async Task DownloadItemsAsync()
@@ -376,6 +408,7 @@ public class ItemManager : MonoBehaviour
             Day = day
         };
     }
+
 
     private struct Date
     {

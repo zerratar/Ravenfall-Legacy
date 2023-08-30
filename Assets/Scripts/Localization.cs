@@ -107,6 +107,14 @@ public static class Localization
     public static readonly string MSG_CRAFT_FAILED = Meta("crafting", "fail") + "{category} {type} cannot be crafted right now.";
     public static readonly string MSG_CRAFT_FAILED_FERRY = Meta("crafting", "fail") + "You cannot craft while on the ferry";
     public static readonly string MSG_CRAFT_FAILED_STATION = Meta("crafting", "fail") + "You can't currently craft weapons or armor. You have to be at the crafting table by typing !train crafting";
+
+    public static readonly string MSG_BREW_FAILED_STATION = Meta("alchemy", "fail") + "You have to be at the alchemy table to brew anything. Type !train alchemy before using the !brew command.";
+    //public static readonly string MSG_BREW_FAILED_STATION = Meta("alchemy", "fail") + "You have to be at the alchemy table to brew anything. Type !train alchemy before using the !brew command.";
+
+    public static readonly string MSG_CRAFT_CANCEL = Meta("crafting", "cancel") + "Your ongoing crafting has been cancelled.";
+    public static readonly string MSG_BREW_CANCEL = Meta("alchemy", "cancel") + "Your ongoing brewing has been cancelled.";
+    public static readonly string MSG_COOK_CANCEL = Meta("cooking", "cancel") + "Your ongoing cooking has been cancelled.";
+
     public static readonly string MSG_CRAFT_FAILED_LEVEL = Meta("crafting", "fail") + "You can't craft this item, it requires level {reqCraftingLevel} crafting.";
     public static readonly string MSG_CRAFT_FAILED_NOT_CRAFTABLE = Meta("crafting", "fail") + "{itemName} is not a craftable item.";
 
@@ -117,6 +125,22 @@ public static class Localization
     public static readonly string MSG_CRAFT_ITEM_NOT_FOUND_MEAN = Meta("crafting", "fail") + "Could not find an item matching the query '{query}', did you mean '{itemName}'?";
     public static readonly string MSG_CRAFT = Meta("crafting", "info") + "You crafted a {itemName}!";
     public static readonly string MSG_CRAFT_MANY = Meta("crafting", "info") + "You crafted x{amount} {itemName}!";
+
+
+    public static readonly string MSG_GENERIC_NOT_SUITABLE_ITEM = "{itemName} is not a suitable item for this.";
+    public static readonly string MSG_GENERIC_ITEM_NOT_FOUND = "Could not find an item matching the query '{query}'";
+
+    public static readonly string MSG_GENERIC_FAILED_FERRY = Meta("ferry", "fail") + "You cannot do that while you are on the ferry";
+    public static readonly string MSG_GENERIC_FAILED_DUNGEON = Meta("dungeon", "fail") + "You cannot do that while you are in a dungeon";
+    public static readonly string MSG_GENERIC_FAILED_RAID = Meta("raid", "fail") + "You cannot do that while you are in a raid";
+    public static readonly string MSG_GENERIC_FAILED_ARENA = Meta("arena", "fail") + "You cannot do that while you are in the arena";
+    public static readonly string MSG_GENERIC_FAILED_DUEL = Meta("duel", "fail") + "You cannot do that while you are in a duel";
+    public static readonly string MSG_GENERIC_FAILED_RESTING = Meta("resting", "fail") + "You cannot do that while you are resting";
+
+    public static readonly string MSG_COOK_FAILED_FERRY = Meta("cooking", "fail") + "You cannot cook while on the ferry";
+    public static readonly string MSG_BREW_FAILED_FERRY = Meta("alchemy", "fail") + "You cannot brew while on the ferry";
+
+
     public static readonly string MSG_GIFT = Meta("gift", "info") + "You gifted {giftCount}x {itemName} to {player}!";
     public static readonly string MSG_GIFT_PLAYER_NOT_FOUND = Meta("gift", "fail") + "Could not find an item or player matching the query '{query}'";
     public static readonly string MSG_GIFT_ITEM_NOT_FOUND = Meta("gift", "fail") + "Could not find a matching the query '{query}'";

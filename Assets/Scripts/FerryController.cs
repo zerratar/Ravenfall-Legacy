@@ -95,7 +95,18 @@ public class FerryController : MonoBehaviour
                 destination = "Heim";
             }
 
-            if (PathIndex == 4)
+            if (PathIndex == 5)
+            {
+                destination = "Atria";
+            }
+
+            if (PathIndex == 6)
+            {
+                destination = "Eldara";
+            }
+
+
+            if (PathIndex == 7)
             {
                 destination = "Home";
             }

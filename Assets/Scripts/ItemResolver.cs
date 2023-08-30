@@ -53,6 +53,11 @@ public class ItemResolver : IItemResolver
         return setItems;
     }
 
+    public ItemResolveResult ResolveItemAndAmount(string query)
+    {
+        return ResolveTradeQuery(query, false, false, true);
+    }
+
     public ItemResolveResult ResolveTradeQuery(
         string query,
         bool parsePrice = true,

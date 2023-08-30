@@ -12,7 +12,9 @@
     public bool? PlayerNamesVisible;
     public bool? LocalBotServerDisabled;
     public bool? AutoKickAfkPlayers;
+    public bool? DayNightCycleEnabled;
 
+    public float? DayNightTime;
     public float? PlayerListSize;
     public float? PlayerListScale;
     public float? RaidHornVolume;
@@ -43,6 +45,18 @@
     private static void SetDefaultValues()
     {
         var wasUpdated = false;
+
+        if (Instance.DayNightCycleEnabled == null)
+        {
+            Instance.DayNightCycleEnabled = true;
+            wasUpdated = true;
+        }
+
+        if (Instance.DayNightTime == null)
+        {
+            Instance.DayNightTime = 0.5f;
+            wasUpdated = true;
+        }
 
         if (Instance.LocalBotServerDisabled == null)
         {

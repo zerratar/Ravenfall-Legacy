@@ -280,11 +280,44 @@ public class PlayerController : MonoBehaviour, IAttackable
     private bool hasGameManager;
     internal DateTime LastSavedStateTime;
 
+    private ScheduledAction activeScheduledAction;
+
+    internal void InterruptAction()
+    {
+        if (activeScheduledAction != null)
+        {
+            var schedule = activeScheduledAction;
+
+            activeScheduledAction = null;
+
+            schedule.Interrupt();
+        }
+    }
+
+    internal async void BeginInterruptableAction(
+        Func<Task> action,
+        Action onInterrupt,
+        double actionLengthSeconds)
+    {
+        InterruptAction();
+
+        if (actionLengthSeconds <= 0)
+        {
+            // execute immediately without interruption.
+            await action();
+            return;
+        }
+
+        // create a timed action
+        this.activeScheduledAction = new ScheduledAction(action, onInterrupt, actionLengthSeconds);
+    }
+
     internal void ClearTarget()
     {
         this.attackTarget = null;
         this.taskTarget = null;
     }
+
     internal void ToggleDiaperMode()
     {
         IsDiaperModeEnabled = !IsDiaperModeEnabled;
@@ -418,6 +451,15 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     void Start()
     {
+        playerAppearance = GetComponent<SyntyPlayerAppearance>();
+        this.hitRangeCollider = GetComponent<SphereCollider>();
+        EnsureComponents();
+
+        if (healthBarManager) healthBar = healthBarManager.Add(this);
+    }
+
+    public void EnsureComponents()
+    {
         if (!Movement) Movement = GetComponent<PlayerMovementController>();
         if (!Movement) Movement = gameObject.AddComponent<PlayerMovementController>();
         if (!onsenHandler) onsenHandler = GetComponent<OnsenHandler>();
@@ -428,10 +470,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!chunkManager) chunkManager = GameManager.Chunks; ;
         if (!healthBarManager) healthBarManager = FindObjectOfType<HealthBarManager>();
         if (!agent) agent = GetComponent<NavMeshAgent>();
-
         if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
-        //if (!rbody) rbody = GetComponent<Rigidbody>();
-
         if (!effectHandler) effectHandler = GetComponent<EffectHandler>();
         if (!teleportHandler) teleportHandler = GetComponent<TeleportHandler>();
         if (!ferryHandler) ferryHandler = GetComponent<FerryHandler>();
@@ -440,13 +479,9 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!arenaHandler) arenaHandler = GetComponent<ArenaHandler>();
         if (!duelHandler) duelHandler = GetComponent<DuelHandler>();
         if (!combatHandler) combatHandler = GetComponent<CombatHandler>();
-
-        playerAppearance = GetComponent<SyntyPlayerAppearance>();
-
         if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
-        if (healthBarManager) healthBar = healthBarManager.Add(this);
-
-        this.hitRangeCollider = GetComponent<SphereCollider>();
+        if (!playerAppearance) playerAppearance = GetComponent<SyntyPlayerAppearance>();
+        if (!this.hitRangeCollider) this.hitRangeCollider = GetComponent<SphereCollider>();
     }
 
     void LateUpdate()
@@ -518,6 +553,17 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!hasBeenInitialized)
         {
             return;
+        }
+
+
+        var schedule = activeScheduledAction;
+        if (schedule != null)
+        {
+            if (schedule.CanInvoke())
+            {
+                activeScheduledAction = null;
+                schedule.InvokeAsync();
+            }
         }
 
         var deltaTime = GameTime.deltaTime;

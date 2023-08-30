@@ -45,6 +45,8 @@ public class SettingsMenuView : MenuView
     [SerializeField] private Toggle potatoModeToggle = null;
     [SerializeField] private Toggle postProcessingToggle = null;
     [SerializeField] private Toggle autoPotatoModeToggle = null;
+    [SerializeField] private Toggle dayNightCycleEnabled = null;
+    [SerializeField] private Slider dayNightTime = null;
     [SerializeField] private Toggle realtimeDayNightCycle = null;
     [SerializeField] private Slider dpiSlider = null;
 
@@ -122,6 +124,9 @@ public class SettingsMenuView : MenuView
         playerNameToggle.isOn = settings.PlayerNamesVisible.GetValueOrDefault(gameManager.PlayerNamesVisible);
         itemDropMessageDropdown.value = settings.ItemDropMessageType.GetValueOrDefault((int)gameManager.ItemDropMessageSettings);
 
+        dayNightCycleEnabled.isOn = settings.DayNightCycleEnabled.GetValueOrDefault(true);
+        dayNightTime.value = settings.DayNightTime.GetValueOrDefault(0.5f);
+
         SetResolutionScale(dpiSlider.value);
         ShowItemDropExample();
         UpdateCameraRotationLabelText();
@@ -182,6 +187,9 @@ public class SettingsMenuView : MenuView
     protected override void OnChangesApplied()
     {
         var settings = PlayerSettings.Instance;
+
+        settings.DayNightCycleEnabled = dayNightCycleEnabled.isOn;
+        settings.DayNightTime = dayNightTime.value;
 
         settings.PotatoMode = potatoModeToggle.isOn;
         settings.PostProcessing = postProcessingToggle.isOn;
@@ -246,10 +254,17 @@ public class SettingsMenuView : MenuView
     {
         gameManager.RealtimeDayNightCycle = realtimeDayNightCycle.isOn;
     }
+
+    public void OnDayNightCycleEnabledChanged()
+    {
+        gameManager.DayNightCycleEnabled = dayNightCycleEnabled.isOn;
+    }
+
     public void OnPostProcessingEffectsChanged()
     {
         gameManager.UsePostProcessingEffects = postProcessingToggle.isOn;
     }
+
     public void OnPlayerNamesToggle()
     {
         gameManager.PlayerNamesVisible = playerNameToggle.isOn;
@@ -283,6 +298,11 @@ public class SettingsMenuView : MenuView
         if (dpiSlider != null)
         {
             UpdateResolutionScale();
+        }
+
+        if (dayNightTime != null)
+        {
+            gameManager.DayNightCycleProgress = dayNightTime.value;
         }
 
         if (musicVolumeSlider != null)

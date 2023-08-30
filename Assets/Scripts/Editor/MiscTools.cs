@@ -1,10 +1,26 @@
-﻿using UnityEditor;
+﻿using Sirenix.OdinInspector;
+using Unity.AI.Navigation;
+using UnityEditor;
 using UnityEngine;
 
 namespace Assets.Scripts.Editor
 {
     public class MiscTools
     {
+        [MenuItem("Ravenfall/Tools/Remove all NavMeshModifiers")]
+        static void RemoveAllNavMeshModifiers()
+        {
+            var modifiers = GameObject.FindObjectsOfType<NavMeshModifier>(true);
+            foreach (var modifier in modifiers)
+            {
+                if (modifier.gameObject.layer == 8)
+                    modifier.gameObject.layer = 0;
+                //GameObjectUtility.SetStaticEditorFlags(modifier.gameObject, StaticEditorFlags.NavigationStatic)
+                modifier.gameObject.isStatic = true;
+                GameObject.DestroyImmediate(modifier);
+            }
+        }
+
         [MenuItem("Ravenfall/Tools/Hierarchy/Group Selection")]
         static void GroupSelection()
         {

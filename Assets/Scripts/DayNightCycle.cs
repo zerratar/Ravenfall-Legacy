@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sirenix.Serialization.Utilities;
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -48,6 +49,7 @@ public class DayNightCycle : MonoBehaviour
     }
 
     public bool UseRealTime { get; set; }
+    public bool IsEnabled { get; set; }
 
     // Start is called before the first frame update
     void Start()
@@ -66,40 +68,49 @@ public class DayNightCycle : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (freezeTimer > 0)
-        {
-            freezeTimer -= GameTime.deltaTime;
-        }
-        else if (gameManager.PotatoMode)
-        {
-            TotalTime = 0;
-            skyLight.shadows = LightShadows.None;
-        }
-        else
-        {
-            skyLight.shadows = LightShadows.Soft;
-            TotalTime += GameTime.deltaTime;
-        }
-
-        var cycle = 0f;
         var skylightLerpValue = 0f;
-        var cycleProgress = 0f;
-        if (UseRealTime && freezeTimer <= 0)
+
+        if (IsEnabled)
         {
-            const float secondsPerDay = 86400f;
-            cycle = (float)(DateTime.Now - DateTime.Now.Date).TotalSeconds / secondsPerDay;
-            cycleProgress = cycle - Mathf.Floor(cycle);
-            skylightLerpValue = GetSeasonalCurve().Evaluate(cycleProgress);
+            var cycle = 0f;
+            var cycleProgress = 0f;
+
+            if (freezeTimer > 0)
+            {
+                freezeTimer -= GameTime.deltaTime;
+            }
+            else if (gameManager.PotatoMode)
+            {
+                TotalTime = 0;
+                skyLight.shadows = LightShadows.None;
+            }
+            else
+            {
+                skyLight.shadows = LightShadows.Soft;
+                TotalTime += GameTime.deltaTime;
+            }
+
+            if (UseRealTime && freezeTimer <= 0)
+            {
+                const float secondsPerDay = 86400f;
+                cycle = (float)(DateTime.Now - DateTime.Now.Date).TotalSeconds / secondsPerDay;
+                cycleProgress = cycle - Mathf.Floor(cycle);
+                skylightLerpValue = GetSeasonalCurve().Evaluate(cycleProgress);
+            }
+            else
+            {
+                cycle = TotalTime / CycleLength;
+                cycleProgress = cycle - Mathf.Floor(cycle);
+                skylightLerpValue = DayNight.Evaluate(cycleProgress);
+            }
+
+            Cycle = cycle;
+            CycleProgress = cycleProgress;
         }
         else
         {
-            cycle = TotalTime / CycleLength;
-            cycleProgress = cycle - Mathf.Floor(cycle);
-            skylightLerpValue = DayNight.Evaluate(cycleProgress);
+            skylightLerpValue = DayNight.Evaluate(CycleProgress);
         }
-
-        Cycle = cycle;
-        CycleProgress = cycleProgress;
 
         RenderSettings.ambientMode = AmbientMode.Trilight;
         RenderSettings.ambientSkyColor = SkyColor.Evaluate(skylightLerpValue);

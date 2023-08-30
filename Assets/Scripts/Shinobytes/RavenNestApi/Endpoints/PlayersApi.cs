@@ -76,6 +76,19 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        public Task<ItemProductionResult> ProduceItemAsync(Guid characterId, Guid recipeId, int amount)
+        {
+            return request.Create()
+                .Identifier(characterId.ToString())
+                .Method("produce")
+                .AddParameter(recipeId.ToString())
+                .AddParameter(amount.ToString())
+                .Build()
+                .SendAsync<ItemProductionResult>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get);
+        }
+
         public Task<CraftItemResult> CraftItemsAsync(Guid characterId, Guid item, int amount = 1)
         {
             return request.Create()

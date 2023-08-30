@@ -32,6 +32,14 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<RedeemableItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
         }
 
+        public Task<ItemRecipeCollection> GetRecipesAsync()
+        {
+            return request.Create()
+                .Method("recipes")
+                .Build()
+                .SendAsync<ItemRecipeCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
+        }
+
         public Task<bool> AddItemAsync(Item item)
         {
             return request.Create().Build()

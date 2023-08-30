@@ -31,31 +31,60 @@ public class RavenfallMeshTools
         int fixCount = 0;
         foreach (var bc in boxColliders)
         {
-            var ls = bc.transform.localScale;
-            var fixNeeded = false;
+            // following logic is unique to floors only
+            // and the logic below is only for floors rotated on certain angle..
+            if (!bc.name.ToLower().Contains("_floor_"))
+                continue;
 
-            if (ls.x < 0)
-            {
-                // Flip the scale and adjust the local position based on the collider's center and size
-                ls.x = -ls.x;
-                bc.transform.localPosition += (bc.size.x * bc.transform.right * 0.5f) - bc.center.x * bc.transform.right;
-                bc.size = new Vector3(-bc.size.x, bc.size.y, bc.size.z);
-                fixNeeded = true;
-            }
+            // if Y: 90 | -90
+            // use size of collider Z (example 1.25)
+            // change X with -= collider size .Z
+
+            // if Y: 180 | -180
+            // use size of collider Z (example 1.25)
+            // change Z with += collider size .Z
+
+            // if Y: -360 | 0 | 360
+            // use size of Collider X (example 2.5)
+            // change Z with -= collider size .X
+
+            var rotY = System.Math.Round(System.Math.Abs(bc.transform.localRotation.eulerAngles.y));
+            var ls = bc.transform.localScale;
+            var @fixed = false;
+            var size = bc.size;
 
             if (ls.z < 0)
             {
+                if (rotY < 2 || System.Math.Abs(rotY - 360) <= 0.1)
+                {
+                    bc.transform.localScale = new Vector3(ls.x, ls.y, -ls.z);
+                    bc.transform.localPosition -= new Vector3(0, 0, size.x);
+                    @fixed = true;
+                }
+
+                else if (System.Math.Abs(rotY - 180) <= 0.1)
+                {
+                    bc.transform.localScale = new Vector3(ls.x, ls.y, -ls.z);
+                    bc.transform.localPosition += new Vector3(0, 0, size.z);
+                    @fixed = true;
+                }
+
+                else if (System.Math.Abs(rotY - 90) <= 0.1)
+                {
+                    bc.transform.localScale = new Vector3(ls.x, ls.y, -ls.z);
+                    bc.transform.localPosition += new Vector3(0, 0, size.z);
+                    @fixed = true;
+                }
+
                 // Flip the scale and adjust the local position based on the collider's center and size
-                ls.z = -ls.z;
-                bc.transform.localPosition += (bc.size.z * bc.transform.forward * 0.5f) - bc.center.z * bc.transform.forward;
-                bc.size = new Vector3(bc.size.x, bc.size.y, -bc.size.z);
-                fixNeeded = true;
+                //ls.z = -ls.z;
+                //bc.transform.localScale = ls;
+                //bc.transform.localPosition -= new Vector3(0, 0, 2.5f);
             }
 
             // Apply the changes if any fixes were made
-            if (fixNeeded)
+            if (@fixed)
             {
-                bc.transform.localScale = ls;
                 fixCount++;
             }
         }

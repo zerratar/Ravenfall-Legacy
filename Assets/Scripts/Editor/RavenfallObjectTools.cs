@@ -1,10 +1,121 @@
-﻿using System.Collections.Generic;
+﻿using Shinobytes.Linq;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class RavenfallObjectTools
 {
+
+
+    [MenuItem("Ravenfall/Tools/Find Duplicate Objects")]
+    public static void FindDuplicateObjects()
+    {
+        // this is quite simple logic, we wont do anything unless we know for certain. but here it is:
+        // 1. find all objects in the scene
+        // 2. get names of each individual object, if the name ends with (number), remove that as it indicates a copy
+        // 3. group by name, then compare position, rotation and scale
+        // 4. log out the number of objects that matched.
+
+        var a = Selection.activeGameObject;
+        Transform[] selections = null;
+        if (!a)
+        {
+            selections = GameObject.FindObjectsOfType<Transform>(true);
+        }
+        else
+        {
+            selections = a.GetComponentsInChildren<Transform>(true);
+        }
+
+        var nameToObject = new Dictionary<string, List<Transform>>();
+        foreach (var transform in selections)
+        {
+            var name = transform.name.Trim();
+            if (name.EndsWith(")") && name.Contains(" "))
+            {
+                var toRemove = name.Split(' ')[^1];
+                name = name.Replace(" " + toRemove, "");
+            }
+
+            nameToObject.TryGetValue(name, out var list);
+            if (list == null)
+            {
+                list = new List<Transform>();
+            }
+
+            list.Add(transform);
+            nameToObject[name] = list;
+        }
+
+
+        var itemTypes = 0;
+        var duplicates = 0;
+        var totalObjects = 0;
+        // distinct by will remove duplicates, we will use that to calculate the duplicate in the end.
+        foreach (var objGroup in nameToObject)
+        {
+            itemTypes++;
+            var countBeforeDistinct = objGroup.Value.Count;
+            var objectsAfterDistinct = objGroup.Value.DistinctBy(x => new { x.position, x.localScale, x.rotation }).AsList();
+
+            var countAfterDistinct = objectsAfterDistinct.Count;
+            totalObjects += countBeforeDistinct;
+            duplicates += countBeforeDistinct - countAfterDistinct;
+        }
+
+        Shinobytes.Debug.Log("A total of " + duplicates + " duplicates was found. Total amount of objects: " + totalObjects + ", of " + itemTypes + " different types");
+    }
+    // too risky..
+    //[MenuItem("Ravenfall/Tools/Find and Destroy Duplicate Objects")]
+    //public static void DestroyDuplicateObjects()
+    //{
+    //    var a = Selection.activeGameObject;
+    //    Transform[] selections = null;
+    //    if (!a)
+    //    {
+    //        selections = GameObject.FindObjectsOfType<Transform>(true);
+    //    }
+    //    else
+    //    {
+    //        selections = a.GetComponentsInChildren<Transform>(true);
+    //    }
+    //    var nameToObject = new Dictionary<string, List<Transform>>();
+    //    foreach (var transform in selections)
+    //    {
+    //        var name = transform.name.Trim();
+    //        if (name.EndsWith(")") && name.Contains(" "))
+    //        {
+    //            var toRemove = name.Split(' ')[^1];
+    //            name = name.Replace(" " + toRemove, "");
+    //        }
+    //        nameToObject.TryGetValue(name, out var list);
+    //        if (list == null)
+    //        {
+    //            list = new List<Transform>();
+    //        }
+    //        list.Add(transform);
+    //        nameToObject[name] = list;
+    //    }
+    //    var objectsDestroyed = 0;
+    //    // distinct by will remove duplicates, we will use that to calculate the duplicate in the end.
+    //    foreach (var objGroup in nameToObject)
+    //    {
+    //        var countBeforeDistinct = objGroup.Value.Count;
+    //        var objectsAfterDistinct =
+    //            new HashSet<int>(objGroup.Value.DistinctBy(x => /*new { */ x.position /*, x.localScale, x.rotation }*/ ).Select(x => x.gameObject.GetInstanceID()));
+    //        foreach (var obj in objGroup.Value)
+    //        {
+    //            if (!objectsAfterDistinct.Contains(obj.GetInstanceID()))
+    //            {
+    //                //GameObject.DestroyImmediate(obj.gameObject);
+    //                Shinobytes.Debug.Log(obj.name + " will be destroyed");
+    //                objectsDestroyed++;
+    //            }
+    //        }
+    //    }
+    //    Shinobytes.Debug.Log("A total of " + objectsDestroyed + " duplicates was destroyed.");
+    //}
 
     private static List<GameObject> tmpDisabledGameObjects = new List<GameObject>();
 
@@ -130,7 +241,7 @@ public class RavenfallObjectTools
     [MenuItem("Ravenfall/Enemies/Assign Dependencies", priority = 0)]
     public static void AssignEnemyDependencies()
     {
-        foreach(var enemy in GameObject.FindObjectsOfType<EnemyController>())
+        foreach (var enemy in GameObject.FindObjectsOfType<EnemyController>())
         {
             enemy.AssignDependencies();
         }

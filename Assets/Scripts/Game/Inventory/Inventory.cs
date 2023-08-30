@@ -88,6 +88,20 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    public bool Contains(Guid itemId, int amount)
+    {
+        lock (mutex)
+        {
+            var target = FromBackpack(itemId);
+            if (target == null)
+            {
+                return false;
+            }
+
+            return target.Amount >= amount;
+        }
+    }
+
     public void Remove(GameInventoryItem item, double amount, bool removeEquipped = false)
     {
         lock (mutex)

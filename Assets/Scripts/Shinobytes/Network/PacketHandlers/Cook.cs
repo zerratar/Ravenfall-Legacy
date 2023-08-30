@@ -1,30 +1,32 @@
-﻿public class Cook : ChatBotCommandHandler<string>
+﻿using RavenNest.Models;
+
+public class Cook : ProduceItemCommand
 {
-    private IItemResolver itemResolver;
     public Cook(GameManager game, RavenBotConnection server, PlayerManager playerManager)
-        : base(game, server, playerManager)
+        : base(TaskType.Cooking, game, server, playerManager)
     {
-        var ioc = game.gameObject.GetComponent<IoCContainer>();
-        this.itemResolver = ioc.Resolve<IItemResolver>();
     }
 
-    public override void Handle(string data, GameMessage gm, GameClient client)
+    protected override Result TryProduceItem(PlayerController player, Item item, int amount, ItemRecipe recipe, GameMessage message, GameClient client)
     {
-        if (!TryGetPlayer(gm, client, out var player))
+        // check if our level is high enough
+        if (recipe.RequiredLevel > player.Stats.Cooking.Level)
         {
-            return;
+            return Result.NotEnoughSkill;
         }
 
-        //player.BeginInterruptableAction(
-        //    action: () => CookItemAsync(inputQuery, gm, client, player, item, toCraft),
-        //    onInterrupt: () => client.SendReply(gm, Localization.MSG_COOK_CANCEL),
-        //    Game.Items.GetCookingTime(item));
+        // check if we have enough resources
 
-        // check so that the player is currently training cooking and at a cooking station
-        // then check if the item or recipe exists.
-        // if the player does not have all the required ingredients or required cooking level, let them know
-        // if all is ok, then cook the item
+        if (HasMissingIngredients(player.Inventory, recipe.Ingredients))
+        {
+            return Result.NotEnoughResources;
+        }
+
+        player.BeginInterruptableAction(
+            action: async () => await ProduceAsync(player, recipe, amount, message, client, new string[] { "cook", "cooked" }),
+            onInterrupt: () => client.SendReply(message, Localization.MSG_COOK_CANCEL),
+            recipe.PreparationTime);
+
+        return Result.OK;
     }
 }
-
-

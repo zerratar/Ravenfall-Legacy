@@ -28,6 +28,8 @@ public class PathSelector : MonoBehaviour
 
     private void Update()
     {
+
+
         if (isMoving)
         {
             elapsed += Time.deltaTime;
@@ -62,7 +64,15 @@ public class PathSelector : MonoBehaviour
         currentSpline = splines[pathIndex].Spline;
         float length = currentSpline.GetLength();
         float adjustedSpeed = movementSpeed + ferryController.CaptainSpeedAdjustment;
-        duration = (2f * length) / adjustedSpeed;
+
+#if UNITY_EDITOR
+        if (Input.GetKey(KeyCode.LeftShift) && Input.GetKey(KeyCode.Space))
+        {
+            adjustedSpeed += 1000;
+        }
+#endif
+
+            duration = (2f * length) / adjustedSpeed;
 
         elapsed = 0f;
         isMoving = true;
