@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-
+using Skill = RavenNest.Models.Skill;
 public class IslandStatisticsUI : MonoBehaviour
 {
 

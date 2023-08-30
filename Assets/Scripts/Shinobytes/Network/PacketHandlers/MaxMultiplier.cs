@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-
+using Skill = RavenNest.Models.Skill;
 public class MaxMultiplier : ChatBotCommandHandler
 {
     public MaxMultiplier(

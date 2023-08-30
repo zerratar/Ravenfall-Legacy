@@ -1,10 +1,11 @@
 ﻿using Shinobytes.Linq;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+
+using Skill = RavenNest.Models.Skill;
 
 [Serializable]
 public class Skills : IComparable

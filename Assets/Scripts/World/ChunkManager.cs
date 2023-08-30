@@ -94,7 +94,7 @@ public class ChunkManager : MonoBehaviour
 
         var trainableChunks = GetTrainableChunks(playerRef, type, strictCombatLevel, refIsland, refCombatLevel);
         var activeSkill = playerRef.ActiveSkill;
-        if (trainableChunks.Count > 1 && activeSkill.IsCombatSkill() && type == TaskType.Fighting && activeSkill != Skill.Healing)
+        if (trainableChunks.Count > 1 && activeSkill.IsCombatSkill() && type == TaskType.Fighting && activeSkill != RavenNest.Models.Skill.Healing)
         {
             // if level requirement is combat level, we should make sure that the skill we are training are in good shape.
             // if we are training Atk, Def or Strength, we can use the avg of Atk, Def, Str and Health to determine a score
@@ -102,12 +102,12 @@ public class ChunkManager : MonoBehaviour
             var health = playerRef.Stats.GetCombatSkill(CombatSkill.Health);
             var score = 0f;
 
-            if (activeSkill == Skill.Ranged)
+            if (activeSkill == RavenNest.Models.Skill.Ranged)
             {
                 var skill = playerRef.Stats.GetCombatSkill(CombatSkill.Ranged);
                 score = (health.Level + skill.Level) / 2f;
             }
-            else if (activeSkill == Skill.Magic)
+            else if (activeSkill == RavenNest.Models.Skill.Magic)
             {
                 var skill = playerRef.Stats.GetCombatSkill(CombatSkill.Magic);
                 score = (health.Level + skill.Level) / 2f;

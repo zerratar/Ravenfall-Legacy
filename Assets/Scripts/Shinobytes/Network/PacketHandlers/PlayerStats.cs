@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using Skill = RavenNest.Models.Skill;
 public class PlayerStats : ChatBotCommandHandler<string>
 {
     public PlayerStats(

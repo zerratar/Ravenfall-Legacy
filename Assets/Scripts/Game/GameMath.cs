@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-
+using Skill = RavenNest.Models.Skill;
 public static class GameMath
 {
     public const int MaxLevel = 999;
@@ -253,39 +253,40 @@ public static class GameMath
         }
     }
 
-    public static TownHouseSlotType GetHouseTypeBySkill(this Skill skill)
+    public static TownHouseSlotType GetHouseTypeBySkill(this RavenNest.Models.Skill skill)
     {
         switch (skill)
         {
-            case Skill.Alchemy: return TownHouseSlotType.Alchemy;
-            case Skill.Gathering: return TownHouseSlotType.Gathering;
-            case Skill.Cooking: return TownHouseSlotType.Cooking;
-            case Skill.Crafting: return TownHouseSlotType.Crafting;
-            case Skill.Farming: return TownHouseSlotType.Farming;
-            case Skill.Mining: return TownHouseSlotType.Mining;
-            case Skill.Sailing: return TownHouseSlotType.Sailing;
-            case Skill.Slayer: return TownHouseSlotType.Slayer;
-            case Skill.Woodcutting: return TownHouseSlotType.Woodcutting;
-            case Skill.Fishing: return TownHouseSlotType.Fishing;
-            case Skill.Healing: return TownHouseSlotType.Healing;
-            case Skill.Ranged: return TownHouseSlotType.Ranged;
-            case Skill.Magic: return TownHouseSlotType.Magic;
+            case RavenNest.Models.Skill.Alchemy: return TownHouseSlotType.Alchemy;
+            case RavenNest.Models.Skill.Gathering: return TownHouseSlotType.Gathering;
+            case RavenNest.Models.Skill.Cooking: return TownHouseSlotType.Cooking;
+            case RavenNest.Models.Skill.Crafting: return TownHouseSlotType.Crafting;
+            case RavenNest.Models.Skill.Farming: return TownHouseSlotType.Farming;
+            case RavenNest.Models.Skill.Mining: return TownHouseSlotType.Mining;
+            case RavenNest.Models.Skill.Sailing: return TownHouseSlotType.Sailing;
+            case RavenNest.Models.Skill.Slayer: return TownHouseSlotType.Slayer;
+            case RavenNest.Models.Skill.Woodcutting: return TownHouseSlotType.Woodcutting;
+            case RavenNest.Models.Skill.Fishing: return TownHouseSlotType.Fishing;
+            case RavenNest.Models.Skill.Healing: return TownHouseSlotType.Healing;
+            case RavenNest.Models.Skill.Ranged: return TownHouseSlotType.Ranged;
+            case RavenNest.Models.Skill.Magic: return TownHouseSlotType.Magic;
             default: return TownHouseSlotType.Melee;
         }
     }
 
-    public static bool IsCombatSkill(this Skill skill)
+    public static bool IsCombatSkill(this RavenNest.Models.Skill skill)
     {
         switch (skill)
         {
             //case Skill.All:
-            case Skill.Attack:
-            case Skill.Defense:
-            case Skill.Strength:
-            case Skill.Health:
-            case Skill.Ranged:
-            case Skill.Magic:
-            case Skill.Healing:
+            case RavenNest.Models.Skill.Melee:
+            case RavenNest.Models.Skill.Attack:
+            case RavenNest.Models.Skill.Defense:
+            case RavenNest.Models.Skill.Strength:
+            case RavenNest.Models.Skill.Health:
+            case RavenNest.Models.Skill.Ranged:
+            case RavenNest.Models.Skill.Magic:
+            case RavenNest.Models.Skill.Healing:
                 return true;
         }
         return false;
@@ -507,7 +508,7 @@ public static class GameMath
         /// <param name="playersInArea"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double GetTicksPerMinute(Skill skill, int playersInArea = 100)
+        public static double GetTicksPerMinute(RavenNest.Models.Skill skill, int playersInArea = 100)
         {
             return GetTicksPerSeconds(skill, playersInArea) * 60;
         }
@@ -519,18 +520,18 @@ public static class GameMath
         /// <param name="skill"></param>
         /// <param name="playersInArea"></param>
         /// <returns></returns>
-        public static double GetTicksPerSeconds(Skill skill, int playersInArea = 100)
+        public static double GetTicksPerSeconds(RavenNest.Models.Skill skill, int playersInArea = 100)
         {
             switch (skill)
             {
-                case Skill.Woodcutting when playersInArea < 100: return 0.15;
-                case Skill.Woodcutting when playersInArea >= 100: return 0.33;
-                case Skill.Farming:
-                case Skill.Crafting:
-                case Skill.Cooking:
-                case Skill.Gathering:
-                case Skill.Alchemy:
-                case Skill.Fishing:
+                case RavenNest.Models.Skill.Woodcutting when playersInArea < 100: return 0.15;
+                case RavenNest.Models.Skill.Woodcutting when playersInArea >= 100: return 0.33;
+                case RavenNest.Models.Skill.Farming:
+                case RavenNest.Models.Skill.Crafting:
+                case RavenNest.Models.Skill.Cooking:
+                case RavenNest.Models.Skill.Gathering:
+                case RavenNest.Models.Skill.Alchemy:
+                case RavenNest.Models.Skill.Fishing:
                     return 1d / 3d;
 
                 case Skill.Mining:

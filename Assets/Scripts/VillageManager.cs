@@ -7,7 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
-
+using Skill = RavenNest.Models.Skill;
 namespace Assets.Scripts
 {
     public class VillageManager : MonoBehaviour

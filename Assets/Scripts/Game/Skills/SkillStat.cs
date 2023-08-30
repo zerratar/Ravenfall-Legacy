@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Skill = RavenNest.Models.Skill;
 
 [Serializable]
 public class SkillStat

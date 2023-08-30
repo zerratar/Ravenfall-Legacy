@@ -1,5 +1,6 @@
 ﻿using Shinobytes.Linq;
 using System;
+using Skill = RavenNest.Models.Skill;
 public class HighestSkill : ChatBotCommandHandler<string>
 {
     public HighestSkill(

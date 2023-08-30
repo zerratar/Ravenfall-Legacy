@@ -1,4 +1,5 @@
-﻿public class TrainingInfo : ChatBotCommandHandler
+﻿using Skill = RavenNest.Models.Skill;
+public class TrainingInfo : ChatBotCommandHandler
 {
     public TrainingInfo(
        GameManager game,

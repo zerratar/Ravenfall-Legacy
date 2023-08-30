@@ -3,7 +3,7 @@ using System.Collections;
 using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-
+using Skill = RavenNest.Models.Skill;
 public class RaidHandler : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;

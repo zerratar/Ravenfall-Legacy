@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
+using Skill = RavenNest.Models.Skill;
 public class PlayerListItem : MonoBehaviour
 {
     [SerializeField] private GameProgressBar pbHealth;

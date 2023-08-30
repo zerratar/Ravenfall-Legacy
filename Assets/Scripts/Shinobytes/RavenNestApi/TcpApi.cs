@@ -8,7 +8,7 @@ using RavenNest.SDK.Endpoints;
 using System.Threading;
 using Shinobytes.Linq;
 using System.Numerics;
-
+using Skill = RavenNest.Models.Skill;
 namespace RavenNest.SDK
 {
     public class TcpApi : IDisposable

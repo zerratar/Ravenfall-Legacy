@@ -1,9 +1,8 @@
-﻿using Assets.Scripts;
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using TMPro;
 using UnityEngine;
-
+using Skill = RavenNest.Models.Skill;
 public class PlayerDetails : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;

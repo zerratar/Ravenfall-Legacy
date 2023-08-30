@@ -61,7 +61,7 @@ public class FerryHandler : MonoBehaviour
             if (expTimer <= 0f)
             {
                 expTimer = expTime;
-                player.AddExp(Skill.Sailing);
+                player.AddExp(RavenNest.Models.Skill.Sailing);
             }
 
             if (ferry.state == FerryState.Docked
