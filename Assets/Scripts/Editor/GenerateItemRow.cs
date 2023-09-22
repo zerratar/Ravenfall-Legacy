@@ -44,17 +44,6 @@ public class GenerateItemRow : OdinEditorWindow
             item.Soulbound = Soulbound;
         }
 
-        if (CanCraft)
-        {
-            item.Craftable = CanCraft;
-            item.RequiredCraftingLevel = CraftingLevel;
-        }
-        else
-        {
-            item.RequiredCraftingLevel = 1000;
-        }
-
-
         if (ItemPrefab)
         {
             var path = AssetDatabase.GetAssetPath(ItemPrefab);

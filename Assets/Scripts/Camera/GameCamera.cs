@@ -25,7 +25,7 @@ public class GameCamera : MonoBehaviour
 
     private Camera _camera;
 
-    private float farClipDistance;
+    public float FarClipDistance;
 
     private float observeNextPlayerTimer = ObserverJumpTimer;
     private int observedPlayerIndex;
@@ -57,7 +57,7 @@ public class GameCamera : MonoBehaviour
         playerObserver.gameObject.SetActive(false);
         postProcessingLayer = GetComponent<PostProcessLayer>();
         _camera = GetComponent<Camera>();
-        farClipDistance = _camera.farClipPlane;
+        FarClipDistance = _camera.farClipPlane;
     }
 
     // Update is called once per frame
@@ -71,7 +71,6 @@ public class GameCamera : MonoBehaviour
             return;
         }
 
-
         LookAt.HasGameCameraRotation = true;
         Rotation = LookAt.GameCameraRotation = transform.rotation;
 
@@ -84,7 +83,7 @@ public class GameCamera : MonoBehaviour
         }
         else
         {
-            _camera.farClipPlane = farClipDistance;
+            _camera.farClipPlane = FarClipDistance;
             if (postProcessingLayer)
                 postProcessingLayer.enabled = true;
         }

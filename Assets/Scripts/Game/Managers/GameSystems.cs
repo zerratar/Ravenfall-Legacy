@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
 
 public static class GameSystems
 {
@@ -52,40 +51,59 @@ public static class ActionSystem
     }
 }
 
-public class ScheduledAction
+public abstract class ScheduledAction
 {
-    private readonly Func<Task> asyncAction;
-    private readonly Action onInterrupt;
-    private readonly DateTime executeTime;
-    private bool interrupted;
-    private bool invoked;
-
-    public ScheduledAction(Func<Task> asyncAction, Action onInterrupt, double duration)
+    public ScheduledAction(object state, double duration, string description, object tag)
     {
-        this.executeTime = DateTime.UtcNow.AddSeconds(duration);
-        this.asyncAction = asyncAction;
-        this.onInterrupt = onInterrupt;
+        this.State = state;
+        this.ExecuteTime = DateTime.UtcNow.AddSeconds(duration);
+        this.Description = description;
+        this.Tag = tag;
     }
-    public bool Invoked => invoked;
-    public bool Interrupted => interrupted;
+
+    public object State { get; }
+
+    public string Description { get; }
+    public object Tag { get; }
+
+    public bool Invoked { get; protected set; }
+    public bool Interrupted { get; protected set; }
+    public DateTime ExecuteTime { get; protected set; }
 
     public bool CanInvoke()
     {
-        return !invoked && !interrupted && DateTime.UtcNow >= executeTime;
+        return !Invoked && !Interrupted && DateTime.UtcNow >= ExecuteTime;
     }
 
-    public async Task InvokeAsync()
+    public abstract Task InvokeAsync();
+    public abstract void Interrupt();
+}
+
+public class ScheduledAction<TState> : ScheduledAction
+    where TState : class
+{
+    private readonly Func<TState, Task> asyncAction;
+    private readonly Action<TState> onInterrupt;
+
+    public ScheduledAction(TState state, Func<TState, Task> asyncAction, Action<TState> onInterrupt, double duration, string description, object tag)
+        : base(state, duration, description, tag)
+    {
+        this.asyncAction = asyncAction;
+        this.onInterrupt = onInterrupt;
+    }
+
+    public override async Task InvokeAsync()
     {
         try
         {
-            if (!CanInvoke())
+            if (Interrupted || Invoked)
             {
                 return;
             }
 
-            invoked = true;
+            Invoked = true;
 
-            await asyncAction();
+            await asyncAction(State as TState);
         }
         catch (Exception exc)
         {
@@ -93,20 +111,20 @@ public class ScheduledAction
         }
     }
 
-    public void Interrupt()
+    public override void Interrupt()
     {
-        if (interrupted)
+        if (Interrupted)
         {
             return;
         }
 
         try
         {
-            interrupted = true;
+            Interrupted = true;
 
             if (onInterrupt != null)
             {
-                onInterrupt();
+                onInterrupt(State as TState);
             }
         }
         catch (Exception exc)

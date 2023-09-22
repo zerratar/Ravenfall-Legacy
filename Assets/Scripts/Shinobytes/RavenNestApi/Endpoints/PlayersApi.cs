@@ -76,7 +76,7 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<ItemProductionResult> ProduceItemAsync(Guid characterId, Guid recipeId, int amount)
+        public Task<ItemProductionResult> ProduceItemAsync(Guid characterId, Guid recipeId, long amount)
         {
             return request.Create()
                 .Identifier(characterId.ToString())
@@ -140,12 +140,38 @@ namespace RavenNest.SDK.Endpoints
 
         internal Task<int> GetAutoJoinDungeonCostAsync()
         {
-            return request.Create().Method("raid-auto-cost").Build().SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
+            return request.Create().Method("dungeon-auto-cost").Build().SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
 
         public Task<int> GetAutoJoinRaidCostAsync()
         {
-            return request.Create().Method("dungeon-auto-cost").Build().SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
+            return request.Create().Method("raid-auto-cost").Build().SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
+        }
+
+        public Task<ItemUseResult> UseItemAsync(Guid characterId, Guid inventoryItemId)
+        {
+            return request.Create()
+                .Identifier(characterId.ToString())
+                .Method("use")
+                .AddParameter(inventoryItemId.ToString())
+                .Build()
+                .SendAsync<ItemUseResult>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get, true);
+        }
+
+
+        public Task<ItemUseResult> UseItemAsync(Guid characterId, Guid inventoryItemId, string arg)
+        {
+            return request.Create()
+                .Identifier(characterId.ToString())
+                .Method("use")
+                .AddParameter(inventoryItemId.ToString())
+                .AddParameter(arg)
+                .Build()
+                .SendAsync<ItemUseResult>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Get, true);
         }
 
         public Task<bool> AutoJoinDungeon(Guid characterId)
@@ -169,6 +195,29 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestTarget.Players,
                     ApiRequestType.Get, true);
         }
+
+        public Task<bool[]> AutoJoinRaid(Guid[] characterId)
+        {
+            return request.Create()
+                .Method("raid-auto")
+                .AddParameter("values", characterId)
+                .Build()
+                .SendAsync<bool[]>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Post, true);
+        }
+
+        public Task<bool[]> AutoJoinDungeon(Guid[] characterId)
+        {
+            return request.Create()
+                .Method("dungeon-auto")
+                .AddParameter("values", characterId)
+                .Build()
+                .SendAsync<bool[]>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Post, true);
+        }
+
 
         public Task<ItemEnchantmentResult> DisenchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {

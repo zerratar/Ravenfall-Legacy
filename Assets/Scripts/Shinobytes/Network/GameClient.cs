@@ -221,16 +221,13 @@ public class GameClient : IDisposable
                             var json = JsonConvert.SerializeObject(cmd);
                             writer.WriteLine(json);
                             writer.Flush();
-
                             onDataSent?.Invoke(json);
                             continue;
                         }
-
-                        //await Task.Delay(10);
-                        System.Threading.Thread.Sleep(10);
                     }
                     catch (Exception exc)
                     {
+                        System.Threading.Thread.Sleep(10);
                         server.LogError(exc.Message);
                     }
                 }

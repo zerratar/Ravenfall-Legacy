@@ -60,7 +60,7 @@ public class Inventory : MonoBehaviour
     private PlayerEquipment equipment;
     private GameManager gameManager;
     private GameInventoryItem equippedMeleeWeapon;
-
+    private GameInventoryItem lastAddedItem;
     private readonly object mutex = new object();
 
     private void Awake()
@@ -69,6 +69,8 @@ public class Inventory : MonoBehaviour
         player = GetComponent<PlayerController>();
         equipment = GetComponent<PlayerEquipment>();
     }
+
+    public IReadOnlyList<GameInventoryItem> Equipped => equipped;
 
     public void RemoveByItemId(Guid itemId, long amount)
     {
@@ -346,8 +348,51 @@ public class Inventory : MonoBehaviour
             return null;
         }
     }
+    public GameInventoryItem GetInventoryItem(Guid inventoryItemId)
+    {
+        lock (mutex)
+        {
+            return GetAllItems().FirstOrDefault(x => x.InventoryItem.Id == inventoryItemId);
+        }
+    }
 
-    public GameInventoryItem AddToBackpack(RavenNest.Models.InventoryItem item, long amount = 1)
+    public void UpdateInventoryItem(Guid inventoryItemId, int newAmount)
+    {
+        lock (mutex)
+        {
+            var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == inventoryItemId);
+            if (existing == null)
+            {
+                return;
+            }
+
+            if (newAmount > 0)
+            {
+                existing.InventoryItem.Amount = newAmount;
+            }
+            else
+            {
+                backpack.Remove(existing);
+            }
+        }
+    }
+
+    public GameInventoryItem AddOrSetInventoryItem(RavenNest.Models.InventoryItem item)
+    {
+        lock (mutex)
+        {
+            var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == item.Id);
+            if (existing != null)
+            {
+                existing.InventoryItem.Amount = item.Amount;
+                return existing;
+            }
+
+            return CreateInstance(item, item.Amount);
+        }
+    }
+
+    public GameInventoryItem AddToBackpack(RavenNest.Models.InventoryItem item, long amount)
     {
         lock (mutex)
         {
@@ -357,14 +402,14 @@ public class Inventory : MonoBehaviour
                 if (item.Soulbound || !string.IsNullOrEmpty(item.Enchantment) || item.TransmogrificationId != null)
                 {
                     existing.Amount -= amount;
-                    return CreateInstance(item, amount);
+                    return (lastAddedItem = CreateInstance(item, amount));
                 }
 
                 existing.InventoryItem.Amount += amount;
                 return existing;
             }
 
-            return CreateInstance(item, amount);
+            return (lastAddedItem = CreateInstance(item, amount));
         }
     }
 
@@ -481,6 +526,25 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    public GameInventoryItem LastAddedItem => lastAddedItem;
+
+    public GameInventoryItem AddToBackpack(Guid inventoryItemId, RavenNest.Models.Item item, double amount = 1)
+    {
+        lock (mutex)
+        {
+            var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == inventoryItemId);
+            if (existing != null)
+            {
+                existing.Amount += (long)amount;
+                lastAddedItem = existing;
+                return existing;
+            }
+        }
+        var i = AddToBackpack(item, amount);
+        i.InstanceId = inventoryItemId;
+        i.InventoryItem.Id = inventoryItemId;
+        return i;
+    }
     public GameInventoryItem AddToBackpack(RavenNest.Models.Item item, double amount = 1)
     {
         if (item == null)
@@ -507,7 +571,7 @@ public class Inventory : MonoBehaviour
                 }, item);
                 backpack.Add(result);
             }
-
+            lastAddedItem = result;
             return result;
         }
     }

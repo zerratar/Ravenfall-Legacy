@@ -51,6 +51,53 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             return;
         }
 
+        var q = query?.ToLower().Trim();
+        if (q == "status")
+        {
+            // if we have an active scheduled action for this skill, return the status.
+            if (player.ScheduledAction != null)
+            {
+                if (player.ScheduledAction.State is not ItemProductionState state)
+                {
+                    return;
+                }
+
+                // TODO: include details such as state.AmountLeftToCraft, expected total time, time for next item, etc.
+
+                var timeLeft = player.ScheduledAction.ExecuteTime - DateTime.UtcNow;
+                if (timeLeft.TotalSeconds <= 0)
+                {
+                    client.SendReply(gm, "You're currently {actionName} and should be done any second!");
+                    return;
+                }
+
+                client.SendReply(gm, "You're currently {actionName} and will be done in {timeLeft}", Utility.FormatTime(timeLeft));
+                return;
+            }
+
+            client.SendReply(gm, "You don't seem to have an ongoing action.");
+            return;
+        }
+
+        if (q == "cancel" || q == "abort")
+        {
+            if (player.ScheduledAction == null)
+            {
+                client.SendReply(gm, "You don't seem to have an action to cancel.");
+                return;
+            }
+
+            if (player.ScheduledAction.State is not ItemProductionState state)
+            {
+                // we should not interrupt a non item production action.
+                return;
+            }
+
+            player.InterruptAction();
+            return;
+        }
+
+
         if (player.GetTask() != itemProductionSkill)
         {
             player.SetTask(itemProductionSkill);
@@ -76,8 +123,15 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
 
         var amountToCraft = Math.Min(MaxCraftingCount, target.Count);
         var amount = amountToCraft > int.MaxValue ? int.MaxValue : (int)amountToCraft;
-
         var recipe = Game.Items.GetItemRecipe(target.Item);
+
+        // unique case, we should allow cooking raw ingredients such as fish, meat, etc.
+        if (recipe == null && itemProductionSkill == TaskType.Cooking)
+        {
+            // does not necessarily have to be only one recipe, but in this game it is. luckily :)
+            recipe = Game.Items.GetRecipeWithSingleIngredient(target.Item);
+        }
+
         if (recipe == null || recipe.RequiredSkill != GetSkill(itemProductionSkill))
         {
             // item does not have a recipe or is not for cooking. 
@@ -152,7 +206,7 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         }));
     }
 
-    protected string GetQuantityForm(int amount, string name)
+    public string GetQuantityForm(long amount, string name)
     {
         var c = name.ToLower().Trim()[0];
         var grammarForm = "a";
@@ -164,18 +218,31 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         return grammarForm;
     }
 
-    protected async Task ProduceAsync(PlayerController player, ItemRecipe recipe, int amount, GameMessage message, GameClient client, string[] terms)
+    public async Task ProduceAsync(ItemProductionState state, string[] terms)
     {
-        ItemProductionResult result = await Game.RavenNest.Players.ProduceItemAsync(player.Id, recipe.Id, amount);
+
+        //         in the future, we can make it so that items that take less than a second to make can be combined to
+        //         be done together so there are not just 1 request per item being made.
+        //   Example: recipe.PreparationTime<1, Amount = Min(Amount, 1/recipe.PreparationTime)
+
+        var player = state.Player;
+        var recipe = state.Recipe;
+        var amount = state.Amount;
+        var message = state.Message;
+        var client = state.Client;
+
+        var result = await Game.RavenNest.Players.ProduceItemAsync(player.Id, recipe.Id, amount);
 
         if (!result.Success)
         {
+            state.Continue = false;
             client.SendReply(message, "Unable to " + terms[0] + " {recipeName}. Server returned an error. Please try again later.", recipe.Name);
             return;
         }
 
         if (result.Items == null || result.Items.Count == 0)
         {
+            state.Continue = false;
             client.SendReply(message, "Unable to " + terms[0] + " {recipeName}. Could you be missing some ingredients?", recipe.Name);
             return;
         }
@@ -183,7 +250,9 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         // get total amount of items that was crafted.
         var producedItemAmount = result.Items.Sum(x => x.Amount);
 
-        // remove the ingredients from the player inventory
+        // TODO: This may cause a bug where inventory is out of sync if we remove items based on what it should cost
+        //       instead of what the server changed. Server may have updated the stash and not removed items from inventory.
+        //       This is a rare case, but it can happen.
         foreach (var req in recipe.Ingredients)
         {
             var a = req.Amount * producedItemAmount;
@@ -205,6 +274,10 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             }
         }
 
+        state.AmountLeftToCraft -= producedItemAmount;
+        state.ProducedItems.AddRange(result.Items);
+        state.Continue = state.AmountLeftToCraft > 0;
+
         // Display the result, if we only have one result that means we either failed or succeeded. 
         if (result.Items.Count == 1)
         {
@@ -212,16 +285,23 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             var item = Game.Items.Get(producedItem.ItemId);
             if (producedItem.Success)
             {
-                client.SendReply(message, "You have successfully " + terms[1] + " the {recipeName}! You've received {quantity} {itemName}",
-                        recipe.Name, GetQuantityForm(producedItem.Amount, item.Name), item.Name);
+                if (recipe.Name.ToLower() == item.Name.ToLower())
+                {
+                    client.SendReply(message, "You have successfully " + terms[1] + " {quantity} {itemName}", GetQuantityForm(producedItem.Amount, item.Name), item.Name);
+                }
+                else
+                {
+                    client.SendReply(message, "You have successfully " + terms[1] + " {recipeName}! You've received {quantity} {itemName}",
+                            recipe.Name, GetQuantityForm(producedItem.Amount, item.Name), item.Name);
+                }
             }
             else
             {
-                client.SendReply(message, "Oh no! You have failed to " + terms[0] + " the {recipeName}! You've received {quantity} {itemName}",
+                client.SendReply(message, "Oh no! You have failed to " + terms[0] + " {recipeName}! You've received {quantity} {itemName}",
                     recipe.Name, GetQuantityForm(producedItem.Amount, item.Name), item.Name);
             }
 
-            player.Inventory.AddToBackpack(item, producedItem.Amount);
+            player.Inventory.AddToBackpack(producedItem.InventoryItemId, item, producedItem.Amount);
             return;
         }
 
@@ -234,16 +314,30 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             GetQuantityForm(producedItemAmount, recipe.Name), recipe.Name
         };
 
+        var inventory = player.Inventory;
+
         for (int i = 0; i < result.Items.Count; i++)
         {
-            ItemProductionResultItem producedItem = result.Items[i];
+            var producedItem = result.Items[i];
             var item = Game.Items.Get(producedItem.ItemId);
             msg = msg.Trim();
             msg += " {quantity" + i + "} {itemName" + i + "},";
             args.Add(GetQuantityForm(producedItem.Amount, item.Name));
             args.Add(item.Name);
 
-            player.Inventory.AddToBackpack(item, producedItem.Amount);
+            var existing = inventory.GetInventoryItem(producedItem.InventoryItemId);
+            if (existing != null)
+            {
+                existing.Amount += producedItem.Amount;
+                continue;
+            }
+
+            inventory.AddOrSetInventoryItem(new InventoryItem
+            {
+                Id = producedItem.InventoryItemId,
+                Amount = producedItem.StackAmount,
+                ItemId = producedItem.ItemId
+            });
         }
 
         msg = msg.Trim(',');
@@ -254,10 +348,21 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
     {
         foreach (var ingredient in ingredients)
         {
-            if (!inventory.Contains(ingredient.ItemId, ingredient.Amount))
+            var stack = inventory.GetInventoryItemsByItemId(ingredient.ItemId);
+            var ownedAmount = 0L;
+            if (stack != null && stack.Count > 0)
+            {
+                ownedAmount = stack.Sum(x => x.Amount);
+            }
+
+            if (ownedAmount < ingredient.Amount)
             {
                 return true;
             }
+            //if (!inventory.Contains(ingredient.ItemId, ingredient.Amount))
+            //{
+            //    return true;
+            //}
         }
 
         return false;

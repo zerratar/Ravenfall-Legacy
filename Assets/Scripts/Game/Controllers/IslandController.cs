@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class IslandController : MonoBehaviour
 {
-    public RavenNest.Models.TcpApi.Island Island;
+    public RavenNest.Models.Island Island;
 
     public string Identifier;
     public DockController DockingArea;
@@ -37,8 +37,6 @@ public class IslandController : MonoBehaviour
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
         radius = sphereCollider.radius;
     }
-
-
 
     private void OnTriggerEnter(Collider other)
     {

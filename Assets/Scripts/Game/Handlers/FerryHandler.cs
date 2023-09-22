@@ -71,6 +71,10 @@ public class FerryHandler : MonoBehaviour
                 Disembark(ferry.Island);
             }
         }
+        else
+        {
+            player.Animations.SetCaptainState(IsCaptain);
+        }
 
         if (Embarking && !OnFerry)
         {
@@ -237,7 +241,7 @@ public class FerryHandler : MonoBehaviour
             isOnFerry = false;
             player.Island = targetIsland;
             player.taskTarget = null;
-            
+
             this.ClearDestination();
 
             var task = player.GetTask();
@@ -279,6 +283,8 @@ public class FerryHandler : MonoBehaviour
     {
         EnsureReferences();
         if (!ferry) return;
+
+        player.InterruptAction();
 
         // re-arrange players if this player should be the captain.
 

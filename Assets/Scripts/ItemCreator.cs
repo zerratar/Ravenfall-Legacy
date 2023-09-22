@@ -265,10 +265,6 @@ public class ItemCreator : MonoBehaviour
             var scale_attack = (float)a.RequiredAttackLevel / b.RequiredAttackLevel;
             var scale_defense = (float)a.RequiredDefenseLevel / b.RequiredDefenseLevel;
 
-
-            var scale_crafting = (float)a.RequiredCraftingLevel / b.RequiredCraftingLevel;
-
-
             var scale_magic = (float)a.RequiredMagicLevel / b.RequiredMagicLevel;
             var scale_slayer = (float)a.RequiredSlayerLevel / b.RequiredSlayerLevel;
 
@@ -296,17 +292,6 @@ public class ItemCreator : MonoBehaviour
 
                 if (item.RequiredSlayerLevel > 0)
                     item.RequiredSlayerLevel += LevelRequirementOffset;
-
-                if (ItemIsCraftable)
-                {
-                    item.RequiredCraftingLevel = RoundUp(Mathf.Max(0, (int)((prevA.RequiredCraftingLevel + LevelRequirementOffset) * scale_crafting)));
-                    item.Craftable = true;
-                }
-                else
-                {
-                    item.RequiredCraftingLevel = 1000;
-                    item.Craftable = false;
-                }
 
                 if (generateMageGear)
                 {
@@ -481,8 +466,8 @@ public class ItemCreator : MonoBehaviour
             case ItemType.OneHandedSword:
                 return "Sword";
 
-            case ItemType.OneHandedMace:
-                return "Mace";
+            case ItemType.TwoHandedSpear:
+                return "Spear";
 
             case ItemType.TwoHandedBow:
                 return "Bow";
@@ -497,7 +482,7 @@ public class ItemCreator : MonoBehaviour
 
     private string ToName(ItemMaterial mat)
     {
-        if (mat == ItemMaterial.Ultima)
+        if (mat == ItemMaterial.Abraxas)
         {
             return "Abraxas";
         }
@@ -540,8 +525,6 @@ public class ItemCreator : MonoBehaviour
         item.Category = category;
         item.Material = material;
         item.Soulbound = false;
-        item.Craftable = false;
-        item.RequiredCraftingLevel = 1000;
         return item;
     }
 
@@ -671,7 +654,9 @@ public class ItemCreator : MonoBehaviour
             case ItemType.Fishing:
             case ItemType.Mining:
             case ItemType.Gathering:
-
+            case ItemType.Cooking:
+            case ItemType.Crafting:
+            case ItemType.Alchemy:
             case ItemType.Arrows:
             case ItemType.Magic:
             case ItemType.Coins:

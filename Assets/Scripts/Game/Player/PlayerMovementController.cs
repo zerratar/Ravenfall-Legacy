@@ -22,8 +22,12 @@ public class PlayerMovementController : MonoBehaviour
     /// Used to always have a slight offset to target destinations.
     /// </summary>
     private Vector3 positionJitter;
+    private float defaultSpeed;
+    private float defaultAngularSpeed;
     private MovementLockState movementLockState;
     private bool firstUnlock = true;
+    public float MovementSpeedMultiplier = 1;
+
     //private NavigationAgent navAgentState;
 
     public enum MovementLockState
@@ -46,6 +50,16 @@ public class PlayerMovementController : MonoBehaviour
     void Update()
     {
         Position = this.transform.position;
+
+        if (defaultSpeed > 0 && MovementSpeedMultiplier > 0)
+        {
+            this.navMeshAgent.speed = MovementSpeedMultiplier * defaultSpeed;
+        }
+
+        if (defaultAngularSpeed > 0 && MovementSpeedMultiplier > 0)
+        {
+            this.navMeshAgent.angularSpeed = MovementSpeedMultiplier * defaultAngularSpeed;
+        }
     }
 
     internal void UpdateMovement()
@@ -67,6 +81,8 @@ public class PlayerMovementController : MonoBehaviour
         var x = UnityEngine.Random.Range(-0.5f, 0.5f);
         var z = UnityEngine.Random.Range(-0.5f, 0.5f);
         this.positionJitter = new Vector3(x, 0, z);
+        this.defaultSpeed = this.navMeshAgent.speed;
+        this.defaultAngularSpeed = this.navMeshAgent.angularSpeed;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

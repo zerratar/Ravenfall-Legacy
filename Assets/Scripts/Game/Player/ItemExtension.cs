@@ -88,7 +88,20 @@ public static class ItemExtension
         return result;
     }
 
-    public static ItemStatsCollection GetItemStats(this GameInventoryItem i)
+    public static ItemStatsCollection GetItemStats(this Item i)
+    {
+        var stats = new List<ItemStat>();
+        if (i.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.WeaponAim, 0, null));
+        if (i.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.WeaponPower, 0, null));
+        if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.RangedAim, 0, null));
+        if (i.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", i.RangedPower, 0, null));
+        if (i.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.MagicAim, 0, null));
+        if (i.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.MagicPower, 0, null));
+        if (i.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.ArmorPower, 0, null));
+        return new ItemStatsCollection(stats);
+    }
+
+    public static ItemStatsCollection GetItemStats(this GameInventoryItem i, bool includeSkillEnchantments = false)
     {
         int aimBonus = 0;
         int armorBonus = 0;
@@ -97,6 +110,8 @@ public static class ItemExtension
         ItemEnchantment powerEnchantment = null;
         ItemEnchantment aimEnchantment = null;
         ItemEnchantment armorEnchantment = null;
+
+        var stats = new List<ItemStat>();
 
         if (i.Enchantments != null)
         {
@@ -116,7 +131,6 @@ public static class ItemExtension
                         powerEnchantment = e;
                         powerBonus = (int)(i.Item.WeaponPower * value) + (int)(i.Item.MagicPower * value) + (int)(i.Item.RangedPower * value);
                     }
-
                     if (key == "AIM")
                     {
                         aimEnchantment = e;
@@ -149,7 +163,6 @@ public static class ItemExtension
             }
         }
 
-        var stats = new List<ItemStat>();
         if (i.Item.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.Item.WeaponAim, aimBonus, aimEnchantment));
         if (i.Item.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.Item.WeaponPower, powerBonus, powerEnchantment));
         if (i.Item.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.Item.RangedAim, aimBonus, aimEnchantment));
@@ -157,6 +170,16 @@ public static class ItemExtension
         if (i.Item.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.Item.MagicAim, aimBonus, aimEnchantment));
         if (i.Item.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.Item.MagicPower, powerBonus, powerEnchantment));
         if (i.Item.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.Item.ArmorPower, armorBonus, armorEnchantment));
+
+        if (includeSkillEnchantments)
+        {
+            var bonuses = i.GetSkillBonuses();
+            foreach (var b in bonuses)
+            {
+                stats.Add(new ItemStat(b.Enchantment.Description, 0, 0));//(int)b.Bonus));
+            }
+        }
+
         return new ItemStatsCollection(stats);
     }
 }

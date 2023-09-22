@@ -1,5 +1,5 @@
-﻿using System;
-using System.Linq;
+﻿using RavenNest.Models;
+using System;
 using UnityEngine;
 
 public class IslandManager : MonoBehaviour
@@ -21,6 +21,18 @@ public class IslandManager : MonoBehaviour
     }
 
     public IslandController[] All => islands;
+
+    public IslandController Get(Island targetIsland)
+    {
+        EnsureIslands();
+        foreach (var island in islands)
+        {
+            if (island.Island == targetIsland)
+                return island;
+        }
+        return null;
+    }
+
     public IslandController Find(string islandName)
     {
         EnsureIslands();
@@ -28,7 +40,7 @@ public class IslandManager : MonoBehaviour
 
         for (var i = 0; i < All.Length; i++)
         {
-            if (All[i].Identifier.StartsWith(islandName, StringComparison.OrdinalIgnoreCase)) 
+            if (All[i].Identifier.StartsWith(islandName, StringComparison.OrdinalIgnoreCase))
                 return All[i];
         }
 
@@ -56,4 +68,5 @@ public class IslandManager : MonoBehaviour
 
         return null;
     }
+
 }

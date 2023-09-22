@@ -16,14 +16,17 @@ public class Chop : ChatBotCommandHandler<string>
             return;
         }
 
+        var taskType = TaskType.Woodcutting;
+        var itemType = ItemType.Woodcutting;
+        var playerSkill = player.Stats.Woodcutting.MaxLevel;
         var query = (data ?? "").Trim().ToLower();
         if (string.IsNullOrEmpty(query))
         {
-            player.SetTask(TaskType.Woodcutting);
+            player.SetTask(taskType);
             return;
         }
 
-        var result = itemResolver.Resolve(query, ItemType.Woodcutting);
+        var result = itemResolver.Resolve(query, x => x.Type == itemType && Game.Items.CanBeDropped(x));
         if (result.SuggestedItemNames != null && result.SuggestedItemNames.Length > 0)
         {
             var message = Utility.ReplaceLastOccurrence(string.Join(", ", result.SuggestedItemNames), ", ", " or ");
@@ -38,10 +41,12 @@ public class Chop : ChatBotCommandHandler<string>
             return;
         }
 
-        // when using !chop and have an argument, we have to validate the item
-        // if the item does not exist, let them know
-        // if the item can not be collected (not of correct type) let them know
-        // if the item requires higher level of skill, let them know
-        // if everything is ok, then we can start gathering the item
+        int levelRequirement = Game.Items.GetRequiredLevelForDrop(result.Item);
+        if (playerSkill < levelRequirement)
+        {
+            client.SendReply(gm, Localization.MSG_CHOP_LEVEL_REQUIREMENT, levelRequirement, result.Item.Name);
+        }
+
+        player.SetTask(taskType, result.Item.Name);
     }
 }

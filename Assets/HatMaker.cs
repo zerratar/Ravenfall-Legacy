@@ -25,8 +25,6 @@ public class HatMaker : MonoBehaviour
             ShopSellPrice = 1,
             ShopBuyPrice = 1,
             Category = ItemCategory.Armor,
-            Craftable = false,
-            RequiredCraftingLevel = 1000,
         };
 
         System.IO.File.WriteAllText(System.IO.Path.Combine(targetDirectory, itemName + ".json"), Newtonsoft.Json.JsonConvert.SerializeObject(item));

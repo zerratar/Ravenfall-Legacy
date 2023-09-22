@@ -29,11 +29,11 @@ public class GameUpdatedEventHandler : GameEventHandler<GameUpdatedRequest>
         {
             if (versionAnnounced.Add(data.ExpectedVersion))
             {
-                gameManager.RavenBot.Announce("Attention! An essential update to Ravenfall, v{version}, is available. This update contains critical changes. To avoid any game disruption, restart your game immediately to apply the update. Thank you!", data.ExpectedVersion);
+                gameManager.RavenBot.Announce("Attention! An essential update to Ravenfall, v{version}, is available. This update contains critical changes. To avoid any game disruption, game will attempt to automatically restart to apply the update.", data.ExpectedVersion);
                 lastAnnounced = DateTime.UtcNow;
             }
 
-            gameManager.SaveStateAndLoadScene();
+            gameManager.SaveStateAndLoadScene(0);
             return;
         }
 

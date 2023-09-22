@@ -6,21 +6,18 @@ using System.Threading.Tasks;
 using Assets.Scripts;
 using RavenNest.Models;
 using RavenNest.SDK;
-using RavenNest.SDK.Endpoints;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
-using RavenNestPlayer = RavenNest.Models.Player;
 using Debug = Shinobytes.Debug;
 
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.PostProcessing;
 using Shinobytes.Linq;
 using UnityEngine.AI;
 using System.Diagnostics;
 using System.Text;
-using JetBrains.Annotations;
+using UnityEditor;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
@@ -98,6 +95,9 @@ public class GameManager : MonoBehaviour, IGameManager
     private float experienceSaveInterval = 3f;
     private float stateSaveInterval = 3f;
 
+    private SessionStats sessionStats;
+    public SessionStats SessionStats => sessionStats;
+
     public string ServerAddress;
 
     public bool UsePostProcessingEffects = true;
@@ -148,8 +148,8 @@ public class GameManager : MonoBehaviour, IGameManager
     private string exitViewTextFormat;
     private DateTime lastGameEventRecevied;
     private bool isReloadingScene;
-    private float uptimeSaveTimerInterval = 5f;
-    private float uptimeSaveTimer = 5f;
+    private float uptimeSaveTimerInterval = 3f;
+    private float uptimeSaveTimer = 3f;
 
     private int spawnedBots;
     private bool useManualExpMultiplierCheck;
@@ -171,6 +171,12 @@ public class GameManager : MonoBehaviour, IGameManager
     public StreamLabel uptimeLabel;
     public StreamLabel villageBoostLabel;
     public StreamLabel playerCountLabel;
+
+    public StreamLabel sessionStatsJson;
+    public StreamLabel ferryStatsJson;
+    public StreamLabel raidStatsJson;
+    public StreamLabel dungeonStatsJson;
+    public StreamLabel villageStatsJson;
 
     private Permissions permissions = new Permissions { ExpMultiplierLimit = 100 };
     public Permissions Permissions
@@ -241,6 +247,15 @@ public class GameManager : MonoBehaviour, IGameManager
     private int experienceSaveIndex;
     private bool sessionPlayersCleared;
     private float gameStateTime;
+
+    public RaidStats raidStats;
+    public VillageStats villageStats;
+    public DungeonStats dungeonStats;
+    public FerryStats ferryStats;
+    private float lastAutoJoinDungeon;
+    private float autoJoinDungeonAnnouncement;
+    private float lastAutoJoinRaid;
+    private float autoJoinRaidAnnouncement;
 
     void Awake()
     {
@@ -390,8 +405,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void SetupStreamLabels()
     {
-        uptimeLabel = StreamLabels.Register("uptime", () => Time.realtimeSinceStartup.ToString());
-        villageBoostLabel = StreamLabels.Register("village-boost", () =>
+        uptimeLabel = StreamLabels.RegisterText("uptime", () => Time.realtimeSinceStartup.ToString());
+
+        villageBoostLabel = StreamLabels.RegisterText("village-boost", () =>
         {
             var bonuses = Village.GetExpBonuses();
 
@@ -403,12 +419,130 @@ public class GameManager : MonoBehaviour, IGameManager
 
             return string.Join(", ", value);
         });
-        playerCountLabel = StreamLabels.Register("online-player-count", () => playerManager.GetPlayerCount().ToString());
 
-        StreamLabels.Register("level-requirements", () => GetLevelRequirementsString()).Update();
-        StreamLabels.Register("level-requirements-json", () => GetLevelRequirementsJson()).Update();
+        playerCountLabel = StreamLabels.RegisterText("online-player-count", () => playerManager.GetPlayerCount().ToString());
 
+        StreamLabels.RegisterText("level-requirements", () => GetLevelRequirementsString()).Update();
+        StreamLabels.Register("level-requirements", () => GetLevelRequirements()).Update();
+
+        sessionStatsJson = StreamLabels.Register("session", () => GetSessionStats());
+        ferryStatsJson = StreamLabels.Register("ferry", () => GetFerryStats());
+        raidStatsJson = StreamLabels.Register("raid", () => GetRaidStats());
+        dungeonStatsJson = StreamLabels.Register("dungeon", () => GetDungeonStats());
+        villageStatsJson = StreamLabels.Register("village", () => GetVillageStats());
+
+        sessionStatsJson.Update();
+        ferryStatsJson.Update();
+        raidStatsJson.Update();
+        dungeonStatsJson.Update();
+        villageStatsJson.Update();
     }
+
+    public VillageStats GetVillageStats()
+    {
+        if (this.villageStats == null)
+        {
+            this.villageStats = new VillageStats();
+        }
+
+        villageStats.Name = null;
+        villageStats.Level = Village.TownHall.Level;
+        villageStats.Tier = Village.TownHall.Tier;
+        villageStats.BonusExp = Village.GetExpBonuses();
+        return villageStats;
+    }
+
+    public RaidStats GetRaidStats()
+    {
+        if (this.raidStats == null)
+        {
+            this.raidStats = new RaidStats();
+        }
+
+        raidStats.Started = Raid.Started;
+        raidStats.PlayersCount = Raid.Raiders.Count;
+        raidStats.SecondsLeft = Raid.SecondsLeft;
+        raidStats.Counter = Raid.Counter;
+        if (Raid.Boss != null)
+        {
+            var health = Raid.Boss.Enemy.Stats.Health;
+            raidStats.BossHealthCurrent = health.CurrentValue;
+            raidStats.BossHealthMax = health.MaxLevel;
+            raidStats.BossHealthPercent = Raid.Boss.Enemy.Stats.HealthPercent;
+            raidStats.BossLevel = Raid.Boss.Enemy.Stats.CombatLevel;
+        }
+
+        return raidStats;
+    }
+
+    public DungeonStats GetDungeonStats()
+    {
+        if (this.dungeonStats == null)
+        {
+            this.dungeonStats = new DungeonStats();
+        }
+
+        dungeonStats.Started = Dungeons.Started;
+        dungeonStats.PlayersCount = Dungeons.GetPlayers().Count;
+        dungeonStats.Counter = Dungeons.Counter;
+
+        if (Dungeons.Boss != null)
+        {
+            var boss = Dungeons.Boss;
+            var health = boss.Enemy.Stats.Health;
+            dungeonStats.BossHealthCurrent = health.CurrentValue;
+            dungeonStats.BossHealthMax = health.MaxLevel;
+            dungeonStats.BossHealthPercent = boss.Enemy.Stats.HealthPercent;
+            dungeonStats.BossLevel = boss.Enemy.Stats.CombatLevel;
+        }
+
+        return dungeonStats;
+    }
+
+    public FerryStats GetFerryStats()
+    {
+        if (this.ferryStats == null)
+        {
+            this.ferryStats = new FerryStats();
+        }
+
+        ferryStats.Destination = Ferry.GetDestination();
+        ferryStats.PlayersCount = Ferry.GetPlayerCount();
+        if (Ferry.Captain)
+        {
+            ferryStats.CaptainName = Ferry.Captain.Name;
+            ferryStats.CaptainSailingLevel = Ferry.Captain.Stats.Sailing.Level;
+        }
+
+        return ferryStats;
+    }
+
+    public SessionStats GetSessionStats()
+    {
+        if (this.sessionStats == null)
+        {
+            this.sessionStats = new SessionStats();
+        }
+
+        if (RavenNest != null)
+        {
+            sessionStats.Authenticated = RavenNest.Authenticated;
+            sessionStats.SessionStarted = RavenNest.SessionStarted;
+            sessionStats.TwitchUserName = RavenNest.TwitchUserName;
+        }
+
+        if (playerManager != null)
+        {
+            sessionStats.OnlinePlayerCount = playerManager.GetPlayerCount();
+        }
+
+        sessionStats.GameVersion = GameVersion.GetApplicationVersion();
+        sessionStats.LastUpdatedUtc = DateTime.UtcNow;
+        sessionStats.RealtimeSinceStartup = Time.realtimeSinceStartup;
+
+        return sessionStats;
+    }
+
     public List<IslandTaskCollection> GetLevelRequirements()
     {
         var items = new List<IslandTaskCollection>();
@@ -435,13 +569,6 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         return items;
-    }
-
-    private string GetLevelRequirementsJson()
-    {
-        List<IslandTaskCollection> items = GetLevelRequirements();
-
-        return Newtonsoft.Json.JsonConvert.SerializeObject(items);
     }
 
 
@@ -737,6 +864,8 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
+        UpdateAutoJoinAnnouncement();
+
         if (Input.GetKeyUp(KeyCode.Escape) && !menuHandler.Visible && !playerSearchHandler.Visible)
         {
             menuHandler.Show();
@@ -802,6 +931,14 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             uptimeSaveTimer = uptimeSaveTimerInterval;
             uptimeLabel.Update();
+
+            /* do it every 3s for now. but would better to keep track on value changes and update only then. */
+
+            sessionStatsJson.Update();
+            ferryStatsJson.Update();
+            raidStatsJson.Update();
+            dungeonStatsJson.Update();
+            villageStatsJson.Update();
         }
 
         UpdateExpBoostTimer();
@@ -960,6 +1097,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
             villageBoostLabel.Update();
             playerCountLabel.Update();
+
+            villageStatsJson.Update();
+            sessionStatsJson.Update();
             SaveStateFile();
             UpdatePathfindingIterations();
         }
@@ -1453,6 +1593,10 @@ public class GameManager : MonoBehaviour, IGameManager
                 return;
             }
 
+            //if (isControlDown && Input.GetKeyUp(KeyCode.R))
+            //{
+            //    Raid.StartRaid();
+            //}
 
             if (isControlDown && Input.GetKeyUp(KeyCode.R))
             {
@@ -1471,7 +1615,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 else
                 {
                     var timeLeft = dungeonStartCooldown - elapsed;
-                    RavenBot.Announce("You have to wait {cooldown} seconds before you can start another raid.", timeLeft.TotalSeconds.ToString());
+                    RavenBot.Announce("You have to wait {cooldown} second(s) before you can start another raid.", timeLeft.TotalSeconds.ToString());
                 }
             }
         }
@@ -1993,6 +2137,247 @@ public class GameManager : MonoBehaviour, IGameManager
         goUpdateAvailable.SetActive(true);
         lblUpdateAvailable.text = "New update available! <color=green>v" + newVersion;
     }
+
+    internal void UpdateAutoJoinAnnouncement()
+    {
+        if (playerAutoJoinList.Count == 0) return;
+        var playerNames = string.Join(", ", playerAutoJoinList.Select(x => "@" + x.Name));
+        var timeNow = Time.realtimeSinceStartup;
+        if (timeNow >= autoJoinDungeonAnnouncement && autoJoinDungeonAnnouncement > 0)
+        {
+            AnnounceAutoDungeonJoin(playerAutoJoinList);
+            playerAutoJoinList.Clear();
+            autoJoinDungeonAnnouncement = 0;
+            return;
+        }
+
+        if (timeNow >= autoJoinRaidAnnouncement && autoJoinRaidAnnouncement > 0)
+        {
+            AnnounceAutoRaidJoin(playerAutoJoinList);
+            playerAutoJoinList.Clear();
+            autoJoinRaidAnnouncement = 0;
+        }
+    }
+
+    internal void AnnounceAutoDungeonJoin(List<PlayerController> players)
+    {
+        if (players.Count == 0) return;
+        var playerNames = string.Join(", ", players.Select(x => "@" + x.Name));
+        if (players.Count == 1)
+        {
+            var plr = players[0];
+            if (plr.Dungeon.AutoJoinCounter > 0 && plr.Dungeon.AutoJoinCounter < int.MaxValue)
+            {
+                RavenBot.SendReply(plr, "You have automatically joined the dungeon! You will join {counter} more.", plr.Dungeon.AutoJoinCounter.ToString());
+            }
+            else
+            {
+                RavenBot.SendReply(plr, "You have automatically joined the dungeon!");
+            }
+        }
+        else if (players.Count < 10)
+        {
+            RavenBot.Announce("{playerNames} have automatically joined the dungeon!", playerNames);
+        }
+        else
+        {
+            RavenBot.Announce("{playerCount} players have automatically joined the dungeon!", players.Count.ToString());
+        }
+    }
+
+    internal void AnnounceAutoDungeonJoinFailed(List<PlayerController> players)
+    {
+        if (players.Count == 0) return;
+        var playerNames = string.Join(", ", players.Select(x => "@" + x.Name));
+        if (players.Count == 1)
+        {
+            RavenBot.SendReply(players[0], "You have failed to join the dungeon. Make sure you have enough coins to automatically join.");
+        }
+        else if (players.Count < 10)
+        {
+            RavenBot.Announce("{playerNames} failed to joined the dungeon. You may not have enough coins.", playerNames);
+        }
+        else
+        {
+            RavenBot.Announce("{playerCount} players failed to join the dungeon.", players.Count.ToString());
+        }
+    }
+
+    internal void AnnounceAutoRaidJoin(List<PlayerController> players)
+    {
+        if (players.Count == 0) return;
+        var playerNames = string.Join(", ", players.Select(x => "@" + x.Name));
+        if (players.Count == 1)
+        {
+            var plr = players[0];
+            if (plr.Raid.AutoJoinCounter > 0 && plr.Raid.AutoJoinCounter < int.MaxValue)
+            {
+                RavenBot.SendReply(plr, "You have automatically joined the raid! You will join {counter} more.", plr.Raid.AutoJoinCounter);
+            }
+            else
+            {
+                RavenBot.SendReply(plr, "You have automatically joined the raid!");
+            }
+        }
+        else if (players.Count < 10)
+        {
+            RavenBot.Announce("{playerNames} have automatically joined the raid!", playerNames);
+        }
+        else
+        {
+            RavenBot.Announce("{playerCount} players have automatically joined the raid!", players.Count.ToString());
+        }
+    }
+
+    internal void AnnounceAutoRaidJoinFailed(List<PlayerController> players)
+    {
+        if (players.Count == 0) return;
+        var playerNames = string.Join(", ", players.Select(x => "@" + x.Name));
+        if (players.Count == 1)
+        {
+            RavenBot.SendReply(players[0], "You have failed to join the raid. Make sure you have enough coins to automatically join.");
+        }
+        else if (players.Count < 10)
+        {
+            RavenBot.Announce("{playerNames} failed to joined the raid. You may not have enough coins.", playerNames);
+        }
+        else
+        {
+            RavenBot.Announce("{playerCount} players failed to join the raid.", players.Count.ToString());
+        }
+    }
+
+    internal void OnPlayerAutoJoinedDungeon(PlayerController player)
+    {
+        lastAutoJoinDungeon = Time.realtimeSinceStartup;
+        autoJoinDungeonAnnouncement = lastAutoJoinDungeon + 1.25f;
+        playerAutoJoinList.Add(player);
+    }
+
+    internal void OnPlayerAutoJoinedRaid(PlayerController player)
+    {
+        lastAutoJoinRaid = Time.realtimeSinceStartup;
+        autoJoinRaidAnnouncement = lastAutoJoinDungeon + 1.25f;
+        playerAutoJoinList.Add(player);
+    }
+
+    internal async Task HandleRaidAutoJoin()
+    {
+        var autoJoinList = new List<Guid>();
+        var autoJoinPlayers = new List<PlayerController>();
+        var success = new List<PlayerController>();
+        var failed = new List<PlayerController>();
+        foreach (var player in Players.GetAllPlayers())
+        {
+            if (Raid.CanJoin(player) != RaidJoinResult.CanJoin)
+                continue;
+
+            if (player.Raid.AutoJoinCounter > 0)
+            {
+                player.Raid.AutoJoining = true;
+                autoJoinList.Add(player.Id);
+                autoJoinPlayers.Add(player);
+            }
+        }
+
+        var result = await RavenNest.Players.AutoJoinRaid(autoJoinList.ToArray());
+        if (result == null || result.Length == 0)
+        {
+            failed = autoJoinPlayers;
+        }
+        else
+        {
+            for (var i = 0; i < result.Length; ++i)
+            {
+                var playerResult = result[i];
+                var plr = autoJoinPlayers[i];
+                if (playerResult)
+                {
+                    Raid.Join(plr);
+                    success.Add(plr);
+                    if (plr.Raid.AutoJoinCounter != int.MaxValue)
+                    {
+                        plr.Raid.AutoJoinCounter--;
+                    }
+                }
+                else
+                {
+                    failed.Add(plr);
+                }
+            }
+        }
+        foreach (var plr in autoJoinPlayers)
+        {
+            plr.Raid.AutoJoining = false;
+        }
+
+        AnnounceAutoRaidJoin(success);
+
+        if (failed.Count > 0)
+        {
+            AnnounceAutoRaidJoinFailed(failed);
+        }
+    }
+
+    internal async Task HandleDungeonAutoJoin()
+    {
+        var autoJoinList = new List<Guid>();
+        var autoJoinPlayers = new List<PlayerController>();
+        var success = new List<PlayerController>();
+        var failed = new List<PlayerController>();
+        foreach (var player in Players.GetAllPlayers())
+        {
+            if (Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin)
+                continue;
+
+            if (player.Dungeon.AutoJoinCounter > 0)
+            {
+                player.Dungeon.AutoJoining = true;
+                autoJoinList.Add(player.Id);
+                autoJoinPlayers.Add(player);
+            }
+        }
+
+        var result = await RavenNest.Players.AutoJoinDungeon(autoJoinList.ToArray());
+        if (result == null || result.Length == 0)
+        {
+            failed = autoJoinPlayers;
+        }
+        else
+        {
+            for (var i = 0; i < result.Length; ++i)
+            {
+                var playerResult = result[i];
+                var plr = autoJoinPlayers[i];
+                if (playerResult)
+                {
+                    Dungeons.Join(plr);
+                    success.Add(plr);
+                    if (plr.Dungeon.AutoJoinCounter != int.MaxValue)
+                    {
+                        plr.Dungeon.AutoJoinCounter--;
+                    }
+                }
+                else
+                {
+                    failed.Add(plr);
+                }
+            }
+        }
+        foreach (var plr in autoJoinPlayers)
+        {
+            plr.Dungeon.AutoJoining = false;
+        }
+
+        AnnounceAutoDungeonJoin(success);
+
+        if (failed.Count > 0)
+        {
+            AnnounceAutoDungeonJoinFailed(failed);
+        }
+    }
+
+    private List<PlayerController> playerAutoJoinList = new List<PlayerController>();
 }
 
 public class IslandTaskCollection
@@ -2011,4 +2396,70 @@ public class IslandTask
 public class GameTime
 {
     public static float deltaTime;
+}
+
+public class SessionStats
+{
+    public bool Authenticated { get; set; }
+    public bool SessionStarted { get; set; }
+    public string TwitchUserName { get; set; }
+    public Version GameVersion { get; set; }
+    public float RealtimeSinceStartup { get; set; }
+    public int OnlinePlayerCount { get; set; }
+    public DateTime LastUpdatedUtc { get; set; }
+}
+
+public class VillageStats
+{
+    public string Name { get; set; }
+    public int Level { get; set; }
+    public int Tier { get; set; }
+    public ICollection<TownHouseExpBonus> BonusExp { get; set; }
+}
+
+public class TownHouseExpBonus
+{
+    public TownHouseSlotType SlotType { get; set; }
+    public float Bonus { get; set; }
+
+    public TownHouseExpBonus() { }
+    public TownHouseExpBonus(TownHouseSlotType slotType, float bonus)
+    {
+        SlotType = slotType;
+        Bonus = bonus;
+    }
+}
+public class RaidStats
+{
+    public int Counter { get; set; }
+    public bool Started { get; set; }
+    public int PlayersCount { get; set; }
+    public float SecondsLeft { get; set; }
+    public int BossHealthCurrent { get; set; }
+    public int BossHealthMax { get; set; }
+    public float BossHealthPercent { get; set; }
+    public int BossLevel { get; set; }
+}
+
+public class DungeonStats
+{
+    public int Counter { get; set; }
+    public bool Started { get; set; }
+    public int PlayersCount { get; set; }
+    public int PlayersLeft { get; set; }
+    public int EnemiesLeft { get; set; }
+    public int BossHealthCurrent { get; set; }
+    public int BossHealthMax { get; set; }
+    public float BossHealthPercent { get; set; }
+    public int BossLevel { get; set; }
+    public int ActivatedCount { get; set; }
+    public float Runtime { get; set; }
+}
+
+public class FerryStats
+{
+    public string Destination { get; set; }
+    public int PlayersCount { get; set; }
+    public int CaptainSailingLevel { get; set; }
+    public string CaptainName { get; set; }
 }

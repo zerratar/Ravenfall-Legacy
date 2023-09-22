@@ -20,8 +20,10 @@ public class RaidHandler : MonoBehaviour
     private FerryState ferryState;
     private TaskType previousTask;
     private string previousTaskArgument;
-    private bool autoJoining;
+
     private float autoJoinRequestTimeout;
+
+    public bool AutoJoining;
 
     public bool InRaid { get; private set; }
     public IslandController PreviousIsland => previousIsland;
@@ -44,7 +46,7 @@ public class RaidHandler : MonoBehaviour
             return;
         }
 
-        if (autoJoining)
+        if (AutoJoining)
         {
             return;
         }
@@ -54,7 +56,7 @@ public class RaidHandler : MonoBehaviour
             if (AutoJoinCounter > 0)
             {
                 // try join the raid if possible 
-                autoJoining = true;
+                AutoJoining = true;
                 RequestAutoJoinAsync();
             }
             else
@@ -125,6 +127,11 @@ public class RaidHandler : MonoBehaviour
 
     private async void RequestAutoJoinAsync()
     {
+        if (AutoJoining)
+        {
+            return;
+        }
+
         try
         {
             if (autoJoinRequestTimeout > 0)
@@ -139,11 +146,30 @@ public class RaidHandler : MonoBehaviour
             var result = await player.GameManager.RavenNest.Players.AutoJoinRaid(player.Id);
             if (result)
             {
-                AutoJoinCounter--;
                 player.GameManager.Raid.Join(player);
+                if (AutoJoinCounter != int.MaxValue)
+                {
+                    AutoJoinCounter--;
+                }
+
+                player.GameManager.OnPlayerAutoJoinedRaid(player);
+
+                //if (AutoJoinCounter > 0 && AutoJoinCounter != int.MaxValue)
+                //{
+                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the raid. You will join {autoJoinLeft} more.", AutoJoinCounter);
+                //}
+                //else if (AutoJoinCounter == int.MaxValue)
+                //{
+                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the raid.");
+                //}
+                //else
+                //{
+                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the raid. You will no longer automatically join any raids.");
+                //}
             }
             else
             {
+                player.GameManager.RavenBot.SendReply(player, "You've failed to automatically joined the raid. You either do not have enough coins or server did not respond.");
                 AutoJoinCounter = 0;
             }
         }
@@ -154,7 +180,7 @@ public class RaidHandler : MonoBehaviour
         }
         finally
         {
-            autoJoining = false;
+            AutoJoining = false;
         }
     }
 

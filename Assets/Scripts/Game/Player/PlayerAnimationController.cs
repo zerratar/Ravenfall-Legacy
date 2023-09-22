@@ -12,6 +12,10 @@ public class PlayerAnimationController : MonoBehaviour
     public bool IsMoving;
     private bool hasAnimator;
 
+    public float CastSpeedMultiplier = 1;
+    public float MovementSpeedMultiplier = 1;
+    public float AttackSpeedMultiplier = 1;
+
     // Use this for initialization
     void Start()
     {
@@ -38,6 +42,16 @@ public class PlayerAnimationController : MonoBehaviour
         {
             TriggerBored();
             idleTimer = 0f;
+        }
+
+        if (activeAnimator)
+        {
+            if (MovementSpeedMultiplier > 0)
+                activeAnimator.SetFloat("MovementSpeedMultiplier", MovementSpeedMultiplier);
+            if (CastSpeedMultiplier > 0)
+                activeAnimator.SetFloat("CastSpeedMultiplier", CastSpeedMultiplier);
+            if (AttackSpeedMultiplier > 0)
+                activeAnimator.SetFloat("AttackSpeedMultiplier", AttackSpeedMultiplier);
         }
     }
 

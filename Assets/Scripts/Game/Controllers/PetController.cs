@@ -102,8 +102,7 @@ public class PetController : MonoBehaviour
             IsGenericModel = true,
             GenericPrefab = "Pets/" + itemName.Replace(" ", ""),
             Level = 1,
-            RequiredCraftingLevel = 10000,
-            ShopSellPrice = 35000,
+            ShopSellPrice = 1000,
         };
 
         var resx = Resources.Load<GameObject>(itemRow.GenericPrefab);

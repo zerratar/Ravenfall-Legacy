@@ -61,6 +61,9 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     [SerializeField] private GameObject[] availableMonsterMeshes;
 
+    private StatsModifiers playerStatsModifiers = new StatsModifiers();
+    private ConcurrentDictionary<StatusEffectType, StatusEffect> statusEffects = new ConcurrentDictionary<StatusEffectType, StatusEffect>();
+
     private SyntyPlayerAppearance playerAppearance;
     private float actionTimer = 0f;
     private Skill lastTrainedSkill = Skill.Attack;
@@ -69,14 +72,6 @@ public class PlayerController : MonoBehaviour, IAttackable
     private DamageCounterManager damageCounterManager;
 
     private TaskType? lateGotoClosestType = null;
-
-    //private Statistics lastSavedStatistics;
-
-    private float outOfResourcesAlertTimer = 0f;
-
-
-    private float outOfResourcesAlertTime = 60f;
-    private int outOfResourcesAlertCounter;
 
     internal Transform attackTarget;
     internal object taskTarget;
@@ -281,6 +276,12 @@ public class PlayerController : MonoBehaviour, IAttackable
     internal DateTime LastSavedStateTime;
 
     private ScheduledAction activeScheduledAction;
+    private float healTimer;
+    private float healDuration;
+    private float lastHealTick;
+    private float lastUnstuckUsed;
+
+    public ScheduledAction ScheduledAction => activeScheduledAction;
 
     internal void InterruptAction()
     {
@@ -294,22 +295,27 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    internal async void BeginInterruptableAction(
-        Func<Task> action,
-        Action onInterrupt,
-        double actionLengthSeconds)
+    internal async void BeginInterruptableAction<TState>(
+        TState state,
+        Func<TState, Task> action,
+        Action<TState> onInterrupt,
+        double actionLengthSeconds,
+        string description = null,
+        object tag = null)
+        where TState : class
     {
         InterruptAction();
 
         if (actionLengthSeconds <= 0)
         {
             // execute immediately without interruption.
-            await action();
+            await action(state);
             return;
         }
 
         // create a timed action
-        this.activeScheduledAction = new ScheduledAction(action, onInterrupt, actionLengthSeconds);
+        this.activeScheduledAction = new ScheduledAction<TState>(
+            state, action, onInterrupt, actionLengthSeconds, description, tag);
     }
 
     internal void ClearTarget()
@@ -540,7 +546,6 @@ public class PlayerController : MonoBehaviour, IAttackable
                 last = corner;
             }
         }
-
     }
 
     void Update()
@@ -555,10 +560,16 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
+        UpdateActiveEffects();
 
         var schedule = activeScheduledAction;
         if (schedule != null)
         {
+            if (schedule.Interrupted)
+            {
+                activeScheduledAction = null;
+            }
+
             if (schedule.CanInvoke())
             {
                 activeScheduledAction = null;
@@ -654,22 +665,163 @@ public class PlayerController : MonoBehaviour, IAttackable
         //}
     }
 
+    private void ClearStatusEffects()
+    {
+        this.playerStatsModifiers.Reset();
+    }
+
+    private void UpdateActiveEffects()
+    {
+        ClearStatusEffects();
+        // clearing the effects first will just reset the player state, so if the
+        // active effect is still active later then it will be reapplied. Its just a simple way to avoid having to keep track on when to toggle on or off.
+
+        if (statusEffects.Count > 0)
+        {
+            var effects = statusEffects.Values.ToList();
+            foreach (var fx in effects)
+            {
+                if (fx.Expired)
+                {
+                    RemoveEffect(fx);
+                    continue;
+                }
+
+                if (UpdateEffect(fx))
+                {
+                    RemoveEffect(fx);
+                }
+            }
+        }
+
+        playerAnimations.CastSpeedMultiplier = playerStatsModifiers.CastSpeedMultiplier;
+        playerAnimations.AttackSpeedMultiplier = playerStatsModifiers.AttackSpeedMultiplier;
+        Movement.MovementSpeedMultiplier = playerAnimations.MovementSpeedMultiplier = playerStatsModifiers.MovementSpeedMultiplier;
+    }
+
+    private bool UpdateEffect(StatusEffect fx)
+    {
+        var now = DateTime.UtcNow;
+        //var elapsed = now - fx.LastUpdateUtc;
+        var timeDuration = fx.Effect.ExpiresUtc - fx.Effect.StartUtc;
+        var isFirstTime = fx.LastUpdateUtc == DateTime.MinValue;
+
+        fx.LastUpdateUtc = now;
+
+        // set effect, if healing over time then heal if elapsed time is >= 1 second. This is not perfect since it wont always heal the full amount
+        // but its better than nothing.
+        var effect = fx.Effect;
+        switch (effect.Type)
+        {
+            case StatusEffectType.HealOverTime:
+                var left = fx.Effect.ExpiresUtc - now;
+                healTimer = (float)left.TotalSeconds;
+                healDuration = (float)timeDuration.TotalSeconds;
+                return RegenerateHealth(ref healTimer, healDuration, effect.Amount);
+
+            case StatusEffectType.Heal:
+                // one time use, heal this player!
+                this.Heal((int)(this.Stats.Health.MaxLevel * effect.Amount));
+                return true;
+
+            case StatusEffectType.IncreasedStrength:
+                this.playerStatsModifiers.StrengthMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedDefense:
+                this.playerStatsModifiers.DefenseMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedAttackPower:
+                this.playerStatsModifiers.AttackPowerMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedMagicPower:
+                this.playerStatsModifiers.MagicPowerMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedHealingPower:
+                this.playerStatsModifiers.HealingPowerMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedRangedPower:
+                this.playerStatsModifiers.RangedPowerMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedExperienceGain:
+                this.playerStatsModifiers.ExpMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedCastSpeed:
+                this.playerStatsModifiers.CastSpeedMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedMovementSpeed:
+                this.playerStatsModifiers.MovementSpeedMultiplier = 1 + effect.Amount;
+                return false;
+
+            case StatusEffectType.IncreasedDodge:
+                this.playerStatsModifiers.DodgeChance = 1 + effect.Amount;
+                return false;
+        }
+        return true;
+    }
+
+    private bool RegenerateHealth(ref float healTimer, float healDuration, float effectAmount)
+    {
+        if (healTimer <= 0)
+        {
+            return true;
+        }
+
+        var fullAmount = this.Stats.Health.MaxLevel * effectAmount;
+        var healAmount = 0f;
+        if (lastHealTick <= 0)
+        {
+            lastHealTick = healTimer;
+        }
+
+        var finished = false;
+        if (healTimer < 1)
+        {
+            var percentLeft = healTimer / healDuration;
+            healAmount = fullAmount * percentLeft;
+            finished = true;
+        }
+        else
+        {
+            var delta = lastHealTick - healTimer;
+            if (delta > 1.5f)
+            {
+                var percent = delta / healDuration;
+                healAmount = fullAmount * percent;
+            }
+        }
+
+        var amount = Mathf.FloorToInt(healAmount);
+        if (amount > 0)
+        {
+            this.Heal(amount);
+            lastHealTick = healTimer;
+        }
+
+        return finished;
+    }
+
+    private void RemoveEffect(StatusEffect fx)
+    {
+        // if we have visual effects bound to this, remove it.
+        // then delete it from the activeEffects dict
+        statusEffects.TryRemove(fx.Effect.Type, out _);
+        lastHealTick = -1;
+    }
+
     private void HideCombinedMesh()
     {
         var visibleMesh = this.Appearance.GetCombinedMesh();
         if (visibleMesh)
             visibleMesh.gameObject.SetActive(false);
     }
-
-    //private void HandleRested()
-    //{
-    //    // this will be updated from the server every 1s. but to get a smoother transition
-    //    // we do this locally until we get the server update.
-    //    if (!this.Onsen.InOnsen && Rested.RestedTime > 0)
-    //    {
-    //        Rested.RestedTime -= GameTime.deltaTime;
-    //    }
-    //}
 
     private void ResetFullBodySkin()
     {
@@ -735,6 +887,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             {
                 regenTimer += GameTime.deltaTime;
             }
+
             if (regenTimer >= RegenTime)
             {
                 var amount = this.Stats.Health.MaxLevel * RegenRate * GameTime.deltaTime;
@@ -743,13 +896,11 @@ public class PlayerController : MonoBehaviour, IAttackable
                 if (add > 0)
                 {
                     Stats.Health.CurrentValue = Mathf.Min(this.Stats.Health.MaxLevel, Stats.Health.CurrentValue + add);
-
+                    regenAmount -= add;
                     if (healthBar && healthBar != null)
                     {
                         healthBar.UpdateHealth();
                     }
-
-                    regenAmount -= add;
                 }
 
                 if (Stats.Health.CurrentValue == Stats.Health.MaxLevel)
@@ -1028,16 +1179,20 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     internal void UpdateTrainingFlags()
     {
-        UseLongRange = HasTaskArgument("ranged") || HasTaskArgument("magic");
-        TrainingRanged = HasTaskArgument("ranged");
-        TrainingMelee = HasTaskArgument("all") || HasTaskArgument("atk") || HasTaskArgument("att") || HasTaskArgument("def") || HasTaskArgument("str");
-        TrainingAll = HasTaskArgument("all");
-        TrainingStrength = HasTaskArgument("str");
-        TrainingDefense = HasTaskArgument("def");
-        TrainingAttack = HasTaskArgument("atk") || HasTaskArgument("att");
-        TrainingMagic = HasTaskArgument("magic");
-        TrainingHealing = HasTaskArgument("heal") || HasTaskArgument("healing");
+        TrainingRanged = ActiveSkill == Skill.Ranged || HasTaskArgument("ranged");
+        TrainingMagic = ActiveSkill == Skill.Magic || HasTaskArgument("magic");
+        TrainingHealing = ActiveSkill == Skill.Healing || HasTaskArgument("heal") || HasTaskArgument("healing");
+        UseLongRange = TrainingRanged || TrainingMagic || TrainingHealing;
+        TrainingAll = ActiveSkill == Skill.Melee || ActiveSkill == Skill.Health || HasTaskArgument("all");
+        TrainingStrength = ActiveSkill == Skill.Strength || HasTaskArgument("str");
+        TrainingDefense = ActiveSkill == Skill.Defense || HasTaskArgument("def");
+        TrainingAttack = ActiveSkill == Skill.Attack || HasTaskArgument("atk") || HasTaskArgument("att");
+
+        TrainingMelee = TrainingAll || TrainingStrength || TrainingDefense || TrainingAttack;
+
         TrainingResourceChangingSkill =
+            ActiveSkill == Skill.Woodcutting || ActiveSkill == Skill.Farming || ActiveSkill == Skill.Crafting ||
+            ActiveSkill == Skill.Fishing || ActiveSkill == Skill.Gathering || ActiveSkill == Skill.Cooking || ActiveSkill == Skill.Mining ||
             HasTaskArgument("wood") || HasTaskArgument("farm") || HasTaskArgument("craft")
             || HasTaskArgument("woodcutting") || HasTaskArgument("mining")
             || HasTaskArgument("fishing") || HasTaskArgument("cooking")
@@ -1105,7 +1260,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (item.Type == ItemType.Shield)
         {
             var thw = Inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedSword); // we will get either.
-            if (thw != null && (thw.Type == ItemType.TwoHandedAxe || thw.Type == ItemType.TwoHandedSword))
+            if (thw != null && (thw.Type == ItemType.TwoHandedAxe || thw.Type == ItemType.TwoHandedSword || thw.Type == ItemType.TwoHandedSpear))
             {
                 if (reportShieldWarning)
                 {
@@ -1115,7 +1270,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
-        if (item.Type == ItemType.OneHandedAxe || item.Type == ItemType.OneHandedMace || item.Type == ItemType.OneHandedSword)
+        if (item.Type == ItemType.OneHandedAxe || item.Type == ItemType.OneHandedSword)
         {
             var eqShield = Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Shield);
             if (eqShield == null)
@@ -1134,13 +1289,17 @@ public class PlayerController : MonoBehaviour, IAttackable
         var equipped = Inventory.Equip(item);
         if (!equipped)
         {
+            var reqLevels = new List<string>();
             var requirement = "You require level ";
-            if (item.RequiredAttackLevel > 0) requirement += item.RequiredAttackLevel + " Attack.";
-            if (item.RequiredDefenseLevel > 0) requirement += item.RequiredAttackLevel + " Defense.";
-            if (item.RequiredMagicLevel > 0) requirement += item.RequiredAttackLevel + " Magic/Healing.";
-            if (item.RequiredRangedLevel > 0) requirement += item.RequiredAttackLevel + " Ranged.";
-            if (item.RequiredSlayerLevel > 0) requirement += item.RequiredAttackLevel + " Slayer.";
-            GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement);
+            if (item.RequiredAttackLevel > Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
+            if (item.RequiredDefenseLevel > Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
+            if (item.RequiredMagicLevel > Stats.Magic.Level || item.RequiredMagicLevel > Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
+            if (item.RequiredRangedLevel > Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
+            if (item.RequiredSlayerLevel > Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
+            if (reqLevels.Count > 0)
+            {
+                GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
+            }
             return;
         }
     }
@@ -1167,14 +1326,14 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (item.Type == ItemType.Shield)
         {
             var thw = Inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedSword); // we will get either.
-            if (thw != null && (thw.Type == ItemType.TwoHandedAxe || thw.Type == ItemType.TwoHandedSword))
+            if (thw != null && (thw.Type == ItemType.TwoHandedAxe || thw.Type == ItemType.TwoHandedSword || thw.Type == ItemType.TwoHandedSpear))
             {
                 GameManager.RavenBot.SendReply(this, Localization.EQUIP_SHIELD_AND_TWOHANDED);
                 return false;
             }
         }
 
-        if (item.Type == ItemType.OneHandedAxe || item.Type == ItemType.OneHandedMace || item.Type == ItemType.OneHandedSword)
+        if (item.Type == ItemType.OneHandedAxe || item.Type == ItemType.OneHandedSword)
         {
             var eqShield = Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Shield);
             if (eqShield == null)
@@ -1193,13 +1352,17 @@ public class PlayerController : MonoBehaviour, IAttackable
         var equipped = Inventory.EquipByItemId(item.Id);
         if (!equipped)
         {
+            var reqLevels = new List<string>();
             var requirement = "You require level ";
-            if (item.RequiredAttackLevel > 0) requirement += item.RequiredAttackLevel + " Attack.";
-            if (item.RequiredDefenseLevel > 0) requirement += item.RequiredAttackLevel + " Defense.";
-            if (item.RequiredMagicLevel > 0) requirement += item.RequiredAttackLevel + " Magic/Healing.";
-            if (item.RequiredRangedLevel > 0) requirement += item.RequiredAttackLevel + " Ranged.";
-            if (item.RequiredSlayerLevel > 0) requirement += item.RequiredAttackLevel + " Slayer.";
-            GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement);
+            if (item.RequiredAttackLevel > Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
+            if (item.RequiredDefenseLevel > Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
+            if (item.RequiredMagicLevel > Stats.Magic.Level || item.RequiredMagicLevel > Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
+            if (item.RequiredRangedLevel > Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
+            if (item.RequiredSlayerLevel > Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
+            if (reqLevels.Count > 0)
+            {
+                GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
+            }
             return false;
         }
 
@@ -1330,6 +1493,9 @@ public class PlayerController : MonoBehaviour, IAttackable
                 Rested.ExpBoost = 2;
             }
 
+            Dungeon.AutoJoinCounter = player.State.AutoJoinDungeonCounter;
+            Raid.AutoJoinCounter = player.State.AutoJoinRaidCounter;
+
             var setTask = true;
             if (hasGameManager)
             {
@@ -1390,7 +1556,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                     {
                         //setTask = false;
                         joinOnsenAfterInitialize = true;
-                        // Attach player to the onsen...                                        
+                        // Attach player to the onsen...
                     }
                 }
             }
@@ -1414,6 +1580,8 @@ public class PlayerController : MonoBehaviour, IAttackable
             itemManager = FindObjectOfType<ItemManager>();
         }
 
+        ApplyStatusEffects(player.StatusEffects);
+
         this.Appearance.player = this;
         this.Appearance.gameManager = GameManager;
         Appearance.SetAppearance(player.Appearance, () =>
@@ -1435,17 +1603,18 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void SetTask(TaskType task, string arg = null)
     {
-        SetTask(task.ToString(), arg);
+        // if our active scheduled action is to brew|craft|cook etc
+        // and we set a new task that is the same as the target action
+        // do not interrupt, otherwise interrupt.
 
-        //if (task != TaskType.Fighting)
-        //{
-        //    ActiveSkill = SkillUtilities.ParseSkill(this.CurrentTaskName);
-        //}
-        //else if (!string.IsNullOrEmpty(arg))
-        //{
-        //    ActiveSkill = SkillUtilities.ParseSkill(arg);
-        //}
-        //this.SetTaskArgument(arg);
+        if (activeScheduledAction != null &&
+            activeScheduledAction.Tag != null &&
+            (TaskType)activeScheduledAction.Tag != task)
+        {
+            InterruptAction();
+        }
+
+        SetTask(task.ToString(), arg);
     }
 
     public void SetTask(string targetTaskName, string args = null)
@@ -1456,9 +1625,36 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         targetTaskName = targetTaskName.Trim();
+        var t = targetTaskName.ToLower();
+
+        // this needs to be fixed in the bot, but lets allow it for now.
+        if (t.StartsWith("brewing"))
+        {
+            targetTaskName = "Alchemy";
+        }
+
         if (!Enum.TryParse<TaskType>(targetTaskName, true, out var type) || type == TaskType.None)
         {
-            return;
+            var score = int.MaxValue;
+
+            foreach (var tt in Enum.GetValues(typeof(TaskType)).OfType<TaskType>())
+            {
+                var s = ItemResolver.LevenshteinDistance(targetTaskName.ToLower(), tt.ToString().ToLower());
+                if (s < score)
+                {
+                    score = s;
+                    type = tt;
+                }
+            }
+
+            if (type == TaskType.None || score > 3)
+            {
+                if (score > 3)
+                {
+                    GameManager.RavenBot.SendReply(this, "{skillName} is not a trainable skill. Did you mean {suggestion}?", targetTaskName, type.ToString());
+                }
+                return;
+            }
         }
 
         if (string.IsNullOrEmpty(args))
@@ -1507,6 +1703,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         var isCombatSkill = skill.IsCombatSkill();
 
+
+
         if (Raid.InRaid && !isCombatSkill)
         {
             Game.Raid.Leave(this);
@@ -1515,6 +1713,11 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (Dungeon.InDungeon && !isCombatSkill)
         {
             return;
+        }
+
+        if (ActiveSkill.IsCombatSkill() && !isCombatSkill)
+        {
+            Equipment.HideEquipments();
         }
 
         ActiveSkill = skill;
@@ -1600,6 +1803,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         Movement.Lock();
         InCombat = false;
 
+        Equipment.HideEquipments();
+
         if (lastTrainedSkill != Skill.Cooking)
         {
             lastTrainedSkill = Skill.Cooking;
@@ -1625,6 +1830,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         InCombat = false;
 
         //Equipment.ShowHammer();
+        Equipment.HideEquipments();
+
         if (lastTrainedSkill != Skill.Alchemy)
         {
             lastTrainedSkill = Skill.Alchemy;
@@ -1757,6 +1964,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         InCombat = false;
         Movement.Lock();
 
+        Equipment.HideEquipments();
         lastTrainedSkill = Skill.Gathering;
         playerAnimations.Gather(gather.PlayKneelingAnimation);
 
@@ -1810,6 +2018,11 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!target.Transform || target.Transform == null)
         {
             return false;
+        }
+
+        if (this.Stats.IsDead)
+        {
+            return true;
         }
 
         Target = target.Transform;
@@ -1868,13 +2081,13 @@ public class PlayerController : MonoBehaviour, IAttackable
         switch (attackType)
         {
             case AttackType.Healing:
-                return healingAnimationTime;
+                return healingAnimationTime / playerStatsModifiers.CastSpeedMultiplier;
             case AttackType.Ranged:
-                return rangeAnimationTime;
+                return rangeAnimationTime / playerStatsModifiers.AttackSpeedMultiplier;
             case AttackType.Magic:
-                return magicAnimationTime;
+                return magicAnimationTime / playerStatsModifiers.CastSpeedMultiplier;
             default:
-                return attackAnimationTime;
+                return attackAnimationTime / playerStatsModifiers.AttackSpeedMultiplier;
         }
     }
 
@@ -1897,7 +2110,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
             var maxHeal = GameMath.MaxHit(Stats.Healing.MaxLevel, EquipmentStats.BaseMagicPower);
             var heal = CalculateDamage(target);
-            if (!target.Heal(this, heal))
+            if (!target.Heal(heal))
                 return true;
 
             // allow for some variation in gains based on how high you heal.
@@ -2100,7 +2313,9 @@ public class PlayerController : MonoBehaviour, IAttackable
             ? ((int)((GetSkill(Skill.Attack).Level + GetSkill(Skill.Defense).Level + GetSkill(Skill.Strength).Level) / 3f)) + 1
             : GetSkill(skill).Level + 1;
 
-        return GameMath.Exp.CalculateExperience(nextLevel, skill, factor, GetExpMultiplier(skill), GetMultiplierFactor());
+        var xp = GameMath.Exp.CalculateExperience(nextLevel, skill, factor, GetExpMultiplier(skill), GetMultiplierFactor());
+
+        return xp * Mathf.Max(1, playerStatsModifiers.ExpMultiplier);
     }
 
     public void AddExp(Skill skill, double factor = 1)
@@ -2144,30 +2359,6 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             CelebrateSkillLevelUp(skill, atkLvls);
         }
-    }
-
-    public void RemoveResources(RavenNest.Models.Item item)
-    {
-        if (item.WoodCost > 0)
-            RemoveResource(Resource.Woodcutting, item.WoodCost);
-
-        if (item.OreCost > 0)
-            RemoveResource(Resource.Mining, item.OreCost);
-    }
-
-    public void RemoveResources(RavenNest.Models.Resources item)
-    {
-        if (item.Wood > 0)
-            RemoveResource(Resource.Woodcutting, item.Wood);
-
-        if (item.Fish > 0)
-            RemoveResource(Resource.Fishing, item.Fish);
-
-        if (item.Wheat > 0)
-            RemoveResource(Resource.Farming, item.Wheat);
-
-        if (item.Ore > 0)
-            RemoveResource(Resource.Mining, item.Ore);
     }
 
     public void RemoveResource(Resource resource, double amount)
@@ -2293,28 +2484,11 @@ public class PlayerController : MonoBehaviour, IAttackable
                     if (reason == TaskExecutionStatus.OutOfRange)
                         SetDestination(GetTaskTargetPosition(taskTarget));
 
-                    if (reason == TaskExecutionStatus.InsufficientResources)
-                    {
-                        outOfResourcesAlertTimer -= GameTime.deltaTime;
-                        if (outOfResourcesAlertTimer <= 0f)
-                        {
-                            Shinobytes.Debug.LogWarning(PlayerName + " is out of resources and won't gain any crafting exp.");
-
-                            var message = lastTrainedSkill == Skill.Cooking
-                                ? "You're out of resources, you wont gain any cooking exp. Use !train farming or !train fishing to get some resources."
-                                : "You're out of resources, you wont gain any crafting exp. Use !train woodcutting or !train mining to get some resources.";
-
-                            GameManager.RavenBot.SendReply(this, message);
-                            outOfResourcesAlertTimer = ++outOfResourcesAlertCounter > 3 ? outOfResourcesAlertTime * 10F : outOfResourcesAlertTime;
-                        }
-                    }
                     return;
                 }
 
                 if (Chunk.ExecuteTask(this, taskTarget))
                 {
-                    outOfResourcesAlertCounter = 0;
-                    outOfResourcesAlertTimer = 0f;
                     return;
                 }
             }
@@ -2336,12 +2510,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
-        if (Chunk.ExecuteTask(this, taskTarget))
-        {
-            outOfResourcesAlertCounter = 0;
-            outOfResourcesAlertTimer = 0f;
-            return;
-        }
+        Chunk.ExecuteTask(this, taskTarget);
     }
 
     private Vector3 GetTaskTargetPosition(object obj)
@@ -2418,7 +2587,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         Attackers.Clear();
     }
 
-    public bool Heal(IAttackable healer, int amount)
+    public bool Heal(int amount)
     {
         if (!transform || transform == null)
             return false;
@@ -2608,7 +2777,12 @@ public class PlayerController : MonoBehaviour, IAttackable
         hasQueuedItemAdd = queuedItemAdd.Count > 0;
     }
 
-    public void UpdateEquipmentEffect(List<GameInventoryItem> equipped)
+    public void UpdateEquipmentEffect()
+    {
+        UpdateEquipmentEffect(Inventory.Equipped);
+    }
+
+    public void UpdateEquipmentEffect(IReadOnlyList<GameInventoryItem> equipped)
     {
         EquipmentStats.BaseArmorPower = 0;
         EquipmentStats.BaseWeaponAim = 0;
@@ -2745,67 +2919,79 @@ public class PlayerController : MonoBehaviour, IAttackable
     }
 
 
-    internal void Unstuck()
+    internal bool Unstuck()
     {
-        // if we are in a raid, teleport to the spawnposition of the island the player is on.
-        // this could potentially be improved by teleporting to the spawnposition of the raid instead
-        if (Raid.InRaid)
+        var now = Time.realtimeSinceStartup;
+        if (now - lastUnstuckUsed < 60)
         {
-            this.SetPosition(this.Island.SpawnPosition);
-            return;
+            return false;
         }
 
-        // if we are in a dungeon, teleport to the spawnposition of the dungeon
-        if (Dungeon.InDungeon)
+        try
         {
-            this.SetPosition(Dungeon.SpawnPosition);
-            return;
-        }
-
-        // if we are in a duel, interrupt the duel
-        if (Duel.InDuel)
-        {
-            this.Duel.Interrupt();
-            return;
-        }
-
-        // if the player is stuck on the war island, teleport to home
-        if (Island && Island.AllowRaidWar && !StreamRaid.InWar)
-        {
-            var homeIsland = GameManager.Islands.All.FirstOrDefault(x => x.Identifier == "home");
-            if (homeIsland)
+            // if we are in a raid, teleport to the spawnposition of the island the player is on.
+            // this could potentially be improved by teleporting to the spawnposition of the raid instead
+            if (Raid.InRaid)
             {
-                SetPosition(homeIsland.SpawnPosition);
-                Island = homeIsland;
-                return;
+                this.SetPosition(this.Island.SpawnPosition);
+                return true;
             }
-        }
 
-        // if we are not in an onsen, dungeon and not on the ferry but we are playing a moving animation
-        // then we are teleported to the spawnposition of the current island we are on.
-        // if no island can be detected, then telepor to home island.
-        // (this could be improved to take closest island into consideration)
-        if (!Onsen.InOnsen && !Dungeon.InDungeon && Animations.IsMoving && !Ferry.OnFerry)
+            // if we are in a dungeon, teleport to the spawnposition of the dungeon
+            if (Dungeon.InDungeon)
+            {
+                this.SetPosition(Dungeon.SpawnPosition);
+                return true;
+            }
+
+            // if we are in a duel, interrupt the duel
+            if (Duel.InDuel)
+            {
+                this.Duel.Interrupt();
+                this.SetPosition(this.Island.SpawnPosition);
+                return true;
+            }
+
+            // if the player is stuck on the war island, teleport to home
+            if (Island && Island.AllowRaidWar && !StreamRaid.InWar)
+            {
+                var homeIsland = GameManager.Islands.All.FirstOrDefault(x => x.Identifier == "home");
+                if (homeIsland)
+                {
+                    SetPosition(homeIsland.SpawnPosition);
+                    Island = homeIsland;
+                    return true;
+                }
+            }
+
+            if (Ferry.OnFerry)
+            {
+                this.transform.localPosition = Vector3.zero;
+                this.transform.localRotation = Quaternion.identity;
+                return true;
+            }
+
+            // if we are not in an onsen, dungeon and not on the ferry but we are playing a moving animation
+            // then we are teleported to the spawnposition of the current island we are on.
+            // if no island can be detected, then telepor to home island.
+            // (this could be improved to take closest island into consideration)
+            if (!Onsen.InOnsen)
+            {
+                var i = Island;
+                if (!i) i = this.GameManager.Islands.FindPlayerIsland(this);
+                if (!i) i = GameManager.Islands.All.OrderBy(x => Vector3.Distance(x.SpawnPositionTransform.position, this.transform.position)).FirstOrDefault();
+                if (!i) i = GameManager.Islands.All.FirstOrDefault(x => x.Identifier == "home");
+                this.SetPosition(i.SpawnPosition);
+                return true;
+            }
+
+            Movement.AdjustPlayerPositionToNavmesh();
+            return true;
+        }
+        finally
         {
-            var i = Island;
-            if (!i) i = GameManager.Islands.All.FirstOrDefault(x => x.Identifier == "home");
-            this.SetPosition(i.SpawnPosition);
-            return;
+            lastUnstuckUsed = Time.realtimeSinceStartup;
         }
-
-        // if we have a known island, character is not moving but playing moving animation
-        // and the real island we are on is not the same island the character thinks its on
-        // teleport to the island it thinks its on.
-        if ((Island && this.GameManager.Islands.FindPlayerIsland(this) != Island) ||
-            Island && agent && agent.isActiveAndEnabled
-            && agent.isOnNavMesh && Movement.IdleTime > 2f
-            && !Movement.IsMoving && Animations.IsMoving)
-        {
-            this.SetPosition(Island.SpawnPosition);
-            return;
-        }
-
-        Movement.AdjustPlayerPositionToNavmesh();
     }
 
     public void Destroy()
@@ -2816,6 +3002,87 @@ public class PlayerController : MonoBehaviour, IAttackable
             isDestroyed = true;
         }
     }
+
+    public int ApplyInstantHealEffect(CharacterStatusEffect effect)
+    {
+        var healAmount = Mathf.FloorToInt(effect.Amount * this.Stats.Health.MaxLevel);
+        this.Heal(healAmount);
+        return healAmount;
+    }
+
+    public void ApplyStatusEffects(IReadOnlyList<CharacterStatusEffect> effects)
+    {
+        foreach (var fx in effects)
+        {
+            ApplyStatusEffect(fx);
+        }
+        UpdateEquipmentEffect();
+    }
+
+    public void ApplyStatusEffect(CharacterStatusEffect effect)
+    {
+        this.statusEffects[effect.Type] = new StatusEffect { Effect = effect };
+    }
+
+    internal IReadOnlyList<StatusEffect> GetStatusEffects()
+    {
+        return statusEffects.Values.AsList();
+    }
+
+    public StatsModifiers GetModifiers() => playerStatsModifiers;
+}
+
+public class StatusEffect
+{
+    public CharacterStatusEffect Effect;
+
+    public float Amount => Effect.Amount;
+    public DateTime ExpiresUtc => Effect.ExpiresUtc;
+    public StatusEffectType Type => Effect.Type;
+
+    public DateTime LastUpdateUtc;
+    public bool Expired =>
+        ((Effect.Type == StatusEffectType.TeleportToIsland || Effect.Type == StatusEffectType.Heal) && LastUpdateUtc > DateTime.MinValue)
+        || DateTime.UtcNow >= Effect.ExpiresUtc;
+}
+
+public class StatsModifiers
+{
+    //public float HealingTicksLeft;
+
+    public StatsModifiers()
+    {
+        Reset();
+    }
+
+    public float DodgeChance;
+    public float ExpMultiplier;
+    public float MovementSpeedMultiplier;
+    public float AttackSpeedMultiplier;
+    public float CastSpeedMultiplier;
+    public float StrengthMultiplier;
+    public float DefenseMultiplier;
+    public float RangedPowerMultiplier;
+    public float MagicPowerMultiplier;
+    public float HealingPowerMultiplier;
+    public float AttackPowerMultiplier;
+    public float HitChanceMultiplier;
+
+    public void Reset()
+    {
+        DodgeChance = 0;
+        ExpMultiplier = 1;
+        MovementSpeedMultiplier = 1;
+        AttackSpeedMultiplier = 1;
+        CastSpeedMultiplier = 1;
+        StrengthMultiplier = 1;
+        DefenseMultiplier = 1;
+        RangedPowerMultiplier = 1;
+        MagicPowerMultiplier = 1;
+        HealingPowerMultiplier = 1;
+        AttackPowerMultiplier = 1;
+        HitChanceMultiplier = 1;
+    }
 }
 
 public class CharacterRestedState
@@ -2824,6 +3091,7 @@ public class CharacterRestedState
     public double RestedPercent;
     public double RestedTime;
     public double CombatStatsBoost;
+    public const double RestedTimeMax = 2 * 60 * 60; // 2 hours (Seconds)
 }
 
 public class AsyncPlayerRequest

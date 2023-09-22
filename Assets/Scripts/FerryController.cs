@@ -64,52 +64,28 @@ public class FerryController : MonoBehaviour
         RegisterStreamLabels();
     }
 
+    public string GetDestination()
+    {
+        if (PathIndex == 0) return "Away";
+        if (PathIndex == 1) return "Ironhill";
+        if (PathIndex == 2) return "Kyo";
+        if (PathIndex == 3) return "Heim";
+        if (PathIndex == 5) return "Atria";
+        if (PathIndex == 6) return "Eldara";
+        if (PathIndex == 7) return "Home";
+        return null;
+    }
+
     private void RegisterStreamLabels()
     {
-        this.ferryStateLabel = gameManager.StreamLabels.Register("ferry-state", () =>
+        this.ferryStateLabel = gameManager.StreamLabels.RegisterText("ferry-state", () =>
         {
             if (state == FerryState.Docked)
             {
                 return "Currently docked at " + this.Island?.Identifier;
             }
 
-            var destination = "";
-
-            if (PathIndex == 0)
-            {
-                destination = "Away";
-            }
-
-            if (PathIndex == 1)
-            {
-                destination = "Ironhill";
-            }
-
-            if (PathIndex == 2)
-            {
-                destination = "Kyo";
-            }
-
-            if (PathIndex == 3)
-            {
-                destination = "Heim";
-            }
-
-            if (PathIndex == 5)
-            {
-                destination = "Atria";
-            }
-
-            if (PathIndex == 6)
-            {
-                destination = "Eldara";
-            }
-
-
-            if (PathIndex == 7)
-            {
-                destination = "Home";
-            }
+            var destination = GetDestination();
 
             if (string.IsNullOrEmpty(destination))
             {
@@ -165,6 +141,11 @@ public class FerryController : MonoBehaviour
     {
         return transform && (transform == playerPositions[0] || transform.position == playerPositions[0].position);
     }
+    
+    public int GetPlayerCount()
+    {
+        return playerPositions.Sum(x => x.childCount);
+    }
 
     public Transform GetNextPlayerPoint(bool includeCaptainPosition = true)
     {
@@ -207,7 +188,7 @@ public class FerryController : MonoBehaviour
     private void Update()
     {
         if (!isVisible) return;
-        
+
         if (Captain && playerPositions[0].childCount == 0)
         {
             SetCaptain(null);
@@ -238,7 +219,7 @@ public class FerryController : MonoBehaviour
 
                 var ray = activeCamera.ScreenPointToRay(Input.mousePosition);
                 var hitCount = Physics.RaycastNonAlloc(ray, raycastHits);
-                for(var i = 0; i < hitCount; ++i)
+                for (var i = 0; i < hitCount; ++i)
                 {
                     var hit = raycastHits[i];
 

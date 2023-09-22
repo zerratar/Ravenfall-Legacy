@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RavenNest.Models;
+using static GameMath;
 
 namespace RavenNest.SDK.Endpoints
 {
@@ -126,18 +127,26 @@ namespace RavenNest.SDK.Endpoints
                 using (var resStream = response.GetResponseStream())
                 using (var reader = new StreamReader(resStream))
                 {
-                    if (((HttpWebResponse)response).StatusCode == HttpStatusCode.Forbidden)
+                    var r = ((HttpWebResponse)response);
+
+                    var responseData = await reader.ReadToEndAsync();
+
+                    if (r.StatusCode == HttpStatusCode.Forbidden)
                     {
                         if (throwOnError) throw new Exception("Request returned status code Forbidden");
                         return default(TResult);
                     }
-
+                    else if (r.StatusCode != HttpStatusCode.OK)
+                    {
+#if UNITY_EDITOR
+                        Shinobytes.Debug.LogError(target + " request returned non OK status code: " + r.StatusCode + ", data: " + responseData);
+#endif
+                    }
                     if (typeof(TResult) == typeof(object))
                     {
                         return default(TResult);
                     }
 
-                    var responseData = await reader.ReadToEndAsync();
                     return JsonConvert.DeserializeObject<TResult>(responseData);
                 }
             }

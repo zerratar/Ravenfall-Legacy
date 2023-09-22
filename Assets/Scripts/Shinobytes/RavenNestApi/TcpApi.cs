@@ -9,6 +9,8 @@ using System.Threading;
 using Shinobytes.Linq;
 using System.Numerics;
 using Skill = RavenNest.Models.Skill;
+using RavenNest.Models;
+
 namespace RavenNest.SDK
 {
     public class TcpApi : IDisposable
@@ -353,7 +355,6 @@ namespace RavenNest.SDK
 
                     var skill = player.GetActiveSkillStat();
                     var isTraining = skill != null;
-
                     var expPerHour = 0L;
 
                     // temporary work-around for overflowing exp per hour.
@@ -370,12 +371,15 @@ namespace RavenNest.SDK
                         }
                     }
 
+                    update.TaskArgument = player.taskArgument;
                     update.TrainingSkillIndex = isTraining ? skill.Index : -1;
                     update.ExpPerHour = isTraining ? expPerHour : 0L;
                     update.EstimatedTimeForLevelUp = isTraining ? skill.GetEstimatedTimeToLevelUp() : DateTime.MaxValue;//GetEstimatedTimeForLevelUp(update.ExpPerHour, skill.Level, skill.Experience) : DateTime.MaxValue;
                     update.Health = (short)player.Stats.Health.CurrentValue;
                     update.Island = island;
                     update.State = state;
+                    update.AutoJoinDungeonCounter = player.Dungeon.AutoJoinCounter;
+                    update.AutoJoinRaidCounter = player.Raid.AutoJoinCounter;
                     update.X = (short)position.x;
                     update.Y = (short)position.y;
                     update.Z = (short)position.z;
@@ -442,6 +446,7 @@ namespace RavenNest.SDK
             var now = DateTime.UtcNow;
             if (a.State != b.State
                 || a.TrainingSkillIndex != b.TrainingSkillIndex
+                || a.TaskArgument != b.TaskArgument
                 || a.Health != b.Health
                 || a.Island != b.Island
                 || Distance(a.X, a.Y, a.Z, b.X, b.Y, b.Z) >= 3f
@@ -681,7 +686,7 @@ namespace RavenNest.SDK
             return result.ToArray();
         }
 
-        private static (RavenNest.Models.TcpApi.Island, UnityEngine.Vector3) GetPosition(PlayerController player)
+        private static (RavenNest.Models.Island, UnityEngine.Vector3) GetPosition(PlayerController player)
         {
             //var islandValue = Island.Ferry;
 

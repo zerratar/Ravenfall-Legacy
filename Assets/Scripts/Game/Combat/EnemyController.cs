@@ -74,6 +74,9 @@ public class EnemyController : MonoBehaviour, IAttackable
     float showDebugInfoTime;
 
     public PlayerController TargetPlayer;
+    private StatsModifiers statsModifiers = new StatsModifiers();
+    public StatsModifiers GetModifiers() => statsModifiers;
+
 
     [Button("Adjust Placement")]
     public void AdjustPlacement()
@@ -427,7 +430,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         //    return;
         //}
 
-        if (dist <= attackRange)
+        if (dist <= attackRange * 1.05f) // add some margin
         {
             // we can reach our target
             Lock();
@@ -556,7 +559,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         AttackerNames.Clear();
         Attackers.Clear();
     }
-    public bool Heal(IAttackable attacker, int damage)
+    public bool Heal(int damage)
     {
         return false;
     }
@@ -704,6 +707,11 @@ public class EnemyController : MonoBehaviour, IAttackable
             float aggro = 0;
             if (attacker != null)
             {
+                if (IsRaidBoss)
+                {
+                    raidBossController.Activate();
+                }
+
                 var attackerName = attacker.Name;
                 if (AttackerNames.Add(attackerName))
                 {

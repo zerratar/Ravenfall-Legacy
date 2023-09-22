@@ -11,7 +11,6 @@ public class DungeonController : MonoBehaviour
     [SerializeField] private GameObject dungeonContainer;
     [SerializeField] private DungeonManager dungeonManager;
     [SerializeField] private GameManager gameManager;
-    [SerializeField] private ItemDropHandler itemDropHandler;
     [SerializeField] private Transform startingPoint;
     [SerializeField] private Transform bossSpawnPoint;
     [SerializeField] private int itemRewardCount = 1;
@@ -39,8 +38,6 @@ public class DungeonController : MonoBehaviour
     public Vector3 BossSpawnPoint => bossSpawnPoint.position;
     public Vector3 StartingPoint => startingPoint.position;
 
-    public ItemDropHandler ItemDrops => itemDropHandler;
-
     public DungeonRoomController BossRoom => Rooms.FirstOrDefault(x => x.RoomType == DungeonRoomType.Boss);
     public DungeonRoomController Room => currentRoom;
     public DungeonRoomController[] Rooms => ((rooms == null || rooms.Length == 0) ? (rooms = GetRooms()) : rooms);
@@ -52,8 +49,6 @@ public class DungeonController : MonoBehaviour
     public bool HasStartingPoint => !!startingPoint;
     void Start()
     {
-        itemDropHandler = GetComponent<ItemDropHandler>();
-
         if (!gameManager) gameManager = FindObjectOfType<GameManager>();
         if (!dungeonManager) dungeonManager = FindObjectOfType<DungeonManager>();
 

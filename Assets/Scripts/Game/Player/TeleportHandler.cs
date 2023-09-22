@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.AI;
 
 public class TeleportHandler : MonoBehaviour
@@ -31,6 +32,18 @@ public class TeleportHandler : MonoBehaviour
         player.SetPosition(position, adjustPlayerToNavmesh);
     }
 
+    public void Teleport(IslandController targetIsland)
+    {
+        Teleport(targetIsland.SpawnPosition);
+        // Force player to start "training" the same skill they were training.
+        // since this will make them find a target and not randomly "fish" or "mining" in the open.
+        var task = player.GetTask();
+        if (task != TaskType.None)
+        {
+            player.SetTask(task, player.taskArgument);
+        }
+    }
+
     public void Teleport(Vector3 position, bool adjustPlayerToNavmesh = true)
     {
         // check if player has been removed
@@ -46,7 +59,7 @@ public class TeleportHandler : MonoBehaviour
         }
 
         player.taskTarget = null;
-        
+
         player.SetPosition(position, adjustPlayerToNavmesh);
         player.SetDestination(position);
         player.Movement.Lock();
@@ -63,6 +76,6 @@ public class TeleportHandler : MonoBehaviour
         player.InCombat = false;
         player.ClearAttackers();
         player.Island = islandManager.FindPlayerIsland(player);
-
     }
+
 }

@@ -22,8 +22,6 @@ public class DungeonManager : MonoBehaviour, IEvent
     [SerializeField] private float notificationUpdate = 30;
     [SerializeField] private EnemyPool dungeonEnemyPool;
 
-    [SerializeField] private ItemDropList[] itemDropLists;
-
     [Header("Dungeon Boss Settings")]
     [SerializeField] private float healthScale = 100f;
     [SerializeField] private float equipmentStatsScale = 0.33f;
@@ -52,10 +50,12 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private bool yieldSpecialReward = false;
 
+    private int dungeonIndex;
     private DungeonBossController generatedBoss;
 
     public string RequiredCode;
 
+    public int Counter => dungeonIndex;
 
     private Queue<Func<Task>> rewardQueue = new Queue<Func<Task>>();
 
@@ -351,12 +351,16 @@ public class DungeonManager : MonoBehaviour, IEvent
                         RequiredCode = EventCode.New();
                     }
                     AnnounceDungeon(RequiredCode);
+
+                    await gameManager.HandleDungeonAutoJoin();
                 }
                 else
                 {
                     gameManager.Events.End(this);
                     return false;
                 }
+
+                gameManager.dungeonStatsJson.Update();
             }
             else
             {
@@ -402,7 +406,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     public DungeonJoinResult CanJoin(PlayerController player)
     {
         if (!Active) return DungeonJoinResult.NoActiveDungeon;
-        
+
         if (!player || player == null)
         {
             return DungeonJoinResult.Error;
@@ -438,6 +442,10 @@ public class DungeonManager : MonoBehaviour, IEvent
         lock (mutex)
         {
             if (joinedPlayers.Contains(player)) return;
+
+            // don't interrupt until we are teleported to the dungeon.
+            //player.InterruptAction();
+
             joinedPlayers.Add(player);
             alivePlayers.Add(player);
 
@@ -463,11 +471,15 @@ public class DungeonManager : MonoBehaviour, IEvent
             player.Dungeon.OnExit();
         }
 
+        dungeonIndex++;
+
         //Debug.LogWarning("EndDungeonSuccess");
         // 1. reward all players
         RewardPlayers();
         // 2. show some victory UI
         ResetDungeon();
+
+        gameManager.dungeonStatsJson.Update();
     }
 
     public void EndDungeonFailed(bool notifyChat = true)
@@ -478,6 +490,8 @@ public class DungeonManager : MonoBehaviour, IEvent
             player.Dungeon.OnExit();
         }
 
+        dungeonIndex++;
+
         //Debug.LogWarning("EndDungeonFailed");
         // 1. show sad UI
         ResetDungeon();
@@ -486,6 +500,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot.Announce("The dungeon has ended without any surviving players.");
         }
+
+        gameManager.dungeonStatsJson.Update();
     }
 
     private bool SpawnDungeonBoss()
@@ -567,6 +583,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             }
         }
     }
+
     private void AdjustBossStats()
     {
         lock (mutex)
@@ -794,6 +811,8 @@ public class DungeonManager : MonoBehaviour, IEvent
             state = DungeonManagerState.Started;
             currentDungeon.Enter();
         }
+
+        gameManager.dungeonStatsJson.Update();
     }
 
     private void AnnounceDungeon(string code)
@@ -833,6 +852,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
         }
+
+        gameManager.dungeonStatsJson.Update();
     }
 
     private void SelectRandomDungeon()
@@ -851,11 +872,6 @@ public class DungeonManager : MonoBehaviour, IEvent
         currentDungeon.gameObject.SetActive(true);
         currentDungeon.EnableContainer();
         SpawnEnemies();
-
-        if (itemDropLists != null && itemDropLists.Length > 0)
-        {
-            currentDungeon.ItemDrops.SetDropList(itemDropLists.Random());
-        }
     }
 
     private void SpawnEnemies()

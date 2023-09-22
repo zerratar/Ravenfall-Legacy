@@ -111,6 +111,32 @@ public static class Utility
         }
         return text;
     }
+
+    public static string FormatTime(TimeSpan time)
+    {
+        string text;
+        if (time.TotalHours < 1)
+        {
+            if (time.TotalMinutes > 1)
+            {
+                text = time.Minutes + "m " + time.Seconds + "s";
+            }
+            else
+            {
+                text = time.Seconds + "s";
+            }
+        }
+        else
+        {
+            text = time.Hours + "h";
+            if (time.Minutes > 1)
+            {
+                text += " " + time.Minutes + "m";
+            }
+        }
+        return text;
+    }
+
     public static string FormatTime(double hours, bool extras = true)
     {
         string text;

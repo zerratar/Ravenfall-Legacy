@@ -43,10 +43,14 @@ public class ItemRepository : MonoBehaviour
         System.Net.WebClient cl = new System.Net.WebClient();
         try
         {
+            cl.DownloadFile("https://localhost:5001/api/items", itemsRepo);
+            Shinobytes.Debug.Log("Downloaded new items repo");
+        }
+        catch
+        {
             cl.DownloadFile("https://www.ravenfall.stream/api/items", itemsRepo);
             Shinobytes.Debug.Log("Downloaded new items repo");
         }
-        catch { }
 
         var json = System.IO.File.ReadAllText(itemsRepo);
 
@@ -58,14 +62,32 @@ public class ItemRepository : MonoBehaviour
             renderCameras = FindObjectsOfType<ItemRenderer>();
         }
 
-
-
-        //foreach (var item in renderCameras)
-        //{
-        //    item.gameObject.SetActive(false);
-        //}
+        //RenameKnownItems("C:\\Item Icons\\");
 
         StartCoroutine(SpawnItems());
+    }
+
+    private void RenameKnownItems(string path)
+    {
+        var files = System.IO.Directory.GetFiles(path, "*.png", System.IO.SearchOption.TopDirectoryOnly);
+        foreach (var f in files)
+        {
+            var n = System.IO.Path.GetFileNameWithoutExtension(f);
+            if (Guid.TryParse(n, out var itemId))
+            {
+                var matchingItem = items.FirstOrDefault(x => x.Id == itemId);
+                if (matchingItem != null)
+                {
+                    var newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(f), matchingItem.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png");
+                    if (System.IO.File.Exists(newPath))
+                    {
+                        System.IO.File.Delete(f);
+                        continue;
+                    }
+                    System.IO.File.Move(f, newPath);
+                }
+            }
+        }
     }
 
     private IEnumerator SpawnItems()
@@ -117,50 +139,51 @@ public class ItemRepository : MonoBehaviour
             yield break;
         }
 
-        if (UseLegacyScreenshots)
+        if (!item.IsGenericModel)
         {
             InstantiateItem(item, itemObj);
             yield break;
         }
+
 #if UNITY_EDITOR
-        var prev = AssetPreview.GetMiniThumbnail(itemObj);
 
-        //var prevT = (Texture)prev;
-        AssetPreview.SetPreviewTextureCacheSize(1024);
-
-        if (!prev.isReadable)
-        {
-            //prev = Texture2D.CreateExternalTexture(prevT.width, prevT.height, TextureFormat.RGBA32, false, false, prevT.GetNativeTexturePtr());
-            //var pixels = ((Texture2D)prevT).GetPixels(0, 0, prev.width, prev.height, 0);
-
-            var assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(itemObj);
-            if (!string.IsNullOrEmpty(assetPath))
-            {
-                Shinobytes.Debug.Log("Asset Path: " + assetPath);
-                var icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
-                if (icon != null)
-                {
-                    prev = icon;
-                }
-            }
-
-            if (!prev.isReadable || prev.width == 0)
-            {
-                Shinobytes.Debug.LogWarning("MiniThumbnail for " + itemObj.name + " is not readable. Using GetAssetPreview");
-                var instanceId = itemObj.GetInstanceID();
-
-                do
-                {
-                    yield return new WaitForSeconds(0.01f);
-                    prev = AssetPreview.GetAssetPreview(itemObj);
-                } while (AssetPreview.IsLoadingAssetPreview(instanceId) || prev == null);
-
-            }
-        }
+        RuntimePreviewGenerator.BackgroundColor = Color.clear;
+        RuntimePreviewGenerator.Padding = 0.05f;
+        RuntimePreviewGenerator.MarkTextureNonReadable = false;
+        var prev = RuntimePreviewGenerator.GenerateModelPreview(itemObj.transform, 256, 256, shouldIgnoreParticleSystems: false);
+        prev.name = item.Name;
+        //var prev = AssetPreview.GetMiniThumbnail(itemObj);
+        ////var prevT = (Texture)prev;
+        //AssetPreview.SetPreviewTextureCacheSize(1024);
+        //if (!prev.isReadable)
+        //{
+        //    //prev = Texture2D.CreateExternalTexture(prevT.width, prevT.height, TextureFormat.RGBA32, false, false, prevT.GetNativeTexturePtr());
+        //    //var pixels = ((Texture2D)prevT).GetPixels(0, 0, prev.width, prev.height, 0);
+        //    var assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(itemObj);
+        //    if (!string.IsNullOrEmpty(assetPath))
+        //    {
+        //        Shinobytes.Debug.Log("Asset Path: " + assetPath);
+        //        var icon = AssetDatabase.GetCachedIcon(assetPath) as Texture2D;
+        //        if (icon != null)
+        //        {
+        //            prev = icon;
+        //        }
+        //    }
+        //    if (!prev.isReadable || prev.width == 0)
+        //    {
+        //        Shinobytes.Debug.LogWarning("MiniThumbnail for " + itemObj.name + " is not readable. Using GetAssetPreview");
+        //        var instanceId = itemObj.GetInstanceID();
+        //        do
+        //        {
+        //            yield return new WaitForSeconds(0.01f);
+        //            prev = AssetPreview.GetAssetPreview(itemObj);
+        //        } while (AssetPreview.IsLoadingAssetPreview(instanceId) || prev == null);
+        //    }
+        //}
 
         assetPreviews.Add(prev);
 
-        SaveTexture(prev, "C:\\Item Icons\\" + item.Id + ".png");
+        SaveTexture(prev, "C:\\Item Icons\\" + item.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png");
         //InstantiateItem(item, itemObj);
 
 #endif
@@ -259,7 +282,7 @@ public class ItemRepository : MonoBehaviour
         var camera = newCamera.GetComponent<Camera>();
         camera.targetTexture = targetTexture;
 
-        StartCoroutine(SaveRenderTexture(targetTexture, "C:\\Item Icons\\" + item.Id + ".png"));
+        StartCoroutine(SaveRenderTexture(targetTexture, "C:\\Item Icons\\" + item.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png"));
     }
 
     public IEnumerator SaveRenderTexture(RenderTexture rt, string pngOutPath)

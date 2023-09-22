@@ -76,11 +76,21 @@ public class RaidBossController : MonoBehaviour
 
     private void AssignIsland()
     {
-        if (gameManager && !island)
+        if (!gameManager)
+        {
+            return;
+        }
+
+        if (!island)
         {
             var newIsland = gameManager.Islands.FindIsland(this.transform.position);
             if (newIsland)
                 IslandEnter(newIsland);
+        }
+
+        if (!enemyController.Island)
+        {
+            enemyController.Island = island;
         }
     }
 
@@ -215,6 +225,7 @@ public class RaidBossController : MonoBehaviour
     }
     public void Activate()
     {
+        if (activated) return;
         activated = true;
         attackTimer = attackInterval;
         Enemy.Unlock();

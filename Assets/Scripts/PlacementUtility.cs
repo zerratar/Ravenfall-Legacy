@@ -94,6 +94,8 @@ public static class PlacementUtility
                  Contains(name, "SM_Env_Ground_Grass") ||
                  Contains(name, "SM_Bld_Base") ||
                  Contains(name, "_Floor_") ||
+                 Contains(name, "bld_wall_") ||
+                 Contains(name, "DockMesh") ||
                  Contains(name, "terrain"))
             {
                 return new Vector3(pos.x, hit.point.y, pos.z);

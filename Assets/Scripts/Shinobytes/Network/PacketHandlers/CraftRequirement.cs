@@ -1,6 +1,6 @@
 ﻿using RavenNest.Models;
 using System.Linq;
-using System.Text;
+
 
 public class CraftRequirement : ChatBotCommandHandler<string>
 {
@@ -38,40 +38,49 @@ public class CraftRequirement : ChatBotCommandHandler<string>
             return;
         }
 
-        var msg = GetItemCraftingRequirements(player, client, item.Item);
-        client.SendReply(gm, msg);
+        var recipe = Game.Items.GetItemRecipe(item.Item);
+        if (recipe == null)
+        {
+            // check if it can be be dropped
+            var drop = Game.Items.GetResourceDrop(item.Item);
+            if (drop != null)
+            {
+                client.SendReply(gm, "{itemName} requires level {level} {skillName}.", item.Item.Name, drop.LevelRequirement.ToString(), drop.RequiredSkill.ToString());
+                return;
+            }
+
+            client.SendReply(gm, "{itemName} is not an item that can be created.", item.Item.Name);
+            return;
+        }
+
+        var name = GetSuitableName(recipe, item.Item);
+
+        var skillname = recipe.RequiredSkill.ToString();
+        var skilllevel = recipe.RequiredLevel.ToString();
+
+        client.SendReply(gm, "{name} requires level {level} {skillname} and {requirements}", name, skilllevel, skillname, GetRecipeIngredientsString(player.Inventory, recipe));
     }
 
-    private string GetItemCraftingRequirements(PlayerController player, GameClient client, Item item)
+    private string GetSuitableName(ItemRecipe recipe, Item item)
     {
-        var requiredItemsStr = new StringBuilder();
-        if (item != null)
+        if (string.IsNullOrEmpty(recipe.Name)) return item.Name;
+        return recipe.Name;
+    }
+
+    private string GetRecipeIngredientsString(Inventory inventory, ItemRecipe recipe)
+    {
+        return string.Join(", ", recipe.Ingredients.Select(x =>
         {
-            requiredItemsStr.Append("You need ");
-            if (item.WoodCost > 0)
+            var targetItem = Game.Items.Get(x.ItemId);
+            var itemName = targetItem.Name;
+            var stack = inventory.GetInventoryItemsByItemId(x.ItemId);
+            var ownedAmount = 0L;
+            if (stack != null && stack.Count > 0)
             {
-                requiredItemsStr.Append($"{Utility.FormatAmount(player.Resources.Wood)}/{Utility.FormatAmount(item.WoodCost)} Wood, ");
+                ownedAmount = stack.Sum(x => x.Amount);
             }
 
-            if (item.OreCost > 0)
-            {
-                requiredItemsStr.Append($"{Utility.FormatAmount(player.Resources.Ore)}/{Utility.FormatAmount(item.OreCost)} Ore, ");
-            }
-
-            foreach (var req in item.CraftingRequirements)
-            {
-                var requiredItem = Game.Items.Get(req.ResourceItemId);
-                var ownedNumber = 0L;
-                var items = player.Inventory.GetInventoryItemsByItemId(req.ResourceItemId);
-                if (items != null)
-                {
-                    ownedNumber = (long)items.Sum(x => x.Amount);
-                }
-                requiredItemsStr.Append($"{Utility.FormatAmount(ownedNumber)}/{Utility.FormatAmount(req.Amount)} {requiredItem.Name}, ");
-            }
-            requiredItemsStr.Append($"crafting level {item.RequiredCraftingLevel} ");
-            requiredItemsStr.Append("to craft " + item.Name);
-        }
-        return requiredItemsStr.ToString();
+            return itemName + " " + ownedAmount + "/" + x.Amount;
+        }));
     }
 }

@@ -185,28 +185,33 @@ public class DungeonNotifications : MonoBehaviour
         lblPlayers.text = string.Format(lblPlayersFormat, alivePlayerCount);
         lblEnemies.text = string.Format(lblEnemiesFormat, aliveEnemyCount);
 
+        gameManager.dungeonStats.ActivatedCount = this.dungeonCount;
+        gameManager.dungeonStats.PlayersLeft = alivePlayerCount;
+        gameManager.dungeonStats.EnemiesLeft = aliveEnemyCount;
+        gameManager.dungeonStats.Runtime = runTime;
+
         if (this.amountOfDungeonsRunLabel == null)
-            this.amountOfDungeonsRunLabel = gameManager.StreamLabels.Register("dungeon-count", () => this.dungeonCount.ToString());
+            this.amountOfDungeonsRunLabel = gameManager.StreamLabels.RegisterText("dungeon-count", () => this.dungeonCount.ToString());
         this.amountOfDungeonsRunLabel.Update();
 
         if (this.playersLeftLabel == null)
-            this.playersLeftLabel = gameManager.StreamLabels.Register("dungeon-players-left", () => alivePlayerCount.ToString());
+            this.playersLeftLabel = gameManager.StreamLabels.RegisterText("dungeon-players-left", () => alivePlayerCount.ToString());
         this.playersLeftLabel.Update();
 
 
         if (this.enemiesLeftLabel == null)
-            this.enemiesLeftLabel = gameManager.StreamLabels.Register("dungeon-enemies-left", () => aliveEnemyCount.ToString());
+            this.enemiesLeftLabel = gameManager.StreamLabels.RegisterText("dungeon-enemies-left", () => aliveEnemyCount.ToString());
         this.enemiesLeftLabel.Update();
 
         if (this.runTimeLabel == null)
-            this.runTimeLabel = gameManager.StreamLabels.Register("dungeon-run-time", () => runTime.ToString());
+            this.runTimeLabel = gameManager.StreamLabels.RegisterText("dungeon-run-time", () => runTime.ToString());
         if (GameSystems.frameCount % 30 == 0)
         {
             this.runTimeLabel.Update();
         }
 
         if (this.bossHealthLabel == null)
-            this.bossHealthLabel = gameManager.StreamLabels.Register("dungeon-boss-health", () =>
+            this.bossHealthLabel = gameManager.StreamLabels.RegisterText("dungeon-boss-health", () =>
             {
                 if (boss && !boss.Enemy.Stats.IsDead)
                 {
@@ -218,7 +223,7 @@ public class DungeonNotifications : MonoBehaviour
         this.bossHealthLabel.Update();
 
         if (this.bossLevelLabel == null)
-            this.bossLevelLabel = gameManager.StreamLabels.Register("dungeon-boss-level", () =>
+            this.bossLevelLabel = gameManager.StreamLabels.RegisterText("dungeon-boss-level", () =>
             {
                 if (boss && !boss.Enemy.Stats.IsDead)
                 {

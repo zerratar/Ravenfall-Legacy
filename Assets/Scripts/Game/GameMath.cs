@@ -52,13 +52,19 @@ public static class GameMath
             var attackerEq = attacker.GetEquipmentStats();
             if (attackerStats == null || attackerEq == null) return 0;
 
-            var defenderDamageSkill = 1;
-            var attackerDamageSkill = attackerStats.Healing.MaxLevel;
+            var attackerModifiers = attacker.GetModifiers();
+            var defenderModifiers = defender.GetModifiers();
+            var minHitChance = (int)(40 * attackerModifiers.HitChanceMultiplier);
+
+            var attackerDamageSkill = (int)(attackerStats.Healing.MaxLevel * attackerModifiers.StrengthMultiplier);
             var attackerAimSkill = attackerStats.Healing.MaxLevel;
             var attackerPower = attackerEq.MagicPower;
             var attackerAim = attackerEq.MagicAim;
 
-            return CalculateDamage(attacker, defender, Skills.Zero, EquipmentStats.Zero, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+            attackerPower = (int)(attackerPower * attackerModifiers.HealingPowerMultiplier);
+
+            var dmg = CalculateDamage(attacker, defender, Skills.Zero, EquipmentStats.Zero, 1, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim, minHitChance);
+            return dmg;
         }
         catch
         {
@@ -78,13 +84,24 @@ public static class GameMath
             var defenderEq = defender.GetEquipmentStats();
             if (attackerEq == null || defenderEq == null) return 0;
 
+            var attackerModifiers = attacker.GetModifiers();
+            var defenderModifiers = defender.GetModifiers();
+            var minHitChance = (int)(40 * attackerModifiers.HitChanceMultiplier);
+            var dodgeChance = defenderModifiers.DodgeChance;
+
             var defenderDamageSkill = defenderStats.Magic.MaxLevel;
-            var attackerDamageSkill = attackerStats.Magic.MaxLevel;
+            var attackerDamageSkill = (int)(attackerStats.Magic.MaxLevel * attackerModifiers.StrengthMultiplier);
             var attackerAimSkill = attackerStats.Magic.MaxLevel;
             var attackerPower = attackerEq.MagicPower;
             var attackerAim = attackerEq.MagicAim;
 
-            return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+            attackerPower = (int)(attackerPower * attackerModifiers.MagicPowerMultiplier);
+
+            var dmg = CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill,
+                    attackerAimSkill, attackerPower, attackerAim, minHitChance, dodgeChance,
+                    defenderModifiers.DefenseMultiplier
+                );
+            return dmg;
         }
         catch
         {
@@ -104,13 +121,25 @@ public static class GameMath
             var defenderEq = defender.GetEquipmentStats();
             if (attackerEq == null || defenderEq == null) return 0;
 
+            var attackerModifiers = attacker.GetModifiers();
+            var defenderModifiers = defender.GetModifiers();
+            var minHitChance = (int)(40 * attackerModifiers.HitChanceMultiplier);
+            var dodgeChance = defenderModifiers.DodgeChance;
+
             var defenderDamageSkill = defenderStats.Ranged.MaxLevel;
-            var attackerDamageSkill = attackerStats.Ranged.MaxLevel;
+            var attackerDamageSkill = (int)(attackerStats.Ranged.MaxLevel * attackerModifiers.StrengthMultiplier);
             var attackerAimSkill = attackerStats.Ranged.MaxLevel;
             var attackerPower = attackerEq.RangedPower;
             var attackerAim = attackerEq.RangedAim;
 
-            return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+            attackerPower = (int)(attackerPower * attackerModifiers.RangedPowerMultiplier);
+
+            var dmg = CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill,
+                  attackerAimSkill, attackerPower, attackerAim, minHitChance, dodgeChance,
+                  defenderModifiers.DefenseMultiplier
+            );
+
+            return dmg;
         }
         catch
         {
@@ -130,13 +159,23 @@ public static class GameMath
             var defenderEq = defender.GetEquipmentStats();
             if (attackerEq == null || defenderEq == null) return 0;
 
+            var attackerModifiers = attacker.GetModifiers();
+            var defenderModifiers = defender.GetModifiers();
+            var minHitChance = (int)(40 * attackerModifiers.HitChanceMultiplier);
+            var dodgeChance = defenderModifiers.DodgeChance;
+
             var defenderDamageSkill = defenderStats.Strength.MaxLevel;
-            var attackerDamageSkill = attackerStats.Strength.MaxLevel;
+            var attackerDamageSkill = (int)(attackerStats.Strength.MaxLevel * attackerModifiers.StrengthMultiplier);
             var attackerAimSkill = attackerStats.Attack.MaxLevel;
             var attackerPower = attackerEq.WeaponPower;
             var attackerAim = attackerEq.WeaponAim;
 
-            return CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim);
+            attackerPower = (int)(attackerPower * attackerModifiers.AttackPowerMultiplier);
+
+            var dmg = CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim, minHitChance,
+                dodgeChance, defenderModifiers.DefenseMultiplier);
+
+            return dmg;
         }
         catch
         {
@@ -154,13 +193,20 @@ public static class GameMath
         int attackerAimSkill,
         int attackerPower,
         int attackerAim,
-        int minHitChance = 40)
+        int minHitChance = 40,
+        float dodgeChance = 0f,
+        float defenseMultiplier = 1f)
     {
+        if (dodgeChance > 0 && UnityEngine.Random.value <= dodgeChance)
+        {
+            return 0;
+        }
+
         var max = MaxHit(attackerDamageSkill, attackerPower);
         var newAtt = (int)((attackerAimSkill / 0.8D) + attackerAim + (attackerDamageSkill / 5D) + 10);
-        var newDef = (int)(((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderStats.Defense.MaxLevel) * 1.1D)
+        var newDef = (int)((((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderStats.Defense.MaxLevel) * 1.1D)
                      + ((UnityEngine.Random.Range(0, 100) <= 5 ? 0 : defenderEq.ArmorPower) / 2.75D)
-                     + (defenderDamageSkill / 4D) + (StyleBonus(defender, 1) * 2));
+                     + (defenderDamageSkill / 4D) + (StyleBonus(defender, 1) * 2)) * defenseMultiplier);
 
         var hitChance = UnityEngine.Random.Range(0, 100) + (newAtt - newDef);
         if (attacker is EnemyController)
@@ -213,9 +259,9 @@ public static class GameMath
 
     public static float CalculateHouseExpBonus(this SkillStat skill)
     {
-        // up to 50% exp bonus
         return (skill.Level / (float)MaxLevel) * MaxExpBonusPerSlot;
     }
+
     public static SkillStat GetSkillByHouseType(this Skills stats, TownHouseSlotType type)
     {
         if (type == TownHouseSlotType.Melee)

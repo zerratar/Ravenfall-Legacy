@@ -294,15 +294,4 @@ namespace Assets.Scripts
         }
     }
 
-    public struct TownHouseExpBonus
-    {
-        public readonly TownHouseSlotType SlotType;
-        public readonly float Bonus;
-
-        public TownHouseExpBonus(TownHouseSlotType slotType, float bonus)
-        {
-            SlotType = slotType;
-            Bonus = bonus;
-        }
-    }
 }

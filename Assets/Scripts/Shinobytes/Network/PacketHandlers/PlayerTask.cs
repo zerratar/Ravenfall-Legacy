@@ -25,15 +25,8 @@ public class PlayerTask : ChatBotCommandHandler<PlayerTaskRequest>
                 return;
             }
 
-            var t = task.Task;
-            // this needs to be fixed in the bot, but lets allow it for now.
-            if (t.ToLower() == "brewing")
-            {
-                t = "Alchemy";
-            }
-
             var arg = task.Arguments != null && task.Arguments.Length > 0 ? task.Arguments[0] : null;
-            player.SetTask(t, arg);
+            player.SetTask(task.Task, arg);
         }
         catch (Exception exc)
         {

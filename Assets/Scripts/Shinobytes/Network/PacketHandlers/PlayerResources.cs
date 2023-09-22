@@ -18,12 +18,12 @@
         }
 
         var res = player.Resources;
-
-        client.SendReply(gm, Localization.MSG_PLAYER_RESOURCES,
-            Utility.FormatAmount(res.Wood),
-            Utility.FormatAmount(res.Ore),
-            Utility.FormatAmount(res.Fish),
-            Utility.FormatAmount(res.Wheat),
-            Utility.FormatAmount(res.Coins));
+        client.SendReply(gm, Localization.MSG_PLAYER_COINS, Utility.FormatAmount(res.Coins));
+        //client.SendReply(gm, Localization.MSG_PLAYER_RESOURCES,
+        //    Utility.FormatAmount(res.Wood),
+        //    Utility.FormatAmount(res.Ore),
+        //    Utility.FormatAmount(res.Fish),
+        //    Utility.FormatAmount(res.Wheat),
+        //    Utility.FormatAmount(res.Coins));
     }
 }

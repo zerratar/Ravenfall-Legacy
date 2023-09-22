@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 public class StreamLabels
 {
@@ -14,9 +12,16 @@ public class StreamLabels
     {
         this.gameSettings = gameSettings;
     }
-    public StreamLabel Register(string name, Func<string> generator)
+
+    public StreamLabel RegisterText(string name, Func<string> generator)
     {
-        return labels[name] = new StreamLabel(gameSettings, name, generator);
+        return labels[name] = new StreamLabel(gameSettings, name, ".txt", generator);
+    }
+
+    public StreamLabel Register<T>(string name, Func<T> model)
+    {
+        return labels[name] = new StreamLabel(gameSettings, name, ".json", 
+            () => Newtonsoft.Json.JsonConvert.SerializeObject(model()));
     }
 
     public IReadOnlyList<StreamLabel> GetAll()
@@ -39,13 +44,14 @@ public class StreamLabel
     private readonly string fileName;
     private string lastSavedValue;
 
-    public StreamLabel(GameSettings settings, string name, Func<string> valueGenerator)
+    public StreamLabel(GameSettings settings, string name, string extension, Func<string> valueGenerator)
     {
         this.valueGenerator = valueGenerator;
-        this.fileName = Shinobytes.IO.Path.Combine(settings.StreamLabelsFolder, name + ".txt");
-        if (!Shinobytes.IO.Directory.Exists(settings.StreamLabelsFolder))
-            Shinobytes.IO.Directory.CreateDirectory(settings.StreamLabelsFolder);
-
+        var folder = settings.StreamLabelsFolder;
+        folder = Shinobytes.IO.Path.Combine(folder, extension.Substring(1));
+        this.fileName = Shinobytes.IO.Path.Combine(folder, name + extension);
+        if (!Shinobytes.IO.Directory.Exists(folder))
+            Shinobytes.IO.Directory.CreateDirectory(folder);
     }
     public void Update()
     {
@@ -57,7 +63,7 @@ public class StreamLabel
     {
         try
         {
-            // CHeck if text has changed, otherwise we dont save it.            
+            // Check if text has changed, otherwise we dont save it.
             if (lastSavedValue == Value)
             {
                 return;

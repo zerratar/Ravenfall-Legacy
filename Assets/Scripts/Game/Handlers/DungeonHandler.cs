@@ -24,8 +24,9 @@ public class DungeonHandler : MonoBehaviour
     public FerryState Ferry;
 
     private bool wasResting;
-    private bool autoJoining;
     private float autoJoinRequestTimeout;
+
+    public bool AutoJoining;
 
     public IslandController PreviousIsland => previousIsland;
     public Vector3 PreviousPosition => previousPosition;
@@ -45,7 +46,7 @@ public class DungeonHandler : MonoBehaviour
             return;
         }
 
-        if (autoJoining)
+        if (AutoJoining)
         {
             return;
         }
@@ -62,18 +63,23 @@ public class DungeonHandler : MonoBehaviour
             return;
         }
 
-        if (!InDungeon)
+        if (!InDungeon && !dungeon.Started)
         {
             if (AutoJoinCounter > 0)
             {
                 // try join the dungeon if possible, and dont auto join if server is not responding.
-                autoJoining = true;
+                AutoJoining = true;
                 RequestAutoJoinAsync();
             }
             else
             {
                 return;
             }
+        }
+
+        if (!dungeon.Started)
+        {
+            return;
         }
 
         if (player.TrainingHealing)
@@ -158,6 +164,11 @@ public class DungeonHandler : MonoBehaviour
 
     private async void RequestAutoJoinAsync()
     {
+        if (AutoJoining)
+        {
+            return;
+        }
+
         try
         {
             if (autoJoinRequestTimeout > 0)
@@ -166,18 +177,37 @@ public class DungeonHandler : MonoBehaviour
                 return;
             }
 
-            if (AutoJoinCounter == 0 || player.GameManager.Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin) 
+            if (AutoJoinCounter == 0 || player.GameManager.Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin)
                 return;
-            
+
             var result = await player.GameManager.RavenNest.Players.AutoJoinDungeon(player.Id);
             if (result)
             {
-                AutoJoinCounter--;
                 player.GameManager.Dungeons.Join(player);
+                if (AutoJoinCounter != int.MaxValue)
+                {
+                    AutoJoinCounter--;
+                }
+
+                player.GameManager.OnPlayerAutoJoinedDungeon(player);
+
+                //if (AutoJoinCounter > 0 && AutoJoinCounter != int.MaxValue)
+                //{
+                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the dungeon. You will join {autoJoinLeft} more.", AutoJoinCounter);
+                //}
+                //else if (AutoJoinCounter == int.MaxValue)
+                //{
+                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the dungeon.");
+                //}
+                //else
+                //{
+                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the dungeon. You will no longer automatically join any dungeon.");
+                //}
             }
             else
             {
                 AutoJoinCounter = 0;
+                player.GameManager.RavenBot.SendReply(player, "You've failed to automatically joined the Dungeon. You either do not have enough coins or server did not respond.");
             }
         }
         catch
@@ -187,7 +217,7 @@ public class DungeonHandler : MonoBehaviour
         }
         finally
         {
-            autoJoining = false;
+            AutoJoining = false;
         }
     }
 
@@ -262,6 +292,7 @@ public class DungeonHandler : MonoBehaviour
 
         previousIsland = this.player.Island;
 
+        player.InterruptAction();
         player.Teleporter.Teleport(startingPoint);
         player.Stats.Health.Reset();
 

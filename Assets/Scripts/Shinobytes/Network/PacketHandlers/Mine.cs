@@ -1,4 +1,7 @@
-﻿public class Mine : ChatBotCommandHandler<string>
+﻿using System.Linq;
+using RavenNest.Models;
+
+public class Mine : ChatBotCommandHandler<string>
 {
     private IItemResolver itemResolver;
 
@@ -16,15 +19,18 @@
             return;
         }
 
+        var taskType = TaskType.Mining;
+        var itemType = ItemType.Mining;
+        var playerSkill = player.Stats.Mining.MaxLevel;
+
         var query = (data ?? "").Trim().ToLower();
         if (string.IsNullOrEmpty(query))
         {
-            // just set player to train mining
-            player.SetTask(TaskType.Mining);
+            player.SetTask(taskType);
             return;
         }
 
-        var result = itemResolver.Resolve(query, RavenNest.Models.ItemType.Mining);
+        var result = itemResolver.Resolve(query, x => x.Type == itemType && Game.Items.CanBeDropped(x));
         if (result.SuggestedItemNames != null && result.SuggestedItemNames.Length > 0)
         {
             var message = Utility.ReplaceLastOccurrence(string.Join(", ", result.SuggestedItemNames), ", ", " or ");
@@ -38,10 +44,26 @@
             return;
         }
 
-        // when using !mine and have an argument, we have to validate the item
-        // if the item does not exist, let them know
-        // if the item can not be mined, (not an ore) let them know
-        // if the item requires higher level of mining, let them know
-        // if everything is ok, then we can start mining the item
+        // check if the target item can be dropped with player's current skill level
+        // if no, then tell them that they are not high enough level to mine that item
+
+        int levelRequirement = Game.Items.GetRequiredLevelForDrop(result.Item);
+
+        //if (player.Island)
+        //{
+        //    var chunks = Game.Chunks.GetChunksOfType(player, taskType);
+        //    if (chunks.Count > 0 && chunks.All(x => x.GetRequiredSkillLevel() < levelRequirement))
+        //    {
+        //        canMineTargetHere = false;
+        //        client.SendReply(gm, "You can't mine {oreName} on this island", result.Item.Name, levelRequirement);
+        //    }
+        //}
+
+        if (playerSkill < levelRequirement)
+        {
+            client.SendReply(gm, Localization.MSG_MINE_LEVEL_REQUIREMENT, levelRequirement, result.Item.Name);
+        }
+
+        player.SetTask(taskType, result.Item.Name);
     }
 }

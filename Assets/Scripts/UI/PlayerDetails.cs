@@ -139,17 +139,30 @@ public class PlayerDetails : MonoBehaviour
         SetActive(lblTraining.gameObject, isTrainingSomething);
         SetActive(lblTrainingSkill.gameObject, isTrainingSomething);
 
-        if (isTrainingSomething)
+        if (observedPlayer.Ferry)
+        {
+            lblTrainingSkill.text = "Sailing";
+            lblTimeForLevel.text = GetTimeLeftForLevelFormatted(observedPlayer.Stats.Sailing);
+        }
+        else if (isTrainingSomething)
         {
             var activeSkill = observedPlayer.GetActiveSkillStat();
             if (activeSkill != null)
             {
                 var trainingAll = activeSkill == observedPlayer.GetSkill(Skill.Health);
                 var name = trainingAll ? "All" : activeSkill.Name;
-                if (playerTask == TaskType.None || observedPlayer.Chunk == null)
+                if (observedPlayer.Chunk == null)
                 {
-                    SetActive(timeforlevelPanel, false);
-                    lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Ineligible</size></color>";
+                    if (!observedPlayer.Island || observedPlayer.Island == null)
+                    {
+                        SetActive(timeforlevelPanel, false);
+                        lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Ineligible</size></color>";
+                    }
+                    else
+                    {
+                        SetActive(timeforlevelPanel, false);
+                        lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Too low level</size></color>";
+                    }
                 }
                 else
                 {
@@ -179,7 +192,11 @@ public class PlayerDetails : MonoBehaviour
         if (s == Skill.None) return "";
 
         var skill = observedPlayer.Stats[s];
+        return GetTimeLeftForLevelFormatted(skill);
+    }
 
+    private string GetTimeLeftForLevelFormatted(SkillStat skill)
+    {
         //var f = observedPlayer.GetExpFactor();
         //var expPerTick = ObservedPlayer.GetExperience(s, f);
         //var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;

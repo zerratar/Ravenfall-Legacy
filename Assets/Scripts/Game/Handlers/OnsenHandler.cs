@@ -49,6 +49,10 @@ public class OnsenHandler : MonoBehaviour
         }
 
         rested.RestedTime += GameTime.deltaTime * RestedGainFactor;
+        if (rested.RestedTime >= CharacterRestedState.RestedTimeMax)
+        {
+            rested.RestedTime = CharacterRestedState.RestedTimeMax;
+        }
     }
 
     public void Enter(OnsenController onsen)

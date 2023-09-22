@@ -178,30 +178,27 @@ public class Chunk : MonoBehaviour
         if (level <= GameMath.Exp.EasyLevel) return 1d; // early levels are not going to change the factor.
         if (nextRequirement <= requirement) return 1d;
 
-        var reqRatio = requirement / nextRequirement;
-        var midPoint = (nextRequirement - requirement) * reqRatio;
-        if (level <= (requirement + midPoint))
-            return 1d; // at the midPoint tip, we will return the max as well. 
-                       // Example, if current level requirement is 100, next is 200.
-                       // Then you will gain full exp all the way to level 150.
-
         // if the current level is more than 2x of the required next place. You don't receive any more exp.
-        var upperBounds = nextRequirement * 2.0;
-        if (level >= upperBounds) return 0;
+        //var upperBounds = nextRequirement * 2.0;
+        //if (level >= upperBounds) return 0;
 
-        // Imagine this:
-        // Exp should not falter before player has reached %50 above the requirement for the next one.
-        // example: Player is training at home at level 1, on first enemies. This one
-        var delta = nextRequirement * .5;
-        var value = System.Math.Min((requirement + delta) / (level - midPoint), 1d);
+        var delta = nextRequirement - requirement;
+        var midPoint = delta / 2f;
+        if (level <= (nextRequirement + midPoint))
+            return 1d;
+
+        var upperBounds = requirement + (delta * 2);
+        if (level >= upperBounds)
+            return 0;
 
         if (level > nextRequirement)
         {
-            var reduceFactor = 1d - (level / upperBounds);
-            return GameMath.Lerp(value, 0.05, reduceFactor);
+            var min = level - nextRequirement;
+            var max = upperBounds - nextRequirement;
+            return GameMath.Lerp(1, 0, min / max);
         }
 
-        return value;
+        return 1;
     }
 
     private ChunkTask GetChunkTask(TaskType type) // ArenaController arena,
@@ -320,6 +317,6 @@ public enum TaskExecutionStatus
     NotReady,
     OutOfRange,
     Ready,
-    InsufficientResources,
+    //InsufficientResources,
     InvalidTarget,
 }

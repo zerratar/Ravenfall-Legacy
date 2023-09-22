@@ -63,7 +63,8 @@ public class PlayerItemDropText
                     continue;
                 }
 
-                Append((IsVocal(itemName[0]) ? "An " : "A ") + itemName);
+                //Append((IsVocal(itemName[0]) ? "An " : "A ") + itemName);
+                Append(itemName);
                 Append(" was found by ");
 
                 for (int i = 0; i < playersRef.Count; i++)

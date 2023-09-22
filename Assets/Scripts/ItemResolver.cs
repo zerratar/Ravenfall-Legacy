@@ -265,17 +265,21 @@ public class ItemResolver : IItemResolver
     {
         return Resolve(query, ItemType.None, maxSuggestions);
     }
-
     public ItemResolveResult Resolve(string query, ItemType expectedItemType, int maxSuggestions = 5)
+    {
+        return Resolve(query, expectedItemType == ItemType.None ? null : x => x.Type == expectedItemType, maxSuggestions);
+    }
+
+    public ItemResolveResult Resolve(string query, Func<Item, bool> itemFilter, int maxSuggestions = 5)
     {
         EnsureManagers();
 
         var itemQuery = query.Trim();
         var items = itemManager.GetItems();
 
-        if (expectedItemType != ItemType.None)
+        if (itemFilter != null)
         {
-            items = items.Where(x => x.Type == expectedItemType).ToList();
+            items = items.Where(itemFilter).ToList();
         }
 
         var matches = items
@@ -333,9 +337,7 @@ public class ItemResolver : IItemResolver
             SuggestedItemNames = suggestedItemNames
         };
     }
-
-
-    static int LevenshteinDistance(string s, string t)
+    public static int LevenshteinDistance(string s, string t)
     {
         int[,] d = new int[s.Length + 1, t.Length + 1];
 
@@ -508,9 +510,9 @@ public class ItemResolver : IItemResolver
             return ItemMatchResult.ExactMatch;
 
         var target = itemQuery.ToLower();
-        if (target == "r2h" && name == "rune 2h sword") return ItemMatchResult.ExactMatch;
-        if (target == "s2h" && name == "steel 2h sword") return ItemMatchResult.ExactMatch;
         if (target == "i2h" && name == "iron 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "s2h" && name == "steel 2h sword") return ItemMatchResult.ExactMatch;
+        if (target == "r2h" && name == "rune 2h sword") return ItemMatchResult.ExactMatch;
         if (target == "a2h" && name == "adamantite 2h sword") return ItemMatchResult.ExactMatch;
         if (target == "d2h" && name == "dragon 2h sword") return ItemMatchResult.ExactMatch;
         if (target == "p2h" && name == "phantom 2h sword") return ItemMatchResult.ExactMatch;
@@ -524,14 +526,24 @@ public class ItemResolver : IItemResolver
             return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedStaff);
         }
 
-        if (q.IndexOf(" 2h") > 0 || q.IndexOf(" two-h") > 0 || q.IndexOf(" two h") > 0 || (q.IndexOf(" 2 ") > 0 && q.IndexOf("sword") > 0) || q.IndexOf(" 2 h") > 0)
+        if (q.IndexOf(" spear") > 0 ||
+            q.IndexOf(" 2h") > 0 || q.IndexOf(" two-h") > 0 || q.IndexOf(" two h") > 0 || (q.IndexOf(" 2 ") > 0 && q.IndexOf("sword") > 0) || q.IndexOf(" 2 h") > 0)
         {
-            return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedSword);
+            if (q.IndexOf("sword") > 0) return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedSword);
+            if (q.IndexOf("bow") > 0) return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedBow);
+            if (q.IndexOf("staff") > 0) return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedStaff);
+            if (q.IndexOf("spear") > 0) return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedSpear);
+            if (q.IndexOf("axe") > 0) return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedAxe);
         }
 
         if (q.IndexOf(" kat") > 0)
         {
             return Match(testItemName, testItemType, itemQuery, ItemType.TwoHandedSword, true);
+        }
+
+        if (q.IndexOf(" axe") > 0)
+        {
+            return Match(testItemName, testItemType, itemQuery, ItemType.OneHandedAxe);
         }
 
         if (q.IndexOf(" sword") > 0)

@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using RavenNest.Models;
-using static UnityEditor.PlayerSettings;
 
 namespace RavenNest.SDK.Endpoints
 {

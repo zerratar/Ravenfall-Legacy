@@ -23,6 +23,7 @@ public static class Localization
     public static readonly string MSG_STATS = Meta("info", "stats") + "Combat level {combatLevel}, {skills} -- TOTAL {total} --";
     public static readonly string MSG_SKILL = Meta("info", "skill") + "{skill}, {currenExp} / {requiredExp} EXP.";
     public static readonly string MSG_PLAYER_RESOURCES = Meta("info", "resources") + "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
+    public static readonly string MSG_PLAYER_COINS = Meta("info", "resources") + "You have {coins} coins";
     public static readonly string MSG_TOWN_RESOURCES = Meta("info", "resources") + "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
     public static readonly string MSG_STREAMER_TOKENS = Meta("info", "tokens") + "You have {tokenCount} {tokenName}(s) you can use.";
     public static readonly string MSG_PLAYER_INSPECT_URL = Meta("system", "inspect") + "https://www.ravenfall.stream/inspect/{characterId}";
@@ -90,6 +91,12 @@ public static class Localization
     public static readonly string MSG_MINE_SUGGEST = Meta("info", "mining") + "Could not find a ore type matching the query '{query}', did you mean: {suggestion}?";
     public static readonly string MSG_FARM_SUGGEST = Meta("info", "farming") + "Could not find a farmable type matching the query '{query}', did you mean: {suggestion}?";
 
+    public static readonly string MSG_MINE_LEVEL_REQUIREMENT = Meta("info", "mining") + "You need to be level {level} to mine {oreName}.";
+    public static readonly string MSG_FARM_LEVEL_REQUIREMENT = Meta("info", "farming") + "You need to be level {level} to farm {farmableName}.";
+    public static readonly string MSG_CHOP_LEVEL_REQUIREMENT = Meta("info", "woodcutting") + "You need to be level {level} to chop {woodName}.";
+    public static readonly string MSG_FISH_LEVEL_REQUIREMENT = Meta("info", "fishing") + "You need to be level {level} to fish {fishName}.";
+    public static readonly string MSG_GATHER_LEVEL_REQUIREMENT = Meta("info", "gathering") + "You need to be level {level} to gather {resourceName}.";
+
     public static readonly string MSG_IN_DUEL = Meta("info", "location") + "You are currently fighting in a duel.";
     public static readonly string MSG_IN_RAID = Meta("info", "location") + "You are currently fighting in the raid.";
     public static readonly string MSG_RAID_STARTED = Meta("raid", "info") + "There is an active raid.";
@@ -150,6 +157,8 @@ public static class Localization
     public static readonly string MSG_EQUIPPED_ALL = Meta("info", "equipment", "equip") + "You have equipped all of your best items.";
 
     public static readonly string MSG_ITEM_COUNT_MISSING_ARGS = Meta("info", "item count", "fail") + "You must specify an item. Use !items (item name) or !count (item name)";
+    public static readonly string MSG_ITEM_EXAMINE_MISSING_ARGS = Meta("info", "examine", "fail") + "You must specify an item. Use !examine (item name)";
+    public static readonly string MSG_ITEM_USE_MISSING_ARGS = Meta("info", "use", "fail") + "You must specify an item. Use !use (item name)";
 
     public static readonly string MSG_ENCHANT_MISSING_ARGS = Meta("enchanting", "fail") + "You must specify an item to enchant. Use !enchant (item name)";
     public static readonly string MSG_ENCHANT_CLAN_SKILL = Meta("enchanting", "fail", "no clan") + "Enchanting is a clan skill. Join a clan to be able to use it!";

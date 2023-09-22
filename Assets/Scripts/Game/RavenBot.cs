@@ -41,6 +41,9 @@ public class RavenBot : System.IDisposable
         Connection.Register<GiftItem>("gift_item");
         Connection.Register<ValueItem>("value_item");
         Connection.Register<CraftRequirement>("req_item");
+        Connection.Register<ItemUsage>("item_usage");
+        
+
         Connection.Register<MaxMultiplier>("multiplier");
 
         Connection.Register<UpdateGame>("update");
@@ -133,6 +136,13 @@ public class RavenBot : System.IDisposable
         Connection.Register<PetRacingPlay>("pet_race_play");
         Connection.Register<PetRacingReset>("pet_race_reset");
         Connection.Register<ConnectionPing>("ping");
+
+        Connection.Register<ExamineItem>("examine_item");
+        Connection.Register<UseItem>("use_item");
+        Connection.Register<TeleportToIsland>("teleport_island");
+
+
+        Connection.Register<GetStatusEffects>("get_status_effects");
 
         Connection.Register<ItemCount>("get_item_count");
 

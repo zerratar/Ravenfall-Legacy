@@ -912,7 +912,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         equipmentSlots[ItemType.TwoHandedBow] = offHand;
         equipmentSlots[ItemType.TwoHandedAxe] = mainHand;
         equipmentSlots[ItemType.OneHandedAxe] = mainHand;
-        equipmentSlots[ItemType.OneHandedMace] = mainHand;
+        equipmentSlots[ItemType.TwoHandedSpear] = mainHand;
         equipmentSlots[ItemType.OneHandedSword] = mainHand;
         equipmentSlots[ItemType.Shield] = offHand;
 

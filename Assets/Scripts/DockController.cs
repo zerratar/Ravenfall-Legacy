@@ -9,12 +9,22 @@ public class DockController : MonoBehaviour
 
     private BoxCollider boxCollider;
 
+    public Transform DockPositionTransform;
+
     private void Start()
     {
         boxCollider = GetComponent<BoxCollider>();
+        if (DockPositionTransform)
+        {
+            DockPosition = DockPositionTransform.position;
+        }
+        else
+        {
+            DockPosition = boxCollider.center + transform.position;
+        }
     }
 
-    public Vector3 DockPosition => boxCollider.center + transform.position;
+    public Vector3 DockPosition;
 
     //public Vector3 RandomDockPosition => DockPosition + (Random.value * (boxCollider.size / 2f));
 
@@ -58,5 +68,10 @@ public class DockController : MonoBehaviour
         }
 
         players.TryRemove(player.Id, out _);
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.DrawSphere(DockPosition, 1);
     }
 }

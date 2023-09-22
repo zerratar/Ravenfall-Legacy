@@ -1,15 +1,20 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Skill = RavenNest.Models.Skill;
 public class PlayerStats : ChatBotCommandHandler<string>
 {
+    protected IItemResolver itemResolver;
     public PlayerStats(
         GameManager game,
         RavenBotConnection server,
         PlayerManager playerManager)
         : base(game, server, playerManager)
     {
+        var ioc = game.gameObject.GetComponent<IoCContainer>();
+        this.itemResolver = ioc.Resolve<IItemResolver>();
     }
 
     public override void Handle(string skillName, GameMessage gm, GameClient client)
@@ -21,8 +26,25 @@ public class PlayerStats : ChatBotCommandHandler<string>
             return;
         }
 
+        // originally for stats (skills) of a player or specific skill
+        // but now it should also support giving  details about a target item.
+
         if (!string.IsNullOrEmpty(skillName))
         {
+            var invItem = itemResolver.ResolveInventoryItem(player, skillName);
+            if (invItem != null && invItem.InventoryItem != null)
+            {
+                SendInventoryItemStats(invItem.InventoryItem, gm, client);
+                return;
+            }
+
+            var item = itemResolver.ResolveAny(skillName);
+            if (item != null && item.Item != null)
+            {
+                SendItemStats(item.Item, gm, client);
+                return;
+            }
+
             var targetPlayer = PlayerManager.GetPlayerByName(skillName);
             if (targetPlayer != null)
             {
@@ -49,6 +71,60 @@ public class PlayerStats : ChatBotCommandHandler<string>
         }
 
         SendPlayerStats(gm, player, client);
+    }
+
+    private void SendInventoryItemStats(GameInventoryItem inventoryItem, GameMessage gm, GameClient client)
+    {
+        var stats = inventoryItem.GetItemStats(true);
+        var statsString = string.Join(", ", stats.Select(FormatStat));
+        if (string.IsNullOrEmpty(statsString))
+        {
+            client.SendReply(gm, "Oh dear! {itemName} seem to be missing stats!", inventoryItem.Name);
+            return;
+        }
+        client.SendReply(gm, "{itemName}: {stats}", inventoryItem.Name, statsString);
+    }
+
+    private void SendItemStats(Item item, GameMessage gm, GameClient client)
+    {
+        var stats = item.GetItemStats();
+        var statsString = string.Join(", ", stats.Select(FormatStat));
+        if (string.IsNullOrEmpty(statsString))
+        {
+            client.SendReply(gm, "Oh dear! {itemName} seem to be missing stats!", item.Name);
+            return;
+        }
+        client.SendReply(gm, "{itemName}: {stats}", item.Name, statsString);
+    }
+
+    private string FormatStat(ItemStat stat)
+    {
+        if (stat.Enchantment != null)
+        {
+            var e = stat.Enchantment;
+            var value = (e.ValueType == AttributeValueType.Percent ? ((int)(e.Value * 100)) + "%" : e.Value + "");
+            return stat.Name + ": " + (int)stat + " (+" + value + ")";
+        }
+
+        // Enchantments will not have a value, only use the description.
+        var s = (int)stat;
+        if (s > 0)
+        {
+            return stat.Name + ": " + (int)stat;
+        }
+
+        if (stat.Name.Contains("%"))
+        {
+            // make sure we parse these not to give a huge amount of decimals.
+            var v = stat.Name.Split(' ');
+            var num = v[^1].Split('%')[0];
+            if (float.TryParse(num.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+            {
+                return stat.Name.Replace(num, Math.Round(value, 2).ToString());
+            }
+        }
+
+        return stat.Name;
     }
 
     private void SendPlayerStats(GameMessage gm, PlayerController player, GameClient client)

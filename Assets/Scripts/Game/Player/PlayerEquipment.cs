@@ -105,8 +105,10 @@ public class PlayerEquipment : MonoBehaviour
         HideEquipments();
 
         if (!bow && bowPrefab)
+        {
             bow = Instantiate(bowPrefab, appearance.OffHandTransform)
                     .GetComponent<ItemController>();
+        }
 
         if (bow)
         {
@@ -121,8 +123,10 @@ public class PlayerEquipment : MonoBehaviour
         HideEquipments();
 
         if (!staff && staffPrefab)
+        {
             staff = Instantiate(staffPrefab, appearance.MainHandTransform)
                         .GetComponent<ItemController>();
+        }
 
         if (staff)
         {
@@ -214,9 +218,7 @@ public class PlayerEquipment : MonoBehaviour
 
     public bool IsOneHandedWeapon(ItemController weapon)
     {
-        return weapon.Type == ItemType.OneHandedAxe ||
-                        weapon.Type == ItemType.OneHandedSword ||
-                        weapon.Type == ItemType.OneHandedMace;
+        return weapon.Type == ItemType.OneHandedAxe || weapon.Type == ItemType.OneHandedSword;
     }
 
     public void EquipAll(IReadOnlyList<GameInventoryItem> inventoryEquippedItems)
@@ -236,10 +238,10 @@ public class PlayerEquipment : MonoBehaviour
         if (player.TrainingMagic)
             ShowWeapon(AttackType.Magic);
 
-        if (player.TrainingRanged)
+        else if (player.TrainingRanged)
             ShowWeapon(AttackType.Ranged);
 
-        if (player.TrainingMelee)
+        else if (player.TrainingMelee)
             ShowWeapon(AttackType.Melee);
     }
 
@@ -324,9 +326,13 @@ public class PlayerEquipment : MonoBehaviour
         }
 
         var existingItemController = equippedObjects.FirstOrDefault(x => x.ItemId == item.Item.Id);
-        if (existingItemController != null && existingItemController)
+        if (existingItemController != null)
         {
-            Destroy(existingItemController.gameObject);
+            if (existingItemController)
+            {
+                Destroy(existingItemController.gameObject);
+            }
+
             equippedObjects.Remove(existingItemController);
         }
 
@@ -354,18 +360,34 @@ public class PlayerEquipment : MonoBehaviour
 
     public void SetShield(ItemController item)
     {
+        DestroyItemObjectIfNotSame(shield, item);
         shield = item;
     }
 
     public void SetWeapon(ItemController item)
     {
         if (item.Type == ItemType.TwoHandedBow)
+        {
+            DestroyItemObjectIfNotSame(bow, item);
             bow = item;
+        }
         else if (item.Type == ItemType.TwoHandedStaff)
+        {
+            DestroyItemObjectIfNotSame(staff, item);
             staff = item;
+        }
         else
         {
+            DestroyItemObjectIfNotSame(weapon, item);
             weapon = item;
+        }
+    }
+
+    private void DestroyItemObjectIfNotSame(ItemController obj, ItemController other)
+    {
+        if (obj && obj.GetInstanceID() != other.GetInstanceID())
+        {
+            Destroy(obj.gameObject);
         }
     }
 

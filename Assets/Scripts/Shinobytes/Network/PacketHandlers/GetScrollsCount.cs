@@ -1,5 +1,6 @@
 ﻿using RavenNest.Models;
 using System.Collections.Generic;
+using System.Linq;
 
 public class GetScrollsCount : ChatBotCommandHandler
 {
@@ -42,7 +43,7 @@ public class GetScrollsCount : ChatBotCommandHandler
     }
     private static ScrollInfoCollection GetScrollInfoCollection(PlayerController player)
     {
-        var scrolls = player.Inventory.GetInventoryItemsOfCategory(ItemCategory.Scroll);
+        var scrolls = player.Inventory.GetInventoryItemsOfCategory(ItemCategory.Scroll).Where(x => !x.Name.Contains(" token", System.StringComparison.OrdinalIgnoreCase)).ToList();
         var res = new List<ScrollInfo>();
         foreach (var scroll in scrolls)
         {
@@ -51,8 +52,8 @@ public class GetScrollsCount : ChatBotCommandHandler
         return new ScrollInfoCollection(res);
     }
     private static void SendScrollCount(
-        GameMessage gm, 
-        GameClient client, 
+        GameMessage gm,
+        GameClient client,
         ScrollInfoCollection scrolls)
     {
         var parameters = new List<object>();

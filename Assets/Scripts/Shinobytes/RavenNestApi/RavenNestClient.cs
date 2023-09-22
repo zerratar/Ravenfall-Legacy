@@ -41,9 +41,9 @@ namespace RavenNest.SDK
             GameManager gameManager)
         {
             Settings =
-                        //new ProductionEndpoint()
+                        new ProductionEndpoint()
                         //new StagingRavenNestStreamSettings()
-                        new LocalServerRemoteBotEndpoint()
+                        //new LocalServerRemoteBotEndpoint()
                         //new DevServerRemoteBotEndpoint()
                         //new LocalEndpoint()
                         ;
@@ -249,6 +249,7 @@ namespace RavenNest.SDK
                 TwitchUserName = currentSessionToken.TwitchUserName;
                 TwitchDisplayName = currentSessionToken.TwitchDisplayName;
                 TwitchUserId = currentSessionToken.TwitchUserId;
+
 
                 UserSettings = result.UserSettings;
 

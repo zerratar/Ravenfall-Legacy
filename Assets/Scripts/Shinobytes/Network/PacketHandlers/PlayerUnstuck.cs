@@ -16,6 +16,10 @@
             return;
         }
 
-        player.Unstuck();
+        var result = player.Unstuck();
+        if (!result)
+        {
+            client.SendReply(gm, "Unstuck command can only be used once per minute/character.");
+        }
     }
 }

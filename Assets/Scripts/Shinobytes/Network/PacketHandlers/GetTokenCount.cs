@@ -19,7 +19,7 @@ public class GetTokenCount : ChatBotCommandHandler
         }
 
         var tokens = player.Inventory
-            .GetInventoryItemsOfCategory(RavenNest.Models.ItemCategory.Resource)
+            .GetInventoryItemsOfCategory(RavenNest.Models.ItemCategory.Scroll)
             .Where(x => x.Item.Name.Equals("Halloween Token") ||
                         x.Item.Name.Equals("Christmas Token") ||
                         x.Item.Name.Equals("Easter Token") ||

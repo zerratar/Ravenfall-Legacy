@@ -24,6 +24,14 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<ItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
         }
 
+        public Task<ResourceItemDropCollection> GetResourceDropsAsync()
+        {
+            return request.Create()
+                .Method("drops")
+                .Build()
+                .SendAsync<ResourceItemDropCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
+        }
+
         public Task<RedeemableItemCollection> GetRedeemablesAsync()
         {
             return request.Create()

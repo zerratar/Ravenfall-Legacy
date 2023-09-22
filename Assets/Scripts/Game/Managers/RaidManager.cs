@@ -38,6 +38,8 @@ public class RaidManager : MonoBehaviour, IEvent
 
     //private float lastRaidEndTime = 0f;
 
+    public int Counter => raidIndex;
+
     public float SecondsLeft => timeoutTimer;
     public float SecondsUntilNextRaid => nextRaidTimer;
     public bool Started => nextRaidTimer < 0f;
@@ -104,6 +106,8 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             return;
         }
+        
+        player.Raid.AutoJoining = false;
 
         lock (mutex)
         {
@@ -113,6 +117,8 @@ public class RaidManager : MonoBehaviour, IEvent
                 // reset the start time until someone joins or boss health is the same.
                 raidStartedTime = Time.time;
             }
+
+            player.InterruptAction();
 
             if (!raidingPlayers.Contains(player))
             {
@@ -126,7 +132,7 @@ public class RaidManager : MonoBehaviour, IEvent
         // whenever a player joins, we take the sum of all combat skills and equipment
         // this needs to be recorded for every raid that occurs
         difficultySystem.Track(raidIndex, player);
-
+        gameManager.raidStatsJson.Update();
     }
 
     public void Leave(PlayerController player, bool reward = false, bool timeout = false)
@@ -144,9 +150,11 @@ public class RaidManager : MonoBehaviour, IEvent
                 player.Raid.OnLeave(reward, timeout);
             }
         }
+
+        gameManager.raidStatsJson.Update();
     }
 
-    public bool StartRaid(string initiator = null)
+    public async Task<bool> StartRaid(string initiator = null)
     {
         if (gameManager.Events.TryStart(this))
         {
@@ -180,6 +188,9 @@ public class RaidManager : MonoBehaviour, IEvent
             {
                 gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
             }
+            gameManager.raidStatsJson.Update();
+
+            await gameManager.HandleRaidAutoJoin();
 
             return true;
         }
@@ -230,6 +241,7 @@ public class RaidManager : MonoBehaviour, IEvent
         RequiredCode = null;
         gameManager.Ferry.AssignBestCaptain();
         difficultySystem.Next();
+        gameManager.raidStatsJson.Update();
     }
 
     private Queue<Func<Task>> rewardQueue = new Queue<Func<Task>>();

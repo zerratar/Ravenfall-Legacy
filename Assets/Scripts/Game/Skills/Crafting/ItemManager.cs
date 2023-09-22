@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RavenNest.Models;
@@ -40,6 +41,7 @@ public class ItemManager : MonoBehaviour
     private DateTime itemsLastUpdate;
     private TimeSpan itemsUpdateInterval = TimeSpan.FromMinutes(5);
     private List<ItemRecipe> recipes;
+    private List<ResourceItemDrop> resourceDrops;
 
     public bool TryGetPrefab(string path, out GameObject prefab)
     {
@@ -122,6 +124,33 @@ public class ItemManager : MonoBehaviour
         return items.FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
     }
 
+    /// <summary>
+    ///     Gets wether or not the target item is dropped by training a skill.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool CanBeDropped(Item item)
+    {
+        return resourceDrops.Any(x => x.ItemId == item.Id);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetRequiredLevelForDrop(Item item)
+    {
+        return resourceDrops.FirstOrDefault(x => x.ItemId == item.Id)?.LevelRequirement ?? -1;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ResourceItemDrop GetResourceDrop(Guid itemId)
+    {
+        return resourceDrops.FirstOrDefault(x => x.ItemId == itemId);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ResourceItemDrop GetResourceDrop(Item item)
+    {
+        return GetResourceDrop(item.Id);
+    }
+
     public IReadOnlyList<RedeemableItem> GetRedeemables()
     {
         var items = new List<RedeemableItem>();
@@ -169,6 +198,7 @@ public class ItemManager : MonoBehaviour
             await DownloadItemsAsync();
             await DownloadItemRecipesAsync();
             await DownloadRedeemableItemsAsync();
+            await DownloadItemResourceDropsAsync();
         }
         catch (Exception exc)
         {
@@ -178,7 +208,16 @@ public class ItemManager : MonoBehaviour
         state = LoadingState.Loaded;
         game.SetLoadingState("items", state);
     }
+    private async Task DownloadItemResourceDropsAsync()
+    {
+        ResourceItemDropCollection resourceDrops = await game.RavenNest.Items.GetResourceDropsAsync();
+        if (resourceDrops != null && resourceDrops.Count > 0)
+        {
+            this.resourceDrops = resourceDrops.ToList();
+        }
 
+        Shinobytes.Debug.Log((resourceDrops?.Count ?? 0) + " resource drops loaded!");
+    }
     private async Task DownloadRedeemableItemsAsync()
     {
         var redeemableItems = await game.RavenNest.Items.GetRedeemablesAsync();
@@ -312,6 +351,7 @@ public class ItemManager : MonoBehaviour
     {
         //existing.Id = updatedItem.Id;
         existing.Name = updatedItem.Name;
+        existing.Description = updatedItem.Description;
         existing.Level = updatedItem.Level;
         existing.WeaponAim = updatedItem.WeaponAim;
         existing.WeaponPower = updatedItem.WeaponPower;
@@ -334,13 +374,9 @@ public class ItemManager : MonoBehaviour
         existing.MalePrefab = updatedItem.MalePrefab;
         existing.FemalePrefab = updatedItem.FemalePrefab;
         existing.IsGenericModel = updatedItem.IsGenericModel;
-        existing.Craftable = updatedItem.Craftable;
-        existing.RequiredCraftingLevel = updatedItem.RequiredCraftingLevel;
-        existing.RequiredCookingLevel = updatedItem.RequiredCookingLevel;
         existing.ShopBuyPrice = updatedItem.ShopBuyPrice;
         existing.ShopSellPrice = updatedItem.ShopSellPrice;
         existing.Soulbound = updatedItem.Soulbound;
-        existing.CraftingRequirements = updatedItem.CraftingRequirements;
         existing.Modified = updatedItem.Modified;
     }
 
@@ -409,6 +445,15 @@ public class ItemManager : MonoBehaviour
         };
     }
 
+    internal IReadOnlyList<ItemRecipe> GetItemRecipes()
+    {
+        return this.recipes;
+    }
+
+    internal ItemRecipe GetRecipeWithSingleIngredient(Item item)
+    {
+        return this.recipes.FirstOrDefault(x => x.Ingredients.Count == 1 && x.Ingredients[0].ItemId == item.Id && x.Ingredients[0].Amount <= 1);
+    }
 
     private struct Date
     {
