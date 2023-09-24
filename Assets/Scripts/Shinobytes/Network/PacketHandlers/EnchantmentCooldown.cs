@@ -36,7 +36,7 @@
         var clearCost = result.CoinsPerSeconds;
         var cooldown = cooldownExpires - now;
         var cooldownString = GetCooldownString(cooldown);
-        var totalCost = clearCost * cooldown.TotalSeconds;
+        var totalCost = (long)(clearCost * cooldown.TotalSeconds);
         client.SendReply(gm, "You have to wait {timeLeft} before you can try to enchant something again. If you want to clear this cooldown, use !enchant clear cooldown, this will cost {pricePerSecond} coins per second. ~Total {totalCost} coins",
             cooldownString, clearCost, totalCost);
     }

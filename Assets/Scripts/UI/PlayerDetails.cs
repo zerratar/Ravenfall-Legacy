@@ -139,7 +139,7 @@ public class PlayerDetails : MonoBehaviour
         SetActive(lblTraining.gameObject, isTrainingSomething);
         SetActive(lblTrainingSkill.gameObject, isTrainingSomething);
 
-        if (observedPlayer.Ferry)
+        if (observedPlayer.Ferry && observedPlayer.Ferry.OnFerry)
         {
             lblTrainingSkill.text = "Sailing";
             lblTimeForLevel.text = GetTimeLeftForLevelFormatted(observedPlayer.Stats.Sailing);

@@ -401,6 +401,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             joinedPlayers.Remove(player);
             deadPlayers.Remove(player);
+            player.Dungeon.Clear();
         }
     }
     public DungeonJoinResult CanJoin(PlayerController player)

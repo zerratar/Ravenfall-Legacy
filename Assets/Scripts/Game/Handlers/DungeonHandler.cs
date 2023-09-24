@@ -46,7 +46,7 @@ public class DungeonHandler : MonoBehaviour
             return;
         }
 
-        if (AutoJoining)
+        if (!InDungeon && AutoJoining)
         {
             return;
         }
@@ -81,6 +81,8 @@ public class DungeonHandler : MonoBehaviour
         {
             return;
         }
+
+        AutoJoining = false;
 
         if (player.TrainingHealing)
         {
@@ -248,9 +250,7 @@ public class DungeonHandler : MonoBehaviour
         waitForDungeon = 0;
         InDungeon = true;
 
-
         var startingPoint = dungeon.StartingPoint;
-
         this.previousTask = this.player.GetTask();
         this.previousTaskArgument = this.player.GetTaskArgument();
 
@@ -305,10 +305,7 @@ public class DungeonHandler : MonoBehaviour
         if (!InDungeon)
             return;
 
-        enemyTarget = null;
-        healTarget = null;
-
-        InDungeon = false;
+        Clear();
 
         if (Ferry.OnFerry)
         {
@@ -441,6 +438,17 @@ public class DungeonHandler : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Clears the dungeon state
+    /// </summary>
+    internal void Clear()
+    {
+        enemyTarget = null;
+        healTarget = null;
+        InDungeon = false;
+        player.attackTarget = null;
+        player.taskTarget = null;
+    }
 
     public struct FerryState
     {

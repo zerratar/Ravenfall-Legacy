@@ -1,4 +1,5 @@
 ﻿using RavenNest.Models;
+using System;
 
 public class UseExpMultiplierScroll : ChatBotCommandHandler<int>
 {
@@ -12,25 +13,39 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<int>
 
     public override async void Handle(int data, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(gm.Sender);
-        if (player == null || !player)
+        UseExpScrollResult result = null;
+        PlayerController player = null;
+        
+        var expLimit = 100;
+        if (Game.Permissions != null)
         {
-            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
-            return;
+            if (Game.Permissions.PlayerExpMultiplierLimit > 0)
+            {
+                expLimit = Game.Permissions.PlayerExpMultiplierLimit;
+            }
         }
 
         var scrollCount = data;
         if (scrollCount < 0) scrollCount = 1;
-        if (scrollCount > 100) scrollCount = 100;
+        if (scrollCount > expLimit) scrollCount = expLimit;
 
-        var result = await Game.RavenNest.Game.UseExpScrollAsync(player, scrollCount);
         try
         {
+
+            player = PlayerManager.GetPlayer(gm.Sender);
+            if (player == null || !player)
+            {
+                client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+                return;
+            }
+
+            result = await Game.RavenNest.Game.UseExpScrollAsync(player, scrollCount);
+
             if (result.Result == ScrollUseResult.Success)
             {
-                if (result.Used == 0 || Game.Boost.Multiplier >= 100 || Game.Boost.Active && Game.Boost.Multiplier >= Game.Twitch.ExpMultiplierLimit)
+                if (result.Used == 0 || Game.Boost.Multiplier >= expLimit || Game.Boost.Active && Game.Boost.Multiplier >= Game.Twitch.ExpMultiplierLimit)
                 {
-                    client.SendReply(gm, "The maximum multiplier has already been reached. Please try again later.");
+                    client.SendReply(gm, "The maximum multiplier has already been reached.");
                     return;
                 }
 
@@ -57,10 +72,19 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<int>
 
             client.SendReply(gm, "Unable to use any scrolls at this time, game may be out of sync. Try again later.");
         }
+        catch (Exception exc)
+        {
+            var playerName = player?.Name;
+            Shinobytes.Debug.LogError("Exception using multiplier scroll, Player: " + playerName + ", Scrolls: " + scrollCount + ", Error: " + exc);
+            client.SendReply(gm, "Unable to use any scrolls at this time, game may be out of sync. Try again later. Error has been logged.");
+        }
         finally
         {
-            // regardless of error, update exp multiplier
-            Game.HandleGameEvent(result.Multiplier);
+            if (result != null)
+            {
+                // regardless of error, update exp multiplier
+                Game.HandleGameEvent(result.Multiplier);
+            }
         }
     }
 }

@@ -64,7 +64,7 @@ public class FightingTask : ChunkTask
             for (var i = 0; i < playerCount; ++i)
             {
                 var x = players[i];
-                if (x.Stats.Health.CurrentValue <= 0)
+                if (x.Stats.Health.CurrentValue <= 0 || x.Ferry.OnFerry)
                 {
                     continue;
                 }
@@ -218,6 +218,12 @@ public class FightingTask : ChunkTask
         {
             var tar = target as PlayerController;
             if (!tar)
+            {
+                reason = TaskExecutionStatus.InvalidTarget;
+                return false;
+            }
+
+            if (tar.Ferry.OnFerry || player.Ferry.OnFerry)
             {
                 reason = TaskExecutionStatus.InvalidTarget;
                 return false;

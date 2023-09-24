@@ -1289,6 +1289,12 @@ public class PlayerController : MonoBehaviour, IAttackable
         var equipped = Inventory.Equip(item);
         if (!equipped)
         {
+            if (!item.IsEquippableType)
+            {
+                GameManager.RavenBot.SendReply(this, "{itemName} can't be equipped.", item.Name);
+                return;
+            }
+
             var reqLevels = new List<string>();
             var requirement = "You require level ";
             if (item.RequiredAttackLevel > Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
@@ -2692,14 +2698,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public bool EquipIfBetter(GameInventoryItem item)
     {
-        if (item.Category == ItemCategory.Resource || item.Category == ItemCategory.Food || item.Category == ItemCategory.Scroll)
+        if (!item.CanBeEquipped())
             return false;
-
-        if (item.RequiredDefenseLevel > Stats.Defense.Level) return false;
-        if (item.RequiredAttackLevel > Stats.Attack.Level) return false;
-        if (item.RequiredSlayerLevel > Stats.Slayer.Level) return false;
-        if (item.RequiredMagicLevel > Stats.Magic.Level && item.RequiredMagicLevel > Stats.Healing.Level) return false;
-        if (item.RequiredRangedLevel > Stats.Ranged.Level) return false;
 
         var currentEquipment = Inventory.GetEquipmentOfType(item.Category, item.Type);
         if (currentEquipment == null)
@@ -2971,6 +2971,16 @@ public class PlayerController : MonoBehaviour, IAttackable
                 return true;
             }
 
+            if (Onsen.InOnsen)
+            {
+                GameManager.Onsen.Leave(this);
+            }
+
+            if (string.IsNullOrEmpty(CurrentTaskName) && Stats.CombatLevel > 3)
+            {
+                SetTask(TaskType.Fighting, "all");
+            }
+
             // if we are not in an onsen, dungeon and not on the ferry but we are playing a moving animation
             // then we are teleported to the spawnposition of the current island we are on.
             // if no island can be detected, then telepor to home island.
@@ -3012,10 +3022,16 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void ApplyStatusEffects(IReadOnlyList<CharacterStatusEffect> effects)
     {
+        if (effects == null || effects.Count == 0)
+        {
+            return;
+        }
+
         foreach (var fx in effects)
         {
             ApplyStatusEffect(fx);
         }
+
         UpdateEquipmentEffect();
     }
 

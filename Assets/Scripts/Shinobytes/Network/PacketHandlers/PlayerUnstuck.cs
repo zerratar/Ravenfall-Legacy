@@ -1,4 +1,4 @@
-﻿public class PlayerUnstuck : ChatBotCommandHandler
+﻿public class PlayerUnstuck : ChatBotCommandHandler<string>
 {
     public PlayerUnstuck(
         GameManager game,
@@ -8,11 +8,22 @@
     {
     }
 
-    public override void Handle(GameMessage gm, GameClient client)
+    public override void Handle(string args, GameMessage gm, GameClient client)
     {
         var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
         {
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(args) && args.ToLower() == "all" || args.ToLower() == "everyone")
+        {
+            foreach (var p in PlayerManager.GetAllPlayers())
+            {
+                p.Unstuck();
+            }
+
+            client.SendReply(gm, "Unstucking all players.");
             return;
         }
 

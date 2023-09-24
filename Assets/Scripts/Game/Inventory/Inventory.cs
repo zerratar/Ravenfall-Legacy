@@ -30,6 +30,39 @@ public class GameInventoryItem
         Type = item.Type;
         Category = item.Category;
     }
+
+    public bool IsEquippableType =>
+        Category == ItemCategory.Weapon ||
+        Category == ItemCategory.Armor ||
+        Category == ItemCategory.Pet ||
+        Category == ItemCategory.Skin ||
+        Category == ItemCategory.Ring ||
+        Category == ItemCategory.Amulet;
+
+    public bool CanBeEquipped()
+    {
+        if (!IsEquippableType)
+            return false;
+
+        if (Category == ItemCategory.Resource ||
+            Category == ItemCategory.Food ||
+            Category == ItemCategory.Scroll ||
+            Type == ItemType.Woodcutting ||
+            Type == ItemType.Alchemy ||
+            Type == ItemType.Fishing ||
+            Type == ItemType.Mining ||
+            Type == ItemType.Farming ||
+            Type == ItemType.Cooking ||
+            Type == ItemType.Crafting)
+            return false;
+
+        return Player.Stats.Defense.Level >= RequiredDefenseLevel
+            && Player.Stats.Attack.Level >= RequiredAttackLevel
+            && Player.Stats.Slayer.Level >= RequiredSlayerLevel
+            && (Player.Stats.Magic.Level >= RequiredMagicLevel || Player.Stats.Healing.Level >= RequiredMagicLevel)
+            && Player.Stats.Ranged.Level >= RequiredRangedLevel;
+    }
+
     public bool Soulbound { get; set; }
     public int RequiredDefenseLevel { get; set; }
     public int RequiredAttackLevel { get; set; }
@@ -664,8 +697,10 @@ public class Inventory : MonoBehaviour
         if (item == null || !player || player == null || !player.transform || player.transform == null || !CanEquipItem(item))
             return false;
 
-        player.transform.localScale = Vector3.one;
+        if (!item.CanBeEquipped())
+            return false;
 
+        player.transform.localScale = Vector3.one;
 
         lock (mutex)
         {

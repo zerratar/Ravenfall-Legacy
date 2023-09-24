@@ -1,4 +1,6 @@
-﻿public class PermissionChangedEventHandler : GameEventHandler<Permissions>
+﻿using RavenNest.Models;
+
+public class PermissionChangedEventHandler : GameEventHandler<Permissions>
 {
     public override void Handle(GameManager gameManager, Permissions data)
     {

@@ -107,7 +107,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public VillageManager Village => villageManager;
     public PlayerLogoManager PlayerLogo => playerLogoManager;
-    public TwitchSubscriberBoost Boost => subEventManager.CurrentBoost;
+    public ExpBoostEvent Boost => subEventManager.CurrentBoost;
     public TwitchEventManager Twitch => subEventManager;
     public MusicManager Music => musicManager;
     public ChunkManager Chunks => chunkManager;
@@ -172,6 +172,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public StreamLabel villageBoostLabel;
     public StreamLabel playerCountLabel;
 
+    public StreamLabel expMultiplierJson;
     public StreamLabel sessionStatsJson;
     public StreamLabel ferryStatsJson;
     public StreamLabel raidStatsJson;
@@ -330,6 +331,9 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ExpMultiplierEventHandler>(GameEventType.ExpMultiplier);
         RegisterGameEventHandler<GameUpdatedEventHandler>(GameEventType.GameUpdated);
 
+        RegisterGameEventHandler<PlayerUnstuckEventHandler>(GameEventType.Unstuck);
+        RegisterGameEventHandler<PlayerTeleportEventHandler>(GameEventType.Teleport);
+
         RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
         RegisterGameEventHandler<PlayerAddEventHandler>(GameEventType.PlayerAdd);
         RegisterGameEventHandler<PlayerExpUpdateEventHandler>(GameEventType.PlayerExpUpdate);
@@ -389,7 +393,10 @@ public class GameManager : MonoBehaviour, IGameManager
                 continue;
             }
 
-            player.PickupItem(rewardItem, false, false);
+            var item = this.itemManager.Get(reward.ItemId);
+            var stack = player.Inventory.AddToBackpack(reward.InventoryItemId, item, reward.Amount);
+            
+            player.EquipIfBetter(stack);
 
             var key = rewardItem.Name;
 
@@ -425,17 +432,31 @@ public class GameManager : MonoBehaviour, IGameManager
         StreamLabels.RegisterText("level-requirements", () => GetLevelRequirementsString()).Update();
         StreamLabels.Register("level-requirements", () => GetLevelRequirements()).Update();
 
+        expMultiplierJson = StreamLabels.Register("exp-multiplier", () => GetExpMultiplierStats());
         sessionStatsJson = StreamLabels.Register("session", () => GetSessionStats());
         ferryStatsJson = StreamLabels.Register("ferry", () => GetFerryStats());
         raidStatsJson = StreamLabels.Register("raid", () => GetRaidStats());
         dungeonStatsJson = StreamLabels.Register("dungeon", () => GetDungeonStats());
         villageStatsJson = StreamLabels.Register("village", () => GetVillageStats());
 
+        expMultiplierJson.Update();
         sessionStatsJson.Update();
         ferryStatsJson.Update();
         raidStatsJson.Update();
         dungeonStatsJson.Update();
         villageStatsJson.Update();
+    }
+
+    private ExpBoostEvent emptySubBoost = new ExpBoostEvent();
+    private ExpBoostEvent GetExpMultiplierStats()
+    {
+        var boost = subEventManager.CurrentBoost;
+        if (boost.Active)
+        {
+            return boost;
+        }
+
+        return emptySubBoost;
     }
 
     public VillageStats GetVillageStats()
@@ -933,7 +954,7 @@ public class GameManager : MonoBehaviour, IGameManager
             uptimeLabel.Update();
 
             /* do it every 3s for now. but would better to keep track on value changes and update only then. */
-
+            expMultiplierJson.Update();
             sessionStatsJson.Update();
             ferryStatsJson.Update();
             raidStatsJson.Update();
@@ -2114,7 +2135,7 @@ public class GameManager : MonoBehaviour, IGameManager
             }
             else if (secondsLeftInt > 60)
                 timeLeft = $"{Mathf.FloorToInt(secondsLeftInt / 60f)} mins";
-            boostTimer.SetSubscriber(subEventManager.CurrentBoost.LastSubscriber, !subEventManager.CurrentBoost.LastSubscriber.Contains(" "));
+            boostTimer.SetSubscriber(subEventManager.CurrentBoost.EventName, !subEventManager.CurrentBoost.EventName.Contains(" "));
             boostTimer.SetText($"EXP Multiplier x{subEventManager.CurrentBoost.Multiplier} - {timeLeft}");
             boostTimer.SetTime(secondsLeft, secondsTotal);
         }

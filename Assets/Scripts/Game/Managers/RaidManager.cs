@@ -106,7 +106,7 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             return;
         }
-        
+
         player.Raid.AutoJoining = false;
 
         lock (mutex)
@@ -420,6 +420,7 @@ public class RaidManager : MonoBehaviour, IEvent
             {
                 var randomChunk = chunkManager
                     .GetChunks()
+                    .Where(x => x.Type != TaskType.Alchemy && x.Type != TaskType.Cooking && x.Type != TaskType.Crafting)
                     .OrderBy(x => UnityEngine.Random.value)
                     .FirstOrDefault();
 
@@ -435,13 +436,6 @@ public class RaidManager : MonoBehaviour, IEvent
                 return false;
             }
 
-            /* old logic
-                var players = playerManager.GetAllPlayers();
-                var highestStats = players.Max(x => x.Stats);
-                var lowestStats = players.Min(x => x.Stats);
-                var rngLowEq = players.Min(x => x.EquipmentStats);
-                var rngHighEq = players.Max(x => x.EquipmentStats) * 0.75f;
-            */
             Boss = Instantiate(raidBossPrefab, spawnPosition, Quaternion.identity).GetComponent<RaidBossController>();
             //Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
             Boss.Create(difficulty.BossSkills, difficulty.BossEquipmentStats);

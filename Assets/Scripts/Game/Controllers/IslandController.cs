@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class IslandController : MonoBehaviour
@@ -22,6 +23,8 @@ public class IslandController : MonoBehaviour
     //private readonly Dictionary<Guid, PlayerController> players = new Dictionary<Guid, PlayerController>();
     private readonly List<PlayerController> players = new List<PlayerController>();
     public Vector3 SpawnPosition => SpawnPositionTransform ? SpawnPositionTransform.position : transform.position;
+
+    private PlayerManager playerManager;
 
     public bool Sailable => this.DockingArea != null;
 
@@ -73,7 +76,44 @@ public class IslandController : MonoBehaviour
         //    return;
         //}
     }
-    public IReadOnlyList<PlayerController> GetPlayers() => players;//players.Values.ToList();
+    public IReadOnlyList<PlayerController> GetPlayers()
+    {
+        // we have to verify that all players are correctly assigned on an island
+        // if not, we have to rebuild this list.
+
+        foreach (var p in players)
+        {
+            if (p.Ferry.OnFerry || p.Dungeon.InDungeon)
+            {
+                return RebuildPlayerList();
+            }
+        }
+
+        return players;//players.Values.ToList();
+    }
+
+    private IReadOnlyList<PlayerController> RebuildPlayerList()
+    {
+        Shinobytes.Debug.Log("Rebuilding player list for island: " + this.Island + " as one or more players were on ferry or in dungeon.");
+        if (!playerManager)
+        {
+            playerManager = FindObjectOfType<PlayerManager>();
+        }
+        players.Clear();
+        foreach (var p in playerManager.GetAllPlayers())
+        {
+            if (p.Ferry.OnFerry || p.Dungeon.InDungeon)
+                continue;
+
+            if (InsideIsland(p.transform.position))
+            {
+                players.Add(p);
+            }
+        }
+
+        return players;
+    }
+
     internal void AddPlayer(PlayerController playerController)
     {
         players.Add(playerController);

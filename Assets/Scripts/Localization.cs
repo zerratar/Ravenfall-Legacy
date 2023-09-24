@@ -64,7 +64,7 @@ public static class Localization
     public static readonly string MSG_RESTED = Meta("info", "rest") + "You're rested and gain {expBoost}x more exp for {restedTime}";
     public static readonly string MSG_NOT_RESTED = Meta("info", "rest") + "You're not rested. Sail to Kyo and use !rest or !onsen to rest.";
     public static readonly string MSG_RESTING = Meta("info", "rest") + "You're currently resting and will have {expBoost}x more exp for {restedTime}";
-    public static readonly string MSG_ONSEN_WRONG_ISLAND = Meta("rest", "fail") + "Resting areas are currently on available on Kyo and Heim. You're currently on {islandName}.";
+    public static readonly string MSG_ONSEN_WRONG_ISLAND = Meta("rest", "fail") + "Resting areas are available on Kyo, Heim, Atria and Eldara only. You're currently on {islandName}.";
     public static readonly string MSG_ONSEN_FERRY = Meta("rest", "fail") + "You can't enter the onsen while you're on the ferry. Disembark at Kyo to use the onsen.";
     public static readonly string MSG_ONSEN_FULL = Meta("rest", "fail") + "Onsen seem to be full. You will have to try again later.";
     public static readonly string MSG_ONSEN_ENTRY = Meta("rest", "fail") + "You are now resting peacefully at the onsen. You will gain 2x more exp for two seconds for every second you stay here. Use !onsen leave when you're done.";

@@ -52,6 +52,12 @@
             return;
         }
 
+        if (!queriedItem.InventoryItem.IsEquippableType)
+        {
+            client.SendReply(gm, "{itemName} is not an equippable item.", queriedItem.InventoryItem.Name);
+            return;
+        }
+
         if (await player.EquipAsync(queriedItem.InventoryItem))
         {
             client.SendReply(gm, Localization.MSG_EQUIPPED, queriedItem.InventoryItem.Name);

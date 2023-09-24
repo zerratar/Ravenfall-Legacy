@@ -4,7 +4,7 @@ using UnityEngine;
 public class TwitchEventManager : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
-    [SerializeField] private TwitchSubscriberBoost boost;
+    [SerializeField] private ExpBoostEvent boost;
 
     public static float[] AnnouncementTimersSeconds = new float[] {
         300, // first at 5 mins left
@@ -20,18 +20,13 @@ public class TwitchEventManager : MonoBehaviour
         0f, 2f, 3f, 5f, 5f, 5f, 5f, 5f, 5f, 5f
     };
 
-    private int BitsForMultiplier = 100;
-
     private int limitOverride = -1;
 
     public DateTime LastUpdated;
 
-
     public int ExpMultiplierLimit => limitOverride > 0 ? limitOverride : gameManager.Permissions.ExpMultiplierLimit;
-    public TimeSpan MaxBoostTime => TimeSpan.FromHours(TierExpMultis[gameManager.Permissions.SubscriberTier] - 1f);
     public TimeSpan? TimeLeft => CurrentBoost?.TimeLeft;
     public TimeSpan? Duration => CurrentBoost?.Duration;
-    public DateTime? EndTime => CurrentBoost?.EndTime;
 
     private void Awake()
     {
@@ -107,21 +102,11 @@ public class TwitchEventManager : MonoBehaviour
         if (CurrentBoost.Multiplier > 1)
         {
             Shinobytes.Debug.Log("Global Exp Multiplier have been reset.");
+            gameManager?.expMultiplierJson?.Update();
         }
 
         announced = new bool[AnnouncementTimersSeconds.Length];
-        boost = new TwitchSubscriberBoost();
-
-
-        //if (CurrentBoost.Active || CurrentBoost.BoostTime > TimeSpan.Zero)
-        //{
-        //    CurrentBoost.BoostTime = TimeSpan.Zero;
-        //    CurrentBoost.EndTime = DateTime.MinValue;
-        //    CurrentBoost.StartTime = DateTime.MinValue;
-        //    CurrentBoost.Active = false;
-        //    CurrentBoost.Multiplier = 0;
-        //    CurrentBoost.Elapsed = Duration;
-        //}
+        boost = new ExpBoostEvent();
     }
 
     public void OnCheer(CheerBitsEvent cheer)
@@ -171,7 +156,7 @@ public class TwitchEventManager : MonoBehaviour
                     receiver.IsSubscriber = true;
                     receiverName = receiver.Name;
 
-                    gameManager.RavenBot?.SendReply(receiver, 
+                    gameManager.RavenBot?.SendReply(receiver,
                         Localization.MSG_SUB_CREW,
                         gameManager.RavenNest.TwitchDisplayName,
                         TierExpMultis[gameManager.Permissions.SubscriberTier]);
@@ -207,11 +192,6 @@ public class TwitchEventManager : MonoBehaviour
         DateTime startTime,
         DateTime endTime)
     {
-        //if (multiplier != CurrentBoost.Multiplier || endTime != CurrentBoost.EndTime)
-        //{
-        //    Shinobytes.Debug.Log($"Updating Exp Multiplier. (Old Multi: " + CurrentBoost.Multiplier + ", Old EndTime: " + CurrentBoost.EndTime + $")\n{{\"multiplier\": \"{multiplier}\", \"name\": \"{eventName}\", \"start-time\": \"{startTime}\", \"end-time\": \"{endTime}\"}}\nCurrent UTC Time is: {DateTime.UtcNow}");
-        //}
-
         LastUpdated = DateTime.UtcNow;
         var multi = Mathf.Min(multiplier, ExpMultiplierLimit);
         if (multi <= 1)
@@ -223,6 +203,7 @@ public class TwitchEventManager : MonoBehaviour
         if (multiplier != CurrentBoost.Multiplier)
         {
             announced = new bool[AnnouncementTimersSeconds.Length];
+            gameManager?.expMultiplierJson?.Update();
         }
 
         var now = DateTime.UtcNow;
@@ -232,28 +213,21 @@ public class TwitchEventManager : MonoBehaviour
         CurrentBoost.Elapsed = now - startTime;
         CurrentBoost.Duration = endTime - startTime;
         CurrentBoost.TimeLeft = CurrentBoost.Duration - CurrentBoost.Elapsed;
-        CurrentBoost.LastSubscriber = eventName;
+        CurrentBoost.EventName = eventName;
         CurrentBoost.Active = true;
     }
 
-    public TwitchSubscriberBoost CurrentBoost
-        => boost = boost ?? new TwitchSubscriberBoost();
+    public ExpBoostEvent CurrentBoost => boost = boost ?? new ExpBoostEvent();
 }
 
-[Serializable]
-public class TwitchSubscriberBoost
+public class ExpBoostEvent
 {
-    public string LastSubscriber;
-    public string LastCheerer;
-
-    public int LastCheerAmount;
-    public int CheerPot;
-
-    public bool Active;
-    public float Multiplier = 1f;
-    public TimeSpan Elapsed;
-    public TimeSpan Duration;
-    public TimeSpan TimeLeft;
-    public DateTime EndTime;
-    public DateTime StartTime;
+    public string EventName { get; set; }
+    public bool Active { get; set; }
+    public float Multiplier { get; set; } = 1f;
+    public TimeSpan Elapsed { get; set; }
+    public TimeSpan Duration { get; set; }
+    public TimeSpan TimeLeft { get; set; }
+    public DateTime EndTime { get; set; }
+    public DateTime StartTime { get; set; }
 }

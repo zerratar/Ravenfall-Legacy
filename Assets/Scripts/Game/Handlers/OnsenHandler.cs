@@ -53,6 +53,12 @@ public class OnsenHandler : MonoBehaviour
         {
             rested.RestedTime = CharacterRestedState.RestedTimeMax;
         }
+
+        if (this.InOnsen)
+        {
+            // force player position
+            player.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        }
     }
 
     public void Enter(OnsenController onsen)
@@ -92,8 +98,7 @@ public class OnsenHandler : MonoBehaviour
         var target = spot.Target;
         player.Teleporter.Teleport(target.position, false);
         player.transform.SetParent(target);
-        player.transform.localRotation = Quaternion.identity;
-        player.transform.localPosition = Vector3.zero;
+        player.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         this.onsenParentID = target.GetInstanceID();
 
         onsen.UpdateDetailsLabel();

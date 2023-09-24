@@ -33,6 +33,23 @@ public class IslandManager : MonoBehaviour
         return null;
     }
 
+    public IslandController FindClosestIsland(Vector3 position)
+    {
+        EnsureIslands();
+        var closest = float.MaxValue;
+        IslandController closestIsland = null;
+        for (var i = 0; i < All.Length; i++)
+        {
+            var dist = Vector3.Distance(position, All[i].transform.position);
+            if (dist < closest)
+            {
+                closest = dist;
+                closestIsland = All[i];
+            }
+        }
+        return closestIsland;
+    }
+
     public IslandController Find(string islandName)
     {
         EnsureIslands();
