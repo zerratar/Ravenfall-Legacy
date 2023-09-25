@@ -395,7 +395,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             var item = this.itemManager.Get(reward.ItemId);
             var stack = player.Inventory.AddToBackpack(reward.InventoryItemId, item, reward.Amount);
-            
+
             player.EquipIfBetter(stack);
 
             var key = rewardItem.Name;
@@ -1188,7 +1188,7 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         var userName = "Bot" + id;
-        return new User(Guid.NewGuid(), Guid.NewGuid(), userName, userName, "#ffffff", "system", userId, false, false, false, false, "1");
+        return new User(Guid.NewGuid(), Guid.NewGuid(), userName, userName, "#ffffff", "system", userId, false, false, false, false, false, false, "1");
     }
 
     public PlayerController SpawnPlayer(
@@ -2346,12 +2346,15 @@ public class GameManager : MonoBehaviour, IGameManager
         var autoJoinPlayers = new List<PlayerController>();
         var success = new List<PlayerController>();
         var failed = new List<PlayerController>();
+
+
+
         foreach (var player in Players.GetAllPlayers())
         {
             if (Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin)
                 continue;
 
-            if (player.Dungeon.AutoJoinCounter > 0)
+            if (player.Dungeon.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
             {
                 player.Dungeon.AutoJoining = true;
                 autoJoinList.Add(player.Id);

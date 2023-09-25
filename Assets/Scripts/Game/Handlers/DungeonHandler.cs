@@ -2,11 +2,8 @@
 using System;
 using UnityEngine;
 
-public class DungeonHandler : MonoBehaviour
+public class DungeonHandler
 {
-    [SerializeField] private DungeonManager dungeon;
-    [SerializeField] private PlayerController player;
-
 
     private EnemyController enemyTarget;
     private PlayerController healTarget;
@@ -28,37 +25,35 @@ public class DungeonHandler : MonoBehaviour
 
     public bool AutoJoining;
 
+    private PlayerController player;
+    private DungeonManager dungeon;
+
     public IslandController PreviousIsland => previousIsland;
     public Vector3 PreviousPosition => previousPosition;
     public bool InDungeon { get; private set; }
     public int AutoJoinCounter { get; set; }
     public bool Joined => dungeon != null && dungeon.JoinedDungeon(this.player);
-    private void Start()
+
+    //private void Start()
+    //{
+    //    if (!player) player = GetComponent<PlayerController>();
+    //    if (!dungeon) dungeon = FindObjectOfType<DungeonManager>();
+    //}
+
+    public DungeonHandler(PlayerController player, DungeonManager dungeon)
     {
-        if (!player) player = GetComponent<PlayerController>();
-        if (!dungeon) dungeon = FindObjectOfType<DungeonManager>();
+        this.player = player;
+        this.dungeon = dungeon;
     }
 
-    private void Update()
+    public void Update()
     {
         if (!Overlay.IsGame)
         {
             return;
         }
 
-        if (!InDungeon && AutoJoining)
-        {
-            return;
-        }
-
-        if (waitForDungeon > 0f)
-        {
-            waitForDungeon -= GameTime.deltaTime;
-            OnEnter();
-            return;
-        }
-
-        if (!dungeon.Active)
+        if (AutoJoining)
         {
             return;
         }
@@ -75,6 +70,18 @@ public class DungeonHandler : MonoBehaviour
             {
                 return;
             }
+        }
+
+        if (waitForDungeon > 0f)
+        {
+            waitForDungeon -= GameTime.deltaTime;
+            OnEnter();
+            return;
+        }
+
+        if (!dungeon.Active)
+        {
+            return;
         }
 
         if (!dungeon.Started)
@@ -98,7 +105,7 @@ public class DungeonHandler : MonoBehaviour
                 {
                     var x = players[i];
 
-                    if (x.Stats.Health.CurrentValue <= 0 || x.Id == player.Id || !x.Dungeon.InDungeon)
+                    if (x.Stats.Health.CurrentValue <= 0 || x.Id == player.Id || !x.Dungeon.InDungeon || Mathf.Abs(player.transform.position.y - x.transform.position.y) > 10)
                     {
                         continue;
                     }
@@ -344,10 +351,12 @@ public class DungeonHandler : MonoBehaviour
 
     public void Died()
     {
-        healTarget = null;
-        enemyTarget = null;
         dungeon.PlayerDied(this.player);
         OnExit();
+
+        healTarget = null;
+        enemyTarget = null;
+        player.ClearTarget();
     }
 
     public Vector3 SpawnPosition
@@ -368,7 +377,7 @@ public class DungeonHandler : MonoBehaviour
         }
 
         var range = player.GetAttackRange();
-        var distance = Vector3.Distance(transform.position, healTarget.Position);
+        var distance = Vector3.Distance(player.transform.position, healTarget.Position);
         if (distance <= range)
         {
             if (healTarget.Stats.IsDead)
@@ -404,7 +413,7 @@ public class DungeonHandler : MonoBehaviour
             return;
         }
 
-        var distance = Vector3.Distance(transform.position, enemyTarget.transform.position);
+        var distance = Vector3.Distance(player.transform.position, enemyTarget.transform.position);
         if (distance <= range)
         {
             if (!player.IsReadyForAction)

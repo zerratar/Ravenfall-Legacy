@@ -14,11 +14,12 @@ public class User
         var platform = player.Connections.FirstOrDefault();
         if (platform != null)
         {
-            SetValues(player.UserId, player.Id, player.UserName, player.UserName, "", platform.Platform, platform.PlatformId, isBroadcaster, false, false, false, player.Identifier);
+            
+            SetValues(player.UserId, player.Id, player.UserName, player.UserName, "", platform.Platform, platform.PlatformId, isBroadcaster, false, player.IsAdmin, player.IsModerator, false, false, player.Identifier);
         }
         else
         {
-            SetValues(player.UserId, player.Id, player.UserName, player.UserName, "", "", "", isBroadcaster, false, false, false, player.Identifier);
+            SetValues(player.UserId, player.Id, player.UserName, player.UserName, "", "", "", isBroadcaster, false, player.IsAdmin, player.IsModerator, false, false, player.Identifier);
         }
     }
 
@@ -34,12 +35,14 @@ public class User
         bool isModerator,
         bool isSubscriber,
         bool isVip,
+        bool isGameAdministrator,
+        bool isGameModerator,
         string identifier)
     {
-        SetValues(id, characterId, username, displayName, color, platform, platformId, isBroadcaster, isModerator, isSubscriber, isVip, identifier);
+        SetValues(id, characterId, username, displayName, color, platform, platformId, isBroadcaster, isModerator, isGameAdministrator, isGameModerator, isSubscriber, isVip, identifier);
     }
 
-    private void SetValues(Guid id, Guid characterId, string username, string displayName, string color, string platform, string platformId, bool isBroadcaster, bool isModerator, bool isSubscriber, bool isVip, string identifier)
+    private void SetValues(Guid id, Guid characterId, string username, string displayName, string color, string platform, string platformId, bool isBroadcaster, bool isModerator, bool isGameAdmin, bool isGameMod, bool isSubscriber, bool isVip, string identifier)
     {
         if (string.IsNullOrEmpty(username)) throw new ArgumentNullException(nameof(username));
 
@@ -50,6 +53,8 @@ public class User
         Platform = platform;
         DisplayName = displayName;
         Color = color;
+        IsGameAdministrator = isGameAdmin;
+        IsGameModerator = isGameMod;
         IsBroadcaster = isBroadcaster;
         IsModerator = isModerator;
         IsSubscriber = isSubscriber;
@@ -86,6 +91,8 @@ public class User
     public bool IsModerator { get; set; }
     public bool IsSubscriber { get; set; }
     public bool IsVip { get; set; }
+    public bool IsGameModerator { get; set; }
+    public bool IsGameAdministrator { get; set; }
     public int SubTier { get; set; }
     public string Identifier { get; set; }
 

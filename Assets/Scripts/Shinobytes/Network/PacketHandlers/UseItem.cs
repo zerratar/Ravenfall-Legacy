@@ -52,6 +52,12 @@ public class UseItem : ChatBotCommandHandler<string>
             return;
         }
 
+        if (queriedItem.Item.Type != ItemType.Food && queriedItem.Item.Type != ItemType.Scroll && queriedItem.Item.Type != ItemType.Potion)
+        {
+            client.SendReply(gm, "{itemName} cannot be used.", queriedItem.Item);
+            return;
+        }
+
         var result = await Game.RavenNest.Players.UseItemAsync(player.Id, queriedItem.InventoryItem.InstanceId);
         if (result == null || result.InventoryItemId == Guid.Empty)
         {

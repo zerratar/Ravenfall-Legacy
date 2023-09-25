@@ -179,14 +179,11 @@ public class PlayerMovementController : MonoBehaviour
 
     internal void Unlock()
     {
-        var agent = navMeshAgent;
-        if (!agent.isOnNavMesh && firstUnlock)
+        navMeshAgent.enabled = true;
+        if (!navMeshAgent.isOnNavMesh)
         {
             AdjustPlayerPositionToNavmesh();
-            firstUnlock = false;
         }
-
-        agent.enabled = true;
 
         movementLockState = MovementLockState.Unlocked;
     }
@@ -222,14 +219,12 @@ public class PlayerMovementController : MonoBehaviour
         {
             var pos = closestHit.position;
             var agent = navMeshAgent;
-            if (agent.enabled)
+            if (agent)
             {
                 agent.Warp(pos);
             }
-            else
-            {
-                gameObject.transform.position = pos;
-            }
+
+            gameObject.transform.position = pos;
         }
     }
 

@@ -10,21 +10,53 @@
 
     public override void Handle(string args, GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(gm.Sender);
-        if (!player)
-        {
-            return;
-        }
+        var sender = gm.Sender;
+        var player = PlayerManager.GetPlayer(sender);
 
-        if (!string.IsNullOrEmpty(args) && args.ToLower() == "all" || args.ToLower() == "everyone")
+        if (!string.IsNullOrEmpty(args))
         {
-            foreach (var p in PlayerManager.GetAllPlayers())
+            if (!sender.IsBroadcaster && !sender.IsModerator && !sender.IsGameModerator && !sender.IsGameAdministrator)
             {
-                p.Unstuck();
+                if (!player)
+                {
+                    return;
+                }
             }
 
-            client.SendReply(gm, "Unstucking all players.");
-            return;
+            if (args.ToLower() == "all" || args.ToLower() == "everyone")
+            {
+
+                foreach (var p in PlayerManager.GetAllPlayers())
+                {
+                    p.Unstuck();
+                }
+
+                client.SendReply(gm, "Unstucking all players.");
+                return;
+            }
+
+            if (args.ToLower() == "training")
+            {
+                var count = 0;
+                foreach (var p in PlayerManager.GetAllPlayers())
+                {
+                    if (string.IsNullOrEmpty(p.CurrentTaskName) && !p.Dungeon.InDungeon && !p.Raid.InRaid && !p.Duel.InDuel && !p.Ferry.OnFerry && !p.Ferry.Embarking && p.Stats.CombatLevel > 3)
+                    {
+                        count++;
+                        p.SetTask(TaskType.Fighting, "all");
+                    }
+                }
+
+                if (count > 0)
+                {
+                    client.SendReply(gm, "{playerCount} players set to train All.", count);
+                    return;
+                }
+
+                client.SendReply(gm, "No players eligible for setting training to All.", count);
+                return;
+            }
+
         }
 
         var result = player.Unstuck();

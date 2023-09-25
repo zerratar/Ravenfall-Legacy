@@ -78,6 +78,8 @@ namespace Assets.Scripts
                                     player.IsModerator,
                                     player.IsSubscriber,
                                     player.IsVip,
+                                    player.IsGameAdmin,
+                                    player.IsGameModerator,
                                     def.Identifier
                                 );
                         }

@@ -204,6 +204,11 @@ public class PlayerDetails : MonoBehaviour
         //var expPerHour = System.Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());
         //var expLeft = nextLevelExp - skill.Experience;
 
+        if (skill.Level >= GameMath.MaxLevel)
+        {
+            return "<color=yellow>Max level</color>";
+        }
+
         var timeLeft = skill.GetEstimatedTimeToLevelUp() - DateTime.UtcNow;// GetEstimatedTimeForLevelUp(expPerHour, skill.Level, skill.Experience);
         var hoursLeft = timeLeft.TotalHours;
         if (hoursLeft <= 0)

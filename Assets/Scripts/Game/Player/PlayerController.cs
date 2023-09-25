@@ -455,6 +455,12 @@ public class PlayerController : MonoBehaviour, IAttackable
         targetDropItem = null;
     }
 
+    void Awake()
+    {
+        // Initialize handlers that are no longer monobehaviours
+        this.dungeonHandler = new DungeonHandler(this, FindObjectOfType<DungeonManager>());
+    }
+
     void Start()
     {
         playerAppearance = GetComponent<SyntyPlayerAppearance>();
@@ -635,7 +641,13 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (streamRaidHandler.InWar) return;
         if (ferryHandler.OnFerry || ferryHandler.Active) return;
-        if (dungeonHandler.InDungeon) return;
+
+        if (dungeonHandler.InDungeon)
+        {
+            dungeonHandler.Update();
+            return;
+        }
+
         if (duelHandler.InDuel) return;
         if (arenaHandler.InArena) return;
         if (raidHandler.InRaid) return;
@@ -1457,7 +1469,10 @@ public class PlayerController : MonoBehaviour, IAttackable
                 PlayerNameHexColor,
                 "ravenfall",
                 player.Id.ToString(),
-                false, false, false, false, player.Identifier);
+                false, false, false, false,
+                player.IsAdmin,
+                player.IsModerator,
+                player.Identifier);
         }
         if (user.Id == Guid.Empty)
         {
@@ -2976,10 +2991,10 @@ public class PlayerController : MonoBehaviour, IAttackable
                 GameManager.Onsen.Leave(this);
             }
 
-            if (string.IsNullOrEmpty(CurrentTaskName) && Stats.CombatLevel > 3)
-            {
-                SetTask(TaskType.Fighting, "all");
-            }
+            //if (string.IsNullOrEmpty(CurrentTaskName) && Stats.CombatLevel > 3)
+            //{
+            //    SetTask(TaskType.Fighting, "all");
+            //}
 
             // if we are not in an onsen, dungeon and not on the ferry but we are playing a moving animation
             // then we are teleported to the spawnposition of the current island we are on.
