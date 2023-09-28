@@ -72,7 +72,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     private DamageCounterManager damageCounterManager;
 
     private TaskType? lateGotoClosestType = null;
-
+    private bool lateGotoClosestSilent;
     internal Transform attackTarget;
     internal object taskTarget;
 
@@ -119,7 +119,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     public User User { get; private set; }
     public int CharacterIndex { get; private set; }
 
-    public DateTime LastActivityUtc;
+    public DateTime LastChatCommandUtc;
 
     public bool IsGameAdmin;
     public bool IsGameModerator;
@@ -260,12 +260,14 @@ public class PlayerController : MonoBehaviour, IAttackable
 
             if (hours.HasValue && hours.Value > 0)
             {
-                return hours.Value < (DateTime.UtcNow - LastActivityUtc).TotalHours;
+                return hours.Value < (DateTime.UtcNow - LastChatCommandUtc).TotalHours;
             }
 
             return false;
         }
     }
+
+    public TimeSpan TimeSinceLastChatCommandUtc => DateTime.UtcNow - LastChatCommandUtc;
 
     public SkillUpdate LastSailingSaved { get; internal set; }
     public SkillUpdate LastSlayerSaved { get; internal set; }
@@ -282,6 +284,9 @@ public class PlayerController : MonoBehaviour, IAttackable
     private float lastUnstuckUsed;
 
     public ScheduledAction ScheduledAction => activeScheduledAction;
+
+    public DateTime LastDungeonAutoJoinFailUtc { get; internal set; }
+    public DateTime LastRaidAutoJoinFailUtc { get; internal set; }
 
     internal void InterruptAction()
     {
@@ -663,7 +668,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             var t = lateGotoClosestType.Value;
             lateGotoClosestType = null;
-            GotoClosest(t);
+            GotoClosest(t, lateGotoClosestSilent);
+            lateGotoClosestSilent = false;
         }
 
         if (Chunk != null)
@@ -715,68 +721,135 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         var now = DateTime.UtcNow;
         //var elapsed = now - fx.LastUpdateUtc;
-        var timeDuration = fx.Effect.ExpiresUtc - fx.Effect.StartUtc;
-        var isFirstTime = fx.LastUpdateUtc == DateTime.MinValue;
+        var timeDuration = fx.Duration;//fx.Effect.ExpiresUtc - fx.Effect.StartUtc;
+        var isFirstTime = fx.LastUpdateUtc <= DateTime.UnixEpoch;
 
         fx.LastUpdateUtc = now;
 
         // set effect, if healing over time then heal if elapsed time is >= 1 second. This is not perfect since it wont always heal the full amount
         // but its better than nothing.
         var effect = fx.Effect;
-        switch (effect.Type)
+        try
         {
-            case StatusEffectType.HealOverTime:
-                var left = fx.Effect.ExpiresUtc - now;
-                healTimer = (float)left.TotalSeconds;
-                healDuration = (float)timeDuration.TotalSeconds;
-                return RegenerateHealth(ref healTimer, healDuration, effect.Amount);
+            switch (effect.Type)
+            {
+                case StatusEffectType.HealOverTime:
+                    var secondsLeft = fx.TimeLeft;
+                    healTimer = (float)secondsLeft;
+                    healDuration = (float)timeDuration;
+                    return RegenerateHealth(ref healTimer, healDuration, effect.Amount);
 
-            case StatusEffectType.Heal:
-                // one time use, heal this player!
-                this.Heal((int)(this.Stats.Health.MaxLevel * effect.Amount));
-                return true;
+                case StatusEffectType.Heal:
+                    // one time use, heal this player!
+                    this.Heal((int)(this.Stats.Health.MaxLevel * effect.Amount));
+                    return true;
 
-            case StatusEffectType.IncreasedStrength:
-                this.playerStatsModifiers.StrengthMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedStrength:
+                    this.playerStatsModifiers.StrengthMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedDefense:
-                this.playerStatsModifiers.DefenseMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedDefense:
+                    this.playerStatsModifiers.DefenseMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedAttackPower:
-                this.playerStatsModifiers.AttackPowerMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedAttackPower:
+                    this.playerStatsModifiers.AttackPowerMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedMagicPower:
-                this.playerStatsModifiers.MagicPowerMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedMagicPower:
+                    this.playerStatsModifiers.MagicPowerMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedHealingPower:
-                this.playerStatsModifiers.HealingPowerMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedHealingPower:
+                    this.playerStatsModifiers.HealingPowerMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedRangedPower:
-                this.playerStatsModifiers.RangedPowerMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedRangedPower:
+                    this.playerStatsModifiers.RangedPowerMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedExperienceGain:
-                this.playerStatsModifiers.ExpMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedExperienceGain:
+                    this.playerStatsModifiers.ExpMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedCastSpeed:
-                this.playerStatsModifiers.CastSpeedMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedCastSpeed:
+                    this.playerStatsModifiers.CastSpeedMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedMovementSpeed:
-                this.playerStatsModifiers.MovementSpeedMultiplier = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedMovementSpeed:
+                    this.playerStatsModifiers.MovementSpeedMultiplier += effect.Amount;
+                    return false;
 
-            case StatusEffectType.IncreasedDodge:
-                this.playerStatsModifiers.DodgeChance = 1 + effect.Amount;
-                return false;
+                case StatusEffectType.IncreasedDodge:
+                    this.playerStatsModifiers.DodgeChance += effect.Amount;
+                    return false;
+
+                case StatusEffectType.IncreasedHitChance:
+                    this.playerStatsModifiers.HitChanceMultiplier += effect.Amount;
+                    return false;
+
+                case StatusEffectType.IncreasedAttackSpeed:
+                    this.playerStatsModifiers.AttackSpeedMultiplier += effect.Amount;
+                    return false;
+
+                case StatusEffectType.IncreaseCriticalHit:
+                    this.playerStatsModifiers.CriticalHitChance += effect.Amount;
+                    return false;
+
+                case StatusEffectType.AttackAttributePoison:
+                    this.playerStatsModifiers.AttackAttributePoisonEffect += effect.Amount;
+                    return false;
+
+                case StatusEffectType.AttackAttributeBleeding:
+                    this.playerStatsModifiers.AttackAttributeBleedingEffect += effect.Amount;
+                    return false;
+
+                case StatusEffectType.AttackAttributeBurning:
+                    this.playerStatsModifiers.AttackAttributeBurningEffect += effect.Amount;
+                    return false;
+
+                case StatusEffectType.AttackAttributeHealthSteal:
+                    this.playerStatsModifiers.AttackAttributeHealthStealEffect += effect.Amount;
+                    return false;
+
+                case StatusEffectType.Poison:
+                    this.playerStatsModifiers.PoisonEffect += effect.Amount;
+                    return false;
+
+                case StatusEffectType.Bleeding:
+                    this.playerStatsModifiers.BleedingEffect += effect.Amount;
+                    return false;
+
+                case StatusEffectType.Burning:
+                    this.playerStatsModifiers.BurningEffect += effect.Amount;
+                    return false;
+
+                case StatusEffectType.Damage:
+                    this.TakeDamage(null, (int)(this.Stats.Health.MaxLevel * effect.Amount));
+                    return true;
+
+                case StatusEffectType.ReducedHitChance:
+                    this.playerStatsModifiers.HitChanceMultiplier -= effect.Amount;
+                    return false;
+
+                case StatusEffectType.ReducedMovementSpeed:
+                    this.playerStatsModifiers.MovementSpeedMultiplier -= effect.Amount;
+                    return false;
+
+                case StatusEffectType.ReducedAttackSpeed:
+                    this.playerStatsModifiers.AttackSpeedMultiplier -= effect.Amount;
+                    return false;
+
+                case StatusEffectType.ReducedCastSpeed:
+                    this.playerStatsModifiers.CastSpeedMultiplier -= effect.Amount;
+                    return false;
+            }
+            return true;
         }
-        return true;
+        finally
+        {
+            fx.TimeLeft -= Time.deltaTime;
+        }
     }
 
     private bool RegenerateHealth(ref float healTimer, float healDuration, float effectAmount)
@@ -995,7 +1068,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         SetDestination(chunkManager.GetStarterChunk().CenterPointWorld);
     }
 
-    public void GotoClosest(TaskType type)
+    public void GotoClosest(TaskType type, bool silent = false)
     {
         if (Raid.InRaid || Dungeon.InDungeon)
         {
@@ -1007,7 +1080,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (onFerry || Island == null || hasNotReachedFerryDestination)
         {
-            LateGotoClosest(type);
+            LateGotoClosest(type, silent);
             return;
         }
 
@@ -1020,7 +1093,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         hasNotReachedFerryDestination = Ferry.Destination && Island != Ferry.Destination;
         if (Island == null || hasNotReachedFerryDestination)
         {
-            LateGotoClosest(type);
+            LateGotoClosest(type, silent);
             return;
         }
 
@@ -1055,6 +1128,11 @@ public class PlayerController : MonoBehaviour, IAttackable
                 // still null? well..
                 if (Chunk == null)
                 {
+                    if (silent)
+                    {
+                        return;
+                    }
+
                     if (chunks.Count > 0)
                     {
                         var lowestReq = chunks.Lowest(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel());//chunks.OrderBy(x => x.GetRequiredCombatLevel() + x.GetRequiredSkillLevel()).FirstOrDefault();
@@ -1162,7 +1240,11 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    private void LateGotoClosest(TaskType type) => lateGotoClosestType = type;
+    private void LateGotoClosest(TaskType type, bool silent = false)
+    {
+        lateGotoClosestType = type;
+        lateGotoClosestSilent = silent;
+    }
 
     private void SetTaskArgument(string taskArg)
     {
@@ -1441,7 +1523,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         if (prepareForCamera)
         {
-            LastActivityUtc = DateTime.UtcNow;
+            LastChatCommandUtc = DateTime.UtcNow;
         }
 
         gameObject.name = player.Name;
@@ -1622,7 +1704,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }, prepareForCamera, false); // Inventory.Create will update the appearance.
     }
 
-    public void SetTask(TaskType task, string arg = null)
+    public void SetTask(TaskType task, string arg = null, bool silent = false)
     {
         // if our active scheduled action is to brew|craft|cook etc
         // and we set a new task that is the same as the target action
@@ -1635,10 +1717,10 @@ public class PlayerController : MonoBehaviour, IAttackable
             InterruptAction();
         }
 
-        SetTask(task.ToString(), arg);
+        SetTask(task.ToString(), arg, silent);
     }
 
-    public void SetTask(string targetTaskName, string args = null)
+    public void SetTask(string targetTaskName, string args = null, bool silent = false)
     {
         if (string.IsNullOrEmpty(targetTaskName))
         {
@@ -1672,7 +1754,10 @@ public class PlayerController : MonoBehaviour, IAttackable
             {
                 if (score > 3)
                 {
-                    GameManager.RavenBot.SendReply(this, "{skillName} is not a trainable skill. Did you mean {suggestion}?", targetTaskName, type.ToString());
+                    if (!silent)
+                    {
+                        GameManager.RavenBot.SendReply(this, "{skillName} is not a trainable skill. Did you mean {suggestion}?", targetTaskName, type.ToString());
+                    }
                 }
                 return;
             }
@@ -1703,12 +1788,15 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (Ferry && Ferry.Active)
         {
-            Ferry.Disembark();
+            Ferry.BeginDisembark();
         }
         var Game = GameManager;
         if (Game.Arena && Game.Arena.HasJoined(this) && !Game.Arena.Leave(this))
         {
-            Shinobytes.Debug.Log(PlayerName + " task cannot be done as you're inside the arena.");
+            if (!silent)
+            {
+                Shinobytes.Debug.Log(PlayerName + " task cannot be done as you're inside the arena.");
+            }
             return;
         }
 
@@ -1723,8 +1811,6 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         var isCombatSkill = skill.IsCombatSkill();
-
-
 
         if (Raid.InRaid && !isCombatSkill)
         {
@@ -1758,7 +1844,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
         else
         {
-            GotoClosest(type);
+            GotoClosest(type, silent);
         }
     }
 
@@ -2898,7 +2984,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         Stats.Health.Reset();
 
-        Movement.Unlock();
+        Movement.Unlock(true);
 
         if (Chunk != null && Chunk.Island != Island)
             GotoClosest(Chunk.ChunkType);
@@ -3035,6 +3121,13 @@ public class PlayerController : MonoBehaviour, IAttackable
         return healAmount;
     }
 
+    public int ApplyInstantDamageEffect(CharacterStatusEffect effect)
+    {
+        var damage = Mathf.FloorToInt(effect.Amount * this.Stats.Health.MaxLevel);
+        this.TakeDamage(null, damage);
+        return damage;
+    }
+
     public void ApplyStatusEffects(IReadOnlyList<CharacterStatusEffect> effects)
     {
         if (effects == null || effects.Count == 0)
@@ -3065,27 +3158,49 @@ public class PlayerController : MonoBehaviour, IAttackable
 
 public class StatusEffect
 {
-    public CharacterStatusEffect Effect;
+    private CharacterStatusEffect effect;
+    public CharacterStatusEffect Effect
+    {
+        get => effect;
+        set
+        {
+            effect = value;
+            TimeLeft = effect.TimeLeft;
+        }
+    }
 
     public float Amount => Effect.Amount;
-    public DateTime ExpiresUtc => Effect.ExpiresUtc;
     public StatusEffectType Type => Effect.Type;
-
+    public double Duration => Effect.Duration;
+    public double TimeLeft;
     public DateTime LastUpdateUtc;
-    public bool Expired =>
-        ((Effect.Type == StatusEffectType.TeleportToIsland || Effect.Type == StatusEffectType.Heal) && LastUpdateUtc > DateTime.MinValue)
-        || DateTime.UtcNow >= Effect.ExpiresUtc;
-}
+    public bool Expired
+    {
+        get
+        {
+            if (Effect.TimeLeft <= 0)
+                return true;
 
+            var effectHasBeenApplied = LastUpdateUtc > DateTime.UnixEpoch;
+            var oneTimeEffect = Effect.Type == StatusEffectType.TeleportToIsland ||
+                                Effect.Type == StatusEffectType.Heal ||
+                                Effect.Type == StatusEffectType.Damage;
+
+            if (effectHasBeenApplied && oneTimeEffect)
+                return true;
+
+            return false;
+        }
+    }
+}
 public class StatsModifiers
 {
-    //public float HealingTicksLeft;
-
     public StatsModifiers()
     {
         Reset();
     }
 
+    // Base stats
     public float DodgeChance;
     public float ExpMultiplier;
     public float MovementSpeedMultiplier;
@@ -3098,6 +3213,20 @@ public class StatsModifiers
     public float HealingPowerMultiplier;
     public float AttackPowerMultiplier;
     public float HitChanceMultiplier;
+
+    // New additions
+    public float CriticalHitChance;
+
+    // Attack attributes
+    public float AttackAttributePoisonEffect;
+    public float AttackAttributeBleedingEffect;
+    public float AttackAttributeBurningEffect;
+    public float AttackAttributeHealthStealEffect;
+
+    // Damage over time effects
+    public float PoisonEffect;  // Represents damage per tick, you can handle application separately
+    public float BleedingEffect;  // Represents damage per tick
+    public float BurningEffect;  // Represents damage per tick
 
     public void Reset()
     {
@@ -3113,6 +3242,18 @@ public class StatsModifiers
         HealingPowerMultiplier = 1;
         AttackPowerMultiplier = 1;
         HitChanceMultiplier = 1;
+
+        // Reset new additions
+        CriticalHitChance = 0;
+
+        AttackAttributePoisonEffect = 0;
+        AttackAttributeBleedingEffect = 0;
+        AttackAttributeBurningEffect = 0;
+        AttackAttributeHealthStealEffect = 0;
+
+        PoisonEffect = 0;
+        BleedingEffect = 0;
+        BurningEffect = 0;
     }
 }
 

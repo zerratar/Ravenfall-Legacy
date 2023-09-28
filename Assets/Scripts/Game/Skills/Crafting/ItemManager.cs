@@ -484,7 +484,7 @@ public struct RedeemableItem
 
     public DateRange GetRedeemableDateRange()
     {
-        var min = DateTime.MinValue;
+        var min = DateTime.UnixEpoch;
         var max = DateTime.MaxValue;
 
         var yStart = YearStart > 0 ? YearStart : min.Year;

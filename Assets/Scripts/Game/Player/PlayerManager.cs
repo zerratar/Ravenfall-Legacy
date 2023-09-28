@@ -45,7 +45,7 @@ public class PlayerManager : MonoBehaviour
     public readonly ConcurrentQueue<RavenNest.Models.Player> PlayerQueue
         = new ConcurrentQueue<RavenNest.Models.Player>();
 
-    private DateTime lastCacheSave = DateTime.MinValue;
+    private DateTime lastCacheSave = DateTime.UnixEpoch;
 
     private ConcurrentQueue<Func<PlayerController>> addPlayerQueue = new ConcurrentQueue<Func<PlayerController>>();
 
@@ -220,7 +220,7 @@ public class PlayerManager : MonoBehaviour
             return null;
         }
 
-        player.Movement.Unlock();
+        player.Movement.Unlock(true);
         player.IsBot = isBot;
         if (player.IsBot)
         {
@@ -554,10 +554,10 @@ public class PlayerManager : MonoBehaviour
                             return null;
                         }
 
-                        p.LastActivityUtc = requested.LastActivityUtc;
-                        if (p.LastActivityUtc == DateTime.MinValue)
+                        p.LastChatCommandUtc = requested.LastActivityUtc;
+                        if (p.LastChatCommandUtc <= DateTime.UnixEpoch)
                         {
-                            p.LastActivityUtc = DateTime.UtcNow;
+                            p.LastChatCommandUtc = DateTime.UtcNow;
                         }
 
                         return p;

@@ -35,7 +35,7 @@ public class PlayerTeleportEventHandler : GameEventHandler<PlayerTeleportMessage
 
             if (player.Ferry.OnFerry)
             {
-                player.Ferry.Disembark();
+                player.Ferry.BeginDisembark();
             }
 
             if (player.Raid.InRaid)

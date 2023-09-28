@@ -55,6 +55,10 @@ public class RaidHandler : MonoBehaviour
         {
             if (AutoJoinCounter > 0)
             {
+                // only start the join process after chat announcement
+                if (!gameManager.Raid.HasBeenAnnounced)
+                    return;
+
                 // try join the raid if possible 
                 AutoJoining = true;
                 RequestAutoJoinAsync();
@@ -269,11 +273,8 @@ public class RaidHandler : MonoBehaviour
             //++player.Statistics.RaidsWon;
 
             var proc = gameManager.Raid.GetParticipationPercentage(RaidEnterTime);
-            var raidBossCombatLevel = (double)gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
-            //var exp = GameMath.CombatExperience(raidBossCombatLevel / 15) * proc;
-            //var yieldExp = exp / 2d;
-
-            var factor = Math.Min(50, Math.Max(raidBossCombatLevel / player.Stats.CombatLevel, 10d)) * proc;
+            var raidBossCombatLevel = gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
+            var factor = Mathf.Max(raidBossCombatLevel / 300, 40) * 0.125 * proc;
             player.AddExp(Skill.Slayer, factor);
 
             var expFactor = Math.Max(5 * proc, factor * 0.5);
@@ -308,7 +309,7 @@ public class RaidHandler : MonoBehaviour
 
             if (previousTask != TaskType.None)
             {
-                this.player.SetTask(previousTask, previousTaskArgument);
+                this.player.SetTask(previousTask, previousTaskArgument, true);
             }
 
             player.taskTarget = null;

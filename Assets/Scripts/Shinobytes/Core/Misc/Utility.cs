@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using UnityEditor;
 
 public static class Utility
 {
@@ -173,6 +174,13 @@ public static class Utility
             return null;
         }
         return DescriberCharacters.Contains(Char.ToLower(name[0])) ? "an" : "a";
+    }
+
+    public static string FormatLongAmount(long amount)
+    {
+        var val = string.Format("{0:N0}", amount).Replace(" ", ",").Replace(' ', ',');
+
+        return val; // still returns spaces?? oh well..
     }
 
     public static string FormatAmount(double value)

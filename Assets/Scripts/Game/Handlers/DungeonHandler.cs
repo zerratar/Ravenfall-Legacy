@@ -331,7 +331,7 @@ public class DungeonHandler
 
         if (previousTask != TaskType.None)
         {
-            this.player.SetTask(previousTask, previousTaskArgument);
+            this.player.SetTask(previousTask, previousTaskArgument, true);
         }
 
         var currentTask = player.GetTask();

@@ -21,7 +21,7 @@ namespace Assets.Scripts
         private readonly ConcurrentDictionary<TownHouseSlotType, TownHouseExpBonus> expBonusByType = new ConcurrentDictionary<TownHouseSlotType, TownHouseExpBonus>();
 
         private LoadingState state = LoadingState.None;
-        private DateTime lastVillageLoad = DateTime.MinValue;
+        private DateTime lastVillageLoad = DateTime.UnixEpoch;
         public TownHallManager TownHall => townHallManager;
         public TownHouseManager TownHouses => townHouseManager;
 

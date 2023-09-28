@@ -41,7 +41,7 @@ public class ArenaJoin : ChatBotCommandHandler<Empty>
 
             if (player.Ferry.Active)
             {
-                player.Ferry.Disembark();
+                player.Ferry.BeginDisembark();
             }
 
             if (!Game.Arena.CanJoin(player, out var alreadyJoined, out var alreadyStarted)

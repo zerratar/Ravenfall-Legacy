@@ -59,7 +59,7 @@ public class DungeonForce : ChatBotCommandHandler
                 {
                     await ExternalResources.ReloadIfModifiedAsync("dungeon.mp3");
 
-                    if (await Game.Dungeons.ActivateDungeon())
+                    if (await Game.Dungeons.ActivateDungeon(plr))
                     {
                         var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Dungeon);
 

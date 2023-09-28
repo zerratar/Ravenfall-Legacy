@@ -32,6 +32,6 @@
             return;
         }
 
-        player.Ferry.Disembark();        
+        player.Ferry.BeginDisembark();        
     }
 }

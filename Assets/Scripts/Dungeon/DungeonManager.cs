@@ -331,7 +331,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    public async Task<bool> ActivateDungeon()
+    public async Task<bool> ActivateDungeon(PlayerController initiator = null)
     {
         try
         {
@@ -352,7 +352,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                     }
                     AnnounceDungeon(RequiredCode);
 
-                    await gameManager.HandleDungeonAutoJoin();
+                    await gameManager.HandleDungeonAutoJoin(initiator);
                 }
                 else
                 {
@@ -439,6 +439,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             return;
         }
+
+        player.Dungeon.AutoJoining = false;
 
         lock (mutex)
         {

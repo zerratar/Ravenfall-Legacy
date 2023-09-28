@@ -46,7 +46,6 @@ public class GiftItem : ChatBotCommandHandler<string>
         // resolve set type
         // so we can take for instance !gift zerratar black set xAmount
         // for now, we will just replace the word " set " with various item types
-
         // first extract the types of a known set:
 
         var queryParts = inputQuery.Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLower()).ToArray();

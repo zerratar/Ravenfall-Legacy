@@ -69,7 +69,10 @@ public class UseItem : ChatBotCommandHandler<string>
 
         // depending on item type, change the term.
         var term = "have used";
-        if (queriedItem.Item.Type == ItemType.Potion)
+
+
+        // special case until its been corrected into a potion
+        if (queriedItem.Item.Name.Equals("red wine", StringComparison.OrdinalIgnoreCase) || queriedItem.Item.Type == ItemType.Potion)
         {
             term = "drank " + (Utility.IsVocal(queriedItem.Item.Name.ToLower()[0]) ? "an" : "a");
         }
@@ -107,7 +110,15 @@ public class UseItem : ChatBotCommandHandler<string>
                 continue;
             }
 
-            var timeLeft = (effect.ExpiresUtc - DateTime.UtcNow).Add(TimeSpan.FromSeconds(1)); // due to delays
+            if (effect.Type == StatusEffectType.Damage)
+            {
+                var amount = player.ApplyInstantDamageEffect(effect);
+                message += "You took {damageAmount" + i + "} damage! ";
+                args.Add(amount.ToString());
+                continue;
+            }
+
+            var timeLeft = TimeSpan.FromSeconds(effect.TimeLeft);
             var proc = UnityEngine.Mathf.FloorToInt((float)effect.Amount * 100);
             if (effect.Type == StatusEffectType.HealOverTime)
             {
@@ -121,7 +132,7 @@ public class UseItem : ChatBotCommandHandler<string>
                 {
                     if (timeLeft.Seconds > 0)
                     {
-                        message += "You gained {effectPercent" + i + "}% {effectType} for {effectMinutes" + i + "} minutes and {effectSecconds" + i + "} seconds. ";
+                        message += "You gained {effectPercent" + i + "}% {effectType" + i + "} for {effectMinutes" + i + "} minutes and {effectSecconds" + i + "} seconds. ";
                         args.Add(proc.ToString().Replace(",", "."));
                         args.Add(Utility.AddSpacesToSentence(effect.Type.ToString()));
                         args.Add(timeLeft.Minutes.ToString());
@@ -129,7 +140,7 @@ public class UseItem : ChatBotCommandHandler<string>
                     }
                     else
                     {
-                        message += "You gained {effectPercent" + i + "}% {effectType} for {effectMinutes" + i + "} minutes. ";
+                        message += "You gained {effectPercent" + i + "}% {effectType" + i + "} for {effectMinutes" + i + "} minutes. ";
                         args.Add(proc.ToString().Replace(",", "."));
                         args.Add(Utility.AddSpacesToSentence(effect.Type.ToString()));
                         args.Add(((int)timeLeft.TotalMinutes).ToString());

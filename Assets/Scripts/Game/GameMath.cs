@@ -570,15 +570,17 @@ public static class GameMath
         {
             switch (skill)
             {
-                case RavenNest.Models.Skill.Woodcutting when playersInArea < 100: return 0.15;
-                case RavenNest.Models.Skill.Woodcutting when playersInArea >= 100: return 0.33;
+                
                 case RavenNest.Models.Skill.Farming:
                 case RavenNest.Models.Skill.Crafting:
                 case RavenNest.Models.Skill.Cooking:
-                case RavenNest.Models.Skill.Gathering:
                 case RavenNest.Models.Skill.Alchemy:
                 case RavenNest.Models.Skill.Fishing:
                     return 1d / 3d;
+
+                case RavenNest.Models.Skill.Woodcutting: return 0.1;
+                case RavenNest.Models.Skill.Gathering:
+                    return 0.125;
 
                 case Skill.Mining:
                     return 0.5;

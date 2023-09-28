@@ -63,7 +63,7 @@ namespace Assets.Scripts
                         item.User = player.User;
                         item.CharacterId = player.Id;
                         item.CharacterIndex = player.CharacterIndex;
-                        item.LastActivityUtc = player.LastActivityUtc;
+                        item.LastActivityUtc = player.LastChatCommandUtc;
                         if (item.User == null)
                         {
                             item.User = new User(

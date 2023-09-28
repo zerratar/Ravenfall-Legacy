@@ -23,7 +23,7 @@ public static class Localization
     public static readonly string MSG_STATS = Meta("info", "stats") + "Combat level {combatLevel}, {skills} -- TOTAL {total} --";
     public static readonly string MSG_SKILL = Meta("info", "skill") + "{skill}, {currenExp} / {requiredExp} EXP.";
     public static readonly string MSG_PLAYER_RESOURCES = Meta("info", "resources") + "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
-    public static readonly string MSG_PLAYER_COINS = Meta("info", "resources") + "You have {coins} coins";
+    public static readonly string MSG_PLAYER_COINS = Meta("info", "resources") + "You have {coins} ({coinsShort}) coins";
     public static readonly string MSG_TOWN_RESOURCES = Meta("info", "resources") + "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
     public static readonly string MSG_STREAMER_TOKENS = Meta("info", "tokens") + "You have {tokenCount} {tokenName}(s) you can use.";
     public static readonly string MSG_PLAYER_INSPECT_URL = Meta("system", "inspect") + "https://www.ravenfall.stream/inspect/{characterId}";

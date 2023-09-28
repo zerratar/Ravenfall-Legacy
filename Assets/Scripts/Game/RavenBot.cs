@@ -42,7 +42,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<ValueItem>("value_item");
         Connection.Register<CraftRequirement>("req_item");
         Connection.Register<ItemUsage>("item_usage");
-        
+
 
         Connection.Register<MaxMultiplier>("multiplier");
 
@@ -65,6 +65,8 @@ public class RavenBot : System.IDisposable
 
         Connection.Register<PlayerResources>("player_resources");
         Connection.Register<TownResources>("town_resources");
+        Connection.Register<TownStats>("village_stats");
+
         Connection.Register<Highscore>("highscore");
         Connection.Register<HighestSkill>("highest_skill");
         Connection.Register<PlayerScale>("set_player_scale");

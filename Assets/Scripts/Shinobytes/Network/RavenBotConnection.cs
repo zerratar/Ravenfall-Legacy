@@ -253,7 +253,7 @@ public class RavenBotConnection : IDisposable
                 if (targetPlayer != null)
                 {
                     // this will help determining afk players.
-                    targetPlayer.LastActivityUtc = DateTime.UtcNow;
+                    targetPlayer.LastChatCommandUtc = DateTime.UtcNow;
                 }
             }
         }

@@ -152,17 +152,12 @@ public class GameManager : MonoBehaviour, IGameManager
     private float uptimeSaveTimer = 3f;
 
     private int spawnedBots;
-    private bool useManualExpMultiplierCheck;
 
     private bool potatoMode;
     private bool forcedPotatoMode;
     private DateTime dungeonStartTime;
     private DateTime raidStartTime;
     private ClanManager clanManager;
-
-    private float lastServerTimeUpdateFloat;
-    private DateTime lastServerTimeUpdateDateTime;
-    private DateTime serverTime;
 
     private readonly TimeSpan dungeonStartCooldown = TimeSpan.FromMinutes(10);
     private readonly TimeSpan raidStartCooldown = TimeSpan.FromMinutes(10);
@@ -2210,9 +2205,11 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         if (players.Count == 0) return;
         var playerNames = string.Join(", ", players.Select(x => "@" + x.Name));
+
         if (players.Count == 1)
         {
-            RavenBot.SendReply(players[0], "You have failed to join the dungeon. Make sure you have enough coins to automatically join.");
+            if (players[0].LastChatCommandUtc > players[0].LastDungeonAutoJoinFailUtc || players[0].LastDungeonAutoJoinFailUtc <= DateTime.UnixEpoch)
+                RavenBot.SendReply(players[0], "You have failed to join the dungeon. Make sure you have enough coins to automatically join.");
         }
         else if (players.Count < 10)
         {
@@ -2222,6 +2219,8 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             RavenBot.Announce("{playerCount} players failed to join the dungeon.", players.Count.ToString());
         }
+
+        foreach (var plr in players) plr.LastDungeonAutoJoinFailUtc = DateTime.UtcNow;
     }
 
     internal void AnnounceAutoRaidJoin(List<PlayerController> players)
@@ -2256,7 +2255,10 @@ public class GameManager : MonoBehaviour, IGameManager
         var playerNames = string.Join(", ", players.Select(x => "@" + x.Name));
         if (players.Count == 1)
         {
-            RavenBot.SendReply(players[0], "You have failed to join the raid. Make sure you have enough coins to automatically join.");
+            if (players[0].LastChatCommandUtc > players[0].LastRaidAutoJoinFailUtc || players[0].LastRaidAutoJoinFailUtc <= DateTime.UnixEpoch)
+            {
+                RavenBot.SendReply(players[0], "You have failed to join the raid. Make sure you have enough coins to automatically join.");
+            }
         }
         else if (players.Count < 10)
         {
@@ -2266,6 +2268,8 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             RavenBot.Announce("{playerCount} players failed to join the raid.", players.Count.ToString());
         }
+
+        foreach (var plr in players) plr.LastRaidAutoJoinFailUtc = DateTime.UtcNow;
     }
 
     internal void OnPlayerAutoJoinedDungeon(PlayerController player)
@@ -2282,7 +2286,7 @@ public class GameManager : MonoBehaviour, IGameManager
         playerAutoJoinList.Add(player);
     }
 
-    internal async Task HandleRaidAutoJoin()
+    internal async Task HandleRaidAutoJoin(PlayerController ignore = null)
     {
         var autoJoinList = new List<Guid>();
         var autoJoinPlayers = new List<PlayerController>();
@@ -2290,8 +2294,14 @@ public class GameManager : MonoBehaviour, IGameManager
         var failed = new List<PlayerController>();
         foreach (var player in Players.GetAllPlayers())
         {
-            if (Raid.CanJoin(player) != RaidJoinResult.CanJoin)
+            if (Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Raid.AutoJoining)
                 continue;
+
+            if (ignore != null && ignore == player)
+            {
+                player.Raid.AutoJoining = true;
+                continue;
+            }
 
             if (player.Raid.AutoJoinCounter > 0)
             {
@@ -2320,6 +2330,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     {
                         plr.Raid.AutoJoinCounter--;
                     }
+                    plr.Resources.Coins -= RaidAuto.autoJoinCost;
                 }
                 else
                 {
@@ -2340,19 +2351,23 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-    internal async Task HandleDungeonAutoJoin()
+    internal async Task HandleDungeonAutoJoin(PlayerController ignore = null)
     {
         var autoJoinList = new List<Guid>();
         var autoJoinPlayers = new List<PlayerController>();
         var success = new List<PlayerController>();
         var failed = new List<PlayerController>();
 
-
-
         foreach (var player in Players.GetAllPlayers())
         {
             if (Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin)
                 continue;
+
+            if (ignore != null && ignore == player)
+            {
+                player.Dungeon.AutoJoining = true;
+                continue;
+            }
 
             if (player.Dungeon.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
             {
@@ -2381,6 +2396,8 @@ public class GameManager : MonoBehaviour, IGameManager
                     {
                         plr.Dungeon.AutoJoinCounter--;
                     }
+
+                    plr.Resources.Coins -= DungeonAuto.autoJoinCost;
                 }
                 else
                 {
@@ -2486,4 +2503,10 @@ public class FerryStats
     public int PlayersCount { get; set; }
     public int CaptainSailingLevel { get; set; }
     public string CaptainName { get; set; }
+}
+
+public class ServerTime
+{
+    public static TimeSpan TimeDelta;
+    public static DateTime UtcNow => DateTime.UtcNow + TimeDelta;
 }
