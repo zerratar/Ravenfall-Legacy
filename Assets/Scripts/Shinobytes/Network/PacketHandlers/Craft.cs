@@ -36,7 +36,7 @@ public class Craft : ProduceItemCommand
             // action: async state => { if (state.Continue) { await ProduceAsync(state, ...) } else { report result }  }
             //         in the future, we can make it so that items that take less than a second to make can be combined to
             //         be done together so there are not just 1 request per item being made.
-            action: async state => await ProduceAsync(state, new string[] { "craft", "crafted" }),
+            action: async state => await ProduceAsync(state),
             onInterrupt: state => client.SendReply(message, Localization.MSG_CRAFT_CANCEL),
             recipe.PreparationTime,
             "Crafting " + recipe.Name,

@@ -23,7 +23,7 @@ public static class Localization
     public static readonly string MSG_STATS = Meta("info", "stats") + "Combat level {combatLevel}, {skills} -- TOTAL {total} --";
     public static readonly string MSG_SKILL = Meta("info", "skill") + "{skill}, {currenExp} / {requiredExp} EXP.";
     public static readonly string MSG_PLAYER_RESOURCES = Meta("info", "resources") + "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
-    public static readonly string MSG_PLAYER_COINS = Meta("info", "resources") + "You have {coins} coins";
+    public static readonly string MSG_PLAYER_COINS = Meta("info", "resources") + "You have {coins} ({coinsShort}) coins";
     public static readonly string MSG_TOWN_RESOURCES = Meta("info", "resources") + "Wood {wood}, Ore {ore}, Fish {fish}, Wheat {wheat}, Coin {coins}";
     public static readonly string MSG_STREAMER_TOKENS = Meta("info", "tokens") + "You have {tokenCount} {tokenName}(s) you can use.";
     public static readonly string MSG_PLAYER_INSPECT_URL = Meta("system", "inspect") + "https://www.ravenfall.stream/inspect/{characterId}";
@@ -62,10 +62,21 @@ public static class Localization
     public static readonly string MSG_ISLAND_ON_FERRY = Meta("info", "location") + "You're currently on the ferry.";
     public static readonly string MSG_ISLAND = Meta("info", "location") + "You're on the island called {islandName}";
     public static readonly string MSG_RESTED = Meta("info", "rest") + "You're rested and gain {expBoost}x more exp for {restedTime}";
-    public static readonly string MSG_NOT_RESTED = Meta("info", "rest") + "You're not rested. Sail to Kyo and use !rest or !onsen to rest.";
     public static readonly string MSG_RESTING = Meta("info", "rest") + "You're currently resting and will have {expBoost}x more exp for {restedTime}";
+
+
     public static readonly string MSG_ONSEN_WRONG_ISLAND = Meta("rest", "fail") + "Resting areas are available on Kyo, Heim, Atria and Eldara only. You're currently on {islandName}.";
-    public static readonly string MSG_ONSEN_FERRY = Meta("rest", "fail") + "You can't enter the onsen while you're on the ferry. Disembark at Kyo to use the onsen.";
+    public static readonly string MSG_NOT_RESTED = Meta("info", "rest") + "You're not rested. Sail to Kyo, Heim, Atria or Eldara and use !rest or !onsen to rest.";
+
+    public static readonly string[] MSG_ONSEN_FERRY = new string[]
+    {
+        Meta("rest", "fail") + "Trying to snooze on the ferry? Seasickness isn't a great lullaby! Head over to Kyo, Heim, Atria, or Eldara for a proper nap.",
+        Meta("rest", "fail") + "Dreaming of a nap on the high seas? More like a splash in the face! Best wait until you're in Kyo, Heim, Atria, or Eldara.",
+        Meta("rest", "fail") + "Resting on a ferry? Hope you brought a waterproof blanket! For dry dreams, try Kyo, Heim, Atria, or Eldara.",
+        Meta("rest", "fail") + "You want to rest NOW? Maybe you enjoy the lull of waves... and the sudden splash! For a less aquatic nap, go to Kyo, Heim, Atria, or Eldara.",
+        Meta("rest", "fail") + "Napping on the ferry? Bold move! But for a sleep without seaspray surprises, Kyo, Heim, Atria, or Eldara is the place to be."
+    };
+
     public static readonly string MSG_ONSEN_FULL = Meta("rest", "fail") + "Onsen seem to be full. You will have to try again later.";
     public static readonly string MSG_ONSEN_ENTRY = Meta("rest", "fail") + "You are now resting peacefully at the onsen. You will gain 2x more exp for two seconds for every second you stay here. Use !onsen leave when you're done.";
     public static readonly string MSG_ONSEN_LEFT = Meta("rest", "fail") + "You have left the onsen.";

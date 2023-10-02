@@ -177,10 +177,10 @@ public class PlayerMovementController : MonoBehaviour
         this.movementLockState = MovementLockState.Locked;
     }
 
-    internal void Unlock()
+    internal void Unlock(bool adjustToNavmesh = false)
     {
         navMeshAgent.enabled = true;
-        if (!navMeshAgent.isOnNavMesh)
+        if (adjustToNavmesh && !navMeshAgent.isOnNavMesh)
         {
             AdjustPlayerPositionToNavmesh();
         }

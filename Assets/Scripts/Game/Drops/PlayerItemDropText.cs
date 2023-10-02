@@ -15,13 +15,13 @@ public class PlayerItemDropText
         this.messages = this.Process(droppedItems, settings);
     }
 
-    private IReadOnlyList<string> Process(Dictionary<string, List<string>> items, PlayerItemDropMessageSettings settings)
+    private IReadOnlyList<string> Process(Dictionary<string, List<string>> items, PlayerItemDropMessageSettings settings, int maxLength = 500)
     {
         // no need for linq here since we need to enumerate everything anyway.
         //Count = items.Values.Sum(x => x.Count);
         var count = 0;
         var output = new List<string>();
-        var sb = new StringBuilder(500);
+        var sb = new StringBuilder(maxLength);
 
         void Next()
         {
@@ -44,7 +44,6 @@ public class PlayerItemDropText
 
         // we will rely on word wrapping so we don't split player names and
         // they can get properly pinged in the chat.
-
         foreach (var kvp in items)
         {
             var itemName = kvp.Key;
@@ -63,10 +62,7 @@ public class PlayerItemDropText
                     continue;
                 }
 
-                //Append((IsVocal(itemName[0]) ? "An " : "A ") + itemName);
-                Append(itemName);
-                Append(" was found by ");
-
+                var toAppend = itemName + " was found by ";
                 for (int i = 0; i < playersRef.Count; i++)
                 {
                     // last player in list
@@ -74,14 +70,19 @@ public class PlayerItemDropText
                     var player = playersRef[i];
                     if (i > 0)
                     {
-                        Append(lastInList ? " and " : ", ");
+                        toAppend += lastInList ? " and " : ", ";
                     }
-                    Append(player);
+                    toAppend += player;
                 }
-                Append(". ");
+                toAppend += ".";
+
+                // append the whole text at once instead, since it will check if we need to break it into a new message or not.
+                Append(toAppend);
 
                 if (settings == PlayerItemDropMessageSettings.OneItemPerRow)
+                {
                     Next();
+                }
             }
             finally
             {

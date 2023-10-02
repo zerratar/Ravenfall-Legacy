@@ -55,6 +55,10 @@ public class RaidHandler : MonoBehaviour
         {
             if (AutoJoinCounter > 0)
             {
+                // only start the join process after chat announcement
+                if (!gameManager.Raid.HasBeenAnnounced)
+                    return;
+
                 // try join the raid if possible 
                 AutoJoining = true;
                 RequestAutoJoinAsync();
@@ -198,7 +202,8 @@ public class RaidHandler : MonoBehaviour
         ferryState = new()
         {
             OnFerry = player.Ferry.OnFerry,
-            HasDestination = !!player.Ferry.Destination
+            HasDestination = !!player.Ferry.Destination,
+            Destination = player.Ferry.Destination
         };
 
         if (wasResting)
@@ -268,12 +273,9 @@ public class RaidHandler : MonoBehaviour
         {
             //++player.Statistics.RaidsWon;
 
-            var proc = gameManager.Raid.GetParticipationPercentage(RaidEnterTime);
-            var raidBossCombatLevel = (double)gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
-            //var exp = GameMath.CombatExperience(raidBossCombatLevel / 15) * proc;
-            //var yieldExp = exp / 2d;
-
-            var factor = Math.Min(50, Math.Max(raidBossCombatLevel / player.Stats.CombatLevel, 10d)) * proc;
+            var proc = gameManager.Raid.GetParticipationPercentage(RaidEnterTime) * Math.Max(1, gameManager.SessionSettings.RaidExpFactor);
+            var raidBossCombatLevel = gameManager.Raid.Boss.Enemy.Stats.CombatLevel;
+            var factor = Mathf.Max(raidBossCombatLevel / 300, 40) * 0.125 * proc;
             player.AddExp(Skill.Slayer, factor);
 
             var expFactor = Math.Max(5 * proc, factor * 0.5);
@@ -308,7 +310,7 @@ public class RaidHandler : MonoBehaviour
 
             if (previousTask != TaskType.None)
             {
-                this.player.SetTask(previousTask, previousTaskArgument);
+                this.player.SetTask(previousTask, previousTaskArgument, true);
             }
 
             player.taskTarget = null;
@@ -321,7 +323,7 @@ public class RaidHandler : MonoBehaviour
         else if (ferryState.OnFerry)
         {
             player.Movement.Lock();
-            player.Ferry.AddPlayerToFerry();
+            player.Ferry.AddPlayerToFerry(ferryState.Destination);
             ferryState.HasReturned = true;
         }
 
@@ -338,6 +340,7 @@ public class RaidHandler : MonoBehaviour
         public bool OnFerry;
         public bool HasDestination;
         public bool HasReturned;
+        public IslandController Destination;
     }
 
 }

@@ -61,7 +61,7 @@ public class RaidForce : ChatBotCommandHandler
                 {
                     var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Raid);
 
-                    if (await Game.Raid.StartRaid(plr.Name))
+                    if (!await Game.Raid.StartRaid(plr, req =>
                     {
                         if (Game.Raid.CanJoin(plr, string.Empty) == RaidJoinResult.CanJoin)
                         {
@@ -72,8 +72,10 @@ public class RaidForce : ChatBotCommandHandler
                         {
                             client.SendReply(gm, "You have used a Raid Scroll.");
                         }
-                    }
-                    else
+
+                        Game.Raid.Announce();
+                        Game.HandleRaidAutoJoin(plr);
+                    }))
                     {
                         var raidScroll = Game.Items.Find(x => x.Name.Contains("raid", System.StringComparison.OrdinalIgnoreCase) && x.Type == ItemType.Scroll);
                         if (raidScroll != null)

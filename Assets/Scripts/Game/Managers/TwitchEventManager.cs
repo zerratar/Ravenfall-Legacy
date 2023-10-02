@@ -24,7 +24,7 @@ public class TwitchEventManager : MonoBehaviour
 
     public DateTime LastUpdated;
 
-    public int ExpMultiplierLimit => limitOverride > 0 ? limitOverride : gameManager.Permissions.ExpMultiplierLimit;
+    public int ExpMultiplierLimit => limitOverride > 0 ? limitOverride : gameManager.SessionSettings.ExpMultiplierLimit;
     public TimeSpan? TimeLeft => CurrentBoost?.TimeLeft;
     public TimeSpan? Duration => CurrentBoost?.Duration;
 
@@ -159,7 +159,7 @@ public class TwitchEventManager : MonoBehaviour
                     gameManager.RavenBot?.SendReply(receiver,
                         Localization.MSG_SUB_CREW,
                         gameManager.RavenNest.TwitchDisplayName,
-                        TierExpMultis[gameManager.Permissions.SubscriberTier]);
+                        TierExpMultis[gameManager.SessionSettings.SubscriberTier]);
                 }
             }
 

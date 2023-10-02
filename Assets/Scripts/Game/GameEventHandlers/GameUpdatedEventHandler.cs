@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class GameUpdatedEventHandler : GameEventHandler<GameUpdatedRequest>
 {
     private HashSet<string> versionAnnounced = new HashSet<string>();
-    private DateTime lastAnnounced = DateTime.MinValue;
+    private DateTime lastAnnounced = DateTime.UnixEpoch;
     public override void Handle(GameManager gameManager, GameUpdatedRequest data)
     {
         Version expectedVersion = GetExpectedVersion(data);
@@ -18,7 +18,7 @@ public class GameUpdatedEventHandler : GameEventHandler<GameUpdatedRequest>
         }
 
         var now = DateTime.UtcNow;
-        if (lastAnnounced > DateTime.MinValue && now - lastAnnounced > TimeSpan.FromHours(3))
+        if (lastAnnounced > DateTime.UnixEpoch && now - lastAnnounced > TimeSpan.FromHours(3))
         {
             versionAnnounced.Clear();
         }

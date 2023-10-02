@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using Shinobytes.Linq;
+//using System.Linq;
 using UnityEngine;
 
 public class OnsenManager : MonoBehaviour
@@ -27,7 +28,7 @@ public class OnsenManager : MonoBehaviour
         {
             if (!player.Island)
             {
-                game.RavenBot.SendReply(player, Localization.MSG_ONSEN_FERRY);
+                game.RavenBot.SendReply(player, Localization.MSG_ONSEN_FERRY.Random());
                 return false;
             }
 

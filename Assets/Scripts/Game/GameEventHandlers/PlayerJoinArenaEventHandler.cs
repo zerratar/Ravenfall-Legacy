@@ -19,7 +19,7 @@ public class PlayerJoinArenaEventHandler : GameEventHandler<PlayerId>
             return;
 
         if (player.Ferry.Active)
-            player.Ferry.Disembark();
+            player.Ferry.BeginDisembark();
 
         if (!gameManager.Arena.CanJoin(player, out var alreadyJoined, out var alreadyStarted)
             || player.Raid.InRaid

@@ -121,12 +121,6 @@ public class EnchantItem : ChatBotCommandHandler<string>
             return;
         }
 
-        //if (result.GainedExperience > 0 || result.GainedLevels > 0)
-        //{
-        //    var clanSkill = player.Clan.ClanInfo.ClanSkills.FirstOrDefault(x => x.Name.ToLower() == "enchanting");
-        //    Game.Clans.UpdateClanSkill(player.Clan.ClanInfo.Id, clanSkill.Id, result.GainedLevels, result.GainedExperience);
-        //}
-
         var enchantedItem = result.EnchantedItem;
         var oldItemName = result.OldItemStack.Name ?? Game.Items.Get(result.OldItemStack.ItemId)?.Name;
 

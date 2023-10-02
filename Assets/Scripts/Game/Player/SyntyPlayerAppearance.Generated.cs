@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 using RavenNest.Models;
 
 public partial class SyntyPlayerAppearance
@@ -31,7 +26,7 @@ public partial class SyntyPlayerAppearance
         }
         for (var i = 0; i < hairs.Length; ++i)
         {
-            hairs[i].SetActive(false);
+            hairs[i]?.SetActive(false);
         }
         for (var i = 0; i < headAttachments.Length; ++i)
         {
@@ -226,13 +221,21 @@ public partial class SyntyPlayerAppearance
             m_capes.SetActive(true);
             capeLogoMaterials.Add(r_capes.material);
         }
+
         var i_hairs = Hair;
         if (i_hairs >= 0 && i_hairs < hairs.Length)
         {
             var m_hairs = hairs[i_hairs];
+            if (m_hairs)
+            {
+                m_hairs.SetActive(true);
+            }
+
             var r_hairs = m_hairs.GetComponent<SkinnedMeshRenderer>();
-            m_hairs.SetActive(true);
-            r_hairs.material.SetColor("_Color_Hair", BeardColor);
+            if (r_hairs)
+            {
+                r_hairs.material.SetColor("_Color_Hair", BeardColor);
+            }
         }
         for (var i = 0; i < HeadAttachments.Length; ++i)
         {

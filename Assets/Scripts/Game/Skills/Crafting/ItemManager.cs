@@ -463,10 +463,34 @@ public class ItemManager : MonoBehaviour
     }
 }
 
+[Serializable]
 public struct DateRange
 {
     public DateTime Start;
     public DateTime End;
+
+    /// <summary>
+    ///     Gets a collection of the dates in the date range.
+    /// </summary>
+    public IList<DateTime> Dates
+    {
+        get
+        {
+            var startDate = Start;
+
+            return Enumerable.Range(0, Days)
+                .Select(offset => startDate.AddDays(offset))
+                .ToList();
+        }
+    }
+
+    /// <summary>
+    ///     Gets the number of whole days in the date range.
+    /// </summary>
+    public int Days
+    {
+        get { return (int)((End - Start).TotalDays + 1); }
+    }
 }
 
 [Serializable]
@@ -484,7 +508,7 @@ public struct RedeemableItem
 
     public DateRange GetRedeemableDateRange()
     {
-        var min = DateTime.MinValue;
+        var min = DateTime.UnixEpoch;
         var max = DateTime.MaxValue;
 
         var yStart = YearStart > 0 ? YearStart : min.Year;

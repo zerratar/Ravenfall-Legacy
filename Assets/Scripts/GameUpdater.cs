@@ -251,6 +251,24 @@ public class GameUpdater : MonoBehaviour
             label.text = "Initializing update.";
         }
 
+        // KillRavenBot();
+
+        // 2. start patcher
+        if (Shinobytes.IO.File.Exists("RavenWeave.exe"))
+        {
+            System.Diagnostics.Process.Start("RavenWeave.exe");
+        }
+        else
+        {
+            Shinobytes.Debug.LogWarning("RavenWeave.exe could not be found. Unable to start the patcher.");
+        }
+
+        // 3. stop unity game
+        Application.Quit();
+    }
+
+    private void KillRavenBot()
+    {
         try
         {
             // 1. stop the bot if its running
@@ -277,19 +295,6 @@ public class GameUpdater : MonoBehaviour
             // InvalidOperationException: Process has exited or is inaccessible, so the requested information is not available.
             Shinobytes.Debug.LogWarning("Failed to stop local running RavenBot. This can be ignored. Error: " + exc.Message);
         }
-
-        // 2. start patcher
-        if (Shinobytes.IO.File.Exists("RavenWeave.exe"))
-        {
-            System.Diagnostics.Process.Start("RavenWeave.exe");
-        }
-        else
-        {
-            Shinobytes.Debug.LogWarning("RavenWeave.exe could not be found. Unable to start the patcher.");
-        }
-
-        // 3. stop unity game
-        Application.Quit();
     }
 
     private void TryStopProcess(System.Diagnostics.Process process)

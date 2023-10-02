@@ -187,8 +187,8 @@ public class DungeonController : MonoBehaviour
     }
 
     public void AddExperienceReward(PlayerController player)
-    {
-        var slayerFactor = Mathf.Max(bossCombatLevel / 1000f, 70);
+    {        
+        var slayerFactor = Mathf.Max(bossCombatLevel / 200, 70) * 0.125 * Math.Max(1, gameManager.SessionSettings.DungeonExpFactor);
         player.AddExp(Skill.Slayer, slayerFactor);
 
         var skillFactor = Math.Max(5, slayerFactor * 0.5);

@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts;
+using Shinobytes.Linq;
 
 #if UNITY_EDITOR
 using Sirenix.OdinInspector;
@@ -30,8 +31,18 @@ public class PetController : MonoBehaviour
     [Button("Generate Animation Controller")]
     public void GenerateAnimationController()
     {
-
         var itemName = gameObject.name;
+
+        // try get existing controller so we can grab the correct animations and then replace the animation controller used.
+
+        var animator = gameObject.GetComponentInChildren<Animator>();
+
+        var currentController = animator.runtimeAnimatorController; // this is the one we want to replace later.
+
+        // get all animation clips, we will use these to determine which animations to use later.
+        var availableAnimations = currentController.animationClips;
+
+
         var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath("Assets/Animations/Pets/" + itemName.Replace(" ", "") + ".controller");
 
         // Add parameters
@@ -44,8 +55,13 @@ public class PetController : MonoBehaviour
         var rootStateMachine = controller.layers[0].stateMachine;
 
         var stateIdle = rootStateMachine.AddState("Idle");
+        stateIdle.motion = availableAnimations.OrderBy(x => x.name.Length).FirstOrDefault(x => x.name.Contains("idle", System.StringComparison.OrdinalIgnoreCase));
+
         var stateRun = rootStateMachine.AddState("Run");
+        stateRun.motion = availableAnimations.OrderBy(x => x.name.Length).FirstOrDefault(x => x.name.Contains("run", System.StringComparison.OrdinalIgnoreCase));
+
         var stateSleeping = rootStateMachine.AddState("Sleeping");
+        stateSleeping.motion = availableAnimations.OrderBy(x => x.name.Length).FirstOrDefault(x => x.name.Contains("sleep", System.StringComparison.OrdinalIgnoreCase)) ?? stateIdle.motion;
 
         rootStateMachine.AddEntryTransition(stateIdle);
 
@@ -84,6 +100,8 @@ public class PetController : MonoBehaviour
         runTransitionToIdle.AddCondition(UnityEditor.Animations.AnimatorConditionMode.IfNot, 0, "Sleeping");
         runTransitionToIdle.duration = 0;
 
+        // replace the used runtime controller
+        animator.runtimeAnimatorController = controller;
     }
 
     [Button("Generate Item Row")]
@@ -139,7 +157,7 @@ public class PetController : MonoBehaviour
             return;
         }
 
-        if (!animator) 
+        if (!animator)
             return;
 
         if (lightSource && Overlay.IsGame)

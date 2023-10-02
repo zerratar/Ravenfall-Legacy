@@ -39,6 +39,7 @@ public class Highscore : ChatBotCommandHandler<string>
         {
             // Admin or moderators dont get to use this.
             Shinobytes.Debug.Log("Game Admin or Game Moderators cant use !hs command.");
+            //client.SendReply(gm, "This command can't be used by Ravenfall Admins and Moderators. You're not on the leaderboard HahaShrugLeft HahaShrugMiddle HahaShrugRight", skillName);
             return;
         }
 

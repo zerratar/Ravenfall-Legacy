@@ -206,30 +206,106 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         }));
     }
 
-    public string GetQuantityForm(long amount, string name)
+    //         in the future, we can make it so that items that take less than a second to make can be combined to
+    //         be done together so there are not just 1 request per item being made.
+    //   Example: recipe.PreparationTime<1, Amount = Min(Amount, 1/recipe.PreparationTime)
+
+
+    public static string GetQuantityForm(long amount, string name)
     {
-        var c = name.ToLower().Trim()[0];
-        var grammarForm = "a";
-        if (c == 'a' || c == 'i' || c == 'u' || c == 'e' || c == 'o') grammarForm = "an";
-        if (amount > 1)
+        var uncountableItems = new HashSet<string>
         {
-            grammarForm = amount.ToString();
+            "yarrow", "cacao", "yeast", "burned perch", "burned beef",
+            "burned bass", "turmeric", "lemon balm", "wormwood", "garlic",
+            "sand", "sage", "coriander", "sugar", "wood pulp", "water",
+            "mugwort", "chocolate", "cinnamon", "cheese", "onion",
+            "black pepper", "butter", "flour", "bread", "resin",
+            "lavender", "tomato", "coal", "wood plank"
+        };
+
+        string itemNameLower = name.ToLower().Trim();
+
+        if (amount == 1)
+        {
+            if (uncountableItems.Contains(itemNameLower)) return string.Empty;
+
+            switch (itemNameLower[0])
+            {
+                case 'a':
+                case 'e':
+                case 'i':
+                case 'o':
+                case 'u':
+                    return "an";
+                default:
+                    return "a";
+            }
         }
-        return grammarForm;
+        return amount.ToString();
     }
 
-    public async Task ProduceAsync(ItemProductionState state, string[] terms)
+    public static readonly Dictionary<string, string[]> CustomTerms = new Dictionary<string, string[]>
     {
+        { "butter", new string[] { "churn", "churned" } },
+        { "red wine", new string[] { "ferment", "fermented" } },
+        { "cheese", new string[] { "make", "made" } },
+        { "yarrow", new string[] { "pick", "picked" } },
+        { "cacao", new string[] { "harvest", "harvested" } },
+        { "yeast", new string[] { "cultivate", "cultivated" } },
+        { "turmeric", new string[] { "grind", "ground" } },
+        { "lemon balm", new string[] { "pluck", "plucked" } },
+        { "wormwood", new string[] { "gather", "gathered" } },
+        { "garlic", new string[] { "harvest", "harvested" } },
+        { "sand", new string[] { "collect", "collected" } },
+        { "sugar", new string[] { "refine", "refined" } },
+        { "wood pulp", new string[] { "process", "processed" } },
+        { "water", new string[] { "fetch", "fetched" } },
+        { "chocolate", new string[] { "mold", "molded" } },
+        { "cinnamon", new string[] { "grind", "ground" } },
+        { "onion", new string[] { "chop", "chopped" } },
+        { "black pepper", new string[] { "grind", "ground" } },
+        { "flour", new string[] { "mill", "milled" } },
+        { "bread", new string[] { "bake", "baked" } },
+        { "resin", new string[] { "extract", "extracted" } },
+        { "lavender", new string[] { "pick", "picked" } },
+        { "tomato", new string[] { "harvest", "harvested" } },
+        { "coal", new string[] { "mine", "mined" } },
+        { "wood plank", new string[] { "cut", "cut" } },
+        { "tome of teleportation", new string[] { "inscribe", "inscribed" } },
+        { "tome of home", new string[] { "inscribe", "inscribed" } },
+        { "tome of away", new string[] { "inscribe", "inscribed" } },
+        { "tome of ironhill", new string[] { "inscribe", "inscribed" } },
+        { "tome of kyo", new string[] { "inscribe", "inscribed" } },
+        { "tome of heim", new string[] { "inscribe", "inscribed" } },
+        { "tome of atria", new string[] { "inscribe", "inscribed" } },
+        { "tome of eldara", new string[] { "inscribe", "inscribed" } }
+    };
 
-        //         in the future, we can make it so that items that take less than a second to make can be combined to
-        //         be done together so there are not just 1 request per item being made.
-        //   Example: recipe.PreparationTime<1, Amount = Min(Amount, 1/recipe.PreparationTime)
-
+    public async Task ProduceAsync(ItemProductionState state)
+    {
         var player = state.Player;
         var recipe = state.Recipe;
         var amount = state.Amount;
         var message = state.Message;
         var client = state.Client;
+
+        string[] terms;
+        if (CustomTerms.ContainsKey(recipe.Name.ToLower()))
+        {
+            terms = CustomTerms[recipe.Name.ToLower()];
+        }
+        else if (state.Recipe.RequiredSkill == Skill.Cooking)
+        {
+            terms = new string[] { "cook", "cooked" };
+        }
+        else if (state.Recipe.RequiredSkill == Skill.Alchemy)
+        {
+            terms = new string[] { "brew", "brewed" };
+        }
+        else
+        {
+            terms = new string[] { "craft", "crafted" }; // default
+        }
 
         var result = await Game.RavenNest.Players.ProduceItemAsync(player.Id, recipe.Id, amount);
 
@@ -350,19 +426,8 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         {
             var stack = inventory.GetInventoryItemsByItemId(ingredient.ItemId);
             var ownedAmount = 0L;
-            if (stack != null && stack.Count > 0)
-            {
-                ownedAmount = stack.Sum(x => x.Amount);
-            }
-
-            if (ownedAmount < ingredient.Amount)
-            {
-                return true;
-            }
-            //if (!inventory.Contains(ingredient.ItemId, ingredient.Amount))
-            //{
-            //    return true;
-            //}
+            if (stack != null && stack.Count > 0) ownedAmount = stack.Sum(x => x.Amount);
+            if (ownedAmount < ingredient.Amount) return true;
         }
 
         return false;

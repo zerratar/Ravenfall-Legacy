@@ -17,11 +17,11 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<int>
         PlayerController player = null;
         
         var expLimit = 100;
-        if (Game.Permissions != null)
+        if (Game.SessionSettings != null)
         {
-            if (Game.Permissions.PlayerExpMultiplierLimit > 0)
+            if (Game.SessionSettings.PlayerExpMultiplierLimit > 0)
             {
-                expLimit = Game.Permissions.PlayerExpMultiplierLimit;
+                expLimit = Game.SessionSettings.PlayerExpMultiplierLimit;
             }
         }
 

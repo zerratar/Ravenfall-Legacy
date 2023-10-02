@@ -59,7 +59,7 @@ public class DungeonForce : ChatBotCommandHandler
                 {
                     await ExternalResources.ReloadIfModifiedAsync("dungeon.mp3");
 
-                    if (await Game.Dungeons.ActivateDungeon())
+                    if (!await Game.Dungeons.ActivateDungeon(plr, req =>
                     {
                         var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Dungeon);
 
@@ -72,8 +72,10 @@ public class DungeonForce : ChatBotCommandHandler
                         {
                             client.SendReply(gm, "You have used a Dungeon Scroll.");
                         }
-                    }
-                    else
+
+                        Game.Dungeons.AnnounceDungeon(req);
+                        Game.HandleDungeonAutoJoin(plr);
+                    }))
                     {
                         client.SendReply(gm, "Dungeon could not be started. Try again later");
                         var dungeonScroll = Game.Items.Find(x => x.Name.ToLower().Contains("dungeon") && x.Category == ItemCategory.Scroll);

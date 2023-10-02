@@ -331,7 +331,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    public async Task<bool> ActivateDungeon()
+    public async Task<bool> ActivateDungeon(PlayerController initiator = null, Action<string> onActivated = null)
     {
         try
         {
@@ -350,9 +350,16 @@ public class DungeonManager : MonoBehaviour, IEvent
                     {
                         RequiredCode = EventCode.New();
                     }
-                    AnnounceDungeon(RequiredCode);
 
-                    await gameManager.HandleDungeonAutoJoin();
+                    if (onActivated != null)
+                    {
+                        onActivated(RequiredCode);
+                    }
+                    else
+                    {
+                        AnnounceDungeon(RequiredCode);
+                        await gameManager.HandleDungeonAutoJoin(initiator);
+                    }
                 }
                 else
                 {
@@ -439,6 +446,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             return;
         }
+
+        player.Dungeon.AutoJoining = false;
 
         lock (mutex)
         {
@@ -816,7 +825,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         gameManager.dungeonStatsJson.Update();
     }
 
-    private void AnnounceDungeon(string code)
+    public void AnnounceDungeon(string code)
     {
         //var ioc = gameManager.gameObject.GetComponent<IoCContainer>();
         //var evt = ioc.Resolve<EventTriggerSystem>();

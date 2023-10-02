@@ -34,7 +34,7 @@ public class Cook : ProduceItemCommand
         player.BeginInterruptableAction(
             new ItemProductionState(player, recipe, amount, message, client),
             // action: async state => { if (state.Continue) { await ProduceAsync(state, ...) } else { report result }  }
-            action: async state => await ProduceAsync(state, new string[] { "cook", "cooked" }),
+            action: async state => await ProduceAsync(state),
             onInterrupt: state => client.SendReply(message, Localization.MSG_COOK_CANCEL),
             recipe.PreparationTime,
             "Cooking " + recipe.Name,

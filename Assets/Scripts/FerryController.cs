@@ -141,7 +141,7 @@ public class FerryController : MonoBehaviour
     {
         return transform && (transform == playerPositions[0] || transform.position == playerPositions[0].position);
     }
-    
+
     public int GetPlayerCount()
     {
         return playerPositions.Sum(x => x.childCount);
@@ -242,17 +242,35 @@ public class FerryController : MonoBehaviour
         emission.rateOverTime = rateOverTime.constant * v;
     }
 
-    internal void AssignBestCaptain()
+    public void AssignBestCaptain()
     {
         var players = GetComponentsInChildren<PlayerController>();
         if (players.Length == 0) return;
+
+        if (Captain != null)
+        {
+            DemoteToSailor(Captain);
+        }
+
         var nextCaptain = players
             .OrderByDescending(x => x.Stats.Sailing.MaxLevel)
             .FirstOrDefault();
+
         if (nextCaptain != null)
         {
             PromoteToCaptain(nextCaptain);
         }
+    }
+
+    private void DemoteToSailor(PlayerController captain)
+    {
+        // make sure first to check if this player is still on the ferry.
+        if (!captain.Ferry.OnFerry)
+        {
+            return;
+        }
+
+        captain.Ferry.AddPlayerToFerry(false);
     }
 
     private void PromoteToCaptain(PlayerController nextCaptain)

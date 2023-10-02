@@ -52,6 +52,11 @@ public class FerryHandler : MonoBehaviour
 
         EnsureReferences();
 
+        if (player.Raid.InRaid || player.Dungeon.InDungeon || player.Duel.InDuel)
+        {
+            return;
+        }
+
         if (OnFerry)
         {
             player.Movement.Lock();
@@ -68,7 +73,7 @@ public class FerryHandler : MonoBehaviour
                 && ferry.Island && destination
                 && destination == ferry.Island)
             {
-                Disembark(ferry.Island);
+                BeginDisembark(ferry.Island);
             }
         }
         else
@@ -168,28 +173,30 @@ public class FerryHandler : MonoBehaviour
         }
     }
 
-    public void Disembark(IslandController destination = null)
+    public void BeginDisembark(IslandController destination = null)
     {
         EnsureReferences();
-
         state = PlayerFerryState.Disembarking;
         this.destination = destination;
     }
 
     public bool RemoveFromFerry()
     {
-        var onFerry = OnFerry;
+        var wasOnFerry = OnFerry;
+        var wasCaptain = this.IsCaptain;
+        var parent = player.transform.parent;
+        var inShipPlayerPoint = parent && parent.CompareTag("ShipPlayerPoint");
+
         isOnFerry = false;
         state = PlayerFerryState.None;
-        var parent = player.transform.parent;
 
         ClearDestination();
 
-        if (onFerry || (parent && parent.name == "PlayerPoint"))
+        if (wasOnFerry || inShipPlayerPoint)
         {
             player.transform.SetParent(null);
 
-            if (this.IsCaptain)
+            if (wasCaptain)
             {
                 // if we remove the captain we need to assign a new player
                 ferry.AssignBestCaptain();
@@ -269,7 +276,6 @@ public class FerryHandler : MonoBehaviour
         }
     }
 
-
     private void LateUpdate()
     {
         if (state == PlayerFerryState.Embarked && lastFerryPoint && transform.parent == lastFerryPoint)
@@ -277,6 +283,13 @@ public class FerryHandler : MonoBehaviour
             player.transform.localPosition = Vector3.zero;
             player.transform.rotation = lastFerryPoint.rotation;
         }
+    }
+
+    public void AddPlayerToFerry(IslandController destination, bool canBeCaptain = true)
+    {
+        ClearDestination();
+        AddPlayerToFerry(canBeCaptain);
+        this.destination = destination;
     }
 
     public void AddPlayerToFerry(bool canBeCaptain = true)
@@ -289,7 +302,7 @@ public class FerryHandler : MonoBehaviour
         // re-arrange players if this player should be the captain.
 
         var currentCaptain = ferry.Captain;
-        if (currentCaptain)
+        if (canBeCaptain && currentCaptain)
         {
             if (player.Stats.Sailing.MaxLevel > currentCaptain.Stats.Sailing.MaxLevel)
             {

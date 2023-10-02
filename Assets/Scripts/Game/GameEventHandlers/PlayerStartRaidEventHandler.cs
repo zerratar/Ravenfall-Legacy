@@ -26,7 +26,7 @@ public class PlayerStartRaidEventHandler : GameEventHandler<RavenNest.Models.Pla
                 if (result == ScrollUseResult.Success)
                 {
                     var scrollsLeft = player.Inventory.RemoveScroll(ScrollType.Raid);
-                    if (!await Game.Raid.StartRaid(player.Name))
+                    if (!await Game.Raid.StartRaid(player))
                     {
                         var raidScroll = Game.Items.Find(x => x.Name.Contains("raid", System.StringComparison.OrdinalIgnoreCase) && x.Type == ItemType.Scroll);
                         if (raidScroll != null)

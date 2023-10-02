@@ -246,7 +246,9 @@ public class GameClient : IDisposable
     public void SendReply(GameMessage sourceMessage, PlayerController player, string format, params object[] args)
     {
         var recipent = GameMessageRecipent.Create(player);
-        Write(GameMessageResponse.CreateReply("message", recipent, format, args, sourceMessage.CorrelationId));
+        Write(GameMessageResponse.CreateReply("message", recipent,
+            format.Replace("  ", " "), // a friendly trim.
+            args, sourceMessage.CorrelationId));
     }
 
     public void SendReplyUseMessageIfNotNull(GameMessage sourceMessage, User player, string format, params object[] args)
@@ -265,7 +267,7 @@ public class GameClient : IDisposable
         Write(new GameMessageResponse(
             "message",
             GameMessageRecipent.System,
-            format,
+            format.Replace("  ", " "), // a friendly trim.
             args, tags, category, string.Empty));
     }
 
@@ -277,7 +279,9 @@ public class GameClient : IDisposable
 
     public void SendReply(GameMessageRecipent recipent, string format, object[] args)
     {
-        Write(GameMessageResponse.CreateReply("message", recipent, format, args, string.Empty));
+        Write(GameMessageResponse.CreateReply("message", recipent, 
+            format.Replace("  ", " "), // a friendly trim.
+            args, string.Empty));
     }
 
     public void SendReply(GameMessage sourceMessage, string format, params object[] args)
@@ -285,7 +289,7 @@ public class GameClient : IDisposable
         Write(
             GameMessageResponse.CreateReply("message",
             GameMessageRecipent.Create(sourceMessage.Sender),
-            format,
+            format.Replace("  ", " "), // a friendly trim.
             args,
             sourceMessage.CorrelationId));
     }

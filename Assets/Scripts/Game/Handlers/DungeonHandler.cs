@@ -264,7 +264,8 @@ public class DungeonHandler
         Ferry = new()
         {
             OnFerry = player.Ferry.OnFerry,
-            HasDestination = !!player.Ferry.Destination
+            HasDestination = !!player.Ferry.Destination,
+            Destination = player.Ferry.Destination
         };
 
         if (Ferry.OnFerry)
@@ -317,7 +318,7 @@ public class DungeonHandler
         if (Ferry.OnFerry)
         {
             player.Movement.Lock();
-            player.Ferry.AddPlayerToFerry();
+            player.Ferry.AddPlayerToFerry(Ferry.Destination);
             Ferry.HasReturned = true;
         }
         else
@@ -331,13 +332,13 @@ public class DungeonHandler
 
         if (previousTask != TaskType.None)
         {
-            this.player.SetTask(previousTask, previousTaskArgument);
+            this.player.SetTask(previousTask, previousTaskArgument, true);
         }
 
         var currentTask = player.GetTask();
         if (!Ferry.OnFerry && currentTask != TaskType.None)
         {
-            player.GotoClosest(currentTask);
+            player.GotoClosest(currentTask, true);
         }
 
         if (wasResting)
@@ -464,6 +465,7 @@ public class DungeonHandler
         public bool OnFerry;
         public bool HasDestination;
         public bool HasReturned;
+        public IslandController Destination;
     }
 
 }

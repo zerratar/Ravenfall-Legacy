@@ -18,6 +18,8 @@ using UnityEngine.AI;
 using System.Diagnostics;
 using System.Text;
 using UnityEditor;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
@@ -152,17 +154,12 @@ public class GameManager : MonoBehaviour, IGameManager
     private float uptimeSaveTimer = 3f;
 
     private int spawnedBots;
-    private bool useManualExpMultiplierCheck;
 
     private bool potatoMode;
     private bool forcedPotatoMode;
     private DateTime dungeonStartTime;
     private DateTime raidStartTime;
     private ClanManager clanManager;
-
-    private float lastServerTimeUpdateFloat;
-    private DateTime lastServerTimeUpdateDateTime;
-    private DateTime serverTime;
 
     private readonly TimeSpan dungeonStartCooldown = TimeSpan.FromMinutes(10);
     private readonly TimeSpan raidStartCooldown = TimeSpan.FromMinutes(10);
@@ -179,16 +176,16 @@ public class GameManager : MonoBehaviour, IGameManager
     public StreamLabel dungeonStatsJson;
     public StreamLabel villageStatsJson;
 
-    private Permissions permissions = new Permissions { ExpMultiplierLimit = 100 };
-    public Permissions Permissions
+    private SessionSettings sessionSettings = new SessionSettings { ExpMultiplierLimit = 100 };
+    public SessionSettings SessionSettings
     {
-        get { return permissions; }
+        get { return sessionSettings; }
         set
         {
-            permissions = value;
+            sessionSettings = value;
             if (value != null)
             {
-                AdminControlData.IsAdmin = permissions.IsAdministrator;
+                AdminControlData.IsAdmin = sessionSettings.IsAdministrator;
             }
         }
     }
@@ -320,7 +317,7 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ResourceUpdateEventHandler>(GameEventType.ResourceUpdate);
         RegisterGameEventHandler<ServerMessageEventHandler>(GameEventType.ServerMessage);
 
-        RegisterGameEventHandler<PermissionChangedEventHandler>(GameEventType.PermissionChange);
+        RegisterGameEventHandler<SessionSettingsChangedEventHandler>(GameEventType.SessionSettingsChanged);
         RegisterGameEventHandler<VillageInfoEventHandler>(GameEventType.VillageInfo);
         RegisterGameEventHandler<VillageLevelUpEventHandler>(GameEventType.VillageLevelUp);
 
@@ -414,18 +411,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         uptimeLabel = StreamLabels.RegisterText("uptime", () => Time.realtimeSinceStartup.ToString());
 
-        villageBoostLabel = StreamLabels.RegisterText("village-boost", () =>
-        {
-            var bonuses = Village.GetExpBonuses();
-
-            var value = bonuses.Where(x => x.Bonus > 0)
-             .GroupBy(x => x.SlotType)
-             .Where(x => x.Key != TownHouseSlotType.Empty && x.Key != TownHouseSlotType.Undefined)
-             .Select(x => $"{x.Key} {x.Value.Sum(y => y.Bonus)}%");
-
-
-            return string.Join(", ", value);
-        });
+        villageBoostLabel = StreamLabels.RegisterText("village-boost", () => GetVillageBoostString());
 
         playerCountLabel = StreamLabels.RegisterText("online-player-count", () => playerManager.GetPlayerCount().ToString());
 
@@ -459,6 +445,17 @@ public class GameManager : MonoBehaviour, IGameManager
         return emptySubBoost;
     }
 
+    public string GetVillageBoostString()
+    {
+        var bonuses = Village.GetExpBonuses();
+        var value = bonuses.Where(x => x.Bonus > 0)
+         .GroupBy(x => x.SlotType)
+         .Where(x => x.Key != TownHouseSlotType.Empty && x.Key != TownHouseSlotType.Undefined)
+         .Select(x => $"{x.Key} {x.Value.Sum(y => y.Bonus)}%");
+
+        return string.Join(", ", value);
+    }
+
     public VillageStats GetVillageStats()
     {
         if (this.villageStats == null)
@@ -470,6 +467,7 @@ public class GameManager : MonoBehaviour, IGameManager
         villageStats.Level = Village.TownHall.Level;
         villageStats.Tier = Village.TownHall.Tier;
         villageStats.BonusExp = Village.GetExpBonuses();
+        villageStats.Boost = GetVillageBoostString();
         return villageStats;
     }
 
@@ -1600,7 +1598,7 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
 
-        if (Permissions.IsAdministrator)
+        if (SessionSettings.IsAdministrator)
         {
             if (isControlDown && Input.GetKeyUp(KeyCode.C))
             {
@@ -1628,7 +1626,7 @@ public class GameManager : MonoBehaviour, IGameManager
             if (isControlDown && Input.GetKeyUp(KeyCode.O))
             {
                 var elapsed = DateTime.UtcNow - dungeonStartTime;
-                if (elapsed > dungeonStartCooldown || Permissions.IsAdministrator)
+                if (elapsed > dungeonStartCooldown || SessionSettings.IsAdministrator)
                 {
                     dungeonStartTime = DateTime.UtcNow;
                     Dungeons.ActivateDungeon();
@@ -1648,7 +1646,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void OnGUI()
     {
-        if (!Permissions.IsAdministrator)
+        if (!SessionSettings.IsAdministrator)
         {
             return;
         }
@@ -2209,19 +2207,51 @@ public class GameManager : MonoBehaviour, IGameManager
     internal void AnnounceAutoDungeonJoinFailed(List<PlayerController> players)
     {
         if (players.Count == 0) return;
-        var playerNames = string.Join(", ", players.Select(x => "@" + x.Name));
-        if (players.Count == 1)
+
+        var playersToReport = players.Where(x => x.LastChatCommandUtc <= x.LastDungeonAutoJoinFailUtc || x.LastDungeonAutoJoinFailUtc <= DateTime.UnixEpoch).ToList();
+        if (playersToReport.Count > 0)
         {
-            RavenBot.SendReply(players[0], "You have failed to join the dungeon. Make sure you have enough coins to automatically join.");
+            var playerNames = string.Join(", ", playersToReport.Select(x => "@" + x.Name));
+            if (playersToReport.Count == 1)
+            {
+                RavenBot.SendReply(playersToReport[0], "You have failed to join the dungeon. Make sure you have enough coins to automatically join.");
+            }
+            else if (playersToReport.Count < 10)
+            {
+                RavenBot.Announce("{playerNames} failed to joined the dungeon. You may not have enough coins.", playerNames);
+            }
+            else
+            {
+                RavenBot.Announce("{playerCount} players failed to join the dungeon.", playersToReport.Count.ToString());
+            }
         }
-        else if (players.Count < 10)
+
+        foreach (var plr in players) plr.LastDungeonAutoJoinFailUtc = DateTime.UtcNow;
+    }
+
+    internal void AnnounceAutoRaidJoinFailed(List<PlayerController> players)
+    {
+        if (players.Count == 0) return;
+
+        var playersToReport = players.Where(x => x.LastChatCommandUtc <= x.LastRaidAutoJoinFailUtc || x.LastRaidAutoJoinFailUtc <= DateTime.UnixEpoch).ToList();
+        if (playersToReport.Count > 0)
         {
-            RavenBot.Announce("{playerNames} failed to joined the dungeon. You may not have enough coins.", playerNames);
+            var playerNames = string.Join(", ", playersToReport.Select(x => "@" + x.Name));
+            if (playersToReport.Count == 1)
+            {
+                RavenBot.SendReply(playersToReport[0], "You have failed to join the raid. Make sure you have enough coins to automatically join.");
+            }
+            else if (playersToReport.Count < 10)
+            {
+                RavenBot.Announce("{playerNames} failed to joined the raid. You may not have enough coins.", playerNames);
+            }
+            else
+            {
+                RavenBot.Announce("{playerCount} players failed to join the raid.", playersToReport.Count.ToString());
+            }
         }
-        else
-        {
-            RavenBot.Announce("{playerCount} players failed to join the dungeon.", players.Count.ToString());
-        }
+
+        foreach (var plr in players) plr.LastRaidAutoJoinFailUtc = DateTime.UtcNow;
     }
 
     internal void AnnounceAutoRaidJoin(List<PlayerController> players)
@@ -2250,23 +2280,6 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-    internal void AnnounceAutoRaidJoinFailed(List<PlayerController> players)
-    {
-        if (players.Count == 0) return;
-        var playerNames = string.Join(", ", players.Select(x => "@" + x.Name));
-        if (players.Count == 1)
-        {
-            RavenBot.SendReply(players[0], "You have failed to join the raid. Make sure you have enough coins to automatically join.");
-        }
-        else if (players.Count < 10)
-        {
-            RavenBot.Announce("{playerNames} failed to joined the raid. You may not have enough coins.", playerNames);
-        }
-        else
-        {
-            RavenBot.Announce("{playerCount} players failed to join the raid.", players.Count.ToString());
-        }
-    }
 
     internal void OnPlayerAutoJoinedDungeon(PlayerController player)
     {
@@ -2282,7 +2295,7 @@ public class GameManager : MonoBehaviour, IGameManager
         playerAutoJoinList.Add(player);
     }
 
-    internal async Task HandleRaidAutoJoin()
+    internal async Task HandleRaidAutoJoin(PlayerController ignore = null)
     {
         var autoJoinList = new List<Guid>();
         var autoJoinPlayers = new List<PlayerController>();
@@ -2290,8 +2303,14 @@ public class GameManager : MonoBehaviour, IGameManager
         var failed = new List<PlayerController>();
         foreach (var player in Players.GetAllPlayers())
         {
-            if (Raid.CanJoin(player) != RaidJoinResult.CanJoin)
+            if (Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Raid.AutoJoining)
                 continue;
+
+            if (ignore != null && ignore == player)
+            {
+                player.Raid.AutoJoining = true;
+                continue;
+            }
 
             if (player.Raid.AutoJoinCounter > 0)
             {
@@ -2320,6 +2339,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     {
                         plr.Raid.AutoJoinCounter--;
                     }
+                    plr.Resources.Coins -= RaidAuto.autoJoinCost;
                 }
                 else
                 {
@@ -2340,19 +2360,23 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-    internal async Task HandleDungeonAutoJoin()
+    internal async Task HandleDungeonAutoJoin(PlayerController ignore = null)
     {
         var autoJoinList = new List<Guid>();
         var autoJoinPlayers = new List<PlayerController>();
         var success = new List<PlayerController>();
         var failed = new List<PlayerController>();
 
-
-
         foreach (var player in Players.GetAllPlayers())
         {
             if (Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin)
                 continue;
+
+            if (ignore != null && ignore == player)
+            {
+                player.Dungeon.AutoJoining = true;
+                continue;
+            }
 
             if (player.Dungeon.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
             {
@@ -2381,6 +2405,8 @@ public class GameManager : MonoBehaviour, IGameManager
                     {
                         plr.Dungeon.AutoJoinCounter--;
                     }
+
+                    plr.Resources.Coins -= DungeonAuto.autoJoinCost;
                 }
                 else
                 {
@@ -2439,10 +2465,12 @@ public class VillageStats
     public int Level { get; set; }
     public int Tier { get; set; }
     public ICollection<TownHouseExpBonus> BonusExp { get; set; }
+    public string Boost { get; set; }
 }
 
 public class TownHouseExpBonus
 {
+    [JsonConverter(typeof(StringEnumConverter))]
     public TownHouseSlotType SlotType { get; set; }
     public float Bonus { get; set; }
 
@@ -2486,4 +2514,10 @@ public class FerryStats
     public int PlayersCount { get; set; }
     public int CaptainSailingLevel { get; set; }
     public string CaptainName { get; set; }
+}
+
+public class ServerTime
+{
+    public static TimeSpan TimeDelta;
+    public static DateTime UtcNow => DateTime.UtcNow + TimeDelta;
 }

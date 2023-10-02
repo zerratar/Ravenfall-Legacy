@@ -45,6 +45,7 @@ public class RaidManager : MonoBehaviour, IEvent
     public bool Started => nextRaidTimer < 0f;
 
     public bool IsBusy { get; internal set; }
+    public bool HasBeenAnnounced { get; private set; }
 
     public string RequiredCode;
 
@@ -154,8 +155,9 @@ public class RaidManager : MonoBehaviour, IEvent
         gameManager.raidStatsJson.Update();
     }
 
-    public async Task<bool> StartRaid(string initiator = null)
+    public async Task<bool> StartRaid(PlayerController initiator = null, Action<string> onActivated = null)
     {
+        this.HasBeenAnnounced = false;
         if (gameManager.Events.TryStart(this))
         {
             if (gameManager.RequireCodeForDungeonOrRaid)
@@ -169,7 +171,6 @@ public class RaidManager : MonoBehaviour, IEvent
             }
 
             notifications.OnBeforeRaidStart();
-
             gameManager.Music.PlayRaidBossMusic();
 
             if (!notifications.gameObject.activeSelf) notifications.gameObject.SetActive(true);
@@ -180,21 +181,21 @@ public class RaidManager : MonoBehaviour, IEvent
 
             notifications.ShowRaidBossAppeared(RequiredCode);
 
-            if (gameManager.RequireCodeForDungeonOrRaid)
+            gameManager.raidStatsJson.Update();
+
+            if (onActivated != null)
             {
-                gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_CODE, Boss.Enemy.Stats.CombatLevel.ToString());
+                onActivated(RequiredCode);
             }
             else
             {
-                gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
+                Announce();
+                await gameManager.HandleRaidAutoJoin(initiator);
             }
-            gameManager.raidStatsJson.Update();
-
-            await gameManager.HandleRaidAutoJoin();
 
             return true;
         }
-        else if (!string.IsNullOrEmpty(initiator))
+        else if (initiator != null)
         {
             gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_ERROR);
         }
@@ -203,8 +204,22 @@ public class RaidManager : MonoBehaviour, IEvent
         return false;
     }
 
+    public void Announce()
+    {
+        if (gameManager.RequireCodeForDungeonOrRaid)
+        {
+            gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_CODE, Boss.Enemy.Stats.CombatLevel.ToString());
+        }
+        else
+        {
+            gameManager.RavenBot?.Announce(Localization.MSG_RAID_START, Boss.Enemy.Stats.CombatLevel.ToString());
+        }
+        this.HasBeenAnnounced = true;
+    }
+
     public void EndRaid(bool bossKilled, bool timeout)
     {
+        HasBeenAnnounced = false;
         gameManager.Events.End(this);
 
         if (!bossKilled && timeout)
@@ -297,16 +312,16 @@ public class RaidManager : MonoBehaviour, IEvent
         var result = gameManager.AddItems(rewards);
         if (result.Count > 0)
         {
-            gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded " + result.Count + " item treasures!");
+            gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded {itemCount} item treasures!", result.Count.ToString());
         }
         else
         {
             gameManager.RavenBot.Announce("Victorious!! The raid boss was slain but did not yield any treasure.");
         }
 
-        foreach (var msg in result.Messages)
+        foreach (var itemDrop in result.Messages)
         {
-            gameManager.RavenBot.Announce(msg);
+            gameManager.RavenBot.Announce(itemDrop);
         }
     }
 

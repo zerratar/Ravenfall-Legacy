@@ -38,7 +38,7 @@ public class GetStatusEffects : ChatBotCommandHandler<string>
                 continue;
             }
 
-            var timeLeft = now - fx.ExpiresUtc;
+            var timeLeft = TimeSpan.FromSeconds(fx.TimeLeft); //now - fx.ExpiresUtc;
             var proc = UnityEngine.Mathf.FloorToInt(fx.Amount * 100);
             strings.Add($"{Utility.AddSpacesToSentence(fx.Type.ToString())} +{proc}% ({timeLeft:hh\\:mm\\:ss})");
         }
