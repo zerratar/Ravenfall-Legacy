@@ -21,13 +21,37 @@ public class DisenchantItem : ChatBotCommandHandler<string>
             return;
         }
 
-        if (string.IsNullOrEmpty(inputQuery))
+        var query = inputQuery;
+        if (inputQuery?.ToLower() == "last")
         {
-            client.SendReply(gm, Localization.MSG_ENCHANT_MISSING_ARGS);
-            return;
+            if (player.LastEnchantedItem == null)
+            {
+                client.SendReply(gm, "You have not enchanted any items recently.");
+                return;
+            }
+
+            query = player.LastEnchantedItem.Name;
+        }
+        else  if (string.IsNullOrEmpty(inputQuery))
+        {
+            if (player.LastEnchantedItem != null)
+            {
+                if (System.DateTime.UtcNow >= player.LastEnchantedItemExpire)
+                {
+                    client.SendReply(gm, "It has been more than 5 minutes since you enchanted '{itemName}', to avoid disenchanting by mistake you have to use '!disenchant last' to continue.", player.LastEnchantedItem.Name);
+                    return;
+                }
+
+                query = player.LastEnchantedItem.Name;
+            }
+            else
+            {
+                client.SendReply(gm, Localization.MSG_ENCHANT_MISSING_ARGS);
+                return;
+            }
         }
 
-        var query = inputQuery;
+     
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
         var queriedItem = itemResolver.ResolveInventoryItem(player, query);

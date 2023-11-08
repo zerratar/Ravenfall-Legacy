@@ -442,18 +442,23 @@ public static class GameMath
 
     public static class Exp
     {
-        /// <summary>
-        /// The level where time between level has peaked at <see cref="IncrementMins"/>.
-        /// </summary>
-        public const double EasyLevel = 70.0;
+        // Old Values
+        public static double EasyLevel = 70;
+        public static double IncrementMins = 14;
+        public static double EasyLevelIncrementDivider = 8;
+        public static double GlobalMultiplierFactor = 1.0;
 
-        public const double IncrementMins = 14.0;
-        public const double IncrementHours = IncrementMins / 60.0;
-        public const double IncrementDays = IncrementHours / 24.0;
-        public const double MaxLevelDays = IncrementDays * MaxLevel;
-        public const double MultiEffectiveness = 1.375d;
+        // New Values, change to these in next update.
+        //public static double EasyLevel = 700;
+        //public static double IncrementMins = 5;
+        //public static double EasyLevelIncrementDivider = 12.5;
+        //public static double GlobalMultiplierFactor = 0.05;
 
-        public const double MaxExpFactorFromIsland = 1d;
+        public static double IncrementHours = IncrementMins / 60.0;
+        public static double IncrementDays = IncrementHours / 24.0;
+        public static double MaxLevelDays = IncrementDays * MaxLevel;
+        public static double MultiEffectiveness = 1.375d;
+        public static double MaxExpFactorFromIsland = 1d;
 
         /// <summary>
         /// Calculates the amount of exp that should be yielded given the current skill and level.
@@ -511,7 +516,7 @@ public static class GameMath
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetEffectiveExpMultiplier(int level, double multiplier = 1)
         {
-            return Math.Max(Math.Min((((MaxLevel * MultiEffectiveness) - (level - 1)) / (MaxLevel * MultiEffectiveness)) * multiplier, multiplier), 1.0);
+            return Math.Max(Math.Min((((MaxLevel * MultiEffectiveness) - (level - 1)) / (MaxLevel * MultiEffectiveness)) * multiplier, multiplier) * GlobalMultiplierFactor, 1.0);
         }
 
         /// <summary>
@@ -538,7 +543,7 @@ public static class GameMath
             if (level <= EasyLevel)
             {
                 var a = Math.Max(0, (level - 2) / EasyLevel);
-                var increment = Lerp(IncrementMins / 8.0d, IncrementMins, a);
+                var increment = Lerp(IncrementMins / EasyLevelIncrementDivider, IncrementMins, a);
                 return (level - 1) * increment;
             }
 
@@ -570,7 +575,7 @@ public static class GameMath
         {
             switch (skill)
             {
-                
+
                 case RavenNest.Models.Skill.Farming:
                 case RavenNest.Models.Skill.Crafting:
                 case RavenNest.Models.Skill.Cooking:

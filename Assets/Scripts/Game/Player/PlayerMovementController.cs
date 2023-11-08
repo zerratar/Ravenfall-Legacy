@@ -13,8 +13,7 @@ public class PlayerMovementController : MonoBehaviour
     public float MovementTime;
     public bool IsMoving;
 
-    public Vector3 NextDestination;
-    public Vector3 LastDestination;
+    public Vector3 Destination;
 
     private Vector3 lastPosition;
 
@@ -27,6 +26,9 @@ public class PlayerMovementController : MonoBehaviour
     private MovementLockState movementLockState;
     private bool firstUnlock = true;
     public float MovementSpeedMultiplier = 1;
+
+
+    private NavMeshPath currentPath;
 
     //private NavigationAgent navAgentState;
 
@@ -130,26 +132,31 @@ public class PlayerMovementController : MonoBehaviour
         IdleTime = 0;
     }
 
-    internal void SetDestination(Vector3 position)
+    internal bool SetDestination(Vector3 pos)
     {
         Unlock();
 
-        playerAnimations.StartMoving();
-        NextDestination = Vector3.zero;
-
-        var agent = navMeshAgent;
-
-        if ((!agent.hasPath || Vector3.Distance(position, LastDestination) >= 1
-               || Vector3.Distance(agent.destination, position) >= 10) && agent.isActiveAndEnabled && agent.isOnNavMesh && !agent.pathPending)
+        if (!navMeshAgent.isActiveAndEnabled || !navMeshAgent.isOnNavMesh)
         {
-            LastDestination = position;
-
-            const float jitterRange = 2f;
-
-            position += positionJitter + new Vector3(UnityEngine.Random.Range(-jitterRange, jitterRange), 0, UnityEngine.Random.Range(-jitterRange, jitterRange));
-
-            agent.SetDestination(position);
+            return true;
         }
+
+        if (Destination == pos)
+        {
+            return true;
+        }
+
+        if (currentPath == null)
+            currentPath = new NavMeshPath();
+
+        if (navMeshAgent.CalculatePath(pos, currentPath) && currentPath.status == NavMeshPathStatus.PathComplete)
+        {
+            Destination = pos;
+            navMeshAgent.SetPath(currentPath);
+            return true;
+        }
+
+        return false;
     }
 
     internal void Lock()
@@ -172,7 +179,7 @@ public class PlayerMovementController : MonoBehaviour
 
         IsMoving = false;
         MovementTime = 0;
-        NextDestination = currentPosition;
+        Destination = currentPosition;
 
         this.movementLockState = MovementLockState.Locked;
     }

@@ -1,5 +1,4 @@
-﻿using Assets.Scripts;
-using Sirenix.OdinInspector;
+﻿using Sirenix.OdinInspector;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -16,19 +15,11 @@ public class TreeController : MonoBehaviour
     [SerializeField] private GameObject[] trees;
     [SerializeField] private GameObject stump;
     [SerializeField] private float respawnTimeSeconds = 15f;
-
+    private bool respawnTimeLocked;
     [SerializeField] private int health = 4;
     [SerializeField] private int maxHealth = 4;
 
-    [SerializeField] private float treeShakeTime = 1f;
-    [SerializeField] private float treeShakeTimer = 0;
-    //[SerializeField] private float treeShakeRange = 2f;
-
-    //private Quaternion startRotation;
-
     public int Level = 1;
-
-    //public double Experience => GameMath.GetWoodcuttingExperience(Level);
 
     public double Resource => 1;
 
@@ -38,9 +29,11 @@ public class TreeController : MonoBehaviour
 
     public IslandController Island { get; private set; }
 
-    // Start is called before the first frame update
     [ReadOnly]
     public float MaxActionDistance = 5f;
+
+    private float maxRespawnTimeSeconds;
+    private float minRespawnTimeSeconds;
 
     [Button("Adjust Placement")]
     public void AdjustPlacement()
@@ -50,6 +43,9 @@ public class TreeController : MonoBehaviour
 
     void Start()
     {
+        maxRespawnTimeSeconds = respawnTimeSeconds;
+        minRespawnTimeSeconds = 1f;
+
         var collider = GetComponent<SphereCollider>();
         if (collider)
         {
@@ -65,11 +61,34 @@ public class TreeController : MonoBehaviour
         ActivateRandomTree();
     }
 
+    public void DecreaseRespawnTime()
+    {
+        if (respawnTimeSeconds <= minRespawnTimeSeconds || respawnTimeLocked)
+        {
+            return;
+        }
+
+        respawnTimeSeconds = Mathf.Clamp(respawnTimeSeconds - 1f, minRespawnTimeSeconds, maxRespawnTimeSeconds);
+        respawnTimeLocked = true;
+    }
+
+    public void IncreaseRespawnTime()
+    {
+        if (respawnTimeSeconds >= maxRespawnTimeSeconds || respawnTimeLocked)
+        {
+            return;
+        }
+
+        respawnTimeSeconds = Mathf.Clamp(respawnTimeSeconds + 1f, minRespawnTimeSeconds, maxRespawnTimeSeconds);
+        respawnTimeLocked = true;
+    }
+
     private IEnumerator Respawn()
     {
         yield return new WaitForSeconds(respawnTimeSeconds);
         woodCutters.Clear();
         ActivateRandomTree();
+        respawnTimeLocked = false;
     }
 
     private void ActivateRandomTree()
@@ -114,18 +133,13 @@ public class TreeController : MonoBehaviour
             return false;
         }
 
-        woodCutters[player.PlayerName] = player;
+        AddWoodcutter(player);
 
         health -= amount;
         if (health <= 0)
         {
             CutDown();
             return true;
-        }
-
-        if (treeShakeTimer <= 0f)
-        {
-            treeShakeTimer = treeShakeTime;
         }
 
         return false;
@@ -204,8 +218,6 @@ public class TreeController : MonoBehaviour
         // no need to assign difficulty, we will just use a fixed one for now.
         this.health = 30;
         this.maxHealth = 30;
-        this.treeShakeTimer = 1;
-        this.treeShakeTime = 1;
         this.Level = 1000;
         this.MaxActionDistance = 6f;
         this.respawnTimeSeconds = 20;

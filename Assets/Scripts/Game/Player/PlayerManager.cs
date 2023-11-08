@@ -61,14 +61,17 @@ public class PlayerManager : MonoBehaviour
         if (addPlayerQueue.Count > 0)
         {
             LoadingPlayers = true;
-            if (GameSystems.frameCount % 2 == 0)
+            try
             {
                 if (addPlayerQueue.TryDequeue(out var addPlayer))
                 {
                     addPlayer();
                 }
             }
-
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("Failed to add player to game: " + exc);
+            }
             if (addPlayerQueue.Count == 0)
             {
                 gameManager.EndBatchedPlayerAdd();

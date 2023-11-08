@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using Tessera;
 using UnityEngine;
 
 public class GatherController : MonoBehaviour
@@ -12,13 +11,12 @@ public class GatherController : MonoBehaviour
     private readonly ConcurrentDictionary<Guid, PlayerController> gatherers
         = new ConcurrentDictionary<Guid, PlayerController>();
 
-    //public int Level = 1;
-    //public double Experience => GameMath.GetFishingExperience(Level);
-
     [SerializeField] private float respawnTimeSeconds = 20f;
+    private bool respawnTimeLocked;
     [SerializeField] private GameObject gatherObj;
 
-    public int Resource => 1;
+    private float maxRespawnTimeSeconds;
+    private float minRespawnTimeSeconds;
 
     public float MaxActionDistance = 5;
 
@@ -31,6 +29,9 @@ public class GatherController : MonoBehaviour
 
     void Start()
     {
+        maxRespawnTimeSeconds = respawnTimeSeconds;
+        minRespawnTimeSeconds = 1f;
+
         if (!gatherObj)
         {
             gatherObj = this.transform.GetChild(0).gameObject;
@@ -63,12 +64,35 @@ public class GatherController : MonoBehaviour
         StartCoroutine(Respawn());
     }
 
+    public void DecreaseRespawnTime()
+    {
+        if (respawnTimeSeconds <= minRespawnTimeSeconds || respawnTimeLocked)
+        {
+            return;
+        }
+
+        respawnTimeSeconds = Mathf.Clamp(respawnTimeSeconds - 1f, minRespawnTimeSeconds, maxRespawnTimeSeconds);
+        respawnTimeLocked = true;
+    }
+
+    public void IncreaseRespawnTime()
+    {
+        if (respawnTimeSeconds >= maxRespawnTimeSeconds || respawnTimeLocked)
+        {
+            return;
+        }
+
+        respawnTimeSeconds = Mathf.Clamp(respawnTimeSeconds + 1f, minRespawnTimeSeconds, maxRespawnTimeSeconds);
+        respawnTimeLocked = true;
+    }
+
     private IEnumerator Respawn()
     {
         yield return new WaitForSeconds(respawnTimeSeconds);
         gatherers.Clear();
         gatherObj.SetActive(true);
         IsDepleted = false;
+        respawnTimeLocked = false;
     }
 
     [Button("Adjust Placement")]
@@ -80,7 +104,6 @@ public class GatherController : MonoBehaviour
     public void Create(GameObject targetGatheringObject)
     {
         this.gatherObj = targetGatheringObject;
-
         this.MaxActionDistance = 6f;
         this.respawnTimeSeconds = 20;
         this.PlayKneelingAnimation = true;

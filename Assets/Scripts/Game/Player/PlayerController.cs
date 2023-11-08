@@ -287,6 +287,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public DateTime LastDungeonAutoJoinFailUtc { get; internal set; }
     public DateTime LastRaidAutoJoinFailUtc { get; internal set; }
+    public GameInventoryItem LastEnchantedItem { get; internal set; }
+    public DateTime LastEnchantedItemExpire { get; internal set; }
 
     internal void InterruptAction()
     {
@@ -513,18 +515,11 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     void OnDrawGizmosSelected()
     {
-        // Display the explosion radius when selected
-        if (Movement.LastDestination != Vector3.zero)
-        {
-            Gizmos.color = new Color(1, 1, 0, 0.75F);
-            Gizmos.DrawLine(transform.position, Movement.LastDestination);
-            Gizmos.DrawSphere(Movement.LastDestination, 0.1f);
-        }
-        if (Movement.NextDestination != Vector3.zero)
+        if (Movement.Destination != Vector3.zero)
         {
             Gizmos.color = new Color(0, 1, 1, 0.75F);
-            Gizmos.DrawLine(transform.position, this.Movement.NextDestination);
-            Gizmos.DrawSphere(Movement.NextDestination, 0.1f);
+            Gizmos.DrawLine(transform.position, this.Movement.Destination);
+            Gizmos.DrawSphere(Movement.Destination, 0.1f);
         }
 
         if (agent && agent.isActiveAndEnabled && agent.isOnNavMesh)
@@ -1063,7 +1058,6 @@ public class PlayerController : MonoBehaviour, IAttackable
     public void GotoStartingArea()
     {
         if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
-
         Chunk = null;
         SetDestination(chunkManager.GetStarterChunk().CenterPointWorld);
     }
@@ -1401,6 +1395,28 @@ public class PlayerController : MonoBehaviour, IAttackable
                 GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
             }
             return;
+        }
+    }
+
+    public void AnnounceLevelToLowToEquip(GameInventoryItem item)
+    {
+
+        if (!item.IsEquippableType)
+        {
+            GameManager.RavenBot.SendReply(this, "{itemName} can't be equipped.", item.Name);
+            return;
+        }
+
+        var reqLevels = new List<string>();
+        var requirement = "You require level ";
+        if (item.RequiredAttackLevel > Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
+        if (item.RequiredDefenseLevel > Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
+        if (item.RequiredMagicLevel > Stats.Magic.Level || item.RequiredMagicLevel > Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
+        if (item.RequiredRangedLevel > Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
+        if (item.RequiredSlayerLevel > Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
+        if (reqLevels.Count > 0)
+        {
+            GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
         }
     }
 
@@ -2645,9 +2661,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public bool SetDestination(Vector3 position)
     {
-        InCombat = Duel.InDuel;
-        Movement.SetDestination(position);
-        return true;
+        InCombat = Duel.InDuel || attackTarget;
+        return Movement.SetDestination(position);
     }
 
     public void SetPosition(Vector3 position, bool adjustToNavmesh = true)

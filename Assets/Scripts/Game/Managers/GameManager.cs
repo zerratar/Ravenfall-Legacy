@@ -267,6 +267,7 @@ public class GameManager : MonoBehaviour, IGameManager
         gameReloadUIPanel.SetActive(false);
         Overlay.CheckIfGame();
         GameSystems.Awake();
+        QueryEngineAPI.OnGameManagerAwake(this);
     }
 
     // Start is called before the first frame update   
@@ -434,7 +435,7 @@ public class GameManager : MonoBehaviour, IGameManager
     }
 
     private ExpBoostEvent emptySubBoost = new ExpBoostEvent();
-    private ExpBoostEvent GetExpMultiplierStats()
+    public ExpBoostEvent GetExpMultiplierStats()
     {
         var boost = subEventManager.CurrentBoost;
         if (boost.Active)
@@ -1332,6 +1333,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
         StopRavenNestSession();
 
+        QueryEngineAPI.OnExit();
+
         Debug.Log("Application ending after " + Time.time + " seconds");
     }
 
@@ -1600,28 +1603,28 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (SessionSettings.IsAdministrator)
         {
-            if (isControlDown && Input.GetKeyUp(KeyCode.C))
-            {
-                Twitch.OnCheer(new CheerBitsEvent("twitch", "zerratar", "72424639", "zerratar", "Zerratar", true, true, true, 10));
-                return;
-            }
+            //if (isControlDown && Input.GetKeyUp(KeyCode.C))
+            //{
+            //    Twitch.OnCheer(new CheerBitsEvent("twitch", "zerratar", "72424639", "zerratar", "Zerratar", true, true, true, 10));
+            //    return;
+            //}
 
-            if (isControlDown && Input.GetKeyUp(KeyCode.X))
+            //if (isControlDown && Input.GetKeyUp(KeyCode.X))
+            //{
+            //    Twitch.OnSubscribe(new UserSubscriptionEvent("twitch", "zerratar", "72424639", "zerratar", "Zerratar", null, true, true, 1, true));
+            //    return;
+            //}
+
+            if (isControlDown && Input.GetKeyUp(KeyCode.P))
             {
-                Twitch.OnSubscribe(new UserSubscriptionEvent("twitch", "zerratar", "72424639", "zerratar", "Zerratar", null, true, true, 1, true));
-                return;
+                Raid.StartRaid();
             }
 
             //if (isControlDown && Input.GetKeyUp(KeyCode.R))
             //{
-            //    Raid.StartRaid();
+            //    var players = Players.GetAllGameAdmins();
+            //    Dungeons.RewardItemDrops(players);
             //}
-
-            if (isControlDown && Input.GetKeyUp(KeyCode.R))
-            {
-                var players = Players.GetAllGameAdmins();
-                Dungeons.RewardItemDrops(players);
-            }
 
             if (isControlDown && Input.GetKeyUp(KeyCode.O))
             {
@@ -1634,7 +1637,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 else
                 {
                     var timeLeft = dungeonStartCooldown - elapsed;
-                    RavenBot.Announce("You have to wait {cooldown} second(s) before you can start another raid.", timeLeft.TotalSeconds.ToString());
+                    RavenBot.Announce("You have to wait {cooldown} second(s) before you can start another dungeon.", timeLeft.TotalSeconds.ToString());
                 }
             }
         }
@@ -2291,7 +2294,7 @@ public class GameManager : MonoBehaviour, IGameManager
     internal void OnPlayerAutoJoinedRaid(PlayerController player)
     {
         lastAutoJoinRaid = Time.realtimeSinceStartup;
-        autoJoinRaidAnnouncement = lastAutoJoinDungeon + 1.25f;
+        autoJoinRaidAnnouncement = lastAutoJoinRaid + 1.25f;
         playerAutoJoinList.Add(player);
     }
 
@@ -2301,7 +2304,10 @@ public class GameManager : MonoBehaviour, IGameManager
         var autoJoinPlayers = new List<PlayerController>();
         var success = new List<PlayerController>();
         var failed = new List<PlayerController>();
-        foreach (var player in Players.GetAllPlayers())
+
+        var allPlayers = Players.GetAllPlayers();
+
+        foreach (var player in allPlayers)
         {
             if (Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Raid.AutoJoining)
                 continue;
@@ -2319,44 +2325,61 @@ public class GameManager : MonoBehaviour, IGameManager
                 autoJoinPlayers.Add(player);
             }
         }
-
-        var result = await RavenNest.Players.AutoJoinRaid(autoJoinList.ToArray());
-        if (result == null || result.Length == 0)
+        try
         {
-            failed = autoJoinPlayers;
-        }
-        else
-        {
-            for (var i = 0; i < result.Length; ++i)
+            if (autoJoinList.Count == 0)
             {
-                var playerResult = result[i];
-                var plr = autoJoinPlayers[i];
-                if (playerResult)
+                return;
+            }
+
+            Shinobytes.Debug.Log("Requesting Raid Auto join with " + autoJoinList.Count + " players.");
+            var result = await RavenNest.Players.AutoJoinRaid(autoJoinList.ToArray());
+            if (result == null || result.Length == 0)
+            {
+                failed = autoJoinPlayers;
+            }
+            else
+            {
+                for (var i = 0; i < result.Length; ++i)
                 {
-                    Raid.Join(plr);
-                    success.Add(plr);
-                    if (plr.Raid.AutoJoinCounter != int.MaxValue)
+                    var playerResult = result[i];
+                    var plr = autoJoinPlayers[i];
+                    if (playerResult)
                     {
-                        plr.Raid.AutoJoinCounter--;
+                        Raid.Join(plr);
+                        success.Add(plr);
+                        if (plr.Raid.AutoJoinCounter != int.MaxValue)
+                        {
+                            plr.Raid.AutoJoinCounter--;
+                        }
+                        plr.Resources.Coins -= RaidAuto.AutoJoinCost;
                     }
-                    plr.Resources.Coins -= RaidAuto.autoJoinCost;
-                }
-                else
-                {
-                    failed.Add(plr);
+                    else
+                    {
+                        failed.Add(plr);
+                    }
                 }
             }
-        }
-        foreach (var plr in autoJoinPlayers)
-        {
-            plr.Raid.AutoJoining = false;
+
+
+            AnnounceAutoRaidJoin(success);
+
+            if (failed.Count > 0)
+            {
+                AnnounceAutoRaidJoinFailed(failed);
+            }
         }
 
-        AnnounceAutoRaidJoin(success);
-
-        if (failed.Count > 0)
+        catch (Exception exc)
         {
-            AnnounceAutoRaidJoinFailed(failed);
+            Debug.LogError("Auto join raid failed, server not responding? Error: " + exc.Message);
+        }
+        finally
+        {
+            foreach (var plr in allPlayers)
+            {
+                plr.Raid.AutoJoining = false;
+            }
         }
     }
 
@@ -2366,8 +2389,8 @@ public class GameManager : MonoBehaviour, IGameManager
         var autoJoinPlayers = new List<PlayerController>();
         var success = new List<PlayerController>();
         var failed = new List<PlayerController>();
-
-        foreach (var player in Players.GetAllPlayers())
+        var allPlayers = Players.GetAllPlayers();
+        foreach (var player in allPlayers)
         {
             if (Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin)
                 continue;
@@ -2385,45 +2408,60 @@ public class GameManager : MonoBehaviour, IGameManager
                 autoJoinPlayers.Add(player);
             }
         }
-
-        var result = await RavenNest.Players.AutoJoinDungeon(autoJoinList.ToArray());
-        if (result == null || result.Length == 0)
+        try
         {
-            failed = autoJoinPlayers;
-        }
-        else
-        {
-            for (var i = 0; i < result.Length; ++i)
+            if (autoJoinList.Count == 0)
             {
-                var playerResult = result[i];
-                var plr = autoJoinPlayers[i];
-                if (playerResult)
-                {
-                    Dungeons.Join(plr);
-                    success.Add(plr);
-                    if (plr.Dungeon.AutoJoinCounter != int.MaxValue)
-                    {
-                        plr.Dungeon.AutoJoinCounter--;
-                    }
+                return;
+            }
 
-                    plr.Resources.Coins -= DungeonAuto.autoJoinCost;
-                }
-                else
+            Shinobytes.Debug.Log("Requesting Raid Auto join with " + autoJoinList.Count + " players.");
+            var result = await RavenNest.Players.AutoJoinDungeon(autoJoinList.ToArray());
+            if (result == null || result.Length == 0)
+            {
+                failed = autoJoinPlayers;
+            }
+            else
+            {
+                for (var i = 0; i < result.Length; ++i)
                 {
-                    failed.Add(plr);
+                    var playerResult = result[i];
+                    var plr = autoJoinPlayers[i];
+                    if (playerResult)
+                    {
+                        Dungeons.Join(plr);
+                        success.Add(plr);
+                        if (plr.Dungeon.AutoJoinCounter != int.MaxValue)
+                        {
+                            plr.Dungeon.AutoJoinCounter--;
+                        }
+
+                        plr.Resources.Coins -= DungeonAuto.AutoJoinCost;
+                    }
+                    else
+                    {
+                        failed.Add(plr);
+                    }
                 }
             }
-        }
-        foreach (var plr in autoJoinPlayers)
-        {
-            plr.Dungeon.AutoJoining = false;
-        }
 
-        AnnounceAutoDungeonJoin(success);
+            AnnounceAutoDungeonJoin(success);
 
-        if (failed.Count > 0)
+            if (failed.Count > 0)
+            {
+                AnnounceAutoDungeonJoinFailed(failed);
+            }
+        }
+        catch (Exception exc)
         {
-            AnnounceAutoDungeonJoinFailed(failed);
+            Debug.LogError("Auto join dungeon failed, server not responding? Error: " + exc.Message);
+        }
+        finally
+        {
+            foreach (var plr in allPlayers)
+            {
+                plr.Dungeon.AutoJoining = false;
+            }
         }
     }
 

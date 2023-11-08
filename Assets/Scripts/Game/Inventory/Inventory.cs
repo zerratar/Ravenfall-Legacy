@@ -410,6 +410,29 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    public void RemoveOrSetInventoryItem(RavenNest.Models.InventoryItem item)
+    {
+        lock (mutex)
+        {
+            var existing = equipped.FirstOrDefault(x => x.InventoryItem.Id == item.Id);
+            if (existing != null)
+            {
+                Unequip(item.Id, true, false);
+                return;
+            }
+
+            existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == item.Id);
+            if (existing != null)
+            {
+                existing.InventoryItem.Amount = item.Amount;
+                if (item.Amount <= 0)
+                {
+                    backpack.Remove(existing);
+                }
+            }
+        }
+    }
+
     public GameInventoryItem AddOrSetInventoryItem(RavenNest.Models.InventoryItem item)
     {
         lock (mutex)
@@ -632,7 +655,7 @@ public class Inventory : MonoBehaviour
         equipment.EquipAll(equipped);
     }
 
-    public void Unequip(Guid instanceId, bool rebuildMeshIfNecessary = false)
+    public void Unequip(Guid instanceId, bool rebuildMeshIfNecessary = false, bool addToBackpack = true)
     {
         lock (mutex)
         {
@@ -640,7 +663,7 @@ public class Inventory : MonoBehaviour
             if (targetItem != null)
             {
                 targetItem.InventoryItem.Equipped = false;
-                AddToBackpack(targetItem);
+                if (addToBackpack) AddToBackpack(targetItem);
                 equipped.Remove(targetItem);
                 equipment.Unequip(targetItem, rebuildMeshIfNecessary);
             }

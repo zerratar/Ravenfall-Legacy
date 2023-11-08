@@ -1,4 +1,5 @@
 ﻿using Shinobytes.Linq;
+using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -13,12 +14,9 @@ public class Chunk : MonoBehaviour
     private CraftingStation[] craftingStations;
     private FarmController[] farmingPatches;
     private GatherController[] gatheringSpots;
-
     private ChunkTask task;
-    //private ChunkTask secondaryTask;
 
     public TaskType Type;
-    //public TaskType SecondaryType = TaskType.None;
 
     public Vector3 CenterPoint;
     public bool IsStarterArea;
@@ -43,11 +41,7 @@ public class Chunk : MonoBehaviour
         if (started) return;
         if (!Game) Game = FindObjectOfType<GameManager>();
         Island = GetComponentInParent<IslandController>();
-        task = GetChunkTask(Type); // arena
-                                   //if (SecondaryType != TaskType.None)
-                                   //{
-                                   //    secondaryTask = GetChunkTask(SecondaryType); // arena
-                                   //}
+
         enemies = gameObject.GetComponentsInChildren<EnemyController>();
         trees = gameObject.GetComponentsInChildren<TreeController>();
         fishingSpots = gameObject.GetComponentsInChildren<FishingController>();
@@ -55,6 +49,8 @@ public class Chunk : MonoBehaviour
         craftingStations = gameObject.GetComponentsInChildren<CraftingStation>();
         farmingPatches = gameObject.GetComponentsInChildren<FarmController>();
         gatheringSpots = gameObject.GetComponentsInChildren<GatherController>();
+
+        task = GetChunkTask(Type);
 
         started = true;
 
@@ -175,7 +171,6 @@ public class Chunk : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private double CalculateExpFactor(double level, double requirement, double nextRequirement)
     {
-        if (level <= GameMath.Exp.EasyLevel) return 1d; // early levels are not going to change the factor.
         if (nextRequirement <= requirement) return 1d;
 
         // if the current level is more than 2x of the required next place. You don't receive any more exp.
@@ -217,100 +212,7 @@ public class Chunk : MonoBehaviour
             default: return null;
         }
     }
-
-    //public Chunk CreateSecondary()
-    //{
-    //    return new SecondaryChunk(this);
-    //}
-
-    //private class SecondaryChunk : Chunk
-    //{
-    //    private readonly Chunk origin;
-    //    //private readonly ChunkTask thisTask;
-
-    //    public SecondaryChunk(Chunk origin)
-    //    {
-    //        this.origin = origin;
-    //        task = this.origin.secondaryTask;
-    //    }
-
-    //    public override object GetTaskTarget(PlayerController player) => task?.GetTarget(player);
-    //    public override bool IsTaskCompleted(PlayerController player, object target) => task == null || task.IsCompleted(player, target);
-    //    public override bool CanExecuteTask(PlayerController player, object target, out TaskExecutionStatus reason)
-    //    {
-    //        reason = TaskExecutionStatus.NotReady;
-    //        if (task == null) return false;
-
-    //        if (!task.CanExecute(player, target, out reason))
-    //        {
-    //            if (target != null && reason == TaskExecutionStatus.OutOfRange)
-    //            {
-    //                // Verify that target is part of chunk.                    
-    //                if (!task.TargetExists(target))
-    //                {
-    //                    reason = TaskExecutionStatus.InvalidTarget;
-    //                }
-    //            }
-    //            return false;
-    //        }
-
-    //        return true;
-    //    }
-
-    //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    //    public override void TargetAcquired(PlayerController player, object target)
-    //    {
-    //        if (task != null)
-    //        {
-    //            task.TargetAcquired(player, target);
-    //        }
-    //    }
-
-    //    public override bool ExecuteTask(PlayerController player, object target) => task != null && task.Execute(player, target);
-
-    //    public override Vector3 CenterPointWorld => origin.CenterPointWorld;
-    //    public override TaskType ChunkType => origin.SecondaryType;
-
-    //    public override IslandController Island => origin.Island;
-
-    //    public override Vector3 GetPlayerSpawnPoint() => origin.GetPlayerSpawnPoint();
-
-    //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    //    public override int GetRequiredCombatLevel()
-    //    {
-    //        return origin.RequiredCombatLevel;
-    //    }
-
-    //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    //    public override  int GetRequiredSkillLevel()
-    //    {
-    //        return origin.RequiredSkilllevel;
-    //    }
-
-    //    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    //    public override double CalculateExpFactor(PlayerController playerController)
-    //    {
-    //        return origin.CalculateExpFactor(origin.SecondaryType, playerController);
-    //    }
-    //}
 }
-
-//public interface IChunk
-//{
-//    bool IsTaskCompleted(PlayerController player, object target);
-//    bool CanExecuteTask(PlayerController player, object target, out TaskExecutionStatus reason);
-//    void TargetAcquired(PlayerController player, object target);
-//    bool ExecuteTask(PlayerController player, object target);
-
-//    int GetRequiredCombatLevel();
-//    int GetRequiredSkillLevel();
-//    double CalculateExpFactor(PlayerController playerController);
-//    object GetTaskTarget(PlayerController player);
-//    Vector3 CenterPointWorld { get; }
-//    TaskType ChunkType { get; }
-//    Vector3 GetPlayerSpawnPoint();
-//    IslandController Island { get; }
-//}
 
 public enum TaskExecutionStatus
 {

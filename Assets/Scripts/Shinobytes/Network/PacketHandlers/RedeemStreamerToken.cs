@@ -68,21 +68,22 @@ public class RedeemStreamerToken : ChatBotCommandHandler<string>
                 return;
             }
 
-
             var result = await Game.RavenNest.Players.RedeemItemAsync(player.Id, item.Id);
+            var targetItem = Game.Items.Find(x => x.Id == result.RedeemedItemId);
+            var targetCurrency = Game.Items.Find(x => x.Id == result.CurrencyItemId);
             switch (result.Code)
             {
                 case RavenNest.Models.RedeemItemResultCode.Success:
-                    player.Inventory.RemoveByItemId(result.CurrencyItemId, result.CurrencyCost);
+                    //player.Inventory.RemoveByItemId(result.CurrencyItemId, result.CurrencyCost);
                     client.SendReply(gm, "You have successefully redeemed a {itemName} for {amount} {currencyName} and now have {amountLeft} left.",
-                        Game.Items.Find(x => x.Id == result.RedeemedItemId)?.Name,
+                        targetItem?.Name,
                         result.CurrencyCost,
-                        Game.Items.Find(x => x.Id == result.CurrencyItemId)?.Name,
+                        targetCurrency?.Name,
                         result.CurrencyLeft);
                     break;
 
                 case RavenNest.Models.RedeemItemResultCode.InsufficientCurrency:
-                    client.SendReply(gm, "Unable to redeem {itemName}. " + result.ErrorMessage, Game.Items.Find(x => x.Id == result.RedeemedItemId)?.Name);
+                    client.SendReply(gm, "Unable to redeem {itemName}. " + result.ErrorMessage, targetItem?.Name);
                     break;
 
                 case RavenNest.Models.RedeemItemResultCode.NoSuchItem:

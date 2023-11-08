@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 public class ExpMultiplierChecker
 {
     public static DateTime LastExpMultiOnlineCheck;
-    private static TimeSpan onlineExpCheckInterval = TimeSpan.FromMinutes(0.5);
+    private static TimeSpan onlineExpCheckInterval = TimeSpan.FromMinutes(1);
     private static TimeSpan twitchExpCheckInterval = TimeSpan.FromMinutes(1);
     private volatile static int isRunning;
 
@@ -32,6 +32,7 @@ public class ExpMultiplierChecker
                 }
             }
         }
+        catch { }
         finally
         {
             Interlocked.Exchange(ref isRunning, 0);

@@ -126,6 +126,7 @@ namespace Assets.Scripts
 
         internal static LoadStateResult LoadState(bool forceReload = false)
         {
+            var fullPath = Shinobytes.IO.Path.GetFilePath(PlayerStateCacheFileName);
             if (Shinobytes.IO.File.Exists(PlayerStateCacheFileName))
             {
                 try
@@ -164,6 +165,10 @@ namespace Assets.Scripts
                     Shinobytes.Debug.LogError("Failed to load player state: " + exc.Message);
                     return LoadStateResult.Error;
                 }
+            }
+            else
+            {
+                Shinobytes.Debug.Log("No player state file found at: " + fullPath + ", state file not loaded.");
             }
 
             return LoadStateResult.PlayersRestored;

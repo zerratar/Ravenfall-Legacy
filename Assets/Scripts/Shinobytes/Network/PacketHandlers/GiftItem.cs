@@ -101,13 +101,15 @@ public class GiftItem : ChatBotCommandHandler<string>
             var giftedItems = new List<GameInventoryItem>();
             foreach (var i in itemsToGift)
             {
-                var giftCount = await Game.RavenNest.Players.GiftItemAsync(player.Id, targetPlayer.Id, i.InstanceId, 1);
-                if (giftCount > 0)
+                var result = await Game.RavenNest.Players.GiftItemAsync(player.Id, targetPlayer.Id, i.InstanceId, 1);
+                if (result.Status == RavenNest.Models.GiftItemStatus.OK)
                 {
                     // Update game client with the changes
                     // this is done locally to avoid sending additional data from server to client and visa versa.
-                    targetPlayer.Inventory.AddToBackpack(i.Item, 1);
-                    player.Inventory.Remove(i, 1);
+
+                    targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
+                    player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+
                     giftedItems.Add(i);
                 }
             }
@@ -172,14 +174,15 @@ public class GiftItem : ChatBotCommandHandler<string>
         if (amount > long.MaxValue)
             amount = long.MaxValue;
 
-        var giftCount = await Game.RavenNest.Players.GiftItemAsync(player.Id, item.Player.Id, item.InventoryItem.InstanceId, (long)amount);
-        if (giftCount > 0)
+        var result = await Game.RavenNest.Players.GiftItemAsync(player.Id, item.Player.Id, item.InventoryItem.InstanceId, amount);
+        if (result.Status == RavenNest.Models.GiftItemStatus.OK)
         {
             // Update game client with the changes
             // this is done locally to avoid sending additional data from server to client and visa versa.
-            item.Player.Inventory.AddToBackpack(item.Item, item.Count);
-            player.Inventory.Remove(item.InventoryItem, item.Count, true);
-            client.SendReply(gm, Localization.MSG_GIFT, giftCount, item.Item.Name, item.Player.PlayerName);
+            var targetPlayer = item.Player;
+            targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
+            player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+            client.SendReply(gm, Localization.MSG_GIFT, result.Amount, item.Item.Name, item.Player.PlayerName);
         }
         else
         {

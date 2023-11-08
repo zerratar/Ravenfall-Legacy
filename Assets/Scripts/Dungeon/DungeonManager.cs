@@ -39,6 +39,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     private float dungeonStartTimer;
     private float nextDungeonTimer;
     private float notificationTimer;
+    private DateTime startedTime;
     private DungeonManagerState state;
     public float SecondsUntilStart => dungeonStartTimer;
     public float SecondsUntilNext => nextDungeonTimer;
@@ -47,6 +48,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     public bool Started => state == DungeonManagerState.Started;
     public DungeonController Dungeon => currentDungeon;
     public bool IsBusy { get; internal set; }
+    public TimeSpan Elapsed => DateTime.UtcNow - startedTime;
 
     private bool yieldSpecialReward = false;
 
@@ -88,6 +90,12 @@ public class DungeonManager : MonoBehaviour, IEvent
     private static bool IsAlive(EnemyController x)
     {
         return x != null && x.gameObject != null && !x.Stats.IsDead && x.Stats.Health.CurrentValue > 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetEnemyCount()
+    {
+        return dungeonEnemyPool.HasLeasedEnemies ? dungeonEnemyPool.GetLeasedEnemies().Count : 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,6 +169,12 @@ public class DungeonManager : MonoBehaviour, IEvent
     private void ScheduleNextDungeon()
     {
         nextDungeonTimer = UnityEngine.Random.Range(minTimeBetweenDungeons, maxTimeBetweenDungeons);
+
+    }
+
+    internal int GetPlayerCount()
+    {
+        return joinedPlayers.Count;
     }
 
     internal IReadOnlyList<PlayerController> GetPlayers()
@@ -650,12 +664,19 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         if (retryCount > 0)
         {
-            if (retryCount > 5)
+            if (retryCount > 1000)
             {
                 return;
             }
 
-            await Task.Delay((int)MathF.Min(retryCount * 2000, 10000));
+            if (retryCount > 30)
+            {
+                await Task.Delay(60_000);
+            }
+            else
+            {
+                await Task.Delay((int)MathF.Min(retryCount * 1000, 10000));
+            }
         }
 
         // make sure we retry later when we have server connection.
@@ -670,7 +691,10 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             // it could be that we are offline, or temporary issue saving. Lets enqueue it for later.
             rewardQueue.Enqueue(() => RewardPlayersAsync(tier, playersToBeRewarded, retryCount + 1));
-            gameManager.RavenBot.Announce("Victorious!! Dungeon boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
+            if (retryCount == 0)
+            {
+                gameManager.RavenBot.Announce("Victorious!! Dungeon boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
+            }
             return;
         }
 
@@ -818,6 +842,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                 ResetDungeon();
                 return;
             }
+            startedTime = DateTime.UtcNow;
             state = DungeonManagerState.Started;
             currentDungeon.Enter();
         }
@@ -893,7 +918,10 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         foreach (var room in currentDungeon.Rooms)
         {
-            SpawnEnemiesInRoom(room);
+            if (room.gameObject.activeInHierarchy)
+            {
+                SpawnEnemiesInRoom(room);
+            }
         }
     }
 
@@ -905,9 +933,21 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             var enemy = this.dungeonEnemyPool.Get();
             enemy.SpawnPoint = point;
+
+            if (enemy.IsUnreachable)
+            {
+                Shinobytes.Debug.LogWarning(enemy.name + " in room: " + room.name + ", in dungeon: " + currentDungeon.Name + ", was unreachable in previous run.");
+            }
+
+            enemy.IsUnreachable = false; // reset unreachable flag.
+            enemy.gameObject.SetActive(true);
+            enemy.Lock();
             enemy.SetPosition(point.transform.position);
             enemy.transform.SetParent(room.EnemyContainer, true);
-            enemy.gameObject.SetActive(true);
+
+
+            // check if this will actually spawn in a room.
+
         }
 
         room.ReloadEnemies();

@@ -96,6 +96,12 @@ public class RaidManager : MonoBehaviour, IEvent
         return canJoin;
     }
 
+
+    internal int GetPlayerCount()
+    {
+        return raidingPlayers.Count;
+    }
+
     public void Join(PlayerController player)
     {
         if (!Started)
@@ -280,12 +286,12 @@ public class RaidManager : MonoBehaviour, IEvent
     {
         if (retryCount > 0)
         {
-            if (retryCount > 5)
+            if (retryCount > 1000)
             {
                 return;
             }
 
-            await Task.Delay((int)MathF.Min(retryCount * 2000, 10000));
+            await Task.Delay((int)MathF.Min(retryCount * 1000, 10000));
         }
 
         // make sure we retry later when we have server connection.
@@ -300,7 +306,10 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             // it could be that we are offline, or temporary issue saving. Lets enqueue it for later.
             rewardQueue.Enqueue(() => RewardPlayersAsync(playersToBeRewarded, retryCount + 1));
-            gameManager.RavenBot.Announce("Victorious!! Raid boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
+            if (retryCount == 0)
+            {
+                gameManager.RavenBot.Announce("Victorious!! Raid boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
+            }
             return;
         }
 
@@ -341,9 +350,11 @@ public class RaidManager : MonoBehaviour, IEvent
     {
         ProcessRewardQueue();
 
-        var players = playerManager.GetAllPlayers();
 
-        if (!Started && players.Count == 0 && !Boss)
+
+        var playerCount = playerManager.GetPlayerCount();
+
+        if (!Started && playerCount == 0 && !Boss)
         {
             // try force ending the event if it's still active
             gameManager.Events.End(this);
@@ -359,7 +370,7 @@ public class RaidManager : MonoBehaviour, IEvent
             }
         }
 
-        if (Started && players.Count == 0)
+        if (Started && playerCount == 0)
         {
             EndRaid(false, false);
             return;
@@ -465,6 +476,7 @@ public class RaidManager : MonoBehaviour, IEvent
             return false;
         }
     }
+
 }
 
 public enum RaidJoinResult

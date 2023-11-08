@@ -166,7 +166,7 @@ public class RavenBotConnection : IDisposable
 
             if (!server.Server.IsBound)
             {
-                logger.WriteError("Bot Server stopped.");
+                logger.WriteDebug("Bot Server stopped.");
             }
         }
     }

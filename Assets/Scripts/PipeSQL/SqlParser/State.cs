@@ -1,0 +1,90 @@
+﻿using System;
+
+namespace SqlParser
+{
+
+    public ref struct State
+    {
+        private readonly ReadOnlySpan<char> _characters;
+        private readonly Location _location;
+        private int _index;
+        private bool _finished;
+
+        internal State(ReadOnlySpan<char> sql)
+        {
+            _characters = sql;
+            _location = new Location();
+            _index = 0;
+            _finished = false;
+        }
+
+        private State(int index, Location location, ReadOnlySpan<char> characters)
+        {
+            _index = index;
+            _location = location;
+            _characters = characters;
+            _finished = false;
+        }
+
+        public char Peek()
+        {
+            if (_finished)
+            {
+                return Symbols.EndOfFile;
+            }
+
+            if (_index >= _characters.Length)
+            {
+                throw new ParserException($"Parser unable to read character at index {_index}");
+            }
+            return _finished ? Symbols.EndOfFile : _characters[_index];
+        }
+
+        public void Next()
+        {
+            _index++;
+
+            if (_index >= _characters.Length)
+            {
+                _finished = true;
+                return;
+            }
+
+            if (Peek() == Symbols.NewLine)
+            {
+                _location.NewLine();
+            }
+            else
+            {
+                _location.MoveCol();
+            }
+        }
+
+        public char? SkipWhile(Func<char, bool> skipPredicate)
+        {
+            try
+            {
+                if (skipPredicate(Peek()))
+                {
+                    Next();
+                }
+
+                return Peek();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        internal Location CloneLocation()
+        {
+            return Location.From(_location.Line, _location.Column);
+        }
+
+        internal State Clone()
+        {
+            return new State(_index, CloneLocation(), _characters);
+        }
+    }
+}

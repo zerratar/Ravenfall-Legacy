@@ -1,4 +1,5 @@
 ﻿using RavenNest.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -160,6 +161,9 @@ public class EnchantItem : ChatBotCommandHandler<string>
         }
 
         client.SendReply(gm, Localization.MSG_ENCHANT_STATS, FormatEnchantmentValues(addedItem.Enchantments), addedItem.Name);
+
+        player.LastEnchantedItem = addedItem;
+        player.LastEnchantedItemExpire = DateTime.UtcNow.AddMinutes(2);
     }
 
     private string FormatEnchantmentValues(IReadOnlyList<ItemEnchantment> enchantments)

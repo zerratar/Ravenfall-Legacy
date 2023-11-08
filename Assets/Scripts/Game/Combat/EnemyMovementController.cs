@@ -41,7 +41,8 @@ public class EnemyMovementController : MonoBehaviour
     [HideInInspector] public bool isMovingInternal;
 
     internal Vector3 Destination;
-    internal DateTime DestinationChangeTime;
+
+    private NavMeshPath currentPath;
 
     private void OnDestroy()
     {
@@ -144,7 +145,6 @@ public class EnemyMovementController : MonoBehaviour
         var agent = navMeshAgent;
 
         Destination = transform.position;
-        DestinationChangeTime = DateTime.Now;
 
         if (agent)
         {
@@ -190,28 +190,33 @@ public class EnemyMovementController : MonoBehaviour
         }
     }
 
-    public void SetDestination(Vector3 pos)
+
+    public bool SetDestination(Vector3 pos)
     {
-        //if (aiPathAgent)
-        //{
-        //    aiPathAgent.destination = pos;
-        //    return;
-        //}
+        Unlock();
 
-        Destination = pos;
-        DestinationChangeTime = DateTime.Now;
-
-        var agent = navMeshAgent;
-
-        if (agent && agent.isActiveAndEnabled && !agent.isOnNavMesh)
+        if (!navMeshAgent.isActiveAndEnabled || !navMeshAgent.isOnNavMesh)
         {
-            Shinobytes.Debug.LogError(this.name + " is not on a navmesh!!!");
+            return true;
         }
 
-        if (!agent || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+        if (Destination == pos)
+        {
+            return true;
+        }
 
-        this.isMovingInternal = true;
-        agent.SetDestination(pos);
+        if (currentPath == null)
+            currentPath = new NavMeshPath();
+
+        if (navMeshAgent.CalculatePath(pos, currentPath) && currentPath.status == NavMeshPathStatus.PathComplete)
+        {
+            Destination = pos;
+            navMeshAgent.SetPath(currentPath);
+            this.isMovingInternal = true;
+            return true;
+        }
+
+        return false;
     }
 
     private void SetupAttackAnimation()
@@ -334,7 +339,7 @@ public class EnemyMovementController : MonoBehaviour
         }
         if (renderers != null && renderers.Length > 0)
         {
-            foreach(var mr in renderers)
+            foreach (var mr in renderers)
             {
                 mr.enabled = value;
             }

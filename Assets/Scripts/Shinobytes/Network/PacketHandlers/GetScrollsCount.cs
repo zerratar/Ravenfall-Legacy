@@ -27,6 +27,13 @@ public class GetScrollsCount : ChatBotCommandHandler
         {
             scrolls = await Game.RavenNest.Game.GetScrollsAsync(player);
             player.Inventory.UpdateScrolls(scrolls);
+
+
+            // filter out tokens
+            if (scrolls.Count > 0)
+            {
+                scrolls = new ScrollInfoCollection(scrolls.Where(x => !x.Name.Contains("token", System.StringComparison.OrdinalIgnoreCase)));
+            }
         }
         catch
         {
@@ -43,7 +50,11 @@ public class GetScrollsCount : ChatBotCommandHandler
     }
     private static ScrollInfoCollection GetScrollInfoCollection(PlayerController player)
     {
-        var scrolls = player.Inventory.GetInventoryItemsOfCategory(ItemCategory.Scroll).Where(x => !x.Name.Contains("token", System.StringComparison.OrdinalIgnoreCase)).ToList();
+        var scrolls = player.Inventory
+            .GetInventoryItemsOfCategory(ItemCategory.Scroll)
+            .Where(x => !x.Name.Contains("token", System.StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
         var res = new List<ScrollInfo>();
         foreach (var scroll in scrolls)
         {
@@ -57,18 +68,24 @@ public class GetScrollsCount : ChatBotCommandHandler
         GameClient client,
         ScrollInfoCollection scrolls)
     {
-        var parameters = new List<object>();
-        var messages = new List<string>();
-        var message = "You have ";
-        var i = 0;
-        foreach (var s in scrolls)
+        var format = "You have ";
+        for (var i = 0; i < scrolls.Count; ++i)
         {
-            messages.Add("{amount" + i + "} {itemName" + i + "}");
-            parameters.Add(((long)s.Amount).ToString());
-            parameters.Add(s.Name);
-            ++i;
+            format += "{tokenAmount" + i + "} {tokenName" + i + "}(s)";
+            if (i + 1 < scrolls.Count)
+            {
+                if (i + 2 == scrolls.Count) format += " and ";
+                else format += ", ";
+            }
         }
-        message += string.Join(", ", messages);
-        client.SendReply(gm, message, parameters.ToArray());
+        format += ".";
+        var parameters = new List<object>();
+        foreach (var token in scrolls)
+        {
+            parameters.Add(token.Amount.ToString());
+            parameters.Add(token.Name);
+        }
+
+        client.SendReply(gm, format, parameters.ToArray());
     }
 }

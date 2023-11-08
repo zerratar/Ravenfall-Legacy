@@ -65,21 +65,25 @@ namespace Shinobytes.IO
 
         internal static System.IO.DirectoryInfo CreateDirectory(string path)
         {
-            return System.IO.Directory.CreateDirectory(Shinobytes.IO.Path.GameFolderAsRoot(path));
+            var fullPath = Shinobytes.IO.Path.GameFolderAsRoot(path);
+            Shinobytes.Debug.Log("Deleting: " + fullPath);
+            return System.IO.Directory.CreateDirectory(fullPath);
         }
     }
     public static class File
     {
         public static string[] ReadAllLines(string path)
         {
-            Shinobytes.Debug.Log("Loading: " + path);
-            return System.IO.File.ReadAllLines(Shinobytes.IO.Path.GameFolderAsRoot(path));
+            var fullPath = Path.GameFolderAsRoot(path);
+            Debug.Log("Loading: " + fullPath);
+            return System.IO.File.ReadAllLines(fullPath);
         }
 
         public static string[] ReadAllLines(string path, Encoding encoding)
         {
-            Shinobytes.Debug.Log("Loading: " + path);
-            return System.IO.File.ReadAllLines(Shinobytes.IO.Path.GameFolderAsRoot(path), encoding);
+            var fullPath = Shinobytes.IO.Path.GameFolderAsRoot(path);
+            Debug.Log("Loading: " + fullPath);
+            return System.IO.File.ReadAllLines(fullPath, encoding);
         }
 
         public static bool Exists(string path)

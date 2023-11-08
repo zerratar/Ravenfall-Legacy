@@ -125,4 +125,9 @@ public class IslandController : MonoBehaviour
         players.Remove(playerController);
         //players.Remove(playerController.Id);
     }
+
+    internal int GetPlayerCount()
+    {
+        return players.Count;
+    }
 }

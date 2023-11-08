@@ -200,8 +200,13 @@ public class ChunkManager : MonoBehaviour
         return 1;
     }
 
-    public IReadOnlyList<Chunk> GetChunks()
+    public IReadOnlyList<Chunk> GetChunks(IslandController island = null)
     {
+        if (island != null)
+        {
+            return chunks.Where(x => x.Island == island).ToList();
+        }
+
         return chunks;
     }
 

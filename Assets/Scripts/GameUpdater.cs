@@ -9,6 +9,7 @@ using TMPro;
 using UnityEngine;
 using System.Linq;
 using Assets.Scripts.Overlay;
+using System.Diagnostics;
 
 public class GameUpdater : MonoBehaviour
 {
@@ -28,7 +29,6 @@ public class GameUpdater : MonoBehaviour
 
     private void Start()
     {
-
 #if UNITY_STANDALONE_LINUX
         Overlay.IsGame = true;
         UnityEngine.SceneManagement.SceneManager.LoadScene(1);
@@ -38,15 +38,19 @@ public class GameUpdater : MonoBehaviour
         var startupArgs = System.Environment.GetCommandLineArgs().Select(x => x.ToLower()).ToArray();
         var forceUpdate = startupArgs.Any(x => x.Contains("forceupdate") || x.Contains("force-update") || x.Contains("reinstall"));
 
+
         this.lastAcceptedVersion = PlayerPrefs.GetInt(CodeOfConductController.CoCLastAcceptedVersion_SettingsName, CodeOfConductController.CoCLastAcceptedVersion_DefaultValue);
 
         if (Application.isEditor)
         {
+            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs) + ", (IsEditor=True)");
+
             Overlay.IsGame = !EditorOnlyStartAsOverlay;
             StartUpdate(forceUpdate);
         }
         else
         {
+            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs));
             CheckIfGameAsync(startupArgs).ContinueWith(async x =>
             {
                 Overlay.IsGame = await x;
@@ -62,6 +66,7 @@ public class GameUpdater : MonoBehaviour
 
     private void StartUpdate(bool forceUpdate)
     {
+        Shinobytes.Debug.Log("Checking for updates: " + CheckUpdateUri);
         gameUpdater = new GameUpdateHandler(CheckUpdateUri);
         gameUpdater.UpdateAsync(forceUpdate, lastAcceptedVersion).ContinueWith(async res =>
         {
@@ -123,7 +128,7 @@ public class GameUpdater : MonoBehaviour
             versionText.text = "VERSION " + Ravenfall.Version;
         }
 
-        if (!UnityEngine.Application.isEditor && Debug.isDebugBuild)
+        if (!UnityEngine.Application.isEditor && UnityEngine.Debug.isDebugBuild)
         {
             loadingScene = true;
             UnityEngine.SceneManagement.SceneManager.LoadScene(1);
@@ -256,7 +261,13 @@ public class GameUpdater : MonoBehaviour
         // 2. start patcher
         if (Shinobytes.IO.File.Exists("RavenWeave.exe"))
         {
-            System.Diagnostics.Process.Start("RavenWeave.exe");
+            var updater = new ProcessStartInfo
+            {
+                FileName = Shinobytes.IO.Path.Combine("RavenWeave.exe"),
+                WorkingDirectory = Shinobytes.IO.Path.GameFolder
+            };
+
+            Process.Start(updater);
         }
         else
         {
@@ -362,9 +373,11 @@ public class GameUpdateHandler
 
     public async Task<UpdateResult> UpdateAsync(bool forceUpdate = false, int lastAcceptedCoCVersion = -1)
     {
+        Shinobytes.Debug.Log("Downloading update information."); ;
         latestUpdate = await DownloadUpdateInfoAsync();
         if (latestUpdate == null)
         {
+            Shinobytes.Debug.Log("Updating failed, no response from server.");
             return UpdateResult.Failed_NoInternet;
         }
 
@@ -380,11 +393,14 @@ public class GameUpdateHandler
 
         if (GameVersion.GetApplicationVersion() >= latestUpdate.GetVersion() && !forceUpdate)
         {
+            Shinobytes.Debug.Log("Client is up to date.");
             return UpdateResult.UpToDate;
         }
 
+        Shinobytes.Debug.Log("Downloading update " + latestUpdate.DownloadUrl + "..."); ;
         if (await DownloadUpdateAsync(latestUpdate.DownloadUrl, OnDownloadProgressChanged))
         {
+            Shinobytes.Debug.Log("Update downloaded successfully."); ;
             return UpdateResult.Success;
         }
 
@@ -469,6 +485,7 @@ public class GameUpdateHandler
             req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36";
             req.ServerCertificateValidationCallback += (sender, certificate, chain, errors) => true;
 
+            Shinobytes.Debug.Log("HTTP GET: " + url);
             using (var res = await req.GetResponseAsync())
             using (var stream = res.GetResponseStream())
             using (var sr = new StreamReader(stream))

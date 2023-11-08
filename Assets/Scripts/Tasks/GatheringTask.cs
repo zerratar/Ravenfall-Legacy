@@ -1,5 +1,5 @@
-﻿using System;
-using System.Linq;
+﻿using Shinobytes.Linq;
+using System;
 using UnityEngine;
 
 public class GatheringTask : ChunkTask
@@ -19,12 +19,22 @@ public class GatheringTask : ChunkTask
     public override object GetTarget(PlayerController player)
     {
         var gatherSpots = lazyTargets();
+        var totalCount = gatherSpots.Length;
+        var availableTargets = gatherSpots.AsList(x => !x.IsDepleted);
+        var left = (float)availableTargets.Count / totalCount;
+        // if less than 25% of the trees are available, decrease respawn time
+        if (left <= 0.25)
+        {
+            foreach (var t in gatherSpots) t.DecreaseRespawnTime();
+        }
+        // if more than 50% of the trees are available, increase respawn time
+        else if (left >= 0.5)
+        {
+            foreach (var t in gatherSpots) t.IncreaseRespawnTime();
+        }
 
-        return gatherSpots
-            .Where(x => !x.IsDepleted)
-            //.OrderBy(x => UnityEngine.Random.value)
+        return availableTargets
             .OrderBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-            //.ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
             .FirstOrDefault();
     }
 

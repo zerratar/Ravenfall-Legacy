@@ -29,6 +29,9 @@
 
     public double? PlayerAfkHours;
     public string RavenBotServer;
+    public string QueryEngineApiPrefix;
+    public bool? QueryEngineEnabled;
+
     public float[] ExpMultiplierAnnouncements;
 
     public ObserverTimes PlayerObserveSeconds;
@@ -67,6 +70,18 @@
         if (Instance.RavenBotServer == null)
         {
             Instance.RavenBotServer = "ravenbot.ravenfall.stream:4041";
+            wasUpdated = true;
+        }
+
+        if (Instance.QueryEngineEnabled == null)
+        {
+            Instance.QueryEngineEnabled = true;
+            wasUpdated = false;
+        }
+
+        if (Instance.QueryEngineApiPrefix == null)
+        {
+            Instance.QueryEngineApiPrefix = "localhost:8888/ravenfall/";
             wasUpdated = true;
         }
 

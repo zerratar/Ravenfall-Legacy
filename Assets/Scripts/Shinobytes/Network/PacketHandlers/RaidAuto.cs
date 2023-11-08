@@ -2,8 +2,8 @@
 
 public class RaidAuto : ChatBotCommandHandler<string>
 {
-    public static DateTime lastCostUpdate = DateTime.UnixEpoch;
-    public static int autoJoinCost = 3000;
+    //public static DateTime lastCostUpdate = DateTime.UnixEpoch;
+    public const int AutoJoinCost = 3000;
 
     public RaidAuto(
         GameManager game,
@@ -24,15 +24,15 @@ public class RaidAuto : ChatBotCommandHandler<string>
 
         try
         {
-            if (DateTime.UtcNow - lastCostUpdate > TimeSpan.FromMinutes(5))
-            {
-                var res = await Game.RavenNest.Players.GetAutoJoinRaidCostAsync();
-                if (autoJoinCost != 0)
-                {
-                    autoJoinCost = res;
-                    lastCostUpdate = DateTime.UtcNow;
-                }
-            }
+            //if (DateTime.UtcNow - lastCostUpdate > TimeSpan.FromMinutes(5))
+            //{
+            //    var res = await Game.RavenNest.Players.GetAutoJoinRaidCostAsync();
+            //    if (autoJoinCost != 0)
+            //    {
+            //        autoJoinCost = res;
+            //        lastCostUpdate = DateTime.UtcNow;
+            //    }
+            //}
 
             var l = data.ToLower();
             var before = player.Raid.AutoJoinCounter;
@@ -40,17 +40,17 @@ public class RaidAuto : ChatBotCommandHandler<string>
             {
                 player.Raid.AutoJoinCounter = Math.Max(0, count);
                 if (before != player.Raid.AutoJoinCounter)
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", player.Raid.AutoJoinCounter, autoJoinCost);
+                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", player.Raid.AutoJoinCounter, AutoJoinCost);
             }
             else if (l == "count" || l == "status" || l == "stats" || l == "left" || l == "state")
             {
                 if (player.Raid.AutoJoinCounter == int.MaxValue)
                 {
-                    client.SendReply(gm, "You will automatically join raids until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", autoJoinCost);
+                    client.SendReply(gm, "You will automatically join raids until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", AutoJoinCost);
                 }
                 else if (player.Raid.AutoJoinCounter > 0)
                 {
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", player.Raid.AutoJoinCounter, autoJoinCost);
+                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", player.Raid.AutoJoinCounter, AutoJoinCost);
                 }
                 else
                 {
@@ -61,7 +61,7 @@ public class RaidAuto : ChatBotCommandHandler<string>
             {
                 player.Raid.AutoJoinCounter = int.MaxValue;
                 //if (before != player.Raid.AutoJoinCounter)
-                client.SendReply(gm, "You will automatically join raids until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", autoJoinCost);
+                client.SendReply(gm, "You will automatically join raids until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", AutoJoinCost);
             }
             else if (l == "off" || l == "cancel" || l == "stop")
             {

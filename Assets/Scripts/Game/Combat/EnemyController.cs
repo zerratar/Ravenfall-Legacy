@@ -506,10 +506,10 @@ public class EnemyController : MonoBehaviour, IAttackable
         Target = null;
     }
 
-    public void SetDestination(Vector3 position)
+    public bool SetDestination(Vector3 position)
     {
         Unlock();
-        movement.SetDestination(position);
+        return movement.SetDestination(position);
     }
 
     private void OnBecameVisible()
@@ -552,6 +552,8 @@ public class EnemyController : MonoBehaviour, IAttackable
     public bool GivesExperienceWhenKilled { get; set; } = true;
 
     public Transform Target { get; private set; }
+    public bool IsUnreachable { get; set; }
+
     public EnemySpawnPoint SpawnPoint;
 
     public void ClearAttackers()

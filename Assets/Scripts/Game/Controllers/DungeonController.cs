@@ -118,6 +118,8 @@ public class DungeonController : MonoBehaviour
         }
     }
 
+    public int CurrentRoomIndex => currentRoomIndex;
+
     public void NextRoom()
     {
         currentRoom.Exit();
@@ -187,7 +189,7 @@ public class DungeonController : MonoBehaviour
     }
 
     public void AddExperienceReward(PlayerController player)
-    {        
+    {
         var slayerFactor = Mathf.Max(bossCombatLevel / 200, 70) * 0.125 * Math.Max(1, gameManager.SessionSettings.DungeonExpFactor);
         player.AddExp(Skill.Slayer, slayerFactor);
 

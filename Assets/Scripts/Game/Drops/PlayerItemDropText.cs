@@ -25,7 +25,7 @@ public class PlayerItemDropText
 
         void Next()
         {
-            output.Add(sb.ToString());
+            output.Add(sb.ToString().Trim());
             sb.Clear();
         }
 
@@ -74,7 +74,7 @@ public class PlayerItemDropText
                     }
                     toAppend += player;
                 }
-                toAppend += ".";
+                toAppend += ". ";
 
                 // append the whole text at once instead, since it will check if we need to break it into a new message or not.
                 Append(toAppend);

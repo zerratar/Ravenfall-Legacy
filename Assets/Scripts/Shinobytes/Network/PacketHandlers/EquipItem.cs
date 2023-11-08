@@ -62,5 +62,9 @@
         {
             client.SendReply(gm, Localization.MSG_EQUIPPED, queriedItem.InventoryItem.Name);
         }
+        else
+        {
+            player.AnnounceLevelToLowToEquip(queriedItem.InventoryItem);
+        }
     }
 }

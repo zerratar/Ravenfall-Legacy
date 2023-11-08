@@ -1,5 +1,6 @@
-﻿using System;
-using System.Linq;
+﻿using Shinobytes.Linq;
+using System;
+//using System.Linq;
 using UnityEngine;
 
 public class WoodcuttingTask : ChunkTask
@@ -10,6 +11,7 @@ public class WoodcuttingTask : ChunkTask
     {
         this.lazyTrees = lazyTrees;
     }
+
     public override bool IsCompleted(PlayerController player, object target)
     {
         var tree = target as TreeController;
@@ -20,12 +22,26 @@ public class WoodcuttingTask : ChunkTask
 
         return tree.IsStump;
     }
+
     public override object GetTarget(PlayerController player)
     {
         var trees = lazyTrees();
 
-        return trees
-            .Where(x => !x.IsStump)
+        var totalCount = trees.Length;
+        var availableTargets = trees.AsList(x => !x.IsStump);
+        var left = (float)availableTargets.Count / totalCount;
+        // if less than 25% of the trees are available, decrease respawn time
+        if (left <= 0.25)
+        {
+            foreach (var t in trees) t.DecreaseRespawnTime();
+        }
+        // if more than 50% of the trees are available, increase respawn time
+        else if (left >= 0.5)
+        {
+            foreach (var t in trees) t.IncreaseRespawnTime();
+        }
+
+        return availableTargets
             .OrderBy(x => Vector3.Distance(player.Position, x.transform.position) + UnityEngine.Random.value * 10f)
             .FirstOrDefault();
     }
@@ -49,24 +65,11 @@ public class WoodcuttingTask : ChunkTask
         {
             return false;
         }
-
-        if (!player.IsReadyForAction)
-        {
-            return false;
-        }
-
         if (target == null)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
-
-        //var possibleTargets = lazyTrees();
-        //if (!possibleTargets.FirstOrDefault(x => x.transform == target))
-        //{
-        //    reason = TaskExecutionStatus.InvalidTarget;
-        //    return false;
-        //}
 
         var tree = target as TreeController;
         if (!tree)
@@ -80,6 +83,11 @@ public class WoodcuttingTask : ChunkTask
         }
 
         tree.AddWoodcutter(player);
+
+        if (!player.IsReadyForAction)
+        {
+            return false;
+        }
 
         var distance = Vector3.Distance(player.Position, tree.transform.position);
         if (distance >= tree.MaxActionDistance)

@@ -105,7 +105,7 @@ public class DungeonRoomController : MonoBehaviour
 
         if (RoomType == DungeonRoomType.Room)
         {
-            if (enemies.All(x => x.Stats.IsDead))
+            if (enemies.All(x => x.Stats.IsDead || x.IsUnreachable))
             {
                 dungeon.NextRoom();
             }
@@ -167,7 +167,7 @@ public static class TargetExtensions
         for (var i = 0; i < enemies.Count; ++i)
         {
             var x = enemies[i];
-            if (x.Stats.Health.CurrentValue <= 0)
+            if (x.Stats.Health.CurrentValue <= 0 || x.IsUnreachable)
             {
                 continue;
             }
@@ -193,7 +193,7 @@ public static class TargetExtensions
         for (var i = 0; i < enemies.Length; ++i)
         {
             var x = enemies[i];
-            if (x.Stats.Health.CurrentValue <= 0)
+            if (x.Stats.Health.CurrentValue <= 0 || x.IsUnreachable)
             {
                 continue;
             }
@@ -220,7 +220,7 @@ public static class TargetExtensions
 
         return
             enemies
-            .Where(x => !x.Stats.IsDead && (filter == null || filter(x)))
+            .Where(x => !x.IsUnreachable && !x.Stats.IsDead && (filter == null || filter(x)))
             .OrderBy(x =>
             {
                 var distance = Vector3.Distance(x.PositionInternal, player.Movement.Position);

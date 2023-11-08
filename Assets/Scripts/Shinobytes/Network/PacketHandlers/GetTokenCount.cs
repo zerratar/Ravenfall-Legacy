@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using RavenNest.Models;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.UIElements;
+
 public class GetTokenCount : ChatBotCommandHandler
 {
     public GetTokenCount(
@@ -9,7 +12,7 @@ public class GetTokenCount : ChatBotCommandHandler
      : base(game, server, playerManager)
     {
     }
-    public override void Handle(GameMessage gm, GameClient client)
+    public override async void Handle(GameMessage gm, GameClient client)
     {        //token_count
         var player = PlayerManager.GetPlayer(gm.Sender);
         if (!player)
@@ -18,14 +21,22 @@ public class GetTokenCount : ChatBotCommandHandler
             return;
         }
 
-        var tokens = player.Inventory
-            .GetInventoryItemsOfCategory(RavenNest.Models.ItemCategory.Scroll)
-            .Where(x => x.Item.Name.Equals("Halloween Token") ||
-                        x.Item.Name.Equals("Christmas Token") ||
-                        x.Item.Name.Equals("Easter Token") ||
-                        x.Item.Name.Equals("Birthday Token") ||
-                        x.Item.Name.Equals("New Year Token"))
-            .ToList();
+        ScrollInfoCollection tokens = null;
+
+        try
+        {
+            tokens = await Game.RavenNest.Game.GetScrollsAsync(player);
+            player.Inventory.UpdateScrolls(tokens);
+
+            if (tokens.Count > 0)
+            {
+                tokens = new ScrollInfoCollection(tokens.Where(x => x.Name.Contains("token", System.StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+        catch
+        {
+            tokens = FilterTokens(player);
+        }
 
         if (tokens.Count == 0)
         {
@@ -49,9 +60,24 @@ public class GetTokenCount : ChatBotCommandHandler
         foreach (var token in tokens)
         {
             parameters.Add(token.Amount.ToString());
-            parameters.Add(token.Item.Name);
+            parameters.Add(token.Name);
         }
 
         client.SendReply(gm, format, parameters.ToArray());
+    }
+
+    private static ScrollInfoCollection FilterTokens(PlayerController player)
+    {
+        var scrolls = player.Inventory
+            .GetInventoryItemsOfCategory(ItemCategory.Scroll)
+            .Where(x => x.Name.Contains("token", System.StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var res = new List<ScrollInfo>();
+        foreach (var scroll in scrolls)
+        {
+            res.Add(new ScrollInfo(scroll.Item.Id, scroll.Item.Name, scroll.Amount));
+        }
+        return new ScrollInfoCollection(res);
     }
 }

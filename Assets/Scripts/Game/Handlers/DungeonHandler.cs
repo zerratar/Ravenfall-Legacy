@@ -442,7 +442,12 @@ public class DungeonHandler
         }
         else
         {
-            player.SetDestination(enemyTarget.transform.position);
+            if (!player.SetDestination(enemyTarget.transform.position))
+            {
+                // unreachable enemy in dungeon
+                enemyTarget.IsUnreachable = true;
+                enemyTarget.TakeDamage(player, enemyTarget.Stats.Health.Level);
+            }
 
             enemyTarget = null;
         }

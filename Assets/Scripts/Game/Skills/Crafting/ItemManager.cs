@@ -39,7 +39,7 @@ public class ItemManager : MonoBehaviour
     [SerializeField] private RedeemableItem[] redeemableItems;
 
     private DateTime itemsLastUpdate;
-    private TimeSpan itemsUpdateInterval = TimeSpan.FromMinutes(5);
+    private TimeSpan itemsUpdateInterval = TimeSpan.FromMinutes(20);
     private List<ItemRecipe> recipes;
     private List<ResourceItemDrop> resourceDrops;
 
@@ -191,7 +191,8 @@ public class ItemManager : MonoBehaviour
 
     private async void LoadItemsAsync()
     {
-        state = LoadingState.Loading;
+        if (state != LoadingState.Loaded)
+            state = LoadingState.Loading;
 
         try
         {
@@ -199,14 +200,19 @@ public class ItemManager : MonoBehaviour
             await DownloadItemRecipesAsync();
             await DownloadRedeemableItemsAsync();
             await DownloadItemResourceDropsAsync();
+
+            // no need to set this status multiple times, after first time we load this data, should be ok.
+            if (state != LoadingState.Loaded)
+            {
+                state = LoadingState.Loaded;
+                game.SetLoadingState("items", state);
+            }
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError("Unable to load items: " + exc);
+            // ignore, this only happens when connectio nto server fails.
+            //Shinobytes.Debug.LogError("Unable to load items: " + exc);
         }
-
-        state = LoadingState.Loaded;
-        game.SetLoadingState("items", state);
     }
     private async Task DownloadItemResourceDropsAsync()
     {
@@ -216,7 +222,7 @@ public class ItemManager : MonoBehaviour
             this.resourceDrops = resourceDrops.ToList();
         }
 
-        Shinobytes.Debug.Log((resourceDrops?.Count ?? 0) + " resource drops loaded!");
+        //Shinobytes.Debug.Log((resourceDrops?.Count ?? 0) + " resource drops loaded!");
     }
     private async Task DownloadRedeemableItemsAsync()
     {
@@ -227,7 +233,7 @@ public class ItemManager : MonoBehaviour
             this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
             game.Overlay.SendRedeemables(redeemables);
         }
-        Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
+        //Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
     }
 
     private async Task DownloadItemRecipesAsync()
@@ -239,7 +245,7 @@ public class ItemManager : MonoBehaviour
             //game.Overlay.SendRecipes(recipes);
         }
 
-        Shinobytes.Debug.Log((recipes?.Count ?? 0) + " recipes loaded!");
+        //Shinobytes.Debug.Log((recipes?.Count ?? 0) + " recipes loaded!");
     }
 
     private async Task DownloadItemsAsync()
@@ -250,6 +256,11 @@ public class ItemManager : MonoBehaviour
         {
             var lastModified = items.Max(x => x.Modified.GetValueOrDefault());
             var deltas = await game.RavenNest.Items.GetDeltaAsync(lastModified);
+            if (deltas == null || deltas.Count == 0)
+            {
+                this.itemsLastUpdate = this.itemsLastUpdate.AddMinutes(-(itemsUpdateInterval.TotalMinutes * 0.5));
+                return;
+            }
             foreach (var d in deltas)
             {
                 var existing = items.FirstOrDefault(x => x.Id == d.Id);
@@ -267,7 +278,7 @@ public class ItemManager : MonoBehaviour
         {
             var loadedItems = await game.RavenNest.Items.GetAsync();
             items = loadedItems.ToList();
-            Shinobytes.Debug.Log(items.Count + " items loaded!");
+            //Shinobytes.Debug.Log(items.Count + " items loaded!");
         }
 
         // rebuild lookups
