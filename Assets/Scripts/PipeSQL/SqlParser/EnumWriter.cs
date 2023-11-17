@@ -11,7 +11,7 @@ namespace SqlParser
 	/// </summary>
 	public static class EnumWriter
 	{
-	    public static string? Write(Enum e)
+	    public static string Write(Enum e)
 	    {
 	        return e switch
 	        {

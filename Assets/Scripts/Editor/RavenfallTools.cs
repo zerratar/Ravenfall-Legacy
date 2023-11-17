@@ -24,7 +24,7 @@ public class RavenfallMeshTools
     {
         BoxCollider[] boxColliders = null;
         if (Selection.activeGameObject == null)
-            boxColliders = GameObject.FindObjectsOfType<BoxCollider>();
+            boxColliders = GameObject.FindObjectsByType<BoxCollider>(FindObjectsSortMode.None);
         else
             boxColliders = Selection.activeGameObject.GetComponentsInChildren<BoxCollider>();
         
@@ -176,7 +176,7 @@ public class RavenfallMeshTools
 
         // Find all MeshFilter objects in the scene
         smp1.Begin();
-        var meshFilters = GameObject.FindObjectsOfType<MeshFilter>();
+        var meshFilters = GameObject.FindObjectsByType<MeshFilter>(FindObjectsSortMode.None);
         smp1.End();
 
         // Need to figure out how large the output mesh needs to be (in terms of vertex/index count),

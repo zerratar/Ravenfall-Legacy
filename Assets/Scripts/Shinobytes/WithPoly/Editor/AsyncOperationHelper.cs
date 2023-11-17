@@ -17,21 +17,21 @@ public static class AsyncOperationHelper
         {
             foreach (var exception in task.Exception.InnerExceptions)
             {
-                UnityEngine.Debug.LogError(exception);
+                UnityEngine.Debug.LogError("AsyncOperationHelper.AsIEnumerator: " + exception);
             }
         }
     }
 }
 
-    public class SettingsData
-    {
-        public string GenerationMode { get; set; }
-        public string PromptText { get; set; }
-        public int UpscaleResolution { get; set; }
-        public string PbrMode { get; set; }
-    }
+public class SettingsData
+{
+    public string GenerationMode { get; set; }
+    public string PromptText { get; set; }
+    public int UpscaleResolution { get; set; }
+    public string PbrMode { get; set; }
+}
 
-    public class TextureResponse
+public class TextureResponse
 {
     public string SchemaVersion { get; set; }
     public string Type { get; set; }

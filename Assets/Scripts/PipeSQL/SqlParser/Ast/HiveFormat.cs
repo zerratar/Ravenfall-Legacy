@@ -8,7 +8,7 @@ namespace SqlParser.Ast
 	{
 	    public HiveRowFormat? RowFormat { get; internal set; }
 	    public HiveIOFormat? Storage { get; internal set; }
-	    public string? Location { get; internal set; }
+	    public string Location { get; internal set; }
 	}
 	/// <summary>
 	/// Hive row format

@@ -15,10 +15,10 @@ public class TownHallController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (!manager) manager = FindObjectOfType<TownHallManager>();
+        if (!manager) manager = FindAnyObjectByType<TownHallManager>();
         if (!resources) resources = GetComponentInChildren<TownHallResource>();
         if (!hitCollider) hitCollider = GetComponent<BoxCollider>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
         this.meshRenderer = GetComponentInChildren<MeshRenderer>();
         this.instanceID = hitCollider.GetInstanceID();
@@ -66,7 +66,7 @@ public class TownHallController : MonoBehaviour
         }
         catch (System.Exception exc)
         {
-            Shinobytes.Debug.LogError(exc.ToString());
+            Shinobytes.Debug.LogError("TownHallController.Update: " + exc.ToString());
         }
     }
 

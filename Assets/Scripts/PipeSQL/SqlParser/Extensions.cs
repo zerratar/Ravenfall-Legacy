@@ -121,7 +121,7 @@ namespace SqlParser
         /// <param name="value">Value to escape</param>
         /// <param name="quote">Quote character to escape</param>
         /// <returns>Escapee string</returns>
-        public static string? EscapeQuotedString(this string? value, char quote)
+        public static string EscapeQuotedString(this string value, char quote)
         {
             if (value == null)
             {
@@ -142,7 +142,7 @@ namespace SqlParser
         /// </summary>
         /// <param name="value">Value to escape</param>
         /// <returns>Escaped string</returns>
-        public static string? EscapeSingleQuoteString(this string? value)
+        public static string EscapeSingleQuoteString(this string value)
         {
             return EscapeQuotedString(value, Symbols.SingleQuote);
         }
@@ -157,7 +157,7 @@ namespace SqlParser
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static string? EscapeEscapedString(this string? value)
+        public static string EscapeEscapedString(this string value)
         {
             if (value == null)
             {

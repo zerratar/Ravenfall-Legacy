@@ -142,7 +142,7 @@ public class Overlay : MonoBehaviour
         if (!this.displayedPlayer)
         {
             // just in case.
-            this.displayedPlayer = FindObjectOfType<PlayerController>();
+            this.displayedPlayer = FindAnyObjectByType<PlayerController>();
         }
 
         if (!this.displayedPlayer)
@@ -158,7 +158,7 @@ public class Overlay : MonoBehaviour
         if (!this.displayedPlayer)
         {
             // just in case.
-            this.displayedPlayer = FindObjectOfType<PlayerController>();
+            this.displayedPlayer = FindAnyObjectByType<PlayerController>();
         }
 
         if (displayedPlayer && displayedPlayer.Id != player.Id)
@@ -203,7 +203,7 @@ public class Overlay : MonoBehaviour
     public void Awake()
     {
         CheckIfGame();
-        this.gameManager = FindObjectOfType<GameManager>();
+        this.gameManager = FindAnyObjectByType<GameManager>();
         this.Players = new OverlayPlayerManager(playerControllerPrefab);
         this.packetManager = new OverlayPacketManager(this);
 
@@ -401,7 +401,7 @@ public class Overlay : MonoBehaviour
     {
         if (!Application.isEditor)
         {
-            var tmpPlayer = FindObjectOfType<PlayerController>();
+            var tmpPlayer = FindAnyObjectByType<PlayerController>();
             if (tmpPlayer)
             {
                 Destroy(tmpPlayer.gameObject);

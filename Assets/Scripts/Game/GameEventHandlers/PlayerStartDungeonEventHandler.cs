@@ -9,7 +9,7 @@ public class PlayerStartDungeonEventHandler : GameEventHandler<RavenNest.Models.
 
         try
         {
-            if (gameManager.StreamRaid.IsWar||gameManager.Dungeons.IsBusy|| gameManager.Raid.IsBusy|| gameManager.Raid.Started)
+            if (gameManager.StreamRaid.IsWar || gameManager.Dungeons.IsBusy || gameManager.Raid.IsBusy || gameManager.Raid.Started)
             {
                 return;
             }
@@ -44,7 +44,7 @@ public class PlayerStartDungeonEventHandler : GameEventHandler<RavenNest.Models.
         }
         catch (System.Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("PlayerStartDungeonEventHandler.Handle: " + exc);
         }
         finally
         {

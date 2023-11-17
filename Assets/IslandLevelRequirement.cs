@@ -44,7 +44,7 @@ public class IslandLevelRequirement : MonoBehaviour
     }
     public List<IslandTask> GetLevelRequirements()
     {
-        var game = FindObjectOfType<GameManager>();
+        var game = FindAnyObjectByType<GameManager>();
         game.Chunks.Init();
         var skills = new List<IslandTask>();
         var chunks = island.GetComponentsInChildren<Chunk>();

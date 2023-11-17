@@ -30,7 +30,7 @@ public class EventCode
             catch (System.Exception exc)
             {
                 // failed t
-                Shinobytes.Debug.LogError(exc);
+                Shinobytes.Debug.LogError("EventCode.LoadWords: " + exc);
             }
         }
     }

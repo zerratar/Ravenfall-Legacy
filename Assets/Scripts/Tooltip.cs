@@ -21,7 +21,7 @@ public class Tooltip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     void Start()
     {
         rect = this.GetComponent<RectTransform>();
-        if (!tooltipViewer) tooltipViewer = FindObjectOfType<TooltipViewer>();
+        if (!tooltipViewer) tooltipViewer = FindAnyObjectByType<TooltipViewer>();
     }
 
     public void OnPointerEnter(PointerEventData eventData)

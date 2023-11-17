@@ -155,7 +155,7 @@ namespace RavenNest.SDK.Endpoints
                 if (throwOnError) throw;
                 try
                 {
-                    Shinobytes.Debug.LogError(exc);
+                    Shinobytes.Debug.LogError("WebApiRequest.SendAsync: " + exc);
                 }
                 catch { }
                 return default(TResult);

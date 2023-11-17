@@ -30,7 +30,7 @@ public class PlayerTask : ChatBotCommandHandler<PlayerTaskRequest>
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("PlayerTask.Handle: " + exc);
         }
     }
 }

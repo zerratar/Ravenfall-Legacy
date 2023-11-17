@@ -55,7 +55,7 @@ public class OverlayPacket
         }
         catch (Exception e)
         {
-            Shinobytes.Debug.LogError(e);
+            Shinobytes.Debug.LogError("OverlayPacket.TryCreate: " + e);
         }
 
         return false;

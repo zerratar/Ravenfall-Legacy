@@ -69,7 +69,7 @@ public class DungeonJoin : ChatBotCommandHandler<string>
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("DungeonJoin.Handle: " + exc);
         }
     }
 }

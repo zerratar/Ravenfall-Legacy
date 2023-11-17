@@ -141,7 +141,7 @@ public class PetController : MonoBehaviour
 #endif
     void Start()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         animator = GetComponent<Animator>();
         if (!animator) animator = GetComponentInChildren<Animator>();
         player = GetComponentInParent<PlayerController>();

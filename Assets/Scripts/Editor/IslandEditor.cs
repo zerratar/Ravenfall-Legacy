@@ -16,7 +16,7 @@ namespace Assets.Scripts.Editor
         {
             var editor = GetWindow<IslandEditor>();
 
-            editor.Islands = GameObject.FindObjectsOfType<IslandController>();
+            editor.Islands = GameObject.FindObjectsByType<IslandController>(FindObjectsSortMode.None);
             editor.AccessToken = EditorPrefs.GetString("openai_access_token", "");
 
             editor.Show();
@@ -44,7 +44,7 @@ namespace Assets.Scripts.Editor
 
             if (Islands == null || Islands.Length == 0)
             {
-                Islands = GameObject.FindObjectsOfType<IslandController>();
+                Islands = GameObject.FindObjectsByType<IslandController>(FindObjectsSortMode.None);
             }
 
             if (string.IsNullOrEmpty(AccessToken))

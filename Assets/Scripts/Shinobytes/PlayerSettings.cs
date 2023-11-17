@@ -29,12 +29,18 @@
 
     public double? PlayerAfkHours;
     public string RavenBotServer;
-    public string QueryEngineApiPrefix;
+
+
     public bool? QueryEngineEnabled;
+    public bool? QueryEngineAlwaysReturnArray;
+    public string QueryEngineApiPrefix;
 
     public float[] ExpMultiplierAnnouncements;
 
+    public StreamLabelSettings StreamLabels;
+
     public ObserverTimes PlayerObserveSeconds;
+
 
     static PlayerSettings()
     {
@@ -73,10 +79,22 @@
             wasUpdated = true;
         }
 
+        if (Instance.StreamLabels == null)
+        {
+            Instance.StreamLabels = StreamLabelSettings.Default;
+            wasUpdated = true;
+        }
+
+        if (Instance.QueryEngineAlwaysReturnArray == null)
+        {
+            Instance.QueryEngineAlwaysReturnArray = false;
+            wasUpdated = true;
+        }
+
         if (Instance.QueryEngineEnabled == null)
         {
             Instance.QueryEngineEnabled = true;
-            wasUpdated = false;
+            wasUpdated = true;
         }
 
         if (Instance.QueryEngineApiPrefix == null)
@@ -124,6 +142,25 @@
         if (wasUpdated)
         {
             Save();
+        }
+    }
+    public class StreamLabelSettings
+    {
+        public bool Enabled;
+        public bool SaveJsonFiles;
+        public bool SaveTextFiles;
+
+        public static StreamLabelSettings Default
+        {
+            get
+            {
+                return new StreamLabelSettings
+                {
+                    Enabled = true,
+                    SaveJsonFiles = true,
+                    SaveTextFiles = true,
+                };
+            }
         }
     }
 

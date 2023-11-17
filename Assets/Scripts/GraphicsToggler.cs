@@ -38,8 +38,8 @@ public class GraphicsToggler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        this.skinnedMeshRenderers = FindObjectsOfType<SkinnedMeshRenderer>();
-        this.meshRenderers = FindObjectsOfType<MeshRenderer>();
+        this.skinnedMeshRenderers = FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None);
+        this.meshRenderers = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None);
         this.previousTargetFramerate = Application.targetFrameRate;
 
         if (Application.isBatchMode)
@@ -130,7 +130,8 @@ public class GraphicsToggler : MonoBehaviour
 
     private void RestoreRenderTarget()
     {
-        Physics.autoSimulation = true;
+        //Physics.autoSimulation = true;
+        Physics.simulationMode = SimulationMode.FixedUpdate;
         OnDemandRendering.renderFrameInterval = 0;
         Application.targetFrameRate = previousTargetFramerate;
         QualitySettings.vSyncCount = previousVsyncCount;
@@ -138,7 +139,7 @@ public class GraphicsToggler : MonoBehaviour
 
     private void ReduceRenderTarget()
     {
-        Physics.autoSimulation = false;
+        Physics.simulationMode = SimulationMode.Script;
         OnDemandRendering.renderFrameInterval = renderFrameInterval;
         previousTargetFramerate = Application.targetFrameRate;
         previousVsyncCount = QualitySettings.vSyncCount;

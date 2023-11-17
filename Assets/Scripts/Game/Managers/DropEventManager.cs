@@ -16,7 +16,7 @@ public class DropEventManager : MonoBehaviour
 
     private void Awake()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
     }
 
     public bool Contains(ItemController item)

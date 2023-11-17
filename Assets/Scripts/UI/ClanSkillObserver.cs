@@ -9,7 +9,7 @@ public class ClanSkillObserver : MonoBehaviour
 
     public void Start()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
     }
 
     public void Observe(PlayerController player)

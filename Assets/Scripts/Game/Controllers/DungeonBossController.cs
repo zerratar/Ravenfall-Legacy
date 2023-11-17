@@ -42,7 +42,7 @@ public class DungeonBossController : MonoBehaviour
     void Awake()
     {
         if (!room) room = GetComponentInParent<DungeonRoomController>();
-        if (!dungeonManager) dungeonManager = FindObjectOfType<DungeonManager>();
+        if (!dungeonManager) dungeonManager = FindAnyObjectByType<DungeonManager>();
         if (!enemyController) enemyController = GetComponent<EnemyController>();
 
         enemyController.GivesExperienceWhenKilled = false;
@@ -203,7 +203,7 @@ public class DungeonBossController : MonoBehaviour
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("DungeonBossController.GetAttackableTarget: " + exc);
             return null;
         }
     }

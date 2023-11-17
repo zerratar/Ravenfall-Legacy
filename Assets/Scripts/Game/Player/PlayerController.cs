@@ -485,9 +485,9 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!clanHandler) clanHandler = GetComponent<ClanHandler>();
         if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
         if (!Inventory) Inventory = GetComponent<Inventory>();
-        if (!GameManager) GameManager = FindObjectOfType<GameManager>();
+        if (!GameManager) GameManager = FindAnyObjectByType<GameManager>();
         if (!chunkManager) chunkManager = GameManager.Chunks; ;
-        if (!healthBarManager) healthBarManager = FindObjectOfType<HealthBarManager>();
+        if (!healthBarManager) healthBarManager = FindAnyObjectByType<HealthBarManager>();
         if (!agent) agent = GetComponent<NavMeshAgent>();
         if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
         if (!effectHandler) effectHandler = GetComponent<EffectHandler>();
@@ -1057,7 +1057,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void GotoStartingArea()
     {
-        if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
+        if (!chunkManager) chunkManager = FindAnyObjectByType<ChunkManager>();
         Chunk = null;
         SetDestination(chunkManager.GetStarterChunk().CenterPointWorld);
     }
@@ -1196,7 +1196,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     public void SetChunk(TaskType type)
     {
         if (!animator) animator = GetComponentInChildren<Animator>();
-        if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
+        if (!chunkManager) chunkManager = FindAnyObjectByType<ChunkManager>();
         if (!chunkManager)
         {
             Shinobytes.Debug.LogError($"No ChunkManager found!");
@@ -1696,7 +1696,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         var itemManager = GameManager?.Items;
         if (itemManager == null)
         {
-            itemManager = FindObjectOfType<ItemManager>();
+            itemManager = FindAnyObjectByType<ItemManager>();
         }
 
         ApplyStatusEffects(player.StatusEffects);
@@ -1898,8 +1898,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         Movement.Lock();
 
         Equipment.ShowFishingRod();
-
-        if (lastTrainedSkill != Skill.Fishing)
+        var currentAnimState = playerAnimations.State;
+        if (lastTrainedSkill != Skill.Fishing || currentAnimState != PlayerAnimationState.Fishing)
         {
             lastTrainedSkill = Skill.Fishing;
             playerAnimations.StartFishing();
@@ -1928,7 +1928,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         Equipment.HideEquipments();
 
-        if (lastTrainedSkill != Skill.Cooking)
+        var currentAnimState = playerAnimations.State;
+        if (lastTrainedSkill != Skill.Cooking || currentAnimState != PlayerAnimationState.Cooking)
         {
             lastTrainedSkill = Skill.Cooking;
             playerAnimations.StartCooking();
@@ -1954,8 +1955,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         //Equipment.ShowHammer();
         Equipment.HideEquipments();
-
-        if (lastTrainedSkill != Skill.Alchemy)
+        var currentAnimState = playerAnimations.State;
+        if (lastTrainedSkill != Skill.Alchemy || currentAnimState != PlayerAnimationState.Brewing)
         {
             lastTrainedSkill = Skill.Alchemy;
             playerAnimations.StartBrewing();
@@ -1982,7 +1983,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         InCombat = false;
 
         Equipment.ShowHammer();
-        if (lastTrainedSkill != Skill.Crafting)
+        var currentAnimState = playerAnimations.State;
+        if (lastTrainedSkill != Skill.Crafting || currentAnimState != PlayerAnimationState.Crafting)
         {
             lastTrainedSkill = Skill.Crafting;
             playerAnimations.StartCrafting();
@@ -2009,7 +2011,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         Equipment.ShowPickAxe();
 
-        if (lastTrainedSkill != Skill.Mining)
+        var currentAnimState = playerAnimations.State;
+        if (lastTrainedSkill != Skill.Mining || currentAnimState != PlayerAnimationState.Mining)
         {
             lastTrainedSkill = Skill.Mining;
             playerAnimations.StartMining();
@@ -2036,7 +2039,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         Movement.Lock();
 
         Equipment.ShowRake();
-        if (lastTrainedSkill != Skill.Farming)
+        var currentAnimState = playerAnimations.State;
+        if (lastTrainedSkill != Skill.Farming || currentAnimState != PlayerAnimationState.Farming)
         {
             lastTrainedSkill = Skill.Farming;
             playerAnimations.StartFarming();
@@ -2064,7 +2068,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         Equipment.ShowHatchet();
 
-        if (lastTrainedSkill != Skill.Woodcutting)
+        var currentAnimState = playerAnimations.State;
+        if (lastTrainedSkill != Skill.Woodcutting || currentAnimState != PlayerAnimationState.Woodcutting)
         {
             lastTrainedSkill = Skill.Woodcutting;
             playerAnimations.StartWoodcutting();
@@ -2718,7 +2723,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return false;
 
         if (!damageCounterManager)
-            damageCounterManager = FindObjectOfType<DamageCounterManager>();
+            damageCounterManager = FindAnyObjectByType<DamageCounterManager>();
 
         if (damageCounterManager)
             damageCounterManager.Add(transform, amount, true);
@@ -2749,7 +2754,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (!damageCounterManager)
         {
-            damageCounterManager = FindObjectOfType<DamageCounterManager>();
+            damageCounterManager = FindAnyObjectByType<DamageCounterManager>();
         }
 
         if (damageCounterManager)
@@ -2776,7 +2781,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void Die()
     {
-        if (!arena) arena = FindObjectOfType<ArenaController>();
+        if (!arena) arena = FindAnyObjectByType<ArenaController>();
         if (dungeonHandler.InDungeon) dungeonHandler.Died();
         if (arena) arena.Died(this);
         if (duelHandler.InDuel) duelHandler.Died();
@@ -2886,7 +2891,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             catch (Exception exc)
             {
                 queuedItemAdd.Enqueue(item);
-                Shinobytes.Debug.LogError(exc);
+                Shinobytes.Debug.LogError("PlayerController.AddQueuedItemAsync: " + exc);
             }
         }
 

@@ -128,7 +128,7 @@ public class FightingTask : ChunkTask
                 catch (Exception exc)
                 {
 #if DEBUG
-                    Shinobytes.Debug.LogError(exc);
+                    Shinobytes.Debug.LogError("FightingTask.GetTarget: " + exc);
 #endif
                     continue;
                 }
@@ -145,7 +145,7 @@ public class FightingTask : ChunkTask
         catch (Exception exc)
         {
 #if DEBUG
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("FightingTask.GetTarget: " + exc);
 #endif
             return null;
         }

@@ -28,7 +28,7 @@ public class RaidDifficultySystem
 
         if (gameManager == null)
         {
-            gameManager = GameObject.FindObjectOfType<GameManager>();
+            gameManager = GameObject.FindAnyObjectByType<GameManager>();
         }
 
         var players = gameManager.Players.GetAllPlayers();

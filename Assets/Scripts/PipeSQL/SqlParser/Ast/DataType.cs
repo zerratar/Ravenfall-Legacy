@@ -89,7 +89,7 @@ namespace SqlParser.Ast
             protected void FormattedDatetimePrecisionAndTz(SqlTextWriter writer, string sqlType)
             {
                 writer.Write($"{sqlType}");
-                string? length = null;
+                string length = null;
 
                 if (Length != null)
                 {
@@ -587,7 +587,7 @@ namespace SqlParser.Ast
             }
         }
         /// <summary>
-        /// String data type
+        /// string data type
         /// </summary>
         public class StringType : DataType
         {

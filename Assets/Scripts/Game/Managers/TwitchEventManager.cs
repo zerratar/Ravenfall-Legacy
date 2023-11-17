@@ -30,7 +30,7 @@ public class TwitchEventManager : MonoBehaviour
 
     private void Awake()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
     }
 
     internal void SetExpMultiplierLimit(string name, int expMultiplier)

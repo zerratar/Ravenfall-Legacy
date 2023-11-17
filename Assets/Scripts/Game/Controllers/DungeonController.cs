@@ -49,8 +49,8 @@ public class DungeonController : MonoBehaviour
     public bool HasStartingPoint => !!startingPoint;
     void Start()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
-        if (!dungeonManager) dungeonManager = FindObjectOfType<DungeonManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        if (!dungeonManager) dungeonManager = FindAnyObjectByType<DungeonManager>();
 
         rooms = GetRooms();
 

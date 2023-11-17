@@ -46,6 +46,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public bool IsBusy { get; internal set; }
     public bool HasBeenAnnounced { get; private set; }
+    public PlayerController Initiator { get; private set; }
 
     public string RequiredCode;
 
@@ -163,9 +164,10 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public async Task<bool> StartRaid(PlayerController initiator = null, Action<string> onActivated = null)
     {
-        this.HasBeenAnnounced = false;
         if (gameManager.Events.TryStart(this))
         {
+            this.HasBeenAnnounced = false;
+
             if (gameManager.RequireCodeForDungeonOrRaid)
                 RequiredCode = EventCode.New();
 
@@ -175,6 +177,8 @@ public class RaidManager : MonoBehaviour, IEvent
                 gameManager.Events.End(this);
                 return false;
             }
+
+            Initiator = initiator;
 
             notifications.OnBeforeRaidStart();
             gameManager.Music.PlayRaidBossMusic();
@@ -196,7 +200,6 @@ public class RaidManager : MonoBehaviour, IEvent
             else
             {
                 Announce();
-                await gameManager.HandleRaidAutoJoin(initiator);
             }
 
             return true;
@@ -225,7 +228,6 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public void EndRaid(bool bossKilled, bool timeout)
     {
-        HasBeenAnnounced = false;
         gameManager.Events.End(this);
 
         if (!bossKilled && timeout)

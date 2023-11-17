@@ -97,7 +97,7 @@ public class IslandController : MonoBehaviour
         Shinobytes.Debug.Log("Rebuilding player list for island: " + this.Island + " as one or more players were on ferry or in dungeon.");
         if (!playerManager)
         {
-            playerManager = FindObjectOfType<PlayerManager>();
+            playerManager = FindAnyObjectByType<PlayerManager>();
         }
         players.Clear();
         foreach (var p in playerManager.GetAllPlayers())

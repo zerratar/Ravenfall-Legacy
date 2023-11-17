@@ -78,6 +78,7 @@ public class QueryEngineAPI
             QueryEngineContext.Column<RedeemableItem, Guid>("ItemId", x => x.ItemId).MakePrimaryKey(),
             QueryEngineContext.Column<RedeemableItem, string>("Name", x => x.Name),
             QueryEngineContext.Column<RedeemableItem, string>("Description", x => gm.Items.Get(x.ItemId).Description),
+            QueryEngineContext.Column<RedeemableItem, string>("Currency", x => x.Currency),
             QueryEngineContext.Column<RedeemableItem, int>("Cost", x => x.Cost)
         );
 
@@ -118,21 +119,21 @@ public class QueryEngineAPI
             QueryEngineContext.Column<GameManager, int>("Players", x => x.Players.GetPlayerCount()),
             QueryEngineContext.Column<GameManager, string>("GameVersion", x => gameVersion),
             QueryEngineContext.Column<GameManager, double>("SecondsSinceStart", x => (DateTime.Now - started).TotalSeconds)
-        );
+        ).HasOnlyOneRow();
 
         context.Register("ferry", () => new[] { gm.Ferry },
             QueryEngineContext.Column<FerryController, string>("Destination", x => x.GetDestination()),
             QueryEngineContext.Column<FerryController, int>("Players", x => x.GetPlayerCount()),
             QueryEngineContext.Column<FerryController, string>("Captain.Name", x => x.Captain?.Name ?? ""),
             QueryEngineContext.Column<FerryController, int>("Captain.SailingLevel", x => x.Captain?.Stats.Sailing.MaxLevel ?? 0)
-        );
+        ).HasOnlyOneRow();
 
         context.Register("village", () => new[] { gm.Village },
             QueryEngineContext.Column<VillageManager, string>("Name", x => "My Village"),
             QueryEngineContext.Column<VillageManager, int>("Level", x => x.TownHall.Level),
             QueryEngineContext.Column<VillageManager, int>("Tier", x => x.TownHall.Tier),
             QueryEngineContext.Column<VillageManager, string>("Boost", x => gm.GetVillageBoostString())
-        );
+        ).HasOnlyOneRow();
 
         context.Register("multiplier", () => new[] { gm.GetExpMultiplierStats() },
             QueryEngineContext.Column<ExpBoostEvent, string>("EventName", x => x.EventName),
@@ -143,7 +144,7 @@ public class QueryEngineAPI
             QueryEngineContext.Column<ExpBoostEvent, double>("TimeLeft", x => x.TimeLeft.TotalSeconds),
             QueryEngineContext.Column<ExpBoostEvent, string>("StartTime", x => x.StartTime.ToString()),
             QueryEngineContext.Column<ExpBoostEvent, string>("EndTime", x => x.EndTime.ToString())
-        );
+        ).HasOnlyOneRow();
 
         context.Register("dungeon", () => new[] { gm.Dungeons },
             QueryEngineContext.Column<DungeonManager, bool>("Started", x => x.Started),
@@ -160,7 +161,7 @@ public class QueryEngineAPI
             QueryEngineContext.Column<DungeonManager, int>("Boss.MaxHealth", x => x.Boss?.Enemy.Stats.Health.MaxLevel ?? 0),
             QueryEngineContext.Column<DungeonManager, float>("Boss.HealthPercent", x => x.Boss?.Enemy.Stats.HealthPercent ?? 0f),
             QueryEngineContext.Column<DungeonManager, int>("Boss.CombatLevel", x => x.Boss?.Enemy.Stats.CombatLevel ?? 0)
-        );
+        ).HasOnlyOneRow();
 
         context.Register("raid", () => new[] { gm.Raid },
             QueryEngineContext.Column<RaidManager, bool>("Started", x => x.Started),
@@ -171,7 +172,51 @@ public class QueryEngineAPI
             QueryEngineContext.Column<RaidManager, int>("Boss.MaxHealth", x => x.Boss?.Enemy.Stats.Health.MaxLevel ?? 0),
             QueryEngineContext.Column<RaidManager, float>("Boss.HealthPercent", x => x.Boss?.Enemy.Stats.HealthPercent ?? 0f),
             QueryEngineContext.Column<RaidManager, int>("Boss.CombatLevel", x => x.Boss?.Enemy.Stats.CombatLevel ?? 0)
-        );
+        ).HasOnlyOneRow();
+
+        context.Register("settings", () => new[] { PlayerSettings.Instance },
+            QueryEngineContext.Column<PlayerSettings, int>("Game.PlayerCacheExpiryTimeIndex", x => x.PlayerCacheExpiryTime.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, float>("Game.CameraRotationSpeed", x => x.CameraRotationSpeed.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, float>("Game.DayNightTime", x => x.DayNightTime.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("Game.DayNightCycleEnabled", x => x.DayNightCycleEnabled.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("Game.RealTimeDayNightCycle", x => x.RealTimeDayNightCycle.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("Game.AutoKickAfkPlayers", x => x.AutoKickAfkPlayers.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("Game.LocalBotServerDisabled", x => x.LocalBotServerDisabled.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("Game.AlertExpiredStateCacheInChat", x => x.AlertExpiredStateCacheInChat.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, int>("Game.PlayerBoostRequirement", x => x.PlayerBoostRequirement.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, int>("Game.ItemDropMessageType", x => x.ItemDropMessageType.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, int>("Game.PathfindingQualitySettings", x => x.PathfindingQualitySettings.GetValueOrDefault()),
+
+            QueryEngineContext.Column<PlayerSettings, float>("Sound.MusicVolume", x => x.MusicVolume.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, float>("Sound.RaidHornVolume", x => x.RaidHornVolume.GetValueOrDefault()),
+
+            QueryEngineContext.Column<PlayerSettings, bool>("UI.PlayerNamesVisible", x => x.PlayerNamesVisible.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, float>("UI.PlayerListSize", x => x.PlayerListSize.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, float>("UI.PlayerListScale", x => x.PlayerListScale.GetValueOrDefault()),
+
+            QueryEngineContext.Column<PlayerSettings, float>("Graphics.DPIScale", x => x.DPIScale.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("Graphics.PotatoMode", x => x.PotatoMode.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("Graphics.AutoPotatoMode", x => x.AutoPotatoMode.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("Graphics.PostProcessing", x => x.PostProcessing.GetValueOrDefault()),
+
+            QueryEngineContext.Column<PlayerSettings, bool>("QueryEngine.Enabled", x => x.QueryEngineEnabled.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, bool>("QueryEngine.AlwaysReturnArray", x => x.QueryEngineAlwaysReturnArray.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, string>("QueryEngine.ApiPrefix", x => x.QueryEngineApiPrefix),
+
+            QueryEngineContext.Column<PlayerSettings, bool>("StreamLabels.Enabled", x => x.StreamLabels.Enabled),
+            QueryEngineContext.Column<PlayerSettings, bool>("StreamLabels.SaveTextFiles", x => x.StreamLabels.SaveTextFiles),
+            QueryEngineContext.Column<PlayerSettings, bool>("StreamLabels.SaveJsonFiles", x => x.StreamLabels.SaveJsonFiles),
+
+            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.Default", x => x.PlayerObserveSeconds.Default),
+            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.Subscriber", x => x.PlayerObserveSeconds.Subscriber),
+            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.Moderator", x => x.PlayerObserveSeconds.Moderator),
+            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.Vip", x => x.PlayerObserveSeconds.Vip),
+
+            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.Broadcaster", x => x.PlayerObserveSeconds.Broadcaster),
+            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.OnSubcription", x => x.PlayerObserveSeconds.OnSubcription),
+            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.OnCheeredBits", x => x.PlayerObserveSeconds.OnCheeredBits)
+        ).HasOnlyOneRow();
+
 
         gm.Islands.EnsureIslands();
 

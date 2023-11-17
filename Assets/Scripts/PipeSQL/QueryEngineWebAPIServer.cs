@@ -60,7 +60,7 @@ namespace RavenfallDataPipe
             }
             catch (Exception exc)
             {
-                Shinobytes.Debug.LogError(exc.ToString());
+                Shinobytes.Debug.LogError("OnContextReceived: " + exc.ToString());
             }
 
             try
@@ -84,12 +84,29 @@ namespace RavenfallDataPipe
 
                     if (TryGetContent(context, out var query))
                     {
-                        Shinobytes.Debug.Log("Query Engine - Processing Query: " + query);
-                        WriteResponse(await engine.ProcessAsync(query), context);
+                        //Shinobytes.Debug.Log("Query Engine - Processing Query: " + query);
+                        var result = await engine.ProcessAsync(query);
+
+                        if (!PlayerSettings.Instance.QueryEngineAlwaysReturnArray.GetValueOrDefault())
+                        {
+                            if (result.Count == 0)
+                            {
+                                WriteJsonResponse("{}", context);
+                                return;
+                            }
+
+                            if (result.Count == 1)
+                            {
+                                WriteResponse(result[0], context);
+                                return;
+                            }
+                        }
+
+                        WriteResponse(result, context);
                     }
                     else
                     {
-                        Shinobytes.Debug.Log("Query Engine - Bad Request: " + context.Request.Url.LocalPath);
+                        //Shinobytes.Debug.Log("Query Engine - Bad Request: " + context.Request.Url.LocalPath);
                         WriteResponse("Empty queries, bad queries!", context);
                     }
 
@@ -149,7 +166,7 @@ namespace RavenfallDataPipe
                 catch (Exception exc)
                 {
 
-                    Shinobytes.Debug.LogError(exc);
+                    Shinobytes.Debug.LogError("QueryEngineWebApiServer.TryGetContent: " + exc);
                 }
             }
             return false;
@@ -167,15 +184,14 @@ namespace RavenfallDataPipe
                 }
                 catch (Exception exc)
                 {
-                    Shinobytes.Debug.LogError(exc);
+                    Shinobytes.Debug.LogError("QueryEngineWebApiServer.TryGetBody: " + exc);
                 }
             }
             return false;
         }
 
-        private void WriteResponse<T>(T data, HttpListenerContext context, HttpStatusCode statusCode = HttpStatusCode.OK)
+        private void WriteJsonResponse(string json, HttpListenerContext context, HttpStatusCode statusCode = HttpStatusCode.OK)
         {
-            var json = JsonConvert.SerializeObject(data);
             var bytes = UTF8Encoding.UTF8.GetBytes(json);
             context.Response.ContentLength64 = bytes.Length;
             context.Response.StatusCode = (int)statusCode;
@@ -183,6 +199,12 @@ namespace RavenfallDataPipe
             {
                 bw.Write(bytes);
             }
+        }
+
+        private void WriteResponse<T>(T data, HttpListenerContext context, HttpStatusCode statusCode = HttpStatusCode.OK)
+        {
+            var json = JsonConvert.SerializeObject(data);
+            WriteJsonResponse(json, context, statusCode);
         }
 
 

@@ -38,9 +38,9 @@ public class TownHouseSelectionDialog : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         if (!townHouseManager) townHouseManager = gameManager.Village.TownHouses;
-        if (!townHouseRenderManager) townHouseRenderManager = FindObjectOfType<TownHouseRenderManager>();
+        if (!townHouseRenderManager) townHouseRenderManager = FindAnyObjectByType<TownHouseRenderManager>();
 
         GenerateTownHouseButtons();
     }

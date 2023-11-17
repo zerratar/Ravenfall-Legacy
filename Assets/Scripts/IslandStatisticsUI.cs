@@ -33,7 +33,7 @@ public class IslandStatisticsUI : MonoBehaviour
             return;
         }
 
-        gameManager = FindObjectOfType<GameManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
     }
 
     // Update is called once per frame

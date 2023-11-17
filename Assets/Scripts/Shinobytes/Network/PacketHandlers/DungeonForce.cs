@@ -74,7 +74,6 @@ public class DungeonForce : ChatBotCommandHandler
                         }
 
                         Game.Dungeons.AnnounceDungeon(req);
-                        Game.HandleDungeonAutoJoin(plr);
                     }))
                     {
                         client.SendReply(gm, "Dungeon could not be started. Try again later");
@@ -101,7 +100,7 @@ public class DungeonForce : ChatBotCommandHandler
         }
         catch (System.Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("DungeonForce.Handle: " + exc);
         }
         finally
         {

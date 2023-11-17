@@ -21,8 +21,6 @@ public class RaidHandler : MonoBehaviour
     private TaskType previousTask;
     private string previousTaskArgument;
 
-    private float autoJoinRequestTimeout;
-
     public bool AutoJoining;
 
     public bool InRaid { get; private set; }
@@ -35,7 +33,7 @@ public class RaidHandler : MonoBehaviour
     void Start()
     {
         if (!player) player = GetComponent<PlayerController>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
     }
 
     // Update is called once per frame
@@ -49,24 +47,6 @@ public class RaidHandler : MonoBehaviour
         if (AutoJoining)
         {
             return;
-        }
-
-        if (!InRaid)
-        {
-            if (AutoJoinCounter > 0)
-            {
-                // only start the join process after chat announcement
-                if (!gameManager.Raid.HasBeenAnnounced)
-                    return;
-
-                // try join the raid if possible 
-                AutoJoining = true;
-                RequestAutoJoinAsync();
-            }
-            else
-            {
-                return;
-            }
         }
 
         var target = gameManager.Raid.Boss.transform;
@@ -128,66 +108,6 @@ public class RaidHandler : MonoBehaviour
             player.SetDestination(target.position);
         }
     }
-
-    private async void RequestAutoJoinAsync()
-    {
-        if (AutoJoining)
-        {
-            return;
-        }
-
-        try
-        {
-            if (autoJoinRequestTimeout > 0)
-            {
-                autoJoinRequestTimeout -= Time.deltaTime;
-                return;
-            }
-
-            if (AutoJoinCounter == 0 || player.GameManager.Raid.CanJoin(player) != RaidJoinResult.CanJoin)
-                return;
-
-            var result = await player.GameManager.RavenNest.Players.AutoJoinRaid(player.Id);
-            if (result)
-            {
-                player.GameManager.Raid.Join(player);
-                if (AutoJoinCounter != int.MaxValue)
-                {
-                    AutoJoinCounter--;
-                }
-
-                player.GameManager.OnPlayerAutoJoinedRaid(player);
-
-                //if (AutoJoinCounter > 0 && AutoJoinCounter != int.MaxValue)
-                //{
-                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the raid. You will join {autoJoinLeft} more.", AutoJoinCounter);
-                //}
-                //else if (AutoJoinCounter == int.MaxValue)
-                //{
-                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the raid.");
-                //}
-                //else
-                //{
-                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the raid. You will no longer automatically join any raids.");
-                //}
-            }
-            else
-            {
-                player.GameManager.RavenBot.SendReply(player, "You've failed to automatically joined the raid. You either do not have enough coins or server did not respond.");
-                AutoJoinCounter = 0;
-            }
-        }
-        catch
-        {
-            // do not cancel auto-join but we don't want to retry again too quickly asking the server. Set a cooldown
-            autoJoinRequestTimeout = 2f;
-        }
-        finally
-        {
-            AutoJoining = false;
-        }
-    }
-
 
     public void OnEnter()
     {

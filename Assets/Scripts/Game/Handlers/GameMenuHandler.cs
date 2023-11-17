@@ -21,7 +21,7 @@ public class GameMenuHandler : MonoBehaviour
     private bool IsAuthenticated => gameManager && gameManager.RavenNest != null && gameManager.RavenNest.Authenticated;
     private void Awake()
     {
-        if (!fadeToBlack) fadeToBlack = FindObjectOfType<FadeInOut>();
+        if (!fadeToBlack) fadeToBlack = FindAnyObjectByType<FadeInOut>();
 
         signOutButton.gameObject.SetActive(false);
 
@@ -30,8 +30,8 @@ public class GameMenuHandler : MonoBehaviour
             lblVersion.text = "v" + Ravenfall.Version;//Application.version;
         }
 
-        if (!loginScreen) loginScreen = FindObjectOfType<LoginHandler>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!loginScreen) loginScreen = FindAnyObjectByType<LoginHandler>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
         settingsView.Hide(false);
 

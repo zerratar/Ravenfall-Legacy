@@ -37,8 +37,8 @@ public class FerryHandler : MonoBehaviour
     private void EnsureReferences()
     {
         if (hasReferences) return;
-        if (!ferry) ferry = FindObjectOfType<FerryController>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!ferry) ferry = FindAnyObjectByType<FerryController>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         if (!player) player = GetComponent<PlayerController>();
         hasReferences = player && gameManager && ferry;
     }
@@ -217,7 +217,7 @@ public class FerryHandler : MonoBehaviour
             }
 
             if (!gameManager)
-                gameManager = GameObject.FindObjectOfType<GameManager>();
+                gameManager = GameObject.FindAnyObjectByType<GameManager>();
 
             if (!gameManager)
             {

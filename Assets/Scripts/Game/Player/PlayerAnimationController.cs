@@ -16,6 +16,8 @@ public class PlayerAnimationController : MonoBehaviour
     public float MovementSpeedMultiplier = 1;
     public float AttackSpeedMultiplier = 1;
 
+    public PlayerAnimationState State => animationState;
+
     // Use this for initialization
     void Start()
     {
@@ -447,14 +449,9 @@ public class PlayerAnimationController : MonoBehaviour
         EndGathering();
         EndBrewing();
     }
-
-    internal void SetGatheringType(object playKneelingAnimation)
-    {
-        throw new NotImplementedException();
-    }
 }
 
-internal enum PlayerAnimationState
+public enum PlayerAnimationState
 {
     Idle,
     Dead,

@@ -98,7 +98,7 @@ namespace RavenNest.SDK
 #if UNITY_EDITOR && DEBUG
             if (!gameManager)
             {
-                gameManager = UnityEngine.GameObject.FindObjectOfType<GameManager>();
+                gameManager = UnityEngine.GameObject.FindAnyObjectByType<GameManager>();
             }
 
             var gameItems = gameManager.Items.GetItems();
@@ -156,7 +156,7 @@ namespace RavenNest.SDK
             {
                 NextOnFerry = false;
 
-                var ferry = UnityEngine.GameObject.FindObjectOfType<FerryController>();
+                var ferry = UnityEngine.GameObject.FindAnyObjectByType<FerryController>();
                 var ferryPosition = ferry.GetNextPlayerPoint().position;
                 return new CharacterState
                 {

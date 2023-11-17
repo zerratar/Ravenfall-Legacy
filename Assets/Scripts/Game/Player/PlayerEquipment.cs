@@ -50,8 +50,8 @@ public class PlayerEquipment : MonoBehaviour
 
     private void Awake()
     {
-        gameManager = FindObjectOfType<GameManager>();
-        itemManager = gameManager?.Items ?? FindObjectOfType<ItemManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
+        itemManager = gameManager?.Items ?? FindAnyObjectByType<ItemManager>();
         equippedObjects = new List<ItemController>();
         appearance = GetComponent<SyntyPlayerAppearance>();
         player = GetComponent<PlayerController>();

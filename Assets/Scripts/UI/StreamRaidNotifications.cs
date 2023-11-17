@@ -19,7 +19,7 @@ public class StreamRaidNotifications : MonoBehaviour
 
     private void Start()
     {
-        if (!logoManager) logoManager = FindObjectOfType<PlayerLogoManager>();
+        if (!logoManager) logoManager = FindAnyObjectByType<PlayerLogoManager>();
         if (!audioSource) audioSource = GetComponent<AudioSource>();
         audioSource.volume = PlayerPrefs.GetFloat("RaidHornVolume", 1f);
         HideRaidInfo();

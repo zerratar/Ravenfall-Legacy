@@ -34,7 +34,7 @@ public class NameTag : MonoBehaviour
     {
         if (!label) label = GetComponentInChildren<TextMeshProUGUI>();
         if (!logo) logo = GetComponentInChildren<Image>();
-        gameManager = FindObjectOfType<GameManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
         originalFontSize = label.fontSize;
 
         // if graphics are disabled, main camera does not exist.

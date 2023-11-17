@@ -11,7 +11,7 @@ public class TeleportHandler : MonoBehaviour
 
     public void Start()
     {
-        if (!islandManager) islandManager = FindObjectOfType<IslandManager>();
+        if (!islandManager) islandManager = FindAnyObjectByType<IslandManager>();
         if (!player) player = GetComponent<PlayerController>();
     }
 

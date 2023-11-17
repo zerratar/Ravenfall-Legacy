@@ -20,7 +20,7 @@ public class StreamLabels
 
     public StreamLabel Register<T>(string name, Func<T> model)
     {
-        return labels[name] = new StreamLabel(gameSettings, name, ".json", 
+        return labels[name] = new StreamLabel(gameSettings, name, ".json",
             () => Newtonsoft.Json.JsonConvert.SerializeObject(model()));
     }
 
@@ -41,12 +41,14 @@ public class StreamLabels
 public class StreamLabel
 {
     private readonly Func<string> valueGenerator;
+    private readonly string extension;
     private readonly string fileName;
     private string lastSavedValue;
 
     public StreamLabel(GameSettings settings, string name, string extension, Func<string> valueGenerator)
     {
         this.valueGenerator = valueGenerator;
+        this.extension = extension;
         var folder = settings.StreamLabelsFolder;
         folder = Shinobytes.IO.Path.Combine(folder, extension.Substring(1));
         this.fileName = Shinobytes.IO.Path.Combine(folder, name + extension);
@@ -55,6 +57,11 @@ public class StreamLabel
     }
     public void Update()
     {
+        var streamLabels = PlayerSettings.Instance.StreamLabels;
+        if (!streamLabels.Enabled) return;
+        if (!streamLabels.SaveTextFiles && extension == ".txt") return;
+        if (!streamLabels.SaveJsonFiles && extension == ".json") return;
+
         Value = valueGenerator();
         SaveGameStat();
     }

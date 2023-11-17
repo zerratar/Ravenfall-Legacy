@@ -34,8 +34,8 @@ public class TownHouseSlot : MonoBehaviour
     void Start()
     {
         if (!mud) mud = transform.Find("Mud").gameObject;
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
-        if (!playerManager) playerManager = FindObjectOfType<PlayerManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        if (!playerManager) playerManager = FindAnyObjectByType<PlayerManager>();
         if (!meshRenderer) meshRenderer = GetComponentInChildren<MeshRenderer>();
     }
 
@@ -137,7 +137,7 @@ public class TownHouseSlot : MonoBehaviour
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("TownHouseSlot.UpdateExpBonus: " + exc);
         }
     }
 

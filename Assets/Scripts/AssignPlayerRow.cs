@@ -15,7 +15,7 @@ public class AssignPlayerRow : MonoBehaviour
 
     private void Start()
     {
-        if (!playerAssignDialog) playerAssignDialog = FindObjectOfType<TownHousePlayerAssignDialog>();
+        if (!playerAssignDialog) playerAssignDialog = FindAnyObjectByType<TownHousePlayerAssignDialog>();
     }
 
     public void SetPlayer(PlayerController player, bool isHouseOwner, TownHouseController dialogHouse)

@@ -17,7 +17,7 @@ public class PlayerListItem : MonoBehaviour
     [SerializeField] private Text lblExpPerHour;
     [SerializeField] private Text lblPlayerName;
 
-    private readonly static string[] skillNames = { "Atk", "Def", "Str", "All", "Woo", "Fis", "Min", "Cra", "Coo", "Far", "Slay", "Mag", "Ran", "Sail", "Heal", "Gat", "Alc"};
+    private readonly static string[] skillNames = { "Atk", "Def", "Str", "All", "Woo", "Fis", "Min", "Cra", "Coo", "Far", "Slay", "Mag", "Ran", "Sail", "Heal", "Gat", "Alc" };
 
     private RectTransform rectTransform;
     private bool isRotatingSkill = false;
@@ -128,7 +128,7 @@ public class PlayerListItem : MonoBehaviour
             }
             catch (System.Exception exc)
             {
-                Shinobytes.Debug.LogError(exc.ToString());
+                Shinobytes.Debug.LogError("PlayerListItem.UpdateLabels: " + exc.ToString());
             }
         }
 

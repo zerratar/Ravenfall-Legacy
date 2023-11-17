@@ -16,7 +16,7 @@ public class ScreamingLady : MonoBehaviour
     void Start()
     {
         if (!animator) animator = GetComponent<Animator>();
-        if (!gameCamera) gameCamera = FindObjectOfType<GameCamera>();
+        if (!gameCamera) gameCamera = FindAnyObjectByType<GameCamera>();
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
     }
 

@@ -30,10 +30,10 @@ namespace Assets.Scripts
         // Start is called before the first frame update
         void Start()
         {
-            if (!gameManager) gameManager = FindObjectOfType<GameManager>();
-            if (!info) info = FindObjectOfType<TownHallInfoManager>();
-            if (!townHallManager) townHallManager = FindObjectOfType<TownHallManager>();
-            if (!townHouseManager) townHouseManager = FindObjectOfType<TownHouseManager>();
+            if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+            if (!info) info = FindAnyObjectByType<TownHallInfoManager>();
+            if (!townHallManager) townHallManager = FindAnyObjectByType<TownHallManager>();
+            if (!townHouseManager) townHouseManager = FindAnyObjectByType<TownHouseManager>();
 
             //if (!gameManager) return;
             //gameManager.SetLoadingState("village", state);

@@ -8,11 +8,16 @@ namespace RavenfallDataPipe
     {
         public IReadOnlyList<string> ColumnNames { get; set; }
         public string Name { get; set; }
-
+        public bool IsSingleRow { get; private set; }
         public abstract void LoadRows();
         public abstract int GetRowCount();
         public abstract SqlPipeDataContextRowColumn GetColumn(string name);
         public abstract SqlPipeDataContextRow GetRow(int index);
+
+        public void HasOnlyOneRow()
+        {
+            IsSingleRow = true;
+        }
     }
 
 
@@ -30,7 +35,7 @@ namespace RavenfallDataPipe
             Columns = columns;
             ColumnNames = columns.Select(x => x.Name).ToList();
             primaryKeyColumn = this.Columns.FirstOrDefault(x => x.IsPrimaryKey);
-            Invalidate();
+            //Invalidate();
         }
 
         /// <summary>
@@ -59,7 +64,7 @@ namespace RavenfallDataPipe
                 foreach (var s in source)
                 {
                     var row = new SqlPipeDataContextRow<T>(s, Columns);
-                    var key = row.GetPrimaryKey();
+                    var key = IsSingleRow ? "n/a" : row.GetPrimaryKey();
                     rows[key] = row;
                 }
             }
@@ -73,7 +78,7 @@ namespace RavenfallDataPipe
                 {
                     if (hasPrimaryKey)
                     {
-                        var key = primaryKeyColumn.GetValue(s)?.ToString();
+                        var key = IsSingleRow ? "n/a" : primaryKeyColumn.GetValue(s)?.ToString();
                         if (rows.ContainsKey(key))
                         {
                             keepers.Add(key);
@@ -86,7 +91,7 @@ namespace RavenfallDataPipe
                     else
                     {
                         var row = new SqlPipeDataContextRow<T>(s, Columns);
-                        rows[row.GetPrimaryKey()] = row;
+                        rows[IsSingleRow ? "n/a" : row.GetPrimaryKey()] = row;
                     }
                 }
 
@@ -117,5 +122,4 @@ namespace RavenfallDataPipe
             return Rows[index];
         }
     }
-
 }

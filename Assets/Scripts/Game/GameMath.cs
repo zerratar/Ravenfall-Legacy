@@ -443,16 +443,16 @@ public static class GameMath
     public static class Exp
     {
         // Old Values
-        public static double EasyLevel = 70;
-        public static double IncrementMins = 14;
-        public static double EasyLevelIncrementDivider = 8;
-        public static double GlobalMultiplierFactor = 1.0;
+        //public static double EasyLevel = 70;
+        //public static double IncrementMins = 14;
+        //public static double EasyLevelIncrementDivider = 8;
+        //public static double GlobalMultiplierFactor = 1.0;
 
         // New Values, change to these in next update.
-        //public static double EasyLevel = 700;
-        //public static double IncrementMins = 5;
-        //public static double EasyLevelIncrementDivider = 12.5;
-        //public static double GlobalMultiplierFactor = 0.05;
+        public static double EasyLevel = 700;
+        public static double IncrementMins = 5;
+        public static double EasyLevelIncrementDivider = 12.5;
+        public static double GlobalMultiplierFactor = 0.05;
 
         public static double IncrementHours = IncrementMins / 60.0;
         public static double IncrementDays = IncrementHours / 24.0;

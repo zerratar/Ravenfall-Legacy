@@ -87,14 +87,14 @@ public class EnemyController : MonoBehaviour, IAttackable
     [Button("Assign Dependencies")]
     public void AssignDependencies()
     {
-        if (!this.game) this.game = FindObjectOfType<GameManager>();
-        if (!damageCounterManager) damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
-        if (!healthBarManager) healthBarManager = GameObject.FindObjectOfType<HealthBarManager>();
+        if (!this.game) this.game = FindAnyObjectByType<GameManager>();
+        if (!damageCounterManager) damageCounterManager = GameObject.FindAnyObjectByType<DamageCounterManager>();
+        if (!healthBarManager) healthBarManager = GameObject.FindAnyObjectByType<HealthBarManager>();
         if (!movement) movement = GetComponent<EnemyMovementController>();
 
         if (!this.Island)
         {
-            var im = GameObject.FindObjectOfType<IslandManager>();
+            var im = GameObject.FindAnyObjectByType<IslandManager>();
             this.Island = im.FindIsland(this.transform.position);
         }
     }
@@ -303,7 +303,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
 
         if (!this.game)
-            this.game = FindObjectOfType<GameManager>();
+            this.game = FindAnyObjectByType<GameManager>();
 
         this.IsDungeonBoss = !!this.dungeonBossController;
         this.IsRaidBoss = !!raidBossController;
@@ -314,8 +314,8 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
 
         //if (!wander) wander = this.GetComponent<WanderScript>();                
-        if (!damageCounterManager) damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
-        if (!healthBarManager) healthBarManager = GameObject.FindObjectOfType<HealthBarManager>();
+        if (!damageCounterManager) damageCounterManager = GameObject.FindAnyObjectByType<DamageCounterManager>();
+        if (!healthBarManager) healthBarManager = GameObject.FindAnyObjectByType<HealthBarManager>();
         if (!movement) movement = GetComponent<EnemyMovementController>();
 
         PositionInternal = this.transform.position;
@@ -607,7 +607,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             }
 
             if (!damageCounterManager)
-                damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
+                damageCounterManager = GameObject.FindAnyObjectByType<DamageCounterManager>();
 
             InCombat = true;
 
@@ -692,7 +692,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             }
 
             if (!damageCounterManager)
-                damageCounterManager = GameObject.FindObjectOfType<DamageCounterManager>();
+                damageCounterManager = GameObject.FindAnyObjectByType<DamageCounterManager>();
 
             InCombat = true;
 

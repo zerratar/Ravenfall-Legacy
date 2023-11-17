@@ -100,7 +100,7 @@ namespace Assets.Scripts.Editor
         //[MenuItem("Ravenfall/Tools/Scripts/Select Missing Scripts")]
         //static void SelectMissing(MenuCommand command)
         //{
-        //    Transform[] ts = GameObject.FindObjectsOfType<Transform>();
+        //    Transform[] ts = GameObject.FindObjectsByType<Transform>(FindObjectsSortMode.None);
         //    List<GameObject> selection = new List<GameObject>();
         //    foreach (Transform t in ts)
         //    {

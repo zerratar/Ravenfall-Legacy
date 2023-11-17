@@ -30,8 +30,8 @@ public class TownHouseManager : MonoBehaviour
 
     void Start()
     {
-        if (!info) info = FindObjectOfType<TownHallInfoManager>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!info) info = FindAnyObjectByType<TownHallInfoManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         slots = GetComponentsInChildren<TownHouseSlot>();
         SetSlotCount(0);
     }
@@ -232,7 +232,7 @@ public class TownHouseManager : MonoBehaviour
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("TownHouseManager.SetHouseType: " + exc);
         }
     }
 

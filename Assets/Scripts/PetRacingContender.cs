@@ -7,7 +7,7 @@ public class PetRacingContender : MonoBehaviour
 
     public void Start()
     {
-        if (!nameTagManager) nameTagManager = FindObjectOfType<NameTagManager>();
+        if (!nameTagManager) nameTagManager = FindAnyObjectByType<NameTagManager>();
         this.nameTag = nameTagManager.Add(this.transform);
         this.nameTag.Scale = 0.1f;
         this.transform.rotation = Quaternion.Euler(0, 180, 0);

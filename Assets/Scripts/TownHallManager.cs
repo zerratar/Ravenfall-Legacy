@@ -20,7 +20,7 @@ public class TownHallManager : MonoBehaviour
 
     void Start()
     {
-        if (!info) info = FindObjectOfType<TownHallInfoManager>();
+        if (!info) info = FindAnyObjectByType<TownHallInfoManager>();
 
         if (townHallBuildings == null || townHallBuildings.Length == 0)
             townHallBuildings = GetComponentsInChildren<TownHallController>();

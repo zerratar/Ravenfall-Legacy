@@ -37,7 +37,7 @@ public class ItemDropEvent : ChatBotCommandHandler<string>
             return;
         }
 
-        var dropEventManager = GameObject.FindObjectOfType<DropEventManager>();
+        var dropEventManager = GameObject.FindAnyObjectByType<DropEventManager>();
         if (dropEventManager)
         {
             var itemCount = Game.Players.GetPlayerCount() * 2;

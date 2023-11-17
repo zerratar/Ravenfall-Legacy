@@ -22,7 +22,7 @@ public class ChunkManager : MonoBehaviour
 
     public void Init(bool forceReInit = false)
     {
-        if (!islandManager) islandManager = FindObjectOfType<IslandManager>();
+        if (!islandManager) islandManager = FindAnyObjectByType<IslandManager>();
         if (forceReInit || chunks == null || chunks.Length == 0)
         {
             chunks = GameObject.FindGameObjectsWithTag("WorldChunk")

@@ -43,7 +43,7 @@ public class JsonBasedItemRepository
             }
             catch (System.Exception exc)
             {
-                Shinobytes.Debug.LogError(exc);
+                Shinobytes.Debug.LogError("JsonBasedItemRepository.Load: " + exc);
             }
         }
     }

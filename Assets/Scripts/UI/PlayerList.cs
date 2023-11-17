@@ -84,7 +84,7 @@ public class PlayerList : MonoBehaviour
     void Start()
     {
         EnsureRectTransform();
-        gameCamera = GameObject.FindObjectOfType<GameCamera>();
+        gameCamera = GameObject.FindAnyObjectByType<GameCamera>();
         startPos = rectTransform.anchoredPosition.y;
     }
 

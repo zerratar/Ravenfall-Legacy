@@ -38,7 +38,7 @@ namespace SqlParser.Ast
 	    Divide,
 	    // Modulo %
 	    Modulo,
-	    // String concat ||
+	    // string concat ||
 	    StringConcat,
 	    // Greater than >
 	    Gt,

@@ -16,7 +16,7 @@ public class TownHouseButton : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (!dialog) dialog = FindObjectOfType<TownHouseSelectionDialog>();
+        if (!dialog) dialog = FindAnyObjectByType<TownHouseSelectionDialog>();
     }
 
     public void SetBuilding(TownHouse house, RenderTexture renderTexture)

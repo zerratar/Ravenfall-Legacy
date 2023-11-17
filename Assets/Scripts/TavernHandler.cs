@@ -43,8 +43,8 @@ public class TavernHandler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        dayNightCycle = FindObjectOfType<DayNightCycle>();
-        if (!gameCamera) gameCamera = FindObjectOfType<GameCamera>();
+        dayNightCycle = FindAnyObjectByType<DayNightCycle>();
+        if (!gameCamera) gameCamera = FindAnyObjectByType<GameCamera>();
         fadeToBlack.FadeHalfWay = OnFadeHalfway;
 
         tavern.SetActive(false);

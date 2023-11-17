@@ -245,7 +245,7 @@ namespace SqlParser.Ast
     /// <param name="Tag">Tag value</param>
     public class DollarQuotedStringValue : IWriteSql
     {
-        public DollarQuotedStringValue(string Value, string? Tag = null)
+        public DollarQuotedStringValue(string Value, string Tag = null)
         {
             this.Value = Value;
             this.Tag = Tag;

@@ -59,7 +59,7 @@ public class ItemRepository : MonoBehaviour
 
         if (renderCameras == null || renderCameras.Length == 0)
         {
-            renderCameras = FindObjectsOfType<ItemRenderer>();
+            renderCameras = FindObjectsByType<ItemRenderer>(FindObjectsSortMode.None);
         }
 
         //RenameKnownItems("C:\\Item Icons\\");

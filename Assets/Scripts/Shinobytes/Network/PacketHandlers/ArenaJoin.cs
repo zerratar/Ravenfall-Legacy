@@ -96,7 +96,7 @@ public class ArenaJoin : ChatBotCommandHandler<Empty>
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("ArenaJoin.Handle: " + exc);
         }
     }
 }

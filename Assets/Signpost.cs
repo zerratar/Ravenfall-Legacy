@@ -18,7 +18,7 @@ public class Signpost : MonoBehaviour
     }
     public void FindIsland()
     {
-        var islands = FindObjectsOfType<IslandController>();
+        var islands = FindObjectsByType<IslandController>(FindObjectsSortMode.None);
         foreach (var island in islands)
         {
             island.Awake();
@@ -73,7 +73,7 @@ public class Signpost : MonoBehaviour
         if (!Label) Label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
         if (!Label) return;
 
-        var chunkManager = FindObjectOfType<ChunkManager>();
+        var chunkManager = FindAnyObjectByType<ChunkManager>();
 
         chunkManager.Init(true);
 

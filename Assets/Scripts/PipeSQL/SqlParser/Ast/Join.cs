@@ -14,12 +14,12 @@ namespace SqlParser.Ast
 	
 	    public void ToSql(SqlTextWriter writer)
 	    {
-	        string? Prefix(JoinConstraint constraint)
+	        string Prefix(JoinConstraint constraint)
 	        {
 	            return constraint is JoinConstraint.Natural ? "NATURAL " : null;
 	        }
 	
-	        string? Suffix(JoinConstraint constraint)
+	        string Suffix(JoinConstraint constraint)
 	        {
 	            if (constraint is JoinConstraint.On on)
 	            {

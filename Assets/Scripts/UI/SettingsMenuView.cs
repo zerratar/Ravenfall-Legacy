@@ -97,7 +97,7 @@ public class SettingsMenuView : MenuView
 
     private void Awake()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
         UpdateSettingsUI();
         ShowSoundSettings();

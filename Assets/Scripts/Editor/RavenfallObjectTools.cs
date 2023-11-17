@@ -134,7 +134,7 @@ public class RavenfallObjectTools
     //        temp = new GameObject(tmpNavObj);
     //    }
 
-    //    var docks = GameObject.FindObjectsOfType<DockController>();
+    //    var docks = GameObject.FindObjectsByType<DockController>(FindObjectsSortMode.None);
     //    foreach (var dock in docks)
     //    {
     //        var colliders = dock.transform.GetComponentsInChildren<BoxCollider>();
@@ -176,7 +176,7 @@ public class RavenfallObjectTools
     //[MenuItem("Ravenfall/Navigation/Generate NavMesh (A*)", priority = 0)]
     //public static void GenerateNavMesh()
     //{
-    //    var astar = GameObject.FindObjectOfType<AstarPath>();
+    //    var astar = GameObject.FindAnyObjectByType<AstarPath>();
     //    if (!astar)
     //    {
     //        return;
@@ -212,7 +212,7 @@ public class RavenfallObjectTools
     //            return;
     //        }
 
-    //        var docks = GameObject.FindObjectsOfType<DockController>();
+    //        var docks = GameObject.FindObjectsByType<DockController>(FindObjectsSortMode.None);
     //        foreach (var dock in docks)
     //        {
     //            var colliders = dock.transform.GetComponentsInChildren<BoxCollider>(true);

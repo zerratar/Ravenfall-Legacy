@@ -11,7 +11,7 @@ public class RavenBotConnectionUI : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (!game) game = FindObjectOfType<GameManager>();
+        if (!game) game = FindAnyObjectByType<GameManager>();
     }
 
     // Update is called once per frame

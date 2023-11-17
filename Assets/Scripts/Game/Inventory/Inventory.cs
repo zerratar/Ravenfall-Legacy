@@ -98,7 +98,7 @@ public class Inventory : MonoBehaviour
 
     private void Awake()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         player = GetComponent<PlayerController>();
         equipment = GetComponent<PlayerEquipment>();
     }
@@ -435,9 +435,13 @@ public class Inventory : MonoBehaviour
 
     public GameInventoryItem AddOrSetInventoryItem(RavenNest.Models.InventoryItem item)
     {
+        if (item == null) return null;
+
         lock (mutex)
         {
-            var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == item.Id);
+            // we have a code smell somewhere, somewhere in our code we add an item to a player
+            // but we don't properly set the InventoryItem property. Is this on enchant? gift? add? when?
+            var existing = backpack.FirstOrDefault(x => x.InventoryItem != null && x.InventoryItem.Id == item.Id);
             if (existing != null)
             {
                 existing.InventoryItem.Amount = item.Amount;
@@ -452,7 +456,7 @@ public class Inventory : MonoBehaviour
     {
         lock (mutex)
         {
-            var existing = backpack.FirstOrDefault(x => x.InventoryItem.Id == item.Id);
+            var existing = backpack.FirstOrDefault(x => x.InventoryItem != null && x.InventoryItem.Id == item.Id);
             if (existing != null)
             {
                 if (item.Soulbound || !string.IsNullOrEmpty(item.Enchantment) || item.TransmogrificationId != null)
@@ -595,12 +599,22 @@ public class Inventory : MonoBehaviour
                 lastAddedItem = existing;
                 return existing;
             }
+
+            var result = new GameInventoryItem(this.player, new InventoryItem
+            {
+                Id = inventoryItemId,
+                Amount = (long)amount,
+                ItemId = item.Id,
+            }, item);
+
+            backpack.Add(result);
+
+            lastAddedItem = result;
+
+            return result;
         }
-        var i = AddToBackpack(item, amount);
-        i.InstanceId = inventoryItemId;
-        i.InventoryItem.Id = inventoryItemId;
-        return i;
     }
+
     public GameInventoryItem AddToBackpack(RavenNest.Models.Item item, double amount = 1)
     {
         if (item == null)

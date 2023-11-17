@@ -305,9 +305,9 @@ namespace SqlParser
             var forColumns = false;
             var cacheMetadata = false;
             var noScan = false;
-            Sequence<SqlExpression>? partitions = null;
+            Sequence<SqlExpression> partitions = null;
             var computeStatistics = false;
-            Sequence<Ident>? columns = null;
+            Sequence<Ident> columns = null;
 
             var loop = true;
             while (loop)
@@ -1141,8 +1141,8 @@ namespace SqlParser
         public WindowFrame ParseWindowFrame()
         {
             var units = ParseWindowFrameUnits();
-            WindowFrameBound? startBound;
-            WindowFrameBound? endBound = null;
+            WindowFrameBound startBound;
+            WindowFrameBound endBound = null;
 
             if (ParseKeyword(Keyword.BETWEEN))
             {
@@ -1169,7 +1169,7 @@ namespace SqlParser
                 return new WindowFrameBound.CurrentRow();
             }
 
-            SqlExpression? rows;
+            SqlExpression rows;
             if (ParseKeyword(Keyword.UNBOUNDED))
             {
                 rows = null;
@@ -1394,7 +1394,7 @@ namespace SqlParser
 
             var token = NextToken();
 
-            Sequence<string?>? pgOptions = null;
+            Sequence<string> pgOptions = null;
 
             #region Binary operator
             var regularBinaryOperator = token switch
@@ -1609,7 +1609,7 @@ namespace SqlParser
             {
                 pgOptions = ExpectParens(() =>
                 {
-                    var values = new Sequence<string?>();
+                    var values = new Sequence<string>();
 
                     while (true)
                     {
@@ -2302,7 +2302,7 @@ namespace SqlParser
         public Cache ParseCacheTable()
         {
             ObjectName? tableFlag = null;
-            Sequence<SqlOption>? options = null;
+            Sequence<SqlOption> options = null;
             var hasAs = false;
             Statement.Select? query = null;
 
@@ -2477,8 +2477,8 @@ namespace SqlParser
         {
             var ifNotExists = ParseIfNotExists();
             var dbName = ParseObjectName();
-            string? location = null;
-            string? managedLocation = null;
+            string location = null;
+            string managedLocation = null;
 
             while (true)
             {
@@ -2551,7 +2551,7 @@ namespace SqlParser
 
                 var args = ExpectParens(() =>
                 {
-                    Sequence<OperateFunctionArg>? fnArgs = null;
+                    Sequence<OperateFunctionArg> fnArgs = null;
                     if (ConsumeToken<RightParen>())
                     {
                         PrevToken();
@@ -2801,11 +2801,11 @@ namespace SqlParser
             bool? replication = null;
             SqlExpression? connectionLimit = null;
             SqlExpression? validUntil = null;
-            Sequence<Ident>? inRole = null;
-            Sequence<Ident>? inGroup = null;
-            Sequence<Ident>? role = null;
-            Sequence<Ident>? user = null;
-            Sequence<Ident>? admin = null;
+            Sequence<Ident> inRole = null;
+            Sequence<Ident> inGroup = null;
+            Sequence<Ident> role = null;
+            Sequence<Ident> user = null;
+            Sequence<Ident> admin = null;
 
             Keyword keyword;
             var loop = true;
@@ -3014,7 +3014,7 @@ namespace SqlParser
             DropFunctionDesc ParseDropFunctionDesc()
             {
                 var name = ParseObjectName();
-                Sequence<OperateFunctionArg>? args = null;
+                Sequence<OperateFunctionArg> args = null;
 
                 if (ConsumeToken<LeftParen>())
                 {
@@ -3234,7 +3234,7 @@ namespace SqlParser
             var tableName = ParseObjectName();
 
             // Clickhouse has `ON CLUSTER 'cluster'` syntax for DDLs
-            string? onCluster = null;
+            string onCluster = null;
             if (ParseKeywordSequence(Keyword.ON, Keyword.CLUSTER))
             {
                 var token = NextToken();
@@ -3405,7 +3405,7 @@ namespace SqlParser
             var name = ParseIdentifier();
             var dataType = ParseDataType();
             var collation = ParseInit(ParseKeyword(Keyword.COLLATE), ParseObjectName);
-            Sequence<ColumnOptionDef>? options = null;
+            Sequence<ColumnOptionDef> options = null;
 
             while (true)
             {
@@ -4008,7 +4008,7 @@ namespace SqlParser
                 new CopyTarget.File(ParseLiteralString());
 
             ParseKeyword(Keyword.WITH);
-            Sequence<CopyOption>? options = null;
+            Sequence<CopyOption> options = null;
             if (ConsumeToken<LeftParen>())
             {
                 options = ParseCommaSeparated(ParseCopyOption);
@@ -4021,7 +4021,7 @@ namespace SqlParser
                 legacyOptions.Add(opt);
             }
 
-            Sequence<string?>? values = null;
+            Sequence<string> values = null;
             if (target is CopyTarget.Stdin)
             {
                 ExpectToken<SemiColon>();
@@ -4167,9 +4167,9 @@ namespace SqlParser
             return s[0];
         }
 
-        public Sequence<string?> ParseTabValue()
+        public Sequence<string> ParseTabValue()
         {
-            var values = new Sequence<string?>();
+            var values = new Sequence<string>();
             var content = StringBuilderPool.Get();
 
             while (NextTokenNoSkip() is { } token)
@@ -4892,7 +4892,7 @@ namespace SqlParser
             return new ExactNumberInfo.None();
         }
 
-        public Sequence<string>? ParseOptionalTypeModifiers()
+        public Sequence<string> ParseOptionalTypeModifiers()
         {
             if (!ConsumeToken<LeftParen>())
             {
@@ -5055,13 +5055,13 @@ namespace SqlParser
             SqlExpression? limit = null;
             Offset? offset = null;
             Ast.Fetch? fetch = null;
-            Sequence<LockClause>? locks = null;
+            Sequence<LockClause> locks = null;
 
             if (!ParseKeyword(Keyword.INSERT))
             {
                 var body = ParseQueryBody(0);
 
-                Sequence<OrderByExpression>? orderBy = null;
+                Sequence<OrderByExpression> orderBy = null;
                 if (ParseKeywordSequence(Keyword.ORDER, Keyword.BY))
                 {
                     orderBy = ParseCommaSeparated(ParseOrderByExpr);
@@ -5325,7 +5325,7 @@ namespace SqlParser
 
             var from = ParseInit(ParseKeyword(Keyword.FROM), () => ParseCommaSeparated(ParseTableAndJoins));
 
-            Sequence<LateralView>? lateralViews = null;
+            Sequence<LateralView> lateralViews = null;
             while (true)
             {
                 if (ParseKeywordSequence(Keyword.LATERAL, Keyword.VIEW))
@@ -5387,11 +5387,11 @@ namespace SqlParser
             var token2 = NextToken();
             var token3 = NextToken();
 
-            string? tableName;
+            string tableName;
 
             if (token2 is Period)
             {
-                string? schemaName;
+                string schemaName;
                 if (token1 is Word schema)
                 {
                     schemaName = schema.Value;
@@ -5641,7 +5641,7 @@ namespace SqlParser
             // Note that for keywords to be properly handled here, they need to be
             // added to `RESERVED_FOR_TABLE_ALIAS`, otherwise they may be parsed as
             // a table alias.
-            Sequence<Join>? joins = null;
+            Sequence<Join> joins = null;
 
             while (true)
             {
@@ -5932,7 +5932,7 @@ namespace SqlParser
                 return ParsePivotTableFactor(name, optionalAlias);
             }
 
-            Sequence<SqlExpression>? withHints = null;
+            Sequence<SqlExpression> withHints = null;
             if (ParseKeyword(Keyword.WITH))
             {
                 if (ConsumeToken<LeftParen>())
@@ -6101,7 +6101,7 @@ namespace SqlParser
             return (privileges, grantObjects);
         }
 
-        public (Keyword, Sequence<Ident>?) ParseGrantPermission()
+        public (Keyword, Sequence<Ident>) ParseGrantPermission()
         {
             var keyword = ParseOneOfKeywords(
                 Keyword.CONNECT,
@@ -6117,7 +6117,7 @@ namespace SqlParser
                 Keyword.UPDATE,
                 Keyword.USAGE);
 
-            Sequence<Ident>? columns = null;
+            Sequence<Ident> columns = null;
             switch (keyword)
             {
                 case Keyword.INSERT or Keyword.REFERENCES or Keyword.SELECT or Keyword.UPDATE:
@@ -6636,7 +6636,7 @@ namespace SqlParser
             return new StartTransaction(ParseTransactionModes());
         }
 
-        public Sequence<TransactionMode>? ParseTransactionModes()
+        public Sequence<TransactionMode> ParseTransactionModes()
         {
             var modes = new Sequence<TransactionMode>();
             var required = false;
@@ -6702,7 +6702,7 @@ namespace SqlParser
         public Execute ParseExecute()
         {
             var name = ParseIdentifier();
-            Sequence<SqlExpression>? parameters = null;
+            Sequence<SqlExpression> parameters = null;
             if (ConsumeToken<LeftParen>())
             {
                 parameters = ParseCommaSeparated(ParseExpr);

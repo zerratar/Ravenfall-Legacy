@@ -21,8 +21,6 @@ public class DungeonHandler
     public FerryState Ferry;
 
     private bool wasResting;
-    private float autoJoinRequestTimeout;
-
     public bool AutoJoining;
 
     private PlayerController player;
@@ -37,7 +35,7 @@ public class DungeonHandler
     //private void Start()
     //{
     //    if (!player) player = GetComponent<PlayerController>();
-    //    if (!dungeon) dungeon = FindObjectOfType<DungeonManager>();
+    //    if (!dungeon) dungeon = FindAnyObjectByType<DungeonManager>();
     //}
 
     public DungeonHandler(PlayerController player, DungeonManager dungeon)
@@ -51,25 +49,6 @@ public class DungeonHandler
         if (!Overlay.IsGame)
         {
             return;
-        }
-
-        if (AutoJoining)
-        {
-            return;
-        }
-
-        if (!InDungeon && !dungeon.Started)
-        {
-            if (AutoJoinCounter > 0)
-            {
-                // try join the dungeon if possible, and dont auto join if server is not responding.
-                AutoJoining = true;
-                RequestAutoJoinAsync();
-            }
-            else
-            {
-                return;
-            }
         }
 
         if (waitForDungeon > 0f)
@@ -89,8 +68,6 @@ public class DungeonHandler
             return;
         }
 
-        AutoJoining = false;
-
         if (player.TrainingHealing)
         {
             if (!healTarget || healTarget.Stats.IsDead || healTarget.Id == player.Id || !healTarget.Dungeon.InDungeon)
@@ -98,7 +75,7 @@ public class DungeonHandler
 
             if (!healTarget || healTarget == null || healTarget.Id == player.Id || healTarget.TrainingHealing || healTarget.Stats.HealthPercent > 0.9 || !healTarget.Dungeon.InDungeon)
             {
-                var players = dungeon.GetAlivePlayers();//GetPlayers();
+                var players = dungeon.GetAlivePlayers();
                 var healthDif = 100f;
                 var healthSmol = int.MaxValue;
                 for (var i = 0; i < players.Count; ++i)
@@ -169,65 +146,6 @@ public class DungeonHandler
             return;
 
         AttackTarget();
-    }
-
-    private async void RequestAutoJoinAsync()
-    {
-        if (AutoJoining)
-        {
-            return;
-        }
-
-        try
-        {
-            if (autoJoinRequestTimeout > 0)
-            {
-                autoJoinRequestTimeout -= Time.deltaTime;
-                return;
-            }
-
-            if (AutoJoinCounter == 0 || player.GameManager.Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin)
-                return;
-
-            var result = await player.GameManager.RavenNest.Players.AutoJoinDungeon(player.Id);
-            if (result)
-            {
-                player.GameManager.Dungeons.Join(player);
-                if (AutoJoinCounter != int.MaxValue)
-                {
-                    AutoJoinCounter--;
-                }
-
-                player.GameManager.OnPlayerAutoJoinedDungeon(player);
-
-                //if (AutoJoinCounter > 0 && AutoJoinCounter != int.MaxValue)
-                //{
-                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the dungeon. You will join {autoJoinLeft} more.", AutoJoinCounter);
-                //}
-                //else if (AutoJoinCounter == int.MaxValue)
-                //{
-                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the dungeon.");
-                //}
-                //else
-                //{
-                //    player.GameManager.RavenBot.SendReply(player, "You've automatically joined the dungeon. You will no longer automatically join any dungeon.");
-                //}
-            }
-            else
-            {
-                AutoJoinCounter = 0;
-                player.GameManager.RavenBot.SendReply(player, "You've failed to automatically joined the Dungeon. You either do not have enough coins or server did not respond.");
-            }
-        }
-        catch
-        {
-            // do not cancel auto-join but we don't want to retry again too quickly asking the server. Set a cooldown
-            autoJoinRequestTimeout = 2f;
-        }
-        finally
-        {
-            AutoJoining = false;
-        }
     }
 
     public void OnEnter()

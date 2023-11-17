@@ -6,11 +6,11 @@
     /// </summary>
     public class StageParams : IWriteSql
     {
-        public string? Url { get; set; }
-        public string? Endpoint { get; set; }
-        public string? StorageIntegration { get; set; }
-        public Sequence<DataLoadingOption>? Credentials { get; set; }
-        public Sequence<DataLoadingOption>? Encryption { get; set; }
+        public string Url { get; set; }
+        public string Endpoint { get; set; }
+        public string StorageIntegration { get; set; }
+        public Sequence<DataLoadingOption> Credentials { get; set; }
+        public Sequence<DataLoadingOption> Encryption { get; set; }
 
         public void ToSql(SqlTextWriter writer)
         {

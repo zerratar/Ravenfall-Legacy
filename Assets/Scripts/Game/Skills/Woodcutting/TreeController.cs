@@ -102,7 +102,7 @@ public class TreeController : MonoBehaviour
         }
         catch (System.Exception exception)
         {
-            Shinobytes.Debug.LogError(exception.ToString());
+            Shinobytes.Debug.LogError("TreeController.ActivateRandomTree: " + exception.ToString());
         }
     }
 
@@ -188,7 +188,7 @@ public class TreeController : MonoBehaviour
             {
                 if (!stumpObject)
                 {
-                    var otherTrees = GameObject.FindObjectsOfType<TreeController>();
+                    var otherTrees = GameObject.FindObjectsByType<TreeController>(FindObjectsSortMode.None);
                     foreach (var t in otherTrees)
                     {
                         if (t.stump)

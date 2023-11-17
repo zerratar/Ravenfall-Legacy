@@ -202,14 +202,14 @@
         /// </summary>
         public class AtTimeZone : SqlExpression
         {
-            public AtTimeZone(SqlExpression Timestamp, string? TimeZone)
+            public AtTimeZone(SqlExpression Timestamp, string TimeZone)
             {
                 this.Timestamp = Timestamp;
                 this.TimeZone = TimeZone;
             }
 
             public SqlExpression Timestamp { get; set; }
-            public string? TimeZone { get; set; }
+            public string TimeZone { get; set; }
 
             public override void ToSql(SqlTextWriter writer)
             {

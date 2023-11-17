@@ -39,7 +39,7 @@ public class Chunk : MonoBehaviour
     {
         //var arena = GetComponentInChildren<ArenaController>();
         if (started) return;
-        if (!Game) Game = FindObjectOfType<GameManager>();
+        if (!Game) Game = FindAnyObjectByType<GameManager>();
         Island = GetComponentInParent<IslandController>();
 
         enemies = gameObject.GetComponentsInChildren<EnemyController>();

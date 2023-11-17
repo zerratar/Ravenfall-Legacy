@@ -16,7 +16,7 @@ public class RunestoneEvent : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (!camera) camera = FindObjectOfType<GameCamera>();
+        if (!camera) camera = FindAnyObjectByType<GameCamera>();
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
         if (!eventText) eventText = GetComponentInChildren<TMPro.TextMeshPro>();
 

@@ -27,7 +27,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
 
     private void Start()
     {
-        if (!streamRaidNotifications) streamRaidNotifications = FindObjectOfType<StreamRaidNotifications>();
+        if (!streamRaidNotifications) streamRaidNotifications = FindAnyObjectByType<StreamRaidNotifications>();
         gameManager = GetComponent<GameManager>();
     }
 

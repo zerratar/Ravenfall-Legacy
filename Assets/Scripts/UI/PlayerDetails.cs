@@ -52,7 +52,7 @@ public class PlayerDetails : MonoBehaviour
     void Start()
     {
         if (!dragscript) dragscript = GetComponent<Dragscript>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         playerInventory.Hide();
     }
 

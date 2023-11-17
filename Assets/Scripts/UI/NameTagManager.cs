@@ -19,7 +19,7 @@ public class NameTagManager : MonoBehaviour
 
     private void Awake()
     {
-        if (!logoManager) logoManager = FindObjectOfType<PlayerLogoManager>();
+        if (!logoManager) logoManager = FindAnyObjectByType<PlayerLogoManager>();
     }
 
     private void Update()

@@ -16,7 +16,7 @@ public class ItemDropHandler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        gameManager = FindObjectOfType<GameManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
     }
 
     public void SetDropList(ItemDropList droplist)

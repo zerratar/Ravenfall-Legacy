@@ -21,7 +21,7 @@ public class PlayerLogoManager : MonoBehaviour
 
     private void Awake()
     {
-        gameManager = FindObjectOfType<GameManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
     }
 
     public void GetLogo(Guid userId, string url, Action<Sprite> onLogoDownloaded)

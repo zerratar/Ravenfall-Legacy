@@ -54,7 +54,7 @@ public class DayNightCycle : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         skyLight = RenderSettings.sun;
         skyboxMaterial = RenderSettings.skybox;
     }

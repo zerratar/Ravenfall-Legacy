@@ -2,7 +2,7 @@ namespace SqlParser.Tokens
 {
 	
 	/// <summary>
-	/// String concatenation `||`
+	/// string concatenation `||`
 	/// </summary>
 	public class StringConcat : StringToken
 	{

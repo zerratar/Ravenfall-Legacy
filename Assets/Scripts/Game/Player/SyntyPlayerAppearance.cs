@@ -154,8 +154,8 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
     void Awake()
     {
-        gameManager = FindObjectOfType<GameManager>();
-        if (!itemManager) itemManager = gameManager?.Items ?? FindObjectOfType<ItemManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
+        if (!itemManager) itemManager = gameManager?.Items ?? FindAnyObjectByType<ItemManager>();
         if (!meshCombiner) meshCombiner = GetComponent<SkinnedMeshCombiner>();
         UpdateBoneTransforms();
     }
@@ -531,7 +531,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
                 }
                 catch (Exception exc)
                 {
-                    Shinobytes.Debug.LogError(exc);
+                    Shinobytes.Debug.LogError("SyntyPlayerAppearance.ToSyntyAppearanceData: " + exc);
                 }
             }
         }

@@ -16,7 +16,6 @@
             return;
         }
 
-
         if (player.Clan == null || !player.Clan.InClan)
         {
             client.SendReply(gm, Localization.MSG_ENCHANT_CLAN_SKILL);
@@ -25,6 +24,12 @@
 
         var result = await Game.RavenNest.Players.GetEnchantmentCooldownAsync(player.Id);
         var now = System.DateTime.UtcNow;
+        if (result == null)
+        {
+            client.SendReply(gm, "Unable to get cooldown from the server right now. Please try again later.");
+            return;
+        }
+
         var cooldownExpires = result.Cooldown.GetValueOrDefault();
 
         if (cooldownExpires <= now)

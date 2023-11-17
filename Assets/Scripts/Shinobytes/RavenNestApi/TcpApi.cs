@@ -31,6 +31,8 @@ namespace RavenNest.SDK
             = new Dictionary<Guid, Update<CharacterUpdate, Skills>>();
 
         public bool Enabled = true;
+        private Action onReconnect;
+        private bool hasBeenConnected;
 
         public bool Connected => client?.Connected ?? false;
         public bool IsReady => Connected && Enabled;
@@ -46,6 +48,11 @@ namespace RavenNest.SDK
             this.thread = new System.Threading.Thread(Update);
             this.thread.Start();
         }
+        public void OnReconnect(Action onReconnect)
+        {
+            this.onReconnect = onReconnect;
+        }
+
 
         public void Connect()
         {
@@ -176,6 +183,13 @@ namespace RavenNest.SDK
 
             // clear previously sent states to ensure we send it again in case it was a server restart.
             lastSaved.Clear();
+
+            if (hasBeenConnected && onReconnect != null)
+            {
+                onReconnect();
+            }
+
+            hasBeenConnected = true;
         }
 
         public static string Base64Encode(string plainText)

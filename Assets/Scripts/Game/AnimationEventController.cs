@@ -16,7 +16,7 @@ public class AnimationEventController : MonoBehaviour
     public void PlaySpinAnimation()
     {
         if (!steeringWheel)
-            steeringWheel = GameObject.FindObjectOfType<SteeringWheelController>();
+            steeringWheel = GameObject.FindAnyObjectByType<SteeringWheelController>();
 
         if (steeringWheel)
             steeringWheel.PlaySpinAnimation();

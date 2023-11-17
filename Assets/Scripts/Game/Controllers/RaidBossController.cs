@@ -62,7 +62,7 @@ public class RaidBossController : MonoBehaviour
         name = "___RAID__BOSS___";
         EnsureRaidManager();
 
-        this.gameManager = FindObjectOfType<GameManager>();
+        this.gameManager = FindAnyObjectByType<GameManager>();
 
         AssignIsland();
 
@@ -210,7 +210,7 @@ public class RaidBossController : MonoBehaviour
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("RaidBossController.GetAttackableTarget: " + exc);
             return null;
         }
     }
@@ -272,7 +272,7 @@ public class RaidBossController : MonoBehaviour
 
     private void EnsureRaidManager()
     {
-        if (!raidManager) raidManager = FindObjectOfType<RaidManager>();
+        if (!raidManager) raidManager = FindAnyObjectByType<RaidManager>();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

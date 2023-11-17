@@ -209,7 +209,7 @@ public class PlayerManager : MonoBehaviour
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("PlayerManager.JoinAsync: " + exc);
         }
         return null;
     }

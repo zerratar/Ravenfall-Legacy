@@ -21,8 +21,8 @@ public class DuelHandler : MonoBehaviour
     private void Awake()
     {
         if (!player) player = GetComponent<PlayerController>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
-        if (!duelCamera) duelCamera = FindObjectOfType<DuelCameraScript>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        if (!duelCamera) duelCamera = FindAnyObjectByType<DuelCameraScript>();
     }
 
     private void Update()
@@ -122,7 +122,7 @@ public class DuelHandler : MonoBehaviour
         }
         catch (System.Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("DuelHandler.DeclineDuel: " + exc);
         }
     }
 
@@ -176,7 +176,7 @@ public class DuelHandler : MonoBehaviour
 
     private void WonDuel()
     {
-        
+
         RemoveDuelCamera();
 
         if (gameManager.RavenBot.IsConnected)

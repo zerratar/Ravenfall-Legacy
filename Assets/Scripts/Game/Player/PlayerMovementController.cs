@@ -156,6 +156,11 @@ public class PlayerMovementController : MonoBehaviour
             return true;
         }
 
+        if (currentPath.status == NavMeshPathStatus.PathInvalid)
+        {
+            // could be good to log this, maybe even target of the player to determine what object has invalid paths.
+        }
+
         return false;
     }
 

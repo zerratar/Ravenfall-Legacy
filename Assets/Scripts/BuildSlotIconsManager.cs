@@ -25,7 +25,7 @@ public class BuildSlotIconsManager : MonoBehaviour
 
     private void Start()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         Hide();
     }
 

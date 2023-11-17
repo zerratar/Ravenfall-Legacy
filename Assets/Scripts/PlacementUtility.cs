@@ -47,7 +47,7 @@ public static class PlacementUtility
     }
     public static void PlaceOnGround<T>() where T : MonoBehaviour
     {
-        PlaceOnGround(GameObject.FindObjectsOfType<T>());
+        PlaceOnGround(GameObject.FindObjectsByType<T>(FindObjectsSortMode.None));
     }
 
     public static void PlaceOnGround(IEnumerable<MonoBehaviour> objs)

@@ -40,6 +40,9 @@ public class DungeonManager : MonoBehaviour, IEvent
     private float nextDungeonTimer;
     private float notificationTimer;
     private DateTime startedTime;
+
+    public PlayerController Initiator { get; private set; }
+
     private DungeonManagerState state;
     public float SecondsUntilStart => dungeonStartTimer;
     public float SecondsUntilNext => nextDungeonTimer;
@@ -152,11 +155,13 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
+    public bool HasBeenAnnounced { get; private set; }
+
 
     // Start is called before the first frame update
     void Start()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
         if (dungeons == null || dungeons.Length == 0)
         {
@@ -351,12 +356,15 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             if (gameManager.Events.TryStart(this))
             {
+                HasBeenAnnounced = false;
+
                 await Notifications.OnDungeonActivated();
 
                 SelectRandomDungeon();
 
                 if (SpawnDungeonBoss())
                 {
+                    Initiator = initiator;
                     state = DungeonManagerState.Active;
                     dungeonStartTimer = timeForDungeonStart;
                     nextDungeonTimer = 0f;
@@ -372,7 +380,6 @@ public class DungeonManager : MonoBehaviour, IEvent
                     else
                     {
                         AnnounceDungeon(RequiredCode);
-                        await gameManager.HandleDungeonAutoJoin(initiator);
                     }
                 }
                 else
@@ -765,7 +772,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("Reset Dungeon Err: " + exc);
         }
         finally
         {
@@ -887,6 +894,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
         }
+
+        HasBeenAnnounced = true;
 
         gameManager.dungeonStatsJson.Update();
     }

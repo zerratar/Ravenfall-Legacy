@@ -8,6 +8,6 @@ namespace SqlParser.Tokens
 	{
 	    public DollarQuotedString(string value) : base(value) { }
 	
-	    public string? Tag { get; set; }
+	    public string Tag { get; set; }
 	}
 }

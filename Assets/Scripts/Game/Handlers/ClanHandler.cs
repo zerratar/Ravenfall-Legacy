@@ -11,7 +11,7 @@ public class ClanHandler : MonoBehaviour
     private void Start()
     {
         if (!player) player = GetComponent<PlayerController>();
-        this.playerLogoManager = FindObjectOfType<PlayerLogoManager>();
+        this.playerLogoManager = FindAnyObjectByType<PlayerLogoManager>();
     }
 
     public bool InClan { get; private set; }

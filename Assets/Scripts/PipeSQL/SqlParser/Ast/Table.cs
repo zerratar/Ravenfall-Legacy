@@ -6,9 +6,9 @@
     public class Table : IWriteSql
     {
         public string Name { get; set; }
-        public string? SchemaName { get; set; }
+        public string SchemaName { get; set; }
 
-        public Table(string Name, string? SchemaName = null)
+        public Table(string Name, string SchemaName = null)
         {
             this.Name = Name;
             this.SchemaName = SchemaName;

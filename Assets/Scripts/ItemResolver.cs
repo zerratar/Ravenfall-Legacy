@@ -22,10 +22,10 @@ public class ItemResolver : IItemResolver
         }
 
         if (!itemManager)
-            itemManager = GameObject.FindObjectOfType<ItemManager>();
+            itemManager = GameObject.FindAnyObjectByType<ItemManager>();
 
         if (!playerManager)
-            playerManager = GameObject.FindObjectOfType<PlayerManager>();
+            playerManager = GameObject.FindAnyObjectByType<PlayerManager>();
     }
 
     public IReadOnlyList<Item> GetItemSet(string setName)
@@ -142,7 +142,7 @@ public class ItemResolver : IItemResolver
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("ItemResolver.ResolveTradeQuery: " + exc);
             return null;
         }
     }

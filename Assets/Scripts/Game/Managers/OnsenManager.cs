@@ -13,9 +13,9 @@ public class OnsenManager : MonoBehaviour
 
     private void Start()
     {
-        if (!game) game = FindObjectOfType<GameManager>();
+        if (!game) game = FindAnyObjectByType<GameManager>();
 
-        restingAreas = FindObjectsOfType<OnsenController>();
+        restingAreas = FindObjectsByType<OnsenController>(FindObjectsSortMode.None);
 
         this.entryPoints = restingAreas.Select(x => x.EntryPoint).ToArray();
     }

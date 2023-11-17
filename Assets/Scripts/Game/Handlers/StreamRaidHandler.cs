@@ -13,7 +13,7 @@ public class StreamRaidHandler : MonoBehaviour
     void Start()
     {
         if (!player) player = GetComponent<PlayerController>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
     }
 
     void Update()

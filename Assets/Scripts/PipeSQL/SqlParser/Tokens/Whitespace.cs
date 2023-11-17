@@ -12,15 +12,15 @@ namespace SqlParser.Tokens
 	    {
 	    }
 	
-	    public Whitespace(WhitespaceKind kind, string? value)
+	    public Whitespace(WhitespaceKind kind, string value)
 	    {
 	        WhitespaceKind = kind;
 	        Value = value;
 	    }
 	
 	    public WhitespaceKind WhitespaceKind { get; set; }
-	    public string? Prefix { get; set; }
-	    public string? Value { get; set; }
+	    public string Prefix { get; set; }
+	    public string Value { get; set; }
 	
 	    public override bool Equals(object? obj)
 	    {

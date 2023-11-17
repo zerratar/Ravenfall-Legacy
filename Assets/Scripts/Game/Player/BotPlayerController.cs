@@ -10,7 +10,7 @@ public class BotPlayerController : MonoBehaviour
 
     private void Start()
     {
-        if (!this.gameManager) this.gameManager = FindObjectOfType<GameManager>();
+        if (!this.gameManager) this.gameManager = FindAnyObjectByType<GameManager>();
         if (!this.playerController) this.playerController = GetComponent<PlayerController>();
         initialized = true;
     }

@@ -64,7 +64,7 @@ public class DungeonNotifications : MonoBehaviour
 
     private void Start()
     {
-        this.gameManager = FindObjectOfType<GameManager>();
+        this.gameManager = FindAnyObjectByType<GameManager>();
     }
     private void Update()
     {

@@ -47,8 +47,8 @@ public class TicTacToe : MonoBehaviour, ITavernGame
     void Start()
     {
         highscore = new TavernGameHighscore("tictactoe");
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
-        if (!itemDropHandler) itemDropHandler = FindObjectOfType<ItemDropHandler>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        if (!itemDropHandler) itemDropHandler = FindAnyObjectByType<ItemDropHandler>();
 
         //ResetText.SetActive(false);
         //RedTeamWins.SetActive(false);

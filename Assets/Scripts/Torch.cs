@@ -24,16 +24,16 @@ public class Torch : MonoBehaviour
     [Button("Assign Dependencies")]
     public void AssignDependencies()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
-        if (!dayNightCycle) dayNightCycle = FindObjectOfType<DayNightCycle>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        if (!dayNightCycle) dayNightCycle = FindAnyObjectByType<DayNightCycle>();
         if (!fire) fire = GetComponentInChildren<ParticleSystem>();
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
-        if (!dayNightCycle) dayNightCycle = FindObjectOfType<DayNightCycle>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        if (!dayNightCycle) dayNightCycle = FindAnyObjectByType<DayNightCycle>();
         if (!fire) fire = GetComponentInChildren<ParticleSystem>();
         if (fire)
         {

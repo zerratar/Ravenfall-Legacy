@@ -74,7 +74,6 @@ public class RaidForce : ChatBotCommandHandler
                         }
 
                         Game.Raid.Announce();
-                        Game.HandleRaidAutoJoin(plr);
                     }))
                     {
                         var raidScroll = Game.Items.Find(x => x.Name.Contains("raid", System.StringComparison.OrdinalIgnoreCase) && x.Type == ItemType.Scroll);

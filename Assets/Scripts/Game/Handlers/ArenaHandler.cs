@@ -88,8 +88,8 @@ public class ArenaHandler : MonoBehaviour
     private void Start()
     {
         if (!player) player = GetComponent<PlayerController>();
-        if (!chunkManager) chunkManager = FindObjectOfType<ChunkManager>();
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!chunkManager) chunkManager = FindAnyObjectByType<ChunkManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
     }
 
     internal void Interrupt()

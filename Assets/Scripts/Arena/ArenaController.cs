@@ -30,9 +30,9 @@ public class ArenaController : MonoBehaviour, IEvent
     void Start()
     {
         arenaStartTimer = arenaStartTime;
-        if (!gameCamera) gameCamera = GameObject.FindObjectOfType<GameCamera>();
+        if (!gameCamera) gameCamera = GameObject.FindAnyObjectByType<GameCamera>();
         island = GetComponentInParent<IslandController>();
-        gameManager = FindObjectOfType<GameManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
     }
 
     // Update is called once per frame

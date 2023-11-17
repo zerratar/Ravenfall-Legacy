@@ -25,7 +25,7 @@ public class TownHallResource : MonoBehaviour
     private void AssignPiles()
     {
         townhall = GetComponentInParent<TownHallController>(true);
-        if (!gameManager) gameManager = FindObjectOfType<GameManager>();
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
         if (coins.Length == 0) coins = FindPile("Coins");
         if (wood.Length == 0) wood = FindPile("Wood");

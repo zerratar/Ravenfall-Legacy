@@ -16,12 +16,12 @@ public class StreamerFlag : MonoBehaviour
     {
         if (!logoManager)
         {
-            logoManager = FindObjectOfType<PlayerLogoManager>();
+            logoManager = FindAnyObjectByType<PlayerLogoManager>();
         }
 
         if (!gameManager)
         {
-            gameManager = FindObjectOfType<GameManager>();
+            gameManager = FindAnyObjectByType<GameManager>();
         }
 
         flagMaterial = flagRenderer.material;

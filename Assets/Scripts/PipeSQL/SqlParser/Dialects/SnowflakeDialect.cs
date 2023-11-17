@@ -75,7 +75,7 @@ namespace SqlParser.Dialects
 	        Sequence<DataLoadingOption>? directoryTableParams = null;
 	        Sequence<DataLoadingOption>? fileFormat = null;
 	        Sequence<DataLoadingOption>? copyOptions = null;
-	        string? comment = null;
+	        string comment = null;
 	
 	        // [ internalStageParams | externalStageParams ]
 	        var stageParams = ParseStageParams(parser);
@@ -127,9 +127,9 @@ namespace SqlParser.Dialects
 	
 	    private StageParams ParseStageParams(Parser parser)
 	    {
-	        string? url=null;
-	        string? storageIntegration = null;
-	        string? endpoint = null;
+	        string url=null;
+	        string storageIntegration = null;
+	        string endpoint = null;
 	        Sequence<DataLoadingOption>? credentials = null;
 	        Sequence<DataLoadingOption>? encryption = null;
 	

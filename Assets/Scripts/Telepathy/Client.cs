@@ -113,7 +113,7 @@ namespace Telepathy
         public int ReceivePipeCount => state != null ? state.receivePipe.TotalCount : 0;
 
         // constructor
-        public Client(int MaxMessageSize) : base(MaxMessageSize) {}
+        public Client(int MaxMessageSize) : base(MaxMessageSize) { }
 
         // the thread function
         // STATIC to avoid sharing state!
@@ -153,7 +153,7 @@ namespace Telepathy
             {
                 // this happens if (for example) the ip address is correct
                 // but there is no server running on that ip/port
-                Log.Info("Client Recv: failed to connect to ip=" + ip + " port=" + port + " reason=" + exception);
+                //Log.Info("Client Recv: failed to connect to ip=" + ip + " port=" + port + " reason=" + exception);
 
                 // add 'Disconnected' event to receive pipe so that the caller
                 // knows that the Connect failed. otherwise they will never know
@@ -236,7 +236,8 @@ namespace Telepathy
             //    too long, which is especially good in games
             // -> this way we don't async client.BeginConnect, which seems to
             //    fail sometimes if we connect too many clients too fast
-            state.receiveThread = new Thread(() => {
+            state.receiveThread = new Thread(() =>
+            {
                 ReceiveThreadFunction(state, ip, port, MaxMessageSize, NoDelay, SendTimeout, ReceiveTimeout, ReceiveQueueLimit);
             });
             state.receiveThread.IsBackground = true;

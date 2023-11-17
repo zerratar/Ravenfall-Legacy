@@ -211,7 +211,6 @@ public class ItemManager : MonoBehaviour
         catch (Exception exc)
         {
             // ignore, this only happens when connectio nto server fails.
-            //Shinobytes.Debug.LogError("Unable to load items: " + exc);
         }
     }
     private async Task DownloadItemResourceDropsAsync()
@@ -221,8 +220,6 @@ public class ItemManager : MonoBehaviour
         {
             this.resourceDrops = resourceDrops.ToList();
         }
-
-        //Shinobytes.Debug.Log((resourceDrops?.Count ?? 0) + " resource drops loaded!");
     }
     private async Task DownloadRedeemableItemsAsync()
     {
@@ -233,7 +230,6 @@ public class ItemManager : MonoBehaviour
             this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
             game.Overlay.SendRedeemables(redeemables);
         }
-        //Shinobytes.Debug.Log((redeemableItems?.Count ?? 0) + " redeemables loaded!");
     }
 
     private async Task DownloadItemRecipesAsync()
@@ -242,10 +238,7 @@ public class ItemManager : MonoBehaviour
         if (recipes != null && recipes.Count > 0)
         {
             this.recipes = recipes.ToList();
-            //game.Overlay.SendRecipes(recipes);
         }
-
-        //Shinobytes.Debug.Log((recipes?.Count ?? 0) + " recipes loaded!");
     }
 
     private async Task DownloadItemsAsync()
@@ -278,7 +271,6 @@ public class ItemManager : MonoBehaviour
         {
             var loadedItems = await game.RavenNest.Items.GetAsync();
             items = loadedItems.ToList();
-            //Shinobytes.Debug.Log(items.Count + " items loaded!");
         }
 
         // rebuild lookups
@@ -415,6 +407,7 @@ public class ItemManager : MonoBehaviour
             ItemId = src.ItemId,
             Cost = src.Cost,
             Name = Get(src.ItemId)?.Name,
+            Currency = Get(src.CurrencyItemId)?.Name,
             YearStart = startDate.Year,
             MonthStart = startDate.Month,
             DayStart = startDate.Day,
@@ -516,6 +509,7 @@ public struct RedeemableItem
     public int MonthEnd;
     public int DayStart;
     public int DayEnd;
+    public string Currency;
 
     public DateRange GetRedeemableDateRange()
     {

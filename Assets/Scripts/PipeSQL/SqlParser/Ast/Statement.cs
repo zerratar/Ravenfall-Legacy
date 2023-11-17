@@ -237,7 +237,7 @@ namespace SqlParser.Ast
         /// <param name="IfExists">Optional IF EXISTS clause</param>
         public class Comment : Statement
         {
-            public Comment(ObjectName Name, CommentObject ObjectType, string? Value = null, bool IfExists = false)
+            public Comment(ObjectName Name, CommentObject ObjectType, string Value = null, bool IfExists = false)
             {
                 this.Name = Name;
                 this.ObjectType = ObjectType;
@@ -356,8 +356,8 @@ namespace SqlParser.Ast
                 this.Name = Name;
             }
             public bool IfNotExists { get; set; }
-            public string? Location { get; set; }
-            public string? ManagedLocation { get; set; }
+            public string Location { get; set; }
+            public string ManagedLocation { get; set; }
             public string IfNotExistsText => IfNotExists ? "IF NOT EXISTS" : null;
 
             public ObjectName Name { get; }
@@ -479,7 +479,7 @@ namespace SqlParser.Ast
             public Sequence<DataLoadingOption>? FileFormat { get; set; }
             public Sequence<DataLoadingOption>? CopyOptions { get; set; }
             // ReSharper disable once MemberHidesStaticFromOuterClass
-            public new string? Comment { get; set; }
+            public new string Comment { get; set; }
             public string IfNotExistsText => IfNotExists ? "IF NOT EXISTS" : null;
 
             [Visit(0)] public ObjectName Name { get; }
@@ -537,19 +537,19 @@ namespace SqlParser.Ast
             public Sequence<SqlOption>? TableProperties { get; set; }
             public Sequence<SqlOption>? WithOptions { get; set; }
             public FileFormat FileFormat { get; set; }
-            public string? Location { get; set; }
+            public string Location { get; set; }
             [Visit(3)] public Query? Query { get; set; }
             public bool WithoutRowId { get; set; }
             [Visit(4)] public ObjectName? Like { get; set; }
             [Visit(5)] public ObjectName? CloneClause { get; set; }
-            public string? Engine { get; set; }
+            public string Engine { get; set; }
             public Sequence<Ident>? OrderBy { get; set; }
-            public string? DefaultCharset { get; set; }
-            public string? Collation { get; set; }
+            public string DefaultCharset { get; set; }
+            public string Collation { get; set; }
             public OnCommit OnCommit { get; set; }
             // Clickhouse "ON CLUSTER" clause:
             // https://clickhouse.com/docs/en/sql-reference/distributed-ddl/
-            public string? OnCluster { get; set; }
+            public string OnCluster { get; set; }
             [Visit(0)] public ObjectName Name { get; }
             [Visit(1)] public Sequence<ColumnDef> Columns { get; }
 
@@ -1241,7 +1241,7 @@ namespace SqlParser.Ast
         /// <param name="Source">Source query</param>
         public class Directory : Statement
         {
-            public Directory(bool Overwrite, bool Local, string? Path, FileFormat FileFormat, Select Source)
+            public Directory(bool Overwrite, bool Local, string Path, FileFormat FileFormat, Select Source)
             {
                 this.Overwrite = Overwrite;
                 this.Local = Local;
@@ -1716,7 +1716,7 @@ namespace SqlParser.Ast
         /// <param name="CollationName">Collation name</param>
         public class SetNames : Statement
         {
-            public SetNames(string CharsetName, string? CollationName = null)
+            public SetNames(string CharsetName, string CollationName = null)
             {
                 this.CharsetName = CharsetName;
                 this.CollationName = CollationName;

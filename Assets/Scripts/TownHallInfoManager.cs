@@ -23,7 +23,7 @@ public class TownHallInfoManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (!villageManager) villageManager = FindObjectOfType<VillageManager>();
+        if (!villageManager) villageManager = FindAnyObjectByType<VillageManager>();
         Hide();
     }
 

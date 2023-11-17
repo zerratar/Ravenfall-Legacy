@@ -11,9 +11,11 @@ namespace RavenfallDataPipe
         private readonly ConcurrentDictionary<string, SqlPipeDataContextTable> tables
             = new ConcurrentDictionary<string, SqlPipeDataContextTable>();
 
-        public void Register<T>(string name, Func<IEnumerable<T>> getDataSource, params SqlPipeDataContextRowColumn<T>[] columns)
+        public SqlPipeDataContextTable<T> Register<T>(string name, Func<IEnumerable<T>> getDataSource, params SqlPipeDataContextRowColumn<T>[] columns)
         {
-            tables[name] = new SqlPipeDataContextTable<T>(name, getDataSource, columns);
+            var table = new SqlPipeDataContextTable<T>(name, getDataSource, columns);
+            tables[name] = table;
+            return table;
         }
 
         public static SqlPipeDataContextRowColumn<T, T2> Column<T, T2>(string header, Func<T, T2> getValue)

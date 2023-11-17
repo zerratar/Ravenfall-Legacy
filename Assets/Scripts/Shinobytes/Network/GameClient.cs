@@ -106,7 +106,7 @@ public class GameClient : IDisposable
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError(exc);
+            Shinobytes.Debug.LogError("GameClient.Update: " + exc);
         }
     }
 
@@ -145,7 +145,7 @@ public class GameClient : IDisposable
                             return;
                         }
 
-                        server.LogError(exc.Message);
+                        server.LogError("GameClient.BeginReceive: " + exc.Message);
                         break;
                     }
                 }
@@ -228,7 +228,7 @@ public class GameClient : IDisposable
                     catch (Exception exc)
                     {
                         System.Threading.Thread.Sleep(10);
-                        server.LogError(exc.Message);
+                        server.LogError("GameClient.BeginWrite: " + exc.Message);
                     }
                 }
             }
@@ -279,7 +279,7 @@ public class GameClient : IDisposable
 
     public void SendReply(GameMessageRecipent recipent, string format, object[] args)
     {
-        Write(GameMessageResponse.CreateReply("message", recipent, 
+        Write(GameMessageResponse.CreateReply("message", recipent,
             format.Replace("  ", " "), // a friendly trim.
             args, string.Empty));
     }

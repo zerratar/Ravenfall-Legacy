@@ -54,7 +54,7 @@ public class FerryController : MonoBehaviour
 
     void Start()
     {
-        gameManager = FindObjectOfType<GameManager>();
+        gameManager = FindAnyObjectByType<GameManager>();
         movementParticleSystem = movementEffect.GetComponent<ParticleSystem>();
         pathSelector = gameObject.GetComponent<PathSelector>();
         emission = movementParticleSystem.emission;
@@ -197,44 +197,44 @@ public class FerryController : MonoBehaviour
         // don't use it right now.
         return;
 
-        try
-        {
-            if (!gameManager || gameManager == null || ui == null || !ui)
-            {
-                return;
-            }
+        //try
+        //{
+        //    if (!gameManager || gameManager == null || ui == null || !ui)
+        //    {
+        //        return;
+        //    }
 
-            if (gameManager && (gameManager.RavenNest == null || !gameManager.RavenNest.Authenticated))
-            {
-                return;
-            }
+        //    if (gameManager && (gameManager.RavenNest == null || !gameManager.RavenNest.Authenticated))
+        //    {
+        //        return;
+        //    }
 
-            if (Input.GetMouseButtonUp(0))
-            {
-                var activeCamera = Camera.main;
-                if (!activeCamera || activeCamera == null)
-                {
-                    return;
-                }
+        //    if (Input.GetMouseButtonUp(0))
+        //    {
+        //        var activeCamera = Camera.main;
+        //        if (!activeCamera || activeCamera == null)
+        //        {
+        //            return;
+        //        }
 
-                var ray = activeCamera.ScreenPointToRay(Input.mousePosition);
-                var hitCount = Physics.RaycastNonAlloc(ray, raycastHits);
-                for (var i = 0; i < hitCount; ++i)
-                {
-                    var hit = raycastHits[i];
+        //        var ray = activeCamera.ScreenPointToRay(Input.mousePosition);
+        //        var hitCount = Physics.RaycastNonAlloc(ray, raycastHits);
+        //        for (var i = 0; i < hitCount; ++i)
+        //        {
+        //            var hit = raycastHits[i];
 
-                    if (hit.collider.CompareTag("Ferry"))
-                    {
-                        ui.ShowDialog();
-                        return;
-                    }
-                }
-            }
-        }
-        catch (System.Exception exc)
-        {
-            Shinobytes.Debug.LogError(exc.ToString());
-        }
+        //            if (hit.collider.CompareTag("Ferry"))
+        //            {
+        //                ui.ShowDialog();
+        //                return;
+        //            }
+        //        }
+        //    }
+        //}
+        //catch (System.Exception exc)
+        //{
+        //    Shinobytes.Debug.LogError(exc.ToString());
+        //}
     }
 
     public void SetMovementEffect(float v)
