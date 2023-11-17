@@ -18,6 +18,8 @@ public class PlayerAnimationController : MonoBehaviour
 
     public PlayerAnimationState State => animationState;
 
+    bool? isCaptain = null;
+
     // Use this for initialization
     void Start()
     {
@@ -128,9 +130,17 @@ public class PlayerAnimationController : MonoBehaviour
     public void SetCaptainState(bool isCaptain)
     {
         if (!EnsureAnimator()) return;
-        animationState = PlayerAnimationState.Captain;
-        SetBool("Captain", isCaptain);
-        StopMoving(true);
+        if (isCaptain)
+        {
+            animationState = PlayerAnimationState.Captain;
+            StopMoving(true);
+        }
+
+        if (this.isCaptain != isCaptain)
+        {
+            SetBool("Captain", isCaptain);
+            this.isCaptain = isCaptain;
+        }
     }
 
     public void Revive()
@@ -260,8 +270,10 @@ public class PlayerAnimationController : MonoBehaviour
     public void StartWoodcutting()
     {
         if (!EnsureAnimator()) return;
-        animationState = PlayerAnimationState.Woodcutting;
         ResetAnimationStates();
+        
+        animationState = PlayerAnimationState.Woodcutting;
+
         SetTrigger("Start");
         SetBool("Woodcutting", true);
     }
@@ -333,8 +345,8 @@ public class PlayerAnimationController : MonoBehaviour
     public void StartBrewing()
     {
         if (!EnsureAnimator()) return;
-        animationState = PlayerAnimationState.Brewing;
         ResetAnimationStates();
+        animationState = PlayerAnimationState.Brewing;
         SetTrigger("Start");
         SetBool("Brewing", true);
     }
@@ -357,8 +369,8 @@ public class PlayerAnimationController : MonoBehaviour
     public void StartFarming()
     {
         if (!EnsureAnimator()) return;
-        animationState = PlayerAnimationState.Farming;
         ResetAnimationStates();
+        animationState = PlayerAnimationState.Farming;
         SetTrigger("Start");
         SetBool("Farming", true);
     }
@@ -374,8 +386,8 @@ public class PlayerAnimationController : MonoBehaviour
     public void StartGathering(bool kneeling = true)
     {
         if (!EnsureAnimator()) return;
-        animationState = PlayerAnimationState.Gathering;
         ResetAnimationStates();
+        animationState = PlayerAnimationState.Gathering;
         SetInteger("Action", kneeling ? 0 : 1);
         SetTrigger("Start");
         SetBool("Gathering", true);
@@ -401,8 +413,8 @@ public class PlayerAnimationController : MonoBehaviour
     public void StartCooking()
     {
         if (!EnsureAnimator()) return;
-        animationState = PlayerAnimationState.Cooking;
         ResetAnimationStates();
+        animationState = PlayerAnimationState.Cooking;
         SetTrigger("Start");
         SetBool("Cooking", true);
     }

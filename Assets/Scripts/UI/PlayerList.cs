@@ -23,7 +23,6 @@ public class PlayerList : MonoBehaviour
     private RectTransform rectTransform;
     private RectTransform viewportTransform;
     private RectTransform listRootRectTransform;
-    private float switchTimer = 1f;
     private List<PlayerController> filteredPlayers;
 
     public float Scale
@@ -37,6 +36,19 @@ public class PlayerList : MonoBehaviour
             listRoot.transform.localScale = new Vector3(value, value, 1);
         }
     }
+
+    public float Speed
+    {
+        get
+        {
+            return scrollSpeed;
+        }
+        set
+        {
+            scrollSpeed = Mathf.Min(100f, Mathf.Max(0.1f, value));
+        }
+    }
+
 
     public float Bottom
     {
@@ -60,6 +72,8 @@ public class PlayerList : MonoBehaviour
             return rectTransform.rect.height;
         }
     }
+
+
 
     public float ContainerHeight
     {

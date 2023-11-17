@@ -121,6 +121,8 @@ namespace RavenNest.SDK.Endpoints
                 }
             }
 
+            string responseData = "";
+
             try
             {
                 using (var response = await request.GetResponseAsync())
@@ -129,7 +131,7 @@ namespace RavenNest.SDK.Endpoints
                 {
                     var r = ((HttpWebResponse)response);
 
-                    var responseData = await reader.ReadToEndAsync();
+                    responseData = await reader.ReadToEndAsync();
 
                     if (r.StatusCode == HttpStatusCode.Forbidden)
                     {
@@ -155,7 +157,7 @@ namespace RavenNest.SDK.Endpoints
                 if (throwOnError) throw;
                 try
                 {
-                    Shinobytes.Debug.LogError("WebApiRequest.SendAsync: " + exc);
+                    Shinobytes.Debug.LogError("WebApiRequest.SendAsync: " + type.ToString().ToUpper() + " " + GetTargetUrl(reqTarget, false) + " - " + exc.Message + " - " + responseData);
                 }
                 catch { }
                 return default(TResult);
@@ -173,7 +175,7 @@ namespace RavenNest.SDK.Endpoints
             }
         }
 
-        private string GetTargetUrl(ApiRequestTarget reqTarget)
+        private string GetTargetUrl(ApiRequestTarget reqTarget, bool includeParameterValues = true)
         {
             var url = reqTarget == ApiRequestTarget.Auth ? settings.WebApiAuthEndpoint : settings.WebApiEndpoint;
             if (!url.EndsWith("/")) url += "/";
@@ -181,9 +183,26 @@ namespace RavenNest.SDK.Endpoints
             if (!string.IsNullOrEmpty(identifier)) url += $"{identifier}/";
             if (!string.IsNullOrEmpty(method)) url += $"{method}/";
             if (parameters == null) return url;
+
+#if DEBUG
             var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => x.Value));
             if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
             return url;
+#else
+            if (includeParameterValues)
+            {
+                var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => x.Value));
+                if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
+            }
+            else
+            {
+                var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => "hidden-value"));
+                if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
+            }
+            return url;
+#endif
+
+
         }
     }
 

@@ -639,6 +639,8 @@ public class GameManager : MonoBehaviour, IGameManager
         ItemDropMessageSettings = (PlayerItemDropMessageSettings)settings.ItemDropMessageType.GetValueOrDefault((int)ItemDropMessageSettings);
         PlayerList.Bottom = settings.PlayerListSize.GetValueOrDefault(PlayerList.Bottom);
         PlayerList.Scale = settings.PlayerListScale.GetValueOrDefault(PlayerList.Scale);
+        PlayerList.Speed = settings.PlayerListSpeed.GetValueOrDefault(PlayerList.Speed);
+
         Raid.Notifications.volume = settings.RaidHornVolume.GetValueOrDefault(Raid.Notifications.volume);
         Music.volume = settings.MusicVolume.GetValueOrDefault(Music.volume);
 
@@ -1368,10 +1370,6 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void OnReconnectedToServer()
     {
-        if (Dungeons.Active && !Dungeons.Started)
-        {
-            HandleDungeonAutoJoin();
-        }
     }
 
     public async Task<bool> RavenNestLoginAsync(string username, string password)
@@ -1985,7 +1983,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Home");
-                    foreach (var bot in bots) bot.Ferry.Embark(island);
+                    foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Away"))
@@ -2163,6 +2161,7 @@ public class GameManager : MonoBehaviour, IGameManager
     }
 
     int handlingAutoJoin = 0;
+    float retryTimer = 0f;
 
     internal async void UpdateAutoJoinAnnouncement()
     {
@@ -2327,6 +2326,10 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private async Task HandleRaidAutoJoin()
     {
+        if (!Raid.Started || Time.time < nextAutoJoinRaid)
+        {
+            return;
+        }
 
         var autoJoinList = new List<Guid>();
         var autoJoinPlayers = new List<PlayerController>();
@@ -2337,7 +2340,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         foreach (var player in allPlayers)
         {
-            if (Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Raid.AutoJoining || Raid.Initiator == player)
+            if (Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Resources.Coins < RaidAuto.AutoJoinCost || player.Raid.AutoJoining || Raid.Initiator == player)
                 continue;
 
             if (player.Raid.AutoJoinCounter > 0)
@@ -2356,6 +2359,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
             Shinobytes.Debug.Log("Requesting Raid Auto join with " + autoJoinList.Count + " players.");
             var result = await RavenNest.Players.AutoJoinRaid(autoJoinList.ToArray());
+
+            nextAutoJoinRaid = Time.time + 5000;
+
             if (result == null || result.Length == 0)
             {
                 failed = autoJoinPlayers;
@@ -2383,13 +2389,15 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
             }
 
-
-            AnnounceAutoRaidJoin(success);
-
-            if (failed.Count > 0)
+            if (success.Count > 0)
             {
-                AnnounceAutoRaidJoinFailed(failed);
+                AnnounceAutoRaidJoin(success);
             }
+
+            //if (failed.Count > 0)
+            //{
+            //    AnnounceAutoRaidJoinFailed(failed);
+            //}
         }
 
         catch (Exception exc)
@@ -2407,6 +2415,11 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private async Task HandleDungeonAutoJoin()
     {
+        if (!Dungeons.Active || Dungeons.Started || Time.time < nextAutoJoinDungeon)
+        {
+            return;
+        }
+
         var autoJoinList = new List<Guid>();
         var autoJoinPlayers = new List<PlayerController>();
         var success = new List<PlayerController>();
@@ -2414,7 +2427,7 @@ public class GameManager : MonoBehaviour, IGameManager
         var allPlayers = Players.GetAllPlayers();
         foreach (var player in allPlayers)
         {
-            if (Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Dungeon.AutoJoining || Dungeons.Initiator == player)
+            if (Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Resources.Coins < DungeonAuto.AutoJoinCost || player.Dungeon.AutoJoining || Dungeons.Initiator == player)
                 continue;
 
             if (player.Dungeon.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
@@ -2433,6 +2446,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
             Shinobytes.Debug.Log("Requesting Dungeon Auto join with " + autoJoinList.Count + " players.");
             var result = await RavenNest.Players.AutoJoinDungeon(autoJoinList.ToArray());
+
+            nextAutoJoinDungeon = Time.time + 5000;
+
             if (result == null || result.Length == 0)
             {
                 failed = autoJoinPlayers;
@@ -2461,12 +2477,15 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
             }
 
-            AnnounceAutoDungeonJoin(success);
-
-            if (failed.Count > 0)
+            if (success.Count > 0)
             {
-                AnnounceAutoDungeonJoinFailed(failed);
+                AnnounceAutoDungeonJoin(success);
             }
+
+            //if (failed.Count > 0)
+            //{
+            //    AnnounceAutoDungeonJoinFailed(failed);
+            //}
         }
         catch (Exception exc)
         {
@@ -2482,6 +2501,8 @@ public class GameManager : MonoBehaviour, IGameManager
     }
 
     private List<PlayerController> playerAutoJoinList = new List<PlayerController>();
+    private float nextAutoJoinRaid;
+    private float nextAutoJoinDungeon;
 }
 
 public class IslandTaskCollection

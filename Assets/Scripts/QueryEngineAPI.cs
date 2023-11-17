@@ -225,14 +225,16 @@ public class QueryEngineAPI
             QueryEngineContext.Column<IslandController, string>("Name", x => x.Identifier).MakePrimaryKey(),
             QueryEngineContext.Column<IslandController, int>("Players", x => x.GetPlayerCount()),
             QueryEngineContext.Column<IslandController, int>("Level.Skill", x => {
+                if (x.Island == Island.Home) return 1;
                 var chunks = gm.Chunks.GetChunks(x);
                 if (chunks.Count == 0) return -1;
-                return chunks.Min(x => x.RequiredSkilllevel);
+                return chunks.Max(x => x.RequiredSkilllevel);
             }),
             QueryEngineContext.Column<IslandController, int>("Level.Combat", x => {
-                                var chunks = gm.Chunks.GetChunks(x);
+                var chunks = gm.Chunks.GetChunks(x);
+                if (x.Island == Island.Home) return 1;
                 if (chunks.Count == 0) return -1;
-                return chunks.Min(x => x.RequiredCombatLevel);
+                return chunks.Max(x => x.RequiredCombatLevel);
             }),
             // SqlPipeDataContext.Column<IslandController, int>("Level.Skill", x => x.),
         };

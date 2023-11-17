@@ -17,6 +17,7 @@
     public float? DayNightTime;
     public float? PlayerListSize;
     public float? PlayerListScale;
+    public float? PlayerListSpeed;
     public float? RaidHornVolume;
     public float? MusicVolume;
     public float? DPIScale;
