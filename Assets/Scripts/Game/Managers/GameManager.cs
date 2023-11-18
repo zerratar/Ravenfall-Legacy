@@ -2340,7 +2340,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         foreach (var player in allPlayers)
         {
-            if (Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Resources.Coins < RaidAuto.AutoJoinCost || player.Raid.AutoJoining || Raid.Initiator == player)
+            if (player.IsBot || Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Resources.Coins < RaidAuto.AutoJoinCost || player.Raid.AutoJoining || Raid.Initiator == player)
                 continue;
 
             if (player.Raid.AutoJoinCounter > 0)
@@ -2357,7 +2357,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 return;
             }
 
-            Shinobytes.Debug.Log("Requesting Raid Auto join with " + autoJoinList.Count + " players.");
+            //Shinobytes.Debug.Log("Requesting Raid Auto join with " + autoJoinList.Count + " players.");
             var result = await RavenNest.Players.AutoJoinRaid(autoJoinList.ToArray());
 
             nextAutoJoinRaid = Time.time + 5000;
@@ -2427,7 +2427,7 @@ public class GameManager : MonoBehaviour, IGameManager
         var allPlayers = Players.GetAllPlayers();
         foreach (var player in allPlayers)
         {
-            if (Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Resources.Coins < DungeonAuto.AutoJoinCost || player.Dungeon.AutoJoining || Dungeons.Initiator == player)
+            if (player.IsBot || Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Resources.Coins < DungeonAuto.AutoJoinCost || player.Dungeon.AutoJoining || Dungeons.Initiator == player)
                 continue;
 
             if (player.Dungeon.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
@@ -2444,7 +2444,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 return;
             }
 
-            Shinobytes.Debug.Log("Requesting Dungeon Auto join with " + autoJoinList.Count + " players.");
+            //Shinobytes.Debug.Log("Requesting Dungeon Auto join with " + autoJoinList.Count + " players.");
             var result = await RavenNest.Players.AutoJoinDungeon(autoJoinList.ToArray());
 
             nextAutoJoinDungeon = Time.time + 5000;

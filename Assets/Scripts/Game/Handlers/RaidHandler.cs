@@ -113,9 +113,9 @@ public class RaidHandler : MonoBehaviour
     {
         InRaid = true;
         RaidEnterTime = Time.time;
-#if DEBUG
-        Shinobytes.Debug.Log($"{player.PlayerName} entered the raid");
-#endif
+//#if DEBUG
+//        Shinobytes.Debug.Log($"{player.PlayerName} entered the raid");
+//#endif
 
         wasResting = player.Onsen.InOnsen;
 
@@ -249,9 +249,9 @@ public class RaidHandler : MonoBehaviour
 
         wasResting = false;
 
-#if DEBUG
-        Shinobytes.Debug.Log($"{player.PlayerName} left the raid");
-#endif
+//#if DEBUG
+//        Shinobytes.Debug.Log($"{player.PlayerName} left the raid");
+//#endif
     }
 
 
