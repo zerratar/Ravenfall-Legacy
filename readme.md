@@ -16,12 +16,13 @@ I try to keep the version up to date with latest releases of Unity to make sure 
 ## Other Ravenfall Projects
 The game client of Ravenfall is not all there is to it. We have various of other projects you can check out too
 
-The website and Game server of current version of Ravenfall: https://github.com/zerratar/ravennest
-The updater/patcher: https://github.com/zerratar/RavenWeave
-The twitch chat bot: https://github.com/zerratar/RavenBot
-The twitch extension: https://github.com/zerratar/Ravenfall-Overlay
+* The website and Game server of current version of Ravenfall: https://github.com/zerratar/ravennest
+* The updater/patcher: https://github.com/zerratar/RavenWeave
+* The twitch chat bot: https://github.com/zerratar/RavenBot
+* The twitch extension: https://github.com/zerratar/Ravenfall-Overlay
 
 A WIP online version of Ravenfall (v2.0) although project been suspended for the time being due to lack of time.
-Client: https://github.com/zerratar/Ravenfall
-Server: https://github.com/zerratar/Ravenfall-Server
-Bot: https://github.com/zerratar/Ravenfall-Bot
+
+* Client: https://github.com/zerratar/Ravenfall
+* Server: https://github.com/zerratar/Ravenfall-Server
+* Bot: https://github.com/zerratar/Ravenfall-Bot
