@@ -70,7 +70,6 @@ namespace RavenNest.SDK.Endpoints
 
         internal Task<ItemCollection> GetDeltaAsync(DateTime lastModified)
         {
-
             return request.Create()
                 .Method("delta")
                 .AddParameter(lastModified.ToString())

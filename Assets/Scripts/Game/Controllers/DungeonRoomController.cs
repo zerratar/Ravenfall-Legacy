@@ -172,7 +172,7 @@ public static class TargetExtensions
                 continue;
             }
 
-            var dist = Vector3.Distance(x.PositionInternal, player.Movement.Position);
+            var dist = Vector3.Distance(x.transform.position, player.Movement.Position);
             if (dist < maxDist)
             {
                 maxDist = dist;
@@ -198,7 +198,7 @@ public static class TargetExtensions
                 continue;
             }
 
-            var dist = Vector3.Distance(x.PositionInternal, player.Movement.Position);
+            var dist = Vector3.Distance(x.transform.position, player.Movement.Position);
             if (dist < maxDist)
             {
                 maxDist = dist;
@@ -223,7 +223,7 @@ public static class TargetExtensions
             .Where(x => !x.IsUnreachable && !x.Stats.IsDead && (filter == null || filter(x)))
             .OrderBy(x =>
             {
-                var distance = Vector3.Distance(x.PositionInternal, player.Movement.Position);
+                var distance = Vector3.Distance(x.Position, player.Movement.Position);
 
                 // We want it to sort by distance still, but to ensure we can protect our players
                 // we will add distance+constant so that healers are always prioritized.

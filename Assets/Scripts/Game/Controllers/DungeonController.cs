@@ -167,7 +167,7 @@ public class DungeonController : MonoBehaviour
         var joinedPlayers = dungeonManager.GetPlayers();
         foreach (var player in joinedPlayers)
         {
-            player.Dungeon.OnEnter();
+            player.dungeonHandler.OnEnter();
         }
 
         gameManager.Ferry.AssignBestCaptain();
@@ -194,7 +194,7 @@ public class DungeonController : MonoBehaviour
         player.AddExp(Skill.Slayer, slayerFactor);
 
         var skillFactor = Math.Max(5, slayerFactor * 0.5);
-        if (player.Dungeon.Ferry.HasReturned && !player.Dungeon.Ferry.HasDestination)
+        if (player.dungeonHandler.Ferry.HasReturned && !player.dungeonHandler.Ferry.HasDestination)
         {
             player.AddExp(Skill.Sailing, skillFactor);
             return;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class PlayerAnimationController : MonoBehaviour
@@ -18,7 +19,10 @@ public class PlayerAnimationController : MonoBehaviour
 
     public PlayerAnimationState State => animationState;
 
-    bool? isCaptain = null;
+    bool isCaptain;
+    private float last_MovementSpeedMultiplier;
+    private float last_CastSpeedMultiplier;
+    private float last_AttackSpeedMultiplier;
 
     // Use this for initialization
     void Start()
@@ -50,12 +54,23 @@ public class PlayerAnimationController : MonoBehaviour
 
         if (activeAnimator)
         {
-            if (MovementSpeedMultiplier > 0)
+            if (MovementSpeedMultiplier > 0 && last_MovementSpeedMultiplier != MovementSpeedMultiplier)
+            {
                 activeAnimator.SetFloat("MovementSpeedMultiplier", MovementSpeedMultiplier);
-            if (CastSpeedMultiplier > 0)
+                last_MovementSpeedMultiplier = MovementSpeedMultiplier;
+            }
+
+            if (CastSpeedMultiplier > 0 && last_CastSpeedMultiplier != CastSpeedMultiplier)
+            {
                 activeAnimator.SetFloat("CastSpeedMultiplier", CastSpeedMultiplier);
-            if (AttackSpeedMultiplier > 0)
+                last_CastSpeedMultiplier = CastSpeedMultiplier;
+            }
+
+            if (AttackSpeedMultiplier > 0 && last_AttackSpeedMultiplier != AttackSpeedMultiplier)
+            {
                 activeAnimator.SetFloat("AttackSpeedMultiplier", AttackSpeedMultiplier);
+                last_AttackSpeedMultiplier = AttackSpeedMultiplier;
+            }
         }
     }
 
@@ -129,7 +144,11 @@ public class PlayerAnimationController : MonoBehaviour
 
     public void SetCaptainState(bool isCaptain)
     {
-        if (!EnsureAnimator()) return;
+        if ((isCaptain && animationState == PlayerAnimationState.Captain)
+            || (!isCaptain && animationState != PlayerAnimationState.Captain)
+            || !EnsureAnimator())
+            return;
+
         if (isCaptain)
         {
             animationState = PlayerAnimationState.Captain;
@@ -271,7 +290,7 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (!EnsureAnimator()) return;
         ResetAnimationStates();
-        
+
         animationState = PlayerAnimationState.Woodcutting;
 
         SetTrigger("Start");
@@ -427,6 +446,7 @@ public class PlayerAnimationController : MonoBehaviour
     }
     #endregion
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool EnsureAnimator()
     {
         if (hasAnimator)

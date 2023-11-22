@@ -61,7 +61,7 @@ public class RaidForce : ChatBotCommandHandler
                 {
                     var scrollsLeft = plr.Inventory.RemoveScroll(ScrollType.Raid);
 
-                    if (!await Game.Raid.StartRaid(plr, req =>
+                    if (!Game.Raid.StartRaid(plr, req =>
                     {
                         if (Game.Raid.CanJoin(plr, string.Empty) == RaidJoinResult.CanJoin)
                         {

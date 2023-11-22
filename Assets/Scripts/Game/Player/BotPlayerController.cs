@@ -27,6 +27,11 @@ public class BotPlayerController : MonoBehaviour
             return;
         }
 
+        if (playerController.raidHandler.InRaid || playerController.dungeonHandler.InDungeon)
+        {
+            return;
+        }
+
         if (gameManager.Raid.Started && gameManager.Raid.CanJoin(playerController) == RaidJoinResult.CanJoin)
         {
             joiningEvent = true;

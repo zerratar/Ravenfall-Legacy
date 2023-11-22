@@ -15,35 +15,35 @@ public class RaidJoin : ChatBotCommandHandler<string>
         var player = PlayerManager.GetPlayer(gm.Sender);
         if (player)
         {
-            if (player.StreamRaid.InWar)
+            if (player.streamRaidHandler.InWar)
             {
                 client.SendReply(gm, Localization.MSG_JOIN_RAID_WAR);
                 return;
             }
 
-            if (player.Dungeon.InDungeon)
+            if (player.dungeonHandler.InDungeon)
             {
                 client.SendReply(gm, Localization.MSG_JOIN_RAID_DUNGEON);
                 return;
             }
-            //if (player.Ferry.OnFerry)
+            //if (player.ferryHandler.OnFerry)
             //{
             //    client.SendMessage(username, Localization.MSG_JOIN_RAID_FERRY);
             //    return;
             //}
 
-            //if (player.Ferry.Active)
+            //if (player.ferryHandler.Active)
             //{
-            //    player.Ferry.Disembark();
+            //    player.ferryHandler.Disembark();
             //}
 
-            if (player.Arena.InArena && Game.Arena.Started)
+            if (player.arenaHandler.InArena && Game.Arena.Started)
             {
                 client.SendReply(gm, Localization.MSG_JOIN_RAID_ARENA);
                 return;
             }
 
-            if (player.Duel.InDuel)
+            if (player.duelHandler.InDuel)
             {
                 client.SendReply(gm, Localization.MSG_JOIN_RAID_DUEL);
                 return;

@@ -40,7 +40,7 @@
                 var count = 0;
                 foreach (var p in PlayerManager.GetAllPlayers())
                 {
-                    if (string.IsNullOrEmpty(p.CurrentTaskName) && !p.Dungeon.InDungeon && !p.Raid.InRaid && !p.Duel.InDuel && !p.Ferry.OnFerry && !p.Ferry.Embarking && p.Stats.CombatLevel > 3)
+                    if (string.IsNullOrEmpty(p.CurrentTaskName) && !p.dungeonHandler.InDungeon && !p.raidHandler.InRaid && !p.duelHandler.InDuel && !p.ferryHandler.OnFerry && !p.ferryHandler.Embarking && p.Stats.CombatLevel > 3)
                     {
                         count++;
                         p.SetTask(TaskType.Fighting, "all");

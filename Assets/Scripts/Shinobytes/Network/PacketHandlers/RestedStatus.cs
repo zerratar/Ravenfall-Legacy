@@ -17,7 +17,7 @@ public class RestedStatus : ChatBotCommandHandler
                 return;
             }
 
-            if (player.Onsen.InOnsen)
+            if (player.onsenHandler.InOnsen)
             {
                 SendOnsenStatusMessage(gm, player, client);
                 return;

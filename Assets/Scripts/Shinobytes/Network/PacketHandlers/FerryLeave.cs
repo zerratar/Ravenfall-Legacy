@@ -17,21 +17,21 @@
             return;
         }
 
-        if (!player.Ferry)
+        if (!player.ferryHandler)
             return;
 
-        if (player.Ferry.Disembarking)
+        if (player.ferryHandler.Disembarking)
         {
             client.SendReply(gm, Localization.MSG_DISEMBARK_ALREADY);
             return;
         }
 
-        if (!player.Ferry.Active)
+        if (!player.ferryHandler.Active)
         {
             client.SendReply(gm, Localization.MSG_DISEMBARK_FAIL);
             return;
         }
 
-        player.Ferry.BeginDisembark();        
+        player.ferryHandler.BeginDisembark();
     }
 }

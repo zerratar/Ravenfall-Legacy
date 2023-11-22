@@ -60,9 +60,10 @@ public class TeleportHandler : MonoBehaviour
 
         player.taskTarget = null;
 
-        player.SetPosition(position, adjustPlayerToNavmesh);
-        player.SetDestination(position);
         player.Movement.Lock();
+        player.SetPosition(position, adjustPlayerToNavmesh);
+        //player.SetDestination(position);
+        
 
         if (!hasParent && parent)
         {
@@ -76,6 +77,10 @@ public class TeleportHandler : MonoBehaviour
         player.InCombat = false;
         player.ClearAttackers();
         player.Island = islandManager.FindPlayerIsland(player);
+        if (player.Island)
+        {
+            player.Island.AddPlayer(player);
+        }
     }
 
 }

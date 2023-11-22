@@ -258,11 +258,11 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
     public void UpdateClanCape()
     {
-        if (this.player.Clan.InClan)
+        if (this.player.clanHandler.InClan)
         {
             gameManager.PlayerLogo.GetLogo(
-                this.player.Clan.ClanInfo.OwnerUserId,
-                this.player.Clan.Logo, logo =>
+                this.player.clanHandler.ClanInfo.OwnerUserId,
+                this.player.clanHandler.Logo, logo =>
                 {
                     SetCapeLogo(logo);
                 });

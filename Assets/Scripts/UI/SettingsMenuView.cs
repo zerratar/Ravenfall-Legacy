@@ -1,5 +1,6 @@
 ﻿using Assets.Scripts.UI.Menu;
 using System;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,6 +21,8 @@ public class SettingsMenuView : MenuView
     public const string SettingsName_PlayerCacheExpiryTime = "PlayerCacheExpiryTime";
     public const string SettingsName_AlertExpiredStateCacheInChat = "AlertExpiredStateCacheInChat";
     public const string SettingsName_ItemDropMessageType = "ItemDropMessageType";
+
+    public const string SettingsName_StreamLabelsEnabled = "StreamLabelsEnabled";
 
     public const string SettingsName_PathfindingQualitySettings = "PathfindingQualitySettings";
 
@@ -57,6 +60,7 @@ public class SettingsMenuView : MenuView
     [SerializeField] private TMPro.TMP_Dropdown boostRequirementDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown playerCacheExpiryTimeDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown itemDropMessageDropdown = null;
+    [SerializeField] private Toggle streamLabelsEnabled = null;
     [SerializeField] private Toggle alertPlayerCacheExpirationToggle = null;
     [SerializeField] private TMPro.TextMeshProUGUI[] itemDropMessageExamples = null;
     [SerializeField] private TMPro.TMP_Dropdown pathfindingQuality = null;
@@ -120,7 +124,10 @@ public class SettingsMenuView : MenuView
         pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
         playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(SettingsMenuView.PlayerCacheExpiry.Length - 1);
         boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
+
         alertPlayerCacheExpirationToggle.isOn = settings.AlertExpiredStateCacheInChat.GetValueOrDefault(gameManager.AlertExpiredStateCacheInChat);
+        streamLabelsEnabled.isOn = settings.StreamLabels.Enabled;
+
         playerNameToggle.isOn = settings.PlayerNamesVisible.GetValueOrDefault(gameManager.PlayerNamesVisible);
         itemDropMessageDropdown.value = settings.ItemDropMessageType.GetValueOrDefault((int)gameManager.ItemDropMessageSettings);
 
@@ -205,6 +212,7 @@ public class SettingsMenuView : MenuView
         settings.PlayerCacheExpiryTime = playerCacheExpiryTimeDropdown.value;
         settings.PathfindingQualitySettings = pathfindingQuality.value;
         settings.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
+        settings.StreamLabels.Enabled = streamLabelsEnabled.isOn;
         settings.ItemDropMessageType = itemDropMessageDropdown.value;
         settings.CameraRotationSpeed = observerCameraRotationSlider.value * -1;
         settings.PlayerNamesVisible = playerNameToggle.isOn;

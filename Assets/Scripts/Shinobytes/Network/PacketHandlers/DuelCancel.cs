@@ -33,7 +33,7 @@ public class ClanDemote : ChatBotCommandHandler<Arguments>
             return;
         }
 
-        if (plr.Clan == null || !plr.Clan.InClan)
+        if (plr.clanHandler == null || !plr.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_NOT_IN_CLAN);
             return;
@@ -51,7 +51,7 @@ public class ClanDemote : ChatBotCommandHandler<Arguments>
         var result = await Game.RavenNest.Clan.DemoteMemberAsync(plr.Id, otherPlayer.Id, value);
         if (result.Success)
         {
-            otherPlayer.Clan.SetRole(result.NewRole);
+            otherPlayer.clanHandler.SetRole(result.NewRole);
             client.SendReply(gm, $"{otherPlayer.Name} has been demoted to {result.NewRole.Name}");
             return;
         }

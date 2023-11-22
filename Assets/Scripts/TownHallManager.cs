@@ -43,8 +43,12 @@ public class TownHallManager : MonoBehaviour
 
     public void SetTierByLevel(int level)
     {
-        SetLevel(level);
-        SetTier(GetTownHallTier(level));
+        if (this.level != level)
+        {
+            SetLevel(level);
+            SetTier(GetTownHallTier(level));
+            if (info) info.MakeDirty();
+        }
     }
 
     public void SetTier(int tier)
@@ -69,6 +73,7 @@ public class TownHallManager : MonoBehaviour
         if (info)
         {
             info.Tier = tier;
+            info.MakeDirty();
         }
     }
 
@@ -78,6 +83,7 @@ public class TownHallManager : MonoBehaviour
         {
             info.UsedSlots = usedCount;
             info.Slots = count;
+            info.MakeDirty();
         }
     }
 
@@ -85,6 +91,7 @@ public class TownHallManager : MonoBehaviour
     {
         if (info)
         {
+            info.MakeDirty();
             info.Toggle();
         }
     }
@@ -95,6 +102,7 @@ public class TownHallManager : MonoBehaviour
         if (info)
         {
             info.Level = level;
+            info.MakeDirty();
         }
     }
 
@@ -104,6 +112,7 @@ public class TownHallManager : MonoBehaviour
         if (info)
         {
             info.Experience = experience;
+            info.MakeDirty();
         }
     }
 
@@ -134,12 +143,40 @@ public class TownHallManager : MonoBehaviour
 
     internal void SetResources(long coins, long ore, long wood, long fish, long wheat)
     {
-        this.coins = coins;
-        this.ore = ore;
-        this.wood = wood;
-        this.fish = fish;
-        this.wheat = wheat;
+        var modified = false;
+        if (this.coins != coins)
+        {
+            this.coins = coins;
+            modified = true;
+        }
 
-        activeTownHall.ResourcesUpdated();
+        if (this.ore != ore)
+        {
+            this.ore = ore;
+            modified = true;
+        }
+
+        if (this.wood != wood)
+        {
+            this.wood = wood;
+            modified = true;
+        }
+
+        if (this.fish != fish)
+        {
+            this.fish = fish;
+            modified = true;
+        }
+
+        if (this.wheat != wheat)
+        {
+            this.wheat = wheat;
+            modified = true;
+        }
+
+        if (modified)
+        {
+            activeTownHall.ResourcesUpdated();
+        }
     }
 }

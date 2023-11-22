@@ -101,8 +101,8 @@ public class PlayerDetails : MonoBehaviour
 
         IsMoving = dragscript.IsDragging;
 
-        if (observedPlayer.Clan.InClan)
-            SetText(lblClanName, "<" + observedPlayer.Clan.ClanInfo.Name + ">");
+        if (observedPlayer.clanHandler.InClan)
+            SetText(lblClanName, "<" + observedPlayer.clanHandler.ClanInfo.Name + ">");
         else
             SetText(lblClanName, "");
 
@@ -123,7 +123,7 @@ public class PlayerDetails : MonoBehaviour
         if (isRested)
         {
             var time = Utility.FormatTime(observedPlayer.Rested.RestedTime / 60f / 60f, false);
-            if (observedPlayer.Onsen.InOnsen)
+            if (observedPlayer.onsenHandler.InOnsen)
             {
                 SetText(lblRestedAmount, "<color=#FFDE00>" + time + "</color>");
                 // increasing time
@@ -139,7 +139,7 @@ public class PlayerDetails : MonoBehaviour
         SetActive(lblTraining.gameObject, isTrainingSomething);
         SetActive(lblTrainingSkill.gameObject, isTrainingSomething);
 
-        if (observedPlayer.Ferry && observedPlayer.Ferry.OnFerry)
+        if (observedPlayer.ferryHandler && observedPlayer.ferryHandler.OnFerry)
         {
             lblTrainingSkill.text = "Sailing";
             lblTimeForLevel.text = GetTimeLeftForLevelFormatted(observedPlayer.Stats.Sailing);

@@ -265,17 +265,24 @@ public class FerryController : MonoBehaviour
     private void DemoteToSailor(PlayerController captain)
     {
         // make sure first to check if this player is still on the ferry.
-        if (!captain.Ferry.OnFerry)
+        if (!captain.ferryHandler.OnFerry)
         {
             return;
         }
 
-        captain.Ferry.AddPlayerToFerry(false);
+        captain.ferryHandler.MoveToSailorPosition();
     }
 
     private void PromoteToCaptain(PlayerController nextCaptain)
     {
-        nextCaptain.transform.SetParent(playerPositions[0]);
+        if (nextCaptain != null)
+        {
+            var t = nextCaptain.transform;
+            t.SetParent(playerPositions[0]);
+            t.localPosition = Vector3.zero;
+            t.localRotation = Quaternion.identity;
+        }
+
         SetCaptain(nextCaptain);
     }
 

@@ -5,7 +5,7 @@
         var player = gameManager.Players.GetPlayerById(data.Id);
         if (!player) return;
 
-        if (!player.Onsen.InOnsen)
+        if (!player.onsenHandler.InOnsen)
         {
             return;
         }

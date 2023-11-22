@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.AI.Navigation;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -19,6 +20,23 @@ public class RavenfallMeshTools
     static ProfilerMarker smp4 = new ProfilerMarker("Cleanup");
 
 
+    [MenuItem("Ravenfall/Make all NavMeshModifiers Add or Modify")]
+    public static void UpdateNavMeshModifiers()
+    {
+        var obj = GameObject.FindObjectsByType<NavMeshModifier>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var updated = 0;
+        foreach (var o in obj)
+        {
+            if (o.ignoreFromBuild != false)
+            {
+                o.ignoreFromBuild = false;
+
+                updated++;
+            }
+        }
+
+        Shinobytes.Debug.Log($"Updated {updated} out of {obj.Length} NavMeshModifiers");
+    }
     [MenuItem("Ravenfall/Fix Negative BoxColliders")]
     public static void FixNegativeBoxColliders()
     {
@@ -27,7 +45,7 @@ public class RavenfallMeshTools
             boxColliders = GameObject.FindObjectsByType<BoxCollider>(FindObjectsSortMode.None);
         else
             boxColliders = Selection.activeGameObject.GetComponentsInChildren<BoxCollider>();
-        
+
         int fixCount = 0;
         foreach (var bc in boxColliders)
         {
@@ -100,7 +118,7 @@ public class RavenfallMeshTools
 
         foreach (var go in sel)
         {
-            var obj = go;            
+            var obj = go;
             if (obj.name != "Tree" || !obj.GetComponent<TreeController>())
             {
                 obj = new GameObject("Tree");

@@ -22,28 +22,27 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public GameManager GameManager;
 
-    [SerializeField] private ManualPlayerController manualPlayerController;
+    [SerializeField] public ManualPlayerController manualPlayerController;
     [NonSerialized] public string taskArgument;
-    [SerializeField] private ChunkManager chunkManager;
+    [SerializeField] public ChunkManager chunkManager;
 
-    [SerializeField] private HealthBarManager healthBarManager;
-    [SerializeField] private NavMeshAgent agent;
-    [SerializeField] private Animator animator;
-    [SerializeField] private RaidHandler raidHandler;
-    [SerializeField] private StreamRaidHandler streamRaidHandler;
+    [SerializeField] public HealthBarManager healthBarManager;
+    [SerializeField] public NavMeshAgent agent;
+    [SerializeField] public Animator animator;
+    [SerializeField] public RaidHandler raidHandler;
+    [SerializeField] public StreamRaidHandler streamRaidHandler;
 
-    [SerializeField] private ClanHandler clanHandler;
+    [SerializeField] public ClanHandler clanHandler;
+    [SerializeField] public DungeonHandler dungeonHandler;
+    [SerializeField] public OnsenHandler onsenHandler;
 
-    [SerializeField] private DungeonHandler dungeonHandler;
-    [SerializeField] private OnsenHandler onsenHandler;
-
-    [SerializeField] private ArenaHandler arenaHandler;
-    [SerializeField] private CombatHandler combatHandler;
-    [SerializeField] private DuelHandler duelHandler;
-    [SerializeField] private FerryHandler ferryHandler;
-    [SerializeField] private TeleportHandler teleportHandler;
-    [SerializeField] private EffectHandler effectHandler;
-    [SerializeField] private PlayerAnimationController playerAnimations;
+    [SerializeField] public ArenaHandler arenaHandler;
+    [SerializeField] public CombatHandler combatHandler;
+    [SerializeField] public DuelHandler duelHandler;
+    [SerializeField] public FerryHandler ferryHandler;
+    [SerializeField] public TeleportHandler teleportHandler;
+    [SerializeField] public EffectHandler effectHandler;
+    [SerializeField] public PlayerAnimationController playerAnimations;
     //[SerializeField] private Rigidbody rbody;
 
     [SerializeField] private float attackAnimationTime = 1.5f;
@@ -61,6 +60,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     [SerializeField] private GameObject[] availableMonsterMeshes;
 
+    private Transform _transform;
     private StatsModifiers playerStatsModifiers = new StatsModifiers();
     private ConcurrentDictionary<StatusEffectType, StatusEffect> statusEffects = new ConcurrentDictionary<StatusEffectType, StatusEffect>();
 
@@ -232,17 +232,17 @@ public class PlayerController : MonoBehaviour, IAttackable
     }
 
     public SyntyPlayerAppearance Appearance => playerAppearance ?? (playerAppearance = GetComponent<SyntyPlayerAppearance>());
-    public StreamRaidHandler StreamRaid => streamRaidHandler;
-    public RaidHandler Raid => raidHandler;
-    public ClanHandler Clan => clanHandler;
-    public ArenaHandler Arena => arenaHandler;
-    public DuelHandler Duel => duelHandler;
-    public CombatHandler Combat => combatHandler;
-    public FerryHandler Ferry => ferryHandler;
-    public EffectHandler Effects => effectHandler;
-    public TeleportHandler Teleporter => teleportHandler;
-    public DungeonHandler Dungeon => dungeonHandler;
-    public OnsenHandler Onsen => onsenHandler;
+    //public StreamRaidHandler StreamRaid => streamRaidHandler;
+    //public RaidHandler Raid => raidHandler;
+    //public ClanHandler Clan => clanHandler;
+    //public ArenaHandler Arena => arenaHandler;
+    //public DuelHandler Duel => duelHandler;
+    //public CombatHandler Combat => combatHandler;
+    //public FerryHandler Ferry => ferryHandler;
+    //public EffectHandler Effects => effectHandler;
+    //public TeleportHandler Teleporter => teleportHandler;
+    //public DungeonHandler Dungeon => dungeonHandler;
+    //public OnsenHandler Onsen => onsenHandler;
 
     public bool ItemDropEventActive { get; private set; }
 
@@ -280,8 +280,10 @@ public class PlayerController : MonoBehaviour, IAttackable
     private ScheduledAction activeScheduledAction;
     private float healTimer;
     private float healDuration;
+    private int statusEffectCount;
     private float lastHealTick;
     private float lastUnstuckUsed;
+    private bool componentsInitialized;
 
     public ScheduledAction ScheduledAction => activeScheduledAction;
 
@@ -464,6 +466,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     void Awake()
     {
+        this._transform = this.transform;
         // Initialize handlers that are no longer monobehaviours
         this.dungeonHandler = new DungeonHandler(this, FindObjectOfType<DungeonManager>());
     }
@@ -479,28 +482,34 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void EnsureComponents()
     {
-        if (!Movement) Movement = GetComponent<PlayerMovementController>();
-        if (!Movement) Movement = gameObject.AddComponent<PlayerMovementController>();
-        if (!onsenHandler) onsenHandler = GetComponent<OnsenHandler>();
-        if (!clanHandler) clanHandler = GetComponent<ClanHandler>();
-        if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
-        if (!Inventory) Inventory = GetComponent<Inventory>();
-        if (!GameManager) GameManager = FindAnyObjectByType<GameManager>();
-        if (!chunkManager) chunkManager = GameManager.Chunks; ;
-        if (!healthBarManager) healthBarManager = FindAnyObjectByType<HealthBarManager>();
-        if (!agent) agent = GetComponent<NavMeshAgent>();
-        if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
-        if (!effectHandler) effectHandler = GetComponent<EffectHandler>();
-        if (!teleportHandler) teleportHandler = GetComponent<TeleportHandler>();
-        if (!ferryHandler) ferryHandler = GetComponent<FerryHandler>();
-        if (!raidHandler) raidHandler = GetComponent<RaidHandler>();
-        if (!streamRaidHandler) streamRaidHandler = GetComponent<StreamRaidHandler>();
-        if (!arenaHandler) arenaHandler = GetComponent<ArenaHandler>();
-        if (!duelHandler) duelHandler = GetComponent<DuelHandler>();
-        if (!combatHandler) combatHandler = GetComponent<CombatHandler>();
-        if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
-        if (!playerAppearance) playerAppearance = GetComponent<SyntyPlayerAppearance>();
-        if (!this.hitRangeCollider) this.hitRangeCollider = GetComponent<SphereCollider>();
+        if (componentsInitialized) return;
+        try
+        {
+            if (!Movement) Movement = GetComponent<PlayerMovementController>();
+            if (!Movement) Movement = gameObject.AddComponent<PlayerMovementController>();
+            if (!onsenHandler) onsenHandler = GetComponent<OnsenHandler>();
+            if (!clanHandler) clanHandler = GetComponent<ClanHandler>();
+            if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
+            if (!Inventory) Inventory = GetComponent<Inventory>();
+            if (!GameManager) GameManager = FindAnyObjectByType<GameManager>();
+            if (!chunkManager) chunkManager = GameManager.Chunks; ;
+            if (!healthBarManager) healthBarManager = FindAnyObjectByType<HealthBarManager>();
+            if (!agent) agent = GetComponent<NavMeshAgent>();
+            if (!Equipment) Equipment = GetComponent<PlayerEquipment>();
+            if (!effectHandler) effectHandler = GetComponent<EffectHandler>();
+            if (!teleportHandler) teleportHandler = GetComponent<TeleportHandler>();
+            if (!ferryHandler) ferryHandler = GetComponent<FerryHandler>();
+            if (!raidHandler) raidHandler = GetComponent<RaidHandler>();
+            if (!streamRaidHandler) streamRaidHandler = GetComponent<StreamRaidHandler>();
+            if (!arenaHandler) arenaHandler = GetComponent<ArenaHandler>();
+            if (!duelHandler) duelHandler = GetComponent<DuelHandler>();
+            if (!combatHandler) combatHandler = GetComponent<CombatHandler>();
+            if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
+            if (!playerAppearance) playerAppearance = GetComponent<SyntyPlayerAppearance>();
+            if (!this.hitRangeCollider) this.hitRangeCollider = GetComponent<SphereCollider>();
+            this.componentsInitialized = true;
+        }
+        catch { }
     }
 
     void LateUpdate()
@@ -508,8 +517,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (GameCache.IsAwaitingGameRestore) return;
         if (Overlay.IsGame)
         {
-            var euler = transform.rotation.eulerAngles;
-            transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
+            var euler = _transform.rotation.eulerAngles;
+            _transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
         }
     }
 
@@ -584,7 +593,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         var deltaTime = GameTime.deltaTime;
-        this.Movement.UpdateIdle(this.Ferry.OnFerry);
+        this.Movement.UpdateIdle(this.ferryHandler.OnFerry);
 
         //HandleRested();
 
@@ -631,7 +640,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         actionTimer -= deltaTime;
 
-        if (Onsen.InOnsen)
+        if (onsenHandler.InOnsen)
             return;
 
         this.Movement.UpdateMovement();
@@ -678,18 +687,13 @@ public class PlayerController : MonoBehaviour, IAttackable
         //}
     }
 
-    private void ClearStatusEffects()
-    {
-        this.playerStatsModifiers.Reset();
-    }
-
     private void UpdateActiveEffects()
     {
-        ClearStatusEffects();
+        this.playerStatsModifiers.Reset();
+
         // clearing the effects first will just reset the player state, so if the
         // active effect is still active later then it will be reapplied. Its just a simple way to avoid having to keep track on when to toggle on or off.
-
-        if (statusEffects.Count > 0)
+        if (statusEffectCount > 0)
         {
             var effects = statusEffects.Values.ToList();
             foreach (var fx in effects)
@@ -717,7 +721,6 @@ public class PlayerController : MonoBehaviour, IAttackable
         var now = DateTime.UtcNow;
         //var elapsed = now - fx.LastUpdateUtc;
         var timeDuration = fx.Duration;//fx.Effect.ExpiresUtc - fx.Effect.StartUtc;
-        var isFirstTime = fx.LastUpdateUtc <= DateTime.UnixEpoch;
 
         fx.LastUpdateUtc = now;
 
@@ -893,6 +896,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         // if we have visual effects bound to this, remove it.
         // then delete it from the activeEffects dict
         statusEffects.TryRemove(fx.Effect.Type, out _);
+        statusEffectCount = statusEffects.Count;
         lastHealTick = -1;
     }
 
@@ -970,14 +974,17 @@ public class PlayerController : MonoBehaviour, IAttackable
 
             if (regenTimer >= RegenTime)
             {
+                var oldValue = Stats.Health.CurrentValue;
+
                 var amount = this.Stats.Health.MaxLevel * RegenRate * GameTime.deltaTime;
                 regenAmount += amount;
                 var add = Mathf.FloorToInt(regenAmount);
                 if (add > 0)
                 {
-                    Stats.Health.CurrentValue = Mathf.Min(this.Stats.Health.MaxLevel, Stats.Health.CurrentValue + add);
+                    var newValue = Mathf.Min(this.Stats.Health.MaxLevel, Stats.Health.CurrentValue + add);
+                    Stats.Health.CurrentValue = newValue;
                     regenAmount -= add;
-                    if (healthBar && healthBar != null)
+                    if (healthBar && healthBar != null && oldValue != newValue)
                     {
                         healthBar.UpdateHealth();
                     }
@@ -1040,7 +1047,8 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         var state = new PlayerState();
         state.PlayerId = this.Id;
-        state.SyncTime = GameSystems.time;
+
+        state.SyncTime = GameTime.time;
         state.Experience = Stats.GetExperienceList();
         state.Level = Stats.GetLevelList();
 
@@ -1064,13 +1072,13 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void GotoClosest(TaskType type, bool silent = false)
     {
-        if (Raid.InRaid || Dungeon.InDungeon)
+        if (raidHandler.InRaid || dungeonHandler.InDungeon)
         {
             return;
         }
 
-        var onFerry = Ferry && Ferry.Active;
-        var hasNotReachedFerryDestination = Ferry.Destination && Island != Ferry.Destination;
+        var onFerry = ferryHandler && ferryHandler.Active;
+        var hasNotReachedFerryDestination = ferryHandler.Destination && Island != ferryHandler.Destination;
 
         if (onFerry || Island == null || hasNotReachedFerryDestination)
         {
@@ -1084,7 +1092,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         Island = GameManager.Islands.FindPlayerIsland(this);
         Chunk = chunkManager.GetChunkOfType(this, type);
 
-        hasNotReachedFerryDestination = Ferry.Destination && Island != Ferry.Destination;
+        hasNotReachedFerryDestination = ferryHandler.Destination && Island != ferryHandler.Destination;
         if (Island == null || hasNotReachedFerryDestination)
         {
             LateGotoClosest(type, silent);
@@ -1612,14 +1620,14 @@ public class PlayerController : MonoBehaviour, IAttackable
                 Rested.ExpBoost = 2;
             }
 
-            Dungeon.AutoJoinCounter = player.State.AutoJoinDungeonCounter;
-            Raid.AutoJoinCounter = player.State.AutoJoinRaidCounter;
+            dungeonHandler.AutoJoinCounter = player.State.AutoJoinDungeonCounter;
+            raidHandler.AutoJoinCounter = player.State.AutoJoinRaidCounter;
 
             var setTask = true;
             if (hasGameManager)
             {
-                this.Teleporter.islandManager = this.GameManager.Islands;
-                this.Teleporter.player = this;
+                this.teleportHandler.islandManager = this.GameManager.Islands;
+                this.teleportHandler.player = this;
 
                 if (!string.IsNullOrEmpty(player.State.Island) && player.State.X != null)
                 {
@@ -1628,7 +1636,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                         var targetIsland = GameManager.Islands.Find(player.State.Island);
                         if (targetIsland)
                         {
-                            this.Teleporter.Teleport(targetIsland.SpawnPosition);
+                            this.teleportHandler.Teleport(targetIsland.SpawnPosition);
                         }
                     }
                     else
@@ -1651,7 +1659,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                             }
                         }
 
-                        this.Teleporter.Teleport(newPosition);
+                        this.teleportHandler.Teleport(newPosition);
                     }
                 }
 
@@ -1715,7 +1723,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             if (joinFerryAfterInitialize)
             {
                 Movement.Lock();
-                Ferry.AddPlayerToFerry();
+                ferryHandler.AddPlayerToFerry();
             }
         }, prepareForCamera, false); // Inventory.Create will update the appearance.
     }
@@ -1794,7 +1802,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             skill = SkillUtilities.ParseSkill(args);
         }
 
-        if (Overlay.IsOverlay || Duel.InDuel)
+        if (Overlay.IsOverlay || duelHandler.InDuel)
         {
             currentTask = type;
             CurrentTaskName = currentTask.ToString();
@@ -1802,9 +1810,9 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
-        if (Ferry && Ferry.Active)
+        if (ferryHandler && ferryHandler.Active)
         {
-            Ferry.BeginDisembark();
+            ferryHandler.BeginDisembark();
         }
         var Game = GameManager;
         if (Game.Arena && Game.Arena.HasJoined(this) && !Game.Arena.Leave(this))
@@ -1816,7 +1824,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return;
         }
 
-        if (Onsen.InOnsen)
+        if (onsenHandler.InOnsen)
         {
             Game.Onsen.Leave(this);
         }
@@ -1828,12 +1836,12 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         var isCombatSkill = skill.IsCombatSkill();
 
-        if (Raid.InRaid && !isCombatSkill)
+        if (raidHandler.InRaid && !isCombatSkill)
         {
             Game.Raid.Leave(this);
         }
 
-        if (Dungeon.InDungeon && !isCombatSkill)
+        if (dungeonHandler.InDungeon && !isCombatSkill)
         {
             return;
         }
@@ -1848,7 +1856,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         CurrentTaskName = currentTask.ToString();
         SetTaskArgument(args);
 
-        if (Raid.InRaid || Dungeon.InDungeon)
+        if (raidHandler.InRaid || dungeonHandler.InDungeon)
         {
             return;
         }
@@ -2142,8 +2150,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             return false;
         }
-
-        if (!target.Transform || target.Transform == null)
+        var targetTransform = target.Transform;
+        if (!targetTransform || target.Transform == null)
         {
             return false;
         }
@@ -2153,7 +2161,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             return true;
         }
 
-        Target = target.Transform;
+        Target = targetTransform;
         var attackType = GetAttackType();
         InCombat = true;
         regenTimer = 0f;
@@ -2188,7 +2196,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         playerAnimations.Attack(weaponAnim, UnityEngine.Random.Range(0, attackAnimation), Equipment.HasShield);
 
-        transform.LookAt(Target.transform);
+        this._transform.LookAt(Target);
 
         var startTime = Time.time;
 
@@ -2244,7 +2252,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             // allow for some variation in gains based on how high you heal.
 
             var factor = (1 + (heal / maxHeal * 0.2)) *
-                ((Raid.InRaid || Dungeon.InDungeon) ? 1.0 : Chunk?.CalculateExpFactor(this) ?? 1.0);
+                ((raidHandler.InRaid || dungeonHandler.InDungeon) ? 1.0 : Chunk?.CalculateExpFactor(this) ?? 1.0);
             AddExp(Skill.Healing, factor);
         }
         catch (Exception exc)
@@ -2265,7 +2273,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (TrainingRanged)
         {
-            this.Effects.DestroyProjectile();
+            this.effectHandler.DestroyProjectile();
         }
 
         var damage = CalculateDamage(enemy);
@@ -2292,7 +2300,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                 if (activeSkill.IsCombatSkill())
                 {
                     //activeSkill = Skill.Health; // ALL
-                    var factor = Dungeon.InDungeon ? 1d : Chunk?.CalculateExpFactor(player) ?? 1d;
+                    var factor = dungeonHandler.InDungeon ? 1d : Chunk?.CalculateExpFactor(player) ?? 1d;
 
                     if (enemyController != null)
                     {
@@ -2574,8 +2582,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (playerAnimations)
             playerAnimations.Cheer();
         //gameManager.PlayerLevelUp(this, GetSkill(skillName));
-        if (Effects)
-            Effects.LevelUp();
+        if (effectHandler)
+            effectHandler.LevelUp();
     }
 
     #endregion
@@ -2666,7 +2674,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public bool SetDestination(Vector3 position)
     {
-        InCombat = Duel.InDuel || attackTarget;
+        InCombat = duelHandler.InDuel || attackTarget;
         return Movement.SetDestination(position);
     }
 
@@ -2930,6 +2938,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
 
             s.CurrentValue = Mathf.FloorToInt(s.Level + (float)s.Bonus);
+            s.MaxLevel = Mathf.FloorToInt(s.Level + s.Bonus);
         }
 
         foreach (var e in equipped)
@@ -2971,6 +2980,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                     continue;
                 }
                 sb.Skill.CurrentValue = Mathf.FloorToInt(sb.Skill.Level + (float)sb.Skill.Bonus);
+                sb.Skill.MaxLevel = Mathf.FloorToInt(sb.Skill.Level + sb.Skill.Bonus);
             }
         }
 
@@ -3052,29 +3062,29 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             // if we are in a raid, teleport to the spawnposition of the island the player is on.
             // this could potentially be improved by teleporting to the spawnposition of the raid instead
-            if (Raid.InRaid)
+            if (raidHandler.InRaid)
             {
                 this.SetPosition(this.Island.SpawnPosition);
                 return true;
             }
 
             // if we are in a dungeon, teleport to the spawnposition of the dungeon
-            if (Dungeon.InDungeon)
+            if (dungeonHandler.InDungeon)
             {
-                this.SetPosition(Dungeon.SpawnPosition);
+                this.SetPosition(dungeonHandler.SpawnPosition);
                 return true;
             }
 
             // if we are in a duel, interrupt the duel
-            if (Duel.InDuel)
+            if (duelHandler.InDuel)
             {
-                this.Duel.Interrupt();
+                this.duelHandler.Interrupt();
                 this.SetPosition(this.Island.SpawnPosition);
                 return true;
             }
 
             // if the player is stuck on the war island, teleport to home
-            if (Island && Island.AllowRaidWar && !StreamRaid.InWar)
+            if (Island && Island.AllowRaidWar && !streamRaidHandler.InWar)
             {
                 var homeIsland = GameManager.Islands.All.FirstOrDefault(x => x.Identifier == "home");
                 if (homeIsland)
@@ -3085,14 +3095,14 @@ public class PlayerController : MonoBehaviour, IAttackable
                 }
             }
 
-            if (Ferry.OnFerry)
+            if (ferryHandler.OnFerry)
             {
                 this.transform.localPosition = Vector3.zero;
                 this.transform.localRotation = Quaternion.identity;
                 return true;
             }
 
-            if (Onsen.InOnsen)
+            if (onsenHandler.InOnsen)
             {
                 GameManager.Onsen.Leave(this);
             }
@@ -3106,7 +3116,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             // then we are teleported to the spawnposition of the current island we are on.
             // if no island can be detected, then telepor to home island.
             // (this could be improved to take closest island into consideration)
-            if (!Onsen.InOnsen)
+            if (!onsenHandler.InOnsen)
             {
                 var i = Island;
                 if (!i) i = this.GameManager.Islands.FindPlayerIsland(this);
@@ -3166,6 +3176,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     public void ApplyStatusEffect(CharacterStatusEffect effect)
     {
         this.statusEffects[effect.Type] = new StatusEffect { Effect = effect };
+        statusEffectCount = statusEffects.Count;
     }
 
     internal IReadOnlyList<StatusEffect> GetStatusEffects()

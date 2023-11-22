@@ -98,6 +98,7 @@ public class GameManager : MonoBehaviour, IGameManager
     private float experienceSaveInterval = 3f;
     private float stateSaveInterval = 3f;
 
+
     private SessionStats sessionStats;
     public SessionStats SessionStats => sessionStats;
 
@@ -224,7 +225,6 @@ public class GameManager : MonoBehaviour, IGameManager
                 dayNightCycle.UseRealTime = value;
         }
     }
-
     public bool AutoPotatoMode { get; set; }
     public bool IsLoaded { get; private set; }
     public bool DungeonStartEnabled { get; internal set; } = true;
@@ -247,15 +247,17 @@ public class GameManager : MonoBehaviour, IGameManager
     public VillageStats villageStats;
     public DungeonStats dungeonStats;
     public FerryStats ferryStats;
-    private float lastAutoJoinDungeon;
-    private float autoJoinDungeonAnnouncement;
-    private float lastAutoJoinRaid;
-    private float autoJoinRaidAnnouncement;
 
     void Awake()
     {
         goUpdateAvailable.SetActive(false);
         GameTime.deltaTime = Time.deltaTime;
+
+        if (!PlayerSettings.Instance.PhysicsEnabled.GetValueOrDefault())
+        {
+            GraphicsToggler.DisablePhysics();
+        }
+
         //Physics.autoSimulation = false;
         BatchPlayerAddInProgress = false;
         overlay = gameObject.AddComponent<Overlay>();
@@ -788,14 +790,13 @@ public class GameManager : MonoBehaviour, IGameManager
     // Update is called once per frame
     void Update()
     {
-        GameTime.deltaTime = Time.deltaTime;
+        GameSystems.Update(!isReloadingScene);
 
         if (isReloadingScene)
         {
             return;
         }
 
-        GameSystems.Update();
 
         //if (Input.GetKeyDown(KeyCode.L))
         //{
@@ -888,6 +889,20 @@ public class GameManager : MonoBehaviour, IGameManager
             menuHandler.Show();
         }
 
+        if (Input.GetKeyUp(KeyCode.F4))
+        {
+            if (GraphicsToggler.SimulationMode == SimulationMode.Script)
+            {
+                Shinobytes.Debug.Log("Physics Turned ON, press F4 to turn off.");
+                GraphicsToggler.EnablePhysics();
+            }
+            else
+            {
+                Shinobytes.Debug.Log("Physics Turned OFF, press F4 to turn on.");
+                GraphicsToggler.DisablePhysics();
+            }
+        }
+
         UpdateApiCommunication();
 
         if (RavenNest == null || !RavenNest.Authenticated)
@@ -946,12 +961,13 @@ public class GameManager : MonoBehaviour, IGameManager
         if (uptimeSaveTimer > 0)
             uptimeSaveTimer -= GameTime.deltaTime;
 
-        if (uptimeSaveTimer <= 0)
+        if (uptimeSaveTimer <= 0 && PlayerSettings.Instance.StreamLabels.Enabled)
         {
             uptimeSaveTimer = uptimeSaveTimerInterval;
             uptimeLabel.Update();
 
             /* do it every 3s for now. but would better to keep track on value changes and update only then. */
+
             expMultiplierJson.Update();
             sessionStatsJson.Update();
             ferryStatsJson.Update();
@@ -995,13 +1011,25 @@ public class GameManager : MonoBehaviour, IGameManager
         Stopwatch sw = new Stopwatch();
         sw.Start();
         var eventsHandled = 0;
+        var evts = new List<GameEventProfiler>();
+        var evtSw = new Stopwatch();
 #endif
 
         while (gameEventQueue.TryDequeue(out var ge))
         {
+#if DEBUG
+            evtSw.Restart();
+#endif
             HandleGameEvent(ge);
 
 #if DEBUG
+            evtSw.Stop();
+            evts.Add(new GameEventProfiler
+            {
+                Size = ge.Data.Length,
+                Type = ge.Type,
+                ElapsedMilliseconds = evtSw.ElapsedMilliseconds
+            });
             eventsHandled++;
 #endif
         }
@@ -1010,10 +1038,20 @@ public class GameManager : MonoBehaviour, IGameManager
         sw.Stop();
         if (sw.ElapsedMilliseconds > 30)
         {
-            Shinobytes.Debug.LogError("UpdateGameEvents took a long time! " + sw.ElapsedMilliseconds + "ms for " + eventsHandled + " events!");
+            Shinobytes.Debug.LogError("UpdateGameEvents took a long time! " + sw.ElapsedMilliseconds + "ms for " + eventsHandled + " events!\r\n" +
+                string.Join("\r\n- ", evts.Select(x => (GameEventType)x.Type + ": " + x.ElapsedMilliseconds + "ms, " + x.Size + " bytes").ToArray())
+            );
         }
 #endif
         return true;
+    }
+
+
+    private struct GameEventProfiler
+    {
+        public int Type;
+        public int Size;
+        public long ElapsedMilliseconds;
     }
 
 
@@ -1085,19 +1123,19 @@ public class GameManager : MonoBehaviour, IGameManager
         var playerName = player?.Name;
         try
         {
-            if (player.Dungeon.InDungeon)
+            if (player.dungeonHandler.InDungeon)
             {
                 dungeonManager.Remove(player);
             }
 
-            if (player.Raid.InRaid)
+            if (player.raidHandler.InRaid)
             {
                 raidManager.Leave(player);
             }
 
-            if (player.Ferry.OnFerry)
+            if (player.ferryHandler.OnFerry)
             {
-                player.Ferry.RemoveFromFerry();
+                player.ferryHandler.RemoveFromFerry();
             }
 
             if (notifyServer)
@@ -1949,69 +1987,69 @@ public class GameManager : MonoBehaviour, IGameManager
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Home");
-                    foreach (var bot in bots) bot.Ferry.Embark(island);
+                    foreach (var bot in bots) bot.ferryHandler.Embark(island);
                 }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Away"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Away");
-                    foreach (var bot in bots) bot.Ferry.Embark(island);
+                    foreach (var bot in bots) bot.ferryHandler.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Ironhill"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Ironhill");
-                    foreach (var bot in bots) bot.Ferry.Embark(island);
+                    foreach (var bot in bots) bot.ferryHandler.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Kyo"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Kyo");
-                    foreach (var bot in bots) bot.Ferry.Embark(island);
+                    foreach (var bot in bots) bot.ferryHandler.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Sail Heim"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Heim");
-                    foreach (var bot in bots) bot.Ferry.Embark(island);
+                    foreach (var bot in bots) bot.ferryHandler.Embark(island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Home"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Home");
-                    foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Away"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Away");
-                    foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Ironhill"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Ironhill");
-                    foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Kyo"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Kyo");
-                    foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Heim"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Heim");
-                    foreach (var bot in bots) bot.Teleporter.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "<< Back"))
@@ -2097,7 +2135,7 @@ public class GameManager : MonoBehaviour, IGameManager
         }
 
         var player = playerKickQueue.Dequeue();
-        //if (player.Duel.InDuel)
+        //if (player.duelHandler.InDuel)
         //{
         //    playerKickQueue.Enqueue(player);
         //    return;
@@ -2160,51 +2198,72 @@ public class GameManager : MonoBehaviour, IGameManager
         lblUpdateAvailable.text = "New update available! <color=green>v" + newVersion;
     }
 
-    int handlingAutoJoin = 0;
-    float retryTimer = 0f;
-
+    float nextAutoJoinCheck = 0f;
+    bool handlingAutoJoin = false;
     internal async void UpdateAutoJoinAnnouncement()
     {
-        if ((!Dungeons.Active || !Dungeons.HasBeenAnnounced) && (!Raid.Started || !Raid.HasBeenAnnounced))
+        if (handlingAutoJoin || (!Dungeons.Active || !Dungeons.HasBeenAnnounced) && (!Raid.Started || !Raid.HasBeenAnnounced))
         {
             return;
         }
 
-        if (Interlocked.CompareExchange(ref handlingAutoJoin, 1, 0) == 1)
-        {
-            return;
-        }
-
+        var now = Time.time;
         try
         {
-            await HandleDungeonAutoJoin();
-            await HandleRaidAutoJoin();
-
-            if (playerAutoJoinList.Count == 0)
-                return;
-
-            var playerNames = string.Join(", ", playerAutoJoinList.Select(x => "@" + x.Name));
-            var timeNow = Time.realtimeSinceStartup;
-            if (timeNow >= autoJoinDungeonAnnouncement && autoJoinDungeonAnnouncement > 0)
+            if (now < nextAutoJoinCheck)
             {
-                AnnounceAutoDungeonJoin(playerAutoJoinList);
-                playerAutoJoinList.Clear();
-                autoJoinDungeonAnnouncement = 0;
                 return;
             }
+        }
+        finally
+        {
+            nextAutoJoinCheck = Time.time + 1;
+        }
+        handlingAutoJoin = true;
+        var players = Players.GetAllPlayers();
+        try
+        {
+            var dateNow = DateTime.Now;
 
-            if (timeNow >= autoJoinRaidAnnouncement && autoJoinRaidAnnouncement > 0)
+            if (Raid.Started)
             {
-                AnnounceAutoRaidJoin(playerAutoJoinList);
-                playerAutoJoinList.Clear();
-                autoJoinRaidAnnouncement = 0;
+                var autoJoinRaid = await HandleRaidAutoJoin(dateNow, players);
+                if (autoJoinRaid.Count > 0)
+                {
+                    foreach (var plr in autoJoinRaid)
+                    {
+                        Raid.Join(plr);
+                    }
+
+                    AnnounceAutoRaidJoin(autoJoinRaid);
+                    return;
+                }
+            }
+            else
+            {
+                var autoJoinDungeon = await HandleDungeonAutoJoin(dateNow, players);
+                if (autoJoinDungeon.Count > 0)
+                {
+                    foreach (var plr in autoJoinDungeon)
+                    {
+                        Dungeons.Join(plr);
+                    }
+
+                    AnnounceAutoDungeonJoin(autoJoinDungeon);
+                }
             }
         }
         catch { }
         finally
         {
-            Interlocked.Exchange(ref handlingAutoJoin, 0);
+            foreach (var player in players)
+            {
+                player.raidHandler.AutoJoining = false;
+                player.dungeonHandler.AutoJoining = false;
+            }
+            handlingAutoJoin = false;
         }
+
     }
 
     internal void AnnounceAutoDungeonJoin(List<PlayerController> players)
@@ -2214,9 +2273,9 @@ public class GameManager : MonoBehaviour, IGameManager
         if (players.Count == 1)
         {
             var plr = players[0];
-            if (plr.Dungeon.AutoJoinCounter > 0 && plr.Dungeon.AutoJoinCounter < int.MaxValue)
+            if (plr.dungeonHandler.AutoJoinCounter > 0 && plr.dungeonHandler.AutoJoinCounter < int.MaxValue)
             {
-                RavenBot.SendReply(plr, "You have automatically joined the dungeon! You will join {counter} more.", plr.Dungeon.AutoJoinCounter.ToString());
+                RavenBot.SendReply(plr, "You have automatically joined the dungeon! You will join {counter} more.", plr.dungeonHandler.AutoJoinCounter.ToString());
             }
             else
             {
@@ -2290,9 +2349,9 @@ public class GameManager : MonoBehaviour, IGameManager
         if (players.Count == 1)
         {
             var plr = players[0];
-            if (plr.Raid.AutoJoinCounter > 0 && plr.Raid.AutoJoinCounter < int.MaxValue)
+            if (plr.raidHandler.AutoJoinCounter > 0 && plr.raidHandler.AutoJoinCounter < int.MaxValue)
             {
-                RavenBot.SendReply(plr, "You have automatically joined the raid! You will join {counter} more.", plr.Raid.AutoJoinCounter);
+                RavenBot.SendReply(plr, "You have automatically joined the raid! You will join {counter} more.", plr.raidHandler.AutoJoinCounter);
             }
             else
             {
@@ -2309,62 +2368,45 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-
-    internal void OnPlayerAutoJoinedDungeon(PlayerController player)
+    private async Task<List<PlayerController>> HandleRaidAutoJoin(DateTime now, IReadOnlyList<PlayerController> allPlayers)
     {
-        lastAutoJoinDungeon = Time.realtimeSinceStartup;
-        autoJoinDungeonAnnouncement = lastAutoJoinDungeon + 1.25f;
-        playerAutoJoinList.Add(player);
-    }
-
-    internal void OnPlayerAutoJoinedRaid(PlayerController player)
-    {
-        lastAutoJoinRaid = Time.realtimeSinceStartup;
-        autoJoinRaidAnnouncement = lastAutoJoinRaid + 1.25f;
-        playerAutoJoinList.Add(player);
-    }
-
-    private async Task HandleRaidAutoJoin()
-    {
-        if (!Raid.Started || Time.time < nextAutoJoinRaid)
+        var success = new List<PlayerController>();
+        if (!Raid.Started || now < nextAutoJoinRaid)
         {
-            return;
+            return success;
         }
 
         var autoJoinList = new List<Guid>();
         var autoJoinPlayers = new List<PlayerController>();
-        var success = new List<PlayerController>();
-        var failed = new List<PlayerController>();
-
-        var allPlayers = Players.GetAllPlayers();
 
         foreach (var player in allPlayers)
         {
-            if (player.IsBot || Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Resources.Coins < RaidAuto.AutoJoinCost || player.Raid.AutoJoining || Raid.Initiator == player)
+            if (player.IsBot || Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Resources.Coins < RaidAuto.AutoJoinCost || player.raidHandler.AutoJoining || Raid.Initiator == player)
                 continue;
 
-            if (player.Raid.AutoJoinCounter > 0)
+            if (player.raidHandler.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
             {
-                player.Raid.AutoJoining = true;
+                player.raidHandler.AutoJoining = true;
                 autoJoinList.Add(player.Id);
                 autoJoinPlayers.Add(player);
             }
         }
+
         try
         {
             if (autoJoinList.Count == 0)
             {
-                return;
+                return success;
             }
 
-            //Shinobytes.Debug.Log("Requesting Raid Auto join with " + autoJoinList.Count + " players.");
+            Shinobytes.Debug.Log("Requesting Raid Auto join with " + autoJoinList.Count + " players.");
             var result = await RavenNest.Players.AutoJoinRaid(autoJoinList.ToArray());
 
-            nextAutoJoinRaid = Time.time + 5000;
+            nextAutoJoinRaid = now.AddSeconds(5);
 
             if (result == null || result.Length == 0)
             {
-                failed = autoJoinPlayers;
+                return success;
             }
             else
             {
@@ -2374,65 +2416,50 @@ public class GameManager : MonoBehaviour, IGameManager
                     var plr = autoJoinPlayers[i];
                     if (playerResult)
                     {
-                        Raid.Join(plr);
                         success.Add(plr);
-                        if (plr.Raid.AutoJoinCounter != int.MaxValue)
+
+                        if (plr.raidHandler.AutoJoinCounter != int.MaxValue)
                         {
-                            plr.Raid.AutoJoinCounter--;
+                            plr.raidHandler.AutoJoinCounter--;
                         }
                         plr.Resources.Coins -= RaidAuto.AutoJoinCost;
                     }
-                    else
-                    {
-                        failed.Add(plr);
-                    }
                 }
             }
-
-            if (success.Count > 0)
-            {
-                AnnounceAutoRaidJoin(success);
-            }
-
-            //if (failed.Count > 0)
-            //{
-            //    AnnounceAutoRaidJoinFailed(failed);
-            //}
         }
 
         catch (Exception exc)
         {
-            Debug.LogError("Auto join raid failed, server not responding? Error: " + exc.Message);
+            Debug.LogError("Auto join raid failed, server not responding? Error: " + exc);
         }
         finally
         {
-            foreach (var plr in allPlayers)
-            {
-                plr.Raid.AutoJoining = false;
-            }
         }
+
+
+        return success;
+
     }
 
-    private async Task HandleDungeonAutoJoin()
+    private async Task<List<PlayerController>> HandleDungeonAutoJoin(DateTime now, IReadOnlyList<PlayerController> allPlayers)
     {
-        if (!Dungeons.Active || Dungeons.Started || Time.time < nextAutoJoinDungeon)
+        var success = new List<PlayerController>();
+
+        if (!Dungeons.Active || Dungeons.Started || now < nextAutoJoinDungeon)
         {
-            return;
+            return success;
         }
 
         var autoJoinList = new List<Guid>();
         var autoJoinPlayers = new List<PlayerController>();
-        var success = new List<PlayerController>();
-        var failed = new List<PlayerController>();
-        var allPlayers = Players.GetAllPlayers();
         foreach (var player in allPlayers)
         {
-            if (player.IsBot || Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Resources.Coins < DungeonAuto.AutoJoinCost || player.Dungeon.AutoJoining || Dungeons.Initiator == player)
+            if (player.IsBot || Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Resources.Coins < DungeonAuto.AutoJoinCost || player.dungeonHandler.AutoJoining || Dungeons.Initiator == player)
                 continue;
 
-            if (player.Dungeon.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
+            if (player.dungeonHandler.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
             {
-                player.Dungeon.AutoJoining = true;
+                player.dungeonHandler.AutoJoining = true;
                 autoJoinList.Add(player.Id);
                 autoJoinPlayers.Add(player);
             }
@@ -2441,17 +2468,18 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             if (autoJoinList.Count == 0)
             {
-                return;
+                return success;
             }
 
-            //Shinobytes.Debug.Log("Requesting Dungeon Auto join with " + autoJoinList.Count + " players.");
+            Shinobytes.Debug.Log("Requesting Dungeon Auto join with " + autoJoinList.Count + " players.");
+
             var result = await RavenNest.Players.AutoJoinDungeon(autoJoinList.ToArray());
 
-            nextAutoJoinDungeon = Time.time + 5000;
+            nextAutoJoinDungeon = now.AddSeconds(5);
 
             if (result == null || result.Length == 0)
             {
-                failed = autoJoinPlayers;
+                return success;
             }
             else
             {
@@ -2461,31 +2489,19 @@ public class GameManager : MonoBehaviour, IGameManager
                     var plr = autoJoinPlayers[i];
                     if (playerResult)
                     {
-                        Dungeons.Join(plr);
                         success.Add(plr);
-                        if (plr.Dungeon.AutoJoinCounter != int.MaxValue)
+                        if (plr.dungeonHandler.AutoJoinCounter != int.MaxValue)
                         {
-                            plr.Dungeon.AutoJoinCounter--;
+                            plr.dungeonHandler.AutoJoinCounter--;
                         }
 
                         plr.Resources.Coins -= DungeonAuto.AutoJoinCost;
                     }
-                    else
-                    {
-                        failed.Add(plr);
-                    }
                 }
             }
 
-            if (success.Count > 0)
-            {
-                AnnounceAutoDungeonJoin(success);
-            }
 
-            //if (failed.Count > 0)
-            //{
-            //    AnnounceAutoDungeonJoinFailed(failed);
-            //}
+            return success;
         }
         catch (Exception exc)
         {
@@ -2495,14 +2511,15 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             foreach (var plr in allPlayers)
             {
-                plr.Dungeon.AutoJoining = false;
+                plr.dungeonHandler.AutoJoining = false;
             }
         }
+
+        return success;
     }
 
-    private List<PlayerController> playerAutoJoinList = new List<PlayerController>();
-    private float nextAutoJoinRaid;
-    private float nextAutoJoinDungeon;
+    private DateTime nextAutoJoinRaid;
+    private DateTime nextAutoJoinDungeon;
 }
 
 public class IslandTaskCollection
@@ -2521,6 +2538,8 @@ public class IslandTask
 public class GameTime
 {
     public static float deltaTime;
+    public static float time;
+    public static DateTime now;
 }
 
 public class SessionStats

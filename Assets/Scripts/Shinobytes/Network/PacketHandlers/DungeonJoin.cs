@@ -28,15 +28,15 @@ public class DungeonJoin : ChatBotCommandHandler<string>
                 return;
             }
 
-            //if (player.Ferry.OnFerry)
+            //if (player.ferryHandler.OnFerry)
             //{
             //    client.SendMessage(username, "You cannot join the dungeon while on the ferry. Please !disembark before you can join.");
             //    return;
             //}
 
-            //if (player.Ferry.Active)
+            //if (player.ferryHandler.Active)
             //{
-            //    player.Ferry.Disembark();
+            //    player.ferryHandler.Disembark();
             //}
 
             if (!Game.Dungeons.Active)

@@ -14,7 +14,7 @@
             return;
         }
 
-        if (plr.Clan == null || !plr.Clan.InClan)
+        if (plr.clanHandler == null || !plr.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_NOT_IN_CLAN);
             return;
@@ -31,7 +31,7 @@
         var result = await Game.RavenNest.Clan.PromoteMemberAsync(plr.Id, otherPlayer.Id, value);
         if (result.Success)
         {
-            otherPlayer.Clan.SetRole(result.NewRole);
+            otherPlayer.clanHandler.SetRole(result.NewRole);
             client.SendReply(gm, $"Congratulations {otherPlayer.Name}! You have been promoted to {result.NewRole.Name}!");
             return;
         }

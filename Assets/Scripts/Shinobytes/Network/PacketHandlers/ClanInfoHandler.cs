@@ -17,7 +17,7 @@ public class ClanInfoHandler : ChatBotCommandHandler<string>
             return;
         }
 
-        if (plr.Clan == null || !plr.Clan.InClan)
+        if (plr.clanHandler == null || !plr.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_NOT_IN_CLAN);
             return;

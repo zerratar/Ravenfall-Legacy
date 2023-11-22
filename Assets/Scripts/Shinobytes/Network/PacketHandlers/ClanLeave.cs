@@ -14,13 +14,13 @@
             return;
         }
 
-        if (plr.Clan == null || !plr.Clan.InClan)
+        if (plr.clanHandler == null || !plr.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_NOT_IN_CLAN);
             return;
         }
 
-        var clan = plr.Clan;
+        var clan = plr.clanHandler;
         var result = await Game.RavenNest.Clan.LeaveAsync(plr.Id);
         if (result.Success)
         {

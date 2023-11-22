@@ -25,13 +25,13 @@
             return;
         }
 
-        if (player1.Ferry.OnFerry)
+        if (player1.ferryHandler.OnFerry)
         {
             client.SendReply(gm, "You cannot duel another player while on the ferry.");
             return;
         }
 
-        if (player2.Ferry.OnFerry)
+        if (player2.ferryHandler.OnFerry)
         {
             client.SendReply(gm, "You cannot duel {targetPlayerName} as they are on the ferry.", player2.PlayerName);
             return;
@@ -49,71 +49,71 @@
             return;
         }
 
-        if (player1.Duel.InDuel)
+        if (player1.duelHandler.InDuel)
         {
             client.SendReply(gm, "You cannot duel another player as you are already in a duel.");
             return;
         }
 
-        if (player1.Arena.InArena)
+        if (player1.arenaHandler.InArena)
         {
             client.SendReply(gm, "You cannot duel another player as you are participating in the Arena.");
             return;
         }
 
-        if (player1.Raid.InRaid)
+        if (player1.raidHandler.InRaid)
         {
             client.SendReply(gm, "You cannot duel another player as you are participating in a Raid.");
             return;
         }
 
-        if (player1.Dungeon.InDungeon)
+        if (player1.dungeonHandler.InDungeon)
         {
             client.SendReply(gm, "You cannot duel another player as you are participating in a Dungeon.");
             return;
         }
 
-        if (player2.Duel.InDuel)
+        if (player2.duelHandler.InDuel)
         {
             client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she is participating in a duel.", player2.PlayerName);
             return;
         }
 
-        if (player2.Arena.InArena)
+        if (player2.arenaHandler.InArena)
         {
             client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she is participating in the Arena.", player2.PlayerName);
             return;
         }
 
-        if (player2.Raid.InRaid)
+        if (player2.raidHandler.InRaid)
         {
             client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she is participating in a Raid.", player2.PlayerName);
             return;
         }
 
-        if (player2.Dungeon.InDungeon)
+        if (player2.dungeonHandler.InDungeon)
         {
             client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she is participating in a Dungeon.", player2.PlayerName);
             return;
         }
 
-        if (player2.Duel.HasActiveRequest)
+        if (player2.duelHandler.HasActiveRequest)
         {
             client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she already have an active duel request.", player2.PlayerName);
             return;
         }
 
-        if (player1.Duel.HasActiveRequest)
+        if (player1.duelHandler.HasActiveRequest)
         {
-            if (player1.Duel.Requester == player2)
+            if (player1.duelHandler.Requester == player2)
             {
-                player1.Duel.AcceptDuel();
+                player1.duelHandler.AcceptDuel();
                 return;
             }
 
-            player1.Duel.DeclineDuel();
+            player1.duelHandler.DeclineDuel();
         }
 
-        player1.Duel.RequestDuel(player2);
+        player1.duelHandler.RequestDuel(player2);
     }
 }

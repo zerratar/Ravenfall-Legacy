@@ -205,10 +205,10 @@ public class PlayerStats : ChatBotCommandHandler<string>
 
     private static PlayerLocation GetLocation(PlayerController player)
     {
-        if (player.Dungeon.InDungeon) return PlayerLocation.Dungeon;
-        if (player.Raid.InRaid) return PlayerLocation.Raid;
-        if (player.StreamRaid.InWar) return PlayerLocation.War;
-        if (player.Onsen.InOnsen) return PlayerLocation.Resting;
+        if (player.dungeonHandler.InDungeon) return PlayerLocation.Dungeon;
+        if (player.raidHandler.InRaid) return PlayerLocation.Raid;
+        if (player.streamRaidHandler.InWar) return PlayerLocation.War;
+        if (player.onsenHandler.InOnsen) return PlayerLocation.Resting;
         if (player.Island?.name == null) return PlayerLocation.Ferry;
         return PlayerLocation.Island;
     }

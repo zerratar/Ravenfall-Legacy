@@ -53,24 +53,24 @@ public class OrbitCamera : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.DownArrow))
         {
-            var newAngle = Mathf.Clamp(orbitAngles.x + (Time.deltaTime * orbitChangeSpeed), MinAngle, MaxAngle);
+            var newAngle = Mathf.Clamp(orbitAngles.x + (GameTime.deltaTime * orbitChangeSpeed), MinAngle, MaxAngle);
             orbitAngles = new Vector2(newAngle, orbitAngles.y);
         }
         if (Input.GetKey(KeyCode.UpArrow))
         {
-            var newAngle = Mathf.Clamp(orbitAngles.x + (Time.deltaTime * -orbitChangeSpeed), MinAngle, MaxAngle);
+            var newAngle = Mathf.Clamp(orbitAngles.x + (GameTime.deltaTime * -orbitChangeSpeed), MinAngle, MaxAngle);
             orbitAngles = new Vector2(newAngle, orbitAngles.y);
         }
         if (Input.GetKey(KeyCode.LeftArrow))
         {
-            orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (Time.deltaTime * -rotateChangeSpeed));
+            orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * -rotateChangeSpeed));
         }
         if (Input.GetKey(KeyCode.RightArrow))
         {
-            orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (Time.deltaTime * rotateChangeSpeed));
+            orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * rotateChangeSpeed));
         }
 
-        var scrollValue = Input.mouseScrollDelta.y * Time.deltaTime * zoomChangeSpeed;
+        var scrollValue = Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
         
         Distance = Mathf.Clamp(Distance + scrollValue, MinZoom, MaxZoom);
     }

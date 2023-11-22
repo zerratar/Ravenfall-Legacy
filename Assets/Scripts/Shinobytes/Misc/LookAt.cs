@@ -7,6 +7,7 @@ public class LookAt : MonoBehaviour
     public bool ReverseX;
 
     public Transform Target;
+    private Transform _transform;
     private Vector3 localScale;
     private bool hasTarget;
 
@@ -15,30 +16,35 @@ public class LookAt : MonoBehaviour
     public static Quaternion GameCameraRotation;
     private bool useCameraRotation;
 
+    private void Awake()
+    {
+        this._transform = this.transform;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
-        localScale = this.transform.localScale;
+        localScale = this._transform.localScale;
 
         TryGetTarget();
 
         if (ReverseX)
         {
-            this.transform.localScale = new Vector3(localScale.x * -1, localScale.y, localScale.z);
+            this._transform.localScale = new Vector3(localScale.x * -1, localScale.y, localScale.z);
         }
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
-        if (OnDemandRendering.renderFrameInterval > 2)
+        if (!GraphicsToggler.GraphicsEnabled)
         {
             return;
         }
 
         if (useCameraRotation)
         {
-            this.transform.rotation = GameCameraRotation;
+            this._transform.rotation = GameCameraRotation;
             return;
         }
 
@@ -53,7 +59,7 @@ public class LookAt : MonoBehaviour
             useCameraRotation = true;
         }
 
-        this.transform.rotation = Target.rotation;
+        this._transform.rotation = Target.rotation;
     }
 
     private void TryGetTarget()

@@ -33,24 +33,24 @@ public class ArenaJoin : ChatBotCommandHandler<Empty>
                 return;
             }
 
-            if (player.Ferry.OnFerry)
+            if (player.ferryHandler.OnFerry)
             {
                 client.SendReply(gm, Localization.MSG_ARENA_FERRY);
                 return;
             }
 
-            if (player.Ferry.Active)
+            if (player.ferryHandler.Active)
             {
-                player.Ferry.BeginDisembark();
+                player.ferryHandler.BeginDisembark();
             }
 
             if (!Game.Arena.CanJoin(player, out var alreadyJoined, out var alreadyStarted)
                 || Game.Raid.Started
                 || Game.Dungeons.Active
                 || Game.Dungeons.Started
-                || player.Raid.InRaid
-                || player.Duel.InDuel
-                || player.Dungeon.InDungeon)
+                || player.raidHandler.InRaid
+                || player.duelHandler.InDuel
+                || player.dungeonHandler.InDungeon)
             {
                 var errorMessage = "";
                 if (Game.Raid.Started)
@@ -61,15 +61,15 @@ public class ArenaJoin : ChatBotCommandHandler<Empty>
                 {
                     errorMessage = Localization.MSG_DUNGEON_STARTED;
                 }
-                else if (player.Dungeon.InDungeon)
+                else if (player.dungeonHandler.InDungeon)
                 {
                     errorMessage = Localization.MSG_IN_DUNGEON;
                 }
-                else if (player.Duel.InDuel)
+                else if (player.duelHandler.InDuel)
                 {
                     errorMessage = Localization.MSG_IN_DUEL;
                 }
-                else if (player.Raid.InRaid)
+                else if (player.raidHandler.InRaid)
                 {
                     errorMessage = Localization.MSG_IN_RAID;
                 }

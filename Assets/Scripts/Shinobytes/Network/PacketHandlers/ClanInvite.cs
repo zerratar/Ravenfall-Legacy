@@ -14,7 +14,7 @@
             return;
         }
 
-        if (plr.Clan == null || !plr.Clan.InClan)
+        if (plr.clanHandler == null || !plr.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_NOT_IN_CLAN);
             return;
@@ -29,7 +29,7 @@
 
         if (await Game.RavenNest.Clan.InvitePlayerAsync(plr.Id, otherPlayer.Id))
         {
-            client.SendReply(gm, "Invite was successfully sent. {playerName}, you may use the command '!clan accept' if you wish to join the clan {clanName}. Or '!clan decline' to decline.", otherPlayer.Name, plr.Clan.ClanInfo.Name);
+            client.SendReply(gm, "Invite was successfully sent. {playerName}, you may use the command '!clan accept' if you wish to join the clan {clanName}. Or '!clan decline' to decline.", otherPlayer.Name, plr.clanHandler.ClanInfo.Name);
             return;
         }
 

@@ -33,20 +33,20 @@ public class PlayerTeleportEventHandler : GameEventHandler<PlayerTeleportMessage
                 continue;
             }
 
-            if (player.Ferry.OnFerry)
+            if (player.ferryHandler.OnFerry)
             {
-                player.Ferry.BeginDisembark();
+                player.ferryHandler.BeginDisembark();
             }
 
-            if (player.Raid.InRaid)
+            if (player.raidHandler.InRaid)
             {
                 gameManager.Raid.Leave(player);
             }
-            if (player.Dungeon.InDungeon)
+            if (player.dungeonHandler.InDungeon)
             {
                 gameManager.Dungeons.Remove(player);
             }
-            player.Teleporter.Teleport(island);
+            player.teleportHandler.Teleport(island);
         }
     }
 }

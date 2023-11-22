@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts.Game;
+using System;
 using System.Text;
 using UnityEngine;
 
@@ -11,17 +12,18 @@ public class FerryHandler : MonoBehaviour
     private GameManager gameManager;
     private IslandController destination;
 
-    public bool OnFerry => state == PlayerFerryState.Embarked || isOnFerry;//player.transform.parent?.GetComponentInParent<FerryController>();
+    public bool OnFerry => isOnFerry || state == PlayerFerryState.Disembarking || state == PlayerFerryState.Embarked;//player.transform.parent?.GetComponentInParent<FerryController>();
     public bool Active => state > PlayerFerryState.None;
     public bool Embarking => state == PlayerFerryState.Embarking;
     public bool Disembarking => state == PlayerFerryState.Disembarking;
-    public bool IsCaptain => OnFerry && ferry.IsCaptainPosition(transform.parent);
+    public bool IsCaptain => OnFerry && ferry.IsCaptainPosition(_transform.parent);
     public IslandController Destination => destination;
 
     private float expTime = 2.5f;
     private float expTimer = 2.5f;
     private Transform lastFerryPoint;
     private bool hasReferences;
+    private Transform _transform;
     private bool isOnFerry;
 
     private void Start()
@@ -41,6 +43,7 @@ public class FerryHandler : MonoBehaviour
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         if (!player) player = GetComponent<PlayerController>();
         hasReferences = player && gameManager && ferry;
+        this._transform = this.transform;
     }
 
     private void Update()
@@ -52,7 +55,7 @@ public class FerryHandler : MonoBehaviour
 
         EnsureReferences();
 
-        if (player.Raid.InRaid || player.Dungeon.InDungeon || player.Duel.InDuel)
+        if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon || player.duelHandler.InDuel)
         {
             return;
         }
@@ -167,7 +170,7 @@ public class FerryHandler : MonoBehaviour
         state = PlayerFerryState.Embarking;
         this.destination = destination;
 
-        if (player.Onsen.InOnsen)
+        if (player.onsenHandler.InOnsen)
         {
             gameManager.Onsen.Leave(player);
         }
@@ -183,7 +186,6 @@ public class FerryHandler : MonoBehaviour
     public bool RemoveFromFerry()
     {
         var wasOnFerry = OnFerry;
-        var wasCaptain = this.IsCaptain;
         var parent = player.transform.parent;
         var inShipPlayerPoint = parent && parent.CompareTag("ShipPlayerPoint");
 
@@ -196,11 +198,8 @@ public class FerryHandler : MonoBehaviour
         {
             player.transform.SetParent(null);
 
-            if (wasCaptain)
-            {
-                // if we remove the captain we need to assign a new player
-                ferry.AssignBestCaptain();
-            }
+            ferry.AssignBestCaptain();
+
             return true;
         }
 
@@ -226,7 +225,6 @@ public class FerryHandler : MonoBehaviour
             }
 
             var onFerry = OnFerry;
-
 
             var targetIsland = island ?? gameManager.Islands.FindPlayerIsland(player) ?? ferry.Island;
 
@@ -262,6 +260,8 @@ public class FerryHandler : MonoBehaviour
                 gameManager.RavenBot?.SendReply(player, Localization.MSG_FERRY_ARRIVED, player.Island.Identifier);
             }
 
+            ferry.AssignBestCaptain();
+
         }
         catch (System.Exception exc)
         {
@@ -278,39 +278,38 @@ public class FerryHandler : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (state == PlayerFerryState.Embarked && lastFerryPoint && transform.parent == lastFerryPoint)
+        if (OnFerry && Time.frameCount % 4 == 0)
         {
             player.transform.localPosition = Vector3.zero;
-            player.transform.rotation = lastFerryPoint.rotation;
+            player.transform.localRotation = Quaternion.identity;
         }
     }
 
-    public void AddPlayerToFerry(IslandController destination, bool canBeCaptain = true)
+    public void AddPlayerToFerry(IslandController destination)
     {
         ClearDestination();
-        AddPlayerToFerry(canBeCaptain);
+        AddPlayerToFerry();
         this.destination = destination;
     }
 
-    public void AddPlayerToFerry(bool canBeCaptain = true)
+    public void AddPlayerToFerry()
     {
         EnsureReferences();
         if (!ferry) return;
-
         player.InterruptAction();
 
         // re-arrange players if this player should be the captain.
 
-        var currentCaptain = ferry.Captain;
-        if (canBeCaptain && currentCaptain)
-        {
-            if (player.Stats.Sailing.MaxLevel > currentCaptain.Stats.Sailing.MaxLevel)
-            {
-                currentCaptain.Ferry.AddPlayerToFerry(false);
-            }
-        }
+        //var currentCaptain = ferry.Captain;
+        //if (canBeCaptain && currentCaptain)
+        //{
+        //    if (player.Stats.Sailing.MaxLevel > currentCaptain.Stats.Sailing.MaxLevel)
+        //    {
+        //        currentCaptain.Ferry.MoveToSailorPosition();
+        //    }
+        //}
 
-        lastFerryPoint = ferry.GetNextPlayerPoint(canBeCaptain);
+        lastFerryPoint = ferry.GetNextPlayerPoint(false);
         if (lastFerryPoint)
         {
             player.Movement.Lock();
@@ -319,10 +318,31 @@ public class FerryHandler : MonoBehaviour
             player.transform.localPosition = Vector3.zero;
             player.transform.rotation = lastFerryPoint.rotation;
             player.Island = null;
-            if (ferry.IsCaptainPosition(lastFerryPoint))
-            {
-                ferry.SetCaptain(this.player);
-            }
+            //if (ferry.IsCaptainPosition(lastFerryPoint))
+            //{
+            //    ferry.SetCaptain(this.player);
+            //}
+            this.isOnFerry = true;
+        }
+
+        ferry.AssignBestCaptain();
+    }
+
+    public void MoveToSailorPosition()
+    {
+        EnsureReferences();
+        if (!ferry) return;
+        player.InterruptAction();
+
+        lastFerryPoint = ferry.GetNextPlayerPoint(false);
+        if (lastFerryPoint)
+        {
+            player.Movement.Lock();
+            state = PlayerFerryState.Embarked;
+            player.transform.SetParent(lastFerryPoint);
+            player.transform.localPosition = Vector3.zero;
+            player.transform.rotation = lastFerryPoint.rotation;
+            player.Island = null;
             this.isOnFerry = true;
         }
     }

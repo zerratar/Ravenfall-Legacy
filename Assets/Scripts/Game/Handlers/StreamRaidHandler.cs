@@ -73,8 +73,8 @@ public class StreamRaidHandler : MonoBehaviour
     public void OnEnter()
     {
         player.taskTarget = null;
-        player.Arena.Interrupt();
-        player.Duel.Interrupt();
+        player.arenaHandler.Interrupt();
+        player.duelHandler.Interrupt();
         InWar = true;
     }
 

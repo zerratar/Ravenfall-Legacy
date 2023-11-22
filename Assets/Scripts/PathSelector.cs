@@ -28,11 +28,9 @@ public class PathSelector : MonoBehaviour
 
     private void Update()
     {
-
-
         if (isMoving)
         {
-            elapsed += Time.deltaTime;
+            elapsed += GameTime.deltaTime;
             float t = EaseInOut(elapsed / duration);
 
             currentSpline.Evaluate(t, out var position, out var tangent, out var upVector);
@@ -50,7 +48,7 @@ public class PathSelector : MonoBehaviour
         }
         else if (stopTimer > 0)
         {
-            stopTimer -= Time.deltaTime;
+            stopTimer -= GameTime.deltaTime;
             if (stopTimer <= 0)
             {
                 StartNewPath();
@@ -72,7 +70,7 @@ public class PathSelector : MonoBehaviour
         }
 #endif
 
-            duration = (2f * length) / adjustedSpeed;
+        duration = Mathf.Max(1f, (2f * length) / adjustedSpeed);
 
         elapsed = 0f;
         isMoving = true;
@@ -80,7 +78,7 @@ public class PathSelector : MonoBehaviour
     }
     private float EaseInOut(float t)
     {
-        return t < 0.5f ? 2 * t * t : 1 - Mathf.Pow(-2 * t + 2, 2) / 2;
+        return Mathf.Clamp01(t < 0.5f ? 2 * t * t : 1 - Mathf.Pow(-2 * t + 2, 2) / 2);
     }
 
     public int PathIndex => pathIndex;

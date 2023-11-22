@@ -15,13 +15,13 @@
                 return;
             }
 
-            if (player.Ferry.Embarking)
+            if (player.ferryHandler.Embarking)
             {
-                player.Ferry.Cancel();
+                player.ferryHandler.Cancel();
             }
 
-            if (player.Duel.InDuel || player.Arena.InArena || player.StreamRaid.InWar
-                || player.Dungeon.InDungeon || player.Raid.InRaid || player.Onsen.InOnsen)
+            if (player.duelHandler.InDuel || player.arenaHandler.InArena || player.streamRaidHandler.InWar
+                || player.dungeonHandler.InDungeon || player.raidHandler.InRaid || player.onsenHandler.InOnsen)
             {
                 return;
             }

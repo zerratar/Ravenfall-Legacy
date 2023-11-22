@@ -14,7 +14,7 @@
             return;
         }
 
-        if (plr.Clan != null && plr.Clan.InClan)
+        if (plr.clanHandler != null && plr.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_ALREADY_IN_CLAN);
             return;
@@ -24,9 +24,9 @@
         if (!string.IsNullOrEmpty(data))
         {
             var otherPlayer = PlayerManager.GetPlayerByName(data);
-            if (otherPlayer != null && otherPlayer.Clan.InClan && otherPlayer.Clan.ClanInfo != null)
+            if (otherPlayer != null && otherPlayer.clanHandler.InClan && otherPlayer.clanHandler.ClanInfo != null)
             {
-                ownerUserId = otherPlayer.Clan.ClanInfo.OwnerUserId;
+                ownerUserId = otherPlayer.clanHandler.ClanInfo.OwnerUserId;
             }
             else
             {
@@ -41,7 +41,7 @@
         var result = await Game.RavenNest.Clan.JoinAsync(ownerUserId, plr.Id);
         if (result.Success)
         {
-            plr.Clan.Join(result.Clan, result.Role);
+            plr.clanHandler.Join(result.Clan, result.Role);
 
             if (!string.IsNullOrEmpty(result.WelcomeMessage))
             {

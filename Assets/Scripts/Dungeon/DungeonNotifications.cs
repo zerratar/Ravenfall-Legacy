@@ -185,10 +185,12 @@ public class DungeonNotifications : MonoBehaviour
         lblPlayers.text = string.Format(lblPlayersFormat, alivePlayerCount);
         lblEnemies.text = string.Format(lblEnemiesFormat, aliveEnemyCount);
 
-        gameManager.dungeonStats.ActivatedCount = this.dungeonCount;
-        gameManager.dungeonStats.PlayersLeft = alivePlayerCount;
-        gameManager.dungeonStats.EnemiesLeft = aliveEnemyCount;
-        gameManager.dungeonStats.Runtime = runTime;
+        var dungeonStats = gameManager.GetDungeonStats();
+
+        dungeonStats.ActivatedCount = this.dungeonCount;
+        dungeonStats.PlayersLeft = alivePlayerCount;
+        dungeonStats.EnemiesLeft = aliveEnemyCount;
+        dungeonStats.Runtime = runTime;
 
         if (this.amountOfDungeonsRunLabel == null)
             this.amountOfDungeonsRunLabel = gameManager.StreamLabels.RegisterText("dungeon-count", () => this.dungeonCount.ToString());

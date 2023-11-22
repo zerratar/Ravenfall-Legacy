@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 public static class GameSystems
 {
     public static int frameCount;
-    public static float time;
     public static void Awake()
     {
         ActionSystem.Init();
@@ -15,11 +14,16 @@ public static class GameSystems
     {
     }
 
-    public static void Update()
+    public static void Update(bool processActionQueue)
     {
         frameCount = UnityEngine.Time.frameCount;
-        time = UnityEngine.Time.time;
-        ActionSystem.Update();
+        GameTime.deltaTime = UnityEngine.Time.deltaTime;
+        GameTime.time = UnityEngine.Time.time;
+        GameTime.now = DateTime.Now;
+        if (processActionQueue)
+        {
+            ActionSystem.Update();
+        }
     }
 }
 

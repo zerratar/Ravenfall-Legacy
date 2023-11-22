@@ -44,13 +44,13 @@ public class OnsenManager : MonoBehaviour
         }
 
 
-        player.Onsen.Enter(restingArea);
-        //player.Teleporter.
+        player.onsenHandler.Enter(restingArea);
+        //player.teleportHandler.
 
         return true;
     }
     public void Leave(PlayerController player)
     {
-        player.Onsen.Exit();
+        player.onsenHandler.Exit();
     }
 }

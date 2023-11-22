@@ -157,7 +157,7 @@ namespace RavenNest.SDK.Endpoints
                 if (throwOnError) throw;
                 try
                 {
-                    Shinobytes.Debug.LogError("WebApiRequest.SendAsync: " + type.ToString().ToUpper() + " " + GetTargetUrl(reqTarget, false) + " - " + exc.Message + " - " + responseData);
+                    Shinobytes.Debug.LogError("WebApiRequest.SendAsync: " + type.ToString().ToUpper() + " " + GetTargetUrl(reqTarget, false) + " - " + exc.Message); //+ " - " + responseData);
                 }
                 catch { }
                 return default(TResult);

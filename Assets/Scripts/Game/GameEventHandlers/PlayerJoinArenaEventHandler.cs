@@ -15,15 +15,15 @@ public class PlayerJoinArenaEventHandler : GameEventHandler<PlayerId>
         if (gameManager.Arena.Island != player.Island)
             return;
 
-        if (player.Ferry.OnFerry)
+        if (player.ferryHandler.OnFerry)
             return;
 
-        if (player.Ferry.Active)
-            player.Ferry.BeginDisembark();
+        if (player.ferryHandler.Active)
+            player.ferryHandler.BeginDisembark();
 
         if (!gameManager.Arena.CanJoin(player, out var alreadyJoined, out var alreadyStarted)
-            || player.Raid.InRaid
-            || player.Duel.InDuel)
+            || player.raidHandler.InRaid
+            || player.duelHandler.InDuel)
             return;
 
         gameManager.Arena.Join(player);

@@ -392,12 +392,12 @@ namespace RavenNest.SDK
                     update.Health = (short)player.Stats.Health.CurrentValue;
                     update.Island = island;
                     update.State = state;
-                    update.AutoJoinDungeonCounter = player.Dungeon.AutoJoinCounter;
-                    update.AutoJoinRaidCounter = player.Raid.AutoJoinCounter;
+                    update.AutoJoinDungeonCounter = player.dungeonHandler.AutoJoinCounter;
+                    update.AutoJoinRaidCounter = player.raidHandler.AutoJoinCounter;
                     update.X = (short)position.x;
                     update.Y = (short)position.y;
                     update.Z = (short)position.z;
-                    update.Destination = player.Ferry.Destination?.Island ?? Island.Ferry;
+                    update.Destination = player.ferryHandler.Destination?.Island ?? Island.Ferry;
 
                     if (player.LastSavedState == null || RequiresUpdate(update, player.LastSavedState, player.LastSavedStateTime))
                     {
@@ -709,27 +709,27 @@ namespace RavenNest.SDK
 
             try
             {
-                if (player.Ferry.OnFerry)
+                if (player.ferryHandler.OnFerry)
                 {
                     island = Island.Ferry;
                     return (island, pos);
                 }
 
-                if (player.Raid.InRaid)
+                if (player.raidHandler.InRaid)
                 {
-                    pos = player.Raid.PreviousPosition;
-                    if (player.Raid.PreviousIsland != null)
+                    pos = player.raidHandler.PreviousPosition;
+                    if (player.raidHandler.PreviousIsland != null)
                     {
-                        island = player.Raid.PreviousIsland?.Island ?? Island.Ferry;
+                        island = player.raidHandler.PreviousIsland?.Island ?? Island.Ferry;
                     }
                 }
 
-                if (player.Dungeon.InDungeon)
+                if (player.dungeonHandler.InDungeon)
                 {
-                    pos = player.Dungeon.PreviousPosition;
-                    if (player.Dungeon.PreviousIsland != null)
+                    pos = player.dungeonHandler.PreviousPosition;
+                    if (player.dungeonHandler.PreviousIsland != null)
                     {
-                        island = player.Dungeon.PreviousIsland?.Island ?? Island.Ferry;
+                        island = player.dungeonHandler.PreviousIsland?.Island ?? Island.Ferry;
                     }
                 }
             }
@@ -747,11 +747,11 @@ namespace RavenNest.SDK
 
             try
             {
-                if (player.Ferry.OnFerry)
+                if (player.ferryHandler.OnFerry)
                 {
                     flags |= CharacterFlags.OnFerry;
 
-                    if (player.Ferry.IsCaptain)
+                    if (player.ferryHandler.IsCaptain)
                     {
                         flags |= CharacterFlags.IsCaptain;
                     }
@@ -759,37 +759,37 @@ namespace RavenNest.SDK
                     return (flags, null);
                 }
 
-                if (player.Raid.InRaid)
+                if (player.raidHandler.InRaid)
                 {
                     flags |= CharacterFlags.InRaid;
                 }
-                if (player.Dungeon.InDungeon)
+                if (player.dungeonHandler.InDungeon)
                 {
                     flags |= CharacterFlags.InDungeon;
                     stateData = player.GameManager.Dungeons.Dungeon.Name;
                 }
-                if (player.Dungeon.Joined)
+                if (player.dungeonHandler.Joined)
                 {
                     flags |= CharacterFlags.InDungeonQueue;
                     stateData = player.GameManager.Dungeons.Dungeon.Name;
                 }
-                if (player.Duel.InDuel)
+                if (player.duelHandler.InDuel)
                 {
                     flags |= CharacterFlags.InDuel;
-                    stateData = player.Duel.Opponent?.Id.ToString();
+                    stateData = player.duelHandler.Opponent?.Id.ToString();
                 }
-                if (player.StreamRaid.InWar)
+                if (player.streamRaidHandler.InWar)
                 {
                     flags |= CharacterFlags.InStreamRaidWar;
                     stateData = player.GameManager.StreamRaid.Raider?.RaiderUserId.ToString();
                 }
 
-                if (player.Arena.InArena)
+                if (player.arenaHandler.InArena)
                 {
                     flags |= CharacterFlags.InArena;
                 }
 
-                if (player.Onsen.InOnsen && !player.InCombat)
+                if (player.onsenHandler.InOnsen && !player.InCombat)
                 {
                     flags |= CharacterFlags.InOnsen;
                 }

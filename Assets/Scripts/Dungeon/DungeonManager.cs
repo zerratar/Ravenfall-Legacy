@@ -429,7 +429,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             joinedPlayers.Remove(player);
             deadPlayers.Remove(player);
-            player.Dungeon.Clear();
+            player.dungeonHandler.Clear();
         }
     }
     public DungeonJoinResult CanJoin(PlayerController player)
@@ -468,7 +468,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             return;
         }
 
-        player.Dungeon.AutoJoining = false;
+        player.dungeonHandler.AutoJoining = false;
 
         lock (mutex)
         {
@@ -499,7 +499,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         var players = GetPlayers();
         foreach (var player in players)
         {
-            player.Dungeon.OnExit();
+            player.dungeonHandler.OnExit();
         }
 
         dungeonIndex++;
@@ -518,7 +518,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         var players = GetPlayers();
         foreach (var player in players)
         {
-            player.Dungeon.OnExit();
+            player.dungeonHandler.OnExit();
         }
 
         dungeonIndex++;

@@ -18,13 +18,13 @@ public class IslandInfo : ChatBotCommandHandler
             return;
         }
 
-        if (player.Dungeon.InDungeon)
+        if (player.dungeonHandler.InDungeon)
         {
             client.SendReply(gm, $"You're currently in the dungeon.");
             return;
         }
 
-        if (player.StreamRaid.InWar)
+        if (player.streamRaidHandler.InWar)
         {
             client.SendReply(gm, $"You're currently in a streamer raid war.");
             return;
@@ -33,9 +33,9 @@ public class IslandInfo : ChatBotCommandHandler
         var islandName = player.Island?.Identifier;
         if (string.IsNullOrEmpty(islandName))
         {
-            if (player.Ferry.OnFerry)
+            if (player.ferryHandler.OnFerry)
             {
-                var dest = player.Ferry.Destination;
+                var dest = player.ferryHandler.Destination;
                 if (dest != null)
                 {
                     client.SendReply(gm, Localization.MSG_ISLAND_ON_FERRY_DEST, dest.Identifier);
@@ -65,7 +65,7 @@ public class IslandInfo : ChatBotCommandHandler
         }
         else
         {
-            if (player.Dungeon.InDungeon)
+            if (player.dungeonHandler.InDungeon)
             {
                 client.SendReply(gm, $"You are currently inside the dungeon.");
                 return;

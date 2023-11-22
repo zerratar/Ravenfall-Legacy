@@ -1,4 +1,7 @@
-﻿public class PlayerSettings
+﻿using System.IO;
+using System.Linq;
+
+public class PlayerSettings
 {
     private readonly static JsonStore<PlayerSettings> store;
     public readonly static PlayerSettings Instance;
@@ -13,6 +16,7 @@
     public bool? LocalBotServerDisabled;
     public bool? AutoKickAfkPlayers;
     public bool? DayNightCycleEnabled;
+    public bool? PhysicsEnabled;
 
     public float? DayNightTime;
     public float? PlayerListSize;
@@ -42,10 +46,59 @@
 
     public ObserverTimes PlayerObserveSeconds;
 
+    public class StreamLabelSettings
+    {
+        public bool Enabled;
+        public bool SaveJsonFiles;
+        public bool SaveTextFiles;
+
+        public static StreamLabelSettings Default
+        {
+            get
+            {
+                return new StreamLabelSettings
+                {
+                    Enabled = true,
+                    SaveJsonFiles = true,
+                    SaveTextFiles = true,
+                };
+            }
+        }
+    }
+
+    public class ObserverTimes
+    {
+        public float Default;
+        public float Subscriber;
+        public float Moderator;
+        public float Vip;
+
+        public float Broadcaster;
+        public float OnSubcription;
+        public float OnCheeredBits;
+
+        public static ObserverTimes DefaultTimes
+        {
+            get
+            {
+                return new ObserverTimes
+                {
+                    Default = 10f,
+                    Subscriber = 30f,
+                    Moderator = 30f,
+                    Vip = 30,
+                    Broadcaster = 30,
+                    OnCheeredBits = 30,
+                    OnSubcription = 30,
+                };
+            }
+        }
+    }
+
 
     static PlayerSettings()
     {
-        store = JsonStore<PlayerSettings>.Create("game-settings");
+        store = JsonStore<PlayerSettings>.Create("game-settings", new PlayerSettingsJsonSerializer());
         Instance = store.Get();
         SetDefaultValues();
     }
@@ -71,6 +124,12 @@
         if (Instance.LocalBotServerDisabled == null)
         {
             Instance.LocalBotServerDisabled = false;
+            wasUpdated = true;
+        }
+
+        if (Instance.PhysicsEnabled == null)
+        {
+            Instance.PhysicsEnabled = true;
             wasUpdated = true;
         }
 
@@ -145,52 +204,88 @@
             Save();
         }
     }
-    public class StreamLabelSettings
-    {
-        public bool Enabled;
-        public bool SaveJsonFiles;
-        public bool SaveTextFiles;
 
-        public static StreamLabelSettings Default
+    public class PlayerSettingsJsonSerializer : ObjectJsonSerializer<PlayerSettings>
+    {
+        public override string Serialize(PlayerSettings obj)
         {
-            get
-            {
-                return new StreamLabelSettings
-                {
-                    Enabled = true,
-                    SaveJsonFiles = true,
-                    SaveTextFiles = true,
-                };
-            }
+            StringWriter sw = new StringWriter();
+
+            sw.WriteLine("{");
+
+            // Serialize all nullable boolean properties
+            Serialize(sw, "potatoMode", obj.PotatoMode);
+            Serialize(sw, "autoPotatoMode", obj.AutoPotatoMode);
+            Serialize(sw, "postProcessing", obj.PostProcessing);
+            Serialize(sw, "realTimeDayNightCycle", obj.RealTimeDayNightCycle);
+            Serialize(sw, "alertExpiredStateCacheInChat", obj.AlertExpiredStateCacheInChat);
+            Serialize(sw, "playerListVisible", obj.PlayerListVisible);
+            Serialize(sw, "playerNamesVisible", obj.PlayerNamesVisible);
+            Serialize(sw, "localBotServerDisabled", obj.LocalBotServerDisabled);
+            Serialize(sw, "autoKickAfkPlayers", obj.AutoKickAfkPlayers);
+            Serialize(sw, "dayNightCycleEnabled", obj.DayNightCycleEnabled);
+            Serialize(sw, "queryEngineEnabled", obj.QueryEngineEnabled);
+            Serialize(sw, "queryEngineAlwaysReturnArray", obj.QueryEngineAlwaysReturnArray);
+            Serialize(sw, "physicsEnabled", obj.PhysicsEnabled);
+
+            // Serialize all nullable float properties
+            Serialize(sw, "dayNightTime", obj.DayNightTime);
+            Serialize(sw, "playerListSize", obj.PlayerListSize);
+            Serialize(sw, "playerListScale", obj.PlayerListScale);
+            Serialize(sw, "playerListSpeed", obj.PlayerListSpeed);
+            Serialize(sw, "raidHornVolume", obj.RaidHornVolume);
+            Serialize(sw, "musicVolume", obj.MusicVolume);
+            Serialize(sw, "dpiScale", obj.DPIScale);
+            Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
+
+            // Serialize all nullable int properties
+            Serialize(sw, "playerBoostRequirement", obj.PlayerBoostRequirement);
+            Serialize(sw, "playerCacheExpiryTime", obj.PlayerCacheExpiryTime);
+            Serialize(sw, "itemDropMessageType", obj.ItemDropMessageType);
+            Serialize(sw, "pathfindingQualitySettings", obj.PathfindingQualitySettings);
+
+            // Serialize all nullable double properties
+            Serialize(sw, "playerAfkHours", obj.PlayerAfkHours);
+
+            // Serialize string properties
+
+            Serialize(sw, "ravenBotServer", obj.RavenBotServer);
+            Serialize(sw, "queryEngineApiPrefix", obj.QueryEngineApiPrefix);
+
+            // Serialize array
+            Serialize(sw, "expMultiplierAnnouncements", obj.ExpMultiplierAnnouncements);
+
+            // Serialize custom class instances
+            sw.WriteLine("  \"streamLabels\": " + SerializeStreamLabelSettings(obj.StreamLabels) + ",");
+            sw.WriteLine("  \"playerObserveSeconds\": " + SerializeObserverTimes(obj.PlayerObserveSeconds));
+
+            sw.WriteLine("}");
+            return sw.ToString();
+        }
+
+        private string SerializeStreamLabelSettings(StreamLabelSettings settings)
+        {
+            if (settings == null) return "null";
+            return "{ " +
+                "\"enabled\": " + settings.Enabled.ToString().ToLower() + ", " +
+                "\"saveJsonFiles\": " + settings.SaveJsonFiles.ToString().ToLower() + ", " +
+                "\"saveTextFiles\": " + settings.SaveTextFiles.ToString().ToLower() +
+                " }";
+        }
+
+        private string SerializeObserverTimes(ObserverTimes times)
+        {
+            if (times == null) return "null";
+            return "{ " +
+                "\"default\": " + times.Default.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " +
+                "\"subscriber\": " + times.Subscriber.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " +
+                "\"moderator\": " + times.Moderator.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " +
+                "\"vip\": " + times.Vip.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " +
+                "\"broadcaster\": " + times.Broadcaster.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " +
+                "\"onSubcription\": " + times.OnSubcription.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " +
+                "\"onCheeredBits\": " + times.OnCheeredBits.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                " }";
         }
     }
 
-    public class ObserverTimes
-    {
-        public float Default;
-        public float Subscriber;
-        public float Moderator;
-        public float Vip;
-
-        public float Broadcaster;
-        public float OnSubcription;
-        public float OnCheeredBits;
-
-        public static ObserverTimes DefaultTimes
-        {
-            get
-            {
-                return new ObserverTimes
-                {
-                    Default = 10f,
-                    Subscriber = 30f,
-                    Moderator = 30f,
-                    Vip = 30,
-                    Broadcaster = 30,
-                    OnCheeredBits = 30,
-                    OnSubcription = 30,
-                };
-            }
-        }
-    }
 }

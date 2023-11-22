@@ -18,13 +18,13 @@ public class ClanSkillObserver : MonoBehaviour
         enchanting.gameObject.SetActive(false);
 
         // Hide the skill if its not avilable.
-        if (!player || !player.Clan.InClan)
+        if (!player || !player.clanHandler.InClan)
             return;
 
         if (!gameManager)
             return;
 
-        var skills = gameManager.Clans.GetClanSkills(player.Clan.ClanInfo.Id);
+        var skills = gameManager.Clans.GetClanSkills(player.clanHandler.ClanInfo.Id);
         if (skills != null && skills.Count > 0)
         {
             // TODO: fix so we can just loop all skills and add them dynamically.

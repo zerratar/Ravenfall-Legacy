@@ -21,6 +21,7 @@ public class PetController : MonoBehaviour
     private PlayerController player;
     private Light lightSource;
     private bool playerWasMoving;
+    private Transform _transform;
 
     //[SerializeField] private bool hasGearStats;
     //[SerializeField] private int gearStat;
@@ -141,6 +142,7 @@ public class PetController : MonoBehaviour
 #endif
     void Start()
     {
+        this._transform = this.transform;
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         animator = GetComponent<Animator>();
         if (!animator) animator = GetComponentInChildren<Animator>();
@@ -182,8 +184,8 @@ public class PetController : MonoBehaviour
             animator.SetBool("Sleeping", true);
         }
 
-        if (transform.localPosition.x != offsetPosition.x)
-            transform.localPosition = offsetPosition;
+        if (_transform.localPosition.x != offsetPosition.x)
+            _transform.localPosition = offsetPosition;
 
         UpdateAnimator(playerIsMoving);
     }

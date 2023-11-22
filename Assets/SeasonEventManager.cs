@@ -6,6 +6,16 @@ public class SeasonEventManager : MonoBehaviour
 {
     public SeasonalEvent[] Events;
 
+    private SeasonalEvent[] orderedEvents;
+    private SeasonalEvent activeEvent;
+
+    private float nextUpdate;
+
+    private void Awake()
+    {
+        this.orderedEvents = Events.OrderBy(x => x.DateRange.Days).ToArray();
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -14,24 +24,31 @@ public class SeasonEventManager : MonoBehaviour
             return;
         }
 
-        // use local time
-        var now = DateTime.Now;
-
-        // if we take the event with least days first and get the first date range matchin our current date
-        // then we can ensure we select a unique event in the middle of a different event. For instance, lets say we call
-        // the default state an event so we can replace certain objects when another event is active, the default one is set to
-        // first of jan to last of dec, so this would always apply. Now if we want halloween to happen, we must make sure to pick events
-        // with least days first since it will only be 31 days long, this ensures we will have halloween. And if we have a unique day
-        // during halloween, that one will also be correctly selected.
-        var targetEvent = Events.OrderBy(x => x.DateRange.Days).FirstOrDefault(x => now >= x.DateRange.Start && now <= x.DateRange.End);
-
-        foreach (var evt in Events)
+        var t = Time.time;
+        if (t > nextUpdate)
         {
-            if (targetEvent == evt) continue; // no need to flicker our objects in the scene.
-            Deactivate(evt);
-        }
 
-        Activate(targetEvent);
+            // use local time
+            var now = DateTime.Now;
+
+            // if we take the event with least days first and get the first date range matchin our current date
+            // then we can ensure we select a unique event in the middle of a different event. For instance, lets say we call
+            // the default state an event so we can replace certain objects when another event is active, the default one is set to
+            // first of jan to last of dec, so this would always apply. Now if we want halloween to happen, we must make sure to pick events
+            // with least days first since it will only be 31 days long, this ensures we will have halloween. And if we have a unique day
+            // during halloween, that one will also be correctly selected.
+            var targetEvent = orderedEvents.FirstOrDefault(x => now >= x.DateRange.Start && now <= x.DateRange.End);
+
+            foreach (var evt in Events)
+            {
+                if (targetEvent == evt) continue; // no need to flicker our objects in the scene.
+                Deactivate(evt);
+            }
+
+            Activate(targetEvent);
+
+            nextUpdate = t + 30;
+        }
     }
 
     private void Deactivate(SeasonalEvent evt)
@@ -44,10 +61,15 @@ public class SeasonEventManager : MonoBehaviour
 
     private void Activate(SeasonalEvent evt)
     {
-        foreach (var obj in evt.Objects)
+        if (activeEvent != evt)
         {
-            obj.SetActive(true);
+            foreach (var obj in evt.Objects)
+            {
+                obj.SetActive(true);
+            }
         }
+
+        this.activeEvent = evt;
     }
 }
 

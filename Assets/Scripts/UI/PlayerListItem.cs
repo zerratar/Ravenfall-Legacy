@@ -281,7 +281,7 @@ public class PlayerListItem : MonoBehaviour
 
             var time = Utility.FormatTime(TargetPlayer.Rested.RestedTime / 60f / 60f, false);
 
-            if (TargetPlayer.Onsen.InOnsen)
+            if (TargetPlayer.onsenHandler.InOnsen)
             {
                 SetText(lblRestedTime, "<color=#FFDE00>" + time + "</color>");
                 // increasing time

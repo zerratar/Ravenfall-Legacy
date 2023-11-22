@@ -29,6 +29,9 @@ public class PlayerMovementController : MonoBehaviour
 
 
     private NavMeshPath currentPath;
+    private float last_speed;
+    private float last_angularSpeed;
+    private Transform _transform;
 
     //private NavigationAgent navAgentState;
 
@@ -42,6 +45,7 @@ public class PlayerMovementController : MonoBehaviour
 
     void Start()
     {
+        this._transform = this.transform;
         if (!navMeshAgent) navMeshAgent = GetComponent<NavMeshAgent>();
         if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
         SetupNavigationAgent();
@@ -51,16 +55,26 @@ public class PlayerMovementController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Position = this.transform.position;
+        Position = _transform.position;
 
         if (defaultSpeed > 0 && MovementSpeedMultiplier > 0)
         {
-            this.navMeshAgent.speed = MovementSpeedMultiplier * defaultSpeed;
+            var speed = MovementSpeedMultiplier * defaultSpeed;
+            if (last_speed != speed)
+            {
+                this.navMeshAgent.speed = speed;
+                last_speed = speed;
+            }
         }
 
         if (defaultAngularSpeed > 0 && MovementSpeedMultiplier > 0)
         {
-            this.navMeshAgent.angularSpeed = MovementSpeedMultiplier * defaultAngularSpeed;
+            var angularSpeed = MovementSpeedMultiplier * defaultAngularSpeed;
+            if (last_angularSpeed != angularSpeed)
+            {
+                this.navMeshAgent.angularSpeed = angularSpeed;
+                last_angularSpeed = angularSpeed;
+            }
         }
     }
 
@@ -134,6 +148,11 @@ public class PlayerMovementController : MonoBehaviour
 
     internal bool SetDestination(Vector3 pos)
     {
+        if (Destination == pos && navMeshAgent.destination == pos)
+        {
+            return true;
+        }
+
         Unlock();
 
         if (!navMeshAgent.isActiveAndEnabled || !navMeshAgent.isOnNavMesh)
@@ -141,35 +160,36 @@ public class PlayerMovementController : MonoBehaviour
             return true;
         }
 
-        if (Destination == pos)
-        {
-            return true;
-        }
-
         if (currentPath == null)
             currentPath = new NavMeshPath();
 
-        if (navMeshAgent.CalculatePath(pos, currentPath) && currentPath.status == NavMeshPathStatus.PathComplete)
+        Destination = pos;
+
+        if (navMeshAgent.CalculatePath(pos, currentPath))//&& currentPath.status == NavMeshPathStatus.PathComplete)
         {
-            Destination = pos;
+            if (currentPath.status != NavMeshPathStatus.PathComplete)
+            {
+
+            }
+
             navMeshAgent.SetPath(currentPath);
             return true;
-        }
-
-        if (currentPath.status == NavMeshPathStatus.PathInvalid)
-        {
-            // could be good to log this, maybe even target of the player to determine what object has invalid paths.
         }
 
         return false;
     }
 
-    internal void Lock()
+    public void Lock()
     {
-        var currentPosition = Position;
-
         //agent.Stop();
         var agent = this.navMeshAgent;
+
+        if (!agent.enabled)
+        {
+            return;
+        }
+
+        var currentPosition = Position;
         agent.velocity = Vector3.zero;
         if (agent.isOnNavMesh)
         {
@@ -189,7 +209,7 @@ public class PlayerMovementController : MonoBehaviour
         this.movementLockState = MovementLockState.Locked;
     }
 
-    internal void Unlock(bool adjustToNavmesh = false)
+    public void Unlock(bool adjustToNavmesh = false)
     {
         navMeshAgent.enabled = true;
         if (adjustToNavmesh && !navMeshAgent.isOnNavMesh)

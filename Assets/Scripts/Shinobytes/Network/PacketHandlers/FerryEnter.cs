@@ -17,23 +17,23 @@
             return;
         }
 
-        if (!player.Ferry)
+        if (!player.ferryHandler)
         {
             return;
         }
 
-        if (player.Ferry.Embarking)
+        if (player.ferryHandler.Embarking)
         {
             client.SendReply(gm, Localization.MSG_FERRY_ALREADY_WAITING);
             return;
         }
-        if (player.Ferry.OnFerry)
+        if (player.ferryHandler.OnFerry)
         {
             client.SendReply(gm, Localization.MSG_FERRY_ALREADY_ON);
             return;
         }
 
-        player.Ferry.Embark();
+        player.ferryHandler.Embark();
         player.ClearTask();
         client.SendReply(gm, Localization.MSG_FERRY_TRAIN_SAIL);
     }

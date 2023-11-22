@@ -52,7 +52,7 @@ public class FightingTask : ChunkTask
     {
         if (player.TrainingHealing)
         {
-            if (player.Duel.InDuel || player.Arena.InArena)
+            if (player.duelHandler.InDuel || player.arenaHandler.InArena)
             {
                 return player;
             }
@@ -64,7 +64,7 @@ public class FightingTask : ChunkTask
             for (var i = 0; i < playerCount; ++i)
             {
                 var x = players[i];
-                if (x.Stats.Health.CurrentValue <= 0 || x.Ferry.OnFerry || x.Onsen.InOnsen)
+                if (x.Stats.Health.CurrentValue <= 0 || x.ferryHandler.OnFerry || x.onsenHandler.InOnsen)
                 {
                     continue;
                 }
@@ -223,7 +223,7 @@ public class FightingTask : ChunkTask
                 return false;
             }
 
-            if (tar.Ferry.OnFerry || player.Ferry.OnFerry)
+            if (tar.ferryHandler.OnFerry || player.ferryHandler.OnFerry)
             {
                 reason = TaskExecutionStatus.InvalidTarget;
                 return false;

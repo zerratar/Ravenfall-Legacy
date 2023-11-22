@@ -26,14 +26,28 @@ public class GraphicsToggler : MonoBehaviour
     private MeshRenderer[] meshRenderers;
     private int previousTargetFramerate;
     private int previousVsyncCount;
-    private bool graphicsEnabled = true;
+    public bool graphicsEnabled = true;
     private int renderFrameInterval = 10;
     private int targetFramesPerSeconds = 6;
     private HashSet<int> ignoreList = new HashSet<int>();
 
     //private readonly SemaphoreSlim mutex = new SemaphoreSlim(1);
     public static bool GraphicsEnabled = true;
+    public static SimulationMode SimulationMode = SimulationMode.FixedUpdate;
+
     public bool IsGraphicsEnabled => graphicsEnabled;
+
+    public static void EnablePhysics()
+    {
+        SimulationMode = SimulationMode.FixedUpdate;
+        Physics.simulationMode = SimulationMode;
+    }
+
+    public static void DisablePhysics()
+    {
+        SimulationMode = SimulationMode.Script;
+        Physics.simulationMode = SimulationMode;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -131,7 +145,7 @@ public class GraphicsToggler : MonoBehaviour
     private void RestoreRenderTarget()
     {
         //Physics.autoSimulation = true;
-        Physics.simulationMode = SimulationMode.FixedUpdate;
+        Physics.simulationMode = SimulationMode;
         OnDemandRendering.renderFrameInterval = 0;
         Application.targetFrameRate = previousTargetFramerate;
         QualitySettings.vSyncCount = previousVsyncCount;
@@ -146,6 +160,7 @@ public class GraphicsToggler : MonoBehaviour
         Application.targetFrameRate = targetFramesPerSeconds;
         QualitySettings.vSyncCount = 2;
     }
+
     private void ToggleBehaviours(Behaviour[] renderer)
     {
         for (var i = 0; i < renderer.Length; ++i)

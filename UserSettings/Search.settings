@@ -37,6 +37,9 @@ scopes = {
 	"last_search.3172962C" = "coin"
 	"OpenInspectorPreview.3172962C" = "0"
 	"currentGroup.3172962C" = "all"
+	"last_search.2567E822" = ""
+	"OpenInspectorPreview.2567E822" = "0"
+	"currentGroup.2567E822" = null
 }
 providers = {
 	asset = {
@@ -87,6 +90,11 @@ providers = {
 	profilermarkers = {
 		active = false
 		priority = 100
+		defaultAction = null
+	}
+	presets_provider = {
+		active = false
+		priority = -10
 		defaultAction = null
 	}
 }

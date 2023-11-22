@@ -80,14 +80,14 @@ public class ChunkManager : MonoBehaviour
 
         /* In case we are in a dungeon or raid when using this method. 
            Use the previous island as reference */
-        if (!refIsland && playerRef.Dungeon.InDungeon)
+        if (!refIsland && playerRef.dungeonHandler.InDungeon)
         {
-            refIsland = playerRef.Dungeon.PreviousIsland;
+            refIsland = playerRef.dungeonHandler.PreviousIsland;
         }
 
-        if (!refIsland && playerRef.Raid.InRaid)
+        if (!refIsland && playerRef.raidHandler.InRaid)
         {
-            refIsland = playerRef.Raid.PreviousIsland;
+            refIsland = playerRef.raidHandler.PreviousIsland;
         }
 
         var refCombatLevel = playerRef.Stats.CombatLevel;

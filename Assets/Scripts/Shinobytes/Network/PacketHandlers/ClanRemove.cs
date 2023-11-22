@@ -14,7 +14,7 @@
             return;
         }
 
-        if (plr.Clan == null || !plr.Clan.InClan)
+        if (plr.clanHandler == null || !plr.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_NOT_IN_CLAN);
             return;
@@ -29,7 +29,7 @@
 
         if (await Game.RavenNest.Clan.RemoveMemberAsync(plr.Id, otherPlayer.Id))
         {
-            otherPlayer.Clan.Leave();
+            otherPlayer.clanHandler.Leave();
             client.SendReply(gm, data.Username + " have been removed from the clan.");
             return;
         }

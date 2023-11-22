@@ -32,6 +32,7 @@ public class RaidBossController : MonoBehaviour
     private bool playingDeathAnimation;
     private IslandController island;
     private GameManager gameManager;
+    public Transform _transform;
 
     public EnemyController Enemy => enemyController;
 
@@ -39,6 +40,7 @@ public class RaidBossController : MonoBehaviour
 
     void Awake()
     {
+        this._transform = transform;
         if (!enemyController) enemyController = GetComponent<EnemyController>();
         if (!rb) rb = GetComponent<Rigidbody>();
         if (!ItemDrops) ItemDrops = GetComponent<ItemDropHandler>();
@@ -83,7 +85,7 @@ public class RaidBossController : MonoBehaviour
 
         if (!island)
         {
-            var newIsland = gameManager.Islands.FindIsland(this.transform.position);
+            var newIsland = gameManager.Islands.FindIsland(this._transform.position);
             if (newIsland)
                 IslandEnter(newIsland);
         }

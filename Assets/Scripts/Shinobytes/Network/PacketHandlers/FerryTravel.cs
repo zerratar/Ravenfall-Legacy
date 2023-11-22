@@ -33,13 +33,13 @@ public class FerryTravel : ChatBotCommandHandler<string>
             return;
         }
 
-        if (player.StreamRaid.InWar)
+        if (player.streamRaidHandler.InWar)
         {
             client.SendReply(gm, Localization.MSG_TRAVEL_WAR);
             return;
         }
 
-        if (player.Arena.InArena)
+        if (player.arenaHandler.InArena)
         {
             if (!Game.Arena.Leave(player))
             {
@@ -48,28 +48,28 @@ public class FerryTravel : ChatBotCommandHandler<string>
             }
         }
 
-        if (player.Duel.InDuel)
+        if (player.duelHandler.InDuel)
         {
             client.SendReply(gm, Localization.MSG_TRAVEL_DUEL);
             return;
         }
 
-        if (player.Dungeon.InDungeon)
+        if (player.dungeonHandler.InDungeon)
         {
             client.SendReply(gm, Localization.MSG_TRAVEL_DUNGEON);
             return;
         }
 
-        if (player.Onsen.InOnsen)
+        if (player.onsenHandler.InOnsen)
         {
             Game.Onsen.Leave(player);
         }
 
-        if (player.Raid)
+        if (player.raidHandler)
         {
             Game.Raid.Leave(player);
         }
 
-        player.Ferry.Embark(island);
+        player.ferryHandler.Embark(island);
     }
 }

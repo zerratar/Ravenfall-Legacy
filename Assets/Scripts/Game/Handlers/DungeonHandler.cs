@@ -68,12 +68,17 @@ public class DungeonHandler
             return;
         }
 
+        if (!InDungeon)
+        {
+            return;
+        }
+
         if (player.TrainingHealing)
         {
-            if (!healTarget || healTarget.Stats.IsDead || healTarget.Id == player.Id || !healTarget.Dungeon.InDungeon)
+            if (!healTarget || healTarget.Stats.IsDead || healTarget.Id == player.Id || !healTarget.dungeonHandler.InDungeon)
                 healTarget = null;
 
-            if (!healTarget || healTarget == null || healTarget.Id == player.Id || healTarget.TrainingHealing || healTarget.Stats.HealthPercent > 0.9 || !healTarget.Dungeon.InDungeon)
+            if (!healTarget || healTarget == null || healTarget.Id == player.Id || healTarget.TrainingHealing || healTarget.Stats.HealthPercent > 0.9 || !healTarget.dungeonHandler.InDungeon)
             {
                 var players = dungeon.GetAlivePlayers();
                 var healthDif = 100f;
@@ -82,7 +87,7 @@ public class DungeonHandler
                 {
                     var x = players[i];
 
-                    if (x.Stats.Health.CurrentValue <= 0 || x.Id == player.Id || !x.Dungeon.InDungeon || Mathf.Abs(player.transform.position.y - x.transform.position.y) > 10)
+                    if (x.Stats.Health.CurrentValue <= 0 || x.Id == player.Id || !x.dungeonHandler.InDungeon || Mathf.Abs(player.transform.position.y - x.transform.position.y) > 10)
                     {
                         continue;
                     }
@@ -132,8 +137,8 @@ public class DungeonHandler
                 }
                 else if (possibleTarget != enemyTarget)
                 {
-                    var distA = Vector3.Distance(possibleTarget.PositionInternal, player.Movement.Position);
-                    var distB = Vector3.Distance(enemyTarget.PositionInternal, player.Movement.Position);
+                    var distA = Vector3.Distance(possibleTarget.transform.position, player.Movement.Position);
+                    var distB = Vector3.Distance(enemyTarget.transform.position, player.Movement.Position);
                     if (distA < distB)
                     {
                         enemyTarget = possibleTarget;
@@ -172,6 +177,11 @@ public class DungeonHandler
             return;
         }
 
+        if (player.Island)
+        {
+            player.Island.RemovePlayer(player);
+        }
+
         waitForDungeon = 0;
         InDungeon = true;
 
@@ -181,17 +191,17 @@ public class DungeonHandler
 
         Ferry = new()
         {
-            OnFerry = player.Ferry.OnFerry,
-            HasDestination = !!player.Ferry.Destination,
-            Destination = player.Ferry.Destination
+            OnFerry = player.ferryHandler.OnFerry,
+            HasDestination = !!player.ferryHandler.Destination,
+            Destination = player.ferryHandler.Destination
         };
 
         if (Ferry.OnFerry)
         {
-            //var wasCaptainOfFerry = this.player.Ferry.IsCaptain;
-            //if (player.Ferry.Destination)
+            //var wasCaptainOfFerry = this.player.ferryHandler.IsCaptain;
+            //if (player.ferryHandler.Destination)
             //{
-            //    previousPosition = player.Ferry.Destination.SpawnPosition;
+            //    previousPosition = player.ferryHandler.Destination.SpawnPosition;
             //}
             //else
             //{
@@ -199,19 +209,19 @@ public class DungeonHandler
             //    previousPosition = chunk.GetPlayerSpawnPoint();
             //}
 
-            player.Ferry.RemoveFromFerry();
+            player.ferryHandler.RemoveFromFerry();
         }
         else
         {
             previousPosition = player.Position;
         }
 
-        wasResting = this.player.Onsen.InOnsen;
+        wasResting = this.player.onsenHandler.InOnsen;
 
-        if (player.Onsen.InOnsen)
+        if (player.onsenHandler.InOnsen)
         {
             //previousPosition = player.Game.Onsen.
-            previousPosition = player.Onsen.EntryPoint;
+            previousPosition = player.onsenHandler.EntryPoint;
             player.GameManager.Onsen.Leave(player);
             player.transform.parent = null;
         }
@@ -219,7 +229,7 @@ public class DungeonHandler
         previousIsland = this.player.Island;
 
         player.InterruptAction();
-        player.Teleporter.Teleport(startingPoint);
+        player.teleportHandler.Teleport(startingPoint);
         player.Stats.Health.Reset();
 
         this.player.Island = null;
@@ -236,12 +246,12 @@ public class DungeonHandler
         if (Ferry.OnFerry)
         {
             player.Movement.Lock();
-            player.Ferry.AddPlayerToFerry(Ferry.Destination);
+            player.ferryHandler.AddPlayerToFerry(Ferry.Destination);
             Ferry.HasReturned = true;
         }
         else
         {
-            player.Teleporter.Teleport(previousPosition);
+            player.teleportHandler.Teleport(previousPosition);
         }
 
 

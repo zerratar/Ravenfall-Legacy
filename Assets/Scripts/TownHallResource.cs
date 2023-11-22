@@ -1,5 +1,6 @@
 ﻿using Sirenix.OdinInspector;
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 public class TownHallResource : MonoBehaviour
 {
@@ -20,6 +21,12 @@ public class TownHallResource : MonoBehaviour
 
     [Header("Wheat")]
     [SerializeField] private GameObject[] wheat;
+
+    private long lastCoins = -1;
+    private long lastWood = -1;
+    private long lastWheat = -1;
+    private long lastOre = -1;
+    private long lastFish = -1;
 
     [Button("Assign resource piles")]
     private void AssignPiles()
@@ -55,32 +62,75 @@ public class TownHallResource : MonoBehaviour
     {
         // determine which of the 4 objects to show
         // based on the amaount of resources available.
-        SetPile(manager.Coins, coins);
-        SetPile(manager.Wood, wood);
-        SetPile(manager.Ore, ore);
-        SetPile(manager.Wheat, wheat);
-        SetPile(manager.Fish, fish);
-    }
 
-    private void SetPile(long amount, GameObject[] pileSizes)
-    {
-        foreach (var ps in pileSizes)
+        if (lastCoins != manager.Coins)
         {
-            ps.SetActive(false);
+            SetPile(manager.Coins, lastCoins, coins);
+            lastCoins = manager.Coins;
         }
 
-        if (amount == 0)
+        if (lastWood != manager.Wood)
         {
-            return;
+            SetPile(manager.Wood, lastWood, wood);
+            lastWood = manager.Wood;
+        }
+
+        if (lastOre != manager.Ore)
+        {
+            SetPile(manager.Ore, lastOre, ore);
+            lastOre = manager.Ore;
+        }
+
+        if (lastWheat != manager.Wheat)
+        {
+            SetPile(manager.Wheat, lastWheat, wheat);
+            lastWheat = manager.Wheat;
+        }
+
+        if (lastFish != manager.Fish)
+        {
+            SetPile(manager.Fish, lastFish, fish);
+            lastFish = manager.Fish;
+        }
+    }
+
+    private void SetPile(long amount, long lastValue, GameObject[] pileSizes)
+    {
+        var oldPileIndex = GetPileIndex(lastValue);
+        var newIndex = GetPileIndex(amount);
+
+        if (lastValue < 0 || oldPileIndex != newIndex)
+        {
+            foreach (var ps in pileSizes)
+            {
+                ps.SetActive(false);
+            }
+
+            if (amount == 0 || newIndex < 0)
+            {
+                return;
+            }
+
+            pileSizes[newIndex].SetActive(true);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+    private int GetPileIndex(long amount)
+    {
+        if (amount <= 0)
+        {
+            return -1;
         }
 
         if (amount >= 10_000)
-            pileSizes[3].SetActive(true);
+            return 3;
         else if (amount >= 5_000)
-            pileSizes[2].SetActive(true);
+            return 2;
         else if (amount >= 1_000)
-            pileSizes[1].SetActive(true);
-        else if (amount > 0)
-            pileSizes[0].SetActive(true);
+            return 1;
+
+        return 0;
     }
 }

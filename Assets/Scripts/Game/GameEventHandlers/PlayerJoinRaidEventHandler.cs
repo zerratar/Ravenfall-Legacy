@@ -9,22 +9,22 @@ public class PlayerJoinRaidEventHandler : GameEventHandler<PlayerId>
         if (!player)
             return;
 
-        if (player.StreamRaid.InWar)
+        if (player.streamRaidHandler.InWar)
             return;
 
-        //if (player.Ferry.OnFerry)
+        //if (player.ferryHandler.OnFerry)
         //    return;
 
-        //if (player.Ferry.Active)
-        //    player.Ferry.Disembark();
+        //if (player.ferryHandler.Active)
+        //    player.ferryHandler.Disembark();
 
-        if (player.Dungeon.InDungeon)
+        if (player.dungeonHandler.InDungeon)
             return;
 
-        if (player.Arena.InArena && gameManager.Arena.Started)
+        if (player.arenaHandler.InArena && gameManager.Arena.Started)
             return;
 
-        if (player.Duel.InDuel)
+        if (player.duelHandler.InDuel)
             return;
 
         var result = gameManager.Raid.CanJoin(player);

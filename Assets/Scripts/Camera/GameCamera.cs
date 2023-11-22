@@ -347,7 +347,7 @@ public class GameCamera : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool CanObservePlayer(PlayerController player)
     {
-        return !forcedFreeCamera && !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.StreamRaid.InWar;
+        return !forcedFreeCamera && !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.streamRaidHandler.InWar;
     }
 }
 

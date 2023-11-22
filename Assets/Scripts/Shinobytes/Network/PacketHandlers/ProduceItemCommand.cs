@@ -35,19 +35,19 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             return;
         }
 
-        if (player.Ferry && player.Ferry.Active)
+        if (player.ferryHandler && player.ferryHandler.Active)
         {
             client.SendReply(gm, Localization.MSG_GENERIC_FAILED_FERRY);
             return;
         }
 
-        if (player.Arena.InArena || player.Raid.InRaid || player.Dungeon.InDungeon || player.Duel.InDuel || player.Onsen.InOnsen)
+        if (player.arenaHandler.InArena || player.raidHandler.InRaid || player.dungeonHandler.InDungeon || player.duelHandler.InDuel || player.onsenHandler.InOnsen)
         {
-            if (player.Arena.InArena) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_ARENA);
-            if (player.Raid.InRaid) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_RAID);
-            if (player.Dungeon.InDungeon) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_DUNGEON);
-            if (player.Duel.InDuel) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_DUEL);
-            if (player.Onsen.InOnsen) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_RESTING);
+            if (player.arenaHandler.InArena) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_ARENA);
+            if (player.raidHandler.InRaid) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_RAID);
+            if (player.dungeonHandler.InDungeon) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_DUNGEON);
+            if (player.duelHandler.InDuel) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_DUEL);
+            if (player.onsenHandler.InOnsen) client.SendReply(gm, Localization.MSG_GENERIC_FAILED_RESTING);
             return;
         }
 

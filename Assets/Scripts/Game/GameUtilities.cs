@@ -33,14 +33,14 @@ namespace Assets.Scripts.Game
                     sb.AppendLine(nameof(player.Animations) + " is null.");
                 }
 
-                if (!player.Ferry || player.Ferry == null)
+                if (!player.ferryHandler || player.ferryHandler == null)
                 {
-                    sb.AppendLine(nameof(player.Ferry) + " is null.");
+                    sb.AppendLine(nameof(player.ferryHandler) + " is null.");
                 }
 
-                if (!player.Onsen || player.Onsen == null)
+                if (!player.onsenHandler || player.onsenHandler == null)
                 {
-                    sb.AppendLine(nameof(player.Onsen) + " is null.");
+                    sb.AppendLine(nameof(player.onsenHandler) + " is null.");
                 }
 
                 if (!player.Appearance || player.Appearance == null)
@@ -50,7 +50,7 @@ namespace Assets.Scripts.Game
 
                 if (!player.Island || player.Island == null)
                 {
-                    if (!player.Dungeon.InDungeon && player.Ferry && !player.Ferry.OnFerry && !player.StreamRaid.InWar)
+                    if (!player.dungeonHandler.InDungeon && player.ferryHandler && !player.ferryHandler.OnFerry && !player.streamRaidHandler.InWar)
                     {
                         sb.AppendLine(nameof(player.Island) + " is null.");
                     }

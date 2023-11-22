@@ -20,11 +20,11 @@ public class PlayerLeave : ChatBotCommandHandler
                 Game.Dungeons.Remove(player);
             }
 
-            if (!Game.Arena.Started && Game.Arena.Activated && player.Arena.InArena)
+            if (!Game.Arena.Started && Game.Arena.Activated && player.arenaHandler.InArena)
             {
                 Game.Arena.Leave(player);
             }
-            else if (player.Duel.InDuel || !Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+            else if (player.duelHandler.InDuel || !Game.Arena.CanJoin(player, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
             {
                 Game.QueueRemovePlayer(player);
                 return;

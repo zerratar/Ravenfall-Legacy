@@ -11,10 +11,12 @@ public class TownHallController : MonoBehaviour
     private GameManager gameManager;
     private MeshRenderer meshRenderer;
     private int instanceID;
+    private TownHallInfoManager ui;
 
     // Start is called before the first frame update
     void Start()
     {
+        if (!ui) ui = FindAnyObjectByType<TownHallInfoManager>();
         if (!manager) manager = FindAnyObjectByType<TownHallManager>();
         if (!resources) resources = GetComponentInChildren<TownHallResource>();
         if (!hitCollider) hitCollider = GetComponent<BoxCollider>();
@@ -74,5 +76,6 @@ public class TownHallController : MonoBehaviour
     {
         if (!resources) resources = GetComponentInChildren<TownHallResource>();
         if (resources) resources.ResourcesUpdated(manager);
+        if (ui) ui.MakeDirty();
     }
 }

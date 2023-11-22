@@ -7,18 +7,18 @@ public class PlayerTravelEventHandler : GameEventHandler<RavenNest.Models.Player
         var player = gameManager.Players.GetPlayerById(data.PlayerId);
         if (!player) return;
 
-        if (player.StreamRaid.InWar || player.Arena.InArena || player.Duel.InDuel
-            || player.Dungeon.InDungeon)
+        if (player.streamRaidHandler.InWar || player.arenaHandler.InArena || player.duelHandler.InDuel
+            || player.dungeonHandler.InDungeon)
         {
             return;
         }
 
-        if (player.Onsen.InOnsen)
+        if (player.onsenHandler.InOnsen)
         {
             gameManager.Onsen.Leave(player);
         }
 
-        if (player.Raid.InRaid)
+        if (player.raidHandler.InRaid)
         {
             gameManager.Raid.Leave(player);
         }
@@ -36,18 +36,18 @@ public class PlayerTravelEventHandler : GameEventHandler<RavenNest.Models.Player
             return;
         }
 
-        player.Ferry.Embark(island);
+        player.ferryHandler.Embark(island);
     }
 
     private void SailForever(PlayerController player)
     {
-        if (player.Ferry.Embarking || player.Ferry.OnFerry)
+        if (player.ferryHandler.Embarking || player.ferryHandler.OnFerry)
         {
-            player.Ferry.ClearDestination();
+            player.ferryHandler.ClearDestination();
             return;
         }
 
         player.ClearTask();
-        player.Ferry.Embark();
+        player.ferryHandler.Embark();
     }
 }

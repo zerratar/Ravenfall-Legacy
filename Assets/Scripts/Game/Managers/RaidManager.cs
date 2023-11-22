@@ -29,8 +29,8 @@ public class RaidManager : MonoBehaviour, IEvent
     private float maxTimeoutSeconds = 900f;
     private float timeoutTimer = 0f;
 
-    private float raidStartedTime = 0f;
-    private float raidEndedTime = 0f;
+    private DateTime raidStartedTime;
+    private DateTime raidEndedTime;
 
     public IReadOnlyList<PlayerController> Raiders { get { lock (mutex) return raidingPlayers; } }
     public RaidBossController Boss { get; private set; }
@@ -115,7 +115,7 @@ public class RaidManager : MonoBehaviour, IEvent
             return;
         }
 
-        player.Raid.AutoJoining = false;
+        player.raidHandler.AutoJoining = false;
 
         lock (mutex)
         {
@@ -123,7 +123,7 @@ public class RaidManager : MonoBehaviour, IEvent
             if (raidingPlayers.Count == 0 || bossHealth.CurrentValue == bossHealth.MaxLevel)
             {
                 // reset the start time until someone joins or boss health is the same.
-                raidStartedTime = Time.time;
+                raidStartedTime = DateTime.Now;
             }
 
             player.InterruptAction();
@@ -135,7 +135,7 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         player.EnsureComponents();
-        player.Raid.OnEnter();
+        player.raidHandler.OnEnter();
 
         // whenever a player joins, we take the sum of all combat skills and equipment
         // this needs to be recorded for every raid that occurs
@@ -155,14 +155,14 @@ public class RaidManager : MonoBehaviour, IEvent
             if (raidingPlayers.Remove(player))
             {
                 player.EnsureComponents();
-                player.Raid.OnLeave(reward, timeout);
+                player.raidHandler.OnLeave(reward, timeout);
             }
         }
 
         gameManager.raidStatsJson.Update();
     }
 
-    public async Task<bool> StartRaid(PlayerController initiator = null, Action<string> onActivated = null)
+    public bool StartRaid(PlayerController initiator = null, Action<string> onActivated = null)
     {
         if (gameManager.Events.TryStart(this))
         {
@@ -186,7 +186,7 @@ public class RaidManager : MonoBehaviour, IEvent
             if (!notifications.gameObject.activeSelf) notifications.gameObject.SetActive(true);
 
             nextRaidTimer = -1f;
-            raidStartedTime = Time.time;
+            raidStartedTime = DateTime.Now;
             camera.EnableRaidCamera();
 
             notifications.ShowRaidBossAppeared(RequiredCode);
@@ -237,7 +237,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
         gameManager.Music.PlayBackgroundMusic();
 
-        raidEndedTime = Time.time;
+        raidEndedTime = DateTime.Now;
         camera.DisableFocusCamera();
         ScheduleNextRaid();
         notifications.HideRaidInfo();
@@ -277,9 +277,9 @@ public class RaidManager : MonoBehaviour, IEvent
             return;
         }
 
-        var playersInRaid = players.Where(x => x.Raid.GetParticipationPercentage() >= 0.2);
+        var playersInRaid = players.Where(x => x.raidHandler.GetParticipationPercentage() >= 0.2);
 
-        var playersToBeRewarded = playersInRaid.OrderByDescending(x => x.Raid.GetParticipationPercentage()).Select(x => x.Id).ToArray();
+        var playersToBeRewarded = playersInRaid.OrderByDescending(x => x.raidHandler.GetParticipationPercentage()).Select(x => x.Id).ToArray();
 
         await RewardPlayersAsync(playersToBeRewarded);
     }
@@ -341,10 +341,10 @@ public class RaidManager : MonoBehaviour, IEvent
         nextRaidTimer = UnityEngine.Random.Range(minTimeBetweenRaids, maxTimeBetweenRaids);
     }
 
-    public float GetParticipationPercentage(float enterTime)
+    public float GetParticipationPercentage(DateTime enterTime)
     {
         var participationTime = raidEndedTime - enterTime;
-        return participationTime / (raidEndedTime - raidStartedTime);
+        return (float)(participationTime.TotalSeconds / (raidEndedTime - raidStartedTime).TotalSeconds);
     }
 
     // Update is called once per frame
@@ -352,9 +352,7 @@ public class RaidManager : MonoBehaviour, IEvent
     {
         ProcessRewardQueue();
 
-
-
-        var playerCount = playerManager.GetPlayerCount();
+        var playerCount = playerManager.GetPlayerCount(true);
 
         if (!Started && playerCount == 0 && !Boss)
         {

@@ -16,7 +16,7 @@
             return;
         }
 
-        if (player.Clan == null || !player.Clan.InClan)
+        if (player.clanHandler == null || !player.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_ENCHANT_CLAN_SKILL);
             return;

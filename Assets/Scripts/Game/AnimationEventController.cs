@@ -31,14 +31,14 @@ public class AnimationEventController : MonoBehaviour
         {
             var targetPlayer = player.Target.GetComponent<PlayerController>();
             if (targetPlayer)
-                targetPlayer.Effects.Heal();
+                targetPlayer.effectHandler.Heal();
         }
 
         if (player.TrainingMagic)
-            player.Effects.ShootMagicProjectile(player.Target);
+            player.effectHandler.ShootMagicProjectile(player.Target);
 
         if (player.TrainingRanged)
-            player.Effects.ShootRangedProjectile(player.Target);
+            player.effectHandler.ShootRangedProjectile(player.Target);
     }
 
     public void Hit() { }

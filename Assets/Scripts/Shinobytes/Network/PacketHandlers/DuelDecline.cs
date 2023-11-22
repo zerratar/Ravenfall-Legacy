@@ -12,11 +12,11 @@
     {
         var player = PlayerManager.GetPlayer(gm.Sender);
 
-        if (!player.Duel.HasActiveRequest)
+        if (!player.duelHandler.HasActiveRequest)
         {
             return;
         }
 
-        player.Duel.DeclineDuel();
+        player.duelHandler.DeclineDuel();
     }
 }

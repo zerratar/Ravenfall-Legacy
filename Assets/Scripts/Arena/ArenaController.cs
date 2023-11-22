@@ -57,8 +57,8 @@ public class ArenaController : MonoBehaviour, IEvent
                     var plr = joinedPlayers.FirstOrDefault();
                     if (plr)
                     {
-                        plr.Arena.OnLeave();
-                        plr.Arena.WalkAwayFromArena();
+                        plr.arenaHandler.OnLeave();
+                        plr.arenaHandler.WalkAwayFromArena();
                     }
 
                     ResetState();
@@ -89,9 +89,9 @@ public class ArenaController : MonoBehaviour, IEvent
         var playersToKick = JoinedPlayers.AsList(x => x.gameObject == null);
         foreach (var player in playersToKick)
         {
-            if (player && player.Arena)
+            if (player && player.arenaHandler)
             {
-                player.Arena.OnKicked();
+                player.arenaHandler.OnKicked();
             }
 
             joinedPlayers.Remove(player);
@@ -143,20 +143,20 @@ public class ArenaController : MonoBehaviour, IEvent
 
             foreach (var player in JoinedPlayers)
             {
-                player.Arena.OnWin(true);
-                player.Arena.OnLeave();
+                player.arenaHandler.OnWin(true);
+                player.arenaHandler.OnLeave();
             }
         }
         else
         {
             // do something awesome for the winning player
             var winner = AvailablePlayers.First();
-            winner.Arena.OnWin(false);
+            winner.arenaHandler.OnWin(false);
             notifications.ShowWinner(winner);
 
             foreach (var player in JoinedPlayers)
             {
-                player.Arena.OnLeave();
+                player.arenaHandler.OnLeave();
             }
         }
 
@@ -237,7 +237,7 @@ public class ArenaController : MonoBehaviour, IEvent
         if (alreadyJoined)
         {
             joinedPlayers.Remove(player);
-            player.Arena.OnLeave();
+            player.arenaHandler.OnLeave();
 
             if (joinedPlayers.Count == 0)
             {
@@ -268,7 +268,7 @@ public class ArenaController : MonoBehaviour, IEvent
                 joinedPlayers.Add(player);
             }
 
-            player.Arena.OnEnter();
+            player.arenaHandler.OnEnter();
 
             BeginCountdown();
         }
@@ -282,7 +282,7 @@ public class ArenaController : MonoBehaviour, IEvent
         }
 
         deadPlayers.Add(player);
-        player.Arena.OnLeave();
+        player.arenaHandler.OnLeave();
     }
 
     private IEnumerator _CloseGate()
@@ -302,7 +302,7 @@ public class ArenaController : MonoBehaviour, IEvent
 
         foreach (var player in joinedPlayers)
         {
-            player.Arena.OnFightStart();
+            player.arenaHandler.OnFightStart();
         }
 
         CloseGate();

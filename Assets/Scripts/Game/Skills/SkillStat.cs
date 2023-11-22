@@ -13,7 +13,7 @@ public class SkillStat
     public Skill Type;
     public float Bonus;
 
-    public int MaxLevel => Mathf.FloorToInt(Level + Bonus);
+    public int MaxLevel;// => Mathf.FloorToInt(Level + Bonus);
 
     public int Index;
 
@@ -31,6 +31,7 @@ public class SkillStat
     {
         this.Level = level;
         this.CurrentValue = level;
+        this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
     }
 
     public SkillStat(
@@ -44,6 +45,7 @@ public class SkillStat
         Level = level;//GameMath.ExperienceToLevel(exp);
         Experience = exp;
         Name = name;
+        this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
     }
 
     public void Set(int newLevel, double newExp, bool updateExpPerHour = true)
@@ -61,6 +63,7 @@ public class SkillStat
             Level = newLevel;
             CurrentValue = newLevel;
             Experience = newExp;
+            this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
             return;
         }
 
@@ -78,6 +81,8 @@ public class SkillStat
             for (var i = 1; i <= levelDelta; ++i)
                 expToAdd += GameMath.ExperienceForLevel(Level + i + 1);
             expToAdd += newExp;
+
+            this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
         }
         else if (levelDelta == 0 && newExp > Experience)
         {
@@ -89,6 +94,8 @@ public class SkillStat
         {
             AddExp(expToAdd);
         }
+
+
     }
 
     public void SetExp(double exp)
@@ -132,7 +139,14 @@ public class SkillStat
             expGains.RemoveAt(0);
         }
 
-        return newLevels > 0;
+
+        if (newLevels > 0)
+        {
+            this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
+            return true;
+        }
+
+        return false;
     }
     public void ResetExperiencePerHour()
     {
@@ -184,6 +198,7 @@ public class SkillStat
     public void Reset()
     {
         CurrentValue = Mathf.FloorToInt(Level + Bonus);
+        MaxLevel = Mathf.FloorToInt(Level + Bonus);
     }
 
     public void Add(int value)

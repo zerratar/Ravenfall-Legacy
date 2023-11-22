@@ -63,13 +63,12 @@ public class EnemyController : MonoBehaviour, IAttackable
     public bool IsRaidBoss { get; private set; }
     public bool IsDungeonBoss { get; private set; }
     public bool IsDungeonEnemy;
-    internal Vector3 PositionInternal;
 
     private float hitRangeRadius;
 
     public bool Removed;
 
-    public Vector3 Position => PositionInternal;
+    public Vector3 Position => _transform.position;
 
     float showDebugInfoTime;
 
@@ -318,8 +317,6 @@ public class EnemyController : MonoBehaviour, IAttackable
         if (!healthBarManager) healthBarManager = GameObject.FindAnyObjectByType<HealthBarManager>();
         if (!movement) movement = GetComponent<EnemyMovementController>();
 
-        PositionInternal = this.transform.position;
-
         if (!spawnPositionSet)
         {
             spawnPoint = Position;
@@ -327,7 +324,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             spawnPositionSet = true;
         }
 
-        if (game.Graphics && game.Graphics.IsGraphicsEnabled && healthBarManager && !IsRaidBoss && !IsDungeonBoss)
+        if (/*game.Graphics && GraphicsToggler.GraphicsEnabled && */ healthBarManager && !IsRaidBoss && !IsDungeonBoss)
         {
             healthBar = healthBarManager.Add(this);
         }
@@ -356,15 +353,17 @@ public class EnemyController : MonoBehaviour, IAttackable
     {
         return hitRangeRadius;
     }
+    void Awake()
+    {
+        this._transform = this.transform;
+    }
+
     void Update()
     {
         if (GameCache.IsAwaitingGameRestore)
         {
             return;
         }
-
-
-        PositionInternal = this.transform.position;
 
         //if (SpawnPoint && Mathf.Abs(SpawnPoint.transform.position.y - PositionInternal.y) >= 5)
         //{
@@ -547,7 +546,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         }
     }
 
-    public Transform Transform => gameObject.transform;
+    public Transform Transform => _transform;
 
     public bool GivesExperienceWhenKilled { get; set; } = true;
 
@@ -555,6 +554,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     public bool IsUnreachable { get; set; }
 
     public EnemySpawnPoint SpawnPoint;
+    private Transform _transform;
 
     public void ClearAttackers()
     {
@@ -769,7 +769,7 @@ public class EnemyController : MonoBehaviour, IAttackable
             return;
         }
 
-        if (!game.Graphics.IsGraphicsEnabled)
+        if (!GraphicsToggler.GraphicsEnabled)
         {
             return;
         }

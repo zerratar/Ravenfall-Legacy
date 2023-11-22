@@ -17,6 +17,7 @@ public class DamageCounter : MonoBehaviour
     [SerializeField] private Color noChangeColor;
 
     private int damage = 0;
+    private Transform _transform;
     private float fadeoutTimer = 2f;
     private Camera mainCamera;
     public float OffsetY = 2.75f;
@@ -43,6 +44,8 @@ public class DamageCounter : MonoBehaviour
 
     void Start()
     {
+        this._transform = transform;
+
         fadeoutTimer = FadeoutDuration;
         this.mainCamera = Camera.main;
     }
@@ -51,7 +54,7 @@ public class DamageCounter : MonoBehaviour
     void Update()
     {
         if (GameCache.IsAwaitingGameRestore) return;
-        if (this.transform.position.y - 0.0001 <= OutOfScreen.y)
+        if (this._transform.position.y - 0.0001 <= OutOfScreen.y)
         {
             return;
         }
@@ -63,23 +66,24 @@ public class DamageCounter : MonoBehaviour
 
         if (mainCamera)
         {
-            transform.LookAt(mainCamera.transform);
+            _transform.LookAt(mainCamera.transform);
         }
         FadeOut();
     }
 
     private void ReturnToPool()
     {
-        this.transform.position = OutOfScreen;
+        _transform.position = OutOfScreen;
         Manager.Return(this);
     }
 
     public void Activate(Transform target, int damage, bool isHeal)
     {
-        Target = target;
+        this._transform = transform;
 
+        Target = target;
         mainCamera = Camera.main;
-        transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
+        _transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
         fadeoutTimer = FadeoutDuration;
 
         canvasGroup.alpha = 1;
@@ -145,7 +149,7 @@ public class DamageCounter : MonoBehaviour
 
         if (Target)
         {
-            transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
+            _transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
         }
 
         //if (background)

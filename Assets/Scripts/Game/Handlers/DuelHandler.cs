@@ -51,7 +51,7 @@ public class DuelHandler : MonoBehaviour
             else
             {
                 StartFight();
-                Opponent.Duel.StartFight();
+                Opponent.duelHandler.StartFight();
                 player.Movement.Lock();
             }
         }
@@ -85,7 +85,7 @@ public class DuelHandler : MonoBehaviour
 
     public void RequestDuel(PlayerController target)
     {
-        target.Duel.Request(this);
+        target.duelHandler.Request(this);
         Opponent = target;
         state = DuelState.RequestSent;
     }
@@ -134,9 +134,9 @@ public class DuelHandler : MonoBehaviour
         }
 
         Opponent = Requester;
-        Requester.Duel.Opponent = player;
+        Requester.duelHandler.Opponent = player;
 
-        Opponent.Duel.StartDuel();
+        Opponent.duelHandler.StartDuel();
         StartDuel();
 
         isDuelCameraOwner = duelCamera.AddTarget(this);
@@ -145,16 +145,16 @@ public class DuelHandler : MonoBehaviour
     public void Died()
     {
         if (!InDuel) return;
-        Opponent.Duel.WonDuel();
+        Opponent.duelHandler.WonDuel();
         LostDuel();
     }
 
     public void StartFight()
     {
         if (!InDuel) return;
-        if (player.Onsen.InOnsen)
+        if (player.onsenHandler.InOnsen)
         {
-            player.Onsen.Exit();
+            player.onsenHandler.Exit();
         }
 
         player.Stats.Health.Reset();
@@ -211,9 +211,9 @@ public class DuelHandler : MonoBehaviour
 
     private void StartDuel()
     {
-        wasInOnsen = player.Onsen.InOnsen;
+        wasInOnsen = player.onsenHandler.InOnsen;
         if (wasInOnsen)
-            player.Onsen.Exit();
+            player.onsenHandler.Exit();
 
         state = DuelState.Started;
         duelRequestTimer = 0f;

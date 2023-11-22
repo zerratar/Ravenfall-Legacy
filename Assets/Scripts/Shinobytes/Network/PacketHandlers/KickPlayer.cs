@@ -32,7 +32,7 @@ public class KickPlayer : ChatBotCommandHandler<User>
             var kickedPlayerCount = 0;
             var players = PlayerManager
                 .GetAllPlayers()
-                .Where(x => (!x.Ferry.OnFerry && x.GetTask() == TaskType.None) || x.IsAfk)
+                .Where(x => (!x.ferryHandler.OnFerry && x.GetTask() == TaskType.None) || x.IsAfk)
                 .ToList();
 
             foreach (var plr in players)
@@ -48,13 +48,13 @@ public class KickPlayer : ChatBotCommandHandler<User>
                 if (plr.Movement.IdleTime < 30f)
                     continue;
 
-                if (plr.Onsen.InOnsen)
+                if (plr.onsenHandler.InOnsen)
                     continue;
 
-                if (plr.Raid.InRaid)
+                if (plr.raidHandler.InRaid)
                     continue;
 
-                if (plr.Ferry.OnFerry)
+                if (plr.ferryHandler.OnFerry)
                     continue;
 
                 if (Game.Dungeons.JoinedDungeon(plr))
@@ -63,7 +63,7 @@ public class KickPlayer : ChatBotCommandHandler<User>
                 if (!Game.Arena.CanJoin(plr, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
                     continue;
 
-                if (plr.Duel.InDuel)
+                if (plr.duelHandler.InDuel)
                     continue;
 
                 ++kickedPlayerCount;
@@ -82,11 +82,11 @@ public class KickPlayer : ChatBotCommandHandler<User>
                 Game.Dungeons.Remove(playerToKick);
             }
 
-            if (!Game.Arena.Started && Game.Arena.Activated && playerToKick.Arena.InArena)
+            if (!Game.Arena.Started && Game.Arena.Activated && playerToKick.arenaHandler.InArena)
             {
                 Game.Arena.Leave(playerToKick);
             }
-            else if (playerToKick.Duel.InDuel || !Game.Arena.CanJoin(playerToKick, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
+            else if (playerToKick.duelHandler.InDuel || !Game.Arena.CanJoin(playerToKick, out var joinedArena, out _) && joinedArena && Game.Arena.Started)
             {
                 Game.QueueRemovePlayer(playerToKick);
             }

@@ -25,18 +25,20 @@ public class IslandController : MonoBehaviour
     public Vector3 SpawnPosition => SpawnPositionTransform ? SpawnPositionTransform.position : transform.position;
 
     private PlayerManager playerManager;
+    private Transform _transform;
 
     public bool Sailable => this.DockingArea != null;
 
     public bool InsideIsland(Vector3 position)
     {
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
-        var pos = sphereCollider.center + transform.position;
+        var pos = sphereCollider.center + _transform.position;
         return Vector3.Distance(position, pos) <= radius;
     }
 
     public void Awake()
     {
+        this._transform = transform;
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
         radius = sphereCollider.radius;
     }
@@ -81,13 +83,13 @@ public class IslandController : MonoBehaviour
         // we have to verify that all players are correctly assigned on an island
         // if not, we have to rebuild this list.
 
-        foreach (var p in players)
-        {
-            if (p.Ferry.OnFerry || p.Dungeon.InDungeon)
-            {
-                return RebuildPlayerList();
-            }
-        }
+        //foreach (var p in players)
+        //{
+        //    if (p.Ferry.OnFerry || p.Dungeon.InDungeon)
+        //    {
+        //        return RebuildPlayerList();
+        //    }
+        //}
 
         return players;//players.Values.ToList();
     }
@@ -102,7 +104,8 @@ public class IslandController : MonoBehaviour
         players.Clear();
         foreach (var p in playerManager.GetAllPlayers())
         {
-            if (p.Ferry.OnFerry || p.Dungeon.InDungeon)
+
+            if (p.ferryHandler.OnFerry || p.dungeonHandler.InDungeon)
                 continue;
 
             if (InsideIsland(p.transform.position))
@@ -116,7 +119,8 @@ public class IslandController : MonoBehaviour
 
     internal void AddPlayer(PlayerController playerController)
     {
-        players.Add(playerController);
+        if (!players.Contains(playerController))
+            players.Add(playerController);
         //players[playerController.Id] = playerController;
     }
 

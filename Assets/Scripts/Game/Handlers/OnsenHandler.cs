@@ -8,7 +8,7 @@ public class OnsenHandler : MonoBehaviour
     private OnsenPositionType positionType;
     private int onsenParentID;
 
-    public bool InOnsen { get; private set; }
+    public bool InOnsen;
     public Vector3 EntryPoint => activeOnsen.EntryPoint;
 
     public const double RestedGainFactor = 2.0;
@@ -96,7 +96,7 @@ public class OnsenHandler : MonoBehaviour
         InOnsen = true;
 
         var target = spot.Target;
-        player.Teleporter.Teleport(target.position, false);
+        player.teleportHandler.Teleport(target.position, false);
         player.transform.SetParent(target);
         player.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         this.onsenParentID = target.GetInstanceID();
@@ -116,7 +116,7 @@ public class OnsenHandler : MonoBehaviour
         {
             player.Movement.Unlock();
             player.transform.SetParent(null);
-            player.Teleporter.Teleport(prevOnsen.EntryPoint, true, true);
+            player.teleportHandler.Teleport(prevOnsen.EntryPoint, true, true);
         }
 
         prevOnsen.UpdateDetailsLabel();

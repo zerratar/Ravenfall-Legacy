@@ -34,22 +34,22 @@ public class DungeonAuto : ChatBotCommandHandler<string>
             //}
 
             var l = data.ToLower();
-            var before = player.Dungeon.AutoJoinCounter;
+            var before = player.dungeonHandler.AutoJoinCounter;
             if (int.TryParse(data, out var count))
             {
-                player.Dungeon.AutoJoinCounter = Math.Max(0, count);
-                if (before != player.Dungeon.AutoJoinCounter)
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", player.Dungeon.AutoJoinCounter, AutoJoinCost);
+                player.dungeonHandler.AutoJoinCounter = Math.Max(0, count);
+                if (before != player.dungeonHandler.AutoJoinCounter)
+                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", player.dungeonHandler.AutoJoinCounter, AutoJoinCost);
             }
             else if (l == "count" || l == "status" || l == "stats" || l == "left" || l == "state")
             {
-                if (player.Dungeon.AutoJoinCounter == int.MaxValue)
+                if (player.dungeonHandler.AutoJoinCounter == int.MaxValue)
                 {
                     client.SendReply(gm, "You will automatically join dungeons until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", AutoJoinCost);
                 }
-                else if (player.Dungeon.AutoJoinCounter > 0)
+                else if (player.dungeonHandler.AutoJoinCounter > 0)
                 {
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", player.Dungeon.AutoJoinCounter, AutoJoinCost);
+                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", player.dungeonHandler.AutoJoinCounter, AutoJoinCost);
                 }
                 else
                 {
@@ -58,14 +58,14 @@ public class DungeonAuto : ChatBotCommandHandler<string>
             }
             else if (l == "on")
             {
-                player.Dungeon.AutoJoinCounter = int.MaxValue;
-                //if (before != player.Dungeon.AutoJoinCounter)
+                player.dungeonHandler.AutoJoinCounter = int.MaxValue;
+                //if (before != player.dungeonHandler.AutoJoinCounter)
                 client.SendReply(gm, "You will automatically join dungeons until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", AutoJoinCost);
             }
             else if (l == "off" || l == "cancel" || l == "stop")
             {
-                player.Dungeon.AutoJoinCounter = 0;
-                //if (before != player.Dungeon.AutoJoinCounter)
+                player.dungeonHandler.AutoJoinCounter = 0;
+                //if (before != player.dungeonHandler.AutoJoinCounter)
                 client.SendReply(gm, "You will no longer automatically join dungeons");
             }
         }

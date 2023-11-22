@@ -30,7 +30,7 @@ public class MaxMultiplier : ChatBotCommandHandler
             multi += Game.Boost.Multiplier;
 
 
-        if (player.Ferry.OnFerry)
+        if (player.ferryHandler.OnFerry)
         {
             hutMulti = Game.Village.GetExpBonusBySkill(Skill.Sailing);
             multi += hutMulti;
@@ -61,7 +61,7 @@ public class MaxMultiplier : ChatBotCommandHandler
             }
         }
 
-        if (player.Raid.InRaid || player.Dungeon.InDungeon)
+        if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon)
         {
             var slayerBonus = Game.Village.GetExpBonusBySkill(Skill.Slayer);
             hutMulti += slayerBonus;

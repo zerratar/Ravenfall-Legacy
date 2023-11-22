@@ -223,7 +223,11 @@ public class PlayerManager : MonoBehaviour
             return null;
         }
 
-        player.Movement.Unlock(true);
+        if (!player.ferryHandler.OnFerry && !player.onsenHandler.InOnsen)
+        {
+            player.Movement.Unlock(true);
+        }
+
         player.IsBot = isBot;
         if (player.IsBot)
         {
@@ -315,15 +319,22 @@ public class PlayerManager : MonoBehaviour
 
     public PlayerController GetPlayer(User user)
     {
-        var player = user.Id != Guid.Empty
-            ? GetPlayerById(user.Id)
-            : GetPlayerByPlatformId(user.PlatformId, user.Platform);
+        var player = user.Id != Guid.Empty ? GetPlayerById(user.Id) : null ;
+        if (!player || player == null)
+        {
+            player = GetPlayerByPlatformId(user.PlatformId, user.Platform);
+        }
 
-        if (!player) player = GetPlayerByName(user.Username);
+        if (!player || player == null)
+        {
+            player = GetPlayerByName(user.Username);
+        }
+
         if (player)
         {
             player.UpdateUser(user);
         }
+
         return player;
     }
 

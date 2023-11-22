@@ -301,13 +301,13 @@ public class Overlay : MonoBehaviour
                 }
                 if (Input.GetKey(KeyCode.A))
                 {
-                    renderCamera.transform.position += new Vector3(Time.deltaTime, 0, 0);
+                    renderCamera.transform.position += new Vector3(GameTime.deltaTime, 0, 0);
                     valuesUpdated = true;
                 }
 
                 if (Input.GetKey(KeyCode.D))
                 {
-                    renderCamera.transform.position -= new Vector3(Time.deltaTime, 0, 0);
+                    renderCamera.transform.position -= new Vector3(GameTime.deltaTime, 0, 0);
                     valuesUpdated = true;
                 }
 

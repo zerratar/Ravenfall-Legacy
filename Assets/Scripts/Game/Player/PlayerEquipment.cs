@@ -34,6 +34,7 @@ public class PlayerEquipment : MonoBehaviour
     private GameObject fishingRod;
     private GameObject rake;
     private float appearanceRefreshTimeout;
+    private AttackType lastShownWeapon;
 
     //private bool staffVisible;
     //private bool bowVisible;
@@ -98,41 +99,67 @@ public class PlayerEquipment : MonoBehaviour
         HidePickAxe();
         HideHammer();
         HideFishingRod();
+
+        lastShownWeapon = AttackType.None;
     }
 
     private void ShowBow()
     {
-        HideEquipments();
-
-        if (!bow && bowPrefab)
+        try
         {
-            bow = Instantiate(bowPrefab, appearance.OffHandTransform)
-                    .GetComponent<ItemController>();
+            if (lastShownWeapon == AttackType.Ranged)
+            {
+                return;
+            }
+
+            HideEquipments();
+
+            if (!bow && bowPrefab)
+            {
+                bow = Instantiate(bowPrefab, appearance.OffHandTransform)
+                        .GetComponent<ItemController>();
+            }
+
+            if (bow)
+            {
+                bow.transform.SetParent(appearance.OffHandTransform);
+                bow.gameObject.SetActive(true);
+                //bowVisible = true;
+            }
         }
-
-        if (bow)
+        finally
         {
-            bow.transform.SetParent(appearance.OffHandTransform);
-            bow.gameObject.SetActive(true);
-            //bowVisible = true;
+            lastShownWeapon = AttackType.Ranged;
         }
     }
 
     private void ShowStaff()
     {
-        HideEquipments();
-
-        if (!staff && staffPrefab)
+        try
         {
-            staff = Instantiate(staffPrefab, appearance.MainHandTransform)
-                        .GetComponent<ItemController>();
+            if (lastShownWeapon == AttackType.Magic)
+            {
+                return;
+            }
+
+            HideEquipments();
+
+            if (!staff && staffPrefab)
+            {
+                staff = Instantiate(staffPrefab, appearance.MainHandTransform)
+                            .GetComponent<ItemController>();
+            }
+
+            if (staff)
+            {
+                staff.transform.SetParent(appearance.MainHandTransform);
+                staff.gameObject.SetActive(true);
+                //staffVisible = true;
+            }
         }
-
-        if (staff)
+        finally
         {
-            staff.transform.SetParent(appearance.MainHandTransform);
-            staff.gameObject.SetActive(true);
-            //staffVisible = true;
+            lastShownWeapon = AttackType.Magic;
         }
     }
 
@@ -188,31 +215,43 @@ public class PlayerEquipment : MonoBehaviour
 
     public void ShowWeapon(AttackType type)
     {
-        HideEquipments();
-
-        switch (type)
+        try
         {
-            case AttackType.Ranged:
-                ShowBow();
+            if (lastShownWeapon == type)
+            {
                 return;
+            }
 
-            case AttackType.Healing:
-            case AttackType.Magic:
-                ShowStaff();
-                return;
-            default:
-                var showShield = !!shield;
-                if (weapon)
-                {
-                    weapon.gameObject.SetActive(true);
-                    showShield &= IsOneHandedWeapon(weapon);
-                }
-                if (showShield)
-                {
-                    shield.gameObject.SetActive(true);
-                    //shieldVisible = true;
-                }
-                return;
+            HideEquipments();
+
+            switch (type)
+            {
+                case AttackType.Ranged:
+                    ShowBow();
+                    return;
+
+                case AttackType.Healing:
+                case AttackType.Magic:
+                    ShowStaff();
+                    return;
+                default:
+                    var showShield = !!shield;
+                    if (weapon)
+                    {
+                        weapon.gameObject.SetActive(true);
+                        showShield &= IsOneHandedWeapon(weapon);
+                    }
+                    if (showShield)
+                    {
+                        shield.gameObject.SetActive(true);
+                        //shieldVisible = true;
+                    }
+                    return;
+            }
+        }
+        finally
+        {
+            lastShownWeapon = type;
         }
     }
 

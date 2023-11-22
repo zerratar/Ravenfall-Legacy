@@ -35,22 +35,22 @@ public class RaidAuto : ChatBotCommandHandler<string>
             //}
 
             var l = data.ToLower();
-            var before = player.Raid.AutoJoinCounter;
+            var before = player.raidHandler.AutoJoinCounter;
             if (int.TryParse(data, out var count))
             {
-                player.Raid.AutoJoinCounter = Math.Max(0, count);
-                if (before != player.Raid.AutoJoinCounter)
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", player.Raid.AutoJoinCounter, AutoJoinCost);
+                player.raidHandler.AutoJoinCounter = Math.Max(0, count);
+                if (before != player.raidHandler.AutoJoinCounter)
+                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", player.raidHandler.AutoJoinCounter, AutoJoinCost);
             }
             else if (l == "count" || l == "status" || l == "stats" || l == "left" || l == "state")
             {
-                if (player.Raid.AutoJoinCounter == int.MaxValue)
+                if (player.raidHandler.AutoJoinCounter == int.MaxValue)
                 {
                     client.SendReply(gm, "You will automatically join raids until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", AutoJoinCost);
                 }
-                else if (player.Raid.AutoJoinCounter > 0)
+                else if (player.raidHandler.AutoJoinCounter > 0)
                 {
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", player.Raid.AutoJoinCounter, AutoJoinCost);
+                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", player.raidHandler.AutoJoinCounter, AutoJoinCost);
                 }
                 else
                 {
@@ -59,14 +59,14 @@ public class RaidAuto : ChatBotCommandHandler<string>
             }
             else if (l == "on" || l == "auto")
             {
-                player.Raid.AutoJoinCounter = int.MaxValue;
-                //if (before != player.Raid.AutoJoinCounter)
+                player.raidHandler.AutoJoinCounter = int.MaxValue;
+                //if (before != player.raidHandler.AutoJoinCounter)
                 client.SendReply(gm, "You will automatically join raids until you use !raid join off or run out of coins. Each time your character automatically joins a raid it will cost {autoJoinCost} coins.", AutoJoinCost);
             }
             else if (l == "off" || l == "cancel" || l == "stop")
             {
-                player.Raid.AutoJoinCounter = 0;
-                //if (before != player.Raid.AutoJoinCounter)
+                player.raidHandler.AutoJoinCounter = 0;
+                //if (before != player.raidHandler.AutoJoinCounter)
                 client.SendReply(gm, "You will no longer automatically join raids", data);
             }
         }

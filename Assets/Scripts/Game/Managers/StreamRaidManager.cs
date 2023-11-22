@@ -47,8 +47,8 @@ public class StreamRaidManager : MonoBehaviour, IEvent
             defenders.Add(player);
             if (!raidWarIsland) raidWarIsland = gameManager.Islands.Find("war");
             oldPlayerPosition[player.UserId] = player.Position;
-            player.Teleporter.Teleport(raidWarIsland.StreamerSpawningPoint.position);
-            player.StreamRaid.OnEnter();
+            player.teleportHandler.Teleport(raidWarIsland.StreamerSpawningPoint.position);
+            player.streamRaidHandler.OnEnter();
         }
     }
 
@@ -60,8 +60,8 @@ public class StreamRaidManager : MonoBehaviour, IEvent
             raiders.Add(player);
             if (!raidWarIsland) raidWarIsland = gameManager.Islands.Find("war");
             oldPlayerPosition[player.UserId] = gameManager.Chunks.GetStarterChunk().GetPlayerSpawnPoint();
-            player.Teleporter.Teleport(raidWarIsland.RaiderSpawningPoint.position);
-            player.StreamRaid.OnEnter();
+            player.teleportHandler.Teleport(raidWarIsland.RaiderSpawningPoint.position);
+            player.streamRaidHandler.OnEnter();
         }
     }
     public bool InRaid(PlayerController target)
@@ -99,7 +99,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         {
             defenders.Remove(playerReference);
             raiders.Remove(playerReference);
-            playerReference.StreamRaid.OnExit();
+            playerReference.streamRaidHandler.OnExit();
         }
     }
 
@@ -114,7 +114,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
 
         if (oldPlayerPosition.TryRemove(player.UserId, out var pos))
         {
-            player.Teleporter.Teleport(pos);
+            player.teleportHandler.Teleport(pos);
         }
 
         CheckForWarEnd();
@@ -144,12 +144,12 @@ public class StreamRaidManager : MonoBehaviour, IEvent
             var fallback = gameManager.Chunks.GetStarterChunk().GetPlayerSpawnPoint();
             foreach (var player in defenders)
             {
-                player.StreamRaid.OnExit();
+                player.streamRaidHandler.OnExit();
                 TeleportBack(fallback, player);
             }
             foreach (var player in raiders)
             {
-                player.StreamRaid.OnExit();
+                player.streamRaidHandler.OnExit();
                 TeleportBack(fallback, player);
             }
 
@@ -171,11 +171,11 @@ public class StreamRaidManager : MonoBehaviour, IEvent
     {
         if (oldPlayerPosition.TryGetValue(player.UserId, out var pos))
         {
-            player.Teleporter.Teleport(pos);
+            player.teleportHandler.Teleport(pos);
         }
         else
         {
-            player.Teleporter.Teleport(fallback);
+            player.teleportHandler.Teleport(fallback);
         }
     }
 
@@ -209,7 +209,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
     //        foreach (var player in players)
     //        {
     //            if (oldPlayerPosition.TryGetValue(player.UserId, out var pos))
-    //                player.Teleporter.Teleport(pos);
+    //                player.teleportHandler.Teleport(pos);
     //        }
     //    }
 

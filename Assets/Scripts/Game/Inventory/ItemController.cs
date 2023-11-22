@@ -49,6 +49,7 @@ public class ItemController : MonoBehaviour
 
     private DropEventManager dropEventManager;
     private bool pickable;
+    private Transform _transform;
 
     public int Compare(RavenNest.Models.Item item)
     {
@@ -56,12 +57,18 @@ public class ItemController : MonoBehaviour
         var stats2 = item.GetTotalStats();
         return stats1 - stats2;
     }
+
+    public void Awake()
+    {
+        this._transform = this.transform;
+    }
+
     public void FixedUpdate()
     {
-        if (GameSystems.frameCount % 30 == 0 && transform.localPosition.x != 0)
+        if (GameSystems.frameCount % 30 == 0 && _transform.localPosition.x != 0)
         {
-            transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.identity;
+            _transform.localPosition = Vector3.zero;
+            _transform.localRotation = Quaternion.identity;
         }
     }
     internal void EnablePickup(DropEventManager dropEventManager)

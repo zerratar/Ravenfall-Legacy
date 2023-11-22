@@ -14,7 +14,7 @@
             return;
         }
 
-        if (plr.Clan != null && plr.Clan.InClan)
+        if (plr.clanHandler != null && plr.clanHandler.InClan)
         {
             client.SendReply(gm, Localization.MSG_ALREADY_IN_CLAN);
             return;
@@ -23,7 +23,7 @@
         var result = await Game.RavenNest.Clan.AcceptInviteAsync(plr.Id, data);
         if (result.Success)
         {
-            plr.Clan.Join(result.Clan, result.Role);
+            plr.clanHandler.Join(result.Clan, result.Role);
 
             if (!string.IsNullOrEmpty(result.WelcomeMessage))
             {

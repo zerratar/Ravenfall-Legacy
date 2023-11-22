@@ -15,32 +15,32 @@
                 return;
             }
 
-            if (!player.Onsen.InOnsen)
+            if (!player.onsenHandler.InOnsen)
             {
                 return;
             }
 
-            if (player.Duel.InDuel)
+            if (player.duelHandler.InDuel)
             {
                 return;
             }
 
-            if (player.Arena.InArena)
+            if (player.arenaHandler.InArena)
             {
                 return;
             }
 
-            if (player.Dungeon.InDungeon)
+            if (player.dungeonHandler.InDungeon)
             {
                 return;
             }
 
-            if (player.Raid.InRaid)
+            if (player.raidHandler.InRaid)
             {
                 return;
             }
 
-            if (player.StreamRaid.InWar)
+            if (player.streamRaidHandler.InWar)
             {
                 return;
             }

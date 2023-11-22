@@ -9,7 +9,7 @@ public class RaidHandler : MonoBehaviour
     [SerializeField] private GameManager gameManager;
     [SerializeField] private PlayerController player;
 
-    public float RaidEnterTime;
+    public DateTime RaidEnterTime;
 
     private bool teleported;
     private IslandController previousIsland;
@@ -22,6 +22,7 @@ public class RaidHandler : MonoBehaviour
     private string previousTaskArgument;
 
     public bool AutoJoining;
+    private Transform _transform;
 
     public bool InRaid { get; private set; }
     public IslandController PreviousIsland => previousIsland;
@@ -34,6 +35,11 @@ public class RaidHandler : MonoBehaviour
     {
         if (!player) player = GetComponent<PlayerController>();
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+    }
+
+    void Awake()
+    {
+        this._transform = this.transform;
     }
 
     // Update is called once per frame
@@ -49,7 +55,12 @@ public class RaidHandler : MonoBehaviour
             return;
         }
 
-        var target = gameManager.Raid.Boss.transform;
+        if (!InRaid)
+        {
+            return;
+        }
+
+        var target = gameManager.Raid.Boss._transform;
         PlayerController healTarget = null;
         if (player.TrainingHealing)
         {
@@ -57,19 +68,19 @@ public class RaidHandler : MonoBehaviour
             if (raiders != null)
             {
                 healTarget = raiders
-                    .Where(x => x != null && x.Stats != null && !x.Stats.IsDead && x.Raid.InRaid)
+                    .Where(x => x != null && x.Stats != null && !x.Stats.IsDead && x.raidHandler.InRaid)
                     .OrderByDescending(x =>
                         x.Stats.Health.MaxLevel - x.Stats.Health.CurrentValue)
                     .FirstOrDefault();
 
                 if (healTarget && healTarget != null)
                 {
-                    target = healTarget.transform;
+                    target = healTarget.Transform;
                 }
                 else
                 {
                     healTarget = this.player;
-                    target = this.player.transform;
+                    target = this._transform;
                 }
             }
         }
@@ -80,7 +91,7 @@ public class RaidHandler : MonoBehaviour
         }
 
         var range = player.GetAttackRange();
-        var distance = Vector3.Distance(transform.position, target.position);
+        var distance = Vector3.Distance(_transform.position, target.position);
         if (distance <= range)
         {
             if (!player.TrainingHealing && gameManager.Raid.Boss.Enemy.Stats.IsDead)
@@ -112,18 +123,18 @@ public class RaidHandler : MonoBehaviour
     public void OnEnter()
     {
         InRaid = true;
-        RaidEnterTime = Time.time;
-//#if DEBUG
-//        Shinobytes.Debug.Log($"{player.PlayerName} entered the raid");
-//#endif
+        RaidEnterTime = DateTime.Now;
+        //#if DEBUG
+        //        Shinobytes.Debug.Log($"{player.PlayerName} entered the raid");
+        //#endif
 
-        wasResting = player.Onsen.InOnsen;
+        wasResting = player.onsenHandler.InOnsen;
 
         ferryState = new()
         {
-            OnFerry = player.Ferry.OnFerry,
-            HasDestination = !!player.Ferry.Destination,
-            Destination = player.Ferry.Destination
+            OnFerry = player.ferryHandler.OnFerry,
+            HasDestination = !!player.ferryHandler.Destination,
+            Destination = player.ferryHandler.Destination
         };
 
         if (wasResting)
@@ -133,7 +144,7 @@ public class RaidHandler : MonoBehaviour
 
         if (ferryState.OnFerry)
         {
-            player.Ferry.RemoveFromFerry();
+            player.ferryHandler.RemoveFromFerry();
         }
 
         this.previousTask = this.player.GetTask();
@@ -149,9 +160,9 @@ public class RaidHandler : MonoBehaviour
         if (player.Island != boss.Island)
         {
             teleported = true;
-            prevPosition = player.transform.position;
+            prevPosition = _transform.position;
             previousIsland = player.Island;
-            player.Teleporter.Teleport(boss.Island.SpawnPosition);
+            player.teleportHandler.Teleport(boss.Island.SpawnPosition);
         }
     }
 
@@ -174,9 +185,9 @@ public class RaidHandler : MonoBehaviour
         if (player.Island != boss.Island)
         {
             teleported = true;
-            prevPosition = player.transform.position;
+            prevPosition = _transform.position;
             previousIsland = player.Island;
-            player.Teleporter.Teleport(boss.Island.SpawnPosition);
+            player.teleportHandler.Teleport(boss.Island.SpawnPosition);
         }
     }
 
@@ -226,7 +237,7 @@ public class RaidHandler : MonoBehaviour
         if (teleported)
         {
             teleported = false;
-            player.Teleporter.Teleport(prevPosition);
+            player.teleportHandler.Teleport(prevPosition);
 
             if (previousTask != TaskType.None)
             {
@@ -243,15 +254,15 @@ public class RaidHandler : MonoBehaviour
         else if (ferryState.OnFerry)
         {
             player.Movement.Lock();
-            player.Ferry.AddPlayerToFerry(ferryState.Destination);
+            player.ferryHandler.AddPlayerToFerry(ferryState.Destination);
             ferryState.HasReturned = true;
         }
 
         wasResting = false;
 
-//#if DEBUG
-//        Shinobytes.Debug.Log($"{player.PlayerName} left the raid");
-//#endif
+        //#if DEBUG
+        //        Shinobytes.Debug.Log($"{player.PlayerName} left the raid");
+        //#endif
     }
 
 

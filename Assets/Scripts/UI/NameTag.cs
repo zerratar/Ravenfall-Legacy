@@ -29,6 +29,12 @@ public class NameTag : MonoBehaviour
 
     private bool isVisible = true;
     private Vector3 offset;
+    private Transform _transform;
+
+    private void Awake()
+    {
+        this._transform = transform;
+    }
 
     void Start()
     {
@@ -57,7 +63,7 @@ public class NameTag : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         if (!GraphicsToggler.GraphicsEnabled)
             return;
@@ -79,7 +85,8 @@ public class NameTag : MonoBehaviour
         //+ (Vector3.up * TargetTransform.localScale.y * YOffset * Scale)
         //+ (Vector3.up * YMinDistance * Scale);
 
-        transform.SetPositionAndRotation(TargetPlayer.Position + this.offset, GameCamera.Rotation); //targetCamera.rotation);
+        //this.transform.rotation = GameCamera.Rotation;
+        _transform.SetPositionAndRotation(TargetPlayer.Position + this.offset, GameCamera.Rotation); //targetCamera.rotation);
         oldCensor = gameManager.LogoCensor;
     }
 
@@ -89,7 +96,7 @@ public class NameTag : MonoBehaviour
         {
             return true;
         }
-
+        _transform = this.transform;
         if (!nameTagSet || oldScale != Scale || string.IsNullOrEmpty(label.text))
         {
             SetupNameTagLabel();
@@ -104,12 +111,16 @@ public class NameTag : MonoBehaviour
 
     public void Refresh()
     {
-        if (clanName && TargetPlayer.Clan.InClan && lastSetClanName != TargetPlayer.Clan.ClanInfo.Name)
+        //this.transform.SetParent(TargetTransform, true);
+        //this.transform.localPosition = this.offset;
+        //this.transform.rotation = GameCamera.Rotation;
+
+        if (clanName && TargetPlayer.clanHandler.InClan && lastSetClanName != TargetPlayer.clanHandler.ClanInfo.Name)
         {
-            clanName.text = "<" + TargetPlayer.Clan.ClanInfo.Name + ">";
-            lastSetClanName = TargetPlayer.Clan.ClanInfo.Name;
+            clanName.text = "<" + TargetPlayer.clanHandler.ClanInfo.Name + ">";
+            lastSetClanName = TargetPlayer.clanHandler.ClanInfo.Name;
         }
-        else if (!TargetPlayer.Clan.InClan && !string.IsNullOrEmpty(lastSetClanName))
+        else if (!TargetPlayer.clanHandler.InClan && !string.IsNullOrEmpty(lastSetClanName))
         {
             clanName.text = "";
             lastSetClanName = "";
@@ -137,6 +148,7 @@ public class NameTag : MonoBehaviour
         {
             label.color = GetColorFromHex(TargetPlayer.PlayerNameHexColor);
             label.text = TargetPlayer.PlayerName;
+
         }
         else
         {

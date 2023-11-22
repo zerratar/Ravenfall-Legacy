@@ -49,8 +49,8 @@ public class OverlayPlayer
         player.UserId = source.UserId;
         player.UserName = source.Definition.UserName;
         player.Name = source.Name;
-        player.Clan = source.Clan.ClanInfo;
-        player.ClanRole = source.Clan.Role;
+        player.Clan = source.clanHandler.ClanInfo;
+        player.ClanRole = source.clanHandler.Role;
         player.IsAdmin = source.IsGameAdmin;
         player.IsModerator = source.IsGameModerator;
         player.Connections = source.Definition.Connections ?? new List<AuthServiceConnection>();
@@ -84,10 +84,10 @@ public class OverlayPlayer
         {
             RestedTime = source.Rested.RestedTime,
             Health = source.Stats.Health.CurrentValue,
-            InArena = source.Arena.InArena,
-            InDungeon = source.Dungeon.InDungeon,
-            InOnsen = source.Onsen.InOnsen,
-            InRaid = source.Raid.InRaid,
+            InArena = source.arenaHandler.InArena,
+            InDungeon = source.dungeonHandler.InDungeon,
+            InOnsen = source.onsenHandler.InOnsen,
+            InRaid = source.raidHandler.InRaid,
             Island = source.Island?.name,
             Task = source.GetTask().ToString(), //source.Chunk?.ChunkType.ToString(),
             TaskArgument = source.GetTaskArgument(),
