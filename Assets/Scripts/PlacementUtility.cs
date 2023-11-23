@@ -7,6 +7,7 @@ using UnityEditor;
 #endif
 
 using UnityEngine;
+using UnityEngine.AI;
 
 public static class PlacementUtility
 {
@@ -50,12 +51,44 @@ public static class PlacementUtility
         PlaceOnGround(GameObject.FindObjectsByType<T>(FindObjectsSortMode.None));
     }
 
+
     public static void PlaceOnGround(IEnumerable<MonoBehaviour> objs)
     {
         foreach (var obj in objs)
         {
             PlaceOnGround(obj.gameObject);
         }
+    }
+
+    public static int AssertInvalidPlacement<T>() where T : MonoBehaviour
+    {
+        return AssertInvalidPlacement(GameObject.FindObjectsByType<T>(FindObjectsSortMode.None));
+    }
+    public static int AssertInvalidPlacement(IEnumerable<MonoBehaviour> objs)
+    {
+        var found = 0;
+        foreach (var obj in objs)
+        {
+            found += AssertInvalidPlacement(obj.gameObject);
+        }
+        return found;
+    }
+
+    public static int AssertInvalidPlacement(this GameObject obj)
+    {
+        return AssertInvalidPlacement(obj.transform);
+    }
+
+    public static int AssertInvalidPlacement(this Transform obj)
+    {
+        if (NavMesh.SamplePosition(obj.position, out var hit, 500f, NavMesh.AllAreas))
+        {
+            if (hit.distance < 2)
+                return 0;
+        }
+
+        UnityEngine.Debug.LogError(GetFullPath(obj) + " is not placed on a navmesh and wont be reachable.");
+        return 1;
     }
 
     public static void PlaceOnGround(this GameObject obj)
@@ -115,5 +148,17 @@ public static class PlacementUtility
     {
         return Contains(name, value1) && Contains(name, value2);
     }
+
+    public static string GetFullPath(Transform obj)
+    {
+        string path = "/" + obj.name;
+        while (obj.parent != null)
+        {
+            obj = obj.parent;
+            path = "/" + obj.name + path;
+        }
+        return path;
+    }
+
 }
 

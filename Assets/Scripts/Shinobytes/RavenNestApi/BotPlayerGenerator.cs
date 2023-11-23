@@ -8,15 +8,43 @@ namespace RavenNest.SDK
     public class BotPlayerGenerator
     {
         public static BotPlayerGenerator Instance;
-        public BotPlayerGenerator()
+        private Dictionary<Island, int> islandSkillMin;
+        private Dictionary<Island, int> islandSkillMax;
+        private GameManager gameManager;
+
+        public BotPlayerGenerator(GameManager gameManager)
         {
             Instance = this;
+
+            islandSkillMin = new Dictionary<Island, int>();
+            islandSkillMax = new Dictionary<Island, int>();
+
+            islandSkillMin[Island.Home] = 1;
+            islandSkillMax[Island.Home] = 50;
+
+            islandSkillMin[Island.Away] = 50;
+            islandSkillMax[Island.Away] = 100;
+
+            islandSkillMin[Island.Ironhill] = 100;
+            islandSkillMax[Island.Ironhill] = 200;
+
+            islandSkillMin[Island.Kyo] = 200;
+            islandSkillMax[Island.Kyo] = 300;
+
+            islandSkillMin[Island.Heim] = 300;
+            islandSkillMax[Island.Heim] = 500;
+
+            islandSkillMin[Island.Atria] = 500;
+            islandSkillMax[Island.Atria] = 700;
+
+            islandSkillMin[Island.Eldara] = 700;
+            islandSkillMax[Island.Eldara] = 1000;
+            this.gameManager = gameManager;
         }
 
         internal bool NextOnFerry;
 
 #if UNITY_EDITOR
-        private GameManager gameManager;
 #endif
         public PlayerJoinResult Generate(PlayerJoinData joinData)
         {
@@ -70,7 +98,7 @@ namespace RavenNest.SDK
 
         private Models.Player GeneratePlayer(PlayerJoinData joinData)
         {
-            var skills = GenerateSkills();
+            var skills = GenerateSkills(out var suitableTargetIsland);
             var inventoryItems = GenerateEquipment(skills);
             return new Models.Player
             {
@@ -81,7 +109,7 @@ namespace RavenNest.SDK
                 Clan = null,
                 ClanRole = null,
                 InventoryItems = inventoryItems,
-                State = GenerateState(skills),
+                State = GenerateState(skills, suitableTargetIsland),
                 Resources = new Resources(),
                 Statistics = new Statistics(),
                 Skills = skills,
@@ -150,7 +178,7 @@ namespace RavenNest.SDK
                     return "#40251e";
             }
         }
-        private CharacterState GenerateState(Models.Skills skills)
+        private CharacterState GenerateState(Models.Skills skills, Island island)
         {
             if (NextOnFerry)
             {
@@ -166,36 +194,69 @@ namespace RavenNest.SDK
                     Z = ferryPosition.z,
                 };
             }
-
+            var i = gameManager.Islands.Get(island);
             return new CharacterState
             {
+                Island = island.ToString(),
                 Health = skills.HealthLevel,
+                X = i.SpawnPosition.x,
+                Y = i.SpawnPosition.y,
+                Z = i.SpawnPosition.z,
             };
         }
 
-        private Models.Skills GenerateSkills()
+
+        private Models.Skills GenerateSkills(out Island targetIsland)
         {
+            // generate skills in a range suitable for a target island when Random is selected.
+
+            // home, away, ironhill, kyo, heim, atria, eldara
+
+            targetIsland = Island.Home;
+            var min = 1;
+            var max = 400;
+            var finalIsland = Island.Eldara;
+            switch (AdminControlData.SpawnBotLevel)
+            {
+                case SpawnBotLevelStrategy.Max:
+                    targetIsland = finalIsland;
+                    min = islandSkillMin[targetIsland];
+                    max = islandSkillMin[targetIsland];
+                    break;
+
+                case SpawnBotLevelStrategy.Min:
+                    min = 1;
+                    max = 2;
+                    break;
+
+                case SpawnBotLevelStrategy.Random:
+                    targetIsland = (Island)UnityEngine.Random.Range(1, ((int)finalIsland) + 1);
+                    min = islandSkillMin[targetIsland];
+                    max = islandSkillMin[targetIsland];
+                    break;
+            }
+
             var skills = new Models.Skills
             {
-                AttackLevel = UnityEngine.Random.Range(1, 400),
-                CookingLevel = UnityEngine.Random.Range(1, 400),
-                CraftingLevel = UnityEngine.Random.Range(1, 400),
-                HealingLevel = UnityEngine.Random.Range(1, 400),
-                WoodcuttingLevel = UnityEngine.Random.Range(1, 400),
-                MagicLevel = UnityEngine.Random.Range(1, 400),
-                HealthLevel = 10,
-                MiningLevel = UnityEngine.Random.Range(1, 400),
-                StrengthLevel = UnityEngine.Random.Range(1, 400),
-                RangedLevel = UnityEngine.Random.Range(1, 400),
-                SailingLevel = UnityEngine.Random.Range(1, 400),
-                SlayerLevel = UnityEngine.Random.Range(1, 400),
-                DefenseLevel = UnityEngine.Random.Range(1, 400),
-                FarmingLevel = UnityEngine.Random.Range(1, 400),
-                FishingLevel = UnityEngine.Random.Range(1, 400),
-
+                AttackLevel = UnityEngine.Random.Range(min, max),
+                CookingLevel = UnityEngine.Random.Range(min, max),
+                CraftingLevel = UnityEngine.Random.Range(min, max),
+                HealingLevel = UnityEngine.Random.Range(min, max),
+                WoodcuttingLevel = UnityEngine.Random.Range(min, max),
+                MagicLevel = UnityEngine.Random.Range(min, max),
+                MiningLevel = UnityEngine.Random.Range(min, max),
+                StrengthLevel = UnityEngine.Random.Range(min, max),
+                RangedLevel = UnityEngine.Random.Range(min, max),
+                SailingLevel = UnityEngine.Random.Range(min, max),
+                SlayerLevel = UnityEngine.Random.Range(min, max),
+                DefenseLevel = UnityEngine.Random.Range(min, max),
+                FarmingLevel = UnityEngine.Random.Range(min, max),
+                FishingLevel = UnityEngine.Random.Range(min, max),
+                GatheringLevel = UnityEngine.Random.Range(min, max),
+                AlchemyLevel = UnityEngine.Random.Range(min, max),
             };
 
-            skills.HealthLevel = (skills.AttackLevel + skills.DefenseLevel + skills.RangedLevel + skills.StrengthLevel + skills.MagicLevel) / 5;
+            skills.HealthLevel = Math.Max(10, (skills.AttackLevel + skills.DefenseLevel + skills.RangedLevel + skills.StrengthLevel + skills.MagicLevel) / 5);
 
             return skills;
         }

@@ -13,14 +13,13 @@ public class PlayerMovementController : MonoBehaviour
     public float MovementTime;
     public bool IsMoving;
 
+    public bool HasIncompletePath;
+    public NavMeshPathStatus PathStatus;
+
     public Vector3 Destination;
 
     private Vector3 lastPosition;
 
-    /// <summary>
-    /// Used to always have a slight offset to target destinations.
-    /// </summary>
-    private Vector3 positionJitter;
     private float defaultSpeed;
     private float defaultAngularSpeed;
     private MovementLockState movementLockState;
@@ -28,10 +27,11 @@ public class PlayerMovementController : MonoBehaviour
     public float MovementSpeedMultiplier = 1;
 
 
-    private NavMeshPath currentPath;
+    public NavMeshPath CurrentPath;
     private float last_speed;
     private float last_angularSpeed;
     private Transform _transform;
+
 
     //private NavigationAgent navAgentState;
 
@@ -94,23 +94,8 @@ public class PlayerMovementController : MonoBehaviour
 
     private void SetupNavigationAgent()
     {
-        var x = UnityEngine.Random.Range(-0.5f, 0.5f);
-        var z = UnityEngine.Random.Range(-0.5f, 0.5f);
-        this.positionJitter = new Vector3(x, 0, z);
         this.defaultSpeed = this.navMeshAgent.speed;
         this.defaultAngularSpeed = this.navMeshAgent.angularSpeed;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal Vector3 JitterTranslate(Vector3 position)
-    {
-        return position + positionJitter;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal Vector3 JitterTranslateSlow(object obj)
-    {
-        return (((obj as Transform) ?? (obj as MonoBehaviour)?.transform)?.position ?? Position) + positionJitter;
     }
 
     internal Vector3 GetAgentVelocity()
@@ -160,23 +145,23 @@ public class PlayerMovementController : MonoBehaviour
             return true;
         }
 
-        if (currentPath == null)
-            currentPath = new NavMeshPath();
+        if (CurrentPath == null)
+            CurrentPath = new NavMeshPath();
 
         Destination = pos;
+        HasIncompletePath = false;
 
-        if (navMeshAgent.CalculatePath(pos, currentPath))//&& currentPath.status == NavMeshPathStatus.PathComplete)
+        navMeshAgent.CalculatePath(pos, CurrentPath);
+
+        if (CurrentPath.status != NavMeshPathStatus.PathComplete)
         {
-            if (currentPath.status != NavMeshPathStatus.PathComplete)
-            {
-
-            }
-
-            navMeshAgent.SetPath(currentPath);
-            return true;
+            this.HasIncompletePath = true;
         }
 
-        return false;
+        this.PathStatus = CurrentPath.status;
+        navMeshAgent.SetPath(CurrentPath);
+
+        return !HasIncompletePath;
     }
 
     public void Lock()

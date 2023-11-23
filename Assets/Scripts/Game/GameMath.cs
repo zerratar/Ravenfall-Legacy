@@ -400,9 +400,12 @@ public static class GameMath
 
     public static float CalculateSkillDamage(SkillStat skillStat, int targetLevel)
     {
-        var levelDiff = skillStat.MaxLevel - targetLevel;
+        var levelDiff = Mathf.Min(skillStat.MaxLevel - targetLevel, 15);
         var hit = Mathf.Max(1f, Math.Abs(levelDiff));
-        if (levelDiff >= 5 || UnityEngine.Random.value <= 0.5)
+
+        hit = UnityEngine.Random.Range(hit, hit * 2);
+
+        if (levelDiff >= 5 || UnityEngine.Random.value <= 0.85)
         {
             return hit;
         }

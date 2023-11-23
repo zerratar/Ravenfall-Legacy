@@ -6,6 +6,34 @@ using UnityEngine.SceneManagement;
 
 public class RavenfallObjectTools
 {
+    [MenuItem("Ravenfall/Objects/Assert unreachable objects", priority = 0)]
+    public static void AssertInvalidPlacement()
+    {
+        int found = 0;
+
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Trees...", 0);
+        found += PlacementUtility.AssertInvalidPlacement<TreeController>();
+
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Rocks...", 1f / 6f);
+        found += PlacementUtility.AssertInvalidPlacement<RockController>();
+
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Enemies...", 2f / 6f);
+        found += PlacementUtility.AssertInvalidPlacement<EnemyController>();
+
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Stalls...", 3f / 6f);
+        found += PlacementUtility.AssertInvalidPlacement<CraftingStation>();
+
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Farming...", 4f / 6f);
+        found += PlacementUtility.AssertInvalidPlacement<FarmController>();
+
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Gathering...", 5f / 6f);
+        found += PlacementUtility.AssertInvalidPlacement<GatherController>();
+
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Done", 6f / 6f);
+
+        System.Threading.Thread.Sleep(1000);
+        EditorUtility.ClearProgressBar();
+    }
 
 
     [MenuItem("Ravenfall/Tools/Find Duplicate Objects")]

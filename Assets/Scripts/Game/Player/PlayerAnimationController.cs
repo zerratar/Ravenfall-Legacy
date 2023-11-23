@@ -16,13 +16,14 @@ public class PlayerAnimationController : MonoBehaviour
     public float CastSpeedMultiplier = 1;
     public float MovementSpeedMultiplier = 1;
     public float AttackSpeedMultiplier = 1;
-
+    public float LastTrigger;
     public PlayerAnimationState State => animationState;
 
     bool isCaptain;
     private float last_MovementSpeedMultiplier;
     private float last_CastSpeedMultiplier;
     private float last_AttackSpeedMultiplier;
+    
 
     // Use this for initialization
     void Start()
@@ -112,6 +113,7 @@ public class PlayerAnimationController : MonoBehaviour
         activeAnimator.SetTrigger(trigger);
         if (activeAnimator != defaultAnimator)
             defaultAnimator.SetTrigger(trigger);
+        LastTrigger = GameTime.time;
     }
 
     private void SetInteger(string key, int value)

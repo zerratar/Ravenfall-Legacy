@@ -1152,6 +1152,11 @@ public class GameManager : MonoBehaviour, IGameManager
                 gameCamera.ObservePlayer(null);
             }
 
+            if (player.IsBot)
+            {
+                return;
+            }
+
             villageBoostLabel.Update();
             playerCountLabel.Update();
 
@@ -1802,6 +1807,11 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             if (AdminControlData.BotSpawnVisible)
             {
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Level: " + AdminControlData.SpawnBotLevel))
+                {
+                    AdminControlData.SpawnBotLevel = (SpawnBotLevelStrategy)((((int)AdminControlData.SpawnBotLevel) + 1) % 3);
+                }
+
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn 300 Bots"))
                 {
                     SpawnManyBotPlayers(300);
@@ -1830,6 +1840,18 @@ public class GameManager : MonoBehaviour, IGameManager
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn a bot on ferry"))
                 {
                     SpawnBotPlayerOnFerry();
+                }
+
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Remove all except stuck"))
+                {
+                    var bots = Players.GetAllBots();
+                    foreach (var b in bots)
+                    {
+                        if (b.Bot.IsStuck)
+                            continue;
+
+                        RemovePlayer(b, false);
+                    }
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "<< Back"))
@@ -1891,7 +1913,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask((new string[] { "mining" }).Random(), null);
+                        bot.SetTask("mining", null);
                     }
                 }
 
@@ -1900,24 +1922,51 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask((new string[] { "farming" }).Random(), null);
+                        bot.SetTask("farming", null);
                     }
                 }
 
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Train Cooking"))
+                {
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    foreach (var bot in bots)
+                    {
+                        bot.SetTask("Cooking", null);
+                    }
+                }
+
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Train Alchemy"))
+                {
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    foreach (var bot in bots)
+                    {
+                        bot.SetTask("Alchemy", null);
+                    }
+                }
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Crafting"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask((new string[] { "Crafting" }).Random(), null);
+                        bot.SetTask("Crafting", null);
                     }
                 }
+
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Train Gathering"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        bot.SetTask((new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting" }).Random());
+                        bot.SetTask("Gathering", null);
+                    }
+                }
+
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Train Non Combat"))
+                {
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    foreach (var bot in bots)
+                    {
+                        bot.SetTask((new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting", "alchemy", "gathering" }).Random());
                     }
                 }
 
@@ -1943,7 +1992,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     foreach (var bot in bots)
                     {
-                        var s = (new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting", "fighting" }).Random();
+                        var s = (new string[] { "fishing", "mining", "farming", "crafting", "cooking", "woodcutting", "gathering", "alchemy", "fighting" }).Random();
                         if (s == "fighting")
                         {
                             bot.SetTask(s, (new string[] { "all", "strength", "attack", "defense", "ranged", "magic", "healing" }).Random());
@@ -2021,35 +2070,49 @@ public class GameManager : MonoBehaviour, IGameManager
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Home");
-                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) TeleportBot(bot, island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Away"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Away");
-                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) TeleportBot(bot, island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Ironhill"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Ironhill");
-                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) TeleportBot(bot, island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Kyo"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Kyo");
-                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) TeleportBot(bot, island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Heim"))
                 {
                     var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
                     var island = Islands.Find("Heim");
-                    foreach (var bot in bots) bot.teleportHandler.Teleport(island.SpawnPosition);
+                    foreach (var bot in bots) TeleportBot(bot, island);
+                }
+
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Atria"))
+                {
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var island = Islands.Find("Atria");
+                    foreach (var bot in bots) TeleportBot(bot, island);
+                }
+
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Teleport Eldara"))
+                {
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    var island = Islands.Find("Eldara");
+                    foreach (var bot in bots) TeleportBot(bot, island);
                 }
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "<< Back"))
@@ -2065,6 +2128,8 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
             }
         }
+
+
         //if (GUI.Button(GetButtonRect(buttonIndex++), dungeonManager.Active ? "Stop Dungeon" : "Start Dungeon"))
         //{
         //    dungeonManager.ToggleDungeon();
@@ -2103,7 +2168,19 @@ public class GameManager : MonoBehaviour, IGameManager
 
         lastButtonIndex = buttonIndex;
     }
+
+    void TeleportBot(PlayerController player, IslandController island)
+    {
+        player.teleportHandler.Teleport(island.SpawnPosition);
+        player.Bot.LastTeleport = Time.time;
+        player.ClearTarget();
+        if (!string.IsNullOrEmpty(player.CurrentTaskName))
+            player.SetTask(player.CurrentTaskName, player.taskArgument, true);
+    }
+
 #endif
+
+
 
     private IEnumerator ToggleManyDungeons(int count)
     {

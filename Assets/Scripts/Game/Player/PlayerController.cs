@@ -76,26 +76,28 @@ public class PlayerController : MonoBehaviour, IAttackable
     internal Transform attackTarget;
     internal object taskTarget;
 
-    public Chunk Chunk;
+    [NonSerialized] public Chunk Chunk;
 
-    public Skills Stats = new Skills();
+    [NonSerialized] public Skills Stats = new Skills();
 
-    public Resources Resources = new Resources();
+    [NonSerialized] public Resources Resources = new Resources();
     //public Statistics Statistics = new Statistics();
-    public PlayerEquipment Equipment;
-    public Inventory Inventory;
+    [NonSerialized] public PlayerEquipment Equipment;
+    [NonSerialized] public Inventory Inventory;
 
 
-    public string PlayerName;
-    public string PlayerNameLowerCase;
+    [NonSerialized] public string PlayerName;
+    [NonSerialized] public string PlayerNameLowerCase;
 
-    public string PlayerNameHexColor = "#FFFFFF";
+    [NonSerialized] public string PlayerNameHexColor = "#FFFFFF";
 
-    public Guid Id;
-    public Guid UserId;
+    [NonSerialized] public Guid Id;
+    [NonSerialized] public Guid UserId;
 
-    public string Platform;
-    public string PlatformId;
+    [NonSerialized] public string Platform;
+    [NonSerialized] public string PlatformId;
+
+    [NonSerialized] public float TimeSinceLastTaskChange = 9999f;
 
     public float AttackRange = 1.8f;
     public float RangedAttackRange = 15F;
@@ -107,10 +109,10 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public bool Controlled { get; private set; }
 
-    public bool IsModerator;
-    public bool IsBroadcaster;
-    public bool IsSubscriber;
-    public bool IsVip;
+    [NonSerialized] public bool IsModerator;
+    [NonSerialized] public bool IsBroadcaster;
+    [NonSerialized] public bool IsSubscriber;
+    [NonSerialized] public bool IsVip;
 
     //public int BitsCheered;
     //public int GiftedSubs;
@@ -119,15 +121,15 @@ public class PlayerController : MonoBehaviour, IAttackable
     public User User { get; private set; }
     public int CharacterIndex { get; private set; }
 
-    public DateTime LastChatCommandUtc;
+    [NonSerialized] public DateTime LastChatCommandUtc;
 
-    public bool IsGameAdmin;
-    public bool IsGameModerator;
+    [NonSerialized] public bool IsGameAdmin;
+    [NonSerialized] public bool IsGameModerator;
 
     public float RegenTime = 10f;
     public float RegenRate = 0.1f;
 
-    public Vector3 TempScale = Vector3.one;
+    [NonSerialized] public Vector3 TempScale = Vector3.one;
 
     private float regenTimer;
     private float regenAmount;
@@ -140,7 +142,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     private float scaleTimer;
     private TaskType currentTask;
 
-    public string CurrentTaskName;
+    [NonSerialized] public string CurrentTaskName;
 
     private readonly ConcurrentQueue<GameInventoryItem> queuedItemAdd = new ConcurrentQueue<GameInventoryItem>();
 
@@ -244,14 +246,12 @@ public class PlayerController : MonoBehaviour, IAttackable
     //public DungeonHandler Dungeon => dungeonHandler;
     //public OnsenHandler Onsen => onsenHandler;
 
-    public bool ItemDropEventActive { get; private set; }
+    [NonSerialized] public bool ItemDropEventActive;
+    [NonSerialized] public Skill ActiveSkill;
+    [NonSerialized] public bool IsDiaperModeEnabled;
+    [NonSerialized] public bool IsBot;
+    [NonSerialized] public BotPlayerController Bot;
 
-    public Skill ActiveSkill;
-    //public int CombatType { get; set; }
-    //public int SkillType { get; set; }
-    public bool IsDiaperModeEnabled { get; private set; }
-    public bool IsBot { get; internal set; }
-    public BotPlayerController Bot { get; internal set; }
     public bool IsAfk
     {
         get
@@ -269,13 +269,10 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public TimeSpan TimeSinceLastChatCommandUtc => DateTime.UtcNow - LastChatCommandUtc;
 
-    public SkillUpdate LastSailingSaved { get; internal set; }
-    public SkillUpdate LastSlayerSaved { get; internal set; }
-
-    public CharacterStateUpdate LastSavedState;
-
-    private bool hasGameManager;
-    internal DateTime LastSavedStateTime;
+    [NonSerialized] public SkillUpdate LastSailingSaved;
+    [NonSerialized] public SkillUpdate LastSlayerSaved;
+    [NonSerialized] public CharacterStateUpdate LastSavedState;
+    [NonSerialized] public DateTime LastSavedStateTime;
 
     private ScheduledAction activeScheduledAction;
     private float healTimer;
@@ -285,6 +282,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     private float lastUnstuckUsed;
     private bool componentsInitialized;
 
+    private bool hasGameManager;
     public ScheduledAction ScheduledAction => activeScheduledAction;
 
     public DateTime LastDungeonAutoJoinFailUtc { get; internal set; }
@@ -593,6 +591,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         var deltaTime = GameTime.deltaTime;
+
+        TimeSinceLastTaskChange += deltaTime;
         this.Movement.UpdateIdle(this.ferryHandler.OnFerry);
 
         //HandleRested();
@@ -1545,6 +1545,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         GameManager gm,
         bool prepareForCamera)
     {
+        EnsureComponents();
+
         if (prepareForCamera)
         {
             LastChatCommandUtc = DateTime.UtcNow;
@@ -1610,6 +1612,8 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         var joinOnsenAfterInitialize = false;
         var joinFerryAfterInitialize = false;
+
+        ClearTask();
 
         //if (Raider != null)
         if (player.State != null)
@@ -1787,6 +1791,8 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
+        TimeSinceLastTaskChange = 0f;
+
         if (string.IsNullOrEmpty(args))
         {
             args = targetTaskName.ToLower();
@@ -1894,9 +1900,12 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         UpdateTrainingFlags();
 
-        // in case we change what we train.
-        // we don't want shield armor to be added to magic, ranged or healing.
-        Inventory.UpdateEquipmentEffect();
+        if (Inventory)
+        {
+            // in case we change what we train.
+            // we don't want shield armor to be added to magic, ranged or healing.
+            Inventory.UpdateEquipmentEffect();
+        }
     }
 
     public bool Fish(FishingController fishingSpot)
@@ -2653,9 +2662,20 @@ public class PlayerController : MonoBehaviour, IAttackable
     {
         if (obj is IAttackable attackable)
         {
-            return Movement.JitterTranslate(attackable.Position);
+            return attackable.Position;
         }
-        return Movement.JitterTranslateSlow(obj);
+
+        if (obj is Transform t)
+        {
+            return t.position;
+        }
+
+        if (obj is MonoBehaviour b)
+        {
+            return b.transform.position;
+        }
+
+        return Position;
     }
 
     //private Transform GetTaskTargetTransform(object obj)
