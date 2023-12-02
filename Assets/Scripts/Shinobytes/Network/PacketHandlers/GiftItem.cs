@@ -99,21 +99,27 @@ public class GiftItem : ChatBotCommandHandler<string>
         if (itemsToGift.Count > 0)
         {
             var giftedItems = new List<GameInventoryItem>();
-            foreach (var i in itemsToGift)
+            try
             {
-                var result = await Game.RavenNest.Players.GiftItemAsync(player.Id, targetPlayer.Id, i.InstanceId, 1);
-                if (result.Status == RavenNest.Models.GiftItemStatus.OK)
+                foreach (var i in itemsToGift)
                 {
-                    // Update game client with the changes
-                    // this is done locally to avoid sending additional data from server to client and visa versa.
+                    var result = await Game.RavenNest.Players.GiftItemAsync(player.Id, targetPlayer.Id, i.InstanceId, 1);
+                    if (result.Status == RavenNest.Models.GiftItemStatus.OK)
+                    {
+                        // Update game client with the changes
+                        // this is done locally to avoid sending additional data from server to client and visa versa.
 
-                    targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
-                    player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+                        targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
+                        player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
 
-                    giftedItems.Add(i);
+                        giftedItems.Add(i);
+                    }
                 }
             }
-
+            catch (System.Exception exc)
+            {
+                Shinobytes.Debug.LogError("Error when '" + player.Name + "' tried to gift an '" + setType + "' item set to '" + targetPlayer.Id + "'. " + giftedItems.Count + " out of " + itemsToGift.Count + " was gifted. Exception: " + exc);
+            }
             var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", giftedItems.Select(x => x.Name).ToArray()), ", ", " and ");
             if (giftedItems.Count != itemSet.Count)
             {
@@ -123,7 +129,8 @@ public class GiftItem : ChatBotCommandHandler<string>
             {
                 var a = "a";
                 if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') a = "an";
-                client.SendReply(gm, "You have gifted " + a + " {setType} set to {targetPlayerName}! The items gifted was {itemList}", giftedItems.Count, itemSet.Count, setType, targetPlayer.Name, itemList);
+                client.SendReply(gm, "You have gifted " + a + " {setType} set to {targetPlayerName}! The items gifted was {itemList}",
+                    setType, targetPlayer.Name, itemList);
             }
         }
         else

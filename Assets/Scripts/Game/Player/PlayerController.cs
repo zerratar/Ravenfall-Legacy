@@ -2627,7 +2627,14 @@ public class PlayerController : MonoBehaviour, IAttackable
                     }
 
                     if (reason == TaskExecutionStatus.OutOfRange)
-                        SetDestination(GetTaskTargetPosition(taskTarget));
+                    {
+                        if (!SetDestination(GetTaskTargetPosition(taskTarget)) && Movement.PathStatus == NavMeshPathStatus.PathInvalid)
+                        {
+                            // path is invalid, this target is therefor invalid.
+                            Chunk.SetTargetInvalid(taskTarget);
+                            taskTarget = null;
+                        }
+                    }
 
                     return;
                 }
@@ -2687,9 +2694,11 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     private void LookAt(Transform targetTransform)
     {
-        var rot = transform.rotation;
+        var rotBefore = transform.eulerAngles;
         transform.LookAt(targetTransform);
-        transform.rotation = new Quaternion(rot.x, transform.rotation.y, rot.z, rot.w);
+
+        var rotAfter = transform.eulerAngles;
+        transform.rotation = Quaternion.Euler(rotAfter.x, rotBefore.y, rotAfter.z);
     }
 
     public bool SetDestination(Vector3 position)

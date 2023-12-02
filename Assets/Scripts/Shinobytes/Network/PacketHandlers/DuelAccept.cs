@@ -1,4 +1,5 @@
-﻿public class DuelAccept : ChatBotCommandHandler
+﻿
+public class DuelAccept : ChatBotCommandHandler
 {
     public DuelAccept(
         GameManager game,

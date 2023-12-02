@@ -4,6 +4,7 @@ using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using Skill = RavenNest.Models.Skill;
+
 public class RaidHandler : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
@@ -17,7 +18,7 @@ public class RaidHandler : MonoBehaviour
     private string[] prevTaskArgs;
     private bool wasResting;
 
-    private FerryState ferryState;
+    private FerryContext ferryState;
     private TaskType previousTask;
     private string previousTaskArgument;
 
@@ -133,6 +134,7 @@ public class RaidHandler : MonoBehaviour
         ferryState = new()
         {
             OnFerry = player.ferryHandler.OnFerry,
+            State = player.ferryHandler.State,
             HasDestination = !!player.ferryHandler.Destination,
             Destination = player.ferryHandler.Destination
         };
@@ -257,6 +259,11 @@ public class RaidHandler : MonoBehaviour
             player.ferryHandler.AddPlayerToFerry(ferryState.Destination);
             ferryState.HasReturned = true;
         }
+        else if (ferryState.State == FerryHandler.PlayerFerryState.Embarking)
+        {
+            // if we were embarking, make sure we do that again.
+            player.ferryHandler.Embark(ferryState.Destination);
+        }
 
         wasResting = false;
 
@@ -264,14 +271,4 @@ public class RaidHandler : MonoBehaviour
         //        Shinobytes.Debug.Log($"{player.PlayerName} left the raid");
         //#endif
     }
-
-
-    public struct FerryState
-    {
-        public bool OnFerry;
-        public bool HasDestination;
-        public bool HasReturned;
-        public IslandController Destination;
-    }
-
 }

@@ -32,7 +32,7 @@ public class TeleportHandler : MonoBehaviour
         player.SetPosition(position, adjustPlayerToNavmesh);
     }
 
-    public void Teleport(IslandController targetIsland)
+    public void Teleport(IslandController targetIsland, bool silent = false)
     {
         Teleport(targetIsland.SpawnPosition);
         // Force player to start "training" the same skill they were training.
@@ -40,7 +40,7 @@ public class TeleportHandler : MonoBehaviour
         var task = player.GetTask();
         if (task != TaskType.None)
         {
-            player.SetTask(task, player.taskArgument);
+            player.SetTask(task, player.taskArgument, silent);
         }
     }
 
@@ -50,6 +50,11 @@ public class TeleportHandler : MonoBehaviour
         // could have been kicked. *Looks at Solunae*
         if (!this || this == null)
             return;
+
+        if (player.onsenHandler.InOnsen)
+        {
+            player.GameManager.Onsen.Leave(player);
+        }
 
         var hasParent = !!player.transform.parent;
         if (hasParent)
@@ -63,7 +68,7 @@ public class TeleportHandler : MonoBehaviour
         player.Movement.Lock();
         player.SetPosition(position, adjustPlayerToNavmesh);
         //player.SetDestination(position);
-        
+
 
         if (!hasParent && parent)
         {

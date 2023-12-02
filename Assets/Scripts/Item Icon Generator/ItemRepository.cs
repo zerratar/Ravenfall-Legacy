@@ -44,12 +44,12 @@ public class ItemRepository : MonoBehaviour
         try
         {
             cl.DownloadFile("https://localhost:5001/api/items", itemsRepo);
-            Shinobytes.Debug.Log("Downloaded new items repo");
+            Shinobytes.Debug.Log("Downloaded new items repo from dev");
         }
         catch
         {
             cl.DownloadFile("https://www.ravenfall.stream/api/items", itemsRepo);
-            Shinobytes.Debug.Log("Downloaded new items repo");
+            Shinobytes.Debug.Log("Downloaded new items repo from production");
         }
 
         var json = System.IO.File.ReadAllText(itemsRepo);

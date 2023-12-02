@@ -212,6 +212,11 @@ public class Chunk : MonoBehaviour
             default: return null;
         }
     }
+
+    internal void SetTargetInvalid(object taskTarget)
+    {
+        task.SetTargetInvalid(taskTarget);
+    }
 }
 
 public enum TaskExecutionStatus

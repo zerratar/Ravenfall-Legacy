@@ -99,7 +99,7 @@ public class UseItem : ChatBotCommandHandler<string>
         if (result.Teleport)
         {
             var targetIsland = Game.Islands.Get(result.EffectIsland);
-            player.teleportHandler.Teleport(targetIsland);
+            player.teleportHandler.Teleport(targetIsland, true);
             message += "You were teleported to {island}! ";
             args.Add(result.EffectIsland.ToString());
         }

@@ -14,7 +14,7 @@ public class FishingTask : ChunkTask
     public override bool IsCompleted(PlayerController player, object target)
     {
         var fishingSpot = target as FishingController;
-        if (!fishingSpot) return true;
+        if (!fishingSpot || fishingSpot.IsInvalid) return true;
         return false;
     }
 
@@ -26,7 +26,7 @@ public class FishingTask : ChunkTask
                 //.Where(x => !x.IsDepleted)
                 .OrderBy(x => UnityEngine.Random.value)
                 .ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-                .FirstOrDefault();
+                .FirstOrDefault(x => !x.IsInvalid);
     }
 
     public override bool Execute(PlayerController player, object target)
@@ -86,6 +86,12 @@ public class FishingTask : ChunkTask
             return false;
         }
 
+        if (fish.IsInvalid)
+        {
+            reason = TaskExecutionStatus.InvalidTarget;
+            return false;
+        }
+
         if (Vector3.Distance(player.transform.position, fish.transform.position) >= fish.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
@@ -106,5 +112,15 @@ public class FishingTask : ChunkTask
 
         var possibleTargets = lazyFishes();
         return possibleTargets.Any(x => x.GetInstanceID() == tar.GetInstanceID());
+    }
+
+
+    internal override void SetTargetInvalid(object target)
+    {
+        if (target is FishingController entity)
+        {
+            entity.IsInvalid = true;
+            //Shinobytes.Debug.LogError(station.name + " is unreachable. Marked invalid to avoid being selected in the future.");
+        }
     }
 }

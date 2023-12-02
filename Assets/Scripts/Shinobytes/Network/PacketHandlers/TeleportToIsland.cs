@@ -79,7 +79,8 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
         player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount);
 
         var targetIsland = Game.Islands.Get(result.EffectIsland);
-        player.teleportHandler.Teleport(targetIsland);
+
+        player.teleportHandler.Teleport(targetIsland, true);
 
         client.SendReply(gm, "You have used a {itemName} and teleported to {island}!", tome.Name, result.EffectIsland.ToString());
     }

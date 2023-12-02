@@ -89,6 +89,8 @@ public class ItemController : MonoBehaviour
     {
         Definition = item;
 
+        item.Controller = this;
+
         gameObject.name = item.InventoryItem.Name ?? item.Item.Name;
 
         transform.localPosition = Vector3.zero;

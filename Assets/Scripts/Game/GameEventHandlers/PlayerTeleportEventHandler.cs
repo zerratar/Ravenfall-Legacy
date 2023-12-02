@@ -46,7 +46,8 @@ public class PlayerTeleportEventHandler : GameEventHandler<PlayerTeleportMessage
             {
                 gameManager.Dungeons.Remove(player);
             }
-            player.teleportHandler.Teleport(island);
+            
+            player.teleportHandler.Teleport(island, true);
         }
     }
 }

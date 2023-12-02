@@ -15,7 +15,7 @@ public class WoodcuttingTask : ChunkTask
     public override bool IsCompleted(PlayerController player, object target)
     {
         var tree = target as TreeController;
-        if (!tree)
+        if (!tree || tree.IsInvalid)
         {
             return true;
         }
@@ -42,7 +42,7 @@ public class WoodcuttingTask : ChunkTask
         }
 
         return availableTargets
-            .OrderBy(x => Vector3.Distance(player.Position, x.transform.position) + UnityEngine.Random.value * 10f)
+            .OrderBy(x => Vector3.Distance(player.Position, x.transform.position) + (UnityEngine.Random.value * 15f))
             .FirstOrDefault();
     }
 
@@ -76,7 +76,7 @@ public class WoodcuttingTask : ChunkTask
         {
             return false;
         }
-        if (tree.Island != player.Island)
+        if (tree.Island != player.Island || tree.IsInvalid)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
@@ -110,5 +110,14 @@ public class WoodcuttingTask : ChunkTask
 
         var possibleTargets = lazyTrees();
         return possibleTargets.Any(x => x.GetInstanceID() == tar.GetInstanceID());
+    }
+
+    internal override void SetTargetInvalid(object target)
+    {
+        if (target is TreeController entity)
+        {
+            entity.IsInvalid = true;
+            //Shinobytes.Debug.LogError(station.name + " is unreachable. Marked invalid to avoid being selected in the future.");
+        }
     }
 }

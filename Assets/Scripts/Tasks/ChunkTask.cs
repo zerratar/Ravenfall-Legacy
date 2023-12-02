@@ -27,6 +27,7 @@ public abstract class ChunkTask
         targetLookup[id] = result;
         return result;
     }
+
     internal abstract bool TargetExistsImpl(object target);
 
     internal int GetTargetInstanceID(object target)
@@ -42,4 +43,6 @@ public abstract class ChunkTask
         }
         return -1;
     }
+
+    internal abstract void SetTargetInvalid(object taskTarget);
 }

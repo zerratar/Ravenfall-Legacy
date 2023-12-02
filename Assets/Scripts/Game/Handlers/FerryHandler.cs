@@ -5,17 +5,17 @@ using UnityEngine;
 
 public class FerryHandler : MonoBehaviour
 {
-    private PlayerFerryState state;
+    [NonSerialized] public PlayerFerryState State;
 
     private PlayerController player;
     private FerryController ferry;
     private GameManager gameManager;
     private IslandController destination;
 
-    public bool OnFerry => isOnFerry || state == PlayerFerryState.Disembarking || state == PlayerFerryState.Embarked;//player.transform.parent?.GetComponentInParent<FerryController>();
-    public bool Active => state > PlayerFerryState.None;
-    public bool Embarking => state == PlayerFerryState.Embarking;
-    public bool Disembarking => state == PlayerFerryState.Disembarking;
+    public bool OnFerry => isOnFerry || State == PlayerFerryState.Disembarking || State == PlayerFerryState.Embarked;//player.transform.parent?.GetComponentInParent<FerryController>();
+    public bool Active => State > PlayerFerryState.None;
+    public bool Embarking => State == PlayerFerryState.Embarking;
+    public bool Disembarking => State == PlayerFerryState.Disembarking;
     public bool IsCaptain => OnFerry && ferry.IsCaptainPosition(_transform.parent);
     public IslandController Destination => destination;
 
@@ -151,7 +151,7 @@ public class FerryHandler : MonoBehaviour
     {
         EnsureReferences();
 
-        state = PlayerFerryState.None;
+        State = PlayerFerryState.None;
         player.SetDestination(player.Position);
         this.destination = null;
     }
@@ -167,7 +167,7 @@ public class FerryHandler : MonoBehaviour
 
         player.Animations.ResetAnimationStates();
         player.taskTarget = null;
-        state = PlayerFerryState.Embarking;
+        State = PlayerFerryState.Embarking;
         this.destination = destination;
 
         if (player.onsenHandler.InOnsen)
@@ -179,7 +179,7 @@ public class FerryHandler : MonoBehaviour
     public void BeginDisembark(IslandController destination = null)
     {
         EnsureReferences();
-        state = PlayerFerryState.Disembarking;
+        State = PlayerFerryState.Disembarking;
         this.destination = destination;
     }
 
@@ -190,7 +190,7 @@ public class FerryHandler : MonoBehaviour
         var inShipPlayerPoint = parent && parent.CompareTag("ShipPlayerPoint");
 
         isOnFerry = false;
-        state = PlayerFerryState.None;
+        State = PlayerFerryState.None;
 
         ClearDestination();
 
@@ -239,7 +239,7 @@ public class FerryHandler : MonoBehaviour
                 player.Movement.SetPosition(targetIsland.DockingArea.DockPosition, true, true);
             }
 
-            state = PlayerFerryState.None;
+            State = PlayerFerryState.None;
 
             player.Animations.SetCaptainState(false);
 
@@ -313,7 +313,7 @@ public class FerryHandler : MonoBehaviour
         if (lastFerryPoint)
         {
             player.Movement.Lock();
-            state = PlayerFerryState.Embarked;
+            State = PlayerFerryState.Embarked;
             player.transform.SetParent(lastFerryPoint);
             player.transform.localPosition = Vector3.zero;
             player.transform.rotation = lastFerryPoint.rotation;
@@ -338,7 +338,7 @@ public class FerryHandler : MonoBehaviour
         if (lastFerryPoint)
         {
             player.Movement.Lock();
-            state = PlayerFerryState.Embarked;
+            State = PlayerFerryState.Embarked;
             player.transform.SetParent(lastFerryPoint);
             player.transform.localPosition = Vector3.zero;
             player.transform.rotation = lastFerryPoint.rotation;

@@ -133,4 +133,9 @@ public class ArenaTask : ChunkTask
         // We do the check in canexecute already.
         return true;
     }
+
+
+    internal override void SetTargetInvalid(object target)
+    {
+    }
 }

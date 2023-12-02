@@ -9,6 +9,7 @@ public class CraftingStation : MonoBehaviour
     public double ExpPerResource => 10;
 
     public IslandController Island { get; private set; }
+    public bool IsInvalid { get; internal set; }
 
     public CraftingStationType StationType = CraftingStationType.Crafting;
 
@@ -23,7 +24,19 @@ public class CraftingStation : MonoBehaviour
     {
         PlacementUtility.PlaceOnGround(this.gameObject);
     }
-
+    private float invalidTimer;
+    private void Update()
+    {
+        if (IsInvalid)
+        {
+            invalidTimer += GameTime.deltaTime;
+            if (invalidTimer >= 20)
+            {
+                invalidTimer = 0f;
+                IsInvalid = false;
+            }
+        }
+    }
     void Start()
     {
         this.Island = GetComponentInParent<IslandController>();

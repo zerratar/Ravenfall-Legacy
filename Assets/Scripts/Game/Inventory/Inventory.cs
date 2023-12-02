@@ -81,6 +81,7 @@ public class GameInventoryItem
         get => InventoryItem.Amount;
         set => InventoryItem.Amount = value;
     }
+    public ItemController Controller { get; set; }
     //public string Tag { get; set; }
     //public double Amount { get; set; }
 }
@@ -1042,10 +1043,11 @@ public class Inventory : MonoBehaviour
             ? equippedItem.GetTotalStats()
             : 0;
 
-        if (player.IsDiaperModeEnabled &&
+        if ((category == ItemCategory.Pet && equippedItem != null) || 
+            (player.IsDiaperModeEnabled &&
             category != ItemCategory.Weapon &&
             category != ItemCategory.Pet &&
-            category != ItemCategory.Ring)
+            category != ItemCategory.Ring))
         {
             return;
         }

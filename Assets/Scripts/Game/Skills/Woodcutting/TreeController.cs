@@ -28,6 +28,7 @@ public class TreeController : MonoBehaviour
     public bool IsStump => health <= 0;
 
     public IslandController Island { get; private set; }
+    public bool IsInvalid { get; internal set; }
 
     [ReadOnly]
     public float MaxActionDistance = 5f;
@@ -59,6 +60,20 @@ public class TreeController : MonoBehaviour
         if (stump) stump.SetActive(false);
         foreach (var tree in trees) tree.SetActive(false);
         ActivateRandomTree();
+    }
+
+    private float invalidTimer;
+    private void Update()
+    {
+        if (IsInvalid)
+        {
+            invalidTimer += GameTime.deltaTime;
+            if (invalidTimer >= 20)
+            {
+                invalidTimer = 0f;
+                IsInvalid = false;
+            }
+        }
     }
 
     public void DecreaseRespawnTime()

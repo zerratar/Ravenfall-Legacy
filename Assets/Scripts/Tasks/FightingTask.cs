@@ -285,4 +285,9 @@ public class FightingTask : ChunkTask
     {
         return true;
     }
+
+
+    internal override void SetTargetInvalid(object target)
+    {
+    }
 }

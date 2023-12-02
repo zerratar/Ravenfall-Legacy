@@ -38,6 +38,8 @@ public class RavenBot : System.IDisposable
         Connection.Register<UseVendor>("vendor");
         Connection.Register<UseMarketplace>("marketplace");
 
+        Connection.Register<OnChatMessage>("chat_message");
+
         Connection.Register<GiftItem>("gift_item");
         Connection.Register<ValueItem>("value_item");
         Connection.Register<CraftRequirement>("req_item");

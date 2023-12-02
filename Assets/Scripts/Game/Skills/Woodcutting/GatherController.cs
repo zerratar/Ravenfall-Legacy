@@ -27,6 +27,8 @@ public class GatherController : MonoBehaviour
 
     public IReadOnlyList<PlayerController> Gatherers => gatherers.Values.ToList();
 
+    public bool IsInvalid { get; internal set; }
+
     void Start()
     {
         maxRespawnTimeSeconds = respawnTimeSeconds;
@@ -42,6 +44,19 @@ public class GatherController : MonoBehaviour
         if (collider)
         {
             MaxActionDistance = collider.radius;
+        }
+    }
+    private float invalidTimer;
+    private void Update()
+    {
+        if (IsInvalid)
+        {
+            invalidTimer += GameTime.deltaTime;
+            if (invalidTimer >= 20)
+            {
+                invalidTimer = 0f;
+                IsInvalid = false;
+            }
         }
     }
     public void AddGatherer(PlayerController player)

@@ -18,7 +18,7 @@ public class DungeonHandler
 
     public bool ReturnedToOnsen;
 
-    public FerryState Ferry;
+    public FerryContext Ferry;
 
     private bool wasResting;
     public bool AutoJoining;
@@ -192,6 +192,7 @@ public class DungeonHandler
         Ferry = new()
         {
             OnFerry = player.ferryHandler.OnFerry,
+            State = player.ferryHandler.State,
             HasDestination = !!player.ferryHandler.Destination,
             Destination = player.ferryHandler.Destination
         };
@@ -254,25 +255,29 @@ public class DungeonHandler
             player.teleportHandler.Teleport(previousPosition);
         }
 
-
-        player.taskTarget = null;
-        player.attackTarget = null;
-
         if (previousTask != TaskType.None)
         {
             this.player.SetTask(previousTask, previousTaskArgument, true);
         }
 
-        var currentTask = player.GetTask();
-        if (!Ferry.OnFerry && currentTask != TaskType.None)
+        if (Ferry.State == FerryHandler.PlayerFerryState.Embarking)
         {
-            player.GotoClosest(currentTask, true);
+            // if we were embarking, make sure we do that again.
+            player.ferryHandler.Embark(Ferry.Destination);
         }
-
-        if (wasResting)
+        else
         {
-            player.GameManager.Onsen.Join(player);
-            ReturnedToOnsen = true;
+            var currentTask = player.GetTask();
+            if (!Ferry.OnFerry && currentTask != TaskType.None)
+            {
+                player.GotoClosest(currentTask, true);
+            }
+
+            if (wasResting)
+            {
+                player.GameManager.Onsen.Join(player);
+                ReturnedToOnsen = true;
+            }
         }
 
         wasResting = false;
@@ -393,12 +398,13 @@ public class DungeonHandler
         player.taskTarget = null;
     }
 
-    public struct FerryState
-    {
-        public bool OnFerry;
-        public bool HasDestination;
-        public bool HasReturned;
-        public IslandController Destination;
-    }
+}
 
+public struct FerryContext
+{
+    public bool OnFerry;
+    public bool HasDestination;
+    public bool HasReturned;
+    public FerryHandler.PlayerFerryState State;
+    public IslandController Destination;
 }
