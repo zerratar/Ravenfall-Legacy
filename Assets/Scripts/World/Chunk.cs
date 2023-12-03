@@ -106,16 +106,40 @@ public class Chunk : MonoBehaviour
     {
         try
         {
+
+            // TODO: less dy´namic, more static, this is not reliable enough..
+
             if (playerController == null || !playerController) return 0;
             var maxFactor = GameMath.Exp.MaxExpFactorFromIsland;
+
+            var s = playerController.Stats;
+
+            var minLv = IslandManager.IslandLevelRangeMin[this.Island.Island];
+            var maxLv = IslandManager.IslandLevelRangeMax[this.Island.Island];
+            var efLv = IslandManager.IslandMaxEffect[this.Island.Island];
+
+            if (RequiredCombatLevel > 1 && s.CombatLevel < minLv || s.CombatLevel > efLv)
+            {
+                return 0;
+            }
+
+            var skillLevel = playerController.GetSkill(taskType);
+            if (RequiredSkilllevel > 1 && skillLevel.Level < minLv || skillLevel.Level > efLv)
+            {
+                return 0;
+            }
+
+            // TODO: rewrite to use minLv, maxLv and efLv instead.
+
             var allChunks = Game.Chunks.GetChunksOfType(taskType);
             var chunkIndex = allChunks.IndexOf(this);// System.Array.IndexOf(, this);
             var isLastChunk = chunkIndex + 1 >= allChunks.Count;
 
+            //CalculateExpFactor
+
             // last chunk must always be maxFactor, regardless of task.
             // since ther are no "better" places to train. This has to be it.
             if (isLastChunk) return maxFactor;
-            var s = playerController.Stats;
             var a = RequiredCombatLevel;
             var b = RequiredSkilllevel;
             var requirement = a > b ? a : b;

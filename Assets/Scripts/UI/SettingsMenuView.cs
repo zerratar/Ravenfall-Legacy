@@ -65,6 +65,9 @@ public class SettingsMenuView : MenuView
     [SerializeField] private TMPro.TextMeshProUGUI[] itemDropMessageExamples = null;
     [SerializeField] private TMPro.TMP_Dropdown pathfindingQuality = null;
 
+    [SerializeField] private Toggle disableRaidsToggle;
+    [SerializeField] private Toggle disableDungeonsToggle;
+
     public static readonly TimeSpan[] PlayerCacheExpiry = new TimeSpan[]
     {
         TimeSpan.Zero,          // [0]
@@ -124,6 +127,9 @@ public class SettingsMenuView : MenuView
         pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
         playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(SettingsMenuView.PlayerCacheExpiry.Length - 1);
         boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
+
+        disableRaidsToggle.isOn = settings.DisableRaids.GetValueOrDefault();
+        disableDungeonsToggle.isOn = settings.DisableDungeons.GetValueOrDefault();
 
         alertPlayerCacheExpirationToggle.isOn = settings.AlertExpiredStateCacheInChat.GetValueOrDefault(gameManager.AlertExpiredStateCacheInChat);
         streamLabelsEnabled.isOn = settings.StreamLabels.Enabled;
@@ -197,6 +203,9 @@ public class SettingsMenuView : MenuView
 
         settings.DayNightCycleEnabled = dayNightCycleEnabled.isOn;
         settings.DayNightTime = dayNightTime.value;
+
+        settings.DisableRaids =    disableRaidsToggle.isOn;
+        settings.DisableDungeons = disableDungeonsToggle.isOn;
 
         settings.PotatoMode = potatoModeToggle.isOn;
         settings.PostProcessing = postProcessingToggle.isOn;

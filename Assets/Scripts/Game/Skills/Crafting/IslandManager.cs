@@ -1,5 +1,6 @@
 ﻿using RavenNest.Models;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class IslandManager : MonoBehaviour
@@ -7,6 +8,42 @@ public class IslandManager : MonoBehaviour
     [SerializeField] private GameManager game;
 
     private IslandController[] islands;
+
+    // todo: make this list dynamic
+    public static Dictionary<Island, int> IslandLevelRangeMin = new Dictionary<Island, int>
+    {
+        { Island.Home, 1 },
+        { Island.Away, 50 },
+        { Island.Ironhill, 100 },
+        { Island.Kyo, 200 },
+        { Island.Heim, 300 },
+        { Island.Atria, 500 },
+        { Island.Eldara, 700 },
+    };
+
+    // todo: make this list dynamic
+    public static Dictionary<Island, int> IslandLevelRangeMax = new Dictionary<Island, int>
+    {
+        { Island.Home, 99 },
+        { Island.Away, 150 },
+        { Island.Ironhill, 300 },
+        { Island.Kyo, 400 },
+        { Island.Heim, 700 },
+        { Island.Atria, 900 },
+        { Island.Eldara, 1000 },
+    };
+
+    // todo: make this list dynamic
+    public static Dictionary<Island, int> IslandMaxEffect = new Dictionary<Island, int>
+    {
+        { Island.Home, 50 },
+        { Island.Away, 100 },
+        { Island.Ironhill, 200 },
+        { Island.Kyo, 300 },
+        { Island.Heim, 500 },
+        { Island.Atria, 700 },
+        { Island.Eldara, 1000 },
+    };
 
     public void EnsureIslands()
     {

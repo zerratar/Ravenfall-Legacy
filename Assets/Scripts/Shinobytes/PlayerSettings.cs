@@ -35,6 +35,8 @@ public class PlayerSettings
     public double? PlayerAfkHours;
     public string RavenBotServer;
 
+    public bool? DisableDungeons;
+    public bool? DisableRaids;
 
     public bool? QueryEngineEnabled;
     public bool? QueryEngineAlwaysReturnArray;
@@ -133,6 +135,18 @@ public class PlayerSettings
             wasUpdated = true;
         }
 
+        if (Instance.DisableDungeons == null)
+        {
+            Instance.DisableDungeons = false;
+            wasUpdated = true;
+        }
+
+        if (Instance.DisableRaids == null)
+        {
+            Instance.DisableRaids = false;
+            wasUpdated = true;
+        }
+
         if (Instance.RavenBotServer == null)
         {
             Instance.RavenBotServer = "ravenbot.ravenfall.stream:4041";
@@ -227,6 +241,9 @@ public class PlayerSettings
             Serialize(sw, "queryEngineEnabled", obj.QueryEngineEnabled);
             Serialize(sw, "queryEngineAlwaysReturnArray", obj.QueryEngineAlwaysReturnArray);
             Serialize(sw, "physicsEnabled", obj.PhysicsEnabled);
+
+            Serialize(sw, "disableRaids", obj.DisableRaids);
+            Serialize(sw, "disableDungeons", obj.DisableDungeons);
 
             // Serialize all nullable float properties
             Serialize(sw, "dayNightTime", obj.DayNightTime);

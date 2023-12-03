@@ -218,23 +218,54 @@ public static class TargetExtensions
         // since healers are now attacked by enemies in dungeons.
         // We have to always focus on enemies that are attacking a healer.
 
-        return
-            enemies
-            .Where(x => !x.IsUnreachable && !x.Stats.IsDead && (filter == null || filter(x)))
-            .OrderBy(x =>
+        EnemyController target = null;
+        float smallestDistance = float.MaxValue;
+
+        for (var i = 0; i < enemies.Length; ++i)
+        {
+            var enemy = enemies[i];
+            if (enemy.IsUnreachable || enemy.Stats.IsDead)
             {
-                var distance = Vector3.Distance(x.Position, player.Movement.Position);
+                continue;
+            }
 
-                // We want it to sort by distance still, but to ensure we can protect our players
-                // we will add distance+constant so that healers are always prioritized.
-                if (x.HasValidTarget && x.TargetPlayer.TrainingHealing)
-                {
-                    return distance;
-                }
+            if (filter != null && !filter(enemy))
+            {
+                continue;
+            }
 
-                return distance + 100f;
-            })
-            .FirstOrDefault();
+            var distance = Vector3.Distance(enemy.Position, player.Movement.Position);
+
+            // we gotta protect our healers first hand. so we add 20 distance to enemies not targeting healers
+            if (!enemy.HasValidTarget || !enemy.TargetPlayer.TrainingHealing)
+            {
+                distance += 20;
+            }
+            if (distance < smallestDistance)
+            {
+                target = enemy;
+                smallestDistance = distance;
+            }
+        }
+
+        return target;
+
+        //enemies
+        //.Where(x => !x.IsUnreachable && !x.Stats.IsDead && (filter == null || filter(x)))
+        //.OrderBy(x =>
+        //{
+        //    var distance = Vector3.Distance(x.Position, player.Movement.Position);
+
+        //    // We want it to sort by distance still, but to ensure we can protect our players
+        //    // we will add distance+constant so that healers are always prioritized.
+        //    if (x.HasValidTarget && x.TargetPlayer.TrainingHealing)
+        //    {
+        //        return distance;
+        //    }
+
+        //    return distance + 100f;
+        //})
+        //.FirstOrDefault();
     }
 }
 

@@ -554,7 +554,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     public bool IsUnreachable { get; set; }
 
     public EnemySpawnPoint SpawnPoint;
-    private Transform _transform;
+    [NonSerialized] public Transform _transform;
 
     public void ClearAttackers()
     {

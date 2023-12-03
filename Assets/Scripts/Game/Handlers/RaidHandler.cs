@@ -117,7 +117,10 @@ public class RaidHandler : MonoBehaviour
         }
         else
         {
-            player.SetDestination(target.position);
+            if (!player.SetDestination(target.position))
+            {
+                player.Movement.DisableLocalAvoidance();
+            }
         }
     }
 
@@ -166,6 +169,8 @@ public class RaidHandler : MonoBehaviour
             previousIsland = player.Island;
             player.teleportHandler.Teleport(boss.Island.SpawnPosition);
         }
+
+        player.Movement.AdjustPlayerPositionToNavmesh();
     }
 
     private IEnumerator WaitForStart()

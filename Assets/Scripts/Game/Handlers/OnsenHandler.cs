@@ -69,6 +69,13 @@ public class OnsenHandler : MonoBehaviour
             player.GameManager.RavenBot.SendReply(player, Localization.MSG_ONSEN_FULL);
             return;
         }
+        
+        var target = spot.Target;
+
+        player.Movement.Lock();
+        player.teleportHandler.Teleport(target.position, false);
+        player._transform.SetParent(target);
+        player._transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
 
         // used for determing which animation to use
         this.positionType = spot.Type;
@@ -92,15 +99,9 @@ public class OnsenHandler : MonoBehaviour
                 break;
         }
 
-        player.Movement.Lock();
-        InOnsen = true;
-
-        var target = spot.Target;
-        player.teleportHandler.Teleport(target.position, false);
-        player.transform.SetParent(target);
-        player.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         this.onsenParentID = target.GetInstanceID();
 
+        InOnsen = true;
         onsen.UpdateDetailsLabel();
     }
 

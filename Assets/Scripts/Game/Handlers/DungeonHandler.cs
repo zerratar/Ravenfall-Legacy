@@ -182,6 +182,8 @@ public class DungeonHandler
             player.Island.RemovePlayer(player);
         }
 
+        //player.Movement.DisableLocalAvoidance();
+
         waitForDungeon = 0;
         InDungeon = true;
 
@@ -235,10 +237,15 @@ public class DungeonHandler
 
         this.player.Island = null;
         this.player.taskTarget = null;
+
+        player.Movement.AdjustPlayerPositionToNavmesh();
     }
 
     public void OnExit()
     {
+        player.Movement.EnableLocalAvoidance();
+
+
         if (!InDungeon)
             return;
 
@@ -253,6 +260,7 @@ public class DungeonHandler
         else
         {
             player.teleportHandler.Teleport(previousPosition);
+            player.Movement.AdjustPlayerPositionToNavmesh();
         }
 
         if (previousTask != TaskType.None)
@@ -333,7 +341,11 @@ public class DungeonHandler
         }
         else
         {
-            player.SetDestination(healTarget.Position);
+            if (!player.SetDestination(healTarget.Position))
+            {
+                player.Movement.DisableLocalAvoidance();
+            }
+
             healTarget = null;
         }
     }
@@ -347,7 +359,9 @@ public class DungeonHandler
             return;
         }
 
-        var distance = Vector3.Distance(player.transform.position, enemyTarget.transform.position);
+        var targetEnemyPosition = enemyTarget._transform.position;
+
+        var distance = Vector3.Distance(player._transform.position, targetEnemyPosition);
         if (distance <= range)
         {
             if (!player.IsReadyForAction)
@@ -357,26 +371,33 @@ public class DungeonHandler
             }
 
             // Aggro more enemies that are close to the one being attacked if it doesnt have an attacker.
-            var enemies = dungeon.GetEnemiesNear(enemyTarget.transform.position);
-            if (enemies != null)
-            {
-                foreach (var enemy in enemies)
-                {
-                    if (enemy.Attackers.Count > 0)
-                    {
-                        continue;
-                    }
 
-                    enemy.Attack(this.player);
+            var enemies = dungeon.GetEnemies();
+            for (var i = 0; i < enemies.Count; ++i)
+            {
+                var enemy = enemies[i];
+                if (enemy.Stats.IsDead || enemy.Attackers.Count > 0 || enemy == enemyTarget)
+                {
+                    continue;
                 }
+
+                if (Vector3.Distance(targetEnemyPosition, enemy._transform.position) > enemy.AggroRange)
+                {
+                    continue;
+                }
+
+                enemy.Attack(this.player);
             }
+
 
             player.Attack(enemyTarget);
         }
         else
         {
-            if (!player.SetDestination(enemyTarget.transform.position))
+            if (!player.SetDestination(targetEnemyPosition))
             {
+                player.Movement.DisableLocalAvoidance();
+
                 // unreachable enemy in dungeon
                 enemyTarget.IsUnreachable = true;
                 enemyTarget.TakeDamage(player, enemyTarget.Stats.Health.Level);

@@ -264,7 +264,10 @@ public class EnemyMovementController : MonoBehaviour
             deathAnimationLength = 0f;
         }
 
-        StartCoroutine(Hide());
+        if (this.isActiveAndEnabled)
+        {
+            StartCoroutine(Hide());
+        }
     }
 
     private IEnumerator Hide()

@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.AI;
@@ -131,14 +132,14 @@ public class PlayerMovementController : MonoBehaviour
         IdleTime = 0;
     }
 
-    internal bool SetDestination(Vector3 pos)
+    internal bool SetDestination(Vector3 pos, bool adjustToNavMesh)
     {
         if (Destination == pos && navMeshAgent.destination == pos)
         {
             return true;
         }
 
-        Unlock();
+        Unlock(adjustToNavMesh);
 
         if (!navMeshAgent.isActiveAndEnabled || !navMeshAgent.isOnNavMesh)
         {
@@ -196,12 +197,12 @@ public class PlayerMovementController : MonoBehaviour
 
     public void Unlock(bool adjustToNavmesh = false)
     {
-        navMeshAgent.enabled = true;
         if (adjustToNavmesh && !navMeshAgent.isOnNavMesh)
         {
             AdjustPlayerPositionToNavmesh();
         }
 
+        navMeshAgent.enabled = true;
         movementLockState = MovementLockState.Unlocked;
     }
 
@@ -231,6 +232,7 @@ public class PlayerMovementController : MonoBehaviour
 
     public void AdjustPlayerPositionToNavmesh()
     {
+        if (navMeshAgent.isOnNavMesh) return;
         NavMeshHit closestHit;
         if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMesh.AllAreas))
         {
@@ -245,10 +247,20 @@ public class PlayerMovementController : MonoBehaviour
         }
     }
 
-    internal void SetAvoidancePriority(int v)
+    public void SetAvoidancePriority(int v)
     {
         if (navMeshAgent)
             navMeshAgent.avoidancePriority = v;
+    }
+
+    public void EnableLocalAvoidance()
+    {
+        navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+    }
+
+    public void DisableLocalAvoidance()
+    {
+        navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
     }
 }
 

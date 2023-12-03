@@ -23,6 +23,12 @@ public class RaidForce : ChatBotCommandHandler
                 return;
             }
 
+            if (PlayerSettings.Instance.DisableRaids.GetValueOrDefault())
+            {
+                client.SendReply(gm, "Raids has been disabled in this stream by the broadcaster.");
+                return;
+            }
+
             if (Game.Raid.IsBusy)
             {
                 client.SendReply(gm, "Someone just used a raid scroll.");

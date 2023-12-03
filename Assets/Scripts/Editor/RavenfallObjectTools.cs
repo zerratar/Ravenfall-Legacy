@@ -285,6 +285,17 @@ public class RavenfallObjectTools
         PlacementUtility.PlaceOnGround<CraftingStation>();
         PlacementUtility.PlaceOnGround<FarmController>();
         PlacementUtility.PlaceOnGround<TownHouseSlot>();
+        AdjustPlacementsOnIslandSpawnpoints();
+    }
+
+    [MenuItem("Ravenfall/Objects/Adjust Placements/Spawnpoints", priority = 10)]
+    public static void AdjustPlacementsOnIslandSpawnpoints()
+    {
+        var islands = GameObject.FindObjectsByType<IslandController>(FindObjectsSortMode.None);
+        foreach (var island in islands)
+        {
+            PlacementUtility.PlaceOnGround(island.SpawnPositionTransform);
+        }
     }
 
     [MenuItem("Ravenfall/Objects/Adjust Placements/Trees", priority = 10)]

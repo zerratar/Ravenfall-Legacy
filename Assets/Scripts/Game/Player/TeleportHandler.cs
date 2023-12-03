@@ -34,7 +34,7 @@ public class TeleportHandler : MonoBehaviour
 
     public void Teleport(IslandController targetIsland, bool silent = false)
     {
-        Teleport(targetIsland.SpawnPosition);
+        Teleport(targetIsland.SpawnPosition, true);
         // Force player to start "training" the same skill they were training.
         // since this will make them find a target and not randomly "fish" or "mining" in the open.
         var task = player.GetTask();

@@ -350,6 +350,11 @@ public class RaidManager : MonoBehaviour, IEvent
     // Update is called once per frame
     private void Update()
     {
+        if (PlayerSettings.Instance.DisableRaids.GetValueOrDefault())
+        {
+            return;
+        }
+
         ProcessRewardQueue();
 
         var playerCount = playerManager.GetPlayerCount(true);

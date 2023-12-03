@@ -60,7 +60,7 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     [SerializeField] private GameObject[] availableMonsterMeshes;
 
-    private Transform _transform;
+    [NonSerialized] public Transform _transform;
     private StatsModifiers playerStatsModifiers = new StatsModifiers();
     private ConcurrentDictionary<StatusEffectType, StatusEffect> statusEffects = new ConcurrentDictionary<StatusEffectType, StatusEffect>();
 
@@ -2632,6 +2632,10 @@ public class PlayerController : MonoBehaviour, IAttackable
                         {
                             // path is invalid, this target is therefor invalid.
                             Chunk.SetTargetInvalid(taskTarget);
+
+                            // turn off local avoidance as well.
+                            Movement.DisableLocalAvoidance();
+
                             taskTarget = null;
                         }
                     }
@@ -2701,10 +2705,10 @@ public class PlayerController : MonoBehaviour, IAttackable
         transform.rotation = Quaternion.Euler(rotAfter.x, rotBefore.y, rotAfter.z);
     }
 
-    public bool SetDestination(Vector3 position)
+    public bool SetDestination(Vector3 position, bool adjustToNavmesh = false)
     {
         InCombat = duelHandler.InDuel || attackTarget;
-        return Movement.SetDestination(position);
+        return Movement.SetDestination(position, adjustToNavmesh);
     }
 
     public void SetPosition(Vector3 position, bool adjustToNavmesh = true)

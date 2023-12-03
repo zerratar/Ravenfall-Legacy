@@ -2172,7 +2172,11 @@ public class GameManager : MonoBehaviour, IGameManager
     void TeleportBot(PlayerController player, IslandController island)
     {
         player.teleportHandler.Teleport(island.SpawnPosition);
-        player.Bot.LastTeleport = Time.time;
+        if (player.IsBot)
+        {
+            player.Bot.LastTeleport = Time.time;
+        }
+
         player.ClearTarget();
         if (!string.IsNullOrEmpty(player.CurrentTaskName))
             player.SetTask(player.CurrentTaskName, player.taskArgument, true);

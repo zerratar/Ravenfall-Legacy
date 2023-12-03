@@ -21,6 +21,13 @@ public class DungeonForce : ChatBotCommandHandler
                 return;
             }
 
+
+            if (PlayerSettings.Instance.DisableDungeons.GetValueOrDefault())
+            {
+                client.SendReply(gm, "Dungeons has been disabled in this stream by the broadcaster.");
+                return;
+            }
+
             if (Game.Dungeons.IsBusy)
             {
                 client.SendReply(gm, "Someone just used a dungeon scroll.");

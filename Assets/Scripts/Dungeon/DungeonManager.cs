@@ -90,9 +90,9 @@ public class DungeonManager : MonoBehaviour, IEvent
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsAlive(EnemyController x)
+    public static bool IsAlive(EnemyController x)
     {
-        return x != null && x.gameObject != null && !x.Stats.IsDead && x.Stats.Health.CurrentValue > 0;
+        return !x.Stats.IsDead && x.Stats.Health.CurrentValue > 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,6 +118,13 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         return dungeonEnemyPool.HasLeasedEnemies ? dungeonEnemyPool.GetLeasedEnemies().AsList(IsAlive) : new List<EnemyController>();
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public IReadOnlyList<EnemyController> GetEnemies()
+    {
+        return dungeonEnemyPool.HasLeasedEnemies ? dungeonEnemyPool.GetLeasedEnemies() : new List<EnemyController>();
+    }
+
     internal EnemyController GetNextEnemyTarget(PlayerController player)
     {
         var room = Dungeon.Room;
@@ -205,6 +212,11 @@ public class DungeonManager : MonoBehaviour, IEvent
     // Update is called once per frame
     private void Update()
     {
+        if (PlayerSettings.Instance.DisableDungeons.GetValueOrDefault())
+        {            
+            return;
+        }
+
         ProcessRewardQueue();
         UpdateDungeonTimer();
         UpdateDungeonStartTimer();

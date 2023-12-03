@@ -8,37 +8,12 @@ namespace RavenNest.SDK
     public class BotPlayerGenerator
     {
         public static BotPlayerGenerator Instance;
-        private Dictionary<Island, int> islandSkillMin;
-        private Dictionary<Island, int> islandSkillMax;
         private GameManager gameManager;
 
         public BotPlayerGenerator(GameManager gameManager)
         {
             Instance = this;
-
-            islandSkillMin = new Dictionary<Island, int>();
-            islandSkillMax = new Dictionary<Island, int>();
-
-            islandSkillMin[Island.Home] = 1;
-            islandSkillMax[Island.Home] = 50;
-
-            islandSkillMin[Island.Away] = 50;
-            islandSkillMax[Island.Away] = 100;
-
-            islandSkillMin[Island.Ironhill] = 100;
-            islandSkillMax[Island.Ironhill] = 200;
-
-            islandSkillMin[Island.Kyo] = 200;
-            islandSkillMax[Island.Kyo] = 300;
-
-            islandSkillMin[Island.Heim] = 300;
-            islandSkillMax[Island.Heim] = 500;
-
-            islandSkillMin[Island.Atria] = 500;
-            islandSkillMax[Island.Atria] = 700;
-
-            islandSkillMin[Island.Eldara] = 700;
-            islandSkillMax[Island.Eldara] = 1000;
+       
             this.gameManager = gameManager;
         }
 
@@ -220,8 +195,8 @@ namespace RavenNest.SDK
             {
                 case SpawnBotLevelStrategy.Max:
                     targetIsland = finalIsland;
-                    min = islandSkillMin[targetIsland];
-                    max = islandSkillMin[targetIsland];
+                    min = 999;
+                    max = 999;
                     break;
 
                 case SpawnBotLevelStrategy.Min:
@@ -231,8 +206,8 @@ namespace RavenNest.SDK
 
                 case SpawnBotLevelStrategy.Random:
                     targetIsland = (Island)UnityEngine.Random.Range(1, ((int)finalIsland) + 1);
-                    min = islandSkillMin[targetIsland];
-                    max = islandSkillMin[targetIsland];
+                    min = IslandManager.IslandLevelRangeMin[targetIsland];
+                    max = IslandManager.IslandMaxEffect[targetIsland];
                     break;
             }
 

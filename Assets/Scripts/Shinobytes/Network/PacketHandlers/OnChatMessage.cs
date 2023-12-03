@@ -17,6 +17,11 @@ public class OnChatMessage : ChatBotCommandHandler<string>
     {
         var player = PlayerManager.GetPlayer(gm.Sender);
         // return silently, no need to do anything with this message.
+        if (string.IsNullOrEmpty(data) || data.StartsWith("!"))
+        {
+            return;
+        }
+
         if (!player)
         {
             return;
@@ -35,7 +40,7 @@ public class OnChatMessage : ChatBotCommandHandler<string>
 
         // a bit slow, but lets go with this for now.
         var petController = equippedPet.Controller.GetComponent<PetController>();
-        if (!petController.ReactToChatMessage)
+        if (!petController || !petController.ReactToChatMessage)
         {
             return;
         }
