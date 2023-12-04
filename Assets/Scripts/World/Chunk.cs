@@ -102,32 +102,36 @@ public class Chunk : MonoBehaviour
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual double CalculateExpFactor(TaskType taskType, PlayerController playerController)
+    public virtual double CalculateExpFactor(TaskType taskType, PlayerController player)
     {
         try
         {
 
             // TODO: less dy´namic, more static, this is not reliable enough..
 
-            if (playerController == null || !playerController) return 0;
+            if (player == null || !player) return 0;
             var maxFactor = GameMath.Exp.MaxExpFactorFromIsland;
 
-            var s = playerController.Stats;
+            var s = player.Stats;
 
             var minLv = IslandManager.IslandLevelRangeMin[this.Island.Island];
             var maxLv = IslandManager.IslandLevelRangeMax[this.Island.Island];
             var efLv = IslandManager.IslandMaxEffect[this.Island.Island];
 
-            if (RequiredCombatLevel > 1 && s.CombatLevel < minLv || s.CombatLevel > efLv)
+            if (RequiredCombatLevel > 1 && (s.CombatLevel < minLv || s.CombatLevel > maxLv))
             {
+                player.IsGainingExp = false;
                 return 0;
             }
 
-            var skillLevel = playerController.GetSkill(taskType);
-            if (RequiredSkilllevel > 1 && skillLevel.Level < minLv || skillLevel.Level > efLv)
+            var skillLevel = player.GetSkill(taskType);
+            if (skillLevel != null && RequiredSkilllevel > 1 && (skillLevel.Level < minLv || skillLevel.Level > maxLv))
             {
+                player.IsGainingExp = false;
                 return 0;
             }
+
+            player.IsGainingExp = true;
 
             // TODO: rewrite to use minLv, maxLv and efLv instead.
 
@@ -153,34 +157,34 @@ public class Chunk : MonoBehaviour
             {
                 case TaskType.Fighting:
                     {
-                        var skill = playerController.GetActiveSkillStat();
+                        var skill = player.GetActiveSkillStat();
 
-                        if (skill == playerController.Stats.Health)
+                        if (skill == player.Stats.Health)
                         {
                             // training all. We can't use combat level. Use average of atk,def,str?
-                            var st = playerController.Stats;
+                            var st = player.Stats;
                             var lv = (st.Strength.Level + st.Defense.Level + st.Attack.Level) / 3;
-                            return CalculateExpFactor(System.Math.Min(lv, secondary), requirement, nextRequirement);
+                            return CalculateExpFactor(player, Math.Min(lv, secondary), requirement, nextRequirement);
                         }
 
-                        return CalculateExpFactor(System.Math.Min(skill.Level, secondary), requirement, nextRequirement);
+                        return CalculateExpFactor(player, Math.Min(skill.Level, secondary), requirement, nextRequirement);
                     }
                 case TaskType.Mining:
-                    return CalculateExpFactor(System.Math.Min(s.Mining.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Mining.Level, secondary), requirement, nextRequirement);
                 case TaskType.Fishing:
-                    return CalculateExpFactor(System.Math.Min(s.Fishing.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Fishing.Level, secondary), requirement, nextRequirement);
                 case TaskType.Woodcutting:
-                    return CalculateExpFactor(System.Math.Min(s.Woodcutting.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Woodcutting.Level, secondary), requirement, nextRequirement);
                 case TaskType.Crafting:
-                    return CalculateExpFactor(System.Math.Min(s.Crafting.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Crafting.Level, secondary), requirement, nextRequirement);
                 case TaskType.Farming:
-                    return CalculateExpFactor(System.Math.Min(s.Farming.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Farming.Level, secondary), requirement, nextRequirement);
                 case TaskType.Cooking:
-                    return CalculateExpFactor(System.Math.Min(s.Cooking.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Cooking.Level, secondary), requirement, nextRequirement);
                 case TaskType.Gathering:
-                    return CalculateExpFactor(System.Math.Min(s.Gathering.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Gathering.Level, secondary), requirement, nextRequirement);
                 case TaskType.Alchemy:
-                    return CalculateExpFactor(System.Math.Min(s.Alchemy.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Alchemy.Level, secondary), requirement, nextRequirement);
             }
 
             return 1;
@@ -188,36 +192,48 @@ public class Chunk : MonoBehaviour
         catch (System.Exception exc)
         {
             Shinobytes.Debug.LogError("Error Calculating Exp Factor: " + exc);
+            player.IsGainingExp = false;
             return 0;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private double CalculateExpFactor(double level, double requirement, double nextRequirement)
+    private double CalculateExpFactor(PlayerController player, double level, double requirement, double nextRequirement)
     {
-        if (nextRequirement <= requirement) return 1d;
-
-        // if the current level is more than 2x of the required next place. You don't receive any more exp.
-        //var upperBounds = nextRequirement * 2.0;
-        //if (level >= upperBounds) return 0;
-
-        var delta = nextRequirement - requirement;
-        var midPoint = delta / 2f;
-        if (level <= (nextRequirement + midPoint))
-            return 1d;
-
-        var upperBounds = requirement + (delta * 2);
-        if (level >= upperBounds)
-            return 0;
-
-        if (level > nextRequirement)
+        var result = 1d;
+        try
         {
-            var min = level - nextRequirement;
-            var max = upperBounds - nextRequirement;
-            return GameMath.Lerp(1, 0, min / max);
-        }
+            if (nextRequirement <= requirement) return result;
 
-        return 1;
+            // if the current level is more than 2x of the required next place. You don't receive any more exp.
+            //var upperBounds = nextRequirement * 2.0;
+            //if (level >= upperBounds) return 0;
+
+            var delta = nextRequirement - requirement;
+            var midPoint = delta / 2f;
+            if (level <= (nextRequirement + midPoint))
+                return result;
+
+            var upperBounds = requirement + (delta * 2);
+            if (level >= upperBounds)
+            {
+                result = 0;
+                return result;
+            }
+
+            if (level > nextRequirement)
+            {
+                var min = level - nextRequirement;
+                var max = upperBounds - nextRequirement;
+                return result = GameMath.Lerp(1, 0, min / max);
+            }
+
+            return result;
+        }
+        finally
+        {
+            player.IsGainingExp = result > 0;
+        }
     }
 
     private ChunkTask GetChunkTask(TaskType type) // ArenaController arena,

@@ -22,7 +22,7 @@ public class TeleportToDocks : MonoBehaviour
         if (player)
         {
             var island = GetComponentInParent<IslandController>();
-            player.teleportHandler.Teleport(island.DockingArea.DockPosition, true);
+            player.teleportHandler.Teleport(island.DockingArea.DockPosition);
         }
     }
 }

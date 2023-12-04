@@ -72,10 +72,19 @@ public class OnsenHandler : MonoBehaviour
         
         var target = spot.Target;
 
+        player.taskTarget = null;
         player.Movement.Lock();
-        player.teleportHandler.Teleport(target.position, false);
+        // player.teleportHandler.Teleport(target.position);
         player._transform.SetParent(target);
         player._transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+        player.InCombat = false;
+        player.ClearAttackers();
+        player.Island = player.GameManager.Islands.FindPlayerIsland(player);
+        if (player.Island)
+        {
+            player.Island.AddPlayer(player);
+        }
 
         // used for determing which animation to use
         this.positionType = spot.Type;

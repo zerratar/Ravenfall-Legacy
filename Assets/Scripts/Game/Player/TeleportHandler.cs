@@ -19,7 +19,7 @@ public class TeleportHandler : MonoBehaviour
     {
         if (!ignoreParent)
         {
-            Teleport(position, adjustPlayerToNavmesh);
+            Teleport(position);
             return;
         }
 
@@ -34,7 +34,7 @@ public class TeleportHandler : MonoBehaviour
 
     public void Teleport(IslandController targetIsland, bool silent = false)
     {
-        Teleport(targetIsland.SpawnPosition, true);
+        Teleport(targetIsland.SpawnPosition);
         // Force player to start "training" the same skill they were training.
         // since this will make them find a target and not randomly "fish" or "mining" in the open.
         var task = player.GetTask();
@@ -44,7 +44,7 @@ public class TeleportHandler : MonoBehaviour
         }
     }
 
-    public void Teleport(Vector3 position, bool adjustPlayerToNavmesh = true)
+    public void Teleport(Vector3 position)
     {
         // check if player has been removed
         // could have been kicked. *Looks at Solunae*
@@ -66,19 +66,20 @@ public class TeleportHandler : MonoBehaviour
         player.taskTarget = null;
 
         player.Movement.Lock();
-        player.SetPosition(position, adjustPlayerToNavmesh);
+        player.SetPosition(position);
         //player.SetDestination(position);
 
 
         if (!hasParent && parent)
         {
-            player.transform.SetParent(parent);
+            player.transform.SetParent(parent, true);
             transform.localPosition = Vector3.zero;
         }
-        else
-        {
-            transform.position = position;
-        }
+        //else
+        //{
+        //    transform.position = position;
+        //}
+
         player.InCombat = false;
         player.ClearAttackers();
         player.Island = islandManager.FindPlayerIsland(player);

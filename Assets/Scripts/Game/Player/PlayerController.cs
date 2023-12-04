@@ -283,6 +283,8 @@ public class PlayerController : MonoBehaviour, IAttackable
     private bool componentsInitialized;
 
     private bool hasGameManager;
+    internal bool IsGainingExp;
+
     public ScheduledAction ScheduledAction => activeScheduledAction;
 
     public DateTime LastDungeonAutoJoinFailUtc { get; internal set; }
