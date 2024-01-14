@@ -11,7 +11,7 @@
         {
             this.Mode = Mode;
         }
-        public Ident? Name { get; set; }
+        public Ident Name { get; set; }
         public DataType? DataType { get; set; }
         public SqlExpression? DefaultExpr { get; set; }
         public ArgMode Mode { get; }

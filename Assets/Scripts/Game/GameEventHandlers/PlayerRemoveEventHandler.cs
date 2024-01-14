@@ -7,7 +7,8 @@ public class PlayerRemoveEventHandler : GameEventHandler<PlayerRemove>
         var player = gameManager.Players.GetPlayerById(data.CharacterId);
         if (!player)
         {
-            Shinobytes.Debug.LogWarning($"Received Player Remove ({data.UserId}) but the player is not in this game. Reason: " + data.Reason);
+            //Shinobytes.Debug.LogWarning($"Received Player Remove ({data.UserId}) but the player is not in this game. Reason: " + data.Reason);
+            // we get this message twice in some cases, so do not log.
             return;
         }
 

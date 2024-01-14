@@ -46,7 +46,7 @@ public class RaidHandler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!gameManager.Raid.Started || !gameManager.Raid.Boss)
+        if (!gameManager || !gameManager.Raid || !gameManager.Raid.Started || !gameManager.Raid.Boss)
         {
             return;
         }

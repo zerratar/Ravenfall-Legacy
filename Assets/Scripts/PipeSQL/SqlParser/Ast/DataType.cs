@@ -13,12 +13,12 @@ namespace SqlParser.Ast
         /// </summary>
         public abstract class CharacterLengthDataType : DataType
         {
-            public CharacterLengthDataType(CharacterLength? CharacterLength)
+            public CharacterLengthDataType(CharacterLength CharacterLength)
             {
                 this.CharacterLength = CharacterLength;
             }
 
-            public CharacterLength? CharacterLength { get; set; }
+            public CharacterLength CharacterLength { get; set; }
 
             protected void FormatCharacterStringType(SqlTextWriter writer, string sqlType, ulong? length)
             {
@@ -63,12 +63,12 @@ namespace SqlParser.Ast
         /// <param name="ExactNumberInfo"></param>
         public abstract class ExactNumberDataType : DataType
         {
-            public ExactNumberDataType(ExactNumberInfo? ExactNumberInfo)
+            public ExactNumberDataType(ExactNumberInfo ExactNumberInfo)
             {
                 this.ExactNumberInfo = ExactNumberInfo;
             }
 
-            public ExactNumberInfo? ExactNumberInfo { get; set; }
+            public ExactNumberInfo ExactNumberInfo { get; set; }
         }
         /// <summary>
         /// Data type with time zone information
@@ -215,7 +215,7 @@ namespace SqlParser.Ast
         /// </summary>
         public class Char : CharacterLengthDataType
         {
-            public Char(CharacterLength? CharacterLength = null) : base(CharacterLength) { }
+            public Char(CharacterLength CharacterLength = null) : base(CharacterLength) { }
             public override void ToSql(SqlTextWriter writer)
             {
                 FormatCharacterStringType(writer, "CHAR", CharacterLength?.Length);
@@ -226,7 +226,7 @@ namespace SqlParser.Ast
         /// </summary>
         public class Character : CharacterLengthDataType
         {
-            public Character(CharacterLength? CharacterLength = null) : base(CharacterLength) { }
+            public Character(CharacterLength CharacterLength = null) : base(CharacterLength) { }
             public override void ToSql(SqlTextWriter writer)
             {
                 FormatCharacterStringType(writer, "CHARACTER", CharacterLength?.Length);
@@ -251,7 +251,7 @@ namespace SqlParser.Ast
         /// </summary>
         public class CharacterVarying : CharacterLengthDataType
         {
-            public CharacterVarying(CharacterLength? CharacterLength = null) : base(CharacterLength) { }
+            public CharacterVarying(CharacterLength CharacterLength = null) : base(CharacterLength) { }
             public override void ToSql(SqlTextWriter writer)
             {
                 if (CharacterLength != null)
@@ -279,7 +279,7 @@ namespace SqlParser.Ast
         /// </summary>
         public class CharVarying : CharacterLengthDataType
         {
-            public CharVarying(CharacterLength? CharacterLength = null) : base(CharacterLength) { }
+            public CharVarying(CharacterLength CharacterLength = null) : base(CharacterLength) { }
             public override void ToSql(SqlTextWriter writer)
             {
                 if (CharacterLength != null)
@@ -308,14 +308,14 @@ namespace SqlParser.Ast
         /// </summary>
         public class Custom : DataType, IElement
         {
-            public Custom(ObjectName Name, Sequence<string>? Values = null)
+            public Custom(ObjectName Name, Sequence<string> Values = null)
             {
                 this.Name = Name;
                 this.Values = Values;
             }
 
             public ObjectName Name { get; set; }
-            public Sequence<string>? Values { get; set; }
+            public Sequence<string> Values { get; set; }
 
             public override void ToSql(SqlTextWriter writer)
             {
@@ -745,7 +745,7 @@ namespace SqlParser.Ast
         /// </summary>
         public class Varchar : CharacterLengthDataType
         {
-            public Varchar(CharacterLength? CharacterLength = null) : base(CharacterLength) { }
+            public Varchar(CharacterLength CharacterLength = null) : base(CharacterLength) { }
 
             public override void ToSql(SqlTextWriter writer)
             {

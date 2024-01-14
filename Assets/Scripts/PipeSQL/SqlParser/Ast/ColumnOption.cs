@@ -94,7 +94,7 @@ namespace SqlParser.Ast
         /// <param name="OnUpdateAction">On DoUpdate Action</param>
         public class ForeignKey : ColumnOption, IElement
         {
-            public ForeignKey(ObjectName Name, Sequence<Ident>? ReferredColumns = null,
+            public ForeignKey(ObjectName Name, Sequence<Ident> ReferredColumns = null,
                 ReferentialAction OnDeleteAction = ReferentialAction.None, ReferentialAction OnUpdateAction = ReferentialAction.None)
             {
                 this.Name = Name;
@@ -239,7 +239,7 @@ namespace SqlParser.Ast
         /// <param name="GenerationExpr">Generation expression</param>
         public class Generated : ColumnOption, IElement
         {
-            public Generated(GeneratedAs GeneratedAs, Sequence<SequenceOptions>? SequenceOptions = null, SqlExpression? GenerationExpr = null)
+            public Generated(GeneratedAs GeneratedAs, Sequence<SequenceOptions> SequenceOptions = null, SqlExpression? GenerationExpr = null)
             {
                 this.GeneratedAs = GeneratedAs;
                 this.SequenceOptions = SequenceOptions;

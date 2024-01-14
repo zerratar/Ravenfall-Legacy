@@ -6,8 +6,8 @@ namespace SqlParser.Ast
 	/// </summary>
 	public class HiveFormat : IElement
 	{
-	    public HiveRowFormat? RowFormat { get; internal set; }
-	    public HiveIOFormat? Storage { get; internal set; }
+	    public HiveRowFormat RowFormat { get; internal set; }
+	    public HiveIOFormat Storage { get; internal set; }
 	    public string Location { get; internal set; }
 	}
 	/// <summary>
@@ -56,8 +56,8 @@ namespace SqlParser.Ast
 	    /// </summary>
 	    public class Clustered : HiveDistributionStyle
 	    {
-	        public Sequence<Ident>? Columns { get; set; }
-	        public Sequence<ColumnDef>? SortedBy { get; set; }
+	        public Sequence<Ident> Columns { get; set; }
+	        public Sequence<ColumnDef> SortedBy { get; set; }
 	        public int NumBuckets { get; set; }
 	    }
 	    /// <summary>

@@ -167,7 +167,7 @@ public class ToggleTMProTypeWindow : OdinEditorWindow
         var horAlign = old.horizontalAlignment;
         var vertAlign = old.verticalAlignment;
 
-        var wrap = old.enableWordWrapping;
+        var wrap = old.textWrappingMode;
 
         GameObject.DestroyImmediate(old);
         GameObject.DestroyImmediate(meshRenderer);
@@ -182,7 +182,7 @@ public class ToggleTMProTypeWindow : OdinEditorWindow
         newText.alignment = alignment;
         newText.horizontalAlignment = horAlign;
         newText.verticalAlignment = vertAlign;
-        newText.enableWordWrapping = wrap;
+        newText.textWrappingMode = wrap;
 
         //AddToComponents<TMPro.TextMeshPro, CanvasRenderer>(Source);
         //ReplaceComponents<TMPro.TextMeshPro, TMPro.TextMeshProUGUI>(Source, true, "renderer", "mesh", "meshfilter", "name", "tag", "layer");

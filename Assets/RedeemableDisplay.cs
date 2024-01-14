@@ -19,10 +19,11 @@ public class RedeemableDisplay : MonoBehaviour
             GameObject.DestroyImmediate(c.gameObject);
         }
 
+        cost.gameObject.SetActive(false);
         cost.text = "";
     }
 
-    public void SetRedeemableItem(Item item, RavenNest.Models.RedeemableItem details)
+    public void SetRedeemableItem(Item item, RavenNest.Models.RedeemableItem details, float maxRedeemableHeight = 2f)
     {
         if (displayPosition.childCount > 0)
         {
@@ -35,7 +36,35 @@ public class RedeemableDisplay : MonoBehaviour
         var obj = Instantiate(itemObj);
         obj.transform.SetParent(displayPosition, false);
         obj.transform.localRotation = Quaternion.identity;
-        cost.text = string.Format("<size=12>{0}\n<color=#880088><size=10>Costs {1} Tokens", item.Name, details.Cost);
+
+        var renderer = obj.GetComponentInChildren<Renderer>();
+        if (renderer && renderer.bounds.size.y > maxRedeemableHeight)
+        {
+            // scale so we fit the max redeemable height
+            var currentScale = obj.transform.localScale;
+            var scale = maxRedeemableHeight / renderer.bounds.size.y;
+            var newScale = new Vector3(scale * currentScale.x, scale * currentScale.y, scale * currentScale.z);
+            obj.transform.localScale = newScale;
+        }
+
+        cost.text = string.Format("<size=12>{0}\n<color=#FF00FF><size=10>Costs {1} Tokens", item.Name, details.Cost);
+        cost.gameObject.SetActive(true);
+
+        // make sure the position of this object is center of the cost
+        var targetPosition = cost.bounds.center + cost.rectTransform.position;
+
+        // we have to ensure all individual objects maintain their position so they dont fly around.
+        var display_pos = display.position;
+        var displayPosition_pos = displayPosition.position;
+        var cost_pos = cost.rectTransform.position;
+
+        // set the new position of this object to targetPosition
+        this.transform.position = targetPosition;
+
+        // reset the position of all the other objects
+        display.position = display_pos;
+        displayPosition.position = displayPosition_pos;
+        cost.rectTransform.position = cost_pos;
     }
 
     [Button("Create Redeemable Spot")]

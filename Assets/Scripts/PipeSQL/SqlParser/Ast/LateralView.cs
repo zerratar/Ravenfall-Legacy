@@ -14,7 +14,7 @@ namespace SqlParser.Ast
 
         [Visit(1)]
         public ObjectName? LateralViewName { get; set; }
-        public Sequence<Ident?>? LateralColAlias { get; set; }
+        public Sequence<Ident?> LateralColAlias { get; set; }
         public bool Outer { get; set; }
         [Visit(0)] public SqlExpression Expression { get; }
 

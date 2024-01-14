@@ -34,6 +34,7 @@ public class GameInventoryItem
     public bool IsEquippableType =>
         Category == ItemCategory.Weapon ||
         Category == ItemCategory.Armor ||
+        Category == ItemCategory.Cosmetic ||
         Category == ItemCategory.Pet ||
         Category == ItemCategory.Skin ||
         Category == ItemCategory.Ring ||
@@ -95,6 +96,7 @@ public class Inventory : MonoBehaviour
     private GameManager gameManager;
     private GameInventoryItem equippedMeleeWeapon;
     private GameInventoryItem lastAddedItem;
+    private ItemManager itemManager;
     private readonly object mutex = new object();
 
     private void Awake()
@@ -102,6 +104,16 @@ public class Inventory : MonoBehaviour
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         player = GetComponent<PlayerController>();
         equipment = GetComponent<PlayerEquipment>();
+
+        if (gameManager)
+        {
+            itemManager = gameManager.Items;
+        }
+
+        if (!itemManager)
+        {
+            itemManager = FindAnyObjectByType<ItemManager>();
+        }
     }
 
     public IReadOnlyList<GameInventoryItem> Equipped => equipped;
@@ -192,7 +204,7 @@ public class Inventory : MonoBehaviour
         lock (mutex)
         {
             backpack.Clear();
-            var itemManager = gameManager.Items;
+            
             for (int i = 0; i < inventoryItems.Count; i++)
             {
                 InventoryItem item = inventoryItems[i];
@@ -236,7 +248,7 @@ public class Inventory : MonoBehaviour
 
             foreach (var s in scrolls)
             {
-                var scrollItem = gameManager.Items.Get(s.ItemId);
+                var scrollItem = itemManager.Get(s.ItemId);
                 if (scrollItem != null)
                 {
                     AddToBackpack(scrollItem, s.Amount);
@@ -487,7 +499,7 @@ public class Inventory : MonoBehaviour
             Name = item.Name,
             Flags = item.Flags,
             Soulbound = item.Soulbound,
-        }, gameManager.Items.Get(item.ItemId));
+        }, itemManager.Get(item.ItemId));
 
         backpack.Add(instance);
         return instance;
@@ -509,7 +521,7 @@ public class Inventory : MonoBehaviour
                 return existing;
             }
 
-            var i = gameManager.Items.Get(item.ItemId);
+            var i = itemManager.Get(item.ItemId);
             var instance = new GameInventoryItem(this.player, new InventoryItem
             {
                 Amount = item.Value,
@@ -545,7 +557,7 @@ public class Inventory : MonoBehaviour
                 Name = item.Name,
                 Flags = item.Flags,
                 Soulbound = item.Soulbound,
-            }, gameManager.Items.Get(item.ItemId));
+            }, itemManager.Get(item.ItemId));
 
             backpack.Add(instance);
             return instance;
@@ -649,7 +661,7 @@ public class Inventory : MonoBehaviour
 
     internal void AddStreamerTokens(int amount)
     {
-        var token = gameManager.Items.GetStreamerToken();
+        var token = itemManager.GetStreamerToken();
         if (token != null)
         {
             AddToBackpack(token, amount);
@@ -707,7 +719,7 @@ public class Inventory : MonoBehaviour
 
     public bool Equip(ItemController i, bool updateAppearance = true)
     {
-        //var item = gameManager.Items.Get(i.Id);
+        //var item = itemManager.Get(i.Id);
         //return Equip(item, updateAppearance);
         return Equip(i.Definition, updateAppearance);
     }
@@ -925,14 +937,62 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    public ItemSlot GetEquipmentSlot(GameInventoryItem item)
+    {
+        return GetEquipmentSlot(item.Type);
+    }
+
+    public static ItemSlot GetEquipmentSlot(ItemType type)
+    {
+        switch (type)
+        {
+            case ItemType.Amulet: return ItemSlot.Amulet;
+            case ItemType.Ring: return ItemSlot.Ring;
+            case ItemType.Shield: return ItemSlot.Shield;
+            case ItemType.Hat: return ItemSlot.Head;
+            case ItemType.Mask: return ItemSlot.Head;
+            case ItemType.Helmet: return ItemSlot.Head;
+            case ItemType.HeadCovering: return ItemSlot.Head;
+            case ItemType.Chest: return ItemSlot.Chest;
+            case ItemType.Gloves: return ItemSlot.Gloves;
+            case ItemType.Leggings: return ItemSlot.Leggings;
+            case ItemType.Boots: return ItemSlot.Boots;
+            case ItemType.Pet: return ItemSlot.Pet;
+            case ItemType.OneHandedAxe: return ItemSlot.MeleeWeapon;
+            case ItemType.TwoHandedAxe: return ItemSlot.MeleeWeapon;
+            case ItemType.TwoHandedSpear: return ItemSlot.MeleeWeapon;
+            case ItemType.OneHandedSword: return ItemSlot.MeleeWeapon;
+            case ItemType.TwoHandedSword: return ItemSlot.MeleeWeapon;
+            case ItemType.TwoHandedStaff: return ItemSlot.MagicWeapon;
+            case ItemType.TwoHandedBow: return ItemSlot.RangedWeapon;
+        }
+
+        return ItemSlot.None;
+    }
+
+    public GameInventoryItem GetEquipmentBySlot(ItemSlot slot)
+    {
+        lock (mutex)
+        {
+            return equipped.FirstOrDefault(x => GetEquipmentSlot(x.Item.Type) == slot);
+        }
+    }
+
+    public GameInventoryItem GetEquipmentBySlot(RavenNest.Models.ItemType type)
+    {
+        lock (mutex)
+        {
+            var slot = GetEquipmentSlot(type);
+            return equipped.FirstOrDefault(x => GetEquipmentSlot(x.Item.Type) == slot);
+        }
+    }
+
     public GameInventoryItem GetEquipmentOfType(ItemCategory itemCategory, RavenNest.Models.ItemType type)
     {
         lock (mutex)
         {
             if (itemCategory == ItemCategory.Weapon && IsMeleeWeapon(type))
             {
-
-
                 return equipped.FirstOrDefault(IsMeleeWeapon);
             }
 
@@ -1035,15 +1095,21 @@ public class Inventory : MonoBehaviour
 
     private void EquipBestItem(ItemCategory category, ItemType? type = null)
     {
-        var equippedItem = type != null
-            ? GetEquipmentOfType(category, type.Value)
+        ItemSlot slot = ItemSlot.None;
+        if (type != null)
+        {
+            slot = GetEquipmentSlot(type.Value);
+        }
+
+        var equippedItem = type != null && slot != ItemSlot.None
+            ? GetEquipmentBySlot(slot)
             : GetEquipmentOfCategory(category);
 
         var bestValue = equippedItem != null
             ? equippedItem.GetTotalStats()
             : 0;
 
-        if ((category == ItemCategory.Pet && equippedItem != null) || 
+        if ((category == ItemCategory.Pet && equippedItem != null) ||
             (player.IsDiaperModeEnabled &&
             category != ItemCategory.Weapon &&
             category != ItemCategory.Pet &&
@@ -1059,8 +1125,17 @@ public class Inventory : MonoBehaviour
             for (var i = 0; i < backpack.Count; ++i)
             {
                 var item = backpack[i];
-                if (item.Item.Category == category && (type == null || item.Item.Type == type))
+
+                if (item.Item.Category == ItemCategory.Skin || item.Item.Category == ItemCategory.Cosmetic ||
+                    item.Item.Type == ItemType.Hat || item.Item.Type == ItemType.Mask)
                 {
+                    continue;
+                }
+
+                var eqSlot = GetEquipmentSlot(item.Item.Type);
+                if (eqSlot == slot || item.Item.Category == category && (type == null || item.Item.Type == type))
+                {
+
                     var itemValue = GetItemValue(item);
                     var canEquip = CanEquipItem(item);
 
@@ -1175,4 +1250,24 @@ public class Inventory : MonoBehaviour
     //    public AttributeValueType ValueType { get; set; }
     //    public double Value { get; set; }
     //}
+}
+
+
+public enum ItemSlot
+{
+    None,
+    Head,
+    Amulet,
+    Ring,
+    Chest,
+    Gloves,
+    Belt,
+    Leggings,
+    Boots,
+    MeleeWeapon,
+    MagicWeapon,
+    RangedWeapon,
+    Shield,
+    Pet,
+    Cape
 }

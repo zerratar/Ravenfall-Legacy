@@ -33,9 +33,9 @@
     public class TableAlias : IWriteSql
     {
         public Ident Name { get; set; }
-        public Sequence<Ident>? Columns { get; set; }
+        public Sequence<Ident> Columns { get; set; }
 
-        public TableAlias(Ident Name, Sequence<Ident>? Columns = null)
+        public TableAlias(Ident Name, Sequence<Ident> Columns = null)
         {
             this.Name = Name;
             this.Columns = Columns;

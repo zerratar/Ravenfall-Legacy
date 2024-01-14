@@ -21,7 +21,7 @@
             {
                 this.Columns = Columns;
             }
-            public Ident? Name { get; set; }
+            public Ident Name { get; set; }
             public bool IsPrimaryKey { get; set; }
             public Sequence<Ident> Columns { get; }
 
@@ -52,8 +52,8 @@
                 this.ForeignTable = ForeignTable;
                 this.Columns = Columns;
             }
-            public Ident? Name { get; set; }
-            public Sequence<Ident>? ReferredColumns { get; set; }
+            public Ident Name { get; set; }
+            public Sequence<Ident> ReferredColumns { get; set; }
             public ReferentialAction OnDelete { get; set; }
             public ReferentialAction OnUpdate { get; set; }
             public ObjectName ForeignTable { get; }
@@ -119,7 +119,7 @@
                 this.Columns = Columns;
             }
             public bool DisplayAsKey { get; set; }
-            public Ident? Name { get; set; }
+            public Ident Name { get; set; }
             public IndexType IndexType { get; set; }
             public Sequence<Ident> Columns { get; }
 
@@ -163,7 +163,7 @@
             }
             public bool FullText { get; set; }
             public KeyOrIndexDisplay IndexTypeDisplay { get; set; }
-            public Ident? OptIndexName { get; set; }
+            public Ident OptIndexName { get; set; }
             public Sequence<Ident> Columns { get; }
 
             public override void ToSql(SqlTextWriter writer)

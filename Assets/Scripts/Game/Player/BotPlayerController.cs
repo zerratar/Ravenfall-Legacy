@@ -27,6 +27,11 @@ public class BotPlayerController : MonoBehaviour
             return;
         }
 
+        if (Overlay.IsOverlay)
+        {
+            return;
+        }
+
         if (joiningEvent)
         {
             return;
@@ -37,13 +42,13 @@ public class BotPlayerController : MonoBehaviour
             return;
         }
 
-        if (gameManager.Raid.Started && gameManager.Raid.CanJoin(playerController) == RaidJoinResult.CanJoin)
+        if (gameManager && gameManager.Raid && gameManager.Raid.Started && gameManager.Raid.CanJoin(playerController) == RaidJoinResult.CanJoin)
         {
             joiningEvent = true;
             StartCoroutine(JoinRaid());
         }
 
-        if (gameManager.Dungeons.Active)
+        if (gameManager && gameManager.Dungeons && gameManager.Dungeons.Active)
         {
             var result = gameManager.Dungeons.CanJoin(playerController);
             if (result == DungeonJoinResult.CanJoin)
@@ -58,7 +63,7 @@ public class BotPlayerController : MonoBehaviour
         // first off here we want to check if our currently trained skill can be trained properly.
         // if not, we have to log it and report so that I can fix it.
         // since we are not in a raid nor a dungeon, unless we are on the ferry we must be on an island.
-        if (playerController.ferryHandler.OnFerry)
+        if (playerController && playerController.ferryHandler && playerController.ferryHandler.OnFerry)
         {
             return;
         }

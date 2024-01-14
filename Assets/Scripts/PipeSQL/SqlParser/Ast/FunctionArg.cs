@@ -155,7 +155,7 @@ namespace SqlParser.Ast
     public class CreateFunctionBody : IWriteSql, IElement
     {
         // LANGUAGE lang_name
-        public Ident? Language { get; internal set; }
+        public Ident Language { get; internal set; }
         // IMMUTABLE | STABLE | VOLATILE
         public FunctionBehavior? Behavior { get; internal set; }
         // AS 'definition'

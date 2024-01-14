@@ -75,7 +75,7 @@ public class TownHousePlayerAssignDialog : MonoBehaviour
         }
 
         var targetPlayers = players.OrderByDescending(x => GetExpBonus(x, townHouse)).ToArray();
-        for (int i = 0; i < targetPlayers.Length; i++)
+        for (int i = 0; i < targetPlayers.Length;)
         {
             var player = targetPlayers[i];
             if (i >= instantiatedPlayerRows.Count)

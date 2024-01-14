@@ -361,6 +361,11 @@ public class RavenBotConnection : IDisposable
 
     private void ListenForLocalBot()
     {
+        if (!Overlay.IsGame)
+        {
+            return;
+        }
+
         if (!localBotServerEnabled)
         {
             return;

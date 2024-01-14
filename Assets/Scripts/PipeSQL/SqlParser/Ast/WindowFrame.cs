@@ -77,11 +77,11 @@ namespace SqlParser.Ast
     }
     public class WindowSpec : IWriteSql, IElement
     {
-        public Sequence<SqlExpression>? PartitionBy { get; set; }
-        public Sequence<OrderByExpression>? OrderBy { get; set; }
+        public Sequence<SqlExpression> PartitionBy { get; set; }
+        public Sequence<OrderByExpression> OrderBy { get; set; }
         public WindowFrame? WindowFrame { get; set; }
 
-        public WindowSpec(Sequence<SqlExpression>? PartitionBy = null, Sequence<OrderByExpression>? OrderBy = null, WindowFrame? WindowFrame = null)
+        public WindowSpec(Sequence<SqlExpression>? PartitionBy = null, Sequence<OrderByExpression> OrderBy = null, WindowFrame? WindowFrame = null)
         {
             this.PartitionBy = PartitionBy;
             this.OrderBy = OrderBy;

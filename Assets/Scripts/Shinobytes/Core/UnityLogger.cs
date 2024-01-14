@@ -1,6 +1,9 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using NUnit.Framework.Internal;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
 
 namespace RavenNest.SDK
@@ -35,12 +38,28 @@ namespace RavenNest.SDK
 
 namespace Shinobytes
 {
+
     public static class Debug
     {
         private static readonly SyntaxHighlightedConsoleLogger console = new SyntaxHighlightedConsoleLogger();
 
+        private static volatile bool patched;
+
+        private static void PatchIfNecessary()
+        {
+            if (patched) return;
+
+            var s_logger = UnityEngine.Debug.unityLogger;
+            var s_loggerField = typeof(UnityEngine.Debug).GetField("s_Logger", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+            s_loggerField.SetValue(null, new PatchedUnityLogger(s_logger));
+
+            patched = true;
+        }
+
+
         public static void Log(string message)
         {
+            PatchIfNecessary();
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.Log(date + message);
             console.WriteLine(date + message);
@@ -48,6 +67,7 @@ namespace Shinobytes
 
         public static void Log(object message)
         {
+            PatchIfNecessary();
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.Log(date + message);
             console.WriteLine(date + message);
@@ -55,6 +75,8 @@ namespace Shinobytes
 
         public static void LogWarning(string message)
         {
+
+            PatchIfNecessary();
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.LogWarning(date + message);
             console.WriteLine(date + " @yel@[WRN] #yel#@bla@" + message);
@@ -62,6 +84,7 @@ namespace Shinobytes
 
         public static void LogError(string message)
         {
+            PatchIfNecessary();
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.LogError(date + message);
             console.WriteLine(date + " @red@[ERR] " + message);
@@ -69,9 +92,52 @@ namespace Shinobytes
 
         public static void LogError(Exception message)
         {
+            PatchIfNecessary();
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.LogError(date + message.Message);
             console.WriteLine(date + "@red@[EXC] #red#@bla@" + message.Message);
+        }
+
+        public class PatchedUnityLogger : UnityEngine.ILogger
+        {
+            private UnityEngine.ILogger logger;
+
+            public PatchedUnityLogger(UnityEngine.ILogger logger)
+            {
+                this.logger = logger;
+            }
+
+            public UnityEngine.ILogHandler logHandler { get => logger.logHandler; set => logger.logHandler = value; }
+            public bool logEnabled { get => logger.logEnabled; set => logger.logEnabled = value; }
+            public UnityEngine.LogType filterLogType { get => logger.filterLogType; set => logger.filterLogType = value; }
+
+            public bool IsLogTypeAllowed(UnityEngine.LogType logType) => logger.IsLogTypeAllowed(logType);
+            public void Log(UnityEngine.LogType logType, object message) => logger.Log(logType, message);
+
+            public void Log(UnityEngine.LogType logType, object message, UnityEngine.Object context) => logger.Log(logType, message, context);
+
+            public void Log(UnityEngine.LogType logType, string tag, object message) => logger.Log(logType, tag, message);
+            public void Log(UnityEngine.LogType logType, string tag, object message, UnityEngine.Object context) => logger.Log(logType, tag, message, context);
+
+            public void Log(object message) => logger.Log(message);
+
+            public void Log(string tag, object message) => logger.Log(tag, message);
+
+            public void Log(string tag, object message, UnityEngine.Object context) => logger.Log(tag, message, context);
+
+            public void LogError(string tag, object message) => logger.LogError(tag, message);
+            public void LogError(string tag, object message, UnityEngine.Object context) => logger.LogError(tag, message, context);
+
+            public void LogException(Exception exception) => logger.LogException(exception);
+            public void LogException(Exception exception, UnityEngine.Object context) => logger.LogException(exception, context);
+
+            public void LogFormat(UnityEngine.LogType logType, string format, params object[] args) => logger.LogFormat(logType, format, args);
+
+            public void LogFormat(UnityEngine.LogType logType, UnityEngine.Object context, string format, params object[] args) => logger.LogFormat(logType, context, format, args);
+
+            public void LogWarning(string tag, object message) => logger.LogWarning(tag, message);
+
+            public void LogWarning(string tag, object message, UnityEngine.Object context) => logger.LogWarning(tag, message, context);
         }
     }
 

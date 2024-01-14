@@ -19,7 +19,7 @@ public class AutoRotate : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        rotation += rotationSpeed * GameTime.deltaTime;
+        rotation += rotationSpeed * Time.deltaTime;
         transform.rotation = Quaternion.Euler(rotation);
     }
 }

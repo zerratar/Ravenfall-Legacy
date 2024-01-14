@@ -1,10 +1,12 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using TMPro;
+
+
+using Shinobytes.IO;
 
 using UnityEngine;
 using System.Linq;
@@ -50,7 +52,8 @@ public class GameUpdater : MonoBehaviour
         }
         else
         {
-            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs));
+            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs));            
+
             CheckIfGameAsync(startupArgs).ContinueWith(async x =>
             {
                 Overlay.IsGame = await x;
@@ -259,12 +262,12 @@ public class GameUpdater : MonoBehaviour
         // KillRavenBot();
 
         // 2. start patcher
-        if (Shinobytes.IO.File.Exists("RavenWeave.exe"))
+        if (File.Exists("RavenWeave.exe"))
         {
             var updater = new ProcessStartInfo
             {
-                FileName = Shinobytes.IO.Path.Combine("RavenWeave.exe"),
-                WorkingDirectory = Shinobytes.IO.Path.GameFolder
+                FileName = Path.Combine("RavenWeave.exe"),
+                WorkingDirectory = Path.GameFolder
             };
 
             Process.Start(updater);
@@ -290,8 +293,18 @@ public class GameUpdater : MonoBehaviour
                 {
                     return false;
                 }
-
-                return x.ProcessName.IndexOf("ravenbot", StringComparison.OrdinalIgnoreCase) >= 0;
+                string name = "";
+                try
+                {
+                    name = x.ProcessName;
+                    if (name.IndexOf("ravenbot", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return true;
+                }
+                catch
+                {
+                    // ignored. we dont have read access to all names.
+                }
+                return false;
             });
 
             if (botProcess != null)
@@ -338,7 +351,7 @@ public class GameUpdater : MonoBehaviour
             Version = Ravenfall.Version
         };
         var metadataContent = JsonConvert.SerializeObject(metadata);
-        Shinobytes.IO.File.WriteAllText("metadata.json", metadataContent);
+        File.WriteAllText("metadata.json", metadataContent);
     }
 }
 
@@ -439,14 +452,14 @@ public class GameUpdateHandler
 
             var updateFile = "update/" + fileName;
 
-            if (!Shinobytes.IO.Directory.Exists("update"))
+            if (!Directory.Exists("update"))
             {
-                Shinobytes.IO.Directory.CreateDirectory("update");
+                Directory.CreateDirectory("update");
             }
 
-            if (Shinobytes.IO.File.Exists(updateFile))
+            if (File.Exists(updateFile))
             {
-                Shinobytes.IO.File.Delete(updateFile);
+                File.Delete(updateFile);
             }
 
             updateFile = Shinobytes.IO.Path.GetFilePath(updateFile);
@@ -488,7 +501,7 @@ public class GameUpdateHandler
             Shinobytes.Debug.Log("HTTP GET: " + url);
             using (var res = await req.GetResponseAsync())
             using (var stream = res.GetResponseStream())
-            using (var sr = new StreamReader(stream))
+            using (var sr = new System.IO.StreamReader(stream))
             {
                 var update = await sr.ReadToEndAsync();
                 var updateData = JsonConvert.DeserializeObject<UpdateData>(update);
@@ -500,12 +513,12 @@ public class GameUpdateHandler
 
                 try
                 {
-                    if (!Shinobytes.IO.Directory.Exists("update"))
+                    if (!Directory.Exists("update"))
                     {
-                        Shinobytes.IO.Directory.CreateDirectory("update");
+                        Directory.CreateDirectory("update");
                     }
 
-                    Shinobytes.IO.File.WriteAllText("update/update.json", update);
+                    File.WriteAllText("update/update.json", update);
                 }
                 catch (Exception exc)
                 {

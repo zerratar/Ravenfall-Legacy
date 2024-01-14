@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Assets.Scripts;
 using RavenNest.Models;
 using UnityEngine;
 
@@ -50,7 +51,20 @@ public class ItemManager : MonoBehaviour
 
     public ((int, int[]), (int, int[])) GetModelIndices(Guid itemId)
     {
-        return (maleModelId[itemId], femaleModelId[itemId]);
+        if (!maleModelId.ContainsKey(itemId))
+        {
+            Shinobytes.Debug.LogError(itemId + " does not have male Model Id");
+        }
+
+        if (!femaleModelId.ContainsKey(itemId))
+        {
+            Shinobytes.Debug.LogError(itemId + " does not have female Model Id");
+        }
+
+        maleModelId.TryGetValue(itemId, out var mi);
+        femaleModelId.TryGetValue(itemId, out var fi);
+
+        return (mi, fi);
     }
 
     void Start()
@@ -74,6 +88,11 @@ public class ItemManager : MonoBehaviour
             LoadItemsAsync();
         }
 
+        if (state == LoadingState.None && game && Overlay.IsOverlay)
+        {
+
+        }
+
         var now = DateTime.UtcNow;
         //if (now - this.redeemablesLastUpdate >= redeemablesUpdateInterval)
         //{
@@ -91,6 +110,7 @@ public class ItemManager : MonoBehaviour
         this.items = items.ToList();
         this.itemLookup = items.ToDictionary(x => x.Id, x => x);
         this.state = LoadingState.Loaded;
+        LoadItemData();
     }
 
     public void SetRedeemableItems(IEnumerable<RavenNest.Models.RedeemableItem> redeemables)
@@ -276,7 +296,11 @@ public class ItemManager : MonoBehaviour
         // rebuild lookups
         itemLookup = items.ToDictionary(x => x.Id, x => x);
         game.Overlay.SendItems(items);
+        LoadItemData();
+    }
 
+    public void LoadItemData()
+    {
         foreach (var item in items)
         {
             var FemaleModelID = -1;
@@ -457,6 +481,11 @@ public class ItemManager : MonoBehaviour
     internal ItemRecipe GetRecipeWithSingleIngredient(Item item)
     {
         return this.recipes.FirstOrDefault(x => x.Ingredients.Count == 1 && x.Ingredients[0].ItemId == item.Id && x.Ingredients[0].Amount <= 1);
+    }
+
+    internal PlayerSkinObject GetSkin(string fullBodySkinPath)
+    {
+        throw new NotImplementedException();
     }
 
     private struct Date

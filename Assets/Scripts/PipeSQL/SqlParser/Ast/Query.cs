@@ -14,11 +14,11 @@ namespace SqlParser.Ast
 	        this.Body = Body;
 	    }
 	    [Visit(0)] public With? With { get; set; }
-	    [Visit(2)] public Sequence<OrderByExpression>? OrderBy { get; set; }
+	    [Visit(2)] public Sequence<OrderByExpression> OrderBy { get; set; }
 	    [Visit(3)] public SqlExpression? Limit { get; set; }
 	    [Visit(4)] public Offset? Offset { get; set; }
 	    [Visit(5)] public Fetch? Fetch { get; set; }
-	    [Visit(6)] public Sequence<LockClause>? Locks { get; set; }
+	    [Visit(6)] public Sequence<LockClause> Locks { get; set; }
 	    public SetExpression Body { get; set; }
 	
 	    public static implicit operator Query(Statement.Select select)

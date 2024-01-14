@@ -47,6 +47,11 @@ public class StreamLabel
 
     public StreamLabel(GameSettings settings, string name, string extension, Func<string> valueGenerator)
     {
+        if (!Overlay.IsGame)
+        {
+            return;
+        }
+
         this.valueGenerator = valueGenerator;
         this.extension = extension;
         var folder = settings.StreamLabelsFolder;
@@ -57,6 +62,11 @@ public class StreamLabel
     }
     public void Update()
     {
+        if (!Overlay.IsGame)
+        {
+            return;
+        }
+
         var streamLabels = PlayerSettings.Instance.StreamLabels;
         if (!streamLabels.Enabled) return;
         if (!streamLabels.SaveTextFiles && extension == ".txt") return;
@@ -68,6 +78,11 @@ public class StreamLabel
     public string Value { get; private set; }
     private void SaveGameStat()
     {
+        if (!Overlay.IsGame)
+        {
+            return;
+        }
+
         try
         {
             // Check if text has changed, otherwise we dont save it.

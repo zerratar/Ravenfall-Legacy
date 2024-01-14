@@ -294,7 +294,7 @@
                 }
             }
 
-            public Sequence<string?>? PgOptions { get; set; }
+            public Sequence<string?> PgOptions { get; set; }
             public SqlExpression Left { get; set; }
             public BinaryOperator Op { get; set; }
             public SqlExpression Right { get; set; }
@@ -315,7 +315,7 @@
                 this.Results = Results;
             }
             public SqlExpression? Operand { get; set; }
-            //public Sequence<Increment>? Conditions { get; set; }
+            //public Sequence<Increment> Conditions { get; set; }
             public SqlExpression? ElseResult { get; set; }
             public Sequence<SqlExpression> Conditions { get; set; }
             public Sequence<SqlExpression> Results { get; set; }
@@ -599,7 +599,7 @@
             /// <summary>
             /// Sequence function call
             /// </summary>
-            public Sequence<FunctionArg>? Args { get; internal set; }
+            public Sequence<FunctionArg> Args { get; internal set; }
             /// <summary>
             /// Window spec
             /// </summary>

@@ -9,7 +9,7 @@ namespace Assets.Scripts.Editor
         [MenuItem("Ravenfall/Tools/Update Signpost Lv Requirements")]
         public static void UpdateSignposts()
         {
-            foreach (var sp in GameObject.FindObjectsOfType<Signpost>())
+            foreach (var sp in GameObject.FindObjectsByType<Signpost>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
             {
                 sp.Bruteforce();
             }

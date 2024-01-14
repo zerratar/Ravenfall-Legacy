@@ -33,7 +33,7 @@ namespace SqlParser.Dialects
 	        return true;
 	    }
 	
-	    public override Statement? ParseStatement(Parser parser)
+	    public override Statement ParseStatement(Parser parser)
 	    {
 	        return parser.ParseKeyword(Keyword.COMMENT) ? ParseComment(parser) : null;
 	    }

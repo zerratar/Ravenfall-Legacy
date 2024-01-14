@@ -99,7 +99,7 @@ namespace SqlParser
         /// </example>
         /// </summary>
         /// <param name="ident"></param>
-        public void WriteConstraint(Ident? ident)
+        public void WriteConstraint(Ident ident)
         {
             if (ident != null)
             {

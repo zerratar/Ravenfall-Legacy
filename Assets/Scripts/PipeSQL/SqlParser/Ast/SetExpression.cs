@@ -47,11 +47,11 @@ namespace SqlParser.Ast
 	    //public class QueryExpression([Visit(1)] SetExpression Body) : IWriteSql, IElement
 	    //{
 	    //    [Visit(0)] public With? With { get; set; }
-	    //    [Visit(2)] public Sequence<OrderByExpression>? OrderBy { get; set; }
+	    //    [Visit(2)] public Sequence<OrderByExpression> OrderBy { get; set; }
 	    //    [Visit(3)] public Expression? Limit { get; set; }
 	    //    [Visit(4)] public Offset? Offset { get; set; }
 	    //    [Visit(5)] public Fetch? Fetch { get; set; }
-	    //    [Visit(6)] public Sequence<LockClause>? Locks { get; set; }
+	    //    [Visit(6)] public Sequence<LockClause> Locks { get; set; }
 	
 	    //    //public static implicit operator Query(Statement.Select select)
 	    //    //{

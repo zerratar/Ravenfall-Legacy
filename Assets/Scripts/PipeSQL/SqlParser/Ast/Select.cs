@@ -17,13 +17,13 @@ namespace SqlParser.Ast
 	    public bool Distinct { get; set; }
 	    [Visit(0)] public Top? Top { get; set; }
 	    [Visit(2)] public SelectInto? Into { get; set; }
-	    [Visit(3)] public Sequence<TableWithJoins>? From { get; set; }
-	    [Visit(4)] public Sequence<LateralView>? LateralViews { get; set; }
+	    [Visit(3)] public Sequence<TableWithJoins> From { get; set; }
+	    [Visit(4)] public Sequence<LateralView> LateralViews { get; set; }
 	    [Visit(5)] public SqlExpression? Selection { get; set; }
-	    [Visit(6)] public Sequence<SqlExpression>? GroupBy { get; set; }
-	    [Visit(7)] public Sequence<SqlExpression>? ClusterBy { get; set; }
-	    [Visit(8)] public Sequence<SqlExpression>? DistributeBy { get; set; }
-	    [Visit(9)] public Sequence<SqlExpression>? SortBy { get; set; }
+	    [Visit(6)] public Sequence<SqlExpression> GroupBy { get; set; }
+	    [Visit(7)] public Sequence<SqlExpression> ClusterBy { get; set; }
+	    [Visit(8)] public Sequence<SqlExpression> DistributeBy { get; set; }
+	    [Visit(9)] public Sequence<SqlExpression> SortBy { get; set; }
 	    [Visit(10)] public SqlExpression? Having { get; set; }
 	    [Visit(11)] public SqlExpression? QualifyBy { get; set; }
 	    public Sequence<SelectItem> Projection { get; set; }

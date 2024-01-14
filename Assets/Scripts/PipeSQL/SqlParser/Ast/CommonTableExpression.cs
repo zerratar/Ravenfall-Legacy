@@ -14,9 +14,9 @@
     {
         public TableAlias Alias { get; set; }
         public Query Query { get; set; }
-        public Ident? From { get; set; }
+        public Ident From { get; set; }
 
-        public CommonTableExpression(TableAlias Alias, Query Query, Ident? From = null)
+        public CommonTableExpression(TableAlias Alias, Query Query, Ident From = null)
         {
             this.Alias = Alias;
             this.Query = Query;

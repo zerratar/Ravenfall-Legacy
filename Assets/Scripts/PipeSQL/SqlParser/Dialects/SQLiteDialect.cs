@@ -40,7 +40,7 @@ namespace SqlParser.Dialects
         /// <summary>
         /// Handles SQLite Replace statement parsing
         /// </summary>
-        public override Statement? ParseStatement(Parser parser)
+        public override Statement ParseStatement(Parser parser)
         {
             if (!parser.ParseKeyword(Keyword.REPLACE))
             {

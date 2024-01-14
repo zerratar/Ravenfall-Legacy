@@ -31,7 +31,7 @@ namespace SqlParser.Dialects
 	        return true;
 	    }
 	
-	    public override Statement? ParseStatement(Parser parser)
+	    public override Statement ParseStatement(Parser parser)
 	    {
 	        if (parser.ParseKeyword(Keyword.CREATE))
 	        {
@@ -72,9 +72,9 @@ namespace SqlParser.Dialects
 	        //[ IF NOT EXISTS ]
 	        var ifNot = parser.ParseIfNotExists();
 	        var name = parser.ParseObjectName();
-	        Sequence<DataLoadingOption>? directoryTableParams = null;
-	        Sequence<DataLoadingOption>? fileFormat = null;
-	        Sequence<DataLoadingOption>? copyOptions = null;
+	        Sequence<DataLoadingOption> directoryTableParams = null;
+	        Sequence<DataLoadingOption> fileFormat = null;
+	        Sequence<DataLoadingOption> copyOptions = null;
 	        string comment = null;
 	
 	        // [ internalStageParams | externalStageParams ]
@@ -130,8 +130,8 @@ namespace SqlParser.Dialects
 	        string url=null;
 	        string storageIntegration = null;
 	        string endpoint = null;
-	        Sequence<DataLoadingOption>? credentials = null;
-	        Sequence<DataLoadingOption>? encryption = null;
+	        Sequence<DataLoadingOption> credentials = null;
+	        Sequence<DataLoadingOption> encryption = null;
 	
 	        if (parser.ParseKeyword(Keyword.URL))
 	        {
@@ -184,9 +184,9 @@ namespace SqlParser.Dialects
 	        };
 	    }
 	
-	    private Sequence<DataLoadingOption>? ParseParenOptions(Parser parser)
+	    private Sequence<DataLoadingOption> ParseParenOptions(Parser parser)
 	    {
-	        Sequence<DataLoadingOption>? options = null;
+	        Sequence<DataLoadingOption> options = null;
 	
 	        parser.ExpectLeftParen();
 	        var loop = true;

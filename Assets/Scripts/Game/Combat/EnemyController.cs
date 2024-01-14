@@ -503,6 +503,7 @@ public class EnemyController : MonoBehaviour, IAttackable
     {
         TargetPlayer = null;
         Target = null;
+        InCombat = false;
     }
 
     public bool SetDestination(Vector3 position)

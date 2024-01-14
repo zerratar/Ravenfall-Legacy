@@ -118,7 +118,8 @@ public class Chunk : MonoBehaviour
             var maxLv = IslandManager.IslandLevelRangeMax[this.Island.Island];
             var efLv = IslandManager.IslandMaxEffect[this.Island.Island];
 
-            if (RequiredCombatLevel > 1 && (s.CombatLevel < minLv || s.CombatLevel > maxLv))
+            if (RequiredCombatLevel > 1 && s.CombatLevel < minLv)
+            // only break out if we are not high enough combat level, we need to check individual skill stat later instead so if we train a skill that is under the level of required combat level it should still gain exp.
             {
                 player.IsGainingExp = false;
                 return 0;
@@ -165,6 +166,13 @@ public class Chunk : MonoBehaviour
                             var st = player.Stats;
                             var lv = (st.Strength.Level + st.Defense.Level + st.Attack.Level) / 3;
                             return CalculateExpFactor(player, Math.Min(lv, secondary), requirement, nextRequirement);
+                        }
+
+                        // if target skill is above max level, we aint gaining exp.
+                        if (skill.Level > maxLv)
+                        {
+                            player.IsGainingExp = false;
+                            return 0;
                         }
 
                         return CalculateExpFactor(player, Math.Min(skill.Level, secondary), requirement, nextRequirement);

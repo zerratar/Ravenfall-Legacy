@@ -127,9 +127,9 @@
             /// This field's value is `Some(v)`, where `v` is a (possibly empty)
             /// vector of arguments, in the case of a table-valued function call,
             /// whereas it's `None` in the case of a regular table name.
-            [Visit(2)] public Sequence<FunctionArg>? Args { get; set; }
+            [Visit(2)] public Sequence<FunctionArg> Args { get; set; }
             /// MSSQL-specific `WITH (...)` hints such as NOLOCK.
-            [Visit(3)] public Sequence<SqlExpression>? WithHints { get; set; }
+            [Visit(3)] public Sequence<SqlExpression> WithHints { get; set; }
             [Visit(0)] public ObjectName Name { get; set; }
 
             public override void ToSql(SqlTextWriter writer)
@@ -201,7 +201,7 @@
                 this.ArrayExpr = ArrayExpr;
             }
             public bool WithOffset { get; set; }
-            public Ident? WithOffsetAlias { get; set; }
+            public Ident WithOffsetAlias { get; set; }
             public SqlExpression ArrayExpr { get; set; }
 
             public override void ToSql(SqlTextWriter writer)

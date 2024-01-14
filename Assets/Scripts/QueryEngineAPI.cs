@@ -13,6 +13,10 @@ public class QueryEngineAPI
 
     public static void OnGameManagerAwake(GameManager gm)
     {
+        if (!Overlay.IsGame)
+        {
+            return;
+        }
 
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;

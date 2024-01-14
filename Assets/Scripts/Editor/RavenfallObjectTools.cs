@@ -49,7 +49,7 @@ public class RavenfallObjectTools
         Transform[] selections = null;
         if (!a)
         {
-            selections = GameObject.FindObjectsOfType<Transform>(true);
+            selections = GameObject.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         }
         else
         {
@@ -102,7 +102,7 @@ public class RavenfallObjectTools
     //    Transform[] selections = null;
     //    if (!a)
     //    {
-    //        selections = GameObject.FindObjectsOfType<Transform>(true);
+    //        selections = GameObject.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
     //    }
     //    else
     //    {
@@ -269,7 +269,7 @@ public class RavenfallObjectTools
     [MenuItem("Ravenfall/Enemies/Assign Dependencies", priority = 0)]
     public static void AssignEnemyDependencies()
     {
-        foreach (var enemy in GameObject.FindObjectsOfType<EnemyController>())
+        foreach (var enemy in GameObject.FindObjectsByType<EnemyController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
             enemy.AssignDependencies();
         }

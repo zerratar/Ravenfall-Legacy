@@ -13,7 +13,7 @@
                 this.Columns = Columns;
             }
 
-            public Sequence<Ident>? Columns { get; }
+            public Sequence<Ident> Columns { get; }
         }
 
         /// <summary>

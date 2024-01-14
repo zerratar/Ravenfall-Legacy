@@ -21,35 +21,33 @@ public class EquipmentSlotManager : MonoBehaviour
         if (!player)
             return;
 
-        var amulet = player.Inventory.GetEquipmentOfCategory(ItemCategory.Amulet);
+        var amulet = player.Inventory.GetEquipmentBySlot(ItemSlot.Amulet);
         amuletSlot.SetItem(amulet);
 
-        var ring = player.Inventory.GetEquipmentOfCategory(ItemCategory.Ring);
+        var ring = player.Inventory.GetEquipmentBySlot(ItemSlot.Ring);
         ringSlot.SetItem(ring);
 
-        var pet = player.Inventory.GetEquipmentOfCategory(ItemCategory.Pet);
+        var pet = player.Inventory.GetEquipmentBySlot(ItemSlot.Pet);
         petSlot.SetItem(pet);
 
-        var helmet = player.Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Helmet);
-
-        if (helmet == null)
-            helmet = player.Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Hat);
-
-        if (helmet == null)
-            helmet = player.Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Mask);
+        var helmet = player.Inventory.GetEquipmentBySlot(ItemSlot.Head);
+        //if (helmet == null)
+        //    helmet = player.Inventory.GetEquipmentBySlot(ItemType.Hat);
+        //if (helmet == null)
+        //    helmet = player.Inventory.GetEquipmentBySlot(ItemType.Mask);
 
         helmetSlot.SetItem(helmet);
 
-        var chest = player.Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Chest);
+        var chest = player.Inventory.GetEquipmentOfType(ItemType.Chest);
         chestSlot.SetItem(chest);
 
-        var gloves = player.Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Gloves);
+        var gloves = player.Inventory.GetEquipmentOfType(ItemType.Gloves);
         glovesSlot.SetItem(gloves);
 
-        var leggings = player.Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Leggings);
+        var leggings = player.Inventory.GetEquipmentOfType(ItemType.Leggings);
         leggingsSlot.SetItem(leggings);
 
-        var boots = player.Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Boots);
+        var boots = player.Inventory.GetEquipmentOfType(ItemType.Boots);
         bootsSlot.SetItem(boots);
 
         var sword0 = player.Inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedSword);

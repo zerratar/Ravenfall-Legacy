@@ -59,6 +59,11 @@
 
         }
 
+        if (!player)
+        {
+            return;
+        }
+
         var result = player.Unstuck();
         if (!result)
         {

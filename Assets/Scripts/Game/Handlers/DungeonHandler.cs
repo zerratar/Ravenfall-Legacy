@@ -243,11 +243,10 @@ public class DungeonHandler
 
     public void OnExit()
     {
-        player.Movement.EnableLocalAvoidance();
-
-
-        if (!InDungeon)
+        if (!InDungeon || !player || !player.Movement)
             return;
+
+        player.Movement.EnableLocalAvoidance();
 
         Clear();
 

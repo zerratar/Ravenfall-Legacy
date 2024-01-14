@@ -65,7 +65,7 @@ namespace SqlParser.Dialects
 	    /// </summary>
 	    /// <param name="parser">Parser instance</param>
 	    /// <returns>Parsed Expression</returns>
-	    public virtual Statement? ParseStatement(Parser parser)
+	    public virtual Statement ParseStatement(Parser parser)
 	    {
 	        return null;
 	    }

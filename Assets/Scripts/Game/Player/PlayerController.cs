@@ -57,7 +57,6 @@ public class PlayerController : MonoBehaviour, IAttackable
     [SerializeField] private float mineRockAnimationTime = 2f;
     [SerializeField] private float respawnTime = 4f;
 
-
     [SerializeField] private GameObject[] availableMonsterMeshes;
 
     [NonSerialized] public Transform _transform;
@@ -283,6 +282,8 @@ public class PlayerController : MonoBehaviour, IAttackable
     private bool componentsInitialized;
 
     private bool hasGameManager;
+
+    internal string FullBodySkinPath;
     internal bool IsGainingExp;
 
     public ScheduledAction ScheduledAction => activeScheduledAction;
@@ -291,6 +292,7 @@ public class PlayerController : MonoBehaviour, IAttackable
     public DateTime LastRaidAutoJoinFailUtc { get; internal set; }
     public GameInventoryItem LastEnchantedItem { get; internal set; }
     public DateTime LastEnchantedItemExpire { get; internal set; }
+    public PlayerSkinObject ActiveFullBodySkin { get; private set; }
 
     internal void InterruptAction()
     {
@@ -429,6 +431,18 @@ public class PlayerController : MonoBehaviour, IAttackable
         animator.runtimeAnimatorController = controller;
         Animations.SetActiveAnimator(animator);
         return true;
+    }
+
+    internal void ApplyPlayerFullBodySkin(PlayerSkinObject skin)
+    {
+        this.ActiveFullBodySkin = skin;
+        this.ApplyPlayerFullBodySkin(ActiveFullBodySkin.SkinMeshObject);
+    }
+
+    internal void RemoveFullBodySkin()
+    {
+        this.ActiveFullBodySkin = null;
+        this.ResetFullBodySkin();
     }
 
     internal void SetRestedState(PlayerRestedUpdate data)
@@ -628,7 +642,15 @@ public class PlayerController : MonoBehaviour, IAttackable
 
             if (monsterTimer <= 0)
             {
-                ResetFullBodySkin();
+                // if we have an active full body skin, this is what we should go back to use.
+                if (ActiveFullBodySkin != null)
+                {
+                    ApplyPlayerFullBodySkin(ActiveFullBodySkin);
+                }
+                else
+                {
+                    ResetFullBodySkin();
+                }
             }
         }
 
@@ -1557,9 +1579,16 @@ public class PlayerController : MonoBehaviour, IAttackable
         gameObject.name = player.Name;
 
         GameManager = gm;
+
+        if (!GameManager && Overlay.IsOverlay)
+        {
+            GameManager = FindAnyObjectByType<GameManager>();
+        }
+
         hasGameManager = !!GameManager;
 
-        clanHandler.SetClan(player.Clan, player.ClanRole, GameManager, GameManager.PlayerLogo);
+        if (clanHandler && GameManager)
+            clanHandler.SetClan(player.Clan, player.ClanRole, GameManager, GameManager.PlayerLogo);
 
         Definition = player;
 
@@ -1617,8 +1646,10 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         ClearTask();
 
+        FullBodySkinPath = player.FullBodySkin;
+
         //if (Raider != null)
-        if (player.State != null)
+        if (player.State != null && Overlay.IsGame)
         {
             if (player.State.RestedTime > 0)
             {
@@ -1630,7 +1661,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             raidHandler.AutoJoinCounter = player.State.AutoJoinRaidCounter;
 
             var setTask = true;
-            if (hasGameManager)
+            if (hasGameManager && Overlay.IsGame)
             {
                 this.teleportHandler.islandManager = this.GameManager.Islands;
                 this.teleportHandler.player = this;
@@ -1700,7 +1731,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
-        if (GameManager)
+        if (GameManager && GameManager.NameTags)
             GameManager.NameTags.Add(this);
 
         Stats.Health.Reset();
@@ -1714,6 +1745,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         ApplyStatusEffects(player.StatusEffects);
+
+
 
         this.Appearance.player = this;
         this.Appearance.gameManager = GameManager;
@@ -1730,6 +1763,17 @@ public class PlayerController : MonoBehaviour, IAttackable
             {
                 Movement.Lock();
                 ferryHandler.AddPlayerToFerry();
+            }
+
+            // check if the player object has a full body skin assigned or not
+            // this will override any item based skins.
+            if (!string.IsNullOrEmpty(FullBodySkinPath))
+            {
+                PlayerSkinObject skin = itemManager.GetSkin(FullBodySkinPath);
+                if (skin != null)
+                {
+                    ApplyPlayerFullBodySkin(skin);
+                }
             }
         }, prepareForCamera, false); // Inventory.Create will update the appearance.
     }
@@ -2876,7 +2920,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             // cosmetic ones should not be replaced.
             // maybe we should find a good way to mark an item as cosmetic?
-            if (currentEquipment.Type == ItemType.Helmet && currentEquipment.GetTotalStats() == 0)
+            if (currentEquipment.Category == ItemCategory.Skin || currentEquipment.Category == ItemCategory.Cosmetic || currentEquipment.GetTotalStats() == 0)
+                //(currentEquipment.Type == ItemType.Helmet || currentEquipment.Type == ItemType.Hat || currentEquipment.Type == ItemType.Mask))
             {
                 return false;
             }
@@ -2943,6 +2988,11 @@ public class PlayerController : MonoBehaviour, IAttackable
 
     public void UpdateEquipmentEffect()
     {
+        if (Overlay.IsOverlay && (!Inventory || Inventory.Equipped == null))
+        {
+            return;
+        }
+
         UpdateEquipmentEffect(Inventory.Equipped);
     }
 
@@ -3019,7 +3069,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             }
         }
 
-        if (GameManager)
+        if (GameManager && !Overlay.IsOverlay)
         {
             var op = this.GameManager.Camera.Observer.ObservedPlayer;
             if (op && op.Id == Id)
@@ -3244,7 +3294,7 @@ public class StatusEffect
     {
         get
         {
-            if (Effect.TimeLeft <= 0)
+            if (TimeLeft <= 0)
                 return true;
 
             var effectHasBeenApplied = LastUpdateUtc > DateTime.UnixEpoch;

@@ -38,8 +38,8 @@ public class ThemeEditor : OdinEditorWindow
 
     private void Init()
     {
-        this.colorGraphics = FindObjectsOfType<Graphic>(true);
-        this.fontGraphics = FindObjectsOfType<TMPro.TextMeshProUGUI>(true);
+        this.colorGraphics = FindObjectsByType<Graphic>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        this.fontGraphics = FindObjectsByType<TMPro.TextMeshProUGUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
         colors.Clear();
 

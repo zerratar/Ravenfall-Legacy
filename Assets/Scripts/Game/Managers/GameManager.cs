@@ -70,6 +70,10 @@ public class GameManager : MonoBehaviour, IGameManager
     public RenderPipelineAsset URP_LowQuality;
     public RenderPipelineAsset URP_DefaultQuality;
 
+    private DateTime nextAutoJoinRaid;
+    private DateTime nextAutoJoinDungeon;
+    [NonSerialized] public bool NewUpdateAvailable;
+
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers = new();
     private readonly ConcurrentDictionary<Type, IGameEventHandler> typedGameEventHandlers = new();
 
@@ -250,7 +254,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
     void Awake()
     {
-        goUpdateAvailable.SetActive(false);
+        if (goUpdateAvailable) goUpdateAvailable.SetActive(false);
+
         GameTime.deltaTime = Time.deltaTime;
 
         if (!PlayerSettings.Instance.PhysicsEnabled.GetValueOrDefault())
@@ -260,10 +265,16 @@ public class GameManager : MonoBehaviour, IGameManager
 
         //Physics.autoSimulation = false;
         BatchPlayerAddInProgress = false;
-        overlay = gameObject.AddComponent<Overlay>();
+
+        overlay = FindAnyObjectByType<Overlay>();
+        if (!overlay)
+        {
+            overlay = gameObject.AddComponent<Overlay>();
+        }
+
         if (!settings) settings = GetComponent<GameSettings>();
         this.StreamLabels = new StreamLabels(settings);
-        gameReloadUIPanel.SetActive(false);
+        if (gameReloadUIPanel) gameReloadUIPanel.SetActive(false);
         Overlay.CheckIfGame();
         GameSystems.Awake();
         QueryEngineAPI.OnGameManagerAwake(this);
@@ -285,7 +296,7 @@ public class GameManager : MonoBehaviour, IGameManager
         GameCache.IsAwaitingGameRestore = false;
         ioc = GetComponent<IoCContainer>();
 
-        gameReloadMessage.SetActive(false);
+        if (gameReloadMessage) gameReloadMessage.SetActive(false);
         if (!Graphics) Graphics = FindAnyObjectByType<GraphicsToggler>();
         if (!nametagManager) nametagManager = FindAnyObjectByType<NameTagManager>();
         if (!dayNightCycle) dayNightCycle = GetComponent<DayNightCycle>();
@@ -362,7 +373,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
         LoadGameSettings();
 
-        musicManager.PlayBackgroundMusic();
+        if (musicManager)
+            musicManager.PlayBackgroundMusic();
 
         gameCacheStateFileLoadResult = GameCache.LoadState();
 
@@ -625,6 +637,10 @@ public class GameManager : MonoBehaviour, IGameManager
     private void LoadGameSettings()
     {
         var settings = PlayerSettings.Instance;
+        if (!Overlay.IsGame)
+        {
+            return;
+        }
 
         TwitchEventManager.AnnouncementTimersSeconds = settings.ExpMultiplierAnnouncements ?? TwitchEventManager.AnnouncementTimersSeconds;
 
@@ -851,7 +867,8 @@ public class GameManager : MonoBehaviour, IGameManager
             EnablePostProcessingEffects();
         }
 
-        nametagManager.NameTagsEnabled = PlayerNamesVisible;
+        if (nametagManager)
+            nametagManager.NameTagsEnabled = PlayerNamesVisible;
 
         UpdateIntegrityCheck();
 
@@ -987,6 +1004,11 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public void EnablePostProcessingEffects()
     {
+        if (!Overlay.IsGame)
+        {
+            return;
+        }
+
         if (!UsePostProcessingEffects)
         {
             DisablePostProcessingEffects();
@@ -2277,6 +2299,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         goUpdateAvailable.SetActive(true);
         lblUpdateAvailable.text = "New update available! <color=green>v" + newVersion;
+        NewUpdateAvailable = true;
     }
 
     float nextAutoJoinCheck = 0f;
@@ -2599,8 +2622,6 @@ public class GameManager : MonoBehaviour, IGameManager
         return success;
     }
 
-    private DateTime nextAutoJoinRaid;
-    private DateTime nextAutoJoinDungeon;
 }
 
 public class IslandTaskCollection

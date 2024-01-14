@@ -2597,7 +2597,7 @@ namespace SqlParser
             }
 
             // parse: [ argname ] argtype
-            Ident? name = null;
+            Ident name = null;
             var dataType = ParseDataType();
 
             if (dataType is DataType.Custom d)
@@ -4656,7 +4656,7 @@ namespace SqlParser
         /// <param name="reservedKeywords"></param>
         /// <returns></returns>
         /// <exception cref="ParserException"></exception>
-        public Ident? ParseOptionalAlias(IEnumerable<Keyword> reservedKeywords)
+        public Ident ParseOptionalAlias(IEnumerable<Keyword> reservedKeywords)
         {
             var afterAs = ParseKeyword(Keyword.AS);
             var token = NextToken();
@@ -4689,7 +4689,7 @@ namespace SqlParser
                 _ => None()
             };
 
-            Ident? None()
+            Ident None()
             {
                 PrevToken();
                 return null;
@@ -4823,7 +4823,7 @@ namespace SqlParser
 
         }
 
-        public CharacterLength? ParseOptionalCharacterLength()
+        public CharacterLength ParseOptionalCharacterLength()
         {
             if (!ConsumeToken<LeftParen>())
             {
@@ -6025,7 +6025,7 @@ namespace SqlParser
             ExpectKeyword(Keyword.TO);
             var grantees = ParseCommaSeparated(ParseIdentifier);
             var withGrantOptions = ParseKeywordSequence(Keyword.WITH, Keyword.GRANT, Keyword.OPTION);
-            Ident? grantedBy = null;
+            Ident grantedBy = null;
 
             if (ParseKeywordSequence(Keyword.GRANTED, Keyword.BY))
             {

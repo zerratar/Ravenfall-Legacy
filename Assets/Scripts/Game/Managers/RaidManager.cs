@@ -350,7 +350,7 @@ public class RaidManager : MonoBehaviour, IEvent
     // Update is called once per frame
     private void Update()
     {
-        if (PlayerSettings.Instance.DisableRaids.GetValueOrDefault())
+        if (Overlay.IsOverlay || PlayerSettings.Instance.DisableRaids.GetValueOrDefault())
         {
             return;
         }

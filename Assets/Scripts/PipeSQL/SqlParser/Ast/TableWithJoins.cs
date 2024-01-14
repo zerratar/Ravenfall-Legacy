@@ -15,7 +15,7 @@
 
         [Visit(0)] public TableFactor? Relation { get; set; }
 
-        [Visit(1)] public Sequence<Join>? Joins { get; set; }
+        [Visit(1)] public Sequence<Join> Joins { get; set; }
 
         public void ToSql(SqlTextWriter writer)
         {

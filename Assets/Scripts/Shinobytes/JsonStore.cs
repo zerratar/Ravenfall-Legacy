@@ -11,7 +11,9 @@ public class JsonStore<T> where T : new()
     {
         this.name = name;
         this.serializer = serializer;
-        this.storeFile = Shinobytes.IO.Path.GetFilePath(System.IO.Path.GetFileNameWithoutExtension(name) + ".json");
+        this.storeFile = Shinobytes.IO.Path.GetFilePath(Path.GetFileNameWithoutExtension(name) + ".json");
+
+        Shinobytes.Debug.Log("Loading " + storeFile);
     }
 
     public static JsonStore<T> Create(string name, ObjectJsonSerializer<T> serializer = null)

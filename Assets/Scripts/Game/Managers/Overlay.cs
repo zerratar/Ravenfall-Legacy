@@ -121,7 +121,7 @@ public class Overlay : MonoBehaviour
         {
             server.Send(packet);
         }
-        
+
     }
     #endregion
 
@@ -204,6 +204,12 @@ public class Overlay : MonoBehaviour
     {
         CheckIfGame();
         this.gameManager = FindAnyObjectByType<GameManager>();
+
+        //if (!gameManager && IsOverlay)
+        //{
+        //    CreateGameManager();
+        //}
+
         this.Players = new OverlayPlayerManager(playerControllerPrefab);
         this.packetManager = new OverlayPacketManager(this);
 
@@ -218,6 +224,12 @@ public class Overlay : MonoBehaviour
 
         AwakeOverlay();
     }
+
+    //private void CreateGameManager()
+    //{
+    //    var gm = new GameObject("GameManager", typeof(GameManager), typeof(ItemManager), typeof(RaidManager), typeof(DungeonManager));
+    //    gameManager = gm.GetComponent<GameManager>();
+    //}
 
     private void OnDestroy()
     {
@@ -290,35 +302,35 @@ public class Overlay : MonoBehaviour
                 }
                 if (Input.GetKey(KeyCode.W))
                 {
-                    renderCamera.transform.position -= renderCamera.transform.forward * GameTime.deltaTime;
+                    renderCamera.transform.position -= renderCamera.transform.forward * Time.deltaTime;
                     valuesUpdated = true;
                 }
 
                 if (Input.GetKey(KeyCode.S))
                 {
-                    renderCamera.transform.position += renderCamera.transform.forward * GameTime.deltaTime;
+                    renderCamera.transform.position += renderCamera.transform.forward * Time.deltaTime;
                     valuesUpdated = true;
                 }
                 if (Input.GetKey(KeyCode.A))
                 {
-                    renderCamera.transform.position += new Vector3(GameTime.deltaTime, 0, 0);
+                    renderCamera.transform.position += new Vector3(Time.deltaTime, 0, 0);
                     valuesUpdated = true;
                 }
 
                 if (Input.GetKey(KeyCode.D))
                 {
-                    renderCamera.transform.position -= new Vector3(GameTime.deltaTime, 0, 0);
+                    renderCamera.transform.position -= new Vector3(Time.deltaTime, 0, 0);
                     valuesUpdated = true;
                 }
 
                 if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.Q))
                 {
-                    CharacterRotationSpeed += GameTime.deltaTime * rotationSpeedDelta * (shiftDown ? 3 : 1);
+                    CharacterRotationSpeed += Time.deltaTime * rotationSpeedDelta * (shiftDown ? 3 : 1);
                     valuesUpdated = true;
                 }
                 if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.E))
                 {
-                    CharacterRotationSpeed -= GameTime.deltaTime * rotationSpeedDelta * (shiftDown ? 3 : 1);
+                    CharacterRotationSpeed -= Time.deltaTime * rotationSpeedDelta * (shiftDown ? 3 : 1);
                     valuesUpdated = true;
                 }
 

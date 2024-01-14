@@ -255,12 +255,28 @@ public class PlayerMovementController : MonoBehaviour
 
     public void EnableLocalAvoidance()
     {
-        navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+        try
+        {
+            if (navMeshAgent)
+                navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.Log(this.gameObject?.name + ": navMeshAgent has not been initialized properly before calling EnableLocalAvoidance: " + exc);
+        }
     }
 
     public void DisableLocalAvoidance()
     {
-        navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+        try
+        {
+            if (navMeshAgent)
+                navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.Log(this.gameObject?.name + ": navMeshAgent has not been initialized properly before calling DisableLocalAvoidance: " + exc);
+        }
     }
 }
 

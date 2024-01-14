@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
@@ -7,8 +8,25 @@ namespace Shinobytes.IO
 {
     public static class Path
     {
-        public static string GameFolder;
+        private static string gameFolder;
+
         private static bool initFailed;
+        
+        public static string Executable;
+
+        public static string GameFolder
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(gameFolder))
+                {
+                    Init();
+                }
+
+                return gameFolder;
+            }
+        }
+
         static Path()
         {
             Init();
@@ -18,8 +36,15 @@ namespace Shinobytes.IO
         {
             try
             {
+
+                var startupArgs = Environment.GetCommandLineArgs().Select(x => x.ToLower()).ToArray();
+                Path.Executable = startupArgs.FirstOrDefault(x => x.ToLower().EndsWith(".exe"));
+
                 var dataFolder = new System.IO.DirectoryInfo(Application.dataPath);
-                GameFolder = dataFolder.Parent.FullName;
+                gameFolder = dataFolder.Parent.FullName;
+
+                Shinobytes.Debug.Log("Game Folder: " + gameFolder);
+
                 initFailed = false;
             }
             catch
@@ -27,6 +52,7 @@ namespace Shinobytes.IO
                 initFailed = true;
             }
         }
+
         public static string GameFolderAsRoot(string path)
         {
             if (initFailed) Init();
@@ -65,11 +91,12 @@ namespace Shinobytes.IO
 
         internal static System.IO.DirectoryInfo CreateDirectory(string path)
         {
-            var fullPath = Shinobytes.IO.Path.GameFolderAsRoot(path);
-            Shinobytes.Debug.Log("Deleting: " + fullPath);
+            var fullPath = Path.GameFolderAsRoot(path);
+            Debug.Log("Deleting: " + fullPath);
             return System.IO.Directory.CreateDirectory(fullPath);
         }
     }
+
     public static class File
     {
         public static string[] ReadAllLines(string path)
@@ -81,50 +108,50 @@ namespace Shinobytes.IO
 
         public static string[] ReadAllLines(string path, Encoding encoding)
         {
-            var fullPath = Shinobytes.IO.Path.GameFolderAsRoot(path);
+            var fullPath = Path.GameFolderAsRoot(path);
             Debug.Log("Loading: " + fullPath);
             return System.IO.File.ReadAllLines(fullPath, encoding);
         }
 
         public static bool Exists(string path)
         {
-            return System.IO.File.Exists(Shinobytes.IO.Path.GameFolderAsRoot(path));
+            return System.IO.File.Exists(Path.GameFolderAsRoot(path));
         }
 
         public static void WriteAllLines(string path, string[] lines)
         {
-            System.IO.File.WriteAllLines(Shinobytes.IO.Path.GameFolderAsRoot(path), lines);
+            System.IO.File.WriteAllLines(Path.GameFolderAsRoot(path), lines);
         }
 
         public static void Delete(string path)
         {
-            Shinobytes.Debug.Log("Deleting: " + path);
-            System.IO.File.Delete(Shinobytes.IO.Path.GameFolderAsRoot(path));
+            Debug.Log("Deleting: " + path);
+            System.IO.File.Delete(Path.GameFolderAsRoot(path));
         }
 
         public static System.IO.FileStream OpenWrite(string path)
         {
-            return System.IO.File.OpenWrite(Shinobytes.IO.Path.GameFolderAsRoot(path));
+            return System.IO.File.OpenWrite(Path.GameFolderAsRoot(path));
         }
 
         internal static void WriteAllText(string path, string text)
         {
-            System.IO.File.WriteAllText(Shinobytes.IO.Path.GameFolderAsRoot(path), text);
+            System.IO.File.WriteAllText(Path.GameFolderAsRoot(path), text);
         }
 
         internal static string ReadAllText(string path)
         {
-            return System.IO.File.ReadAllText(Shinobytes.IO.Path.GameFolderAsRoot(path));
+            return System.IO.File.ReadAllText(Path.GameFolderAsRoot(path));
         }
 
         internal static void Copy(string source, string destination, bool overwrite)
         {
-            System.IO.File.Copy(Shinobytes.IO.Path.GameFolderAsRoot(source), Shinobytes.IO.Path.GameFolderAsRoot(destination), overwrite);
+            System.IO.File.Copy(Path.GameFolderAsRoot(source), Path.GameFolderAsRoot(destination), overwrite);
         }
 
         internal static void WriteAllBytes(string path, byte[] bytes)
         {
-            System.IO.File.WriteAllBytes(Shinobytes.IO.Path.GameFolderAsRoot(path), bytes);
+            System.IO.File.WriteAllBytes(Path.GameFolderAsRoot(path), bytes);
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Assets.Scripts.Editor
         [MenuItem("Ravenfall/Tools/Remove all NavMeshModifiers")]
         static void RemoveAllNavMeshModifiers()
         {
-            var modifiers = GameObject.FindObjectsOfType<NavMeshModifier>(true);
+            var modifiers = GameObject.FindObjectsByType<NavMeshModifier>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var modifier in modifiers)
             {
                 if (modifier.gameObject.layer == 8)

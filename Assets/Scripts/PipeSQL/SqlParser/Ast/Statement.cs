@@ -57,9 +57,9 @@ namespace SqlParser.Ast
             {
                 this.Name = Name;
             }
-            [Visit(1)] public Sequence<SqlExpression>? Partitions { get; set; }
+            [Visit(1)] public Sequence<SqlExpression> Partitions { get; set; }
             public bool ForColumns { get; set; }
-            public Sequence<Ident>? Columns { get; set; }
+            public Sequence<Ident> Columns { get; set; }
             public bool CacheMetadata { get; set; }
             public bool NoScan { get; set; }
             public bool ComputeStatistics { get; set; }
@@ -170,7 +170,7 @@ namespace SqlParser.Ast
             /// </summary>
             [Visit(0)] public ObjectName? TableFlag { get; set; }
             public bool HasAs { get; set; }
-            [Visit(2)] public Sequence<SqlOption>? Options { get; set; }
+            [Visit(2)] public Sequence<SqlOption> Options { get; set; }
             /// <summary>
             /// Cache table as a Select
             /// </summary>
@@ -292,18 +292,18 @@ namespace SqlParser.Ast
         /// <param name="Target">Copy target</param>
         public class Copy : Statement
         {
-            public Copy(ObjectName Name, Sequence<Ident>? Columns, bool To, CopyTarget Target)
+            public Copy(ObjectName Name, Sequence<Ident> Columns, bool To, CopyTarget Target)
             {
                 this.Name = Name;
                 this.Columns = Columns;
                 this.To = To;
                 this.Target = Target;
             }
-            public Sequence<CopyOption>? Options { get; set; }
+            public Sequence<CopyOption> Options { get; set; }
             // WITH options (before PostgreSQL version 9.0)
-            public Sequence<CopyLegacyOption>? LegacyOptions { get; set; }
+            public Sequence<CopyLegacyOption> LegacyOptions { get; set; }
             // VALUES a vector of values to be copied
-            public Sequence<string?>? Values { get; set; }
+            public Sequence<string?> Values { get; set; }
             public ObjectName Name { get; }
             public Sequence<Ident> Columns { get; }
             public bool To { get; }
@@ -401,7 +401,7 @@ namespace SqlParser.Ast
             }
             public bool OrReplace { get; set; }
             public bool Temporary { get; set; }
-            [Visit(2)] public Sequence<OperateFunctionArg>? Args { get; set; }
+            [Visit(2)] public Sequence<OperateFunctionArg> Args { get; set; }
             public DataType? ReturnType { get; set; }
             public ObjectName Name { get; }
             public CreateFunctionBody Parameters { get; }
@@ -435,8 +435,8 @@ namespace SqlParser.Ast
                 this.Name = Name;
                 this.TableName = TableName;
             }
-            public Ident? Using { get; set; }
-            [Visit(2)] public Sequence<OrderByExpression>? Columns { get; set; }
+            public Ident Using { get; set; }
+            [Visit(2)] public Sequence<OrderByExpression> Columns { get; set; }
             public bool Unique { get; set; }
             public bool IfNotExists { get; set; }
             public string IfNotExistsText => IfNotExists ? "IF NOT EXISTS" : null;
@@ -475,9 +475,9 @@ namespace SqlParser.Ast
             public bool OrReplace { get; set; }
             public bool Temporary { get; set; }
             public bool IfNotExists { get; set; }
-            public Sequence<DataLoadingOption>? DirectoryTableParams { get; set; }
-            public Sequence<DataLoadingOption>? FileFormat { get; set; }
-            public Sequence<DataLoadingOption>? CopyOptions { get; set; }
+            public Sequence<DataLoadingOption> DirectoryTableParams { get; set; }
+            public Sequence<DataLoadingOption> FileFormat { get; set; }
+            public Sequence<DataLoadingOption> CopyOptions { get; set; }
             // ReSharper disable once MemberHidesStaticFromOuterClass
             public new string Comment { get; set; }
             public string IfNotExistsText => IfNotExists ? "IF NOT EXISTS" : null;
@@ -531,11 +531,11 @@ namespace SqlParser.Ast
             public bool? Global { get; set; }
             public bool IfNotExists { get; set; }
             public bool Transient { get; set; }
-            [Visit(2)] public Sequence<TableConstraint>? Constraints { get; set; }
+            [Visit(2)] public Sequence<TableConstraint> Constraints { get; set; }
             public HiveDistributionStyle? HiveDistribution { get; set; } = new HiveDistributionStyle.None();
             public HiveFormat? HiveFormats { get; set; }
-            public Sequence<SqlOption>? TableProperties { get; set; }
-            public Sequence<SqlOption>? WithOptions { get; set; }
+            public Sequence<SqlOption> TableProperties { get; set; }
+            public Sequence<SqlOption> WithOptions { get; set; }
             public FileFormat FileFormat { get; set; }
             public string Location { get; set; }
             [Visit(3)] public Query? Query { get; set; }
@@ -543,7 +543,7 @@ namespace SqlParser.Ast
             [Visit(4)] public ObjectName? Like { get; set; }
             [Visit(5)] public ObjectName? CloneClause { get; set; }
             public string Engine { get; set; }
-            public Sequence<Ident>? OrderBy { get; set; }
+            public Sequence<Ident> OrderBy { get; set; }
             public string DefaultCharset { get; set; }
             public string Collation { get; set; }
             public OnCommit OnCommit { get; set; }
@@ -733,9 +733,9 @@ namespace SqlParser.Ast
             }
             public bool OrReplace { get; set; }
             public bool Materialized { get; set; }
-            public Sequence<Ident>? Columns { get; set; }
-            [Visit(2)] public Sequence<SqlOption>? WithOptions { get; set; }
-            public Sequence<Ident>? ClusterBy { get; set; }
+            public Sequence<Ident> Columns { get; set; }
+            [Visit(2)] public Sequence<SqlOption> WithOptions { get; set; }
+            public Sequence<Ident> ClusterBy { get; set; }
             [Visit(0)] public ObjectName Name { get; }
             [Visit(1)] public Select Query { get; }
 
@@ -775,8 +775,8 @@ namespace SqlParser.Ast
                 this.Name = Name;
             }
             public bool IfNotExists { get; set; }
-            public Ident? ModuleName { get; set; }
-            public Sequence<Ident>? ModuleArgs { get; set; }
+            public Ident ModuleName { get; set; }
+            public Sequence<Ident> ModuleArgs { get; set; }
             public string IfNotExistsText => IfNotExists ? "IF NOT EXISTS" : null;
 
             public ObjectName Name { get; }
@@ -815,11 +815,11 @@ namespace SqlParser.Ast
             public bool? Replication { get; set; }
             [Visit(1)] public SqlExpression? ConnectionLimit { get; set; }
             [Visit(2)] public SqlExpression? ValidUntil { get; set; }
-            public Sequence<Ident>? InRole { get; set; }
-            public Sequence<Ident>? InGroup { get; set; }
-            public Sequence<Ident>? User { get; set; }
-            public Sequence<Ident>? Role { get; set; }
-            public Sequence<Ident>? Admin { get; set; }
+            public Sequence<Ident> InRole { get; set; }
+            public Sequence<Ident> InGroup { get; set; }
+            public Sequence<Ident> User { get; set; }
+            public Sequence<Ident> Role { get; set; }
+            public Sequence<Ident> Admin { get; set; }
             // MSSQL
             [Visit(3)] public ObjectName? AuthorizationOwner { get; set; }
             [Visit(0)] public Sequence<ObjectName> Names { get; }
@@ -936,7 +936,7 @@ namespace SqlParser.Ast
             public bool Temporary { get; set; }
             public bool IfNotExists { get; set; }
             public DataType? DataType { get; set; }
-            [Visit(1)] public Sequence<SequenceOptions>? SequenceOptions { get; set; }
+            [Visit(1)] public Sequence<SequenceOptions> SequenceOptions { get; set; }
             [Visit(2)] public ObjectName? OwnedBy { get; set; }
             public string IfNotExistsText => IfNotExists ? "IF NOT EXISTS" : null;
 
@@ -991,7 +991,7 @@ namespace SqlParser.Ast
         /// <param name="Parameters">Parameter expressions</param>
         public class Execute : Statement
         {
-            public Execute(Ident Name, Sequence<SqlExpression>? Parameters = null)
+            public Execute(Ident Name, Sequence<SqlExpression> Parameters = null)
             {
                 this.Name = Name;
                 this.Parameters = Parameters;
@@ -1082,7 +1082,7 @@ namespace SqlParser.Ast
         /// <param name="Args">Operate function arguments</param>
         public class DropFunctionDesc : Statement
         {
-            public DropFunctionDesc(ObjectName Name, Sequence<OperateFunctionArg>? Args = null)
+            public DropFunctionDesc(ObjectName Name, Sequence<OperateFunctionArg> Args = null)
             {
                 this.Name = Name;
                 this.Args = Args;
@@ -1199,7 +1199,7 @@ namespace SqlParser.Ast
         /// <param name="Returning">Select items to return</param>
         public class Delete : Statement
         {
-            public Delete(TableFactor Name, TableFactor? Using = null, SqlExpression? Selection = null, Sequence<SelectItem>? Returning = null)
+            public Delete(TableFactor Name, TableFactor? Using = null, SqlExpression? Selection = null, Sequence<SelectItem> Returning = null)
             {
                 this.Name = Name;
                 this.Using = Using;
@@ -1380,7 +1380,7 @@ namespace SqlParser.Ast
         /// <param name="GrantedBy">Granted by name</param>
         public class Grant : Statement
         {
-            public Grant(Privileges Privileges, GrantObjects? Objects, Sequence<Ident> Grantees, bool WithGrantOption, Ident? GrantedBy = null)
+            public Grant(Privileges Privileges, GrantObjects? Objects, Sequence<Ident> Grantees, bool WithGrantOption, Ident GrantedBy = null)
             {
                 this.Privileges = Privileges;
                 this.Objects = Objects;
@@ -1429,18 +1429,18 @@ namespace SqlParser.Ast
             /// INTO - optional keyword
             public bool Into { get; set; }
             /// COLUMNS
-            public Sequence<Ident>? Columns { get; set; }
+            public Sequence<Ident> Columns { get; set; }
             /// Overwrite (Hive)
             public bool Overwrite { get; set; }
             /// partitioned insert (Hive)
-            [Visit(2)] public Sequence<SqlExpression>? Partitioned { get; set; }
+            [Visit(2)] public Sequence<SqlExpression> Partitioned { get; set; }
             /// Columns defined after PARTITION
-            public Sequence<Ident>? AfterColumns { get; set; }
+            public Sequence<Ident> AfterColumns { get; set; }
             /// whether the insert has the table keyword (Hive)
             public bool Table { get; set; }
             public OnInsert? On { get; set; }
             /// RETURNING
-            [Visit(3)] public Sequence<SelectItem>? Returning { get; set; }
+            [Visit(3)] public Sequence<SelectItem> Returning { get; set; }
             [Visit(0)] public ObjectName Name { get; }
             [Visit(1)] public Select Source { get; }
 
@@ -1641,7 +1641,7 @@ namespace SqlParser.Ast
         /// <param name="Cascade">Cascade</param>
         public class Revoke : Statement
         {
-            public Revoke(Privileges Privileges, GrantObjects Objects, Sequence<Ident> Grantees, bool Cascade = false, Ident? GrantedBy = null)
+            public Revoke(Privileges Privileges, GrantObjects Objects, Sequence<Ident> Grantees, bool Cascade = false, Ident GrantedBy = null)
             {
                 this.Privileges = Privileges;
                 this.Objects = Objects;
@@ -1759,7 +1759,7 @@ namespace SqlParser.Ast
         /// <param name="Name">Name identifier</param>
         public class SetRole : Statement
         {
-            public SetRole(ContextModifier ContextModifier, Ident? Name = null)
+            public SetRole(ContextModifier ContextModifier, Ident Name = null)
             {
                 this.ContextModifier = ContextModifier;
                 this.Name = Name;
@@ -1859,7 +1859,7 @@ namespace SqlParser.Ast
         /// <param name="Value">Value</param>
         public class SetVariable : Statement
         {
-            public SetVariable(bool Local, bool HiveVar, ObjectName? Variable = null, Sequence<SqlExpression>? Value = null)
+            public SetVariable(bool Local, bool HiveVar, ObjectName? Variable = null, Sequence<SqlExpression> Value = null)
             {
                 this.Local = Local;
                 this.HiveVar = HiveVar;
@@ -2047,7 +2047,7 @@ namespace SqlParser.Ast
         /// <param name="Filter">Optional filter</param>
         public class ShowTables : Statement
         {
-            public ShowTables(bool Extended, bool Full, Ident? Name = null, ShowStatementFilter? Filter = null)
+            public ShowTables(bool Extended, bool Full, Ident Name = null, ShowStatementFilter? Filter = null)
             {
                 this.Extended = Extended;
                 this.Full = Full;
@@ -2107,7 +2107,7 @@ namespace SqlParser.Ast
         /// <param name="Partitions">List of partitions</param>
         public class Truncate : Statement
         {
-            public Truncate(ObjectName Name, Sequence<SqlExpression>? Partitions)
+            public Truncate(ObjectName Name, Sequence<SqlExpression> Partitions)
             {
                 this.Name = Name;
                 this.Partitions = Partitions;
@@ -2160,7 +2160,7 @@ namespace SqlParser.Ast
         /// <param name="Returning">Select returning values</param>
         public class Update : Statement
         {
-            public Update(TableWithJoins Table, Sequence<Assignment> Assignments, TableWithJoins? From = null, SqlExpression? Selection = null, Sequence<SelectItem>? Returning = null)
+            public Update(TableWithJoins Table, Sequence<Assignment> Assignments, TableWithJoins? From = null, SqlExpression? Selection = null, Sequence<SelectItem> Returning = null)
             {
                 this.Table = Table;
                 this.Assignments = Assignments;
