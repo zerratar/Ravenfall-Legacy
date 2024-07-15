@@ -96,20 +96,24 @@ public class Chunk : MonoBehaviour
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual double CalculateExpFactor(PlayerController playerController)
+    public virtual double CalculateExpFactor(PlayerController playerController, out ExpGainState state)
     {
-        return CalculateExpFactor(Type, playerController);
+        return CalculateExpFactor(Type, playerController, out state);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual double CalculateExpFactor(TaskType taskType, PlayerController player)
+    public virtual double CalculateExpFactor(TaskType taskType, PlayerController player, out ExpGainState state)
     {
         try
         {
 
             // TODO: less dy´namic, more static, this is not reliable enough..
 
-            if (player == null || !player) return 0;
+            if (player == null || !player)
+            {
+                state = ExpGainState.PlayerRemoved;
+                return 0;
+            }
             var maxFactor = GameMath.Exp.MaxExpFactorFromIsland;
 
             var s = player.Stats;
@@ -118,21 +122,42 @@ public class Chunk : MonoBehaviour
             var maxLv = IslandManager.IslandLevelRangeMax[this.Island.Island];
             var efLv = IslandManager.IslandMaxEffect[this.Island.Island];
 
-            if (RequiredCombatLevel > 1 && s.CombatLevel < minLv)
-            // only break out if we are not high enough combat level, we need to check individual skill stat later instead so if we train a skill that is under the level of required combat level it should still gain exp.
+            if (taskType == TaskType.Fighting)
             {
-                player.IsGainingExp = false;
-                return 0;
-            }
+                var skill = player.GetActiveSkillStat();
+                if (skill == null)
+                {
+                    state = ExpGainState.NotAValidSkill;
+                    return 0;
+                }
 
-            var skillLevel = player.GetSkill(taskType);
-            if (skillLevel != null && RequiredSkilllevel > 1 && (skillLevel.Level < minLv || skillLevel.Level > maxLv))
+                var mySkillLevel = skill.Level;
+                if (skill.Type == RavenNest.Models.Skill.Health)
+                {
+                    var st = player.Stats;
+                    var lv = (st.Strength.Level + st.Defense.Level + st.Attack.Level) / 3;
+                    mySkillLevel = lv;
+                }
+
+                if (RequiredCombatLevel > s.CombatLevel && RequiredSkilllevel > mySkillLevel)
+                {
+                    state = ExpGainState.LevelTooLow;
+                    return 0;
+                }
+            }
+            else
             {
-                player.IsGainingExp = false;
-                return 0;
-            }
+                var skillLevel = player.GetSkill(taskType);
+                if (skillLevel != null && RequiredSkilllevel > 1 && (skillLevel.Level < minLv || skillLevel.Level > maxLv))
+                {
+                    if (skillLevel.Level < minLv)
+                        state = ExpGainState.LevelTooLow;
+                    else
+                        state = ExpGainState.LevelTooHigh;
 
-            player.IsGainingExp = true;
+                    return 0;
+                }
+            }
 
             // TODO: rewrite to use minLv, maxLv and efLv instead.
 
@@ -144,7 +169,11 @@ public class Chunk : MonoBehaviour
 
             // last chunk must always be maxFactor, regardless of task.
             // since ther are no "better" places to train. This has to be it.
-            if (isLastChunk) return maxFactor;
+            if (isLastChunk)
+            {
+                state = ExpGainState.FullGain;
+                return maxFactor;
+            }
             var a = RequiredCombatLevel;
             var b = RequiredSkilllevel;
             var requirement = a > b ? a : b;
@@ -165,83 +194,86 @@ public class Chunk : MonoBehaviour
                             // training all. We can't use combat level. Use average of atk,def,str?
                             var st = player.Stats;
                             var lv = (st.Strength.Level + st.Defense.Level + st.Attack.Level) / 3;
-                            return CalculateExpFactor(player, Math.Min(lv, secondary), requirement, nextRequirement);
+                            return CalculateExpFactor(player, Math.Min(lv, secondary), requirement, nextRequirement, out state);
                         }
 
                         // if target skill is above max level, we aint gaining exp.
                         if (skill.Level > maxLv)
                         {
-                            player.IsGainingExp = false;
+                            state = ExpGainState.LevelTooHigh;
                             return 0;
                         }
 
-                        return CalculateExpFactor(player, Math.Min(skill.Level, secondary), requirement, nextRequirement);
+                        return CalculateExpFactor(player, Math.Min(skill.Level, secondary), requirement, nextRequirement, out state);
                     }
                 case TaskType.Mining:
-                    return CalculateExpFactor(player, Math.Min(s.Mining.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Mining.Level, secondary), requirement, nextRequirement, out state);
                 case TaskType.Fishing:
-                    return CalculateExpFactor(player, Math.Min(s.Fishing.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Fishing.Level, secondary), requirement, nextRequirement, out state);
                 case TaskType.Woodcutting:
-                    return CalculateExpFactor(player, Math.Min(s.Woodcutting.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Woodcutting.Level, secondary), requirement, nextRequirement, out state);
                 case TaskType.Crafting:
-                    return CalculateExpFactor(player, Math.Min(s.Crafting.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Crafting.Level, secondary), requirement, nextRequirement, out state);
                 case TaskType.Farming:
-                    return CalculateExpFactor(player, Math.Min(s.Farming.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Farming.Level, secondary), requirement, nextRequirement, out state);
                 case TaskType.Cooking:
-                    return CalculateExpFactor(player, Math.Min(s.Cooking.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Cooking.Level, secondary), requirement, nextRequirement, out state);
                 case TaskType.Gathering:
-                    return CalculateExpFactor(player, Math.Min(s.Gathering.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Gathering.Level, secondary), requirement, nextRequirement, out state);
                 case TaskType.Alchemy:
-                    return CalculateExpFactor(player, Math.Min(s.Alchemy.Level, secondary), requirement, nextRequirement);
+                    return CalculateExpFactor(player, Math.Min(s.Alchemy.Level, secondary), requirement, nextRequirement, out state);
             }
-
+            state = ExpGainState.FullGain;
             return 1;
         }
         catch (System.Exception exc)
         {
             Shinobytes.Debug.LogError("Error Calculating Exp Factor: " + exc);
-            player.IsGainingExp = false;
+            state = ExpGainState.PlayerRemoved;
             return 0;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private double CalculateExpFactor(PlayerController player, double level, double requirement, double nextRequirement)
+    private double CalculateExpFactor(PlayerController player, double level, double requirement, double nextRequirement, out ExpGainState state)
     {
         var result = 1d;
-        try
+        state = ExpGainState.FullGain;
+
+        if (nextRequirement <= requirement)
         {
-            if (nextRequirement <= requirement) return result;
-
-            // if the current level is more than 2x of the required next place. You don't receive any more exp.
-            //var upperBounds = nextRequirement * 2.0;
-            //if (level >= upperBounds) return 0;
-
-            var delta = nextRequirement - requirement;
-            var midPoint = delta / 2f;
-            if (level <= (nextRequirement + midPoint))
-                return result;
-
-            var upperBounds = requirement + (delta * 2);
-            if (level >= upperBounds)
-            {
-                result = 0;
-                return result;
-            }
-
-            if (level > nextRequirement)
-            {
-                var min = level - nextRequirement;
-                var max = upperBounds - nextRequirement;
-                return result = GameMath.Lerp(1, 0, min / max);
-            }
-
             return result;
         }
-        finally
+
+        // if the current level is more than 2x of the required next place. You don't receive any more exp.
+        //var upperBounds = nextRequirement * 2.0;
+        //if (level >= upperBounds) return 0;
+
+        var delta = nextRequirement - requirement;
+        var midPoint = delta / 2f;
+        if (level <= (nextRequirement + midPoint))
         {
-            player.IsGainingExp = result > 0;
+            state = ExpGainState.FullGain;
+            return result;
         }
+
+        var upperBounds = requirement + (delta * 2);
+        if (level >= upperBounds)
+        {
+            state = ExpGainState.LevelTooHigh;
+            result = 0;
+            return result;
+        }
+
+        if (level > nextRequirement)
+        {
+            var min = level - nextRequirement;
+            var max = upperBounds - nextRequirement;
+            result = GameMath.Lerp(1, 0, min / max);
+            state = result < 0.95 ? ExpGainState.PartialGain : ExpGainState.FullGain;
+        }
+
+        return result;
     }
 
     private ChunkTask GetChunkTask(TaskType type) // ArenaController arena,
@@ -274,4 +306,15 @@ public enum TaskExecutionStatus
     Ready,
     //InsufficientResources,
     InvalidTarget,
+}
+
+public enum ExpGainState
+{
+    PlayerRemoved,
+    NotAValidSkill,
+    NotTraining,
+    PartialGain,
+    FullGain,
+    LevelTooLow,
+    LevelTooHigh,
 }

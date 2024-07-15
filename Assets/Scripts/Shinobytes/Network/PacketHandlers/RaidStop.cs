@@ -19,7 +19,7 @@
                 return;
             }
 
-            if (!user.IsBroadcaster && !user.IsModerator)
+            if (!user.IsBroadcaster && !user.IsModerator && !user.IsGameModerator && !user.IsGameAdministrator)
             {
                 return;
             }

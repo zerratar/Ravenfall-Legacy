@@ -27,6 +27,8 @@ public class OverlayPlayer
                 IsBroadcaster = source.IsBroadcaster,
                 IsModerator = source.IsModerator,
                 IsSubscriber = source.IsSubscriber,
+                IsGameAdministrator = source.IsGameAdmin,
+                IsGameModerator = source.IsGameModerator,
                 IsVip = source.IsVip,
                 Id = source.UserId,
                 Platform = source.Platform,

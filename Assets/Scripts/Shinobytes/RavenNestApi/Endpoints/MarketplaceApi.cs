@@ -39,10 +39,23 @@ namespace RavenNest.SDK.Endpoints
                 .Identifier("v2/" + characterId)
                 .Method("buy")
                 .AddParameter(itemId.ToString())
-                .AddParameter((amount).ToString())
-                .AddParameter((maxPricePerItem).ToString())
+                .AddParameter(amount.ToString())
+                .AddParameter(maxPricePerItem.ToString())
                 .Build()
                 .SendAsync<ItemBuyResult>(
+                    ApiRequestTarget.Marketplace,
+                    ApiRequestType.Get);
+        }
+
+        public Task<ItemValueResult> GetMarketValueAsync(Guid itemId, long count = 1)
+        {
+            return request.Create()
+                .Identifier("v2")
+                .Method("value")
+                .AddParameter(itemId.ToString())
+                .AddParameter(count.ToString())
+                .Build()
+                .SendAsync<ItemValueResult>(
                     ApiRequestTarget.Marketplace,
                     ApiRequestType.Get);
         }

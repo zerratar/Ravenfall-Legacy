@@ -8,7 +8,7 @@ public class JsonBasedItemRepository
     private List<Item> items;
 
     public static JsonBasedItemRepository Instance { get; private set; }
-    public JsonBasedItemRepository(string file = @"C:\git\Ravenfall Legacy\Data\Repositories\items.json")
+    public JsonBasedItemRepository(string file = @"G:\Ravenfall\Projects\Ravenfall Legacy\Data\Repositories\items.json")
     {
         this.file = file;
         Instance = this;

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class OnsenHandler : MonoBehaviour
 {
@@ -14,7 +15,7 @@ public class OnsenHandler : MonoBehaviour
     public const double RestedGainFactor = 2.0;
     public const double RestedDrainFactor = 1.0;
 
-    private void Update()
+    public void Poll()
     {
         var rested = player.Rested;
         if (rested.RestedTime > 0)

@@ -38,7 +38,7 @@ public class ItemRepository : MonoBehaviour
     {
         QualitySettings.antiAliasing = 0;
 
-        var itemsRepo = @"C:\git\Ravenfall Legacy\Data\Repositories\items.json";
+        var itemsRepo = @"G:\Ravenfall\Projects\Ravenfall Legacy\Data\Repositories\items.json";
 
         System.Net.WebClient cl = new System.Net.WebClient();
         try
@@ -54,7 +54,7 @@ public class ItemRepository : MonoBehaviour
 
         var json = System.IO.File.ReadAllText(itemsRepo);
 
-        //var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall Legacy\Data\Repositories\items.json");
+        //var json = System.IO.File.ReadAllText(@"G:\Ravenfall\Projects\Ravenfall Legacy\Data\Repositories\items.json");
         items = JsonConvert.DeserializeObject<Item[]>(json);
 
         if (renderCameras == null || renderCameras.Length == 0)
@@ -183,7 +183,7 @@ public class ItemRepository : MonoBehaviour
 
         assetPreviews.Add(prev);
 
-        SaveTexture(prev, "C:\\Item Icons\\" + item.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png");
+        SaveTexture(prev, @"G:\Ravenfall\Data\generated-item-images\" + item.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png");
         //InstantiateItem(item, itemObj);
 
 #endif
@@ -282,7 +282,7 @@ public class ItemRepository : MonoBehaviour
         var camera = newCamera.GetComponent<Camera>();
         camera.targetTexture = targetTexture;
 
-        StartCoroutine(SaveRenderTexture(targetTexture, "C:\\Item Icons\\" + item.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png"));
+        StartCoroutine(SaveRenderTexture(targetTexture, @"G:\Ravenfall\Data\generated-item-images\" + item.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png"));
     }
 
     public IEnumerator SaveRenderTexture(RenderTexture rt, string pngOutPath)

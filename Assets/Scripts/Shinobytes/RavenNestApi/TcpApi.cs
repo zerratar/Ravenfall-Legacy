@@ -394,6 +394,14 @@ namespace RavenNest.SDK
                     update.State = state;
                     update.AutoJoinDungeonCounter = player.dungeonHandler.AutoJoinCounter;
                     update.AutoJoinRaidCounter = player.raidHandler.AutoJoinCounter;
+
+                    update.AutoTrainTargetLevel = player.AutoTrainTargetLevel;
+                    update.DungeonCombatStyle = AsInt(player.DungeonCombatStyle);
+                    update.RaidCombatStyle = AsInt(player.RaidCombatStyle);
+                    update.AutoRestTarget = player.Rested.AutoRestTarget;
+                    update.AutoRestStart = player.Rested.AutoRestStart;
+
+
                     update.X = (short)position.x;
                     update.Y = (short)position.y;
                     update.Z = (short)position.z;
@@ -429,6 +437,12 @@ namespace RavenNest.SDK
             }
         }
 
+        private int? AsInt(Skill? skill)
+        {
+            if (skill == null) return null;
+            return (int)skill.Value;
+        }
+
         private DateTime GetEstimatedTimeForLevelUp(long expPerHour, int level, double experience)
         {
             if (expPerHour <= 0 || level >= GameMath.MaxLevel) return DateTime.MaxValue;
@@ -462,6 +476,13 @@ namespace RavenNest.SDK
                 || a.TrainingSkillIndex != b.TrainingSkillIndex
                 || a.TaskArgument != b.TaskArgument
                 || a.Health != b.Health
+                || a.AutoJoinRaidCounter != b.AutoJoinRaidCounter
+                || a.AutoJoinDungeonCounter != b.AutoJoinDungeonCounter
+                || a.AutoTrainTargetLevel != b.AutoTrainTargetLevel
+                || a.AutoRestTarget != b.AutoRestTarget
+                || a.AutoRestStart != b.AutoRestStart
+                || a.DungeonCombatStyle != b.DungeonCombatStyle
+                || a.RaidCombatStyle != b.RaidCombatStyle
                 || a.Island != b.Island
                 || Distance(a.X, a.Y, a.Z, b.X, b.Y, b.Z) >= 3f
                 || a.ExpPerHour != b.ExpPerHour
@@ -612,7 +633,7 @@ namespace RavenNest.SDK
                 X = position.x,
                 Y = position.y,
                 Z = position.z,
-                Skills = skills
+                Skills = skills,
             };
 
             // finally, check if the data we save actually needs to be pushed.

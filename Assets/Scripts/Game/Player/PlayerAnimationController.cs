@@ -23,7 +23,7 @@ public class PlayerAnimationController : MonoBehaviour
     private float last_MovementSpeedMultiplier;
     private float last_CastSpeedMultiplier;
     private float last_AttackSpeedMultiplier;
-    
+
 
     // Use this for initialization
     void Start()
@@ -33,7 +33,7 @@ public class PlayerAnimationController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    public void Poll()
     {
         if (!EnsureAnimator())
         {
@@ -53,25 +53,22 @@ public class PlayerAnimationController : MonoBehaviour
             idleTimer = 0f;
         }
 
-        if (activeAnimator)
+        if (MovementSpeedMultiplier > 0 && last_MovementSpeedMultiplier != MovementSpeedMultiplier)
         {
-            if (MovementSpeedMultiplier > 0 && last_MovementSpeedMultiplier != MovementSpeedMultiplier)
-            {
-                activeAnimator.SetFloat("MovementSpeedMultiplier", MovementSpeedMultiplier);
-                last_MovementSpeedMultiplier = MovementSpeedMultiplier;
-            }
+            activeAnimator.SetFloat("MovementSpeedMultiplier", MovementSpeedMultiplier);
+            last_MovementSpeedMultiplier = MovementSpeedMultiplier;
+        }
 
-            if (CastSpeedMultiplier > 0 && last_CastSpeedMultiplier != CastSpeedMultiplier)
-            {
-                activeAnimator.SetFloat("CastSpeedMultiplier", CastSpeedMultiplier);
-                last_CastSpeedMultiplier = CastSpeedMultiplier;
-            }
+        if (CastSpeedMultiplier > 0 && last_CastSpeedMultiplier != CastSpeedMultiplier)
+        {
+            activeAnimator.SetFloat("CastSpeedMultiplier", CastSpeedMultiplier);
+            last_CastSpeedMultiplier = CastSpeedMultiplier;
+        }
 
-            if (AttackSpeedMultiplier > 0 && last_AttackSpeedMultiplier != AttackSpeedMultiplier)
-            {
-                activeAnimator.SetFloat("AttackSpeedMultiplier", AttackSpeedMultiplier);
-                last_AttackSpeedMultiplier = AttackSpeedMultiplier;
-            }
+        if (AttackSpeedMultiplier > 0 && last_AttackSpeedMultiplier != AttackSpeedMultiplier)
+        {
+            activeAnimator.SetFloat("AttackSpeedMultiplier", AttackSpeedMultiplier);
+            last_AttackSpeedMultiplier = AttackSpeedMultiplier;
         }
     }
 
@@ -483,6 +480,7 @@ public class PlayerAnimationController : MonoBehaviour
         EndGathering();
         EndBrewing();
     }
+
 }
 
 public enum PlayerAnimationState

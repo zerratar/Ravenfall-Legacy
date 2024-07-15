@@ -13,7 +13,7 @@ public class PlayerSettings
     public bool? AlertExpiredStateCacheInChat;
     public bool? PlayerListVisible;
     public bool? PlayerNamesVisible;
-    public bool? LocalBotServerDisabled;
+    public bool? LocalBotServerDisabled;    
     public bool? AutoKickAfkPlayers;
     public bool? DayNightCycleEnabled;
     public bool? PhysicsEnabled;
@@ -25,8 +25,10 @@ public class PlayerSettings
     public float? RaidHornVolume;
     public float? MusicVolume;
     public float? DPIScale;
+    public float? ViewDistance;
     public float? CameraRotationSpeed;
 
+    public int? LocalBotPort;
     public int? PlayerBoostRequirement;
     public int? PlayerCacheExpiryTime;
     public int? ItemDropMessageType;
@@ -129,6 +131,12 @@ public class PlayerSettings
             wasUpdated = true;
         }
 
+        if(Instance.LocalBotPort == null)
+        {
+            Instance.LocalBotPort = RavenBotConnection.DefaultLocalBotServerPort;
+            wasUpdated = true;
+        }
+
         if (Instance.PhysicsEnabled == null)
         {
             Instance.PhysicsEnabled = true;
@@ -201,6 +209,12 @@ public class PlayerSettings
             wasUpdated = true;
         }
 
+        if (Instance.ViewDistance == null)
+        {
+            Instance.ViewDistance = 0.5f;
+            wasUpdated = true;
+        }
+
         if (Instance.AutoKickAfkPlayers == null)
         {
             Instance.AutoKickAfkPlayers = false;
@@ -235,7 +249,7 @@ public class PlayerSettings
             Serialize(sw, "alertExpiredStateCacheInChat", obj.AlertExpiredStateCacheInChat);
             Serialize(sw, "playerListVisible", obj.PlayerListVisible);
             Serialize(sw, "playerNamesVisible", obj.PlayerNamesVisible);
-            Serialize(sw, "localBotServerDisabled", obj.LocalBotServerDisabled);
+            Serialize(sw, "localBotServerDisabled", obj.LocalBotServerDisabled);            
             Serialize(sw, "autoKickAfkPlayers", obj.AutoKickAfkPlayers);
             Serialize(sw, "dayNightCycleEnabled", obj.DayNightCycleEnabled);
             Serialize(sw, "queryEngineEnabled", obj.QueryEngineEnabled);
@@ -253,6 +267,7 @@ public class PlayerSettings
             Serialize(sw, "raidHornVolume", obj.RaidHornVolume);
             Serialize(sw, "musicVolume", obj.MusicVolume);
             Serialize(sw, "dpiScale", obj.DPIScale);
+            Serialize(sw, "viewDistance", obj.ViewDistance);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
 
             // Serialize all nullable int properties
@@ -260,6 +275,7 @@ public class PlayerSettings
             Serialize(sw, "playerCacheExpiryTime", obj.PlayerCacheExpiryTime);
             Serialize(sw, "itemDropMessageType", obj.ItemDropMessageType);
             Serialize(sw, "pathfindingQualitySettings", obj.PathfindingQualitySettings);
+            Serialize(sw, "localBotPort", obj.LocalBotPort);
 
             // Serialize all nullable double properties
             Serialize(sw, "playerAfkHours", obj.PlayerAfkHours);

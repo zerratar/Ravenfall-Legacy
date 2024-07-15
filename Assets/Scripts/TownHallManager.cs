@@ -93,6 +93,8 @@ public class TownHallManager : MonoBehaviour
         {
             info.MakeDirty();
             info.Toggle();
+            var infoPos = activeTownHall.InfoTransform;
+            info.transform.SetPositionAndRotation(infoPos.position, infoPos.rotation);
         }
     }
 

@@ -13,8 +13,9 @@ using Resources = RavenNest.Models.Resources;
 using Debug = Shinobytes.Debug;
 using RavenNest.Models.TcpApi;
 using Sirenix.OdinInspector;
+using static UnityEngine.Rendering.GPUSort;
 
-public class PlayerController : MonoBehaviour, IAttackable
+public class PlayerController : MonoBehaviour, IAttackable, IPollable
 {
     private readonly HashSet<Guid> pickedItems = new HashSet<Guid>();
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
@@ -37,7 +38,6 @@ public class PlayerController : MonoBehaviour, IAttackable
     [SerializeField] public OnsenHandler onsenHandler;
 
     [SerializeField] public ArenaHandler arenaHandler;
-    [SerializeField] public CombatHandler combatHandler;
     [SerializeField] public DuelHandler duelHandler;
     [SerializeField] public FerryHandler ferryHandler;
     [SerializeField] public TeleportHandler teleportHandler;
@@ -83,7 +83,6 @@ public class PlayerController : MonoBehaviour, IAttackable
     //public Statistics Statistics = new Statistics();
     [NonSerialized] public PlayerEquipment Equipment;
     [NonSerialized] public Inventory Inventory;
-
 
     [NonSerialized] public string PlayerName;
     [NonSerialized] public string PlayerNameLowerCase;
@@ -284,15 +283,18 @@ public class PlayerController : MonoBehaviour, IAttackable
     private bool hasGameManager;
 
     internal string FullBodySkinPath;
-    internal bool IsGainingExp;
-
+    private PlayerSessionStats sessionStats = new PlayerSessionStats();
     public ScheduledAction ScheduledAction => activeScheduledAction;
 
+    public PlayerSessionStats SessionStats => sessionStats;
     public DateTime LastDungeonAutoJoinFailUtc { get; internal set; }
     public DateTime LastRaidAutoJoinFailUtc { get; internal set; }
     public GameInventoryItem LastEnchantedItem { get; internal set; }
     public DateTime LastEnchantedItemExpire { get; internal set; }
     public PlayerSkinObject ActiveFullBodySkin { get; private set; }
+    public Skill? RaidCombatStyle { get; set; }
+    public Skill? DungeonCombatStyle { get; set; }
+    public int AutoTrainTargetLevel { get; internal set; }
 
     internal void InterruptAction()
     {
@@ -517,7 +519,6 @@ public class PlayerController : MonoBehaviour, IAttackable
             if (!streamRaidHandler) streamRaidHandler = GetComponent<StreamRaidHandler>();
             if (!arenaHandler) arenaHandler = GetComponent<ArenaHandler>();
             if (!duelHandler) duelHandler = GetComponent<DuelHandler>();
-            if (!combatHandler) combatHandler = GetComponent<CombatHandler>();
             if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
             if (!playerAppearance) playerAppearance = GetComponent<SyntyPlayerAppearance>();
             if (!this.hitRangeCollider) this.hitRangeCollider = GetComponent<SphereCollider>();
@@ -526,14 +527,24 @@ public class PlayerController : MonoBehaviour, IAttackable
         catch { }
     }
 
-    void LateUpdate()
+    public void LatePoll()
     {
-        if (GameCache.IsAwaitingGameRestore) return;
-        if (Overlay.IsGame)
-        {
-            var euler = _transform.rotation.eulerAngles;
-            _transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
-        }
+        if (GameCache.IsAwaitingGameRestore || !Overlay.IsGame) return;
+
+        // we would like to avoid doing this every late update as it will be a bit expensive
+        // but it cant be helped. Rotate the player to make sure they are standing straight!
+        var euler = _transform.rotation.eulerAngles;
+        _transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
+
+        //// if the player is not in a raid, dungeon, or arena, we should check if the player are in a "no-go" zone
+        //// aka, under the map, or in a place they should not be. If so, we should teleport them to the island spawn position
+        //if (!raidHandler.InRaid && !dungeonHandler.InDungeon && !arenaHandler.InArena)
+        //{
+        //    //if (transform.position.y < -100)
+        //    //{
+        //    //    teleportHandler.TeleportToIslandSpawn();
+        //    //}
+        //}
     }
 
     void OnDrawGizmosSelected()
@@ -577,7 +588,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
     }
 
-    void Update()
+    public void Poll()
     {
         if ((IsBot && !Overlay.IsGame) || GameCache.IsAwaitingGameRestore)
         {
@@ -588,6 +599,21 @@ public class PlayerController : MonoBehaviour, IAttackable
         {
             return;
         }
+
+        if (IsBot && Bot)
+        {
+            Bot.Poll();
+        }
+
+        Animations.Poll();
+        Movement.Poll();
+        onsenHandler.Poll();
+        ferryHandler.Poll();
+        manualPlayerController.Poll();
+        duelHandler.Poll();
+        arenaHandler.Poll();
+        raidHandler.Poll();
+        streamRaidHandler.Poll();
 
         UpdateActiveEffects();
 
@@ -609,6 +635,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         var deltaTime = GameTime.deltaTime;
 
         TimeSinceLastTaskChange += deltaTime;
+
         this.Movement.UpdateIdle(this.ferryHandler.OnFerry);
 
         //HandleRested();
@@ -1132,6 +1159,8 @@ public class PlayerController : MonoBehaviour, IAttackable
                     return;
                 }
 
+                ChunkManager.StrictLevelRequirements = false;
+
                 var chunks = chunkManager.GetChunksOfType(Island, type);
                 var skill = GetSkill(type) ?? GetActiveSkillStat(); // if its null, then its a combat skill
 
@@ -1143,7 +1172,7 @@ public class PlayerController : MonoBehaviour, IAttackable
                         var reqCombat = chunk.GetRequiredCombatLevel();
                         var reqSkill = chunk.GetRequiredSkillLevel();
 
-                        if (Stats.CombatLevel >= reqCombat && skill.Level >= reqSkill)
+                        if ((reqCombat > 1 && Stats.CombatLevel >= reqCombat) || (reqSkill > 1 && skill.Level >= reqSkill))
                         {
                             Chunk = chunk;
                             break;
@@ -1903,6 +1932,19 @@ public class PlayerController : MonoBehaviour, IAttackable
             Equipment.HideEquipments();
         }
 
+        if (isCombatSkill)
+        {
+            if (raidHandler.InRaid)
+            {
+                RaidCombatStyle = skill;
+            }
+
+            if (dungeonHandler.InDungeon)
+            {
+                DungeonCombatStyle = skill;
+            }
+        }
+
         ActiveSkill = skill;
         currentTask = type;
         CurrentTaskName = currentTask.ToString();
@@ -1921,6 +1963,36 @@ public class PlayerController : MonoBehaviour, IAttackable
         else
         {
             GotoClosest(type, silent);
+        }
+    }
+
+    public void SetTaskBySkillSilently(Skill skill)
+    {
+        ActiveSkill = skill;
+        currentTask = skill.GetTaskType();
+        CurrentTaskName = currentTask.ToString();
+        SetTaskArgument(skill.ToString());
+    }
+
+    public void SetTaskBySkillSilently(Skill skill, int targetLevel)
+    {
+        SetTaskBySkillSilently(skill);
+        AutoTrainTargetLevel = targetLevel;
+    }
+
+    [NonSerialized] public ExpGainState CurrentExpGainState;
+    internal bool IsObserved;
+
+    private void SetExpGainState(ExpGainState state)
+    {
+        if (state != CurrentExpGainState)
+        {
+            CurrentExpGainState = state;
+        }
+
+        if (IsObserved && GameManager.ObservedPlayerDetails)
+        {
+            GameManager.ObservedPlayerDetails.SetExpGainState(state);
         }
     }
 
@@ -1975,7 +2047,9 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         if (fishingSpot.Fish(this))
         {
-            AddExp(Skill.Fishing, GetExpFactor());
+            AddExp(Skill.Fishing, GetExpFactor(out var state));
+
+            SetExpGainState(state);
             //var amount = fishingSpot.Resource * Mathf.FloorToInt(Stats.Fishing.CurrentValue / 10f);
             //Statistics.TotalFishCollected += (int)amount;
         }
@@ -2001,10 +2075,16 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         LookAt(craftingStation.transform);
 
-        if (craftingStation.Craft(this))
+        if (craftingStation.Craft(this) && Chunk != null)
         {
-            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
-            AddExp(Skill.Cooking, factor);//, craftingStation.GetExperience(this));
+            var factor = Chunk.CalculateExpFactor(this, out var state);
+
+            SetExpGainState(state);
+
+            if (factor > 0)
+            {
+                AddExp(Skill.Cooking, factor);//, craftingStation.GetExperience(this));
+            }
         }
 
         return true;
@@ -2030,10 +2110,16 @@ public class PlayerController : MonoBehaviour, IAttackable
         //playerAnimations.StartBrewing();
 
         LookAt(craftingStation.transform);
-        if (craftingStation.Craft(this))
+        if (craftingStation.Craft(this) && Chunk != null)
         {
-            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
-            AddExp(Skill.Alchemy, factor);//, craftingStation.GetExperience(this));
+            var factor = Chunk.CalculateExpFactor(this, out var state);
+
+            SetExpGainState(state);
+
+            if (factor > 0)
+            {
+                AddExp(Skill.Alchemy, factor);//, craftingStation.GetExperience(this));
+            }
         }
 
         return true;
@@ -2057,9 +2143,12 @@ public class PlayerController : MonoBehaviour, IAttackable
         playerAnimations.Craft();
 
         LookAt(craftingStation.transform);
-        if (craftingStation.Craft(this))
+        if (craftingStation.Craft(this) && Chunk != null)
         {
-            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            var factor = Chunk.CalculateExpFactor(this, out var state);
+
+            SetExpGainState(state);
+
             AddExp(Skill.Crafting, factor);//, craftingStation.GetExperience(this));
         }
 
@@ -2086,9 +2175,12 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         LookAt(rock.transform);
 
-        if (rock.Mine(this))
+        if (rock.Mine(this) && Chunk != null)
         {
-            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            var factor = Chunk.CalculateExpFactor(this, out var state);
+
+            SetExpGainState(state);
+
             AddExp(Skill.Mining, factor);
             //var amount = rock.Resource * Mathf.FloorToInt(Stats.Mining.CurrentValue / 10f);
             //Statistics.TotalOreCollected += (int)amount;
@@ -2112,11 +2204,15 @@ public class PlayerController : MonoBehaviour, IAttackable
 
         LookAt(farm.transform);
 
-        if (farm.Farm(this))
+        if (farm.Farm(this) && Chunk != null)
         {
-            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            var factor = Chunk.CalculateExpFactor(this, out var state);
+
+            SetExpGainState(state);
+
             AddExp(Skill.Farming, factor);
-            var amount = farm.Resource * Mathf.FloorToInt(Stats.Farming.MaxLevel / 10f);
+
+            //var amount = farm.Resource * Mathf.FloorToInt(Stats.Farming.MaxLevel / 10f);
             //Statistics.TotalWheatCollected += amount;
         }
 
@@ -2304,10 +2400,15 @@ public class PlayerController : MonoBehaviour, IAttackable
             if (!target.Heal(heal))
                 return true;
 
-            // allow for some variation in gains based on how high you heal.
+            sessionStats.AddHealingDealt(heal);
 
+            // allow for some variation in gains based on how high you heal.
+            var state = ExpGainState.FullGain;
             var factor = (1 + (heal / maxHeal * 0.2)) *
-                ((raidHandler.InRaid || dungeonHandler.InDungeon) ? 1.0 : Chunk?.CalculateExpFactor(this) ?? 1.0);
+                ((raidHandler.InRaid || dungeonHandler.InDungeon) ? 1.0 : Chunk?.CalculateExpFactor(this, out state) ?? 1.0);
+
+            SetExpGainState(state);
+
             AddExp(Skill.Healing, factor);
         }
         catch (Exception exc)
@@ -2320,6 +2421,7 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
         return true;
     }
+
     public bool DamageEnemy(IAttackable enemy, float hitTime, float startTime)
     {
         var delta = Time.time - startTime;
@@ -2332,9 +2434,13 @@ public class PlayerController : MonoBehaviour, IAttackable
         }
 
         var damage = CalculateDamage(enemy);
+
+        sessionStats.AddDamageDealt(damage);
+
         if (enemy == null || !enemy.TakeDamage(this, damage))
             return true;
 
+        sessionStats.IncrementEnemiesKilled();
         //Statistics.TotalDamageDone += damage;
 
         var isPlayer = enemy is PlayerController playerController;
@@ -2355,7 +2461,10 @@ public class PlayerController : MonoBehaviour, IAttackable
                 if (activeSkill.IsCombatSkill())
                 {
                     //activeSkill = Skill.Health; // ALL
-                    var factor = dungeonHandler.InDungeon ? 1d : Chunk?.CalculateExpFactor(player) ?? 1d;
+                    var state = ExpGainState.FullGain;
+                    var factor = dungeonHandler.InDungeon ? 1d : Chunk?.CalculateExpFactor(player, out state) ?? 1d;
+
+                    SetExpGainState(state);
 
                     if (enemyController != null)
                     {
@@ -2383,6 +2492,9 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!gather.Gather(this))
             return false;
 
+
+        sessionStats.IncrementGather();
+
         foreach (var player in gather.Gatherers)
         {
             if (player == null || !player || player.isDestroyed)
@@ -2390,7 +2502,10 @@ public class PlayerController : MonoBehaviour, IAttackable
                 continue;
             }
 
-            var factor = Chunk?.CalculateExpFactor(this) ?? 1d;
+            var factor = Chunk.CalculateExpFactor(this, out var state);
+
+            SetExpGainState(state);
+
             AddExp(Skill.Gathering, factor);
         }
 
@@ -2408,6 +2523,8 @@ public class PlayerController : MonoBehaviour, IAttackable
         if (!tree.DoDamage(this, damage))
             return true;
 
+        sessionStats.IncrementTreeCutDown();
+
         // give all attackers exp for the kill, not just the one who gives the killing blow.
         foreach (var player in tree.WoodCutters)
         {
@@ -2418,7 +2535,10 @@ public class PlayerController : MonoBehaviour, IAttackable
 
             //++player.Statistics.TotalTreesCutDown;
 
-            var factor = Chunk?.CalculateExpFactor(player) ?? 1d;
+            var factor = Chunk.CalculateExpFactor(this, out var state);
+
+            SetExpGainState(state);
+
             player.AddExp(Skill.Woodcutting, factor);// tree.Experience);
             //var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
             //player.Statistics.TotalWoodCollected += amount;
@@ -2483,12 +2603,13 @@ public class PlayerController : MonoBehaviour, IAttackable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double GetMultiplierFactor() => 1;
 
-    public double GetExpFactor()
+    public double GetExpFactor(out ExpGainState state)
     {
         var skill = ActiveSkill;
+        state = ExpGainState.FullGain;
         if (skill == Skill.Sailing || skill == Skill.Healing) return 1;
         //if (skill == Skill.Health) return 1d / 3d;
-        return Chunk?.CalculateExpFactor(this) ?? 1d;
+        return Chunk?.CalculateExpFactor(this, out state) ?? 1d;
     }
 
     public double GetExperience(Skill skill, double factor)
@@ -2921,7 +3042,7 @@ public class PlayerController : MonoBehaviour, IAttackable
             // cosmetic ones should not be replaced.
             // maybe we should find a good way to mark an item as cosmetic?
             if (currentEquipment.Category == ItemCategory.Skin || currentEquipment.Category == ItemCategory.Cosmetic || currentEquipment.GetTotalStats() == 0)
-                //(currentEquipment.Type == ItemType.Helmet || currentEquipment.Type == ItemType.Hat || currentEquipment.Type == ItemType.Mask))
+            //(currentEquipment.Type == ItemType.Helmet || currentEquipment.Type == ItemType.Hat || currentEquipment.Type == ItemType.Mask))
             {
                 return false;
             }
@@ -3135,10 +3256,10 @@ public class PlayerController : MonoBehaviour, IAttackable
     }
 
 
-    internal bool Unstuck()
+    internal bool Unstuck(bool forceUnstuck = false)
     {
         var now = Time.realtimeSinceStartup;
-        if (now - lastUnstuckUsed < 60)
+        if (!forceUnstuck && now - lastUnstuckUsed < 30)
         {
             return false;
         }
@@ -3180,16 +3301,19 @@ public class PlayerController : MonoBehaviour, IAttackable
                 }
             }
 
-            if (ferryHandler.OnFerry)
+            if (!Island || ferryHandler.OnFerry)
             {
-                this.transform.localPosition = Vector3.zero;
-                this.transform.localRotation = Quaternion.identity;
+                this.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                this.ferryHandler.AddPlayerToFerry();
                 return true;
             }
 
             if (onsenHandler.InOnsen)
             {
+                // leave and join onsen
                 GameManager.Onsen.Leave(this);
+                GameManager.Onsen.Join(this);
+                return true;
             }
 
             //if (string.IsNullOrEmpty(CurrentTaskName) && Stats.CombatLevel > 3)
@@ -3332,6 +3456,8 @@ public class StatsModifiers
 
     // New additions
     public float CriticalHitChance;
+    public float CriticalHitDamage;
+
 
     // Attack attributes
     public float AttackAttributePoisonEffect;
@@ -3379,6 +3505,8 @@ public class CharacterRestedState
     public double RestedPercent;
     public double RestedTime;
     public double CombatStatsBoost;
+    internal double? AutoRestTarget;
+    internal double? AutoRestStart;
     public const double RestedTimeMax = 2 * 60 * 60; // 2 hours (Seconds)
 }
 

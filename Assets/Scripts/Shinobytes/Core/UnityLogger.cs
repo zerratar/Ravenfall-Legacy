@@ -1,9 +1,7 @@
-﻿using JetBrains.Annotations;
-using NUnit.Framework.Internal;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Contexts;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace RavenNest.SDK
@@ -42,7 +40,6 @@ namespace Shinobytes
     public static class Debug
     {
         private static readonly SyntaxHighlightedConsoleLogger console = new SyntaxHighlightedConsoleLogger();
-
         private static volatile bool patched;
 
         private static void PatchIfNecessary()
@@ -52,10 +49,8 @@ namespace Shinobytes
             var s_logger = UnityEngine.Debug.unityLogger;
             var s_loggerField = typeof(UnityEngine.Debug).GetField("s_Logger", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
             s_loggerField.SetValue(null, new PatchedUnityLogger(s_logger));
-
             patched = true;
         }
-
 
         public static void Log(string message)
         {
@@ -112,32 +107,92 @@ namespace Shinobytes
             public UnityEngine.LogType filterLogType { get => logger.filterLogType; set => logger.filterLogType = value; }
 
             public bool IsLogTypeAllowed(UnityEngine.LogType logType) => logger.IsLogTypeAllowed(logType);
-            public void Log(UnityEngine.LogType logType, object message) => logger.Log(logType, message);
+            public void Log(UnityEngine.LogType logType, object message)
+            {
+                if (Filter(message)) logger.Log(logType, message);
+            }
 
-            public void Log(UnityEngine.LogType logType, object message, UnityEngine.Object context) => logger.Log(logType, message, context);
+            public void Log(UnityEngine.LogType logType, object message, UnityEngine.Object context)
+            {
+                if (Filter(message)) logger.Log(logType, message, context);
+            }
 
             public void Log(UnityEngine.LogType logType, string tag, object message) => logger.Log(logType, tag, message);
-            public void Log(UnityEngine.LogType logType, string tag, object message, UnityEngine.Object context) => logger.Log(logType, tag, message, context);
+            public void Log(UnityEngine.LogType logType, string tag, object message, UnityEngine.Object context)
+            {
+                if (Filter(message)) logger.Log(logType, tag, message, context);
+            }
 
-            public void Log(object message) => logger.Log(message);
+            public void Log(object message)
+            {
+                if (Filter(message)) logger.Log(message);
+            }
 
-            public void Log(string tag, object message) => logger.Log(tag, message);
+            public void Log(string tag, object message)
+            {
+                if (Filter(message)) logger.Log(tag, message);
+            }
+            public void Log(string tag, object message, UnityEngine.Object context) { if (Filter(message)) logger.Log(tag, message, context); }
+            public void LogError(string tag, object message)
+            {
+                if (Filter(message)) logger.LogError(tag, message);
+            }
+            public void LogError(string tag, object message, UnityEngine.Object context)
+            {
+                if (Filter(message)) logger.LogError(tag, message, context);
+            }
+            public void LogException(Exception exception)
+            {
+                if (Filter(exception)) logger.LogException(exception);
+            }
+            public void LogException(Exception exception, UnityEngine.Object context)
+            {
+                if (Filter(exception)) logger.LogException(exception, context);
+            }
 
-            public void Log(string tag, object message, UnityEngine.Object context) => logger.Log(tag, message, context);
+            public void LogFormat(UnityEngine.LogType logType, string format, params object[] args)
+            {
+                if (Filter(format)) logger.LogFormat(logType, format, args);
+            }
 
-            public void LogError(string tag, object message) => logger.LogError(tag, message);
-            public void LogError(string tag, object message, UnityEngine.Object context) => logger.LogError(tag, message, context);
+            public void LogFormat(UnityEngine.LogType logType, UnityEngine.Object context, string format, params object[] args)
+            {
+                if (Filter(format)) logger.LogFormat(logType, context, format, args);
+            }
 
-            public void LogException(Exception exception) => logger.LogException(exception);
-            public void LogException(Exception exception, UnityEngine.Object context) => logger.LogException(exception, context);
+            public void LogWarning(string tag, object message)
+            {
+                if (Filter(message)) logger.LogWarning(tag, message);
+            }
 
-            public void LogFormat(UnityEngine.LogType logType, string format, params object[] args) => logger.LogFormat(logType, format, args);
+            public void LogWarning(string tag, object message, UnityEngine.Object context)
+            {
+                if (Filter(message)) logger.LogWarning(tag, message, context);
+            }
 
-            public void LogFormat(UnityEngine.LogType logType, UnityEngine.Object context, string format, params object[] args) => logger.LogFormat(logType, context, format, args);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool Filter(object message)
+            {
+                if (message == null) return false;
+                if (message is string str) return Filter(str);
+                if (message is Exception exc) return Filter(exc);
+                return true;
+            }
 
-            public void LogWarning(string tag, object message) => logger.LogWarning(tag, message);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool Filter(Exception exc)
+            {
+                return true; // catch all
+            }
 
-            public void LogWarning(string tag, object message, UnityEngine.Object context) => logger.LogWarning(tag, message, context);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool Filter(string str)
+            {
+                if (string.IsNullOrEmpty(str)
+                    || str.Contains("Failed to create agent because it is not close enough to the NavMesh", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                return true;
+            }
         }
     }
 

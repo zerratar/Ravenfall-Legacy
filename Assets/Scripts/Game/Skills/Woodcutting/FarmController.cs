@@ -6,7 +6,7 @@ public class FarmController : MonoBehaviour
     //public double Experience => GameMath.GetFishingExperience(Level);
     public int Resource => 1;
 
-    public bool IsInvalid { get; internal set; }
+    [HideInInspector] public bool IsInvalid;
 
     public float MaxActionDistance = 5;
 

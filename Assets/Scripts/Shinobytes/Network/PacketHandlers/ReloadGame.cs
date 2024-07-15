@@ -26,12 +26,13 @@ public class ReloadGame : ChatBotCommandHandler
             var player = PlayerManager.GetPlayer(gm.Sender);
             if (!player)
             {
+                return;
             }
+
             if (!player.IsGameAdmin && !player.IsGameModerator)
             {
                 return;
             }
-            return;
         }
 
         Game.SaveStateAndLoadScene();

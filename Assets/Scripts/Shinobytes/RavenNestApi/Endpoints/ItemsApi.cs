@@ -68,13 +68,13 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<bool>(ApiRequestTarget.Items, ApiRequestType.Remove);
         }
 
-        internal Task<ItemCollection> GetDeltaAsync(DateTime lastModified)
+        public Task<ItemCollection> GetDeltaAsync(DateTime lastModified)
         {
             return request.Create()
                 .Method("delta")
                 .AddParameter(lastModified.ToString())
                 .Build()
-                .SendAsync<ItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
+                .SendAsync<ItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get, excludeRequestParametersOnError: true);
         }
     }
 }

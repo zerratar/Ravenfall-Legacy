@@ -126,23 +126,23 @@ public class ItemResolver : IItemResolver
             if (playerToSearch != null)
             {
                 var result = ResolveInventoryItem(playerToSearch, itemQuery, equippedState: equippedState);
-                result.Count = amount;
-                result.Price = price;
+                result.Count = amount < 0 ? 1 : amount;
+                result.Price = price < 0 ? 1 : price;
                 result.Player = player;
                 return result;
             }
             else
             {
                 var result = Resolve(itemQuery, 5);
-                result.Count = amount;
-                result.Price = price;
+                result.Count = amount < 0 ? 1 : amount;
+                result.Price = price < 0 ? 1 : price;
                 result.Player = player;
                 return result;
             }
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError("ItemResolver.ResolveTradeQuery: " + exc);
+            Shinobytes.Debug.LogError("ItemResolver.ResolveTradeQuery \"" + query + "\": " + exc);
             return null;
         }
     }

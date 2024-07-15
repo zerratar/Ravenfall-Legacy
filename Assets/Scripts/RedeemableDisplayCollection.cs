@@ -91,7 +91,7 @@ public class RedeemableDisplayCollection : MonoBehaviour
 
     private void EnsureRedeemableRepository(bool forceRefresh = true)
     {
-        var redeemableRepo = @"C:\git\Ravenfall Legacy\Data\Repositories\redeemable.json";
+        var redeemableRepo = @"G:\Ravenfall\Projects\Ravenfall Legacy\Data\Repositories\redeemable.json";
 
         if (forceRefresh || !System.IO.File.Exists(redeemableRepo))
         {
@@ -115,7 +115,7 @@ public class RedeemableDisplayCollection : MonoBehaviour
 
     private void EnsureItemRepository(bool forceRefresh = true)
     {
-        var itemsRepo = @"C:\git\Ravenfall Legacy\Data\Repositories\items.json";
+        var itemsRepo = @"G:\Ravenfall\Projects\Ravenfall Legacy\Data\Repositories\items.json";
         if (forceRefresh || !System.IO.File.Exists(itemsRepo))
         {
             System.Net.WebClient cl = new System.Net.WebClient();
@@ -134,7 +134,7 @@ public class RedeemableDisplayCollection : MonoBehaviour
 
         var json = System.IO.File.ReadAllText(itemsRepo);
 
-        //var json = System.IO.File.ReadAllText(@"C:\git\Ravenfall Legacy\Data\Repositories\items.json");
+        //var json = System.IO.File.ReadAllText(@"G:\Ravenfall\Projects\Ravenfall Legacy\Data\Repositories\items.json");
         items = JsonConvert.DeserializeObject<Item[]>(json);
     }
 }

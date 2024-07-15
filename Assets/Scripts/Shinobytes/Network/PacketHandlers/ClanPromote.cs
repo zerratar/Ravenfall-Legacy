@@ -1,4 +1,6 @@
-﻿public class ClanPromote : ChatBotCommandHandler<Arguments>
+﻿using System;
+
+public class ClanPromote : ChatBotCommandHandler<Arguments>
 {
     public ClanPromote(GameManager game, RavenBotConnection server, PlayerManager playerManager)
         : base(game, server, playerManager)

@@ -21,6 +21,7 @@ public class KickPlayer : ChatBotCommandHandler<User>
             {
                 return;
             }
+
             if (!player.IsGameAdmin && !player.IsGameModerator)
             {
                 return;

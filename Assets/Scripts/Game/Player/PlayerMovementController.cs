@@ -31,9 +31,8 @@ public class PlayerMovementController : MonoBehaviour
     public NavMeshPath CurrentPath;
     private float last_speed;
     private float last_angularSpeed;
-    private Transform _transform;
-
-
+    private Transform internalTransform;
+    private bool hasInternalTransform;
     //private NavigationAgent navAgentState;
 
     public enum MovementLockState
@@ -46,7 +45,6 @@ public class PlayerMovementController : MonoBehaviour
 
     void Start()
     {
-        this._transform = this.transform;
         if (!navMeshAgent) navMeshAgent = GetComponent<NavMeshAgent>();
         if (!playerAnimations) playerAnimations = GetComponent<PlayerAnimationController>();
         SetupNavigationAgent();
@@ -54,10 +52,15 @@ public class PlayerMovementController : MonoBehaviour
 
 
     // Update is called once per frame
-    void Update()
+    public void Poll()
     {
-        Position = _transform.position;
+        if (!hasInternalTransform)
+        {
+            internalTransform = transform;
+            hasInternalTransform = true;
+        }
 
+        Position = internalTransform.position;
         if (defaultSpeed > 0 && MovementSpeedMultiplier > 0)
         {
             var speed = MovementSpeedMultiplier * defaultSpeed;
@@ -237,13 +240,14 @@ public class PlayerMovementController : MonoBehaviour
         if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMesh.AllAreas))
         {
             var pos = closestHit.position;
+
+            gameObject.transform.position = pos;
+
             var agent = navMeshAgent;
             if (agent)
             {
                 agent.Warp(pos);
             }
-
-            gameObject.transform.position = pos;
         }
     }
 

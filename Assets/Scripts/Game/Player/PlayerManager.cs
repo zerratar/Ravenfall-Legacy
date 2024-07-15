@@ -78,6 +78,11 @@ public class PlayerManager : MonoBehaviour
             }
         }
         else { LoadingPlayers = false; }
+
+        for(var i= 0; i < playerList.Count; i++)
+        {
+            playerList[i].LatePoll();
+        }
     }
 
     void Start()
@@ -88,6 +93,17 @@ public class PlayerManager : MonoBehaviour
 
         //LoadStatCache();
     }
+
+
+    private void Update()
+    {
+
+        for (var i = 0; i < playerList.Count; i++)
+        {
+            playerList[i].Poll();
+        }
+    }
+
 
     internal async Task<PlayerController> JoinAsync(GameMessage command, User user, GameClient client, bool userTriggered, bool isBot, Guid? characterId)
     {
@@ -516,13 +532,13 @@ public class PlayerManager : MonoBehaviour
         player.SetRestedState(data);
     }
 
-    internal async Task RestoreAsync(List<GameCachePlayerItem> players)
+    internal async Task RestoreAsync(List<RestorablePlayer> players)
     {
         // even if players count is 0, do the request.
         // it will ensure the server later removes players not being recovered.
         //if (players.Count == 0) return;
 
-        var failed = new List<GameCachePlayerItem>();
+        var failed = new List<RestorablePlayer>();
         try
         {
             Shinobytes.Debug.Log("Send Restore to server with " + players.Count + " players.");

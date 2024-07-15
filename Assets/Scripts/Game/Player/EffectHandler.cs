@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 public class EffectHandler : MonoBehaviour
 {
-
     [Header("Spell Projectile effects")]
     [SerializeField] private Transform spellSourceTransform;
     [SerializeField] private GameObject[] SpellProjectilePrefabs;
@@ -13,7 +11,6 @@ public class EffectHandler : MonoBehaviour
     [SerializeField] private Transform arrowSourceTransform;
     [SerializeField] private GameObject[] ArrowProjectilePrefabs;
 
-
     [Header("Level Up Effect")]
     [SerializeField] private GameObject LevelUpPrefab;
     [SerializeField] private float LevelUpGlowDuration = 3f;
@@ -21,8 +18,32 @@ public class EffectHandler : MonoBehaviour
     [Header("Heal Effect")]
     [SerializeField] private GameObject HealPrefab;
     [SerializeField] private float HealDuration = 3f;
+
+    private GameObject magicProjectileInstance;
+    private GameObject arrowProjectileInstance;
+
     private ProjectileMover activeArrowProjectile;
     private ProjectileMover activeMagicProjectile;
+    private GameObject container;
+
+    private GameObject levelUpInstance;
+    private DelayedDeactivate levelUpDelayedDeactivate;
+    private FollowTarget levelUpFollowTarget;
+    private GameObject healInstance;
+    private DelayedDeactivate healDelayedDeactivate;
+    private FollowTarget healFollowTarget;
+
+    private void Start()
+    {
+        this.container = GameObject.Find("Effects and Projectiles");
+        if (!this.container)
+        {
+            this.container = new GameObject("Effects and Projectiles");
+        }
+
+        // Instantiate and disable projectiles initially
+
+    }
 
     internal void LevelUp()
     {
@@ -32,13 +53,17 @@ public class EffectHandler : MonoBehaviour
             if (!transform || transform == null || !this || this == null)
                 return;
 
-            var obj = Instantiate(LevelUpPrefab, transform.position, Quaternion.identity);
+            if (!levelUpInstance)
+            {
+                levelUpInstance = Instantiate(LevelUpPrefab, transform.position, Quaternion.identity);
+                levelUpInstance.transform.parent = this.container.transform;
+                levelUpDelayedDeactivate = levelUpInstance.AddComponent<DelayedDeactivate>();
+                levelUpFollowTarget = levelUpInstance.AddComponent<FollowTarget>();
+            }
 
-            obj.AddComponent<TimeoutDestroy>()
-                .TimeoutSeconds = LevelUpGlowDuration;
-
-            obj.AddComponent<FollowTarget>()
-                .Target = gameObject;
+            levelUpFollowTarget.Target = gameObject;
+            levelUpDelayedDeactivate.TimeoutSeconds = LevelUpGlowDuration;
+            levelUpInstance.SetActive(true);
         }
         catch { }
     }
@@ -51,13 +76,17 @@ public class EffectHandler : MonoBehaviour
             if (!transform || transform == null || !this || this == null)
                 return;
 
-            var obj = Instantiate(HealPrefab, transform.position, Quaternion.identity);
+            if (!healInstance)
+            {
+                healInstance = Instantiate(HealPrefab, transform.position, Quaternion.identity);
+                healInstance.transform.parent = this.container.transform;
+                healDelayedDeactivate = healInstance.AddComponent<DelayedDeactivate>();
+                healFollowTarget = healInstance.AddComponent<FollowTarget>();
+            }
 
-            obj.AddComponent<TimeoutDestroy>()
-                .TimeoutSeconds = HealDuration;
-
-            obj.AddComponent<FollowTarget>()
-                .Target = gameObject;
+            healDelayedDeactivate.TimeoutSeconds = HealDuration;
+            healFollowTarget.Target = gameObject;
+            healInstance.SetActive(true);
         }
         catch { }
     }
@@ -66,36 +95,75 @@ public class EffectHandler : MonoBehaviour
     {
         var direction = target.position - gameObject.transform.position;
         var rotation = Quaternion.LookRotation(direction);
-        var magicProjectile = Instantiate(SpellProjectilePrefabs[0], spellSourceTransform.position, rotation);
-        this.activeMagicProjectile = magicProjectile.GetComponent<ProjectileMover>();
-        this.activeMagicProjectile.TargetTransform = target;
+
+        if (!magicProjectileInstance)
+        {
+            magicProjectileInstance = Instantiate(SpellProjectilePrefabs[0]);
+            magicProjectileInstance.name = this.gameObject.name + " - magic projectile";
+            magicProjectileInstance.transform.parent = container.transform;
+            magicProjectileInstance.SetActive(false);
+            activeMagicProjectile = magicProjectileInstance.GetComponent<ProjectileMover>();
+            activeMagicProjectile.RecycleThisObject = true;
+        }
+
+        // Reuse magic projectile instance
+        magicProjectileInstance.SetActive(false);
+        magicProjectileInstance.transform.position = spellSourceTransform.position;
+        magicProjectileInstance.transform.rotation = rotation;
+        magicProjectileInstance.SetActive(true);
+
+        if (!activeMagicProjectile)
+            activeMagicProjectile = magicProjectileInstance.GetComponent<ProjectileMover>();
+
+        activeMagicProjectile.Recycle();
+        activeMagicProjectile.TargetTransform = target;
     }
 
     internal void ShootRangedProjectile(Transform target)
     {
         var direction = target.position - gameObject.transform.position;
         var rotation = Quaternion.LookRotation(direction);
-        var arrowProjectile = Instantiate(ArrowProjectilePrefabs[0], arrowSourceTransform.position, rotation);
-        this.activeArrowProjectile = arrowProjectile.GetComponent<ProjectileMover>();
-        this.activeArrowProjectile.TargetTransform = target;
+
+        if (!arrowProjectileInstance)
+        {
+            arrowProjectileInstance = Instantiate(ArrowProjectilePrefabs[0]);
+            arrowProjectileInstance.name = this.gameObject.name + " - arrow projectile";
+            arrowProjectileInstance.transform.parent = container.transform;
+            arrowProjectileInstance.SetActive(false);
+            activeArrowProjectile = arrowProjectileInstance.GetComponent<ProjectileMover>();
+            activeArrowProjectile.RecycleThisObject = true;
+        }
+
+        // Reuse arrow projectile instance
+        arrowProjectileInstance.SetActive(false);
+        arrowProjectileInstance.transform.position = arrowSourceTransform.position;
+        arrowProjectileInstance.transform.rotation = rotation;
+        arrowProjectileInstance.SetActive(true);
+
+        if (!activeArrowProjectile)
+            activeArrowProjectile = arrowProjectileInstance.GetComponent<ProjectileMover>();
+        activeArrowProjectile.Recycle();
+        activeArrowProjectile.TargetTransform = target;
     }
+
     internal void DestroyProjectile()
     {
-        DestroyArrowProjectile();
-        DestroyMagicProjectile();
-    }
-    internal void DestroyMagicProjectile()
-    {
-        if (this.activeMagicProjectile && this.activeMagicProjectile.gameObject != null)
+        // Instead of destroying, disable the projectiles
+        if (activeMagicProjectile)
         {
-            Destroy(this.activeMagicProjectile.gameObject, 0.1f);
+            activeMagicProjectile.gameObject.SetActive(false);
+        }
+
+        if (activeArrowProjectile)
+        {
+            activeArrowProjectile.gameObject.SetActive(false);
         }
     }
-    internal void DestroyArrowProjectile()
+
+    private void OnDestroy()
     {
-        if (this.activeArrowProjectile && this.activeArrowProjectile.gameObject != null)
-        {
-            Destroy(this.activeArrowProjectile.gameObject, 0.1f);
-        }
+        if (activeMagicProjectile) Destroy(activeMagicProjectile);
+        if (activeArrowProjectile) Destroy(activeArrowProjectile);
     }
+
 }

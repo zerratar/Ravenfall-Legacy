@@ -46,7 +46,7 @@ public class FerryHandler : MonoBehaviour
         this._transform = this.transform;
     }
 
-    private void Update()
+    public void Poll()
     {
         if (!Overlay.IsGame)
         {

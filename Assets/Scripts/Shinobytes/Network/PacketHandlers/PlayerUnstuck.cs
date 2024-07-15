@@ -10,14 +10,19 @@
 
     public override void Handle(string args, GameMessage gm, GameClient client)
     {
-        var sender = gm.Sender;
-        var player = PlayerManager.GetPlayer(sender);
+        var user = gm.Sender;
+        var player = PlayerManager.GetPlayer(user);
 
         if (!string.IsNullOrEmpty(args))
         {
-            if (!sender.IsBroadcaster && !sender.IsModerator && !sender.IsGameModerator && !sender.IsGameAdministrator)
+            if (!user.IsBroadcaster && !user.IsModerator)
             {
                 if (!player)
+                {
+                    return;
+                }
+
+                if (!player.IsGameAdmin && !player.IsGameModerator)
                 {
                     return;
                 }
@@ -25,7 +30,6 @@
 
             if (args.ToLower() == "all" || args.ToLower() == "everyone")
             {
-
                 foreach (var p in PlayerManager.GetAllPlayers())
                 {
                     p.Unstuck();

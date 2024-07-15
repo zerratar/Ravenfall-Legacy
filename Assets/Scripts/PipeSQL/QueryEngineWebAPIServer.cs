@@ -85,24 +85,31 @@ namespace RavenfallDataPipe
                     if (TryGetContent(context, out var query))
                     {
                         //Shinobytes.Debug.Log("Query Engine - Processing Query: " + query);
-                        var result = await engine.ProcessAsync(query);
-
-                        if (!PlayerSettings.Instance.QueryEngineAlwaysReturnArray.GetValueOrDefault())
+                        try
                         {
-                            if (result.Count == 0)
+                            var result = await engine.ProcessAsync(query);
+
+                            if (!PlayerSettings.Instance.QueryEngineAlwaysReturnArray.GetValueOrDefault())
                             {
-                                WriteJsonResponse("{}", context);
-                                return;
+                                if (result.Count == 0)
+                                {
+                                    WriteJsonResponse("{}", context);
+                                    return;
+                                }
+
+                                if (result.Count == 1)
+                                {
+                                    WriteResponse(result[0], context);
+                                    return;
+                                }
                             }
 
-                            if (result.Count == 1)
-                            {
-                                WriteResponse(result[0], context);
-                                return;
-                            }
+                            WriteResponse(result, context);
                         }
-
-                        WriteResponse(result, context);
+                        catch (Exception exc)
+                        {
+                            WriteResponse("Failed to parse the following query: '" + query + "', exception: " + exc, context);
+                        }
                     }
                     else
                     {
@@ -160,7 +167,7 @@ namespace RavenfallDataPipe
                     using (var sr = new StreamReader(context.Request.InputStream))
                     {
                         content = sr.ReadToEnd();
-                        return true;
+                        return !string.IsNullOrEmpty(content);
                     }
                 }
                 catch (Exception exc)

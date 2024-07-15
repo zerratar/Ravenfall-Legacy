@@ -16,7 +16,7 @@ public class TimeoutDestroy : MonoBehaviour
         if (TimeoutSeconds <= 0f)
         {
             destroyed = true;
-            DestroyImmediate(gameObject);            
+            DestroyImmediate(gameObject);
         }
     }
 }

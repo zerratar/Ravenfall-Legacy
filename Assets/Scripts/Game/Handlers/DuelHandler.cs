@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 public class DuelHandler : MonoBehaviour
@@ -25,7 +26,7 @@ public class DuelHandler : MonoBehaviour
         if (!duelCamera) duelCamera = FindAnyObjectByType<DuelCameraScript>();
     }
 
-    private void Update()
+    public void Poll()
     {
         if (duelRequestTimer > 0f)
         {

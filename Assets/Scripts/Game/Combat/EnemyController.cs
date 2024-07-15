@@ -8,7 +8,8 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class EnemyController : MonoBehaviour, IAttackable
+
+public class EnemyController : MonoBehaviour, IAttackable, IPollable
 {
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
@@ -57,11 +58,12 @@ public class EnemyController : MonoBehaviour, IAttackable
 
     public IslandController Island;
     public IReadOnlyDictionary<string, float> Aggro => attackerAggro;
-    public bool InCombat { get; private set; }
+    [HideInInspector] public bool InCombat { get; set; }
     public string Name => name;
     public float HealthBarOffset => healthBarOffset;
-    public bool IsRaidBoss { get; private set; }
-    public bool IsDungeonBoss { get; private set; }
+    [HideInInspector] public bool IsRaidBoss;
+    [HideInInspector] public bool IsDungeonBoss;
+
     public bool IsDungeonEnemy;
 
     private float hitRangeRadius;
@@ -75,7 +77,6 @@ public class EnemyController : MonoBehaviour, IAttackable
     public PlayerController TargetPlayer;
     private StatsModifiers statsModifiers = new StatsModifiers();
     public StatsModifiers GetModifiers() => statsModifiers;
-
 
     [Button("Adjust Placement")]
     public void AdjustPlacement()
@@ -353,12 +354,14 @@ public class EnemyController : MonoBehaviour, IAttackable
     {
         return hitRangeRadius;
     }
+
     void Awake()
     {
         this._transform = this.transform;
+        FindFirstObjectByType<EnemyManager>().Register(this);
     }
 
-    void Update()
+    public void Poll()
     {
         if (GameCache.IsAwaitingGameRestore)
         {
@@ -370,6 +373,8 @@ public class EnemyController : MonoBehaviour, IAttackable
         //    SetPosition(SpawnPoint.transform.position);
         //    //this.transform.position = ;
         //}
+
+        movement.Poll();
 
         if ((!InCombat || !Target) && !IsDungeonEnemy)
         {
@@ -521,7 +526,7 @@ public class EnemyController : MonoBehaviour, IAttackable
         this.isVisbile = false;
     }
 
-    void LateUpdate()
+    public void LatePoll()
     {
         if (!isVisbile)
         {
@@ -897,5 +902,4 @@ public class EnemyController : MonoBehaviour, IAttackable
             Attackers.Add(player);
         }
     }
-
 }

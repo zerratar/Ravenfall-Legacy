@@ -5,7 +5,7 @@ using Skill = RavenNest.Models.Skill;
 public static class GameMath
 {
     public const int MaxLevel = 999;
-    public const int MaxVillageLevel = 300;
+    public const int MaxVillageLevel = 400;
 
     public readonly static double[] ExperienceArray = new double[MaxLevel];
 
@@ -63,7 +63,7 @@ public static class GameMath
 
             attackerPower = (int)(attackerPower * attackerModifiers.HealingPowerMultiplier);
 
-            var dmg = CalculateDamage(attacker, defender, Skills.Zero, EquipmentStats.Zero, 1, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim, minHitChance);
+            var dmg = CalculateDamage(attacker, defender, Skills.Zero, EquipmentStats.Zero, 1, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim, minHitChance, attackerModifiers.CriticalHitChance, attackerModifiers.CriticalHitDamage);
             return dmg;
         }
         catch
@@ -99,7 +99,7 @@ public static class GameMath
 
             var dmg = CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill,
                     attackerAimSkill, attackerPower, attackerAim, minHitChance, dodgeChance,
-                    defenderModifiers.DefenseMultiplier
+                    defenderModifiers.DefenseMultiplier, attackerModifiers.CriticalHitChance, attackerModifiers.CriticalHitDamage
                 );
             return dmg;
         }
@@ -136,7 +136,7 @@ public static class GameMath
 
             var dmg = CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill,
                   attackerAimSkill, attackerPower, attackerAim, minHitChance, dodgeChance,
-                  defenderModifiers.DefenseMultiplier
+                  defenderModifiers.DefenseMultiplier, attackerModifiers.CriticalHitChance, attackerModifiers.CriticalHitDamage
             );
 
             return dmg;
@@ -173,7 +173,7 @@ public static class GameMath
             attackerPower = (int)(attackerPower * attackerModifiers.AttackPowerMultiplier);
 
             var dmg = CalculateDamage(attacker, defender, defenderStats, defenderEq, defenderDamageSkill, attackerDamageSkill, attackerAimSkill, attackerPower, attackerAim, minHitChance,
-                dodgeChance, defenderModifiers.DefenseMultiplier);
+                dodgeChance, defenderModifiers.DefenseMultiplier, attackerModifiers.CriticalHitChance, attackerModifiers.CriticalHitDamage);
 
             return dmg;
         }
@@ -195,12 +195,17 @@ public static class GameMath
         int attackerAim,
         int minHitChance = 40,
         float dodgeChance = 0f,
-        float defenseMultiplier = 1f)
+        float defenseMultiplier = 1f,
+        float criticalHitChance = 0f,
+        float criticalHitDamage = 1.25f)
     {
         if (dodgeChance > 0 && UnityEngine.Random.value <= dodgeChance)
         {
             return 0;
         }
+
+        if (criticalHitDamage < 1.25f)
+            criticalHitDamage = 1.25f;
 
         var max = MaxHit(attackerDamageSkill, attackerPower);
         var newAtt = (int)((attackerAimSkill / 0.8D) + attackerAim + (attackerDamageSkill / 5D) + 10);
@@ -219,6 +224,12 @@ public static class GameMath
             hitChance += 20;
         }
 
+        var multiplier = 1f;
+        if (UnityEngine.Random.value <= criticalHitChance)
+        {
+            multiplier = criticalHitDamage;
+        }
+
         var reqHitChance = Mathf.Min(minHitChance, (defender is EnemyController ? 40 : 50));
         if (hitChance > reqHitChance)
         {
@@ -235,23 +246,23 @@ public static class GameMath
             var hitRange = UnityEngine.Random.Range(0, 100);
             if (hitRange >= (100 - maxProb))
             {
-                return max;
+                return max * multiplier;
             }
 
             if (hitRange >= (100 - nearMaxProp))
             {
-                return (int)Math.Round(Math.Abs(max - max * (UnityEngine.Random.Range(0, 10) * 0.01D)), MidpointRounding.AwayFromZero);
+                return (int)Math.Round(Math.Abs(max - max * (UnityEngine.Random.Range(0, 10) * 0.01D)), MidpointRounding.AwayFromZero) * multiplier;
             }
 
             if (hitRange >= (100 - avProb))
             {
                 newMax = (int)Math.Round(max - (max * 0.1D));
-                return (int)Math.Round(Math.Abs(newMax - newMax * (UnityEngine.Random.Range(0, 50) * 0.01D)), MidpointRounding.AwayFromZero);
+                return (int)Math.Round(Math.Abs(newMax - newMax * (UnityEngine.Random.Range(0, 50) * 0.01D)), MidpointRounding.AwayFromZero) * multiplier;
             }
 
 
             newMax = (int)Math.Round(max - max * 0.5D);
-            return (int)Math.Round(Math.Abs((newMax - (newMax * (UnityEngine.Random.Range(0, 50) * 0.01D)))), MidpointRounding.AwayFromZero);
+            return (int)Math.Round(Math.Abs((newMax - (newMax * (UnityEngine.Random.Range(0, 50) * 0.01D)))), MidpointRounding.AwayFromZero) * multiplier;
         }
 
         return 0;
@@ -319,6 +330,27 @@ public static class GameMath
             default: return TownHouseSlotType.Melee;
         }
     }
+
+
+    public static TaskType GetTaskType(this RavenNest.Models.Skill skill)
+    {
+        switch (skill)
+        {
+            case RavenNest.Models.Skill.Alchemy: return TaskType.Alchemy;
+            case RavenNest.Models.Skill.Gathering: return TaskType.Gathering;
+            case RavenNest.Models.Skill.Cooking: return TaskType.Cooking;
+            case RavenNest.Models.Skill.Crafting: return TaskType.Crafting;
+            case RavenNest.Models.Skill.Farming: return TaskType.Farming;
+            case RavenNest.Models.Skill.Mining: return TaskType.Mining;
+            case RavenNest.Models.Skill.Woodcutting: return TaskType.Woodcutting;
+            case RavenNest.Models.Skill.Fishing: return TaskType.Fishing;
+            case RavenNest.Models.Skill.Healing: return TaskType.Fighting;
+            case RavenNest.Models.Skill.Ranged: return TaskType.Fighting;
+            case RavenNest.Models.Skill.Magic: return TaskType.Fighting;
+            default: return TaskType.Fighting;
+        }
+    }
+
 
     public static bool IsCombatSkill(this RavenNest.Models.Skill skill)
     {

@@ -1,5 +1,6 @@
 ﻿using Shinobytes.Linq;
 using System;
+using Tessera;
 using UnityEngine;
 
 public class DungeonHandler
@@ -239,6 +240,11 @@ public class DungeonHandler
         this.player.taskTarget = null;
 
         player.Movement.AdjustPlayerPositionToNavmesh();
+
+        if (player.DungeonCombatStyle != null)
+        {
+            this.player.SetTaskBySkillSilently(player.DungeonCombatStyle.Value);
+        }
     }
 
     public void OnExit()
@@ -418,6 +424,18 @@ public class DungeonHandler
         player.taskTarget = null;
     }
 
+    public bool SetCombatStyle(RavenNest.Models.Skill? value)
+    {
+        player.DungeonCombatStyle = value;
+
+        if (InDungeon && previousTask == TaskType.Fighting)
+        {
+            player.SetTask(previousTask, previousTaskArgument, true);
+            return true;
+        }
+
+        return false;
+    }
 }
 
 public struct FerryContext

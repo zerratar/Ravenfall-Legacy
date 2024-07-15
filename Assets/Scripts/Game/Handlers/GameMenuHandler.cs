@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 public class GameMenuHandler : MonoBehaviour
@@ -58,6 +59,13 @@ public class GameMenuHandler : MonoBehaviour
         {
             Hide();
         }
+    }
+
+    public void OpenPlayerLogFolder()
+    {
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var appDataFolder = System.IO.Path.Combine(userProfile, @"AppData\LocalLow\", Application.companyName, Application.productName);
+        System.Diagnostics.Process.Start(appDataFolder);
     }
 
     public void Back()

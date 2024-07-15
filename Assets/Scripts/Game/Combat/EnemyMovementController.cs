@@ -107,7 +107,7 @@ public class EnemyMovementController : MonoBehaviour
         animator.enabled = false;
     }
 
-    private void Update()
+    public void Poll()
     {
         if (GameCache.IsAwaitingGameRestore) return;
 

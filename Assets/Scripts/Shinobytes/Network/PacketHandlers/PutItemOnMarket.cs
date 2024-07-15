@@ -24,7 +24,7 @@ public class PutItemOnMarket : ChatBotCommandHandler<string>
             var ioc = Game.gameObject.GetComponent<IoCContainer>();
             var itemResolver = ioc.Resolve<IItemResolver>();
             var item = itemResolver.ResolveTradeQuery(inputQuery, playerToSearch: player);
-            
+
             if (item.SuggestedItemNames.Length > 0)
             {
                 client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", item.SuggestedItemNames));
@@ -37,7 +37,7 @@ public class PutItemOnMarket : ChatBotCommandHandler<string>
                 return;
             }
 
-            if (item.Count >= long.MaxValue)
+            if (item.Count >= int.MaxValue)
             {
                 client.SendReply(gm, Localization.MSG_SELL_TOO_MANY,
                     item.Count,
@@ -49,9 +49,9 @@ public class PutItemOnMarket : ChatBotCommandHandler<string>
             var itemAmount = item.Count;
             var pricePerItem = item.Price;
 
-            if (itemAmount > long.MaxValue)
+            if (itemAmount > int.MaxValue)
             {
-                itemAmount = long.MaxValue;
+                itemAmount = int.MaxValue;
             }
 
             if (pricePerItem > long.MaxValue)
@@ -77,6 +77,7 @@ public class PutItemOnMarket : ChatBotCommandHandler<string>
             if (sellResult == null)
             {
                 client.SendReply(gm, Localization.MSG_SELL_MARKETPLACE_ERROR);
+                return;
             }
 
             switch (sellResult.State)

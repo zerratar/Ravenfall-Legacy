@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UnityEngine;
 
 public class StreamRaidHandler : MonoBehaviour
@@ -16,7 +17,7 @@ public class StreamRaidHandler : MonoBehaviour
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
     }
 
-    void Update()
+    public void Poll()
     {
         if (!InWar || !gameManager.StreamRaid.Started)
         {

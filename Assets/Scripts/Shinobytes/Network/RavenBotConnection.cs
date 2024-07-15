@@ -12,7 +12,7 @@ using UnityEngine;
 
 public class RavenBotConnection : IDisposable
 {
-    public const int ServerPort = 4040;
+    public const int DefaultLocalBotServerPort = 4040;
     public readonly int RemoteBotPort = 4041;
 
     private readonly bool localBotServerEnabled;
@@ -37,7 +37,11 @@ public class RavenBotConnection : IDisposable
     public event EventHandler<GameClient> RemoteDisconnected;
 
     public GameManager Game => game;
-    public RavenBotConnection(RavenNest.SDK.ILogger logger, RavenNestClient ravenNest, GameManager game, RavenBot ravenbot)
+    public RavenBotConnection(
+        RavenNest.SDK.ILogger logger,
+        RavenNestClient ravenNest,
+        GameManager game,
+        RavenBot ravenbot)
     {
         this.logger = logger;
         this.ravenNest = ravenNest;
@@ -47,7 +51,8 @@ public class RavenBotConnection : IDisposable
 
         if (localBotServerEnabled)
         {
-            server = new TcpListener(new IPEndPoint(IPAddress.Any, ServerPort));
+            var port = PlayerSettings.Instance.LocalBotPort ?? DefaultLocalBotServerPort;
+            server = new TcpListener(new IPEndPoint(IPAddress.Any, port));
         }
 
         string remoteBotServer = PlayerSettings.Instance.RavenBotServer;
@@ -186,9 +191,9 @@ public class RavenBotConnection : IDisposable
         var msg = JsonConvert.DeserializeObject<GameMessage>(rawCommand);
         var cmd = new BotMessage(gameClient, msg);
 
-#if DEBUG
-        logger.WriteMessage(rawCommand);
-#endif
+        //#if DEBUG
+        //        logger.WriteMessage(rawCommand);
+        //#endif
 
 
         availablePackets.Enqueue(cmd);

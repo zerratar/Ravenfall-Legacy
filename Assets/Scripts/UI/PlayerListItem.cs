@@ -190,7 +190,7 @@ public class PlayerListItem : MonoBehaviour
                 return;
             }
 
-            var f = TargetPlayer.GetExpFactor();
+            var f = TargetPlayer.GetExpFactor(out _);
             var expPerTick = TargetPlayer.GetExperience(s, f);
             var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;
             var expPerHour = System.Math.Min(estimatedExpPerHour, skill.GetExperiencePerHour());

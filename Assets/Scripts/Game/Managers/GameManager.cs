@@ -102,7 +102,6 @@ public class GameManager : MonoBehaviour, IGameManager
     private float experienceSaveInterval = 3f;
     private float stateSaveInterval = 3f;
 
-
     private SessionStats sessionStats;
     public SessionStats SessionStats => sessionStats;
 
@@ -112,7 +111,6 @@ public class GameManager : MonoBehaviour, IGameManager
     public GraphicsToggler Graphics;
     public RavenNestClient RavenNest;
     public ClanManager Clans => clanManager ?? (clanManager = new ClanManager(this));
-
     public VillageManager Village => villageManager;
     public PlayerLogoManager PlayerLogo => playerLogoManager;
     public ExpBoostEvent Boost => subEventManager.CurrentBoost;
@@ -368,6 +366,8 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ItemSellEventHandler>(GameEventType.ItemSell);
 
         RegisterGameEventHandler<ItemRemoveEventHandler>(GameEventType.ItemRemove);
+        RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
+
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);
         RegisterGameEventHandler<ItemEquipEventHandler>(GameEventType.ItemEquip);
 
@@ -763,7 +763,7 @@ public class GameManager : MonoBehaviour, IGameManager
         SceneManager.LoadScene(sceneIndex, LoadSceneMode.Single);
     }
 
-    private IEnumerator RestoreGameState(GameCacheState state)
+    private IEnumerator RestoreGameState(RestorableGameState state)
     {
         GameCache.IsAwaitingGameRestore = false;
 
@@ -847,7 +847,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (URP_LowQuality)
             {
-                GraphicsSettings.renderPipelineAsset = URP_LowQuality;
+                GraphicsSettings.defaultRenderPipeline = URP_LowQuality;
             }
 
             DisablePostProcessingEffects();
@@ -861,7 +861,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (URP_DefaultQuality)
             {
-                GraphicsSettings.renderPipelineAsset = URP_DefaultQuality;
+                GraphicsSettings.defaultRenderPipeline = URP_DefaultQuality;
             }
 
             EnablePostProcessingEffects();
@@ -971,7 +971,10 @@ public class GameManager : MonoBehaviour, IGameManager
                 sessionPlayersCleared = true;
             }
 
-            UpdateAutoJoinAnnouncement();
+            if (!handlingAutoJoin && ((Dungeons.Active && Dungeons.HasBeenAnnounced) || (Raid.Started && Raid.HasBeenAnnounced)))
+            {
+                UpdateAutoJoinAnnouncementAsync();
+            }
         }
 
 
@@ -1027,41 +1030,44 @@ public class GameManager : MonoBehaviour, IGameManager
         IntegrityCheck.Update();
     }
 
+#if DEBUG
+    Stopwatch UpdateGameEvents_stopwatch = new Stopwatch();
+    Stopwatch UpdateGameEvents_evtSw = new Stopwatch();
+    List<GameEventProfiler> UpdateGameEvents_evts = new List<GameEventProfiler>();
+#endif
+
     private bool UpdateGameEvents()
     {
 #if DEBUG
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
+        UpdateGameEvents_stopwatch.Restart();
         var eventsHandled = 0;
-        var evts = new List<GameEventProfiler>();
-        var evtSw = new Stopwatch();
 #endif
 
         while (gameEventQueue.TryDequeue(out var ge))
         {
 #if DEBUG
-            evtSw.Restart();
+            UpdateGameEvents_evtSw.Restart();
 #endif
             HandleGameEvent(ge);
 
 #if DEBUG
-            evtSw.Stop();
-            evts.Add(new GameEventProfiler
+            UpdateGameEvents_evtSw.Stop();
+            UpdateGameEvents_evts.Add(new GameEventProfiler
             {
                 Size = ge.Data.Length,
                 Type = ge.Type,
-                ElapsedMilliseconds = evtSw.ElapsedMilliseconds
+                ElapsedMilliseconds = UpdateGameEvents_evtSw.ElapsedMilliseconds
             });
             eventsHandled++;
 #endif
         }
 
 #if DEBUG
-        sw.Stop();
-        if (sw.ElapsedMilliseconds > 30)
+        UpdateGameEvents_stopwatch.Stop();
+        if (UpdateGameEvents_stopwatch.ElapsedMilliseconds > 30)
         {
-            Shinobytes.Debug.LogError("UpdateGameEvents took a long time! " + sw.ElapsedMilliseconds + "ms for " + eventsHandled + " events!\r\n" +
-                string.Join("\r\n- ", evts.Select(x => (GameEventType)x.Type + ": " + x.ElapsedMilliseconds + "ms, " + x.Size + " bytes").ToArray())
+            Shinobytes.Debug.LogError("UpdateGameEvents took a long time! " + UpdateGameEvents_stopwatch.ElapsedMilliseconds + "ms for " + eventsHandled + " events!\r\n" +
+                string.Join("\r\n- ", UpdateGameEvents_evts.Select(x => (GameEventType)x.Type + ": " + x.ElapsedMilliseconds + "ms, " + x.Size + " bytes").ToArray())
             );
         }
 #endif
@@ -1640,7 +1646,12 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        RavenBot.HandleNextPacket(this, RavenBot, playerManager);
+        if (ravenbotArgs == null)
+        {
+            ravenbotArgs = new object[] { this, RavenBot, playerManager };
+        }
+
+        RavenBot.HandleNextPacket(ravenbotArgs);
     }
 
     private void HandleKeyDown()
@@ -1887,6 +1898,16 @@ public class GameManager : MonoBehaviour, IGameManager
                 if (GUI.Button(GetButtonRect(buttonIndex++), "Spawn Bots"))
                 {
                     AdminControlData.BotSpawnVisible = true;
+                }
+
+                var count = Players.GetPlayerCount(true);
+
+                if (count > 0 && GUI.Button(GetButtonRect(buttonIndex++), "Unstuck All"))
+                {
+                    foreach (var p in Players.GetAllPlayers())
+                    {
+                        p.Unstuck(true);
+                    }
                 }
             }
         }
@@ -2304,12 +2325,10 @@ public class GameManager : MonoBehaviour, IGameManager
 
     float nextAutoJoinCheck = 0f;
     bool handlingAutoJoin = false;
-    internal async void UpdateAutoJoinAnnouncement()
+    private object[] ravenbotArgs;
+
+    internal async Task UpdateAutoJoinAnnouncementAsync()
     {
-        if (handlingAutoJoin || (!Dungeons.Active || !Dungeons.HasBeenAnnounced) && (!Raid.Started || !Raid.HasBeenAnnounced))
-        {
-            return;
-        }
 
         var now = Time.time;
         try

@@ -147,6 +147,11 @@ public class TownHouseManager : MonoBehaviour
         }
     }
 
+    internal TownHouseSlot FindSlotByOwner(PlayerController player)
+    {
+        return slots.FirstOrDefault(x => x.OwnerUserId == player.UserId);
+    }
+
     internal void InvalidateOwnership(PlayerController player)
     {
         var wasInvalidated = false;

@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class BotPlayerController : MonoBehaviour
@@ -18,9 +20,7 @@ public class BotPlayerController : MonoBehaviour
         initialized = true;
     }
 
-
-
-    private void Update()
+    public void Poll()
     {
         if (!initialized)
         {
@@ -42,13 +42,13 @@ public class BotPlayerController : MonoBehaviour
             return;
         }
 
-        if (gameManager && gameManager.Raid && gameManager.Raid.Started && gameManager.Raid.CanJoin(playerController) == RaidJoinResult.CanJoin)
+        if (gameManager.Raid.Started && gameManager.Raid.CanJoin(playerController) == RaidJoinResult.CanJoin)
         {
             joiningEvent = true;
             StartCoroutine(JoinRaid());
         }
 
-        if (gameManager && gameManager.Dungeons && gameManager.Dungeons.Active)
+        if (gameManager.Dungeons.Active)
         {
             var result = gameManager.Dungeons.CanJoin(playerController);
             if (result == DungeonJoinResult.CanJoin)
@@ -63,7 +63,7 @@ public class BotPlayerController : MonoBehaviour
         // first off here we want to check if our currently trained skill can be trained properly.
         // if not, we have to log it and report so that I can fix it.
         // since we are not in a raid nor a dungeon, unless we are on the ferry we must be on an island.
-        if (playerController && playerController.ferryHandler && playerController.ferryHandler.OnFerry)
+        if (playerController.ferryHandler.OnFerry)
         {
             return;
         }
@@ -135,14 +135,12 @@ public class BotPlayerController : MonoBehaviour
                 return;
             }
         }
-
         // after recording details, store it for later, let bots run wild for 5-10 minutes then teleport them to next island, and continue recording issues until all islands been tested.
         // then generate a report
-
-
     }
 
-    private float ExpectedMaxIdleTime(RavenNest.Models.Skill skill)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static float ExpectedMaxIdleTime(RavenNest.Models.Skill skill)
     {
         if (IsSkillExpectedToStandStill(skill))
             return float.MaxValue;
@@ -166,7 +164,8 @@ public class BotPlayerController : MonoBehaviour
         return 5f;
     }
 
-    private bool IsSkillExpectedToStandStill(RavenNest.Models.Skill skill)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsSkillExpectedToStandStill(RavenNest.Models.Skill skill)
     {
         return skill == RavenNest.Models.Skill.None || skill == RavenNest.Models.Skill.Alchemy
             || skill == RavenNest.Models.Skill.Cooking || skill == RavenNest.Models.Skill.Crafting
@@ -188,4 +187,5 @@ public class BotPlayerController : MonoBehaviour
         gameManager.Raid.Join(playerController);
         joiningEvent = false;
     }
+
 }

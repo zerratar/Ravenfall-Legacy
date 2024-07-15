@@ -21,6 +21,7 @@ public class PlayerDetails : MonoBehaviour
 
     [SerializeField] private GameObject timeforlevelPanel;
     [SerializeField] private TextMeshProUGUI lblTimeForLevel;
+    [SerializeField] private TextMeshProUGUI lblLevelUpTimeLabel;
 
     [SerializeField] private GameObject restedPanel;
     [SerializeField] private TextMeshProUGUI lblRestedAmount;
@@ -48,12 +49,19 @@ public class PlayerDetails : MonoBehaviour
     private float observedPlayerTimeout;
     private RectTransform rectTransform;
     private bool visible = true;
+    private ExpGainState CurrentExpGainState;
+    private string defaultTimeToLevelUpLabelText;
 
     void Start()
     {
         if (!dragscript) dragscript = GetComponent<Dragscript>();
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         playerInventory.Hide();
+
+        // the text "Time left for next level" that is shown as smaller text
+        // above the actual time left, keep track on this one so we can change it
+        // to "Recommended island" when needed
+        defaultTimeToLevelUpLabelText = lblLevelUpTimeLabel.text;
     }
 
     public void ToggleVisibility()
@@ -151,7 +159,26 @@ public class PlayerDetails : MonoBehaviour
             {
                 var trainingAll = activeSkill == observedPlayer.GetSkill(Skill.Health);
                 var name = trainingAll ? "All" : activeSkill.Name;
-                if (observedPlayer.Chunk == null)
+
+                var recommendedIsland = IslandManager.GetSuitableIsland(activeSkill.Level);
+                //var currentIsland = observedPlayer.Island?.Island ?? RavenNest.Models.Island.Ferry;
+                //var onRecommendedIsland = currentIsland != RavenNest.Models.Island.Ferry && recommendedIsland != currentIsland;
+
+                if (CurrentExpGainState == ExpGainState.LevelTooHigh)
+                {
+                    SetActive(timeforlevelPanel, true);
+                    lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Level too high</size></color>";
+                    lblLevelUpTimeLabel.text = "Recommended Island";
+                    lblTimeForLevel.text = $"!sail <b>{recommendedIsland}</b>";
+                }
+                else if (CurrentExpGainState == ExpGainState.LevelTooLow)
+                {
+                    SetActive(timeforlevelPanel, true);
+                    lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Level too low</size></color>";
+                    lblLevelUpTimeLabel.text = "Recommended Island";
+                    lblTimeForLevel.text = $"!sail <b>{recommendedIsland}</b>";
+                }
+                else if (observedPlayer.Chunk == null)
                 {
                     if (!observedPlayer.Island || observedPlayer.Island == null)
                     {
@@ -161,11 +188,12 @@ public class PlayerDetails : MonoBehaviour
                     else
                     {
                         SetActive(timeforlevelPanel, false);
-                        lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Too low level</size></color>";
+                        lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Level too low</size></color>";
                     }
                 }
                 else
                 {
+                    lblLevelUpTimeLabel.text = defaultTimeToLevelUpLabelText;
                     SetActive(timeforlevelPanel, true);
                     lblTrainingSkill.text = name;
                     lblTimeForLevel.text = trainingAll ? "N/A" : GetTimeLeftForLevelFormatted();
@@ -195,6 +223,11 @@ public class PlayerDetails : MonoBehaviour
         return GetTimeLeftForLevelFormatted(skill);
     }
 
+    internal void SetExpGainState(ExpGainState state)
+    {
+        this.CurrentExpGainState = state;
+    }
+
     private string GetTimeLeftForLevelFormatted(SkillStat skill)
     {
         //var f = observedPlayer.GetExpFactor();
@@ -209,40 +242,47 @@ public class PlayerDetails : MonoBehaviour
             return "<color=yellow>Max level</color>";
         }
 
-        var timeLeft = skill.GetEstimatedTimeToLevelUp() - DateTime.UtcNow;// GetEstimatedTimeForLevelUp(expPerHour, skill.Level, skill.Experience);
-        var hoursLeft = timeLeft.TotalHours;
-        if (hoursLeft <= 0)
-            return "<color=red>Unknown</color>";
+        var recommendedIsland = IslandManager.GetSuitableIsland(skill.Level);
+        var currentIsland = observedPlayer.Island?.Island ?? RavenNest.Models.Island.Ferry;
+        var onRecommendedIsland = currentIsland != RavenNest.Models.Island.Ferry && recommendedIsland != currentIsland;
 
-        if (timeLeft.Days >= 365 * 10_000)
+        switch (CurrentExpGainState)
         {
-            return "<color=red>When hell freezes over</color>";
+            case ExpGainState.LevelTooLow:
+                return $"<color=red>Your level is too low</color>\n<size=14>Recommended Island:{recommendedIsland}</size>";
+
+            case ExpGainState.LevelTooHigh:
+                return $"<color=red>Your level is too high</color>\n<size=14>Recommended Island:{recommendedIsland}</size>";
         }
-        if (timeLeft.Days >= 365 * 1000)
-        {
-            return "<color=red>Unreasonably long</color>";
-        }
-        if (timeLeft.Days >= 365)
-        {
-            return "<color=red>Way too long</color>";
-        }
-        if (timeLeft.Days > 21)
-        {
-            return "<color=orange>" + (int)(timeLeft.Days / 7) + " weeks</color>";
-        }
-        if (timeLeft.Days > 0)
-        {
-            return "<color=yellow>" + timeLeft.Days + " days, " + timeLeft.Hours + " hours</color>";
-        }
-        if (timeLeft.Hours > 0)
-        {
-            return timeLeft.Hours + " hours, " + timeLeft.Minutes + " mins";
-        }
-        if (timeLeft.Minutes > 0)
-        {
-            return timeLeft.Minutes + " mins, " + timeLeft.Seconds + " secs";
-        }
-        return timeLeft.Seconds + " seconds";
+
+        var timeLeft = skill.GetEstimatedTimeToLevelUp() - DateTime.UtcNow;
+        var hoursLeft = timeLeft.TotalHours;
+
+        var result = "";
+
+        if (hoursLeft <= 0)
+            result = "<color=red>Unknown</color>";
+
+        else if (timeLeft.Days >= 365 * 10_000)
+            result = "<color=red>When hell freezes over</color>";
+        else if (timeLeft.Days >= 365 * 1000)
+            result = "<color=red>Unreasonably long</color>";
+        else if (timeLeft.Days >= 365)
+            result = "<color=red>Way too long</color>";
+        else if (timeLeft.Days > 21)
+            result = "<color=orange>" + (int)(timeLeft.Days / 7) + " weeks</color>";
+        else if (timeLeft.Days > 0)
+            result = "<color=yellow>" + timeLeft.Days + " days, " + timeLeft.Hours + " hours</color>";
+        else if (timeLeft.Hours > 0)
+            result = timeLeft.Hours + " hours, " + timeLeft.Minutes + " mins";
+        else if (timeLeft.Minutes > 0)
+            result = timeLeft.Minutes + " mins, " + timeLeft.Seconds + " secs";
+        else
+            result = timeLeft.Seconds + " seconds";
+        if (!onRecommendedIsland)
+            result += $"\n<size=14>Recommended Island: {recommendedIsland}</size>";
+
+        return result;
     }
 
     public void Observe(PlayerController player, float timeout)
@@ -252,7 +292,17 @@ public class PlayerDetails : MonoBehaviour
         else
             playerDetailsTooltip.Enable();
 
+        if (observedPlayer)
+        {
+            observedPlayer.IsObserved = false;
+        }
+
         observedPlayer = player;
+
+        if (player)
+        {
+            player.IsObserved = true;
+        }
 
         ForceUpdate();
 

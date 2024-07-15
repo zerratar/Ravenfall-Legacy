@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class TreeController : MonoBehaviour
+
+public class TreeController : TaskObject
 {
     private readonly ConcurrentDictionary<string, PlayerController> woodCutters
         = new ConcurrentDictionary<string, PlayerController>();
@@ -28,13 +29,14 @@ public class TreeController : MonoBehaviour
     public bool IsStump => health <= 0;
 
     public IslandController Island { get; private set; }
-    public bool IsInvalid { get; internal set; }
+    [HideInInspector] public bool IsInvalid;
 
     [ReadOnly]
     public float MaxActionDistance = 5f;
 
     private float maxRespawnTimeSeconds;
     private float minRespawnTimeSeconds;
+    private float invalidTimer;
 
     [Button("Adjust Placement")]
     public void AdjustPlacement()
@@ -62,8 +64,7 @@ public class TreeController : MonoBehaviour
         ActivateRandomTree();
     }
 
-    private float invalidTimer;
-    private void Update()
+    public override void Poll()
     {
         if (IsInvalid)
         {

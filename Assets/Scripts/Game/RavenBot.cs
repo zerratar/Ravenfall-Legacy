@@ -11,6 +11,8 @@ public class RavenBot : System.IDisposable
 
     public BotState State { get; set; }
 
+    public bool HasJoinedChannel { get; set; }
+
     public RavenBot(RavenNest.SDK.ILogger logger, RavenNestClient ravenNest, GameManager gameManager)
     {
         if (!this.gameManager) this.gameManager = gameManager;
@@ -96,6 +98,11 @@ public class RavenBot : System.IDisposable
         Connection.Register<RaidAuto>("raid_auto");
         Connection.Register<DungeonAuto>("dungeon_auto");
 
+        Connection.Register<DungeonCombatStyleClear>("dungeon_skill_clear");
+        Connection.Register<DungeonCombatStyleSet>("dungeon_skill");
+        Connection.Register<RaidCombatStyleClear>("raid_skill_clear");
+        Connection.Register<RaidCombatStyleSet>("raid_skill");
+
         Connection.Register<DungeonJoin>("dungeon_join");
         Connection.Register<DungeonForce>("dungeon_force");
         Connection.Register<DungeonStop>("dungeon_stop");
@@ -124,6 +131,8 @@ public class RavenBot : System.IDisposable
         Connection.Register<ClanPromote>("clan_promote");
         Connection.Register<ClanDemote>("clan_demote");
 
+        Connection.Register<ChannelStateChanged>("channel_state");
+
         Connection.Register<FerryEnter>("ferry_enter");
         Connection.Register<FerryLeave>("ferry_leave");
         Connection.Register<FerryTravel>("ferry_travel");
@@ -145,15 +154,21 @@ public class RavenBot : System.IDisposable
         Connection.Register<UseItem>("use_item");
         Connection.Register<TeleportToIsland>("teleport_island");
 
-
         Connection.Register<GetStatusEffects>("get_status_effects");
-
         Connection.Register<ItemCount>("get_item_count");
-
         Connection.Register<OnsenJoin>("onsen_join");
         Connection.Register<OnsenLeave>("onsen_leave");
         Connection.Register<RestedStatus>("rested_status");
         Connection.Register<ClientVersion>("client_version");
+
+        Connection.Register<AutoRest>("auto_rest");
+        Connection.Register<AutoRestStop>("auto_rest_stop");
+        Connection.Register<AutoRestStatus>("auto_rest_status");
+        Connection.Register<AutoUse>("auto_use");
+        Connection.Register<AutoUseStop>("auto_use_stop");
+        Connection.Register<AutoUseStatus>("auto_use_status");
+
+        Connection.Register<Dps>("dps");
 
         Connection.LocalConnected -= BotConnected;
         Connection.LocalConnected += BotConnected;

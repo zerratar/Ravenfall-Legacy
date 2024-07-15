@@ -76,7 +76,7 @@ public class ItemCreator : MonoBehaviour
             }
         });
 
-        var itemsRepo = @"C:\git\Ravenfall Legacy\Data\Repositories\items.json";
+        var itemsRepo = @"G:\Ravenfall\Projects\Ravenfall Legacy\Data\Repositories\items.json";
 
         System.Net.WebClient cl = new System.Net.WebClient();
         try

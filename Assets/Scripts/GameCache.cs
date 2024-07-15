@@ -1,22 +1,28 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Assets.Scripts
 {
     public class GameCache
     {
-        private const string PlayerStateCacheFileName = "state-data.json";
+        private static readonly string[] PlayerStateCacheFileNames = {
+            "state-data.json",
+            "player-state.json",
+            "players.json",
+        };
+
+        private static string DefaultPlayerStateCacheFileName = PlayerStateCacheFileNames[0];
+
         private const string TempPlayerStateCacheFileName = "tmp-state-data.json";
         //private static GameCache instance;
         //public static GameCache Instance => instance ?? (instance = new GameCache());
         //private readonly ConcurrentQueue<GameCacheState> stateCache = new ConcurrentQueue<GameCacheState>();
 
         private static readonly object mutex = new object();
-        private static GameCacheState? stateCache;
-        private static List<GameCachePlayerItem> playerCache;
+        private static RestorableGameState? stateCache;
+        private static List<RestorablePlayer> playerCache;
         public static bool IsAwaitingGameRestore;
+        private static string usedPlayerStateCacheFileName;
         public static readonly TwitchUserStore TwitchUserStore = new TwitchUserStore();
 
         internal static void SavePlayersState(IReadOnlyList<PlayerController> players)
@@ -26,13 +32,12 @@ namespace Assets.Scripts
             SaveState();
         }
 
-
-        internal static void SetState(GameCacheState? cacheState)
+        internal static void SetState(RestorableGameState? cacheState)
         {
             stateCache = cacheState;
             if (stateCache != null)
             {
-                stateCache = new GameCacheState
+                stateCache = new RestorableGameState
                 {
                     Created = System.DateTime.UtcNow,
                     Players = cacheState.Value.Players
@@ -45,7 +50,7 @@ namespace Assets.Scripts
             Shinobytes.Debug.Log("Updating Player State.");
             lock (mutex)
             {
-                playerCache = new List<GameCachePlayerItem>();
+                playerCache = new List<RestorablePlayer>();
                 foreach (var player in players)
                 {
                     try
@@ -58,7 +63,7 @@ namespace Assets.Scripts
 
                         var def = player.Definition;
 
-                        var item = new GameCachePlayerItem();
+                        var item = new RestorablePlayer();
                         item.NameTagHexColor = player.PlayerNameHexColor;
                         item.User = player.User;
                         item.CharacterId = player.Id;
@@ -106,9 +111,9 @@ namespace Assets.Scripts
             }
         }
 
-        internal static GameCacheState BuildState()
+        internal static RestorableGameState BuildState()
         {
-            var state = new GameCacheState();
+            var state = new RestorableGameState();
             state.Created = System.DateTime.UtcNow;
             state.Players = playerCache;
             //stateCache.Enqueue(state);
@@ -124,51 +129,62 @@ namespace Assets.Scripts
             Expired
         }
 
-        internal static LoadStateResult LoadState(bool forceReload = false)
+        private static RestorableGameState GetLatestCache()
         {
-            var fullPath = Shinobytes.IO.Path.GetFilePath(PlayerStateCacheFileName);
-            if (Shinobytes.IO.File.Exists(PlayerStateCacheFileName))
+            var state = new RestorableGameState();
+            foreach (var file in PlayerStateCacheFileNames)
             {
-                try
+                if (!Shinobytes.IO.File.Exists(file))
                 {
-                    var expiryTime = SettingsMenuView.GetPlayerCacheExpiryTime();
-                    if (expiryTime == TimeSpan.Zero)
-                    {
-                        return LoadStateResult.NoPlayersRestored;
-                    }
-#if DEBUG
-                    Shinobytes.Debug.Log("Loading state file: " + Shinobytes.IO.Path.GetFilePath(PlayerStateCacheFileName));
-#endif
-
-                    var stateContent = Shinobytes.IO.File.ReadAllText(PlayerStateCacheFileName);
-
-                    // backward compatibility
-                    stateContent = stateContent.Replace("\"TwitchUser\"", "\"User\"");
-                    stateContent = stateContent.Replace("\"UserId\"", "\"Platform\":\"twitch\",\"PlatformId\"");
-
-                    var state = Newtonsoft.Json.JsonConvert.DeserializeObject<GameCacheState>(stateContent);
-
-                    if (!forceReload && (System.DateTime.UtcNow - state.Created) > expiryTime)
-                    {
-                        Shinobytes.Debug.LogWarning("State Cache File has expired and will not be loaded.");
-                        return LoadStateResult.Expired;
-                    }
-
-                    stateCache = state;
-
-                    IsAwaitingGameRestore = true;
-
-                    Shinobytes.Debug.Log("Loading Player State file...");
+                    continue;
                 }
-                catch (System.Exception exc)
+
+                var stateContent = Shinobytes.IO.File.ReadAllText(file);
+                var readState = Newtonsoft.Json.JsonConvert.DeserializeObject<RestorableGameState>(stateContent);
+                if (readState.Created > state.Created)
                 {
-                    Shinobytes.Debug.LogError("Failed to load player state: " + exc.Message);
-                    return LoadStateResult.Error;
+                    state = readState;
+                    usedPlayerStateCacheFileName = file;
                 }
             }
-            else
+            return state;
+        }
+
+
+
+        internal static LoadStateResult LoadState(bool forceReload = false)
+        {
+            try
             {
-                Shinobytes.Debug.Log("No player state file found at: " + fullPath + ", state file not loaded.");
+                var expiryTime = SettingsMenuView.GetPlayerCacheExpiryTime();
+                if (expiryTime == TimeSpan.Zero)
+                {
+                    return LoadStateResult.NoPlayersRestored;
+                }
+
+                var state = GetLatestCache();
+                if (state.Players == null || state.Players.Count == 0)
+                {
+                    Shinobytes.Debug.Log("No player state file found or state file did not contain any players.");
+                    return LoadStateResult.NoPlayersRestored;
+                }
+
+                if (!forceReload && (System.DateTime.UtcNow - state.Created) > expiryTime)
+                {
+                    Shinobytes.Debug.LogWarning("State Cache File has expired and will not be loaded.");
+                    return LoadStateResult.Expired;
+                }
+
+                if (!forceReload && (System.DateTime.UtcNow - state.Created) > expiryTime)
+                {
+                    Shinobytes.Debug.LogWarning("State Cache File has expired and will not be loaded.");
+                    return LoadStateResult.Expired;
+                }
+            }
+            catch (System.Exception exc)
+            {
+                Shinobytes.Debug.LogError("Failed to load player state: " + exc.Message);
+                return LoadStateResult.Error;
             }
 
             return LoadStateResult.PlayersRestored;
@@ -186,7 +202,7 @@ namespace Assets.Scripts
                     // To ensure we dont accidently overwrite the state-data with half written data.
                     // in case the game crashes and saving in progress.
                     Shinobytes.IO.File.WriteAllText(TempPlayerStateCacheFileName, stateData);
-                    Shinobytes.IO.File.Copy(TempPlayerStateCacheFileName, PlayerStateCacheFileName, true);
+                    Shinobytes.IO.File.Copy(TempPlayerStateCacheFileName, usedPlayerStateCacheFileName, true);
                     Shinobytes.IO.File.Delete(TempPlayerStateCacheFileName);
                 }
                 catch (System.Exception exc)
@@ -196,7 +212,7 @@ namespace Assets.Scripts
             }
         }
 
-        internal static GameCacheState? GetReloadState()
+        internal static RestorableGameState? GetReloadState()
         {
             try
             {
@@ -209,18 +225,25 @@ namespace Assets.Scripts
         }
     }
 
-    public struct GameCacheState
+    public struct RestorableGameState
     {
         public System.DateTime Created { get; set; }
-        public List<GameCachePlayerItem> Players { get; set; }
+        public List<RestorablePlayer> Players { get; set; }
     }
 
-    public class GameCachePlayerItem
+    public class RestorablePlayer
     {
         public User User { get; set; }
         public System.Guid CharacterId { get; set; }
         public string NameTagHexColor { get; set; }
         public int CharacterIndex { get; set; }
         public DateTime LastActivityUtc { get; set; }
+
+        // potentially we can add skill experience and level here if we encrypt it with a session key that the server gives uniquely every login
+        // then upon "restore", send the blob to the server to decrypt and apply changes to the characters before returning them back here.
+        // on the server side it should only update characters that has not been updated within a reasonable time. 
+
+        // or: what if we get a key with every session ping, only the latest key will be accepted.
+
     }
 }

@@ -13,6 +13,8 @@ public class TownHallController : MonoBehaviour
     private int instanceID;
     private TownHallInfoManager ui;
 
+    public Transform InfoTransform => infoPos;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -55,7 +57,8 @@ public class TownHallController : MonoBehaviour
                 }
 
                 var ray = activeCamera.ScreenPointToRay(Input.mousePosition);
-                var result = Physics.RaycastAll(ray);
+                //var result = Physics.RaycastAll(ray, 5000);
+                var result = Physics.RaycastAll(ray, 5000);
                 foreach (var res in result)
                 {
                     if (res.collider.GetInstanceID() == instanceID)

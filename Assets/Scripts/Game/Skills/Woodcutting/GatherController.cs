@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class GatherController : MonoBehaviour
+public class GatherController : TaskObject
 {
     private readonly ConcurrentDictionary<Guid, PlayerController> gatherers
         = new ConcurrentDictionary<Guid, PlayerController>();
@@ -27,7 +27,7 @@ public class GatherController : MonoBehaviour
 
     public IReadOnlyList<PlayerController> Gatherers => gatherers.Values.ToList();
 
-    public bool IsInvalid { get; internal set; }
+    [HideInInspector] public bool IsInvalid;
 
     void Start()
     {
@@ -47,7 +47,7 @@ public class GatherController : MonoBehaviour
         }
     }
     private float invalidTimer;
-    private void Update()
+    public override void Poll()
     {
         if (IsInvalid)
         {

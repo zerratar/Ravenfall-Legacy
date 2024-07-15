@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -54,7 +55,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
     private int raidIndex = 0;
 
-    private bool isProcessingRewardQueue;
+    private int isProcessingRewardQueue;
 
     private void Start()
     {
@@ -228,8 +229,6 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public void EndRaid(bool bossKilled, bool timeout)
     {
-        gameManager.Events.End(this);
-
         if (!bossKilled && timeout)
         {
             gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
@@ -250,6 +249,10 @@ public class RaidManager : MonoBehaviour, IEvent
             if (bossKilled)
             {
                 RewardItemDrops(playersToLeave);
+            }
+            else
+            {
+                gameManager.Events.End(this);
             }
 
             foreach (var player in playersToLeave)
@@ -334,6 +337,8 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot.Announce(itemDrop);
         }
+
+        SignalPlayersBeenRewarded();
     }
 
     private void ScheduleNextRaid()
@@ -355,7 +360,11 @@ public class RaidManager : MonoBehaviour, IEvent
             return;
         }
 
-        ProcessRewardQueue();
+        if (rewardQueue.Count > 0 && Interlocked.CompareExchange(ref isProcessingRewardQueue, 1, 0) == 0)
+        {
+            ProcessRewardQueueAsync();
+        }
+
 
         var playerCount = playerManager.GetPlayerCount(true);
 
@@ -414,16 +423,16 @@ public class RaidManager : MonoBehaviour, IEvent
         }
     }
 
-    private async void ProcessRewardQueue()
+    public void SignalPlayersBeenRewarded()
     {
-        if (isProcessingRewardQueue)
-        {
-            return;
-        }
+        gameManager.Events.End(this);
+    }
 
+
+    private async Task ProcessRewardQueueAsync()
+    {
         try
         {
-            isProcessingRewardQueue = true;
             if (rewardQueue.TryDequeue(out var addItems))
             {
                 await addItems();
@@ -432,7 +441,7 @@ public class RaidManager : MonoBehaviour, IEvent
         catch { }
         finally
         {
-            isProcessingRewardQueue = false;
+            Interlocked.Exchange(ref isProcessingRewardQueue, 0);
         }
     }
 

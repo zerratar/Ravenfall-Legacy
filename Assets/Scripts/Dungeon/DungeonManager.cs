@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -64,7 +65,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private Queue<Func<Task>> rewardQueue = new Queue<Func<Task>>();
 
-    private bool isProcessingRewardQueue;
+    private int isProcessingRewardQueue;
     public Vector3 StartingPoint
     {
         get
@@ -213,26 +214,30 @@ public class DungeonManager : MonoBehaviour, IEvent
     private void Update()
     {
         if (PlayerSettings.Instance.DisableDungeons.GetValueOrDefault())
-        {            
+        {
             return;
         }
 
-        ProcessRewardQueue();
+        if (rewardQueue.Count > 0 && Interlocked.CompareExchange(ref isProcessingRewardQueue, 1, 0) == 0)
+        {
+            ProcessRewardQueueAsync();
+        }
+
         UpdateDungeonTimer();
         UpdateDungeonStartTimer();
         UpdateDungeon();
     }
 
-    private async void ProcessRewardQueue()
+    public void SignalPlayersBeenRewarded()
     {
-        if (isProcessingRewardQueue)
-        {
-            return;
-        }
+        state = DungeonManagerState.None;
+        gameManager.Events.End(this);
+    }
 
+    private async Task ProcessRewardQueueAsync()
+    {
         try
         {
-            isProcessingRewardQueue = true;
             if (rewardQueue.TryDequeue(out var addItems))
             {
                 await addItems();
@@ -241,7 +246,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         catch { }
         finally
         {
-            isProcessingRewardQueue = false;
+            Interlocked.Exchange(ref isProcessingRewardQueue, 0);
         }
     }
 
@@ -519,6 +524,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         //Debug.LogWarning("EndDungeonSuccess");
         // 1. reward all players
         RewardPlayers();
+
         // 2. show some victory UI
         ResetDungeon();
 
@@ -642,10 +648,10 @@ public class DungeonManager : MonoBehaviour, IEvent
             var rngHighEq = joinedPlayers.Max(x => x.EquipmentStats);
 
             Boss.SetStats(
-                lowestStats * combatStatsScale,
-                highestStats * combatStatsScale,
-                rngLowEq * equipmentStatsScale,
-                rngHighEq * equipmentStatsScale,
+                lowestStats * combatStatsScale * Dungeon.BossCombatScale,
+                highestStats * combatStatsScale * Dungeon.BossCombatScale,
+                rngLowEq * equipmentStatsScale * Dungeon.BossCombatScale,
+                rngHighEq * equipmentStatsScale * Dungeon.BossCombatScale,
                 GetBossHealthScale());
         }
     }
@@ -665,6 +671,8 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         lock (mutex)
         {
+            state = DungeonManagerState.RewardingPlayers;
+
             RewardItemDrops(joinedPlayers);
 
             foreach (var player in joinedPlayers)
@@ -723,6 +731,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     private void AddItems(EventItemReward[] rewards)
     {
         var result = gameManager.AddItems(rewards);
+
         if (result.Count > 0)
         {
             gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain and yielded " + result.Count + " item treasures!");
@@ -736,6 +745,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot.Announce(msg);
         }
+
+        SignalPlayersBeenRewarded();
     }
 
 
@@ -752,7 +763,10 @@ public class DungeonManager : MonoBehaviour, IEvent
             }
 
             //generatedEnemies = null;
-            state = DungeonManagerState.None;
+            if (state != DungeonManagerState.RewardingPlayers)
+            {
+                state = DungeonManagerState.None;
+            }
             lock (mutex) joinedPlayers.Clear();
             alivePlayers.Clear();
             deadPlayers.Clear();
@@ -789,7 +803,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         finally
         {
             ScheduleNextDungeon();
-            gameManager.Events.End(this);
+
+            if (state != DungeonManagerState.RewardingPlayers)
+            {
+                gameManager.Events.End(this);
+            }
         }
     }
 
@@ -1037,5 +1055,6 @@ public enum DungeonManagerState
 {
     None,
     Active,
-    Started
+    Started,
+    RewardingPlayers
 }

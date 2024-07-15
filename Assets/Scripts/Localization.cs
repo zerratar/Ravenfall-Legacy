@@ -93,7 +93,11 @@ public static class Localization
     public static readonly string MSG_BUY_ITEM_NOT_IN_MARKET = Meta("marketplace", "buy", "fail") + "Could not find any {itemName} in the marketplace.";
     public static readonly string MSG_BUY_ITEM_INSUFFICIENT_COIN = Meta("marketplace", "buy", "fail") + "You do not have enough coins to buy the {itemName}.";
     public static readonly string MSG_BUY_ITEM_MARKETPLACE_ERROR = Meta("marketplace", "buy", "fail") + "Error accessing marketplace right now.";
-    public static readonly string MSG_BUY_ITEM_ERROR = Meta("marketplace", "buy", "fail") + "Error buying {itemName}. Server returned an error. :( Try !leave and then !join to see if buying it was successful or not.";
+    public static readonly string MSG_BUY_ITEM_ERROR = Meta("marketplace", "buy", "fail") + "Error buying {itemName}. Server returned an error. :( Try !leave and then !join to see if it was successful or not.";
+    public static readonly string MSG_SELL_ITEM_ERROR = Meta("marketplace", "sell", "fail") + "Error selling {itemName}. Server returned an error. :( Try !leave and then !join to see if it was successful or not.";
+    public static readonly string MSG_VALUE_ITEM_ERROR = Meta("marketplace", "value", "fail") + "Error valuating {itemName}. Server returned an error.";
+
+
     public static readonly string MSG_BUY_ITEM_TOO_LOW = Meta("marketplace", "buy", "fail") + "Unable to buy any {itemName}, the cheapest asking price is {cheapestPrice}.";
 
     public static readonly string MSG_GATHERING_SUGGEST = Meta("info", "gathering") + "Could not find a resource type matching the query '{query}', did you mean: {suggestion}?";
@@ -287,4 +291,8 @@ public static class Localization
     public static readonly string MSG_CLAN_NOT_FOUND = "Could not find a suitable clan using '{clanSearch}'. There must be atleast one player in the game with the target clan.";
     public static readonly string MSG_CLAN_INFO_UNKNOWN_ERROR = "Unable to get clan info at this time, please try again later.";
     public static readonly string MSG_CLAN_STATS_UNKNOWN_ERROR = "Unable to get clan stats at this time, please try again later.";
+
+    public static readonly string MSG_MARKET_ITEM_UNAVAILABLE = "{itemName} is not available on the marketplace.";
+    public static readonly string MSG_MARKET_VALUE_COUNT = "There are currently {available} {itemName} sold on the marketplace. Cheapest can be bought for {minPrice}, max price is {maxPrice}, average price is {avgPrice}, to buy {amount} it would cost roughly {cost} coins";
+    public static readonly string MSG_MARKET_VALUE = "There are currently {available} {itemName} sold on the marketplace. Cheapest can be bought for {minPrice}, max price is {maxPrice}, average price is {avgPrice}";
 }

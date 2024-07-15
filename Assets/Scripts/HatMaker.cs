@@ -11,7 +11,7 @@ public class HatMaker : MonoBehaviour
     private void GenerateItemJson()
     {
         var path = UnityEditor.AssetDatabase.GetAssetPath(this).Replace("Assets\\Resources\\", "").Replace("Assets/Resources/", "").Replace(".prefab", "");
-        var targetDirectory = @"C:\Ravenfall\generated-hat-jsons";
+        var targetDirectory = @"g:\Ravenfall\Data\generated-hat-jsons";
 
         var itemName = this.name;
 

@@ -9,7 +9,8 @@ public class CraftingStation : MonoBehaviour
     public double ExpPerResource => 10;
 
     public IslandController Island { get; private set; }
-    public bool IsInvalid { get; internal set; }
+
+    [HideInInspector] public bool IsInvalid;
 
     public CraftingStationType StationType = CraftingStationType.Crafting;
 

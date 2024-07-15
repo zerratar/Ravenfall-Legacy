@@ -1,5 +1,4 @@
 ﻿using System;
-
 public class DungeonAuto : ChatBotCommandHandler<string>
 {
     //public static DateTime lastCostUpdate = DateTime.UnixEpoch;
@@ -56,7 +55,7 @@ public class DungeonAuto : ChatBotCommandHandler<string>
                     client.SendReply(gm, "You have are not set to automatically join any dungeons.");
                 }
             }
-            else if (l == "on")
+            else if (string.IsNullOrEmpty(l) || l == "on")
             {
                 player.dungeonHandler.AutoJoinCounter = int.MaxValue;
                 //if (before != player.dungeonHandler.AutoJoinCounter)

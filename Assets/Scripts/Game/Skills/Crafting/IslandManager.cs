@@ -45,6 +45,23 @@ public class IslandManager : MonoBehaviour
         { Island.Eldara, 1000 },
     };
 
+    public static Island GetSuitableIsland(int level)
+    {
+        foreach (var island in IslandLevelRangeMin.Keys)
+        {
+            if (level >= IslandLevelRangeMin[island] && level <= IslandMaxEffect[island])
+            {
+                return island;
+            }
+
+            if (level >= IslandLevelRangeMin[island] && level <= IslandLevelRangeMax[island])
+            {
+                return island;
+            }
+        }
+        return Island.Home;
+    }
+
     public void EnsureIslands()
     {
         if (islands == null || islands.Length == 0)

@@ -16,6 +16,7 @@ public class SettingsMenuView : MenuView
     public const string SettingsName_RaidHornVolume = "RaidHornVolume";
     public const string SettingsName_MusicVolume = "MusicVolume";
     public const string SettingsName_DPIScale = "DPIScale";
+    public const string SettingsName_ViewDistance = "ViewDistance";
 
     public const string SettingsName_PlayerBoostRequirement = "PlayerBoostRequirement";
     public const string SettingsName_PlayerCacheExpiryTime = "PlayerCacheExpiryTime";
@@ -52,6 +53,7 @@ public class SettingsMenuView : MenuView
     [SerializeField] private Slider dayNightTime = null;
     [SerializeField] private Toggle realtimeDayNightCycle = null;
     [SerializeField] private Slider dpiSlider = null;
+    [SerializeField] private Slider viewDistanceSlider = null;
 
     [Header("Game Settings")]
     [SerializeField] private GameObject game;
@@ -121,6 +123,9 @@ public class SettingsMenuView : MenuView
         playerListSizeSlider.value = settings.PlayerListSize.GetValueOrDefault(gameManager.PlayerList.Bottom);
         playerListScaleSlider.value = settings.PlayerListScale.GetValueOrDefault(gameManager.PlayerList.Scale);
         dpiSlider.value = settings.DPIScale.GetValueOrDefault(1f);
+
+        viewDistanceSlider.value = settings.ViewDistance.GetValueOrDefault(0.5f);
+
         raidHornVolumeSlider.value = settings.RaidHornVolume.GetValueOrDefault(gameManager.Raid.Notifications.volume);
         musicVolumeSlider.value = settings.MusicVolume.GetValueOrDefault(gameManager.Music.volume);
         observerCameraRotationSlider.value = settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed * -1);
@@ -140,6 +145,7 @@ public class SettingsMenuView : MenuView
         dayNightCycleEnabled.isOn = settings.DayNightCycleEnabled.GetValueOrDefault(true);
         dayNightTime.value = settings.DayNightTime.GetValueOrDefault(0.5f);
 
+        SetViewDistance(viewDistanceSlider.value);
         SetResolutionScale(dpiSlider.value);
         ShowItemDropExample();
         UpdateCameraRotationLabelText();
@@ -204,7 +210,7 @@ public class SettingsMenuView : MenuView
         settings.DayNightCycleEnabled = dayNightCycleEnabled.isOn;
         settings.DayNightTime = dayNightTime.value;
 
-        settings.DisableRaids =    disableRaidsToggle.isOn;
+        settings.DisableRaids = disableRaidsToggle.isOn;
         settings.DisableDungeons = disableDungeonsToggle.isOn;
 
         settings.PotatoMode = potatoModeToggle.isOn;
@@ -225,6 +231,7 @@ public class SettingsMenuView : MenuView
         settings.ItemDropMessageType = itemDropMessageDropdown.value;
         settings.CameraRotationSpeed = observerCameraRotationSlider.value * -1;
         settings.PlayerNamesVisible = playerNameToggle.isOn;
+        settings.ViewDistance = viewDistanceSlider.value;
         PlayerSettings.Save();
     }
 
@@ -310,6 +317,12 @@ public class SettingsMenuView : MenuView
         gameManager.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
     }
 
+    public void SetViewDistance(float value)
+    {
+        var camera = gameManager.Camera;
+        camera.FarClipDistance = Mathf.Lerp(camera.MinFarClipDistance, camera.MaxFarClipDistance, value);
+    }
+
     public void OnSliderValueChanged()
     {
         if (dpiSlider != null)
@@ -325,6 +338,11 @@ public class SettingsMenuView : MenuView
         if (musicVolumeSlider != null)
         {
             gameManager.Music.volume = musicVolumeSlider.value;
+        }
+
+        if (viewDistanceSlider != null)
+        {
+            SetViewDistance(viewDistanceSlider.value);
         }
 
         if (raidHornVolumeSlider != null)
@@ -356,8 +374,10 @@ public class SettingsMenuView : MenuView
         SetResolutionScale(dpiSlider.value);
     }
 
+
     public static void SetResolutionScale(float factor)
     {
+        factor = Mathf.Clamp(factor, 0.05f, 1f);
         QualitySettings.resolutionScalingFixedDPIFactor = factor;
         ScalableBufferManager.ResizeBuffers(factor, factor);
     }

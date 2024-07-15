@@ -11,7 +11,7 @@ public class FishingController : MonoBehaviour
     public Transform LookTransform => !!rotationTarget ? rotationTarget : transform;
 
     public IslandController Island { get; private set; }
-    public bool IsInvalid { get; internal set; }
+    [HideInInspector] public bool IsInvalid;
 
     [ReadOnly]
     public float MaxActionDistance = 5;

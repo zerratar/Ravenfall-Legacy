@@ -27,6 +27,9 @@ public class GameCamera : MonoBehaviour
 
     public float FarClipDistance;
 
+    public float MaxFarClipDistance;
+    public float MinFarClipDistance;
+
     private float observeNextPlayerTimer = ObserverJumpTimer;
     private int observedPlayerIndex;
 
@@ -58,6 +61,8 @@ public class GameCamera : MonoBehaviour
         postProcessingLayer = GetComponent<PostProcessLayer>();
         _camera = GetComponent<Camera>();
         FarClipDistance = _camera.farClipPlane;
+        MaxFarClipDistance = FarClipDistance * 2f;
+        MinFarClipDistance = FarClipDistance * 0.05f;
     }
 
     // Update is called once per frame

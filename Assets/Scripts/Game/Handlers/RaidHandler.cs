@@ -30,12 +30,13 @@ public class RaidHandler : MonoBehaviour
     public Vector3 PreviousPosition => prevPosition;
 
     public int AutoJoinCounter { get; set; }
-
+    private bool started;
     // Start is called before the first frame update
     void Start()
     {
         if (!player) player = GetComponent<PlayerController>();
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        started = true;
     }
 
     void Awake()
@@ -44,9 +45,14 @@ public class RaidHandler : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    public void Poll()
     {
-        if (!gameManager || !gameManager.Raid || !gameManager.Raid.Started || !gameManager.Raid.Boss)
+        if (!started)
+        {
+            return;
+        }
+
+        if (Overlay.IsOverlay || !gameManager.Raid.Started || !gameManager.Raid.Boss)
         {
             return;
         }
@@ -171,6 +177,11 @@ public class RaidHandler : MonoBehaviour
         }
 
         player.Movement.AdjustPlayerPositionToNavmesh();
+
+        if (player.RaidCombatStyle != null)
+        {
+            this.player.SetTaskBySkillSilently(player.RaidCombatStyle.Value);
+        }
     }
 
     private IEnumerator WaitForStart()
@@ -206,6 +217,7 @@ public class RaidHandler : MonoBehaviour
 
     public void OnLeave(bool raidWon, bool raidTimedOut)
     {
+
         InRaid = false;
         if (raidWon)
         {
@@ -275,5 +287,17 @@ public class RaidHandler : MonoBehaviour
         //#if DEBUG
         //        Shinobytes.Debug.Log($"{player.PlayerName} left the raid");
         //#endif
+    }
+
+    public bool SetCombatStyle(RavenNest.Models.Skill? value)
+    {
+        player.RaidCombatStyle = value;
+
+        if (InRaid && previousTask == TaskType.Fighting)
+        {
+            player.SetTask(previousTask, previousTaskArgument, true);
+            return true;
+        }
+        return false;
     }
 }
