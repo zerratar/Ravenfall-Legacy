@@ -168,6 +168,8 @@ public class RavenBot : System.IDisposable
         Connection.Register<AutoUseStop>("auto_use_stop");
         Connection.Register<AutoUseStatus>("auto_use_status");
 
+        Connection.Register<GetLoot>("get_loot");
+
         Connection.Register<Dps>("dps");
 
         Connection.LocalConnected -= BotConnected;

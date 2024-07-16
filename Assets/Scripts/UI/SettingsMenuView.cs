@@ -62,6 +62,7 @@ public class SettingsMenuView : MenuView
     [SerializeField] private TMPro.TMP_Dropdown boostRequirementDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown playerCacheExpiryTimeDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown itemDropMessageDropdown = null;
+    [SerializeField] private Toggle autoAssignVacantHousesEnabled = null; 
     [SerializeField] private Toggle streamLabelsEnabled = null;
     [SerializeField] private Toggle alertPlayerCacheExpirationToggle = null;
     [SerializeField] private TMPro.TextMeshProUGUI[] itemDropMessageExamples = null;
@@ -138,6 +139,8 @@ public class SettingsMenuView : MenuView
 
         alertPlayerCacheExpirationToggle.isOn = settings.AlertExpiredStateCacheInChat.GetValueOrDefault(gameManager.AlertExpiredStateCacheInChat);
         streamLabelsEnabled.isOn = settings.StreamLabels.Enabled;
+
+        autoAssignVacantHousesEnabled.isOn = settings.AutoAssignVacantHouses.GetValueOrDefault(true);
 
         playerNameToggle.isOn = settings.PlayerNamesVisible.GetValueOrDefault(gameManager.PlayerNamesVisible);
         itemDropMessageDropdown.value = settings.ItemDropMessageType.GetValueOrDefault((int)gameManager.ItemDropMessageSettings);
@@ -228,6 +231,7 @@ public class SettingsMenuView : MenuView
         settings.PathfindingQualitySettings = pathfindingQuality.value;
         settings.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
         settings.StreamLabels.Enabled = streamLabelsEnabled.isOn;
+        settings.AutoAssignVacantHouses = autoAssignVacantHousesEnabled.isOn;
         settings.ItemDropMessageType = itemDropMessageDropdown.value;
         settings.CameraRotationSpeed = observerCameraRotationSlider.value * -1;
         settings.PlayerNamesVisible = playerNameToggle.isOn;

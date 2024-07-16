@@ -381,7 +381,7 @@ public class GameManager : MonoBehaviour, IGameManager
         GameSystems.Start();
     }
 
-    public PlayerItemDropText AddItems(EventItemReward[] rewards)
+    public PlayerItemDropText AddItems(EventItemReward[] rewards, int dungeonIndex = -1, int raidIndex = -1)
     {
         //DropItem(player);
         // Does unity allow us to use C# 10?
@@ -404,6 +404,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
             var item = this.itemManager.Get(reward.ItemId);
             var stack = player.Inventory.AddToBackpack(reward.InventoryItemId, item, reward.Amount);
+
+            player.RecordLoot(item, reward.Amount, dungeonIndex, raidIndex);
 
             player.EquipIfBetter(stack);
 

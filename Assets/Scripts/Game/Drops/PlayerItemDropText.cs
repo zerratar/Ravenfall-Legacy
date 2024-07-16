@@ -15,7 +15,10 @@ public class PlayerItemDropText
         this.messages = this.Process(droppedItems, settings);
     }
 
-    private IReadOnlyList<string> Process(Dictionary<string, List<string>> items, PlayerItemDropMessageSettings settings, int maxLength = 500)
+    private IReadOnlyList<string> Process(
+        Dictionary<string, List<string>> items,
+        PlayerItemDropMessageSettings settings,
+        int maxLength = 500)
     {
         // no need for linq here since we need to enumerate everything anyway.
         //Count = items.Values.Sum(x => x.Count);
@@ -52,6 +55,29 @@ public class PlayerItemDropText
                 continue;
             try
             {
+                if (settings == PlayerItemDropMessageSettings.NoMessage)
+                {
+                    continue;
+                }
+
+                if (settings == PlayerItemDropMessageSettings.ItemNameOnly)
+                {
+                    Append(itemName);
+                    Next();
+                    continue;
+                }
+
+                if (settings == PlayerItemDropMessageSettings.ItemNameAndCountOnly)
+                {
+                    if (playersRef.Count > 1)
+                        Append(playersRef.Count + "x " + itemName);
+                    else
+                        Append(itemName);
+
+                    Next();
+                    continue;
+                }
+
                 if (settings == PlayerItemDropMessageSettings.OnePlayerPerRow)
                 {
                     for (int i = 0; i < playersRef.Count; i++)
@@ -61,24 +87,25 @@ public class PlayerItemDropText
                     }
                     continue;
                 }
-
-                var toAppend = itemName + " was found by ";
-                for (int i = 0; i < playersRef.Count; i++)
+                else
                 {
-                    // last player in list
-                    var lastInList = playersRef.Count - 1 == i;
-                    var player = playersRef[i];
-                    if (i > 0)
+                    var toAppend = itemName + " was found by ";
+                    for (int i = 0; i < playersRef.Count; i++)
                     {
-                        toAppend += lastInList ? " and " : ", ";
+                        // last player in list
+                        var lastInList = playersRef.Count - 1 == i;
+                        var player = playersRef[i];
+                        if (i > 0)
+                        {
+                            toAppend += lastInList ? " and " : ", ";
+                        }
+                        toAppend += player;
                     }
-                    toAppend += player;
+                    toAppend += ". ";
+
+                    // append the whole text at once instead, since it will check if we need to break it into a new message or not.
+                    Append(toAppend);
                 }
-                toAppend += ". ";
-
-                // append the whole text at once instead, since it will check if we need to break it into a new message or not.
-                Append(toAppend);
-
                 if (settings == PlayerItemDropMessageSettings.OneItemPerRow)
                 {
                     Next();
@@ -111,5 +138,8 @@ public enum PlayerItemDropMessageSettings : int
 {
     OneItemPerRow = 0,
     OnePlayerPerRow = 1,
-    Minimal = 2
+    Minimal = 2,
+    ItemNameAndCountOnly = 3,
+    ItemNameOnly = 4,
+    NoMessage = 5
 }

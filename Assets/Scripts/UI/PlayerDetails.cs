@@ -163,8 +163,17 @@ public class PlayerDetails : MonoBehaviour
                 var recommendedIsland = IslandManager.GetSuitableIsland(activeSkill.Level);
                 //var currentIsland = observedPlayer.Island?.Island ?? RavenNest.Models.Island.Ferry;
                 //var onRecommendedIsland = currentIsland != RavenNest.Models.Island.Ferry && recommendedIsland != currentIsland;
-
-                if (CurrentExpGainState == ExpGainState.LevelTooHigh)
+                if (CurrentExpGainState == ExpGainState.TargetLevelReached)
+                {
+                    SetActive(timeforlevelPanel, false);
+                    lblTrainingSkill.text = "<color=green>" + name + "\r\n<size=14>Target level " + observedPlayer.AutoTrainTargetLevel + " reached</size></color>";
+                }
+                else if (activeSkill.Level >= GameMath.MaxLevel)
+                {
+                    SetActive(timeforlevelPanel, false);
+                    lblTrainingSkill.text = "<color=yellow>" + name + "\r\n<size=14>Max level</size></color>";
+                }
+                else if (CurrentExpGainState == ExpGainState.LevelTooHigh)
                 {
                     SetActive(timeforlevelPanel, true);
                     lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Level too high</size></color>";
@@ -248,6 +257,9 @@ public class PlayerDetails : MonoBehaviour
 
         switch (CurrentExpGainState)
         {
+            case ExpGainState.TargetLevelReached:
+                return "N/A";
+
             case ExpGainState.LevelTooLow:
                 return $"<color=red>Your level is too low</color>\n<size=14>Recommended Island:{recommendedIsland}</size>";
 

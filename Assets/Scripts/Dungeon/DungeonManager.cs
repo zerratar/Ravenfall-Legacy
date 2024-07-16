@@ -730,7 +730,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void AddItems(EventItemReward[] rewards)
     {
-        var result = gameManager.AddItems(rewards);
+        var result = gameManager.AddItems(rewards, dungeonIndex: dungeonIndex);
 
         if (result.Count > 0)
         {

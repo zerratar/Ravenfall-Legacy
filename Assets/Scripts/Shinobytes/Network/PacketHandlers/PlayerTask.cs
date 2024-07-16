@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SqlParser.Ast;
+using System;
 
 public class PlayerTask : ChatBotCommandHandler<PlayerTaskRequest>
 {
@@ -25,8 +26,19 @@ public class PlayerTask : ChatBotCommandHandler<PlayerTaskRequest>
                 return;
             }
 
-            var arg = task.Arguments != null && task.Arguments.Length > 0 ? task.Arguments[0] : null;
-            player.SetTask(task.Task, arg);
+            var taskArgument = string.Empty;
+            var targetLevel = 0;
+            if (task.Arguments != null && task.Arguments.Length > 0)
+            {
+                taskArgument = task.Arguments[0];
+                if (task.Arguments.Length > 1 && int.TryParse(task.Arguments[1], out var lv))
+                {
+                    targetLevel = lv;
+                }
+            }
+
+            player.SetTask(task.Task, taskArgument);
+            player.AutoTrainTargetLevel = targetLevel;
         }
         catch (Exception exc)
         {

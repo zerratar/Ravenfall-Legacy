@@ -361,6 +361,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         FindFirstObjectByType<EnemyManager>().Register(this);
     }
 
+
+
     public void Poll()
     {
         if (GameCache.IsAwaitingGameRestore)
@@ -373,6 +375,11 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         //    SetPosition(SpawnPoint.transform.position);
         //    //this.transform.position = ;
         //}
+
+        if (Removed) //  || !gameObject || gameObject == null
+        {
+            return;
+        }
 
         movement.Poll();
 
@@ -486,6 +493,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
                 var damage = GameMath.CalculateMeleeDamage(this, targetPlayer);
                 if (targetPlayer.TakeDamage(this, (int)damage))
                 {
+                    PlayerKillCount++;
                     ClearTarget();
                 }
             });
@@ -558,6 +566,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
 
     public Transform Target { get; private set; }
     public bool IsUnreachable { get; set; }
+    public int DeathCount;
+    public int PlayerKillCount;
 
     public EnemySpawnPoint SpawnPoint;
     [NonSerialized] public Transform _transform;
@@ -751,6 +761,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
                 return false;
             }
 
+            DeathCount++;
             noDamageDropTargetTimer = -1f;
             InCombat = false;
             highestAttackerAggroValue = 0;

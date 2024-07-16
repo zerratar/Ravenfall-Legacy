@@ -2,6 +2,7 @@
 
 public static class Localization
 {
+    public static readonly string MSG_PATREON_ONLY = Meta("system", "fail") + "This command is for Patreon supporters only. Consider supporting the game on Patreon to gain access to this command.";
     public static readonly string PETRACE_NO_PET = Meta("minigame", "pet race", "fail") + "You need to equip a pet to play.";
     public static readonly string PETRACE_ALREADY_PLAYING = Meta("minigame", "pet race", "fail") + "You're already playing.";
     public static readonly string PETRACE_START_COMMAND = Meta("minigame", "pet race") + "racing";

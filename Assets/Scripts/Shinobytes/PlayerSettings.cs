@@ -13,7 +13,7 @@ public class PlayerSettings
     public bool? AlertExpiredStateCacheInChat;
     public bool? PlayerListVisible;
     public bool? PlayerNamesVisible;
-    public bool? LocalBotServerDisabled;    
+    public bool? LocalBotServerDisabled;
     public bool? AutoKickAfkPlayers;
     public bool? DayNightCycleEnabled;
     public bool? PhysicsEnabled;
@@ -39,6 +39,7 @@ public class PlayerSettings
 
     public bool? DisableDungeons;
     public bool? DisableRaids;
+    public bool? AutoAssignVacantHouses;
 
     public bool? QueryEngineEnabled;
     public bool? QueryEngineAlwaysReturnArray;
@@ -47,8 +48,24 @@ public class PlayerSettings
     public float[] ExpMultiplierAnnouncements;
 
     public StreamLabelSettings StreamLabels;
-
     public ObserverTimes PlayerObserveSeconds;
+    public LootSettings Loot;
+
+    public class LootSettings
+    {
+        public bool IncludeOrigin;
+
+        public static LootSettings Default
+        {
+            get
+            {
+                return new LootSettings
+                {
+                    IncludeOrigin = true
+                };
+            }
+        }
+    }
 
     public class StreamLabelSettings
     {
@@ -131,7 +148,13 @@ public class PlayerSettings
             wasUpdated = true;
         }
 
-        if(Instance.LocalBotPort == null)
+        if (Instance.AutoAssignVacantHouses == null)
+        {
+            Instance.AutoAssignVacantHouses = true;
+            wasUpdated = true;
+        }
+
+        if (Instance.LocalBotPort == null)
         {
             Instance.LocalBotPort = RavenBotConnection.DefaultLocalBotServerPort;
             wasUpdated = true;
@@ -158,6 +181,12 @@ public class PlayerSettings
         if (Instance.RavenBotServer == null)
         {
             Instance.RavenBotServer = "ravenbot.ravenfall.stream:4041";
+            wasUpdated = true;
+        }
+
+        if (Instance.Loot == null)
+        {
+            Instance.Loot = LootSettings.Default;
             wasUpdated = true;
         }
 
@@ -249,7 +278,7 @@ public class PlayerSettings
             Serialize(sw, "alertExpiredStateCacheInChat", obj.AlertExpiredStateCacheInChat);
             Serialize(sw, "playerListVisible", obj.PlayerListVisible);
             Serialize(sw, "playerNamesVisible", obj.PlayerNamesVisible);
-            Serialize(sw, "localBotServerDisabled", obj.LocalBotServerDisabled);            
+            Serialize(sw, "localBotServerDisabled", obj.LocalBotServerDisabled);
             Serialize(sw, "autoKickAfkPlayers", obj.AutoKickAfkPlayers);
             Serialize(sw, "dayNightCycleEnabled", obj.DayNightCycleEnabled);
             Serialize(sw, "queryEngineEnabled", obj.QueryEngineEnabled);
@@ -258,6 +287,7 @@ public class PlayerSettings
 
             Serialize(sw, "disableRaids", obj.DisableRaids);
             Serialize(sw, "disableDungeons", obj.DisableDungeons);
+            Serialize(sw, "autoAssignVacantHouses", obj.AutoAssignVacantHouses);
 
             // Serialize all nullable float properties
             Serialize(sw, "dayNightTime", obj.DayNightTime);

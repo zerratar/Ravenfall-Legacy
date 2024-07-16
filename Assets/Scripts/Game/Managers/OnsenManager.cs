@@ -43,9 +43,7 @@ public class OnsenManager : MonoBehaviour
             return false;
         }
 
-
         player.onsenHandler.Enter(restingArea);
-        //player.teleportHandler.
 
         return true;
     }

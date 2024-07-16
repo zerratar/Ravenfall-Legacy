@@ -13,7 +13,6 @@ using Resources = RavenNest.Models.Resources;
 using Debug = Shinobytes.Debug;
 using RavenNest.Models.TcpApi;
 using Sirenix.OdinInspector;
-using static UnityEngine.Rendering.GPUSort;
 
 public class PlayerController : MonoBehaviour, IAttackable, IPollable
 {
@@ -104,7 +103,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public int PatreonTier;
 
     public EquipmentStats EquipmentStats = new EquipmentStats();
-
+    public PlayerLootManager Loot = new PlayerLootManager();
     public bool Controlled { get; private set; }
 
     [NonSerialized] public bool IsModerator;
@@ -294,7 +293,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public PlayerSkinObject ActiveFullBodySkin { get; private set; }
     public Skill? RaidCombatStyle { get; set; }
     public Skill? DungeonCombatStyle { get; set; }
-    public int AutoTrainTargetLevel { get; internal set; }
+    public int AutoTrainTargetLevel { get; set; }
 
     internal void InterruptAction()
     {
@@ -1686,6 +1685,20 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 Rested.ExpBoost = 2;
             }
 
+            AutoTrainTargetLevel = player.State.AutoTrainTargetLevel;
+            if (player.State.DungeonCombatStyle != null)
+            {
+                DungeonCombatStyle = (Skill)player.State.DungeonCombatStyle.Value;
+            }
+
+            if (player.State.RaidCombatStyle != null)
+            {
+                RaidCombatStyle = (Skill)player.State.RaidCombatStyle.Value;
+            }
+
+            Rested.AutoRestTarget = player.State.AutoRestTarget;
+            Rested.AutoRestStart = player.State.AutoRestStart;
+
             dungeonHandler.AutoJoinCounter = player.State.AutoJoinDungeonCounter;
             raidHandler.AutoJoinCounter = player.State.AutoJoinRaidCounter;
 
@@ -2409,7 +2422,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
             SetExpGainState(state);
 
-            AddExp(Skill.Healing, factor);
+            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Healing.Level)
+                AddExp(Skill.Healing, factor);
         }
         catch (Exception exc)
         {
@@ -2471,7 +2485,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                         factor *= System.Math.Max(1.0d, enemyController.ExpFactor);
                     }
 
-                    player.AddExp(activeSkill, factor);
+                    if (player.AutoTrainTargetLevel <= 0 || player.AutoTrainTargetLevel > player.GetSkill(activeSkill).Level)
+                        player.AddExp(activeSkill, factor);
                 }
             }
         }
@@ -2506,7 +2521,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
             SetExpGainState(state);
 
-            AddExp(Skill.Gathering, factor);
+            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Gathering.Level)
+                player.AddExp(Skill.Gathering, factor);
         }
 
         return true;
@@ -2539,7 +2555,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
             SetExpGainState(state);
 
-            player.AddExp(Skill.Woodcutting, factor);// tree.Experience);
+            if (player.AutoTrainTargetLevel <= 0 || player.AutoTrainTargetLevel > player.Stats.Woodcutting.Level)
+                player.AddExp(Skill.Woodcutting, factor);// tree.Experience);
             //var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
             //player.Statistics.TotalWoodCollected += amount;
         }
@@ -2654,22 +2671,43 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             if (skill == Skill.Health)
             {
                 var each = exp / 3d;
-                if (Stats.Attack.AddExp(each, out var a))
-                    CelebrateSkillLevelUp(Skill.Attack, a);
+                var left = 3d;
 
-                if (Stats.Defense.AddExp(each, out var b))
-                    CelebrateSkillLevelUp(Skill.Defense, b);
+                if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Attack.Level)
+                {
+                    if (Stats.Attack.AddExp(each, out var a))
+                        CelebrateSkillLevelUp(Skill.Attack, a);
+                }
+                else
+                {
+                    each = exp / --left;
+                }
 
-                if (Stats.Strength.AddExp(each, out var c))
-                    CelebrateSkillLevelUp(Skill.Strength, c);
+                if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Defense.Level)
+                {
+                    if (Stats.Defense.AddExp(each, out var b))
+                        CelebrateSkillLevelUp(Skill.Defense, b);
+                }
+                else
+                {
+                    each = exp / --left;
+                }
+
+                if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Strength.Level)
+                    if (Stats.Strength.AddExp(each, out var c))
+                        CelebrateSkillLevelUp(Skill.Strength, c);
 
                 return;
             }
         }
 
-        if (stat.AddExp(exp, out var atkLvls))
+        if (stat.Type == Skill.Slayer || stat.Type == Skill.Sailing || stat.Type == Skill.Health ||
+            AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > stat.Level)
         {
-            CelebrateSkillLevelUp(skill, atkLvls);
+            if (stat.AddExp(exp, out var atkLvls))
+            {
+                CelebrateSkillLevelUp(skill, atkLvls);
+            }
         }
     }
 
@@ -3255,7 +3293,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         PlacementUtility.PlaceOnGround(this.gameObject);
     }
 
-
     internal bool Unstuck(bool forceUnstuck = false)
     {
         var now = Time.realtimeSinceStartup;
@@ -3394,147 +3431,20 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     }
 
     public StatsModifiers GetModifiers() => playerStatsModifiers;
-}
 
-public class StatusEffect
-{
-    private CharacterStatusEffect effect;
-    public CharacterStatusEffect Effect
+    public void RecordLoot(Item item, int amount, int dungeonIndex, int raidIndex)
     {
-        get => effect;
-        set
+        var utcNow = DateTime.UtcNow;
+        var gameTime = GameTime.time;
+        var record = new PlayerLootRecord
         {
-            effect = value;
-            TimeLeft = effect.TimeLeft;
-        }
-    }
+            Time = utcNow,
+            ItemName = item.Name,
+            Amount = amount,
+            DungeonIndex = dungeonIndex,
+            RaidIndex = raidIndex,
+        };
 
-    public float Amount => Effect.Amount;
-    public StatusEffectType Type => Effect.Type;
-    public double Duration => Effect.Duration;
-    public double TimeLeft;
-    public DateTime LastUpdateUtc;
-    public bool Expired
-    {
-        get
-        {
-            if (TimeLeft <= 0)
-                return true;
-
-            var effectHasBeenApplied = LastUpdateUtc > DateTime.UnixEpoch;
-            var oneTimeEffect = Effect.Type == StatusEffectType.TeleportToIsland ||
-                                Effect.Type == StatusEffectType.Heal ||
-                                Effect.Type == StatusEffectType.Damage;
-
-            if (effectHasBeenApplied && oneTimeEffect)
-                return true;
-
-            return false;
-        }
-    }
-}
-public class StatsModifiers
-{
-    public StatsModifiers()
-    {
-        Reset();
-    }
-
-    // Base stats
-    public float DodgeChance;
-    public float ExpMultiplier;
-    public float MovementSpeedMultiplier;
-    public float AttackSpeedMultiplier;
-    public float CastSpeedMultiplier;
-    public float StrengthMultiplier;
-    public float DefenseMultiplier;
-    public float RangedPowerMultiplier;
-    public float MagicPowerMultiplier;
-    public float HealingPowerMultiplier;
-    public float AttackPowerMultiplier;
-    public float HitChanceMultiplier;
-
-    // New additions
-    public float CriticalHitChance;
-    public float CriticalHitDamage;
-
-
-    // Attack attributes
-    public float AttackAttributePoisonEffect;
-    public float AttackAttributeBleedingEffect;
-    public float AttackAttributeBurningEffect;
-    public float AttackAttributeHealthStealEffect;
-
-    // Damage over time effects
-    public float PoisonEffect;  // Represents damage per tick, you can handle application separately
-    public float BleedingEffect;  // Represents damage per tick
-    public float BurningEffect;  // Represents damage per tick
-
-    public void Reset()
-    {
-        DodgeChance = 0;
-        ExpMultiplier = 1;
-        MovementSpeedMultiplier = 1;
-        AttackSpeedMultiplier = 1;
-        CastSpeedMultiplier = 1;
-        StrengthMultiplier = 1;
-        DefenseMultiplier = 1;
-        RangedPowerMultiplier = 1;
-        MagicPowerMultiplier = 1;
-        HealingPowerMultiplier = 1;
-        AttackPowerMultiplier = 1;
-        HitChanceMultiplier = 1;
-
-        // Reset new additions
-        CriticalHitChance = 0;
-
-        AttackAttributePoisonEffect = 0;
-        AttackAttributeBleedingEffect = 0;
-        AttackAttributeBurningEffect = 0;
-        AttackAttributeHealthStealEffect = 0;
-
-        PoisonEffect = 0;
-        BleedingEffect = 0;
-        BurningEffect = 0;
-    }
-}
-
-public class CharacterRestedState
-{
-    public double ExpBoost;
-    public double RestedPercent;
-    public double RestedTime;
-    public double CombatStatsBoost;
-    internal double? AutoRestTarget;
-    internal double? AutoRestStart;
-    public const double RestedTimeMax = 2 * 60 * 60; // 2 hours (Seconds)
-}
-
-public class AsyncPlayerRequest
-{
-    private readonly Task request;
-    private readonly Func<Task> lazyRequest;
-    public AsyncPlayerRequest(Func<Task> action)
-    {
-        lazyRequest = action;
-    }
-    public AsyncPlayerRequest(Task request)
-    {
-        this.request = request;
-    }
-
-    public AsyncPlayerRequest(Action request)
-    {
-        this.request = new Task(request);
-    }
-
-    public Task Invoke()
-    {
-        if (lazyRequest != null)
-        {
-            return lazyRequest.Invoke();
-        }
-
-        return request;
+        Loot.Add(record);
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
-using FlatKit;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 
@@ -16,6 +15,7 @@ public class GameCamera : MonoBehaviour
     [SerializeField] private GameManager gameManager;
     [SerializeField] private RaidManager raidManager;
     [SerializeField] private PlayerObserveCamera observeCamera;
+    [SerializeField] private IslandObserveCamera islandObserveCamera;
     [SerializeField] private GameObject arena;
 
     [SerializeField] private PlayerDetails playerObserver;
@@ -31,7 +31,9 @@ public class GameCamera : MonoBehaviour
     public float MinFarClipDistance;
 
     private float observeNextPlayerTimer = ObserverJumpTimer;
+    private float observeNextIslandTimer = ObserverJumpTimer;
     private int observedPlayerIndex;
+    private int observedIslandIndex;
 
     private GameCameraType state = GameCameraType.Free;
     private bool canObserveNextPlayer = true;
@@ -54,7 +56,7 @@ public class GameCamera : MonoBehaviour
         if (!freeCamera) freeCamera = GetComponent<FreeCamera>();
         if (!orbitCamera) orbitCamera = GetComponent<OrbitCamera>();
         if (!focusTargetCamera) focusTargetCamera = GetComponent<FocusTargetCamera>();
-
+        if (!islandObserveCamera) islandObserveCamera = GetComponent<IslandObserveCamera>();
         if (!playerObserver) playerObserver = gameManager.ObservedPlayerDetails;
 
         playerObserver.gameObject.SetActive(false);
@@ -109,6 +111,11 @@ public class GameCamera : MonoBehaviour
                 EnableFreeCamera();
                 return;
             }
+            else if (Input.GetKeyDown(KeyCode.I))
+            {
+                ObserveNextIsland();
+                return;
+            }
             else if (canObserveNextPlayer && Input.GetKeyDown(KeyCode.Tab))
             {
                 ObserveNextPlayer();
@@ -149,6 +156,15 @@ public class GameCamera : MonoBehaviour
                     ObserveNextPlayer();
                 }
             }
+            else if (state == GameCameraType.Island)
+            {
+                AllowJoinObserve = false;
+                observeNextIslandTimer -= GameTime.deltaTime;
+                if (observeNextIslandTimer <= 0)
+                {
+                    ObserveNextIsland();
+                }
+            }
         }
         catch (Exception exc)
         {
@@ -173,6 +189,7 @@ public class GameCamera : MonoBehaviour
         orbitCamera.TargetTransform = null;
         freeCamera.enabled = true;
         orbitCamera.enabled = false;
+        islandObserveCamera.enabled = false;
         focusTargetCamera.enabled = false;
 
         playerObserver.Observe(null, 0);
@@ -209,6 +226,24 @@ public class GameCamera : MonoBehaviour
         forcedFreeCamera = false;
     }
 
+    public bool ObserveNextIsland()
+    {
+        state = GameCameraType.Island;
+        var allIslands = gameManager.Islands.All;
+        var islandCount = allIslands.Length;
+        IslandController island = null;
+        for (var i = 0; i < islandCount; i++)
+        {
+            observedIslandIndex = (observedIslandIndex + 1) % islandCount;
+            island = allIslands[observedIslandIndex];
+            if (!island) return true;
+            if (CanObserveIsland(island)) break;
+        }
+        if (!island) return true;
+        ObserveIsland(island);
+        return false;
+    }
+
     public bool ObserveNextPlayer()
     {
         var playerCount = playerManager.GetPlayerCount(true);
@@ -219,16 +254,16 @@ public class GameCamera : MonoBehaviour
 
         state = GameCameraType.Observe;
         focusTargetCamera.enabled = false;
-        PlayerController player;
+        PlayerController player = null;
 
-        while (true)
+        for (var i = 0; i < playerCount; i++)
         {
             observedPlayerIndex = (observedPlayerIndex + 1) % playerCount;
             player = playerManager.GetPlayerByIndex(observedPlayerIndex);
             if (!player) return true;
             if (CanObservePlayer(player)) break;
         }
-
+        if (!player) return true;
         ObservePlayer(player);
         return false;
     }
@@ -285,6 +320,17 @@ public class GameCamera : MonoBehaviour
         ObservePlayer(player, ObserveEvent.Automatic);
     }
 
+    public void ObserveIsland(IslandController island)
+    {
+        if (!island) return;
+        if (forcedFreeCamera) return;
+
+        observeNextIslandTimer = ObserverJumpTimer;
+        islandObserveCamera.ObserveIsland(island);
+        islandObserveCamera.enabled = true;
+        freeCamera.enabled = false;
+        orbitCamera.enabled = false;
+    }
 
     public void ObservePlayer(PlayerController player, ObserveEvent @event, int data = 1)
     {
@@ -338,6 +384,7 @@ public class GameCamera : MonoBehaviour
         freeCamera.enabled = false;
         orbitCamera.TargetTransform = player.transform;
         orbitCamera.enabled = true;
+        islandObserveCamera.enabled = false;
     }
 
     public void EnableFocusTargetCamera(Transform transform)
@@ -346,6 +393,7 @@ public class GameCamera : MonoBehaviour
         freeCamera.enabled = false;
         orbitCamera.enabled = false;
         focusTargetCamera.enabled = true;
+        islandObserveCamera.enabled = false;
         if (transform) focusTargetCamera.Target = transform;
     }
 
@@ -353,6 +401,14 @@ public class GameCamera : MonoBehaviour
     private bool CanObservePlayer(PlayerController player)
     {
         return !forcedFreeCamera && !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.streamRaidHandler.InWar;
+    }
+
+    private bool CanObserveIsland(IslandController island)
+    {
+        if (forcedFreeCamera) return false;
+        if ((gameManager.StreamRaid.Started || gameManager.StreamRaid.IsWar) && !island.AllowRaidWar) return false;
+        if (!gameManager.StreamRaid.Started && !gameManager.StreamRaid.IsWar && island.AllowRaidWar) return false;
+        return island.GetPlayerCount() > 0;
     }
 }
 
@@ -369,5 +425,6 @@ public enum GameCameraType
     Observe,
     Arena,
     Raid,
-    Dungeon
+    Dungeon,
+    Island
 }

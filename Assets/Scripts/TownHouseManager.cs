@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class TownHouseManager : MonoBehaviour
 {
@@ -40,7 +39,7 @@ public class TownHouseManager : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            if (IsPointerOverUIElement())
+            if (UIUtility.IsPointerOverUIElement())
                 return;
 
             var ray = gameCamera.ScreenPointToRay(Input.mousePosition);
@@ -159,7 +158,7 @@ public class TownHouseManager : MonoBehaviour
         {
             if (slot.OwnerUserId == player.UserId)
             {
-                slot.InvalidateOwner();
+                slot.InvalidateOwner(PlayerSettings.Instance.AutoAssignVacantHouses.GetValueOrDefault());
                 wasInvalidated = true;
             }
         }
@@ -174,7 +173,7 @@ public class TownHouseManager : MonoBehaviour
     {
         foreach (var slot in slots)
         {
-            slot.InvalidateOwner();
+            slot.InvalidateOwner(PlayerSettings.Instance.AutoAssignVacantHouses.GetValueOrDefault());
         }
 
         gameManager.villageBoostLabel.Update();
@@ -249,40 +248,4 @@ public class TownHouseManager : MonoBehaviour
             gameObject.SetActive(value);
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsPointerOverUIElement()
-    {
-        return IsPointerOverUIElement(GetEventSystemRaycastResults());
-    }
-
-    ///Returns 'true' if we touched or hovering on Unity UI element.
-    ///
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsPointerOverUIElement(List<RaycastResult> eventSystemRaysastResults)
-    {
-        for (int index = 0; index < eventSystemRaysastResults.Count; index++)
-        {
-            RaycastResult curRaysastResult = eventSystemRaysastResults[index];
-            if (curRaysastResult.gameObject.layer == LayerMask.NameToLayer("UI") &&
-                curRaysastResult.gameObject.tag == "BuildingDialog")
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    ///Gets all event systen raycast results of current mouse or touch position.
-    ///
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static List<RaycastResult> GetEventSystemRaycastResults()
-    {
-        PointerEventData eventData = new PointerEventData(EventSystem.current);
-        eventData.position = Input.mousePosition;
-        List<RaycastResult> raysastResults = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventData, raysastResults);
-        return raysastResults;
-    }
-
 }

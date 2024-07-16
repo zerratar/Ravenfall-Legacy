@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
 using UnityEngine;
 using Debug = Shinobytes.Debug;
 public class FreeCamera : MonoBehaviour
@@ -12,6 +13,8 @@ public class FreeCamera : MonoBehaviour
 
     [SerializeField] private float slowDownMovementScale = 0.25f;
     [SerializeField] private float slowDownLookScale = 0.35f;
+
+    [SerializeField] private EnemyObserveDialog enemyObserveDialog;
 
     private RaycastHit[] raycastHits = new RaycastHit[24];
 
@@ -136,6 +139,15 @@ public class FreeCamera : MonoBehaviour
                     this.btnDown.Add(btn);
                 }
             }
+            else if (enemyObserveDialog && !UIUtility.IsPointerOverUIElement())
+            {
+                var ec = hit.collider.gameObject.GetComponent<EnemyController>();
+                if (ec)// && !enemyObserveDialog.IsVisible)
+                {
+                    enemyObserveDialog.ShowDialog(ec);
+                    break;
+                }
+            }
         }
 
         if (!hitButton)
@@ -147,6 +159,11 @@ public class FreeCamera : MonoBehaviour
 
             btnDown.Clear();
         }
+    }
+
+    private void OnDisable()
+    {
+        if (enemyObserveDialog) enemyObserveDialog.Close();
     }
 
     private void OnMouseUpAction()
@@ -176,6 +193,7 @@ public class FreeCamera : MonoBehaviour
                 //Shinobytes.Debug.LogError("You've clicked on: " + pc.Name);
                 return;
             }
+
         }
     }
 

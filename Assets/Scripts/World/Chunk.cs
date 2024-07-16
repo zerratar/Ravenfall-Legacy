@@ -114,6 +114,7 @@ public class Chunk : MonoBehaviour
                 state = ExpGainState.PlayerRemoved;
                 return 0;
             }
+
             var maxFactor = GameMath.Exp.MaxExpFactorFromIsland;
 
             var s = player.Stats;
@@ -122,9 +123,9 @@ public class Chunk : MonoBehaviour
             var maxLv = IslandManager.IslandLevelRangeMax[this.Island.Island];
             var efLv = IslandManager.IslandMaxEffect[this.Island.Island];
 
+            var skill = player.GetActiveSkillStat();
             if (taskType == TaskType.Fighting)
             {
-                var skill = player.GetActiveSkillStat();
                 if (skill == null)
                 {
                     state = ExpGainState.NotAValidSkill;
@@ -137,6 +138,12 @@ public class Chunk : MonoBehaviour
                     var st = player.Stats;
                     var lv = (st.Strength.Level + st.Defense.Level + st.Attack.Level) / 3;
                     mySkillLevel = lv;
+
+                    if (player.AutoTrainTargetLevel > 0 && player.AutoTrainTargetLevel <= lv)
+                    {
+                        state = ExpGainState.TargetLevelReached;
+                        return 0;
+                    }
                 }
 
                 if (RequiredCombatLevel > s.CombatLevel && RequiredSkilllevel > mySkillLevel)
@@ -147,16 +154,22 @@ public class Chunk : MonoBehaviour
             }
             else
             {
-                var skillLevel = player.GetSkill(taskType);
-                if (skillLevel != null && RequiredSkilllevel > 1 && (skillLevel.Level < minLv || skillLevel.Level > maxLv))
+                skill = player.GetSkill(taskType);
+                if (skill != null && RequiredSkilllevel > 1 && (skill.Level < minLv || skill.Level > maxLv))
                 {
-                    if (skillLevel.Level < minLv)
+                    if (skill.Level < minLv)
                         state = ExpGainState.LevelTooLow;
                     else
                         state = ExpGainState.LevelTooHigh;
 
                     return 0;
                 }
+            }
+
+            if (skill != null && player.AutoTrainTargetLevel > 0 && player.AutoTrainTargetLevel <= skill.Level)
+            {
+                state = ExpGainState.TargetLevelReached;
+                return 0;
             }
 
             // TODO: rewrite to use minLv, maxLv and efLv instead.
@@ -187,8 +200,6 @@ public class Chunk : MonoBehaviour
             {
                 case TaskType.Fighting:
                     {
-                        var skill = player.GetActiveSkillStat();
-
                         if (skill == player.Stats.Health)
                         {
                             // training all. We can't use combat level. Use average of atk,def,str?
@@ -317,4 +328,5 @@ public enum ExpGainState
     FullGain,
     LevelTooLow,
     LevelTooHigh,
+    TargetLevelReached
 }

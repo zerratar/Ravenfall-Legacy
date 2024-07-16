@@ -141,7 +141,7 @@ public class TownHouseSlot : MonoBehaviour
         }
     }
 
-    public void InvalidateOwner()
+    public void InvalidateOwner(bool assignNewOwnerIfEmpty)
     {
         Player = OwnerUserId != null ? playerManager.GetPlayerByUserId(OwnerUserId.Value) : null;
         if (Player)
@@ -160,19 +160,48 @@ public class TownHouseSlot : MonoBehaviour
             PlayerName = null;
         }
 
+        if (assignNewOwnerIfEmpty && PlayerSkills == null)
+        {
+            var players = playerManager.GetAllRealPlayers();
+            PlayerController targetPlayer = null;
+            int highestSkill = 0;
+            foreach (var plr in players)
+            {
+                var hasSlotAlready = gameManager.Village.TownHouses.FindSlotByOwner(plr);
+                if (hasSlotAlready)
+                {
+                    continue;
+                }
+
+                var houseSkill = GameMath.GetSkillByHouseType(plr.Stats, SlotType);
+                if (highestSkill < houseSkill.MaxLevel)
+                {
+                    highestSkill = houseSkill.MaxLevel;
+                    targetPlayer = plr;
+                }
+            }
+
+            if (targetPlayer)
+            {
+                OwnerUserId = targetPlayer.UserId;
+                PlayerSkills = targetPlayer.Stats;
+                PlayerName = targetPlayer.Name;
+            }
+        }
+
         UpdateExpBonus();
     }
 
     internal void SetOwner(Guid? userId)
     {
         this.OwnerUserId = userId;
-        InvalidateOwner();
+        InvalidateOwner(PlayerSettings.Instance.AutoAssignVacantHouses.GetValueOrDefault());
     }
 
     internal void RemoveOwner()
     {
         this.OwnerUserId = null;
-        InvalidateOwner();
+        InvalidateOwner(false);
     }
 
     public void Deselect(Material defaultMaterial)

@@ -111,8 +111,12 @@ public class SkillStat
     public bool AddExp(double exp, out int newLevels)
     {
         newLevels = 0;
+        if (exp <= 0)
+        {
+            return false;
+        }
+        
         Experience += exp;
-
         var expForNextLevel = GameMath.ExperienceForLevel(this.Level + 1);
         while (Experience >= expForNextLevel)
         {

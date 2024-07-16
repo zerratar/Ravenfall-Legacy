@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using UnityEngine;
 
 public class OnsenHandler : MonoBehaviour
@@ -28,8 +29,32 @@ public class OnsenHandler : MonoBehaviour
             rested.ExpBoost = 0;
         }
 
+        // check if we have auto rest on
+        if (player.Rested.AutoRestTarget.HasValue && 
+            player.Rested.AutoRestStart.HasValue && 
+            player.Rested.AutoRestTarget.Value > 0 &&
+            !player.dungeonHandler.InDungeon && !player.raidHandler.InRaid &&
+            !player.duelHandler.InDuel && !player.arenaHandler.InArena && !player.streamRaidHandler.InWar)
+        {
+            var autoRestTarget = player.Rested.AutoRestTarget.Value;
+            var autoRestStart = player.Rested.AutoRestStart.Value;
+            var restedMinutes = player.Rested.RestedTime / 60;
+            if (restedMinutes <= player.Rested.AutoRestStart && !InOnsen)
+            {
+                player.GameManager.Onsen.Join(player);
+                return;
+            }
+            else if (InOnsen && restedMinutes >= player.Rested.AutoRestTarget)
+            {
+                player.GameManager.Onsen.Leave(player);
+                return;
+            }
+        }
+
         if (!InOnsen)
         {
+
+
             if (rested.RestedTime > 0)
             {
                 rested.RestedTime -= GameTime.deltaTime * RestedDrainFactor;
@@ -70,7 +95,7 @@ public class OnsenHandler : MonoBehaviour
             player.GameManager.RavenBot.SendReply(player, Localization.MSG_ONSEN_FULL);
             return;
         }
-        
+
         var target = spot.Target;
 
         player.taskTarget = null;
@@ -132,5 +157,17 @@ public class OnsenHandler : MonoBehaviour
 
         prevOnsen.UpdateDetailsLabel();
         InOnsen = false;
+    }
+
+    internal void ClearAutoRest()
+    {
+        player.Rested.AutoRestTarget = null;
+        player.Rested.AutoRestStart = null;
+    }
+
+    internal void SetAutoRest(int autoRestStart, int autoRestStop)
+    {
+        player.Rested.AutoRestStart = autoRestStart;
+        player.Rested.AutoRestTarget = autoRestStop;
     }
 }

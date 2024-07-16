@@ -220,7 +220,9 @@ public class QueryEngineAPI
 
             QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.Broadcaster", x => x.PlayerObserveSeconds.Broadcaster),
             QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.OnSubcription", x => x.PlayerObserveSeconds.OnSubcription),
-            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.OnCheeredBits", x => x.PlayerObserveSeconds.OnCheeredBits)
+            QueryEngineContext.Column<PlayerSettings, float>("PlayerObserveSeconds.OnCheeredBits", x => x.PlayerObserveSeconds.OnCheeredBits),
+            QueryEngineContext.Column<PlayerSettings, bool>("Loot.IncludeOrigin", x => x.Loot.IncludeOrigin)
+
         ).HasOnlyOneRow();
 
 

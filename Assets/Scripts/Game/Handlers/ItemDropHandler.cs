@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using RavenNest.Models;
 using Shinobytes.Linq;
 using UnityEngine;
-using static UnityEngine.Networking.UnityWebRequest;
 
 public class ItemDropHandler : MonoBehaviour
 {

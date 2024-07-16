@@ -323,7 +323,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
     private void AddItems(EventItemReward[] rewards)
     {
-        var result = gameManager.AddItems(rewards);
+        var result = gameManager.AddItems(rewards, raidIndex: raidIndex);
         if (result.Count > 0)
         {
             gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded {itemCount} item treasures!", result.Count.ToString());
