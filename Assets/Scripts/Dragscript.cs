@@ -1,5 +1,4 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
@@ -17,19 +16,17 @@ public class Dragscript : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     private float screenH;
     private string keyX;
     private string keyY;
+    private Vector3 originalPosition;
 
     public bool IsDragging { get; private set; }
 
     void Start()
     {
-
         size = GetComponent<RectTransform>().sizeDelta;
         canvasScaler = GetComponentInParent<CanvasScaler>();
         canvas = canvasScaler.GetComponent<Canvas>();
         var refW = canvasScaler.referenceResolution.x;
         var refH = canvasScaler.referenceResolution.y;
-
-        
 
         this.screenW = refW;
         this.screenH = refH;
@@ -49,10 +46,17 @@ public class Dragscript : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         if (PlayerPrefs.HasKey(keyY))
             lpy = PlayerPrefs.GetFloat(keyY);
 
+        this.originalPosition = this.transform.position;
+
         this.transform.localPosition = new Vector3(lpx, lpy, lp.z);
     }
+    public void ResetPosition()
+    {
+        this.transform.position = this.originalPosition;
 
-    private Vector2 Size => PlayerDetails.IsExpanded ? new Vector2(size.x, screenH) : size;
+        PlayerPrefs.SetFloat(keyX, originalPosition.x);
+        PlayerPrefs.SetFloat(keyY, originalPosition.y);
+    }
 
     #region IBeginDragHandler implementation
     public void OnBeginDrag(PointerEventData eventData)
@@ -73,29 +77,22 @@ public class Dragscript : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         var mousePos = eventData.position;
         var posDelta = (Vector3)mousePos - lastMousePos;
         var newPos = lastUiPos + posDelta;
-        var eight = size.y / 8f;
-        var bX0 = -(screenW / 2);
-        var bX1 = (screenW - size.x) + bX0;
-        var bY0 = -eight;
-        var bY1 = screenH - size.y - eight;
 
+        var rectTransform = GetComponent<RectTransform>();
+        var canvasRectTransform = canvas.GetComponent<RectTransform>();
 
-        if (newPos.x < bX0)
-            newPos.x = bX0;
-        if (newPos.x > bX1)
-            newPos.x = bX1;
+        // Calculate the boundaries
+        var canvasSize = canvasRectTransform.sizeDelta;
+        var halfSize = rectTransform.sizeDelta / 2f;
 
-        if (PlayerDetails.IsExpanded)
-        {
-            newPos.y = bY1;
-        }
-        else
-        {
-            if (newPos.y < bY0)
-                newPos.y = bY0;
-            if (newPos.y > bY1)
-                newPos.y = bY1;
-        }
+        var minX = -canvasSize.x / 2f + halfSize.x;
+        var maxX = canvasSize.x / 2f - halfSize.x;
+        var minY = -canvasSize.y / 2f + halfSize.y;
+        var maxY = canvasSize.y / 2f - halfSize.y;
+
+        // Clamp the new position within the boundaries
+        newPos.x = Mathf.Clamp(newPos.x, minX, maxX);
+        newPos.y = Mathf.Clamp(newPos.y, minY, maxY);
 
         transform.localPosition = newPos;
         lastUiPos = newPos;
@@ -111,12 +108,9 @@ public class Dragscript : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         IsDragging = false;
         var pos = transform.localPosition;
 
-        UnityEngine.PlayerPrefs.SetFloat(keyX, pos.x);
-        UnityEngine.PlayerPrefs.SetFloat(keyY, pos.y);
-
+        PlayerPrefs.SetFloat(keyX, pos.x);
+        PlayerPrefs.SetFloat(keyY, pos.y);
     }
 
-
     #endregion
-
 }

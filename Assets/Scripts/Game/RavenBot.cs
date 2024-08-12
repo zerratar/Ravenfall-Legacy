@@ -43,6 +43,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<OnChatMessage>("chat_message");
 
         Connection.Register<GiftItem>("gift_item");
+        Connection.Register<SendItem>("send_item");
         Connection.Register<ValueItem>("value_item");
         Connection.Register<CraftRequirement>("req_item");
         Connection.Register<ItemUsage>("item_usage");
@@ -122,6 +123,7 @@ public class RavenBot : System.IDisposable
 
         Connection.Register<ClanInfoHandler>("clan_info");
         Connection.Register<ClanStatsHandler>("clan_stats");
+        Connection.Register<ClanRank>("clan_rank");
         Connection.Register<ClanJoin>("clan_join");
         Connection.Register<ClanRemove>("clan_remove");
         Connection.Register<ClanLeave>("clan_leave");

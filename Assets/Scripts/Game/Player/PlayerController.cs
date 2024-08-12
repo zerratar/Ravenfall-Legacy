@@ -117,6 +117,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     //public int TotalGiftedSubs;
     public User User { get; private set; }
     public int CharacterIndex { get; private set; }
+    public string Identifier { get; private set; }
 
     [NonSerialized] public DateTime LastChatCommandUtc;
 
@@ -1663,6 +1664,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         PlayerNameLowerCase = player.Name.ToLower();
         Stats = new Skills(player.Skills);
         CharacterIndex = player.CharacterIndex;
+        Identifier = player.Identifier;
         Resources = player.Resources;
 
         Raider = raidInfo;
@@ -2060,6 +2062,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (fishingSpot.Fish(this))
         {
+            Island.Statistics.FishCaught++;
+
             AddExp(Skill.Fishing, GetExpFactor(out var state));
 
             SetExpGainState(state);
@@ -2190,6 +2194,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (rock.Mine(this) && Chunk != null)
         {
+            Island.Statistics.RocksMined++;
+
             var factor = Chunk.CalculateExpFactor(this, out var state);
 
             SetExpGainState(state);
@@ -2219,6 +2225,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (farm.Farm(this) && Chunk != null)
         {
+            Island.Statistics.CropsHarvested++;
+
             var factor = Chunk.CalculateExpFactor(this, out var state);
 
             SetExpGainState(state);
@@ -2459,8 +2467,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         var isPlayer = enemy is PlayerController playerController;
         var enemyController = enemy as EnemyController;
+
         try
         {
+            var isMonster = enemyController != null;
+            if (isMonster && Island)
+                Island.Statistics.MonstersDefeated++;
+
             if (!enemy.GivesExperienceWhenKilled)
                 return true;
 
@@ -2480,7 +2493,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
                     SetExpGainState(state);
 
-                    if (enemyController != null)
+                    if (isMonster)
                     {
                         factor *= System.Math.Max(1.0d, enemyController.ExpFactor);
                     }
@@ -2507,8 +2520,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (!gather.Gather(this))
             return false;
 
-
         sessionStats.IncrementGather();
+
+        if (Island)
+            Island.Statistics.ItemsGathered++;
 
         foreach (var player in gather.Gatherers)
         {
@@ -2540,6 +2555,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return true;
 
         sessionStats.IncrementTreeCutDown();
+
+        if (Island)
+            Island.Statistics.TreesCutDown++;
 
         // give all attackers exp for the kill, not just the one who gives the killing blow.
         foreach (var player in tree.WoodCutters)

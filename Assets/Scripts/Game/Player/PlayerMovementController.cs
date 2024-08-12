@@ -144,7 +144,9 @@ public class PlayerMovementController : MonoBehaviour
 
         Unlock(adjustToNavMesh);
 
-        if (!navMeshAgent.isActiveAndEnabled || !navMeshAgent.isOnNavMesh)
+        if (!navMeshAgent.isActiveAndEnabled 
+                // || !navMeshAgent.isOnNavMesh
+            )
         {
             return true;
         }

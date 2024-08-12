@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using Skill = RavenNest.Models.Skill;
+
 public class PlayerDetails : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
@@ -122,8 +124,16 @@ public class PlayerDetails : MonoBehaviour
 
         SetActive(broadcasterBadge, observedPlayer.IsBroadcaster);
 
+        //if (gameManager.Camera.State == GameCameraType.Observe)
+        //{
         observedPlayerTimeout -= GameTime.deltaTime;
         SetText(lblObserving, $"({Mathf.FloorToInt(observedPlayerTimeout) + 1}s)");
+        //}
+        //else
+        //{
+        //SetActive(lblObserving, false);
+        //}
+
         SetText(lblPlayerlevel, $"LV : <b>{observedPlayer.Stats.CombatLevel}");
 
         var isRested = observedPlayer.Rested.RestedTime > 0;
@@ -220,7 +230,12 @@ public class PlayerDetails : MonoBehaviour
             SetText(lblPlayername, $"{observedPlayer.PlayerName}");
 
         if (observedPlayerTimeout < 0)
-            gameManager.Camera.ObserveNextPlayer();
+        {
+            if (gameManager.Camera.State == GameCameraType.Island)
+                gameManager.Camera.ObserveNextIsland();
+            else
+                gameManager.Camera.ObserveNextPlayer();
+        }
     }
 
     private string GetTimeLeftForLevelFormatted()
@@ -355,4 +370,12 @@ public class PlayerDetails : MonoBehaviour
             obj.SetActive(value);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SetActive(Component obj, bool value)
+    {
+        if (!obj) return;
+        var go = obj.gameObject;
+        if (go.activeSelf != value)
+            go.SetActive(value);
+    }
 }

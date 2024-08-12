@@ -20,6 +20,11 @@ public class OnsenManager : MonoBehaviour
         this.entryPoints = restingAreas.Select(x => x.EntryPoint).ToArray();
     }
 
+    public bool RestingAreaAvailable(IslandController island)
+    {
+        return restingAreas.FirstOrDefault(x => x.Island.Identifier == island.Identifier) != null;
+    }
+
     public bool Join(PlayerController player)
     {
         var restingArea = restingAreas.FirstOrDefault(x => x.Island.Identifier == player.Island?.Identifier);

@@ -1,6 +1,5 @@
 ﻿using RavenNest.Models;
 using Shinobytes.Linq;
-
 public class ClanStatsHandler : ChatBotCommandHandler<string>
 {
     public ClanStatsHandler(GameManager game, RavenBotConnection server, PlayerManager playerManager)

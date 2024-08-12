@@ -897,15 +897,19 @@ public class DungeonManager : MonoBehaviour, IEvent
         Notifications.SetLevel(Boss.Enemy.Stats.CombatLevel);
         Notifications.ShowDungeonActivated(code);
 
+        var bossMesh = Boss.transform.GetChild(0);
+        if (bossMesh)
+        {
+            var n = bossMesh.name.Split('_');
+            var type = n[n.Length - 2];
+            Boss.name = Utility.AddSpacesToSentence(type);
+        }
+
         if (currentDungeon.Tier == DungeonTier.Dynamic)
         {
-            var bossMesh = Boss.transform.GetChild(0);
             if (bossMesh)
             {
-                var n = bossMesh.name.Split('_');
-                var type = n[n.Length - 2];
-                var bossName = Utility.AddSpacesToSentence(type);
-                currentDungeon.Name = DungeonNameGenerator.Generate(bossName);
+                currentDungeon.Name = DungeonNameGenerator.Generate(Boss.name);
             }
             else
             {

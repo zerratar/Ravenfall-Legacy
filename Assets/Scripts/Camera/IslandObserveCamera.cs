@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class IslandObserveCamera : MonoBehaviour
 {
@@ -35,9 +37,18 @@ public class IslandObserveCamera : MonoBehaviour
 
     private IslandController island;
 
+    public IslandController Island => island;
+
+    private Dictionary<string, IslandSettings> settings = new Dictionary<string, IslandSettings>();
+    private float saveTimeout;
 
     private void Update()
     {
+        var scrollValue = Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
+        var oldDistance = Distance;
+        var oldAngle = orbitAngles.x;
+        Distance = Mathf.Clamp(Distance + scrollValue, MinZoom, MaxZoom);
+
         if (Input.GetKey(KeyCode.DownArrow))
         {
             var newAngle = Mathf.Clamp(orbitAngles.x + (GameTime.deltaTime * orbitChangeSpeed), MinAngle, MaxAngle);
@@ -57,9 +68,32 @@ public class IslandObserveCamera : MonoBehaviour
             orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * rotateChangeSpeed));
         }
 
-        var scrollValue = Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
+        if (oldDistance != Distance || oldAngle != orbitAngles.x)
+        {
+            UpdateIslandSettings();
+        }
 
-        Distance = Mathf.Clamp(Distance + scrollValue, MinZoom, MaxZoom);
+        if (saveTimeout > 0f)
+        {
+            saveTimeout -= GameTime.time;
+            if (saveTimeout <= 0)
+            {
+                SaveSettings();
+            }
+        }
+    }
+
+    private void UpdateIslandSettings()
+    {
+        if (island != null)
+        {
+            if (settings.TryGetValue(island.Identifier, out var islandSettings))
+            {
+                islandSettings.Angle = orbitAngles.x;
+                islandSettings.Distance = Distance;
+                saveTimeout = 5f;
+            }
+        }
     }
 
     private void LateUpdate()
@@ -84,7 +118,7 @@ public class IslandObserveCamera : MonoBehaviour
 
     private void UpdateFocusPoint()
     {
-        Vector3 targetPoint = targetTransform.position;
+        Vector3 targetPoint = island?.CameraPanTarget != null ? island.CameraPanTarget.position : targetTransform.position;
         if (FocusRadius > 0f)
         {
 
@@ -115,5 +149,47 @@ public class IslandObserveCamera : MonoBehaviour
         targetTransform = island.transform;
         focusPoint = targetTransform.position;
         this.island = island;
+
+        // check if there are settings for this island
+        // use those values for angle/distance
+        if (settings.TryGetValue(island.Identifier, out var islandSettings))
+        {
+            orbitAngles = new Vector2(islandSettings.Angle, 0f);
+            Distance = islandSettings.Distance;
+        }
+        // otherwise save the distance /angle for this island
+        else
+        {
+            islandSettings = new IslandSettings
+            {
+                Angle = orbitAngles.x,
+                Distance = Distance
+            };
+            settings[island.Identifier] = islandSettings;
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        SaveSettings();
+    }
+
+    private void SaveSettings()
+    {
+        PlayerPrefs.SetString("IslandCameraSettings", Newtonsoft.Json.JsonConvert.SerializeObject(settings));
+    }
+
+    private void LoadSettings()
+    {
+        if (PlayerPrefs.HasKey("IslandCameraSettings"))
+        {
+            settings = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, IslandSettings>>(PlayerPrefs.GetString("IslandCameraSettings"));
+        }
+    }
+
+    internal class IslandSettings
+    {
+        public float Angle;
+        public float Distance;
     }
 }

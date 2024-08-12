@@ -61,7 +61,7 @@ public class DungeonBossController : MonoBehaviour
             }
         }
 
-        name = "___DUNGEON__BOSS___";
+        //name = "Dungeon Boss";
         this.Enemy.Lock();
         this.transform.SetParent(null);
 
@@ -145,7 +145,7 @@ public class DungeonBossController : MonoBehaviour
     //        Enemy.SetDestination(target.Position);
     //        return;
     //    }
-        
+
     //    if (attackTimer <= 0f)
     //    {
     //        Enemy.Lock();

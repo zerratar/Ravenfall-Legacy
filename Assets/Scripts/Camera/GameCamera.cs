@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Shinobytes.Linq;
+using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -19,6 +20,7 @@ public class GameCamera : MonoBehaviour
     [SerializeField] private GameObject arena;
 
     [SerializeField] private PlayerDetails playerObserver;
+    [SerializeField] private IslandDetails islandObserver;
 
     [SerializeField] private float potatoModeFarClipDistance = 500f;
     private PostProcessLayer postProcessingLayer;
@@ -44,6 +46,10 @@ public class GameCamera : MonoBehaviour
 
     public PlayerDetails Observer => playerObserver;
     public bool ForcedFreeCamera => forcedFreeCamera;
+    public GameCameraType State => state;
+
+    public IslandController CurrentlyObservedIsland => islandObserveCamera.Island;
+
     public bool AllowJoinObserve
     {
         get => !forcedFreeCamera && allowJoinObserve && !gameManager.Raid.Started;
@@ -65,6 +71,16 @@ public class GameCamera : MonoBehaviour
         FarClipDistance = _camera.farClipPlane;
         MaxFarClipDistance = FarClipDistance * 2f;
         MinFarClipDistance = FarClipDistance * 0.05f;
+
+    }
+
+    internal void OnSessionStart()
+    {
+        if (PlayerSettings.Instance.EnableIslandCameraOnStart == true)
+        {
+            AllowJoinObserve = false;
+            ObserveNextIsland();
+        }
     }
 
     // Update is called once per frame
@@ -105,13 +121,13 @@ public class GameCamera : MonoBehaviour
 
             var leftCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 
-            if (state != GameCameraType.Free &&
+            if (//state != GameCameraType.Free &&
                 leftCtrl && Input.GetKey(KeyCode.Tab))
             {
                 EnableFreeCamera();
                 return;
             }
-            else if (Input.GetKeyDown(KeyCode.I))
+            else if (leftCtrl && Input.GetKeyDown(KeyCode.I))
             {
                 ObserveNextIsland();
                 return;
@@ -159,6 +175,15 @@ public class GameCamera : MonoBehaviour
             else if (state == GameCameraType.Island)
             {
                 AllowJoinObserve = false;
+
+                // check if we are currently observing a player
+                // if so, then don't allow the camera to switch to the next island
+                if (observeCamera.HasTarget)
+                {
+                    return;
+                }
+
+
                 observeNextIslandTimer -= GameTime.deltaTime;
                 if (observeNextIslandTimer <= 0)
                 {
@@ -193,6 +218,8 @@ public class GameCamera : MonoBehaviour
         focusTargetCamera.enabled = false;
 
         playerObserver.Observe(null, 0);
+        islandObserver.Observe(null, 0);
+
         observeCamera.ObservePlayer(null);
 
 
@@ -228,6 +255,18 @@ public class GameCamera : MonoBehaviour
 
     public bool ObserveNextIsland()
     {
+        if (forcedFreeCamera || gameManager.StreamRaid.IsWar)
+            return true;
+
+        var settings = PlayerSettings.Instance;
+        if (settings.EnableIslandCameraOnStart == false)
+        {
+            settings.EnableIslandCameraOnStart = true;
+            PlayerSettings.Save();
+        }
+
+        var totalPlayerCount = playerManager.GetPlayerCountOnIslands();
+
         state = GameCameraType.Island;
         var allIslands = gameManager.Islands.All;
         var islandCount = allIslands.Length;
@@ -237,7 +276,11 @@ public class GameCamera : MonoBehaviour
             observedIslandIndex = (observedIslandIndex + 1) % islandCount;
             island = allIslands[observedIslandIndex];
             if (!island) return true;
-            if (CanObserveIsland(island)) break;
+
+            if (CanObserveIsland(totalPlayerCount, island))
+            {
+                break;
+            }
         }
         if (!island) return true;
         ObserveIsland(island);
@@ -250,6 +293,13 @@ public class GameCamera : MonoBehaviour
         if (playerCount == 0)
         {
             return true;
+        }
+
+        var settings = PlayerSettings.Instance;
+        if (settings.EnableIslandCameraOnStart == true)
+        {
+            settings.EnableIslandCameraOnStart = false;
+            PlayerSettings.Save();
         }
 
         state = GameCameraType.Observe;
@@ -274,6 +324,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Raid;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
+        islandObserver.Observe(null, 0);
         //orbitCamera.TargetTransform = raidManager?.Boss?.transform;
     }
 
@@ -283,6 +334,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Arena;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
+        islandObserver.Observe(null, 0);
         //orbitCamera.TargetTransform = null;
     }
 
@@ -292,6 +344,7 @@ public class GameCamera : MonoBehaviour
         state = GameCameraType.Dungeon;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
+        islandObserver.Observe(null, 0);
         //orbitCamera.TargetTransform = null;
     }
 
@@ -299,13 +352,29 @@ public class GameCamera : MonoBehaviour
     {
         if (forcedFreeCamera) return;
         if (state != GameCameraType.Observe)
-            ObserveNextPlayer();
+        {
+            if (PlayerSettings.Instance.EnableIslandCameraOnStart == true)
+            {
+                ObserveNextIsland();
+            }
+            else
+            {
+                ObserveNextPlayer();
+            }
+        }
     }
 
     public void DisableDungeonCamera()
     {
         if (forcedFreeCamera) return;
-        ObserveNextPlayer();
+        if (PlayerSettings.Instance.EnableIslandCameraOnStart == true)
+        {
+            ObserveNextIsland();
+        }
+        else
+        {
+            ObserveNextPlayer();
+        }
     }
     public void EnsureObserverCamera()
     {
@@ -324,8 +393,9 @@ public class GameCamera : MonoBehaviour
     {
         if (!island) return;
         if (forcedFreeCamera) return;
-
+        playerObserver.Observe(null, 0);
         observeNextIslandTimer = ObserverJumpTimer;
+        islandObserver.Observe(island, observeNextIslandTimer);
         islandObserveCamera.ObserveIsland(island);
         islandObserveCamera.enabled = true;
         freeCamera.enabled = false;
@@ -380,6 +450,8 @@ public class GameCamera : MonoBehaviour
 
         observeNextPlayerTimer = time;
         observeCamera.ObservePlayer(player);
+        islandObserver.Observe(null, 0);
+
         playerObserver.Observe(player, time);
         freeCamera.enabled = false;
         orbitCamera.TargetTransform = player.transform;
@@ -403,11 +475,15 @@ public class GameCamera : MonoBehaviour
         return !forcedFreeCamera && !gameManager.StreamRaid.Started || !gameManager.StreamRaid.IsWar || player.streamRaidHandler.InWar;
     }
 
-    private bool CanObserveIsland(IslandController island)
+    private bool CanObserveIsland(int totalPlayerCount, IslandController island)
     {
-        if (forcedFreeCamera) return false;
-        if ((gameManager.StreamRaid.Started || gameManager.StreamRaid.IsWar) && !island.AllowRaidWar) return false;
-        if (!gameManager.StreamRaid.Started && !gameManager.StreamRaid.IsWar && island.AllowRaidWar) return false;
+        if (island.AllowRaidWar) return false;
+
+        // if we dont have any players, then all islands can be observed
+        if (totalPlayerCount == 0)
+            return true;
+
+        // when we have players, we should only observe the island with players on.
         return island.GetPlayerCount() > 0;
     }
 }

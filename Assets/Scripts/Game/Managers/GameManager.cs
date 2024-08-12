@@ -21,46 +21,52 @@ using UnityEditor;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using System.Threading;
+using UnityEngine.UIElements;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
     [Header("Default Settings")]
+    [SerializeField] private string accessKey;
     [SerializeField] private GameCamera gameCamera;
     [SerializeField] private RavenBot ravenBot;
-
-    [SerializeField] private PlayerDetails playerObserver;
-    [SerializeField] private PlayerList playerList;
     [SerializeField] private GameSettings settings;
 
-    [SerializeField] private TwitchEventManager subEventManager;
-    [SerializeField] private DropEventManager dropEventManager;
+    [SerializeField] private LoginHandler loginHandler;
+    [SerializeField] private TavernHandler tavern;
+    [SerializeField] private DayNightCycle dayNightCycle;
+    [SerializeField] private Volume postProcessingEffects;
 
+    [Header("UI")]
     [SerializeField] private BATimer boostTimer;
     [SerializeField] private PlayerSearchHandler playerSearchHandler;
     [SerializeField] private GameMenuHandler menuHandler;
-
-    [SerializeField] private string accessKey;
-
-    [SerializeField] private FerryProgress ferryProgress;
+    [SerializeField] private GameObject gameReloadMessage;
     [SerializeField] private GameObject exitView;
-    [SerializeField] private MusicManager musicManager;
+    [SerializeField] private GameObject gameReloadUIPanel;
+    [SerializeField] private PlayerDetails playerObserver;
+    [SerializeField] private PlayerList playerList;
 
+    [Header("Managers")]
+    [SerializeField] private TwitchEventManager subEventManager;
+    [SerializeField] private DropEventManager dropEventManager;
+    [SerializeField] private MusicManager musicManager;
     [SerializeField] private IslandManager islandManager;
     [SerializeField] private DungeonManager dungeonManager;
-
     [SerializeField] private VillageManager villageManager;
     [SerializeField] private OnsenManager onsen;
-
     [SerializeField] private PlayerLogoManager playerLogoManager;
     [SerializeField] private ServerNotificationManager serverNotificationManager;
-    [SerializeField] private LoginHandler loginHandler;
+    [SerializeField] private ChunkManager chunkManager;
+    [SerializeField] private PlayerManager playerManager;
+    [SerializeField] private CraftingManager craftingManager;
+    [SerializeField] private RaidManager raidManager;
+    [SerializeField] private StreamRaidManager streamRaidManager;
+    [SerializeField] private ArenaController arenaController;
+    [SerializeField] private ItemManager itemManager;
 
-    [SerializeField] private GameObject gameReloadMessage;
-    [SerializeField] private TavernHandler tavern;
-    [SerializeField] private DayNightCycle dayNightCycle;
-
-    [SerializeField] private GameObject gameReloadUIPanel;
-    [SerializeField] private Volume postProcessingEffects;
+    [Header("Ferry")]
+    [SerializeField] private FerryController ferryController;
+    [SerializeField] private FerryProgress ferryProgress;
 
     [Header("Game Update Banner")]
     [SerializeField] private GameObject goUpdateAvailable;
@@ -72,6 +78,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private DateTime nextAutoJoinRaid;
     private DateTime nextAutoJoinDungeon;
+
     [NonSerialized] public bool NewUpdateAvailable;
 
     private readonly ConcurrentDictionary<GameEventType, IGameEventHandler> gameEventHandlers = new();
@@ -85,14 +92,6 @@ public class GameManager : MonoBehaviour, IGameManager
     private readonly GameEventManager events = new GameEventManager();
     private IoCContainer ioc;
 
-    [SerializeField] private FerryController ferryController;
-    [SerializeField] private ChunkManager chunkManager;
-    [SerializeField] private PlayerManager playerManager;
-    [SerializeField] private CraftingManager craftingManager;
-    [SerializeField] private RaidManager raidManager;
-    [SerializeField] private StreamRaidManager streamRaidManager;
-    [SerializeField] private ArenaController arenaController;
-    [SerializeField] private ItemManager itemManager;
 
     private int lastButtonIndex = 0;
 
@@ -664,12 +663,15 @@ public class GameManager : MonoBehaviour, IGameManager
         Raid.Notifications.volume = settings.RaidHornVolume.GetValueOrDefault(Raid.Notifications.volume);
         Music.volume = settings.MusicVolume.GetValueOrDefault(Music.volume);
 
-        OrbitCamera.RotationSpeed = settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed);
+        IslandObserveCamera.RotationSpeed = OrbitCamera.RotationSpeed = settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed);
+
         SettingsMenuView.SetResolutionScale(settings.DPIScale.GetValueOrDefault(1f));
     }
 
     internal void OnSessionStart()
     {
+        gameCamera.OnSessionStart();
+
         ravenBot.UpdateSessionInfo();
 
         if (RavenBot.UseRemoteBot && RavenBot.IsConnectedToRemote)
@@ -815,7 +817,6 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-
         //if (Input.GetKeyDown(KeyCode.L))
         //{
         //    (new StreamerRaidEventHandler()).Handle(this, JsonConvert.SerializeObject(new StreamRaidInfo()
@@ -847,24 +848,30 @@ public class GameManager : MonoBehaviour, IGameManager
                 QualitySettings.SetQualityLevel(0);
             }
 
-            if (URP_LowQuality)
-            {
-                GraphicsSettings.defaultRenderPipeline = URP_LowQuality;
-            }
+            //if (URP_LowQuality)
+            //{
+            //    GraphicsSettings.defaultRenderPipeline = URP_LowQuality;
+            //}
 
             DisablePostProcessingEffects();
         }
         else
         {
-            if (currentQualityLevel != 1)
+            var targetQualitySettings = PlayerSettings.Instance.QualityLevel.GetValueOrDefault(1);
+            if (targetQualitySettings < 0 || targetQualitySettings > QualitySettings.count)
             {
-                QualitySettings.SetQualityLevel(1);
+                targetQualitySettings = QualitySettings.count - 1;
             }
 
-            if (URP_DefaultQuality)
+            if (currentQualityLevel != targetQualitySettings)
             {
-                GraphicsSettings.defaultRenderPipeline = URP_DefaultQuality;
+                QualitySettings.SetQualityLevel(targetQualitySettings);
             }
+
+            //if (URP_DefaultQuality)
+            //{
+            //    GraphicsSettings.defaultRenderPipeline = URP_DefaultQuality;
+            //}
 
             EnablePostProcessingEffects();
         }
@@ -1020,7 +1027,7 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        postProcessingEffects.weight = 0.625f;
+        postProcessingEffects.weight = 1;
     }
     public void DisablePostProcessingEffects()
     {
@@ -1173,6 +1180,8 @@ public class GameManager : MonoBehaviour, IGameManager
                 RavenNest.PlayerRemoveAsync(player);
             }
 
+            player.Island = null;
+
             player.Removed = true;
             playerList.RemovePlayer(player);
             playerManager.Remove(player);
@@ -1318,8 +1327,21 @@ public class GameManager : MonoBehaviour, IGameManager
             playerCountLabel.Update();
             villageBoostLabel.Update();
 
-            if (player && gameCamera && gameCamera.AllowJoinObserve)
-                gameCamera.ObservePlayer(player);
+            if (player && gameCamera)
+            {
+                if (gameCamera.AllowJoinObserve)
+                {
+                    gameCamera.ObservePlayer(player);
+                }
+                // in case we are currently observing islands, and more specifically an island without players
+                // then we should observe the island the player is on.
+                else if (player.Island && gameCamera.State == GameCameraType.Island &&
+                        (gameCamera.CurrentlyObservedIsland == null || gameCamera.CurrentlyObservedIsland.GetPlayerCount() == 0))
+                {
+                    gameCamera.ObserveIsland(player.Island);
+                }
+
+            }
         }
 
         if (dropEventManager.IsActive)

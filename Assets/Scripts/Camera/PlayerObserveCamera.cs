@@ -14,6 +14,9 @@ public class PlayerObserveCamera : MonoBehaviour
     private PlayerController player;
     private int playerObserveLayer;
 
+
+    public bool HasTarget => player != null;
+
     // Update is called once per frame
     void Update()
     {

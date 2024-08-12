@@ -61,7 +61,7 @@ public class RaidBossController : MonoBehaviour
                 Shinobytes.Debug.LogError("Blerp");
             }
         }
-        name = "___RAID__BOSS___";
+        name = "Raid Boss";
         EnsureRaidManager();
 
         this.gameManager = FindAnyObjectByType<GameManager>();

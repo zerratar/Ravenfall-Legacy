@@ -18,6 +18,7 @@ public class GameMenuHandler : MonoBehaviour
 
     [SerializeField] private FadeInOut fadeToBlack;
     [SerializeField] private UnityEngine.UI.Button signOutButton;
+
     public bool Visible => gameObject.activeSelf;
     private bool IsAuthenticated => gameManager && gameManager.RavenNest != null && gameManager.RavenNest.Authenticated;
     private void Awake()
@@ -37,6 +38,14 @@ public class GameMenuHandler : MonoBehaviour
         settingsView.Hide(false);
 
         Hide();
+    }
+
+    public void ResetUIPositions()
+    {
+        foreach (var ds in GameObject.FindObjectsByType<Dragscript>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            ds.ResetPosition();
+        }
     }
 
     private void Update()

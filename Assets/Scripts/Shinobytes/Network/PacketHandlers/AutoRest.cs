@@ -22,6 +22,9 @@
 
         var autoRestStart = int.Parse(data.Values[0]?.ToString());
         var autoRestStop = int.Parse(data.Values[1]?.ToString());
-        plr.onsenHandler.SetAutoRest(autoRestStart, autoRestStop);
+        if (!plr.onsenHandler.SetAutoRest(autoRestStart, autoRestStop))
+        {
+            client.SendReply(gm, "Failed to set auto rest values. Make sure the start value is lower than the stop value.");
+        }
     }
 }

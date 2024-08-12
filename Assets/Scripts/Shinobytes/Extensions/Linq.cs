@@ -26,6 +26,25 @@ namespace Shinobytes.Linq
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T MinBy<T>(this IReadOnlyList<T> source, Func<T, IComparable> selector)
+        {
+            if (source.Count == 0) return default(T);
+            var min = source[0];
+            var minValue = selector(min);
+            for (var i = 1; i < source.Count; i++)
+            {
+                var item = source[i];
+                var value = selector(item);
+                if (value.CompareTo(minValue) < 0)
+                {
+                    min = item;
+                    minValue = value;
+                }
+            }
+            return min;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TSource Highest<TSource, TCompare>(this IEnumerable<TSource> source, Func<TSource, TCompare> comp) where TCompare : IComparable
         {
             using (IEnumerator<TSource> e = source.GetEnumerator())

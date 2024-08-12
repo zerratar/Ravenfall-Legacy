@@ -5,7 +5,7 @@ public static class Localization
     public static readonly string MSG_PATREON_ONLY = Meta("system", "fail") + "This command is for Patreon supporters only. Consider supporting the game on Patreon to gain access to this command.";
     public static readonly string PETRACE_NO_PET = Meta("minigame", "pet race", "fail") + "You need to equip a pet to play.";
     public static readonly string PETRACE_ALREADY_PLAYING = Meta("minigame", "pet race", "fail") + "You're already playing.";
-    public static readonly string PETRACE_START_COMMAND = Meta("minigame", "pet race") + "racing";
+    public static readonly string PETRACE_START_COMMAND = "race"; // Meta("minigame", "pet race") + 
     public static readonly string EQUIP_SHIELD_AND_TWOHANDED = Meta("equipment", "equip", "fail") + "You cannot equip a shield while having a 2-handed weapon equipped.";
     public static readonly string CANT_TRAIN_HERE = Meta("training", "fail") + "You cannot train {type} here.";
     public static readonly string NOT_HIGH_ENOUGH_SKILL = Meta("training", "fail") + "You need to have at least level {reqSkill} {type} to train this skill on this island.";
@@ -169,6 +169,13 @@ public static class Localization
     public static readonly string MSG_GIFT_ITEM_NOT_FOUND = Meta("gift", "fail") + "Could not find a matching the query '{query}'";
     public static readonly string MSG_GIFT_ITEM_NOT_OWNED = Meta("gift", "fail") + "You do not have any {itemName} to gift.";
     public static readonly string MSG_GIFT_ERROR = Meta("gift", "fail") + "Error gifting {giftCount}x {itemName} to {player}. FeelsBadMan";
+
+    public static readonly string MSG_SEND = Meta("send", "info") + "You sent {count}x {itemName} to {player}!";
+    public static readonly string MSG_SEND_PLAYER_NOT_FOUND = Meta("send", "fail") + "Could not find an item or player matching the query '{query}'";
+    public static readonly string MSG_SEND_ITEM_NOT_FOUND = Meta("send", "fail") + "Could not find a matching the query '{query}'";
+    public static readonly string MSG_SEND_ITEM_NOT_OWNED = Meta("send", "fail") + "You do not have any {itemName} to gift.";
+    public static readonly string MSG_SEND_ERROR = Meta("send", "fail") + "Error sending {count}x {itemName} to {player}. FeelsBadMan Either server is having hiccups or you don't have a character with that number or alias.";
+
     public static readonly string MSG_EQUIPPED = Meta("info", "equipment", "equip") + "You have equipped {itemName}.";
     public static readonly string MSG_EQUIPPED_ALL = Meta("info", "equipment", "equip") + "You have equipped all of your best items.";
 
@@ -189,6 +196,7 @@ public static class Localization
     public static readonly string MSG_ENCHANT_WARN_REPLACE = Meta("enchanting", "info") + "{itemName} is already enchanted with {stats}. If you want to replace the enchantment, use !enchant replace {itemName}";
     public static readonly string MSG_ENCHANT_STATS = Meta("enchanting", "info") + "{enchantmentStats} was added to {enchantedItemName}";
 
+    public static readonly string MSG_DISENCHANT_NO_ITEM = Meta("enchanting", "fail") + "It seem like you are trying to use '!disenchant' but you don't seem to have recently enchanted an item. Try using !disenchant (item name) instead.";
     public static readonly string MSG_DISENCHANT_NOT_ENCHANTED = Meta("enchanting", "fail") + "You cannot disenchant {itemName} as it is not enchanted.";
     public static readonly string MSG_DISENCHANT_UNKNOWN_ERROR = Meta("enchanting", "fail") + "Disenchanting {itemName} failed. Please try again later.";
     public static readonly string MSG_DISENCHANT_SUCCESS = Meta("enchanting", "info") + "You have successfully removed the enchantment from {oldItemName}.";

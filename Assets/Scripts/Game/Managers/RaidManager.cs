@@ -467,6 +467,7 @@ public class RaidManager : MonoBehaviour, IEvent
                 if (randomChunk != null)
                 {
                     spawnPosition = randomChunk.CenterPointWorld + (Vector3.up * 3.4f);
+                    randomChunk.Island.Statistics.RaidBossesSpawned++;
                 }
             }
 

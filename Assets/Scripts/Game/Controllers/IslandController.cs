@@ -7,8 +7,11 @@ public class IslandController : MonoBehaviour
     public RavenNest.Models.Island Island;
 
     public string Identifier;
+    public int LevelRequirement;
+
     public DockController DockingArea;
     public Transform SpawnPositionTransform;
+    public Transform CameraPanTarget;
 
     public bool AllowRaidWar;
     public Transform RaiderSpawningPoint;
@@ -16,6 +19,7 @@ public class IslandController : MonoBehaviour
 
     private SphereCollider sphereCollider;
     private float radius;
+    private Chunk[] chunks;
 
     //private int ferryArriveCount;
     private int raidBossCount;
@@ -29,6 +33,8 @@ public class IslandController : MonoBehaviour
 
     public bool Sailable => this.DockingArea != null;
 
+    public IslandStatistics Statistics = new IslandStatistics();
+
     public bool InsideIsland(Vector3 position)
     {
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
@@ -41,7 +47,10 @@ public class IslandController : MonoBehaviour
         this._transform = transform;
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
         radius = sphereCollider.radius;
+        this.chunks = GetComponentsInChildren<Chunk>();
     }
+
+    public IReadOnlyList<Chunk> TrainingAreas => chunks;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -134,4 +143,19 @@ public class IslandController : MonoBehaviour
     {
         return players.Count;
     }
+}
+
+public class IslandStatistics
+{
+    public long MonstersDefeated;
+    public long PlayersKilled;
+    public long RaidBossesSpawned;
+    public long ItemsGathered;
+    public long TreesCutDown;
+    public long RocksMined;
+    public long FishCaught;
+    public long CropsHarvested;
+    public long FoodCooked;
+    public long ItemsCrafted;
+    public long PotionsBrewed;
 }

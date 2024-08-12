@@ -79,7 +79,7 @@ public class EnemyObserveDialog : MonoBehaviour
         strength.Observe(target.Stats.Strength);
 
         lblCombatLevel.text = "Combat Level: <b>" + target.Stats.CombatLevel + "</b>";
-        lblName.text = target.Name;
+        lblName.text = target.Name.Replace("_", "");
 
         var eqStats = target.EquipmentStats;
         armor.Text = (eqStats.ArmorPowerBonus > 0 ? "<color=green>" : "") + eqStats.BaseArmorPower.ToString();

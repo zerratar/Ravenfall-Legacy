@@ -66,6 +66,7 @@ public class ItemResolver : IItemResolver
         PlayerController playerToSearch = null,
         EquippedState equippedState = EquippedState.Any)
     {
+        string targetPlayerName = "";
         try
         {
             if (string.IsNullOrEmpty(query))
@@ -82,6 +83,7 @@ public class ItemResolver : IItemResolver
                 var username = query.Split(' ')[0];
                 player = playerManager.GetPlayerByName(username);
                 query = query.Substring(username.Length).Trim();
+                targetPlayerName = username;
             }
 
             if (string.IsNullOrEmpty(query))
@@ -129,6 +131,7 @@ public class ItemResolver : IItemResolver
                 result.Count = amount < 0 ? 1 : amount;
                 result.Price = price < 0 ? 1 : price;
                 result.Player = player;
+                result.PlayerName = targetPlayerName;
                 return result;
             }
             else
@@ -137,6 +140,7 @@ public class ItemResolver : IItemResolver
                 result.Count = amount < 0 ? 1 : amount;
                 result.Price = price < 0 ? 1 : price;
                 result.Player = player;
+                result.PlayerName = targetPlayerName;
                 return result;
             }
         }
@@ -836,6 +840,7 @@ public class ItemResolveResult
     public Item Item { get => item ?? InventoryItem?.Item; set => item = value; }
     public GameInventoryItem InventoryItem { get; set; }
     public PlayerController Player { get; set; }
+    public string PlayerName { get; set; }
 
     public static ItemResolveResult Empty { get; } = new ItemResolveResult
     {

@@ -1,4 +1,5 @@
-﻿public class PetRacingReset : ChatBotCommandHandler{
+﻿public class PetRacingReset : ChatBotCommandHandler
+{
     public PetRacingReset(
      GameManager game,
      RavenBotConnection server,
@@ -9,26 +10,24 @@
 
     public override void Handle(GameMessage gm, GameClient client)
     {
-        //return;
+        if (!Game.Tavern.PetRacing || !Game.Tavern.IsActivated)
+        {
+            return;
+        }
 
-        //if (!Game.Tavern.IsActivated)
-        //{
-        //    return;
-        //}
+        if (!Game.Tavern.PetRacing.IsGameOver)
+        {
+            return;
+        }
 
-        //if (!Game.Tavern.PetRacing.IsGameOver)
-        //{
-        //    return;
-        //}
+        var player = PlayerManager.GetPlayer(gm.Sender);
+        if (player == null)
+        {
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+            return;
+        }
 
-        //var player = PlayerManager.GetPlayer(data);
-        //if (player == null)
-        //{
-        //    client.SendMessage(data, Localization.MSG_NOT_PLAYING);
-        //    return;
-        //}
-
-        //Game.Tavern.PetRacing.ResetGame();
+        Game.Tavern.PetRacing.ResetGame();
     }
 }
 

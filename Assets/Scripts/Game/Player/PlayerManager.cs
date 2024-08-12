@@ -79,7 +79,7 @@ public class PlayerManager : MonoBehaviour
         }
         else { LoadingPlayers = false; }
 
-        for(var i= 0; i < playerList.Count; i++)
+        for (var i = 0; i < playerList.Count; i++)
         {
             playerList[i].LatePoll();
         }
@@ -335,7 +335,7 @@ public class PlayerManager : MonoBehaviour
 
     public PlayerController GetPlayer(User user)
     {
-        var player = user.Id != Guid.Empty ? GetPlayerById(user.Id) : null ;
+        var player = user.Id != Guid.Empty ? GetPlayerById(user.Id) : null;
         if (!player || player == null)
         {
             player = GetPlayerByPlatformId(user.PlatformId, user.Platform);
@@ -630,6 +630,10 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    internal int GetPlayerCountOnIslands()
+    {
+        return this.playerList.Count(x => x.Island != null);
+    }
 
     //internal Skills GetStoredPlayerSkills(Guid id)
     //{

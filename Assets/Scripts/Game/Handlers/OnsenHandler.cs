@@ -1,6 +1,8 @@
 ﻿using RavenNest.Models;
 using System;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
+using UnityEngine.Rendering.UI;
 
 public class OnsenHandler : MonoBehaviour
 {
@@ -30,8 +32,8 @@ public class OnsenHandler : MonoBehaviour
         }
 
         // check if we have auto rest on
-        if (player.Rested.AutoRestTarget.HasValue && 
-            player.Rested.AutoRestStart.HasValue && 
+        if (player.Rested.AutoRestTarget.HasValue &&
+            player.Rested.AutoRestStart.HasValue &&
             player.Rested.AutoRestTarget.Value > 0 &&
             !player.dungeonHandler.InDungeon && !player.raidHandler.InRaid &&
             !player.duelHandler.InDuel && !player.arenaHandler.InArena && !player.streamRaidHandler.InWar)
@@ -39,7 +41,7 @@ public class OnsenHandler : MonoBehaviour
             var autoRestTarget = player.Rested.AutoRestTarget.Value;
             var autoRestStart = player.Rested.AutoRestStart.Value;
             var restedMinutes = player.Rested.RestedTime / 60;
-            if (restedMinutes <= player.Rested.AutoRestStart && !InOnsen)
+            if (restedMinutes <= player.Rested.AutoRestStart && !InOnsen && player.GameManager.Onsen.RestingAreaAvailable(player.Island))
             {
                 player.GameManager.Onsen.Join(player);
                 return;
@@ -165,9 +167,23 @@ public class OnsenHandler : MonoBehaviour
         player.Rested.AutoRestStart = null;
     }
 
-    internal void SetAutoRest(int autoRestStart, int autoRestStop)
+    internal bool SetAutoRest(int autoRestStart, int autoRestStop)
     {
+        // reverse if they are set in the wrong order
+        if (autoRestStart > autoRestStop)
+        {
+            var tmp = autoRestStart;
+            autoRestStart = autoRestStop;
+            autoRestStop = tmp;
+        }
+
+        if (autoRestStart == autoRestStop)
+        {
+            return false;
+        }
+
         player.Rested.AutoRestStart = autoRestStart;
         player.Rested.AutoRestTarget = autoRestStop;
+        return true;
     }
 }

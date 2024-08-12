@@ -1,6 +1,5 @@
 ﻿using Assets.Scripts.UI.Menu;
 using System;
-using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -54,6 +53,8 @@ public class SettingsMenuView : MenuView
     [SerializeField] private Toggle realtimeDayNightCycle = null;
     [SerializeField] private Slider dpiSlider = null;
     [SerializeField] private Slider viewDistanceSlider = null;
+    [SerializeField] private TMPro.TMP_Dropdown qualityLevelDropdown = null;
+
 
     [Header("Game Settings")]
     [SerializeField] private GameObject game;
@@ -62,7 +63,7 @@ public class SettingsMenuView : MenuView
     [SerializeField] private TMPro.TMP_Dropdown boostRequirementDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown playerCacheExpiryTimeDropdown = null;
     [SerializeField] private TMPro.TMP_Dropdown itemDropMessageDropdown = null;
-    [SerializeField] private Toggle autoAssignVacantHousesEnabled = null; 
+    [SerializeField] private Toggle autoAssignVacantHousesEnabled = null;
     [SerializeField] private Toggle streamLabelsEnabled = null;
     [SerializeField] private Toggle alertPlayerCacheExpirationToggle = null;
     [SerializeField] private TMPro.TextMeshProUGUI[] itemDropMessageExamples = null;
@@ -133,6 +134,7 @@ public class SettingsMenuView : MenuView
         pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
         playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(SettingsMenuView.PlayerCacheExpiry.Length - 1);
         boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
+        qualityLevelDropdown.value = settings.QualityLevel.GetValueOrDefault(1);
 
         disableRaidsToggle.isOn = settings.DisableRaids.GetValueOrDefault();
         disableDungeonsToggle.isOn = settings.DisableDungeons.GetValueOrDefault();
@@ -161,7 +163,7 @@ public class SettingsMenuView : MenuView
         // but since slider shows left as negative and right as positive
         // we have to invert the value.
 
-        OrbitCamera.RotationSpeed = observerCameraRotationSlider.value * -1;
+        IslandObserveCamera.RotationSpeed = OrbitCamera.RotationSpeed = observerCameraRotationSlider.value * -1;
     }
 
     private void UpdateCameraRotationLabelText()
@@ -227,6 +229,7 @@ public class SettingsMenuView : MenuView
         settings.CameraRotationSpeed = observerCameraRotationSlider.value;
         settings.DPIScale = dpiSlider.value;
         settings.PlayerBoostRequirement = boostRequirementDropdown.value;
+        settings.QualityLevel = qualityLevelDropdown.value;
         settings.PlayerCacheExpiryTime = playerCacheExpiryTimeDropdown.value;
         settings.PathfindingQualitySettings = pathfindingQuality.value;
         settings.AlertExpiredStateCacheInChat = alertPlayerCacheExpirationToggle.isOn;
@@ -300,6 +303,12 @@ public class SettingsMenuView : MenuView
     public void OnBoostRequirementChanged(int val)
     {
         gameManager.PlayerBoostRequirement = boostRequirementDropdown.value;
+    }
+
+    public void OnQualityLevelChanged(int val)
+    {
+        var settings = PlayerSettings.Instance;
+        settings.QualityLevel = qualityLevelDropdown.value;
     }
 
     public void OnNavigationQualityChanged(int val)

@@ -27,6 +27,9 @@ public class DayNightCycle : MonoBehaviour
     [SerializeField] public float DayAtmosphere = 0.9f;
     [SerializeField] public float NightAtmosphere = 0.2f;
 
+    [SerializeField] public Color NightFogColor;
+    private Color DayFogColor;
+
     public const float TimeOfDay_Night = 270;
     public float CycleLength = 420f;
 
@@ -57,6 +60,10 @@ public class DayNightCycle : MonoBehaviour
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         skyLight = RenderSettings.sun;
         skyboxMaterial = RenderSettings.skybox;
+        if (RenderSettings.fog)
+        {
+            DayFogColor = RenderSettings.fogColor;
+        }
     }
 
     internal void SetTimeOfDay(float totalTime, float freezeTime)
@@ -123,6 +130,11 @@ public class DayNightCycle : MonoBehaviour
         skyLight.transform.rotation = Quaternion.Lerp(NightLight.transform.rotation, DayLight.transform.rotation, skylightLerpValue);
 
         skyboxMaterial.SetFloat(atmosphereThicknessID, Mathf.Lerp(NightAtmosphere, DayAtmosphere, skylightLerpValue));
+
+        if (RenderSettings.fog)
+        {
+            RenderSettings.fogColor = Color.Lerp(NightFogColor, DayFogColor, skylightLerpValue);
+        }
     }
 
     private AnimationCurve GetSeasonalCurve()

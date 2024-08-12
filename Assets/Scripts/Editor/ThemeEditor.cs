@@ -6,25 +6,28 @@ using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using System.Linq;
-using System;
+using Unity.Hierarchy;
+using UnityEditor.SceneManagement;
 
 public class ThemeEditor : OdinEditorWindow
 {
     private Dictionary<string, List<Graphic>> colors = new Dictionary<string, List<Graphic>>();
-    private Dictionary<string, List<TextMeshProUGUI>> fonts = new Dictionary<string, List<TextMeshProUGUI>>();
+    private Dictionary<string, List<TMP_Text>> fonts = new Dictionary<string, List<TMP_Text>>();
 
     private Graphic[] colorGraphics;
-    private TextMeshProUGUI[] fontGraphics;
+    private TMP_Text[] fontGraphics;
 
     private List<ColorGroup> colorGroups;
     private List<FontGroup> fontGroups;
 
+
+    [TabGroup("Colors")]
     [Header("Color Theme")]
     public Color[] Colors;
-    
+
+    [TabGroup("Fonts")]
     [Header("Font Theme")]
     public TMP_FontAsset[] Fonts;
 
@@ -39,7 +42,7 @@ public class ThemeEditor : OdinEditorWindow
     private void Init()
     {
         this.colorGraphics = FindObjectsByType<Graphic>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        this.fontGraphics = FindObjectsByType<TMPro.TextMeshProUGUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        this.fontGraphics = FindObjectsByType<TMPro.TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
         colors.Clear();
 
@@ -64,14 +67,16 @@ public class ThemeEditor : OdinEditorWindow
             }
 
             fonts.TryGetValue(key, out var items);
-            if (items == null) items = new List<TextMeshProUGUI>();
+            if (items == null) items = new List<TMP_Text>();
             items.Add(text);
             fonts[key] = items;
         }
 
         Colors = colors
-            .OrderByDescending(x => x.Value.Count)
+            // .OrderByDescending(x => x.Value.Count) // order by how many items that uses this color
             .Select(x => Colorify(x.Key))
+            .OrderByDescending(x => x.r + x.g + x.b) // order by color
+            .ThenByDescending(x => x.a) // order by alpha
             .ToArray();
 
         colorGroups = new List<ColorGroup>();
@@ -117,7 +122,35 @@ public class ThemeEditor : OdinEditorWindow
         return rgba;
     }
 
-    [HorizontalGroup(GroupID = "Color")]
+    [TabGroup("Colors")]
+    [Header("Search and select object with color")]
+    public Color ColorSearch;
+
+    [TabGroup("Colors")]
+    [Button("Select Object with Color")]
+    private void SelectObjWithColor()
+    {
+        var objToSelect = new List<Object>();
+
+        var key = Stringify(ColorSearch);
+        if (!colors.TryGetValue(key, out var items))
+        {
+            return;
+        }
+
+        objToSelect.AddRange(items);
+
+        if (objToSelect.Count > 0)
+        {
+            Selection.objects = objToSelect.ToArray();
+            foreach (var obj in objToSelect)
+            {
+                ExpandToParent(((Component)obj).transform);
+            }
+        }
+    }
+
+    [TabGroup("Colors")]
     [Button("Apply Colors")]
     private void ApplyThemeColorChanges()
     {
@@ -131,7 +164,7 @@ public class ThemeEditor : OdinEditorWindow
         Init();
     }
 
-    [HorizontalGroup(GroupID = "Color")]
+    [TabGroup("Colors")]
     [Button("Revert Colors")]
     private void RevertThemeColorChanges()
     {
@@ -141,7 +174,96 @@ public class ThemeEditor : OdinEditorWindow
         }
     }
 
-    [HorizontalGroup(GroupID = "Font")]
+
+
+    [TabGroup("Fonts")]
+    [Header("Search and select object with font")]
+    public TMP_FontAsset FontSearch;
+
+    [TabGroup("Fonts")]
+    [Button("Select Object with Font")]
+    private void SelectObjWithFont()
+    {
+        var objToSelect = new List<Object>();
+
+        var key = !FontSearch ? "missing-font" : FontSearch.name;
+        if (!fonts.TryGetValue(key, out var items))
+        {
+            return; // no missing fonts.
+        }
+
+        objToSelect.AddRange(items);
+
+        if (objToSelect.Count > 0)
+        {
+            Selection.objects = objToSelect.ToArray();
+            var obj = objToSelect.FirstOrDefault();
+
+            //foreach (var obj in objToSelect)
+            //{
+            ExpandToParent(((Component)obj).transform);
+            //}
+        }
+    }
+
+
+    [TabGroup("Fonts")]
+    [Button("Select Object with Missing Font")]
+    private void SelectObjWithMissingFont()
+    {
+        var objToSelect = new List<Object>();
+        foreach (var gfx in fontGraphics)
+        {
+            if (gfx.font == null || !gfx.font)
+            {
+                objToSelect.Add(gfx);
+            }
+        }
+
+        //if (!fonts.TryGetValue("missing-font", out var items))
+        //{
+        //    return; // no missing fonts.
+        //}
+
+        if (objToSelect.Count > 0)
+        {
+            Selection.objects = objToSelect.ToArray();
+            foreach (var obj in objToSelect)
+            {
+                ExpandToParent(((Component)obj).transform);
+            }
+        }
+    }
+
+
+    [TabGroup("Fonts")]
+    public string Text;
+
+    [TabGroup("Fonts")]
+    [Button("Find object by text")]
+    private void SelectOBjWithText()
+    {
+        var objToSelect = new List<Object>();
+        foreach (var gfx in fontGraphics)
+        {
+            if ((string.IsNullOrEmpty(gfx.text) && string.IsNullOrEmpty(Text)) ||
+                (!string.IsNullOrEmpty(gfx.text) && !string.IsNullOrEmpty(Text) && gfx.text.Contains(Text, System.StringComparison.OrdinalIgnoreCase)))
+            {
+                objToSelect.Add(gfx);
+            }
+        }
+
+        if (objToSelect.Count > 0)
+        {
+            Selection.objects = objToSelect.ToArray();
+            foreach (var obj in objToSelect)
+            {
+                ExpandToParent(((Component)obj).transform);
+            }
+        }
+    }
+
+    [TabGroup("Fonts")]
     [Button("Apply Fonts")]
     private void ApplyThemeFontChanges()
     {
@@ -155,7 +277,7 @@ public class ThemeEditor : OdinEditorWindow
         Init();
     }
 
-    [HorizontalGroup(GroupID = "Font")]
+    [TabGroup("Fonts")]
     [Button("Revert Fonts")]
     private void RevertThemeFontChanges()
     {
@@ -165,13 +287,54 @@ public class ThemeEditor : OdinEditorWindow
         }
     }
 
+
+
+    static void ExpandToParent(Transform transform)
+    {
+        // Recursively go up to the root and expand each parent
+        if (transform.parent != null)
+        {
+            ExpandToParent(transform.parent);
+        }
+
+        // Get the path in the hierarchy and expand it
+        string hierarchyPath = GetHierarchyPath(transform);
+        ExpandHierarchyToPath(hierarchyPath);
+    }
+
+    static string GetHierarchyPath(Transform transform)
+    {
+        string path = transform.name;
+        while (transform.parent != null)
+        {
+            transform = transform.parent;
+            path = transform.name + "/" + path;
+        }
+        return path;
+    }
+
+    static void ExpandHierarchyToPath(string hierarchyPath)
+    {
+        // Open the hierarchy window and focus on the object
+        EditorApplication.ExecuteMenuItem("Window/General/Hierarchy");
+        //EditorApplication.ExecuteMenuItem("Window/Layouts/Default"); // Optional: reset layout to ensure Hierarchy is visible
+
+        // Expand all GameObjects in the path
+        var gameObject = GameObject.Find(hierarchyPath);
+        if (gameObject != null)
+        {
+            Selection.activeGameObject = gameObject;
+            EditorGUIUtility.PingObject(gameObject);
+        }
+    }
+
 }
 
 
 public class FontGroup
 {
     public TMP_FontAsset Font;
-    public List<TextMeshProUGUI> Texts;
+    public List<TMP_Text> Texts;
     internal void Reset()
     {
         foreach (var g in Texts)

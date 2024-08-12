@@ -346,6 +346,18 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<GiftItemResult>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
 
+        public Task<GiftItemResult> SendItemAsync(Guid characterId, string alias, Guid inventoryItemId, long amount)
+        {
+            return request.Create()
+                .Identifier(characterId.ToString())
+                .Method("send")
+                .AddParameter(alias)
+                .AddParameter(inventoryItemId.ToString())
+                .AddParameter(amount.ToString())
+                .Build()
+                .SendAsync<GiftItemResult>(ApiRequestTarget.Players, ApiRequestType.Get);
+        }
+
         public Task<long> VendorInventoryItemAsync(Guid characterId, Guid inventoryItemId, long amount)
         {
             return request.Create()

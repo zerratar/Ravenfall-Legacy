@@ -46,7 +46,7 @@ public class DisenchantItem : ChatBotCommandHandler<string>
             }
             else
             {
-                client.SendReply(gm, Localization.MSG_ENCHANT_MISSING_ARGS);
+                client.SendReply(gm, Localization.MSG_DISENCHANT_NO_ITEM);
                 return;
             }
         }

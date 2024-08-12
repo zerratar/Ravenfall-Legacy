@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using SqlParser;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -115,6 +116,11 @@ public class NameTag : MonoBehaviour
         //this.transform.localPosition = this.offset;
         //this.transform.rotation = GameCamera.Rotation;
 
+        if (!TargetPlayer)
+        {
+            return;
+        }
+
         if (clanName && TargetPlayer.clanHandler.InClan && lastSetClanName != TargetPlayer.clanHandler.ClanInfo.Name)
         {
             clanName.text = "<" + TargetPlayer.clanHandler.ClanInfo.Name + ">";
@@ -175,7 +181,16 @@ public class NameTag : MonoBehaviour
     public static Color GetColorFromHex(string hex)
     {
         if (ColorUtility.TryParseHtmlString(hex, out var color))
-            return color;
+        {
+            var c = color;
+
+            if (c.r <= 0.15f && c.g <= 0.15f && c.b <= 0.15f)
+            {
+                return new Color(0.15f, 0.15f, 0.15f);
+            }
+
+            return c;
+        }
         return Color.white;
     }
 }

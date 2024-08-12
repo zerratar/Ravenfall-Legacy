@@ -354,6 +354,23 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         state.ProducedItems.AddRange(result.Items);
         state.Continue = state.AmountLeftToCraft > 0;
 
+        if (player.Island)
+        {
+            var count = result.Items.Where(x => x.Success).Sum(x => x.Amount);
+            switch (state.Recipe.RequiredSkill)
+            {
+                case Skill.Cooking:
+                    player.Island.Statistics.FoodCooked += count;
+                    break;
+                case Skill.Alchemy:
+                    player.Island.Statistics.PotionsBrewed += count;
+                    break;
+                default:
+                    player.Island.Statistics.ItemsCrafted += count;
+                    break;
+            }
+        }
+
         // Display the result, if we only have one result that means we either failed or succeeded. 
         if (result.Items.Count == 1)
         {
