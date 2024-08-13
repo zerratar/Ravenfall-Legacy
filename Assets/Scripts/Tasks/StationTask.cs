@@ -17,14 +17,14 @@ public class StationTask : ChunkTask
     public override bool IsCompleted(PlayerController player, object target)
     {
         var craftingStation = target as CraftingStation;
-        if (!craftingStation || craftingStation.StationType != type || craftingStation.IsInvalid) return true;
+        if (!craftingStation || craftingStation.StationType != type) return true;
         return false;
     }
 
     public override object GetTarget(PlayerController player)
     {
         var all = lazyCraftingStations();
-        return all.FirstOrDefault(x => x.StationType == type && !x.IsInvalid);
+        return all.FirstOrDefault(x => x.StationType == type);
     }
 
     public override bool Execute(PlayerController player, object target)
@@ -80,7 +80,7 @@ public class StationTask : ChunkTask
             return false;
         }
 
-        if (station.Island != player.Island || station.IsInvalid)
+        if (station.Island != player.Island)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
@@ -110,10 +110,15 @@ public class StationTask : ChunkTask
 
     internal override void SetTargetInvalid(object target)
     {
-        if (target is CraftingStation station)
+        if (target != null && target is MonoBehaviour mb)
         {
-            station.IsInvalid = true;
-            //Shinobytes.Debug.LogError(station.name + " is unreachable. Marked invalid to avoid being selected in the future.");
+            var path = mb.GetHierarchyPath();
+            if (badPathReported.Add(path))
+            {
+                Shinobytes.Debug.LogError(path + " is unreachable.");
+            }
         }
     }
+
+    private System.Collections.Generic.HashSet<string> badPathReported = new();
 }

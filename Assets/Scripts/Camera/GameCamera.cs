@@ -178,7 +178,7 @@ public class GameCamera : MonoBehaviour
 
                 // check if we are currently observing a player
                 // if so, then don't allow the camera to switch to the next island
-                if (observeCamera.HasTarget)
+                if (observeCamera.HasTarget && playerObserver.IsObservingPlayer)
                 {
                     return;
                 }
@@ -394,7 +394,7 @@ public class GameCamera : MonoBehaviour
         if (!island) return;
         if (forcedFreeCamera) return;
         playerObserver.Observe(null, 0);
-        observeNextIslandTimer = ObserverJumpTimer;
+        observeNextIslandTimer = PlayerSettings.Instance.IslandObserveSeconds;
         islandObserver.Observe(island, observeNextIslandTimer);
         islandObserveCamera.ObserveIsland(island);
         islandObserveCamera.enabled = true;
@@ -479,12 +479,19 @@ public class GameCamera : MonoBehaviour
     {
         if (island.AllowRaidWar) return false;
 
+        if (PlayerSettings.Instance.CanObserveEmptyIslands.GetValueOrDefault())
+        {
+            return true;
+        }
+
         // if we dont have any players, then all islands can be observed
         if (totalPlayerCount == 0)
             return true;
 
         // when we have players, we should only observe the island with players on.
-        return island.GetPlayerCount() > 0;
+        var plrCount = island.GetPlayerCount();
+
+        return plrCount > 0;
     }
 }
 

@@ -27,8 +27,6 @@ public class GatherController : TaskObject
 
     public IReadOnlyList<PlayerController> Gatherers => gatherers.Values.ToList();
 
-    [HideInInspector] public bool IsInvalid;
-
     void Start()
     {
         maxRespawnTimeSeconds = respawnTimeSeconds;
@@ -46,19 +44,11 @@ public class GatherController : TaskObject
             MaxActionDistance = collider.radius;
         }
     }
-    private float invalidTimer;
+
     public override void Poll()
     {
-        if (IsInvalid)
-        {
-            invalidTimer += GameTime.deltaTime;
-            if (invalidTimer >= 20)
-            {
-                invalidTimer = 0f;
-                IsInvalid = false;
-            }
-        }
     }
+
     public void AddGatherer(PlayerController player)
     {
         gatherers[player.Id] = player;

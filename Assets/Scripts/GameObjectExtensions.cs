@@ -18,4 +18,26 @@ public static class GameObjectExtensions
         return c;
     }
 
+
+    public static string GetHierarchyPath(this MonoBehaviour obj)
+    {
+        return obj.transform.GetHierarchyPath();
+    }
+
+    public static string GetHierarchyPath(this GameObject obj)
+    {
+        return obj.transform.GetHierarchyPath();
+    }
+
+    public static string GetHierarchyPath(this Transform transform)
+    {
+        string path = transform.name;
+        while (transform.parent != null)
+        {
+            transform = transform.parent;
+            path = transform.name + "/" + path;
+        }
+        return path;
+    }
+
 }

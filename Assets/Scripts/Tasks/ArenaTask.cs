@@ -1,5 +1,7 @@
 ﻿using Shinobytes.Linq;
+using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class ArenaTask : ChunkTask
 {
@@ -137,5 +139,15 @@ public class ArenaTask : ChunkTask
 
     internal override void SetTargetInvalid(object target)
     {
+        if (target != null && target is MonoBehaviour mb)
+        {
+            var path = mb.GetHierarchyPath();
+            if (badPathReported.Add(path))
+            {
+                Shinobytes.Debug.LogError(path + " is unreachable.");
+            }
+        }
     }
+
+    private HashSet<string> badPathReported = new HashSet<string>();
 }

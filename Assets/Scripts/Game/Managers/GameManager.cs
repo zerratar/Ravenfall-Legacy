@@ -375,9 +375,13 @@ public class GameManager : MonoBehaviour, IGameManager
         if (musicManager)
             musicManager.PlayBackgroundMusic();
 
-        gameCacheStateFileLoadResult = GameCache.LoadState();
-
         GameSystems.Start();
+
+        gameCacheStateFileLoadResult = GameCache.LoadState();
+        if (gameCacheStateFileLoadResult == GameCache.LoadStateResult.PlayersRestored)
+        {
+            GameCache.IsAwaitingGameRestore = true;
+        }
     }
 
     public PlayerItemDropText AddItems(EventItemReward[] rewards, int dungeonIndex = -1, int raidIndex = -1)

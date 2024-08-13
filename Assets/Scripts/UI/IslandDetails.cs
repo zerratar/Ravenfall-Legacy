@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using RavenNest.Models;
+using UnityEngine.UI;
 
 public class IslandDetails : MonoBehaviour
 {
@@ -11,6 +12,8 @@ public class IslandDetails : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI requiredLevel;
     [SerializeField] private GameObject onsenAvailable;
     [SerializeField] private TMPro.TextMeshProUGUI playerCount;
+    [SerializeField] private TMPro.TextMeshProUGUI lblObserverTime;
+    [SerializeField] private Image imgObserverTimePg;
 
 
     /*
@@ -51,9 +54,11 @@ public class IslandDetails : MonoBehaviour
 
     private IslandController target;
     private float timeout;
+    private float timeoutLength;
     private Dictionary<RavenNest.Models.Skill, int> skillCounter = new Dictionary<RavenNest.Models.Skill, int>();
     private string playerCountFormat;
     private string requiredLevelFormat;
+    private string observerTimeoutFormat;
 
     private void Awake()
     {
@@ -84,6 +89,7 @@ public class IslandDetails : MonoBehaviour
         this.gameObject.SetActive(true);
         this.target = island;
         this.timeout = timer;
+        this.timeoutLength = timer;
         this.UpdateUI();
     }
 
@@ -100,8 +106,17 @@ public class IslandDetails : MonoBehaviour
             playerCountFormat = playerCount.text;
         }
 
+        if (string.IsNullOrEmpty(observerTimeoutFormat))
+        {
+            observerTimeoutFormat = lblObserverTime.text;
+        }
+
         var players = target.GetPlayers();
-        islandName.text = target.name;
+        islandName.text = target.Identifier;
+
+        imgObserverTimePg.fillAmount = timeout / timeoutLength;
+
+        lblObserverTime.text = string.Format(observerTimeoutFormat, Mathf.RoundToInt(timeout));
         requiredLevel.text = string.Format(requiredLevelFormat, target.LevelRequirement);
         onsenAvailable.SetActive(gameManager.Onsen.RestingAreaAvailable(target));
         playerCount.text = string.Format(playerCountFormat, players.Count);

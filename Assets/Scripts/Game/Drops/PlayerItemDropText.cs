@@ -45,6 +45,8 @@ public class PlayerItemDropText
             return;
         }
 
+        var appendStrings = new List<string>();
+
         // we will rely on word wrapping so we don't split player names and
         // they can get properly pinged in the chat.
         foreach (var kvp in items)
@@ -62,19 +64,20 @@ public class PlayerItemDropText
 
                 if (settings == PlayerItemDropMessageSettings.ItemNameOnly)
                 {
-                    Append(itemName);
-                    Next();
+                    appendStrings.Add(itemName);
+                    //Append(itemName + ", ");
+                    //Next();
                     continue;
                 }
 
                 if (settings == PlayerItemDropMessageSettings.ItemNameAndCountOnly)
                 {
                     if (playersRef.Count > 1)
-                        Append(playersRef.Count + "x " + itemName);
+                        appendStrings.Add(playersRef.Count + "x " + itemName);
                     else
-                        Append(itemName);
+                        appendStrings.Add(itemName);
 
-                    Next();
+                    //Next();
                     continue;
                 }
 
@@ -117,6 +120,10 @@ public class PlayerItemDropText
             }
         }
 
+        if (appendStrings.Count > 0)
+        {
+            Append(string.Join(", ", appendStrings) + ".");
+        }
 
         var remaining = sb.ToString();
         if (!string.IsNullOrEmpty(remaining))

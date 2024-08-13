@@ -189,9 +189,14 @@ public class QueryEngineAPI
             QueryEngineContext.Column<PlayerSettings, bool>("Game.AutoKickAfkPlayers", x => x.AutoKickAfkPlayers.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, bool>("Game.LocalBotServerDisabled", x => x.LocalBotServerDisabled.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, bool>("Game.AlertExpiredStateCacheInChat", x => x.AlertExpiredStateCacheInChat.GetValueOrDefault()),
+
+            QueryEngineContext.Column<PlayerSettings, bool>("Game.CanObserveEmptyIslands", x => x.CanObserveEmptyIslands.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, int>("Game.PlayerBoostRequirement", x => x.PlayerBoostRequirement.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, int>("Game.ItemDropMessageType", x => x.ItemDropMessageType.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, int>("Game.PathfindingQualitySettings", x => x.PathfindingQualitySettings.GetValueOrDefault()),
+            QueryEngineContext.Column<PlayerSettings, int>("Game.LocalBotPort", x => x.LocalBotPort.GetValueOrDefault()),
+
+            QueryEngineContext.Column<PlayerSettings, float>("Game.IslandObserveSeconds", x => x.IslandObserveSeconds),
 
             QueryEngineContext.Column<PlayerSettings, float>("Sound.MusicVolume", x => x.MusicVolume.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, float>("Sound.RaidHornVolume", x => x.RaidHornVolume.GetValueOrDefault()),
@@ -200,6 +205,7 @@ public class QueryEngineAPI
             QueryEngineContext.Column<PlayerSettings, float>("UI.PlayerListSize", x => x.PlayerListSize.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, float>("UI.PlayerListScale", x => x.PlayerListScale.GetValueOrDefault()),
 
+            QueryEngineContext.Column<PlayerSettings, int>("Graphics.QualityLevel", x => x.QualityLevel.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, float>("Graphics.DPIScale", x => x.DPIScale.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, bool>("Graphics.PotatoMode", x => x.PotatoMode.GetValueOrDefault()),
             QueryEngineContext.Column<PlayerSettings, bool>("Graphics.AutoPotatoMode", x => x.AutoPotatoMode.GetValueOrDefault()),

@@ -1,5 +1,6 @@
 ﻿using Shinobytes.Linq;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GatheringTask : ChunkTask
@@ -35,7 +36,7 @@ public class GatheringTask : ChunkTask
 
         return availableTargets
             .OrderBy(x => Vector3.Distance(player.transform.position, x.transform.position) + (UnityEngine.Random.value * 15f))
-            .FirstOrDefault(x => !x.IsInvalid);
+            .FirstOrDefault();
     }
 
     public override bool Execute(PlayerController player, object target)
@@ -65,7 +66,7 @@ public class GatheringTask : ChunkTask
             return false;
         }
 
-        if (target.Island != player.Island || target.IsInvalid)
+        if (target.Island != player.Island)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
@@ -95,13 +96,17 @@ public class GatheringTask : ChunkTask
         return possibleTargets.Any(x => x.GetInstanceID() == tar.GetInstanceID());
     }
 
-
     internal override void SetTargetInvalid(object target)
     {
-        if (target is GatherController entity)
+        if (target != null && target is MonoBehaviour mb)
         {
-            entity.IsInvalid = true;
-            //Shinobytes.Debug.LogError(station.name + " is unreachable. Marked invalid to avoid being selected in the future.");
+            var path = mb.GetHierarchyPath();
+            if (badPathReported.Add(path))
+            {
+                Shinobytes.Debug.LogError(path + " is unreachable.");
+            }
         }
     }
+
+    private System.Collections.Generic.HashSet<string> badPathReported = new ();
 }

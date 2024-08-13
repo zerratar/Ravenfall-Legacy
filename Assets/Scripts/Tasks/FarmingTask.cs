@@ -13,7 +13,7 @@ public class FarmingTask : ChunkTask
     public override bool IsCompleted(PlayerController player, object target)
     {
         var farm = target as FarmController;
-        if (!farm || farm.IsInvalid) return true;
+        if (!farm) return true;
         return false;
     }
     public override object GetTarget(PlayerController player)
@@ -24,7 +24,7 @@ public class FarmingTask : ChunkTask
             //.Where(x => !x.IsDepleted)
             .OrderBy(x => UnityEngine.Random.value)
             //.ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-            .FirstOrDefault(x => !x.IsInvalid);
+            .FirstOrDefault();
     }
 
     public override bool Execute(PlayerController player, object target)
@@ -48,7 +48,7 @@ public class FarmingTask : ChunkTask
             return false;
         }
 
-        if (farm.Island != player.Island || farm.IsInvalid)
+        if (farm.Island != player.Island)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
@@ -78,10 +78,15 @@ public class FarmingTask : ChunkTask
 
     internal override void SetTargetInvalid(object target)
     {
-        if (target is FarmController entity)
+        if (target != null && target is MonoBehaviour mb)
         {
-            entity.IsInvalid = true;
-            //Shinobytes.Debug.LogError(station.name + " is unreachable. Marked invalid to avoid being selected in the future.");
+            var path = mb.GetHierarchyPath();
+            if (badPathReported.Add(path))
+            {
+                Shinobytes.Debug.LogError(path + " is unreachable.");
+            }
         }
     }
+
+    private System.Collections.Generic.HashSet<string> badPathReported = new();
 }

@@ -15,7 +15,7 @@ public class WoodcuttingTask : ChunkTask
     public override bool IsCompleted(PlayerController player, object target)
     {
         var tree = target as TreeController;
-        if (!tree || tree.IsInvalid)
+        if (!tree)
         {
             return true;
         }
@@ -76,7 +76,7 @@ public class WoodcuttingTask : ChunkTask
         {
             return false;
         }
-        if (tree.Island != player.Island || tree.IsInvalid)
+        if (tree.Island != player.Island)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
@@ -114,10 +114,15 @@ public class WoodcuttingTask : ChunkTask
 
     internal override void SetTargetInvalid(object target)
     {
-        if (target is TreeController entity)
+        if (target != null && target is MonoBehaviour mb)
         {
-            entity.IsInvalid = true;
-            //Shinobytes.Debug.LogError(station.name + " is unreachable. Marked invalid to avoid being selected in the future.");
+            var path = mb.GetHierarchyPath();
+            if (badPathReported.Add(path))
+            {
+                Shinobytes.Debug.LogError(path + " is unreachable.");
+            }
         }
     }
+
+    private System.Collections.Generic.HashSet<string> badPathReported = new();
 }

@@ -65,7 +65,7 @@ public class PlayerDetails : MonoBehaviour
         // to "Recommended island" when needed
         defaultTimeToLevelUpLabelText = lblLevelUpTimeLabel.text;
     }
-
+    public bool IsObservingPlayer => visible && observedPlayerTimeout > 0 && observedPlayer != null;
     public void ToggleVisibility()
     {
         this.visible = !this.visible;

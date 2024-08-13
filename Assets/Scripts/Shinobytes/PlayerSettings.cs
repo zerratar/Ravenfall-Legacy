@@ -17,6 +17,9 @@ public class PlayerSettings
     public bool? AutoKickAfkPlayers;
     public bool? DayNightCycleEnabled;
     public bool? PhysicsEnabled;
+    public bool? EnableIslandCameraOnStart;
+    public bool? CanObserveEmptyIslands;
+
 
     public float? DayNightTime;
     public float? PlayerListSize;
@@ -33,6 +36,7 @@ public class PlayerSettings
     public int? PlayerCacheExpiryTime;
     public int? ItemDropMessageType;
     public int? PathfindingQualitySettings;
+    public int? QualityLevel;
 
     public double? PlayerAfkHours;
     public string RavenBotServer;
@@ -49,8 +53,8 @@ public class PlayerSettings
 
     public StreamLabelSettings StreamLabels;
     public ObserverTimes PlayerObserveSeconds;
+    public float IslandObserveSeconds;
     public LootSettings Loot;
-
     public class LootSettings
     {
         public bool IncludeOrigin;
@@ -129,10 +133,28 @@ public class PlayerSettings
     private static void SetDefaultValues()
     {
         var wasUpdated = false;
+        
+        if (Instance.CanObserveEmptyIslands == null)
+        {
+            Instance.CanObserveEmptyIslands = true;
+            wasUpdated = true;
+        }
+
+        if (Instance.EnableIslandCameraOnStart == null)
+        {
+            Instance.EnableIslandCameraOnStart = false;
+            wasUpdated = true;
+        }
 
         if (Instance.DayNightCycleEnabled == null)
         {
             Instance.DayNightCycleEnabled = true;
+            wasUpdated = true;
+        }
+
+        if (Instance.QualityLevel == null)
+        {
+            Instance.QualityLevel = 1;
             wasUpdated = true;
         }
 
@@ -220,6 +242,12 @@ public class PlayerSettings
             wasUpdated = true;
         }
 
+        if (Instance.IslandObserveSeconds == 0)
+        {
+            Instance.IslandObserveSeconds = 10f;
+            wasUpdated = true;
+        }
+
         if (Instance.CameraRotationSpeed == null)
         {
             Instance.CameraRotationSpeed = OrbitCamera.RotationSpeed;
@@ -288,6 +316,7 @@ public class PlayerSettings
             Serialize(sw, "disableRaids", obj.DisableRaids);
             Serialize(sw, "disableDungeons", obj.DisableDungeons);
             Serialize(sw, "autoAssignVacantHouses", obj.AutoAssignVacantHouses);
+            Serialize(sw, "enableIslandCameraOnStart", obj.EnableIslandCameraOnStart);
 
             // Serialize all nullable float properties
             Serialize(sw, "dayNightTime", obj.DayNightTime);

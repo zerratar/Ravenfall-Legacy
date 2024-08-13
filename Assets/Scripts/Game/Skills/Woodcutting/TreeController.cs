@@ -29,14 +29,12 @@ public class TreeController : TaskObject
     public bool IsStump => health <= 0;
 
     public IslandController Island { get; private set; }
-    [HideInInspector] public bool IsInvalid;
 
     [ReadOnly]
     public float MaxActionDistance = 5f;
 
     private float maxRespawnTimeSeconds;
     private float minRespawnTimeSeconds;
-    private float invalidTimer;
 
     [Button("Adjust Placement")]
     public void AdjustPlacement()
@@ -66,15 +64,6 @@ public class TreeController : TaskObject
 
     public override void Poll()
     {
-        if (IsInvalid)
-        {
-            invalidTimer += GameTime.deltaTime;
-            if (invalidTimer >= 20)
-            {
-                invalidTimer = 0f;
-                IsInvalid = false;
-            }
-        }
     }
 
     public void DecreaseRespawnTime()

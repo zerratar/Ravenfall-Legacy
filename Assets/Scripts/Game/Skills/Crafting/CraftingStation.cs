@@ -10,8 +10,6 @@ public class CraftingStation : MonoBehaviour
 
     public IslandController Island { get; private set; }
 
-    [HideInInspector] public bool IsInvalid;
-
     public CraftingStationType StationType = CraftingStationType.Crafting;
 
     public float ExpMultiplier = 1f;
@@ -25,19 +23,7 @@ public class CraftingStation : MonoBehaviour
     {
         PlacementUtility.PlaceOnGround(this.gameObject);
     }
-    private float invalidTimer;
-    private void Update()
-    {
-        if (IsInvalid)
-        {
-            invalidTimer += GameTime.deltaTime;
-            if (invalidTimer >= 20)
-            {
-                invalidTimer = 0f;
-                IsInvalid = false;
-            }
-        }
-    }
+
     void Start()
     {
         this.Island = GetComponentInParent<IslandController>();

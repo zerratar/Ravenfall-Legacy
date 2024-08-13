@@ -14,7 +14,7 @@ public class MiningTask : ChunkTask
     public override bool IsCompleted(PlayerController player, object target)
     {
         var rock = target as RockController;
-        if (!rock || rock.IsInvalid) return true;
+        if (!rock) return true;
         return false;
     }
 
@@ -25,7 +25,7 @@ public class MiningTask : ChunkTask
         return rocks
             .OrderBy(x => UnityEngine.Random.value)
             .ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
-            .FirstOrDefault(x => !x.IsInvalid);
+            .FirstOrDefault();
     }
 
     public override bool Execute(PlayerController player, object target)
@@ -84,7 +84,7 @@ public class MiningTask : ChunkTask
         {
             return false;
         }
-        if (rock.Island != player.Island || rock.IsInvalid)
+        if (rock.Island != player.Island)
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
@@ -113,10 +113,15 @@ public class MiningTask : ChunkTask
 
     internal override void SetTargetInvalid(object target)
     {
-        if (target is RockController entity)
+        if (target != null && target is MonoBehaviour mb)
         {
-            entity.IsInvalid = true;
-            //Shinobytes.Debug.LogError(station.name + " is unreachable. Marked invalid to avoid being selected in the future.");
+            var path = mb.GetHierarchyPath();
+            if (badPathReported.Add(path))
+            {
+                Shinobytes.Debug.LogError(path + " is unreachable.");
+            }
         }
     }
+
+    private System.Collections.Generic.HashSet<string> badPathReported = new();
 }

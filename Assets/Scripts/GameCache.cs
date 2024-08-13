@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Assets.Scripts
 {
@@ -147,6 +148,7 @@ namespace Assets.Scripts
                     usedPlayerStateCacheFileName = file;
                 }
             }
+            stateCache = state;
             return state;
         }
 

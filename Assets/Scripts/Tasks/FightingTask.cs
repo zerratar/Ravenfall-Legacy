@@ -287,7 +287,18 @@ public class FightingTask : ChunkTask
     }
 
 
+
     internal override void SetTargetInvalid(object target)
     {
+        if (target != null && target is MonoBehaviour mb)
+        {
+            var path = mb.GetHierarchyPath();
+            if (badPathReported.Add(path))
+            {
+                Shinobytes.Debug.LogError(path + " is unreachable.");
+            }
+        }
     }
+
+    private System.Collections.Generic.HashSet<string> badPathReported = new();
 }
