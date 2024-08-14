@@ -103,9 +103,12 @@ public class IslandController : MonoBehaviour
         return players;//players.Values.ToList();
     }
 
-    private IReadOnlyList<PlayerController> RebuildPlayerList()
+    public IReadOnlyList<PlayerController> RebuildPlayerList()
     {
+#if DEBUG
         Shinobytes.Debug.Log("Rebuilding player list for island: " + this.Island + " as one or more players were on ferry or in dungeon.");
+#endif
+
         if (!playerManager)
         {
             playerManager = FindAnyObjectByType<PlayerManager>();
@@ -119,6 +122,7 @@ public class IslandController : MonoBehaviour
 
             if (InsideIsland(p.transform.position))
             {
+                p.Island = this;
                 players.Add(p);
             }
         }

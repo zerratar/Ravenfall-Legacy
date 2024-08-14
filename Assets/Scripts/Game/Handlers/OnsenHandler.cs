@@ -152,9 +152,9 @@ public class OnsenHandler : MonoBehaviour
 
         if (InOnsen)
         {
-            player.Movement.Unlock();
             player.transform.SetParent(null);
             player.teleportHandler.Teleport(prevOnsen.EntryPoint, true, true);
+            player.Movement.Unlock();
         }
 
         prevOnsen.UpdateDetailsLabel();

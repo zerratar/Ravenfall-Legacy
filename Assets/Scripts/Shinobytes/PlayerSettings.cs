@@ -37,6 +37,7 @@ public class PlayerSettings
     public int? ItemDropMessageType;
     public int? PathfindingQualitySettings;
     public int? QualityLevel;
+    public int? NoExpGainWarningMinutes;
 
     public double? PlayerAfkHours;
     public string RavenBotServer;
@@ -44,6 +45,7 @@ public class PlayerSettings
     public bool? DisableDungeons;
     public bool? DisableRaids;
     public bool? AutoAssignVacantHouses;
+    public bool? AnnounceNoExpGain;
 
     public bool? QueryEngineEnabled;
     public bool? QueryEngineAlwaysReturnArray;
@@ -133,7 +135,19 @@ public class PlayerSettings
     private static void SetDefaultValues()
     {
         var wasUpdated = false;
-        
+
+        if (Instance.AnnounceNoExpGain == null)
+        {
+            Instance.AnnounceNoExpGain = false;
+            wasUpdated = true;
+        }
+
+        if (Instance.NoExpGainWarningMinutes == null)
+        {
+            Instance.NoExpGainWarningMinutes = 5;
+            wasUpdated = true;
+        }
+
         if (Instance.CanObserveEmptyIslands == null)
         {
             Instance.CanObserveEmptyIslands = true;
@@ -306,7 +320,7 @@ public class PlayerSettings
             Serialize(sw, "alertExpiredStateCacheInChat", obj.AlertExpiredStateCacheInChat);
             Serialize(sw, "playerListVisible", obj.PlayerListVisible);
             Serialize(sw, "playerNamesVisible", obj.PlayerNamesVisible);
-            Serialize(sw, "localBotServerDisabled", obj.LocalBotServerDisabled);
+
             Serialize(sw, "autoKickAfkPlayers", obj.AutoKickAfkPlayers);
             Serialize(sw, "dayNightCycleEnabled", obj.DayNightCycleEnabled);
             Serialize(sw, "queryEngineEnabled", obj.QueryEngineEnabled);
@@ -317,6 +331,12 @@ public class PlayerSettings
             Serialize(sw, "disableDungeons", obj.DisableDungeons);
             Serialize(sw, "autoAssignVacantHouses", obj.AutoAssignVacantHouses);
             Serialize(sw, "enableIslandCameraOnStart", obj.EnableIslandCameraOnStart);
+
+            Serialize(sw, "noExpGainWarningMinutes", obj.NoExpGainWarningMinutes);
+            Serialize(sw, "qualityLevel", obj.QualityLevel);
+            Serialize(sw, "islandObserveSeconds", obj.IslandObserveSeconds);
+            Serialize(sw, "canObserveEmptyIslands", obj.CanObserveEmptyIslands);
+            Serialize(sw, "announceNoExpGain", obj.AnnounceNoExpGain);
 
             // Serialize all nullable float properties
             Serialize(sw, "dayNightTime", obj.DayNightTime);
@@ -334,6 +354,8 @@ public class PlayerSettings
             Serialize(sw, "playerCacheExpiryTime", obj.PlayerCacheExpiryTime);
             Serialize(sw, "itemDropMessageType", obj.ItemDropMessageType);
             Serialize(sw, "pathfindingQualitySettings", obj.PathfindingQualitySettings);
+
+            Serialize(sw, "localBotServerDisabled", obj.LocalBotServerDisabled);
             Serialize(sw, "localBotPort", obj.LocalBotPort);
 
             // Serialize all nullable double properties

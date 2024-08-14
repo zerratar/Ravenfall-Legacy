@@ -221,6 +221,7 @@ public static class Localization
     public static readonly string MSG_APPEARANCE_INVALID = "Invalid appearance data";
     public static readonly string MSG_TRAVEL_ALREADY_ON_ISLAND = "You cannot travel to the island you're already on.";
     public static readonly string MSG_TRAVEL_NO_SUCH_ISLAND = "No islands named '{islandName}'. You may travel to: '{islandList}'";
+    public static readonly string MSG_TRAVEL_NO_SUCH_PLAYER = "No player named '{islandName}'.";
     public static readonly string MSG_TRAVEL_WAR = "You cannot travel when participating in a war. Please wait for it to be over.";
     public static readonly string MSG_TRAVEL_DUEL = "You cannot travel when duelling another player.";
     public static readonly string MSG_TRAVEL_ARENA = "You cannot travel when participating in the arena.";
@@ -283,6 +284,9 @@ public static class Localization
     public static readonly string MSG_DIAPER_OFF = "Diaper mode has been disabled, you have equipped your armor again.";
     public static readonly string MSG_TOGGLE_PET_NO_PET = "You have no more pets to cycle between.";
     public static readonly string MSG_TOGGLE_PET = "You have changed your active pet to {itemName}";
+
+    public static readonly string MSG_TRAINING_RECOMMENDED_ISLAND = Meta("training", "info") + "You have not been gaining any experience for more than {mins} minutes. You're recommended to sail to {recommendedIslandName} to continue training. The broadcaster may now also use !sail {recommendedIslandName} {playerName} to make your character move.";
+
     public static readonly string MSG_TRAINING = "You're currently training {skill}.";
     public static readonly string MSG_TRAINING_NOTHING = "You're not training anything. Use !train <skill name> to start training!";
     public static readonly string MSG_JOIN_RAID = "You have joined the raid. Good luck!";

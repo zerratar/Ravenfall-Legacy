@@ -86,6 +86,9 @@ public class IslandDetails : MonoBehaviour
             this.timeout = 0;
             return;
         }
+
+        island.RebuildPlayerList();
+
         this.gameObject.SetActive(true);
         this.target = island;
         this.timeout = timer;
@@ -145,33 +148,33 @@ public class IslandDetails : MonoBehaviour
         }
 
         // update skill training distribution ui
-        attack.text = skillCounter[Skill.Attack].ToString();
-        defense.text = skillCounter[Skill.Defense].ToString();
-        strength.text = skillCounter[Skill.Strength].ToString();
-        magic.text = skillCounter[Skill.Magic].ToString();
-        ranged.text = skillCounter[Skill.Ranged].ToString();
-        healing.text = skillCounter[Skill.Health].ToString();
-        alchemy.text = skillCounter[Skill.Alchemy].ToString();
-        woodcutting.text = skillCounter[Skill.Woodcutting].ToString();
-        fishing.text = skillCounter[Skill.Fishing].ToString();
-        mining.text = skillCounter[Skill.Mining].ToString();
-        crafting.text = skillCounter[Skill.Crafting].ToString();
-        cooking.text = skillCounter[Skill.Cooking].ToString();
-        farming.text = skillCounter[Skill.Farming].ToString();
-        gathering.text = skillCounter[Skill.Gathering].ToString();
+        attack.text = Utility.FormatAmount(skillCounter[Skill.Attack]);
+        defense.text = Utility.FormatAmount(skillCounter[Skill.Defense]);
+        strength.text = Utility.FormatAmount(skillCounter[Skill.Strength]);
+        magic.text = Utility.FormatAmount(skillCounter[Skill.Magic]);
+        ranged.text = Utility.FormatAmount(skillCounter[Skill.Ranged]);
+        healing.text = Utility.FormatAmount(skillCounter[Skill.Health]);
+        alchemy.text = Utility.FormatAmount(skillCounter[Skill.Alchemy]);
+        woodcutting.text = Utility.FormatAmount(skillCounter[Skill.Woodcutting]);
+        fishing.text = Utility.FormatAmount(skillCounter[Skill.Fishing]);
+        mining.text = Utility.FormatAmount(skillCounter[Skill.Mining]);
+        crafting.text = Utility.FormatAmount(skillCounter[Skill.Crafting]);
+        cooking.text = Utility.FormatAmount(skillCounter[Skill.Cooking]);
+        farming.text = Utility.FormatAmount(skillCounter[Skill.Farming]);
+        gathering.text = Utility.FormatAmount(skillCounter[Skill.Gathering]);
 
         // update the statistics
         var statistics = target.Statistics;
-        monstersDefeated.text = statistics.MonstersDefeated.ToString();
-        playersKilled.text = statistics.PlayersKilled.ToString();
-        raidBosses.text = statistics.RaidBossesSpawned.ToString();
-        itemsGathered.text = statistics.ItemsGathered.ToString();
-        treesCutDown.text = statistics.TreesCutDown.ToString();
-        rocksMined.text = statistics.RocksMined.ToString();
-        fishCaught.text = statistics.FishCaught.ToString();
-        cropsHarvested.text = statistics.CropsHarvested.ToString();
-        foodCooked.text = statistics.FoodCooked.ToString();
-        itemsCrafted.text = statistics.ItemsCrafted.ToString();
-        potionsBrewed.text = statistics.PotionsBrewed.ToString();
+        monstersDefeated.text = Utility.FormatAmount(statistics.MonstersDefeated);
+        playersKilled.text = Utility.FormatAmount(statistics.PlayersKilled);
+        raidBosses.text = Utility.FormatAmount(statistics.RaidBossesSpawned);
+        itemsGathered.text = Utility.FormatAmount(statistics.ItemsGathered);
+        treesCutDown.text = Utility.FormatAmount(statistics.TreesCutDown);
+        rocksMined.text = Utility.FormatAmount(statistics.RocksMined);
+        fishCaught.text = Utility.FormatAmount(statistics.FishCaught);
+        cropsHarvested.text = Utility.FormatAmount(statistics.CropsHarvested);
+        foodCooked.text = Utility.FormatAmount(statistics.FoodCooked);
+        itemsCrafted.text = Utility.FormatAmount(statistics.ItemsCrafted);
+        potionsBrewed.text = Utility.FormatAmount(statistics.PotionsBrewed);
     }
 }

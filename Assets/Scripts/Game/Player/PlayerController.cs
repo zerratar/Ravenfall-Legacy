@@ -1998,6 +1998,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     [NonSerialized] public ExpGainState CurrentExpGainState;
     internal bool IsObserved;
 
+    [NonSerialized]
+    public bool CanBeControlledByStreamer;
+    private DateTime? badIslandTimeStart = null;
+    private DateTime? badIslandReportTime = null;
+
     private void SetExpGainState(ExpGainState state)
     {
         if (state != CurrentExpGainState)
@@ -2005,10 +2010,77 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             CurrentExpGainState = state;
         }
 
+        if (state == ExpGainState.LevelTooHigh || state == ExpGainState.LevelTooLow)
+        {
+            // in case our level is too high or too low,
+            // we should warn the user about it and if they don't change skill themselves or move to a different location
+            // since this can be intentional behaviour if a player is trying to help new players level up.
+            // we will let the streamer decide whether or not the player should be traveling to their recommended island.
+
+            // 1. if player has not gained any exp due to level too high or too low for the past 5 minutes send a notification
+            // 2. streamer can now use !sail <destination> <user> to send the player to the recommended island.
+
+            var activeSkill = GetActiveSkillStat();
+            var recommendedIsland = IslandManager.GetSuitableIsland(activeSkill.Level);
+
+            if (recommendedIsland != this._island?.Island)
+            {
+
+                var now = DateTime.UtcNow;
+
+                if (badIslandTimeStart == null)
+                {
+                    badIslandTimeStart = now;
+                    badIslandReportTime = null;
+                }
+                else
+                {
+                    var timeBetweenNotifications = badIslandReportTime == null
+                        ? PlayerSettings.Instance.NoExpGainWarningMinutes
+                        : PlayerSettings.Instance.NoExpGainWarningMinutes * 5;
+
+                    var noExpTime = now - badIslandTimeStart.Value;
+                    var reportTime = now - (badIslandReportTime ?? badIslandTimeStart).Value;
+                    if (reportTime.TotalMinutes >= timeBetweenNotifications)
+                    {
+                        this.CanBeControlledByStreamer = true;
+                        badIslandReportTime = now;
+
+                        if (PlayerSettings.Instance.AnnounceNoExpGain.GetValueOrDefault())
+                        {
+                            GameManager.RavenBot.SendReply(this,
+                                // Localization.MSG_TRAINING_RECOMMENDED_ISLAND,
+                                "You have not been gaining any experience for more than {mins} minutes. " +
+                                "You're recommended to sail to {recommendedIslandName1} to continue training. " +
+                                "The broadcaster may now also use !sail {recommendedIslandName2} {playerName} to make your character move.",
+                                Math.Round(noExpTime.TotalMinutes, 1),
+                                recommendedIsland.ToString(),
+                                recommendedIsland.ToString(),
+                                this.PlayerName);
+                        }
+                    }
+                }
+            }
+
+            // ClearTask();
+        }
+        else
+        {
+            badIslandTimeStart = null;
+            badIslandReportTime = null;
+        }
+
         if (IsObserved && GameManager.ObservedPlayerDetails)
         {
             GameManager.ObservedPlayerDetails.SetExpGainState(state);
         }
+    }
+
+    public void ResetPlayerControl()
+    {
+        this.CanBeControlledByStreamer = false;
+        badIslandTimeStart = null;
+        badIslandReportTime = null;
     }
 
     public void ClearTask()
