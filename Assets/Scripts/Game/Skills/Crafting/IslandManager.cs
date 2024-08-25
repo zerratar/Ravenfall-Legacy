@@ -1,6 +1,7 @@
 ﻿using RavenNest.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class IslandManager : MonoBehaviour
@@ -47,8 +48,9 @@ public class IslandManager : MonoBehaviour
 
     public static Island GetSuitableIsland(int level)
     {
-        foreach (var island in IslandLevelRangeMin.Keys)
+        foreach (var islandReq in IslandLevelRangeMin.OrderByDescending(x => x.Value))
         {
+            var island = islandReq.Key;
             if (level >= IslandLevelRangeMin[island] && level <= IslandMaxEffect[island])
             {
                 return island;
