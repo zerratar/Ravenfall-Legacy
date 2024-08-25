@@ -98,83 +98,98 @@ public class IslandDetails : MonoBehaviour
 
     private void UpdateUI()
     {
-
-        if (string.IsNullOrEmpty(requiredLevelFormat))
+        try
         {
-            requiredLevelFormat = requiredLevel.text;
-        }
-
-        if (string.IsNullOrEmpty(playerCountFormat))
-        {
-            playerCountFormat = playerCount.text;
-        }
-
-        if (string.IsNullOrEmpty(observerTimeoutFormat))
-        {
-            observerTimeoutFormat = lblObserverTime.text;
-        }
-
-        var players = target.GetPlayers();
-        islandName.text = target.Identifier;
-
-        imgObserverTimePg.fillAmount = timeout / timeoutLength;
-
-        lblObserverTime.text = string.Format(observerTimeoutFormat, Mathf.RoundToInt(timeout));
-        requiredLevel.text = string.Format(requiredLevelFormat, target.LevelRequirement);
-        onsenAvailable.SetActive(gameManager.Onsen.RestingAreaAvailable(target));
-        playerCount.text = string.Format(playerCountFormat, players.Count);
-
-        foreach (var skill in SkillUtilities.Skills)
-        {
-            skillCounter[skill] = 0;
-        }
-
-        foreach (var player in players)
-        {
-            var taskType = player.GetTask();
-            var activeSkill = player.GetActiveSkillStat();
-            if (taskType == TaskType.Fighting)
+            if (string.IsNullOrEmpty(requiredLevelFormat))
             {
-                if (activeSkill.Type == Skill.Health || activeSkill.Type == Skill.Melee)
-                {
-                    skillCounter[Skill.Attack]++;
-                    skillCounter[Skill.Defense]++;
-                    skillCounter[Skill.Strength]++;
-                    continue;
-                }
+                requiredLevelFormat = requiredLevel.text;
             }
 
-            skillCounter[activeSkill.Type]++;
+            if (string.IsNullOrEmpty(playerCountFormat))
+            {
+                playerCountFormat = playerCount.text;
+            }
+
+            if (string.IsNullOrEmpty(observerTimeoutFormat))
+            {
+                observerTimeoutFormat = lblObserverTime.text;
+            }
+
+            if (target == null)
+            {
+                return;
+            }
+
+            var players = target.GetPlayers();
+
+            islandName.text = target.Identifier;
+            imgObserverTimePg.fillAmount = timeout / timeoutLength;
+
+            lblObserverTime.text = string.Format(observerTimeoutFormat, Mathf.RoundToInt(timeout));
+            requiredLevel.text = string.Format(requiredLevelFormat, target.LevelRequirement);
+            onsenAvailable.SetActive(gameManager.Onsen.RestingAreaAvailable(target));
+            playerCount.text = string.Format(playerCountFormat, players.Count);
+
+            foreach (var skill in SkillUtilities.Skills)
+            {
+                skillCounter[skill] = 0;
+            }
+
+            foreach (var player in players)
+            {
+                if (player == null || player.isDestroyed || !player)
+                {
+                    continue;
+                }
+
+                var taskType = player.GetTask();
+                var activeSkill = player.GetActiveSkillStat();
+                if (taskType == TaskType.Fighting)
+                {
+                    if (activeSkill.Type == Skill.Health || activeSkill.Type == Skill.Melee)
+                    {
+                        skillCounter[Skill.Attack]++;
+                        skillCounter[Skill.Defense]++;
+                        skillCounter[Skill.Strength]++;
+                        continue;
+                    }
+                }
+
+                skillCounter[activeSkill.Type]++;
+            }
+
+            // update skill training distribution ui
+            attack.text = Utility.FormatAmount(skillCounter[Skill.Attack]);
+            defense.text = Utility.FormatAmount(skillCounter[Skill.Defense]);
+            strength.text = Utility.FormatAmount(skillCounter[Skill.Strength]);
+            magic.text = Utility.FormatAmount(skillCounter[Skill.Magic]);
+            ranged.text = Utility.FormatAmount(skillCounter[Skill.Ranged]);
+            healing.text = Utility.FormatAmount(skillCounter[Skill.Health]);
+            alchemy.text = Utility.FormatAmount(skillCounter[Skill.Alchemy]);
+            woodcutting.text = Utility.FormatAmount(skillCounter[Skill.Woodcutting]);
+            fishing.text = Utility.FormatAmount(skillCounter[Skill.Fishing]);
+            mining.text = Utility.FormatAmount(skillCounter[Skill.Mining]);
+            crafting.text = Utility.FormatAmount(skillCounter[Skill.Crafting]);
+            cooking.text = Utility.FormatAmount(skillCounter[Skill.Cooking]);
+            farming.text = Utility.FormatAmount(skillCounter[Skill.Farming]);
+            gathering.text = Utility.FormatAmount(skillCounter[Skill.Gathering]);
+
+            // update the statistics
+            var statistics = target.Statistics;
+            monstersDefeated.text = Utility.FormatAmount(statistics.MonstersDefeated);
+            playersKilled.text = Utility.FormatAmount(statistics.PlayersKilled);
+            raidBosses.text = Utility.FormatAmount(statistics.RaidBossesSpawned);
+            itemsGathered.text = Utility.FormatAmount(statistics.ItemsGathered);
+            treesCutDown.text = Utility.FormatAmount(statistics.TreesCutDown);
+            rocksMined.text = Utility.FormatAmount(statistics.RocksMined);
+            fishCaught.text = Utility.FormatAmount(statistics.FishCaught);
+            cropsHarvested.text = Utility.FormatAmount(statistics.CropsHarvested);
+            foodCooked.text = Utility.FormatAmount(statistics.FoodCooked);
+            itemsCrafted.text = Utility.FormatAmount(statistics.ItemsCrafted);
+            potionsBrewed.text = Utility.FormatAmount(statistics.PotionsBrewed);
         }
-
-        // update skill training distribution ui
-        attack.text = Utility.FormatAmount(skillCounter[Skill.Attack]);
-        defense.text = Utility.FormatAmount(skillCounter[Skill.Defense]);
-        strength.text = Utility.FormatAmount(skillCounter[Skill.Strength]);
-        magic.text = Utility.FormatAmount(skillCounter[Skill.Magic]);
-        ranged.text = Utility.FormatAmount(skillCounter[Skill.Ranged]);
-        healing.text = Utility.FormatAmount(skillCounter[Skill.Health]);
-        alchemy.text = Utility.FormatAmount(skillCounter[Skill.Alchemy]);
-        woodcutting.text = Utility.FormatAmount(skillCounter[Skill.Woodcutting]);
-        fishing.text = Utility.FormatAmount(skillCounter[Skill.Fishing]);
-        mining.text = Utility.FormatAmount(skillCounter[Skill.Mining]);
-        crafting.text = Utility.FormatAmount(skillCounter[Skill.Crafting]);
-        cooking.text = Utility.FormatAmount(skillCounter[Skill.Cooking]);
-        farming.text = Utility.FormatAmount(skillCounter[Skill.Farming]);
-        gathering.text = Utility.FormatAmount(skillCounter[Skill.Gathering]);
-
-        // update the statistics
-        var statistics = target.Statistics;
-        monstersDefeated.text = Utility.FormatAmount(statistics.MonstersDefeated);
-        playersKilled.text = Utility.FormatAmount(statistics.PlayersKilled);
-        raidBosses.text = Utility.FormatAmount(statistics.RaidBossesSpawned);
-        itemsGathered.text = Utility.FormatAmount(statistics.ItemsGathered);
-        treesCutDown.text = Utility.FormatAmount(statistics.TreesCutDown);
-        rocksMined.text = Utility.FormatAmount(statistics.RocksMined);
-        fishCaught.text = Utility.FormatAmount(statistics.FishCaught);
-        cropsHarvested.text = Utility.FormatAmount(statistics.CropsHarvested);
-        foodCooked.text = Utility.FormatAmount(statistics.FoodCooked);
-        itemsCrafted.text = Utility.FormatAmount(statistics.ItemsCrafted);
-        potionsBrewed.text = Utility.FormatAmount(statistics.PotionsBrewed);
+        catch
+        {
+        }
     }
 }

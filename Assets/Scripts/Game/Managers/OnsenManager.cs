@@ -22,6 +22,7 @@ public class OnsenManager : MonoBehaviour
 
     public bool RestingAreaAvailable(IslandController island)
     {
+        if (!island || island == null || restingAreas == null) return false;
         return restingAreas.FirstOrDefault(x => x.Island.Identifier == island.Identifier) != null;
     }
 

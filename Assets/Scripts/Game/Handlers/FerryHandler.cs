@@ -346,13 +346,13 @@ public class FerryHandler : MonoBehaviour
             this.isOnFerry = true;
         }
     }
+}
 
-    public enum PlayerFerryState
-    {
-        None,
-        Embarking,
-        Embarked,
-        Fishing,
-        Disembarking
-    }
+public enum PlayerFerryState
+{
+    None,
+    Embarking,
+    Embarked,
+    Fishing,
+    Disembarking
 }

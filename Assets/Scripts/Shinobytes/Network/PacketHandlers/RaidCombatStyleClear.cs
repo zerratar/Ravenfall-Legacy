@@ -1,6 +1,7 @@
 ﻿public class RaidCombatStyleClear : ChatBotCommandHandler
 {
-    public RaidCombatStyleClear(GameManager game, RavenBotConnection server, PlayerManager playerManager) : base(game, server, playerManager)
+    public RaidCombatStyleClear(GameManager game, RavenBotConnection server, PlayerManager playerManager) 
+        : base(game, server, playerManager)
     {
     }
 
@@ -12,6 +13,6 @@
         }
 
         player.raidHandler.SetCombatStyle(null);
-        client.SendReply(gm, "Your combat style has been cleared.");
+        client.SendReply(gm, "The skill used for raids has been reset.");
     }
 }

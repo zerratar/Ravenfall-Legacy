@@ -360,6 +360,8 @@ public class PlayerAnimationController : MonoBehaviour
     }
 
     #endregion
+
+    #region Alchemy
     public void StartBrewing()
     {
         if (!EnsureAnimator()) return;
@@ -383,6 +385,8 @@ public class PlayerAnimationController : MonoBehaviour
         animationState = PlayerAnimationState.Idle;
         SetBool("Brewing", false);
     }
+    #endregion
+
     #region Farming
     public void StartFarming()
     {
@@ -401,6 +405,7 @@ public class PlayerAnimationController : MonoBehaviour
     }
     #endregion
 
+    #region Gathering
     public void StartGathering(bool kneeling = true)
     {
         if (!EnsureAnimator()) return;
@@ -426,8 +431,9 @@ public class PlayerAnimationController : MonoBehaviour
         animationState = PlayerAnimationState.Idle;
         SetBool("Gathering", false);
     }
+    #endregion
 
-    #region Farming
+    #region Cooking
     public void StartCooking()
     {
         if (!EnsureAnimator()) return;

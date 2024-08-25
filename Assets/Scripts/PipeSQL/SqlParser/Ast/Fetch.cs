@@ -1,3 +1,5 @@
+#nullable enable
+
 namespace SqlParser.Ast
 {
 
@@ -16,7 +18,7 @@ namespace SqlParser.Ast
             this.Percent = Percent;
         }
 
-        public SqlExpression Quantity { get; }
+        public SqlExpression? Quantity { get; }
         public bool WithTies { get; }
         public bool Percent { get; }
 

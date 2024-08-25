@@ -361,8 +361,6 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         FindFirstObjectByType<EnemyManager>().Register(this);
     }
 
-
-
     public void Poll()
     {
         if (GameCache.IsAwaitingGameRestore)
@@ -570,6 +568,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     public int PlayerKillCount;
 
     public EnemySpawnPoint SpawnPoint;
+
     [NonSerialized] public Transform _transform;
 
     public void ClearAttackers()
@@ -878,11 +877,11 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         movement.Lock();
     }
 
-    public void Unlock()
+    public void Unlock(bool adjustToNavMesh = false)
     {
         if (!movement) movement = GetComponent<EnemyMovementController>();
         if (!movement) return;
-        movement.Unlock();
+        movement.Unlock(adjustToNavMesh);
     }
 
     internal void SetPosition(Vector3 position)

@@ -295,6 +295,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public Skill? RaidCombatStyle { get; set; }
     public Skill? DungeonCombatStyle { get; set; }
     public int AutoTrainTargetLevel { get; set; }
+    public bool IsStuck { get; set; }
 
     internal void InterruptAction()
     {
@@ -527,7 +528,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         catch { }
     }
 
-    public void LatePoll()
+    public void LateUpdate()
     {
         if (GameCache.IsAwaitingGameRestore || !Overlay.IsGame) return;
 
@@ -590,12 +591,27 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public void Poll()
     {
+        Update();
+    }
+
+    public void LatePoll()
+    {
+        LateUpdate();
+    }
+
+    public void Update()
+    {
         if ((IsBot && !Overlay.IsGame) || GameCache.IsAwaitingGameRestore)
         {
             return;
         }
 
         if (!hasBeenInitialized)
+        {
+            return;
+        }
+
+        if (!GameManager.Players.Validate(this))
         {
             return;
         }
@@ -3383,10 +3399,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         PlacementUtility.PlaceOnGround(this.gameObject);
     }
 
-    internal bool Unstuck(bool forceUnstuck = false)
+    internal bool Unstuck(bool forceUnstuck = false, float unstuckTimeout = 30f)
     {
         var now = Time.realtimeSinceStartup;
-        if (!forceUnstuck && now - lastUnstuckUsed < 30)
+        if (!forceUnstuck && now - lastUnstuckUsed < unstuckTimeout)
         {
             return false;
         }

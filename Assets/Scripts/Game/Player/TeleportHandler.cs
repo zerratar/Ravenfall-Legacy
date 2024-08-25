@@ -9,6 +9,8 @@ public class TeleportHandler : MonoBehaviour
     public PlayerController player;
     public Transform parent;
 
+    [NonSerialized] public float LastTeleport;
+
     public void Start()
     {
         if (!islandManager) islandManager = FindAnyObjectByType<IslandManager>();
@@ -26,6 +28,7 @@ public class TeleportHandler : MonoBehaviour
         if (!this || this == null)
             return;
 
+        LastTeleport = GameTime.time;
         parent = null;
         player.transform.parent = null;
         player.transform.localPosition = Vector3.zero;
@@ -50,6 +53,8 @@ public class TeleportHandler : MonoBehaviour
         // could have been kicked. *Looks at Solunae*
         if (!this || this == null)
             return;
+
+        LastTeleport = GameTime.time;
 
         if (player.onsenHandler.InOnsen)
         {

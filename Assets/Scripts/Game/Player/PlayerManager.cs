@@ -53,6 +53,13 @@ public class PlayerManager : MonoBehaviour
 
     public PlayerController LastAddedPlayer;
 
+    public PlayerValidator Validator { get; } = new PlayerValidator();
+
+    public bool Validate(PlayerController player)
+    {
+        return Validator.Validate(player);
+    }
+
     private void LateUpdate()
     {
         if (this.gameManager == null || this.gameManager.RavenNest == null || !this.gameManager.RavenNest.Authenticated || !this.gameManager.RavenNest.SessionStarted)
@@ -79,10 +86,10 @@ public class PlayerManager : MonoBehaviour
         }
         else { LoadingPlayers = false; }
 
-        for (var i = 0; i < playerList.Count; i++)
-        {
-            playerList[i].LatePoll();
-        }
+        //for (var i = 0; i < playerList.Count; i++)
+        //{
+        //    playerList[i].LatePoll();
+        //}
     }
 
     void Start()
@@ -95,14 +102,14 @@ public class PlayerManager : MonoBehaviour
     }
 
 
-    private void Update()
-    {
-
-        for (var i = 0; i < playerList.Count; i++)
-        {
-            playerList[i].Poll();
-        }
-    }
+    //private void Update()
+    //{
+    //    for (var i = 0; i < playerList.Count; i++)
+    //    {
+    //        var player = playerList[i];
+    //        player.Poll();
+    //    }
+    //}
 
 
     internal async Task<PlayerController> JoinAsync(GameMessage command, User user, GameClient client, bool userTriggered, bool isBot, Guid? characterId)
@@ -247,7 +254,7 @@ public class PlayerManager : MonoBehaviour
         player.IsBot = isBot;
         if (player.IsBot)
         {
-            player.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();
+            player.Bot = player.gameObject.GetComponent<BotPlayerController>() ?? player.gameObject.AddComponent<BotPlayerController>();
             player.Bot.playerController = player;
             if (player.PlatformId != null && !player.PlatformId.StartsWith("#"))
             {

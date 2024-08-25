@@ -185,13 +185,13 @@ public class OverlayPlayerManager
         src.IsVip = newValues.IsVip;
     }
 
-    internal void Update()
-    {
-        foreach (var p in players)
-        {
-            p.Value.PlayerController.Poll();
-        }
-    }
+    //internal void Update()
+    //{
+    //    foreach (var p in players)
+    //    {
+    //        p.Value.PlayerController.Poll();
+    //    }
+    //}
 
     private class PlayerMap
     {

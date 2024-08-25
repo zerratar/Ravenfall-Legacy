@@ -156,59 +156,6 @@ public class DungeonRoomController : MonoBehaviour
 
 public static class TargetExtensions
 {
-
-    public static EnemyController GetNextEnemyTargetExceptBoss(this IReadOnlyList<EnemyController> enemies, PlayerController player)
-    {
-        if (enemies == null || enemies.Count == 0)
-            return null;
-
-        var maxDist = float.MaxValue;
-        EnemyController target = null;
-        for (var i = 0; i < enemies.Count; ++i)
-        {
-            var x = enemies[i];
-            if (x.Stats.Health.CurrentValue <= 0 || x.IsUnreachable)
-            {
-                continue;
-            }
-
-            var dist = Vector3.Distance(x.transform.position, player.Movement.Position);
-            if (dist < maxDist)
-            {
-                maxDist = dist;
-                target = x;
-            }
-        }
-
-        return target;
-    }
-
-    public static EnemyController GetNextEnemyTargetExceptBoss(this EnemyController[] enemies, PlayerController player)
-    {
-        if (enemies == null || enemies.Length == 0)
-            return null;
-
-        var maxDist = float.MaxValue;
-        EnemyController target = null;
-        for (var i = 0; i < enemies.Length; ++i)
-        {
-            var x = enemies[i];
-            if (x.Stats.Health.CurrentValue <= 0 || x.IsUnreachable)
-            {
-                continue;
-            }
-
-            var dist = Vector3.Distance(x.transform.position, player.Movement.Position);
-            if (dist < maxDist)
-            {
-                maxDist = dist;
-                target = x;
-            }
-        }
-
-        return target;
-    }
-
     public static EnemyController GetNextEnemyTarget(this EnemyController[] enemies, PlayerController player, Func<EnemyController, bool> filter = null)
     {
         if (enemies == null || enemies.Length == 0)
@@ -234,7 +181,7 @@ public static class TargetExtensions
                 continue;
             }
 
-            var distance = Vector3.Distance(enemy.Position, player.Movement.Position);
+            var distance = Vector3.Distance(enemy.Position, player.Movement.Position) + UnityEngine.Random.Range(0, 25f);
 
             // we gotta protect our healers first hand. so we add 20 distance to enemies not targeting healers
             if (!enemy.HasValidTarget || !enemy.TargetPlayer.TrainingHealing)
@@ -249,23 +196,6 @@ public static class TargetExtensions
         }
 
         return target;
-
-        //enemies
-        //.Where(x => !x.IsUnreachable && !x.Stats.IsDead && (filter == null || filter(x)))
-        //.OrderBy(x =>
-        //{
-        //    var distance = Vector3.Distance(x.Position, player.Movement.Position);
-
-        //    // We want it to sort by distance still, but to ensure we can protect our players
-        //    // we will add distance+constant so that healers are always prioritized.
-        //    if (x.HasValidTarget && x.TargetPlayer.TrainingHealing)
-        //    {
-        //        return distance;
-        //    }
-
-        //    return distance + 100f;
-        //})
-        //.FirstOrDefault();
     }
 }
 

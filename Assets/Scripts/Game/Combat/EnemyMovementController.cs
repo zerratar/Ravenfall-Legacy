@@ -159,7 +159,7 @@ public class EnemyMovementController : MonoBehaviour
         }
         this.isMovingInternal = false;
     }
-    public void Unlock()
+    public void Unlock(bool adjustToNavMesh = false)
     {
         //if (aiPathAgent)
         //{
@@ -171,11 +171,33 @@ public class EnemyMovementController : MonoBehaviour
         var agent = navMeshAgent;
         if (agent)
         {
+            if (adjustToNavMesh && !agent.isOnNavMesh)
+            {
+                AdjustPlayerPositionToNavmesh();
+            }
+
             agent.enabled = true;
             agent.isStopped = false;
         }
     }
 
+    public void AdjustPlayerPositionToNavmesh()
+    {
+        if (navMeshAgent.isOnNavMesh) return;
+        NavMeshHit closestHit;
+        if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMesh.AllAreas))
+        {
+            var pos = closestHit.position;
+
+            gameObject.transform.position = pos;
+
+            var agent = navMeshAgent;
+            if (agent)
+            {
+                agent.Warp(pos);
+            }
+        }
+    }
     internal void SetPosition(Vector3 position)
     {
         if (!navMeshAgent) navMeshAgent = GetComponent<NavMeshAgent>();

@@ -1,12 +1,11 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class BotPlayerController : MonoBehaviour
 {
-    public bool IsStuck;
-
     private GameManager gameManager;
     public PlayerController playerController;
     private bool initialized;
@@ -42,6 +41,22 @@ public class BotPlayerController : MonoBehaviour
             return;
         }
 
+        // if we are stuck, try and resolve the issue
+        if (playerController.IsStuck)
+        {
+#if UNITY_EDITOR
+            UnityEngine.Debug.LogError(playerController.Name + " is stuck. Trying to unstuck.");
+#endif
+            // make sure we only call this once every 5 seconds.
+            if (playerController.Unstuck(true, 5f))
+            {
+                playerController.Movement.AdjustPlayerPositionToNavmesh();
+                playerController.IsStuck = false;
+            }
+
+            return;
+        }
+
         if (gameManager.Raid.Started && gameManager.Raid.CanJoin(playerController) == RaidJoinResult.CanJoin)
         {
             joiningEvent = true;
@@ -58,7 +73,6 @@ public class BotPlayerController : MonoBehaviour
             }
         }
 
-
         // try identifying issues in game using the bot player controller
         // first off here we want to check if our currently trained skill can be trained properly.
         // if not, we have to log it and report so that I can fix it.
@@ -71,7 +85,7 @@ public class BotPlayerController : MonoBehaviour
         if (!playerController.Island)
         {
             UnityEngine.Debug.LogError(playerController.Name + " is not on an island! Please check scene view to see where this poor guy is.");
-            IsStuck = true;
+            playerController.IsStuck = true;
             // record position, target, island, any details here, record the amount of bots effected, include current task and target
             return;
         }
@@ -83,7 +97,7 @@ public class BotPlayerController : MonoBehaviour
             return;
         }
 
-        // TODO: if we have a task, and we area on an island that will let us gain exp
+        // TODO: if we have a task, and we are on an island that will let us gain exp
         // check if we gained any exp the past 30s, if not then report!
 
         if (playerController.ActiveSkill != RavenNest.Models.Skill.None)
@@ -107,14 +121,17 @@ public class BotPlayerController : MonoBehaviour
             if (distanceToTarget > 2) // distance to target needs to be based on actual target.
             {
                 UnityEngine.Debug.LogError(playerController.Name + ", island: " + playerController.Island.Identifier + ", has incomplete path: " + movement.PathStatus + ", current task: " + playerController.ActiveSkill);// + ", distance: " + distanceToTarget);
-                IsStuck = true;
+                playerController.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary.
                 return;
             }
         }
 
         // alright, we are on an island, lets check if we are stuck or not.
+        // of course, if we are resting this should be ignored.
         if (playerController.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
+            && playerController.ferryHandler.State != PlayerFerryState.Embarking
+            && !playerController.onsenHandler.InOnsen
             && movement.IdleTime >= ExpectedMaxIdleTime(playerController.ActiveSkill)
             && playerController.Target)
         {
@@ -130,11 +147,13 @@ public class BotPlayerController : MonoBehaviour
             if (!ignored)
             {
                 UnityEngine.Debug.LogError(playerController.Name + ", island: " + playerController.Island.Identifier + ", has been idling for much longer than expected for current task: " + playerController.ActiveSkill); //+ ", idleTime: " + movement.IdleTime);
-                IsStuck = true;
+                playerController.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary, but we can update amount of unique bots triggered out of bots using same skill.
                 return;
             }
         }
+
+        playerController.IsStuck = false;
         // after recording details, store it for later, let bots run wild for 5-10 minutes then teleport them to next island, and continue recording issues until all islands been tested.
         // then generate a report
     }

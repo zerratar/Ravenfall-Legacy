@@ -460,7 +460,7 @@ public class RaidManager : MonoBehaviour, IEvent
             {
                 var randomChunk = chunkManager
                     .GetChunks()
-                    .Where(x => x.Type != TaskType.Alchemy && x.Type != TaskType.Cooking && x.Type != TaskType.Crafting)
+                    .Where(x => x.Type != TaskType.Alchemy && x.Type != TaskType.Cooking && x.Type != TaskType.Crafting && x.Type != TaskType.Arena)
                     .OrderBy(x => UnityEngine.Random.value)
                     .FirstOrDefault();
 
@@ -480,6 +480,7 @@ public class RaidManager : MonoBehaviour, IEvent
             Boss = Instantiate(raidBossPrefab, spawnPosition, Quaternion.identity).GetComponent<RaidBossController>();
             //Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
             Boss.Create(difficulty.BossSkills, difficulty.BossEquipmentStats);
+                        
             Boss.UnlockMovement();
 
             timeoutTimer = Mathf.Min(maxTimeoutSeconds, Mathf.Max(minTimeoutSeconds, Boss.Enemy.Stats.CombatLevel * 0.8249123f));

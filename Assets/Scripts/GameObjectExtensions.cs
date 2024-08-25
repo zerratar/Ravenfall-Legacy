@@ -35,7 +35,7 @@ public static class GameObjectExtensions
         while (transform.parent != null)
         {
             transform = transform.parent;
-            path = transform.name + "/" + path;
+            path = transform.name + "[" + transform.GetSiblingIndex() + "]/" + path;
         }
         return path;
     }

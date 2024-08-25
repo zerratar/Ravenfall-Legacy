@@ -347,7 +347,7 @@ public class Overlay : MonoBehaviour
                     }
                 }
 
-                this.Players.Update();
+                //this.Players.Update();
             }
         }
 

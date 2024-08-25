@@ -276,7 +276,7 @@ public class RaidHandler : MonoBehaviour
             player.ferryHandler.AddPlayerToFerry(ferryState.Destination);
             ferryState.HasReturned = true;
         }
-        else if (ferryState.State == FerryHandler.PlayerFerryState.Embarking)
+        else if (ferryState.State == PlayerFerryState.Embarking)
         {
             // if we were embarking, make sure we do that again.
             player.ferryHandler.Embark(ferryState.Destination);

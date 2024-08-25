@@ -12,6 +12,8 @@ public class PathSelector : MonoBehaviour
     private bool isMoving = false;
     private bool isPlaying;
     private float elapsed = 0f;
+    private float pathLength;
+    private float originalDuration;
     private float duration = 0f;
     private Spline currentSpline;
     private float stopTimer = 0f;
@@ -69,8 +71,9 @@ public class PathSelector : MonoBehaviour
             adjustedSpeed += 1000;
         }
 #endif
-
-        duration = Mathf.Max(1f, (2f * length) / adjustedSpeed);
+        pathLength = length;
+        originalDuration = Mathf.Max(1f, (2f * length) / adjustedSpeed);
+        duration = originalDuration;
 
         elapsed = 0f;
         isMoving = true;

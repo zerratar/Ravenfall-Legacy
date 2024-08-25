@@ -1,4 +1,5 @@
-﻿namespace SqlParser.Ast
+﻿#nullable enable
+namespace SqlParser.Ast
 {
 
     /// <summary>
@@ -10,7 +11,7 @@
     /// <param name="Options">Column options</param>
     public class ColumnDef : IWriteSql, IElement
     {
-        public ColumnDef(Ident Name, DataType DataType, ObjectName? Collation = null, Sequence<ColumnOptionDef> Options = null)
+        public ColumnDef(Ident Name, DataType DataType, ObjectName? Collation = null, Sequence<ColumnOptionDef>? Options = null)
         {
             this.Name = Name;
             this.DataType = DataType;
@@ -20,8 +21,8 @@
 
         public Ident Name { get; }
         public DataType DataType { get; }
-        public ObjectName Collation { get; }
-        public Sequence<ColumnOptionDef> Options { get; }
+        public ObjectName? Collation { get; }
+        public Sequence<ColumnOptionDef>? Options { get; }
 
         public void ToSql(SqlTextWriter writer)
         {
@@ -59,14 +60,14 @@
     /// <param name="Option">Column Options</param>
     public class ColumnOptionDef : IWriteSql, IElement
     {
-        public ColumnOptionDef(ColumnOption Option, Ident Name = null)
+        public ColumnOptionDef(ColumnOption Option, Ident? Name = null)
         {
             this.Option = Option;
             this.Name = Name;
         }
 
         public ColumnOption Option { get; }
-        public Ident Name { get; }
+        public Ident? Name { get; }
 
         public void ToSql(SqlTextWriter writer)
         {

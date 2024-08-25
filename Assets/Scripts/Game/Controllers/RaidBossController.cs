@@ -73,7 +73,8 @@ public class RaidBossController : MonoBehaviour
 
     public void UnlockMovement()
     {
-        this.enemyController.Unlock();
+        enemyController.AdjustPlacement();
+        enemyController.Unlock(true);
     }
 
     private void AssignIsland()

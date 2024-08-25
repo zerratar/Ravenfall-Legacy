@@ -48,14 +48,15 @@ public class EnemyPool : ComponentPool<EnemyController>
     {
         // Reset enemy status, etc. Move it into the pool container if it isnt already and 
         // disable the component.
-        leasedEnemies.Remove(component);
+        component.gameObject.SetActive(false);
 
         component.Lock();
         component.ResetState();
 
         component.transform.SetParent(objectContainer);
         component.transform.localPosition = Vector3.zero;
-        component.gameObject.SetActive(false);
+
+        leasedEnemies.Remove(component);
 
         return component;
     }
@@ -95,8 +96,9 @@ public abstract class ComponentPool<T> : MonoBehaviour where T : MonoBehaviour
 
     private T CreateInstance()
     {
-
-        var obj = Instantiate(poolableObjects.Random(), objectContainer);
+        var targetObjectType = poolableObjects.Random();
+        var obj = Instantiate(targetObjectType, objectContainer);
+        obj.name = targetObjectType.name;
         var comp = obj.GetComponent<T>();
         if (!comp)
         {

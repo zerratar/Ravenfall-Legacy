@@ -20,8 +20,6 @@ using System.Text;
 using UnityEditor;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
-using System.Threading;
-using UnityEngine.UIElements;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
@@ -1908,7 +1906,7 @@ public class GameManager : MonoBehaviour, IGameManager
                     var bots = Players.GetAllBots();
                     foreach (var b in bots)
                     {
-                        if (b.Bot.IsStuck)
+                        if (b.IsStuck)
                             continue;
 
                         RemovePlayer(b, false);
@@ -2083,6 +2081,25 @@ public class GameManager : MonoBehaviour, IGameManager
                         Onsen.Join(bot);
                     }
                 }
+
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Auto Rest On"))
+                {
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    foreach (var bot in bots)
+                    {
+                        bot.onsenHandler.SetAutoRest(0, 5);
+                    }
+                }
+
+                if (GUI.Button(GetButtonRect(buttonIndex++), "Auto Rest Off"))
+                {
+                    var bots = AdminControlData.ControlPlayers ? this.playerManager.GetAllPlayers() : this.playerManager.GetAllBots();
+                    foreach (var bot in bots)
+                    {
+                        bot.onsenHandler.ClearAutoRest();
+                    }
+                }
+
 
                 if (GUI.Button(GetButtonRect(buttonIndex++), "<< Back"))
                 {

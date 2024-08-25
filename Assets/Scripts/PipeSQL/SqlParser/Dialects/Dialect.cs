@@ -1,3 +1,4 @@
+#nullable enable
 using SqlParser.Ast;
 
 namespace SqlParser.Dialects

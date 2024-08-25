@@ -1,4 +1,6 @@
 ﻿using RavenNest.Models;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 
@@ -38,6 +40,8 @@ public class CraftRequirement : ChatBotCommandHandler<string>
             return;
         }
 
+        // 
+        var i = item.Item;
         var recipe = Game.Items.GetItemRecipe(item.Item);
         if (recipe == null)
         {
@@ -49,7 +53,14 @@ public class CraftRequirement : ChatBotCommandHandler<string>
                 return;
             }
 
-            client.SendReply(gm, "{itemName} is not an item that can be created.", item.Item.Name);
+            if (EquipmentLevelRequirement(i) > 0)
+            {
+                client.SendReply(gm, "{itemName} requires {equipRequirements} to equip. This item cannot be created.", i.Name, GetEquipRequirements(i));
+            }
+            else
+            {
+                client.SendReply(gm, "{itemName} is not an item that can be created.", item.Item.Name);
+            }
             return;
         }
 
@@ -58,13 +69,56 @@ public class CraftRequirement : ChatBotCommandHandler<string>
         var skillname = recipe.RequiredSkill.ToString();
         var skilllevel = recipe.RequiredLevel.ToString();
 
-        client.SendReply(gm, "{name} requires level {level} {skillname} and {requirements}", name, skilllevel, skillname, GetRecipeIngredientsString(player.Inventory, recipe));
+
+        // check if its an equipable. if so, then we want to include it in the string.
+        if (EquipmentLevelRequirement(i) > 0)
+        {
+            client.SendReply(gm, "{name} requires level {level} {skillname} create and {requirements}. To equip this item you require {equipRequirements}", name, skilllevel, skillname,
+                GetRecipeIngredientsString(player.Inventory, recipe), GetEquipRequirements(i));
+        }
+        else
+        {
+            client.SendReply(gm, "{name} requires level {level} {skillname} and {requirements}", name, skilllevel, skillname, GetRecipeIngredientsString(player.Inventory, recipe));
+        }
+    }
+
+    private int EquipmentLevelRequirement(Item item)
+    {
+        return item.RequiredAttackLevel + item.RequiredSlayerLevel + item.RequiredDefenseLevel
+            + item.RequiredAttackLevel + item.RequiredRangedLevel
+            + item.RequiredMagicLevel;
     }
 
     private string GetSuitableName(ItemRecipe recipe, Item item)
     {
         if (string.IsNullOrEmpty(recipe.Name)) return item.Name;
         return recipe.Name;
+    }
+
+    private string GetEquipRequirements(Item item)
+    {
+        var requirements = new List<string>();
+        if (item.RequiredAttackLevel > 0)
+        {
+            requirements.Add("Level " + item.RequiredAttackLevel + " Attack");
+        }
+        if (item.RequiredDefenseLevel > 0)
+        {
+            requirements.Add("Level " + item.RequiredDefenseLevel + " Defense");
+        }
+        if (item.RequiredRangedLevel > 0)
+        {
+            requirements.Add("Level " + item.RequiredRangedLevel + " Ranged");
+        }
+        if (item.RequiredMagicLevel > 0)
+        {
+            requirements.Add("Level " + item.RequiredMagicLevel + " Magic or Healing");
+        }
+        if (item.RequiredSlayerLevel > 0)
+        {
+            requirements.Add("Level " + item.RequiredSlayerLevel + " Slayer");
+        }
+        return string.Join(", ", requirements);
     }
 
     private string GetRecipeIngredientsString(Inventory inventory, ItemRecipe recipe)

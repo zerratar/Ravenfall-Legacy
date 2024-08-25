@@ -35,13 +35,21 @@ public class OnsenHandler : MonoBehaviour
         if (player.Rested.AutoRestTarget.HasValue &&
             player.Rested.AutoRestStart.HasValue &&
             player.Rested.AutoRestTarget.Value > 0 &&
-            !player.dungeonHandler.InDungeon && !player.raidHandler.InRaid &&
-            !player.duelHandler.InDuel && !player.arenaHandler.InArena && !player.streamRaidHandler.InWar)
+            // player cannot be on or waiting for the ferry, in dungeon, in raid, duel or arena
+            !player.ferryHandler.OnFerry &&
+            player.ferryHandler.State != PlayerFerryState.Embarking &&
+            !player.dungeonHandler.InDungeon && 
+            !player.raidHandler.InRaid &&
+            !player.duelHandler.InDuel && 
+            !player.arenaHandler.InArena && 
+            !player.streamRaidHandler.InWar)
         {
             var autoRestTarget = player.Rested.AutoRestTarget.Value;
             var autoRestStart = player.Rested.AutoRestStart.Value;
             var restedMinutes = player.Rested.RestedTime / 60;
-            if (restedMinutes <= player.Rested.AutoRestStart && !InOnsen && player.GameManager.Onsen.RestingAreaAvailable(player.Island))
+            if (restedMinutes <= player.Rested.AutoRestStart 
+                && !InOnsen // if we are not already resting
+                && player.GameManager.Onsen.RestingAreaAvailable(player.Island))
             {
                 player.GameManager.Onsen.Join(player);
                 return;
@@ -55,8 +63,6 @@ public class OnsenHandler : MonoBehaviour
 
         if (!InOnsen)
         {
-
-
             if (rested.RestedTime > 0)
             {
                 rested.RestedTime -= GameTime.deltaTime * RestedDrainFactor;
@@ -64,7 +70,7 @@ public class OnsenHandler : MonoBehaviour
             return;
         }
 
-        if (!this.transform.parent || activeOnsen == null || player.InCombat)
+        if (!this.transform.parent || activeOnsen == null)
         {
             this.InOnsen = false;
             return;
@@ -86,6 +92,7 @@ public class OnsenHandler : MonoBehaviour
         {
             // force player position
             player.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            player.ClearTarget();
         }
     }
 
@@ -108,12 +115,13 @@ public class OnsenHandler : MonoBehaviour
 
         player.InCombat = false;
         player.ClearAttackers();
+        player.ClearTarget();
+
         player.Island = player.GameManager.Islands.FindPlayerIsland(player);
         if (player.Island)
         {
             player.Island.AddPlayer(player);
         }
-
         // used for determing which animation to use
         this.positionType = spot.Type;
         this.activeOnsen = onsen;

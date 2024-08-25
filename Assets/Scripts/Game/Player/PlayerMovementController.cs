@@ -33,6 +33,8 @@ public class PlayerMovementController : MonoBehaviour
     private float last_angularSpeed;
     private Transform internalTransform;
     private bool hasInternalTransform;
+    private int navmeshErrorCount;
+
     //private NavigationAgent navAgentState;
 
     public enum MovementLockState
@@ -144,8 +146,8 @@ public class PlayerMovementController : MonoBehaviour
 
         Unlock(adjustToNavMesh);
 
-        if (!navMeshAgent.isActiveAndEnabled 
-                // || !navMeshAgent.isOnNavMesh
+        if (!navMeshAgent.isActiveAndEnabled
+            // || !navMeshAgent.isOnNavMesh
             )
         {
             return true;
@@ -154,18 +156,43 @@ public class PlayerMovementController : MonoBehaviour
         if (CurrentPath == null)
             CurrentPath = new NavMeshPath();
 
-        Destination = pos;
         HasIncompletePath = false;
 
-        navMeshAgent.CalculatePath(pos, CurrentPath);
-
-        if (CurrentPath.status != NavMeshPathStatus.PathComplete)
+        if (navMeshAgent.isOnNavMesh && navMeshAgent.CalculatePath(pos, CurrentPath))
         {
-            this.HasIncompletePath = true;
+            navmeshErrorCount = 0;
+            Destination = pos;
+
+            if (CurrentPath.status != NavMeshPathStatus.PathComplete)
+            {
+                this.HasIncompletePath = true;
+            }
+
+            navMeshAgent.SetPath(CurrentPath);
+        }
+        else
+        {
+            navMeshAgent.enabled = false;
+            navMeshAgent.enabled = true;
+
+            if (!navMeshAgent.isOnNavMesh)
+            {
+                navmeshErrorCount++;
+#if UNITY_EDITOR
+                if (navmeshErrorCount > 5)
+                {
+                    Shinobytes.Debug.LogError("Player '" + this.name + "' is not on a navmesh, cannot calculate path to destination: " + pos);
+                }
+#endif
+                if (navmeshErrorCount >= 5)
+                {
+                    AdjustPlayerPositionToNavmesh();
+                    navmeshErrorCount = 0;
+                }
+            }
         }
 
         this.PathStatus = CurrentPath.status;
-        navMeshAgent.SetPath(CurrentPath);
 
         return !HasIncompletePath;
     }

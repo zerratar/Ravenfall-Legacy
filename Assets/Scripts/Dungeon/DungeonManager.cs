@@ -3,7 +3,6 @@ using Shinobytes.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,7 +47,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     public float SecondsUntilStart => dungeonStartTimer;
     public float SecondsUntilNext => nextDungeonTimer;
     public DungeonNotifications Notifications => dungeonNotifications;
-    public bool Active => state >= DungeonManagerState.Active;
+    public bool Active => state == DungeonManagerState.Active || state == DungeonManagerState.Started;
     public bool Started => state == DungeonManagerState.Started;
     public DungeonController Dungeon => currentDungeon;
     public bool IsBusy { get; internal set; }
@@ -786,15 +785,14 @@ public class DungeonManager : MonoBehaviour, IEvent
 
             currentDungeon.gameObject.SetActive(false);
 
-            currentDungeon = null;
-
             notificationTimer = notificationUpdate;
             dungeonStartTimer = timeForDungeonStart;
 
             gameManager.Camera.DisableDungeonCamera();
 
-            Boss = null;
+            currentDungeon = null;
 
+            Boss = null;
         }
         catch (Exception exc)
         {
@@ -959,6 +957,8 @@ public class DungeonManager : MonoBehaviour, IEvent
             return;
         }
 
+        dungeonEnemyPool.ReturnAll();
+
         foreach (var room in currentDungeon.Rooms)
         {
             if (room.gameObject.activeInHierarchy)
@@ -970,8 +970,6 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void SpawnEnemiesInRoom(DungeonRoomController room)
     {
-        room.ReloadEnemies();
-
         foreach (var point in room.GetComponentsInChildren<EnemySpawnPoint>())
         {
             var enemy = this.dungeonEnemyPool.Get();

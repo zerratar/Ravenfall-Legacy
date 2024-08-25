@@ -1,4 +1,6 @@
-﻿using SqlParser.Ast;
+﻿#nullable enable
+
+using SqlParser.Ast;
 using System;
 using System.Collections.Generic;
 using System.Linq;

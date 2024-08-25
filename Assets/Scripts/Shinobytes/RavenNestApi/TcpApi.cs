@@ -253,7 +253,6 @@ namespace RavenNest.SDK
                 var manager = gameManager.Dungeons;
                 var d = gameStateRequest.Dungeon = new DungeonState();
 
-
                 if (manager.SecondsUntilStart >= 0)
                 {
                     d.NextDungeon = now.AddSeconds(manager.SecondsUntilStart);
@@ -263,24 +262,33 @@ namespace RavenNest.SDK
                     d.NextDungeon = now;
                 }
 
-                if (gameManager.Dungeons.Active)
+                if (manager.Active)
                 {
                     var dungeon = manager.Dungeon;
-                    d.IsActive = true;
-                    d.Name = dungeon.Name;
-                    d.HasStarted = manager.Started;
-                    d.StartTime = now.AddSeconds(manager.SecondsUntilStart);
-
-                    d.PlayersAlive = manager.GetAlivePlayerCount();
-                    d.PlayersJoined = d.PlayersAlive + manager.GetDeadPlayerCount();
-                    d.EnemiesLeft = manager.GetAliveEnemies().Count;
-                    var boss = manager.Boss;
-                    if (boss)
+                    if (dungeon != null)
                     {
-                        var health = boss.Enemy.Stats.Health;
-                        d.CurrentBossHealth = health.CurrentValue;
-                        d.MaxBossHealth = health.Level;
-                        d.BossCombatLevel = boss.Enemy.Stats.CombatLevel;
+                        d.IsActive = true;
+                        d.Name = dungeon.Name;
+                        d.HasStarted = manager.Started;
+                        d.StartTime = now.AddSeconds(manager.SecondsUntilStart);
+
+                        d.PlayersAlive = manager.GetAlivePlayerCount();
+                        d.PlayersJoined = d.PlayersAlive + manager.GetDeadPlayerCount();
+                        d.EnemiesLeft = manager.GetAliveEnemies().Count;
+                        var boss = manager.Boss;
+                        if (boss)
+                        {
+                            var health = boss.Enemy.Stats.Health;
+                            d.CurrentBossHealth = health.CurrentValue;
+                            d.MaxBossHealth = health.Level;
+                            d.BossCombatLevel = boss.Enemy.Stats.CombatLevel;
+                        }
+                    }
+                    else
+                    {
+#if UNITY_EDITOR
+                        Shinobytes.Debug.LogError("(Only logged in Editor) Potential bug: Dungeon is active but dungeon is null.");
+#endif
                     }
                 }
 

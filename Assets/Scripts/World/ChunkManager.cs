@@ -148,7 +148,7 @@ public class ChunkManager : MonoBehaviour
                 {
                     return false;
                 }
-                if (type == TaskType.Fighting && x.RequiredSkilllevel > 1)
+                if (type == TaskType.Fighting && x.RequiredSkilllevel >= 1)
                 {
                     if (playerRef.TrainingAll)
                     {

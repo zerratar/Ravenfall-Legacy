@@ -155,7 +155,7 @@ public class Chunk : MonoBehaviour
             else
             {
                 skill = player.GetSkill(taskType);
-                if (skill != null && RequiredSkilllevel > 1 && (skill.Level < minLv || skill.Level > maxLv))
+                if (skill != null && RequiredSkilllevel >= 1 && (skill.Level < minLv || skill.Level > maxLv))
                 {
                     if (skill.Level < minLv)
                         state = ExpGainState.LevelTooLow;

@@ -273,7 +273,7 @@ public class DungeonHandler
             this.player.SetTask(previousTask, previousTaskArgument, true);
         }
 
-        if (Ferry.State == FerryHandler.PlayerFerryState.Embarking)
+        if (Ferry.State == PlayerFerryState.Embarking)
         {
             // if we were embarking, make sure we do that again.
             player.ferryHandler.Embark(Ferry.Destination);
@@ -443,6 +443,6 @@ public struct FerryContext
     public bool OnFerry;
     public bool HasDestination;
     public bool HasReturned;
-    public FerryHandler.PlayerFerryState State;
+    public PlayerFerryState State;
     public IslandController Destination;
 }
