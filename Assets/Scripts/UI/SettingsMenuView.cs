@@ -72,6 +72,12 @@ public class SettingsMenuView : MenuView
     [SerializeField] private Toggle disableRaidsToggle;
     [SerializeField] private Toggle disableDungeonsToggle;
 
+    [Header("Admin Settings")]
+    [SerializeField] private GameObject adminButton;
+    [SerializeField] private GameObject admin;
+    [SerializeField] private Toggle debugControlsEnabled = null;
+
+
     public static readonly TimeSpan[] PlayerCacheExpiry = new TimeSpan[]
     {
         TimeSpan.Zero,          // [0]
@@ -111,7 +117,7 @@ public class SettingsMenuView : MenuView
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
         UpdateSettingsUI();
-        ShowSoundSettings();
+        ShowGameSettings();
     }
 
     public void UpdateSettingsUI()
@@ -124,6 +130,7 @@ public class SettingsMenuView : MenuView
         realtimeDayNightCycle.isOn = settings.RealTimeDayNightCycle.GetValueOrDefault(gameManager.RealtimeDayNightCycle);
         playerListSizeSlider.value = settings.PlayerListSize.GetValueOrDefault(gameManager.PlayerList.Bottom);
         playerListScaleSlider.value = settings.PlayerListScale.GetValueOrDefault(gameManager.PlayerList.Scale);
+
         dpiSlider.value = settings.DPIScale.GetValueOrDefault(1f);
 
         viewDistanceSlider.value = settings.ViewDistance.GetValueOrDefault(0.5f);
@@ -143,6 +150,7 @@ public class SettingsMenuView : MenuView
         streamLabelsEnabled.isOn = settings.StreamLabels.Enabled;
 
         autoAssignVacantHousesEnabled.isOn = settings.AutoAssignVacantHouses.GetValueOrDefault(true);
+        debugControlsEnabled.isOn = gameManager.isDebugMenuVisible;
 
         playerNameToggle.isOn = settings.PlayerNamesVisible.GetValueOrDefault(gameManager.PlayerNamesVisible);
         itemDropMessageDropdown.value = settings.ItemDropMessageType.GetValueOrDefault((int)gameManager.ItemDropMessageSettings);
@@ -151,7 +159,15 @@ public class SettingsMenuView : MenuView
         dayNightTime.value = settings.DayNightTime.GetValueOrDefault(0.5f);
 
         SetViewDistance(viewDistanceSlider.value);
-        SetResolutionScale(dpiSlider.value);
+
+        if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D12)
+        {
+            SetResolutionScale(dpiSlider.value);
+        }
+        else
+        {
+            dpiSlider.transform.parent.gameObject.SetActive(false);
+        }
         ShowItemDropExample();
         UpdateCameraRotationLabelText();
     }
@@ -239,6 +255,8 @@ public class SettingsMenuView : MenuView
         settings.CameraRotationSpeed = observerCameraRotationSlider.value * -1;
         settings.PlayerNamesVisible = playerNameToggle.isOn;
         settings.ViewDistance = viewDistanceSlider.value;
+
+        gameManager.isDebugMenuVisible = debugControlsEnabled.isOn;
         PlayerSettings.Save();
     }
 
@@ -253,6 +271,7 @@ public class SettingsMenuView : MenuView
         graphics.gameObject.SetActive(false);
         sounds.gameObject.SetActive(true);
         game.gameObject.SetActive(false);
+        admin.gameObject.SetActive(false);
     }
     public void ShowGraphicsSettings()
     {
@@ -260,6 +279,7 @@ public class SettingsMenuView : MenuView
         graphics.gameObject.SetActive(true);
         sounds.gameObject.SetActive(false);
         game.gameObject.SetActive(false);
+        admin.gameObject.SetActive(false);
     }
     public void ShowGameSettings()
     {
@@ -267,6 +287,7 @@ public class SettingsMenuView : MenuView
         graphics.gameObject.SetActive(false);
         sounds.gameObject.SetActive(false);
         game.gameObject.SetActive(true);
+        admin.gameObject.SetActive(false);
     }
     public void ShowUISettings()
     {
@@ -274,6 +295,16 @@ public class SettingsMenuView : MenuView
         graphics.gameObject.SetActive(false);
         sounds.gameObject.SetActive(false);
         game.gameObject.SetActive(false);
+        admin.gameObject.SetActive(false);
+    }
+
+    public void ShowAdminSettings()
+    {
+        ui.gameObject.SetActive(false);
+        graphics.gameObject.SetActive(false);
+        sounds.gameObject.SetActive(false);
+        game.gameObject.SetActive(false);
+        admin.gameObject.SetActive(true);
     }
     public void OnPotatoModeChanged()
     {
@@ -390,6 +421,9 @@ public class SettingsMenuView : MenuView
 
     public static void SetResolutionScale(float factor)
     {
+        if (SystemInfo.graphicsDeviceType != UnityEngine.Rendering.GraphicsDeviceType.Direct3D12)
+            return;
+
         factor = Mathf.Clamp(factor, 0.05f, 1f);
         QualitySettings.resolutionScalingFixedDPIFactor = factor;
         ScalableBufferManager.ResizeBuffers(factor, factor);
@@ -397,7 +431,20 @@ public class SettingsMenuView : MenuView
 
     private void OnEnable()
     {
+        if (!gameManager)
+        {
+            adminButton.SetActive(false);
+            return;
+        }
 
+        if (gameManager.SessionSettings != null && gameManager.SessionSettings.IsAdministrator)
+        {
+            adminButton.SetActive(true);
+        }
+        else
+        {
+            adminButton.SetActive(false);
+        }
     }
 
     private void OnDisable()

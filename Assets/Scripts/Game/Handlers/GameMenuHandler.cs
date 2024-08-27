@@ -27,10 +27,7 @@ public class GameMenuHandler : MonoBehaviour
 
         signOutButton.gameObject.SetActive(false);
 
-        if (lblVersion)
-        {
-            lblVersion.text = "v" + Ravenfall.Version;//Application.version;
-        }
+        UpdateDetailsLabel();
 
         if (!loginScreen) loginScreen = FindAnyObjectByType<LoginHandler>();
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
@@ -38,6 +35,21 @@ public class GameMenuHandler : MonoBehaviour
         settingsView.Hide(false);
 
         Hide();
+    }
+
+    private void UpdateDetailsLabel()
+    {
+        if (lblVersion)
+        {
+
+            lblVersion.text =
+                "Game Version\t<b>" + Ravenfall.Version + "</b>\n" +
+                "Graphics API\t<b>" + SystemInfo.graphicsDeviceType + "</b>\n" +
+                "Graphics Memory\t<b>" + SystemInfo.graphicsMemorySize + "MB</b>\n" +
+                "System Memory\t<b>" + SystemInfo.systemMemorySize + "MB</b>\n" +
+                "Operating System\t<b>" + SystemInfo.operatingSystem + "</b>\n" +
+                "Uptime\t\t<b>" + Utility.FormatTime(TimeSpan.FromSeconds(Time.time)) + "</b>";
+        }
     }
 
     public void ResetUIPositions()
@@ -63,6 +75,8 @@ public class GameMenuHandler : MonoBehaviour
         //{
         //    ShowMenu();
         //}
+
+        UpdateDetailsLabel();
 
         if (Input.GetKeyUp(KeyCode.Escape))
         {

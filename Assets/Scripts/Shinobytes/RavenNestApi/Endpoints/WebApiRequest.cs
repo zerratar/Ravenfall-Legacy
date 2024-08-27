@@ -39,22 +39,22 @@ namespace RavenNest.SDK.Endpoints
             this.sessionToken = sessionToken;
         }
 
-        public Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, bool throwOnError = false, bool excludeRequestParametersOnError = false)
+        public Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, bool throwOnError = false)
         {
-            return SendAsync<TResult, object>(reqTarget, type, null, throwOnError, excludeRequestParametersOnError);
+            return SendAsync<TResult, object>(reqTarget, type, null, throwOnError);
         }
 
-        public Task SendAsync(ApiRequestTarget target, ApiRequestType type, bool throwOnError = false, bool excludeRequestParametersOnError = false)
+        public Task SendAsync(ApiRequestTarget target, ApiRequestType type, bool throwOnError = false)
         {
-            return SendAsync<object>(target, type, throwOnError, excludeRequestParametersOnError);
+            return SendAsync<object>(target, type, throwOnError);
         }
 
-        public Task<TResult> SendAsync<TResult, TModel>(ApiRequestTarget reqTarget, ApiRequestType type, TModel model, bool throwOnError = false, bool excludeRequestParametersOnError = false)
+        public Task<TResult> SendAsync<TResult, TModel>(ApiRequestTarget reqTarget, ApiRequestType type, TModel model, bool throwOnError = false)
         {
-            return SendAsync<TResult>(reqTarget, type, model, throwOnError, excludeRequestParametersOnError);
+            return SendAsync<TResult>(reqTarget, type, model, throwOnError);
         }
 
-        public async Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, object model, bool throwOnError = false, bool excludeRequestParametersOnError = false)
+        public async Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, object model, bool throwOnError = false)
         {
             if (IntegrityCheck.IsCompromised)
             {
@@ -157,7 +157,7 @@ namespace RavenNest.SDK.Endpoints
                 if (throwOnError) throw;
                 try
                 {
-                    Shinobytes.Debug.LogError("WebApiRequest.SendAsync: " + type.ToString().ToUpper() + " " + GetTargetUrl(reqTarget, excludeRequestParametersOnError) + " - " + exc.Message); //+ " - " + responseData);
+                    Shinobytes.Debug.LogError("WebApiRequest.SendAsync: " + type.ToString().ToUpper() + " " + GetTargetUrl(reqTarget) + " - " + exc.Message); //+ " - " + responseData);
                 }
                 catch { }
                 return default(TResult);
@@ -175,7 +175,7 @@ namespace RavenNest.SDK.Endpoints
             }
         }
 
-        private string GetTargetUrl(ApiRequestTarget reqTarget, bool excludeParameterValues = false)
+        private string GetTargetUrl(ApiRequestTarget reqTarget)
         {
             var url = reqTarget == ApiRequestTarget.Auth ? settings.WebApiAuthEndpoint : settings.WebApiEndpoint;
             if (!url.EndsWith("/")) url += "/";
@@ -184,25 +184,27 @@ namespace RavenNest.SDK.Endpoints
             if (!string.IsNullOrEmpty(method)) url += $"{method}/";
             if (parameters == null) return url;
 
-#if DEBUG
             var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => x.Value));
             if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
             return url;
-#else
-            if (excludeParameterValues)
-            {
-                var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => "hidden-value"));
-                if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
-            }
-            else
-            {
-                var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => x.Value));
-                if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
-            }
-            return url;
-#endif
 
-
+            //#if DEBUG
+            //            var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => x.Value));
+            //            if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
+            //            return url;
+            //#else
+            //            if (excludeParameterValues)
+            //            {
+            //                var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => "hidden-value"));
+            //                if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
+            //            }
+            //            else
+            //            {
+            //                var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => x.Value));
+            //                if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
+            //            }
+            //            return url;
+            //#endif
         }
     }
 

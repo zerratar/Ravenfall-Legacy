@@ -1,5 +1,5 @@
 ﻿using RavenNest.Models;
-using System.Threading;
+
 public class DungeonForce : ChatBotCommandHandler
 {
     public DungeonForce(
@@ -57,6 +57,12 @@ public class DungeonForce : ChatBotCommandHandler
                 if (Game.Events.IsActive)
                 {
                     client.SendReply(gm, "Dungeon cannot be started right now. Please try again later");
+                    return;
+                }
+
+                if (Game.Events.IsEventCooldownActive)
+                {
+                    client.SendReply(gm, "Dungeon cannot be started so quickly after eachother. Please wait {seconds} seconds.", UnityEngine.Mathf.RoundToInt(Game.Events.EventCooldownTimeLeft));
                     return;
                 }
 

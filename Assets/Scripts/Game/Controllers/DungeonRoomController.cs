@@ -26,6 +26,11 @@ public class DungeonRoomController : MonoBehaviour
     private DungeonGateController gate;
     private EnemyController[] enemies;
 
+    private float stuckCheckTime;
+    private int stuckCheckAliveCount;
+    private int stuckCheckAlivePlayerCount;
+    private long stuckCheckEnemyHealth;
+
     public DungeonBossController Boss { get; set; }
     public bool InProgress => state == DungeonRoomState.InProgress;
     public bool IsCompleted => state == DungeonRoomState.Completed;
@@ -108,6 +113,65 @@ public class DungeonRoomController : MonoBehaviour
             if (enemies.All(x => x.Stats.IsDead || x.IsUnreachable))
             {
                 dungeon.NextRoom();
+            }
+            else
+            {
+                var aliveEnemyCount = 0;
+                var totalEnemyHealth = 0L;
+                foreach (var e in enemies)
+                {
+                    if (e.Stats.IsDead)
+                    {
+                        continue;
+                    }
+                    aliveEnemyCount++;
+                    totalEnemyHealth += e.Stats.Health.CurrentValue;
+                }
+
+                var alivePlayerCount = dungeon.DungeonManager.GetAlivePlayerCount();
+                var ignore = false;
+                // if the alive player count is the same, check if those players are training healing or not
+                if (alivePlayerCount == stuckCheckAlivePlayerCount)
+                {
+                    var healCount = 0;
+                    foreach (var plr in dungeon.DungeonManager.GetAlivePlayers())
+                    {
+                        if (plr.TrainingHealing)
+                        {
+                            healCount++;
+                        }
+                    }
+
+                    ignore = healCount == alivePlayerCount;
+                }
+
+                if (ignore || (stuckCheckAliveCount != aliveEnemyCount || stuckCheckEnemyHealth != totalEnemyHealth) || stuckCheckAlivePlayerCount != alivePlayerCount)
+                {
+                    stuckCheckTime = GameTime.time;
+                    stuckCheckAliveCount = aliveEnemyCount;
+                    stuckCheckAlivePlayerCount = alivePlayerCount;
+                    stuckCheckEnemyHealth = totalEnemyHealth;
+                }
+                else if (GameTime.time - stuckCheckTime > 30f)
+                {
+                    // forcibly kill all enemies.
+                    Shinobytes.Debug.LogWarning("Dungeon room " + name + " is stuck. Forcibly killing all enemies to proceed to the next room.");
+
+                    var players = dungeon.DungeonManager.GetPlayers();
+                    foreach (var enemy in Enemies)
+                    {
+                        var randomPlayer = players.Random();
+                        if (!enemy.Stats.IsDead)
+                        {
+                            enemy.TakeDamage(randomPlayer, enemy.Stats.Health.MaxLevel);
+                        }
+                    }
+
+                    foreach (var player in players)
+                    {
+                        player.ClearTarget();
+                    }
+                }
             }
         }
 

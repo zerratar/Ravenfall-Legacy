@@ -99,7 +99,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<RaidAuto>("raid_auto");
         Connection.Register<DungeonAuto>("dungeon_auto");
 
-        Connection.Register<RaidGetCombatStyle>("dungeon_skill_get");
+        Connection.Register<RaidGetCombatStyle>("raid_skill_get");
         Connection.Register<DungeonGetCombatStyle>("dungeon_skill_get");
         Connection.Register<DungeonCombatStyleClear>("dungeon_skill_clear");
         Connection.Register<DungeonCombatStyleSet>("dungeon_skill");
@@ -108,8 +108,15 @@ public class RavenBot : System.IDisposable
 
         Connection.Register<DungeonJoin>("dungeon_join");
         Connection.Register<DungeonForce>("dungeon_force");
+
+        Connection.Register<DungeonProceed>("dungeon_proceed");
+        Connection.Register<DungeonKillBoss>("dungeon_kill_boss");
+
         Connection.Register<DungeonStop>("dungeon_stop");
         Connection.Register<DungeonStart>("dungeon_start");
+        
+        Connection.Register<RaidKillBoss>("raid_kill_boss");
+
         Connection.Register<RaidStreamer>("raid_streamer");
         Connection.Register<RaidStop>("raid_stop");
 

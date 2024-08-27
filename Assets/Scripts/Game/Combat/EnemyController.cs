@@ -363,6 +363,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
 
     public void Poll()
     {
+        FreezeChecker.SetCurrentScriptUpdate(this);
         if (GameCache.IsAwaitingGameRestore)
         {
             return;

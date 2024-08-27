@@ -58,7 +58,7 @@ namespace Assets.Scripts
                     {
                         if (player.IsBot)
                         {
-                            Shinobytes.Debug.LogWarning(player.Name + " is a bot and was not added to player state cache.");
+                            //Shinobytes.Debug.LogWarning(player.Name + " is a bot and was not added to player state cache.");
                             continue;
                         }
 

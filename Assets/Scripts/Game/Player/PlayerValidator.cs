@@ -40,7 +40,7 @@ public class PlayerValidator
         if (player.IsStuck)
         {
 #if UNITY_EDITOR
-            UnityEngine.Debug.LogError(player.Name + " is stuck. Trying to unstuck.");
+            Shinobytes.Debug.LogWarning(player.Name + " is stuck. Trying to unstuck.");
 #endif
             // make sure we only call this once every 5 seconds.
             if (player.Unstuck(true, 5f))
@@ -55,7 +55,7 @@ public class PlayerValidator
         if (!player.Island)
         {
 #if UNITY_EDITOR
-            UnityEngine.Debug.LogError(player.Name + " is not on an island! Please check scene view to see where this poor guy is.");
+            Shinobytes.Debug.LogWarning(player.Name + " is not on an island! Please check scene view to see where this poor guy is.");
 #endif
             player.IsStuck = true;
             // record position, target, island, any details here, record the amount of bots effected, include current task and target
@@ -95,7 +95,7 @@ public class PlayerValidator
             if (distanceToTarget > 2) // distance to target needs to be based on actual target.
             {
 #if UNITY_EDITOR
-                UnityEngine.Debug.LogError(player.Name + ", island: " + player.Island.Identifier + ", has incomplete path: " +
+                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has incomplete path: " +
                     movement.PathStatus + ", current task: " + player.ActiveSkill);// + ", distance: " + distanceToTarget);
 #endif
                 player.IsStuck = true;
@@ -110,10 +110,9 @@ public class PlayerValidator
         if (player.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
             && !player.onsenHandler.InOnsen // we will stand still if we are in the onsen :)
             && player.ferryHandler.State != PlayerFerryState.Embarking // if we are embarking the ferry we will be standing still.
-            && movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill)
+            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 15 && (GameTime.time - player.LastExecutedTaskTime) >= 15))
             && player.Target)
         {
-
             // if we are training Ranged or Magic, we could potentially be standing for a long time
             // so we also have to check "last activation" time of either magic or ranged skill
             var ignored = false;
@@ -125,7 +124,7 @@ public class PlayerValidator
             if (!ignored)
             {
 #if UNITY_EDITOR
-                UnityEngine.Debug.LogError(player.Name + ", island: " + player.Island.Identifier + ", has been idling for much longer than expected for current task: " + player.ActiveSkill); //+ ", idleTime: " + movement.IdleTime);
+                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has been idling for much longer than expected for current task: " + player.ActiveSkill); //+ ", idleTime: " + movement.IdleTime);
 #endif
                 player.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary, but we can update amount of unique bots triggered out of bots using same skill.

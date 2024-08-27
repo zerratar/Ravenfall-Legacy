@@ -209,6 +209,17 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot?.Announce(Localization.MSG_RAID_START_ERROR);
         }
+        else
+        {
+            if (gameManager.Events.IsEventCooldownActive)
+            {
+                Shinobytes.Debug.LogWarning("Raid could not be started. There is an active cooldown. " + gameManager.Events.EventCooldownTimeLeft + " seconds left.");
+            }
+            else
+            {
+                Shinobytes.Debug.LogWarning("Raid could not be started.");
+            }
+        }
 
         nextRaidTimer = gameManager.Events.RescheduleTime;
         return false;
@@ -480,7 +491,7 @@ public class RaidManager : MonoBehaviour, IEvent
             Boss = Instantiate(raidBossPrefab, spawnPosition, Quaternion.identity).GetComponent<RaidBossController>();
             //Boss.Create(lowestStats, highestStats, rngLowEq, rngHighEq);
             Boss.Create(difficulty.BossSkills, difficulty.BossEquipmentStats);
-                        
+
             Boss.UnlockMovement();
 
             timeoutTimer = Mathf.Min(maxTimeoutSeconds, Mathf.Max(minTimeoutSeconds, Boss.Enemy.Stats.CombatLevel * 0.8249123f));

@@ -36,6 +36,9 @@ public class DuelCameraScript : MonoBehaviour
         {
             focusCam.UsePosition = true;
         }
+
+        image.gameObject.SetActive(false);
+        this.gameObject.SetActive(false);
     }
 
     void Update()
@@ -44,8 +47,9 @@ public class DuelCameraScript : MonoBehaviour
         {
             focusCam.enabled = false;
             renderCamera.enabled = false;
-            if (image)
+            if (image && image.gameObject.activeInHierarchy)
             {
+                image.gameObject.SetActive(false);
                 image.enabled = false;
             }
             this.gameObject.SetActive(false);
@@ -76,6 +80,11 @@ public class DuelCameraScript : MonoBehaviour
         if (image)
         {
             image.enabled = true;
+
+            if (!image.gameObject.activeInHierarchy)
+            {
+                image.gameObject.SetActive(true);
+            }
         }
 
 

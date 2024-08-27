@@ -24,6 +24,8 @@
                 return;
             }
 
+            Shinobytes.Debug.LogWarning("Dungeon '" + Game.Dungeons.Dungeon.Name + "' was forcibly stopped. (by " + user.DisplayName + ")");
+
             Game.Dungeons.EndDungeonFailed(false);
             client.SendReply(gm, "Dungeon has been forcibly stopped.");
         }

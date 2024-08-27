@@ -98,7 +98,7 @@ namespace RavenNest.SDK
         {
             var items = new List<InventoryItem>();
 
-#if UNITY_EDITOR && DEBUG
+//#if UNITY_EDITOR && DEBUG
             if (!gameManager)
             {
                 gameManager = UnityEngine.GameObject.FindAnyObjectByType<GameManager>();
@@ -115,7 +115,7 @@ namespace RavenNest.SDK
                     Amount = 1,
                 });
             }
-#endif
+//#endif
 
             return items;
         }

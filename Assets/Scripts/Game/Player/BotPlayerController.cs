@@ -44,9 +44,7 @@ public class BotPlayerController : MonoBehaviour
         // if we are stuck, try and resolve the issue
         if (playerController.IsStuck)
         {
-#if UNITY_EDITOR
-            UnityEngine.Debug.LogError(playerController.Name + " is stuck. Trying to unstuck.");
-#endif
+            Shinobytes.Debug.LogWarning(playerController.Name + " is stuck. Trying to unstuck.");
             // make sure we only call this once every 5 seconds.
             if (playerController.Unstuck(true, 5f))
             {
@@ -84,7 +82,7 @@ public class BotPlayerController : MonoBehaviour
 
         if (!playerController.Island)
         {
-            UnityEngine.Debug.LogError(playerController.Name + " is not on an island! Please check scene view to see where this poor guy is.");
+            Shinobytes.Debug.LogWarning(playerController.Name + " is not on an island! Please check scene view to see where this poor guy is.");
             playerController.IsStuck = true;
             // record position, target, island, any details here, record the amount of bots effected, include current task and target
             return;
@@ -120,7 +118,7 @@ public class BotPlayerController : MonoBehaviour
 
             if (distanceToTarget > 2) // distance to target needs to be based on actual target.
             {
-                UnityEngine.Debug.LogError(playerController.Name + ", island: " + playerController.Island.Identifier + ", has incomplete path: " + movement.PathStatus + ", current task: " + playerController.ActiveSkill);// + ", distance: " + distanceToTarget);
+                Shinobytes.Debug.LogWarning(playerController.Name + ", island: " + playerController.Island.Identifier + ", has incomplete path: " + movement.PathStatus + ", current task: " + playerController.ActiveSkill);// + ", distance: " + distanceToTarget);
                 playerController.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary.
                 return;
@@ -131,8 +129,8 @@ public class BotPlayerController : MonoBehaviour
         // of course, if we are resting this should be ignored.
         if (playerController.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
             && playerController.ferryHandler.State != PlayerFerryState.Embarking
-            && !playerController.onsenHandler.InOnsen
-            && movement.IdleTime >= ExpectedMaxIdleTime(playerController.ActiveSkill)
+            && !playerController.onsenHandler.InOnsen            
+            && (movement.IdleTime >= ExpectedMaxIdleTime(playerController.ActiveSkill) || (movement.IdleTime >= 15 && (GameTime.time - playerController.LastExecutedTaskTime) >= 15))
             && playerController.Target)
         {
 
@@ -146,7 +144,7 @@ public class BotPlayerController : MonoBehaviour
 
             if (!ignored)
             {
-                UnityEngine.Debug.LogError(playerController.Name + ", island: " + playerController.Island.Identifier + ", has been idling for much longer than expected for current task: " + playerController.ActiveSkill); //+ ", idleTime: " + movement.IdleTime);
+                Shinobytes.Debug.LogWarning(playerController.Name + ", island: " + playerController.Island.Identifier + ", has been idling for much longer than expected for current task: " + playerController.ActiveSkill); //+ ", idleTime: " + movement.IdleTime);
                 playerController.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary, but we can update amount of unique bots triggered out of bots using same skill.
                 return;

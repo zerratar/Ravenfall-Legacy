@@ -408,6 +408,15 @@ public class DungeonManager : MonoBehaviour, IEvent
             }
             else
             {
+                if (gameManager.Events.IsEventCooldownActive)
+                {
+                    Shinobytes.Debug.LogWarning("Dungeon could not be started. There is an active cooldown. " + gameManager.Events.EventCooldownTimeLeft + " seconds left.");
+                }
+                else
+                {
+                    Shinobytes.Debug.LogWarning("Dungeon could not be started.");
+                }
+
                 nextDungeonTimer = gameManager.Events.RescheduleTime;
             }
             return true;

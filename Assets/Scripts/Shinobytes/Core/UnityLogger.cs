@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
+using UnityEngine;
 
 namespace RavenNest.SDK
 {
@@ -41,16 +44,137 @@ namespace Shinobytes
     {
         private static readonly SyntaxHighlightedConsoleLogger console = new SyntaxHighlightedConsoleLogger();
         private static volatile bool patched;
+        private static long logCounter = 0;
+        private static bool logToFile;
+        private static string LogFilePath;
+
+        private const string CustomLogFile = "ravenfall.log";
+        private const string CustomPrevLogFile = "ravenfall-prev.log";
+
+        static Debug()
+        {
+            PatchIfNecessary();
+        }
 
         private static void PatchIfNecessary()
         {
             if (patched) return;
 
-            var s_logger = UnityEngine.Debug.unityLogger;
-            var s_loggerField = typeof(UnityEngine.Debug).GetField("s_Logger", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-            s_loggerField.SetValue(null, new PatchedUnityLogger(s_logger));
+            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var appDataFolder = System.IO.Path.Combine(userProfile, @"AppData\LocalLow\", Application.companyName, Application.productName);
+
+            //var s_logger = UnityEngine.Debug.unityLogger;
+            //var s_loggerField = typeof(UnityEngine.Debug).GetField("s_Logger", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+            //s_loggerField.SetValue(null, new PatchedUnityLogger(s_logger));
+            logToFile = Application.unityVersion.Contains("6000.0.16f1");
+            var prevLog = Path.Combine(appDataFolder, "player-prev.log");
+            var prevLogExists = System.IO.File.Exists(prevLog);
+            if (prevLogExists && new System.IO.FileInfo(prevLog).Length == 0)
+            {
+                logToFile = true;
+            }
+
+            if (logToFile)
+            {
+                Application.logMessageReceived += Application_logMessageReceived;
+                //Application.logMessageReceivedThreaded += Application_logMessageReceivedThreaded;
+                LogFilePath = Path.Combine(appDataFolder, CustomLogFile);
+                if (System.IO.File.Exists(LogFilePath))
+                {
+                    // copy to a backup file
+                    var backupFile = Path.Combine(appDataFolder, CustomPrevLogFile);
+                    if (System.IO.File.Exists(backupFile))
+                    {
+                        System.IO.File.Delete(backupFile);
+                    }
+                    System.IO.File.Move(LogFilePath, backupFile);
+                }
+                AppendSystemInfo(LogFilePath);
+            }
+            else
+            {
+                LogFilePath = Path.Combine(appDataFolder, "player.log");
+            }
             patched = true;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Application_logMessageReceived(string condition, string stackTrace, LogType type)
+        {
+            LogToFile(condition, stackTrace, type);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool LogToFile(string condition, string stackTrace, LogType type)
+        {
+            if (!logToFile || string.IsNullOrEmpty(LogFilePath) || string.IsNullOrEmpty(condition)) return false;
+            if (condition.Contains("Failed to create agent because there is no valid NavMesh")) return false; // Completely useless since we dont know which agent it is.
+
+            var count = Interlocked.Increment(ref logCounter);
+            if (count > 200)
+            {
+                var logFile = new FileInfo(LogFilePath);
+                if (logFile.Length > 1024 * 1024 * 10)
+                {
+                    var backupFile = Path.Combine(logFile.DirectoryName, CustomPrevLogFile);
+                    if (System.IO.File.Exists(backupFile))
+                    {
+                        System.IO.File.Delete(backupFile);
+                    }
+                    System.IO.File.Move(LogFilePath, backupFile);
+                    AppendSystemInfo(LogFilePath);
+                    File.AppendAllText(LogFilePath, "Log file exceeded 10MB, backed up to " + backupFile + Environment.NewLine);
+                }
+
+                Interlocked.Exchange(ref logCounter, 0);
+            }
+
+            File.AppendAllText(LogFilePath, "[" + type.ToString().PadLeft(9) + "] " + condition + Environment.NewLine + stackTrace);
+            return true;
+        }
+
+        private static void AppendSystemInfo(string logFilePath)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("Unity Version: " + Application.unityVersion);
+            sb.AppendLine("Game Version: " + Application.version);
+
+            sb.AppendLine();
+            sb.AppendLine("[System]");
+            sb.AppendLine("OS: " + SystemInfo.operatingSystem);
+            sb.AppendLine("System Memory Size: " + SystemInfo.systemMemorySize);
+
+            sb.AppendLine();
+            sb.AppendLine("[Processor]");
+            sb.AppendLine("Type: " + SystemInfo.processorType);
+            sb.AppendLine("Model: " + SystemInfo.processorModel);
+            sb.AppendLine("Count: " + SystemInfo.processorCount);
+            sb.AppendLine("Frequency: " + SystemInfo.processorFrequency);
+
+            sb.AppendLine();
+            sb.AppendLine("[Graphics Device]");
+            sb.AppendLine("Name: " + SystemInfo.graphicsDeviceName);
+            sb.AppendLine("Vendor: " + SystemInfo.graphicsDeviceVendor);
+            sb.AppendLine("Vendor ID: " + SystemInfo.graphicsDeviceVendorID);
+            sb.AppendLine("ID: " + SystemInfo.graphicsDeviceID);
+            sb.AppendLine("Type: " + SystemInfo.graphicsDeviceType);
+            sb.AppendLine("Version: " + SystemInfo.graphicsDeviceVersion);
+            sb.AppendLine("Memory Size: " + SystemInfo.graphicsMemorySize);
+            sb.AppendLine("Multi Threaded: " + SystemInfo.graphicsMultiThreaded);
+            sb.AppendLine("Shader Level: " + SystemInfo.graphicsShaderLevel);
+            sb.AppendLine("UV Starts At Top: " + SystemInfo.graphicsUVStartsAtTop);
+
+            sb.AppendLine();
+            sb.AppendLine("[Device]");
+            sb.AppendLine("Model: " + SystemInfo.deviceModel);
+            sb.AppendLine("Name: " + SystemInfo.deviceName);
+            sb.AppendLine("Type: " + SystemInfo.deviceType);
+            sb.AppendLine("Unique Identifier: " + SystemInfo.deviceUniqueIdentifier);
+            sb.AppendLine();
+            File.AppendAllText(logFilePath, sb.ToString());
+        }
+
 
         public static void Log(string message)
         {
@@ -70,7 +194,6 @@ namespace Shinobytes
 
         public static void LogWarning(string message)
         {
-
             PatchIfNecessary();
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.LogWarning(date + message);

@@ -21,6 +21,11 @@ public class PlayerStartRaidEventHandler : GameEventHandler<RavenNest.Models.Pla
                     return;
                 }
 
+                if (Game.Events.IsEventCooldownActive)
+                {
+                    return;
+                }
+
                 Game.Raid.IsBusy = true;
                 var result = await Game.RavenNest.Game.ActivateRaidAsync(player);
                 if (result == ScrollUseResult.Success)

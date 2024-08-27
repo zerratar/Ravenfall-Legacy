@@ -29,6 +29,14 @@ public class GameUpdater : MonoBehaviour
     private bool loadingScene;
     private int lastAcceptedVersion;
 
+    private void Awake()
+    {
+        if (versionText)
+        {
+            versionText.text = "VERSION " + Ravenfall.Version;
+        }
+    }
+
     private void Start()
     {
 #if UNITY_STANDALONE_LINUX

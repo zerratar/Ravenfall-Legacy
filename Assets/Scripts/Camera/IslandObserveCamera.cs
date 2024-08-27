@@ -42,6 +42,11 @@ public class IslandObserveCamera : MonoBehaviour
     private Dictionary<string, IslandSettings> settings = new Dictionary<string, IslandSettings>();
     private float saveTimeout;
 
+    private void Awake()
+    {
+        LoadSettings();
+    }
+
     private void Update()
     {
         var scrollValue = Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
@@ -75,7 +80,7 @@ public class IslandObserveCamera : MonoBehaviour
 
         if (saveTimeout > 0f)
         {
-            saveTimeout -= GameTime.time;
+            saveTimeout -= GameTime.deltaTime;
             if (saveTimeout <= 0)
             {
                 SaveSettings();
@@ -91,7 +96,7 @@ public class IslandObserveCamera : MonoBehaviour
             {
                 islandSettings.Angle = orbitAngles.x;
                 islandSettings.Distance = Distance;
-                saveTimeout = 5f;
+                saveTimeout = 2f;
             }
         }
     }
@@ -176,14 +181,24 @@ public class IslandObserveCamera : MonoBehaviour
 
     private void SaveSettings()
     {
-        PlayerPrefs.SetString("IslandCameraSettings", Newtonsoft.Json.JsonConvert.SerializeObject(settings));
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(settings);
+        Shinobytes.IO.File.WriteAllText("data/island-camera-settings.json", json);
+        PlayerPrefs.SetString("IslandCameraSettings", json);
     }
 
     private void LoadSettings()
     {
+        if (Shinobytes.IO.File.Exists("data/island-camera-settings.json"))
+        {
+            var json = Shinobytes.IO.File.ReadAllText("data/island-camera-settings.json");
+            settings = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, IslandSettings>>(json);
+            return;
+        }
+
         if (PlayerPrefs.HasKey("IslandCameraSettings"))
         {
-            settings = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, IslandSettings>>(PlayerPrefs.GetString("IslandCameraSettings"));
+            var json = PlayerPrefs.GetString("IslandCameraSettings");
+            settings = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, IslandSettings>>(json);
         }
     }
 

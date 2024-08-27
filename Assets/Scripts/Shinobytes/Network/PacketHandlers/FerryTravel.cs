@@ -45,12 +45,11 @@ public class FerryTravel : ChatBotCommandHandler<string>
             {
                 player = PlayerManager.GetPlayerByName(playerName);
                 otherPlayer = true;
-
-                if (!player.CanBeControlledByStreamer)
-                {
-                    client.SendReply(gm, "You cannot use the !sail command for {playerName}.", playerName);
-                    return;
-                }
+                //if (!player.CanBeControlledByStreamer)
+                //{
+                //    client.SendReply(gm, "You cannot use the !sail command for {playerName}.", playerName);
+                //    return;
+                //}
             }
 
             if (!player)

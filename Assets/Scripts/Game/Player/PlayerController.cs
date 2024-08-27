@@ -601,6 +601,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public void Update()
     {
+        FreezeChecker.SetCurrentScriptUpdate(this);
+
         if ((IsBot && !Overlay.IsGame) || GameCache.IsAwaitingGameRestore)
         {
             return;
@@ -2014,10 +2016,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     [NonSerialized] public ExpGainState CurrentExpGainState;
     internal bool IsObserved;
 
-    [NonSerialized]
-    public bool CanBeControlledByStreamer;
+    //[NonSerialized]
+    //public bool CanBeControlledByStreamer;
     private DateTime? badIslandTimeStart = null;
     private DateTime? badIslandReportTime = null;
+    [NonSerialized] public float LastExecutedTaskTime;
 
     private void SetExpGainState(ExpGainState state)
     {
@@ -2059,7 +2062,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                     var reportTime = now - (badIslandReportTime ?? badIslandTimeStart).Value;
                     if (reportTime.TotalMinutes >= timeBetweenNotifications)
                     {
-                        this.CanBeControlledByStreamer = true;
+                        //this.CanBeControlledByStreamer = true;
                         badIslandReportTime = now;
 
                         if (PlayerSettings.Instance.AnnounceNoExpGain.GetValueOrDefault())
@@ -2094,7 +2097,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public void ResetPlayerControl()
     {
-        this.CanBeControlledByStreamer = false;
+        //this.CanBeControlledByStreamer = false;
         badIslandTimeStart = null;
         badIslandReportTime = null;
     }
@@ -2956,6 +2959,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
                 if (Chunk.ExecuteTask(this, taskTarget))
                 {
+                    LastExecutedTaskTime = GameTime.time;
                     return;
                 }
             }
@@ -2978,6 +2982,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         Chunk.ExecuteTask(this, taskTarget);
+        LastExecutedTaskTime = GameTime.time;
     }
 
     private Vector3 GetTaskTargetPosition(object obj)

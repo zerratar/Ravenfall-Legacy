@@ -74,7 +74,7 @@ namespace RavenNest.SDK.Endpoints
                 .Method("delta")
                 .AddParameter(lastModified.ToString())
                 .Build()
-                .SendAsync<ItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get, excludeRequestParametersOnError: true);
+                .SendAsync<ItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
         }
     }
 }

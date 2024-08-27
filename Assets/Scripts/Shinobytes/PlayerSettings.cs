@@ -126,7 +126,7 @@ public class PlayerSettings
     static PlayerSettings()
     {
         store = JsonStore<PlayerSettings>.Create("game-settings", new PlayerSettingsJsonSerializer());
-        Instance = store.Get();
+        Instance = store.Get() ?? new PlayerSettings();
         SetDefaultValues();
     }
 
@@ -135,7 +135,6 @@ public class PlayerSettings
     private static void SetDefaultValues()
     {
         var wasUpdated = false;
-
         if (Instance.AnnounceNoExpGain == null)
         {
             Instance.AnnounceNoExpGain = false;
