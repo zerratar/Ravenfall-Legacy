@@ -42,6 +42,8 @@ public class SettingsMenuView : MenuView
     [SerializeField] private Slider playerListSizeSlider = null;
     [SerializeField] private Slider playerListScaleSlider = null;
     [SerializeField] private Toggle playerNameToggle;
+    [SerializeField] private Toggle playerListToggle;
+    [SerializeField] private Toggle playerDetailsToggle;
 
     [Header("Graphics Settings")]
     [SerializeField] private GraphicsSettings graphics;
@@ -137,7 +139,9 @@ public class SettingsMenuView : MenuView
 
         raidHornVolumeSlider.value = settings.RaidHornVolume.GetValueOrDefault(gameManager.Raid.Notifications.volume);
         musicVolumeSlider.value = settings.MusicVolume.GetValueOrDefault(gameManager.Music.volume);
-        observerCameraRotationSlider.value = settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed * -1);
+        
+        observerCameraRotationSlider.SetValueWithoutNotify(settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed * -1));
+
         pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
         playerCacheExpiryTimeDropdown.value = settings.PlayerCacheExpiryTime.GetValueOrDefault(SettingsMenuView.PlayerCacheExpiry.Length - 1);
         boostRequirementDropdown.value = settings.PlayerBoostRequirement.GetValueOrDefault(gameManager.PlayerBoostRequirement);
@@ -157,6 +161,9 @@ public class SettingsMenuView : MenuView
 
         dayNightCycleEnabled.isOn = settings.DayNightCycleEnabled.GetValueOrDefault(true);
         dayNightTime.value = settings.DayNightTime.GetValueOrDefault(0.5f);
+
+        playerDetailsToggle.isOn = gameManager.Camera.Observer.IsVisible;
+        playerListToggle.isOn = gameManager.PlayerList.IsVisible;
 
         SetViewDistance(viewDistanceSlider.value);
 
@@ -256,6 +263,8 @@ public class SettingsMenuView : MenuView
         settings.PlayerNamesVisible = playerNameToggle.isOn;
         settings.ViewDistance = viewDistanceSlider.value;
 
+        gameManager.PlayerList.SetVisibility(playerListToggle.isOn);
+        gameManager.Camera.Observer.SetVisibility(playerDetailsToggle.isOn);
         gameManager.isDebugMenuVisible = debugControlsEnabled.isOn;
         PlayerSettings.Save();
     }
@@ -331,6 +340,17 @@ public class SettingsMenuView : MenuView
     {
         gameManager.PlayerNamesVisible = playerNameToggle.isOn;
     }
+
+    public void OnPlayerListToggle()
+    {
+        gameManager.PlayerList.SetVisibility(playerListToggle.isOn);
+    }
+
+    public void OnPlayerDetailsToggle()
+    {
+        gameManager.Camera.Observer.SetVisibility(playerDetailsToggle.isOn);
+    }
+
     public void OnBoostRequirementChanged(int val)
     {
         gameManager.PlayerBoostRequirement = boostRequirementDropdown.value;

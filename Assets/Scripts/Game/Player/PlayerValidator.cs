@@ -39,12 +39,10 @@ public class PlayerValidator
         // if we are stuck, try and resolve the issue
         if (player.IsStuck)
         {
-#if UNITY_EDITOR
-            Shinobytes.Debug.LogWarning(player.Name + " is stuck. Trying to unstuck.");
-#endif
             // make sure we only call this once every 5 seconds.
             if (player.Unstuck(true, 5f))
             {
+                Shinobytes.Debug.LogWarning("Unstuck attempt for " + player.Name + ".");
                 player.Movement.AdjustPlayerPositionToNavmesh();
                 player.IsStuck = false;
             }
@@ -54,16 +52,14 @@ public class PlayerValidator
 
         if (!player.Island)
         {
-#if UNITY_EDITOR
             Shinobytes.Debug.LogWarning(player.Name + " is not on an island! Please check scene view to see where this poor guy is.");
-#endif
             player.IsStuck = true;
             // record position, target, island, any details here, record the amount of bots effected, include current task and target
             return false;
         }
 
         var now = GameTime.time;
-        if (now - player.teleportHandler.LastTeleport < 3)
+        if (now - player.teleportHandler.LastTeleport < 5)
         {
             // dont report if we just got teleported here since current paths does not get flushed out upon teleport.
             return true;
@@ -94,10 +90,8 @@ public class PlayerValidator
 
             if (distanceToTarget > 2) // distance to target needs to be based on actual target.
             {
-#if UNITY_EDITOR
                 Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has incomplete path: " +
                     movement.PathStatus + ", current task: " + player.ActiveSkill);// + ", distance: " + distanceToTarget);
-#endif
                 player.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary.
                 return false;
@@ -110,7 +104,7 @@ public class PlayerValidator
         if (player.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
             && !player.onsenHandler.InOnsen // we will stand still if we are in the onsen :)
             && player.ferryHandler.State != PlayerFerryState.Embarking // if we are embarking the ferry we will be standing still.
-            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 15 && (GameTime.time - player.LastExecutedTaskTime) >= 15))
+            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 30 && (GameTime.time - player.LastExecutedTaskTime) >= 30))
             && player.Target)
         {
             // if we are training Ranged or Magic, we could potentially be standing for a long time
@@ -118,14 +112,12 @@ public class PlayerValidator
             var ignored = false;
             if (player.ActiveSkill == RavenNest.Models.Skill.Magic || player.ActiveSkill == RavenNest.Models.Skill.Ranged)
             {
-                ignored = now - player.Animations.LastTrigger < 3;
+                ignored = now - player.Animations.LastTrigger < 10;
             }
 
             if (!ignored)
             {
-#if UNITY_EDITOR
                 Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has been idling for much longer than expected for current task: " + player.ActiveSkill); //+ ", idleTime: " + movement.IdleTime);
-#endif
                 player.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary, but we can update amount of unique bots triggered out of bots using same skill.
                 return false;

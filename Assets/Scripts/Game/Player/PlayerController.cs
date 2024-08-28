@@ -2134,6 +2134,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool Fish(FishingController fishingSpot)
     {
+        LastExecutedTaskTime = Time.time;
         actionTimer = fishingAnimationTime;
         InCombat = false;
         Movement.Lock();
@@ -2167,6 +2168,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool Cook(CraftingStation craftingStation)
     {
+        LastExecutedTaskTime = Time.time;
         actionTimer = cookingAnimationTime;
         Movement.Lock();
         InCombat = false;
@@ -2200,6 +2202,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool Brew(CraftingStation craftingStation)
     {
+        LastExecutedTaskTime = Time.time;
         actionTimer = craftingAnimationTime;
         Movement.Lock();
         InCombat = false;
@@ -2235,6 +2238,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool Craft(CraftingStation craftingStation)
     {
+        LastExecutedTaskTime = Time.time;
         actionTimer = craftingAnimationTime;
         Movement.Lock();
         InCombat = false;
@@ -2265,6 +2269,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool Mine(RockController rock)
     {
+        LastExecutedTaskTime = Time.time;
         actionTimer = mineRockAnimationTime;
         InCombat = false;
         Movement.Lock();
@@ -2299,6 +2304,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     }
     public bool Farm(FarmController farm)
     {
+        LastExecutedTaskTime = Time.time;
         actionTimer = rakeAnimationTime;
         InCombat = false;
         Movement.Lock();
@@ -2333,6 +2339,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool Cut(TreeController tree)
     {
+        LastExecutedTaskTime = Time.time;
         actionTimer = chompTreeAnimationTime;
         InCombat = false;
         Movement.Lock();
@@ -2359,6 +2366,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool Gather(GatherController gather)
     {
+        LastExecutedTaskTime = Time.time;
         actionTimer = rakeAnimationTime;
         InCombat = false;
         Movement.Lock();
@@ -2404,6 +2412,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     private bool AttackEntity(IAttackable target, bool damageOnDraw = false)
     {
+        LastExecutedTaskTime = Time.time;
         if (target == null)
         {
             return false;
@@ -2500,6 +2509,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool HealTarget(IAttackable target, float hitTime, float startTime)
     {
+        LastExecutedTaskTime = Time.time;
         var delta = Time.time - startTime;
         if (delta < hitTime) return false;
         try
@@ -2537,6 +2547,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool DamageEnemy(IAttackable enemy, float hitTime, float startTime)
     {
+        LastExecutedTaskTime = Time.time;
         var delta = Time.time - startTime;
         if (delta < hitTime) return false;
         if (enemy == null) return true;
@@ -2603,6 +2614,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     private bool Gather(GatherController gather, float startTime)
     {
+        LastExecutedTaskTime = Time.time;
         var delta = Time.time - startTime;
         var actionTime = chompTreeAnimationTime / 2f;
         if (delta < actionTime)
@@ -2636,6 +2648,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public bool DamageTree(TreeController tree, float startTime)
     {
+        LastExecutedTaskTime = Time.time;
         var delta = Time.time - startTime;
         var actionTime = chompTreeAnimationTime / 2f;
         if (delta < actionTime)
@@ -2924,6 +2937,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             var taskCompleted = Chunk.IsTaskCompleted(this, taskTarget);
             if (taskCompleted)
             {
+                LastExecutedTaskTime = GameTime.time;
                 Movement.Unlock();
             }
             else
@@ -2955,6 +2969,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                     }
 
                     return;
+                }
+                else
+                {
+                    LastExecutedTaskTime = GameTime.time;
                 }
 
                 if (Chunk.ExecuteTask(this, taskTarget))

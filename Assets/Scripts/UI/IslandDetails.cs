@@ -59,6 +59,7 @@ public class IslandDetails : MonoBehaviour
     private string playerCountFormat;
     private string requiredLevelFormat;
     private string observerTimeoutFormat;
+    private bool errorHasBeenLogged;
 
     private void Awake()
     {
@@ -80,6 +81,7 @@ public class IslandDetails : MonoBehaviour
 
     internal void Observe(IslandController island, float timer)
     {
+        this.errorHasBeenLogged = false;
         if (island == null)
         {
             this.target = null;
@@ -88,7 +90,6 @@ public class IslandDetails : MonoBehaviour
         }
 
         island.RebuildPlayerList();
-
         this.gameObject.SetActive(true);
         this.target = island;
         this.timeout = timer;
@@ -188,8 +189,14 @@ public class IslandDetails : MonoBehaviour
             itemsCrafted.text = Utility.FormatAmount(statistics.ItemsCrafted);
             potionsBrewed.text = Utility.FormatAmount(statistics.PotionsBrewed);
         }
-        catch
+        catch (System.Exception exc)
         {
+            // only log once per island / observe.
+            if (!errorHasBeenLogged)
+            {
+                Shinobytes.Debug.LogError($"Error updating island UI for {target?.Island}: " + exc);
+                errorHasBeenLogged = true;
+            }
         }
     }
 }

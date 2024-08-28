@@ -24,6 +24,7 @@ public class PlayerList : MonoBehaviour
     private RectTransform viewportTransform;
     private RectTransform listRootRectTransform;
     private List<PlayerController> filteredPlayers;
+    private bool isVisible;
 
     public float Scale
     {
@@ -92,7 +93,14 @@ public class PlayerList : MonoBehaviour
         }
     }
 
+    public bool IsVisible => isVisible;
+
     private List<PlayerController> DataSource => filteredPlayers != null ? filteredPlayers : trackedPlayers;
+
+    private void Awake()
+    {
+        isVisible = true;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -102,6 +110,30 @@ public class PlayerList : MonoBehaviour
         startPos = rectTransform.anchoredPosition.y;
     }
 
+    public void Show()
+    {
+        isVisible = true;
+        gameObject.SetActive(true);
+    }
+
+    public void Hide()
+    {
+        isVisible = false;
+        gameObject.SetActive(false);
+    }
+
+    public void SetVisibility(bool isVisible)
+    {
+        this.isVisible = isVisible;
+        if (isVisible)
+        {
+            Show();
+        }
+        else
+        {
+            Hide();
+        }
+    }
     // Update is called once per frame
     void Update()
     {

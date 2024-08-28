@@ -45,8 +45,9 @@ namespace Shinobytes
         private static readonly SyntaxHighlightedConsoleLogger console = new SyntaxHighlightedConsoleLogger();
         private static volatile bool patched;
         private static long logCounter = 0;
+        private static string PlayerLogFilePath;
         private static bool logToFile;
-        private static string LogFilePath;
+        private static string TargetLogFilePath;
 
         private const string CustomLogFile = "ravenfall.log";
         private const string CustomPrevLogFile = "ravenfall-prev.log";
@@ -63,23 +64,26 @@ namespace Shinobytes
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var appDataFolder = System.IO.Path.Combine(userProfile, @"AppData\LocalLow\", Application.companyName, Application.productName);
 
-            //var s_logger = UnityEngine.Debug.unityLogger;
-            //var s_loggerField = typeof(UnityEngine.Debug).GetField("s_Logger", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-            //s_loggerField.SetValue(null, new PatchedUnityLogger(s_logger));
-            logToFile = Application.unityVersion.Contains("6000.0.16f1");
-            var prevLog = Path.Combine(appDataFolder, "player-prev.log");
-            var prevLogExists = System.IO.File.Exists(prevLog);
-            if (prevLogExists && new System.IO.FileInfo(prevLog).Length == 0)
-            {
-                logToFile = true;
-            }
+            //logToFile = Application.unityVersion.Contains("6000.0.16f1");
+            //var prevLog = Path.Combine(appDataFolder, "player-prev.log");
+            //var prevLogExists = System.IO.File.Exists(prevLog);
+            //if (prevLogExists && new System.IO.FileInfo(prevLog).Length == 0)
+            //{
+            //    logToFile = true;
+            //}
+
+            // always log to file for now
+
+            PlayerLogFilePath = Path.Combine(appDataFolder, "player.log");
+
+            logToFile = true;
 
             if (logToFile)
             {
                 Application.logMessageReceived += Application_logMessageReceived;
                 //Application.logMessageReceivedThreaded += Application_logMessageReceivedThreaded;
-                LogFilePath = Path.Combine(appDataFolder, CustomLogFile);
-                if (System.IO.File.Exists(LogFilePath))
+                TargetLogFilePath = Path.Combine(appDataFolder, CustomLogFile);
+                if (System.IO.File.Exists(TargetLogFilePath))
                 {
                     // copy to a backup file
                     var backupFile = Path.Combine(appDataFolder, CustomPrevLogFile);
@@ -87,13 +91,13 @@ namespace Shinobytes
                     {
                         System.IO.File.Delete(backupFile);
                     }
-                    System.IO.File.Move(LogFilePath, backupFile);
+                    System.IO.File.Move(TargetLogFilePath, backupFile);
                 }
-                AppendSystemInfo(LogFilePath);
+                AppendSystemInfo(TargetLogFilePath);
             }
             else
             {
-                LogFilePath = Path.Combine(appDataFolder, "player.log");
+                TargetLogFilePath = Path.Combine(appDataFolder, "player.log");
             }
             patched = true;
         }
@@ -107,13 +111,13 @@ namespace Shinobytes
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool LogToFile(string condition, string stackTrace, LogType type)
         {
-            if (!logToFile || string.IsNullOrEmpty(LogFilePath) || string.IsNullOrEmpty(condition)) return false;
-            if (condition.Contains("Failed to create agent because there is no valid NavMesh")) return false; // Completely useless since we dont know which agent it is.
+            if (!logToFile || string.IsNullOrEmpty(TargetLogFilePath) || string.IsNullOrEmpty(condition)) return false;
+            if (!Filter(condition)) return false;
 
             var count = Interlocked.Increment(ref logCounter);
             if (count > 200)
             {
-                var logFile = new FileInfo(LogFilePath);
+                var logFile = new FileInfo(TargetLogFilePath);
                 if (logFile.Length > 1024 * 1024 * 10)
                 {
                     var backupFile = Path.Combine(logFile.DirectoryName, CustomPrevLogFile);
@@ -121,16 +125,48 @@ namespace Shinobytes
                     {
                         System.IO.File.Delete(backupFile);
                     }
-                    System.IO.File.Move(LogFilePath, backupFile);
-                    AppendSystemInfo(LogFilePath);
-                    File.AppendAllText(LogFilePath, "Log file exceeded 10MB, backed up to " + backupFile + Environment.NewLine);
+                    System.IO.File.Move(TargetLogFilePath, backupFile);
+                    AppendSystemInfo(TargetLogFilePath);
+                    File.AppendAllText(TargetLogFilePath, "Log file exceeded 10MB, backed up to " + backupFile + Environment.NewLine);
                 }
 
                 Interlocked.Exchange(ref logCounter, 0);
+
+                // delete the player.log file, it should not be used.
+                // if the game crashes, then the player.log will only contain the crash log.
+                // while the ravenfall.log will contain game logs.
+
+                if (System.IO.File.Exists(PlayerLogFilePath))
+                {
+                    System.IO.File.Delete(PlayerLogFilePath);
+                }
             }
 
-            File.AppendAllText(LogFilePath, "[" + type.ToString().PadLeft(9) + "] " + condition + Environment.NewLine + stackTrace);
+            File.AppendAllText(TargetLogFilePath, "[" + type.ToString().PadLeft(9) + "] " + condition + Environment.NewLine + stackTrace);
             return true;
+        }
+
+        private static bool Filter(string message)
+        {
+            if (string.IsNullOrEmpty(message)) return false;
+            if (ContainsAny(
+                "Failed to create agent because it is not close enough to the NavMesh",
+                "Failed to create agent because there is no valid NavMesh"))
+                return false;
+            return true;
+        }
+
+        private static bool ContainsAny(this string input, params string[] values)
+        {
+            if (string.IsNullOrEmpty(input)) return false;
+            if (values == null || values.Length == 0) return false;
+            foreach (var value in values)
+            {
+                if (input.Contains(value, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
 
         private static void AppendSystemInfo(string logFilePath)
@@ -148,7 +184,7 @@ namespace Shinobytes
             sb.AppendLine();
             sb.AppendLine("[Processor]");
             sb.AppendLine("Type: " + SystemInfo.processorType);
-            sb.AppendLine("Model: " + SystemInfo.processorModel);
+            //sb.AppendLine("Model: " + SystemInfo.processorModel);
             sb.AppendLine("Count: " + SystemInfo.processorCount);
             sb.AppendLine("Frequency: " + SystemInfo.processorFrequency);
 
@@ -214,108 +250,6 @@ namespace Shinobytes
             var date = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] ";
             UnityEngine.Debug.LogError(date + message.Message);
             console.WriteLine(date + "@red@[EXC] #red#@bla@" + message.Message);
-        }
-
-        public class PatchedUnityLogger : UnityEngine.ILogger
-        {
-            private UnityEngine.ILogger logger;
-
-            public PatchedUnityLogger(UnityEngine.ILogger logger)
-            {
-                this.logger = logger;
-            }
-
-            public UnityEngine.ILogHandler logHandler { get => logger.logHandler; set => logger.logHandler = value; }
-            public bool logEnabled { get => logger.logEnabled; set => logger.logEnabled = value; }
-            public UnityEngine.LogType filterLogType { get => logger.filterLogType; set => logger.filterLogType = value; }
-
-            public bool IsLogTypeAllowed(UnityEngine.LogType logType) => logger.IsLogTypeAllowed(logType);
-            public void Log(UnityEngine.LogType logType, object message)
-            {
-                if (Filter(message)) logger.Log(logType, message);
-            }
-
-            public void Log(UnityEngine.LogType logType, object message, UnityEngine.Object context)
-            {
-                if (Filter(message)) logger.Log(logType, message, context);
-            }
-
-            public void Log(UnityEngine.LogType logType, string tag, object message) => logger.Log(logType, tag, message);
-            public void Log(UnityEngine.LogType logType, string tag, object message, UnityEngine.Object context)
-            {
-                if (Filter(message)) logger.Log(logType, tag, message, context);
-            }
-
-            public void Log(object message)
-            {
-                if (Filter(message)) logger.Log(message);
-            }
-
-            public void Log(string tag, object message)
-            {
-                if (Filter(message)) logger.Log(tag, message);
-            }
-            public void Log(string tag, object message, UnityEngine.Object context) { if (Filter(message)) logger.Log(tag, message, context); }
-            public void LogError(string tag, object message)
-            {
-                if (Filter(message)) logger.LogError(tag, message);
-            }
-            public void LogError(string tag, object message, UnityEngine.Object context)
-            {
-                if (Filter(message)) logger.LogError(tag, message, context);
-            }
-            public void LogException(Exception exception)
-            {
-                if (Filter(exception)) logger.LogException(exception);
-            }
-            public void LogException(Exception exception, UnityEngine.Object context)
-            {
-                if (Filter(exception)) logger.LogException(exception, context);
-            }
-
-            public void LogFormat(UnityEngine.LogType logType, string format, params object[] args)
-            {
-                if (Filter(format)) logger.LogFormat(logType, format, args);
-            }
-
-            public void LogFormat(UnityEngine.LogType logType, UnityEngine.Object context, string format, params object[] args)
-            {
-                if (Filter(format)) logger.LogFormat(logType, context, format, args);
-            }
-
-            public void LogWarning(string tag, object message)
-            {
-                if (Filter(message)) logger.LogWarning(tag, message);
-            }
-
-            public void LogWarning(string tag, object message, UnityEngine.Object context)
-            {
-                if (Filter(message)) logger.LogWarning(tag, message, context);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private bool Filter(object message)
-            {
-                if (message == null) return false;
-                if (message is string str) return Filter(str);
-                if (message is Exception exc) return Filter(exc);
-                return true;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private bool Filter(Exception exc)
-            {
-                return true; // catch all
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private bool Filter(string str)
-            {
-                if (string.IsNullOrEmpty(str)
-                    || str.Contains("Failed to create agent because it is not close enough to the NavMesh", StringComparison.OrdinalIgnoreCase))
-                    return false;
-                return true;
-            }
         }
     }
 

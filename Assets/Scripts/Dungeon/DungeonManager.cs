@@ -358,6 +358,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         Notifications.HideInformation();
     }
+
     private void UpdateDungeonUI()
     {
         if (this.Dungeon && Started)
@@ -372,6 +373,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             if (gameManager.Events.TryStart(this))
             {
+
                 HasBeenAnnounced = false;
 
                 await Notifications.OnDungeonActivated();
@@ -380,6 +382,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
                 if (SpawnDungeonBoss())
                 {
+                    Shinobytes.Debug.Log($"Dungeon #{(dungeonIndex + 1)} has been activated: " + Dungeon.Name);
                     Initiator = initiator;
                     state = DungeonManagerState.Active;
                     dungeonStartTimer = timeForDungeonStart;
@@ -521,6 +524,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     public void EndDungeonSuccess()
     {
+        Shinobytes.Debug.Log("Dungeon ended in a success.");
         var players = GetPlayers();
         foreach (var player in players)
         {
@@ -541,6 +545,15 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     public void EndDungeonFailed(bool notifyChat = true)
     {
+        if (notifyChat)
+        {
+            Shinobytes.Debug.Log("The dungeon has ended without any surviving players.");
+        }
+        else
+        {
+            Shinobytes.Debug.Log("The dungeon was stopped by a user.");
+        }
+
         var players = GetPlayers();
         foreach (var player in players)
         {
@@ -875,6 +888,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void StartDungeon()
     {
+        Shinobytes.Debug.Log("Starting dungeon: " + currentDungeon.Name);
         SpawnEnemies();
 
         Notifications.Hide();

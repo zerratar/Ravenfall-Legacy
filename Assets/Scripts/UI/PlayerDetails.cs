@@ -80,6 +80,14 @@ public class PlayerDetails : MonoBehaviour
         }
     }
 
+    public void SetVisibility(bool isVisible)
+    {
+        this.visible = !isVisible; // reverse
+        ToggleVisibility(); // then toggle. :D
+    }
+
+    public bool IsVisible => visible;
+
     public void ToggleInventory()
     {
         IsExpanded = playerInventory.ToggleVisibility();
