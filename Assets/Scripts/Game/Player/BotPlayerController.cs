@@ -121,10 +121,11 @@ public class BotPlayerController : MonoBehaviour
 
         // alright, we are on an island, lets check if we are stuck or not.
         // of course, if we are resting this should be ignored.
+        var timeSinceLastExecutedTask = GameTime.time - player.LastExecutedTaskTime;
         if (player.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
             && player.ferryHandler.State != PlayerFerryState.Embarking
             && !player.onsenHandler.InOnsen
-            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 30 && (GameTime.time - player.LastExecutedTaskTime) >= 30))
+            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 30 && timeSinceLastExecutedTask >= 30))
             && player.Target)
         {
 
@@ -138,8 +139,7 @@ public class BotPlayerController : MonoBehaviour
 
             if (!ignored)
             {
-                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier +
-                    ", has been idling for much longer than expected for current task: " + player.ActiveSkill);
+                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has been idling for much longer than expected for current task: " + player.ActiveSkill + ", idle: " + movement.IdleTime + ", time since last task: " + timeSinceLastExecutedTask);
                 player.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary, but we can update amount of unique bots triggered out of bots using same skill.
                 return;

@@ -168,6 +168,14 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync(ApiRequestTarget.Game, ApiRequestType.Get);
         }
 
+        public void EndSession()
+        {
+            request.Create()
+                .Method("end")
+                .Build()
+                .Send(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
+
         //public Task EndSessionAsync()
         //{
         //    return request.Create()

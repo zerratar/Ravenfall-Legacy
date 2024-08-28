@@ -559,6 +559,9 @@ public class PlayerManager : MonoBehaviour
             var result = await gameManager.RavenNest.Players.RestoreAsync(new PlayerRestoreData
             {
                 Characters = id,
+//#if UNITY_EDITOR || DEBUG
+                ForceAdd = gameManager.SessionSettings.IsAdministrator
+//#endif
             });
 
             var i = 0;

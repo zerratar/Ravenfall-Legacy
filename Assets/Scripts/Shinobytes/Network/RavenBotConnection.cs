@@ -289,7 +289,7 @@ public class RavenBotConnection : IDisposable
                 ListenForLocalBot();
             }
         }
-        else if (!IsConnectedToRemote && UseRemoteBot)
+        else if (!IsConnectedToRemote && UseRemoteBot && allowAutomaticReconnect)
         {
             var sinceLastConnectionAttempt = UnityEngine.Time.time - connectionAttemptStart;
             if (connectionInProgress && sinceLastConnectionAttempt < 2)
@@ -312,7 +312,7 @@ public class RavenBotConnection : IDisposable
             catch (Exception exc)
             {
                 connectionInProgress = false;
-                logger.WriteError("Error Connecting to Remote Bot: " + exc.Message);
+                logger.WriteError("Error Connecting to Remote Bot: " + exc);
             }
             finally
             {

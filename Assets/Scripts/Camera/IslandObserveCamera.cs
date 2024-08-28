@@ -176,7 +176,14 @@ public class IslandObserveCamera : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        SaveSettings();
+        try
+        {
+            SaveSettings();
+        }
+        catch
+        {
+            // ignored
+        }
     }
 
     private void SaveSettings()

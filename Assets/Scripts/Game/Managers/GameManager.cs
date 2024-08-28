@@ -69,6 +69,7 @@ public class GameManager : MonoBehaviour, IGameManager
     private ClanManager clanManager;
     private NameTagManager nametagManager;
     private SessionStats sessionStats;
+    private bool userTriggeredExit;
 
     [Header("Default Settings")]
     [SerializeField] private string accessKey;
@@ -740,7 +741,25 @@ public class GameManager : MonoBehaviour, IGameManager
             loginHandler.ActivateTempAutoLogin();
         }
 
+        userTriggeredExit = true;
+
         SaveStateFile();
+
+        OnExit();
+
+#if UNITY_2023_2 || UNITY_2023_2_20
+        try
+        {
+            // die!
+            Process.GetCurrentProcess().Kill();
+            return;
+        }
+        catch
+        {
+            // ignored
+        }
+#endif
+
         Application.Quit();
     }
 
@@ -1057,6 +1076,7 @@ public class GameManager : MonoBehaviour, IGameManager
     Stopwatch UpdateGameEvents_stopwatch = new Stopwatch();
     Stopwatch UpdateGameEvents_evtSw = new Stopwatch();
     List<GameEventProfiler> UpdateGameEvents_evts = new List<GameEventProfiler>();
+
 #endif
 
     private bool UpdateGameEvents()
@@ -1439,17 +1459,32 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void OnApplicationQuit()
     {
-        FreezeChecker.Stop();
-        if (RavenBotController != null)
+        if (!userTriggeredExit)
         {
-            RavenBotController.Dispose();
+            OnExit();
         }
+    }
 
-        StopRavenNestSession();
+    private void OnExit()
+    {
+        try
+        {
+            FreezeChecker.Stop();
+            if (RavenBotController != null)
+            {
+                RavenBotController.Dispose();
+            }
 
-        QueryEngineAPI.OnExit();
+            StopRavenNestSession();
 
-        Debug.Log("Application ending after " + Time.time + " seconds");
+            QueryEngineAPI.OnExit();
+
+            Shinobytes.Debug.Log("Application ending after " + Time.time + " seconds");
+        }
+        catch
+        {
+            // ignored
+        }
     }
 
     private void HandleRavenNestConnection()

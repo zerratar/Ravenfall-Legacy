@@ -198,18 +198,27 @@ namespace Assets.Scripts
             {
                 try
                 {
+                    var stateFileName = usedPlayerStateCacheFileName;
+                    if (string.IsNullOrEmpty(stateFileName))
+                    {
+                        stateFileName = DefaultPlayerStateCacheFileName;
+                    }
 
                     Shinobytes.Debug.Log("Saving Player State file... (" + (stateCache?.Players?.Count ?? 0) + " players)");
                     var stateData = Newtonsoft.Json.JsonConvert.SerializeObject(stateCache);
-                    // To ensure we dont accidently overwrite the state-data with half written data.
-                    // in case the game crashes and saving in progress.
-                    Shinobytes.IO.File.WriteAllText(TempPlayerStateCacheFileName, stateData);
-                    Shinobytes.IO.File.Copy(TempPlayerStateCacheFileName, usedPlayerStateCacheFileName, true);
-                    Shinobytes.IO.File.Delete(TempPlayerStateCacheFileName);
+
+                    if (!string.IsNullOrEmpty(stateData))
+                    {
+                        // To ensure we dont accidently overwrite the state-data with half written data.
+                        // in case the game crashes and saving in progress.
+                        Shinobytes.IO.File.WriteAllText(TempPlayerStateCacheFileName, stateData);
+                        Shinobytes.IO.File.Copy(TempPlayerStateCacheFileName, stateFileName, true);
+                        Shinobytes.IO.File.Delete(TempPlayerStateCacheFileName);
+                    }
                 }
                 catch (System.Exception exc)
                 {
-                    Shinobytes.Debug.LogError("Failed to save player state: " + exc.Message);
+                    Shinobytes.Debug.LogError("Failed to save player state " + exc);
                 }
             }
         }

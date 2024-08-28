@@ -361,12 +361,12 @@ namespace RavenNest.SDK
             }
         }
 
-        public async Task<bool> EndSessionAsync()
+        public bool EndSession()
         {
             try
             {
-                Interlocked.Increment(ref activeRequestCount);
-                await Game.EndSessionAsync();
+                //Interlocked.Increment(ref activeRequestCount);
+                Game.EndSession();
                 return true;
             }
             catch (Exception exc)
@@ -376,7 +376,7 @@ namespace RavenNest.SDK
             }
             finally
             {
-                Interlocked.Decrement(ref activeRequestCount);
+                //Interlocked.Decrement(ref activeRequestCount);
                 currentSessionToken = null;
                 tokenProvider.SetSessionToken(null);
             }
@@ -391,10 +391,10 @@ namespace RavenNest.SDK
             return this.Game.ClearLogoAsync(twitchUserId);
         }
 
-        internal async void Terminate()
+        internal void Terminate()
         {
+            EndSession();
             Dispose();
-            await EndSessionAsync();
         }
 
         public void Dispose()

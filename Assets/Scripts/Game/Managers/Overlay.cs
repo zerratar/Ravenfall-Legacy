@@ -244,13 +244,20 @@ public class Overlay : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        if (IsGame)
+        try
         {
-            DestroyGame();
-            return;
-        }
+            if (IsGame)
+            {
+                DestroyGame();
+                return;
+            }
 
-        DestroyOverlay();
+            DestroyOverlay();
+        }
+        catch
+        {
+            //ignored
+        }
     }
 
     private void Update()

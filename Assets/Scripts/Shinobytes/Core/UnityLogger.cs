@@ -112,7 +112,7 @@ namespace Shinobytes
         private static bool LogToFile(string condition, string stackTrace, LogType type)
         {
             if (!logToFile || string.IsNullOrEmpty(TargetLogFilePath) || string.IsNullOrEmpty(condition)) return false;
-            if (!Filter(condition)) return false;
+            if (!Filter(condition, type)) return false;
 
             var count = Interlocked.Increment(ref logCounter);
             if (count > 200)
@@ -146,12 +146,13 @@ namespace Shinobytes
             return true;
         }
 
-        private static bool Filter(string message)
+        private static bool Filter(string message, LogType logType)
         {
             if (string.IsNullOrEmpty(message)) return false;
-            if (ContainsAny(
-                "Failed to create agent because it is not close enough to the NavMesh",
-                "Failed to create agent because there is no valid NavMesh"))
+            if (logType == LogType.Warning &&
+                ContainsAny(message,
+                    "Failed to create agent because it is not close enough to the NavMesh",
+                    "Failed to create agent because there is no valid NavMesh"))
                 return false;
             return true;
         }

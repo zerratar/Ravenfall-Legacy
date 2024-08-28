@@ -101,10 +101,11 @@ public class PlayerValidator
         // if we don't have a path or incomplete path, but been idling longer than expected
         // also, ignore if the player is currently resting.
 
+        var timeSinceLastExecutedTask = GameTime.time - player.LastExecutedTaskTime;
         if (player.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
             && !player.onsenHandler.InOnsen // we will stand still if we are in the onsen :)
             && player.ferryHandler.State != PlayerFerryState.Embarking // if we are embarking the ferry we will be standing still.
-            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 30 && (GameTime.time - player.LastExecutedTaskTime) >= 30))
+            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 30 && timeSinceLastExecutedTask >= 30))
             && player.Target)
         {
             // if we are training Ranged or Magic, we could potentially be standing for a long time
@@ -117,7 +118,7 @@ public class PlayerValidator
 
             if (!ignored)
             {
-                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has been idling for much longer than expected for current task: " + player.ActiveSkill); //+ ", idleTime: " + movement.IdleTime);
+                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has been idling for much longer than expected for current task: " + player.ActiveSkill + ", idle: " + movement.IdleTime + ", time since last task: " + timeSinceLastExecutedTask);
                 player.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary, but we can update amount of unique bots triggered out of bots using same skill.
                 return false;

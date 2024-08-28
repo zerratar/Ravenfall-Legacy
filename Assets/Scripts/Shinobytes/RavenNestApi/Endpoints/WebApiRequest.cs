@@ -38,6 +38,18 @@ namespace RavenNest.SDK.Endpoints
             this.authToken = authToken;
             this.sessionToken = sessionToken;
         }
+        public void Send(ApiRequestTarget target, ApiRequestType type, bool throwOnError = false)
+        {
+            Send<object>(target, type, throwOnError);
+        }
+        public TResult Send<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, bool throwOnError = false)
+        {
+            return Send<TResult, object>(reqTarget, type, null, throwOnError);
+        }
+        public TResult Send<TResult, TModel>(ApiRequestTarget reqTarget, ApiRequestType type, TModel model, bool throwOnError = false)
+        {
+            return Send<TResult>(reqTarget, type, model, throwOnError);
+        }
 
         public Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, bool throwOnError = false)
         {
@@ -132,6 +144,116 @@ namespace RavenNest.SDK.Endpoints
                     var r = ((HttpWebResponse)response);
 
                     responseData = await reader.ReadToEndAsync();
+
+                    if (r.StatusCode == HttpStatusCode.Forbidden)
+                    {
+                        if (throwOnError) throw new Exception("Request returned status code Forbidden");
+                        return default(TResult);
+                    }
+                    else if (r.StatusCode != HttpStatusCode.OK)
+                    {
+#if UNITY_EDITOR
+                        Shinobytes.Debug.LogError(target + " request returned non OK status code: " + r.StatusCode + ", data: " + responseData);
+#endif
+                    }
+                    if (typeof(TResult) == typeof(object))
+                    {
+                        return default(TResult);
+                    }
+
+                    return JsonConvert.DeserializeObject<TResult>(responseData);
+                }
+            }
+            catch (Exception exc)
+            {
+                if (throwOnError) throw;
+                try
+                {
+                    Shinobytes.Debug.LogError("WebApiRequest.SendAsync: " + type.ToString().ToUpper() + " " + GetTargetUrl(reqTarget) + " - " + exc.Message); //+ " - " + responseData);
+                }
+                catch { }
+                return default(TResult);
+            }
+        }
+
+        public TResult Send<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, object model, bool throwOnError = false)
+        {
+            if (IntegrityCheck.IsCompromised)
+            {
+                return default(TResult);
+            }
+
+            // string target, string method, 
+            var target = GetTargetUrl(reqTarget);
+            var request = (HttpWebRequest)WebRequest.CreateDefault(new Uri(target, UriKind.Absolute));
+            var requestData = "";
+            //request.Accept = "application/json";
+
+            if (reqTarget == ApiRequestTarget.Game || reqTarget == ApiRequestTarget.Players)
+            {
+                request.Timeout = 25000;
+            }
+
+            request.ServicePoint.ConnectionLimit = 100;
+            request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36";
+            request.Method = GetMethod(type);
+            request.CookieContainer = cookieContainer;
+            request.ServerCertificateValidationCallback += (sender, certificate, chain, errors) => true;
+
+            if (authToken != null)
+            {
+                request.Headers["auth-token"] = JsonConvert.SerializeObject(authToken).Base64Encode();
+            }
+
+            if (sessionToken != null)
+            {
+                request.Headers["session-token"] = JsonConvert.SerializeObject(sessionToken).Base64Encode();
+            }
+
+            if (parameters != null)
+            {
+                var named = parameters.Where(x => !string.IsNullOrEmpty(x.Key)).ToList();
+                if (model != null)
+                {
+                    foreach (var param in named)
+                    {
+                        request.Headers[param.Key] = param.Value;
+                    }
+                }
+                else if (named.Count > 0)
+                {
+                    requestData = "{" + string.Join(",", named.Select(x => "\"" + x.Key + "\": " + x.Value)) + "}";
+                }
+            }
+
+            if (model != null)
+            {
+                requestData = JsonConvert.SerializeObject(model);
+            }
+
+            if (!string.IsNullOrEmpty(requestData))
+            {
+                request.ContentType = "application/json";
+                request.ContentLength = Encoding.UTF8.GetByteCount(requestData);
+                using (var reqStream = request.GetRequestStream())
+                using (var writer = new StreamWriter(reqStream))
+                {
+                    writer.Write(requestData);
+                    writer.Flush();
+                }
+            }
+
+            string responseData = "";
+
+            try
+            {
+                using (var response = request.GetResponse())
+                using (var resStream = response.GetResponseStream())
+                using (var reader = new StreamReader(resStream))
+                {
+                    var r = ((HttpWebResponse)response);
+
+                    responseData = reader.ReadToEnd();
 
                     if (r.StatusCode == HttpStatusCode.Forbidden)
                     {
