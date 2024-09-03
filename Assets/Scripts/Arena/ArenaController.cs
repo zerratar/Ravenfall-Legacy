@@ -26,6 +26,9 @@ public class ArenaController : MonoBehaviour, IEvent
     public IReadOnlyList<PlayerController> JoinedPlayers => joinedPlayers;
     public IReadOnlyList<PlayerController> AvailablePlayers => joinedPlayers.Except(deadPlayers).AsList(InsideArena);
 
+    public string EventName => name;
+    public bool IsEventActive => Activated;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -78,7 +81,7 @@ public class ArenaController : MonoBehaviour, IEvent
         }
 
         // try force ending the event if it's still active
-        if (state == ArenaState.NotStarted || state == ArenaState.Finished)
+        if (state == ArenaState.Finished)
         {
             gameManager.Events.End(this);
         }
@@ -257,7 +260,7 @@ public class ArenaController : MonoBehaviour, IEvent
             return;
         }
 
-        if (gameManager.Events.TryStart(this) || Activated)
+        if (gameManager.Events.TryStart(this, true) || Activated)
         {
 #if DEBUG
             Debug.Log($"{player.PlayerName} joined the arena!");

@@ -72,7 +72,7 @@ namespace RavenNest.SDK.Endpoints
         {
             return request.Create()
                 .Method("delta")
-                .AddParameter(lastModified.ToString())
+                .AddParameter(lastModified.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"))
                 .Build()
                 .SendAsync<ItemCollection>(ApiRequestTarget.Items, ApiRequestType.Get);
         }

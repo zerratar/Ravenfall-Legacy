@@ -25,6 +25,10 @@ public class StreamRaidManager : MonoBehaviour, IEvent
 
     public StreamRaidNotifications Notifications => streamRaidNotifications;
 
+    public string EventName => raiderInfo.RaiderUserName + " Stream Raid";
+
+    public bool IsEventActive => Started;
+
     private void Start()
     {
         if (!streamRaidNotifications) streamRaidNotifications = FindAnyObjectByType<StreamRaidNotifications>();

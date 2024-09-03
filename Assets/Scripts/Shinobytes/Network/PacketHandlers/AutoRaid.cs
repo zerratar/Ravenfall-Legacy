@@ -1,11 +1,11 @@
 ﻿using System;
 
-public class RaidAuto : ChatBotCommandHandler<string>
+public class AutoRaid : ChatBotCommandHandler<string>
 {
     //public static DateTime lastCostUpdate = DateTime.UnixEpoch;
     public const int AutoJoinCost = 3000;
 
-    public RaidAuto(
+    public AutoRaid(
         GameManager game,
         RavenBotConnection server,
         PlayerManager playerManager)

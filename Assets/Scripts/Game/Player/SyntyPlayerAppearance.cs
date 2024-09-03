@@ -907,6 +907,10 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         var neck = transform.Find("Root/Hips/Spine_01/Spine_02/Spine_03/Neck");
         equipmentSlots[ItemType.Amulet] = neck;
         equipmentSlots[ItemType.Helmet] = neck.Find("Head/Head_Attachment");
+        equipmentSlots[ItemType.Mask] = equipmentSlots[ItemType.Helmet];
+        equipmentSlots[ItemType.Hat] = equipmentSlots[ItemType.Helmet];
+        equipmentSlots[ItemType.HeadCovering] = equipmentSlots[ItemType.Helmet];
+
         equipmentSlots[ItemType.TwoHandedSword] = mainHand;
         equipmentSlots[ItemType.TwoHandedStaff] = mainHand;
         equipmentSlots[ItemType.TwoHandedBow] = offHand;

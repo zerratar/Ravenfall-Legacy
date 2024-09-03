@@ -1,10 +1,10 @@
 ﻿using System;
-public class DungeonAuto : ChatBotCommandHandler<string>
+public class AutoDungeon : ChatBotCommandHandler<string>
 {
     //public static DateTime lastCostUpdate = DateTime.UnixEpoch;
     public const int AutoJoinCost = 5000;
 
-    public DungeonAuto(
+    public AutoDungeon(
         GameManager game,
         RavenBotConnection server,
         PlayerManager playerManager)

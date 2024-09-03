@@ -1,8 +1,5 @@
 ﻿using RavenNest.Models;
-using System;
-using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
-using UnityEngine.Rendering.UI;
 
 public class OnsenHandler : MonoBehaviour
 {
@@ -18,6 +15,42 @@ public class OnsenHandler : MonoBehaviour
     public const double RestedGainFactor = 2.0;
     public const double RestedDrainFactor = 1.0;
 
+    private bool hasSetTransform;
+    private Transform transformInternal;
+
+    public bool AutoRestAvailable
+    {
+        get
+        {
+            var rested = player.Rested;
+
+            return rested.AutoRestTarget.HasValue &&
+            rested.AutoRestStart.HasValue &&
+            rested.AutoRestTarget.Value > 0 &&
+            // player cannot be on or waiting for the ferry, in dungeon, in raid, duel or arena
+            !player.ferryHandler.OnFerry &&
+            player.ferryHandler.State != PlayerFerryState.Embarking &&
+            !player.dungeonHandler.InDungeon &&
+            !player.raidHandler.InRaid &&
+            !player.duelHandler.InDuel &&
+            !player.arenaHandler.InArena &&
+            !player.streamRaidHandler.InWar;
+        }
+    }
+
+    public bool ShouldAutoRest
+    {
+        get
+        {
+            var rested = player.Rested;
+            var autoRestStart = rested.AutoRestStart.Value;
+            var restedMinutes = rested.RestedTime / 60;
+            return restedMinutes <= rested.AutoRestStart
+                && !InOnsen // if we are not already resting
+                && player.GameManager.Onsen.RestingAreaAvailable(player.Island);
+        }
+    }
+
     public void Poll()
     {
         var rested = player.Rested;
@@ -32,31 +65,17 @@ public class OnsenHandler : MonoBehaviour
         }
 
         // check if we have auto rest on
-        if (player.Rested.AutoRestTarget.HasValue &&
-            player.Rested.AutoRestStart.HasValue &&
-            player.Rested.AutoRestTarget.Value > 0 &&
-            // player cannot be on or waiting for the ferry, in dungeon, in raid, duel or arena
-            !player.ferryHandler.OnFerry &&
-            player.ferryHandler.State != PlayerFerryState.Embarking &&
-            !player.dungeonHandler.InDungeon && 
-            !player.raidHandler.InRaid &&
-            !player.duelHandler.InDuel && 
-            !player.arenaHandler.InArena && 
-            !player.streamRaidHandler.InWar)
+        if (AutoRestAvailable)
         {
-            var autoRestTarget = player.Rested.AutoRestTarget.Value;
-            var autoRestStart = player.Rested.AutoRestStart.Value;
-            var restedMinutes = player.Rested.RestedTime / 60;
-            if (restedMinutes <= player.Rested.AutoRestStart 
-                && !InOnsen // if we are not already resting
-                && player.GameManager.Onsen.RestingAreaAvailable(player.Island))
+            var restedMinutes = rested.RestedTime / 60;
+            if (ShouldAutoRest)
             {
                 player.GameManager.Onsen.Join(player);
                 return;
             }
-            else if (InOnsen && restedMinutes >= player.Rested.AutoRestTarget)
+            else if (InOnsen && restedMinutes >= rested.AutoRestTarget)
             {
-                player.GameManager.Onsen.Leave(player);
+                player.onsenHandler.Exit();
                 return;
             }
         }
@@ -70,13 +89,20 @@ public class OnsenHandler : MonoBehaviour
             return;
         }
 
-        if (!this.transform.parent || activeOnsen == null)
+        if (!hasSetTransform)
+        {
+            hasSetTransform = true;
+            transformInternal = this.transform;
+        }
+
+        var parent = transformInternal.parent;
+        if (!parent || activeOnsen == null)
         {
             this.InOnsen = false;
             return;
         }
 
-        if (this.transform.parent.GetInstanceID() != onsenParentID)
+        if (parent.GetInstanceID() != onsenParentID)
         {
             this.InOnsen = false;
             return;
@@ -91,7 +117,7 @@ public class OnsenHandler : MonoBehaviour
         if (this.InOnsen)
         {
             // force player position
-            player.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            transformInternal.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             player.ClearTarget();
         }
     }
@@ -118,7 +144,7 @@ public class OnsenHandler : MonoBehaviour
         player.ClearTarget();
 
         player.Island = player.GameManager.Islands.FindPlayerIsland(player);
-        if (player.Island)
+        if (player.Island != null)
         {
             player.Island.AddPlayer(player);
         }
@@ -161,8 +187,7 @@ public class OnsenHandler : MonoBehaviour
         if (InOnsen)
         {
             player.transform.SetParent(null);
-            player.teleportHandler.Teleport(prevOnsen.EntryPoint, true, true);
-            player.Movement.Unlock();
+            player.teleportHandler.Teleport(prevOnsen.EntryPoint, true);
         }
 
         prevOnsen.UpdateDetailsLabel();
@@ -171,8 +196,9 @@ public class OnsenHandler : MonoBehaviour
 
     internal void ClearAutoRest()
     {
-        player.Rested.AutoRestTarget = null;
-        player.Rested.AutoRestStart = null;
+        var rested = player.Rested;
+        rested.AutoRestTarget = null;
+        rested.AutoRestStart = null;
     }
 
     internal bool SetAutoRest(int autoRestStart, int autoRestStop)
@@ -190,8 +216,9 @@ public class OnsenHandler : MonoBehaviour
             return false;
         }
 
-        player.Rested.AutoRestStart = autoRestStart;
-        player.Rested.AutoRestTarget = autoRestStop;
+        var rested = player.Rested;
+        rested.AutoRestStart = autoRestStart;
+        rested.AutoRestTarget = autoRestStop;
         return true;
     }
 }

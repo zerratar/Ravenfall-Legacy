@@ -1,4 +1,5 @@
-﻿using RavenNest.Models;
+﻿using Assets.Scripts;
+using RavenNest.Models;
 using Shinobytes.Linq;
 using System;
 using System.Collections;
@@ -28,8 +29,11 @@ public class DungeonManager : MonoBehaviour, IEvent
     [SerializeField] private float combatStatsScale = 0.75f;
     [SerializeField] private float mobsCombatStatsScale = 0.33f;
 
+    private float lastDungeonRewardTime;
+
     private readonly object mutex = new object();
 
+    private readonly HashSet<Guid> joinedPlayerId = new();
     private readonly List<PlayerController> joinedPlayers = new();
     private readonly List<PlayerController> deadPlayers = new();
     private readonly List<PlayerController> alivePlayers = new();
@@ -64,7 +68,15 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private Queue<Func<Task>> rewardQueue = new Queue<Func<Task>>();
 
+    public bool HasBeenAnnounced { get; private set; }
+
+    public string EventName => Dungeon?.Name ?? "Dungeon";
+
+    public bool IsEventActive => Active && Dungeon != null && Dungeon?.BossRoom?.Boss != null;
+
     private int isProcessingRewardQueue;
+    private float adjustStatsTimer;
+
     public Vector3 StartingPoint
     {
         get
@@ -162,9 +174,6 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    public bool HasBeenAnnounced { get; private set; }
-
-
     // Start is called before the first frame update
     void Start()
     {
@@ -217,20 +226,30 @@ public class DungeonManager : MonoBehaviour, IEvent
             return;
         }
 
+        if (GameCache.IsAwaitingGameRestore)
+        {
+            rewardQueue.Clear();
+            return;
+        }
+
         if (rewardQueue.Count > 0 && Interlocked.CompareExchange(ref isProcessingRewardQueue, 1, 0) == 0)
         {
             ProcessRewardQueueAsync();
         }
 
+        if (adjustStatsTimer > 0)
+        {
+            adjustStatsTimer -= GameTime.deltaTime;
+            if (adjustStatsTimer <= 0)
+            {
+                AdjustEnemyStats();
+                AdjustBossStats();
+            }
+        }
+
         UpdateDungeonTimer();
         UpdateDungeonStartTimer();
         UpdateDungeon();
-    }
-
-    public void SignalPlayersBeenRewarded()
-    {
-        state = DungeonManagerState.None;
-        gameManager.Events.End(this);
     }
 
     private async Task ProcessRewardQueueAsync()
@@ -239,10 +258,14 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             if (rewardQueue.TryDequeue(out var addItems))
             {
+                rewardQueue.Clear();
                 await addItems();
             }
         }
-        catch { }
+        catch
+        {
+            rewardQueue.Clear();
+        }
         finally
         {
             Interlocked.Exchange(ref isProcessingRewardQueue, 0);
@@ -263,7 +286,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         //{
         if (this.state == DungeonManagerState.None)
         {
-            yield return ActivateDungeon();
+            yield return ActivateDungeon(gameManager.Players.GetRandom());
         }
         else
         {
@@ -371,7 +394,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         try
         {
-            if (gameManager.Events.TryStart(this))
+            if (gameManager.Events.TryStart(this, initiator != null))
             {
 
                 HasBeenAnnounced = false;
@@ -447,7 +470,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         lock (mutex)
         {
-            return joinedPlayers.Contains(player);
+            return joinedPlayerId.Contains(player.Id);
         }
     }
 
@@ -455,6 +478,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         lock (mutex)
         {
+            joinedPlayerId.Remove(player.Id);
             joinedPlayers.Remove(player);
             deadPlayers.Remove(player);
             player.dungeonHandler.Clear();
@@ -471,7 +495,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         lock (mutex)
         {
-            if (joinedPlayers.Contains(player))
+            if (joinedPlayerId.Contains(player.Id))
                 return DungeonJoinResult.AlreadyJoined;
 
             return DungeonJoinResult.CanJoin;
@@ -500,18 +524,18 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         lock (mutex)
         {
-            if (joinedPlayers.Contains(player)) return;
+            if (joinedPlayerId.Contains(player.Id)) return;
 
             // don't interrupt until we are teleported to the dungeon.
             //player.InterruptAction();
 
+            joinedPlayerId.Add(player.Id);
             joinedPlayers.Add(player);
             alivePlayers.Add(player);
 
             SpawnEnemies();
 
-            AdjustBossStats();
-            AdjustEnemyStats();
+            adjustStatsTimer = 0.5f;
         }
     }
 
@@ -526,6 +550,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         Shinobytes.Debug.Log("Dungeon ended in a success.");
         var players = GetPlayers();
+
         foreach (var player in players)
         {
             player.dungeonHandler.OnExit();
@@ -685,23 +710,30 @@ public class DungeonManager : MonoBehaviour, IEvent
             return healthScale * (playerCount / (float)MinPlayerCountForHealthScaling) * Dungeon.BossHealthScale;
         }
     }
-
-
-
     private void RewardPlayers()
     {
         lock (mutex)
         {
-            state = DungeonManagerState.RewardingPlayers;
-
-            RewardItemDrops(joinedPlayers);
-
-            foreach (var player in joinedPlayers)
+            var timeSinceLastReward = Time.time - lastDungeonRewardTime;
+            if (timeSinceLastReward >= 5 || lastDungeonRewardTime <= 0)
             {
-                Dungeon.AddExperienceReward(player);
+                RewardItemDrops(joinedPlayers);
+
+                foreach (var player in joinedPlayers)
+                {
+                    Dungeon.AddExperienceReward(player);
+                }
             }
+            else
+            {
+#if DEBUG
+                Shinobytes.Debug.LogWarning("Dungeon ended very quickly. We will be skipping the reward this time.");
+#endif
+            }
+            lastDungeonRewardTime = Time.time;
         }
     }
+
     public async void RewardItemDrops(IReadOnlyList<PlayerController> joinedPlayers)
     {
         var playersToBeRewarded = joinedPlayers.Select(x => x.Id).ToArray();
@@ -710,6 +742,11 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     public async Task RewardPlayersAsync(DungeonTier tier, Guid[] playersToBeRewarded, int retryCount = 0)
     {
+        if (playersToBeRewarded == null || playersToBeRewarded.Length == 0)
+        {
+            return;
+        }
+
         if (retryCount > 0)
         {
             if (retryCount > 1000)
@@ -766,8 +803,6 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot.Announce(msg);
         }
-
-        SignalPlayersBeenRewarded();
     }
 
 
@@ -783,12 +818,14 @@ public class DungeonManager : MonoBehaviour, IEvent
                 gameManager.Camera.ReleaseFreeCamera();
             }
 
-            //generatedEnemies = null;
-            if (state != DungeonManagerState.RewardingPlayers)
+            state = DungeonManagerState.None;
+
+            lock (mutex)
             {
-                state = DungeonManagerState.None;
+                joinedPlayers.Clear();
+                joinedPlayerId.Clear();
             }
-            lock (mutex) joinedPlayers.Clear();
+
             alivePlayers.Clear();
             deadPlayers.Clear();
 
@@ -804,17 +841,12 @@ public class DungeonManager : MonoBehaviour, IEvent
             if (!currentDungeon) return;
 
             currentDungeon.DisableContainer();
-
             currentDungeon.gameObject.SetActive(false);
 
             notificationTimer = notificationUpdate;
             dungeonStartTimer = timeForDungeonStart;
 
             gameManager.Camera.DisableDungeonCamera();
-
-            currentDungeon = null;
-
-            Boss = null;
         }
         catch (Exception exc)
         {
@@ -824,10 +856,10 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             ScheduleNextDungeon();
 
-            if (state != DungeonManagerState.RewardingPlayers)
-            {
-                gameManager.Events.End(this);
-            }
+            state = DungeonManagerState.None;
+            currentDungeon = null;
+            Boss = null;
+            gameManager.Events.End(this);
         }
     }
 
@@ -839,7 +871,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         UpdateTimer(ref dungeonStartTimer, StartDungeon);
 
-        lock (mutex) if (!joinedPlayers.Any()) return;
+        lock (mutex) if (joinedPlayers.Count == 0) return;
         UpdateTimer(ref notificationTimer, SendNotification);
     }
 
@@ -895,7 +927,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         lock (mutex)
         {
-            if (!joinedPlayers.Any())
+            if (joinedPlayers.Count == 0)
             {
                 ResetDungeon();
                 return;
@@ -1081,5 +1113,5 @@ public enum DungeonManagerState
     None,
     Active,
     Started,
-    RewardingPlayers
+    //RewardingPlayers
 }

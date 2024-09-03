@@ -273,6 +273,11 @@ public class Skills : IComparable
     {
         get
         {
+            if (skill == Skill.Melee)
+            {
+                return Health;
+            }
+
             var index = (int)skill;
             if (this.SkillList.Length < index)
             {

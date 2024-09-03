@@ -51,7 +51,7 @@ namespace Shinobytes
 
         private const string CustomLogFile = "ravenfall.log";
         private const string CustomPrevLogFile = "ravenfall-prev.log";
-
+        private static readonly object mutex = new object();
         static Debug()
         {
             PatchIfNecessary();
@@ -81,19 +81,22 @@ namespace Shinobytes
             if (logToFile)
             {
                 Application.logMessageReceived += Application_logMessageReceived;
-                //Application.logMessageReceivedThreaded += Application_logMessageReceivedThreaded;
-                TargetLogFilePath = Path.Combine(appDataFolder, CustomLogFile);
-                if (System.IO.File.Exists(TargetLogFilePath))
+                lock (mutex)
                 {
-                    // copy to a backup file
-                    var backupFile = Path.Combine(appDataFolder, CustomPrevLogFile);
-                    if (System.IO.File.Exists(backupFile))
+                    //Application.logMessageReceivedThreaded += Application_logMessageReceivedThreaded;
+                    TargetLogFilePath = Path.Combine(appDataFolder, CustomLogFile);
+                    if (System.IO.File.Exists(TargetLogFilePath))
                     {
-                        System.IO.File.Delete(backupFile);
+                        // copy to a backup file
+                        var backupFile = Path.Combine(appDataFolder, CustomPrevLogFile);
+                        if (System.IO.File.Exists(backupFile))
+                        {
+                            System.IO.File.Delete(backupFile);
+                        }
+                        System.IO.File.Move(TargetLogFilePath, backupFile);
                     }
-                    System.IO.File.Move(TargetLogFilePath, backupFile);
+                    AppendSystemInfo(TargetLogFilePath);
                 }
-                AppendSystemInfo(TargetLogFilePath);
             }
             else
             {
@@ -114,36 +117,46 @@ namespace Shinobytes
             if (!logToFile || string.IsNullOrEmpty(TargetLogFilePath) || string.IsNullOrEmpty(condition)) return false;
             if (!Filter(condition, type)) return false;
 
-            var count = Interlocked.Increment(ref logCounter);
-            if (count > 200)
+            lock (mutex)
             {
-                var logFile = new FileInfo(TargetLogFilePath);
-                if (logFile.Length > 1024 * 1024 * 10)
+                var count = Interlocked.Increment(ref logCounter);
+                if (count > 200)
                 {
-                    var backupFile = Path.Combine(logFile.DirectoryName, CustomPrevLogFile);
-                    if (System.IO.File.Exists(backupFile))
+                    var logFile = new FileInfo(TargetLogFilePath);
+                    if (logFile.Length > 1024 * 1024 * 10)
                     {
-                        System.IO.File.Delete(backupFile);
+                        var backupFile = Path.Combine(logFile.DirectoryName, CustomPrevLogFile);
+                        if (System.IO.File.Exists(backupFile))
+                        {
+                            System.IO.File.Delete(backupFile);
+                        }
+                        System.IO.File.Move(TargetLogFilePath, backupFile);
+                        AppendSystemInfo(TargetLogFilePath);
+                        File.AppendAllText(TargetLogFilePath, "Log file exceeded 10MB, backed up to " + backupFile + Environment.NewLine);
                     }
-                    System.IO.File.Move(TargetLogFilePath, backupFile);
-                    AppendSystemInfo(TargetLogFilePath);
-                    File.AppendAllText(TargetLogFilePath, "Log file exceeded 10MB, backed up to " + backupFile + Environment.NewLine);
+
+                    Interlocked.Exchange(ref logCounter, 0);
+
+                    // delete the player.log file, it should not be used.
+                    // if the game crashes, then the player.log will only contain the crash log.
+                    // while the ravenfall.log will contain game logs.
+
+                    try
+                    {
+                        if (System.IO.File.Exists(PlayerLogFilePath))
+                        {
+                            System.IO.File.Delete(PlayerLogFilePath);
+                        }
+                    }
+                    catch
+                    {
+                        // ignore this as it could be Unity trying to write to the file.
+                    }
                 }
 
-                Interlocked.Exchange(ref logCounter, 0);
-
-                // delete the player.log file, it should not be used.
-                // if the game crashes, then the player.log will only contain the crash log.
-                // while the ravenfall.log will contain game logs.
-
-                if (System.IO.File.Exists(PlayerLogFilePath))
-                {
-                    System.IO.File.Delete(PlayerLogFilePath);
-                }
+                File.AppendAllText(TargetLogFilePath, "[" + type.ToString().PadLeft(9) + "] " + condition + Environment.NewLine + stackTrace);
+                return true;
             }
-
-            File.AppendAllText(TargetLogFilePath, "[" + type.ToString().PadLeft(9) + "] " + condition + Environment.NewLine + stackTrace);
-            return true;
         }
 
         private static bool Filter(string message, LogType logType)
@@ -172,44 +185,47 @@ namespace Shinobytes
 
         private static void AppendSystemInfo(string logFilePath)
         {
-            var sb = new StringBuilder();
+            lock (mutex)
+            {
+                var sb = new StringBuilder();
 
-            sb.AppendLine("Unity Version: " + Application.unityVersion);
-            sb.AppendLine("Game Version: " + Application.version);
+                sb.AppendLine("Unity Version: " + Application.unityVersion);
+                sb.AppendLine("Game Version: " + Application.version);
 
-            sb.AppendLine();
-            sb.AppendLine("[System]");
-            sb.AppendLine("OS: " + SystemInfo.operatingSystem);
-            sb.AppendLine("System Memory Size: " + SystemInfo.systemMemorySize);
+                sb.AppendLine();
+                sb.AppendLine("[System]");
+                sb.AppendLine("OS: " + SystemInfo.operatingSystem);
+                sb.AppendLine("System Memory Size: " + SystemInfo.systemMemorySize);
 
-            sb.AppendLine();
-            sb.AppendLine("[Processor]");
-            sb.AppendLine("Type: " + SystemInfo.processorType);
-            //sb.AppendLine("Model: " + SystemInfo.processorModel);
-            sb.AppendLine("Count: " + SystemInfo.processorCount);
-            sb.AppendLine("Frequency: " + SystemInfo.processorFrequency);
+                sb.AppendLine();
+                sb.AppendLine("[Processor]");
+                sb.AppendLine("Type: " + SystemInfo.processorType);
+                //sb.AppendLine("Model: " + SystemInfo.processorModel);
+                sb.AppendLine("Count: " + SystemInfo.processorCount);
+                sb.AppendLine("Frequency: " + SystemInfo.processorFrequency);
 
-            sb.AppendLine();
-            sb.AppendLine("[Graphics Device]");
-            sb.AppendLine("Name: " + SystemInfo.graphicsDeviceName);
-            sb.AppendLine("Vendor: " + SystemInfo.graphicsDeviceVendor);
-            sb.AppendLine("Vendor ID: " + SystemInfo.graphicsDeviceVendorID);
-            sb.AppendLine("ID: " + SystemInfo.graphicsDeviceID);
-            sb.AppendLine("Type: " + SystemInfo.graphicsDeviceType);
-            sb.AppendLine("Version: " + SystemInfo.graphicsDeviceVersion);
-            sb.AppendLine("Memory Size: " + SystemInfo.graphicsMemorySize);
-            sb.AppendLine("Multi Threaded: " + SystemInfo.graphicsMultiThreaded);
-            sb.AppendLine("Shader Level: " + SystemInfo.graphicsShaderLevel);
-            sb.AppendLine("UV Starts At Top: " + SystemInfo.graphicsUVStartsAtTop);
+                sb.AppendLine();
+                sb.AppendLine("[Graphics Device]");
+                sb.AppendLine("Name: " + SystemInfo.graphicsDeviceName);
+                sb.AppendLine("Vendor: " + SystemInfo.graphicsDeviceVendor);
+                sb.AppendLine("Vendor ID: " + SystemInfo.graphicsDeviceVendorID);
+                sb.AppendLine("ID: " + SystemInfo.graphicsDeviceID);
+                sb.AppendLine("Type: " + SystemInfo.graphicsDeviceType);
+                sb.AppendLine("Version: " + SystemInfo.graphicsDeviceVersion);
+                sb.AppendLine("Memory Size: " + SystemInfo.graphicsMemorySize);
+                sb.AppendLine("Multi Threaded: " + SystemInfo.graphicsMultiThreaded);
+                sb.AppendLine("Shader Level: " + SystemInfo.graphicsShaderLevel);
+                sb.AppendLine("UV Starts At Top: " + SystemInfo.graphicsUVStartsAtTop);
 
-            sb.AppendLine();
-            sb.AppendLine("[Device]");
-            sb.AppendLine("Model: " + SystemInfo.deviceModel);
-            sb.AppendLine("Name: " + SystemInfo.deviceName);
-            sb.AppendLine("Type: " + SystemInfo.deviceType);
-            sb.AppendLine("Unique Identifier: " + SystemInfo.deviceUniqueIdentifier);
-            sb.AppendLine();
-            File.AppendAllText(logFilePath, sb.ToString());
+                sb.AppendLine();
+                sb.AppendLine("[Device]");
+                sb.AppendLine("Model: " + SystemInfo.deviceModel);
+                sb.AppendLine("Name: " + SystemInfo.deviceName);
+                sb.AppendLine("Type: " + SystemInfo.deviceType);
+                sb.AppendLine("Unique Identifier: " + SystemInfo.deviceUniqueIdentifier);
+                sb.AppendLine();
+                File.AppendAllText(logFilePath, sb.ToString());
+            }
         }
 
 

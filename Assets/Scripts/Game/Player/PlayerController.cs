@@ -153,8 +153,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     {
         get => (attackTarget as IAttackable) ?? (taskTarget as IAttackable);
     }
-    public CharacterRestedState Rested { get; private set; } = new CharacterRestedState();
-    public RavenNest.Models.Player Definition { get; private set; }
+
+    [NonSerialized] public CharacterRestedState Rested = new CharacterRestedState();
+    [NonSerialized] public RavenNest.Models.Player Definition;
 
     private Transform cachedTransform;
     public Transform Transform
@@ -601,7 +602,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public void Update()
     {
-        FreezeChecker.SetCurrentScriptUpdate(this);
+        FreezeChecker.SetCurrentScriptUpdate(this.PlayerName);
 
         if ((IsBot && !Overlay.IsGame) || GameCache.IsAwaitingGameRestore)
         {
@@ -710,6 +711,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         actionTimer -= deltaTime;
 
         if (onsenHandler.InOnsen)
+            return;
+
+        // in case we are about to go auto-resting, we shouldnt trigger anything
+        if (onsenHandler.AutoRestAvailable && onsenHandler.ShouldAutoRest)
             return;
 
         this.Movement.UpdateMovement();
@@ -1940,7 +1945,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (onsenHandler.InOnsen)
         {
-            Game.Onsen.Leave(this);
+            this.onsenHandler.Exit();
         }
 
         if (Game.Arena.HasJoined(this))
@@ -3039,15 +3044,15 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         transform.rotation = Quaternion.Euler(rotAfter.x, rotBefore.y, rotAfter.z);
     }
 
-    public bool SetDestination(Vector3 position, bool adjustToNavmesh = false)
+    public bool SetDestination(Vector3 position)
     {
         InCombat = duelHandler.InDuel || attackTarget;
-        return Movement.SetDestination(position, adjustToNavmesh);
+        return Movement.SetDestination(position);
     }
 
-    public void SetPosition(Vector3 position, bool adjustToNavmesh = true)
+    public void SetPosition(Vector3 position)
     {
-        this.Movement.SetPosition(position, adjustToNavmesh);
+        this.Movement.SetPosition(position);
         this.Island = GameManager.Islands.FindPlayerIsland(this);
     }
 
@@ -3387,7 +3392,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         Stats.Health.Reset();
 
-        Movement.Unlock(true);
+        Movement.Unlock();
 
         if (Chunk != null && Chunk.Island != Island)
             GotoClosest(Chunk.ChunkType);
@@ -3477,7 +3482,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             if (onsenHandler.InOnsen)
             {
                 // leave and join onsen
-                GameManager.Onsen.Leave(this);
+                this.onsenHandler.Exit();
                 GameManager.Onsen.Join(this);
                 return true;
             }
@@ -3498,6 +3503,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 if (!i) i = GameManager.Islands.All.OrderBy(x => Vector3.Distance(x.SpawnPositionTransform.position, this.transform.position)).FirstOrDefault();
                 if (!i) i = GameManager.Islands.All.FirstOrDefault(x => x.Identifier == "home");
                 this.SetPosition(i.SpawnPosition);
+
+                if (!string.IsNullOrEmpty(CurrentTaskName))
+                {
+                    SetTask(currentTask, taskArgument, true);
+                }
+
                 return true;
             }
 

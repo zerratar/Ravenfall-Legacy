@@ -60,11 +60,11 @@ public class DungeonForce : ChatBotCommandHandler
                     return;
                 }
 
-                if (Game.Events.IsEventCooldownActive)
-                {
-                    client.SendReply(gm, "Dungeon cannot be started so quickly after eachother. Please wait {seconds} seconds.", UnityEngine.Mathf.RoundToInt(Game.Events.EventCooldownTimeLeft));
-                    return;
-                }
+                //if (Game.Events.IsEventCooldownActive)
+                //{
+                //    client.SendReply(gm, "Dungeon cannot be started so quickly after eachother. Please wait {seconds} seconds.", UnityEngine.Mathf.RoundToInt(Game.Events.EventCooldownTimeLeft));
+                //    return;
+                //}
 
                 Game.Dungeons.IsBusy = true;
                 var result = await Game.RavenNest.Game.ActivateDungeonAsync(plr);

@@ -45,7 +45,7 @@
                 return;
             }
 
-            Game.Onsen.Leave(player);
+            player.onsenHandler.Exit();
 
             //Game.RavenBot.SendReply(player, Localization.MSG_ONSEN_LEFT);
         }

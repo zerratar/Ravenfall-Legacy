@@ -137,14 +137,14 @@ public class PlayerMovementController : MonoBehaviour
         IdleTime = 0;
     }
 
-    internal bool SetDestination(Vector3 pos, bool adjustToNavMesh)
+    internal bool SetDestination(Vector3 pos)
     {
         if (Destination == pos && navMeshAgent.destination == pos)
         {
             return true;
         }
 
-        Unlock(adjustToNavMesh);
+        Unlock();
 
         if (!navMeshAgent.isActiveAndEnabled
             // || !navMeshAgent.isOnNavMesh
@@ -169,27 +169,6 @@ public class PlayerMovementController : MonoBehaviour
             }
 
             navMeshAgent.SetPath(CurrentPath);
-        }
-        else
-        {
-            navMeshAgent.enabled = false;
-            navMeshAgent.enabled = true;
-
-            if (!navMeshAgent.isOnNavMesh)
-            {
-                navmeshErrorCount++;
-#if UNITY_EDITOR
-                if (navmeshErrorCount > 5)
-                {
-                    Shinobytes.Debug.LogError("Player '" + this.name + "' is not on a navmesh, cannot calculate path to destination: " + pos);
-                }
-#endif
-                if (navmeshErrorCount >= 5)
-                {
-                    AdjustPlayerPositionToNavmesh();
-                    navmeshErrorCount = 0;
-                }
-            }
         }
 
         this.PathStatus = CurrentPath.status;
@@ -227,29 +206,30 @@ public class PlayerMovementController : MonoBehaviour
         this.movementLockState = MovementLockState.Locked;
     }
 
-    public void Unlock(bool adjustToNavmesh = false)
+    public void Unlock()
     {
-        if (adjustToNavmesh && !navMeshAgent.isOnNavMesh)
+        if (!navMeshAgent.isOnNavMesh)
         {
-            AdjustPlayerPositionToNavmesh();
+            AdjustPlayerPositionToNavmesh(0.5f);
         }
 
         navMeshAgent.enabled = true;
         movementLockState = MovementLockState.Unlocked;
     }
 
-    internal void SetPosition(Vector3 position, bool adjustToNavmesh, bool unlock)
+    internal void SetPosition(Vector3 position)
     {
-        SetPosition(position, adjustToNavmesh);
-        if (unlock) Unlock();
+        SetPositionImpl(position);
+        AdjustPlayerPositionToNavmesh(0.5f);
     }
 
-    internal void SetPosition(Vector3 position, bool adjustToNavmesh = true)
+    private bool SetPositionImpl(Vector3 position)
     {
+        var success = true;
         var agent = navMeshAgent;
         if (agent.enabled)
         {
-            agent.Warp(position);
+            success = agent.Warp(position);
         }
         else
         {
@@ -257,27 +237,32 @@ public class PlayerMovementController : MonoBehaviour
         }
 
         Position = position;
-
-        if (adjustToNavmesh)
-            AdjustPlayerPositionToNavmesh();
+        return success;
     }
 
-    public void AdjustPlayerPositionToNavmesh()
+    public void AdjustPlayerPositionToNavmesh(float maxDistance = 20f)
     {
         if (navMeshAgent.isOnNavMesh) return;
-        NavMeshHit closestHit;
-        if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMesh.AllAreas))
+        var currentPosition = gameObject.transform.position;
+
+        if (NavMeshHelper.SamplePosition(currentPosition, maxDistance, out var pos))
         {
-            var pos = closestHit.position;
-
-            gameObject.transform.position = pos;
-
-            var agent = navMeshAgent;
-            if (agent)
+            if (!SetPositionImpl(pos))
             {
-                agent.Warp(pos);
+#if DEBUG
+                Shinobytes.Debug.LogError(name + " could not be placed on the navmesh. Perhaps try nudging the player slightly.");
+#endif
+                var nudge = UnityEngine.Random.insideUnitSphere * 1f;
+                nudge.y = 0;
+                SetPositionImpl(currentPosition + nudge);
             }
         }
+#if DEBUG
+        else
+        {
+            Shinobytes.Debug.LogError("Could not find a valid position on the navmesh for " + name + " at " + currentPosition);
+        }
+#endif
     }
 
     public void SetAvoidancePriority(int v)

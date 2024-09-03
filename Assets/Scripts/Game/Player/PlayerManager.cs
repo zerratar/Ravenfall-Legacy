@@ -248,7 +248,7 @@ public class PlayerManager : MonoBehaviour
 
         if (!player.ferryHandler.OnFerry && !player.onsenHandler.InOnsen)
         {
-            player.Movement.Unlock(true);
+            player.Movement.Unlock();
         }
 
         player.IsBot = isBot;
@@ -528,6 +528,9 @@ public class PlayerManager : MonoBehaviour
         }
 
         gameManager.Village.TownHouses.InvalidateOwnership(controller);
+
+        //controller.Movement.AdjustPlayerPositionToNavmesh(0.5f);
+
         return controller;
     }
 
@@ -559,9 +562,9 @@ public class PlayerManager : MonoBehaviour
             var result = await gameManager.RavenNest.Players.RestoreAsync(new PlayerRestoreData
             {
                 Characters = id,
-//#if UNITY_EDITOR || DEBUG
+                //#if UNITY_EDITOR || DEBUG
                 ForceAdd = gameManager.SessionSettings.IsAdministrator
-//#endif
+                //#endif
             });
 
             var i = 0;
@@ -643,6 +646,11 @@ public class PlayerManager : MonoBehaviour
     internal int GetPlayerCountOnIslands()
     {
         return this.playerList.Count(x => x.Island != null);
+    }
+
+    internal PlayerController GetRandom()
+    {
+        return playerList.Random();
     }
 
     //internal Skills GetStoredPlayerSkills(Guid id)

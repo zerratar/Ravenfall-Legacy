@@ -90,6 +90,7 @@ public class DungeonRoomController : MonoBehaviour
 
     internal void ResetRoom()
     {
+        stuckCheckTime = 0;
         if (gate)
         {
             gate.Close();
@@ -154,7 +155,7 @@ public class DungeonRoomController : MonoBehaviour
                     stuckCheckEnemyHealth = totalEnemyHealth;
                     stuckCheckPlayerHealth = totalPlayerHealth;
                 }
-                else if (GameTime.time - stuckCheckTime > 10f)
+                else if (stuckCheckTime > 0 && GameTime.time - stuckCheckTime > 10f)
                 {
                     // forcibly kill all enemies.
                     Shinobytes.Debug.LogWarning("[" + dungeon.Name + "] Dungeon room " + name + " is stuck. Forcibly killing all enemies to proceed to the next room.");

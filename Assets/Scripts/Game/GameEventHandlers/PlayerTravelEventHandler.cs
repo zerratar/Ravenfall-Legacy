@@ -15,7 +15,7 @@ public class PlayerTravelEventHandler : GameEventHandler<RavenNest.Models.Player
 
         if (player.onsenHandler.InOnsen)
         {
-            gameManager.Onsen.Leave(player);
+            player.onsenHandler.Exit();
         }
 
         if (player.raidHandler.InRaid)

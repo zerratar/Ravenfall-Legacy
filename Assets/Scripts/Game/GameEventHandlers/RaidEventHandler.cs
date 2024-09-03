@@ -70,7 +70,7 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
 
     private IEnumerator StartRaidWar(GameManager gameManager, StreamRaidInfo raidInfo, IReadOnlyList<PlayerController> players, IReadOnlyList<PlayerController> raiders)
     {
-        if (gameManager.Events.TryStart(gameManager.StreamRaid))
+        if (gameManager.Events.TryStart(gameManager.StreamRaid, true))
         {
             var myPlayerCount = gameManager.Players.GetPlayerCount();
             var raiderPlayerCount = raidInfo.Players.Count;

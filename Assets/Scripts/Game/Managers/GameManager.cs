@@ -21,6 +21,7 @@ using UnityEditor;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
@@ -843,7 +844,7 @@ public class GameManager : MonoBehaviour, IGameManager
     void Update()
     {
         GameSystems.Update(!isReloadingScene);
-        FreezeChecker.SetCurrentScriptUpdate(this);
+        FreezeChecker.SetCurrentScriptUpdate("GameManager Update");
 
         if (isReloadingScene)
         {
@@ -1352,6 +1353,11 @@ public class GameManager : MonoBehaviour, IGameManager
             return null;
         }
 
+        if (!player.ferryHandler.OnFerry)
+        {
+            player.Movement.AdjustPlayerPositionToNavmesh(0.5f);
+        }
+
         playerList.AddPlayer(player);
 
         if (!isGameRestore && !BatchPlayerAddInProgress)
@@ -1855,7 +1861,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (GUI.Button(GetButtonRect(buttonIndex++), "Start Raid"))
             {
-                raidManager.StartRaid();
+                raidManager.StartRaid(Players.GetRandom());
             }
 
         }
@@ -2002,7 +2008,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 {
                     foreach (var p in Players.GetAllPlayers())
                     {
-                        p.Unstuck(true);
+                        p.Unstuck(true, 0);
                     }
                 }
             }
@@ -2677,7 +2683,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         foreach (var player in allPlayers)
         {
-            if (player.IsBot || Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Resources.Coins < RaidAuto.AutoJoinCost || player.raidHandler.AutoJoining || Raid.Initiator == player)
+            if (player.IsBot || Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Resources.Coins < AutoRaid.AutoJoinCost || player.raidHandler.AutoJoining || Raid.Initiator == player)
                 continue;
 
             if (player.raidHandler.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
@@ -2718,7 +2724,7 @@ public class GameManager : MonoBehaviour, IGameManager
                         {
                             plr.raidHandler.AutoJoinCounter--;
                         }
-                        plr.Resources.Coins -= RaidAuto.AutoJoinCost;
+                        plr.Resources.Coins -= AutoRaid.AutoJoinCost;
                     }
                 }
             }
@@ -2750,7 +2756,7 @@ public class GameManager : MonoBehaviour, IGameManager
         var autoJoinPlayers = new List<PlayerController>();
         foreach (var player in allPlayers)
         {
-            if (player.IsBot || Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Resources.Coins < DungeonAuto.AutoJoinCost || player.dungeonHandler.AutoJoining || Dungeons.Initiator == player)
+            if (player.IsBot || Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Resources.Coins < AutoDungeon.AutoJoinCost || player.dungeonHandler.AutoJoining || Dungeons.Initiator == player)
                 continue;
 
             if (player.dungeonHandler.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
@@ -2791,7 +2797,7 @@ public class GameManager : MonoBehaviour, IGameManager
                             plr.dungeonHandler.AutoJoinCounter--;
                         }
 
-                        plr.Resources.Coins -= DungeonAuto.AutoJoinCost;
+                        plr.Resources.Coins -= AutoDungeon.AutoJoinCost;
                     }
                 }
             }
@@ -2921,11 +2927,13 @@ public class FreezeChecker
     private static DateTime lastChange;
 
     private static string currentObjectName;
-    private static MonoBehaviour currentScriptUpdate;
+    private static string currentScriptMethodName;
+    private static string currentScriptFileName;
     private static Thread currentScriptThread;
 
     public static void Start()
     {
+#if DEBUG
         if (isRunning)
         {
             // we should clear out stacktraces and other stuff
@@ -2933,7 +2941,8 @@ public class FreezeChecker
             lock (mutex)
             {
                 currentObjectName = null;
-                currentScriptUpdate = null;
+                currentScriptFileName = null;
+                currentScriptMethodName = null;
                 currentScriptThread = null;
                 lastChange = DateTime.UtcNow;
             }
@@ -2948,10 +2957,12 @@ public class FreezeChecker
             freezeCheckThread.Name = "Freeze Check";
             freezeCheckThread.Start();
         }
+#endif
     }
 
-    public static void SetCurrentScriptUpdate(MonoBehaviour script)
+    public static void SetCurrentScriptUpdate(string objectName, [CallerMemberName] string scriptMethodName = null, [CallerFilePath] string scriptFile = null)
     {
+#if DEBUG
         lock (mutex)
         {
             lastChange = DateTime.UtcNow;
@@ -2960,14 +2971,17 @@ public class FreezeChecker
             //{
             //    currentScriptStackTrace = GetStackTrace();
             //}
-            currentObjectName = script.gameObject.name;
-            currentScriptUpdate = script;
+            currentObjectName = objectName;
+            currentScriptMethodName = scriptMethodName;
+            currentScriptFileName = scriptFile;
             currentScriptThread = Thread.CurrentThread;
         }
+#endif
     }
 
     private static void Run(object obj)
     {
+#if DEBUG
         lastChange = DateTime.UtcNow;
         var updateInterval = interval;
         while (isRunning)
@@ -2975,11 +2989,11 @@ public class FreezeChecker
             lock (mutex)
             {
                 var timeSinceLastChange = DateTime.UtcNow - lastChange;
-                if (timeSinceLastChange > timeout && currentScriptUpdate != null)
+                if (timeSinceLastChange > timeout && currentScriptFileName != null)
                 {
                     // most likely we have a crash or freeze
                     // we can also try and determine that the crash or freeze happened in the currentScriptUpdate.
-                    Debug.LogError("!!Freeze Detected!! Possible Culprit: " + currentScriptUpdate.GetType().FullName + " - Name: " + currentObjectName);
+                    Debug.LogError("!!Freeze Detected!! Possible Culprit: " + currentScriptFileName + "::" + currentScriptMethodName + " (" + currentObjectName + ")");
                     updateInterval = 30000;
                 }
                 else
@@ -2989,30 +3003,15 @@ public class FreezeChecker
             }
             System.Threading.Thread.Sleep(updateInterval);
         }
-    }
-
-    public static string GetStackTrace()
-    {
-        var stackTrace = "";
-        try
-        {
-            stackTrace = UnityEngine.StackTraceUtility.ExtractStackTrace();
-        }
-        catch
-        {
-        }
-
-        if (string.IsNullOrEmpty(stackTrace))
-        {
-            stackTrace = Environment.StackTrace;
-        }
-
-        return stackTrace;
+#endif
+        isRunning = false;
     }
 
     public static void Stop()
     {
+#if DEBUG
         Shinobytes.Debug.Log("Stopping freeze checker...");
         isRunning = false;
+#endif
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 
@@ -50,16 +51,24 @@ namespace RavenNest.SDK
         {
             lock (writelock)
             {
-                var prevForeground = Console.ForegroundColor;
-                var prevBackground = Console.BackgroundColor;
-                foreach (var op in operations)
+                try
                 {
-                    Console.ForegroundColor = op.ForegroundColor;
-                    Console.BackgroundColor = op.BackgroundColor;
-                    Console.Write(op.Text);
+                    var prevForeground = Console.ForegroundColor;
+                    var prevBackground = Console.BackgroundColor;
+                    foreach (var op in operations)
+                    {
+                        Console.ForegroundColor = op.ForegroundColor;
+                        Console.BackgroundColor = op.BackgroundColor;
+                        Console.Write(op.Text);
+                    }
+                    Console.ForegroundColor = prevForeground;
+                    Console.BackgroundColor = prevBackground;
                 }
-                Console.ForegroundColor = prevForeground;
-                Console.BackgroundColor = prevBackground;
+                catch (Exception exc)
+                {
+                    // ignored for now
+                }
+
                 if (newLine)
                 {
                     Console.WriteLine();
@@ -89,7 +98,7 @@ namespace RavenNest.SDK
                                 ops[ops.Count - 1] = new ConsoleWriteOperation(prevOp.Text.Remove(prevOp.Text.Length - 1), prevOp.ForegroundColor, prevOp.BackgroundColor);
                                 goto default;
                             }
-                            foregroundColor = ParseColor(tokens[++tokenIndex].Text);
+                            foregroundColor = ConsoleWriteOperation.EnsureValidColor(ParseColor(tokens[++tokenIndex].Text), Console.ForegroundColor);
                             ++tokenIndex;// var endToken = tokens[++tokenIndex];                            
                         }
                         break;
@@ -102,7 +111,7 @@ namespace RavenNest.SDK
                                 ops[ops.Count - 1] = new ConsoleWriteOperation(prevOp.Text.Remove(prevOp.Text.Length - 1), prevOp.ForegroundColor, prevOp.BackgroundColor);
                                 goto default;
                             }
-                            backgroundColor = ParseColor(tokens[++tokenIndex].Text);
+                            backgroundColor = ConsoleWriteOperation.EnsureValidColor(ParseColor(tokens[++tokenIndex].Text), Console.BackgroundColor);
                             ++tokenIndex;// var endToken = tokens[++tokenIndex];                            
                         }
                         break;
@@ -127,18 +136,20 @@ namespace RavenNest.SDK
             var possibleColorName = names.FirstOrDefault(x => x.Equals(color, StringComparison.OrdinalIgnoreCase));
             if (possibleColorName != null)
             {
-                return Enum.GetValues(typeof(ConsoleColor))
+                var val = Enum.GetValues(typeof(ConsoleColor))
                     .Cast<ConsoleColor>()
                     .ElementAt(Array.IndexOf(names, possibleColorName));
+                return val;
             }
 
             // ex: @whi@
             possibleColorName = names.FirstOrDefault(x => x.StartsWith(color, StringComparison.OrdinalIgnoreCase));
             if (possibleColorName != null)
             {
-                return Enum.GetValues(typeof(ConsoleColor))
+                var val = Enum.GetValues(typeof(ConsoleColor))
                     .Cast<ConsoleColor>()
                     .ElementAt(Array.IndexOf(names, possibleColorName));
+                return val;
             }
 
             return Console.ForegroundColor;
@@ -204,8 +215,18 @@ namespace RavenNest.SDK
             public ConsoleWriteOperation(string text, ConsoleColor foregroundColor, ConsoleColor backgroundColor)
             {
                 Text = text;
-                ForegroundColor = foregroundColor;
-                BackgroundColor = backgroundColor;
+                ForegroundColor = EnsureValidColor(foregroundColor, Console.ForegroundColor);
+                BackgroundColor = EnsureValidColor(backgroundColor, Console.BackgroundColor);
+            }
+
+            public static ConsoleColor EnsureValidColor(ConsoleColor color, ConsoleColor fallback)
+            {
+                var i = (int)color;
+                if (i < 0 || i > 15)
+                {
+                    return fallback;
+                }
+                return color;
             }
         }
     }

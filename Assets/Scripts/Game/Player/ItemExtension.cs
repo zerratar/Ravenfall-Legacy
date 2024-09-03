@@ -17,8 +17,8 @@ public static class ItemExtension
 
     public static int GetTotalStats(this Item item)
     {
-        return item.Level
-            + item.WeaponPower
+        return //item.Level
+            item.WeaponPower
             + item.WeaponAim
             + item.ArmorPower
             + item.MagicAim
@@ -31,8 +31,8 @@ public static class ItemExtension
     {
         var item = invItem.Item;
         var stats = invItem.GetItemStats();
-        return item.Level
-            + stats.WeaponPower
+        return // item.Level
+            stats.WeaponPower
             + stats.WeaponAim
             + stats.ArmorPower
             + stats.MagicAim

@@ -42,7 +42,9 @@ public class PlayerValidator
             // make sure we only call this once every 5 seconds.
             if (player.Unstuck(true, 5f))
             {
+#if DEBUG
                 Shinobytes.Debug.LogWarning("Unstuck attempt for " + player.Name + ".");
+#endif
                 player.Movement.AdjustPlayerPositionToNavmesh();
                 player.IsStuck = false;
             }
@@ -52,7 +54,9 @@ public class PlayerValidator
 
         if (!player.Island)
         {
+#if DEBUG
             Shinobytes.Debug.LogWarning(player.Name + " is not on an island! Please check scene view to see where this poor guy is.");
+#endif
             player.IsStuck = true;
             // record position, target, island, any details here, record the amount of bots effected, include current task and target
             return false;
@@ -90,8 +94,19 @@ public class PlayerValidator
 
             if (distanceToTarget > 2) // distance to target needs to be based on actual target.
             {
-                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has incomplete path: " +
-                    movement.PathStatus + ", current task: " + player.ActiveSkill);// + ", distance: " + distanceToTarget);
+#if DEBUG
+                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier +
+                    ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill + ", target: " + player.Target.name);// + ", distance: " + distanceToTarget);
+                                                                                                                                                   // can be target being stuck too.
+#endif
+                // Try unstucking the target as well if its an EnemyController
+
+                var enemyController = player.Target.GetComponent<EnemyController>();
+                if (enemyController)
+                {
+                    enemyController.Unstuck();
+                }
+
                 player.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary.
                 return false;
@@ -105,7 +120,8 @@ public class PlayerValidator
         if (player.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
             && !player.onsenHandler.InOnsen // we will stand still if we are in the onsen :)
             && player.ferryHandler.State != PlayerFerryState.Embarking // if we are embarking the ferry we will be standing still.
-            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 30 && timeSinceLastExecutedTask >= 30))
+            && ((movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) && timeSinceLastExecutedTask >= 5) || 
+                (movement.IdleTime >= 15 && timeSinceLastExecutedTask >= 15))
             && player.Target)
         {
             // if we are training Ranged or Magic, we could potentially be standing for a long time
@@ -118,7 +134,9 @@ public class PlayerValidator
 
             if (!ignored)
             {
+#if DEBUG
                 Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier + ", has been idling for much longer than expected for current task: " + player.ActiveSkill + ", idle: " + movement.IdleTime + ", time since last task: " + timeSinceLastExecutedTask);
+#endif
                 player.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary, but we can update amount of unique bots triggered out of bots using same skill.
                 return false;
@@ -141,11 +159,11 @@ public class PlayerValidator
             skill == RavenNest.Models.Skill.Defense ||
             skill == RavenNest.Models.Skill.Strength ||
             skill == RavenNest.Models.Skill.Health)
-            return 60f;
+            return 45f;
 
         if (skill == RavenNest.Models.Skill.Magic ||
             skill == RavenNest.Models.Skill.Ranged)
-            return 180f;
+            return 120f;
 
         if (skill == RavenNest.Models.Skill.Woodcutting)
             return 20f;

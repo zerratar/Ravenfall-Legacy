@@ -363,7 +363,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
 
     public void Poll()
     {
-        FreezeChecker.SetCurrentScriptUpdate(this);
+        FreezeChecker.SetCurrentScriptUpdate(this.Name);
         if (GameCache.IsAwaitingGameRestore)
         {
             return;
@@ -911,6 +911,22 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         if (AttackerNames.Add(player.PlayerName))
         {
             Attackers.Add(player);
+        }
+    }
+
+    internal void Unstuck()
+    {
+        if (!movement.navMeshAgent.isOnNavMesh)
+        {
+            // reset position to spawn position
+            // SetPosition(spawnPoint);
+
+            Lock();
+            gameObject.SetActive(true);
+            ClearAttackers();
+            attackerAggro.Clear();
+            transform.position = spawnPoint;
+            Unlock();
         }
     }
 }

@@ -91,11 +91,11 @@ public class DungeonController : MonoBehaviour
             this.activeCameraPoint = Room.CameraPoint;
         }
 
-        if (this.dungeonManager.Started && (!dungeonManager.Boss || dungeonManager.Boss.Enemy.Stats.IsDead))
-        {
-            Exit();
-            return;
-        }
+        //if (this.dungeonManager.Started && (!dungeonManager.Boss || dungeonManager.Boss.Enemy.Stats.IsDead))
+        //{
+        //    Exit();
+        //    return;
+        //}
     }
 
     private DungeonRoomController[] GetRooms()

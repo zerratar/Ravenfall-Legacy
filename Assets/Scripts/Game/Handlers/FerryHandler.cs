@@ -57,6 +57,7 @@ public class FerryHandler : MonoBehaviour
 
         if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon || player.duelHandler.InDuel)
         {
+            player.Animations.SetCaptainState(false);
             return;
         }
 
@@ -172,7 +173,7 @@ public class FerryHandler : MonoBehaviour
 
         if (player.onsenHandler.InOnsen)
         {
-            gameManager.Onsen.Leave(player);
+            player.onsenHandler.Exit();
         }
     }
 
@@ -236,7 +237,8 @@ public class FerryHandler : MonoBehaviour
 
             if (RemoveFromFerry())
             {
-                player.Movement.SetPosition(targetIsland.DockingArea.DockPosition, true, true);
+                player.Movement.SetPosition(targetIsland.DockingArea.DockPosition);
+                player.Movement.Unlock();
             }
 
             State = PlayerFerryState.None;
@@ -309,6 +311,7 @@ public class FerryHandler : MonoBehaviour
         //    }
         //}
 
+        player.Animations.ResetAnimationStates();
         lastFerryPoint = ferry.GetNextPlayerPoint(false);
         if (lastFerryPoint)
         {

@@ -61,11 +61,11 @@ public class RaidForce : ChatBotCommandHandler
                     return;
                 }
 
-                if (Game.Events.IsEventCooldownActive)
-                {
-                    client.SendReply(gm, "Raid cannot be started so quickly after eachother. Please wait {seconds} seconds.", UnityEngine.Mathf.RoundToInt(Game.Events.EventCooldownTimeLeft));
-                    return;
-                }
+                //if (Game.Events.IsEventCooldownActive)
+                //{
+                //    client.SendReply(gm, "Raid cannot be started so quickly after eachother. Please wait {seconds} seconds.", UnityEngine.Mathf.RoundToInt(Game.Events.EventCooldownTimeLeft));
+                //    return;
+                //}
 
                 Game.Raid.IsBusy = true;
                 var result = await Game.RavenNest.Game.ActivateRaidAsync(plr);

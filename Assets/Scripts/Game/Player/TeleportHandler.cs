@@ -17,7 +17,7 @@ public class TeleportHandler : MonoBehaviour
         if (!player) player = GetComponent<PlayerController>();
     }
 
-    public void Teleport(Vector3 position, bool ignoreParent, bool adjustPlayerToNavmesh)
+    public void Teleport(Vector3 position, bool ignoreParent)
     {
         if (!ignoreParent)
         {
@@ -32,7 +32,7 @@ public class TeleportHandler : MonoBehaviour
         parent = null;
         player.transform.parent = null;
         player.transform.localPosition = Vector3.zero;
-        player.SetPosition(position, adjustPlayerToNavmesh);
+        player.SetPosition(position);
     }
 
     public void Teleport(IslandController targetIsland, bool silent = false)
@@ -58,7 +58,7 @@ public class TeleportHandler : MonoBehaviour
 
         if (player.onsenHandler.InOnsen)
         {
-            player.GameManager.Onsen.Leave(player);
+            player.onsenHandler.Exit();
         }
 
         var hasParent = !!player.transform.parent;
@@ -72,8 +72,6 @@ public class TeleportHandler : MonoBehaviour
 
         player.Movement.Lock();
         player.SetPosition(position);
-        //player.SetDestination(position);
-
 
         if (!hasParent && parent)
         {

@@ -32,7 +32,7 @@
             {
                 foreach (var p in PlayerManager.GetAllPlayers())
                 {
-                    p.Unstuck();
+                    p.Unstuck(true, 5);
                 }
 
                 client.SendReply(gm, "Unstucking all players.");
@@ -71,7 +71,7 @@
         var result = player.Unstuck();
         if (!result)
         {
-            client.SendReply(gm, "Unstuck command can only be used once per minute/character.");
+            client.SendReply(gm, "Unstuck command can only be used once every 30s per character.");
         }
     }
 }

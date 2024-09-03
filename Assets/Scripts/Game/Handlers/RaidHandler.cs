@@ -4,6 +4,7 @@ using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using Skill = RavenNest.Models.Skill;
+using System.Collections.Concurrent;
 
 public class RaidHandler : MonoBehaviour
 {
@@ -150,7 +151,7 @@ public class RaidHandler : MonoBehaviour
 
         if (wasResting)
         {
-            player.GameManager.Onsen.Leave(player);
+            player.onsenHandler.Exit();
         }
 
         if (ferryState.OnFerry)
@@ -175,8 +176,6 @@ public class RaidHandler : MonoBehaviour
             previousIsland = player.Island;
             player.teleportHandler.Teleport(boss.Island.SpawnPosition);
         }
-
-        player.Movement.AdjustPlayerPositionToNavmesh();
 
         if (player.RaidCombatStyle != null)
         {
@@ -217,7 +216,6 @@ public class RaidHandler : MonoBehaviour
 
     public void OnLeave(bool raidWon, bool raidTimedOut)
     {
-
         InRaid = false;
         if (raidWon)
         {
@@ -241,30 +239,42 @@ public class RaidHandler : MonoBehaviour
             }
         }
 
-        //if (raidTimedOut)
-        //{
-        //    ++player.Statistics.RaidsLost;
-        //}
-
         if (raidTimedOut || raidWon)
         {
             player.Stats.Health.Reset();
         }
 
         player.ClearAttackers();
+        var revertedToOldTask = false;
+
+        player.taskTarget = null;
 
         if (teleported)
         {
             teleported = false;
-            player.teleportHandler.Teleport(prevPosition);
+
+            if (!ferryState.OnFerry) // do not teleport back if we were on the ferry. the code below will handle it.
+            {
+                player.teleportHandler.Teleport(prevPosition);
+            }
 
             if (previousTask != TaskType.None)
             {
                 this.player.SetTask(previousTask, previousTaskArgument, true);
+                revertedToOldTask = true;
             }
 
-            player.taskTarget = null;
         }
+
+        if (!revertedToOldTask && player.RaidCombatStyle != null && previousTask != TaskType.None)
+        {
+            if (previousTask != TaskType.None)
+            {
+                this.player.SetTask(previousTask, previousTaskArgument, true);
+            }
+        }
+
+        player.taskTarget = null;
 
         if (wasResting)
         {
@@ -272,6 +282,8 @@ public class RaidHandler : MonoBehaviour
         }
         else if (ferryState.OnFerry)
         {
+            player.InCombat = false;
+            player.ClearAttackers();
             player.Movement.Lock();
             player.ferryHandler.AddPlayerToFerry(ferryState.Destination);
             ferryState.HasReturned = true;

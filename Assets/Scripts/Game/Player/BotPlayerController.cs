@@ -112,7 +112,14 @@ public class BotPlayerController : MonoBehaviour
             if (distanceToTarget > 2) // distance to target needs to be based on actual target.
             {
                 Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier +
-                    ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill);// + ", distance: " + distanceToTarget);
+                    ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill + ", target: " + player.Target.name);// + ", distance: " + distanceToTarget);
+                                                                                                                                                   // can be target being stuck too.
+                var enemyController = player.Target.GetComponent<EnemyController>();
+                if (enemyController)
+                {
+                    enemyController.Unstuck();
+                }
+
                 player.IsStuck = true;
                 // record position, target, island, any details here, only one record per target is necessary.
                 return;
@@ -125,7 +132,8 @@ public class BotPlayerController : MonoBehaviour
         if (player.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
             && player.ferryHandler.State != PlayerFerryState.Embarking
             && !player.onsenHandler.InOnsen
-            && (movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) || (movement.IdleTime >= 30 && timeSinceLastExecutedTask >= 30))
+            && ((movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) && timeSinceLastExecutedTask >= 5) ||
+                (movement.IdleTime >= 15 && timeSinceLastExecutedTask >= 15))
             && player.Target)
         {
 

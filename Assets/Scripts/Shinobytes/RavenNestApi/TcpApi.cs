@@ -795,12 +795,12 @@ namespace RavenNest.SDK
                 if (player.dungeonHandler.InDungeon)
                 {
                     flags |= CharacterFlags.InDungeon;
-                    stateData = player.GameManager.Dungeons.Dungeon.Name;
+                    stateData = player.GameManager.Dungeons?.Dungeon?.Name;
                 }
                 if (player.dungeonHandler.Joined)
                 {
                     flags |= CharacterFlags.InDungeonQueue;
-                    stateData = player.GameManager.Dungeons.Dungeon.Name;
+                    stateData = player.GameManager.Dungeons?.Dungeon?.Name;
                 }
                 if (player.duelHandler.InDuel)
                 {

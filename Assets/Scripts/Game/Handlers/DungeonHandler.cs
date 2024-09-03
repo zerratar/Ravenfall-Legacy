@@ -226,7 +226,7 @@ public class DungeonHandler
         {
             //previousPosition = player.Game.Onsen.
             previousPosition = player.onsenHandler.EntryPoint;
-            player.GameManager.Onsen.Leave(player);
+            player.onsenHandler.Exit();
             player.transform.parent = null;
         }
 
@@ -238,8 +238,6 @@ public class DungeonHandler
 
         this.player.Island = null;
         this.player.taskTarget = null;
-
-        player.Movement.AdjustPlayerPositionToNavmesh();
 
         if (player.DungeonCombatStyle != null)
         {
@@ -255,7 +253,8 @@ public class DungeonHandler
         player.Movement.EnableLocalAvoidance();
 
         Clear();
-
+        
+        this.player.taskTarget = null;
         if (Ferry.OnFerry)
         {
             player.Movement.Lock();
@@ -265,14 +264,13 @@ public class DungeonHandler
         else
         {
             player.teleportHandler.Teleport(previousPosition);
-            player.Movement.AdjustPlayerPositionToNavmesh();
         }
 
         if (previousTask != TaskType.None)
         {
             this.player.SetTask(previousTask, previousTaskArgument, true);
         }
-
+        this.player.taskTarget = null;
         if (Ferry.State == PlayerFerryState.Embarking)
         {
             // if we were embarking, make sure we do that again.

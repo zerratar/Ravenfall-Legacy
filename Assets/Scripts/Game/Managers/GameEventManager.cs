@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 public class GameEventManager
 {
@@ -6,18 +7,29 @@ public class GameEventManager
     public float LastEventEnded { get; private set; }
 
     private IEvent activeEvent;
+    private float activeEventStarted;
 
     public float RescheduleTime { get; internal set; } = 60;
     public bool IsActive => activeEvent != null;
 
-    public bool IsEventCooldownActive => GameTime.time - LastEventEnded < EventCooldown;
-    public float EventCooldownTimeLeft => EventCooldown - (GameTime.time - LastEventEnded);
+    public bool IsEventCooldownActive => LastEventEnded > 0 && GameTime.time - LastEventEnded < EventCooldown;
+    public float EventCooldownTimeLeft => LastEventEnded <= 0 ? 0 : EventCooldown - (GameTime.time - LastEventEnded);
 
-    internal bool TryStart(IEvent eventManager)
+    internal bool TryStart(IEvent @event, bool userInitiated)
     {
-        if (IsActive) return false;
-        if (LastEventEnded > 0 && GameTime.time - LastEventEnded < EventCooldown) return false;
-        activeEvent = eventManager;
+        if (activeEvent != null)
+        {
+            if (activeEvent.IsEventActive)
+                return false;
+
+            Shinobytes.Debug.LogWarning("Event " + @event.EventName + " did not end before the new event tried to start.");
+        }
+
+        if (!userInitiated && LastEventEnded > 0 && GameTime.time - LastEventEnded < EventCooldown) return false;
+        activeEvent = @event;
+        activeEventStarted = GameTime.time;
+        Shinobytes.Debug.Log("Event started: " + @event.EventName);
+
         return true;
     }
 
@@ -28,6 +40,8 @@ public class GameEventManager
 
         LastEventEnded = GameTime.time;
         // we dont want events to trigger too close to eachother
+
+        Shinobytes.Debug.Log("Event ended: " + eventManager.EventName);
 
         activeEvent = null;
     }

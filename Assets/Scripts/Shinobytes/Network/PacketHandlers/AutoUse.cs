@@ -18,8 +18,6 @@
             client.SendReply(gm, Localization.MSG_PATREON_ONLY);
             return;
         }
-
-
     }
 }
 

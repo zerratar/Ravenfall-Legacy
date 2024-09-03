@@ -96,8 +96,8 @@ public class RavenBot : System.IDisposable
         Connection.Register<RaidJoin>("raid_join");
         Connection.Register<RaidForce>("raid_force");
 
-        Connection.Register<RaidAuto>("raid_auto");
-        Connection.Register<DungeonAuto>("dungeon_auto");
+        Connection.Register<AutoRaid>("raid_auto");
+        Connection.Register<AutoDungeon>("dungeon_auto");
 
         Connection.Register<RaidGetCombatStyle>("raid_skill_get");
         Connection.Register<DungeonGetCombatStyle>("dungeon_skill_get");

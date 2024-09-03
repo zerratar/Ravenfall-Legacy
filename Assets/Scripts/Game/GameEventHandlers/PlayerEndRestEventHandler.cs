@@ -9,7 +9,6 @@
         {
             return;
         }
-
-        gameManager.Onsen.Leave(player);
+        player.onsenHandler.Exit();
     }
 }

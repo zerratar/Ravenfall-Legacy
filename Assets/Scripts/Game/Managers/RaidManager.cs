@@ -1,4 +1,5 @@
-﻿using RavenNest.Models;
+﻿using Assets.Scripts;
+using RavenNest.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,6 +49,9 @@ public class RaidManager : MonoBehaviour, IEvent
     public bool IsBusy { get; internal set; }
     public bool HasBeenAnnounced { get; private set; }
     public PlayerController Initiator { get; private set; }
+
+    public string EventName => "Raid " + Boss?.name ?? "Raid";
+    public bool IsEventActive => Started || (Boss != null && Boss.Enemy && !Boss.Enemy.Stats.IsDead);
 
     public string RequiredCode;
 
@@ -160,12 +164,16 @@ public class RaidManager : MonoBehaviour, IEvent
             }
         }
 
-        gameManager.raidStatsJson.Update();
+        // if user chose to leave themselves, update the raidstatsjson
+        if (!reward && !timeout)
+        {
+            gameManager.raidStatsJson.Update();
+        }
     }
 
     public bool StartRaid(PlayerController initiator = null, Action<string> onActivated = null)
     {
-        if (gameManager.Events.TryStart(this))
+        if (gameManager.Events.TryStart(this, initiator != null))
         {
             this.HasBeenAnnounced = false;
 
@@ -184,7 +192,8 @@ public class RaidManager : MonoBehaviour, IEvent
             notifications.OnBeforeRaidStart();
             gameManager.Music.PlayRaidBossMusic();
 
-            if (!notifications.gameObject.activeSelf) notifications.gameObject.SetActive(true);
+            if (!notifications.gameObject.activeSelf)
+                notifications.gameObject.SetActive(true);
 
             nextRaidTimer = -1f;
             raidStartedTime = DateTime.Now;
@@ -240,45 +249,72 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public void EndRaid(bool bossKilled, bool timeout)
     {
-        if (!bossKilled && timeout)
+        try
         {
-            gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
+            if (!bossKilled && timeout)
+            {
+                gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
+            }
+
+            gameManager.Music.PlayBackgroundMusic();
+
+            camera.DisableFocusCamera();
+
+            notifications.HideRaidInfo();
+
+            RemovePlayers(bossKilled, timeout);
+
+            if (Boss != null && Boss.gameObject != null)
+            {
+                Destroy(Boss.gameObject);
+            }
+
+            gameManager.Ferry.AssignBestCaptain();
+            gameManager.raidStatsJson.Update();
         }
-
-        gameManager.Music.PlayBackgroundMusic();
-
-        raidEndedTime = DateTime.Now;
-        camera.DisableFocusCamera();
-        ScheduleNextRaid();
-        notifications.HideRaidInfo();
-
-        raidIndex++;
-
-        lock (mutex)
+        catch (Exception exc)
         {
-            var playersToLeave = raidingPlayers.ToList();
-            if (bossKilled)
-            {
-                RewardItemDrops(playersToLeave);
-            }
-            else
-            {
-                gameManager.Events.End(this);
-            }
-
-            foreach (var player in playersToLeave)
-            {
-                Leave(player, bossKilled, timeout);
-            }
+            Shinobytes.Debug.LogError("Error when attempting to end raid: " + exc);
         }
+        finally
+        {
+            gameManager.Events.End(this);
 
-        Destroy(Boss.gameObject);
+            nextRaidTimer = UnityEngine.Random.Range(minTimeBetweenRaids, maxTimeBetweenRaids);
+            raidEndedTime = DateTime.Now;
 
-        Boss = null;
-        RequiredCode = null;
-        gameManager.Ferry.AssignBestCaptain();
-        difficultySystem.Next();
-        gameManager.raidStatsJson.Update();
+            raidIndex++;
+            difficultySystem.Next();
+
+            Boss = null;
+            RequiredCode = null;
+        }
+    }
+
+    private void RemovePlayers(bool bossKilled, bool timeout)
+    {
+        try
+        {
+            lock (mutex)
+            {
+                var playersToLeave = raidingPlayers.ToList();
+                if (bossKilled)
+                {
+                    RewardItemDrops(playersToLeave);
+                }
+
+                foreach (var player in playersToLeave)
+                {
+                    Leave(player, bossKilled, timeout);
+                }
+            }
+
+            gameManager.raidStatsJson.Update();
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Error when attempting to remove players from raid: " + exc);
+        }
     }
 
     private Queue<Func<Task>> rewardQueue = new Queue<Func<Task>>();
@@ -300,6 +336,11 @@ public class RaidManager : MonoBehaviour, IEvent
 
     public async Task RewardPlayersAsync(Guid[] playersToBeRewarded, int retryCount = 0)
     {
+        if (playersToBeRewarded == null || playersToBeRewarded.Length == 0)
+        {
+            return;
+        }
+
         if (retryCount > 0)
         {
             if (retryCount > 1000)
@@ -348,14 +389,8 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             gameManager.RavenBot.Announce(itemDrop);
         }
-
-        SignalPlayersBeenRewarded();
     }
 
-    private void ScheduleNextRaid()
-    {
-        nextRaidTimer = UnityEngine.Random.Range(minTimeBetweenRaids, maxTimeBetweenRaids);
-    }
 
     public float GetParticipationPercentage(DateTime enterTime)
     {
@@ -371,19 +406,24 @@ public class RaidManager : MonoBehaviour, IEvent
             return;
         }
 
-        if (rewardQueue.Count > 0 && Interlocked.CompareExchange(ref isProcessingRewardQueue, 1, 0) == 0)
+        if (GameCache.IsAwaitingGameRestore)
         {
-            ProcessRewardQueueAsync();
+            rewardQueue.Clear();
+            return;
         }
-
 
         var playerCount = playerManager.GetPlayerCount(true);
 
         if (!Started && playerCount == 0 && !Boss)
         {
             // try force ending the event if it's still active
-            gameManager.Events.End(this);
+            //gameManager.Events.End(this);
             return;
+        }
+
+        if (rewardQueue.Count > 0 && Interlocked.CompareExchange(ref isProcessingRewardQueue, 1, 0) == 0)
+        {
+            ProcessRewardQueueAsync();
         }
 
         if (nextRaidTimer > 0f)
@@ -434,22 +474,20 @@ public class RaidManager : MonoBehaviour, IEvent
         }
     }
 
-    public void SignalPlayersBeenRewarded()
-    {
-        gameManager.Events.End(this);
-    }
-
-
     private async Task ProcessRewardQueueAsync()
     {
         try
         {
             if (rewardQueue.TryDequeue(out var addItems))
             {
+                rewardQueue.Clear();
                 await addItems();
             }
         }
-        catch { }
+        catch
+        {
+            rewardQueue.Clear();
+        }
         finally
         {
             Interlocked.Exchange(ref isProcessingRewardQueue, 0);

@@ -113,7 +113,7 @@ public class FerryTravel : ChatBotCommandHandler<string>
 
         if (player.onsenHandler.InOnsen)
         {
-            if (!otherPlayer) Game.Onsen.Leave(player);
+            if (!otherPlayer) player.onsenHandler.Exit();
         }
 
         if (player.raidHandler)

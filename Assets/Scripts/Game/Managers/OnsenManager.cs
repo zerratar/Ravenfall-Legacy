@@ -1,4 +1,7 @@
-﻿using Shinobytes.Linq;
+﻿using RavenNest.Models;
+using Shinobytes.Linq;
+using System.Collections.Generic;
+
 //using System.Linq;
 using UnityEngine;
 
@@ -9,7 +12,42 @@ public class OnsenManager : MonoBehaviour
     [SerializeField] private GameManager game;
 
     private Vector3[] entryPoints;
+    private bool initialized;
+
     public Vector3[] EntryPoint => entryPoints;//.EntryPoint;
+
+    //private readonly Dictionary<Island, bool> hasRestingArea = new Dictionary<Island, bool>
+    //{
+    //    { Island.Ferry, false },
+    //    { Island.Home, false },
+    //    { Island.Away, false },
+    //    { Island.Ironhill, false },
+    //    { Island.Kyo, true },
+    //    { Island.Heim, true },
+    //    { Island.Atria, true },
+    //    { Island.Eldara, true }
+    //};
+
+    private readonly bool[] restingAreasAvailable = new bool[16]
+    {
+        /* Ferry */ false,
+        /* Home */ false,
+        /* Away */ false,
+        /* Ironhill */ false,
+        /* Kyo */ true,
+        /* Heim */ true,
+        /* Atria */ true,
+        /* Eldara */ true,
+        
+        /*  8 */ false,
+        /*  9 */ false,
+        /* 10 */ false,
+        /* 11 */ false,
+        /* 12 */ false,
+        /* 13 */ false,
+        /* 14 */ false,
+        /* 15 */ false,
+    };
 
     private void Start()
     {
@@ -18,12 +56,28 @@ public class OnsenManager : MonoBehaviour
         restingAreas = FindObjectsByType<OnsenController>(FindObjectsSortMode.None);
 
         this.entryPoints = restingAreas.Select(x => x.EntryPoint).ToArray();
+
+        initialized = true;
     }
 
     public bool RestingAreaAvailable(IslandController island)
     {
-        if (!island || island == null || restingAreas == null) return false;
-        return restingAreas.FirstOrDefault(x => x.Island.Identifier == island.Identifier) != null;
+        if (island == null || !initialized) return false;
+
+        var value = (byte)island.Island;
+        if (value >= restingAreasAvailable.Length) return false;
+        return restingAreasAvailable[value];
+
+        //if (hasRestingArea.TryGetValue(island.Island, out var r)) return r;
+        //for (var i = 0; i < restingAreas.Length; ++i)
+        //{
+        //    if (restingAreas[i].Island.Identifier == island.Identifier)
+        //    {
+        //        hasRestingArea[island.Island] = true;
+        //        return true;
+        //    }
+        //}
+        //return false;
     }
 
     public bool Join(PlayerController player)
@@ -52,9 +106,5 @@ public class OnsenManager : MonoBehaviour
         player.onsenHandler.Enter(restingArea);
 
         return true;
-    }
-    public void Leave(PlayerController player)
-    {
-        player.onsenHandler.Exit();
     }
 }

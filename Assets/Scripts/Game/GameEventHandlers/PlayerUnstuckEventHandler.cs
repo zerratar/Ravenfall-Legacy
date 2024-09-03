@@ -9,7 +9,7 @@ public class PlayerUnstuckEventHandler : GameEventHandler<PlayerUnstuckMessage>
         {
             var player = gameManager.Players.GetPlayerById(id);
             if (!player) continue;
-            player.Unstuck();
+            player.Unstuck(true,0);
         }
     }
 }
