@@ -1,4 +1,5 @@
 ﻿using RavenNest.Models;
+using System.Linq;
 
 public class SetPet : ChatBotCommandHandler<string>
 {
@@ -23,7 +24,7 @@ public class SetPet : ChatBotCommandHandler<string>
         var itemResolver = ioc.Resolve<IItemResolver>();
         var itemQuery = inputQuery;
         var item = itemResolver.ResolveAny(itemQuery, itemQuery + " pet");
-       
+
         if (item.SuggestedItemNames.Length > 0)
         {
             client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, itemQuery, string.Join(", ", item.SuggestedItemNames));
@@ -32,13 +33,7 @@ public class SetPet : ChatBotCommandHandler<string>
 
         if (item.Item == null)
         {
-           client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, inputQuery);
-            return;
-        }
-
-        if (item.InventoryItem == null)
-        {
-            client.SendReply(gm, Localization.MSG_SET_PET_NOT_OWNED, item.Item.Name);
+            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 
@@ -48,8 +43,15 @@ public class SetPet : ChatBotCommandHandler<string>
             return;
         }
 
+        var invItems = player.Inventory.GetInventoryItemsByItemId(item.Id);
+        if (invItems == null || invItems.Count == 0)
+        {
+            client.SendReply(gm, Localization.MSG_SET_PET_NOT_OWNED, item.Item.Name);
+            return;
+        }
+
         var equippedPet = player.Inventory.GetEquipmentOfCategory(ItemCategory.Pet);
-        var invItem = item.InventoryItem;
+        var invItem = invItems.FirstOrDefault();//item.InventoryItem;
         if (invItem == null)
         {
             if (equippedPet == null || equippedPet.ItemId != item.Id)

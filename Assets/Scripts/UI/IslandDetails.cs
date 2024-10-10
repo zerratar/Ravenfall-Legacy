@@ -95,6 +95,7 @@ public class IslandDetails : MonoBehaviour
         this.timeout = timer;
         this.timeoutLength = timer;
         this.UpdateUI();
+
     }
 
     private void UpdateUI()

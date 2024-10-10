@@ -53,11 +53,13 @@ public class PlayerManager : MonoBehaviour
 
     public PlayerController LastAddedPlayer;
 
-    public PlayerValidator Validator { get; } = new PlayerValidator();
+    private PlayerValidator validator = new PlayerValidator();
+    public PlayerValidator Validator => validator;
 
     public bool Validate(PlayerController player)
     {
-        return Validator.Validate(player);
+        if (validator == null) return true;
+        return validator.Validate(player);
     }
 
     private void LateUpdate()

@@ -204,7 +204,7 @@ public class Inventory : MonoBehaviour
         lock (mutex)
         {
             backpack.Clear();
-            
+
             for (int i = 0; i < inventoryItems.Count; i++)
             {
                 InventoryItem item = inventoryItems[i];
@@ -680,6 +680,7 @@ public class Inventory : MonoBehaviour
     public void EquipAll()
     {
         equipment.EquipAll(equipped);
+        this.player.GameManager.ObservedPlayerDetails.PlayerEquipmentUpdated(this.player);
     }
 
     public void Unequip(Guid instanceId, bool rebuildMeshIfNecessary = false, bool addToBackpack = true)
@@ -693,6 +694,8 @@ public class Inventory : MonoBehaviour
                 if (addToBackpack) AddToBackpack(targetItem);
                 equipped.Remove(targetItem);
                 equipment.Unequip(targetItem, rebuildMeshIfNecessary);
+
+                this.player.GameManager.ObservedPlayerDetails.PlayerEquipmentUpdated(this.player);
             }
         }
     }
@@ -713,6 +716,8 @@ public class Inventory : MonoBehaviour
                 AddToBackpack(equip);
                 equipped.Remove(equip);
                 equipment.Unequip(equip, rebuildMesh);
+
+                this.player.GameManager.ObservedPlayerDetails.PlayerEquipmentUpdated(this.player);
             }
         }
     }
@@ -794,7 +799,10 @@ public class Inventory : MonoBehaviour
                 RemoveByItemId(item.Item.Id, 1);
             }
 
-            if (updateAppearance)
+            var newItemIsGeneric = string.IsNullOrEmpty(item.Item.GenericPrefab);
+            var oldItemWasGeneric = equip != null && string.IsNullOrEmpty(equip.Item.GenericPrefab);
+
+            if (updateAppearance && (!newItemIsGeneric || (equip != null && !oldItemWasGeneric)))
             {
                 equipment.EquipAll(equipped);
             }
@@ -809,6 +817,8 @@ public class Inventory : MonoBehaviour
             }
 
             player.transform.localScale = player.TempScale;
+
+            this.player.GameManager.ObservedPlayerDetails.PlayerEquipmentUpdated(this.player);
             return true;
         }
     }
@@ -996,7 +1006,13 @@ public class Inventory : MonoBehaviour
                 return equipped.FirstOrDefault(IsMeleeWeapon);
             }
 
-            return equipped.FirstOrDefault(x => x.Item.Category == itemCategory && x.Item.Type == type);
+            var exact = equipped.FirstOrDefault(x => x.Item.Category == itemCategory && x.Item.Type == type);
+            if (exact != null)
+                return exact;
+
+            // maybe its a type mismatch but same slot, example Helmet and Hat
+            var slot = GetEquipmentSlot(type);
+            return equipped.FirstOrDefault(x => GetEquipmentSlot(x.Item.Type) == slot);
         }
     }
 

@@ -404,8 +404,8 @@ namespace RavenNest.SDK
                     update.AutoJoinRaidCounter = player.raidHandler.AutoJoinCounter;
 
                     update.AutoTrainTargetLevel = player.AutoTrainTargetLevel;
-                    update.DungeonCombatStyle = AsInt(player.DungeonCombatStyle);
-                    update.RaidCombatStyle = AsInt(player.RaidCombatStyle);
+                    update.DungeonCombatStyle = AsInt(player.DungeonSkill);
+                    update.RaidCombatStyle = AsInt(player.RaidSkill);
                     update.AutoRestTarget = player.Rested.AutoRestTarget;
                     update.AutoRestStart = player.Rested.AutoRestStart;
 

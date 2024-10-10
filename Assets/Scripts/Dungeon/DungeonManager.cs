@@ -272,7 +272,6 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-
     public void ToggleDungeon()
     {
         StartCoroutine(DoBadThings());
@@ -286,7 +285,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         //{
         if (this.state == DungeonManagerState.None)
         {
-            yield return ActivateDungeon(gameManager.Players.GetRandom());
+            yield return ForceActivateDungeon();
         }
         else
         {
@@ -390,11 +389,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    public async Task<bool> ActivateDungeon(PlayerController initiator = null, Action<string> onActivated = null)
+    private async Task<bool> ActivateDungeon(bool hasInitiator, PlayerController initiator = null, Action<string> onActivated = null)
     {
         try
         {
-            if (gameManager.Events.TryStart(this, initiator != null))
+            if (gameManager.Events.TryStart(this, hasInitiator))
             {
 
                 HasBeenAnnounced = false;
@@ -426,6 +425,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                 }
                 else
                 {
+                    Shinobytes.Debug.LogError($"Dungeon #{(dungeonIndex + 1)} boss could not be spawned.");
                     gameManager.Events.End(this);
                     return false;
                 }
@@ -453,6 +453,16 @@ public class DungeonManager : MonoBehaviour, IEvent
             Shinobytes.Debug.LogError("Error trying to activate dungeon: " + exc);
             return false;
         }
+    }
+
+    public async Task<bool> ForceActivateDungeon()
+    {
+        return await ActivateDungeon(true, null, null);
+    }
+
+    public async Task<bool> ActivateDungeon(PlayerController initiator = null, Action<string> onActivated = null)
+    {
+        return await ActivateDungeon(initiator != null, initiator, onActivated);
     }
 
     public void ForceStartDungeon()

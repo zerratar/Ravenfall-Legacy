@@ -171,9 +171,9 @@ public class RaidManager : MonoBehaviour, IEvent
         }
     }
 
-    public bool StartRaid(PlayerController initiator = null, Action<string> onActivated = null)
+    private bool StartRaid(bool hasInitiator, PlayerController? initiator = null, Action<string> onActivated = null)
     {
-        if (gameManager.Events.TryStart(this, initiator != null))
+        if (gameManager.Events.TryStart(this, hasInitiator))
         {
             this.HasBeenAnnounced = false;
 
@@ -183,6 +183,7 @@ public class RaidManager : MonoBehaviour, IEvent
             var raidBossSpawned = SpawnRaidBoss();
             if (!raidBossSpawned)
             {
+                Shinobytes.Debug.LogWarning("Raid boss failed to spawn. Raid will be cancelled.");
                 gameManager.Events.End(this);
                 return false;
             }
@@ -234,6 +235,16 @@ public class RaidManager : MonoBehaviour, IEvent
         return false;
     }
 
+    public bool ForceStartRaid()
+    {
+        return StartRaid(true, null, null);
+    }
+
+    public bool StartRaid(PlayerController initiator = null, Action<string> onActivated = null)
+    {
+        return StartRaid(initiator != null, initiator, onActivated);
+    }
+
     public void Announce()
     {
         if (gameManager.RequireCodeForDungeonOrRaid)
@@ -254,6 +265,11 @@ public class RaidManager : MonoBehaviour, IEvent
             if (!bossKilled && timeout)
             {
                 gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
+                Shinobytes.Debug.Log("Raid boss was not killed in time.");
+            }
+            else
+            {
+                Shinobytes.Debug.Log("Raid boss was slain!");
             }
 
             gameManager.Music.PlayBackgroundMusic();

@@ -177,9 +177,9 @@ public class RaidHandler : MonoBehaviour
             player.teleportHandler.Teleport(boss.Island.SpawnPosition);
         }
 
-        if (player.RaidCombatStyle != null)
+        if (player.RaidSkill != null)
         {
-            this.player.SetTaskBySkillSilently(player.RaidCombatStyle.Value);
+            this.player.SetTaskBySkillSilently(player.RaidSkill.Value);
         }
     }
 
@@ -217,6 +217,7 @@ public class RaidHandler : MonoBehaviour
     public void OnLeave(bool raidWon, bool raidTimedOut)
     {
         InRaid = false;
+
         if (raidWon)
         {
             //++player.Statistics.RaidsWon;
@@ -245,8 +246,7 @@ public class RaidHandler : MonoBehaviour
         }
 
         player.ClearAttackers();
-        var revertedToOldTask = false;
-
+        player.attackTarget = null;
         player.taskTarget = null;
 
         if (teleported)
@@ -256,21 +256,6 @@ public class RaidHandler : MonoBehaviour
             if (!ferryState.OnFerry) // do not teleport back if we were on the ferry. the code below will handle it.
             {
                 player.teleportHandler.Teleport(prevPosition);
-            }
-
-            if (previousTask != TaskType.None)
-            {
-                this.player.SetTask(previousTask, previousTaskArgument, true);
-                revertedToOldTask = true;
-            }
-
-        }
-
-        if (!revertedToOldTask && player.RaidCombatStyle != null && previousTask != TaskType.None)
-        {
-            if (previousTask != TaskType.None)
-            {
-                this.player.SetTask(previousTask, previousTaskArgument, true);
             }
         }
 
@@ -288,12 +273,25 @@ public class RaidHandler : MonoBehaviour
             player.ferryHandler.AddPlayerToFerry(ferryState.Destination);
             ferryState.HasReturned = true;
         }
-        else if (ferryState.State == PlayerFerryState.Embarking)
+
+        if (previousTask != TaskType.None)
+        {
+            this.player.SetTask(previousTask, previousTaskArgument, true);
+        }
+
+        if (ferryState.State == PlayerFerryState.Embarking)
         {
             // if we were embarking, make sure we do that again.
             player.ferryHandler.Embark(ferryState.Destination);
         }
-
+        else if (!ferryState.OnFerry)
+        {
+            var currentTask = player.GetTask();
+            if (currentTask != TaskType.None)
+            {
+                player.GotoClosest(currentTask, true);
+            }
+        }
         wasResting = false;
 
         //#if DEBUG
@@ -301,15 +299,16 @@ public class RaidHandler : MonoBehaviour
         //#endif
     }
 
-    public bool SetCombatStyle(RavenNest.Models.Skill? value)
+    public bool SetSkill(RavenNest.Models.Skill? value)
     {
-        player.RaidCombatStyle = value;
+        player.RaidSkill = value;
 
-        if (InRaid && previousTask == TaskType.Fighting)
+        if (InRaid && player.RaidSkill != null)
         {
-            player.SetTask(previousTask, previousTaskArgument, true);
+            this.player.SetTaskBySkillSilently(player.RaidSkill.Value);
             return true;
         }
+
         return false;
     }
 }

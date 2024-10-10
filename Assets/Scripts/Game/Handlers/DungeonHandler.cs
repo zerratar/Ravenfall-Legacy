@@ -17,8 +17,6 @@ public class DungeonHandler
     private Vector3 previousPosition;
     private IslandController previousIsland;
 
-    public bool ReturnedToOnsen;
-
     public FerryContext Ferry;
 
     private bool wasResting;
@@ -156,8 +154,6 @@ public class DungeonHandler
 
     public void OnEnter()
     {
-        ReturnedToOnsen = false;
-
         enemyTarget = null;
         healTarget = null;
 
@@ -183,8 +179,6 @@ public class DungeonHandler
             player.Island.RemovePlayer(player);
         }
 
-        //player.Movement.DisableLocalAvoidance();
-
         waitForDungeon = 0;
         InDungeon = true;
 
@@ -202,17 +196,6 @@ public class DungeonHandler
 
         if (Ferry.OnFerry)
         {
-            //var wasCaptainOfFerry = this.player.ferryHandler.IsCaptain;
-            //if (player.ferryHandler.Destination)
-            //{
-            //    previousPosition = player.ferryHandler.Destination.SpawnPosition;
-            //}
-            //else
-            //{
-            //    var chunk = player.GameManager.Chunks.GetStarterChunk();
-            //    previousPosition = chunk.GetPlayerSpawnPoint();
-            //}
-
             player.ferryHandler.RemoveFromFerry();
         }
         else
@@ -224,7 +207,6 @@ public class DungeonHandler
 
         if (player.onsenHandler.InOnsen)
         {
-            //previousPosition = player.Game.Onsen.
             previousPosition = player.onsenHandler.EntryPoint;
             player.onsenHandler.Exit();
             player.transform.parent = null;
@@ -239,9 +221,9 @@ public class DungeonHandler
         this.player.Island = null;
         this.player.taskTarget = null;
 
-        if (player.DungeonCombatStyle != null)
+        if (player.DungeonSkill != null)
         {
-            this.player.SetTaskBySkillSilently(player.DungeonCombatStyle.Value);
+            this.player.SetTaskBySkillSilently(player.DungeonSkill.Value);
         }
     }
 
@@ -287,7 +269,6 @@ public class DungeonHandler
             if (wasResting)
             {
                 player.GameManager.Onsen.Join(player);
-                ReturnedToOnsen = true;
             }
         }
 
@@ -422,13 +403,13 @@ public class DungeonHandler
         player.taskTarget = null;
     }
 
-    public bool SetCombatStyle(RavenNest.Models.Skill? value)
+    public bool SetSkill(RavenNest.Models.Skill? value)
     {
-        player.DungeonCombatStyle = value;
+        player.DungeonSkill = value;
 
-        if (InDungeon && previousTask == TaskType.Fighting)
+        if (InDungeon && player.DungeonSkill != null)
         {
-            player.SetTask(previousTask, previousTaskArgument, true);
+            this.player.SetTaskBySkillSilently(player.DungeonSkill.Value);
             return true;
         }
 

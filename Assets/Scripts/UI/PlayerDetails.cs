@@ -276,12 +276,18 @@ public class PlayerDetails : MonoBehaviour
 
         var recommendedIsland = IslandManager.GetSuitableIsland(skill.Level);
         var currentIsland = observedPlayer.Island?.Island ?? RavenNest.Models.Island.Ferry;
-        var onRecommendedIsland = currentIsland != RavenNest.Models.Island.Ferry && recommendedIsland != currentIsland;
+        var onRecommendedIsland = currentIsland != RavenNest.Models.Island.Ferry && recommendedIsland == currentIsland;
 
         switch (CurrentExpGainState)
         {
             case ExpGainState.TargetLevelReached:
                 return "N/A";
+
+            //case ExpGainState.LowGain:
+            //    return $"<color=orange>Very low exp</color>\n<size=14>Recommended Island:{recommendedIsland}</size>";
+
+            //case ExpGainState.PartialGain:
+            //    return $"<color=yellow>Partial exp</color>\n<size=14>Recommended Island:{recommendedIsland}</size>";
 
             case ExpGainState.LevelTooLow:
                 return $"<color=red>Your level is too low</color>\n<size=14>Recommended Island:{recommendedIsland}</size>";
@@ -314,8 +320,9 @@ public class PlayerDetails : MonoBehaviour
             result = timeLeft.Minutes + " mins, " + timeLeft.Seconds + " secs";
         else
             result = timeLeft.Seconds + " seconds";
+
         if (!onRecommendedIsland)
-            result += $"\n<size=14>Recommended Island: {recommendedIsland}</size>";
+            result += $"\n<color=yellow><size=14>Recommended Island: {recommendedIsland}</size>";
 
         return result;
     }
@@ -385,5 +392,13 @@ public class PlayerDetails : MonoBehaviour
         var go = obj.gameObject;
         if (go.activeSelf != value)
             go.SetActive(value);
+    }
+
+    internal void PlayerEquipmentUpdated(PlayerController player)
+    {
+        if (!visible || observedPlayer == null || !observedPlayer || observedPlayer.Id != player.Id)
+            return;
+
+        equipmentSlotManager.Observe(observedPlayer);
     }
 }

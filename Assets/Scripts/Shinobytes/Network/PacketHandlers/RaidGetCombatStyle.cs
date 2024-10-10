@@ -12,12 +12,12 @@
             return;
         }
 
-        if (player.RaidCombatStyle == null)
+        if (player.RaidSkill == null)
         {
             client.SendReply(gm, "Your raid skill is not set. Use !raid skill <skill> to set it.");
             return;
         }
 
-        client.SendReply(gm, "Your raid skill is set to " + player.RaidCombatStyle);
+        client.SendReply(gm, "Your raid skill is set to " + player.RaidSkill);
     }
 }

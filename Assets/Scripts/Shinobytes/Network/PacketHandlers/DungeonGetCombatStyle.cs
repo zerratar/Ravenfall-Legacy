@@ -12,12 +12,12 @@
             return;
         }
 
-        if (player.DungeonCombatStyle == null)
+        if (player.DungeonSkill == null)
         {
             client.SendReply(gm, "Your dungeon skill is not set. Use !dungeon skill <skill> to set it.");
             return;
         }
 
-        client.SendReply(gm, "Your dungeon skill is set to " + player.DungeonCombatStyle);
+        client.SendReply(gm, "Your dungeon skill is set to " + player.DungeonSkill);
     }
 }

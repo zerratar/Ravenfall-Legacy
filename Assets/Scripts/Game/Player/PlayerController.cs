@@ -293,8 +293,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public GameInventoryItem LastEnchantedItem { get; internal set; }
     public DateTime LastEnchantedItemExpire { get; internal set; }
     public PlayerSkinObject ActiveFullBodySkin { get; private set; }
-    public Skill? RaidCombatStyle { get; set; }
-    public Skill? DungeonCombatStyle { get; set; }
+    public Skill? RaidSkill { get; set; }
+    public Skill? DungeonSkill { get; set; }
     public int AutoTrainTargetLevel { get; set; }
     public bool IsStuck { get; set; }
 
@@ -1694,7 +1694,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         UpdateUser(user);
 
-        var joinOnsenAfterInitialize = false;
         var joinFerryAfterInitialize = false;
 
         ClearTask();
@@ -1713,12 +1712,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             AutoTrainTargetLevel = player.State.AutoTrainTargetLevel;
             if (player.State.DungeonCombatStyle != null)
             {
-                DungeonCombatStyle = (Skill)player.State.DungeonCombatStyle.Value;
+                DungeonSkill = (Skill)player.State.DungeonCombatStyle.Value;
             }
 
             if (player.State.RaidCombatStyle != null)
             {
-                RaidCombatStyle = (Skill)player.State.RaidCombatStyle.Value;
+                RaidSkill = (Skill)player.State.RaidCombatStyle.Value;
             }
 
             Rested.AutoRestTarget = player.State.AutoRestTarget;
@@ -1728,19 +1727,25 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             raidHandler.AutoJoinCounter = player.State.AutoJoinRaidCounter;
 
             var setTask = true;
+            var inOnsen = false;
             if (hasGameManager && Overlay.IsGame)
             {
                 this.teleportHandler.islandManager = this.GameManager.Islands;
                 this.teleportHandler.player = this;
 
+                if (player.State.InOnsen && onsenHandler)
+                {
+                    inOnsen = true;
+                }
+
                 if (!string.IsNullOrEmpty(player.State.Island) && player.State.X != null)
                 {
+                    this.Island = GameManager.Islands.Find(player.State.Island);
                     if (player.State.InDungeon)
                     {
-                        var targetIsland = GameManager.Islands.Find(player.State.Island);
-                        if (targetIsland)
+                        if (Island)
                         {
-                            this.teleportHandler.Teleport(targetIsland.SpawnPosition);
+                            this.teleportHandler.Teleport(Island.SpawnPosition);
                         }
                     }
                     else
@@ -1761,9 +1766,23 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                             {
                                 newPosition = targetIsland.SpawnPosition;
                             }
+
+                            if (inOnsen && GameManager.Onsen.RestingAreaAvailable(targetIsland))
+                            {
+                                this.Island = targetIsland;
+
+                                GameManager.Onsen.Join(this);
+                            }
+                            else
+                            {
+                                inOnsen = false;
+                            }
                         }
 
-                        this.teleportHandler.Teleport(newPosition);
+                        if (!inOnsen)
+                        {
+                            this.teleportHandler.Teleport(newPosition);
+                        }
                     }
                 }
 
@@ -1779,16 +1798,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                     // most likely on the ferry, bub!
                     joinFerryAfterInitialize = true;
                 }
-                else
+                else if (!Island)
                 {
                     Island = GameManager.Islands.FindPlayerIsland(this);
-
-                    if (player.State.InOnsen && onsenHandler)
-                    {
-                        //setTask = false;
-                        joinOnsenAfterInitialize = true;
-                        // Attach player to the onsen...
-                    }
                 }
             }
 
@@ -1813,18 +1825,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         ApplyStatusEffects(player.StatusEffects);
 
-
-
         this.Appearance.player = this;
         this.Appearance.gameManager = GameManager;
         Appearance.SetAppearance(player.Appearance, () =>
         {
             Inventory.Create(player.InventoryItems);
             hasBeenInitialized = true;
-            if (joinOnsenAfterInitialize)
-            {
-                GameManager.Onsen.Join(this);
-            }
+            //if (joinOnsenAfterInitialize)
+            //{
+            //    GameManager.Onsen.Join(this);
+            //}
 
             if (joinFerryAfterInitialize)
             {
@@ -1974,12 +1984,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             if (raidHandler.InRaid)
             {
-                RaidCombatStyle = skill;
+                RaidSkill = skill;
             }
 
             if (dungeonHandler.InDungeon)
             {
-                DungeonCombatStyle = skill;
+                DungeonSkill = skill;
             }
         }
 
@@ -2776,65 +2786,72 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public void AddExp(Skill skill, double factor = 1)
     {
-        //exp *= GetExpMultiplier(skill);
-
-        var stat = Stats.GetSkill(skill);
-        if (stat == null)
-            return;
-
-        var exp = GetExperience(skill, factor);
-
-        //if (!isTimeExp && Application.isEditor)
-        //{
-        //    var expTickSkill = skill.IsCombatSkill() && skill != Skill.Healing ? Skill.Health : skill;
-        //    IslandStatisticsUI.Data.ExpTick(this.Island, expTickSkill);
-        //}
-
-        if (skill.IsCombatSkill())
+        try
         {
-            if (Stats.Health.AddExp(exp / 3d, out var hpLevels))
-                CelebrateSkillLevelUp(Skill.Health, hpLevels);
+            //exp *= GetExpMultiplier(skill);
 
-            if (skill == Skill.Health)
-            {
-                var each = exp / 3d;
-                var left = 3d;
-
-                if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Attack.Level)
-                {
-                    if (Stats.Attack.AddExp(each, out var a))
-                        CelebrateSkillLevelUp(Skill.Attack, a);
-                }
-                else
-                {
-                    each = exp / --left;
-                }
-
-                if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Defense.Level)
-                {
-                    if (Stats.Defense.AddExp(each, out var b))
-                        CelebrateSkillLevelUp(Skill.Defense, b);
-                }
-                else
-                {
-                    each = exp / --left;
-                }
-
-                if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Strength.Level)
-                    if (Stats.Strength.AddExp(each, out var c))
-                        CelebrateSkillLevelUp(Skill.Strength, c);
-
+            var stat = Stats.GetSkill(skill);
+            if (stat == null)
                 return;
+
+            var exp = GetExperience(skill, factor);
+
+            //if (!isTimeExp && Application.isEditor)
+            //{
+            //    var expTickSkill = skill.IsCombatSkill() && skill != Skill.Healing ? Skill.Health : skill;
+            //    IslandStatisticsUI.Data.ExpTick(this.Island, expTickSkill);
+            //}
+
+            if (skill.IsCombatSkill())
+            {
+                if (Stats.Health.AddExp(exp / 3d, out var hpLevels))
+                    CelebrateSkillLevelUp(Skill.Health, hpLevels);
+
+                if (skill == Skill.Health)
+                {
+                    var each = exp / 3d;
+                    var left = 3d;
+
+                    if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Attack.Level)
+                    {
+                        if (Stats.Attack.AddExp(each, out var a))
+                            CelebrateSkillLevelUp(Skill.Attack, a);
+                    }
+                    else
+                    {
+                        each = exp / --left;
+                    }
+
+                    if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Defense.Level)
+                    {
+                        if (Stats.Defense.AddExp(each, out var b))
+                            CelebrateSkillLevelUp(Skill.Defense, b);
+                    }
+                    else
+                    {
+                        each = exp / --left;
+                    }
+
+                    if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Strength.Level)
+                        if (Stats.Strength.AddExp(each, out var c))
+                            CelebrateSkillLevelUp(Skill.Strength, c);
+
+                    return;
+                }
+            }
+
+            if (stat.Type == Skill.Slayer || stat.Type == Skill.Sailing || stat.Type == Skill.Health ||
+                AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > stat.Level)
+            {
+                if (stat.AddExp(exp, out var atkLvls))
+                {
+                    CelebrateSkillLevelUp(skill, atkLvls);
+                }
             }
         }
-
-        if (stat.Type == Skill.Slayer || stat.Type == Skill.Sailing || stat.Type == Skill.Health ||
-            AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > stat.Level)
+        catch (Exception exc)
         {
-            if (stat.AddExp(exp, out var atkLvls))
-            {
-                CelebrateSkillLevelUp(skill, atkLvls);
-            }
+            Shinobytes.Debug.LogError("Unable to add exp to " + PlayerName + " training '" + skill + "': " + exc);
         }
     }
 

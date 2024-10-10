@@ -25,7 +25,7 @@
             return;
         }
 
-        player.raidHandler.SetCombatStyle(targetSkill);
+        player.raidHandler.SetSkill(targetSkill);
         client.SendReply(gm, "Your combat skill during raids has been set to {skill}.", targetSkill.ToString());
     }
 }

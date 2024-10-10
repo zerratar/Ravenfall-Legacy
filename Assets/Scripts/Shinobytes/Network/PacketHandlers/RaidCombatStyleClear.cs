@@ -12,7 +12,7 @@
             return;
         }
 
-        player.raidHandler.SetCombatStyle(null);
+        player.raidHandler.SetSkill(null);
         client.SendReply(gm, "The skill used for raids has been reset.");
     }
 }

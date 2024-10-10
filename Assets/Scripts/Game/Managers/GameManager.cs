@@ -87,10 +87,12 @@ public class GameManager : MonoBehaviour, IGameManager
     [SerializeField] private BATimer boostTimer;
     [SerializeField] private PlayerSearchHandler playerSearchHandler;
     [SerializeField] private GameMenuHandler menuHandler;
+    [SerializeField] private SettingsMenuView settingsView;
     [SerializeField] private GameObject gameReloadMessage;
     [SerializeField] private GameObject exitView;
     [SerializeField] private GameObject gameReloadUIPanel;
     [SerializeField] private PlayerDetails playerObserver;
+    [SerializeField] private IslandDetails islandDetails;
     [SerializeField] private PlayerList playerList;
 
     [Header("Managers")]
@@ -141,6 +143,10 @@ public class GameManager : MonoBehaviour, IGameManager
     public ChunkManager Chunks => chunkManager;
     public IslandManager Islands => islandManager;
     public PlayerDetails ObservedPlayerDetails => playerObserver;
+    public IslandDetails ObservedIslandDetails => islandDetails;
+
+    //public ObservedTarget ObservedTarget => new ObservedTarget(playerObserver.ObservedPlayer, islandDetails);
+
     public PlayerManager Players => playerManager;
     public ItemManager Items => itemManager;
     public CraftingManager Crafting => craftingManager;
@@ -680,6 +686,7 @@ public class GameManager : MonoBehaviour, IGameManager
             SettingsMenuView.SetResolutionScale(1);
         }
 
+        settingsView.UpdateSettingsUI();
 
     }
 
@@ -1402,9 +1409,15 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (!botsAdded)
         {
-            Village.TownHouses.EnsureAssignPlayerRows(Players.GetPlayerCount());
+            var count = Players.GetPlayerCount();
+
+            Shinobytes.Debug.Log("Finished restoring game state with " + count + " players added back.");
+
+            Village.TownHouses.EnsureAssignPlayerRows(count);
             playerCountLabel.Update();
             villageBoostLabel.Update();
+
+            Village.AssignBestPlayers();
 
             var player = playerManager.LastAddedPlayer;
             if (player && gameCamera && gameCamera.AllowJoinObserve)
@@ -1783,7 +1796,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (isControlDown && Input.GetKeyUp(KeyCode.P))
             {
-                Raid.StartRaid();
+                Raid.ForceStartRaid();
             }
 
             //if (isControlDown && Input.GetKeyUp(KeyCode.R))
@@ -1794,7 +1807,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (isControlDown && Input.GetKeyUp(KeyCode.O))
             {
-                Dungeons.ActivateDungeon();
+                Dungeons.ForceActivateDungeon();
             }
         }
     }
@@ -1861,7 +1874,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             if (GUI.Button(GetButtonRect(buttonIndex++), "Start Raid"))
             {
-                raidManager.StartRaid(Players.GetRandom());
+                raidManager.ForceStartRaid(/*Players.GetRandom()*/);
             }
 
         }
@@ -2683,7 +2696,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
         foreach (var player in allPlayers)
         {
-            if (player.IsBot || Raid.CanJoin(player) != RaidJoinResult.CanJoin || player.Resources.Coins < AutoRaid.AutoJoinCost || player.raidHandler.AutoJoining || Raid.Initiator == player)
+            if (player.IsBot || Raid.CanJoin(player) != RaidJoinResult.CanJoin ||
+                player.Resources.Coins < AutoRaid.AutoJoinCost || player.raidHandler.AutoJoining || Raid.Initiator == player)
                 continue;
 
             if (player.raidHandler.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)

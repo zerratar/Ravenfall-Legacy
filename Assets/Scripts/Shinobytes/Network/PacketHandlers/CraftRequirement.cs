@@ -73,7 +73,7 @@ public class CraftRequirement : ChatBotCommandHandler<string>
         // check if its an equipable. if so, then we want to include it in the string.
         if (EquipmentLevelRequirement(i) > 0)
         {
-            client.SendReply(gm, "{name} requires level {level} {skillname} create and {requirements}. To equip this item you require {equipRequirements}", name, skilllevel, skillname,
+            client.SendReply(gm, "{name} requires level {level} {skillname} and {requirements}. To equip this item you require {equipRequirements}", name, skilllevel, skillname,
                 GetRecipeIngredientsString(player.Inventory, recipe), GetEquipRequirements(i));
         }
         else

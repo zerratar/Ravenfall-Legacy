@@ -303,7 +303,17 @@ public class Skills : IComparable
     }
     public SkillStat GetSkill(Skill skill)
     {
-        return this.skillList[(int)skill];
+        if (skill == Skill.Melee)
+        {
+            return Health;
+        }
+
+        var i = (int)skill;
+        if (i < 0 || i >= this.skillList.Length)
+        {
+            return null;
+        }
+        return this.skillList[i];
     }
 
     [Obsolete("Please use GetSkill instead.")]

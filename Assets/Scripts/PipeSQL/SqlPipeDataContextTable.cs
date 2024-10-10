@@ -63,6 +63,7 @@ namespace RavenfallDataPipe
                 var source = DataSource();
                 foreach (var s in source)
                 {
+                    if (s == null) continue;
                     var row = new SqlPipeDataContextRow<T>(s, Columns);
                     var key = IsSingleRow ? "n/a" : row.GetPrimaryKey();
                     rows[key] = row;

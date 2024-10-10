@@ -281,7 +281,10 @@ public class Chunk : MonoBehaviour
             var min = level - nextRequirement;
             var max = upperBounds - nextRequirement;
             result = GameMath.Lerp(1, 0, min / max);
-            state = result < 0.95 ? ExpGainState.PartialGain : ExpGainState.FullGain;
+            
+            state = result < 0.5 ? ExpGainState.LowGain :
+                    result < 0.95 ? ExpGainState.PartialGain : 
+                    ExpGainState.FullGain;
         }
 
         return result;
@@ -324,6 +327,7 @@ public enum ExpGainState
     PlayerRemoved,
     NotAValidSkill,
     NotTraining,
+    LowGain,
     PartialGain,
     FullGain,
     LevelTooLow,

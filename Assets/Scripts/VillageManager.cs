@@ -144,7 +144,30 @@ namespace Assets.Scripts
             }
         }
 
-        internal async Task SetVillageBoostTarget(TownHouseSlotType slotType)
+        internal async void AssignBestPlayers()
+        {
+            //throw new NotImplementedException();
+            if (TownHouses.SlotCount > 0)
+            {
+                var firstHut = TownHouses.TownHouses.FirstOrDefault();
+                // check if all huts are the same type
+                if (firstHut != null && TownHouses.TownHouses.All(x => x.Type == firstHut.Type))
+                {
+                    Shinobytes.Debug.Log("All huts are the same type, assigning players to huts.");
+                    await SetVillageBoostTarget(firstHut.Type, false);
+                }
+                else
+                {
+                    Shinobytes.Debug.Log("Not all huts were the same type, skipping auto-assign players.");
+                }
+            }
+            else
+            {
+                Shinobytes.Debug.Log("No huts available, skipping auto-assigning players.");
+            }
+        }
+
+        internal async Task SetVillageBoostTarget(TownHouseSlotType slotType, bool announceInChat = true)
         {
             try
             {
@@ -169,11 +192,6 @@ namespace Assets.Scripts
 
                 for (var i = 0; i < houses.Length; ++i)
                 {
-                    //if (!await gameManager.RavenNest.Village.BuildHouseAsync(i, (int)slotType))
-                    //{
-                    //    gameManager.RavenBot.SendMessage("", failedToUpdate);
-                    //    return;
-                    //}
                     var plr = i < assignablePlayers.Count ? assignablePlayers[i] : null;
                     var ownerUserId = plr?.PlatformId;
                     houses[i] = new VillageHouseInfo()
@@ -187,18 +205,25 @@ namespace Assets.Scripts
                     if (!string.IsNullOrEmpty(ownerUserId))
                     {
                         toAssign.Add(assignablePlayers[i].Id);
-                        //await gameManager.RavenNest.Village.AssignPlayerAsync(i, assignablePlayers[i].Id);
                     }
                 }
 
                 if (await gameManager.RavenNest.Village.AssignVillageAsync((int)slotType, toAssign.ToArray()))
                 {
                     SetHouses(houses);
+                    Shinobytes.Debug.Log("All " + houses.Length + " houses has been set to " + slotType + " with the most suitable players!");
                 }
                 else
                 {
-                    gameManager.RavenBot.Announce(failedToUpdate);
+                    if (announceInChat)
+                    {
+                        gameManager.RavenBot.Announce(failedToUpdate);
+                    }
                 }
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError($"Failed to assign the town to {slotType}. " + exc);
             }
             finally
             {
@@ -292,6 +317,7 @@ namespace Assets.Scripts
 
             return false;
         }
+
     }
 
 }

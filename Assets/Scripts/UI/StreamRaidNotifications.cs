@@ -9,7 +9,7 @@ public class StreamRaidNotifications : MonoBehaviour
     [SerializeField] private GameObject raidersWin;
     [SerializeField] private GameObject defendersWin;
 
-    private AudioSource audioSource;
+    [SerializeField] private AudioSource audioSource;
     private string raidSound = "streamraid.mp3";
     public float volume
     {

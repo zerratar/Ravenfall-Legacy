@@ -26,7 +26,7 @@
             return;
         }
 
-        player.dungeonHandler.SetCombatStyle(targetSkill);
+        player.dungeonHandler.SetSkill(targetSkill);
         client.SendReply(gm, "Your combat skill during dungeons has been set to {skill}.", targetSkill.ToString());
     }
 }

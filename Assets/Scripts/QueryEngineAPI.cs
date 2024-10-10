@@ -118,6 +118,8 @@ public class QueryEngineAPI
 
         context.Register("observed", () => new[] { gm.ObservedPlayerDetails.ObservedPlayer }, playerColumns.ToArray()).HasOnlyOneRow();
 
+        //context.Register("island", () => new[] { gm.ObservedIslandDetails })
+
         context.Register("session", () => new[] { gm },
             QueryEngineContext.Column<GameManager, bool>("Authenticated", x => x.RavenNest.Authenticated),
             QueryEngineContext.Column<GameManager, bool>("SessionStarted", x => x.RavenNest.SessionStarted),

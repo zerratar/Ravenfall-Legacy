@@ -12,7 +12,7 @@
             return;
         }
 
-        player.dungeonHandler.SetCombatStyle(null);
+        player.dungeonHandler.SetSkill(null);
         client.SendReply(gm, "The skill used for dungeons has been reset.");
     }
 }

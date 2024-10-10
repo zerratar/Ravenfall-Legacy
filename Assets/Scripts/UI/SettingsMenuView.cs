@@ -114,7 +114,7 @@ public class SettingsMenuView : MenuView
         return PlayerCacheExpiry[PlayerSettings.Instance.PlayerCacheExpiryTime ?? ^1]; // PlayerPrefs.GetInt(SettingsName_PlayerCacheExpiryTime, 1)
     }
 
-    private void Awake()
+    private void Start()
     {
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
@@ -177,6 +177,8 @@ public class SettingsMenuView : MenuView
         }
         ShowItemDropExample();
         UpdateCameraRotationLabelText();
+        ApplyCameraRotationSpeed();
+        OnSliderValueChanged();
     }
 
     private void ApplyCameraRotationSpeed()
