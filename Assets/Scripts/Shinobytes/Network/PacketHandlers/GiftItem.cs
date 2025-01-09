@@ -56,9 +56,15 @@ public class GiftItem : ChatBotCommandHandler<string>
                     return;
                 }
 
+                if (resolved.Player.Id == player.Id)
+                {
+                    client.SendReply(gm, "You cannot gift coins to yourself.");
+                    return;
+                }
+
                 if (resolved.Count <= 0)
                 {
-                    client.SendReply(gm, "You cannot send a negative amount of coins.");
+                    client.SendReply(gm, "You cannot gift a negative amount of coins.");
                     return;
                 }
 
@@ -67,17 +73,20 @@ public class GiftItem : ChatBotCommandHandler<string>
                 {
                     resolved.Player.AddResource(Resource.Currency, result);
                     player.AddResource(Resource.Currency, -result);
-                    client.SendReply(gm, "You have sent {amount} coins to {playerName}!", result, resolved.PlayerName);
+                    if (result > 1)
+                        client.SendReply(gm, "You have gifted {playerName} with {amount} coins!", resolved.PlayerName, result);
+                    else
+                        client.SendReply(gm, "Did you feel extra nice today? You have gifted {playerName} with a single coin!", resolved.PlayerName, result);
                     return;
                 }
 
                 if (result == -1 || result == -2)
                 {
-                    client.SendReply(gm, "You could not send any coins to {playerName}, make sure the name is spelled correctly and that you have enough coins to send.", resolved.PlayerName);
+                    client.SendReply(gm, "You could not gift any coins to {playerName}, make sure the name is spelled correctly and that you have enough coins to send.", resolved.PlayerName);
                 }
                 else
                 {
-                    client.SendReply(gm, "Unable to send any coins right now. Please try again later.");
+                    client.SendReply(gm, "Unable to gift any coins right now. Please try again later.");
                 }
                 return;
             }
