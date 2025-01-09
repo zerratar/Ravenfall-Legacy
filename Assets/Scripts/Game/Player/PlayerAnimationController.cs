@@ -143,7 +143,8 @@ public class PlayerAnimationController : MonoBehaviour
 
     public void SetCaptainState(bool isCaptain)
     {
-        if ((isCaptain && animationState == PlayerAnimationState.Captain)
+        if ((this.isCaptain == isCaptain) &&
+            (isCaptain && animationState == PlayerAnimationState.Captain)
             || (!isCaptain && animationState != PlayerAnimationState.Captain)
             || !EnsureAnimator())
             return;

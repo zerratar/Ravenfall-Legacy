@@ -20,6 +20,8 @@ public class DamageCounter : MonoBehaviour
     private Transform _transform;
     private float fadeoutTimer = 2f;
     private Camera mainCamera;
+    private Vector3 targetPosition;
+    private Vector3 currentPosition;
     public float OffsetY = 2.75f;
 
     //public string Color;
@@ -27,6 +29,8 @@ public class DamageCounter : MonoBehaviour
     public float TargetFadeoutOffsetY = 3f;
     public float FadeoutDuration = 2f;
     public Transform Target;
+    private bool inUse;
+
     public DamageCounterManager Manager { get; internal set; }
     public float FadeOutProgress => (FadeoutDuration - fadeoutTimer) / FadeoutDuration;
     public int Damage
@@ -53,11 +57,13 @@ public class DamageCounter : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (GameCache.IsAwaitingGameRestore) return;
-        if (this._transform.position.y - 0.0001 <= OutOfScreen.y)
+        if (!inUse || GameCache.IsAwaitingGameRestore) return;
+
+        if (this.currentPosition.y - 0.0001 <= OutOfScreen.y)
         {
             return;
         }
+
         if (!Target || fadeoutTimer <= 0f)
         {
             ReturnToPool();
@@ -74,16 +80,24 @@ public class DamageCounter : MonoBehaviour
     private void ReturnToPool()
     {
         _transform.position = OutOfScreen;
+        currentPosition = OutOfScreen;
+        inUse = false;
+        Target = null;
         Manager.Return(this);
     }
 
     public void Activate(Transform target, int damage, bool isHeal)
     {
+        inUse = true;
         this._transform = transform;
 
         Target = target;
         mainCamera = Camera.main;
-        _transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
+
+        targetPosition = Target.position;
+        currentPosition = targetPosition + (Vector3.up * (OffsetY + FadeoutOffsetY));
+        _transform.position = currentPosition;
+
         fadeoutTimer = FadeoutDuration;
 
         canvasGroup.alpha = 1;
@@ -149,7 +163,8 @@ public class DamageCounter : MonoBehaviour
 
         if (Target)
         {
-            _transform.position = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
+            currentPosition = Target.position + (Vector3.up * (OffsetY + FadeoutOffsetY));
+            _transform.position = currentPosition;
         }
 
         //if (background)

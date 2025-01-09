@@ -418,7 +418,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             ResetFullBodySkin();
         }
 
-        Equipment.HideEquipments();
+        Equipment.HideEquipments(true);
         Appearance.SetFullBodySkinMesh(meshSkinObject);
 
         var monsterMesh = Appearance.FullBodySkinMesh;
@@ -623,6 +623,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             Bot.Poll();
         }
+
+
 
         Animations.Poll();
         Movement.Poll();
@@ -1700,9 +1702,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         FullBodySkinPath = player.FullBodySkin;
 
+        var setTask = true;
+        var inOnsen = false;
+
         //if (Raider != null)
         if (player.State != null && Overlay.IsGame)
         {
+            raidHandler.AutoJoinCount = player.State.AutoJoinRaidCount;
+            dungeonHandler.AutoJoinCount = player.State.AutoJoinDungeonCount;
+            onsenHandler.IsAutoResting = player.State.IsAutoResting;
+
             if (player.State.RestedTime > 0)
             {
                 Rested.RestedTime = player.State.RestedTime;
@@ -1723,11 +1732,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             Rested.AutoRestTarget = player.State.AutoRestTarget;
             Rested.AutoRestStart = player.State.AutoRestStart;
 
-            dungeonHandler.AutoJoinCounter = player.State.AutoJoinDungeonCounter;
-            raidHandler.AutoJoinCounter = player.State.AutoJoinRaidCounter;
+            if (player.PatreonTier > 0)
+            {
+                dungeonHandler.AutoJoinCounter = player.State.AutoJoinDungeonCounter;
+                raidHandler.AutoJoinCounter = player.State.AutoJoinRaidCounter;
+            }
 
-            var setTask = true;
-            var inOnsen = false;
             if (hasGameManager && Overlay.IsGame)
             {
                 this.teleportHandler.islandManager = this.GameManager.Islands;
@@ -1803,11 +1813,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                     Island = GameManager.Islands.FindPlayerIsland(this);
                 }
             }
-
-            if (setTask && !string.IsNullOrEmpty(player.State.Task))
-            {
-                SetTask(player.State.Task, player.State.TaskArgument ?? player.State.Task);
-            }
         }
 
         if (GameManager && GameManager.NameTags)
@@ -1815,13 +1820,15 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         Stats.Health.Reset();
         //Inventory.EquipBestItems();
-        Equipment.HideEquipments(); // don't show sword on join
+        //Equipment.HideEquipments(true); // don't show sword on join
 
         var itemManager = GameManager?.Items;
         if (itemManager == null)
         {
             itemManager = FindAnyObjectByType<ItemManager>();
         }
+
+        Equipment.HideEquipments(true); // don't show sword on join
 
         ApplyStatusEffects(player.StatusEffects);
 
@@ -1835,6 +1842,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             //{
             //    GameManager.Onsen.Join(this);
             //}
+
+            if (setTask && !string.IsNullOrEmpty(player.State.Task))
+            {
+                SetTask(player.State.Task, player.State.TaskArgument ?? player.State.Task);
+            }
 
             if (joinFerryAfterInitialize)
             {
@@ -3151,7 +3163,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (!damageCounterManager)
         {
-            damageCounterManager = FindAnyObjectByType<DamageCounterManager>();
+            damageCounterManager = FindAnyObjectByType<DamageCounterManager>(FindObjectsInactive.Include);
         }
 
         if (damageCounterManager)

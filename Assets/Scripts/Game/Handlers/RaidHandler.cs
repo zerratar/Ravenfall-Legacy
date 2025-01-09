@@ -4,7 +4,6 @@ using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using Skill = RavenNest.Models.Skill;
-using System.Collections.Concurrent;
 
 public class RaidHandler : MonoBehaviour
 {
@@ -23,7 +22,6 @@ public class RaidHandler : MonoBehaviour
     private TaskType previousTask;
     private string previousTaskArgument;
 
-    public bool AutoJoining;
     private Transform _transform;
 
     public bool InRaid { get; private set; }
@@ -31,6 +29,9 @@ public class RaidHandler : MonoBehaviour
     public Vector3 PreviousPosition => prevPosition;
 
     public int AutoJoinCounter { get; set; }
+    public long AutoJoinCount { get; set; }
+    //public double AutoJoinCost { get; set; } = 3000;
+
     private bool started;
     // Start is called before the first frame update
     void Start()
@@ -54,11 +55,6 @@ public class RaidHandler : MonoBehaviour
         }
 
         if (Overlay.IsOverlay || !gameManager.Raid.Started || !gameManager.Raid.Boss)
-        {
-            return;
-        }
-
-        if (AutoJoining)
         {
             return;
         }

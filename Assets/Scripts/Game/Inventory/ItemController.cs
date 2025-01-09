@@ -60,17 +60,14 @@ public class ItemController : MonoBehaviour
 
     public void Awake()
     {
+        this.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         this._transform = this.transform;
     }
-
-    public void FixedUpdate()
+    public void Start()
     {
-        if (GameSystems.frameCount % 30 == 0 && _transform.localPosition.x != 0)
-        {
-            _transform.localPosition = Vector3.zero;
-            _transform.localRotation = Quaternion.identity;
-        }
+        this.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
     }
+
     internal void EnablePickup(DropEventManager dropEventManager)
     {
         this.dropEventManager = dropEventManager;

@@ -24,7 +24,7 @@ public class MiningTask : ChunkTask
 
         return rocks
             .OrderBy(x => UnityEngine.Random.value)
-            .ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
+            .ThenBy(x => Vector3.Distance(player.Position, x.Position))
             .FirstOrDefault();
     }
 
@@ -79,8 +79,8 @@ public class MiningTask : ChunkTask
         //    reason = TaskExecutionStatus.InvalidTarget;
         //    return false;
         //}
-        var rock = target as RockController;
-        if (!rock)
+        //var rock = target as RockController;
+        if (target is not RockController rock)
         {
             return false;
         }
@@ -89,7 +89,7 @@ public class MiningTask : ChunkTask
             reason = TaskExecutionStatus.InvalidTarget;
             return false;
         }
-        if (Vector3.Distance(player.transform.position, rock.transform.position) >= rock.MaxActionDistance)
+        if (Vector3.Distance(player.Position, rock.Position) >= rock.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;

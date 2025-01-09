@@ -295,21 +295,33 @@ public class PlayerEq : ChatBotCommandHandler<string>
         }
 
         GameInventoryItem targetItem = null;
-        if (target == "weapon" || target == "sword")
+        if (target == "weapon" || target == "sword" || target == "spear" || target == "axe" || target == "katana")
         {
             targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.TwoHandedSword);
             if (targetItem == null)
                 targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.OneHandedSword);
+            if (targetItem == null)
+                targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.TwoHandedSpear);
+            if (targetItem == null)
+                targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.TwoHandedAxe);
+            if (targetItem == null)
+                targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.OneHandedAxe);
         }
 
-        if (target == "ranged")
+        if (target == "ranged" || target == "bow")
         {
             targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.TwoHandedBow);
         }
 
-        if (target == "magic")
+        if (target == "magic" || target == "staff")
         {
             targetItem = player.Inventory.GetEquipmentOfType(RavenNest.Models.ItemType.TwoHandedStaff);
+        }
+
+        if (targetItem == null)
+        {
+            client.SendReply(gm, "You don't seem to have any {type} equipped.", target);
+            return;
         }
 
         SendEquipmentDetails(gm, client, targetItem, player);
@@ -443,6 +455,13 @@ public class PlayerEq : ChatBotCommandHandler<string>
 
     private bool IsValidTarget(string target)
     {
-        return target == "shield" || target == "weapon" || target == "sword" || target == "ranged" || target == "magic" || target == "armor" || target == "armour" || target == "amulet" || target == "ring" || target == "pet";
+        return target == "shield" || target == "weapon" 
+            || target == "sword" || target == "ranged" 
+            || target == "magic" || target == "armor"
+            || target == "bow" || target == "staff"
+            || target == "spear" || target == "axe"
+            || target == "katana"
+            || target == "armour" || target == "amulet" 
+            || target == "ring" || target == "pet";
     }
 }

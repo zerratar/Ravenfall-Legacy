@@ -20,15 +20,17 @@ public class DungeonHandler
     public FerryContext Ferry;
 
     private bool wasResting;
-    public bool AutoJoining;
 
     private PlayerController player;
     private DungeonManager dungeon;
 
     public IslandController PreviousIsland => previousIsland;
     public Vector3 PreviousPosition => previousPosition;
-    public bool InDungeon { get; private set; }
+    public bool InDungeon;
     public int AutoJoinCounter { get; set; }
+    public long AutoJoinCount { get; set; }
+    //public int AutoJoinCost { get; set; } = 5000;
+
     public bool Joined => dungeon != null && dungeon.JoinedDungeon(this.player);
 
     //private void Start()
@@ -235,7 +237,7 @@ public class DungeonHandler
         player.Movement.EnableLocalAvoidance();
 
         Clear();
-        
+
         this.player.taskTarget = null;
         if (Ferry.OnFerry)
         {

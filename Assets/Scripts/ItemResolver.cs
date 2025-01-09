@@ -373,7 +373,7 @@ public class ItemResolver : IItemResolver
         return d[s.Length, t.Length];
     }
 
-    private static bool TryParsePrice(Token token, out double price)
+    public static bool TryParsePrice(string s, out double price)
     {
         price = 0d;
 
@@ -384,10 +384,10 @@ public class ItemResolver : IItemResolver
                 { "b", 1000_000_000 },
             };
 
-        var lastChar = token.Value[token.Value.Length - 1];
+        var lastChar = s[s.Length - 1];
         if (values.TryGetValue(char.ToLower(lastChar).ToString(), out var m))
         {
-            if (double.TryParse(token.Value.Remove(token.Value.Length - 1), NumberStyles.Any, new NumberFormatInfo(), out var p))
+            if (double.TryParse(s.Remove(s.Length - 1), NumberStyles.Any, new NumberFormatInfo(), out var p))
             {
                 price = p * m;
                 return true;
@@ -396,10 +396,15 @@ public class ItemResolver : IItemResolver
 
         if (!char.IsDigit(lastChar)) return false;
         {
-            if (!double.TryParse(token.Value, NumberStyles.Any, new NumberFormatInfo(), out var p)) return false;
+            if (!double.TryParse(s, NumberStyles.Any, new NumberFormatInfo(), out var p)) return false;
             price = p;
             return true;
         }
+    }
+
+    public static bool TryParsePrice(Token token, out double price)
+    {
+        return TryParsePrice(token.Value, out price);
     }
 
     private static readonly Dictionary<string, double> amountLookup = new Dictionary<string, double>

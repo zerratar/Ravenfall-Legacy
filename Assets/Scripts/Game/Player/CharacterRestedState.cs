@@ -3,6 +3,7 @@
     public double ExpBoost;
     public double RestedPercent;
     public double RestedTime;
+    public double AutoRestTime;
     public double CombatStatsBoost;
     internal double? AutoRestTarget;
     internal double? AutoRestStart;

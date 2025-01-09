@@ -422,6 +422,8 @@ public class DungeonManager : MonoBehaviour, IEvent
                     {
                         AnnounceDungeon(RequiredCode);
                     }
+
+                    AutoJoinPlayers();
                 }
                 else
                 {
@@ -452,6 +454,35 @@ public class DungeonManager : MonoBehaviour, IEvent
             gameManager.Events.End(this);
             Shinobytes.Debug.LogError("Error trying to activate dungeon: " + exc);
             return false;
+        }
+    }
+
+    private void AutoJoinPlayers()
+    {
+        var playersToJoin = new List<PlayerController>();
+        var autoJoinCost = gameManager.SessionSettings.AutoJoinDungeonCost;
+        foreach (var player in gameManager.Players.GetAllPlayers())
+        {
+            if (/*player.PatreonTier <= 0 ||*/ player.IsBot || CanJoin(player) != DungeonJoinResult.CanJoin || Initiator == player || player.dungeonHandler.AutoJoinCounter <= 0 ||
+                player.Resources.Coins < autoJoinCost)
+            {
+                continue;
+            }
+
+            if (player.dungeonHandler.AutoJoinCounter != int.MaxValue)
+            {
+                player.dungeonHandler.AutoJoinCounter--;
+            }
+
+            player.Resources.Coins -= autoJoinCost;
+            player.dungeonHandler.AutoJoinCount++;
+            playersToJoin.Add(player);
+            Join(player);
+        }
+
+        if (playersToJoin.Count > 0)
+        {
+            gameManager.AnnounceAutoDungeonJoin(playersToJoin);
         }
     }
 
@@ -529,8 +560,6 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             return;
         }
-
-        player.dungeonHandler.AutoJoining = false;
 
         lock (mutex)
         {

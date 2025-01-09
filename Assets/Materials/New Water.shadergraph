@@ -347,6 +347,9 @@
         },
         {
             "m_Id": "31c6bdd0bd2a4270b3a904be82033236"
+        },
+        {
+            "m_Id": "2458693f73cb4dcfb08363e6b01cd7c2"
         }
     ],
     "m_GroupDatas": [
@@ -537,6 +540,20 @@
                     "m_Id": "4bf5cfb77f8f4823b929a32938954df4"
                 },
                 "m_SlotId": 1
+            }
+        },
+        {
+            "m_OutputSlot": {
+                "m_Node": {
+                    "m_Id": "2458693f73cb4dcfb08363e6b01cd7c2"
+                },
+                "m_SlotId": 1
+            },
+            "m_InputSlot": {
+                "m_Node": {
+                    "m_Id": "fbd6b2f908e64f0283e5bd18915d0285"
+                },
+                "m_SlotId": 0
             }
         },
         {
@@ -1570,7 +1587,7 @@
             },
             "m_InputSlot": {
                 "m_Node": {
-                    "m_Id": "fbd6b2f908e64f0283e5bd18915d0285"
+                    "m_Id": "2458693f73cb4dcfb08363e6b01cd7c2"
                 },
                 "m_SlotId": 0
             }
@@ -2531,8 +2548,8 @@
     "m_ObjectId": "13159b75dd884fe1852b78eb18d9b2d0",
     "m_Title": "Normals",
     "m_Position": {
-        "x": -1514.9857177734375,
-        "y": -12.051429748535157
+        "x": -1660.800537109375,
+        "y": -12.0
     }
 }
 
@@ -2578,8 +2595,8 @@
     "m_ObjectId": "157db65fa5634698809b8eeac812a68a",
     "m_Title": "Refraction",
     "m_Position": {
-        "x": -2842.39990234375,
-        "y": -1046.3997802734375
+        "x": -2842.400146484375,
+        "y": -1046.39990234375
     }
 }
 
@@ -2920,6 +2937,44 @@
     "m_Value": 0.0,
     "m_DefaultValue": 0.0,
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.AbsoluteNode",
+    "m_ObjectId": "2458693f73cb4dcfb08363e6b01cd7c2",
+    "m_Group": {
+        "m_Id": "6c3fbf449b63452ba685162fd7dbb975"
+    },
+    "m_Name": "Absolute",
+    "m_DrawState": {
+        "m_Expanded": true,
+        "m_Position": {
+            "serializedVersion": "2",
+            "x": -4343.2001953125,
+            "y": 592.800048828125,
+            "width": 208.0,
+            "height": 277.60003662109377
+        }
+    },
+    "m_Slots": [
+        {
+            "m_Id": "a37a90b765654b1689794efc52c0ba6d"
+        },
+        {
+            "m_Id": "c021009b3868469fa2f9bc18d7eccf9f"
+        }
+    ],
+    "synonyms": [
+        "positive"
+    ],
+    "m_Precision": 0,
+    "m_PreviewExpanded": false,
+    "m_DismissedVersion": 0,
+    "m_PreviewMode": 0,
+    "m_CustomColors": {
+        "m_SerializableColors": []
+    }
 }
 
 {
@@ -4061,7 +4116,7 @@
     "m_StageCapability": 3,
     "m_BareResource": false,
     "m_Texture": {
-        "m_SerializedTexture": "{\"texture\":{\"instanceID\":0}}",
+        "m_SerializedTexture": "",
         "m_Guid": ""
     },
     "m_DefaultType": 3
@@ -4160,7 +4215,7 @@
     "m_StageCapability": 3,
     "m_BareResource": false,
     "m_Texture": {
-        "m_SerializedTexture": "{\"texture\":{\"instanceID\":0}}",
+        "m_SerializedTexture": "",
         "m_Guid": ""
     },
     "m_DefaultType": 3
@@ -5789,8 +5844,8 @@
     "m_ObjectId": "6c3fbf449b63452ba685162fd7dbb975",
     "m_Title": "Ripples",
     "m_Position": {
-        "x": -5068.79931640625,
-        "y": 330.3999938964844
+        "x": -5296.00048828125,
+        "y": 330.4000244140625
     }
 }
 
@@ -6664,8 +6719,8 @@
     "m_ObjectId": "84742c7163464622b1346684be29fe0e",
     "m_Title": "Foam Controls",
     "m_Position": {
-        "x": -2003.199951171875,
-        "y": 789.6001586914063
+        "x": -2518.400146484375,
+        "y": 782.400146484375
     }
 }
 
@@ -7349,8 +7404,8 @@
     "m_ObjectId": "96beaee5b6bf4227bbd0ea2f366720ec",
     "m_Title": "Water Color",
     "m_Position": {
-        "x": -4505.599609375,
-        "y": -412.7999267578125
+        "x": -4505.60009765625,
+        "y": -412.79998779296877
     }
 }
 
@@ -7928,6 +7983,30 @@
         "e31": 0.0,
         "e32": 0.0,
         "e33": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.DynamicVectorMaterialSlot",
+    "m_ObjectId": "a37a90b765654b1689794efc52c0ba6d",
+    "m_Id": 0,
+    "m_DisplayName": "In",
+    "m_SlotType": 0,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "In",
+    "m_StageCapability": 3,
+    "m_Value": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 0.0
+    },
+    "m_DefaultValue": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 0.0
     }
 }
 
@@ -8696,6 +8775,30 @@
         "y": 0.0
     },
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.DynamicVectorMaterialSlot",
+    "m_ObjectId": "c021009b3868469fa2f9bc18d7eccf9f",
+    "m_Id": 1,
+    "m_DisplayName": "Out",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "Out",
+    "m_StageCapability": 3,
+    "m_Value": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 0.0
+    },
+    "m_DefaultValue": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 0.0
+    }
 }
 
 {
@@ -9641,8 +9744,8 @@
     "m_ObjectId": "d60af875c4464804b08ac86da06b0df6",
     "m_Title": "Wave Controls",
     "m_Position": {
-        "x": -2824.000244140625,
-        "y": -1953.600341796875
+        "x": -2777.60009765625,
+        "y": -1953.60009765625
     }
 }
 

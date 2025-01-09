@@ -42,7 +42,7 @@ public class WoodcuttingTask : ChunkTask
         }
 
         return availableTargets
-            .OrderBy(x => Vector3.Distance(player.Position, x.transform.position) + (UnityEngine.Random.value * 15f))
+            .OrderBy(x => Vector3.Distance(player.Position, x.Position) + (UnityEngine.Random.value * 15f))
             .FirstOrDefault();
     }
 
@@ -71,11 +71,11 @@ public class WoodcuttingTask : ChunkTask
             return false;
         }
 
-        var tree = target as TreeController;
-        if (!tree)
+        if (target is not TreeController tree)
         {
             return false;
         }
+
         if (tree.Island != player.Island)
         {
             reason = TaskExecutionStatus.InvalidTarget;
@@ -89,7 +89,7 @@ public class WoodcuttingTask : ChunkTask
             return false;
         }
 
-        var distance = Vector3.Distance(player.Position, tree.transform.position);
+        var distance = Vector3.Distance(player.Position, tree.Position);
         if (distance >= tree.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;

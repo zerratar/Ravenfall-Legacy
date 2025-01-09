@@ -22,8 +22,9 @@ public class GraphicsToggler : MonoBehaviour
     public bool DisableSkinnedRenderers;
     public bool DisableRenderers;
 
-    private SkinnedMeshRenderer[] skinnedMeshRenderers;
-    private MeshRenderer[] meshRenderers;
+    //private SkinnedMeshRenderer[] skinnedMeshRenderers;
+    //private MeshRenderer[] meshRenderers;
+
     private int previousTargetFramerate;
     private int previousVsyncCount;
     public bool graphicsEnabled = true;
@@ -52,14 +53,17 @@ public class GraphicsToggler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        this.skinnedMeshRenderers = FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None);
-        this.meshRenderers = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None);
+        //this.skinnedMeshRenderers = FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None);
+        //this.meshRenderers = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None);
         this.previousTargetFramerate = Application.targetFrameRate;
+
+        // disable physics per default
+        DisablePhysics();
 
         if (Application.isBatchMode)
         {
             //ToggleAllGraphics();            
-            ReduceRenderTarget();
+            //ReduceRenderTarget();
         }
     }
 
@@ -116,12 +120,12 @@ public class GraphicsToggler : MonoBehaviour
         {
             uiCamera.enabled = false;
 
-            RestoreRenderTarget();
+            //RestoreRenderTarget();
         }
         else
         {
             uiCamera.enabled = true;
-            ReduceRenderTarget();
+            //ReduceRenderTarget();
         }
 
         yield return null;
@@ -130,14 +134,14 @@ public class GraphicsToggler : MonoBehaviour
         {
             ToggleBehaviours(cameras);
         }
-        if (DisableSkinnedRenderers)
-        {
-            ToggleRenderers(skinnedMeshRenderers);
-        }
-        if (DisableRenderers)
-        {
-            ToggleRenderers(meshRenderers);
-        }
+        //if (DisableSkinnedRenderers)
+        //{
+        //    ToggleRenderers(skinnedMeshRenderers);
+        //}
+        //if (DisableRenderers)
+        //{
+        //    ToggleRenderers(meshRenderers);
+        //}
         yield return null;
 
     }

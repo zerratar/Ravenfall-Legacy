@@ -34,13 +34,19 @@ public class DungeonForce : ChatBotCommandHandler
                 return;
             }
 
+            if (Game.Dungeons.Active)
+            {
+                client.SendReply(gm, "There is already an active dungeon.");
+                return;
+            }
+
             if (Game.Raid.IsBusy)
             {
                 client.SendReply(gm, "Someone tried to use a raid scroll. Please wait before using a dungeon scroll.");
                 return;
             }
 
-            if (Game.Raid.Started)
+            if (Game.Raid.IsEventActive)
             {
                 client.SendReply(gm, Localization.MSG_DUNGEON_START_FAILED_RAID);
                 return;

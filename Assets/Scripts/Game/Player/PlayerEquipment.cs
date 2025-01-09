@@ -35,6 +35,15 @@ public class PlayerEquipment : MonoBehaviour
     private GameObject rake;
     private float appearanceRefreshTimeout;
     private AttackType lastShownWeapon;
+    private bool woodcuttingHatchetVisible;
+    private bool miningPickaxeVisible;
+    private bool fishingRodVisible;
+    private bool rakeVisible;
+    private bool hammerVisible;
+    private bool staffVisible;
+    private bool bowVisible;
+    private bool shieldVisible;
+    private bool weaponVisible;
 
     //private bool staffVisible;
     //private bool bowVisible;
@@ -58,56 +67,93 @@ public class PlayerEquipment : MonoBehaviour
         player = GetComponent<PlayerController>();
     }
 
-    public void HideHatchet()
+    public void HideEquipments(bool forceHide = false)
     {
-        if (woodcuttingHatchet) woodcuttingHatchet.SetActive(false);
-    }
-
-    public void HidePickAxe()
-    {
-        if (miningPickaxe) miningPickaxe.SetActive(false);
-    }
-
-    public void HideFishingRod()
-    {
-        if (fishingRod) fishingRod.SetActive(false);
-    }
-
-    public void HideRake()
-    {
-        if (rake) rake.SetActive(false);
-    }
-
-    public void HideWeapon()
-    {
-        if (weapon) weapon.gameObject.SetActive(false);
-        if (shield) shield.gameObject.SetActive(false);
-        if (bow) bow.gameObject.SetActive(false);
-        if (staff) staff.gameObject.SetActive(false);
-    }
-
-    public void HideHammer()
-    {
-        if (hammer) hammer.SetActive(false);
-    }
-
-    public void HideEquipments()
-    {
-        HideRake();
-        HideWeapon();
-        HideHatchet();
-        HidePickAxe();
-        HideHammer();
-        HideFishingRod();
-
+        HideRake(forceHide);
+        HideWeapon(forceHide);
+        HideHatchet(forceHide);
+        HidePickAxe(forceHide);
+        HideHammer(forceHide);
+        HideFishingRod(forceHide);
         lastShownWeapon = AttackType.None;
     }
+
+    public void HideHatchet(bool forceHide = false)
+    {
+        if (forceHide || woodcuttingHatchetVisible)
+        {
+            if (woodcuttingHatchet) woodcuttingHatchet.SetActive(false);
+            woodcuttingHatchetVisible = false;
+        }
+    }
+
+    public void HidePickAxe(bool forceHide = false)
+    {
+        if (forceHide || miningPickaxeVisible)
+        {
+            if (miningPickaxe) miningPickaxe.SetActive(false);
+            miningPickaxeVisible = false;
+        }
+    }
+
+    public void HideFishingRod(bool forceHide = false)
+    {
+        if (forceHide || fishingRodVisible)
+        {
+            if (fishingRod) fishingRod.SetActive(false);
+            fishingRodVisible = false;
+        }
+    }
+
+    public void HideRake(bool forceHide = false)
+    {
+        if (forceHide || rakeVisible)
+        {
+            if (rake) rake.SetActive(false);
+            rakeVisible = false;
+        }
+    }
+
+    public void HideWeapon(bool forceHide = false)
+    {
+        if (forceHide || weaponVisible)
+        {
+            if (weapon) weapon.gameObject.SetActive(false);
+            weaponVisible = false;
+        }
+
+        if (forceHide || shieldVisible)
+        {
+            if (shield) shield.gameObject.SetActive(false);
+            shieldVisible = false;
+        }
+        if (forceHide || bowVisible)
+        {
+            if (bow) bow.gameObject.SetActive(false);
+            bowVisible = false;
+        }
+        if (forceHide || staffVisible)
+        {
+            if (staff) staff.gameObject.SetActive(false);
+            staffVisible = false;
+        }
+    }
+
+    public void HideHammer(bool forceHide = false)
+    {
+        if (forceHide || hammerVisible)
+        {
+            if (hammer) hammer.SetActive(false);
+            hammerVisible = false;
+        }
+    }
+
 
     private void ShowBow()
     {
         try
         {
-            if (lastShownWeapon == AttackType.Ranged)
+            if (bowVisible || lastShownWeapon == AttackType.Ranged)
             {
                 return;
             }
@@ -124,7 +170,7 @@ public class PlayerEquipment : MonoBehaviour
             {
                 bow.transform.SetParent(appearance.OffHandTransform);
                 bow.gameObject.SetActive(true);
-                //bowVisible = true;
+                bowVisible = true;
             }
         }
         finally
@@ -137,7 +183,7 @@ public class PlayerEquipment : MonoBehaviour
     {
         try
         {
-            if (lastShownWeapon == AttackType.Magic)
+            if (staffVisible || lastShownWeapon == AttackType.Magic)
             {
                 return;
             }
@@ -154,7 +200,7 @@ public class PlayerEquipment : MonoBehaviour
             {
                 staff.transform.SetParent(appearance.MainHandTransform);
                 staff.gameObject.SetActive(true);
-                //staffVisible = true;
+                staffVisible = true;
             }
         }
         finally
@@ -165,51 +211,83 @@ public class PlayerEquipment : MonoBehaviour
 
     public void ShowFishingRod()
     {
+        if (fishingRodVisible)
+            return;
+
         HideEquipments();
 
         if (!fishingRod && fishingRodPrefab)
             fishingRod = Instantiate(fishingRodPrefab, appearance.MainHandTransform);
 
-        if (fishingRod) fishingRod.SetActive(true);
-        //fishingRodVisible = true;
+        if (fishingRod)
+        {
+            fishingRod.SetActive(true);
+            fishingRodVisible = true;
+        }
     }
 
     public void ShowPickAxe()
     {
+        if (miningPickaxeVisible)
+            return;
+
         HideEquipments();
 
         if (!miningPickaxe && miningPickaxePrefab)
             miningPickaxe = Instantiate(miningPickaxePrefab, appearance.MainHandTransform);
-        if (miningPickaxe) miningPickaxe.SetActive(true);
-        //miningPickaxeVisible = true;
+
+        if (miningPickaxe)
+        {
+            miningPickaxe.SetActive(true);
+            miningPickaxeVisible = true;
+        }
     }
 
     public void ShowHammer()
     {
+        if (hammerVisible)
+            return;
+
         HideEquipments();
 
         if (!hammer && hammerPrefab)
             hammer = Instantiate(hammerPrefab, appearance.MainHandTransform);
-        if (hammer) hammer.SetActive(true);
+        if (hammer)
+        {
+            hammer.SetActive(true);
+            hammerVisible = true;
+        }
         //hammerVisible = true;
     }
 
     public void ShowHatchet()
     {
+        if (woodcuttingHatchetVisible)
+            return;
+
         HideEquipments();
 
         if (!woodcuttingHatchet && woodcuttingHatchetPrefab)
             woodcuttingHatchet = Instantiate(woodcuttingHatchetPrefab, appearance.MainHandTransform);
 
-        if (woodcuttingHatchet) woodcuttingHatchet.SetActive(true);
-        //woodcuttingHatchetVisible = true;
+        if (woodcuttingHatchet)
+        {
+            woodcuttingHatchet.SetActive(true);
+            woodcuttingHatchetVisible = true;
+        }
     }
 
     public void ShowRake()
     {
+        if (rakeVisible) return;
+
         HideEquipments();
         if (!rake && rakePrefab) rake = Instantiate(rakePrefab, appearance.MainHandTransform);
-        if (rake) rake.SetActive(true);
+        if (rake)
+        {
+            rake.SetActive(true);
+            rakeVisible = true;
+        }
         //rakeVisible = true;
     }
 
@@ -217,10 +295,10 @@ public class PlayerEquipment : MonoBehaviour
     {
         try
         {
-            if (lastShownWeapon == type)
-            {
-                return;
-            }
+            //if (lastShownWeapon == type)
+            //{
+            //    return;
+            //}
 
             HideEquipments();
 
@@ -239,12 +317,13 @@ public class PlayerEquipment : MonoBehaviour
                     if (weapon)
                     {
                         weapon.gameObject.SetActive(true);
+                        weaponVisible = true;
                         showShield &= IsOneHandedWeapon(weapon);
                     }
                     if (showShield)
                     {
                         shield.gameObject.SetActive(true);
-                        //shieldVisible = true;
+                        shieldVisible = true;
                     }
                     return;
             }
@@ -401,6 +480,7 @@ public class PlayerEquipment : MonoBehaviour
     {
         DestroyItemObjectIfNotSame(shield, item);
         shield = item;
+        shieldVisible = true;
     }
 
     public void SetWeapon(ItemController item)
@@ -409,16 +489,22 @@ public class PlayerEquipment : MonoBehaviour
         {
             DestroyItemObjectIfNotSame(bow, item);
             bow = item;
+            item.gameObject.SetActive(true);
+            bowVisible = true;
         }
         else if (item.Type == ItemType.TwoHandedStaff)
         {
             DestroyItemObjectIfNotSame(staff, item);
             staff = item;
+            item.gameObject.SetActive(true);
+            staffVisible = true;
         }
         else
         {
             DestroyItemObjectIfNotSame(weapon, item);
             weapon = item;
+            item.gameObject.SetActive(true);
+            weaponVisible = true;
         }
     }
 

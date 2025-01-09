@@ -38,6 +38,51 @@ public class GiftItem : ChatBotCommandHandler<string>
             return;
         }
 
+        if (inputQuery.Contains(" "))
+        {
+            var parts = inputQuery.Split(" ");
+            if (parts.Length == 3 && inputQuery.Contains(" coins ", System.StringComparison.OrdinalIgnoreCase) || inputQuery.Contains(" coin ", System.StringComparison.OrdinalIgnoreCase))
+            {
+                var amountString = parts.LastOrDefault();
+
+                var resolved = itemResolver.ResolveTradeQuery(inputQuery,
+                    parsePrice: false,
+                    parseUsername: true,
+                    parseAmount: true);
+
+                if (resolved.Player == null)
+                {
+                    client.SendReply(gm, "No player with the name {playerName} found in this stream. Maybe you misspelled it?", resolved.PlayerName);
+                    return;
+                }
+
+                if (resolved.Count <= 0)
+                {
+                    client.SendReply(gm, "You cannot send a negative amount of coins.");
+                    return;
+                }
+
+                var result = await Game.RavenNest.Players.SendCoinsAsync(player.Id, resolved.Player.Id, resolved.Count);
+                if (result > 0)
+                {
+                    resolved.Player.AddResource(Resource.Currency, result);
+                    player.AddResource(Resource.Currency, -result);
+                    client.SendReply(gm, "You have sent {amount} coins to {playerName}!", result, resolved.PlayerName);
+                    return;
+                }
+
+                if (result == -1 || result == -2)
+                {
+                    client.SendReply(gm, "You could not send any coins to {playerName}, make sure the name is spelled correctly and that you have enough coins to send.", resolved.PlayerName);
+                }
+                else
+                {
+                    client.SendReply(gm, "Unable to send any coins right now. Please try again later.");
+                }
+                return;
+            }
+        }
+
         await GiftItemAsync(inputQuery, gm, client, player);
     }
 

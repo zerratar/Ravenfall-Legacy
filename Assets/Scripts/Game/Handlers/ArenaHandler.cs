@@ -12,7 +12,7 @@ public class ArenaHandler : MonoBehaviour
     private bool fightStarted;
     private Chunk previousChunk;
 
-    public bool InArena { get; private set; }
+    public bool InArena;
 
     private Chunk ArenaChunk
     {

@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -48,7 +46,8 @@ namespace Shinobytes
         private static bool logToFile;
         private static bool isBatchMode;
         private static string TargetLogFilePath;
-
+        private static DateTime lastLogMessage;
+        private static DateTime lastWriteToFile;
         private const string CustomLogFile = "ravenfall.log";
         private const string CustomPrevLogFile = "ravenfall-prev.log";
         private static readonly object mutex = new object();
@@ -119,9 +118,12 @@ namespace Shinobytes
 
             lock (mutex)
             {
+                var timeSinceLastLog = DateTime.UtcNow - lastLogMessage;
+                var timeSinceWrite = DateTime.UtcNow - lastWriteToFile;
                 var count = Interlocked.Increment(ref logCounter);
-                if (count > 200)
+                if (count < 30 || count > 200 || timeSinceLastLog > TimeSpan.FromSeconds(1) || timeSinceWrite > TimeSpan.FromSeconds(1))
                 {
+                    lastWriteToFile = DateTime.UtcNow;
                     var logFile = new FileInfo(TargetLogFilePath);
                     if (logFile.Length > 1024 * 1024 * 10)
                     {
@@ -200,7 +202,7 @@ namespace Shinobytes
                 sb.AppendLine();
                 sb.AppendLine("[Processor]");
                 sb.AppendLine("Type: " + SystemInfo.processorType);
-                //sb.AppendLine("Model: " + SystemInfo.processorModel);
+                sb.AppendLine("Model: " + SystemInfo.processorModel);
                 sb.AppendLine("Count: " + SystemInfo.processorCount);
                 sb.AppendLine("Frequency: " + SystemInfo.processorFrequency);
 
@@ -235,6 +237,7 @@ namespace Shinobytes
             var msg = GetMessage(message);
             UnityEngine.Debug.Log(msg);
             if (isBatchMode) Console.WriteLine(Prefix(LogType.Log) + msg);
+            lastLogMessage = DateTime.UtcNow;
         }
 
         public static void Log(object message)
@@ -243,6 +246,7 @@ namespace Shinobytes
             var msg = GetMessage(message?.ToString());
             UnityEngine.Debug.Log(msg);
             if (isBatchMode) Console.WriteLine(Prefix(LogType.Log) + msg);
+            lastLogMessage = DateTime.UtcNow;
         }
 
         public static void LogWarning(string message)
@@ -251,6 +255,7 @@ namespace Shinobytes
             var msg = GetMessage(message);
             UnityEngine.Debug.LogWarning(msg);
             if (isBatchMode) Console.WriteLine(Prefix(LogType.Warning) + msg);
+            lastLogMessage = DateTime.UtcNow;
         }
 
         public static void LogError(string message)
@@ -259,6 +264,7 @@ namespace Shinobytes
             var msg = GetMessage(message);
             UnityEngine.Debug.LogError(msg);
             if (isBatchMode) Console.WriteLine(Prefix(LogType.Error) + msg);
+            lastLogMessage = DateTime.UtcNow;
         }
 
         private static string Prefix(LogType logType)

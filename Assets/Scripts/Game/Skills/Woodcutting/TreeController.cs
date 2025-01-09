@@ -16,7 +16,6 @@ public class TreeController : TaskObject
     [SerializeField] private GameObject[] trees;
     [SerializeField] private GameObject stump;
     [SerializeField] private float respawnTimeSeconds = 15f;
-    private bool respawnTimeLocked;
     [SerializeField] private int health = 4;
     [SerializeField] private int maxHealth = 4;
 
@@ -28,13 +27,15 @@ public class TreeController : TaskObject
 
     public bool IsStump => health <= 0;
 
-    public IslandController Island { get; private set; }
+    public Vector3 Position;
+    public IslandController Island;
 
     [ReadOnly]
     public float MaxActionDistance = 5f;
 
     private float maxRespawnTimeSeconds;
     private float minRespawnTimeSeconds;
+    private bool respawnTimeLocked;
 
     [Button("Adjust Placement")]
     public void AdjustPlacement()
@@ -46,7 +47,7 @@ public class TreeController : TaskObject
     {
         maxRespawnTimeSeconds = respawnTimeSeconds;
         minRespawnTimeSeconds = 1f;
-
+        Position = this.transform.position;
         var collider = GetComponent<SphereCollider>();
         if (collider)
         {

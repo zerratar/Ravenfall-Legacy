@@ -54,7 +54,7 @@ public class FarmingTask : ChunkTask
             return false;
         }
 
-        if (Vector3.Distance(player.transform.position, farm.transform.position) >= farm.MaxActionDistance)
+        if (Vector3.Distance(player.transform.position, farm.Position) >= farm.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;

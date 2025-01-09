@@ -346,6 +346,24 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<GiftItemResult>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
 
+        /// <summary>
+        /// Sends coins from one character to another
+        /// </summary>
+        /// <param name="senderCharacterId"></param>
+        /// <param name="receiverCharacterId"></param>
+        /// <param name="amount"></param>
+        /// <returns>The amount that was transfered. Returns -1 if amount is <= 0 or characters does not exist. -2 if coins are 0</returns>
+        public Task<long> SendCoinsAsync(Guid senderCharacterId, Guid receiverCharacterId, long amount)
+        {
+            return request.Create()
+                .Identifier(senderCharacterId.ToString())
+                .Method("send-coins")
+                .AddParameter(receiverCharacterId.ToString())
+                .AddParameter(amount.ToString())
+                .Build()
+                .SendAsync<long>(ApiRequestTarget.Players, ApiRequestType.Get);
+        }
+
         public Task<GiftItemResult> SendItemAsync(Guid characterId, string alias, Guid inventoryItemId, long amount)
         {
             return request.Create()

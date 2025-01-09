@@ -120,8 +120,6 @@ public class RaidManager : MonoBehaviour, IEvent
             return;
         }
 
-        player.raidHandler.AutoJoining = false;
-
         lock (mutex)
         {
             var bossHealth = Boss.Enemy.Stats.Health;
@@ -213,6 +211,8 @@ public class RaidManager : MonoBehaviour, IEvent
                 Announce();
             }
 
+            AutoJoinPlayers();
+
             return true;
         }
         else if (initiator != null)
@@ -234,6 +234,40 @@ public class RaidManager : MonoBehaviour, IEvent
         nextRaidTimer = gameManager.Events.RescheduleTime;
         return false;
     }
+
+
+    private void AutoJoinPlayers()
+    {
+        var playersToJoin = new List<PlayerController>();
+        var autoJoinCost = gameManager.SessionSettings.AutoJoinRaidCost;
+        foreach (var player in gameManager.Players.GetAllPlayers())
+        {
+            if (/*player.PatreonTier <= 0 ||*/ player.IsBot ||
+                CanJoin(player) != RaidJoinResult.CanJoin || Initiator == player
+                || player.raidHandler.AutoJoinCounter <= 0
+                || autoJoinCost > player.Resources.Coins)
+            {
+                continue;
+            }
+
+            if (player.raidHandler.AutoJoinCounter != int.MaxValue)
+            {
+                player.raidHandler.AutoJoinCounter--;
+            }
+
+            player.Resources.Coins -= autoJoinCost;
+            player.raidHandler.AutoJoinCount++;
+
+            playersToJoin.Add(player);
+            Join(player);
+        }
+
+        if (playersToJoin.Count > 0)
+        {
+            gameManager.AnnounceAutoRaidJoin(playersToJoin);
+        }
+    }
+
 
     public bool ForceStartRaid()
     {

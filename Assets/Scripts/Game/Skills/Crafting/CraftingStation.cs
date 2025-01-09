@@ -8,12 +8,12 @@ public class CraftingStation : MonoBehaviour
     public int Level = 1;
     public double ExpPerResource => 10;
 
-    public IslandController Island { get; private set; }
+    public IslandController Island;
 
     public CraftingStationType StationType = CraftingStationType.Crafting;
 
     public float ExpMultiplier = 1f;
-
+    public Vector3 Position;
     [ReadOnly]
     public float MaxActionDistance = 5;
 
@@ -28,6 +28,7 @@ public class CraftingStation : MonoBehaviour
     {
         this.Island = GetComponentInParent<IslandController>();
         var collider = GetComponent<SphereCollider>();
+        this.Position = this.transform.position;
         if (collider)
         {
             MaxActionDistance = collider.radius;

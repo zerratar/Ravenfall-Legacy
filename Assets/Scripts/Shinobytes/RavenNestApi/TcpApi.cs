@@ -403,12 +403,15 @@ namespace RavenNest.SDK
                     update.AutoJoinDungeonCounter = player.dungeonHandler.AutoJoinCounter;
                     update.AutoJoinRaidCounter = player.raidHandler.AutoJoinCounter;
 
+                    update.AutoJoinRaidCount = player.raidHandler.AutoJoinCount;
+                    update.AutoJoinDungeonCount = player.dungeonHandler.AutoJoinCount;
+                    update.IsAutoResting = player.onsenHandler.IsAutoResting;
+
                     update.AutoTrainTargetLevel = player.AutoTrainTargetLevel;
                     update.DungeonCombatStyle = AsInt(player.DungeonSkill);
                     update.RaidCombatStyle = AsInt(player.RaidSkill);
                     update.AutoRestTarget = player.Rested.AutoRestTarget;
                     update.AutoRestStart = player.Rested.AutoRestStart;
-
 
                     update.X = (short)position.x;
                     update.Y = (short)position.y;
@@ -487,6 +490,9 @@ namespace RavenNest.SDK
                 || a.AutoJoinRaidCounter != b.AutoJoinRaidCounter
                 || a.AutoJoinDungeonCounter != b.AutoJoinDungeonCounter
                 || a.AutoTrainTargetLevel != b.AutoTrainTargetLevel
+                || a.IsAutoResting != b.IsAutoResting
+                || a.AutoJoinRaidCount != b.AutoJoinRaidCount
+                || a.AutoJoinDungeonCount != b.AutoJoinDungeonCount
                 || a.AutoRestTarget != b.AutoRestTarget
                 || a.AutoRestStart != b.AutoRestStart
                 || a.DungeonCombatStyle != b.DungeonCombatStyle

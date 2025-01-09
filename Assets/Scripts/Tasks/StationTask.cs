@@ -86,7 +86,7 @@ public class StationTask : ChunkTask
             return false;
         }
 
-        if (Vector3.Distance(player.transform.position, station.transform.position) >= station.MaxActionDistance)
+        if (Vector3.Distance(player.Position, station.Position) >= station.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;

@@ -1,9 +1,6 @@
 ﻿using System;
 public class AutoDungeon : ChatBotCommandHandler<string>
 {
-    //public static DateTime lastCostUpdate = DateTime.UnixEpoch;
-    public const int AutoJoinCost = 5000;
-
     public AutoDungeon(
         GameManager game,
         RavenBotConnection server,
@@ -20,35 +17,32 @@ public class AutoDungeon : ChatBotCommandHandler<string>
             client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
+
         try
         {
-            //if (DateTime.UtcNow - lastCostUpdate > TimeSpan.FromMinutes(5))
+            //if (player.PatreonTier <= 0)
             //{
-            //    var res = await Game.RavenNest.Players.GetAutoJoinDungeonCostAsync();
-            //    if (res > 0)
-            //    {
-            //        autoJoinCost = res;
-            //        lastCostUpdate = DateTime.UtcNow;
-            //    }
+            //    client.SendReply(gm, "You need to be a mithril patron or higher to use this command. https://www.patreon.com/ravenfall");
+            //    return;
             //}
-
+            var autoJoinCost = Game.SessionSettings.AutoJoinDungeonCost;
             var l = data.ToLower();
             var before = player.dungeonHandler.AutoJoinCounter;
             if (int.TryParse(data, out var count))
             {
                 player.dungeonHandler.AutoJoinCounter = Math.Max(0, count);
                 if (before != player.dungeonHandler.AutoJoinCounter)
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", player.dungeonHandler.AutoJoinCounter, AutoJoinCost);
+                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off. It will cost {cost} each time you automatically join a dungeon.", player.dungeonHandler.AutoJoinCounter, autoJoinCost);
             }
             else if (l == "count" || l == "status" || l == "stats" || l == "left" || l == "state")
             {
                 if (player.dungeonHandler.AutoJoinCounter == int.MaxValue)
                 {
-                    client.SendReply(gm, "You will automatically join dungeons until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", AutoJoinCost);
+                    client.SendReply(gm, "You will automatically join dungeons until you use !dungeon join off.");
                 }
                 else if (player.dungeonHandler.AutoJoinCounter > 0)
                 {
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", player.dungeonHandler.AutoJoinCounter, AutoJoinCost);
+                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off. It will cost {cost} each time you automatically join a dungeon.", player.dungeonHandler.AutoJoinCounter, autoJoinCost);
                 }
                 else
                 {
@@ -59,7 +53,7 @@ public class AutoDungeon : ChatBotCommandHandler<string>
             {
                 player.dungeonHandler.AutoJoinCounter = int.MaxValue;
                 //if (before != player.dungeonHandler.AutoJoinCounter)
-                client.SendReply(gm, "You will automatically join dungeons until you use !dungeon join off or run out of coins. Each time your character automatically joins a dungeon it will cost {autoJoinCost} coins.", AutoJoinCost);
+                client.SendReply(gm, "You will automatically join dungeons until you use !dungeon join off. It will cost {cost} each time you automatically join a dungeon.", autoJoinCost);
             }
             else if (l == "off" || l == "cancel" || l == "stop")
             {

@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class RockController : MonoBehaviour
 {
-    public IslandController Island { get; private set; }
-    
+    public IslandController Island;
+    public Vector3 Position;
 
     [ReadOnly]
     public float MaxActionDistance = 5;
@@ -18,6 +18,7 @@ public class RockController : MonoBehaviour
 
     void Start()
     {
+        this.Position = transform.position;
         this.Island = GetComponentInParent<IslandController>();
         var collider = GetComponent<SphereCollider>();
         if (collider)

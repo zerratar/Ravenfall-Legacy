@@ -25,7 +25,7 @@ public class FishingTask : ChunkTask
         return fishingSpots
                 //.Where(x => !x.IsDepleted)
                 .OrderBy(x => UnityEngine.Random.value)
-                .ThenBy(x => Vector3.Distance(player.transform.position, x.transform.position))
+                .ThenBy(x => Vector3.Distance(player.Position, x.Position))
                 .FirstOrDefault();
     }
 
@@ -86,7 +86,7 @@ public class FishingTask : ChunkTask
             return false;
         }
 
-        if (Vector3.Distance(player.transform.position, fish.transform.position) >= fish.MaxActionDistance)
+        if (Vector3.Distance(player.Position, fish.Position) >= fish.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;

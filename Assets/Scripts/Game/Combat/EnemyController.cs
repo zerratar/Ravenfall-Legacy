@@ -59,7 +59,10 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     public IslandController Island;
     public IReadOnlyDictionary<string, float> Aggro => attackerAggro;
     [HideInInspector] public bool InCombat { get; set; }
-    public string Name => name;
+
+    private string _name;
+
+    public string Name => _name ?? (_name = name);
     public float HealthBarOffset => healthBarOffset;
     [HideInInspector] public bool IsRaidBoss;
     [HideInInspector] public bool IsDungeonBoss;
@@ -87,16 +90,21 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     [Button("Assign Dependencies")]
     public void AssignDependencies()
     {
-        if (!this.game) this.game = FindAnyObjectByType<GameManager>();
-        if (!damageCounterManager) damageCounterManager = GameObject.FindAnyObjectByType<DamageCounterManager>();
-        if (!healthBarManager) healthBarManager = GameObject.FindAnyObjectByType<HealthBarManager>();
-        if (!movement) movement = GetComponent<EnemyMovementController>();
+        AssignManagers();
 
         if (!this.Island)
         {
             var im = GameObject.FindAnyObjectByType<IslandManager>();
             this.Island = im.FindIsland(this.transform.position);
         }
+    }
+
+    private void AssignManagers()
+    {
+        if (!this.game) this.game = FindAnyObjectByType<GameManager>(FindObjectsInactive.Include);
+        if (!damageCounterManager) damageCounterManager = GameObject.FindAnyObjectByType<DamageCounterManager>(FindObjectsInactive.Include);
+        if (!healthBarManager) healthBarManager = GameObject.FindAnyObjectByType<HealthBarManager>(FindObjectsInactive.Include);
+        if (!movement) movement = GetComponent<EnemyMovementController>();
     }
 
     [Button("Rename")]
@@ -358,6 +366,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     void Awake()
     {
         this._transform = this.transform;
+        AssignManagers();
         FindFirstObjectByType<EnemyManager>().Register(this);
     }
 
@@ -666,7 +675,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError("Error handling Damage: " + exc.Message);
+            Shinobytes.Debug.LogError("Error handling Damage: " + exc);
             return false;
         }
     }
@@ -708,11 +717,12 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
             }
 
             if (!damageCounterManager)
-                damageCounterManager = GameObject.FindAnyObjectByType<DamageCounterManager>();
+                damageCounterManager = GameObject.FindAnyObjectByType<DamageCounterManager>(FindObjectsInactive.Include);
 
             InCombat = true;
 
-            damageCounterManager.Add(transform, damage, false, IsDungeonBoss || IsRaidBoss);//IsDungeonBoss || IsRaidBoss || this.Attackers.Count >= 5);
+            if (damageCounterManager)
+                damageCounterManager.Add(transform, damage, false, IsDungeonBoss || IsRaidBoss);//IsDungeonBoss || IsRaidBoss || this.Attackers.Count >= 5);
             //dc.Color = player.PlayerNameHexColor;
 
             Stats.Health.Add(-damage);
@@ -774,7 +784,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         }
         catch (Exception exc)
         {
-            Shinobytes.Debug.LogError("Error handling Damage: " + exc.Message);
+            Shinobytes.Debug.LogError("Error handling Damage: " + exc);
             return false;
         }
     }
@@ -793,7 +803,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
 
         if (!healthBar)
         {
-            healthBar = healthBarManager.Add(this);
+            AssignManagers();
+            if (healthBarManager) healthBar = healthBarManager.Add(this);
         }
         if (healthBar)
         {

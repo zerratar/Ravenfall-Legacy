@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using RavenNest.Models;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -37,7 +38,6 @@ public class SendItem : ChatBotCommandHandler<string>
             await SendItemSetAsync(inputQuery, gm, client, player);
             return;
         }
-
         await SendItemAsync(inputQuery, gm, client, player);
     }
 

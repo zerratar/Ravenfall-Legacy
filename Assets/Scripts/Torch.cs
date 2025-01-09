@@ -53,13 +53,13 @@ public class Torch : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (wasActivated && gameManager.PotatoMode)
-        {
-            fobj.SetActive(false);
-            wasActivated = false;
-            return;
-        }
-
+        //if (wasActivated && gameManager.PotatoMode)
+        //{
+        //    fobj.SetActive(false);
+        //    wasActivated = false;
+        //    return;
+        //}
+        
         var isNight = dayNightCycle.IsNight;
         if (isNight != wasActivated)
         {

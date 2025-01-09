@@ -51,38 +51,42 @@ public class GameUpdater : MonoBehaviour
 
         this.lastAcceptedVersion = PlayerPrefs.GetInt(CodeOfConductController.CoCLastAcceptedVersion_SettingsName, CodeOfConductController.CoCLastAcceptedVersion_DefaultValue);
 
-        if (Application.isEditor)
-        {
-            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs) + ", (IsEditor=True)");
-
-            Overlay.IsGame = !EditorOnlyStartAsOverlay;
-            StartUpdate(forceUpdate);
-        }
-        else
-        {
-            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs));            
-
-            CheckIfGameAsync(startupArgs).ContinueWith(async x =>
-            {
-                Overlay.IsGame = await x;
-                StartUpdate(forceUpdate);
-            });
-        }
-
         if (progressBar)
         {
             progressBar.gameObject.SetActive(false);
         }
+
+        if (Application.isEditor)
+        {
+            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs) + ", (IsEditor=True)");
+            Overlay.IsGame = !EditorOnlyStartAsOverlay;
+            StartUpdate(startupArgs, forceUpdate, false);
+        }
+        else
+        {
+            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs));
+            StartUpdate(startupArgs, forceUpdate, true);
+        }
     }
 
-    private void StartUpdate(bool forceUpdate)
+    private async void StartUpdate(string[] args, bool forceUpdate, bool checkIfGame)
     {
-        Shinobytes.Debug.Log("Checking for updates: " + CheckUpdateUri);
-        gameUpdater = new GameUpdateHandler(CheckUpdateUri);
-        gameUpdater.UpdateAsync(forceUpdate, lastAcceptedVersion).ContinueWith(async res =>
+        try
         {
-            updateResult = await res;
-        });
+            if (checkIfGame)
+            {
+                Overlay.IsGame = await CheckIfGameAsync(args);
+            }
+            updateResult = UpdateResult.CheckingForUpdate;
+            Shinobytes.Debug.Log("Checking for updates: " + CheckUpdateUri);
+            gameUpdater = new GameUpdateHandler(CheckUpdateUri);
+            updateResult = await gameUpdater.UpdateAsync(forceUpdate, lastAcceptedVersion);
+        }
+        catch (Exception ex)
+        {
+
+            Shinobytes.Debug.LogError("Failed to updates! " + ex);
+        }
     }
 
     private async Task<bool> CheckIfGameAsync(string[] args)
@@ -100,26 +104,36 @@ public class GameUpdater : MonoBehaviour
         // We don't do that check for now, so players will have to close down both instances if they f' things up.        
 
         var isGame = args.Length == 0 || args.All(x => !x.Contains("overlay"));
-
-        if (isGame)
+        try
         {
-            try
+            if (isGame)
             {
-                isGame = System.Diagnostics.Process.GetProcesses().Count(x => x.ProcessName.ToLower().Contains("ravenfall") || x.ProcessName.ToLower().Contains("unity editor")) == 1;
-            }
-            catch { }
+                try
+                {
+                    isGame = System.Diagnostics.Process.GetProcesses().Count(x => x.ProcessName.ToLower().Contains("ravenfall") || x.ProcessName.ToLower().Contains("unity editor")) == 1;
+                }
+                catch (Exception exc)
+                {
+                    Shinobytes.Debug.LogError("CheckIfGameAsync Error: " + exc);
+                }
 
-            if (!isGame)
-            {
-                var canConnectToServer = await OverlayClient.TestServerAvailabilityAsync();
-                // finally, check 
-                // if we can't connect to a server, assume the game is not running.
-                return !canConnectToServer;
+                if (!isGame)
+                {
+                    var canConnectToServer = await OverlayClient.TestServerAvailabilityAsync();
+                    // finally, check 
+                    // if we can't connect to a server, assume the game is not running.
 
+                    isGame = !canConnectToServer;
+
+                }
             }
+
+            return isGame;
         }
-
-        return isGame;
+        finally
+        {
+            Shinobytes.Debug.Log("Is Game: " + isGame);
+        }
     }
 
     private void Update()
@@ -139,8 +153,9 @@ public class GameUpdater : MonoBehaviour
             versionText.text = "VERSION " + Ravenfall.Version;
         }
 
-        if (!UnityEngine.Application.isEditor && UnityEngine.Debug.isDebugBuild)
+        if (updateResult != UpdateResult.CheckingForUpdate && !UnityEngine.Application.isEditor && UnityEngine.Debug.isDebugBuild)
         {
+            label.text = "Starting game...";
             loadingScene = true;
             UnityEngine.SceneManagement.SceneManager.LoadScene(1);
             return;
@@ -163,6 +178,8 @@ public class GameUpdater : MonoBehaviour
 
         if (updateResult == UpdateResult.UpToDate)
         {
+            label.text = "Game is up to date. Starting game...";
+
             loadingScene = true;
 
             if (Overlay.IsGame)
@@ -376,7 +393,8 @@ public enum UpdateResult
     CodeOfConductModified,
     Success,
     Failed_NoInternet,
-    Failed
+    Failed,
+    CheckingForUpdate
 }
 public class GameUpdateHandler
 {
@@ -385,20 +403,26 @@ public class GameUpdateHandler
     private readonly string version;
     private DownloadProgress lastDownloadProgress;
     private UpdateData latestUpdate;
+    private HttpClient webClient;
     public GameUpdateHandler(string host)
     {
         this.host = host;
         version = Ravenfall.Version;
         if (!this.host.EndsWith("/")) this.host += "/";
+
+        var handler = new HttpClientHandler();
+        handler.CookieContainer = new System.Net.CookieContainer();
+        handler.ServerCertificateCustomValidationCallback = (a, b, c, d) => true;
+        webClient = new HttpClient(handler);
     }
 
     public async Task<UpdateResult> UpdateAsync(bool forceUpdate = false, int lastAcceptedCoCVersion = -1)
     {
-        Shinobytes.Debug.Log("Downloading update information."); ;
+        Shinobytes.Debug.Log("Downloading update information.");
         latestUpdate = await DownloadUpdateInfoAsync();
         if (latestUpdate == null)
         {
-            Shinobytes.Debug.Log("Updating failed, no response from server.");
+            Shinobytes.Debug.LogError("Updating failed, no response from server.");
             return UpdateResult.Failed_NoInternet;
         }
 
@@ -408,6 +432,8 @@ public class GameUpdateHandler
             if (Application.isEditor || coc.VisibleInClient)
             {
                 CodeOfConductController.CodeOfConduct = coc;
+
+                Shinobytes.Debug.Log("New Code of Conduct available.");
                 return UpdateResult.CodeOfConductModified;
             }
         }
@@ -501,18 +527,23 @@ public class GameUpdateHandler
         try
         {
             var url = host + "api/version/check";
-            var req = (HttpWebRequest)HttpWebRequest.Create(url);
-            req.Method = HttpMethod.Get.Method;
-            req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36";
-            req.ServerCertificateValidationCallback += (sender, certificate, chain, errors) => true;
-
             Shinobytes.Debug.Log("HTTP GET: " + url);
-            using (var res = await req.GetResponseAsync())
-            using (var stream = res.GetResponseStream())
-            using (var sr = new System.IO.StreamReader(stream))
+
+            var update = await webClient.GetStringAsync(url);
+
+            //var req = (HttpWebRequest)HttpWebRequest.Create(url);
+            //req.Method = HttpMethod.Get.Method;
+            //req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36";
+            //req.ServerCertificateValidationCallback += (sender, certificate, chain, errors) => true;
+
+            //using (var res = await req.GetResponseAsync())
+            //using (var stream = res.GetResponseStream())
+            //using (var sr = new System.IO.StreamReader(stream))
             {
-                var update = await sr.ReadToEndAsync();
+                //var update = await sr.ReadToEndAsync();
                 var updateData = JsonConvert.DeserializeObject<UpdateData>(update);
+
+                Shinobytes.Debug.Log("Update Info Downloaded. Latest version available: " + updateData.Version + ", current version: " + version);
 
                 if (updateData.Version == version)
                 {

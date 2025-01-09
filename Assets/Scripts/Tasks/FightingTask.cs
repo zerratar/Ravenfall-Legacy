@@ -64,10 +64,9 @@ public class FightingTask : ChunkTask
             for (var i = 0; i < playerCount; ++i)
             {
                 var x = players[i];
-                if (x.Stats.Health.CurrentValue <= 0 || x.ferryHandler.OnFerry || x.onsenHandler.InOnsen
-                    || (!player.dungeonHandler.InDungeon && x.dungeonHandler.InDungeon)
-                    || (!player.dungeonHandler.InDungeon && !x.dungeonHandler.InDungeon)
-                    )
+                var playerInDungeon = player.dungeonHandler.InDungeon;
+                var otherPlayerInDungeon = x.dungeonHandler.InDungeon;
+                if (x.Stats.Health.CurrentValue <= 0 || x.ferryHandler.OnFerry || x.onsenHandler.InOnsen || (playerInDungeon != otherPlayerInDungeon))
                 {
                     continue;
                 }

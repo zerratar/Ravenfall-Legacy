@@ -10,7 +10,8 @@ public class FishingController : MonoBehaviour
     public double Resource => 1;
     public Transform LookTransform => !!rotationTarget ? rotationTarget : transform;
 
-    public IslandController Island { get; private set; }
+    public IslandController Island;
+    public Vector3 Position;
 
     [ReadOnly]
     public float MaxActionDistance = 5;
@@ -24,6 +25,7 @@ public class FishingController : MonoBehaviour
     void Start()
     {
         this.Island = GetComponentInParent<IslandController>();
+        this.Position = transform.position;
         var collider = GetComponent<SphereCollider>();
         if (collider)
         {

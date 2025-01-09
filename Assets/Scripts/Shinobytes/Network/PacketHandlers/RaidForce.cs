@@ -35,13 +35,19 @@ public class RaidForce : ChatBotCommandHandler
                 return;
             }
 
+            if (Game.Raid.IsEventActive)
+            {
+                client.SendReply(gm, "There is already an active raid.");
+                return;
+            }
+
             if (Game.Dungeons.IsBusy)
             {
                 client.SendReply(gm, "Someone tried to use a dungeon scroll. Please wait before using a raid scroll.");
                 return;
             }
 
-            if (Game.Dungeons.Started)
+            if (Game.Dungeons.Active)
             {
                 client.SendReply(gm, "Unable to start a raid during a dungeon. Please wait for it to be over.");
                 return;

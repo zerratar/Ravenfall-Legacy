@@ -67,7 +67,7 @@ public class UseMarketplace : ChatBotCommandHandler<string>
             return;
         }
 
-        var item = itemResolver.ResolveTradeQuery(query, parsePrice: false);
+        var item = itemResolver.ResolveTradeQuery(query);
 
         if (!ValidateItem(query, gm, client, item))
         {

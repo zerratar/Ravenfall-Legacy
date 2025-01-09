@@ -26,6 +26,7 @@
                 return;
             }
 
+            player.onsenHandler.IsAutoResting = false;
             Game.Onsen.Join(player);
         }
         catch { }

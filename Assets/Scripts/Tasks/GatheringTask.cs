@@ -35,7 +35,7 @@ public class GatheringTask : ChunkTask
         }
 
         return availableTargets
-            .OrderBy(x => Vector3.Distance(player.transform.position, x.transform.position) + (UnityEngine.Random.value * 15f))
+            .OrderBy(x => Vector3.Distance(player.Position, x.Position) + (UnityEngine.Random.value * 15f))
             .FirstOrDefault();
     }
 
@@ -53,7 +53,10 @@ public class GatheringTask : ChunkTask
     public override bool CanExecute(PlayerController player, object targetObject, out TaskExecutionStatus reason)
     {
         reason = TaskExecutionStatus.NotReady;
-        var target = targetObject as GatherController;
+        if (targetObject is not GatherController target)
+        {
+            return false;
+        }
 
         if (!target || !player || player.Stats.IsDead || !player.IsReadyForAction || targetObject == null)
         {
@@ -74,7 +77,7 @@ public class GatheringTask : ChunkTask
 
         target.AddGatherer(player);
 
-        if (Vector3.Distance(player.transform.position, target.transform.position) >= target.MaxActionDistance)
+        if (Vector3.Distance(player.Position, target.Position) >= target.MaxActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;
@@ -108,5 +111,5 @@ public class GatheringTask : ChunkTask
         }
     }
 
-    private System.Collections.Generic.HashSet<string> badPathReported = new ();
+    private System.Collections.Generic.HashSet<string> badPathReported = new();
 }

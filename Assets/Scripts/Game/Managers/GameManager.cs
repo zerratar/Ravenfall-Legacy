@@ -39,8 +39,6 @@ public class GameManager : MonoBehaviour, IGameManager
     private DateTime nextAutoJoinRaid;
     private DateTime nextAutoJoinDungeon;
 
-    private float nextAutoJoinCheck = 0f;
-    private bool handlingAutoJoin = false;
     private object[] ravenbotArgs;
 
     private int lastButtonIndex = 0;
@@ -181,7 +179,14 @@ public class GameManager : MonoBehaviour, IGameManager
     public StreamLabel dungeonStatsJson;
     public StreamLabel villageStatsJson;
 
-    private SessionSettings sessionSettings = new SessionSettings { ExpMultiplierLimit = 100 };
+    private SessionSettings sessionSettings = new SessionSettings
+    {
+        ExpMultiplierLimit = 100,
+        AutoRestCost = 500,
+        AutoJoinDungeonCost = 5000,
+        AutoJoinRaidCost = 3000,
+        
+    };
     public SessionSettings SessionSettings
     {
         get { return sessionSettings; }
@@ -1019,11 +1024,6 @@ public class GameManager : MonoBehaviour, IGameManager
                 RavenNest.Game.ClearPlayersAsync();
 
                 sessionPlayersCleared = true;
-            }
-
-            if (!handlingAutoJoin && ((Dungeons.Active && Dungeons.HasBeenAnnounced) || (Raid.Started && Raid.HasBeenAnnounced)))
-            {
-                UpdateAutoJoinAnnouncementAsync();
             }
         }
 
@@ -2518,69 +2518,6 @@ public class GameManager : MonoBehaviour, IGameManager
         lblUpdateAvailable.text = "New update available! <color=green>v" + newVersion;
         NewUpdateAvailable = true;
     }
-
-    internal async Task UpdateAutoJoinAnnouncementAsync()
-    {
-
-        var now = Time.time;
-        try
-        {
-            if (now < nextAutoJoinCheck)
-            {
-                return;
-            }
-        }
-        finally
-        {
-            nextAutoJoinCheck = Time.time + 1;
-        }
-        handlingAutoJoin = true;
-        var players = Players.GetAllPlayers();
-        try
-        {
-            var dateNow = DateTime.Now;
-
-            if (Raid.Started)
-            {
-                var autoJoinRaid = await HandleRaidAutoJoin(dateNow, players);
-                if (autoJoinRaid.Count > 0)
-                {
-                    foreach (var plr in autoJoinRaid)
-                    {
-                        Raid.Join(plr);
-                    }
-
-                    AnnounceAutoRaidJoin(autoJoinRaid);
-                    return;
-                }
-            }
-            else
-            {
-                var autoJoinDungeon = await HandleDungeonAutoJoin(dateNow, players);
-                if (autoJoinDungeon.Count > 0)
-                {
-                    foreach (var plr in autoJoinDungeon)
-                    {
-                        Dungeons.Join(plr);
-                    }
-
-                    AnnounceAutoDungeonJoin(autoJoinDungeon);
-                }
-            }
-        }
-        catch { }
-        finally
-        {
-            foreach (var player in players)
-            {
-                player.raidHandler.AutoJoining = false;
-                player.dungeonHandler.AutoJoining = false;
-            }
-            handlingAutoJoin = false;
-        }
-
-    }
-
     internal void AnnounceAutoDungeonJoin(List<PlayerController> players)
     {
         if (players.Count == 0) return;
@@ -2682,158 +2619,6 @@ public class GameManager : MonoBehaviour, IGameManager
             RavenBot.Announce("{playerCount} players have automatically joined the raid!", players.Count.ToString());
         }
     }
-
-    private async Task<List<PlayerController>> HandleRaidAutoJoin(DateTime now, IReadOnlyList<PlayerController> allPlayers)
-    {
-        var success = new List<PlayerController>();
-        if (!Raid.Started || now < nextAutoJoinRaid)
-        {
-            return success;
-        }
-
-        var autoJoinList = new List<Guid>();
-        var autoJoinPlayers = new List<PlayerController>();
-
-        foreach (var player in allPlayers)
-        {
-            if (player.IsBot || Raid.CanJoin(player) != RaidJoinResult.CanJoin ||
-                player.Resources.Coins < AutoRaid.AutoJoinCost || player.raidHandler.AutoJoining || Raid.Initiator == player)
-                continue;
-
-            if (player.raidHandler.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
-            {
-                player.raidHandler.AutoJoining = true;
-                autoJoinList.Add(player.Id);
-                autoJoinPlayers.Add(player);
-            }
-        }
-
-        try
-        {
-            if (autoJoinList.Count == 0)
-            {
-                return success;
-            }
-
-            Shinobytes.Debug.Log("Requesting Raid Auto join with " + autoJoinList.Count + " players.");
-            var result = await RavenNest.Players.AutoJoinRaid(autoJoinList.ToArray());
-
-            nextAutoJoinRaid = now.AddSeconds(5);
-
-            if (result == null || result.Length == 0)
-            {
-                return success;
-            }
-            else
-            {
-                for (var i = 0; i < result.Length; ++i)
-                {
-                    var playerResult = result[i];
-                    var plr = autoJoinPlayers[i];
-                    if (playerResult)
-                    {
-                        success.Add(plr);
-
-                        if (plr.raidHandler.AutoJoinCounter != int.MaxValue)
-                        {
-                            plr.raidHandler.AutoJoinCounter--;
-                        }
-                        plr.Resources.Coins -= AutoRaid.AutoJoinCost;
-                    }
-                }
-            }
-        }
-
-        catch (Exception exc)
-        {
-            Debug.LogError("Auto join raid failed, server not responding? Error: " + exc);
-        }
-        finally
-        {
-        }
-
-
-        return success;
-
-    }
-
-    private async Task<List<PlayerController>> HandleDungeonAutoJoin(DateTime now, IReadOnlyList<PlayerController> allPlayers)
-    {
-        var success = new List<PlayerController>();
-
-        if (!Dungeons.Active || Dungeons.Started || now < nextAutoJoinDungeon)
-        {
-            return success;
-        }
-
-        var autoJoinList = new List<Guid>();
-        var autoJoinPlayers = new List<PlayerController>();
-        foreach (var player in allPlayers)
-        {
-            if (player.IsBot || Dungeons.CanJoin(player) != DungeonJoinResult.CanJoin || player.Resources.Coins < AutoDungeon.AutoJoinCost || player.dungeonHandler.AutoJoining || Dungeons.Initiator == player)
-                continue;
-
-            if (player.dungeonHandler.AutoJoinCounter > 0 || AdminControlData.ControlPlayers)
-            {
-                player.dungeonHandler.AutoJoining = true;
-                autoJoinList.Add(player.Id);
-                autoJoinPlayers.Add(player);
-            }
-        }
-        try
-        {
-            if (autoJoinList.Count == 0)
-            {
-                return success;
-            }
-
-            Shinobytes.Debug.Log("Requesting Dungeon Auto join with " + autoJoinList.Count + " players.");
-
-            var result = await RavenNest.Players.AutoJoinDungeon(autoJoinList.ToArray());
-
-            nextAutoJoinDungeon = now.AddSeconds(5);
-
-            if (result == null || result.Length == 0)
-            {
-                return success;
-            }
-            else
-            {
-                for (var i = 0; i < result.Length; ++i)
-                {
-                    var playerResult = result[i];
-                    var plr = autoJoinPlayers[i];
-                    if (playerResult)
-                    {
-                        success.Add(plr);
-                        if (plr.dungeonHandler.AutoJoinCounter != int.MaxValue)
-                        {
-                            plr.dungeonHandler.AutoJoinCounter--;
-                        }
-
-                        plr.Resources.Coins -= AutoDungeon.AutoJoinCost;
-                    }
-                }
-            }
-
-
-            return success;
-        }
-        catch (Exception exc)
-        {
-            Debug.LogError("Auto join dungeon failed, server not responding? Error: " + exc.Message);
-        }
-        finally
-        {
-            foreach (var plr in allPlayers)
-            {
-                plr.dungeonHandler.AutoJoining = false;
-            }
-        }
-
-        return success;
-    }
-
 }
 
 public class IslandTaskCollection
@@ -2947,7 +2732,6 @@ public class FreezeChecker
 
     public static void Start()
     {
-#if DEBUG
         if (isRunning)
         {
             // we should clear out stacktraces and other stuff
@@ -2971,31 +2755,22 @@ public class FreezeChecker
             freezeCheckThread.Name = "Freeze Check";
             freezeCheckThread.Start();
         }
-#endif
     }
 
     public static void SetCurrentScriptUpdate(string objectName, [CallerMemberName] string scriptMethodName = null, [CallerFilePath] string scriptFile = null)
     {
-#if DEBUG
         lock (mutex)
         {
             lastChange = DateTime.UtcNow;
-            //currentScriptStackTrace = stackTrace;
-            //if (string.IsNullOrEmpty(currentScriptStackTrace))
-            //{
-            //    currentScriptStackTrace = GetStackTrace();
-            //}
             currentObjectName = objectName;
             currentScriptMethodName = scriptMethodName;
             currentScriptFileName = scriptFile;
             currentScriptThread = Thread.CurrentThread;
         }
-#endif
     }
 
     private static void Run(object obj)
     {
-#if DEBUG
         lastChange = DateTime.UtcNow;
         var updateInterval = interval;
         while (isRunning)
@@ -3017,15 +2792,12 @@ public class FreezeChecker
             }
             System.Threading.Thread.Sleep(updateInterval);
         }
-#endif
         isRunning = false;
     }
 
     public static void Stop()
     {
-#if DEBUG
         Shinobytes.Debug.Log("Stopping freeze checker...");
         isRunning = false;
-#endif
     }
 }

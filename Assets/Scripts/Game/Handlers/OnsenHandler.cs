@@ -18,6 +18,10 @@ public class OnsenHandler : MonoBehaviour
     private bool hasSetTransform;
     private Transform transformInternal;
 
+    public bool IsAutoResting { get; set; }
+
+    //public int AutoRestCost { get; set; } = 500;
+
     public bool AutoRestAvailable
     {
         get
@@ -47,7 +51,8 @@ public class OnsenHandler : MonoBehaviour
             var restedMinutes = rested.RestedTime / 60;
             return restedMinutes <= rested.AutoRestStart
                 && !InOnsen // if we are not already resting
-                && player.GameManager.Onsen.RestingAreaAvailable(player.Island);
+                && player.GameManager.Onsen.RestingAreaAvailable(player.Island) &&
+                player.Resources.Coins >= player.GameManager.SessionSettings.AutoRestCost;
         }
     }
 
@@ -70,7 +75,9 @@ public class OnsenHandler : MonoBehaviour
             var restedMinutes = rested.RestedTime / 60;
             if (ShouldAutoRest)
             {
+                IsAutoResting = true;
                 player.GameManager.Onsen.Join(player);
+
                 return;
             }
             else if (InOnsen && restedMinutes >= rested.AutoRestTarget)
@@ -106,6 +113,22 @@ public class OnsenHandler : MonoBehaviour
         {
             this.InOnsen = false;
             return;
+        }
+
+        if (IsAutoResting)
+        {
+            var before = (int)rested.AutoRestTime;
+            rested.AutoRestTime += GameTime.deltaTime;
+            var after = (int)rested.AutoRestTime;
+            if (after > before)
+            {
+                var delta = after - before;
+                player.Resources.Coins -= delta * player.GameManager.SessionSettings.AutoRestCost;
+            }
+        }
+        else
+        {
+            rested.AutoRestTime = 0;
         }
 
         rested.RestedTime += GameTime.deltaTime * RestedGainFactor;

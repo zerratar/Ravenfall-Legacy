@@ -114,7 +114,7 @@ public static class Utility
 
     public static string FormatTime(TimeSpan time)
     {
-        string text;
+        string text = string.Empty ;
         if (time.TotalHours < 1)
         {
             if (time.TotalMinutes > 1)
@@ -128,13 +128,18 @@ public static class Utility
         }
         else
         {
-            text = time.Hours + "h";
+            if (time.TotalDays > 1)
+            {
+                text += time.Days + "d ";
+            }
+
+            text += time.Hours + "h ";
             if (time.Minutes > 1)
             {
-                text += " " + time.Minutes + "m";
+                text += time.Minutes + "m";
             }
         }
-        return text;
+        return text.Trim();
     }
 
     public static string FormatTime(double hours, bool extras = true)

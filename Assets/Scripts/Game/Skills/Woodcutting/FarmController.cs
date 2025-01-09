@@ -7,11 +7,12 @@ public class FarmController : MonoBehaviour
     public int Resource => 1;
 
     public float MaxActionDistance = 5;
-
+    public Vector3 Position;
     public IslandController Island;
     void Start()
     {
         this.Island = GetComponentInParent<IslandController>();
+        this.Position = this.transform.position;
         var collider = GetComponent<SphereCollider>();
         if (collider)
         {

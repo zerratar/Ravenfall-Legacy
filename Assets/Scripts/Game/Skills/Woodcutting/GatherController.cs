@@ -12,8 +12,10 @@ public class GatherController : TaskObject
         = new ConcurrentDictionary<Guid, PlayerController>();
 
     [SerializeField] private float respawnTimeSeconds = 20f;
-    private bool respawnTimeLocked;
+    
     [SerializeField] private GameObject gatherObj;
+
+    private bool respawnTimeLocked;
 
     private float maxRespawnTimeSeconds;
     private float minRespawnTimeSeconds;
@@ -22,6 +24,8 @@ public class GatherController : TaskObject
 
     public bool IsDepleted { get; set; }
     public bool PlayKneelingAnimation = true;
+
+    public Vector3 Position;
 
     public IslandController Island;
 
@@ -36,7 +40,7 @@ public class GatherController : TaskObject
         {
             gatherObj = this.transform.GetChild(0).gameObject;
         }
-
+        this.Position = this.transform.position;
         this.Island = GetComponentInParent<IslandController>();
         var collider = GetComponent<SphereCollider>();
         if (collider)

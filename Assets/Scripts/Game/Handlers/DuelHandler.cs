@@ -12,11 +12,12 @@ public class DuelHandler : MonoBehaviour
     private float duelRequestTimer = 0f;
     private bool wasInOnsen;
     private DuelState state = DuelState.NotStarted;
+    public bool InDuel;
     private bool isDuelCameraOwner;
 
-    public bool InDuel => state >= DuelState.StakeInput;
-    public PlayerController Opponent { get; private set; }
-    public PlayerController Requester { get; private set; }
+    //public bool InDuel => state >= DuelState.StakeInput;
+    public PlayerController Opponent;
+    public PlayerController Requester;
     public bool HasActiveRequest => Requester;
 
     private void Awake()
@@ -160,6 +161,7 @@ public class DuelHandler : MonoBehaviour
 
         player.Stats.Health.Reset();
         state = DuelState.Fighting;
+        InDuel = true;
     }
 
     private void LostDuel()
@@ -177,7 +179,6 @@ public class DuelHandler : MonoBehaviour
 
     private void WonDuel()
     {
-
         RemoveDuelCamera();
 
         if (gameManager.RavenBot.IsConnected)
@@ -217,6 +218,7 @@ public class DuelHandler : MonoBehaviour
             player.onsenHandler.Exit();
 
         state = DuelState.Started;
+        InDuel = true;
         duelRequestTimer = 0f;
         player.Stats.Health.Reset();
     }
@@ -225,6 +227,7 @@ public class DuelHandler : MonoBehaviour
     {
         wasInOnsen = false;
         state = DuelState.NotStarted;
+        InDuel = false;
         Opponent = null;
         Requester = null;
     }
