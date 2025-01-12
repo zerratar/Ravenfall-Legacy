@@ -22,6 +22,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using UnityEngine.UIElements;
 
 public class GameManager : MonoBehaviour, IGameManager
 {
@@ -185,7 +186,7 @@ public class GameManager : MonoBehaviour, IGameManager
         AutoRestCost = 500,
         AutoJoinDungeonCost = 5000,
         AutoJoinRaidCost = 3000,
-        
+
     };
     public SessionSettings SessionSettings
     {
@@ -1298,7 +1299,11 @@ public class GameManager : MonoBehaviour, IGameManager
         var playerInfo = await GenerateBotInfoAsync();
         var player = await Players.JoinAsync(null, playerInfo, RavenBot.ActiveClient, false, true, null);
         if (player)
+        {
+            player.AddResource(Resource.Currency, 100000000);
             player.EquipBestItems();
+            player.onsenHandler.SetAutoRest(0, 5);
+        }
         ++spawnedBots;
     }
 
@@ -1882,6 +1887,20 @@ public class GameManager : MonoBehaviour, IGameManager
         if (GUI.Button(GetButtonRect(buttonIndex++), "Toggle Dungeon"))
         {
             dungeonManager.ToggleDungeon();
+        }
+
+        if (Arena.Activated)
+        {
+            if (GUI.Button(GetButtonRect(buttonIndex++), "Bots Join Arena"))
+            {
+                var bots = Players.GetAllBots();
+                foreach (var b in bots)
+                {
+                    Arena.Join(b);
+                }
+
+                dungeonManager.ToggleDungeon();
+            }
         }
 
         if (dungeonManager.Active)

@@ -124,7 +124,8 @@ public class PlayerValidator
             // also, ignore if the player is currently resting.
 
             var timeSinceLastExecutedTask = GameTime.time - player.LastExecutedTaskTime;
-            if (player.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
+            if (player.ActiveSkill != RavenNest.Models.Skill.None &&
+                player.TimeSinceLastTaskChange > 1f // if we recently changed task, this will spam, so make sure its been more than a second since we changed task.
                 && !player.onsenHandler.InOnsen // we will stand still if we are in the onsen :)
                 && player.ferryHandler.State != PlayerFerryState.Embarking // if we are embarking the ferry we will be standing still.
                 && ((movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) && timeSinceLastExecutedTask >= 5) ||

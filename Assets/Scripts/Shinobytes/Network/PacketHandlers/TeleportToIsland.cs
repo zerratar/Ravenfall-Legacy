@@ -26,6 +26,36 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
             return;
         }
 
+        if (player.dungeonHandler.InDungeon)
+        {
+            client.SendReply(gm, "You cannot teleport to an while in a dungeon.");
+            return;
+        }
+
+        if (player.streamRaidHandler.InWar)
+        {
+            client.SendReply(gm, "You cannot teleport while in a raid war.");
+            return;
+        }
+
+        if (player.arenaHandler.InArena)
+        {
+            client.SendReply(gm, "You cannot teleport while in a the arena.");
+            return;
+        }
+
+        if (player.duelHandler.InDuel)
+        {
+            client.SendReply(gm, "You cannot teleport while in a duel.");
+            return;
+        }
+
+        if (player.raidHandler.InRaid)
+        {
+            client.SendReply(gm, "You cannot teleport while in a raid.");
+            return;
+        }
+
         var inventory = player.Inventory;
         var backpack = inventory.GetBackpackItems();
 

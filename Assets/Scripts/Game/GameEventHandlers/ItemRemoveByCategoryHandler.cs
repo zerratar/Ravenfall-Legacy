@@ -14,6 +14,12 @@ public class ItemRemoveByCategoryHandler : GameEventHandler<ItemRemoveByCategory
         var items = player.Inventory.GetInventoryItems();
         foreach (var invItem in items)
         {
+            // do not remove equipped items when its by category as it will make player go nekkid when using send all to stash.
+            if (invItem.Equipped) 
+            {
+                continue;
+            }
+
             if (data.Exclude != null && data.Exclude.Contains(invItem.Id))
             {
                 continue;

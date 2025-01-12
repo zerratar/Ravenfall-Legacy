@@ -140,7 +140,7 @@ public class ArenaController : MonoBehaviour, IEvent
         if (gameCamera) gameCamera.DisableFocusCamera();
         if (AvailablePlayers.Count != 1)
         {
-            Debug.Log("It ended in a draw! Reward them all!");
+            //Debug.Log("It ended in a draw! Reward them all!");
 
             notifications.ShowDraw();
 

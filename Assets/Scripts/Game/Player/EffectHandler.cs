@@ -93,8 +93,6 @@ public class EffectHandler : MonoBehaviour
 
     internal void ShootMagicProjectile(Transform target)
     {
-        var direction = target.position - gameObject.transform.position;
-        var rotation = Quaternion.LookRotation(direction);
 
         if (!magicProjectileInstance)
         {
@@ -109,7 +107,15 @@ public class EffectHandler : MonoBehaviour
         // Reuse magic projectile instance
         magicProjectileInstance.SetActive(false);
         magicProjectileInstance.transform.position = spellSourceTransform.position;
-        magicProjectileInstance.transform.rotation = rotation;
+
+        var direction = target.position - gameObject.transform.position;
+
+        if (direction != Vector3.zero)
+        {
+            var rotation = Quaternion.LookRotation(direction);
+            magicProjectileInstance.transform.rotation = rotation;
+        }
+
         magicProjectileInstance.SetActive(true);
 
         if (!activeMagicProjectile)

@@ -825,7 +825,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         AddItems(rewards);
     }
 
-    private void AddItems(EventItemReward[] rewards)
+    private async void AddItems(EventItemReward[] rewards)
     {
         var result = gameManager.AddItems(rewards, dungeonIndex: dungeonIndex);
 
@@ -838,8 +838,14 @@ public class DungeonManager : MonoBehaviour, IEvent
             gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain but did not yield any treasure.");
         }
 
-        foreach (var msg in result.Messages)
+        for (int i = 0; i < result.Messages.Count; i++)
         {
+            if (i > 0)
+            {
+                await Task.Delay(100);
+            }
+
+            string msg = result.Messages[i];
             gameManager.RavenBot.Announce(msg);
         }
     }

@@ -54,14 +54,23 @@ public class TeleportHandler : MonoBehaviour
         if (!this || this == null)
             return;
 
+        player.playerAnimations.ResetAnimationStates();
+
+        var hasParent = !!player.transform.parent;
+        if (player.ferryHandler.OnFerry)
+        {
+            hasParent = true;
+            player.ferryHandler.RemoveFromFerry();
+        }
+
         LastTeleport = GameTime.time;
 
         if (player.onsenHandler.InOnsen)
         {
+            hasParent = true;
             player.onsenHandler.Exit();
         }
 
-        var hasParent = !!player.transform.parent;
         if (hasParent)
         {
             parent = player.Transform.parent;

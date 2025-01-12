@@ -94,6 +94,7 @@ public class ArenaHandler : MonoBehaviour
 
     internal void Interrupt()
     {
+        if (!InArena) return;
         OnLeave();
         gameManager.Arena.Interrupt();
     }

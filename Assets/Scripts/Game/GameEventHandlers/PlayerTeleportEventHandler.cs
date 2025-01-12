@@ -42,11 +42,17 @@ public class PlayerTeleportEventHandler : GameEventHandler<PlayerTeleportMessage
             {
                 gameManager.Raid.Leave(player);
             }
+
+            if (player.duelHandler.InDuel)
+            {
+                player.duelHandler.Died();
+            }
+
             if (player.dungeonHandler.InDungeon)
             {
                 gameManager.Dungeons.Remove(player);
             }
-            
+
             player.teleportHandler.Teleport(island, true);
         }
     }

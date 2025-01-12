@@ -91,7 +91,8 @@ public class AICombatantController : MonoBehaviour
 
         // rotate towards the enemy
         var direction = (closest.transform.position - transform.position).normalized;
-        transform.rotation = Quaternion.LookRotation(direction);
+        if (direction != Vector3.zero)
+            transform.rotation = Quaternion.LookRotation(direction);
 
         nextAttack = GameTime.time + Random.Range(minTimeBetweenAttack, maxTimeBetweenAttack);
 

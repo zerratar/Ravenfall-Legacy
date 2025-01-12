@@ -101,7 +101,8 @@ public class BotPlayerController : MonoBehaviour
         {
             // if the path is partial, can we check if last point is close enough to do the task or not.
             var distanceToTarget = 9999f;
-            if (movement.PathStatus == UnityEngine.AI.NavMeshPathStatus.PathPartial && player.Target && movement.CurrentPath != null)
+            var hasTarget = !!player.Target;
+            if (movement.PathStatus == UnityEngine.AI.NavMeshPathStatus.PathPartial && hasTarget && movement.CurrentPath != null)
             {
                 var targetPos = player.Target.position;
                 var lastCorner = movement.CurrentPath.corners[^1];
@@ -109,11 +110,11 @@ public class BotPlayerController : MonoBehaviour
                 distanceToTarget = Vector3.Distance(lastCorner, targetPos);
             }
 
-            if (distanceToTarget > 2) // distance to target needs to be based on actual target.
+            if (distanceToTarget > 2 && hasTarget) // distance to target needs to be based on actual target.
             {
-                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier +
-                    ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill + ", target: " + player.Target.name);// + ", distance: " + distanceToTarget);
-                                                                                                                                                   // can be target being stuck too.
+                Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island?.Identifier +
+                    ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill + ", target: " + player.Target?.name);// + ", distance: " + distanceToTarget);
+                                                                                                                                                    // can be target being stuck too.
                 var enemyController = player.Target.GetComponent<EnemyController>();
                 if (enemyController)
                 {

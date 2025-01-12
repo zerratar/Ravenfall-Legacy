@@ -11,7 +11,7 @@ public class TwitchSubscriber : ChatBotCommandHandler<UserSubscriptionEvent>
 
     public override void Handle(UserSubscriptionEvent data, GameMessage gm, GameClient client)
     {
-        Game.RavenNest.EnqueueLoyaltyUpdate(data);
+        //Game.RavenNest.EnqueueLoyaltyUpdate(data);
         Game.Twitch.OnSubscribe(data);
     }
 }

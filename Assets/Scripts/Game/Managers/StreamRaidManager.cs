@@ -10,7 +10,9 @@ public class StreamRaidManager : MonoBehaviour, IEvent
     private readonly object mutex = new object();
     private readonly List<PlayerController> defenders = new List<PlayerController>();
     private readonly List<PlayerController> raiders = new List<PlayerController>();
-    private readonly ConcurrentDictionary<Guid, Vector3> oldPlayerPosition = new ConcurrentDictionary<Guid, Vector3>();
+    //private readonly ConcurrentDictionary<Guid, Vector3> oldPlayerPosition = new ConcurrentDictionary<Guid, Vector3>();
+
+    private readonly ConcurrentDictionary<Guid, PrevPlayerState> prevPlayerStates = new ConcurrentDictionary<Guid, PrevPlayerState>();
 
     [SerializeField] private StreamRaidNotifications streamRaidNotifications;
 
@@ -50,7 +52,8 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         {
             defenders.Add(player);
             if (!raidWarIsland) raidWarIsland = gameManager.Islands.Find("war");
-            oldPlayerPosition[player.UserId] = player.Position;
+            prevPlayerStates[player.Id] = new PrevPlayerState(player);
+            //oldPlayerPosition[player.UserId] = player.Position;
             player.teleportHandler.Teleport(raidWarIsland.StreamerSpawningPoint.position);
             player.streamRaidHandler.OnEnter();
         }
@@ -63,7 +66,10 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         {
             raiders.Add(player);
             if (!raidWarIsland) raidWarIsland = gameManager.Islands.Find("war");
-            oldPlayerPosition[player.UserId] = gameManager.Chunks.GetStarterChunk().GetPlayerSpawnPoint();
+
+            prevPlayerStates[player.Id] = new PrevPlayerState(player);
+
+            //oldPlayerPosition[player.UserId] = gameManager.Chunks.GetStarterChunk().GetPlayerSpawnPoint();
             player.teleportHandler.Teleport(raidWarIsland.RaiderSpawningPoint.position);
             player.streamRaidHandler.OnEnter();
         }
@@ -80,7 +86,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
     {
         lock (mutex)
         {
-            oldPlayerPosition.Clear();
+            prevPlayerStates.Clear();
             defenders.Clear();
             raiders.Clear();
         }
@@ -115,12 +121,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         }
 
         RemoveFromRaid(player);
-
-        if (oldPlayerPosition.TryRemove(player.UserId, out var pos))
-        {
-            player.teleportHandler.Teleport(pos);
-        }
-
+        ReturnPlayer(player);
         CheckForWarEnd();
     }
 
@@ -145,16 +146,15 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         lock (mutex)
         {
 
-            var fallback = gameManager.Chunks.GetStarterChunk().GetPlayerSpawnPoint();
             foreach (var player in defenders)
             {
                 player.streamRaidHandler.OnExit();
-                TeleportBack(fallback, player);
+                ReturnPlayer(player);
             }
             foreach (var player in raiders)
             {
                 player.streamRaidHandler.OnExit();
-                TeleportBack(fallback, player);
+                ReturnPlayer(player);
             }
 
             if (defenders.Count >= raiders.Count) AnnounceDefendersWon();
@@ -162,8 +162,7 @@ public class StreamRaidManager : MonoBehaviour, IEvent
 
             defenders.Clear();
             raiders.Clear();
-            oldPlayerPosition.Clear();
-
+            prevPlayerStates.Clear();
 
             this.raiderInfo = null;
         }
@@ -171,15 +170,44 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         gameManager.Music.PlayBackgroundMusic();
     }
 
-    private void TeleportBack(Vector3 fallback, PlayerController player)
+    private void ReturnPlayer(PlayerController player)
     {
-        if (oldPlayerPosition.TryGetValue(player.UserId, out var pos))
+        if (!prevPlayerStates.TryGetValue(player.Id, out var state))
         {
-            player.teleportHandler.Teleport(pos);
+            return;
+        }
+
+        player.Movement.EnableLocalAvoidance();
+        player.taskTarget = null;
+        if (state.Ferry.OnFerry)
+        {
+            player.Movement.Lock();
+            player.ferryHandler.AddPlayerToFerry(state.Ferry.Destination);
+            state.Ferry.HasReturned = true;
         }
         else
         {
-            player.teleportHandler.Teleport(fallback);
+            player.teleportHandler.Teleport(state.Position);
+        }
+
+        if (state.TrainingSkill != null && state.TrainingSkill != Skill.None)
+        {
+            player.SetTask(state.TrainingTask.Value, state.TrainingTaskArgument, true);
+
+            if (!state.Ferry.OnFerry && state.Ferry.State != PlayerFerryState.Embarking)
+            {
+                player.GotoClosest(state.TrainingTask.Value, true);
+            }
+        }
+
+        if (state.Ferry.State == PlayerFerryState.Embarking)
+        {
+            player.ferryHandler.Embark(state.Ferry.Destination);
+        }
+
+        if (state.Resting)
+        {
+            player.GameManager.Onsen.Join(player);
         }
     }
 
@@ -206,20 +234,6 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         streamRaidNotifications.ShowRaidersWon();
     }
 
-    //private void TeleportBack(IEnumerable<PlayerController> players)
-    //{
-    //    lock (mutex)
-    //    {
-    //        foreach (var player in players)
-    //        {
-    //            if (oldPlayerPosition.TryGetValue(player.UserId, out var pos))
-    //                player.teleportHandler.Teleport(pos);
-    //        }
-    //    }
-
-    //    oldPlayerPosition.Clear();
-    //}
-
     private void AnnounceRaidMessage(string msg)
     {
         if (!streamRaidNotifications.gameObject.activeSelf)
@@ -232,5 +246,31 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         if (!streamRaidNotifications.gameObject.activeSelf)
             streamRaidNotifications.gameObject.SetActive(true);
         streamRaidNotifications.ShowIncomingRaid(msg);
+    }
+}
+
+public class PrevPlayerState
+{
+    public Vector3 Position;
+    public bool Resting;
+    public TaskType? TrainingTask;
+    public string? TrainingTaskArgument;
+    public Skill? TrainingSkill;
+    public FerryContext Ferry = new FerryContext();
+    public IslandController Island;
+
+    public PrevPlayerState(PlayerController player)
+    {
+        Island = player.Island;
+        Position = player.Position;
+        Resting = player.onsenHandler.InOnsen;
+
+        TrainingTask = player.GetTask();
+        TrainingTaskArgument = player.GetTaskArgument();
+
+        Ferry.OnFerry = player.ferryHandler.OnFerry;
+        Ferry.State = player.ferryHandler.State;
+        Ferry.HasDestination = !!player.ferryHandler.Destination;
+        Ferry.Destination = player.ferryHandler.Destination;
     }
 }

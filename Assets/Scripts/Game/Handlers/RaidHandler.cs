@@ -257,6 +257,11 @@ public class RaidHandler : MonoBehaviour
 
         player.taskTarget = null;
 
+        if (previousTask != TaskType.None)
+        {
+            this.player.SetTask(previousTask, previousTaskArgument, true);
+        }
+
         if (wasResting)
         {
             player.GameManager.Onsen.Join(player);
@@ -270,17 +275,12 @@ public class RaidHandler : MonoBehaviour
             ferryState.HasReturned = true;
         }
 
-        if (previousTask != TaskType.None)
-        {
-            this.player.SetTask(previousTask, previousTaskArgument, true);
-        }
-
         if (ferryState.State == PlayerFerryState.Embarking)
         {
             // if we were embarking, make sure we do that again.
             player.ferryHandler.Embark(ferryState.Destination);
         }
-        else if (!ferryState.OnFerry)
+        else if (!ferryState.OnFerry && !wasResting)
         {
             var currentTask = player.GetTask();
             if (currentTask != TaskType.None)

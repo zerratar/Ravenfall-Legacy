@@ -50,7 +50,8 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
             var existingPlayer = gameManager.Players.GetPlayerByUserId(user.UserId);
             if (existingPlayer)
             {
-                gameManager.RemovePlayer(existingPlayer);
+                continue;
+                //gameManager.RemovePlayer(existingPlayer);
             }
 
             var player = await gameManager.AddPlayerByCharacterIdAsync(user.CharacterId, raidInfo);
@@ -58,6 +59,12 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
             {
                 raiders.Add(player);
             }
+        }
+
+        if (raiders.Count == 0)
+        {
+            gameManager.RavenBot.Announce("Raid could not be started, as 0 players could be added to the raid.");
+            return;
         }
 
         gameManager.SaveStateFile();

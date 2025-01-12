@@ -62,7 +62,15 @@ public class ArenaNotifications : MonoBehaviour
     {
         activeTimer = secondsLeft;
         DisableAll();
-        notificationText.text = string.Format(startingSoon_format, secondsLeft);
+        //notificationText.text = string.Format(startingSoon_format, secondsLeft);
+        if (secondsLeft > 0)
+        {
+            notificationText.text = "You have " + secondsLeft + " seconds left to join!";
+        }
+        else
+        {
+            notificationText.text = "Arena will start as soon as all players arrive.";
+        }
         startingSoon.SetActive(true);
     }
 

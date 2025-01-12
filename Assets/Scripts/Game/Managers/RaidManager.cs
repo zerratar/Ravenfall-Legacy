@@ -423,7 +423,7 @@ public class RaidManager : MonoBehaviour, IEvent
         AddItems(rewards);
     }
 
-    private void AddItems(EventItemReward[] rewards)
+    private async void AddItems(EventItemReward[] rewards)
     {
         var result = gameManager.AddItems(rewards, raidIndex: raidIndex);
         if (result.Count > 0)
@@ -435,9 +435,15 @@ public class RaidManager : MonoBehaviour, IEvent
             gameManager.RavenBot.Announce("Victorious!! The raid boss was slain but did not yield any treasure.");
         }
 
-        foreach (var itemDrop in result.Messages)
+        for (int i = 0; i < result.Messages.Count; i++)
         {
-            gameManager.RavenBot.Announce(itemDrop);
+            if (i > 0)
+            {
+                await Task.Delay(100);
+            }
+
+            string msg = result.Messages[i];
+            gameManager.RavenBot.Announce(msg);
         }
     }
 

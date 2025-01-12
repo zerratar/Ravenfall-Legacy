@@ -161,14 +161,18 @@ public class PlayerDetails : MonoBehaviour
             }
         }
         var playerTask = observedPlayer.GetTask();
-        var isTrainingSomething = playerTask != TaskType.None || !string.IsNullOrEmpty(observedPlayer.GetTaskArgument());
+
+        var isSailing = observedPlayer.ferryHandler && observedPlayer.ferryHandler.OnFerry;
+
+        var isTrainingSomething = playerTask != TaskType.None || !string.IsNullOrEmpty(observedPlayer.GetTaskArgument()) || isSailing;
         SetActive(lblTraining.gameObject, isTrainingSomething);
         SetActive(lblTrainingSkill.gameObject, isTrainingSomething);
 
-        if (observedPlayer.ferryHandler && observedPlayer.ferryHandler.OnFerry)
+        if (isSailing)
         {
             lblTrainingSkill.text = "Sailing";
             lblTimeForLevel.text = GetTimeLeftForLevelFormatted(observedPlayer.Stats.Sailing);
+            SetActive(lblTimeForLevel.gameObject, true);
         }
         else if (isTrainingSomething)
         {
@@ -179,7 +183,7 @@ public class PlayerDetails : MonoBehaviour
                 var name = trainingAll ? "All" : activeSkill.Name;
 
                 var recommendedIsland = IslandManager.GetSuitableIsland(activeSkill.Level);
-                //var currentIsland = observedPlayer.Island?.Island ?? RavenNest.Models.Island.Ferry;
+                var currentIsland = observedPlayer.Island?.Island ?? RavenNest.Models.Island.Ferry;
                 //var onRecommendedIsland = currentIsland != RavenNest.Models.Island.Ferry && recommendedIsland != currentIsland;
                 if (CurrentExpGainState == ExpGainState.TargetLevelReached)
                 {
@@ -191,14 +195,14 @@ public class PlayerDetails : MonoBehaviour
                     SetActive(timeforlevelPanel, false);
                     lblTrainingSkill.text = "<color=yellow>" + name + "\r\n<size=14>Max level</size></color>";
                 }
-                else if (CurrentExpGainState == ExpGainState.LevelTooHigh)
+                else if (CurrentExpGainState == ExpGainState.LevelTooHigh && recommendedIsland != currentIsland)
                 {
                     SetActive(timeforlevelPanel, true);
                     lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Level too high</size></color>";
                     lblLevelUpTimeLabel.text = "Recommended Island";
                     lblTimeForLevel.text = $"!sail <b>{recommendedIsland}</b>";
                 }
-                else if (CurrentExpGainState == ExpGainState.LevelTooLow)
+                else if (CurrentExpGainState == ExpGainState.LevelTooLow && recommendedIsland != currentIsland)
                 {
                     SetActive(timeforlevelPanel, true);
                     lblTrainingSkill.text = "<color=red>" + name + "\r\n<size=14>Level too low</size></color>";
@@ -223,7 +227,7 @@ public class PlayerDetails : MonoBehaviour
                     lblLevelUpTimeLabel.text = defaultTimeToLevelUpLabelText;
                     SetActive(timeforlevelPanel, true);
                     lblTrainingSkill.text = name;
-                    lblTimeForLevel.text = trainingAll ? "N/A" : GetTimeLeftForLevelFormatted();
+                    lblTimeForLevel.text = GetTimeLeftForLevelFormatted(trainingAll);
                 }
             }
         }
@@ -246,8 +250,27 @@ public class PlayerDetails : MonoBehaviour
         }
     }
 
-    private string GetTimeLeftForLevelFormatted()
+    private string GetTimeLeftForLevelFormatted(bool isTrainingAll = false)
     {
+        if (isTrainingAll)
+        {
+            var now = DateTime.UtcNow;
+            var str = observedPlayer.Stats.Strength;
+            var strTimeLeft = str.GetEstimatedTimeToLevelUp() - now;
+            var def = observedPlayer.Stats.Defense;
+            var defTimeLeft = def.GetEstimatedTimeToLevelUp() - now;
+            var atk = observedPlayer.Stats.Attack;
+            var atkTimeLeft = def.GetEstimatedTimeToLevelUp() - now;
+
+            if (strTimeLeft < defTimeLeft && strTimeLeft < atkTimeLeft)
+                return GetTimeLeftForLevelFormatted(str);
+
+            if (defTimeLeft < strTimeLeft && defTimeLeft < atkTimeLeft)
+                return GetTimeLeftForLevelFormatted(def);
+
+            return GetTimeLeftForLevelFormatted(atk);
+        }
+
         var s = observedPlayer.ActiveSkill;
         if (s == Skill.None) return "";
 
@@ -276,7 +299,8 @@ public class PlayerDetails : MonoBehaviour
 
         var recommendedIsland = IslandManager.GetSuitableIsland(skill.Level);
         var currentIsland = observedPlayer.Island?.Island ?? RavenNest.Models.Island.Ferry;
-        var onRecommendedIsland = currentIsland != RavenNest.Models.Island.Ferry && recommendedIsland == currentIsland;
+        var onRecommendedIsland = (currentIsland == RavenNest.Models.Island.Ferry && skill.Type == Skill.Sailing)
+            || (currentIsland != RavenNest.Models.Island.Ferry && recommendedIsland == currentIsland);
 
         switch (CurrentExpGainState)
         {

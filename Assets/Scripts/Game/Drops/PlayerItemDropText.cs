@@ -18,7 +18,7 @@ public class PlayerItemDropText
     private IReadOnlyList<string> Process(
         Dictionary<string, List<string>> items,
         PlayerItemDropMessageSettings settings,
-        int maxLength = 500)
+        int maxLength = 475)
     {
         // no need for linq here since we need to enumerate everything anyway.
         //Count = items.Values.Sum(x => x.Count);

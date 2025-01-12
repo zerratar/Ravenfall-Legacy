@@ -175,7 +175,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
             x.radius = 0.5f;
             x.height = 2f;
             x.avoidancePriority = 50;
-            x.baseOffset = -0.125f;
+            x.baseOffset = 0;//-0.125f;
         });
 
         this.gameObject.EnsureComponent<EnemyMovementController>(x =>

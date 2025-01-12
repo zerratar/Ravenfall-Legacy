@@ -241,6 +241,7 @@ public class FerryHandler : MonoBehaviour
                 player.Movement.Unlock();
             }
 
+
             State = PlayerFerryState.None;
 
             player.Animations.SetCaptainState(false);
@@ -248,6 +249,8 @@ public class FerryHandler : MonoBehaviour
             isOnFerry = false;
             player.Island = targetIsland;
             player.taskTarget = null;
+
+            player.playerAnimations.ResetAnimationStates();
 
             this.ClearDestination();
 
@@ -282,8 +285,7 @@ public class FerryHandler : MonoBehaviour
     {
         if (OnFerry && Time.frameCount % 4 == 0)
         {
-            player.transform.localPosition = Vector3.zero;
-            player.transform.localRotation = Quaternion.identity;
+            player.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         }
     }
 
@@ -299,7 +301,7 @@ public class FerryHandler : MonoBehaviour
         EnsureReferences();
         if (!ferry) return;
         player.InterruptAction();
-
+        player.playerAnimations.ResetAnimationStates();
         // re-arrange players if this player should be the captain.
 
         //var currentCaptain = ferry.Captain;
