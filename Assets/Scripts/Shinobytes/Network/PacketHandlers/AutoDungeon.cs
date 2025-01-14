@@ -20,11 +20,6 @@ public class AutoDungeon : ChatBotCommandHandler<string>
 
         try
         {
-            //if (player.PatreonTier <= 0)
-            //{
-            //    client.SendReply(gm, "You need to be a mithril patron or higher to use this command. https://www.patreon.com/ravenfall");
-            //    return;
-            //}
             var autoJoinCost = Game.SessionSettings.AutoJoinDungeonCost;
             var l = data.ToLower();
             var before = player.dungeonHandler.AutoJoinCounter;

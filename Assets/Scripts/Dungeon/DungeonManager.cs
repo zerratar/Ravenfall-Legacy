@@ -463,7 +463,10 @@ public class DungeonManager : MonoBehaviour, IEvent
         var autoJoinCost = gameManager.SessionSettings.AutoJoinDungeonCost;
         foreach (var player in gameManager.Players.GetAllPlayers())
         {
-            if (/*player.PatreonTier <= 0 ||*/ player.IsBot || CanJoin(player) != DungeonJoinResult.CanJoin || Initiator == player || player.dungeonHandler.AutoJoinCounter <= 0 ||
+            if (player.IsBot || 
+                CanJoin(player) != DungeonJoinResult.CanJoin || 
+                Initiator == player || 
+                player.dungeonHandler.AutoJoinCounter <= 0 ||
                 player.Resources.Coins < autoJoinCost)
             {
                 continue;

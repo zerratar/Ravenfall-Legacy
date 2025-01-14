@@ -1732,11 +1732,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             Rested.AutoRestTarget = player.State.AutoRestTarget;
             Rested.AutoRestStart = player.State.AutoRestStart;
 
-            if (player.PatreonTier > 0)
-            {
-                dungeonHandler.AutoJoinCounter = player.State.AutoJoinDungeonCounter;
-                raidHandler.AutoJoinCounter = player.State.AutoJoinRaidCounter;
-            }
+            dungeonHandler.AutoJoinCounter = player.State.AutoJoinDungeonCounter;
+            raidHandler.AutoJoinCounter = player.State.AutoJoinRaidCounter;
 
             if (hasGameManager && Overlay.IsGame)
             {

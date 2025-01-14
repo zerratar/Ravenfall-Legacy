@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using RavenNest.Models;
+using System;
+using System.Linq;
 
 public class FerryTravel : ChatBotCommandHandler<string>
 {
@@ -22,8 +24,25 @@ public class FerryTravel : ChatBotCommandHandler<string>
         IslandController island = null;
         PlayerController player = cmdPlayer;
         var islandName = data.Trim();
+
+        // check if islandName is a player eg. !sail zerratar, this should enforce zerratar to train sailing
+
         var playerName = "";
         var otherPlayer = false;
+
+        var targetPlayer = PlayerManager.GetPlayerByName(islandName);
+        if (targetPlayer != null)
+        {
+            if (player.IsGameAdmin || player.IsGameModerator || player.IsBroadcaster || player.IsModerator || targetPlayer.UserId == cmdPlayer.UserId)
+            {
+                Embark(gm, client, targetPlayer);
+                return;
+            }
+
+            client.SendReply(gm, "You do not have permission to set this player to sail.");
+            return;
+        }
+
         if (islandName.Contains(' '))
         {
             var parts = islandName.Split(' ');
@@ -45,11 +64,6 @@ public class FerryTravel : ChatBotCommandHandler<string>
             {
                 player = PlayerManager.GetPlayerByName(playerName);
                 otherPlayer = true;
-                //if (!player.CanBeControlledByStreamer)
-                //{
-                //    client.SendReply(gm, "You cannot use the !sail command for {playerName}.", playerName);
-                //    return;
-                //}
             }
 
             if (!player)
@@ -122,5 +136,28 @@ public class FerryTravel : ChatBotCommandHandler<string>
         }
 
         player.ferryHandler.Embark(island);
+    }
+
+    private void Embark(GameMessage gm, GameClient client, PlayerController player)
+    {
+        if (!player.ferryHandler)
+        {
+            return;
+        }
+
+        if (player.ferryHandler.Embarking)
+        {
+            client.SendReply(gm, Localization.MSG_FERRY_ALREADY_WAITING);
+            return;
+        }
+        if (player.ferryHandler.OnFerry)
+        {
+            client.SendReply(gm, Localization.MSG_FERRY_ALREADY_ON);
+            return;
+        }
+
+        player.ferryHandler.Embark();
+        player.ClearTask();
+        client.SendReply(gm, Localization.MSG_FERRY_TRAIN_SAIL);
     }
 }

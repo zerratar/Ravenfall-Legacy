@@ -51,6 +51,9 @@ namespace Shinobytes
         private const string CustomLogFile = "ravenfall.log";
         private const string CustomPrevLogFile = "ravenfall-prev.log";
         private static readonly object mutex = new object();
+
+        public static bool KeepPlayerLog = true;
+
         static Debug()
         {
             PatchIfNecessary();
@@ -142,17 +145,19 @@ namespace Shinobytes
                     // delete the player.log file, it should not be used.
                     // if the game crashes, then the player.log will only contain the crash log.
                     // while the ravenfall.log will contain game logs.
-
-                    try
+                    if (!KeepPlayerLog)
                     {
-                        if (System.IO.File.Exists(PlayerLogFilePath))
+                        try
                         {
-                            System.IO.File.Delete(PlayerLogFilePath);
+                            if (System.IO.File.Exists(PlayerLogFilePath))
+                            {
+                                System.IO.File.Delete(PlayerLogFilePath);
+                            }
                         }
-                    }
-                    catch
-                    {
-                        // ignore this as it could be Unity trying to write to the file.
+                        catch
+                        {
+                            // ignore this as it could be Unity trying to write to the file.
+                        }
                     }
                 }
 

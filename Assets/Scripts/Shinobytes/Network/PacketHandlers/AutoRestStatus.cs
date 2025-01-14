@@ -14,11 +14,11 @@
             return;
         }
 
-        if (plr.PatreonTier <= 0)
-        {
-            client.SendReply(gm, Localization.MSG_PATREON_ONLY);
-            return;
-        }
+        //if (plr.PatreonTier <= 0)
+        //{
+        //    client.SendReply(gm, Localization.MSG_PATREON_ONLY);
+        //    return;
+        //}
 
         var autoRestStopMinutes = plr.Rested.AutoRestTarget;
         var autoRestStartMinutesLeft = plr.Rested.AutoRestStart;

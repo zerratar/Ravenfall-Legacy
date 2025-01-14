@@ -242,7 +242,7 @@ public class RaidManager : MonoBehaviour, IEvent
         var autoJoinCost = gameManager.SessionSettings.AutoJoinRaidCost;
         foreach (var player in gameManager.Players.GetAllPlayers())
         {
-            if (/*player.PatreonTier <= 0 ||*/ player.IsBot ||
+            if (player.IsBot ||
                 CanJoin(player) != RaidJoinResult.CanJoin || Initiator == player
                 || player.raidHandler.AutoJoinCounter <= 0
                 || autoJoinCost > player.Resources.Coins)
