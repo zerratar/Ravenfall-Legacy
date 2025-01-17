@@ -46,6 +46,16 @@ public class DropEventManager : MonoBehaviour
         }
     }
 
+    internal void DropRandomHats(int itemCount)
+    {
+
+    }
+
+    internal void DropRandomItems(int itemCount)
+    {
+
+    }
+
     public void Drop(Item item, int amount)
     {
         if (spawnPoints == null || spawnPoints.Length == 0)
@@ -80,4 +90,5 @@ public class DropEventManager : MonoBehaviour
             amount.ToString(),
             item.Name);
     }
+
 }

@@ -22,16 +22,18 @@ public class ItemDropEvent : ChatBotCommandHandler<string>
             return;
         }
 
+        var randomHatDropParty = inputQuery.Contains("random hat") || inputQuery.Contains("hats");
+        var randomItem = inputQuery.Contains("random");
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
         var item = itemResolver.Resolve(inputQuery);
 
-        if (item.SuggestedItemNames.Length > 0)
+        if (item.SuggestedItemNames.Length > 0 && !randomHatDropParty && !randomItem)
         {
             return;
         }
 
-        if (item == null)
+        if (item == null && !randomHatDropParty && !randomItem)
         {
             //client.SendReply(player, "Could not find an item matching the query '{query}'", data.ItemQuery);
             return;
@@ -41,7 +43,18 @@ public class ItemDropEvent : ChatBotCommandHandler<string>
         if (dropEventManager)
         {
             var itemCount = Game.Players.GetPlayerCount() * 2;
-            dropEventManager.Drop(item.Item, itemCount);
+            if (randomHatDropParty)
+            {
+                dropEventManager.DropRandomHats(itemCount);
+            }
+            else if (randomItem)
+            {
+                dropEventManager.DropRandomItems(itemCount);
+            }
+            else
+            {
+                dropEventManager.Drop(item.Item, itemCount);
+            }
         }
     }
 }

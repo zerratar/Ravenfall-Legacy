@@ -72,7 +72,7 @@ public class GiftItem : ChatBotCommandHandler<string>
                 if (result > 0)
                 {
                     resolved.Player.AddResource(Resource.Currency, result);
-                    player.AddResource(Resource.Currency, -result);
+                    player.RemoveResource(Resource.Currency, result);
                     if (result > 1)
                         client.SendReply(gm, "You have gifted {playerName} with {amount} coins!", resolved.PlayerName, result);
                     else
