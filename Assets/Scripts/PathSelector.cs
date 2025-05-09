@@ -38,7 +38,8 @@ public class PathSelector : MonoBehaviour
             currentSpline.Evaluate(t, out var position, out var tangent, out var upVector);
             transform.position = position;
             transform.rotation = Quaternion.LookRotation(tangent, upVector);
-            ferryController.SetMovementEffect(Mathf.Clamp01((movementSpeed + ferryController.CaptainSpeedAdjustment) / movementSpeed));
+            var effectBoost = Mathf.Max(1, ferryController.GetFerryBoostEffect());
+            ferryController.SetMovementEffect(Mathf.Clamp01(((movementSpeed + ferryController.CaptainSpeedAdjustment) * effectBoost) / movementSpeed));
 
             if (elapsed >= duration)
             {
@@ -63,7 +64,9 @@ public class PathSelector : MonoBehaviour
         pathIndex = (pathIndex + 1) % splines.Length;
         currentSpline = splines[pathIndex].Spline;
         float length = currentSpline.GetLength();
-        float adjustedSpeed = movementSpeed + ferryController.CaptainSpeedAdjustment;
+
+        var effectBoost = Mathf.Max(1, ferryController.GetFerryBoostEffect());
+        float adjustedSpeed = (movementSpeed + ferryController.CaptainSpeedAdjustment) * effectBoost;
 
 #if UNITY_EDITOR
         if (Input.GetKey(KeyCode.LeftShift) && Input.GetKey(KeyCode.Space))
