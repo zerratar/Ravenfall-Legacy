@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using RavenNest.Models;
-
 namespace RavenNest.SDK.Endpoints
 {
     public class GameApi

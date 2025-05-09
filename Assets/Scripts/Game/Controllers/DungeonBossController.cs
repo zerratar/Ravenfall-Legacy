@@ -233,8 +233,13 @@ public class DungeonBossController : MonoBehaviour
 
     public void SetStats(Skills rngLowStats, Skills rngHighStats, EquipmentStats rngLowEq, EquipmentStats rngHighEq, float healthScale = 100f)
     {
-        enemyController.Stats = GenerateCombatStats(rngLowStats ?? new Skills(), rngHighStats ?? new Skills(), healthScale);
-        enemyController.EquipmentStats = GenerateEquipmentStats(rngLowEq ?? new EquipmentStats(), rngHighEq ?? new EquipmentStats());
+        var cbStat = GenerateCombatStats(rngLowStats ?? new Skills(), rngHighStats ?? new Skills(), healthScale);
+        var eqStat = GenerateEquipmentStats(rngLowEq ?? new EquipmentStats(), rngHighEq ?? new EquipmentStats());
+
+
+        enemyController.Stats = cbStat;
+        enemyController.EquipmentStats = eqStat;
+
         transform.localScale = Vector3.one * Mathf.Max(1f, Mathf.Min(3.5f, enemyController.Stats.CombatLevel * 0.003f));
         modelObject.transform.localScale = Vector3.one;
 
@@ -254,7 +259,11 @@ public class DungeonBossController : MonoBehaviour
     {
         var skills = Skills.Random(rngLowStats, rngHighStats);
 
-        skills.Health.Level = skills.Health.CurrentValue = (int)(skills.Health.Level * healthScale);
+        // reduce defense by 50%
+        skills.Defense.Level = skills.Defense.CurrentValue = (int)(skills.Defense.Level * 0.5);
+
+        // increase health by additional 15%
+        skills.Health.Level = skills.Health.CurrentValue = (int)(skills.Health.Level * healthScale * 1.15);
         return skills;
     }
 
@@ -263,8 +272,11 @@ public class DungeonBossController : MonoBehaviour
     {
         return new EquipmentStats
         {
-            BaseArmorPower = UnityEngine.Random.Range(rngLowEq.BaseArmorPower, rngHighEq.BaseArmorPower),
-            BaseWeaponPower = UnityEngine.Random.Range(rngLowEq.BaseWeaponPower, rngHighEq.BaseWeaponPower),
+            // reduce armor power by 75%
+            BaseArmorPower = (int)(UnityEngine.Random.Range(rngLowEq.BaseArmorPower, rngHighEq.BaseArmorPower) * 0.25),
+
+            // increase weapon power by 15%
+            BaseWeaponPower = (int)(UnityEngine.Random.Range(rngLowEq.BaseWeaponPower, rngHighEq.BaseWeaponPower) * 1.15),
             BaseWeaponAim = UnityEngine.Random.Range(rngLowEq.BaseWeaponAim, rngHighEq.BaseWeaponAim)
         };
     }

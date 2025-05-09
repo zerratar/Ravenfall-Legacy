@@ -20,10 +20,10 @@ public class SetPet : ChatBotCommandHandler<string>
             return;
         }
 
+        var itemQuery = inputQuery;
         var ioc = Game.gameObject.GetComponent<IoCContainer>();
         var itemResolver = ioc.Resolve<IItemResolver>();
-        var itemQuery = inputQuery;
-        var item = itemResolver.ResolveAny(itemQuery, itemQuery + " pet");
+        var item = itemResolver.ResolveInventoryItem(player, itemQuery + " pet", 5, EquippedState.NotEquipped);
 
         if (item.SuggestedItemNames.Length > 0)
         {
@@ -43,24 +43,14 @@ public class SetPet : ChatBotCommandHandler<string>
             return;
         }
 
-        var invItems = player.Inventory.GetInventoryItemsByItemId(item.Id);
-        if (invItems == null || invItems.Count == 0)
+        var invItem = item.InventoryItem;
+        if (invItem == null)
         {
             client.SendReply(gm, Localization.MSG_SET_PET_NOT_OWNED, item.Item.Name);
             return;
         }
 
         var equippedPet = player.Inventory.GetEquipmentOfCategory(ItemCategory.Pet);
-        var invItem = invItems.FirstOrDefault();//item.InventoryItem;
-        if (invItem == null)
-        {
-            if (equippedPet == null || equippedPet.ItemId != item.Id)
-            {
-                client.SendReply(gm, Localization.MSG_SET_PET_NOT_OWNED, item.Item.Name);
-                return;
-            }
-        }
-
         if (equippedPet == null || equippedPet.ItemId != item.Id)
         {
             await player.EquipAsync(item.Item);

@@ -82,6 +82,29 @@ public class Skills : IComparable
         SetupSkillLookup();
     }
 
+    public uint GetDirtyMask()
+    {
+        uint mask = 0;
+        for (int i = 0; i < SkillList.Length; i++)
+        {
+            var skill = SkillList[i];
+            if (skill.IsDirty)
+            {
+                mask |= (uint)(1 << i);
+            }
+        }
+        return mask;
+    }
+
+    public void ClearDirtyMask()
+    {
+        for (int i = 0; i < SkillList.Length; i++)
+        {
+            var skill = SkillList[i];
+            skill.IsDirty = false;
+        }
+    }
+
     private void SetupSkillLookup()
     {
         for (var i = 0; i < SkillList.Length; ++i)

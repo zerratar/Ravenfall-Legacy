@@ -17,6 +17,8 @@ public class SkillStat
 
     public int Index;
 
+    public bool IsDirty;
+
     private List<ExpGain> expGains = new List<ExpGain>();
     private float windowDuration = 180;//3600; // 1 hour
 
@@ -115,7 +117,7 @@ public class SkillStat
         {
             return false;
         }
-        
+
         Experience += exp;
         var expForNextLevel = GameMath.ExperienceForLevel(this.Level + 1);
         while (Experience >= expForNextLevel)
@@ -143,6 +145,7 @@ public class SkillStat
             expGains.RemoveAt(0);
         }
 
+        IsDirty = true;
 
         if (newLevels > 0)
         {

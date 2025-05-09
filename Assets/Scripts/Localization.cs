@@ -254,6 +254,8 @@ public static class Localization
     public static readonly string MSG_SELL_ITEM_NOT_OWNED = Meta("marketplace", "sell", "fail") + "You do not have any {itemName} in your inventory.";
     public static readonly string MSG_SELL_MARKETPLACE_ERROR = Meta("marketplace", "fail") + "Error accessing marketplace right now.";
     public static readonly string MSG_ITEM_SOULBOUND = Meta("marketplace", "sell", "soulbound", "fail") + "{itemName} is soulbound and cannot be sold to the marketplace or gifted to another player.";
+    public static readonly string MSG_ITEM_SELL_ENCHANTED = Meta("marketplace", "sell", "soulbound", "fail") + "{itemName} is enchanted and cannot be sold to the marketplace or gifted to another player.";
+
     public static readonly string MSG_SELL = Meta("marketplace", "sell", "info") + "{itemAmount}x {itemName} was put in the marketplace listing for {itemPrice} per item.";
     public static readonly string MSG_VALUE_ITEM = Meta("info", "item", "value") + "{itemName} can be sold for {vendorPrice} using !vendor";
     public static readonly string MSG_VALUE_ITEM_NOT_FOUND = Meta("info", "item", "value", "fail") + "Could not find an item matching the name: {query}";

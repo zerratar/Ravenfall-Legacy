@@ -62,8 +62,8 @@ public class GraphicsToggler : MonoBehaviour
 
         if (Application.isBatchMode)
         {
-            //ToggleAllGraphics();            
-            //ReduceRenderTarget();
+            ToggleAllGraphics();
+            ReduceRenderTarget();
         }
     }
 
@@ -73,7 +73,6 @@ public class GraphicsToggler : MonoBehaviour
         if (Application.isBatchMode)
         {
             GraphicsEnabled = false;
-
             //mutex.Wait(TimeSpan.FromMilliseconds(10));
             return;
         }

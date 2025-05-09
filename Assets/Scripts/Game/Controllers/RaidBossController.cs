@@ -297,7 +297,9 @@ public class RaidBossController : MonoBehaviour
     {
         var health = Math.Max(healthMultiplier, Random.Range(rngLowStats.Health.CurrentValue, rngHighStats.Health.CurrentValue) * healthMultiplier);
         var strength = Math.Max(1, Random.Range(rngLowStats.Strength.MaxLevel, rngHighStats.Strength.MaxLevel));
-        var defense = Math.Max(1, Random.Range(rngLowStats.Defense.MaxLevel, rngHighStats.Defense.MaxLevel));
+
+        // reduce defense by 50%
+        var defense = (int)(Math.Max(1, Random.Range(rngLowStats.Defense.MaxLevel, rngHighStats.Defense.MaxLevel)) * 0.5);
         var attack = Math.Max(1, Random.Range(rngLowStats.Attack.MaxLevel, rngHighStats.Attack.MaxLevel));
         var magic = Math.Max(1, Random.Range(rngLowStats.Magic.MaxLevel, rngHighStats.Magic.MaxLevel));
         var ranged = Math.Max(1, Random.Range(rngLowStats.Ranged.MaxLevel, rngHighStats.Ranged.MaxLevel));
@@ -312,13 +314,17 @@ public class RaidBossController : MonoBehaviour
             Ranged = new(ranged)
         };
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private EquipmentStats GenerateEquipmentStats(EquipmentStats rngLowEq, EquipmentStats rngHighEq)
     {
         return new EquipmentStats
         {
-            BaseArmorPower = Random.Range(rngLowEq.BaseArmorPower, rngHighEq.BaseArmorPower),
-            BaseWeaponPower = Random.Range(rngLowEq.BaseWeaponPower, rngHighEq.BaseWeaponPower),
+            // reduce armor power by 75%
+            BaseArmorPower = (int)(Random.Range(rngLowEq.BaseArmorPower, rngHighEq.BaseArmorPower) * 0.25),
+
+            // increase power by 15%
+            BaseWeaponPower = (int)(Random.Range(rngLowEq.BaseWeaponPower, rngHighEq.BaseWeaponPower) * 1.15),
             BaseWeaponAim = Random.Range(rngLowEq.BaseWeaponAim, rngHighEq.BaseWeaponAim)
         };
     }

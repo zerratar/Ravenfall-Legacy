@@ -32,7 +32,7 @@ public class DisenchantItem : ChatBotCommandHandler<string>
 
             query = player.LastEnchantedItem.Name;
         }
-        else  if (string.IsNullOrEmpty(inputQuery))
+        else if (string.IsNullOrEmpty(inputQuery))
         {
             if (player.LastEnchantedItem != null)
             {
@@ -51,30 +51,39 @@ public class DisenchantItem : ChatBotCommandHandler<string>
             }
         }
 
-     
-        var ioc = Game.gameObject.GetComponent<IoCContainer>();
-        var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.ResolveInventoryItem(player, query);
 
-        if (queriedItem == null || queriedItem.Item == null)
+        var inventoryItem = player.Inventory.GetAllItems().FirstOrDefault(x => x.Name.Equals(query.Trim(), System.StringComparison.OrdinalIgnoreCase));
+
+        if (inventoryItem == null)
         {
-            if (queriedItem != null && queriedItem.SuggestedItemNames != null && queriedItem.SuggestedItemNames.Length > 0)
+            var ioc = Game.gameObject.GetComponent<IoCContainer>();
+            var itemResolver = ioc.Resolve<IItemResolver>();
+            var queriedItem = itemResolver.ResolveInventoryItem(player, query);
+
+            if (queriedItem == null || queriedItem.Item == null)
             {
-                client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+                if (queriedItem != null && queriedItem.SuggestedItemNames != null && queriedItem.SuggestedItemNames.Length > 0)
+                {
+                    client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, inputQuery, string.Join(", ", queriedItem.SuggestedItemNames));
+                    return;
+                }
+                client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, inputQuery);
                 return;
             }
-            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, inputQuery);
-            return;
-        }
 
-        var item = queriedItem.InventoryItem;
-        if (item == null)
-        {
+            //var item = queriedItem.InventoryItem;
+            //if (item == null)
+            //{
+            //    client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
+            //    return;
+            //}
+
+            //inventoryItem = item;
+
             client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
             return;
         }
 
-        var inventoryItem = item;
         if ((inventoryItem.Enchantments == null || inventoryItem.Enchantments.Count == 0) || string.IsNullOrEmpty(inventoryItem.InventoryItem.Enchantment))
         {
             client.SendReply(gm, Localization.MSG_DISENCHANT_NOT_ENCHANTED, inventoryItem.Name);

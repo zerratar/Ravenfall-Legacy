@@ -131,6 +131,8 @@ public class QueryEngineAPI
 
         context.Register("ferry", () => new[] { gm.Ferry },
             QueryEngineContext.Column<FerryController, string>("Destination", x => x.GetDestination()),
+            QueryEngineContext.Column<FerryController, bool>("Boost.IsActive", x => x.IsFerryBoostActive),
+            QueryEngineContext.Column<FerryController, double>("Boost.RemainingTime", x => x.GetFerryBoostDuration()),
             QueryEngineContext.Column<FerryController, int>("Players", x => x.GetPlayerCount()),
             QueryEngineContext.Column<FerryController, string>("Captain.Name", x => x.Captain?.Name ?? ""),
             QueryEngineContext.Column<FerryController, int>("Captain.SailingLevel", x => x.Captain?.Stats.Sailing.MaxLevel ?? 0)

@@ -1,4 +1,8 @@
-﻿public class FerryEnter : ChatBotCommandHandler
+﻿using RavenNest.Models;
+using System;
+using System.Linq;
+
+public class FerryEnter : ChatBotCommandHandler
 {
     public FerryEnter(
        GameManager game,

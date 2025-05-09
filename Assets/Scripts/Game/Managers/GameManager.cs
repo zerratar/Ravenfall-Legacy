@@ -45,8 +45,8 @@ public class GameManager : MonoBehaviour, IGameManager
     private int lastButtonIndex = 0;
     private float stateSaveTime = 1f;
     private float experienceSaveTime = 1f;
-    private float experienceSaveInterval = 3f;
-    private float stateSaveInterval = 3f;
+    private float experienceSaveInterval = 2f; // 3f
+    private float stateSaveInterval = 2f;      // 3f
     private float updateSessionInfoTime = 5f;
     private float sessionUpdateFrequency = 5f;
     private int saveCounter;
@@ -129,6 +129,10 @@ public class GameManager : MonoBehaviour, IGameManager
     public SessionStats SessionStats => sessionStats;
 
     public string ServerAddress;
+
+    public static GameManager Instance { get; private set; }
+    [Obsolete("Do not send data to Tcp API as we use the delta client for that now. See DeltaClientBehavior")]
+    [NonSerialized] public bool PushDataToTcpApi = true;
 
     public bool UsePostProcessingEffects = true;
     public GraphicsToggler Graphics;
@@ -245,6 +249,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public NameTagManager NameTags => nametagManager;
     public StreamLabels StreamLabels { get; private set; }
 
+
     private Overlay overlay;
 
     public bool RequireCodeForDungeonOrRaid;
@@ -263,6 +268,12 @@ public class GameManager : MonoBehaviour, IGameManager
 
     void Awake()
     {
+        if (Instance != null)
+        {
+            GameObject.Destroy(Instance);
+        }
+
+        Instance = this;
         FreezeChecker.Start();
 
         if (goUpdateAvailable) goUpdateAvailable.SetActive(false);
@@ -1601,7 +1612,7 @@ public class GameManager : MonoBehaviour, IGameManager
             }
         }
 
-        if (RavenNest.Authenticated && RavenNest.SessionStarted)
+        if (PushDataToTcpApi)
         {
             var saveIntervalScale = Players.LoadingPlayers ? 5 : 1;
 
@@ -1653,7 +1664,6 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
             }
         }
-
         if (updateSessionInfoTime <= 0f)
         {
             updateSessionInfoTime = sessionUpdateFrequency;
@@ -1686,9 +1696,6 @@ public class GameManager : MonoBehaviour, IGameManager
                 return;
             }
 
-            //#if UNITY_EDITOR
-            //            Shinobytes.Debug.LogWarning("Sending Game State");
-            //#endif
             RavenNest.SendGameState();
         }
         catch (Exception exc)
@@ -1705,12 +1712,8 @@ public class GameManager : MonoBehaviour, IGameManager
             {
                 return;
             }
-
             var players = playerManager.GetAllRealPlayers();
             if (players.Count == 0) return;
-            //#if UNITY_EDITOR
-            //            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player Experience: saveAllSkills=" + saveAllSkills);
-            //#endif
             RavenNest.SavePlayerExperience(players, saveAllSkills);
         }
         catch (Exception exc)
@@ -1726,9 +1729,6 @@ public class GameManager : MonoBehaviour, IGameManager
             if (playerManager == null) return;//not loaded yet?
             var players = playerManager.GetAllRealPlayers();
             if (players == null || players.Count == 0) return;
-            //#if UNITY_EDITOR
-            //            Shinobytes.Debug.LogWarning("Saving " + players.Count + " Player States");
-            //#endif
             RavenNest.SavePlayerState(players);
         }
         catch (Exception exc)
@@ -1767,7 +1767,7 @@ public class GameManager : MonoBehaviour, IGameManager
             LogoCensor = !LogoCensor;
         }
 
-        if (Input.GetKeyUp(KeyCode.I))
+        if (!isControlDown && Input.GetKeyUp(KeyCode.I))
         {
             playerList.ToggleExpRate();
         }

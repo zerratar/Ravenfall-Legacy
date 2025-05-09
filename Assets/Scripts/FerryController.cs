@@ -2,6 +2,7 @@
 using System;
 using Shinobytes.Linq;
 using UnityEngine;
+using RavenNest.Models;
 
 public enum FerryState
 {
@@ -43,7 +44,7 @@ public class FerryController : MonoBehaviour
     public IslandController Island => island;
     public int PathIndex => pathSelector.PathIndex;
     public float CaptainSpeedAdjustment { get; private set; }
-
+    
     public PlayerController Captain { get; private set; }
 
 
@@ -97,6 +98,11 @@ public class FerryController : MonoBehaviour
     }
 
     public bool Docked => state == FerryState.Docked;
+
+    public bool IsFerryBoostActive { get; internal set; }
+
+    private double ferryBoostDuration;
+    private float ferryBoostEffect;
 
     private void OnBecameVisible()
     {
@@ -187,6 +193,15 @@ public class FerryController : MonoBehaviour
 
     private void Update()
     {
+        if (IsFerryBoostActive)
+        {
+            ferryBoostDuration -= GameTime.deltaTime;
+            if (ferryBoostDuration <= 0)
+            {
+                IsFerryBoostActive = false;
+            }
+        }
+
         if (!isVisible) return;
 
         if (Captain && playerPositions[0].childCount == 0)
@@ -298,5 +313,27 @@ public class FerryController : MonoBehaviour
         }
 
         this.Captain = newCaptain;
+    }
+
+    internal void ApplyFerryBoost(CharacterStatusEffect effect)
+    {
+        this.IsFerryBoostActive = true;
+        ferryBoostDuration = effect.Duration;
+        ferryBoostEffect = effect.Amount;
+    }
+
+    internal float GetFerryBoostEffect()
+    {
+        return ferryBoostEffect;
+    }
+
+    internal double GetFerryBoostDuration()
+    {
+        return ferryBoostDuration;
+    }
+
+    internal string GetRemainingBoostTime()
+    {
+        return Utility.FormatTime(TimeSpan.FromSeconds(ferryBoostDuration));
     }
 }

@@ -49,36 +49,45 @@ public class EnchantItem : ChatBotCommandHandler<string>
         var isReplace = query.ToLower().IndexOf("replace") >= 0;
         if (isReplace) query = query.Replace("replace", "");
 
-        var ioc = Game.gameObject.GetComponent<IoCContainer>();
-        var itemResolver = ioc.Resolve<IItemResolver>();
-        var queriedItem = itemResolver.ResolveTradeQuery(query, parsePrice: false, parseAmount: false, playerToSearch: player);
 
-        if (queriedItem.SuggestedItemNames.Length > 0)
-        {
-            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, query, string.Join(", ", queriedItem.SuggestedItemNames));
-            return;
-        }
+        var inventoryItem = player.Inventory.GetAllItems().FirstOrDefault(x => x.Name.Equals(query.Trim(), System.StringComparison.OrdinalIgnoreCase));
 
-        if (queriedItem.Item == null)
+        if (inventoryItem == null)
         {
-            client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, query);
-            return;
-        }
 
-        if (checkForCost)
-        {
-            client.SendReply(gm, Localization.MSG_ENCHANT_COST_NO_REQ, queriedItem.Item.Name);
-            return;
-        }
+            var ioc = Game.gameObject.GetComponent<IoCContainer>();
+            var itemResolver = ioc.Resolve<IItemResolver>();
+            var queriedItem = itemResolver.ResolveTradeQuery(query, parsePrice: false, parseAmount: false, playerToSearch: player);
 
-        var item = queriedItem.InventoryItem;
-        if (item == null)
-        {
+            if (queriedItem.SuggestedItemNames.Length > 0)
+            {
+                client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND_SUGGEST, query, string.Join(", ", queriedItem.SuggestedItemNames));
+                return;
+            }
+
+            if (queriedItem.Item == null)
+            {
+                client.SendReply(gm, Localization.MSG_ITEM_NOT_FOUND, query);
+                return;
+            }
+
+            if (checkForCost)
+            {
+                client.SendReply(gm, Localization.MSG_ENCHANT_COST_NO_REQ, queriedItem.Item.Name);
+                return;
+            }
+
+            //var item = queriedItem.InventoryItem;
+            //if (item == null)
+            //{
+            //    client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
+            //    return;
+            //}
+
             client.SendReply(gm, Localization.MSG_ITEM_NOT_OWNED, queriedItem.Item.Name);
             return;
         }
 
-        var inventoryItem = item;
         if ((inventoryItem.Enchantments != null && inventoryItem.Enchantments.Count > 0) || !string.IsNullOrEmpty(inventoryItem.InventoryItem.Enchantment))
         {
             if (!isReplace)

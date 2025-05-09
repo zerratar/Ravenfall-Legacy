@@ -79,8 +79,8 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
     {
         if (gameManager.Events.TryStart(gameManager.StreamRaid, true))
         {
-            var myPlayerCount = gameManager.Players.GetPlayerCount();
             var raiderPlayerCount = raidInfo.Players.Count;
+            var myPlayerCount = gameManager.Players.GetPlayerCount() - raiderPlayerCount;
             foreach (var player in players)
             {
                 if (raidInfo.Players.Any(x => x.UserId == player.UserId)) continue;

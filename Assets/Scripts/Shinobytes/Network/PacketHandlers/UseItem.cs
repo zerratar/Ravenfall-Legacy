@@ -64,6 +64,16 @@ public class UseItem : ChatBotCommandHandler<string>
             return;
         }
 
+        if (queriedItem.Item.Type == ItemType.Scroll && queriedItem.Item.Name.Contains("ferry", StringComparison.OrdinalIgnoreCase))
+        {
+            // check if we have an active ferry boost.
+            if (Game.Ferry.IsFerryBoostActive)
+            {
+                client.SendReply(gm, "There is already a ferry boost active. It will last for " + Game.Ferry.GetRemainingBoostTime());
+                return;
+            }
+        }
+
         var result = await Game.RavenNest.Players.UseItemAsync(player.Id, queriedItem.InventoryItem.InstanceId);
         if (result == null || result.InventoryItemId == Guid.Empty)
         {
@@ -107,6 +117,13 @@ public class UseItem : ChatBotCommandHandler<string>
         for (int i = 0; i < result.Effects.Count; i++)
         {
             CharacterStatusEffect effect = result.Effects[i];
+
+            if (effect.Type == StatusEffectType.IncreasedFerrySpeed)
+            {
+                Game.Ferry.ApplyFerryBoost(effect);
+                message += $"The ferry will now move faster for {Game.Ferry.GetRemainingBoostTime()}. ";
+                continue;
+            }
 
             if (effect.Type == StatusEffectType.TeleportToIsland)
             {

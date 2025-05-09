@@ -87,6 +87,8 @@ public class StreamRaidHandler : MonoBehaviour
             player.Stats.Health.Reset();
         }
         player.ClearAttackers();
+        player.taskTarget = null;
+        player.attackTarget = null;
     }
 
     internal void Died()

@@ -6,6 +6,7 @@ using UnityEngine;
 
 using Shinobytes.Core.ScriptParser;
 using RavenNest.Models;
+using System.Runtime.CompilerServices;
 
 public class ItemResolver : IItemResolver
 {
@@ -151,19 +152,37 @@ public class ItemResolver : IItemResolver
         }
     }
 
-    public ItemResolveResult ResolveInventoryItem(PlayerController player, string itemName, int maxSuggestions = 5
-        , EquippedState equippedState = EquippedState.Any)
+    private static string TrimEnd(string input, string str)
+    {
+        input = input.Trim();
+        while (input.EndsWith(str))
+        {
+            input = input.Substring(0, str.Length - 4).Trim();
+        }
+        return input;
+    }
+
+    public ItemResolveResult ResolveInventoryItem(
+        PlayerController player,
+        string itemName,
+        int maxSuggestions = 5, EquippedState equippedState = EquippedState.Any)
     {
         EnsureManagers();
 
         var itemQuery = itemName.Trim();
+        var isPetSearch = itemQuery.EndsWith(" pet");
+        if (isPetSearch)
+        {
+            itemQuery = TrimEnd(itemQuery, " pet");
+        }
 
         var items = player.Inventory.GetAllItems();
 
         var matches = items
-            .Select(x => new ItemMatchPair<GameInventoryItem> { Item = x, Match = Match(x.Name, x.Item.Type, itemQuery) })
+            .Where(x => x.Item != null && (!isPetSearch || x.Item.Category == ItemCategory.Pet))
+            .Select(x => new ItemMatchPair<GameInventoryItem> { Item = x, Match = Match(isPetSearch ? TrimEnd(x.Name, " pet") : x.Name, x.Item.Type, itemQuery) })
             .Where(x => x.Match.IsCloseMatch)
-            .OrderBy(x => LevenshteinDistance(x.Item.Name, itemQuery))
+            .OrderBy(x => LevenshteinDistance(isPetSearch ? TrimEnd(x.Item.Name, " pet") : x.Item.Name, itemQuery))
             .ToArray();
 
         var exactMatches = matches.Where(x => x.Match.IsExactMatch).ToArray();
@@ -195,7 +214,9 @@ public class ItemResolver : IItemResolver
         else if (invItem == null)
         {
             suggestedItemNames = items
-                .Where(x => IsCloseMatch(x.Name, x.Item.Type, itemQuery))
+
+                .Where(x => x.Item != null && (!isPetSearch || x.Item.Category == ItemCategory.Pet))
+                .Where(x => IsCloseMatch(isPetSearch ? TrimEnd(x.Name, " pet") : x.Name, x.Item.Type, itemQuery))
                 .Select(x => x.Name)
                 .Distinct()
                 .Take(maxSuggestions)

@@ -29,10 +29,10 @@ public static class GameSystems
 
 public static class ActionSystem
 {
-    private static Queue<System.Func<bool>> actions = new Queue<System.Func<bool>>();
+    private static Queue<PlayerAction> actions = new Queue<PlayerAction>();
     public static void Init()
     {
-        actions = new Queue<System.Func<bool>>();
+        actions = new Queue<PlayerAction>();
     }
 
     public static void Update()
@@ -41,18 +41,25 @@ public static class ActionSystem
         {
             if (actions.TryDequeue(out var action))
             {
-                if (!action()) actions.Enqueue(action);
-                continue;
+                var a = action.Action;
+                if (!a() && action.RetryOnFalse)
+                {
+                    actions.Enqueue(action);
+                }
             }
-            //break;
         }
-
     }
 
-    public static void Run(System.Func<bool> action)
+    public static void Run(System.Func<bool> action, bool retryOnFalse = true)
     {
-        actions.Enqueue(action);
+        actions.Enqueue(new PlayerAction { Action = action, RetryOnFalse = retryOnFalse });
     }
+}
+
+public class PlayerAction
+{
+    public Func<bool> Action;
+    public bool RetryOnFalse;
 }
 
 public abstract class ScheduledAction

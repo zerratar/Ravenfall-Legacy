@@ -268,10 +268,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public TimeSpan TimeSinceLastChatCommandUtc => DateTime.UtcNow - LastChatCommandUtc;
 
+    [NonSerialized] public ExperienceUpdate LastExperienceUpdate;
     [NonSerialized] public SkillUpdate LastSailingSaved;
     [NonSerialized] public SkillUpdate LastSlayerSaved;
     [NonSerialized] public CharacterStateUpdate LastSavedState;
-    [NonSerialized] public DateTime LastSavedStateTime;
 
     private ScheduledAction activeScheduledAction;
     private float healTimer;
@@ -1119,17 +1119,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         return itemInstance;
     }
 
-    public PlayerState BuildPlayerState()
-    {
-        var state = new PlayerState();
-        state.PlayerId = this.Id;
-
-        state.SyncTime = GameTime.time;
-        state.Experience = Stats.GetExperienceList();
-        state.Level = Stats.GetLevelList();
-
-        return state;
-    }
 
     public void Cheer() => playerAnimations.ForceCheer();
 
@@ -2383,7 +2372,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         //StartCoroutine(DamageTree(tree));
         var startTime = Time.time;
 
-        ActionSystem.Run(() => DamageTree(tree, startTime));
+        ActionSystem.Run(() => DamageTree(tree, startTime), true);
 
         return true;
     }
@@ -2403,7 +2392,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         var startTime = Time.time;
 
-        ActionSystem.Run(() => Gather(gather, startTime));
+        ActionSystem.Run(() => Gather(gather, startTime), true);
 
         return true;
     }
@@ -2638,6 +2627,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     private bool Gather(GatherController gather, float startTime)
     {
+        if (gather == null || Chunk == null || sessionStats == null || isDestroyed)
+        {
+            Debug.LogWarning($"{name} unable to process gather, target or chunk is null or player has been destroyed.");
+            return true;
+        }
+
         LastExecutedTaskTime = Time.time;
         var delta = Time.time - startTime;
         var actionTime = chompTreeAnimationTime / 2f;
@@ -3486,10 +3481,18 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 return true;
             }
 
+            if (streamRaidHandler.InWar)
+            {
+                var warIsland = GameManager.Islands.All.FirstOrDefault(x => x.AllowRaidWar);
+                SetPosition(warIsland.SpawnPosition);
+                Island = warIsland;
+                return true;
+            }
+            else
             // if the player is stuck on the war island, teleport to home
             if (Island && Island.AllowRaidWar && !streamRaidHandler.InWar)
             {
-                var homeIsland = GameManager.Islands.All.FirstOrDefault(x => x.Identifier == "home");
+                var homeIsland = GameManager.Islands.All.FirstOrDefault(x => x.Identifier.Equals("home", StringComparison.OrdinalIgnoreCase));
                 if (homeIsland)
                 {
                     SetPosition(homeIsland.SpawnPosition);
@@ -3613,4 +3616,63 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         Loot.Add(record);
     }
+
+
+    public CharacterFlags GetFlags()
+    {
+        var flags = CharacterFlags.None;
+
+        try
+        {
+            if (ferryHandler.OnFerry)
+            {
+                flags |= CharacterFlags.OnFerry;
+
+                if (ferryHandler.IsCaptain)
+                {
+                    flags |= CharacterFlags.IsCaptain;
+                }
+
+                return flags;
+            }
+
+            if (raidHandler.InRaid)
+            {
+                flags |= CharacterFlags.InRaid;
+            }
+            if (dungeonHandler.InDungeon)
+            {
+                flags |= CharacterFlags.InDungeon;
+            }
+            if (dungeonHandler.Joined)
+            {
+                flags |= CharacterFlags.InDungeonQueue;
+            }
+            if (duelHandler.InDuel)
+            {
+                flags |= CharacterFlags.InDuel;
+            }
+            if (streamRaidHandler.InWar)
+            {
+                flags |= CharacterFlags.InStreamRaidWar;
+            }
+
+            if (arenaHandler.InArena)
+            {
+                flags |= CharacterFlags.InArena;
+            }
+
+            if (onsenHandler.InOnsen && !InCombat)
+            {
+                flags |= CharacterFlags.InOnsen;
+            }
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Unable to determine player state, player name: " + Name + ", error: " + exc);
+        }
+
+        return flags;
+    }
+
 }

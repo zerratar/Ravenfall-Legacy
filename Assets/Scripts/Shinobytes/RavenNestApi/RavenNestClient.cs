@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RavenNest.Models;
 using RavenNest.SDK.Endpoints;
+using Shinobytes.DeltaTcpLib;
 
 namespace RavenNest.SDK
 {
@@ -41,8 +42,10 @@ namespace RavenNest.SDK
             GameManager gameManager)
         {
             Settings =
+                        //new UnsecureLocalRavenNestStreamSettings()
                         new ProductionEndpoint()
                         //new StagingRavenNestStreamSettings()
+
                         //new LocalServerRemoteBotEndpoint()
                         //new DevServerRemoteBotEndpoint()
                         //new LocalEndpoint()
@@ -59,7 +62,10 @@ namespace RavenNest.SDK
             tokenProvider = new TokenProvider();
             var request = new WebApiRequestBuilderProvider(Settings, tokenProvider);
 
-            Tcp = new TcpApi(gameManager, Settings.TcpApiEndpoint, tokenProvider);
+            Tcp = new TcpApi(gameManager, Settings.TcpApiEndpoint, Settings.TcpApiPort, tokenProvider);
+
+            //Delta = new DeltaClient
+            DeltaClient = new Shinobytes.DeltaTcpLib.DeltaClient(Settings.TcpApiEndpoint, Settings.TcpApiPort + 1, tokenProvider);
 
             Auth = new AuthApi(this, logger, request);
             Game = new GameApi(this, logger, request);
@@ -75,6 +81,8 @@ namespace RavenNest.SDK
         }
 
         public TcpApi Tcp { get; }
+        public DeltaClient DeltaClient { get; }
+
         public AuthApi Auth { get; }
         public GameApi Game { get; }
         public ItemsApi Items { get; }
@@ -183,27 +191,6 @@ namespace RavenNest.SDK
         }
 
 
-        public bool SavePlayer(PlayerController player, PlayerUpdateType updateType)
-        {
-            if (!player || player == null || !SessionStarted || !Tcp.IsReady)
-            {
-                return false;
-            }
-
-            if (player.IsBot)
-            {
-                return true;
-            }
-
-            if (!TcpApi.IsValidPlayer(player))
-            {
-                return true;
-            }
-
-            Tcp.UpdatePlayer(player, updateType);
-            return true;
-        }
-
         public async Task<bool> LoginAsync(string username, string password)
         {
             try
@@ -258,6 +245,10 @@ namespace RavenNest.SDK
                 gameManager.HandleGameEvent(result.Village);
                 gameManager.HandleGameEvent(result.Permissions);
                 gameManager.HandleGameEvent(result.ExpMultiplier);
+
+#if DEBUG
+                Shinobytes.Debug.Log("Session Started (Client Version: " + clientVersion + ")");
+#endif
                 return true;
             }
             catch (Exception exc)

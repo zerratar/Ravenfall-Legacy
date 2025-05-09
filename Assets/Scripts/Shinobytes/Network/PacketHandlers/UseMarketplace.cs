@@ -184,11 +184,18 @@ public class UseMarketplace : ChatBotCommandHandler<string>
             client.SendReply(gm, Localization.MSG_ITEM_SOULBOUND, item.Item.Name);
             return;
         }
+
+        if (item.InventoryItem.Enchantments != null && item.InventoryItem.Enchantments.Count > 0)
+        {
+            client.SendReply(gm, Localization.MSG_ITEM_SELL_ENCHANTED, item.Item.Name);
+            return;
+        }
+
         try
         {
             var itemAmount = item.Count;
             var pricePerItem = item.Price;
-            var sellResult = await Game.RavenNest.Marketplace.SellItemAsync(player.Id, item.Id, (long)itemAmount, (long)pricePerItem);
+            var sellResult = await Game.RavenNest.Marketplace.SellItemAsync(player.Id, item.InventoryItem.InstanceId, (long)itemAmount, (long)pricePerItem);
             if (sellResult == null)
             {
                 client.SendReply(gm, Localization.MSG_SELL_MARKETPLACE_ERROR);

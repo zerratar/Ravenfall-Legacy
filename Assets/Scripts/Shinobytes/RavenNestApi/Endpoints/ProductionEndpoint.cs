@@ -9,6 +9,8 @@
         public string WebSocketEndpoint => "wss://www.ravenfall.stream/api/stream";
         public string TcpApiEndpoint => "ravenfall.stream";
         public string RavenbotEndpoint => "ravenbot.ravenfall.stream";
+
+        public int TcpApiPort => 3920;
         //public string ApiEndpoint => "https://www.ravenfall.stream/api/";
         //public string ApiAuthEndpoint => "https://www.ravenfall.stream/api/";
         //public string WebSocketEndpoint => "wss://www.ravenfall.stream/api/stream";
@@ -21,14 +23,16 @@
         public string WebSocketEndpoint => "wss://staging.ravenfall.stream/api/stream";
         public string TcpApiEndpoint => "staging.ravenfall.stream";
         public string RavenbotEndpoint => "ravenbot.ravenfall.stream";
+        public int TcpApiPort => 3920;
     }
     public class UnsecureLocalRavenNestStreamSettings : IAppSettings
     {
-        public string WebApiEndpoint => "https://localhost:5001/api/";
-        public string WebApiAuthEndpoint => "https://localhost:5001/api/";
+        public string WebApiEndpoint => "http://localhost:5000/api/";
+        public string WebApiAuthEndpoint => "http://localhost:5000/api/";
         public string WebSocketEndpoint => "ws://localhost:5000/api/stream";
         public string TcpApiEndpoint => "127.0.0.1";
         public string RavenbotEndpoint => "ravenbot.ravenfall.stream";
+        public int TcpApiPort => 3920;
     }
     public class LocalServerRemoteBotEndpoint : IAppSettings
     {
@@ -37,6 +41,7 @@
         public string WebSocketEndpoint => "wss://localhost:5001/api/stream";
         public string TcpApiEndpoint => "127.0.0.1";
         public string RavenbotEndpoint => "ravenbot.ravenfall.stream";
+        public int TcpApiPort => 1337;
     }
     public class DevServerRemoteBotEndpoint : IAppSettings
     {
@@ -45,6 +50,7 @@
         public string WebSocketEndpoint => "wss://92.35.43.91:5001/api/stream";
         public string TcpApiEndpoint => "92.35.43.91";
         public string RavenbotEndpoint => "ravenbot.ravenfall.stream";
+        public int TcpApiPort => 3920;
     }
     public class LocalEndpoint : IAppSettings
     {
@@ -53,5 +59,6 @@
         public string WebSocketEndpoint => "wss://localhost:5001/api/stream";
         public string TcpApiEndpoint => "127.0.0.1";
         public string RavenbotEndpoint => "127.0.0.1";
+        public int TcpApiPort => 1337;
     }
 }

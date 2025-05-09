@@ -124,7 +124,9 @@ public class PlayerLogoManager : MonoBehaviour
 
         if (IsError(www.result))
         {
-            Shinobytes.Debug.Log(www.error);
+#if DEBUG
+            Shinobytes.Debug.LogError("Failed to download texture from: " + url + ": " + www.error);
+#endif
             userLogos.TryRemove(userId, out _);
             onLogoDownloaded?.Invoke(replacementLogo);
         }

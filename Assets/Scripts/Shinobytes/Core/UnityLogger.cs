@@ -279,7 +279,21 @@ namespace Shinobytes
 
         private static string GetMessage(string message)
         {
-            return "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message;
+            var msg = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message;
+            // try get callstack if debug
+
+
+#if DEBUG
+            var stackTrace = Environment.StackTrace;
+            if (!string.IsNullOrEmpty(stackTrace)) {
+                // first line will have: at System.Environment.get_StackTrace () [0x00000] 
+                // second message is this method (GetMessage)
+                stackTrace = string.Join(Environment.NewLine, stackTrace.Split(Environment.NewLine)[2..]);
+                return msg + Environment.NewLine + stackTrace;
+            }
+#endif
+
+            return msg;
         }
     }
 }

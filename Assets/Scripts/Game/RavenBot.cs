@@ -114,7 +114,7 @@ public class RavenBot : System.IDisposable
 
         Connection.Register<DungeonStop>("dungeon_stop");
         Connection.Register<DungeonStart>("dungeon_start");
-        
+
         Connection.Register<RaidKillBoss>("raid_kill_boss");
 
         Connection.Register<RaidStreamer>("raid_streamer");
@@ -143,6 +143,9 @@ public class RavenBot : System.IDisposable
         Connection.Register<ClanDemote>("clan_demote");
 
         Connection.Register<ChannelStateChanged>("channel_state");
+
+        Connection.Register<FerryInfo>("ferry_info");
+        Connection.Register<UseFerryBoostScroll>("ferry_boost");
 
         Connection.Register<FerryEnter>("ferry_enter");
         Connection.Register<FerryLeave>("ferry_leave");

@@ -185,7 +185,14 @@ public class ItemController : MonoBehaviour
                 return this;
             }
 
-            model = Instantiate(prefab, transform) as GameObject;
+            if (prefab)
+            {
+                model = Instantiate(prefab, transform);
+            }
+            else
+            {
+                Debug.LogError("Failed to load prefab: " + path);
+            }
         }
 
         transform.localPosition = Vector3.zero;

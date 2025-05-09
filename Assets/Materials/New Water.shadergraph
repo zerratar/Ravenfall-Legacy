@@ -2549,7 +2549,7 @@
     "m_Title": "Normals",
     "m_Position": {
         "x": -1660.800537109375,
-        "y": -12.0
+        "y": -11.999755859375
     }
 }
 
@@ -3606,6 +3606,7 @@
     },
     "isMainTexture": false,
     "useTilingAndOffset": false,
+    "useTexelSize": true,
     "m_Modifiable": true,
     "m_DefaultType": 0
 }
@@ -5845,7 +5846,7 @@
     "m_Title": "Ripples",
     "m_Position": {
         "x": -5296.00048828125,
-        "y": 330.4000244140625
+        "y": 330.400146484375
     }
 }
 
@@ -7405,7 +7406,7 @@
     "m_Title": "Water Color",
     "m_Position": {
         "x": -4505.60009765625,
-        "y": -412.79998779296877
+        "y": -412.800048828125
     }
 }
 
