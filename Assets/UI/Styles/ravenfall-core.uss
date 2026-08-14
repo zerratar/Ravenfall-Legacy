@@ -195,3 +195,28 @@
     border-top-color: var(--rf-accent-bright);
     border-bottom-color: var(--rf-accent-bright);
 }
+
+/* ---- scroll regions ----------------------------------------------------
+ * Long body text, for example the code of conduct. The track is darker than
+ * the panel so the scrollable area reads as inset rather than floating.
+ */
+
+.rf-scroll {
+    background-color: var(--rf-bg);
+    border-left-width: var(--rf-border-width);
+    border-right-width: var(--rf-border-width);
+    border-top-width: var(--rf-border-width);
+    border-bottom-width: var(--rf-border-width);
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+}

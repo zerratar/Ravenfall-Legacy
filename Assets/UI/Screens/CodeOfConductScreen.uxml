@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      Code of Conduct. Shown once per revision before a player can continue, so it has to be
+      readable rather than decorative: long body text, a scroll region, and two unambiguous
+      choices.
+
+      Accept is the primary action and is styled as such. Decline quits the game, so it is
+      deliberately not styled to attract the eye.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+
+    <engine:VisualElement class="rf-screen">
+
+        <engine:VisualElement class="rf-panel rf-stack"
+                              style="width: 860px; max-width: 92%; height: 76%;">
+
+            <engine:Label name="header-label"
+                          text="Code of Conduct"
+                          class="rf-text rf-text--heading"
+                          style="margin-bottom: 4px;" />
+
+            <!-- Revision and date sit together, quiet, under the heading. -->
+            <engine:VisualElement class="rf-row" style="margin-bottom: 16px;">
+                <engine:Label name="version-label"
+                              text="Version"
+                              class="rf-text rf-text--caption rf-text--faint" />
+                <engine:VisualElement style="width: 12px;" />
+                <engine:Label name="modified-label"
+                              text="Last Modified"
+                              class="rf-text rf-text--caption rf-text--faint" />
+            </engine:VisualElement>
+
+            <!-- The body scrolls. flex-grow makes it take whatever height is left after the
+                 heading and the buttons, so the panel never pushes the buttons off screen. -->
+            <engine:ScrollView name="message-scroll"
+                               class="rf-scroll"
+                               style="flex-grow: 1; margin-bottom: 20px;">
+                <engine:Label name="message-label"
+                              text=""
+                              class="rf-text"
+                              style="white-space: normal;" />
+            </engine:ScrollView>
+
+            <engine:VisualElement class="rf-row">
+                <engine:Button name="decline-button"
+                               text="Decline and Exit"
+                               class="rf-button" />
+                <engine:VisualElement class="rf-spacer" />
+                <engine:Button name="accept-button"
+                               text="Accept"
+                               class="rf-button rf-button--primary"
+                               style="min-width: 200px;" />
+            </engine:VisualElement>
+
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</engine:UXML>
