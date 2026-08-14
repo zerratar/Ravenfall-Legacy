@@ -1,4 +1,4 @@
-# Unity 6.7 upgrade — fixes that live outside version control
+# Unity 6.7 upgrade - fixes that live outside version control
 
 Ravenfall Legacy targets **Unity 6000.7.0a4**. Several fixes required by that upgrade land in
 files that `.gitignore` excludes (third-party paid assets, generated collider data, and the URP
@@ -8,7 +8,7 @@ checkout, or the project will not compile.
 This document records each one so it is reproducible without redistributing licensed source.
 
 > If the editor reports compile errors on a fresh clone, work through section 1 first. Because
-> `DamageNumbersPro` has its own assembly definition, its errors block every downstream assembly —
+> `DamageNumbersPro` has its own assembly definition, its errors block every downstream assembly -
 > so a handful of errors there hides everything else in `Assembly-CSharp`.
 
 ---
@@ -38,36 +38,36 @@ to `EntityId` but left every user of it as `int`. Finish the migration:
 | `SetPoolingID()` signature | `void SetPoolingID(int id)` | `void SetPoolingID(EntityId id)` |
 | `SetFollowedTarget()` | `followedTransform.GetInstanceID()` | `followedTransform.GetEntityId()` |
 
-`Assets/DamageNumbersPro/Scripts/DamageNumberGUI.cs` — in `OnStart()`:
+`Assets/DamageNumbersPro/Scripts/DamageNumberGUI.cs` - in `OnStart()`:
 `transform.parent.GetInstanceID()` → `transform.parent.GetEntityId()`
 
 `Assets/DamageNumbersPro/Demo/Scripts/DNP_Camera.cs`:
 `enemy.GetInstanceID()` → `enemy.GetEntityId()`
 
-`Assets/DamageNumbersPro/Scripts/Internal/Editor/DNPEditorInternal.cs` — two occurrences
+`Assets/DamageNumbersPro/Scripts/Internal/Editor/DNPEditorInternal.cs` - two occurrences
 (`NewTextMeshPro` and `NewTextGUI`). TextMeshPro's `enableWordWrapping` is obsolete-as-error:
 `tmp.enableWordWrapping = false;` → `tmp.textWrappingMode = TextWrappingModes.NoWrap;`
 
-### MT Assets — Skinned Mesh Combiner
+### MT Assets - Skinned Mesh Combiner
 
-`Assets/MT Assets/Skinned Mesh Combiner/Scripts/SkinnedMeshCombiner.cs` — two occurrences, both
+`Assets/MT Assets/Skinned Mesh Combiner/Scripts/SkinnedMeshCombiner.cs` - two occurrences, both
 `texturesToMerge[i].GetInstanceID().ToString()` → `texturesToMerge[i].GetEntityId().ToString()`
 
 ### Fantasy Adventure Environment
 
-`Assets/Fantasy Adventure Environment/Scripts/SubstanceBaker.cs` — the `int` overload of
+`Assets/Fantasy Adventure Environment/Scripts/SubstanceBaker.cs` - the `int` overload of
 `GetAssetPath` is gone; pass the object instead:
 `AssetDatabase.GetAssetPath(substance.GetInstanceID())` → `AssetDatabase.GetAssetPath(substance)`
 
 ### PolyFew
 
-`Assets/PolyFew/Scripts/Editor/PolyfewMenu.cs` — same change:
+`Assets/PolyFew/Scripts/Editor/PolyfewMenu.cs` - same change:
 `AssetDatabase.GetAssetPath(Selection.activeObject.GetInstanceID())` →
 `AssetDatabase.GetAssetPath(Selection.activeObject)`
 
 ---
 
-## 2. URP pipeline assets — disable Dynamic Batching
+## 2. URP pipeline assets - disable Dynamic Batching
 
 Excluded by the blanket `*.asset` rule in `.gitignore` (line 133), so this setting is per-machine.
 
@@ -94,7 +94,7 @@ so.ApplyModifiedProperties();
 
 ## 3. Generated convex collider assets
 
-`Assets/Polygon*/**/*_Convex*.asset` — excluded by `.gitignore` (`Assets/Polygon*/*`).
+`Assets/Polygon*/**/*_Convex*.asset` - excluded by `.gitignore` (`Assets/Polygon*/*`).
 
 **425 of ~5,154** of these files were malformed: a `MonoBehaviour` block was missing its YAML
 document header, so the file began (or continued, mid-file) with bare fields:
@@ -107,8 +107,8 @@ document header, so the file began (or continued, mid-file) with bare fields:
 
 Unity 6.7's parser rejects this, producing hundreds of console errors:
 
-- `Failed to parse data as no preceding class type header ... at line 8` — leading case
-- `Invalid Script reference on non-host type 'Mesh' ... at line 172` — mid-file case, where the
+- `Failed to parse data as no preceding class type header ... at line 8` - leading case
+- `Invalid Script reference on non-host type 'Mesh' ... at line 172` - mid-file case, where the
   orphaned `m_Script` gets attributed to the preceding `Mesh` document
 
 **Fix:** insert the two missing header lines immediately before the headerless block:
@@ -119,7 +119,7 @@ MonoBehaviour:
 ```
 
 This restores the same shape as the ~2,259 files that were already well-formed. Do **not** delete
-the block instead — that changes the asset's main object and produces
+the block instead - that changes the asset's main object and produces
 `Main Object Name ... does not match filename` warnings.
 
 Mesh `fileID`s must be preserved; prefabs reference the collision meshes directly, e.g.
@@ -132,12 +132,12 @@ foreach (var mc in go.GetComponentsInChildren<MeshCollider>(true))
 ```
 
 The MonoBehaviour's `m_Script` GUID (`5b71ad40e238046238f9b0c6f33c3791`) refers to a collider
-generator that is no longer in the project. That is pre-existing and harmless — the meshes are
+generator that is no longer in the project. That is pre-existing and harmless - the meshes are
 referenced directly by `fileID`, not through the script.
 
 ---
 
-## 4. Known unresolved — Odin Inspector
+## 4. Known unresolved - Odin Inspector
 
 `Assets/Plugins/Sirenix` (excluded by `Assets/Plugins/*`). The installed build dates from
 mid-2024 and is **not compatible with Unity 6.7**. At editor startup it throws:
@@ -154,7 +154,7 @@ NotImplementedException: The method or operation is not implemented.
 
 Both fire on **every domain reload**, not only at editor startup, so they reappear after each
 recompile. Odin reflects into Unity internals that 6.7 changed or removed. It ships as
-precompiled DLLs, so this cannot be patched locally — it needs an updated build from Sirenix.
+precompiled DLLs, so this cannot be patched locally - it needs an updated build from Sirenix.
 
 **Impact is limited to the editor.** The project uses Odin only for inspector decoration
 (`[Button]` ×39, `[TabGroup]` ×17, `[ReadOnly]` ×9 across 28 files) and **no**
