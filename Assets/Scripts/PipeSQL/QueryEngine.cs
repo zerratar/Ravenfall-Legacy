@@ -505,7 +505,7 @@ namespace RavenfallDataPipe
             var selection = "";
             foreach (var t in tables)
             {
-                var s = ItemResolver.LevenshteinDistance(t.Name, target);
+                var s = StringDistance.Levenshtein(t.Name, target);
                 if (s < score)
                 {
                     selection = t.Name;

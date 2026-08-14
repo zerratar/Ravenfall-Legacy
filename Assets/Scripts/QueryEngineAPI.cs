@@ -34,7 +34,8 @@ public class QueryEngineAPI
 
         if (PlayerSettings.Instance.QueryEngineEnabled.GetValueOrDefault())
         {
-            Server = new QueryEngineWebAPIServer(Context);
+            Server = new QueryEngineWebAPIServer(Context,
+                () => PlayerSettings.Instance.QueryEngineAlwaysReturnArray.GetValueOrDefault());
             Server.Start(PlayerSettings.Instance.QueryEngineApiPrefix);
         }
     }

@@ -386,37 +386,13 @@ public class ItemResolver : IItemResolver
             SuggestedItemNames = suggestedItemNames
         };
     }
+    /// <summary>
+    /// Delegates to <see cref="RavenfallDataPipe.StringDistance.Levenshtein"/>, which lives in the
+    /// PipeSQL assembly so the query engine does not depend on game code. Kept here so existing
+    /// callers keep working.
+    /// </summary>
     public static int LevenshteinDistance(string s, string t)
-    {
-        int[,] d = new int[s.Length + 1, t.Length + 1];
-
-        for (int i = 0; i <= s.Length; i++)
-        {
-            d[i, 0] = i;
-        }
-
-        for (int j = 0; j <= t.Length; j++)
-        {
-            d[0, j] = j;
-        }
-
-        for (int j = 1; j <= t.Length; j++)
-        {
-            for (int i = 1; i <= s.Length; i++)
-            {
-                if (s[i - 1] == t[j - 1])
-                {
-                    d[i, j] = d[i - 1, j - 1];
-                }
-                else
-                {
-                    d[i, j] = Math.Min(d[i - 1, j] + 1, Math.Min(d[i, j - 1] + 1, d[i - 1, j - 1] + 1));
-                }
-            }
-        }
-
-        return d[s.Length, t.Length];
-    }
+        => RavenfallDataPipe.StringDistance.Levenshtein(s, t);
 
     public static bool TryParsePrice(string s, out double price)
     {

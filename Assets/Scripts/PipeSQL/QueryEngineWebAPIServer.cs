@@ -6,7 +6,6 @@ using System.Threading;
 using System.Net;
 using Newtonsoft.Json;
 using System.IO;
-using static GameMath;
 using System.Threading.Tasks;
 
 namespace RavenfallDataPipe
@@ -16,13 +15,19 @@ namespace RavenfallDataPipe
     {
         private readonly HttpListener listener;
         private readonly QueryEngine engine;
+        private readonly Func<bool> alwaysReturnArray;
         private bool disposed;
 
-        public QueryEngineWebAPIServer(QueryEngineContext context)
+        /// <param name="alwaysReturnArray">
+        /// Supplied by the game so this assembly does not depend on PlayerSettings. Invoked per
+        /// request rather than cached, so changing the setting still takes effect immediately.
+        /// Defaults to false when not provided.
+        /// </param>
+        public QueryEngineWebAPIServer(QueryEngineContext context, Func<bool> alwaysReturnArray = null)
         {
             this.listener = new HttpListener();
             this.engine = new QueryEngine(context);
-
+            this.alwaysReturnArray = alwaysReturnArray ?? (() => false);
         }
 
         public void Start(string prefix)//string host, string apiRoute, int apiPort)
@@ -89,7 +94,7 @@ namespace RavenfallDataPipe
                         {
                             var result = await engine.ProcessAsync(query);
 
-                            if (!PlayerSettings.Instance.QueryEngineAlwaysReturnArray.GetValueOrDefault())
+                            if (!alwaysReturnArray())
                             {
                                 if (result.Count == 0)
                                 {
