@@ -19,6 +19,73 @@ public class GameUpdater : MonoBehaviour
     [SerializeField] private TextMeshProUGUI label;
     [SerializeField] private GameProgressBar progressBar;
 
+    /// <summary>
+    /// Optional UI Toolkit replacement for the screen above. When assigned, all status, version and
+    /// progress output goes here instead of the uGUI fields, which stay wired and working so this
+    /// can be reverted by clearing the field. See docs/ui-toolkit-migration.md.
+    /// </summary>
+    [SerializeField] private MonoBehaviour uiToolkitScreen;
+
+    private Shinobytes.UI.IUpdateScreen toolkitScreen;
+    private bool toolkitScreenResolved;
+
+    private Shinobytes.UI.IUpdateScreen ToolkitScreen
+    {
+        get
+        {
+            if (!toolkitScreenResolved)
+            {
+                toolkitScreen = uiToolkitScreen as Shinobytes.UI.IUpdateScreen;
+                toolkitScreenResolved = true;
+            }
+            return toolkitScreen;
+        }
+    }
+
+    private void SetStatus(string value)
+    {
+        var screen = ToolkitScreen;
+        if (screen != null)
+        {
+            screen.Status = value;
+            return;
+        }
+        if (label) label.text = value;
+    }
+
+    private void SetVersion(string value)
+    {
+        var screen = ToolkitScreen;
+        if (screen != null)
+        {
+            screen.Version = value;
+            return;
+        }
+        if (versionText) versionText.text = value;
+    }
+
+    private void SetProgressVisible(bool value)
+    {
+        var screen = ToolkitScreen;
+        if (screen != null)
+        {
+            screen.ProgressVisible = value;
+            return;
+        }
+        if (progressBar) progressBar.displayProgress = value;
+    }
+
+    private void SetProgress(float value)
+    {
+        var screen = ToolkitScreen;
+        if (screen != null)
+        {
+            screen.Progress = value;
+            return;
+        }
+        if (progressBar) progressBar.Progress = value;
+    }
+
     public bool EditorOnlyStartAsOverlay;
 
     private GameUpdateHandler gameUpdater;
@@ -33,7 +100,7 @@ public class GameUpdater : MonoBehaviour
     {
         if (versionText)
         {
-            versionText.text = "VERSION " + Ravenfall.Version;
+            SetVersion("VERSION " + Ravenfall.Version);
         }
     }
 
@@ -164,12 +231,12 @@ public class GameUpdater : MonoBehaviour
 
         if (versionText)
         {
-            versionText.text = "VERSION " + Ravenfall.Version;
+            SetVersion("VERSION " + Ravenfall.Version);
         }
 
         if (updateResult != UpdateResult.CheckingForUpdate && !UnityEngine.Application.isEditor && UnityEngine.Debug.isDebugBuild)
         {
-            label.text = "Starting game...";
+            SetStatus("Starting game...");
             loadingScene = true;
             UnityEngine.SceneManagement.SceneManager.LoadScene(1);
             return;
@@ -192,7 +259,7 @@ public class GameUpdater : MonoBehaviour
 
         if (updateResult == UpdateResult.UpToDate)
         {
-            label.text = "Game is up to date. Starting game...";
+            SetStatus("Game is up to date. Starting game...");
 
             loadingScene = true;
 
@@ -244,7 +311,7 @@ public class GameUpdater : MonoBehaviour
     {
         if (label)
         {
-            label.text = "Error occurred when trying to update the game. \r\nPress space to open the log folder.";
+            SetStatus("Error occurred when trying to update the game. \r\nPress space to open the log folder.");
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 TryOpenLogFolder();
@@ -266,7 +333,7 @@ public class GameUpdater : MonoBehaviour
     {
         if (label)
         {
-            label.text = "Unable to connect to the server. Please check your internet connection.";
+            SetStatus("Unable to connect to the server. Please check your internet connection.");
         }
     }
 
@@ -276,14 +343,14 @@ public class GameUpdater : MonoBehaviour
         if (label)
         {
             var updateInfo = gameUpdater.GetUpdateInfo();
-            label.text = "Downloading update " + updateInfo?.Version;
+            SetStatus("Downloading update " + updateInfo?.Version);
         }
 
         if (progressBar)
         {
             progressBar.gameObject.SetActive(true);
-            progressBar.displayProgress = true;
-            progressBar.Progress = (float)progressPercent;
+            SetProgressVisible(true);
+            SetProgress((float)progressPercent);
         }
     }
 
@@ -295,7 +362,7 @@ public class GameUpdater : MonoBehaviour
 
         if (label)
         {
-            label.text = "Initializing update.";
+            SetStatus("Initializing update.");
         }
 
         // 2. start patcher

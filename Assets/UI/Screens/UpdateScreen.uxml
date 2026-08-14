@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      The launcher / updater screen. First thing anyone sees, so it is also the first thing that
+      should look like the rest of the game.
+
+      Structure mirrors what GameUpdater already drives: a status label, a progress bar, and a
+      version string. Nothing here carries its own styling; everything comes from
+      ravenfall-core.uss and the tokens it reads.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+
+    <engine:VisualElement class="rf-screen">
+
+        <engine:VisualElement class="rf-panel rf-stack" style="width: 560px; max-width: 90%;">
+
+            <engine:Label text="RAVENFALL"
+                          class="rf-text rf-text--display rf-text--center"
+                          style="margin-bottom: 4px;" />
+
+            <engine:Label name="version-label"
+                          text="VERSION"
+                          class="rf-text rf-text--caption rf-text--faint rf-text--center"
+                          style="margin-bottom: 32px;" />
+
+            <!-- Status line. GameUpdater writes everything from "Checking for updates." to
+                 connection failures here, so it has to wrap rather than clip. -->
+            <engine:Label name="status-label"
+                          text="Checking for updates."
+                          class="rf-text rf-text--center"
+                          style="min-height: 56px; margin-bottom: 16px;" />
+
+            <!-- Progress. Hidden until there is something to report, because an empty bar sitting
+                 at zero reads as stuck rather than idle. -->
+            <engine:VisualElement name="progress-root" class="rf-progress" style="display: none;">
+                <engine:VisualElement name="progress-fill" class="rf-progress__fill" />
+                <engine:Label name="progress-label" text="" class="rf-progress__label" />
+            </engine:VisualElement>
+
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</engine:UXML>

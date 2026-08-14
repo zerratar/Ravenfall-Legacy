@@ -1,0 +1,91 @@
+/*
+ * Ravenfall design tokens.
+ *
+ * Every screen pulls from this file. Nothing else should hard code a colour, a size or a spacing
+ * value, because the whole reason for moving to UI Toolkit is that consistency stops depending on
+ * anyone remembering to be consistent.
+ *
+ * Direction: the dark plus warm cream identity already in the project, which came from the
+ * NieR:Automata inspiration, kept but made to survive a video encoder.
+ *
+ * This UI is watched through Twitch by an audience, not just operated by a player. At around
+ * 6000 kbps, with many viewers at 720p on a phone while also reading chat, H.264 destroys thin
+ * strokes, low contrast pairs, small text and subtle gradients. So:
+ *
+ *   - solid fills, never gradients
+ *   - contrast well above what a desktop app needs
+ *   - heavier type weights; the Light weights of FOT-Rodin are deliberately unused
+ *   - generous minimum sizes, because the reference viewer is glancing at a phone
+ *
+ * Colours are chosen for contrast against --rf-bg, checked so body text clears WCAG AA at the
+ * sizes used here. That is not about accessibility compliance, it is because contrast is exactly
+ * what compression eats first.
+ */
+
+:root {
+    /* ---- surfaces -------------------------------------------------------
+     * Not pure black. Flat #000 bands badly under compression and crushes to
+     * mud next to dark UI. A warm tinted charcoal holds up and matches the
+     * cream text.
+     */
+    --rf-bg: rgb(20, 18, 15);
+    --rf-surface: rgb(31, 28, 23);
+    --rf-surface-raised: rgb(43, 39, 32);
+    --rf-overlay-scrim: rgba(10, 9, 7, 0.82);
+
+    /* ---- text -----------------------------------------------------------
+     * --rf-text is the warm cream already used in the project (#FFF4D6).
+     */
+    --rf-text: rgb(255, 244, 214);
+    --rf-text-dim: rgb(167, 158, 138);
+    --rf-text-faint: rgb(112, 105, 91);
+    --rf-text-on-accent: rgb(20, 18, 15);
+
+    /* ---- accents --------------------------------------------------------
+     * One accent carries interaction and progress. Amber sits far from the
+     * background in both luminance and hue, so it stays legible after the
+     * encoder has finished with it.
+     */
+    --rf-accent: rgb(232, 163, 61);
+    --rf-accent-dim: rgb(158, 110, 40);
+    --rf-accent-bright: rgb(255, 194, 106);
+
+    /* ---- semantic -------------------------------------------------------
+     * Never used alone to convey meaning; colour blind viewers and heavy
+     * compression both lose hue before they lose shape or text.
+     */
+    --rf-success: rgb(76, 195, 138);
+    --rf-warning: rgb(232, 163, 61);
+    --rf-danger: rgb(229, 72, 77);
+
+    /* ---- borders --------------------------------------------------------
+     * 2px minimum. A 1px border disappears entirely at 720p.
+     */
+    --rf-border: rgb(58, 53, 44);
+    --rf-border-strong: rgb(90, 82, 68);
+    --rf-border-width: 2px;
+    --rf-radius: 4px;
+    --rf-radius-lg: 8px;
+
+    /* ---- spacing scale --------------------------------------------------
+     * 4px base. Use these rather than arbitrary numbers; that is what keeps
+     * panels feeling like the same product.
+     */
+    --rf-space-1: 4px;
+    --rf-space-2: 8px;
+    --rf-space-3: 12px;
+    --rf-space-4: 16px;
+    --rf-space-5: 24px;
+    --rf-space-6: 32px;
+    --rf-space-7: 48px;
+
+    /* ---- type scale -----------------------------------------------------
+     * Deliberately larger than a desktop app. --rf-font-body is the smallest
+     * size allowed for anything a viewer needs to read.
+     */
+    --rf-font-caption: 14px;
+    --rf-font-body: 18px;
+    --rf-font-title: 24px;
+    --rf-font-heading: 32px;
+    --rf-font-display: 48px;
+}

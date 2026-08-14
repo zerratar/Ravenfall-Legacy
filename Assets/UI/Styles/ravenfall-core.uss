@@ -1,0 +1,182 @@
+/*
+ * Shared Ravenfall UI components.
+ *
+ * Everything here reads from ravenfall-tokens.uss. If a screen needs a value that is not a token,
+ * that is a signal the token set is missing something, not a reason to hard code it locally.
+ */
+
+/* ---- layout primitives ------------------------------------------------- */
+
+.rf-screen {
+    flex-grow: 1;
+    background-color: var(--rf-bg);
+    align-items: center;
+    justify-content: center;
+}
+
+.rf-panel {
+    background-color: var(--rf-surface);
+    border-left-width: var(--rf-border-width);
+    border-right-width: var(--rf-border-width);
+    border-top-width: var(--rf-border-width);
+    border-bottom-width: var(--rf-border-width);
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-5);
+    padding-bottom: var(--rf-space-5);
+}
+
+.rf-stack {
+    flex-direction: column;
+}
+
+.rf-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-spacer {
+    flex-grow: 1;
+}
+
+/* ---- text -------------------------------------------------------------- */
+
+.rf-text {
+    color: var(--rf-text);
+    font-size: var(--rf-font-body);
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.rf-text--dim {
+    color: var(--rf-text-dim);
+}
+
+.rf-text--faint {
+    color: var(--rf-text-faint);
+}
+
+.rf-text--caption {
+    font-size: var(--rf-font-caption);
+    letter-spacing: 1px;
+}
+
+.rf-text--title {
+    font-size: var(--rf-font-title);
+}
+
+.rf-text--heading {
+    font-size: var(--rf-font-heading);
+}
+
+.rf-text--display {
+    font-size: var(--rf-font-display);
+}
+
+.rf-text--center {
+    -unity-text-align: middle-center;
+}
+
+.rf-text--danger {
+    color: var(--rf-danger);
+}
+
+.rf-text--success {
+    color: var(--rf-success);
+}
+
+/* ---- progress bar ------------------------------------------------------
+ * Solid fill on a solid track. No gradient, no thin outline: both are the
+ * first things a video encoder destroys.
+ */
+
+.rf-progress {
+    height: 28px;
+    background-color: var(--rf-bg);
+    border-left-width: var(--rf-border-width);
+    border-right-width: var(--rf-border-width);
+    border-top-width: var(--rf-border-width);
+    border-bottom-width: var(--rf-border-width);
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    overflow: hidden;
+    justify-content: center;
+}
+
+.rf-progress__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background-color: var(--rf-accent);
+}
+
+.rf-progress__label {
+    -unity-text-align: middle-center;
+    font-size: var(--rf-font-caption);
+    -unity-font-style: bold;
+    color: var(--rf-text);
+}
+
+/* ---- buttons ----------------------------------------------------------- */
+
+.rf-button {
+    background-color: var(--rf-surface-raised);
+    color: var(--rf-text);
+    font-size: var(--rf-font-body);
+    -unity-font-style: bold;
+    border-left-width: var(--rf-border-width);
+    border-right-width: var(--rf-border-width);
+    border-top-width: var(--rf-border-width);
+    border-bottom-width: var(--rf-border-width);
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    min-height: 40px;
+}
+
+.rf-button:hover {
+    background-color: var(--rf-border);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-button:active {
+    background-color: var(--rf-accent);
+    color: var(--rf-text-on-accent);
+}
+
+.rf-button--primary {
+    background-color: var(--rf-accent);
+    color: var(--rf-text-on-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
