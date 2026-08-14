@@ -30,6 +30,9 @@ Ravenfall is a **Twitch-integrated Idle RPG** where viewers can join a streamer'
 - [Twitch Integration](./integration/twitch.md) - Bot commands and Twitch features
 - [RavenNest API](./integration/ravennest.md) - Server communication
 
+### Design Notes
+- [Twitch Message Budget](./twitch-message-budget.md) - chat length vs rate limits, and prioritising active players
+
 ### Setup
 - [Unity 6.7 Local Fixes](./unity-6.7-local-fixes.md) - Required patches that live outside version control (third-party assets, URP settings, generated collider data)
 

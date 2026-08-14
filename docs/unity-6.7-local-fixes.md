@@ -147,10 +147,14 @@ Exception while executing InitializeOnLoad for GUITimeHelper.Init
 MissingFieldException: Field not found:
   System.Action`1<UnityEngine.UIElements.IMGUIContainer>
   UnityEngine.UIElements.UIElementsUtility.s_BeginContainerCallback
+
+Exception while executing InitializeOnLoad for SdfIcons.FixBug
+NotImplementedException: The method or operation is not implemented.
 ```
 
-Odin reflects into a Unity internal that 6.7 removed. It ships as precompiled DLLs, so this
-cannot be patched locally — it needs an updated build from Sirenix.
+Both fire on **every domain reload**, not only at editor startup, so they reappear after each
+recompile. Odin reflects into Unity internals that 6.7 changed or removed. It ships as
+precompiled DLLs, so this cannot be patched locally — it needs an updated build from Sirenix.
 
 **Impact is limited to the editor.** The project uses Odin only for inspector decoration
 (`[Button]` ×39, `[TabGroup]` ×17, `[ReadOnly]` ×9 across 28 files) and **no**

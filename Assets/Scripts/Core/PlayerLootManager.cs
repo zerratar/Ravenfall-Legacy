@@ -6,17 +6,18 @@ public class PlayerLootManager
 {
     private readonly List<PlayerLootRecord> records = new List<PlayerLootRecord>();
 
-    internal void Add(PlayerLootRecord record)
+    // public rather than internal: callers live in Assembly-CSharp, a different assembly to Ravenfall.Core.
+    public void Add(PlayerLootRecord record)
     {
         records.Add(record);
     }
 
-    internal void Clear()
+    public void Clear()
     {
         records.Clear();
     }
 
-    internal IReadOnlyList<PlayerLootRecord> Query(string filterQuery)
+    public IReadOnlyList<PlayerLootRecord> Query(string filterQuery)
     {
         if (string.IsNullOrEmpty(filterQuery))
         {
