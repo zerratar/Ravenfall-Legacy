@@ -66,6 +66,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     /// skills. Split out of this class; see PlayerProgression.
     /// </summary>
     public PlayerProgression Progression { get; private set; }
+
+    /// <summary>Passive out of combat health regeneration. See PlayerHealthRegeneration.</summary>
+    public PlayerHealthRegeneration HealthRegeneration { get; private set; }
     private ConcurrentDictionary<StatusEffectType, StatusEffect> statusEffects = new ConcurrentDictionary<StatusEffectType, StatusEffect>();
 
     // Snapshot of the active effects, rebuilt only when one is added or removed.
@@ -142,11 +145,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public float RegenRate = 0.1f;
 
     [NonSerialized] public Vector3 TempScale = Vector3.one;
-
-    private float regenTimer;
-    private float regenAmount;
-
     private HealthBar healthBar;
+    /// <summary>Exposed for PlayerHealthRegeneration, which updates the bar after regenerating.</summary>
+    internal HealthBar HealthBar => healthBar;
     private bool hasBeenInitialized;
 
     private ItemController targetDropItem;
@@ -503,6 +504,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         // Initialize handlers that are no longer monobehaviours
         this.dungeonHandler = new DungeonHandler(this, FindObjectOfType<DungeonManager>());
         this.Progression = new PlayerProgression(this);
+        this.HealthRegeneration = new PlayerHealthRegeneration(this);
     }
 
     void Start()
@@ -1061,58 +1063,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
     }
 
-    private void UpdateHealthRegeneration()
-    {
-        try
-        {
-            if (isDestroyed || Removed)
-            {
-                // player removed.
-                return;
-            }
-        }
-        catch
-        {
-            // ignored
-            return;
-        }
-
-        try
-        {
-            if ((Chunk?.ChunkType != TaskType.Fighting) && !InCombat)
-            {
-                regenTimer += GameTime.deltaTime;
-            }
-
-            if (regenTimer >= RegenTime)
-            {
-                var oldValue = Stats.Health.CurrentValue;
-
-                var amount = this.Stats.Health.MaxLevel * RegenRate * GameTime.deltaTime;
-                regenAmount += amount;
-                var add = Mathf.FloorToInt(regenAmount);
-                if (add > 0)
-                {
-                    var newValue = Mathf.Min(this.Stats.Health.MaxLevel, Stats.Health.CurrentValue + add);
-                    Stats.Health.CurrentValue = newValue;
-                    regenAmount -= add;
-                    if (healthBar && healthBar != null && oldValue != newValue)
-                    {
-                        healthBar.UpdateHealth();
-                    }
-                }
-
-                if (Stats.Health.CurrentValue == Stats.Health.MaxLevel)
-                {
-                    regenTimer = 0;
-                }
-            }
-        }
-        catch
-        {
-            // ignored
-        }
-    }
+    // Passive out of combat regeneration lives in PlayerHealthRegeneration.
+    private void UpdateHealthRegeneration() => HealthRegeneration.Poll();
 
     public bool PickupItemById(Guid id)
     {
@@ -2509,7 +2461,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         Target = targetTransform;
         var attackType = GetAttackType();
         InCombat = true;
-        regenTimer = 0f;
+        HealthRegeneration.ResetTimer();
         actionTimer = GetAttackAnimationTime(attackType);
 
         var hitTime = actionTimer / 2;
