@@ -71,7 +71,7 @@ namespace Obscured.Editor
             int newValue = EditorGUI.IntField(position, label, current);
             if (EditorGUI.EndChangeCheck())
             {
-                // Simulate Set(value, countOp:false) — reseal parts with current salt
+                // Simulate Set(value, countOp:false) - reseal parts with current salt
                 int a = SecureRng.NextNonZeroInt();
                 int b = unchecked(newValue - a);
                 partA.intValue = a;

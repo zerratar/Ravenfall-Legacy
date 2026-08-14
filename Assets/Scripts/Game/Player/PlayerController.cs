@@ -62,6 +62,14 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     private StatsModifiers playerStatsModifiers = new StatsModifiers();
     private ConcurrentDictionary<StatusEffectType, StatusEffect> statusEffects = new ConcurrentDictionary<StatusEffectType, StatusEffect>();
 
+    // Snapshot of the active effects, rebuilt only when one is added or removed.
+    // UpdateActiveEffects runs every frame for every player, and ConcurrentDictionary.Values
+    // already builds a snapshot list internally, so the old "statusEffects.Values.ToList()" there
+    // allocated twice per affected player per frame. At a thousand players that is the single
+    // largest source of per-frame garbage in the player update path.
+    private readonly List<StatusEffect> activeEffectsBuffer = new List<StatusEffect>();
+    private bool statusEffectsDirty = true;
+
     private SyntyPlayerAppearance playerAppearance;
     private float actionTimer = 0f;
     private Skill lastTrainedSkill = Skill.Attack;
@@ -534,10 +542,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     {
         if (GameCache.IsAwaitingGameRestore || !Overlay.IsGame) return;
 
-        // we would like to avoid doing this every late update as it will be a bit expensive
-        // but it cant be helped. Rotate the player to make sure they are standing straight!
+        // Keep the player standing straight by zeroing any pitch.
+        // Writing transform.rotation dirties the transform and forces a matrix rebuild that
+        // propagates to children, so with a thousand players it is worth paying only when the
+        // rotation is actually wrong. Reading eulerAngles is cheap next to the write it avoids,
+        // and in the common case the pitch is already zero and nothing is written at all.
         var euler = _transform.rotation.eulerAngles;
-        _transform.rotation = Quaternion.Euler(0, euler.y, euler.z);
+        if (euler.x != 0f)
+        {
+            _transform.rotation = Quaternion.Euler(0f, euler.y, euler.z);
+        }
 
         //// if the player is not in a raid, dungeon, or arena, we should check if the player are in a "no-go" zone
         //// aka, under the map, or in a place they should not be. If so, we should teleport them to the island spawn position
@@ -772,9 +786,22 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         // active effect is still active later then it will be reapplied. Its just a simple way to avoid having to keep track on when to toggle on or off.
         if (statusEffectCount > 0)
         {
-            var effects = statusEffects.Values.ToList();
-            foreach (var fx in effects)
+            if (statusEffectsDirty)
             {
+                activeEffectsBuffer.Clear();
+                foreach (var fx in statusEffects.Values)
+                {
+                    activeEffectsBuffer.Add(fx);
+                }
+                statusEffectsDirty = false;
+            }
+
+            // Indexed loop rather than foreach: RemoveEffect below mutates the dictionary and marks
+            // the buffer dirty, but does not touch the buffer itself, so it stays valid for the rest
+            // of this frame and gets rebuilt on the next one. Order matches the previous behaviour.
+            for (var i = 0; i < activeEffectsBuffer.Count; i++)
+            {
+                var fx = activeEffectsBuffer[i];
                 if (fx.Expired)
                 {
                     RemoveEffect(fx);
@@ -974,6 +1001,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         // then delete it from the activeEffects dict
         statusEffects.TryRemove(fx.Effect.Type, out _);
         statusEffectCount = statusEffects.Count;
+        statusEffectsDirty = true;
         lastHealTick = -1;
     }
 
@@ -3641,6 +3669,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     {
         this.statusEffects[effect.Type] = new StatusEffect { Effect = effect };
         statusEffectCount = statusEffects.Count;
+        statusEffectsDirty = true;
     }
 
     internal IReadOnlyList<StatusEffect> GetStatusEffects()

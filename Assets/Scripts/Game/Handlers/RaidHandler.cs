@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using Shinobytes.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using Skill = RavenNest.Models.Skill;
@@ -71,11 +70,27 @@ public class RaidHandler : MonoBehaviour
             var raiders = gameManager.Raid.Raiders;
             if (raiders != null)
             {
-                healTarget = raiders
-                    .Where(x => x != null && x.Stats != null && !x.Stats.IsDead && x.raidHandler.InRaid)
-                    .OrderByDescending(x =>
-                        x.Stats.Health.MaxLevel - x.Stats.Health.CurrentValue)
-                    .FirstOrDefault();
+                // Single pass instead of Where + OrderByDescending + FirstOrDefault. Sorting every
+                // raider to pick one is O(n log n) and allocates an enumerator, a key array and a
+                // sorter, and this runs per healer per frame - with a few hundred raiders that was
+                // the most expensive thing in the raid update path. Strict ">" keeps the first
+                // element among equals, matching the stable sort this replaces.
+                var mostHurt = int.MinValue;
+                for (var i = 0; i < raiders.Count; i++)
+                {
+                    var raider = raiders[i];
+                    if (raider == null || raider.Stats == null || raider.Stats.IsDead || !raider.raidHandler.InRaid)
+                    {
+                        continue;
+                    }
+
+                    int missingHealth = raider.Stats.Health.MaxLevel - raider.Stats.Health.CurrentValue;
+                    if (healTarget == null || missingHealth > mostHurt)
+                    {
+                        healTarget = raider;
+                        mostHurt = missingHealth;
+                    }
+                }
 
                 if (healTarget && healTarget != null)
                 {
