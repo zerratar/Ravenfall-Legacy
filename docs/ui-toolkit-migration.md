@@ -47,6 +47,9 @@ roughly ten screens, not 143.
 - Island details
 - Player inventory
 - Notifications: arena, raid, stream raid
+- **Game restore overlay** - the full screen "Game is being restored / Downloading characters
+  data" cover shown while `GameCache.IsAwaitingGameRestore` is set. It sits over everything, so it
+  is both high visibility and a good early candidate: it has almost no interaction, only text.
 - Stat and skill observers
 - Code of Conduct screen (own scene)
 - Update screen (own scene)
@@ -62,6 +65,43 @@ real answer there.
 - `DamageCounter` and `DamageCounterManager`
 - `MessageBubbleManager`
 - DamageNumbersPro, an entire TMP based asset
+
+## Rule: never disable a Canvas GameObject, disable the Canvas component
+
+The project's convention is to put UI scripts **on the Canvas object and on its children**, because
+that makes them easy to find in the hierarchy. So switching off a Canvas GameObject to hide the old
+UI also stops those scripts from running, and it fails completely silently: nothing executes, so
+there is no error, just a screen that never populates.
+
+This already bit both migrated screens. `GameUpdater` and `CodeOfConductController` are components
+on the Canvas object itself, so disabling it meant `Awake` never ran and the new UI sat empty while
+looking correctly styled.
+
+**Hide old UI by disabling the Canvas component, and the GraphicRaycaster with it** so the hidden
+hierarchy cannot swallow clicks. Leave the GameObject active.
+
+Run `tools/canvas-script-preflight.py <scene>` before touching a screen. It reads the scene file
+directly, needs no editor, and lists every one of our scripts on or under each Canvas. Current
+state:
+
+| Scene | Canvas | Our scripts |
+|---|---|---|
+| `Update` | Canvas | 1 on the canvas itself (`GameUpdater`), 1 on a child |
+| `CodeOfConduct` | Canvas | 1 on the canvas itself (`CodeOfConductController`) |
+| `MainWorld` | Canvas2D | 52 on children |
+| `MainWorld` | Canvas3D | 25 on children, mostly `LookAt`, this is the world space canvas |
+
+MainWorld carries 77 of our scripts under canvases. That is the real reason its screens have to be
+migrated one panel at a time rather than by switching the canvas off.
+
+## A second silent failure worth knowing about
+
+Unity runs **every `Awake` before any `OnEnable`**, and `UIDocument` builds its visual tree in
+`OnEnable`. A controller that writes text from `Awake` is therefore writing into a tree that does
+not exist yet. Nothing throws; the UXML placeholder text simply stays on screen.
+
+Both views handle this by holding values until the tree exists and flushing them once it does. Any
+new screen view should do the same rather than assuming the tree is ready.
 
 ## The design constraint that should drive every decision
 
@@ -100,6 +140,8 @@ Then, smallest and most isolated first, so the cost per screen is learned somewh
 2. **`CodeOfConduct.unity`** - 18, also isolated.
 3. **`Overlay.unity`** - 35, self contained, and it is what viewers see.
 4. **Notifications** - small, self contained, high visibility on stream.
+5. **Game restore overlay** - text only, no interaction, but covers the whole screen so it is worth
+   getting right early.
 5. **Player details** - the most seen panel, and the one that benefits most.
 6. **Player list and rows** - depends on virtualised lists; UI Toolkit's `ListView` replaces
    SuperScrollView here.
