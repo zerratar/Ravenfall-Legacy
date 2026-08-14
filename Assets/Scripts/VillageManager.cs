@@ -149,12 +149,13 @@ namespace Assets.Scripts
             //throw new NotImplementedException();
             if (TownHouses.SlotCount > 0)
             {
-                var firstHut = TownHouses.TownHouses.FirstOrDefault();
+                var th = TownHouses.Slots.Where(x => x.SlotType != TownHouseSlotType.Empty).ToList();
+                var firstHut = th.FirstOrDefault();
                 // check if all huts are the same type
-                if (firstHut != null && TownHouses.TownHouses.All(x => x.Type == firstHut.Type))
+                if (firstHut != null && th.All(x => x.SlotType == firstHut.SlotType))
                 {
                     Shinobytes.Debug.Log("All huts are the same type, assigning players to huts.");
-                    await SetVillageBoostTarget(firstHut.Type, false);
+                    await SetVillageBoostTarget(firstHut.SlotType, false);
                 }
                 else
                 {
@@ -318,6 +319,25 @@ namespace Assets.Scripts
             return false;
         }
 
+        internal IReadOnlyDictionary<TownHouseSlotType, List<PlayerController>> GetAssignedPlayersGroupedByType()
+        {
+            var realPlayers = gameManager.Players.GetAllRealPlayers();
+            var dict = new Dictionary<TownHouseSlotType, List<PlayerController>>();
+            foreach (var s in townHouseManager.Slots)
+            {
+                dict.TryGetValue(s.SlotType, out var players);
+                if (players == null)
+                {
+                    players = new List<PlayerController>();
+                }
+                var availablePlayer = realPlayers.FirstOrDefault(x => x.UserId == s.OwnerUserId);
+                if (availablePlayer != null)
+                {
+                    players.Add(availablePlayer);
+                    dict[s.SlotType] = players;
+                }
+            }
+            return dict;
+        }
     }
-
 }

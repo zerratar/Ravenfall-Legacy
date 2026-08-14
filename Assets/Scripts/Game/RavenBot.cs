@@ -71,6 +71,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<PlayerResources>("player_resources");
         Connection.Register<TownResources>("town_resources");
         Connection.Register<TownStats>("village_stats");
+        Connection.Register<TownHouses>("villagers");
 
         Connection.Register<Highscore>("highscore");
         Connection.Register<HighestSkill>("highest_skill");
@@ -185,6 +186,9 @@ public class RavenBot : System.IDisposable
         Connection.Register<GetLoot>("get_loot");
 
         Connection.Register<Dps>("dps");
+
+        Connection.Register<GameStateUpload>("upload_state");
+        Connection.Register<PlayerLogUpload>("upload_log");
 
         Connection.LocalConnected -= BotConnected;
         Connection.LocalConnected += BotConnected;

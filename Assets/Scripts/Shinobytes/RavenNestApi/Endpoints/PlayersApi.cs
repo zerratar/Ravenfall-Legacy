@@ -21,10 +21,23 @@ namespace RavenNest.SDK.Endpoints
             this.request = request;
         }
 
+        public Task<bool> PlayerRemoveFailedAsync(Guid characterId, string reason)
+        {
+            var req = request.Create()
+                .AddParameter(characterId)
+                .Method("remove-failed")
+                .Build();
+
+            return req.SendAsync<bool, string>(
+                ApiRequestTarget.Players,
+                ApiRequestType.Post,
+                reason);
+        }
+
         public Task PlayerRemoveAsync(Guid characterId)
         {
             return request.Create()
-               .AddParameter(characterId.ToString())
+               .AddParameter(characterId)
                 .Build()
                .SendAsync<bool>(
                    ApiRequestTarget.Players,

@@ -21,7 +21,7 @@ public class DropEventManager : MonoBehaviour
 
     public bool Contains(ItemController item)
     {
-        lock (mutex) return droppedItems.FirstOrDefault(x => x.GetInstanceID() == item.GetInstanceID());
+        lock (mutex) return droppedItems.FirstOrDefault(x => x.GetEntityId() == item.GetEntityId());
     }
 
     public IReadOnlyList<ItemController> GetDropItems()

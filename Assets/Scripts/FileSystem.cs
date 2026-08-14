@@ -11,7 +11,7 @@ namespace Shinobytes.IO
         private static string gameFolder;
 
         private static bool initFailed;
-        
+
         public static string Executable;
 
         public static string GameFolder
@@ -57,8 +57,12 @@ namespace Shinobytes.IO
         {
             if (initFailed) Init();
             if (System.IO.Path.IsPathFullyQualified(path)) return path;
-            if (initFailed) return System.IO.Path.GetFullPath(path);
-            return System.IO.Path.GetFullPath(System.IO.Path.Combine(GameFolder, path));
+            if (initFailed) return Environment.OSVersion.Platform == PlatformID.Unix ?
+                    System.IO.Path.GetFullPath(path).Replace("\\", "/") : System.IO.Path.GetFullPath(path);
+            var p = System.IO.Path.GetFullPath(System.IO.Path.Combine(GameFolder, path));
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+                return p.Replace("\\", "/");
+            return p;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -77,6 +81,8 @@ namespace Shinobytes.IO
             }
 
             paths[0] = GameFolderAsRoot(paths[0]);
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+                return System.IO.Path.Combine(paths).Replace("\\", "/");
             return System.IO.Path.Combine(paths);
         }
     }
@@ -152,6 +158,21 @@ namespace Shinobytes.IO
         internal static void WriteAllBytes(string path, byte[] bytes)
         {
             System.IO.File.WriteAllBytes(Path.GameFolderAsRoot(path), bytes);
+        }
+
+        internal static void WriteAllBytes(string path, byte[] bytes, int offset, int count)
+        {
+            try
+            {
+                var p = Path.GameFolderAsRoot(path);
+                using var fs = System.IO.File.OpenWrite(p);
+                fs.Write(bytes, offset, count);
+                fs.Flush();
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError($"Unable to write to file: '{path}', error: {exc}");
+            }
         }
     }
 }

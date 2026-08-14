@@ -1,8 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using UnityEngine;
 
 public abstract class JsonBasedRepository<T> : IRepository<T>
@@ -59,6 +60,9 @@ public abstract class JsonBasedRepository<T> : IRepository<T>
             Shinobytes.IO.Directory.CreateDirectory(repoFolder);
         var json = JsonConvert.SerializeObject(items.Values.ToList());
         var repoFile = System.IO.Path.Combine(repoFolder, "repository.json");
+        if (Environment.OSVersion.Platform == PlatformID.Unix)
+            repoFile = repoFile.Replace("\\", "/");
+
         using (var stream = Shinobytes.IO.File.OpenWrite(repoFile))
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
@@ -68,7 +72,9 @@ public abstract class JsonBasedRepository<T> : IRepository<T>
 
     public void Load()
     {
-        var repoFile = System.IO.Path.Combine(repoFolder, "repository.json");
+        var repoFile = System.IO.Path.Combine(repoFolder, "repository.json"); 
+        if (Environment.OSVersion.Platform == PlatformID.Unix)
+            repoFile = repoFile.Replace("\\", "/");
         if (!Shinobytes.IO.File.Exists(repoFile))
         {
             return;
@@ -85,6 +91,8 @@ public abstract class JsonBasedRepository<T> : IRepository<T>
             Shinobytes.IO.Directory.CreateDirectory(repoFolder);
         var json = JsonConvert.SerializeObject(items.Values.ToList());
         var repoFile = System.IO.Path.Combine(repoFolder, "repository.json");
+        if (Environment.OSVersion.Platform == PlatformID.Unix)
+            repoFile = repoFile.Replace("\\", "/");
         Shinobytes.IO.File.WriteAllText(repoFile, json);
         Shinobytes.Debug.Log(repoFile + " saved.");
     }

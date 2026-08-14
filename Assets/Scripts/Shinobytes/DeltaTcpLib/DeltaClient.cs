@@ -16,6 +16,8 @@ using RavenNest.Models.TcpApi;
 using RavenNest.SDK.Endpoints;
 using UnityEngine.UIElements;
 using Shinobytes.Linq;
+using Cysharp.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace Shinobytes.DeltaTcpLib
 {
@@ -71,6 +73,9 @@ namespace Shinobytes.DeltaTcpLib
         public double? AutoRestStart;
         public int? DungeonCombatStyle;
         public int? RaidCombatStyle;
+
+        public string PlatformUserId;
+        public string PlatformUserName;
     }
 
     [Flags]
@@ -93,6 +98,8 @@ namespace Shinobytes.DeltaTcpLib
         AutoRestStart = 1 << 14,
         DungeonStyle = 1 << 15,
         RaidStyle = 1 << 16,
+
+        Platform = 1 << 17,
     }
     // -------------------------------------------------------------------------
     // VarInt and Span reader/writer
@@ -196,15 +203,35 @@ namespace Shinobytes.DeltaTcpLib
             BinaryPrimitives.WriteInt16BigEndian(span, v);
             return 2;
         }
+
         public static int Write(this Span<byte> span, float v)
         {
-            var b = BitConverter.SingleToInt32Bits(v); BinaryPrimitives.WriteInt32BigEndian(span, b);
+            var b = BitConverter.SingleToInt32Bits(v);
+            BinaryPrimitives.WriteInt32BigEndian(span, b);
             return 4;
         }
+
         public static int Write(this Span<byte> span, bool v)
         {
             span[0] = (byte)(v ? 1 : 0);
             return 1;
+        }
+        public static int WriteShortString(this Span<byte> span, string s)
+        {
+            if (string.IsNullOrEmpty(s))
+            {
+                span[0] = 0;
+                return 1;
+            }
+
+            var b = Encoding.UTF8.GetBytes(s);
+            if (b.Length > 255)
+            {
+                throw new ArgumentException("String is too long for short string format.");
+            }
+            span[0] = (byte)b.Length;
+            b.CopyTo(span.Slice(1));
+            return 1 + b.Length;
         }
         public static int Write(this Span<byte> span, string s)
         {
@@ -241,39 +268,36 @@ namespace Shinobytes.DeltaTcpLib
         const int PLAYER_STATE = 3;
         const int GAME_STATE = 4;
 
-
         private readonly ITokenProvider tokenProvider;
         private readonly IPEndPoint endpoint;
-        private readonly object _sync = new();
+        //private readonly object socketLock = new();
         private bool _isConnecting = false;
         private CancellationTokenSource _connectCts;
-
         private Socket socket;
         private readonly SocketType socketType;
         private readonly ProtocolType protocolType;
 
-        // Updated events
-        public event Action<SessionToken> OnConnected;
-        public event Action OnDisconnected;
-        public event Action<Exception> OnConnectionError;
-
 #if UNITY_EDITOR
-
         private long _totalBytesSent;
         private long _totalBytesReceived;
         private DateTime _trackingStartTime;
         private readonly Dictionary<string, long> _messageTypeBytesSent;
-
         public long TotalBytesSent => _totalBytesSent;
         public long TotalBytesReceived => _totalBytesReceived;
         public TimeSpan TrackingDuration => DateTime.UtcNow - _trackingStartTime;
-
-        public float BytesSentPerSecond =>
-            (float)_totalBytesSent / (float)Math.Max(1, TrackingDuration.TotalSeconds);
-
-        public Dictionary<string, long> MessageTypeBytesSent =>
-            new Dictionary<string, long>(_messageTypeBytesSent);
+        public float BytesSentPerSecond => (float)_totalBytesSent / (float)Math.Max(1, TrackingDuration.TotalSeconds);
+        public Dictionary<string, long> MessageTypeBytesSent => new Dictionary<string, long>(_messageTypeBytesSent);
+        private DateTime _lastLogTime = DateTime.MinValue;
 #endif
+
+        // --- Buffer size safety (conservative estimate, tweak as needed) ---
+        public const int MaxPlayerStateSize = 512;
+        public const int MaxExpUpdateSize = 128;
+        public const int MaxGameStateSize = 512;
+
+        public event Action<SessionToken> OnConnected;
+        public event Action OnDisconnected;
+        public event Action<Exception> OnConnectionError;
 
         public DeltaClient(string host, int port, ITokenProvider tokenProvider)
         {
@@ -292,7 +316,6 @@ namespace Shinobytes.DeltaTcpLib
                 {
                     throw new ArgumentException($"Unable to resolve host: {host}");
                 }
-
                 this.endpoint = new IPEndPoint(hostEntry.AddressList[0], port);
             }
             this.socket = new Socket(socketType, protocolType);
@@ -333,7 +356,6 @@ namespace Shinobytes.DeltaTcpLib
 
             return sb.ToString();
         }
-        // Format byte size to human-readable format
         private string FormatByteSize(long bytes)
         {
             string[] sizes = { "B", "KB", "MB", "GB" };
@@ -348,7 +370,6 @@ namespace Shinobytes.DeltaTcpLib
 
             return $"{len:0.##} {sizes[order]}";
         }
-        // Reset statistics
         public void ResetStatistics()
         {
             _totalBytesSent = 0;
@@ -356,14 +377,11 @@ namespace Shinobytes.DeltaTcpLib
             _trackingStartTime = DateTime.UtcNow;
 
             foreach (var key in _messageTypeBytesSent.Keys.ToList())
-            {
                 _messageTypeBytesSent[key] = 0;
-            }
         }
-
 #endif
 
-        public async Task ConnectAsync(CancellationToken cancellationToken = default)
+        public async UniTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             if (IsConnected || _isConnecting)
                 return;
@@ -375,17 +393,7 @@ namespace Shinobytes.DeltaTcpLib
 
                 if (socket == null || !socket.Connected)
                 {
-                    // Dispose old socket if it exists
-                    if (socket != null)
-                    {
-                        try
-                        {
-                            socket.Dispose();
-                        }
-                        catch { /* Ignore any errors during disposal */ }
-                    }
-
-                    // Create a new socket
+                    try { socket?.Dispose(); } catch { }
                     socket = new Socket(socketType, protocolType);
                 }
 
@@ -393,14 +401,10 @@ namespace Shinobytes.DeltaTcpLib
                 if (sessionToken == null)
                     throw new InvalidOperationException("Session token is not set.");
 
-                // Use async connection
-                await Task.Run(() =>
+                await UniTask.RunOnThreadPool(async () =>
                 {
                     socket.BeginConnect(endpoint, OnSocketConnected, socket);
-
-                    // Wait for connection with timeout
-                    var connected = SpinWait.SpinUntil(() => socket.Connected || _connectCts.Token.IsCancellationRequested,
-                        TimeSpan.FromSeconds(5));
+                    var connected = SpinWait.SpinUntil(() => socket.Connected || _connectCts.Token.IsCancellationRequested, TimeSpan.FromSeconds(5));
 
                     if (_connectCts.Token.IsCancellationRequested)
                         throw new OperationCanceledException();
@@ -409,17 +413,11 @@ namespace Shinobytes.DeltaTcpLib
                         throw new TimeoutException("Connection attempt timed out");
 
                     if (socket.Connected)
-                    {
-                        SendFrame(AUTH, sessionToken.ToBytes());
-                    }
+                        await SendFrameAsync(AUTH, sessionToken.ToBytes());
+                }, cancellationToken: _connectCts.Token);
 
-                }, _connectCts.Token);
-
-                // If we got here without exception, we're connected
                 if (socket.Connected)
-                {
                     OnConnected?.Invoke(sessionToken);
-                }
             }
             catch (OperationCanceledException)
             {
@@ -440,23 +438,15 @@ namespace Shinobytes.DeltaTcpLib
 
         private void OnSocketConnected(IAsyncResult ar)
         {
-            try
-            {
-                socket.EndConnect(ar);
-            }
-            catch //(Exception ex)
-            {
-                //OnConnectionError?.Invoke(ex);
-                // ignored
-            }
+            try { socket.EndConnect(ar); }
+            catch { /* Ignore connect errors here, handled in ConnectAsync */ }
         }
 
         public void Disconnect()
         {
-            // Cancel any pending connection
             _connectCts?.Cancel();
 
-            lock (_sync)
+            //lock (socketLock)
             {
                 try
                 {
@@ -467,7 +457,6 @@ namespace Shinobytes.DeltaTcpLib
                             try { socket.Shutdown(SocketShutdown.Both); } catch { }
                             try { socket.Close(); } catch { }
                         }
-
                         try { socket.Dispose(); } catch { }
                         socket = null;
                     }
@@ -478,282 +467,358 @@ namespace Shinobytes.DeltaTcpLib
             OnDisconnected?.Invoke();
         }
 
+        // --------- Async batch sending methods ----------
 
-        public void SendExperienceDeltas(DeltaExperienceUpdate[] batch, int count)
+        public static int Serialize(DeltaExperienceUpdate[] batch, byte[] output, int count)
         {
-            //var buf = new byte[count * 64];
-            var buf = ArrayPool<byte>.Shared.Rent(count * 64);
-            try
-            {
-                int pos = 0;
-                pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)count);
-
-                for (int i = 0; i < count; i++)
-                {
-                    var d = batch[i];
-                    pos += buf.AsSpan(pos).Write(d.CharacterId);
-                    pos += buf.AsSpan(pos).Write(d.DirtyMask);
-                    pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)d.Changes.Length);
-
-                    for (int j = 0; j < d.Changes.Length; j++)
-                    {
-                        var c = d.Changes[j];
-                        buf[pos++] = c.Index;
-                        pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)c.Experience);
-                        pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)c.Level);
-                    }
-                }
-
-                SendFrame(EXPERIENCE_UPDATE, buf, pos);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buf);
-            }
-            //SendFrame(EXPERIENCE_UPDATE, PackExperience(batch, count));
-        }
-        public void SendPlayerState(CharacterStateDelta[] states, int count)
-        {
-            var buf = ArrayPool<byte>.Shared.Rent(count * 256);
-            try
-            {
-                int pos = 0;
-                pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)count);
-
-                for (int i = 0; i < count; i++)
-                {
-                    var d = states[i];
-                    pos += buf.AsSpan(pos).Write(d.CharacterId);
-                    pos += buf.AsSpan(pos).Write(d.DirtyMask);  // Write the dirty mask
-
-                    // Only write fields that are dirty (have changed)
-                    if ((d.DirtyMask & (uint)CharacterStateFields.Health) != 0)
-                        pos += buf.AsSpan(pos).Write(d.Health);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.Island) != 0)
-                        pos += buf.AsSpan(pos).Write(d.Island);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.Destination) != 0)
-                        pos += buf.AsSpan(pos).Write(d.Destination);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.State) != 0)
-                        pos += buf.AsSpan(pos).Write(d.State);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.TrainingSkill) != 0)
-                        pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)d.TrainingSkillIndex);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.TaskArgument) != 0)
-                        pos += buf.AsSpan(pos).Write(d.TaskArgument);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.ExpPerHour) != 0)
-                        pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)d.ExpPerHour);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.LevelUpETA) != 0)
-                        pos += buf.AsSpan(pos).Write(d.EstimatedTimeForLevelUp);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.Position) != 0)
-                    {
-                        pos += buf.AsSpan(pos).Write(d.X);
-                        pos += buf.AsSpan(pos).Write(d.Y);
-                        pos += buf.AsSpan(pos).Write(d.Z);
-                    }
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.AutoJoinRaid) != 0)
-                    {
-                        pos += buf.AsSpan(pos).Write(d.AutoJoinRaidCounter);
-                        pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)d.AutoJoinRaidCount);
-                    }
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.AutoJoinDungeon) != 0)
-                    {
-                        pos += buf.AsSpan(pos).Write(d.AutoJoinDungeonCounter);
-                        pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)d.AutoJoinDungeonCount);
-                    }
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.IsAutoResting) != 0)
-                        pos += buf.AsSpan(pos).Write(d.IsAutoResting);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.AutoTrainLevel) != 0)
-                        pos += buf.AsSpan(pos).Write(d.AutoTrainTargetLevel);
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.AutoRestTarget) != 0)
-                    {
-                        buf[pos++] = d.AutoRestTarget.HasValue ? (byte)1 : (byte)0;
-                        if (d.AutoRestTarget.HasValue)
-                        {
-                            BinaryPrimitives.WriteInt64BigEndian(buf.AsSpan(pos),
-                                BitConverter.DoubleToInt64Bits(d.AutoRestTarget.Value));
-                            pos += 8;
-                        }
-                    }
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.AutoRestStart) != 0)
-                    {
-                        buf[pos++] = d.AutoRestStart.HasValue ? (byte)1 : (byte)0;
-                        if (d.AutoRestStart.HasValue)
-                        {
-                            BinaryPrimitives.WriteInt64BigEndian(buf.AsSpan(pos),
-                                BitConverter.DoubleToInt64Bits(d.AutoRestStart.Value));
-                            pos += 8;
-                        }
-                    }
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.DungeonStyle) != 0)
-                    {
-                        buf[pos++] = d.DungeonCombatStyle.HasValue ? (byte)1 : (byte)0;
-                        if (d.DungeonCombatStyle.HasValue)
-                            pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)d.DungeonCombatStyle.Value);
-                    }
-
-                    if ((d.DirtyMask & (uint)CharacterStateFields.RaidStyle) != 0)
-                    {
-                        buf[pos++] = d.RaidCombatStyle.HasValue ? (byte)1 : (byte)0;
-                        if (d.RaidCombatStyle.HasValue)
-                            pos += VarInt.WriteVarUInt(buf.AsSpan(pos), (ulong)d.RaidCombatStyle.Value);
-                    }
-                }
-
-                SendFrame(PLAYER_STATE, buf, pos);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buf);
-            }
-        }
-
-        public void SendGameState(GameStateRequest gs)
-        {
-            // Use stackalloc for a temporary buffer - 512 bytes is a reasonable size
-            Span<byte> buf = stackalloc byte[512];
             int pos = 0;
+            pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)count);
 
-            pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.PlayerCount);
+            for (int i = 0; i < count; i++)
+            {
+                var d = batch[i];
+                pos += output.AsSpan(pos).Write(d.CharacterId);
+                pos += output.AsSpan(pos).Write(d.DirtyMask);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.Changes.Length);
 
-            // raid
-            buf[pos++] = gs.Raid.IsActive ? (byte)1 : (byte)0;
+                for (int j = 0; j < d.Changes.Length; j++)
+                {
+                    var c = d.Changes[j];
+                    output[pos++] = c.Index;
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)c.Experience);
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)c.Level);
+                }
+            }
+
+            return pos;
+        }
+
+
+        public static int Serialize(CharacterStateDelta[] states, byte[] output, int count)
+        {
+            int pos = 0;
+            pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)count);
+
+            for (int i = 0; i < count; i++)
+            {
+                var d = states[i];
+                pos += output.AsSpan(pos).Write(d.CharacterId);
+                pos += output.AsSpan(pos).Write(d.DirtyMask);
+
+                // Only write fields that are dirty (have changed)
+                if ((d.DirtyMask & (uint)CharacterStateFields.Health) != 0)
+                    pos += output.AsSpan(pos).Write(d.Health);
+                if ((d.DirtyMask & (uint)CharacterStateFields.Island) != 0)
+                    pos += output.AsSpan(pos).Write(d.Island);
+                if ((d.DirtyMask & (uint)CharacterStateFields.Destination) != 0)
+                    pos += output.AsSpan(pos).Write(d.Destination);
+                if ((d.DirtyMask & (uint)CharacterStateFields.State) != 0)
+                    pos += output.AsSpan(pos).Write(d.State);
+                if ((d.DirtyMask & (uint)CharacterStateFields.TrainingSkill) != 0)
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.TrainingSkillIndex);
+                if ((d.DirtyMask & (uint)CharacterStateFields.TaskArgument) != 0)
+                    pos += output.AsSpan(pos).WriteShortString(d.TaskArgument);
+                if ((d.DirtyMask & (uint)CharacterStateFields.ExpPerHour) != 0)
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.ExpPerHour);
+                if ((d.DirtyMask & (uint)CharacterStateFields.LevelUpETA) != 0)
+                    pos += output.AsSpan(pos).Write(d.EstimatedTimeForLevelUp);
+                if ((d.DirtyMask & (uint)CharacterStateFields.Position) != 0)
+                {
+                    pos += output.AsSpan(pos).Write(d.X);
+                    pos += output.AsSpan(pos).Write(d.Y);
+                    pos += output.AsSpan(pos).Write(d.Z);
+                }
+                if ((d.DirtyMask & (uint)CharacterStateFields.AutoJoinRaid) != 0)
+                {
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.AutoJoinRaidCounter);
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.AutoJoinRaidCount);
+                }
+                if ((d.DirtyMask & (uint)CharacterStateFields.AutoJoinDungeon) != 0)
+                {
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.AutoJoinDungeonCounter);
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.AutoJoinDungeonCount);
+                }
+                if ((d.DirtyMask & (uint)CharacterStateFields.IsAutoResting) != 0)
+                    pos += output.AsSpan(pos).Write(d.IsAutoResting);
+                if ((d.DirtyMask & (uint)CharacterStateFields.AutoTrainLevel) != 0)
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.AutoTrainTargetLevel);
+                if ((d.DirtyMask & (uint)CharacterStateFields.AutoRestTarget) != 0)
+                {
+                    output[pos++] = d.AutoRestTarget.HasValue ? (byte)1 : (byte)0;
+                    if (d.AutoRestTarget.HasValue)
+                    {
+                        BinaryPrimitives.WriteInt64BigEndian(output.AsSpan(pos), BitConverter.DoubleToInt64Bits(d.AutoRestTarget.Value));
+                        pos += 8;
+                    }
+                }
+                if ((d.DirtyMask & (uint)CharacterStateFields.AutoRestStart) != 0)
+                {
+                    output[pos++] = d.AutoRestStart.HasValue ? (byte)1 : (byte)0;
+                    if (d.AutoRestStart.HasValue)
+                    {
+                        BinaryPrimitives.WriteInt64BigEndian(output.AsSpan(pos), BitConverter.DoubleToInt64Bits(d.AutoRestStart.Value));
+                        pos += 8;
+                    }
+                }
+                if ((d.DirtyMask & (uint)CharacterStateFields.DungeonStyle) != 0)
+                {
+                    output[pos++] = d.DungeonCombatStyle.HasValue ? (byte)1 : (byte)0;
+                    if (d.DungeonCombatStyle.HasValue)
+                        pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.DungeonCombatStyle.Value);
+                }
+                if ((d.DirtyMask & (uint)CharacterStateFields.RaidStyle) != 0)
+                {
+                    output[pos++] = d.RaidCombatStyle.HasValue ? (byte)1 : (byte)0;
+                    if (d.RaidCombatStyle.HasValue)
+                        pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)d.RaidCombatStyle.Value);
+                }
+                if ((d.DirtyMask & (uint)CharacterStateFields.Platform) != 0)
+                {
+                    pos += output.AsSpan(pos).WriteShortString(d.PlatformUserId);
+                    pos += output.AsSpan(pos).WriteShortString(d.PlatformUserName);
+                }
+            }
+
+            return pos;
+        }
+
+        public static int Serialize(GameStateRequest gs, byte[] output)
+        {
+            int pos = 0;
+            pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.PlayerCount);
+
+            output[pos++] = gs.Raid.IsActive ? (byte)1 : (byte)0;
             if (gs.Raid.IsActive)
             {
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Raid.BossCombatLevel);
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Raid.CurrentBossHealth);
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Raid.MaxBossHealth);
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Raid.PlayersJoined);
-                pos += SpanWriter.Write(buf.Slice(pos), gs.Raid.EndTime);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Raid.BossCombatLevel);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Raid.CurrentBossHealth);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Raid.MaxBossHealth);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Raid.PlayersJoined);
+                pos += SpanWriter.Write(output.AsSpan(pos), gs.Raid.EndTime);
             }
-            pos += SpanWriter.Write(buf.Slice(pos), gs.Raid.NextRaid);
+            pos += SpanWriter.Write(output.AsSpan(pos), gs.Raid.NextRaid);
 
-            // dungeon
-            buf[pos++] = gs.Dungeon.IsActive ? (byte)1 : (byte)0;
+            output[pos++] = gs.Dungeon.IsActive ? (byte)1 : (byte)0;
             if (gs.Dungeon.IsActive)
             {
-                // Handle dungeon name (potentially variable length)
                 var hasDungeonName = !string.IsNullOrEmpty(gs.Dungeon.Name);
-
                 if (hasDungeonName)
                 {
                     var dungeonName = Encoding.UTF8.GetBytes(gs.Dungeon.Name);
-                    pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)dungeonName.Length);
-                    dungeonName.CopyTo(buf.Slice(pos));
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)dungeonName.Length);
+                    dungeonName.CopyTo(output.AsSpan(pos));
                     pos += dungeonName.Length;
                 }
                 else
                 {
-                    pos += VarInt.WriteVarUInt(buf.Slice(pos), 0);
+                    pos += VarInt.WriteVarUInt(output.AsSpan(pos), 0);
                 }
-
-                buf[pos++] = gs.Dungeon.HasStarted ? (byte)1 : (byte)0;
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Dungeon.BossCombatLevel);
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Dungeon.CurrentBossHealth);
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Dungeon.MaxBossHealth);
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Dungeon.PlayersAlive);
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Dungeon.PlayersJoined);
-                pos += VarInt.WriteVarUInt(buf.Slice(pos), (ulong)gs.Dungeon.EnemiesLeft);
-                pos += SpanWriter.Write(buf.Slice(pos), gs.Dungeon.StartTime);
+                output[pos++] = gs.Dungeon.HasStarted ? (byte)1 : (byte)0;
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Dungeon.BossCombatLevel);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Dungeon.CurrentBossHealth);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Dungeon.MaxBossHealth);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Dungeon.PlayersAlive);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Dungeon.PlayersJoined);
+                pos += VarInt.WriteVarUInt(output.AsSpan(pos), (ulong)gs.Dungeon.EnemiesLeft);
+                pos += SpanWriter.Write(output.AsSpan(pos), gs.Dungeon.StartTime);
             }
-
-            pos += SpanWriter.Write(buf.Slice(pos), gs.Dungeon.NextDungeon);
-
-            SendFrame(GAME_STATE, buf, pos);
+            pos += SpanWriter.Write(output.AsSpan(pos), gs.Dungeon.NextDungeon);
+            return pos;
         }
 
-        private void SendFrame(byte type, Span<byte> buf, int length)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetPlayerStateBufferSize(int playerCount)
         {
-            if (length == 0)
-            {
-                return;
-            }
+            return playerCount * MaxPlayerStateSize + 32;
+        }
 
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(length);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetExpBufferSize(int playerCount)
+        {
+            return playerCount * MaxExpUpdateSize + 16;
+        }
+
+        public async UniTask SendExperienceDeltasAsync(DeltaExperienceUpdate[] batch, int count)
+        {
+            if (batch == null || count == 0) return;
+            int estimatedBufSize = GetExpBufferSize(count);
+            byte[] buf = ArrayPool<byte>.Shared.Rent(estimatedBufSize);
+
             try
             {
-                buf.Slice(0, length).CopyTo(rentedBuffer);
+                int pos = Serialize(batch, buf, count);
+                if (pos > estimatedBufSize)
+                {
+                    Shinobytes.Debug.LogError($"[DeltaClient] Experience batch buffer overrun: used {pos} of {estimatedBufSize} bytes.");
+                }
 
-                SendFrame(type, rentedBuffer, length);
+                await SendFrameAsync(EXPERIENCE_UPDATE, buf, pos);
             }
-            catch (Exception exc)
+            catch (Exception ex)
             {
-                Shinobytes.Debug.LogError("Error sending frame: " + exc.ToString());
+                Shinobytes.Debug.LogError("[DeltaClient] Error in SendExperienceDeltasAsync: " + ex);
             }
             finally
             {
-
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
+                ArrayPool<byte>.Shared.Return(buf, clearArray: true);
             }
         }
 
-        private void SendFrame(byte type, byte[] payload)
+        public async UniTask SendPlayerStateAsync(CharacterStateDelta[] states, int count)
         {
-            // Call the other SendFrame method to avoid code duplication
-            SendFrame(type, payload, payload.Length);
-        }
-
-        private void SendFrame(byte type, byte[] buf, int length)
-        {
-            if (length == 0)
-            {
-                return;
-            }
+            if (states == null || count == 0) return;
+            int estimatedBufSize = GetPlayerStateBufferSize(count);
+            byte[] buf = ArrayPool<byte>.Shared.Rent(estimatedBufSize);
 
             try
             {
-                int len = 1 + length;
-                Span<byte> hdr = stackalloc byte[5];
-                BinaryPrimitives.WriteInt32BigEndian(hdr, len);
-                hdr[4] = type;
-                socket.Send(hdr);
-                socket.Send(buf, 0, length, SocketFlags.None);
+                int pos = Serialize(states, buf, count);
 
-#if UNITY_EDITOR
-
-            if (UnityEngine.Application.isEditor)
-            {
-                // Track bytes sent (header + payload)
-                int totalBytes = 5 + length; // 5-byte header + payload length
-                _totalBytesSent += totalBytes;
-
-                // Track by message type
-                string messageType = GetMessageTypeName(type);
-                if (_messageTypeBytesSent.ContainsKey(messageType))
+                if (pos > estimatedBufSize)
                 {
-                    _messageTypeBytesSent[messageType] += totalBytes;
+                    Shinobytes.Debug.LogError($"[DeltaClient] Player state batch buffer overrun: used {pos} of {estimatedBufSize} bytes.");
                 }
 
-                // Optional: Log every X seconds for real-time monitoring
-                LogPeriodicStatistics();
+                await SendFrameAsync(PLAYER_STATE, buf, pos);
             }
-#endif
-            }
-            catch (SocketException se)
+            catch (Exception ex)
             {
-                Disconnect();
+                Shinobytes.Debug.LogError("[DeltaClient] Error in SendPlayerStateAsync: " + ex);
             }
-            catch (Exception exc)
+            finally
             {
-                Shinobytes.Debug.LogError("Error sending frame: " + exc.ToString());
+                ArrayPool<byte>.Shared.Return(buf, clearArray: true);
             }
         }
 
 
-        // Helper to convert type code to string name
+        public async UniTask SendGameStateAsync(GameStateRequest gs)
+        {
+            if (gs == null) return;
+            byte[] buf = ArrayPool<byte>.Shared.Rent(MaxGameStateSize);
+            try
+            {
+                int pos = Serialize(gs, buf);
+
+                await SendFrameAsync(GAME_STATE, buf, pos);
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("[DeltaClient] Error in SendGameStateAsync: " + exc);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buf, clearArray: true);
+            }
+        }
+
+        // --------- Thread-safe async frame send ---------
+        private async UniTask SendFrameAsync(byte type, byte[] payload, int length)
+        {
+            if (length == 0 || payload == null) return;
+
+            byte[] frame = ArrayPool<byte>.Shared.Rent(length + 5);
+            try
+            {
+                int msgLen = 1 + length;
+                BinaryPrimitives.WriteInt32BigEndian(frame.AsSpan(0, 4), msgLen);
+                frame[4] = type;
+                Array.Copy(payload, 0, frame, 5, length);
+
+                await UniTask.Yield(); // Allow Unity main thread to yield
+
+                //lock (socketLock)
+                {
+                    if (socket == null || !socket.Connected)
+                    {
+                        Shinobytes.Debug.LogWarning("[DeltaClient] Attempted to send while socket disconnected.");
+                        return;
+                    }
+                    try
+                    {
+                        //socket.Send(frame, 0, 5 + length, SocketFlags.None).;
+                        await socket.SendAsync(frame.AsMemory(0, 5 + length), SocketFlags.None, CancellationToken.None);
+#if UNITY_EDITOR
+                        _totalBytesSent += 5 + length;
+                        string messageType = GetMessageTypeName(type);
+                        if (_messageTypeBytesSent.ContainsKey(messageType))
+                            _messageTypeBytesSent[messageType] += 5 + length;
+                        LogPeriodicStatistics();
+#endif
+                    }
+                    catch (SocketException se)
+                    {
+                        Shinobytes.Debug.LogError("[DeltaClient] SocketException: " + se);
+                        Disconnect();
+                    }
+                    catch (Exception ex)
+                    {
+                        Shinobytes.Debug.LogError("[DeltaClient] SendFrameAsync error: " + ex);
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(frame, clearArray: true);
+            }
+        }
+
+        private UniTask SendFrameAsync(byte type, Span<byte> buf, int length)
+        {
+            byte[] tempBuf = ArrayPool<byte>.Shared.Rent(length);
+            buf.Slice(0, length).CopyTo(tempBuf);
+            var task = SendFrameAsync(type, tempBuf, length);
+            ArrayPool<byte>.Shared.Return(tempBuf, clearArray: true);
+            return task;
+        }
+
+        private async UniTask SendFrameAsync(byte type, byte[] payload)
+        {
+            await SendFrameAsync(type, payload, payload.Length);
+        }
+
+        //        private void SendFrame(byte type, byte[] buf, int length)
+        //        {
+        //            if (length == 0)
+        //                return;
+
+        //            byte[] frame = ArrayPool<byte>.Shared.Rent(length + 5);
+        //            try
+        //            {
+        //                int msgLen = 1 + length;
+        //                BinaryPrimitives.WriteInt32BigEndian(frame.AsSpan(0, 4), msgLen);
+        //                frame[4] = type;
+        //                Array.Copy(buf, 0, frame, 5, length);
+
+        //                //lock (socketLock)
+        //                {
+        //                    if (socket == null || !socket.Connected)
+        //                        return;
+        //                    //socket.Send(frame, 0, 5 + length, SocketFlags.None);
+        //                    await socket.SendAsync(frame.AsMemory(0, 5 + length), SocketFlags.None, CancellationToken.None);
+        //#if UNITY_EDITOR
+        //                    _totalBytesSent += 5 + length;
+        //                    string messageType = GetMessageTypeName(type);
+        //                    if (_messageTypeBytesSent.ContainsKey(messageType))
+        //                        _messageTypeBytesSent[messageType] += 5 + length;
+        //                    LogPeriodicStatistics();
+        //#endif
+        //                }
+        //            }
+        //            catch (SocketException)
+        //            {
+        //                Disconnect();
+        //            }
+        //            catch (Exception exc)
+        //            {
+        //                Shinobytes.Debug.LogError("[DeltaClient] SendFrame error: " + exc);
+        //            }
+        //            finally
+        //            {
+        //                ArrayPool<byte>.Shared.Return(frame, clearArray: true);
+        //            }
+        //        }
+
         private string GetMessageTypeName(byte type)
         {
             switch (type)
@@ -767,11 +832,8 @@ namespace Shinobytes.DeltaTcpLib
         }
 
 #if UNITY_EDITOR
-        // For periodic logging in Editor
-        private DateTime _lastLogTime = DateTime.MinValue;
         private void LogPeriodicStatistics()
         {
-            // Log statistics every 10 seconds
             if ((DateTime.UtcNow - _lastLogTime).TotalSeconds >= 10)
             {
                 _lastLogTime = DateTime.UtcNow;
@@ -779,5 +841,12 @@ namespace Shinobytes.DeltaTcpLib
             }
         }
 #endif
+
+        // Utility: Zero out array between sends if you want to ensure no stale data leaks
+        public static void ClearBuffer<T>(T[] arr, int usedCount)
+        {
+            if (arr == null) return;
+            Array.Clear(arr, 0, usedCount);
+        }
     }
 }

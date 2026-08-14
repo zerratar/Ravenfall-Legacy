@@ -31,15 +31,27 @@ public class EquipmentSlot : MonoBehaviour
         tooltip.Enable();
         iconImage.gameObject.SetActive(false);
 
-        if (!loadedItemImages.TryGetValue(item.Item.Id, out var sprite))
+        var itemId = item.Item.Id;
+        var itemName = item.Item.Name;
+        if (item.TransmogrificationId != null)
         {
-            if (!ExternalResources.TryGetSprite(item.Item.Id.ToString(), out sprite) &&
-                !ExternalResources.TryGetSprite(item.Item.Name, out sprite))
+            itemId = item.TransmogrificationId.Value;
+            var transmogItem = GameManager.Instance.Items.Get(itemId);
+            if (transmogItem != null)
             {
-                sprite = UnityEngine.Resources.Load<Sprite>("Items/" + item.Item.Name.Replace(" ", "-").Replace("'", "").ToLower());
+                itemName = transmogItem.Name;
+            }
+        }
+
+        if (!loadedItemImages.TryGetValue(itemId, out var sprite))
+        {
+            if (!ExternalResources.TryGetSprite(itemId.ToString(), out sprite) &&
+                !ExternalResources.TryGetSprite(itemName, out sprite))
+            {
+                sprite = UnityEngine.Resources.Load<Sprite>("Items/" + itemName.Replace(" ", "-").Replace("'", "").ToLower());
             }
 
-            loadedItemImages[item.Item.Id] = sprite;
+            loadedItemImages[itemId] = sprite;
         }
 
         if (sprite)
@@ -48,6 +60,8 @@ public class EquipmentSlot : MonoBehaviour
         }
 
         itemImage.sprite = sprite;
+
+
         tooltip.Title = item.InventoryItem.Name ?? item.Item.Name;
         tooltip.Body = GenerateItemTooltipContent(item);
     }
@@ -62,6 +76,12 @@ public class EquipmentSlot : MonoBehaviour
         StringBuilder sb = new StringBuilder();
         var stats = item.GetItemStats();
         sb.Append("<mspace=20>");
+
+        if (item.TransmogrificationId != null)
+        {
+            sb.AppendLine("<color=green><b>Transmogrified</b></color>");
+        }
+
         foreach (var s in stats)
         {
             var bonus = "";

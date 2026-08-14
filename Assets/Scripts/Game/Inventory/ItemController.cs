@@ -30,6 +30,11 @@ public class ItemController : MonoBehaviour
 
     public ItemCategory Category;
     public ItemType Type;
+
+    public Item Skin { get; set; }
+    public Item Item { get; private set; }
+    public ItemManager ItemManager { get; private set; }
+
     public ItemMaterial Material;
 
     public int MaleModelID;
@@ -44,6 +49,8 @@ public class ItemController : MonoBehaviour
     public bool IsGenericModel;
 
     [SerializeField] private float pickupRadius = 3f;
+
+    public bool UseMalePrefab { get; private set; }
 
     public GameInventoryItem Definition;
 
@@ -84,6 +91,8 @@ public class ItemController : MonoBehaviour
 
     public ItemController Create(ItemManager itemManager, GameInventoryItem item, bool useMalePrefab)
     {
+        this.ItemManager = itemManager;
+        UseMalePrefab = useMalePrefab;
         Definition = item;
 
         item.Controller = this;
@@ -92,6 +101,7 @@ public class ItemController : MonoBehaviour
 
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;
+        Item = item.Item;
 
         Id = item.InventoryItem.Id;
         ItemId = item.ItemId;
@@ -116,9 +126,45 @@ public class ItemController : MonoBehaviour
 
         Category = item.Item.Category;
         Type = item.Item.Type;
-        Material = item.Item.Material;
 
-        var indices = itemManager.GetModelIndices(ItemId);
+        this.Skin = itemManager.Get(item.TransmogrificationId);
+        if (Skin != null)
+        {
+            SetItemAppearance(itemManager, useMalePrefab, Skin);
+        }
+        else
+        {
+            SetItemAppearance(itemManager, useMalePrefab, Item);
+        }
+
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
+
+        return this;
+    }
+
+    public void UpdateAppearance()
+    {
+        if (ItemManager == null)
+        {
+            return;
+        }
+
+        if (Skin != null)
+        {
+            SetItemAppearance(ItemManager, UseMalePrefab, Skin);
+        }
+        else if (Item != null)
+        {
+            SetItemAppearance(ItemManager, UseMalePrefab, Item);
+        }
+    }
+
+    private void SetItemAppearance(ItemManager itemManager, bool useMalePrefab, Item item)
+    {
+        var indices = itemManager.GetModelIndices(item.Id);
+
+        Material = item.Material;
 
         MaleModelID = indices.Item1.Item1;
         MaleAdditionalIndex = indices.Item1.Item2;
@@ -126,46 +172,10 @@ public class ItemController : MonoBehaviour
         FemaleModelID = indices.Item2.Item1;
         FemaleAdditionalIndex = indices.Item2.Item2;
 
-        //if (!string.IsNullOrEmpty(item.Item.FemaleModelId))
-        //{
-        //    if (item.Item.FemaleModelId.Contains(","))
-        //    {
-        //        var indices = item.Item.FemaleModelId.Split(',');
-        //        FemaleModelID = int.Parse(indices[0]);
-        //        MaleAdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
-        //    }
-        //    else
-        //    {
-        //        FemaleModelID = int.Parse(item.Item.FemaleModelId);
-        //    }
-        //}
-        //else
-        //{
-        //    FemaleModelID = -1;
-        //}
-
-        //if (!string.IsNullOrEmpty(item.Item.MaleModelId))
-        //{
-        //    if (item.Item.MaleModelId.Contains(","))
-        //    {
-        //        var indices = item.Item.MaleModelId.Split(',');
-        //        MaleModelID = int.Parse(indices[0]);
-        //        FemaleAdditionalIndex = indices.Skip(1).Select(int.Parse).ToArray();
-        //    }
-        //    else
-        //    {
-        //        MaleModelID = int.Parse(item.Item.MaleModelId);
-        //    }
-        //}
-        //else
-        //{
-        //    MaleModelID = -1;
-        //}
-
-        GenericPrefabPath = item.Item.GenericPrefab;
-        MalePrefabPath = item.Item.MalePrefab;
-        FemalePrefabPath = item.Item.FemalePrefab;
-        IsGenericModel = item.Item.IsGenericModel || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
+        GenericPrefabPath = item.GenericPrefab;
+        MalePrefabPath = item.MalePrefab;
+        FemalePrefabPath = item.FemalePrefab;
+        IsGenericModel = item.IsGenericModel || Category == ItemCategory.Pet || !string.IsNullOrEmpty(GenericPrefabPath);
 
         if (!prefab)
         {
@@ -177,12 +187,12 @@ public class ItemController : MonoBehaviour
 
             if (string.IsNullOrEmpty(path))
             {
-                return this;
+                return;
             }
 
             if (!itemManager.TryGetPrefab(path, out var prefab))
             {
-                return this;
+                return;
             }
 
             if (prefab)
@@ -194,13 +204,15 @@ public class ItemController : MonoBehaviour
                 Debug.LogError("Failed to load prefab: " + path);
             }
         }
-
-        transform.localPosition = Vector3.zero;
-        transform.localRotation = Quaternion.identity;
-
-        return this;
     }
-
+    public void CleanupModel()
+    {
+        if (model != null)
+        {
+            GameObject.Destroy(model);
+            model = null;
+        }
+    }
     private void OnTriggerEnter(Collider other)
     {
         if (!pickable)

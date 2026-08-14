@@ -83,6 +83,11 @@ public class TwitchEventManager : MonoBehaviour
 
     private void AnnounceExpMultiplierEnding(float secondsLeft)
     {
+        if (gameManager.HasMessageFilter("ExpMultiplierExpire"))
+        {
+            return;
+        }
+
         var timeLeft = TimeSpan.FromSeconds(secondsLeft);
         var minutesStr = timeLeft.Minutes > 0 ? timeLeft.Minutes + " mins " : "";
         var secondsStr = timeLeft.Seconds > 0 ? timeLeft.Seconds + " seconds" : "";

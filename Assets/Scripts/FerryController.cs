@@ -44,7 +44,7 @@ public class FerryController : MonoBehaviour
     public IslandController Island => island;
     public int PathIndex => pathSelector.PathIndex;
     public float CaptainSpeedAdjustment { get; private set; }
-    
+
     public PlayerController Captain { get; private set; }
 
 
@@ -71,9 +71,9 @@ public class FerryController : MonoBehaviour
         if (PathIndex == 1) return "Ironhill";
         if (PathIndex == 2) return "Kyo";
         if (PathIndex == 3) return "Heim";
-        if (PathIndex == 5) return "Atria";
-        if (PathIndex == 6) return "Eldara";
-        if (PathIndex == 7) return "Home";
+        if (PathIndex == 4) return "Atria";
+        if (PathIndex == 5) return "Eldara";
+        if (PathIndex == 6) return "Home";
         return null;
     }
 
@@ -204,13 +204,13 @@ public class FerryController : MonoBehaviour
 
         if (!isVisible) return;
 
-        if (Captain && playerPositions[0].childCount == 0)
+        if ((!Captain && CaptainSpeedAdjustment > 0) ||
+            Captain && playerPositions[0].childCount == 0)
         {
             SetCaptain(null);
         }
 
         // don't use it right now.
-        return;
 
         //try
         //{
@@ -303,6 +303,7 @@ public class FerryController : MonoBehaviour
 
     internal void SetCaptain(PlayerController newCaptain)
     {
+        var prevSpeedAdjustment = CaptainSpeedAdjustment;
         if (newCaptain != null)
         {
             CaptainSpeedAdjustment = newCaptain.Stats.Sailing.MaxLevel;
@@ -313,6 +314,11 @@ public class FerryController : MonoBehaviour
         }
 
         this.Captain = newCaptain;
+
+        if (prevSpeedAdjustment != CaptainSpeedAdjustment)
+        {
+            pathSelector.UpdateFerrySpeed();
+        }
     }
 
     internal void ApplyFerryBoost(CharacterStatusEffect effect)
@@ -320,6 +326,7 @@ public class FerryController : MonoBehaviour
         this.IsFerryBoostActive = true;
         ferryBoostDuration = effect.Duration;
         ferryBoostEffect = effect.Amount;
+        pathSelector.UpdateFerrySpeed();
     }
 
     internal float GetFerryBoostEffect()

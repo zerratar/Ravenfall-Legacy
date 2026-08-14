@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using RavenNest.Models;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 public class Dps : ChatBotCommandHandler

@@ -3,6 +3,7 @@ using RavenNest.Models;
 using Shinobytes.Linq;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -66,7 +67,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     public int Counter => dungeonIndex;
 
-    private Queue<Func<Task>> rewardQueue = new Queue<Func<Task>>();
+    private ConcurrentQueue<Func<Task>> rewardQueue = new ConcurrentQueue<Func<Task>>();
 
     public bool HasBeenAnnounced { get; private set; }
 
@@ -402,6 +403,8 @@ public class DungeonManager : MonoBehaviour, IEvent
 
                 SelectRandomDungeon();
 
+                var activeType = Dungeon.ActiveDungeonType;
+
                 if (SpawnDungeonBoss())
                 {
                     Shinobytes.Debug.Log($"Dungeon #{(dungeonIndex + 1)} has been activated: " + Dungeon.Name);
@@ -463,9 +466,9 @@ public class DungeonManager : MonoBehaviour, IEvent
         var autoJoinCost = gameManager.SessionSettings.AutoJoinDungeonCost;
         foreach (var player in gameManager.Players.GetAllPlayers())
         {
-            if (player.IsBot || 
-                CanJoin(player) != DungeonJoinResult.CanJoin || 
-                Initiator == player || 
+            if (player.IsBot ||
+                CanJoin(player) != DungeonJoinResult.CanJoin ||
+                Initiator == player ||
                 player.dungeonHandler.AutoJoinCounter <= 0 ||
                 player.Resources.Coins < autoJoinCost)
             {
@@ -633,7 +636,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         // 1. show sad UI
         ResetDungeon();
 
-        if (notifyChat)
+        if (notifyChat && !gameManager.HasMessageFilter("DungeonResult"))
         {
             gameManager.RavenBot.Announce("The dungeon has ended without any surviving players.");
         }
@@ -667,11 +670,12 @@ public class DungeonManager : MonoBehaviour, IEvent
                 return false;
             }
 
+            var config = Dungeon.ActiveDungeonType;
             Boss.Create(
-                lowestStats * combatStatsScale * Dungeon.BossCombatScale,
-                highestStats * combatStatsScale * Dungeon.BossCombatScale,
-                rngLowEq * equipmentStatsScale * Dungeon.BossCombatScale,
-                rngHighEq * equipmentStatsScale * Dungeon.BossCombatScale,
+                lowestStats * combatStatsScale * config.BossCombatScale,
+                highestStats * combatStatsScale * config.BossCombatScale,
+                rngLowEq * equipmentStatsScale * config.BossCombatScale,
+                rngHighEq * equipmentStatsScale * config.BossCombatScale,
                 GetBossHealthScale());
 
             return true;
@@ -706,11 +710,12 @@ public class DungeonManager : MonoBehaviour, IEvent
 
             var avgDefense = joinedPlayers.Sum(x => x.Stats.Defense.Level) / joinedPlayers.Count;
 
+            var config = Dungeon.ActiveDungeonType;
             foreach (var enemy in enemies)
             {
                 var starting = lowestStats;
                 var high = lowestStats + highestStats;
-                enemy.Stats = Skills.Max(starting, Skills.Lerp(starting, high, lerpAmount) * mobsCombatStatsScale * Dungeon.MobsDifficultyScale);
+                enemy.Stats = Skills.Max(starting, Skills.Lerp(starting, high, lerpAmount) * mobsCombatStatsScale * config.MobsDifficultyScale);
 
                 // ugly hax, but will at least make enemies possible to kill.
                 if (enemy.Stats.Defense.CurrentValue > avgDefense)
@@ -735,11 +740,12 @@ public class DungeonManager : MonoBehaviour, IEvent
             var rngLowEq = joinedPlayers.Min(x => x.EquipmentStats);
             var rngHighEq = joinedPlayers.Max(x => x.EquipmentStats);
 
+            var config = Dungeon.ActiveDungeonType;
             Boss.SetStats(
-                lowestStats * combatStatsScale * Dungeon.BossCombatScale,
-                highestStats * combatStatsScale * Dungeon.BossCombatScale,
-                rngLowEq * equipmentStatsScale * Dungeon.BossCombatScale,
-                rngHighEq * equipmentStatsScale * Dungeon.BossCombatScale,
+                lowestStats * combatStatsScale * config.BossCombatScale,
+                highestStats * combatStatsScale * config.BossCombatScale,
+                rngLowEq * equipmentStatsScale * config.BossCombatScale,
+                rngHighEq * equipmentStatsScale * config.BossCombatScale,
                 GetBossHealthScale());
         }
     }
@@ -749,7 +755,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         lock (mutex)
         {
             var playerCount = Mathf.Max(MinPlayerCountForHealthScaling, joinedPlayers.Count);
-            return healthScale * (playerCount / (float)MinPlayerCountForHealthScaling) * Dungeon.BossHealthScale;
+            var config = Dungeon.ActiveDungeonType;
+            return healthScale * (playerCount / (float)MinPlayerCountForHealthScaling) * config.BossHealthScale;
         }
     }
     private void RewardPlayers()
@@ -779,7 +786,8 @@ public class DungeonManager : MonoBehaviour, IEvent
     public async void RewardItemDrops(IReadOnlyList<PlayerController> joinedPlayers)
     {
         var playersToBeRewarded = joinedPlayers.Select(x => x.Id).ToArray();
-        await RewardPlayersAsync(Dungeon.Tier, playersToBeRewarded);
+        var config = Dungeon.ActiveDungeonType;
+        await RewardPlayersAsync(config.Tier, playersToBeRewarded);
     }
 
     public async Task RewardPlayersAsync(DungeonTier tier, Guid[] playersToBeRewarded, int retryCount = 0)
@@ -818,7 +826,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             // it could be that we are offline, or temporary issue saving. Lets enqueue it for later.
             rewardQueue.Enqueue(() => RewardPlayersAsync(tier, playersToBeRewarded, retryCount + 1));
-            if (retryCount == 0)
+            if (retryCount == 0 && !gameManager.HasMessageFilter("DungeonResult"))
             {
                 gameManager.RavenBot.Announce("Victorious!! Dungeon boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
             }
@@ -832,13 +840,21 @@ public class DungeonManager : MonoBehaviour, IEvent
     {
         var result = gameManager.AddItems(rewards, dungeonIndex: dungeonIndex);
 
-        if (result.Count > 0)
+        if (!gameManager.HasMessageFilter("DungeonResult"))
         {
-            gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain and yielded " + result.Count + " item treasures!");
+            if (result.Count > 0)
+            {
+                gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain and yielded " + result.Count + " item treasures!");
+            }
+            else
+            {
+                gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain but did not yield any treasure.");
+            }
         }
-        else
+
+        if (gameManager.HasMessageFilter("ItemDrop"))
         {
-            gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain but did not yield any treasure.");
+            return;
         }
 
         for (int i = 0; i < result.Messages.Count; i++)
@@ -1006,7 +1022,8 @@ public class DungeonManager : MonoBehaviour, IEvent
             Boss.name = Utility.AddSpacesToSentence(type);
         }
 
-        if (currentDungeon.Tier == DungeonTier.Dynamic)
+        var config = Dungeon.ActiveDungeonType;
+        if (config.Tier == DungeonTier.Dynamic)
         {
             if (bossMesh)
             {
@@ -1018,6 +1035,11 @@ public class DungeonManager : MonoBehaviour, IEvent
             }
 
             SpawnEnemies();
+        }
+
+        if (string.IsNullOrEmpty(currentDungeon.Name) && bossMesh)
+        {
+            currentDungeon.Name = DungeonNameGenerator.Generate(Boss.name);
         }
 
         // 1. announce dungeon event
@@ -1047,7 +1069,9 @@ public class DungeonManager : MonoBehaviour, IEvent
             throw new Exception("Unable to select a dungeon as no dungeon could be found.");
         }
 
-        currentDungeon = dungeons.Weighted(x => x.SpawnRate);
+        currentDungeon = dungeons[0];
+        var dungeonType = currentDungeon.DungeonTypes.Weighted(x => x.SpawnRate);
+        currentDungeon.ActiveDungeonType = dungeonType;
         currentDungeon.gameObject.SetActive(true);
         currentDungeon.EnableContainer();
         SpawnEnemies();
@@ -1149,7 +1173,7 @@ public class DungeonNameGenerator
         // For nostalgia!
         if (UnityEngine.Random.value < 0.1f)
         {
-            return "Luna's Tickle Basement";
+            return "Lunas Tickle Basement";
         }
 
         return string.Format(nameFormats.Random(), types.Random(), elements.Random(), bossName);

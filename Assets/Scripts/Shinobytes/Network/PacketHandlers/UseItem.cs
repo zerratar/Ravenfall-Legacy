@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using RavenNest.Models;
 
 public class UseItem : ChatBotCommandHandler<string>
@@ -22,6 +23,49 @@ public class UseItem : ChatBotCommandHandler<string>
         {
             client.SendReply(gm, Localization.MSG_ITEM_USE_MISSING_ARGS);
             return;
+        }
+
+        if (inputQuery.Contains("scroll", StringComparison.OrdinalIgnoreCase))
+        {
+            if (inputQuery.Contains("exp", StringComparison.OrdinalIgnoreCase))
+            {
+                // redirect to UseExpMultiplierScroll instead
+
+                // try and get a number out of all parts of the string
+                var parts = inputQuery.Split(' ');
+                if (parts.Length > 2)
+                {
+                    var useCount =
+                        parts.Any(parts => parts.Contains("max", StringComparison.OrdinalIgnoreCase) || 
+                        parts.Contains("all", StringComparison.OrdinalIgnoreCase)) ? 100 : 0;
+
+                    if (useCount == 0)
+                    {
+                        parts
+                            .Select(x => int.TryParse(x, out var result) ? result : 0)
+                            .FirstOrDefault(x => x > 0);
+                    }
+
+                    new UseExpMultiplierScroll(Game, Server, PlayerManager).Handle(useCount, gm, client);
+                    return;
+                }
+                new UseExpMultiplierScroll(Game, Server, PlayerManager).Handle(1, gm, client);
+                return;
+            }
+
+            if (inputQuery.Contains("raid", StringComparison.OrdinalIgnoreCase))
+            {
+                // redirect to UseExpMultiplierScroll instead
+                new RaidForce(Game, Server, PlayerManager).Handle(gm, client);
+                return;
+            }
+
+            if (inputQuery.Contains("dungeon", StringComparison.OrdinalIgnoreCase))
+            {
+                // redirect to UseExpMultiplierScroll instead
+                new DungeonForce(Game, Server, PlayerManager).Handle(gm, client);
+                return;
+            }
         }
 
         var ioc = Game.gameObject.GetComponent<IoCContainer>();

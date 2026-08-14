@@ -158,9 +158,18 @@ namespace Assets.Scripts
         {
             try
             {
+                if (Ravenfall.isBatchMode)
+                {
+                    Shinobytes.Debug.Log("Loading player state data file...");
+                }
+
                 var expiryTime = SettingsMenuView.GetPlayerCacheExpiryTime();
                 if (expiryTime == TimeSpan.Zero)
                 {
+                    if (Ravenfall.isBatchMode)
+                    {
+                        Shinobytes.Debug.Log("No players to restore.");
+                    }
                     return LoadStateResult.NoPlayersRestored;
                 }
 
@@ -182,13 +191,17 @@ namespace Assets.Scripts
                     Shinobytes.Debug.LogWarning("State Cache File has expired and will not be loaded.");
                     return LoadStateResult.Expired;
                 }
+
+                if (Ravenfall.isBatchMode)
+                {
+                    Shinobytes.Debug.Log(state.Players.Count + " players will be restored.");
+                }
             }
             catch (System.Exception exc)
             {
                 Shinobytes.Debug.LogError("Failed to load player state: " + exc.Message);
                 return LoadStateResult.Error;
             }
-
             return LoadStateResult.PlayersRestored;
         }
 

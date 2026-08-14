@@ -29,7 +29,7 @@ public class SendItem : ChatBotCommandHandler<string>
         inputQuery = inputQuery?.Trim();
         if (string.IsNullOrEmpty(inputQuery))
         {
-            client.SendReply(player, Localization.MSG_SEND_ITEM_NOT_FOUND, inputQuery);
+            //client.SendReply(player, Localization.MSG_SEND_ITEM_NOT_FOUND, inputQuery);
             return;
         }
 

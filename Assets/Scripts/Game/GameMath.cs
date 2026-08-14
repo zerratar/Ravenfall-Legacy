@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.UIElements.Experimental;
 using Skill = RavenNest.Models.Skill;
 public static class GameMath
 {
@@ -310,6 +312,28 @@ public static class GameMath
         }
     }
 
+    public static Skill GetHouseSkillType(this TownHouseSlotType type)
+    {
+        switch (type)
+        {
+            case TownHouseSlotType.Woodcutting: return RavenNest.Models.Skill.Woodcutting;
+            case TownHouseSlotType.Mining: return RavenNest.Models.Skill.Mining;
+            case TownHouseSlotType.Farming: return RavenNest.Models.Skill.Farming;
+            case TownHouseSlotType.Crafting: return RavenNest.Models.Skill.Crafting;
+            case TownHouseSlotType.Cooking: return RavenNest.Models.Skill.Cooking;
+            case TownHouseSlotType.Slayer: return RavenNest.Models.Skill.Slayer;
+            case TownHouseSlotType.Sailing: return RavenNest.Models.Skill.Sailing;
+            case TownHouseSlotType.Fishing: return RavenNest.Models.Skill.Fishing;
+            case TownHouseSlotType.Melee: return RavenNest.Models.Skill.Health;
+            case TownHouseSlotType.Healing: return RavenNest.Models.Skill.Healing;
+            case TownHouseSlotType.Magic: return RavenNest.Models.Skill.Magic;
+            case TownHouseSlotType.Ranged: return RavenNest.Models.Skill.Ranged;
+            case TownHouseSlotType.Gathering: return RavenNest.Models.Skill.Gathering;
+            case TownHouseSlotType.Alchemy: return RavenNest.Models.Skill.Alchemy;
+            default: return RavenNest.Models.Skill.Mining;
+        }
+    }
+
     public static TownHouseSlotType GetHouseTypeBySkill(this RavenNest.Models.Skill skill)
     {
         switch (skill)
@@ -328,6 +352,60 @@ public static class GameMath
             case RavenNest.Models.Skill.Ranged: return TownHouseSlotType.Ranged;
             case RavenNest.Models.Skill.Magic: return TownHouseSlotType.Magic;
             default: return TownHouseSlotType.Melee;
+        }
+    }
+
+    public static string GetName(this RavenNest.Models.Skill skill)
+    {
+        switch (skill)
+        {
+            case Skill.Attack: return "Attack";
+            case Skill.Defense: return "Defense";
+            case Skill.Strength: return "Strength";
+            case Skill.Health: return "Health";
+            case Skill.Woodcutting: return "Woodcutting";
+            case Skill.Fishing: return "Fishing";
+            case Skill.Mining: return "Mining";
+            case Skill.Crafting: return "Crafting";
+            case Skill.Cooking: return "Cooking";
+            case Skill.Farming: return "Farming";
+            case Skill.Slayer: return "Slayer";
+            case Skill.Magic: return "Magic";
+            case Skill.Ranged: return "Ranged";
+            case Skill.Sailing: return "Sailing";
+            case Skill.Healing: return "Healing";
+            case Skill.Gathering: return "Gathering";
+            case Skill.Alchemy: return "Alchemy";
+            case Skill.Melee: return "Melee";
+            case Skill.None: return "None";
+            default: return "All";
+        }
+    }
+
+    public static string GetShortName(this RavenNest.Models.Skill skill)
+    {
+        switch (skill)
+        {
+            case Skill.Attack: return "Atk";
+            case Skill.Defense: return "Def";
+            case Skill.Strength: return "Str";
+            case Skill.Health: return "All";
+            case Skill.Woodcutting: return "Woo";
+            case Skill.Fishing: return "Fis";
+            case Skill.Mining: return "Min";
+            case Skill.Crafting: return "Cra";
+            case Skill.Cooking: return "Coo";
+            case Skill.Farming: return "Far";
+            case Skill.Slayer: return "Slay";
+            case Skill.Magic: return "Mag";
+            case Skill.Ranged: return "Ran";
+            case Skill.Sailing: return "Sail";
+            case Skill.Healing: return "Heal";
+            case Skill.Gathering: return "Gat";
+            case Skill.Alchemy: return "Alc";
+            case Skill.Melee: return "All";
+            case Skill.None: return "None";
+            default: return "All";
         }
     }
 
@@ -610,7 +688,6 @@ public static class GameMath
         {
             switch (skill)
             {
-
                 case RavenNest.Models.Skill.Farming:
                 case RavenNest.Models.Skill.Crafting:
                 case RavenNest.Models.Skill.Cooking:
@@ -625,13 +702,13 @@ public static class GameMath
                 case Skill.Mining:
                     return 0.5;
 
-                case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 10:
+                case (Skill.Health or Skill.Melee or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 10:
                     return 0.25;
 
-                case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 100:
+                case (Skill.Health or Skill.Melee or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 100:
                     return 0.75;
 
-                case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea >= 100:
+                case (Skill.Health or Skill.Melee or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea >= 100:
                     return 1.25;
 
                 case Skill.Healing: return 0.5d;

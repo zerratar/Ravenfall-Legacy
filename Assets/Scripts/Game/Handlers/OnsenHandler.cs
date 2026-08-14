@@ -7,7 +7,7 @@ public class OnsenHandler : MonoBehaviour
 
     private OnsenController activeOnsen;
     private OnsenPositionType positionType;
-    private int onsenParentID;
+    private EntityId onsenParentID;
 
     public bool InOnsen;
     public Vector3 EntryPoint => activeOnsen.EntryPoint;
@@ -109,7 +109,7 @@ public class OnsenHandler : MonoBehaviour
             return;
         }
 
-        if (parent.GetInstanceID() != onsenParentID)
+        if (parent.GetEntityId() != onsenParentID)
         {
             this.InOnsen = false;
             return;
@@ -193,7 +193,7 @@ public class OnsenHandler : MonoBehaviour
                 break;
         }
 
-        this.onsenParentID = target.GetInstanceID();
+        this.onsenParentID = target.GetEntityId();
 
         InOnsen = true;
         onsen.UpdateDetailsLabel();
@@ -205,7 +205,7 @@ public class OnsenHandler : MonoBehaviour
         activeOnsen = null;
 
         player.Animations.ClearOnsenAnimations();
-        onsenParentID = -1;
+        onsenParentID = default;
 
         if (InOnsen)
         {

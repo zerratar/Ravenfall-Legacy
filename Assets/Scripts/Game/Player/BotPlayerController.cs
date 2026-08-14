@@ -169,7 +169,8 @@ public class BotPlayerController : MonoBehaviour
         if (skill == RavenNest.Models.Skill.Attack ||
             skill == RavenNest.Models.Skill.Defense ||
             skill == RavenNest.Models.Skill.Strength ||
-            skill == RavenNest.Models.Skill.Health)
+            skill == RavenNest.Models.Skill.Health ||
+            skill == RavenNest.Models.Skill.Melee)
             return 60f;
 
         if (skill == RavenNest.Models.Skill.Magic ||

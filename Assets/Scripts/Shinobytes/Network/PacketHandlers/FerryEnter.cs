@@ -37,8 +37,9 @@ public class FerryEnter : ChatBotCommandHandler
             return;
         }
 
-        player.ferryHandler.Embark();
         player.ClearTask();
-        client.SendReply(gm, Localization.MSG_FERRY_TRAIN_SAIL);
+        player.ferryHandler.Embark();
+        if (!Game.HasMessageFilter("TrainWarning"))
+            client.SendReply(gm, Localization.MSG_FERRY_TRAIN_SAIL);
     }
 }

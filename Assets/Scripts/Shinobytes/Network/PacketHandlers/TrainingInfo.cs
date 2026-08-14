@@ -25,7 +25,7 @@ public class TrainingInfo : ChatBotCommandHandler
         if (skill != null)
         {
             var skillName = skill.Name;
-            if (skill.Type == Skill.Health)
+            if (skill.Type == Skill.Health || skill.Type == Skill.Melee)
                 skillName = "All";
 
             if (!string.IsNullOrEmpty(skillName))
@@ -33,6 +33,12 @@ public class TrainingInfo : ChatBotCommandHandler
                 client.SendReply(gm, Localization.MSG_TRAINING, skillName);
                 return;
             }
+        }
+
+        if (player.ferryHandler.OnFerry && player.ferryHandler.Destination == null)
+        {
+            client.SendReply(gm, Localization.MSG_TRAINING_SAILING);
+            return;
         }
 
         client.SendReply(gm, Localization.MSG_TRAINING_NOTHING);

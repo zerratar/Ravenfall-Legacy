@@ -16,18 +16,44 @@ public class DungeonController : MonoBehaviour
     [SerializeField] private int itemRewardCount = 1;
     [SerializeField] private GameObject background;
 
-    public string Name;
+    [NonSerialized] public string Name;
+    //public int Level = 1;
+    //public DungeonTier Tier;
+    //public DungeonDifficulity Difficulity;
+    //[Range(0.01f, 1f)]
+    //public float SpawnRate = 0.5f;
+    //[Range(1f, 10f)] public float MobsDifficultyScale = 1f;
+    //[Range(1f, 10f)] public float BossCombatScale = 1f;
+    //[Range(1f, 10f)] public float BossHealthScale = 1f;
 
-    public int Level = 1;
-    public DungeonTier Tier;
-    public DungeonDifficulity Difficulity;
+    public DungeonType[] DungeonTypes = new DungeonType[2]
+    {
+        new DungeonType()
+        {
+            Name = "Lunas Tickle Basement",
+            Level = 1,
+            Tier = DungeonTier.Common,
+            Difficulity = DungeonDifficulity.Normal,
+            SpawnRate = 0.75f,
+            MobsDifficultyScale = 1f,
+            BossCombatScale = 1f,
+            BossHealthScale = 1f
+        },
 
-    [Range(0.01f, 1f)]
-    public float SpawnRate = 0.5f;
+        new DungeonType()
+        {
+            Name = "Heroic Lunas Tickle Basement",
+            Level = 10,
+            Tier = DungeonTier.Legendary,
+            Difficulity = DungeonDifficulity.Dynamic,
+            SpawnRate = 0.5f,
+            MobsDifficultyScale = 4f,
+            BossCombatScale = 2.5f,
+            BossHealthScale = 2.5f
+        }
+    };
 
-    [Range(1f, 10f)] public float MobsDifficultyScale = 1f;
-    [Range(1f, 10f)] public float BossCombatScale = 1f;
-    [Range(1f, 10f)] public float BossHealthScale = 1f;
+    [NonSerialized] public DungeonType ActiveDungeonType;
 
     private DungeonRoomController[] rooms;
     private DungeonRoomController currentRoom;
@@ -49,6 +75,7 @@ public class DungeonController : MonoBehaviour
     public bool HasStartingPoint => !!startingPoint;
     void Start()
     {
+        if (ActiveDungeonType == null) ActiveDungeonType = DungeonTypes[0];
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         if (!dungeonManager) dungeonManager = FindAnyObjectByType<DungeonManager>();
 
@@ -223,4 +250,20 @@ public class DungeonController : MonoBehaviour
         }
     }
 
+}
+
+[Serializable]
+public class DungeonType
+{
+    public string Name;
+    public int Level = 1;
+    public DungeonTier Tier;
+    public DungeonDifficulity Difficulity;
+
+    [Range(0.01f, 1f)]
+    public float SpawnRate = 0.5f;
+
+    [Range(1f, 10f)] public float MobsDifficultyScale = 1f;
+    [Range(1f, 10f)] public float BossCombatScale = 1f;
+    [Range(1f, 10f)] public float BossHealthScale = 1f;
 }

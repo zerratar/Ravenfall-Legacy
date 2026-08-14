@@ -22,13 +22,15 @@
 
         if (player.ferryHandler.Disembarking)
         {
-            client.SendReply(gm, Localization.MSG_DISEMBARK_ALREADY);
+            if (!Game.HasMessageFilter("Disembark"))
+                client.SendReply(gm, Localization.MSG_DISEMBARK_ALREADY);
             return;
         }
 
         if (!player.ferryHandler.Active)
         {
-            client.SendReply(gm, Localization.MSG_DISEMBARK_FAIL);
+            if (!Game.HasMessageFilter("Disembark"))
+                client.SendReply(gm, Localization.MSG_DISEMBARK_FAIL);
             return;
         }
 

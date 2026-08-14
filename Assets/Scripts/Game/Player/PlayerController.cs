@@ -1244,12 +1244,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                                 arg1 = ActiveSkill.ToString();
                             }
                         }
-
-                        GameManager.RavenBot.SendReply(this, msg, arg0, arg1);
+                        if (!GameManager.HasMessageFilter("TrainWarning"))
+                            GameManager.RavenBot.SendReply(this, msg, arg0, arg1);
                         return;
                     }
 
-                    GameManager.RavenBot.SendReply(this, Localization.CANT_TRAIN_HERE, type.ToString());
+                    if (!GameManager.HasMessageFilter("TrainWarning"))
+                        GameManager.RavenBot.SendReply(this, Localization.CANT_TRAIN_HERE, type.ToString());
 #if UNITY_EDITOR
                     Shinobytes.Debug.LogWarning($"{PlayerName}. No suitable chunk found of type '{type}'");
 #endif
@@ -1670,7 +1671,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             this.Bot = this.gameObject.GetComponent<BotPlayerController>() ?? this.gameObject.AddComponent<BotPlayerController>();
             this.Bot.playerController = this;
         }
-
+        Movement.Lock();
         Movement.SetAvoidancePriority(UnityEngine.Random.Range(1, 99));
 
         PatreonTier = player.PatreonTier;
@@ -1869,6 +1870,17 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         SetTask(task.ToString(), arg, silent);
     }
 
+    /// <summary>
+    /// Sets the current task for the player, determining the activity to perform and its associated parameters.
+    /// </summary>
+    /// <remarks>This method attempts to match the provided task name to a valid task. If the task name is
+    /// invalid, it uses a Levenshtein distance algorithm to suggest the closest matching task. If no valid match is
+    /// found or the match is too distant, the task is not set. Certain conditions, such as being in a duel, raid, or
+    /// dungeon, may restrict task changes.</remarks>
+    /// <param name="targetTaskName">The name of the task to set. This can be a valid task name or a close approximation.</param>
+    /// <param name="args">Optional arguments associated with the task. Defaults to <see langword="null"/> if not provided.</param>
+    /// <param name="silent">A value indicating whether to suppress feedback messages. If <see langword="true"/>, no messages will be sent to
+    /// the player for invalid tasks or suggestions.</param>
     public void SetTask(string targetTaskName, string args = null, bool silent = false)
     {
         if (string.IsNullOrEmpty(targetTaskName))
@@ -1991,7 +2003,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             }
         }
 
-        ActiveSkill = skill;
+        ActiveSkill = Skills.SkillTypeListIds.Contains((int)skill) ? skill : Skill.None;
         currentTask = type;
         CurrentTaskName = currentTask.ToString();
         SetTaskArgument(args);
@@ -2035,7 +2047,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     private DateTime? badIslandReportTime = null;
     [NonSerialized] public float LastExecutedTaskTime;
 
-    private void SetExpGainState(ExpGainState state)
+    private void SetExpGainState(ExpGainState state, SkillStat activeSkill)
     {
         if (state != CurrentExpGainState)
         {
@@ -2052,7 +2064,16 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             // 1. if player has not gained any exp due to level too high or too low for the past 5 minutes send a notification
             // 2. streamer can now use !sail <destination> <user> to send the player to the recommended island.
 
-            var activeSkill = GetActiveSkillStat();
+            //var activeSkill = GetActiveSkillStat();
+            if (activeSkill == null)
+            {
+                activeSkill = GetActiveSkillStat();
+            }
+            if (activeSkill == null)
+            {
+                return;
+            }
+
             var recommendedIsland = IslandManager.GetSuitableIsland(activeSkill.Level);
 
             if (recommendedIsland != this._island?.Island)
@@ -2169,9 +2190,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             Island.Statistics.FishCaught++;
 
-            AddExp(Skill.Fishing, GetExpFactor(out var state));
+            var factor = GetExpFactor(out var state);
+            SetExpGainState(state, Stats.Fishing);
+            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Farming.Level)
+                AddExp(Skill.Fishing, factor);
 
-            SetExpGainState(state);
             //var amount = fishingSpot.Resource * Mathf.FloorToInt(Stats.Fishing.CurrentValue / 10f);
             //Statistics.TotalFishCollected += (int)amount;
         }
@@ -2202,12 +2225,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             var factor = Chunk.CalculateExpFactor(this, out var state);
 
-            SetExpGainState(state);
+            SetExpGainState(state, Stats.Cooking);
 
-            if (factor > 0)
-            {
+            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Cooking.Level)
                 AddExp(Skill.Cooking, factor);//, craftingStation.GetExperience(this));
-            }
         }
 
         return true;
@@ -2238,7 +2259,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             var factor = Chunk.CalculateExpFactor(this, out var state);
 
-            SetExpGainState(state);
+            SetExpGainState(state, Stats.Alchemy);
 
             if (factor > 0)
             {
@@ -2272,9 +2293,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         {
             var factor = Chunk.CalculateExpFactor(this, out var state);
 
-            SetExpGainState(state);
+            SetExpGainState(state, Stats.Crafting);
 
-            AddExp(Skill.Crafting, factor);//, craftingStation.GetExperience(this));
+            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Crafting.Level)
+                AddExp(Skill.Crafting, factor);//, craftingStation.GetExperience(this));
         }
 
         return true;
@@ -2307,9 +2329,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
             var factor = Chunk.CalculateExpFactor(this, out var state);
 
-            SetExpGainState(state);
+            SetExpGainState(state, Stats.Mining);
 
-            AddExp(Skill.Mining, factor);
+            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Mining.Level)
+                AddExp(Skill.Mining, factor);
             //var amount = rock.Resource * Mathf.FloorToInt(Stats.Mining.CurrentValue / 10f);
             //Statistics.TotalOreCollected += (int)amount;
         }
@@ -2339,9 +2362,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
             var factor = Chunk.CalculateExpFactor(this, out var state);
 
-            SetExpGainState(state);
+            SetExpGainState(state, Stats.Farming);
 
-            AddExp(Skill.Farming, factor);
+            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Farming.Level)
+                AddExp(Skill.Farming, factor);
 
             //var amount = farm.Resource * Mathf.FloorToInt(Stats.Farming.MaxLevel / 10f);
             //Statistics.TotalWheatCollected += amount;
@@ -2542,7 +2566,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             var factor = (1 + (heal / maxHeal * 0.2)) *
                 ((raidHandler.InRaid || dungeonHandler.InDungeon) ? 1.0 : Chunk?.CalculateExpFactor(this, out state) ?? 1.0);
 
-            SetExpGainState(state);
+            SetExpGainState(state, Stats.Healing);
 
             if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Healing.Level)
                 AddExp(Skill.Healing, factor);
@@ -2606,7 +2630,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                     var state = ExpGainState.FullGain;
                     var factor = dungeonHandler.InDungeon ? 1d : Chunk?.CalculateExpFactor(player, out state) ?? 1d;
 
-                    SetExpGainState(state);
+                    player.SetExpGainState(state, null);
 
                     if (isMonster)
                     {
@@ -2627,81 +2651,99 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     private bool Gather(GatherController gather, float startTime)
     {
-        if (gather == null || Chunk == null || sessionStats == null || isDestroyed)
+        try
         {
-            Debug.LogWarning($"{name} unable to process gather, target or chunk is null or player has been destroyed.");
-            return true;
-        }
-
-        LastExecutedTaskTime = Time.time;
-        var delta = Time.time - startTime;
-        var actionTime = chompTreeAnimationTime / 2f;
-        if (delta < actionTime)
-            return false;
-
-        if (!gather.Gather(this))
-            return false;
-
-        sessionStats.IncrementGather();
-
-        if (Island)
-            Island.Statistics.ItemsGathered++;
-
-        foreach (var player in gather.Gatherers)
-        {
-            if (player == null || !player || player.isDestroyed)
+            if (gather == null || Chunk == null || sessionStats == null || isDestroyed)
             {
-                continue;
+                Debug.LogWarning($"{name} unable to process gather, target or chunk is null or player has been destroyed.");
+                return true;
             }
 
-            var factor = Chunk.CalculateExpFactor(this, out var state);
+            LastExecutedTaskTime = Time.time;
+            var delta = Time.time - startTime;
+            var actionTime = chompTreeAnimationTime / 2f;
+            if (delta < actionTime)
+                return false;
 
-            SetExpGainState(state);
+            if (!gather.Gather(this))
+                return false;
 
-            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Gathering.Level)
-                player.AddExp(Skill.Gathering, factor);
+            sessionStats.IncrementGather();
+
+            if (Island)
+                Island.Statistics.ItemsGathered++;
+
+            foreach (var player in gather.Gatherers)
+            {
+                if (player == null || !player || player.isDestroyed)
+                {
+                    continue;
+                }
+
+                var factor = Chunk.CalculateExpFactor(player, out var state);
+
+                player.SetExpGainState(state, player.Stats.Gathering);
+
+                if (player.AutoTrainTargetLevel <= 0 || player.AutoTrainTargetLevel > player.Stats.Gathering.Level)
+                    player.AddExp(Skill.Gathering, factor);
+            }
+
+            return true;
         }
-
-        return true;
+        catch (Exception exc)
+        {
+            var pos = gather.Position;
+            Shinobytes.Debug.LogError($"Unable to gather from {gather.name} at x{pos.x} y{pos.y} z{pos.z}: " + exc.Message);
+            return false;
+        }
     }
 
     public bool DamageTree(TreeController tree, float startTime)
     {
-        LastExecutedTaskTime = Time.time;
-        var delta = Time.time - startTime;
-        var actionTime = chompTreeAnimationTime / 2f;
-        if (delta < actionTime)
-            return false;
-
-        var damage = CalculateDamage(tree);
-        if (!tree.DoDamage(this, damage))
-            return true;
-
-        sessionStats.IncrementTreeCutDown();
-
-        if (Island)
-            Island.Statistics.TreesCutDown++;
-
-        // give all attackers exp for the kill, not just the one who gives the killing blow.
-        foreach (var player in tree.WoodCutters)
+        try
         {
-            if (player == null || !player || player.isDestroyed)
+            LastExecutedTaskTime = Time.time;
+            var delta = Time.time - startTime;
+            var actionTime = chompTreeAnimationTime / 2f;
+            if (delta < actionTime)
+                return false;
+
+            var damage = CalculateDamage(tree);
+            if (!tree.DoDamage(this, damage))
+                return true;
+
+            sessionStats.IncrementTreeCutDown();
+
+            if (Island)
+                Island.Statistics.TreesCutDown++;
+
+            // give all attackers exp for the kill, not just the one who gives the killing blow.
+            foreach (var player in tree.WoodCutters)
             {
-                continue;
+                if (player == null || !player || player.isDestroyed)
+                {
+                    continue;
+                }
+
+                //++player.Statistics.TotalTreesCutDown;
+
+                var factor = Chunk.CalculateExpFactor(player, out var state);
+
+                player.SetExpGainState(state, player.Stats.Woodcutting);
+
+                if (player.AutoTrainTargetLevel <= 0 || player.AutoTrainTargetLevel > player.Stats.Woodcutting.Level)
+                    player.AddExp(Skill.Woodcutting, factor);// tree.Experience);
+                                                             //var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
+                                                             //player.Statistics.TotalWoodCollected += amount;
             }
-
-            //++player.Statistics.TotalTreesCutDown;
-
-            var factor = Chunk.CalculateExpFactor(this, out var state);
-
-            SetExpGainState(state);
-
-            if (player.AutoTrainTargetLevel <= 0 || player.AutoTrainTargetLevel > player.Stats.Woodcutting.Level)
-                player.AddExp(Skill.Woodcutting, factor);// tree.Experience);
-            //var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
-            //player.Statistics.TotalWoodCollected += amount;
+            return true;
         }
-        return true;
+        catch (Exception exc)
+        {
+            var pos = tree.Position;
+            Shinobytes.Debug.LogError($"Unable to damage tree ({tree.name} at x{pos.x} y{pos.y} z{pos.z}): " + exc.Message);
+            return false;
+        }
     }
 
     #region Manage EXP/Resources
@@ -2779,7 +2821,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         // one skill first and then gain the rest super quickly. using avg will still
         // benefit the player but not as much that it can be abused.
         // It will be more beneficial if the player have similar level on each skill (ATK,DEF,STR)
-        int nextLevel = skill == Skill.Health
+        int nextLevel = skill == Skill.Health || skill == Skill.Melee
             ? ((int)((GetSkill(Skill.Attack).Level + GetSkill(Skill.Defense).Level + GetSkill(Skill.Strength).Level) / 3f)) + 1
             : GetSkill(skill).Level + 1;
 
@@ -2793,6 +2835,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         try
         {
             //exp *= GetExpMultiplier(skill);
+
+            if (factor == 0)
+            {
+                return;
+            }
 
             var stat = Stats.GetSkill(skill);
             if (stat == null)
@@ -2811,7 +2858,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 if (Stats.Health.AddExp(exp / 3d, out var hpLevels))
                     CelebrateSkillLevelUp(Skill.Health, hpLevels);
 
-                if (skill == Skill.Health)
+                if (skill == Skill.Health || skill == Skill.Melee)
                 {
                     var each = exp / 3d;
                     var left = 3d;
@@ -2844,7 +2891,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 }
             }
 
-            if (stat.Type == Skill.Slayer || stat.Type == Skill.Sailing || stat.Type == Skill.Health ||
+            if (stat.Type == Skill.Slayer || stat.Type == Skill.Sailing ||
+                stat.Type == Skill.Health || stat.Type == Skill.Melee ||
                 AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > stat.Level)
             {
                 if (stat.AddExp(exp, out var atkLvls))

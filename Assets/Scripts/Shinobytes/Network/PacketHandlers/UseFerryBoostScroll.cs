@@ -23,7 +23,10 @@ public class UseFerryBoostScroll : ChatBotCommandHandler
 
         try
         {
-            var ferryScroll = player.Inventory.GetInventoryItemsOfCategory(ItemCategory.Scroll).FirstOrDefault(x => x.Name.Contains("ferry", StringComparison.OrdinalIgnoreCase);
+            var ferryScroll = player.Inventory
+                .GetInventoryItemsOfCategory(ItemCategory.Scroll)
+                .FirstOrDefault(x => x.Name.Contains("ferry", StringComparison.OrdinalIgnoreCase));
+
             if (ferryScroll == null)
             {
                 client.SendReply(gm, "You don't have any ferry boost scrolls.");

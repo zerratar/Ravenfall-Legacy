@@ -8,16 +8,20 @@ using UnityEngine;
 
 public class GameInventoryItem
 {
-    public RavenNest.Models.Item Item { get; }
+    public Item Item { get; }
+    public Item SkinItem { get; set; }
     public IReadOnlyList<ItemEnchantment> Enchantments { get; set; }
+    public Guid? TransmogrificationId { get; set; }
     public InventoryItem InventoryItem { get; set; }
     public PlayerController Player { get; }
-    public GameInventoryItem(PlayerController owner, InventoryItem instance, Item item)
+    public GameInventoryItem(PlayerController owner, InventoryItem instance, Item item, Item? skinItem = null)
     {
         this.Player = owner;
         this.InventoryItem = instance;
         this.Item = item;
+        this.SkinItem = skinItem;
         this.Enchantments = Inventory.GetItemEnchantments(instance.Enchantment);
+        this.TransmogrificationId = instance.TransmogrificationId;
 
         Soulbound = instance.Soulbound || item.Soulbound;
         RequiredDefenseLevel = item.RequiredDefenseLevel;
@@ -54,7 +58,9 @@ public class GameInventoryItem
             Type == ItemType.Mining ||
             Type == ItemType.Farming ||
             Type == ItemType.Cooking ||
-            Type == ItemType.Crafting)
+            Type == ItemType.Crafting ||
+            Category == ItemCategory.LootBox ||
+            Category == ItemCategory.QuestItem)
             return false;
 
         return Player.Stats.Defense.Level >= RequiredDefenseLevel
@@ -83,6 +89,13 @@ public class GameInventoryItem
         set => InventoryItem.Amount = value;
     }
     public ItemController Controller { get; set; }
+
+    internal void UpdateAppearance()
+    {
+        Controller.CleanupModel();
+        this.Controller.Skin = SkinItem;
+        this.Controller.UpdateAppearance();
+    }
     //public string Tag { get; set; }
     //public double Amount { get; set; }
 }
@@ -211,7 +224,8 @@ public class Inventory : MonoBehaviour
                 var loadedItem = itemManager.Get(item.ItemId);
                 if (loadedItem == null) continue;
 
-                var gameItem = new GameInventoryItem(this.player, item, loadedItem);
+                var skin = itemManager.Get(item.TransmogrificationId);
+                var gameItem = new GameInventoryItem(this.player, item, loadedItem, skin);
 
                 if (item.Equipped)
                 {
@@ -402,7 +416,7 @@ public class Inventory : MonoBehaviour
         }
     }
 
-    public void UpdateInventoryItem(Guid inventoryItemId, int newAmount)
+    public void UpdateInventoryItem(Guid inventoryItemId, long newAmount)
     {
         lock (mutex)
         {
@@ -488,6 +502,7 @@ public class Inventory : MonoBehaviour
 
     private GameInventoryItem CreateInstance(InventoryItem item, long amount)
     {
+        var skin = itemManager.Get(item.TransmogrificationId);
         var instance = new GameInventoryItem(this.player, new InventoryItem
         {
             Amount = amount,
@@ -499,7 +514,9 @@ public class Inventory : MonoBehaviour
             Name = item.Name,
             Flags = item.Flags,
             Soulbound = item.Soulbound,
-        }, itemManager.Get(item.ItemId));
+        }, itemManager.Get(item.ItemId), skin);
+
+
 
         backpack.Add(instance);
         return instance;
@@ -546,6 +563,7 @@ public class Inventory : MonoBehaviour
                 return existing;
             }
 
+            var skin = itemManager.Get(item.TransmogrificationId);
             var instance = new GameInventoryItem(this.player, new InventoryItem
             {
                 Amount = item.Amount,
@@ -557,7 +575,7 @@ public class Inventory : MonoBehaviour
                 Name = item.Name,
                 Flags = item.Flags,
                 Soulbound = item.Soulbound,
-            }, itemManager.Get(item.ItemId));
+            }, itemManager.Get(item.ItemId), skin);
 
             backpack.Add(instance);
             return instance;
@@ -581,6 +599,8 @@ public class Inventory : MonoBehaviour
             else
             {
                 var ii = item.InventoryItem;
+
+                var skin = itemManager.Get(item.TransmogrificationId);
                 var instance = new GameInventoryItem(this.player, new InventoryItem
                 {
                     Amount = (long)amount,
@@ -592,7 +612,7 @@ public class Inventory : MonoBehaviour
                     Name = ii.Name,
                     Flags = ii.Flags,
                     Soulbound = ii.Soulbound,
-                }, item.Item);
+                }, item.Item, skin);
 
                 backpack.Add(instance);
             }
@@ -799,8 +819,8 @@ public class Inventory : MonoBehaviour
                 RemoveByItemId(item.Item.Id, 1);
             }
 
-            var newItemIsGeneric = string.IsNullOrEmpty(item.Item.GenericPrefab);
-            var oldItemWasGeneric = equip != null && string.IsNullOrEmpty(equip.Item.GenericPrefab);
+            var newItemIsGeneric = !string.IsNullOrEmpty(item.Item.GenericPrefab);
+            var oldItemWasGeneric = equip != null && !string.IsNullOrEmpty(equip.Item.GenericPrefab);
 
             if (updateAppearance && (!newItemIsGeneric || (equip != null && !oldItemWasGeneric)))
             {
@@ -877,6 +897,15 @@ public class Inventory : MonoBehaviour
         lock (mutex)
             return backpack.Concat(equipped);
     }
+
+    public GameInventoryItem GetEquipped(Guid inventoryItemId)
+    {
+        lock (mutex)
+        {
+            return equipped.FirstOrDefault(x => x.InventoryItem.Id == inventoryItemId);
+        }
+    }
+
     public List<GameInventoryItem> GetBackpackItems() { lock (mutex) return backpack; }
     public List<GameInventoryItem> GetEquippedItems() { lock (mutex) return equipped; }
 
@@ -1153,6 +1182,7 @@ public class Inventory : MonoBehaviour
                 {
 
                     var itemValue = GetItemValue(item);
+
                     var canEquip = CanEquipItem(item);
 
                     //if (equippedItem != null && equippedItem.Item.Name == item.Item.Name)
@@ -1225,8 +1255,14 @@ public class Inventory : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetItemValue(GameInventoryItem item)
     {
-        return item.Item.GetTotalStats();
+        if (item.Enchantments == null || item.Enchantments.Count == 0)
+        {
+            item.Item.GetTotalStats();
+        }
+
+        return item.GetItemStats().Sum(x => (int)x);
     }
+
     public void UpdateAppearance()
     {
         equipment.EquipAll(equipped);
@@ -1249,6 +1285,106 @@ public class Inventory : MonoBehaviour
     {
         return type != ItemType.TwoHandedBow && type != ItemType.TwoHandedStaff;
     }
+
+    internal void SyncItems(ItemSync data)
+    {
+        lock (mutex)
+        {
+            // 1. Snapshot equipped item IDs before sync
+            var equippedBefore = new HashSet<Guid>(equipped.Select(x => x.InstanceId));
+            bool equipmentChanged = false;
+
+            // 2. Process only items present in the update
+            foreach (var i in data.Items)
+            {
+                // Remove if amount is 0
+                if (i.Amount <= 0)
+                {
+                    var equippedStack = GetEquipped(i.Id);
+                    if (equippedStack != null)
+                    {
+                        Unequip(equippedStack.InstanceId, true, false);
+                        equipmentChanged = true;
+                        continue;
+                    }
+                    var existingStack = GetInventoryItem(i.Id);
+                    if (existingStack != null)
+                    {
+                        Remove(existingStack, existingStack.Amount);
+                    }
+                    continue;
+                }
+
+                // Find existing item (equipped or backpack)
+                var localItem = GetAllItems().FirstOrDefault(x => x.InstanceId == i.Id);
+
+                if (localItem == null)
+                {
+                    var itemDef = itemManager.Get(i.ItemId);
+                    var skin = itemManager.Get(i.TransmogrificationId);
+                    var newItem = new GameInventoryItem(this.player, i, itemDef, skin);
+
+                    if (i.Equipped)
+                    {
+                        Equip(newItem, false);
+                        equipmentChanged = true;
+                    }
+                    else
+                    {
+                        backpack.Add(newItem);
+                    }
+                    continue;
+                }
+
+                // Update properties
+                localItem.InventoryItem = i;
+                localItem.Enchantments = GetItemEnchantments(i.Enchantment);
+                localItem.Soulbound = i.Soulbound;
+                localItem.Name = i.Name ?? localItem.Item.Name;
+                localItem.Amount = i.Amount;
+
+                var oldTransmogrificationId = localItem.TransmogrificationId;
+
+                localItem.TransmogrificationId = i.TransmogrificationId;
+                localItem.SkinItem = gameManager.Items.Get(i.TransmogrificationId);
+                if (oldTransmogrificationId != localItem.TransmogrificationId)
+                {
+                    equipmentChanged = true;
+                    localItem.UpdateAppearance();
+                }
+                // Handle equipped/unequipped state
+                if (i.Equipped)
+                {
+                    if (!IsEquipped(localItem))
+                    {
+                        Equip(localItem, false);
+                        equipmentChanged = true;
+                    }
+                }
+                else
+                {
+                    if (IsEquipped(localItem))
+                    {
+                        Unequip(localItem.InstanceId, true, false);
+                        equipmentChanged = true;
+                    }
+                    if (!backpack.Contains(localItem))
+                    {
+                        backpack.Add(localItem);
+                    }
+                }
+            }
+
+            // 3. Only update appearance if equipment changed
+            if (equipmentChanged)
+            {
+                equipment.EquipAll(equipped);
+                player.UpdateEquipmentEffect(equipped);
+            }
+        }
+    }
+
+
 
     private class ItemComparer : IComparer<RavenNest.Models.Item>
     {

@@ -171,7 +171,8 @@ public class PlayerValidator
         if (skill == RavenNest.Models.Skill.Attack ||
             skill == RavenNest.Models.Skill.Defense ||
             skill == RavenNest.Models.Skill.Strength ||
-            skill == RavenNest.Models.Skill.Health)
+            skill == RavenNest.Models.Skill.Health ||
+            skill == RavenNest.Models.Skill.Melee)
             return 45f;
 
         if (skill == RavenNest.Models.Skill.Magic ||

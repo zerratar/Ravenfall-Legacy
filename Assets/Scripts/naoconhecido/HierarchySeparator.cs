@@ -62,7 +62,7 @@ public class HierarchySeparator : MonoBehaviour
 
     static HierarchySeparator()
     {
-        EditorApplication.hierarchyWindowItemOnGUI += HierarchyWindowItemOnGUI;
+        EditorApplication.hierarchyWindowItemByEntityIdOnGUI += HierarchyWindowItemOnGUI;
     }
 
     [MenuItem("GameObject/Separator", false, 30)]
@@ -75,11 +75,11 @@ public class HierarchySeparator : MonoBehaviour
         Selection.activeObject = separator;
     }
 
-    static void HierarchyWindowItemOnGUI(int instanceID, Rect selectionRect)
+    static void HierarchyWindowItemOnGUI(EntityId entityId, Rect selectionRect)
     {
         try
         {
-            GameObject gameObject = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
+            GameObject gameObject = EditorUtility.EntityIdToObject(entityId) as GameObject;
 
             if (gameObject == null) return;
             if (!gameObject.TryGetComponent(out HierarchySeparator hierarchy)) return;
@@ -89,12 +89,12 @@ public class HierarchySeparator : MonoBehaviour
             guiStyle.normal.textColor = hierarchy.TextColor;
             guiStyle.alignment = TextAnchor.MiddleCenter;
 
-            UnityEngine.Random.InitState(instanceID);
+            UnityEngine.Random.InitState(entityId.GetHashCode());
 
             var targetColor = Random.ColorHSV();
             targetColor.a = 1f;
 
-            if (Selection.activeObject && Selection.activeObject.GetInstanceID() == gameObject.GetInstanceID())
+            if (Selection.activeObject && Selection.activeObject.GetEntityId() == gameObject.GetEntityId())
             {
                 Color.RGBToHSV(targetColor, out var h, out var s, out var v);
                 v *= 0.5f;

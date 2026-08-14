@@ -17,8 +17,6 @@ public class PlayerListItem : MonoBehaviour
     [SerializeField] private Text lblExpPerHour;
     [SerializeField] private Text lblPlayerName;
 
-    private readonly static string[] skillNames = { "Atk", "Def", "Str", "All", "Woo", "Fis", "Min", "Cra", "Coo", "Far", "Slay", "Mag", "Ran", "Sail", "Heal", "Gat", "Alc" };
-
     private RectTransform rectTransform;
     private bool isRotatingSkill = false;
     private bool isCombatSkill = false;
@@ -44,7 +42,7 @@ public class PlayerListItem : MonoBehaviour
     private int lastCombatLevel;
     private GameObject lblExpPerHourObj;
     private GameObject pbSkillObj;
-
+    private int errorCount;
     public PlayerList List;
 
     public int ItemIndex;
@@ -82,15 +80,18 @@ public class PlayerListItem : MonoBehaviour
 
     private void UpdateLabels()
     {
-        if (TargetPlayer == null || !TargetPlayer || TargetPlayer.isDestroyed)
+        var target = TargetPlayer;
+
+        if (target == null || !target || target.isDestroyed)
         {
             SetText(lblSkillLevel, "");
             SetText(lblCombatLevel, "");
             lblPlayerName.text = "-";
             return;
         }
+        var targetStats = target.Stats;
+        var combatLevel = targetStats.CombatLevel;
 
-        var combatLevel = TargetPlayer.Stats.CombatLevel;
         if (combatLevel != lastCombatLevel)
         {
             SetText(lblCombatLevel, "Lv:<b> " + combatLevel + "</b>");
@@ -105,14 +106,17 @@ public class PlayerListItem : MonoBehaviour
         else if (hasSkill)
         {
             SetActive(pbSkillObj, true);
+            Skill targetActiveSkill = Skill.None;
+            string skillName = string.Empty;
+            SkillStat skill = null;
             try
             {
-                var skill = TargetPlayer.GetActiveSkillStat();
+                targetActiveSkill = target.ActiveSkill;
+                skill = target.GetActiveSkillStat();
                 if (skill != null)
                 {
-                    string skillName = skill != null ? skillNames[(int)TargetPlayer.ActiveSkill] : "";
-
-                    if (TargetPlayer.ActiveSkill == Skill.Health)
+                    skillName = targetActiveSkill.GetShortName();
+                    if (targetActiveSkill == Skill.Health || targetActiveSkill == Skill.Melee)
                     {
                         SetText(lblSkillLevel, skillName);
                     }
@@ -124,11 +128,17 @@ public class PlayerListItem : MonoBehaviour
                     UpdateSkillProgressBar(skill);
                     this.lastSkillTrained = skill;
                     this.lastSkillTrainedLevel = skill.Level;
+                    errorCount = 0;
                 }
             }
             catch (System.Exception exc)
             {
-                Shinobytes.Debug.LogError("PlayerListItem.UpdateLabels: " + exc.ToString());
+                if (errorCount % 240 == 0)
+                {
+                    Shinobytes.Debug.LogError($"PlayerListItem.UpdateLabels ({targetActiveSkill},'{skillName}','{skill?.Name}'): " + exc.ToString());
+                }
+
+                errorCount++;
             }
         }
 
@@ -159,7 +169,7 @@ public class PlayerListItem : MonoBehaviour
             return;
         }
 
-        if (skill.Type == Skill.Health)
+        if (skill.Type == Skill.Health || skill.Type == Skill.Melee)
         {
             SetText(lblExpPerHour, "");
             return;
@@ -305,7 +315,7 @@ public class PlayerListItem : MonoBehaviour
         if (hasSkill)
         {
             skillIndex = (int)activeSkill;
-            isRotatingSkill = activeSkill == Skill.Health;
+            isRotatingSkill = activeSkill == Skill.Health || activeSkill == Skill.Melee;
             isCombatSkill = activeSkill.IsCombatSkill();
         }
         else

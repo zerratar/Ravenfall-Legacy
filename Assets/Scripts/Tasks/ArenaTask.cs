@@ -105,7 +105,7 @@ public class ArenaTask : ChunkTask
             return false;
         }
 
-        if (!arena.AvailablePlayers.FirstOrDefault(x => x.transform.GetInstanceID() == attackable.Transform.GetInstanceID()))
+        if (!arena.AvailablePlayers.FirstOrDefault(x => x.transform.GetEntityId() == attackable.Transform.GetEntityId()))
         {
             reason = TaskExecutionStatus.InvalidTarget;
             return false;

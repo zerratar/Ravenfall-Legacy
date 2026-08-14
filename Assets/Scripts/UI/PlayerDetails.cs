@@ -285,6 +285,8 @@ public class PlayerDetails : MonoBehaviour
 
     private string GetTimeLeftForLevelFormatted(SkillStat skill)
     {
+        if (skill == null) return "";
+
         //var f = observedPlayer.GetExpFactor();
         //var expPerTick = ObservedPlayer.GetExperience(s, f);
         //var estimatedExpPerHour = expPerTick * GameMath.Exp.GetTicksPerMinute(s) * 60;

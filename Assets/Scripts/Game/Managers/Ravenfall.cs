@@ -3,6 +3,26 @@
 //using UnityEngine.Experimental.Rendering.HDPipeline;
 public static class Ravenfall
 {
+    private static bool _isBatchMode = false;
+
+    static Ravenfall()
+    {
+        _isBatchMode = Application.isBatchMode;
+
+//#if UNITY_EDITOR
+//        _isBatchMode = true;
+//#endif
+    }
+
+    public static bool isBatchMode
+    {
+        get
+        {
+            return _isBatchMode;
+        }
+    }
+
+
     public static string Version
     {
         get

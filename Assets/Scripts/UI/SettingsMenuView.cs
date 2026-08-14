@@ -1,5 +1,6 @@
 ﻿using Assets.Scripts.UI.Menu;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -79,6 +80,9 @@ public class SettingsMenuView : MenuView
     [SerializeField] private GameObject admin;
     [SerializeField] private Toggle debugControlsEnabled = null;
 
+    [Header("Bot Settings")]
+    [SerializeField] private GameObject bot;
+    [SerializeField] private Toggle[] botMessageFilter;
 
     public static readonly TimeSpan[] PlayerCacheExpiry = new TimeSpan[]
     {
@@ -139,7 +143,7 @@ public class SettingsMenuView : MenuView
 
         raidHornVolumeSlider.value = settings.RaidHornVolume.GetValueOrDefault(gameManager.Raid.Notifications.volume);
         musicVolumeSlider.value = settings.MusicVolume.GetValueOrDefault(gameManager.Music.volume);
-        
+
         observerCameraRotationSlider.SetValueWithoutNotify(settings.CameraRotationSpeed.GetValueOrDefault(OrbitCamera.RotationSpeed * -1));
 
         pathfindingQuality.value = settings.PathfindingQualitySettings.GetValueOrDefault(1);
@@ -164,6 +168,24 @@ public class SettingsMenuView : MenuView
 
         playerDetailsToggle.isOn = gameManager.Camera.Observer.IsVisible;
         playerListToggle.isOn = gameManager.PlayerList.IsVisible;
+
+        foreach (var toggle in botMessageFilter)
+        {
+            toggle.SetIsOnWithoutNotify(true);
+        }
+
+        foreach (var filter in settings.BotMessageFilters)
+        {
+            foreach (var toggle in botMessageFilter)
+            {
+                if (filter.Equals(toggle.name, StringComparison.OrdinalIgnoreCase))
+                {
+                    toggle.SetIsOnWithoutNotify(false);
+                }
+            }
+        }
+
+        OnBotMessageFiltersChanged();
 
         SetViewDistance(viewDistanceSlider.value);
 
@@ -265,6 +287,9 @@ public class SettingsMenuView : MenuView
         settings.PlayerNamesVisible = playerNameToggle.isOn;
         settings.ViewDistance = viewDistanceSlider.value;
 
+        settings.BotMessageFilters = botMessageFilter.Where(x => x.isOn).Select(x => x.name).ToArray();
+        OnBotMessageFiltersChanged();
+
         gameManager.PlayerList.SetVisibility(playerListToggle.isOn);
         gameManager.Camera.Observer.SetVisibility(playerDetailsToggle.isOn);
         gameManager.isDebugMenuVisible = debugControlsEnabled.isOn;
@@ -283,6 +308,7 @@ public class SettingsMenuView : MenuView
         sounds.gameObject.SetActive(true);
         game.gameObject.SetActive(false);
         admin.gameObject.SetActive(false);
+        bot.gameObject.SetActive(false);
     }
     public void ShowGraphicsSettings()
     {
@@ -291,6 +317,7 @@ public class SettingsMenuView : MenuView
         sounds.gameObject.SetActive(false);
         game.gameObject.SetActive(false);
         admin.gameObject.SetActive(false);
+        bot.gameObject.SetActive(false);
     }
     public void ShowGameSettings()
     {
@@ -299,6 +326,16 @@ public class SettingsMenuView : MenuView
         sounds.gameObject.SetActive(false);
         game.gameObject.SetActive(true);
         admin.gameObject.SetActive(false);
+        bot.gameObject.SetActive(false);
+    }
+    public void ShowBotSettings()
+    {
+        ui.gameObject.SetActive(false);
+        graphics.gameObject.SetActive(false);
+        sounds.gameObject.SetActive(false);
+        game.gameObject.SetActive(false);
+        admin.gameObject.SetActive(false);
+        bot.gameObject.SetActive(true);
     }
     public void ShowUISettings()
     {
@@ -307,6 +344,7 @@ public class SettingsMenuView : MenuView
         sounds.gameObject.SetActive(false);
         game.gameObject.SetActive(false);
         admin.gameObject.SetActive(false);
+        bot.gameObject.SetActive(false);
     }
 
     public void ShowAdminSettings()
@@ -316,6 +354,7 @@ public class SettingsMenuView : MenuView
         sounds.gameObject.SetActive(false);
         game.gameObject.SetActive(false);
         admin.gameObject.SetActive(true);
+        bot.gameObject.SetActive(false);
     }
     public void OnPotatoModeChanged()
     {
@@ -376,6 +415,14 @@ public class SettingsMenuView : MenuView
     {
         gameManager.ItemDropMessageSettings = (PlayerItemDropMessageSettings)itemDropMessageDropdown.value;
         ShowItemDropExample();
+    }
+
+    public void OnBotMessageFiltersChanged()
+    {
+        foreach (var toggle in botMessageFilter)
+        {
+            gameManager.SetMessageFilter(toggle.name, toggle.isOn);
+        }
     }
 
     public void OnAlertExpiryCacheFileChanged()

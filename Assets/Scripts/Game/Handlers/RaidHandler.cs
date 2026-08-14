@@ -18,7 +18,7 @@ public class RaidHandler : MonoBehaviour
     private string[] prevTaskArgs;
     private bool wasResting;
 
-    private FerryContext ferryState;
+    [NonSerialized] public FerryContext ferryState;
     private TaskType previousTask;
     private string previousTaskArgument;
 
@@ -262,17 +262,18 @@ public class RaidHandler : MonoBehaviour
             this.player.SetTask(previousTask, previousTaskArgument, true);
         }
 
-        if (wasResting)
-        {
-            player.GameManager.Onsen.Join(player);
-        }
-        else if (ferryState.OnFerry)
+        if (ferryState.OnFerry)
         {
             player.InCombat = false;
             player.ClearAttackers();
             player.Movement.Lock();
             player.ferryHandler.AddPlayerToFerry(ferryState.Destination);
             ferryState.HasReturned = true;
+        }
+
+        if (wasResting)
+        {
+            player.GameManager.Onsen.Join(player);
         }
 
         if (ferryState.State == PlayerFerryState.Embarking)

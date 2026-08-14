@@ -40,6 +40,7 @@ public class PlayerSettings
 
     public double? PlayerAfkHours;
     public string RavenBotServer;
+    public string[] BotMessageFilters;
 
     public bool? DisableDungeons;
     public bool? DisableRaids;
@@ -49,7 +50,6 @@ public class PlayerSettings
     public bool? QueryEngineEnabled;
     public bool? QueryEngineAlwaysReturnArray;
     public string QueryEngineApiPrefix;
-
     public float[] ExpMultiplierAnnouncements;
 
     public StreamLabelSettings StreamLabels;
@@ -134,6 +134,13 @@ public class PlayerSettings
     private static void SetDefaultValues()
     {
         var wasUpdated = false;
+
+        if (Instance.BotMessageFilters == null)
+        {
+            Instance.BotMessageFilters = new string[0];
+            wasUpdated = true;
+        }
+
         if (Instance.AnnounceNoExpGain == null)
         {
             Instance.AnnounceNoExpGain = false;

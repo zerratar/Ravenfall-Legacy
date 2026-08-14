@@ -34,7 +34,7 @@ public class HealthBarManager : MonoBehaviour
                     && ((x.Target == player || x.Target.Name == player.Name)
                     || x.Target.Transform != null
                     && x.Target.Transform
-                    && x.Target.Transform.GetInstanceID() == player.GetInstanceID()));
+                    && x.Target.Transform.GetEntityId() == player.GetEntityId()));
 
                 if (bar)
                 {

@@ -27,6 +27,9 @@ public class ItemManager : MonoBehaviour
     private List<RavenNest.Models.RedeemableItem> redeemables = new List<RavenNest.Models.RedeemableItem>();
     private Dictionary<Guid, RavenNest.Models.Item> itemLookup = new Dictionary<Guid, Item>();
 
+    private readonly object redeemableMutex = new object();
+    private readonly object itemMutex = new object();
+
     private Dictionary<Guid, (int, int[])> femaleModelId = new Dictionary<Guid, (int, int[])>();
     private Dictionary<Guid, (int, int[])> maleModelId = new Dictionary<Guid, (int, int[])>();
 
@@ -107,16 +110,22 @@ public class ItemManager : MonoBehaviour
 
     public void SetItems(IEnumerable<RavenNest.Models.Item> items)
     {
-        this.items = items.ToList();
-        this.itemLookup = items.ToDictionary(x => x.Id, x => x);
-        this.state = LoadingState.Loaded;
-        LoadItemData();
+        lock (itemMutex)
+        {
+            this.items = items.ToList();
+            this.itemLookup = items.ToDictionary(x => x.Id, x => x);
+            this.state = LoadingState.Loaded;
+            LoadItemData();
+        }
     }
 
     public void SetRedeemableItems(IEnumerable<RavenNest.Models.RedeemableItem> redeemables)
     {
-        this.redeemables = redeemables.ToList();
-        this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
+        lock (redeemableMutex)
+        {
+            this.redeemables = redeemables.ToList();
+            this.redeemableItems = redeemables.Select(MapRedeemable).ToArray();
+        }
     }
 
     public void SetItemRecipes(IEnumerable<RavenNest.Models.ItemRecipe> recipes)
@@ -136,12 +145,14 @@ public class ItemManager : MonoBehaviour
 
     public Item Find(Func<Item, bool> predicate)
     {
-        return items.FirstOrDefault(predicate);
+        lock (itemMutex)
+            return items.FirstOrDefault(predicate);
 
     }
     public Item GetStreamerToken()
     {
-        return items.FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
+        lock (itemMutex)
+            return items.FirstOrDefault(x => x.Category == ItemCategory.StreamerToken);
     }
 
     /// <summary>
@@ -201,12 +212,14 @@ public class ItemManager : MonoBehaviour
 
     public IReadOnlyList<RavenNest.Models.RedeemableItem> GetRedeemableItems()
     {
-        return redeemables;
+        lock (redeemableMutex)
+            return redeemables;
     }
 
     public IReadOnlyList<RavenNest.Models.Item> GetItems()
     {
-        return items;
+        lock (itemMutex)
+            return items;
     }
 
     private async void LoadItemsAsync()
@@ -226,6 +239,10 @@ public class ItemManager : MonoBehaviour
             {
                 state = LoadingState.Loaded;
                 game.SetLoadingState("items", state);
+                if (Ravenfall.isBatchMode)
+                {
+                    Shinobytes.Debug.Log("All items loaded.");
+                }
             }
         }
         catch (Exception exc)
@@ -235,6 +252,11 @@ public class ItemManager : MonoBehaviour
     }
     private async Task DownloadItemResourceDropsAsync()
     {
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("Downloading resource drop list from server...");
+        }
+
         ResourceItemDropCollection resourceDrops = await game.RavenNest.Items.GetResourceDropsAsync();
         if (resourceDrops != null && resourceDrops.Count > 0)
         {
@@ -243,6 +265,11 @@ public class ItemManager : MonoBehaviour
     }
     private async Task DownloadRedeemableItemsAsync()
     {
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("Downloading redeemables from server...");
+        }
+
         var redeemableItems = await game.RavenNest.Items.GetRedeemablesAsync();
         if (redeemableItems != null && redeemableItems.Count > 0)
         {
@@ -254,6 +281,10 @@ public class ItemManager : MonoBehaviour
 
     private async Task DownloadItemRecipesAsync()
     {
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("Downloading item recipes from server...");
+        }
         var recipes = await game.RavenNest.Items.GetRecipesAsync();
         if (recipes != null && recipes.Count > 0)
         {
@@ -264,6 +295,11 @@ public class ItemManager : MonoBehaviour
     private async Task DownloadItemsAsync()
     {
         this.itemsLastUpdate = DateTime.UtcNow;
+
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("Downloading items from server...");
+        }
 
         if (items != null && items.Count > 0)
         {
@@ -439,6 +475,19 @@ public class ItemManager : MonoBehaviour
             MonthEnd = endDate.Month,
             DayEnd = endDate.Day,
         };
+    }
+
+    public Item? Get(Guid? id)
+    {
+        if (id == null)
+        {
+            return null;
+        }
+        if (itemLookup.TryGetValue(id.Value, out var value))
+        {
+            return value;
+        }
+        return null;
     }
 
     public Item Get(Guid id)

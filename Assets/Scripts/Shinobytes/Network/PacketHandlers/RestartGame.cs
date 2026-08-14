@@ -15,7 +15,7 @@ public class RestartGame : ChatBotCommandHandler
 
         if (user.IsGameAdministrator || user.IsGameModerator)
         {
-            Game.SaveStateAndShutdownGame();
+            Game.SaveStateAndShutdownGame(attemptRestart: true);
             return;
         }
 
@@ -32,6 +32,6 @@ public class RestartGame : ChatBotCommandHandler
             }
         }
 
-        Game.SaveStateAndShutdownGame();
+        Game.SaveStateAndShutdownGame(attemptRestart: true);
     }
 }

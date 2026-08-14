@@ -1,17 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using Assets.Scripts.Overlay;
+using Newtonsoft.Json;
+using RavenNest.Models.TcpApi;
+using Shinobytes.IO;
 using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using TMPro;
-
-
-using Shinobytes.IO;
-
 using UnityEngine;
-using System.Linq;
-using Assets.Scripts.Overlay;
-using System.Diagnostics;
 
 public class GameUpdater : MonoBehaviour
 {
@@ -29,6 +27,8 @@ public class GameUpdater : MonoBehaviour
     private bool loadingScene;
     private int lastAcceptedVersion;
 
+    [NonSerialized] public static bool UpdateWasSkipped;
+
     private void Awake()
     {
         if (versionText)
@@ -39,15 +39,20 @@ public class GameUpdater : MonoBehaviour
 
     private void Start()
     {
-#if UNITY_STANDALONE_LINUX
-        Overlay.IsGame = true;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(1);
-        return;
-#endif
+        //#if UNITY_STANDALONE_LINUX
+        //        Overlay.IsGame = true;
+        //        UnityEngine.SceneManagement.SceneManager.LoadScene(1);
+        //        UpdateWasSkipped = true;
+        //        return;
+        //#endif
 
-        var startupArgs = System.Environment.GetCommandLineArgs().Select(x => x.ToLower()).ToArray();
-        var forceUpdate = startupArgs.Any(x => x.Contains("forceupdate") || x.Contains("force-update") || x.Contains("reinstall"));
+        var args = System.Environment.GetCommandLineArgs();
+        var startupArgs = args.Select(x => x.ToLower().Replace("-", "").Trim()).ToArray();
 
+        var forceUpdate = startupArgs.Any(x => x.Contains("forceupdate") || x.Contains("reinstall"));
+        var skipUpdate = startupArgs.Any(x => x.Contains("skipupdate") || x.Contains("noupdate"));
+
+        UpdateWasSkipped = skipUpdate;
 
         this.lastAcceptedVersion = PlayerPrefs.GetInt(CodeOfConductController.CoCLastAcceptedVersion_SettingsName, CodeOfConductController.CoCLastAcceptedVersion_DefaultValue);
 
@@ -58,18 +63,18 @@ public class GameUpdater : MonoBehaviour
 
         if (Application.isEditor)
         {
-            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs) + ", (IsEditor=True)");
+            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", args) + ", (IsEditor=True)");
             Overlay.IsGame = !EditorOnlyStartAsOverlay;
-            StartUpdate(startupArgs, forceUpdate, false);
+            StartUpdate(startupArgs, forceUpdate, false, skipUpdate);
         }
         else
         {
-            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", startupArgs));
-            StartUpdate(startupArgs, forceUpdate, true);
+            Shinobytes.Debug.Log("Starting game using args: " + string.Join(",", args));
+            StartUpdate(startupArgs, forceUpdate, true, skipUpdate);
         }
     }
 
-    private async void StartUpdate(string[] args, bool forceUpdate, bool checkIfGame)
+    private async void StartUpdate(string[] args, bool forceUpdate, bool checkIfGame, bool skipUpdate)
     {
         try
         {
@@ -77,9 +82,18 @@ public class GameUpdater : MonoBehaviour
             {
                 Overlay.IsGame = await CheckIfGameAsync(args);
             }
+
             updateResult = UpdateResult.CheckingForUpdate;
             Shinobytes.Debug.Log("Checking for updates: " + CheckUpdateUri);
             gameUpdater = new GameUpdateHandler(CheckUpdateUri);
+
+            if (skipUpdate)
+            {
+                Shinobytes.Debug.Log("Skipping update check.");
+                updateResult = UpdateResult.UpToDate;
+                return;
+            }
+
             updateResult = await gameUpdater.UpdateAsync(forceUpdate, lastAcceptedVersion);
         }
         catch (Exception ex)
@@ -284,9 +298,26 @@ public class GameUpdater : MonoBehaviour
             label.text = "Initializing update.";
         }
 
-        // KillRavenBot();
-
         // 2. start patcher
+#if UNITY_STANDALONE_LINUX
+        // run update.sh script
+        if (File.Exists("./update.sh"))
+        {
+            var updater = new ProcessStartInfo
+            {
+                FileName = "/bin/bash",
+                Arguments = "-c \"setsid ./update.sh &\"",
+                WorkingDirectory = Path.GameFolder,
+                UseShellExecute = false,
+                CreateNoWindow = false
+            };
+            Process.Start(updater);
+        }
+        else
+        {
+            Shinobytes.Debug.LogWarning("update.sh could not be found. Unable to start the patcher.");
+        }
+#else
         if (File.Exists("RavenWeave.exe"))
         {
             var updater = new ProcessStartInfo
@@ -301,6 +332,7 @@ public class GameUpdater : MonoBehaviour
         {
             Shinobytes.Debug.LogWarning("RavenWeave.exe could not be found. Unable to start the patcher.");
         }
+#endif
 
         // 3. stop unity game
         Application.Quit();
@@ -481,7 +513,7 @@ public class GameUpdateHandler
             var fileName = downloadUrl.Split('/').LastOrDefault();
 
 #if UNITY_STANDALONE_LINUX
-            downloadUrl = downloadUrl.Replace("update.7z", "linux-update.7z");
+            downloadUrl = downloadUrl.Replace("update.7z", "update-linux.7z");
 #endif
 
             var updateFile = "update/" + fileName;

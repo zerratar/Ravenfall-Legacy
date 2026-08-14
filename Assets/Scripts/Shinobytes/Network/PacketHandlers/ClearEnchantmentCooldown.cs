@@ -1,4 +1,6 @@
-﻿public class ClearEnchantmentCooldown : ChatBotCommandHandler
+﻿using System;
+
+public class ClearEnchantmentCooldown : ChatBotCommandHandler
 {
     public ClearEnchantmentCooldown(
         GameManager game,
@@ -10,9 +12,16 @@
 
     public override async void Handle(GameMessage gm, GameClient client)
     {
-        var player = PlayerManager.GetPlayer(gm.Sender);
-        if (!player)
+        if (gm == null || gm.Sender == null)
         {
+            Shinobytes.Debug.LogError("ClearEnchantmentCooldown: GameMessage or Sender is null.");
+            return;
+        }
+
+        var player = PlayerManager.GetPlayer(gm.Sender);
+        if (!player || !player.clanHandler)
+        {
+            Shinobytes.Debug.LogError("ClearEnchantmentCooldown: player or clanHandler is null (" + gm.Sender.DisplayName + ")");
             return;
         }
 
@@ -22,17 +31,26 @@
             return;
         }
 
-        var result = await Game.RavenNest.Players.ClearEnchantmentCooldownAsync(player.Id);
-        if (result.Success)
+        try
         {
-            var totalCost = result.TotalCost;
-            client.SendReply(gm, "You have cleared your enchantment cooldown for a total of {totalCost} coins", totalCost);
-            return;
+            var result = await Game.RavenNest.Players.ClearEnchantmentCooldownAsync(player.Id);
+            if (result != null && result.Success)
+            {
+                var totalCost = result.TotalCost;
+                client.SendReply(gm, "You have cleared your enchantment cooldown for a total of {totalCost} coins", totalCost);
+                return;
+            }
+            else
+            {
+                if (result == null) Shinobytes.Debug.LogWarning("ClearEnchantmentCooldown(" + player.Id + "): server call returned null.");
+                client.SendReply(gm, "Unable to clear the cooldown, either you don't have a cooldown active or you don't have enough coins.");
+                return;
+            }
         }
-        else
+        catch (Exception exc)
         {
-            client.SendReply(gm, "Unable to clear the cooldown, either you don't have a cooldown active or you don't have enough coins.");
-            return;
+            Shinobytes.Debug.LogError("ClearEnchantmentCooldown: An error occurred while clearing enchantment cooldown: " + exc);
+            client.SendReply(gm, "An error occurred while trying to clear your enchantment cooldown. Please try again later.");
         }
     }
 }

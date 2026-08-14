@@ -33,24 +33,47 @@ public class ItemResolver : IItemResolver
     {
         var setItems = new List<Item>();
 
-        // since elder can match with all elder items, so skip elder if that is being used.
-        if (string.IsNullOrEmpty(setName) || setName.Trim().Equals("elder"))
+        try
         {
-            return setItems;
-        }
-
-        foreach (var item in itemManager.GetItems())
-        {
-            if (item.Name.StartsWith(setName, StringComparison.OrdinalIgnoreCase))
+            // since elder can match with all elder items, so skip elder if that is being used.
+            if (string.IsNullOrEmpty(setName) || setName.Trim().Equals("elder"))
             {
-                // good start, now lets make sure its an equipment
-                if (item.Category == ItemCategory.Armor || item.Category == ItemCategory.Weapon || item.Category == ItemCategory.Ring || item.Category == ItemCategory.Amulet)
+                return setItems;
+            }
+            var items = itemManager.GetItems();
+            if (items == null || items.Count == 0)
+            {
+                Shinobytes.Debug.LogError("ItemResolver.GetItemSet(\"" + setName + "\"), itemManager.GetItems() returned 0 items.");
+                return setItems;
+            }
+
+            foreach (var item in items)
+            {
+                if (item == null)
                 {
-                    setItems.Add(item);
+                    Shinobytes.Debug.LogError("ItemResolver.GetItemSet(\"" + setName + "\"): itemNamanger.GetItems() contained null item.");
+                    continue;
+                }
+
+                if (string.IsNullOrEmpty(item.Name))
+                {
+                    Shinobytes.Debug.LogError("Item (" + item.Id + ") without name found in itemManager.GetItems(), skipping item.");
+                    continue;
+                }
+                if (item.Name.StartsWith(setName, StringComparison.OrdinalIgnoreCase))
+                {
+                    // good start, now lets make sure its an equipment
+                    if (item.Category == ItemCategory.Armor || item.Category == ItemCategory.Weapon || item.Category == ItemCategory.Ring || item.Category == ItemCategory.Amulet)
+                    {
+                        setItems.Add(item);
+                    }
                 }
             }
         }
-
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("ItemResolver.GetItemSet(\"" + setName + "\"): " + exc);
+        }
         return setItems;
     }
 
@@ -65,7 +88,8 @@ public class ItemResolver : IItemResolver
         bool parseUsername = false,
         bool parseAmount = true,
         PlayerController playerToSearch = null,
-        EquippedState equippedState = EquippedState.Any)
+        EquippedState equippedState = EquippedState.Any,
+        bool includeSkinnedItems = true)
     {
         string targetPlayerName = "";
         try
@@ -128,7 +152,7 @@ public class ItemResolver : IItemResolver
 
             if (playerToSearch != null)
             {
-                var result = ResolveInventoryItem(playerToSearch, itemQuery, equippedState: equippedState);
+                var result = ResolveInventoryItem(playerToSearch, itemQuery, equippedState: equippedState, includeSkinnedItems: includeSkinnedItems);
                 result.Count = amount < 0 ? 1 : amount;
                 result.Price = price < 0 ? 1 : price;
                 result.Player = player;
@@ -165,7 +189,7 @@ public class ItemResolver : IItemResolver
     public ItemResolveResult ResolveInventoryItem(
         PlayerController player,
         string itemName,
-        int maxSuggestions = 5, EquippedState equippedState = EquippedState.Any)
+        int maxSuggestions = 5, EquippedState equippedState = EquippedState.Any, bool includeSkinnedItems = true)
     {
         EnsureManagers();
 
@@ -179,7 +203,7 @@ public class ItemResolver : IItemResolver
         var items = player.Inventory.GetAllItems();
 
         var matches = items
-            .Where(x => x.Item != null && (!isPetSearch || x.Item.Category == ItemCategory.Pet))
+            .Where(x => x.Item != null && (!isPetSearch || x.Item.Category == ItemCategory.Pet) && (!includeSkinnedItems || x.TransmogrificationId == null))
             .Select(x => new ItemMatchPair<GameInventoryItem> { Item = x, Match = Match(isPetSearch ? TrimEnd(x.Name, " pet") : x.Name, x.Item.Type, itemQuery) })
             .Where(x => x.Match.IsCloseMatch)
             .OrderBy(x => LevenshteinDistance(isPetSearch ? TrimEnd(x.Item.Name, " pet") : x.Item.Name, itemQuery))

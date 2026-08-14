@@ -105,7 +105,7 @@ public class StationTask : ChunkTask
         }
 
         var possibleTargets = lazyCraftingStations();
-        return possibleTargets.Any(x => x.GetInstanceID() == station.GetInstanceID());
+        return possibleTargets.Any(x => x.GetEntityId() == station.GetEntityId());
     }
 
     internal override void SetTargetInvalid(object target)

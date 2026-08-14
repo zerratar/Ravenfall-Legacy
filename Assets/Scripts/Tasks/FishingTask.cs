@@ -105,7 +105,7 @@ public class FishingTask : ChunkTask
         }
 
         var possibleTargets = lazyFishes();
-        return possibleTargets.Any(x => x.GetInstanceID() == tar.GetInstanceID());
+        return possibleTargets.Any(x => x.GetEntityId() == tar.GetEntityId());
     }
 
     internal override void SetTargetInvalid(object target)

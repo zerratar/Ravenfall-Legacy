@@ -30,7 +30,7 @@ public class GraphicsToggler : MonoBehaviour
     public bool graphicsEnabled = true;
     private int renderFrameInterval = 10;
     private int targetFramesPerSeconds = 6;
-    private HashSet<int> ignoreList = new HashSet<int>();
+    private HashSet<EntityId> ignoreList = new HashSet<EntityId>();
 
     //private readonly SemaphoreSlim mutex = new SemaphoreSlim(1);
     public static bool GraphicsEnabled = true;
@@ -60,7 +60,7 @@ public class GraphicsToggler : MonoBehaviour
         // disable physics per default
         DisablePhysics();
 
-        if (Application.isBatchMode)
+        if (Ravenfall.isBatchMode)
         {
             ToggleAllGraphics();
             ReduceRenderTarget();
@@ -70,7 +70,7 @@ public class GraphicsToggler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Application.isBatchMode)
+        if (Ravenfall.isBatchMode)
         {
             GraphicsEnabled = false;
             //mutex.Wait(TimeSpan.FromMilliseconds(10));
@@ -168,7 +168,7 @@ public class GraphicsToggler : MonoBehaviour
     {
         for (var i = 0; i < renderer.Length; ++i)
         {
-            if (ignoreList.Contains(renderer[i].GetInstanceID()))
+            if (ignoreList.Contains(renderer[i].GetEntityId()))
             {
                 continue;
             }
@@ -176,7 +176,7 @@ public class GraphicsToggler : MonoBehaviour
             var enabled = renderer[i].enabled;
             if (graphicsEnabled == enabled)
             {
-                this.ignoreList.Add(renderer[i].GetInstanceID());
+                this.ignoreList.Add(renderer[i].GetEntityId());
                 continue;
             }
 
@@ -187,7 +187,7 @@ public class GraphicsToggler : MonoBehaviour
     {
         for (var i = 0; i < renderer.Length; ++i)
         {
-            if (ignoreList.Contains(renderer[i].GetInstanceID()))
+            if (ignoreList.Contains(renderer[i].GetEntityId()))
             {
                 continue;
             }
@@ -195,7 +195,7 @@ public class GraphicsToggler : MonoBehaviour
             var enabled = renderer[i].enabled;
             if (graphicsEnabled == enabled)
             {
-                this.ignoreList.Add(renderer[i].GetInstanceID());
+                this.ignoreList.Add(renderer[i].GetEntityId());
                 continue;
             }
             renderer[i].enabled = graphicsEnabled;

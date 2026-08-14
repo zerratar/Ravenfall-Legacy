@@ -291,6 +291,7 @@ public static class Localization
 
     public static readonly string MSG_TRAINING = "You're currently training {skill}.";
     public static readonly string MSG_TRAINING_NOTHING = "You're not training anything. Use !train <skill name> to start training!";
+    public static readonly string MSG_TRAINING_SAILING = "You're currently sailing the seas. Use !disembark to leave the ferry or !travel <island name> to sail to a specific island.";
     public static readonly string MSG_JOIN_RAID = "You have joined the raid. Good luck!";
     public static readonly string MSG_JOIN_RAID_FERRY = "You cannot join the raid while on the ferry.";
     public static readonly string MSG_JOIN_RAID_WAR = "You cannot fight a raid boss during a war!";

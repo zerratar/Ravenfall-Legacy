@@ -29,8 +29,8 @@ public class GameMenuHandler : MonoBehaviour
 
         UpdateDetailsLabel();
 
-        if (!loginScreen) loginScreen = FindAnyObjectByType<LoginHandler>();
-        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        if (!loginScreen) loginScreen = FindAnyObjectByType<LoginHandler>(FindObjectsInactive.Include);
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>(FindObjectsInactive.Include);
 
         settingsView.Hide(false);
 
@@ -86,8 +86,11 @@ public class GameMenuHandler : MonoBehaviour
 
     public void OpenPlayerLogFolder()
     {
-        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var appDataFolder = System.IO.Path.Combine(userProfile, @"AppData\LocalLow\", Application.companyName, Application.productName);
+        //var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        //var appDataFolder = System.IO.Path.Combine(userProfile, @"AppData\LocalLow\", Application.companyName, Application.productName);
+        var appDataFolder = UnityEngine.Application.persistentDataPath;
+        if (Environment.OSVersion.Platform == PlatformID.Unix)
+            appDataFolder = appDataFolder.Replace("\\", "/");
         System.Diagnostics.Process.Start(appDataFolder);
     }
 
@@ -126,7 +129,7 @@ public class GameMenuHandler : MonoBehaviour
 
         if (loginScreen && !IsAuthenticated)
         {
-            loginScreen.gameObject.SetActive(true);
+            loginScreen.ShowView();
         }
     }
 
@@ -149,7 +152,7 @@ public class GameMenuHandler : MonoBehaviour
     {
         if (loginScreen && !IsAuthenticated)
         {
-            loginScreen.gameObject.SetActive(false);
+            loginScreen.HideView();
         }
 
         if (!Visible)

@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using UnityEngine;
 public abstract class ChunkTask
 {
-    private readonly ConcurrentDictionary<int, bool> targetLookup = new ConcurrentDictionary<int, bool>();
+    private readonly ConcurrentDictionary<EntityId, bool> targetLookup = new ConcurrentDictionary<EntityId, bool>();
     public abstract bool IsCompleted(PlayerController player, object target);
 
     public abstract bool Execute(PlayerController player, object target);
@@ -17,7 +17,7 @@ public abstract class ChunkTask
     }
     internal bool TargetExists(object target)
     {
-        var id = GetTargetInstanceID(target);
+        var id = GetTargetEntityId(target);
         if (targetLookup.TryGetValue(id, out var result))
         {
             return result;
@@ -30,18 +30,18 @@ public abstract class ChunkTask
 
     internal abstract bool TargetExistsImpl(object target);
 
-    internal int GetTargetInstanceID(object target)
+    internal EntityId GetTargetEntityId(object target)
     {
-        if (target == null) return -1;
+        if (target == null) return default;
         if (target is MonoBehaviour behaviour)
         {
-            return behaviour.GetInstanceID();
+            return behaviour.GetEntityId();
         }
         if (target is Transform transform)
         {
-            return transform.GetInstanceID();
+            return transform.GetEntityId();
         }
-        return -1;
+        return default;
     }
 
     internal abstract void SetTargetInvalid(object taskTarget);

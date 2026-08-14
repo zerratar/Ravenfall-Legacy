@@ -29,7 +29,7 @@
         player.dungeonHandler.SetSkill(targetSkill);
 
         var skillName = targetSkill.ToString();
-        if (targetSkill == RavenNest.Models.Skill.Health)
+        if (targetSkill == RavenNest.Models.Skill.Health || targetSkill == RavenNest.Models.Skill.Melee)
         {
             skillName = "All";
         }

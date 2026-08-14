@@ -2,18 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Skill = RavenNest.Models.Skill;
+using Obscured;
 
 [Serializable]
 public class SkillStat
 {
     public string Name;
-    public int CurrentValue;
-    public int Level;
-    public double Experience;
+    public ObscuredIntSplit CurrentValue;
+    public ObscuredIntSplit Level;
+    public ObscuredDouble Experience;
     public Skill Type;
-    public float Bonus;
+    public ObscuredFloat Bonus;
 
-    public int MaxLevel;// => Mathf.FloorToInt(Level + Bonus);
+    public ObscuredIntSplit MaxLevel;// => Mathf.FloorToInt(Level + Bonus);
 
     public int Index;
 
@@ -29,7 +30,7 @@ public class SkillStat
     {
     }
 
-    public SkillStat(int level)
+    public SkillStat(ObscuredIntSplit level)
     {
         this.Level = level;
         this.CurrentValue = level;
@@ -39,8 +40,8 @@ public class SkillStat
     public SkillStat(
         Skill type,
         string name,
-        int level,
-        double exp)
+        ObscuredIntSplit level,
+        ObscuredDouble exp)
     {
         Type = type;
         CurrentValue = level;//GameMath.ExperienceToLevel(exp);
@@ -100,7 +101,7 @@ public class SkillStat
 
     }
 
-    public void SetExp(double exp)
+    public void SetExp(ObscuredDouble exp)
     {
         AddExp(exp - Experience, out _);
     }

@@ -510,7 +510,7 @@ public class PlayerEquipment : MonoBehaviour
 
     private void DestroyItemObjectIfNotSame(ItemController obj, ItemController other)
     {
-        if (obj && obj.GetInstanceID() != other.GetInstanceID())
+        if (obj && obj.GetEntityId() != other.GetEntityId())
         {
             Destroy(obj.gameObject);
         }

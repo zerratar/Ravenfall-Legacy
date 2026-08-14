@@ -5,32 +5,33 @@ using UnityEngine;
 [CustomEditor(typeof(DungeonController))]
 public class DungeonEditor : Editor
 {
-    private SerializedProperty nameProp;
-    private SerializedProperty spawnRate;
-    private SerializedProperty MobsDifficultyScale;
-    private SerializedProperty BossCombatScale;
-    private SerializedProperty BossHealthScale;
-    private SerializedProperty level;
-    private SerializedProperty tier;
-    private SerializedProperty difficulity;
+    //private SerializedProperty nameProp;
+    //private SerializedProperty spawnRate;
+    //private SerializedProperty MobsDifficultyScale;
+    //private SerializedProperty BossCombatScale;
+    //private SerializedProperty BossHealthScale;
+    //private SerializedProperty level;
+    //private SerializedProperty tier;
+    //private SerializedProperty difficulity;
 
+
+    private SerializedProperty dungeonConfigs;
     private SerializedProperty itemRewardCount;
-
     private SerializedProperty bossSpawnPoint;
     private SerializedProperty startingPoint;
 
     void OnEnable()
     {
-        spawnRate = serializedObject.FindProperty("SpawnRate");
+        //spawnRate = serializedObject.FindProperty("SpawnRate");
+        //MobsDifficultyScale = serializedObject.FindProperty("MobsDifficultyScale");
+        //BossCombatScale = serializedObject.FindProperty("BossCombatScale");
+        //BossHealthScale = serializedObject.FindProperty("BossHealthScale");
+        //nameProp = serializedObject.FindProperty("Name");
+        //level = serializedObject.FindProperty("Level");
+        //tier = serializedObject.FindProperty("Tier");
+        //difficulity = serializedObject.FindProperty("Difficulity");
 
-        MobsDifficultyScale = serializedObject.FindProperty("MobsDifficultyScale");
-        BossCombatScale = serializedObject.FindProperty("BossCombatScale");
-        BossHealthScale = serializedObject.FindProperty("BossHealthScale");
-
-        nameProp = serializedObject.FindProperty("Name");
-        level = serializedObject.FindProperty("Level");
-        tier = serializedObject.FindProperty("Tier");
-        difficulity = serializedObject.FindProperty("Difficulity");
+        dungeonConfigs = serializedObject.FindProperty("DungeonTypes");
 
         itemRewardCount = serializedObject.FindProperty("itemRewardCount");
         bossSpawnPoint = serializedObject.FindProperty("bossSpawnPoint");
@@ -40,16 +41,16 @@ public class DungeonEditor : Editor
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
-        EditorGUILayout.PropertyField(spawnRate);
-        EditorGUILayout.PropertyField(nameProp);
-        EditorGUILayout.PropertyField(level);
-        EditorGUILayout.PropertyField(tier);
-        EditorGUILayout.PropertyField(difficulity);
+        //EditorGUILayout.PropertyField(spawnRate);
+        //EditorGUILayout.PropertyField(nameProp);
+        //EditorGUILayout.PropertyField(level);
+        //EditorGUILayout.PropertyField(tier);
+        //EditorGUILayout.PropertyField(difficulity);
+        //EditorGUILayout.PropertyField(MobsDifficultyScale);
+        //EditorGUILayout.PropertyField(BossCombatScale);
+        //EditorGUILayout.PropertyField(BossHealthScale);
 
-        EditorGUILayout.PropertyField(MobsDifficultyScale);
-        EditorGUILayout.PropertyField(BossCombatScale);
-        EditorGUILayout.PropertyField(BossHealthScale);
-
+        EditorGUILayout.PropertyField(dungeonConfigs);
         EditorGUILayout.PropertyField(itemRewardCount);
         EditorGUILayout.PropertyField(bossSpawnPoint);
         EditorGUILayout.PropertyField(startingPoint);

@@ -31,7 +31,8 @@ public class PlayerLeave : ChatBotCommandHandler
             }
 
             Game.RemovePlayer(player);
-            client.SendReply(gm, "You have left the game.");
+            if (!Game.HasMessageFilter("PlayerWelcome"))
+                client.SendReply(gm, "You have left the game.");
         }
         else
         {

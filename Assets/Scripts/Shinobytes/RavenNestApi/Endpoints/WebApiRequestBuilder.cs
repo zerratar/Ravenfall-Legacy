@@ -30,6 +30,12 @@ namespace RavenNest.SDK.Endpoints
             return this;
         }
 
+        public IApiRequestBuilder AddParameter(System.Guid value)
+        {
+            parameters.Add(new WebApiRequestParameter(null, value.ToString()));
+            return this;
+        }
+
         public IApiRequestBuilder AddParameter(string value)
         {
             parameters.Add(new WebApiRequestParameter(null, value));

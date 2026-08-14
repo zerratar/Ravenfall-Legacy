@@ -26,39 +26,23 @@ public class MaxMultiplier : ChatBotCommandHandler
         var multi = (float)tierSub;
         var rested = false;
 
+        // Prepare global boost info if active
+        string globalBoostInfo = "";
         if (Game.Boost.Active)
+        {
+            globalBoostInfo = $" and {Game.Boost.Multiplier}x from global exp multiplier for {Utility.FormatTime(Game.Boost.TimeLeft)}";
             multi += Game.Boost.Multiplier;
-
+        }
 
         if (player.ferryHandler.OnFerry)
         {
             hutMulti = Game.Village.GetExpBonusBySkill(Skill.Sailing);
             multi += hutMulti;
         }
-        else
+        else if (player.ActiveSkill != Skill.None)
         {
-            if (player.ActiveSkill != Skill.None)
-            {
-                hutMulti = Game.Village.GetExpBonusBySkill(player.ActiveSkill);
-                multi += hutMulti;
-
-                //var taskArgs = player.GetTaskArguments();
-                //var combatType = PlayerController.GetCombatTypeFromArg(taskArgs.FirstOrDefault());
-                //if (combatType != -1)
-                //{
-                //    hutMulti = Game.Village.GetExpBonusBySkill((CombatSkill)combatType);
-                //    multi += hutMulti;
-                //}
-                //else
-                //{
-                //    var skillIndex = player.GetSkillTypeFromArgs(taskArgs);
-                //    if (skillIndex != -1)
-                //    {
-                //        hutMulti = Game.Village.GetExpBonusBySkill((TaskSkill)skillIndex);
-                //        multi += hutMulti;
-                //    }
-                //}
-            }
+            hutMulti = Game.Village.GetExpBonusBySkill(player.ActiveSkill);
+            multi += hutMulti;
         }
 
         if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon)
@@ -75,29 +59,31 @@ public class MaxMultiplier : ChatBotCommandHandler
             rested = true;
         }
 
+        // Helper to append global boost info
+        string AppendGlobal(string msg) => msg + globalBoostInfo;
+
         if (rested)
         {
             if (hutMulti > 0)
             {
                 if (tierSub > 0)
                 {
-                    client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon, {hutMulti}x from huts and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, hutMulti, (float)player.Rested.ExpBoost);
+                    client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon, {hutMulti}x from huts") + " and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, hutMulti, (float)player.Rested.ExpBoost);
                 }
                 else
                 {
-                    client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts and the total is multiplied by {restedMulti}x from being rested.", multi, hutMulti, (float)player.Rested.ExpBoost);
+                    client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts") + " and the total is multiplied by {restedMulti}x from being rested.", multi, hutMulti, (float)player.Rested.ExpBoost);
                 }
-
                 return;
             }
 
             if (tierSub > 0)
             {
-                client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, (float)player.Rested.ExpBoost);
+                client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon") + " and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, (float)player.Rested.ExpBoost);
             }
             else
             {
-                client.SendReply(gm, "You're gaining {expMulti}x more exp for being rested.", multi);
+                client.SendReply(gm, AppendGlobal("You're gaining {expMulti}x more exp for being rested"), multi);
             }
             return;
         }
@@ -106,22 +92,22 @@ public class MaxMultiplier : ChatBotCommandHandler
         {
             if (tierSub > 0)
             {
-                client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and {hutMulti}x from huts.", multi, tierSub, hutMulti);
+                client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and {hutMulti}x from huts"), multi, tierSub, hutMulti);
             }
             else
             {
-                client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts.", multi, hutMulti);
+                client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts"), multi, hutMulti);
             }
             return;
         }
 
         if (tierSub > 0)
         {
-            client.SendReply(gm, "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon.", multi, tierSub);
+            client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon"), multi, tierSub);
         }
         else
         {
-            client.SendReply(gm, "Your current exp boost: {expMulti}x.", multi);
+            client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x"), multi);
         }
     }
 }

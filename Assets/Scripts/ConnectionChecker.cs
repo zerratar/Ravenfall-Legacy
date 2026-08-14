@@ -48,7 +48,7 @@ public class ConnectionChecker : MonoBehaviour
                 return;
             }
 
-            Label.text = "CONNECTION LOST";
+            Label.text = "CONNECTION LOST - DO NOT RESTART YOUR GAME TO AVOID DATA LOSS";
             SetVisibility(true);
         }
         catch { }

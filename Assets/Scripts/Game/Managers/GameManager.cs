@@ -124,15 +124,24 @@ public class GameManager : MonoBehaviour, IGameManager
     public RenderPipelineAsset URP_LowQuality;
     public RenderPipelineAsset URP_DefaultQuality;
 
+
     [NonSerialized] public bool NewUpdateAvailable;
+
+    [Header("Network Settings")]
+    public DeltaClientBehaviour DeltaClient;
 
     public SessionStats SessionStats => sessionStats;
 
     public string ServerAddress;
 
     public static GameManager Instance { get; private set; }
+
+#if RELEASE
+    public const bool PushDataToTcpApi = false;
+#else
     [Obsolete("Do not send data to Tcp API as we use the delta client for that now. See DeltaClientBehavior")]
-    [NonSerialized] public bool PushDataToTcpApi = true;
+    [NonSerialized] public bool PushDataToTcpApi = false;
+#endif
 
     public bool UsePostProcessingEffects = true;
     public GraphicsToggler Graphics;
@@ -300,6 +309,14 @@ public class GameManager : MonoBehaviour, IGameManager
         Overlay.CheckIfGame();
         GameSystems.Awake();
         QueryEngineAPI.OnGameManagerAwake(this);
+
+        if (PlayerSettings.Instance.BotMessageFilters?.Length > 0)
+        {
+            foreach (var toggle in PlayerSettings.Instance.BotMessageFilters)
+            {
+                SetMessageFilter(toggle, false);
+            }
+        }
     }
 
     // Start is called before the first frame update   
@@ -318,12 +335,13 @@ public class GameManager : MonoBehaviour, IGameManager
         GameCache.IsAwaitingGameRestore = false;
         ioc = GetComponent<IoCContainer>();
 
+        if (!DeltaClient) DeltaClient = FindAnyObjectByType<DeltaClientBehaviour>(FindObjectsInactive.Include);
         if (gameReloadMessage) gameReloadMessage.SetActive(false);
         if (!Graphics) Graphics = FindAnyObjectByType<GraphicsToggler>();
         if (!nametagManager) nametagManager = FindAnyObjectByType<NameTagManager>();
         if (!dayNightCycle) dayNightCycle = GetComponent<DayNightCycle>();
         if (!onsen) onsen = GetComponent<OnsenManager>();
-        if (!loginHandler) loginHandler = FindAnyObjectByType<LoginHandler>();
+        if (!loginHandler) loginHandler = FindAnyObjectByType<LoginHandler>(FindObjectsInactive.Include);
         if (!dropEventManager) dropEventManager = GetComponent<DropEventManager>();
         if (!ferryProgress) ferryProgress = FindAnyObjectByType<FerryProgress>();
         if (!gameCamera) gameCamera = FindAnyObjectByType<GameCamera>();
@@ -347,6 +365,8 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!musicManager) musicManager = GetComponent<MusicManager>();
 
         RegisterGameEventHandler<ItemAddEventHandler>(GameEventType.ItemAdd);
+        RegisterGameEventHandler<ItemSyncEventHandler>(GameEventType.ItemSync);
+
         RegisterGameEventHandler<ResourceUpdateEventHandler>(GameEventType.ResourceUpdate);
         RegisterGameEventHandler<ServerMessageEventHandler>(GameEventType.ServerMessage);
 
@@ -366,6 +386,9 @@ public class GameManager : MonoBehaviour, IGameManager
 
         RegisterGameEventHandler<PlayerRemoveEventHandler>(GameEventType.PlayerRemove);
         RegisterGameEventHandler<PlayerAddEventHandler>(GameEventType.PlayerAdd);
+        RegisterGameEventHandler<PlayerLogRequestEventHandler>(GameEventType.PlayerLogRequest);
+        RegisterGameEventHandler<GameStateRequestEventHandler>(GameEventType.GameStateRequest);
+
         RegisterGameEventHandler<PlayerExpUpdateEventHandler>(GameEventType.PlayerExpUpdate);
         RegisterGameEventHandler<PlayerJoinArenaEventHandler>(GameEventType.PlayerJoinArena);
         RegisterGameEventHandler<PlayerJoinDungeonEventHandler>(GameEventType.PlayerJoinDungeon);
@@ -572,7 +595,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (Ferry.Captain)
         {
             ferryStats.CaptainName = Ferry.Captain.Name;
-            ferryStats.CaptainSailingLevel = Ferry.Captain.Stats.Sailing.Level;
+            ferryStats.CaptainSailingLevel = Ferry.Captain.Stats.Sailing.MaxLevel;
         }
 
         return ferryStats;
@@ -758,7 +781,7 @@ public class GameManager : MonoBehaviour, IGameManager
         return default;
     }
 
-    public void SaveStateAndShutdownGame(bool activateTempLogin = true)
+    public void SaveStateAndShutdownGame(bool activateTempLogin = true, bool attemptRestart = false)
     {
         if (activateTempLogin)
         {
@@ -771,6 +794,76 @@ public class GameManager : MonoBehaviour, IGameManager
         SaveStateFile();
 
         OnExit();
+
+
+        if (attemptRestart)
+        {
+            var args = string.Join(" ", Environment.GetCommandLineArgs());
+#if UNITY_STANDALONE_LINUX
+            try
+            {
+                // Restart the game using the same command line arguments
+                // 1. save a .sh file and make it executable
+                // 2. run the .sh file with the command line arguments
+                // the shell file should try and close down ravenfall if it runs, and then start it again
+                // 3. the shell file should be in the same directory as the game executable
+
+                var shellFile = Shinobytes.IO.Path.Combine(Shinobytes.IO.Path.GameFolder, "restart.sh");
+                var shellFileContent = $"#!/bin/bash\n" +
+                    $"pkill -f Ravenfall.x86_64\n" +
+                    $"./Ravenfall.x86_64 {args}";
+
+                System.IO.File.WriteAllText(shellFile, shellFileContent);
+
+                // Make the shell file executable
+                new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "chmod",
+                        Arguments = $"+x \"{shellFile}\"",
+                        WorkingDirectory = Shinobytes.IO.Path.GameFolder,
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    }
+                }.Start();
+
+                new System.Diagnostics.Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "/bin/bash",
+                        Arguments = $"-c \"setsid ./{shellFile} &\"",
+                        WorkingDirectory = Shinobytes.IO.Path.GameFolder,
+                        UseShellExecute = false,
+                        CreateNoWindow = false
+                    }
+                }.Start();
+                return;
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("Failed to restart via shell: " + exc);
+            }
+#else
+            try
+            {
+                // on windows, generate a bat file and run it
+                var batFile = Shinobytes.IO.Path.Combine(Shinobytes.IO.Path.GameFolder, "restart.bat");
+                var batFileContent = $"@echo off\n" +
+                    $"taskkill /F /IM Ravenfall.exe\n" +
+                    $"start Ravenfall.exe {args}";
+                System.IO.File.WriteAllText(batFile, batFileContent);
+                System.Diagnostics.Process.Start(batFile);
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("Failed to restart via batch: " + exc);
+            }
+#endif
+        }
+
 
 #if UNITY_2023_2 || UNITY_2023_2_20
         try
@@ -829,6 +922,7 @@ public class GameManager : MonoBehaviour, IGameManager
         GameCache.IsAwaitingGameRestore = false;
 
         gameReloadUIPanel.SetActive(true);
+
         try
         {
             if (state.Players == null || state.Players.Count == 0)
@@ -937,7 +1031,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (nametagManager)
             nametagManager.NameTagsEnabled = PlayerNamesVisible;
 
-        UpdateIntegrityCheck();
+        //UpdateIntegrityCheck();
 
         if (Input.GetKeyDown(KeyCode.F11) && RavenBot.UseRemoteBot && !RavenBot.IsConnectedToLocal)
         {
@@ -1011,8 +1105,14 @@ public class GameManager : MonoBehaviour, IGameManager
                 var reloadState = GameCache.GetReloadState();
                 if (reloadState != null)
                 {
+                    if (Ravenfall.isBatchMode)
+                        Shinobytes.Debug.Log("Starting restore coroutine");
                     StartCoroutine(RestoreGameState(reloadState.Value));
                     return;
+                }
+                else if (Ravenfall.isBatchMode)
+                {
+                    Shinobytes.Debug.Log("Player state data is null. No Players will be restored.");
                 }
             }
 
@@ -1192,6 +1292,11 @@ public class GameManager : MonoBehaviour, IGameManager
 
     public void OnAuthenticated()
     {
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("Authentication was successfull.");
+        }
+
         //ShowFerryProgress();
     }
 
@@ -1229,10 +1334,6 @@ public class GameManager : MonoBehaviour, IGameManager
                 player.ferryHandler.RemoveFromFerry();
             }
 
-            if (notifyServer)
-            {
-                RavenNest.PlayerRemoveAsync(player);
-            }
 
             player.Island = null;
 
@@ -1245,6 +1346,11 @@ public class GameManager : MonoBehaviour, IGameManager
                 gameCamera.ObservePlayer(null);
             }
 
+            if (notifyServer)
+            {
+                RavenNest.PlayerRemoveAsync(player);
+            }
+
             if (player.IsBot)
             {
                 return;
@@ -1255,11 +1361,17 @@ public class GameManager : MonoBehaviour, IGameManager
 
             villageStatsJson.Update();
             sessionStatsJson.Update();
-            SaveStateFile();
+
+            if (!GameManager.BatchPlayerAddInProgress)
+            {
+                SaveStateFile();
+            }
+
             UpdatePathfindingIterations();
         }
         catch (Exception exc)
         {
+            RavenNest.PlayerRemoveFailedAsync(player, exc.ToString());
             Shinobytes.Debug.LogError("Failed to remove player (" + playerName + "): " + exc.ToString() + "\nPlayer instead queued up for removal");
             if (player != null && !player.isDestroyed)
             {
@@ -1439,6 +1551,8 @@ public class GameManager : MonoBehaviour, IGameManager
             if (player && gameCamera && gameCamera.AllowJoinObserve)
                 gameCamera.ObservePlayer(player);
         }
+
+        SaveStateFile();
     }
 
     public void HandleGameEvents(EventList gameEvents)
@@ -2480,6 +2594,11 @@ public class GameManager : MonoBehaviour, IGameManager
         //    return;
         //}
 
+        if (player == null || player.isDestroyed)
+        {
+            return;
+        }
+
         RemovePlayer(player);
     }
 
@@ -2638,6 +2757,19 @@ public class GameManager : MonoBehaviour, IGameManager
             RavenBot.Announce("{playerCount} players have automatically joined the raid!", players.Count.ToString());
         }
     }
+
+    private ConcurrentDictionary<string, bool> messageFilters = new ConcurrentDictionary<string, bool>();
+
+    internal void SetMessageFilter(string key, bool value)
+    {
+        messageFilters[key] = value;
+    }
+
+    internal bool HasMessageFilter(string key)
+    {
+        messageFilters.TryGetValue(key, out var value);
+        return !value;
+    }
 }
 
 public class IslandTaskCollection
@@ -2749,8 +2881,11 @@ public class FreezeChecker
     private static string currentScriptFileName;
     private static Thread currentScriptThread;
 
+    public static bool IsEnabled = false;
+
     public static void Start()
     {
+        if (!IsEnabled) return;
         if (isRunning)
         {
             // we should clear out stacktraces and other stuff
@@ -2778,6 +2913,7 @@ public class FreezeChecker
 
     public static void SetCurrentScriptUpdate(string objectName, [CallerMemberName] string scriptMethodName = null, [CallerFilePath] string scriptFile = null)
     {
+        if (!IsEnabled) return;
         lock (mutex)
         {
             lastChange = DateTime.UtcNow;
@@ -2790,6 +2926,7 @@ public class FreezeChecker
 
     private static void Run(object obj)
     {
+        if (!IsEnabled) return;
         lastChange = DateTime.UtcNow;
         var updateInterval = interval;
         while (isRunning)
@@ -2816,6 +2953,7 @@ public class FreezeChecker
 
     public static void Stop()
     {
+        if (!IsEnabled) return;
         Shinobytes.Debug.Log("Stopping freeze checker...");
         isRunning = false;
     }

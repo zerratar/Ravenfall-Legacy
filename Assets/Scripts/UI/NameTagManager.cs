@@ -61,7 +61,7 @@ public class NameTagManager : MonoBehaviour
     {
         //lock (mutex)
         {
-            var nameTag = nameTags.FirstOrDefault(x => x.TargetTransform.GetInstanceID() == transform.GetInstanceID());
+            var nameTag = nameTags.FirstOrDefault(x => x.TargetTransform.GetEntityId() == transform.GetEntityId());
             if (nameTag)
             {
                 Destroy(nameTag.gameObject);

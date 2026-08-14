@@ -43,6 +43,7 @@ namespace Shinobytes
         private static volatile bool patched;
         private static long logCounter = 0;
         private static string PlayerLogFilePath;
+        private static string LogFolder;
         private static bool logToFile;
         private static bool isBatchMode;
         private static string TargetLogFilePath;
@@ -53,6 +54,7 @@ namespace Shinobytes
         private static readonly object mutex = new object();
 
         public static bool KeepPlayerLog = true;
+        private static bool patchFailed = false;
 
         static Debug()
         {
@@ -62,49 +64,126 @@ namespace Shinobytes
         private static void PatchIfNecessary()
         {
             if (patched) return;
-
-            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var appDataFolder = System.IO.Path.Combine(userProfile, @"AppData\LocalLow\", Application.companyName, Application.productName);
-
-            //logToFile = Application.unityVersion.Contains("6000.0.16f1");
-            //var prevLog = Path.Combine(appDataFolder, "player-prev.log");
-            //var prevLogExists = System.IO.File.Exists(prevLog);
-            //if (prevLogExists && new System.IO.FileInfo(prevLog).Length == 0)
-            //{
-            //    logToFile = true;
-            //}
-
-            // always log to file for now
-
-            PlayerLogFilePath = Path.Combine(appDataFolder, "player.log");
-
-            logToFile = true;
-            isBatchMode = Application.isBatchMode;
-            if (logToFile)
+            try
             {
-                Application.logMessageReceived += Application_logMessageReceived;
+
+
+                //var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                //var appDataFolder = System.IO.Path.Combine(userProfile, @"AppData\LocalLow\", Application.companyName, Application.productName);
+                var appDataFolder = UnityEngine.Application.persistentDataPath;
+                appDataFolder = appDataFolder.Replace("\\/", "/");
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
+                {
+                    appDataFolder = appDataFolder.Replace("\\", "/");
+                }
+                if (!Directory.Exists(appDataFolder))
+                {
+                    Directory.CreateDirectory(appDataFolder);
+                }
+                LogFolder = appDataFolder;
+                PlayerLogFilePath = Path.Combine(appDataFolder, "player.log");
+
+                logToFile = true;
+                //isBatchMode = Application.isBatchMode;
+                isBatchMode = false;
+                if (logToFile)
+                {
+                    Application.logMessageReceived += Application_logMessageReceived;
+                    lock (mutex)
+                    {
+                        //Application.logMessageReceivedThreaded += Application_logMessageReceivedThreaded;
+                        TargetLogFilePath = Path.Combine(appDataFolder, CustomLogFile);
+                        if (Environment.OSVersion.Platform == PlatformID.Unix)
+                        {
+                            TargetLogFilePath = TargetLogFilePath.Replace("\\", "/");
+                        }
+
+                        if (System.IO.File.Exists(TargetLogFilePath))
+                        {
+                            // copy to a backup file
+                            var backupFile = Path.Combine(appDataFolder, CustomPrevLogFile);
+                            if (Environment.OSVersion.Platform == PlatformID.Unix)
+                            {
+                                backupFile = backupFile.Replace("\\", "/");
+                            }
+                            if (System.IO.File.Exists(backupFile))
+                            {
+                                System.IO.File.Delete(backupFile);
+                            }
+                            System.IO.File.Move(TargetLogFilePath, backupFile);
+                        }
+                        AppendSystemInfo(TargetLogFilePath);
+                    }
+                }
+                else
+                {
+                    TargetLogFilePath = Path.Combine(appDataFolder, "player.log");
+                    if (Environment.OSVersion.Platform == PlatformID.Unix)
+                    {
+                        TargetLogFilePath = TargetLogFilePath.Replace("\\", "/");
+                    }
+                }
+                patched = true;
+            }
+            catch
+            {
+                logToFile = false;
+                patchFailed = true;
+            }
+        }
+
+        public static byte[] GetLogFileContentAsBytes(string logFile)
+        {
+            try
+            {
+                var path = Path.Combine(LogFolder, logFile);
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
+                {
+                    path = path.Replace("\\", "/");
+                }
+
+                if (!System.IO.File.Exists(path))
+                    return Array.Empty<byte>();
+
                 lock (mutex)
                 {
-                    //Application.logMessageReceivedThreaded += Application_logMessageReceivedThreaded;
-                    TargetLogFilePath = Path.Combine(appDataFolder, CustomLogFile);
-                    if (System.IO.File.Exists(TargetLogFilePath))
-                    {
-                        // copy to a backup file
-                        var backupFile = Path.Combine(appDataFolder, CustomPrevLogFile);
-                        if (System.IO.File.Exists(backupFile))
-                        {
-                            System.IO.File.Delete(backupFile);
-                        }
-                        System.IO.File.Move(TargetLogFilePath, backupFile);
-                    }
-                    AppendSystemInfo(TargetLogFilePath);
+                    File.Copy(path, path + ".tmp", true);
                 }
+                var bytes = System.IO.File.ReadAllBytes(path + ".tmp");
+                try
+                {
+                    System.IO.File.Delete(path + ".tmp");
+                }
+                catch { }
+                return bytes;
             }
-            else
+            catch
             {
-                TargetLogFilePath = Path.Combine(appDataFolder, "player.log");
+                return Array.Empty<byte>();
             }
-            patched = true;
+        }
+
+        public static byte[] GetCurrentLogContentAsBytes()
+        {
+            try
+            {
+                lock (mutex)
+                {
+                    File.Copy(TargetLogFilePath, TargetLogFilePath + ".tmp", true);
+                }
+
+                var bytes = System.IO.File.ReadAllBytes(TargetLogFilePath + ".tmp");
+                try
+                {
+                    System.IO.File.Delete(TargetLogFilePath + ".tmp");
+                }
+                catch { }
+                return bytes;
+            }
+            catch
+            {
+                return Array.Empty<byte>();
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -116,9 +195,12 @@ namespace Shinobytes
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool LogToFile(string condition, string stackTrace, LogType type)
         {
-            if (!logToFile || string.IsNullOrEmpty(TargetLogFilePath) || string.IsNullOrEmpty(condition)) return false;
+            if (patchFailed || !logToFile || string.IsNullOrEmpty(TargetLogFilePath) || string.IsNullOrEmpty(condition)) return false;
             if (!Filter(condition, type)) return false;
-
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                TargetLogFilePath = TargetLogFilePath.Replace("\\", "/");
+            }
             lock (mutex)
             {
                 var timeSinceLastLog = DateTime.UtcNow - lastLogMessage;
@@ -131,6 +213,10 @@ namespace Shinobytes
                     if (logFile.Length > 1024 * 1024 * 10)
                     {
                         var backupFile = Path.Combine(logFile.DirectoryName, CustomPrevLogFile);
+                        if (Environment.OSVersion.Platform == PlatformID.Unix)
+                        {
+                            backupFile = backupFile.Replace("\\", "/");
+                        }
                         if (System.IO.File.Exists(backupFile))
                         {
                             System.IO.File.Delete(backupFile);
@@ -192,6 +278,11 @@ namespace Shinobytes
 
         private static void AppendSystemInfo(string logFilePath)
         {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                logFilePath = logFilePath.Replace("\\", "/");
+            }
+
             lock (mutex)
             {
                 var sb = new StringBuilder();
@@ -238,38 +329,54 @@ namespace Shinobytes
 
         public static void Log(string message)
         {
-            PatchIfNecessary();
-            var msg = GetMessage(message);
-            UnityEngine.Debug.Log(msg);
-            if (isBatchMode) Console.WriteLine(Prefix(LogType.Log) + msg);
-            lastLogMessage = DateTime.UtcNow;
+            try
+            {
+                PatchIfNecessary();
+                var msg = GetMessage(message);
+                UnityEngine.Debug.Log(msg);
+                if (isBatchMode) Console.WriteLine(Prefix(LogType.Log) + msg);
+                lastLogMessage = DateTime.UtcNow;
+            }
+            catch { }
         }
 
         public static void Log(object message)
         {
-            PatchIfNecessary();
-            var msg = GetMessage(message?.ToString());
-            UnityEngine.Debug.Log(msg);
-            if (isBatchMode) Console.WriteLine(Prefix(LogType.Log) + msg);
-            lastLogMessage = DateTime.UtcNow;
+            try
+            {
+                PatchIfNecessary();
+                var msg = GetMessage(message?.ToString());
+                UnityEngine.Debug.Log(msg);
+                if (isBatchMode) Console.WriteLine(Prefix(LogType.Log) + msg);
+                lastLogMessage = DateTime.UtcNow;
+            }
+            catch { }
         }
 
         public static void LogWarning(string message)
         {
-            PatchIfNecessary();
-            var msg = GetMessage(message);
-            UnityEngine.Debug.LogWarning(msg);
-            if (isBatchMode) Console.WriteLine(Prefix(LogType.Warning) + msg);
-            lastLogMessage = DateTime.UtcNow;
+            try
+            {
+                PatchIfNecessary();
+                var msg = GetMessage(message);
+                UnityEngine.Debug.LogWarning(msg);
+                if (isBatchMode) Console.WriteLine(Prefix(LogType.Warning) + msg);
+                lastLogMessage = DateTime.UtcNow;
+            }
+            catch { }
         }
 
         public static void LogError(string message)
         {
-            PatchIfNecessary();
-            var msg = GetMessage(message);
-            UnityEngine.Debug.LogError(msg);
-            if (isBatchMode) Console.WriteLine(Prefix(LogType.Error) + msg);
-            lastLogMessage = DateTime.UtcNow;
+            try
+            {
+                PatchIfNecessary();
+                var msg = GetMessage(message);
+                UnityEngine.Debug.LogError(msg);
+                if (isBatchMode) Console.WriteLine(Prefix(LogType.Error) + msg);
+                lastLogMessage = DateTime.UtcNow;
+            }
+            catch { }
         }
 
         private static string Prefix(LogType logType)
@@ -282,10 +389,10 @@ namespace Shinobytes
             var msg = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message;
             // try get callstack if debug
 
-
 #if DEBUG
             var stackTrace = Environment.StackTrace;
-            if (!string.IsNullOrEmpty(stackTrace)) {
+            if (!string.IsNullOrEmpty(stackTrace))
+            {
                 // first line will have: at System.Environment.get_StackTrace () [0x00000] 
                 // second message is this method (GetMessage)
                 stackTrace = string.Join(Environment.NewLine, stackTrace.Split(Environment.NewLine)[2..]);

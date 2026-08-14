@@ -24,7 +24,7 @@ public class CodeOfConductController : MonoBehaviour
             lblModified.text = "Last Modified " + CodeOfConduct.LastModified;
         }
 
-        if (Application.isBatchMode)
+        if (Ravenfall.isBatchMode)
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene(0);
         }

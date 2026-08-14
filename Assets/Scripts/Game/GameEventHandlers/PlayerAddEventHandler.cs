@@ -10,7 +10,7 @@ public class PlayerAddEventHandler : GameEventHandler<PlayerAdd>
             var existing = gameManager.Players.GetPlayerByUserId(data.UserId);
             if (existing != null)
             {
-                gameManager.RemovePlayer(existing, false);
+                gameManager.RemovePlayer(existing);
             }
         }
 

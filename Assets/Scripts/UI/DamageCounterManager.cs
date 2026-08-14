@@ -10,9 +10,9 @@ public class DamageCounterManager : MonoBehaviour
     private readonly Stack<DamageCounter> availableDamageCounters
         = new Stack<DamageCounter>();
 
-    private readonly ConcurrentDictionary<int, DamageCounter> damgeCounter = new ConcurrentDictionary<int, DamageCounter>();
-    private readonly ConcurrentDictionary<int, int> targetDamage = new ConcurrentDictionary<int, int>();
-    private readonly ConcurrentDictionary<int, int> targetHeal = new ConcurrentDictionary<int, int>();
+    private readonly ConcurrentDictionary<EntityId, DamageCounter> damgeCounter = new ConcurrentDictionary<EntityId, DamageCounter>();
+    private readonly ConcurrentDictionary<EntityId, int> targetDamage = new ConcurrentDictionary<EntityId, int>();
+    private readonly ConcurrentDictionary<EntityId, int> targetHeal = new ConcurrentDictionary<EntityId, int>();
 
     public void Add(Transform target, int damage, bool isHeal = false, bool allowMerge = false)
     {
@@ -28,7 +28,7 @@ public class DamageCounterManager : MonoBehaviour
 
     private void AddDamageCounter(Transform target, int damage, bool isHeal)
     {
-        var id = target.GetInstanceID();
+        var id = target.GetEntityId();
         var dc = GetAvailableDamageCounter();
         dc.Activate(target, damage, isHeal);
 
@@ -47,7 +47,7 @@ public class DamageCounterManager : MonoBehaviour
 
     private void AddMergedDamageCounter(Transform target, int damage, bool isHeal)
     {
-        var id = target.GetInstanceID();
+        var id = target.GetEntityId();
         int value = 0;
         if (isHeal)
         {

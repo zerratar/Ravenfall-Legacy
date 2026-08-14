@@ -68,7 +68,7 @@ namespace RavenNest.SDK
         public bool Enabled = true;
         private Action onReconnect;
         private bool hasBeenConnected;
-        private GameStateRequest lastSentGameStateRequest;
+        private Models.TcpApi.GameStateRequest lastSentGameStateRequest;
 
         public bool Connected => client?.Connected ?? false;
         public bool IsReady => Connected && Enabled;
@@ -383,7 +383,7 @@ namespace RavenNest.SDK
             try
             {
 
-                GameStateRequest gameStateRequest = BuildStateRequest();
+                Models.TcpApi.GameStateRequest gameStateRequest = BuildStateRequest();
 
                 if (lastSentGameStateRequest == null || RequiresUpdate(gameStateRequest, lastSentGameStateRequest))
                 {
@@ -397,11 +397,11 @@ namespace RavenNest.SDK
             }
         }
 
-        private GameStateRequest BuildStateRequest()
+        private Models.TcpApi.GameStateRequest BuildStateRequest()
         {
             var now = DateTime.UtcNow;
             var players = gameManager.Players.GetAllRealPlayers();
-            var gameStateRequest = new GameStateRequest();
+            var gameStateRequest = new Models.TcpApi.GameStateRequest();
             //gameStateRequest.SessionToken = this.sessionToken;
             gameStateRequest.PlayerCount = players.Count;
 
@@ -654,7 +654,7 @@ namespace RavenNest.SDK
             return (int)skill.Value;
         }
 
-        private bool RequiresUpdate(GameStateRequest a, GameStateRequest b)
+        private bool RequiresUpdate(Models.TcpApi.GameStateRequest a, Models.TcpApi.GameStateRequest b)
         {
             if (a == null || b == null) return true;
             if (a.PlayerCount != b.PlayerCount) return true;
@@ -767,7 +767,7 @@ namespace RavenNest.SDK
                 return new SkillUpdate[0]; // none
             }
 
-            if (activeSkill.Type == Skill.Health)
+            if (activeSkill.Type == Skill.Health || activeSkill.Type == Skill.Melee)
             {
                 updates.Add(GetSkillUpdate(player, Skill.Attack));
                 updates.Add(GetSkillUpdate(player, Skill.Defense));

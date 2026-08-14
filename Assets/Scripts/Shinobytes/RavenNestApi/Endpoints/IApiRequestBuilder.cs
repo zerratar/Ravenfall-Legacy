@@ -6,6 +6,7 @@ namespace RavenNest.SDK.Endpoints
     {
         IApiRequestBuilder Identifier(string value);
         IApiRequestBuilder AddParameter(string value);
+        IApiRequestBuilder AddParameter(System.Guid value);
         IApiRequestBuilder AddParameter(string key, object value);
         IApiRequestBuilder Method(string item);
         WebApiRequest Build();

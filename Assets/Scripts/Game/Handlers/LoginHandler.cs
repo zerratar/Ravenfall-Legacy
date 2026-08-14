@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
@@ -13,6 +14,8 @@ public class LoginHandler : MonoBehaviour
     [SerializeField] private TextMeshProUGUI loginBtnText;
     [SerializeField] private TextMeshProUGUI invalidUsername;
     [SerializeField] private Toggle rememberMeToggle;
+
+    [SerializeField] private GameObject view;
     //[SerializeField] private LoadingHandler loading;
 
     const string AutoLoginFile = "autologin.conf";
@@ -20,6 +23,11 @@ public class LoginHandler : MonoBehaviour
 
     void Start()
     {
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("Login handler started");
+        }
+
         invalidUsername.gameObject.SetActive(false);
         var savedUsername = PlayerPrefs.GetString("LoginUsername", string.Empty);
         var savedPassword = PlayerPrefs.GetString("LoginPassword", string.Empty);
@@ -57,11 +65,21 @@ public class LoginHandler : MonoBehaviour
 
     private async Task LoginImplementation()
     {
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("Attempting to login...");
+        }
+
         loginBtnText.text = "LOGGING IN...";
-        if (txtUsername.text.Length == 0 || txtPassword.text.Length == 0) return;
+        if (txtUsername.text.Length == 0 || txtPassword.text.Length == 0)
+        {
+            if (Ravenfall.isBatchMode)
+                Shinobytes.Debug.Log("User/pass not set, login cannot proceed.");
+            return;
+        }
         if (await gameManager.RavenNestLoginAsync(txtUsername.text, txtPassword.text))
         {
-            gameObject.SetActive(false);
+            HideView();
             invalidUsername.enabled = false;
 
             if (rememberMeToggle != null && rememberMeToggle && rememberMeToggle.isOn)
@@ -89,7 +107,14 @@ public class LoginHandler : MonoBehaviour
     {
         if (!Shinobytes.IO.File.Exists(AutoLoginFile) && !Shinobytes.IO.File.Exists(TmpAutoLoginFile))
         {
+            if (Ravenfall.isBatchMode)
+                Shinobytes.Debug.Log("autologin.conf not present, automatic login has been cancelled.");
             return;
+        }
+
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("HandleAutoLogin");
         }
 
         if (Shinobytes.IO.File.Exists(TmpAutoLoginFile))
@@ -104,14 +129,28 @@ public class LoginHandler : MonoBehaviour
 
     private void AutoLogin(string AutoLoginFile)
     {
+        if (Ravenfall.isBatchMode)
+        {
+            Shinobytes.Debug.Log("AutoLogin " + AutoLoginFile);
+        }
+
         var loginInfo = ParseAutoLoginConfig(Shinobytes.IO.File.ReadAllLines(AutoLoginFile));
         if (string.IsNullOrEmpty(loginInfo.Username) || string.IsNullOrEmpty(loginInfo.Password))
         {
+            if (Ravenfall.isBatchMode)
+                Shinobytes.Debug.Log("login config file does not include both Username and Password. Login cannot proceed.");
             return;
         }
 
         txtUsername.text = loginInfo.Username;
         txtPassword.text = loginInfo.Password;
+
+        if (Ravenfall.isBatchMode)
+        {
+            Login();
+            return;
+        }
+
         StartCoroutine(DelayedLogin());
     }
 
@@ -154,6 +193,15 @@ public class LoginHandler : MonoBehaviour
         return new AutoLoginInfo { Username = user, Password = pass };
     }
 
+    internal void ShowView()
+    {
+        this.view.SetActive(true);
+    }
+
+    internal void HideView()
+    {
+        this.view.SetActive(false);
+    }
 
     private struct AutoLoginInfo
     {

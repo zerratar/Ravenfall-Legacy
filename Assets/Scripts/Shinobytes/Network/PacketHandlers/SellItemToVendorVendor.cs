@@ -22,7 +22,7 @@ public class SellItemToVendorVendor : ChatBotCommandHandler<string>
             return;
         }
 
-        var item = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, playerToSearch: player);
+        var item = itemResolver.ResolveTradeQuery(inputQuery, parsePrice: false, playerToSearch: player, includeSkinnedItems: false);
 
         if (item.SuggestedItemNames.Length > 0)
         {

@@ -24,7 +24,7 @@ public class DungeonForce : ChatBotCommandHandler
 
             if (PlayerSettings.Instance.DisableDungeons.GetValueOrDefault())
             {
-                client.SendReply(gm, "Dungeons has been disabled in this stream by the broadcaster.");
+                client.SendReply(gm, "Dungeons have been disabled in this stream by the broadcaster.");
                 return;
             }
 

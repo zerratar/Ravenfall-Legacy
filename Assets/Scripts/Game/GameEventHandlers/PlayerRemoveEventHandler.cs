@@ -12,7 +12,7 @@ public class PlayerRemoveEventHandler : GameEventHandler<PlayerRemove>
             return;
         }
 
-        gameManager.RemovePlayer(player, false);
+        gameManager.RemovePlayer(player);
 
         Shinobytes.Debug.LogWarning($"{player.PlayerName} removed from the game. Reason: " + data.Reason);
     }

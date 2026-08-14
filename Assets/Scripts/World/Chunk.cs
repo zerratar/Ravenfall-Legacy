@@ -133,7 +133,7 @@ public class Chunk : MonoBehaviour
                 }
 
                 var mySkillLevel = skill.Level;
-                if (skill.Type == RavenNest.Models.Skill.Health)
+                if (skill.Type == RavenNest.Models.Skill.Health || skill.Type == RavenNest.Models.Skill.Melee)
                 {
                     var st = player.Stats;
                     var lv = (st.Strength.Level + st.Defense.Level + st.Attack.Level) / 3;

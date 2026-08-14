@@ -10,7 +10,7 @@ public class TownHallController : MonoBehaviour
 
     private GameManager gameManager;
     private MeshRenderer meshRenderer;
-    private int instanceID;
+    private EntityId instanceID;
     private TownHallInfoManager ui;
 
     public Transform InfoTransform => infoPos;
@@ -25,7 +25,7 @@ public class TownHallController : MonoBehaviour
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
         this.meshRenderer = GetComponentInChildren<MeshRenderer>();
-        this.instanceID = hitCollider.GetInstanceID();
+        this.instanceID = hitCollider.GetEntityId();
     }
 
     public void SetTownHallResourceController(TownHallResource resx)
@@ -61,7 +61,7 @@ public class TownHallController : MonoBehaviour
                 var result = Physics.RaycastAll(ray, 5000);
                 foreach (var res in result)
                 {
-                    if (res.collider.GetInstanceID() == instanceID)
+                    if (res.collider.GetEntityId() == instanceID)
                     {
                         manager.OpenVillageDialog();
                         return;

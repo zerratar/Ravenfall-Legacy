@@ -12,7 +12,8 @@ public class Skills : IComparable
 {
     private readonly ConcurrentDictionary<string, SkillStat> skills
         = new ConcurrentDictionary<string, SkillStat>();
-
+    public static readonly Skill[] SkillTypeList = Enums.GetValues<Skill>().ToArray();
+    public static readonly HashSet<int> SkillTypeListIds = new HashSet<int>(Enums.GetValues<Skill>().Select(x => (int)x).ToArray());
     private SkillStat[] skillList;
 
     public SkillStat Attack;
@@ -292,20 +293,23 @@ public class Skills : IComparable
     //    get => this.skillList[index];
     //}
 
-    public SkillStat this[Skill skill]
+    public SkillStat? this[Skill skill]
     {
         get
         {
-            if (skill == Skill.Melee)
+            if ((int)skill == (int)Skill.Melee)
             {
                 return Health;
             }
 
             var index = (int)skill;
-            if (this.SkillList.Length < index)
+
+            if (!SkillTypeListIds.Contains(index))
             {
-                throw new Exception("Trying to get skill (index: " + index + ", " + skill + ")");
+                Shinobytes.Debug.LogError("Trying to access skill " + skill + " which does not exist.");
+                return null;
             }
+
             return this.skillList[index];
         }
     }
@@ -582,6 +586,7 @@ public static class SkillUtilities
 
             SkillLookup["hp"] = Skill.Health;
             SkillLookup["all"] = Skill.Health;
+            SkillLookup["melee"] = Skill.Health;
             SkillLookup["health"] = Skill.Health;
             SkillLookup["heal"] = Skill.Healing;
             SkillLookup["mage"] = Skill.Magic;

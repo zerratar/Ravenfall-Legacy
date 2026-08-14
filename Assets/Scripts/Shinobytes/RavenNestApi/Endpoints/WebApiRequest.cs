@@ -65,6 +65,7 @@ namespace RavenNest.SDK.Endpoints
         {
             return SendAsync<TResult>(reqTarget, type, model, throwOnError);
         }
+
         public async Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type, object model, bool throwOnError = false)
         {
             if (IntegrityCheck.IsCompromised)
@@ -125,8 +126,23 @@ namespace RavenNest.SDK.Endpoints
                 // If a model is provided, serialize it as JSON and add it as the request body.
                 if (model != null)
                 {
-                    var requestData = JsonConvert.SerializeObject(model);
-                    request.Content = new StringContent(requestData, Encoding.UTF8, "application/json");
+                    if (model is byte[] rawBytes)
+                    {
+                        var stream = new MemoryStream(rawBytes);
+                        request.Content = new StreamContent(stream);
+                        request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                    }
+                    else if (model is Stream streamModel)
+                    {
+                        request.Content = new StreamContent(streamModel);
+                        request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                    }
+                    else
+                    {
+                        var requestData = JsonConvert.SerializeObject(model);
+                        request.Content = new StringContent(requestData, Encoding.UTF8, "application/json");
+                    }
+
                 }
 
                 try

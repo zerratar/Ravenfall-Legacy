@@ -37,8 +37,19 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<SessionToken>(ApiRequestTarget.Game, ApiRequestType.Post);
         }
 
-        public Task<BeginSessionResult> BeginSessionAsync(string clientVersion, string accessKey, float syncTime)
+        public Task<BeginSessionResult> BeginSessionAsync(string clientVersion, string accessKey, float syncTime, bool updateSkipped = false)
         {
+            if (updateSkipped)
+            {
+                return request.Create()
+                    .AddParameter(clientVersion)
+                    .AddParameter(accessKey)
+                    .AddParameter(syncTime.ToString())
+                    .AddParameter("skip-update")
+                    .Build()
+                    .SendAsync<BeginSessionResult>(ApiRequestTarget.Game, ApiRequestType.Post);
+            }
+
             return request.Create()
                 .AddParameter(clientVersion)
                 .AddParameter(accessKey)
@@ -220,6 +231,40 @@ namespace RavenNest.SDK.Endpoints
             catch
             {
                 return false;
+            }
+        }
+
+        internal async Task<object> UploadLogFileAsync(Guid requestId, byte[] content)
+        {
+            try
+            {
+                return await request.Create()
+                    .Method("upload-log")
+                    .AddParameter(requestId.ToString())
+                    .Build()
+                    .SendAsync<object, byte[]>(ApiRequestTarget.Game, ApiRequestType.Post, content);
+            }
+            catch (Exception ex)
+            {
+                Shinobytes.Debug.LogError($"Failed to upload log file: {ex}");
+                return null;
+            }
+        }
+
+        internal async Task<object> UploadStateDataAsync(Guid requestId, byte[] content)
+        {
+            try
+            {
+                return await request.Create()
+                    .Method("upload-state")
+                    .AddParameter(requestId.ToString())
+                    .Build()
+                    .SendAsync<object, byte[]>(ApiRequestTarget.Game, ApiRequestType.Post, content);
+            }
+            catch (Exception ex)
+            {
+                Shinobytes.Debug.LogError($"Failed to upload game state: {ex}");
+                return null;
             }
         }
     }

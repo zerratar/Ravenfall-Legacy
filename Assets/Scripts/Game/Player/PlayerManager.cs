@@ -150,7 +150,8 @@ public class PlayerManager : MonoBehaviour
                     var alreadyInGameMessage = addPlayerRequest.Username + " failed to be added back to the game. Player is already in game.";
                     if (userTriggered)
                     {
-                        client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
+                        if (!Game.HasMessageFilter("PlayerWelcome"))
+                            client.SendReplyUseMessageIfNotNull(command, user, Localization.MSG_JOIN_FAILED_ALREADY_PLAYING);
                         Shinobytes.Debug.Log(alreadyInGameMessage);
                         return null;
                     }
@@ -213,15 +214,21 @@ public class PlayerManager : MonoBehaviour
 
                 if (userTriggered && !player.IsBot)
                 {
-                    gameManager.SaveStateFile();
-
-                    if (playerInfo.IsNewUser)
+                    if (!GameManager.BatchPlayerAddInProgress)
                     {
-                        client.SendReply(command, player, Localization.MSG_JOIN_WELCOME_FIRST_TIME, addPlayerRequest.Username);
+                        gameManager.SaveStateFile();
                     }
-                    else
+
+                    if (!gameManager.HasMessageFilter("PlayerWelcome"))
                     {
-                        client.SendReply(command, player, Localization.MSG_JOIN_WELCOME);
+                        if (playerInfo.IsNewUser)
+                        {
+                            client.SendReply(command, player, Localization.MSG_JOIN_WELCOME_FIRST_TIME, addPlayerRequest.Username);
+                        }
+                        else
+                        {
+                            client.SendReply(command, player, Localization.MSG_JOIN_WELCOME);
+                        }
                     }
                 }
                 return player;

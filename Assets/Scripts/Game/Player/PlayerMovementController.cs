@@ -181,6 +181,12 @@ public class PlayerMovementController : MonoBehaviour
         //agent.Stop();
         var agent = this.navMeshAgent;
 
+        if (playerAnimations)
+            playerAnimations.StopMoving();
+
+        IsMoving = false;
+        MovementTime = 0;
+
         if (!agent.enabled)
         {
             return;
@@ -196,11 +202,6 @@ public class PlayerMovementController : MonoBehaviour
         }
         agent.enabled = false;
 
-        if (playerAnimations)
-            playerAnimations.StopMoving();
-
-        IsMoving = false;
-        MovementTime = 0;
         Destination = currentPosition;
 
         this.movementLockState = MovementLockState.Locked;

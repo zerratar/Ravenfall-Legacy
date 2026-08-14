@@ -260,7 +260,7 @@ public class FerryHandler : MonoBehaviour
                 player.GotoClosest(task);
             }
 
-            if (notifyPlayerOfDisembark && !AdminControlData.ControlPlayers)
+            if (notifyPlayerOfDisembark && !AdminControlData.ControlPlayers && !gameManager.HasMessageFilter("Disembark"))
             {
                 gameManager.RavenBot?.SendReply(player, Localization.MSG_FERRY_ARRIVED, player.Island.Identifier);
             }

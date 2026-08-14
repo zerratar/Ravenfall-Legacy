@@ -298,7 +298,9 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             if (!bossKilled && timeout)
             {
-                gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
+                if (!gameManager.HasMessageFilter("RaidResult"))
+                    gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
+
                 Shinobytes.Debug.Log("Raid boss was not killed in time.");
             }
             else
@@ -413,7 +415,8 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             // it could be that we are offline, or temporary issue saving. Lets enqueue it for later.
             rewardQueue.Enqueue(() => RewardPlayersAsync(playersToBeRewarded, retryCount + 1));
-            if (retryCount == 0)
+
+            if (retryCount == 0 && !gameManager.HasMessageFilter("RaidResult"))
             {
                 gameManager.RavenBot.Announce("Victorious!! Raid boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
             }
@@ -426,14 +429,26 @@ public class RaidManager : MonoBehaviour, IEvent
     private async void AddItems(EventItemReward[] rewards)
     {
         var result = gameManager.AddItems(rewards, raidIndex: raidIndex);
-        if (result.Count > 0)
+
+        if (!gameManager.HasMessageFilter("RaidResult"))
         {
-            gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded {itemCount} item treasures!", result.Count.ToString());
+            if (result.Count > 0)
+            {
+                gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded {itemCount} item treasures!", result.Count.ToString());
+
+            }
+            else
+            {
+                gameManager.RavenBot.Announce("Victorious!! The raid boss was slain but did not yield any treasure.");
+
+            }
         }
-        else
+
+        if (gameManager.HasMessageFilter("ItemDrop"))
         {
-            gameManager.RavenBot.Announce("Victorious!! The raid boss was slain but did not yield any treasure.");
+            return;
         }
+
 
         for (int i = 0; i < result.Messages.Count; i++)
         {

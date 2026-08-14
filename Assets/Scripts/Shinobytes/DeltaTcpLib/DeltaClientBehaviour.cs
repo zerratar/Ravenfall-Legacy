@@ -8,6 +8,7 @@ using RavenNest.Models;
 using RavenNest.Models.TcpApi;
 using System.Threading;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 /// <summary>
 /// Unity MonoBehaviour wrapper for DeltaClient.
@@ -20,12 +21,12 @@ public class DeltaClientBehaviour : MonoBehaviour
     //public int ServerPortOverride = 3921;
 
     [Tooltip("The maximum number of player updates to process at once")]
-    public int MaxPlayerUpdates = 1024;
+    public int MaxPlayerUpdates = 2048;
 
     // Pre-allocated buffers to avoid GC
-    private DeltaExperienceUpdate[] _expUpdateBuffer;
-    private CharacterStateDelta[] _stateUpdateBuffer;
-    private SkillDelta[] _skillDeltaBuffer;
+    private DeltaExperienceUpdate[] expUpdateBuffer;
+    private CharacterStateDelta[] stateUpdateBuffer;
+    private SkillDelta[] skillDeltaBuffer;
 
     [Tooltip("The interval, in seconds, how frequently the game will be saved.")]
     public float GameSyncInterval = 2f;
@@ -36,32 +37,33 @@ public class DeltaClientBehaviour : MonoBehaviour
     [Tooltip("Connection timeout in seconds")]
     public float ConnectionTimeout = 5f;
 
-    private bool _connected;
-    private bool _connecting;
-    private bool _expUpdateInProgress = false;
-    private bool _stateUpdateInProgress = false;
+    private bool connected;
+    private bool connecting;
+    private bool expUpdateInProgress = false;
+    private bool stateUpdateInProgress = false;
 
-    private int _lastProcessedExpPlayer = 0;
-    private int _lastProcessedStatePlayer = 0;
+    private int lastProcessedExpPlayer = 0;
+    private int lastProcessedStatePlayer = 0;
 
-    private CancellationTokenSource _connectionCts;
+    private CancellationTokenSource connectionCts;
     private GameManager gameManager;
-    private DeltaClient _client;
+    private DeltaClient client;
     private DateTime lastGameSync;
     private DateTime lastReconnectAttempt;
-    private Shinobytes.DeltaTcpLib.GameStateRequest _lastSentGameState;
+    private Shinobytes.DeltaTcpLib.GameStateRequest lastSentGameState;
 
 
-    private Dictionary<Guid, CharacterStateDelta> _lastPlayerStates = new Dictionary<Guid, CharacterStateDelta>();
+    private Dictionary<Guid, CharacterStateDelta> lastPlayerStates = new Dictionary<Guid, CharacterStateDelta>();
 
     private void Awake()
     {
-        _expUpdateBuffer = new DeltaExperienceUpdate[MaxPlayerUpdates];
-        _stateUpdateBuffer = new CharacterStateDelta[MaxPlayerUpdates];
-        _skillDeltaBuffer = new SkillDelta[32]; // Assuming max 32 skills per player
+        var skillCount = Math.Max(32, Skills.SkillTypeList.Length);
+        expUpdateBuffer = new DeltaExperienceUpdate[MaxPlayerUpdates];
+        stateUpdateBuffer = new CharacterStateDelta[MaxPlayerUpdates];
+        skillDeltaBuffer = new SkillDelta[skillCount];
     }
 
-    private void Update()
+    public async UniTaskVoid Update()
     {
         if (gameManager == null)
         {
@@ -72,28 +74,77 @@ public class DeltaClientBehaviour : MonoBehaviour
         if (gameManager.RavenNest != null &&
             gameManager.RavenNest.DeltaClient != null)
         {
-            if (_client == null)
+            if (client == null)
             {
-                _client = gameManager.RavenNest.DeltaClient;
-                _client.OnConnected += OnConnected;
-                _client.OnDisconnected += OnDisconnected;
-                _client.OnConnectionError += OnConnectionError;
+                client = gameManager.RavenNest.DeltaClient;
+                client.OnConnected += OnConnected;
+                client.OnDisconnected += OnDisconnected;
+                client.OnConnectionError += OnConnectionError;
             }
 
-            if (_client != null && gameManager.RavenNest.SessionStarted)
+            if (client != null && gameManager.RavenNest.SessionStarted)
             {
-                if (!_connected && !_connecting && ShouldAttemptReconnect())
+                if (!connected && !connecting && ShouldAttemptReconnect())
                 {
-                    StartConnectingAsync();
+                    await StartConnectingAsync();
                     return;
                 }
 
-                if (_connected)
+                if (connected)
                 {
-                    SyncGame();
+                    await SyncGameAsync();
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Generates a binary format of the current GameState, Exp State and Player State, saves it to disk under /states/ folder and then returns the 3 binary data as one byte array in the order of 1. GS, 2. XP, 3. PS.
+    /// Use this data to upload to server upon request.
+    /// </summary>
+    /// <returns></returns>
+    public byte[] SaveStateToDisk()
+    {
+        // build the data blob ready to be uploaded to server all in one go just like we do with upload player log.
+        // but first we want to store individual blobs on disk.
+        var players = gameManager.Players.GetAllPlayers();
+        var playerCount = players.Count;
+        var skillCount = Math.Max(32, Skills.SkillTypeList.Length);
+        var expUpdateBuffer = new DeltaExperienceUpdate[playerCount];
+        var stateUpdateBuffer = new CharacterStateDelta[playerCount];
+        var skillDeltaBuffer = new SkillDelta[skillCount];
+
+        var now = DateTime.Now;
+        var statesFolder = $"states";
+        if (!Shinobytes.IO.Directory.Exists(statesFolder))
+            Shinobytes.IO.Directory.CreateDirectory(statesFolder);
+
+        var gsBuffer = new byte[DeltaClient.MaxGameStateSize];
+        var xpBuffer = new byte[DeltaClient.GetExpBufferSize(playerCount)];
+        var psBuffer = new byte[DeltaClient.GetPlayerStateBufferSize(playerCount)];
+        var opBuffer = new byte[gsBuffer.Length + psBuffer.Length + xpBuffer.Length];
+
+        // 1. Game State
+        var gameState = BuildGameStateRequest();
+        var gsLength = DeltaClient.Serialize(gameState, gsBuffer);
+        Shinobytes.IO.File.WriteAllBytes(Shinobytes.IO.Path.Combine(statesFolder, "gs" + now.ToString("yyyyMMddHHmmss") + ".bin"), gsBuffer, 0, gsLength);
+        Array.Copy(gsBuffer, 0, opBuffer, 0, gsLength);
+
+        // 2. Experience State
+        int updateCount = BuildExperienceUpdateBatch(players, expUpdateBuffer, skillDeltaBuffer, 0, playerCount, false);
+        var xpLength = DeltaClient.Serialize(expUpdateBuffer, xpBuffer, updateCount);
+        Shinobytes.IO.File.WriteAllBytes(Shinobytes.IO.Path.Combine(statesFolder, "xp" + now.ToString("yyyyMMddHHmmss") + ".bin"), xpBuffer, 0, xpLength);
+        Array.Copy(xpBuffer, 0, opBuffer, gsLength, xpLength);
+
+        // 3. Player State
+        updateCount = BuildStateUpdateBatch(players, stateUpdateBuffer, 0, playerCount, false);
+        var psLength = DeltaClient.Serialize(stateUpdateBuffer, psBuffer, updateCount);
+        Shinobytes.IO.File.WriteAllBytes(Shinobytes.IO.Path.Combine(statesFolder, "ps" + now.ToString("yyyyMMddHHmmss") + ".bin"), psBuffer, 0, psLength);
+        Array.Copy(psBuffer, 0, opBuffer, gsLength + xpLength, psLength);
+
+        // save the full output buffer to disk
+        Shinobytes.IO.File.WriteAllBytes(Shinobytes.IO.Path.Combine(statesFolder, "all" + now.ToString("yyyyMMddHHmmss") + ".bin"), opBuffer, 0, gsLength + xpLength + psLength);
+        return opBuffer;
     }
 
     private bool ShouldAttemptReconnect()
@@ -101,7 +152,7 @@ public class DeltaClientBehaviour : MonoBehaviour
         return DateTime.UtcNow - lastReconnectAttempt >= TimeSpan.FromSeconds(ReconnectDelay);
     }
 
-    private void SyncGame()
+    private async UniTask SyncGameAsync()
     {
         var now = DateTime.UtcNow;
         if (now - lastGameSync >= TimeSpan.FromSeconds(GameSyncInterval))
@@ -111,43 +162,43 @@ public class DeltaClientBehaviour : MonoBehaviour
             var players = gameManager.Players.GetAllPlayers();
 
             // Process experience updates with batching support
-            if (!_expUpdateInProgress)
+            if (!expUpdateInProgress)
             {
-                _expUpdateInProgress = true;
-                ProcessAllExperienceUpdates(players);
+                expUpdateInProgress = true;
+                await ProcessAllExperienceUpdatesAsync(players);
             }
 
             // Process state updates with batching support
-            if (!_stateUpdateInProgress)
+            if (!stateUpdateInProgress)
             {
-                _stateUpdateInProgress = true;
-                ProcessAllStateUpdates(players);
+                stateUpdateInProgress = true;
+                await ProcessAllStateUpdatesAsync(players);
             }
 
             var currentGameState = BuildGameStateRequest();
             if (ShouldSendGameState(currentGameState))
             {
-                SendGameState(currentGameState);
-                _lastSentGameState = currentGameState;
+                await SendGameStateAsync(currentGameState);
+                lastSentGameState = currentGameState;
             }
         }
     }
     private bool ShouldSendGameState(Shinobytes.DeltaTcpLib.GameStateRequest currentState)
     {
         // Always send if this is the first update
-        if (_lastSentGameState == null)
+        if (lastSentGameState == null)
             return true;
 
         // Check if player count changed
-        if (currentState.PlayerCount != _lastSentGameState.PlayerCount)
+        if (currentState.PlayerCount != lastSentGameState.PlayerCount)
             return true;
 
         // Check raid state changes
-        if (HasRaidStateChanged(currentState.Raid, _lastSentGameState.Raid))
+        if (HasRaidStateChanged(currentState.Raid, lastSentGameState.Raid))
             return true;
 
         // Check dungeon state changes
-        if (HasDungeonStateChanged(currentState.Dungeon, _lastSentGameState.Dungeon))
+        if (HasDungeonStateChanged(currentState.Dungeon, lastSentGameState.Dungeon))
             return true;
 
         // No significant changes detected
@@ -249,87 +300,106 @@ public class DeltaClientBehaviour : MonoBehaviour
         return false;
     }
 
-    private async void ProcessAllExperienceUpdates(IReadOnlyList<PlayerController> players)
+    private async UniTask ProcessAllExperienceUpdatesAsync(IReadOnlyList<PlayerController> players)
     {
-        // Reset the index if we've processed all players or this is a new sync cycle
-        if (_lastProcessedExpPlayer >= players.Count)
-            _lastProcessedExpPlayer = 0;
-
-        bool hasMorePlayers = true;
-
-        while (hasMorePlayers)
+        try
         {
-            int expUpdateCount = BuildExperienceUpdateBatch(players, _lastProcessedExpPlayer);
+            // Reset the index if we've processed all players or this is a new sync cycle
+            if (lastProcessedExpPlayer >= players.Count)
+                lastProcessedExpPlayer = 0;
 
-            // Send the batch if we have updates
-            if (expUpdateCount > 0)
+            bool hasMorePlayers = true;
+
+            while (hasMorePlayers)
             {
-                SendExperienceBatch(expUpdateCount);
+                int expUpdateCount = BuildExperienceUpdateBatch(players, expUpdateBuffer, skillDeltaBuffer, lastProcessedExpPlayer, MaxPlayerUpdates);
 
-                // Small delay to avoid network congestion on large batches
-                await Task.Delay(10);
+                // Send the batch if we have updates
+                if (expUpdateCount > 0)
+                {
+                    await SendExperienceBatch(expUpdateCount);
+
+                    // Small delay to avoid network congestion on large batches
+                    await UniTask.Delay(10);
+                }
+
+                // If we've processed all players, or there were no updates in this batch, we're done
+                hasMorePlayers = (lastProcessedExpPlayer < players.Count) && (expUpdateCount > 0);
             }
-
-            // If we've processed all players, or there were no updates in this batch, we're done
-            hasMorePlayers = (_lastProcessedExpPlayer < players.Count) && (expUpdateCount > 0);
         }
-
-        _expUpdateInProgress = false;
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Error processing player exp update: " + exc);
+        }
+        finally
+        {
+            expUpdateInProgress = false;
+        }
     }
 
-    private async void ProcessAllStateUpdates(IReadOnlyList<PlayerController> players)
+    private async UniTask ProcessAllStateUpdatesAsync(IReadOnlyList<PlayerController> players)
     {
-        // Reset the index if we've processed all players or this is a new sync cycle
-        if (_lastProcessedStatePlayer >= players.Count)
-            _lastProcessedStatePlayer = 0;
-
-        bool hasMorePlayers = true;
-
-        while (hasMorePlayers)
+        try
         {
-            int stateUpdateCount = BuildStateUpdateBatch(players, _lastProcessedStatePlayer);
+            if (lastProcessedStatePlayer >= players.Count)
+                lastProcessedStatePlayer = 0;
 
-            // Send the batch if we have updates
-            if (stateUpdateCount > 0)
+            bool hasMorePlayers = true;
+
+            while (hasMorePlayers)
             {
-                SendStateBatch(stateUpdateCount);
+                int stateUpdateCount = BuildStateUpdateBatch(players, stateUpdateBuffer, lastProcessedStatePlayer, MaxPlayerUpdates);
 
-                // Small delay to avoid network congestion on large batches
-                await Task.Delay(10);
+                if (stateUpdateCount > 0)
+                    await SendStateBatch(stateUpdateCount);
+
+                // The loop should be based ONLY on whether all players are processed
+                hasMorePlayers = (lastProcessedStatePlayer < players.Count);
+
+                await UniTask.Delay(10);
             }
-
-            // If we've processed all players, or there were no updates in this batch, we're done
-            hasMorePlayers = (_lastProcessedStatePlayer < players.Count) && (stateUpdateCount > 0);
         }
-
-        _stateUpdateInProgress = false;
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Error processing state update: " + exc);
+        }
+        finally
+        {
+            stateUpdateInProgress = false;
+        }
     }
 
-    private int BuildExperienceUpdateBatch(IReadOnlyList<PlayerController> players, int startIndex)
+    private int BuildExperienceUpdateBatch(
+        IReadOnlyList<PlayerController> players,
+        DeltaExperienceUpdate[] expUpdateBuffer,
+        SkillDelta[] skillDeltaBuffer,
+        int offset,
+        int count,
+        bool isDeltaUpdate = true)
     {
         int updateCount = 0;
 
-        for (int playerIndex = startIndex;
-             playerIndex < players.Count && updateCount < MaxPlayerUpdates;
+        for (int playerIndex = offset;
+             playerIndex < players.Count && updateCount < count;
              playerIndex++)
         {
             var p = players[playerIndex];
             if (p == null || p.isDestroyed || p.IsBot) continue;
 
             // Grab the bitmask of changed skills
-            var mask = p.Stats.GetDirtyMask();
+            var mask = isDeltaUpdate ? p.Stats.GetDirtyMask() : 0xFFFFFFFF; // Set all bits;
             if (mask == 0) continue;
 
             // Build SkillDelta[] for each dirty skill
             int skillChangeCount = 0;
             var skillList = p.Stats.SkillList;
 
-            for (int i = 0; i < skillList.Length && skillChangeCount < _skillDeltaBuffer.Length; i++)
+            for (int i = 0; i < skillList.Length && skillChangeCount < skillDeltaBuffer.Length; i++)
             {
                 if ((mask & (1u << i)) != 0)
                 {
                     var s = skillList[i];
-                    _skillDeltaBuffer[skillChangeCount++] = new SkillDelta
+                    skillDeltaBuffer[skillChangeCount++] = new SkillDelta
                     {
                         Index = (byte)i,
                         Experience = (long)s.Experience,
@@ -338,166 +408,253 @@ public class DeltaClientBehaviour : MonoBehaviour
                 }
             }
 
-            // Clear so we only send new dirty bits next time
-            p.Stats.ClearDirtyMask();
+            if (isDeltaUpdate)
+                // Clear so we only send new dirty bits next time
+                p.Stats.ClearDirtyMask();
 
             // Copy skill deltas to a properly sized array
             var changes = new SkillDelta[skillChangeCount];
-            Array.Copy(_skillDeltaBuffer, changes, skillChangeCount);
+            Array.Copy(skillDeltaBuffer, changes, skillChangeCount);
 
-            _expUpdateBuffer[updateCount++] = new DeltaExperienceUpdate
+            expUpdateBuffer[updateCount++] = new DeltaExperienceUpdate
             {
                 CharacterId = p.Id,
                 DirtyMask = mask,
                 Changes = changes
             };
 
-            // Update the last processed player index
-            _lastProcessedExpPlayer = playerIndex + 1;
+            if (isDeltaUpdate)
+                // Update the last processed player index
+                lastProcessedExpPlayer = playerIndex + 1;
         }
 
         return updateCount;
+
     }
 
-    private int BuildStateUpdateBatch(IReadOnlyList<PlayerController> players, int startIndex)
+    private int BuildStateUpdateBatch(
+        IReadOnlyList<PlayerController> players,
+        CharacterStateDelta[] stateUpdateBuffer,
+        int offset,
+        int count,
+        bool isDeltaUpdate = true)
     {
         int stateCount = 0;
 
-        for (int i = startIndex; i < players.Count && stateCount < MaxPlayerUpdates; i++)
+        for (int i = offset; i < players.Count && stateCount < count; i++)
         {
-            var p = players[i];
-            if (p == null || p.isDestroyed || p.IsBot) continue;
-
-            var skill = p.GetActiveSkillStat();
-            var isTraining = skill != null;
-
-            var expPerHour = 0L;
-            var skillIndex = -1;
-            if (isTraining)
+            try
             {
-                var v = skill.GetExperiencePerHour();
-                expPerHour = v > long.MaxValue ? long.MaxValue : (long)v;
-                skillIndex = skill.Index;
+                var p = players[i];
+                if (p == null || p.isDestroyed || p.IsBot)
+                {
+                    if (isDeltaUpdate)
+                        lastProcessedStatePlayer = i + 1;
+                    continue;
+                }
+
+                var stats = p.Stats;
+                var ferryHandler = p.ferryHandler;
+                var raidHandler = p.raidHandler;
+                var dungeonHandler = p.dungeonHandler;
+                var onsenHandler = p.onsenHandler;
+
+                var skill = p.GetActiveSkillStat();
+                var isTraining = skill != null;
+
+                var currentIsland = p.Island;
+                if (!ferryHandler.OnFerry && !dungeonHandler.InDungeon && !p.streamRaidHandler.InWar && currentIsland == null)
+                {
+                    // we should be on an island.
+                    p.Island = gameManager.Islands.FindPlayerIsland(p);
+                }
+                var island = p.Island?.Island ?? Island.None;
+
+                if (ferryHandler.OnFerry)
+                {
+                    island = Island.Ferry;
+                    if (ferryHandler.Destination == null || ferryHandler.Destination.Island == Island.Ferry)
+                    {
+                        skill = p.Stats.Sailing;
+                    }
+                }
+
+                var expPerHour = 0L;
+                var skillIndex = -1;
+                var levelUpETA = DateTime.MaxValue;
+
+                if (isTraining)
+                {
+                    var v = skill.GetExperiencePerHour();
+                    levelUpETA = skill.GetEstimatedTimeToLevelUp();
+                    expPerHour = v > long.MaxValue ? long.MaxValue : (long)v;
+                    skillIndex = skill.Index;
+                }
+                else if (ferryHandler.OnFerry)
+                {
+                    // in case we are sailing, we still want to send the sailing exp per hour.
+                    var v = stats.Sailing.GetExperiencePerHour();
+                    levelUpETA = stats.Sailing.GetEstimatedTimeToLevelUp();
+                    expPerHour = v > long.MaxValue ? long.MaxValue : (long)v;
+                }
+
+                var rested = p.Rested;
+                var flags = p.GetFlags();
+                var pos = p.transform.position;
+
+                // in case we are in a dungeon, we should send the position and island of the player prior to entering the dungeon.
+                // this will allow the player to return to the same position if game is restarted during the dungeon.
+
+                if (dungeonHandler.InDungeon && dungeonHandler.PreviousIsland != null && !dungeonHandler.Ferry.OnFerry)
+                {
+                    pos = dungeonHandler.PreviousPosition;
+                    island = dungeonHandler.PreviousIsland.Island;
+                }
+
+                // same with raid, in case we were not on the ferry.
+                if (raidHandler.InRaid && raidHandler.PreviousIsland != null && !raidHandler.ferryState.OnFerry)
+                {
+                    pos = raidHandler.PreviousPosition;
+                    island = raidHandler.PreviousIsland.Island;
+                }
+
+                // Create current state with all fields
+                var currentState = new CharacterStateDelta
+                {
+                    CharacterId = p.Id,
+                    Health = (short)stats.Health.CurrentValue,
+                    Island = island,
+                    Destination = ferryHandler.OnFerry ? (ferryHandler.Destination?.Island ?? Island.Ferry) : Island.None,
+                    State = flags,
+                    TrainingSkillIndex = skillIndex,
+                    TaskArgument = p.taskArgument,
+                    ExpPerHour = expPerHour,
+                    EstimatedTimeForLevelUp = levelUpETA,
+                    X = (short)pos.x,
+                    Y = (short)pos.y,
+                    Z = (short)pos.z,
+                    AutoJoinRaidCounter = raidHandler.AutoJoinCounter,
+                    AutoJoinDungeonCounter = dungeonHandler.AutoJoinCounter,
+                    AutoJoinRaidCount = raidHandler.AutoJoinCount,
+                    AutoJoinDungeonCount = dungeonHandler.AutoJoinCount,
+                    IsAutoResting = onsenHandler.IsAutoResting,
+                    AutoTrainTargetLevel = p.AutoTrainTargetLevel,
+                    AutoRestTarget = rested.AutoRestTarget,
+                    AutoRestStart = rested.AutoRestStart,
+                    DungeonCombatStyle = AsInt(p.DungeonSkill),
+                    RaidCombatStyle = AsInt(p.RaidSkill),
+                    PlatformUserId = p.PlatformId,
+                    PlatformUserName = p.User?.Username ?? p.Name,
+                };
+
+                // Check for changes compared to last state
+                uint dirtyMask = 0;
+
+                if (isDeltaUpdate && lastPlayerStates.TryGetValue(p.Id, out var lastState))
+                {
+                    // Check each field for changes
+                    if (currentState.Health != lastState.Health)
+                        dirtyMask |= (uint)CharacterStateFields.Health;
+
+                    if (currentState.Island != lastState.Island)
+                        dirtyMask |= (uint)CharacterStateFields.Island;
+
+                    if (currentState.Destination != lastState.Destination)
+                        dirtyMask |= (uint)CharacterStateFields.Destination;
+
+                    if (currentState.State != lastState.State)
+                        dirtyMask |= (uint)CharacterStateFields.State;
+
+                    if (currentState.TrainingSkillIndex != lastState.TrainingSkillIndex || currentState.TaskArgument != lastState.TaskArgument)
+                    {
+                        dirtyMask |= (uint)CharacterStateFields.TrainingSkill;
+                        dirtyMask |= (uint)CharacterStateFields.TaskArgument;
+                    }
+
+                    if (currentState.ExpPerHour != lastState.ExpPerHour)
+                        dirtyMask |= (uint)CharacterStateFields.ExpPerHour;
+
+                    if (currentState.EstimatedTimeForLevelUp != lastState.EstimatedTimeForLevelUp)
+                        dirtyMask |= (uint)CharacterStateFields.LevelUpETA;
+
+                    // Position treated as one unit
+                    if (currentState.X != lastState.X || currentState.Y != lastState.Y || currentState.Z != lastState.Z)
+                        dirtyMask |= (uint)CharacterStateFields.Position;
+
+                    if (currentState.AutoJoinRaidCounter != lastState.AutoJoinRaidCounter ||
+                        currentState.AutoJoinRaidCount != lastState.AutoJoinRaidCount)
+                        dirtyMask |= (uint)CharacterStateFields.AutoJoinRaid;
+
+                    if (currentState.AutoJoinDungeonCounter != lastState.AutoJoinDungeonCounter ||
+                        currentState.AutoJoinDungeonCount != lastState.AutoJoinDungeonCount)
+                        dirtyMask |= (uint)CharacterStateFields.AutoJoinDungeon;
+
+                    if (currentState.IsAutoResting != lastState.IsAutoResting)
+                        dirtyMask |= (uint)CharacterStateFields.IsAutoResting;
+
+                    if (currentState.AutoTrainTargetLevel != lastState.AutoTrainTargetLevel)
+                        dirtyMask |= (uint)CharacterStateFields.AutoTrainLevel;
+
+                    if (currentState.AutoRestTarget != lastState.AutoRestTarget)
+                        dirtyMask |= (uint)CharacterStateFields.AutoRestTarget;
+
+                    if (currentState.AutoRestStart != lastState.AutoRestStart)
+                        dirtyMask |= (uint)CharacterStateFields.AutoRestStart;
+
+                    if (currentState.DungeonCombatStyle != lastState.DungeonCombatStyle)
+                        dirtyMask |= (uint)CharacterStateFields.DungeonStyle;
+
+                    if (currentState.RaidCombatStyle != lastState.RaidCombatStyle)
+                        dirtyMask |= (uint)CharacterStateFields.RaidStyle;
+
+                    if ((currentState.PlatformUserId != lastState.PlatformUserId ||
+                        currentState.PlatformUserName != lastState.PlatformUserName) &&
+                        !string.IsNullOrEmpty(currentState.PlatformUserName) &&
+                        !string.IsNullOrEmpty(currentState.PlatformUserId))
+                    {
+                        dirtyMask |= (uint)CharacterStateFields.Platform;
+                    }
+                }
+                else
+                {
+                    // New player - all fields are dirty
+                    dirtyMask = 0xFFFFFFFF; // Set all bits
+                }
+
+                // If there are changes or this is a new player
+                if (dirtyMask != 0)
+                {
+                    // Set the dirty mask
+                    currentState.DirtyMask = dirtyMask;
+
+                    // Add to update batch
+                    stateUpdateBuffer[stateCount++] = currentState;
+
+                    if (isDeltaUpdate)
+                        // Store the current state for next comparison
+                        lastPlayerStates[p.Id] = currentState;
+                }
+
+                // Update the last processed player index
+                if (isDeltaUpdate)
+                    lastProcessedStatePlayer = i + 1;
             }
-
-            DateTime levelUpETA = isTraining ? skill.GetEstimatedTimeToLevelUp() : DateTime.MaxValue;
-
-            // Create current state with all fields
-            var currentState = new CharacterStateDelta
+            catch (Exception ex)
             {
-                CharacterId = p.Id,
-                Health = (short)p.Stats.Health.CurrentValue,
-                Island = p.Island.Island,
-                Destination = p.ferryHandler.Destination?.Island ?? Island.Ferry,
-                State = p.GetFlags(),
-                TrainingSkillIndex = skillIndex,
-                TaskArgument = p.taskArgument,
-                ExpPerHour = expPerHour,
-                EstimatedTimeForLevelUp = levelUpETA,
-                X = (short)p.transform.position.x,
-                Y = (short)p.transform.position.y,
-                Z = (short)p.transform.position.z,
-                AutoJoinRaidCounter = p.raidHandler.AutoJoinCounter,
-                AutoJoinDungeonCounter = p.dungeonHandler.AutoJoinCounter,
-                AutoJoinRaidCount = p.raidHandler.AutoJoinCount,
-                AutoJoinDungeonCount = p.dungeonHandler.AutoJoinCount,
-                IsAutoResting = p.onsenHandler.IsAutoResting,
-                AutoTrainTargetLevel = p.AutoTrainTargetLevel,
-                AutoRestTarget = p.Rested.AutoRestTarget,
-                AutoRestStart = p.Rested.AutoRestStart,
-                DungeonCombatStyle = AsInt(p.DungeonSkill),
-                RaidCombatStyle = AsInt(p.RaidSkill),
-            };
-
-            // Check for changes compared to last state
-            uint dirtyMask = 0;
-
-            if (_lastPlayerStates.TryGetValue(p.Id, out var lastState))
-            {
-                // Check each field for changes
-                if (currentState.Health != lastState.Health)
-                    dirtyMask |= (uint)CharacterStateFields.Health;
-
-                if (currentState.Island != lastState.Island)
-                    dirtyMask |= (uint)CharacterStateFields.Island;
-
-                if (currentState.Destination != lastState.Destination)
-                    dirtyMask |= (uint)CharacterStateFields.Destination;
-
-                if (currentState.State != lastState.State)
-                    dirtyMask |= (uint)CharacterStateFields.State;
-
-                if (currentState.TrainingSkillIndex != lastState.TrainingSkillIndex)
-                    dirtyMask |= (uint)CharacterStateFields.TrainingSkill;
-
-                if (currentState.TaskArgument != lastState.TaskArgument)
-                    dirtyMask |= (uint)CharacterStateFields.TaskArgument;
-
-                if (currentState.ExpPerHour != lastState.ExpPerHour)
-                    dirtyMask |= (uint)CharacterStateFields.ExpPerHour;
-
-                if (currentState.EstimatedTimeForLevelUp != lastState.EstimatedTimeForLevelUp)
-                    dirtyMask |= (uint)CharacterStateFields.LevelUpETA;
-
-                // Position treated as one unit
-                if (currentState.X != lastState.X || currentState.Y != lastState.Y || currentState.Z != lastState.Z)
-                    dirtyMask |= (uint)CharacterStateFields.Position;
-
-                if (currentState.AutoJoinRaidCounter != lastState.AutoJoinRaidCounter ||
-                    currentState.AutoJoinRaidCount != lastState.AutoJoinRaidCount)
-                    dirtyMask |= (uint)CharacterStateFields.AutoJoinRaid;
-
-                if (currentState.AutoJoinDungeonCounter != lastState.AutoJoinDungeonCounter ||
-                    currentState.AutoJoinDungeonCount != lastState.AutoJoinDungeonCount)
-                    dirtyMask |= (uint)CharacterStateFields.AutoJoinDungeon;
-
-                if (currentState.IsAutoResting != lastState.IsAutoResting)
-                    dirtyMask |= (uint)CharacterStateFields.IsAutoResting;
-
-                if (currentState.AutoTrainTargetLevel != lastState.AutoTrainTargetLevel)
-                    dirtyMask |= (uint)CharacterStateFields.AutoTrainLevel;
-
-                if (currentState.AutoRestTarget != lastState.AutoRestTarget)
-                    dirtyMask |= (uint)CharacterStateFields.AutoRestTarget;
-
-                if (currentState.AutoRestStart != lastState.AutoRestStart)
-                    dirtyMask |= (uint)CharacterStateFields.AutoRestStart;
-
-                if (currentState.DungeonCombatStyle != lastState.DungeonCombatStyle)
-                    dirtyMask |= (uint)CharacterStateFields.DungeonStyle;
-
-                if (currentState.RaidCombatStyle != lastState.RaidCombatStyle)
-                    dirtyMask |= (uint)CharacterStateFields.RaidStyle;
+                Shinobytes.Debug.LogError("Error building state delta for player at index " + i + ": " + ex);
+                // Always increment so we don't get stuck
+                if (isDeltaUpdate)
+                    lastProcessedStatePlayer = i + 1;
+                continue;
             }
-            else
-            {
-                // New player - all fields are dirty
-                dirtyMask = 0xFFFFFFFF; // Set all bits
-            }
-
-            // If there are changes or this is a new player
-            if (dirtyMask != 0)
-            {
-                // Set the dirty mask
-                currentState.DirtyMask = dirtyMask;
-
-                // Add to update batch
-                _stateUpdateBuffer[stateCount++] = currentState;
-
-                // Store the current state for next comparison
-                _lastPlayerStates[p.Id] = currentState;
-            }
-
-            // Update the last processed player index
-            _lastProcessedStatePlayer = i + 1;
         }
 
         // Clean up states for players that no longer exist - do this once we've processed all players
-        if (_lastProcessedStatePlayer >= players.Count)
+        if (isDeltaUpdate && lastProcessedStatePlayer >= players.Count)
         {
             var keysToRemove = new List<Guid>();
 
-            foreach (var key in _lastPlayerStates.Keys)
+            foreach (var key in lastPlayerStates.Keys)
             {
                 bool found = false;
                 for (int i = 0; i < players.Count; i++)
@@ -515,7 +672,7 @@ public class DeltaClientBehaviour : MonoBehaviour
             }
 
             foreach (var key in keysToRemove)
-                _lastPlayerStates.Remove(key);
+                lastPlayerStates.Remove(key);
         }
 
         return stateCount;
@@ -614,36 +771,31 @@ public class DeltaClientBehaviour : MonoBehaviour
 
         return gameStateRequest;
     }
-    /// <summary>Begin connect attempts after AuthToken is set.</summary>
-    public void StartConnecting()
-    {
-        StartConnectingAsync();
-    }
 
-    private async Task StartConnectingAsync()
+    private async UniTask StartConnectingAsync()
     {
-        if (_connecting) return;
+        if (connecting) return;
 
         lastReconnectAttempt = DateTime.UtcNow;
-        _connecting = true;
+        connecting = true;
 
         try
         {
             // Create a new cancellation token for this connection attempt
-            _connectionCts = new CancellationTokenSource();
+            connectionCts = new CancellationTokenSource();
 
             // Attempt connection with timeout
-            await _client.ConnectAsync(_connectionCts.Token);
+            await client.ConnectAsync(connectionCts.Token);
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"DeltaClient connect failed: {ex.Message}");
+            Shinobytes.Debug.LogWarning($"DeltaClient connect failed: {ex.Message}");
         }
         finally
         {
-            _connecting = false;
-            _connectionCts?.Dispose();
-            _connectionCts = null;
+            connecting = false;
+            connectionCts?.Dispose();
+            connectionCts = null;
         }
     }
 
@@ -651,55 +803,55 @@ public class DeltaClientBehaviour : MonoBehaviour
     public void StopConnecting()
     {
         // Cancel any ongoing connection attempt
-        _connectionCts?.Cancel();
+        connectionCts?.Cancel();
 
-        if (_client != null && (_connected || _connecting))
+        if (client != null && (connected || connecting))
         {
-            _client.Disconnect();
+            client.Disconnect();
         }
 
-        _connecting = false;
+        connecting = false;
     }
 
 
     void OnConnected(SessionToken token)
     {
-        _connected = true;
-        _connecting = false;
-        Debug.Log($"DeltaClient connected: {token?.SessionId}");
+        connected = true;
+        connecting = false;
+        Shinobytes.Debug.Log($"DeltaClient connected: {token?.SessionId}");
     }
 
     void OnDisconnected()
     {
-        _connected = false;
-        _lastPlayerStates.Clear();
-        _lastSentGameState = null;
-        Debug.LogWarning("DeltaClient disconnected.");
+        connected = false;
+        lastPlayerStates.Clear();
+        lastSentGameState = null;
+        Shinobytes.Debug.LogWarning("DeltaClient disconnected.");
     }
 
     void OnConnectionError(Exception ex)
     {
-        _connecting = false;
-        Debug.LogWarning($"DeltaClient connection error: {ex.Message}");
+        connecting = false;
+        Shinobytes.Debug.LogWarning($"DeltaClient connection error: {ex.Message}");
     }
 
     // Update the send methods to use our buffer arrays
-    public void SendExperienceBatch(int count)
+    public async UniTask SendExperienceBatch(int count)
     {
-        if (!_connected || count == 0) return;
-        _client.SendExperienceDeltas(_expUpdateBuffer, count);
+        if (!connected || count == 0) return;
+        await client.SendExperienceDeltasAsync(expUpdateBuffer, count);
     }
 
-    public void SendStateBatch(int count)
+    public async UniTask SendStateBatch(int count)
     {
-        if (!_connected || count == 0) return;
-        _client.SendPlayerState(_stateUpdateBuffer, count);
+        if (!connected || count == 0) return;
+        await client.SendPlayerStateAsync(stateUpdateBuffer, count);
     }
 
-    public void SendGameState(Shinobytes.DeltaTcpLib.GameStateRequest gs)
+    public async UniTask SendGameStateAsync(Shinobytes.DeltaTcpLib.GameStateRequest gs)
     {
-        if (!_connected) return;
-        _client.SendGameState(gs);
+        if (!connected) return;
+        await client.SendGameStateAsync(gs);
     }
 
     void OnDestroy()
@@ -707,23 +859,23 @@ public class DeltaClientBehaviour : MonoBehaviour
         StopConnecting();
 
         // Unsubscribe from events
-        if (_client != null)
+        if (client != null)
         {
-            _client.OnConnected -= OnConnected;
-            _client.OnDisconnected -= OnDisconnected;
-            _client.OnConnectionError -= OnConnectionError;
+            client.OnConnected -= OnConnected;
+            client.OnDisconnected -= OnDisconnected;
+            client.OnConnectionError -= OnConnectionError;
         }
     }
 
 #if UNITY_EDITOR
     public string GetStatisticsReport()
     {
-        return _client?.GetStatisticsReport() ?? "Client not initialized";
+        return client?.GetStatisticsReport() ?? "Client not initialized";
     }
 
     public void ResetStatistics()
     {
-        _client?.ResetStatistics();
+        client?.ResetStatistics();
     }
 #endif
 }

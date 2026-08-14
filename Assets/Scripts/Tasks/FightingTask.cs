@@ -9,7 +9,7 @@ public class FightingTask : ChunkTask
 
     //private readonly Func<EnemyController[]> lazyEnemies;
     private EnemyController[] allEnemies;
-    private Dictionary<int, EnemyController> instanceLookup;
+    private Dictionary<EntityId, EnemyController> instanceLookup;
     public FightingTask(Func<EnemyController[]> lazyEnemies)
     {
         this.lazyEnemies = lazyEnemies;
@@ -25,11 +25,11 @@ public class FightingTask : ChunkTask
         this.allEnemies = lazyEnemies();
         if (this.allEnemies == null || this.allEnemies.Length == 0)
         {
-            this.instanceLookup = new Dictionary<int, EnemyController>();
+            this.instanceLookup = new Dictionary<EntityId, EnemyController>();
         }
         else
         {
-            this.instanceLookup = this.allEnemies.ToDictionary(x => x.GetInstanceID());
+            this.instanceLookup = this.allEnemies.ToDictionary(x => x.GetEntityId());
         }
         return allEnemies;
     }
@@ -104,7 +104,7 @@ public class FightingTask : ChunkTask
                 {
                     continue;
                 }
-                if (instanceLookup.ContainsKey(enemyController.GetInstanceID()) && !enemyController.Stats.IsDead)
+                if (instanceLookup.ContainsKey(enemyController.GetEntityId()) && !enemyController.Stats.IsDead)
                 {
                     return enemyController;
                 }

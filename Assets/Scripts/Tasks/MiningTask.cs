@@ -108,7 +108,7 @@ public class MiningTask : ChunkTask
         }
 
         var possibleTargets = lazyRock();
-        return possibleTargets.Any(x => x.GetInstanceID() == tar.GetInstanceID());
+        return possibleTargets.Any(x => x.GetEntityId() == tar.GetEntityId());
     }
 
     internal override void SetTargetInvalid(object target)

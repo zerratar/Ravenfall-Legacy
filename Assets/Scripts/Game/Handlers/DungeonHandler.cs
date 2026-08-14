@@ -238,7 +238,12 @@ public class DungeonHandler
 
         Clear();
 
+        if (previousTask != TaskType.None)
+        {
+            this.player.SetTask(previousTask, previousTaskArgument, true);
+        }
         this.player.taskTarget = null;
+
         if (Ferry.OnFerry)
         {
             player.Movement.Lock();
@@ -250,11 +255,7 @@ public class DungeonHandler
             player.teleportHandler.Teleport(previousPosition);
         }
 
-        if (previousTask != TaskType.None)
-        {
-            this.player.SetTask(previousTask, previousTaskArgument, true);
-        }
-        this.player.taskTarget = null;
+
         if (Ferry.State == PlayerFerryState.Embarking)
         {
             // if we were embarking, make sure we do that again.

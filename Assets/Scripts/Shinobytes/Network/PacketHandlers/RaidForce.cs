@@ -25,7 +25,7 @@ public class RaidForce : ChatBotCommandHandler
 
             if (PlayerSettings.Instance.DisableRaids.GetValueOrDefault())
             {
-                client.SendReply(gm, "Raids has been disabled in this stream by the broadcaster.");
+                client.SendReply(gm, "Raids have been disabled in this stream by the broadcaster.");
                 return;
             }
 
