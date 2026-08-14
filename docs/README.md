@@ -33,6 +33,7 @@ Ravenfall is a **Twitch-integrated Idle RPG** where viewers can join a streamer'
 ### Design Notes
 - [Twitch Message Budget](./twitch-message-budget.md) - chat length vs rate limits, and prioritising active players
 - [Player Component Architecture](./player-component-architecture.md) - which MonoBehaviours should stay components, and where a system fits better
+- [UI Toolkit Migration](./ui-toolkit-migration.md) - plan for moving the UI off uGUI, one screen at a time
 - [Refactor Risk Log](./refactor-risk-log.md) - behaviour changes to verify before shipping an update
 
 ### Setup
