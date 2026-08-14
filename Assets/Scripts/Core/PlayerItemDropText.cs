@@ -36,7 +36,9 @@ public class PlayerItemDropText
         {
             if (string.IsNullOrEmpty(msg)) return;
 
-            if (sb.Length + msg.Length >= sb.Capacity)
+            // Compare against maxLength, not sb.Capacity: StringBuilder grows its capacity as it
+            // fills, so using Capacity here let the effective limit drift upwards.
+            if (sb.Length > 0 && sb.Length + msg.Length >= maxLength)
             {
                 Next();
             }
@@ -92,22 +94,53 @@ public class PlayerItemDropText
                 }
                 else
                 {
-                    var toAppend = itemName + " was found by ";
+                    // One item can be dropped to hundreds of players in a raid. Building the whole
+                    // "<item> was found by ..." line in one go produced a single message far over
+                    // the limit, which chat then rejects - so the players were never told. Split
+                    // the receiver list into as many messages as it takes instead, repeating the
+                    // item prefix on each.
+                    var prefix = itemName + " was found by ";
+                    var group = new List<string>();
+                    // prefix plus the trailing ". "
+                    var groupLength = prefix.Length + 2;
+
+                    void FlushGroup()
+                    {
+                        if (group.Count == 0) return;
+
+                        var text = prefix;
+                        for (int i = 0; i < group.Count; i++)
+                        {
+                            if (i > 0)
+                            {
+                                text += (i == group.Count - 1) ? " and " : ", ";
+                            }
+                            text += group[i];
+                        }
+                        text += ". ";
+
+                        Append(text);
+                        group.Clear();
+                        groupLength = prefix.Length + 2;
+                    }
+
                     for (int i = 0; i < playersRef.Count; i++)
                     {
-                        // last player in list
-                        var lastInList = playersRef.Count - 1 == i;
                         var player = playersRef[i];
-                        if (i > 0)
-                        {
-                            toAppend += lastInList ? " and " : ", ";
-                        }
-                        toAppend += player;
-                    }
-                    toAppend += ". ";
+                        // worst case separator is " and " (5 chars)
+                        var separatorLength = group.Count == 0 ? 0 : 5;
 
-                    // append the whole text at once instead, since it will check if we need to break it into a new message or not.
-                    Append(toAppend);
+                        if (group.Count > 0 && groupLength + separatorLength + player.Length >= maxLength)
+                        {
+                            FlushGroup();
+                            separatorLength = 0;
+                        }
+
+                        group.Add(player);
+                        groupLength += separatorLength + player.Length;
+                    }
+
+                    FlushGroup();
                 }
                 if (settings == PlayerItemDropMessageSettings.OneItemPerRow)
                 {
