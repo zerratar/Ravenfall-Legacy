@@ -46,7 +46,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     [SerializeField] private float attackAnimationTime = 1.5f;
     [SerializeField] private float rangeAnimationTime = 1.5f;
-    [SerializeField] private float healingAnimationTime = 3f;
+    // Default matches Player.prefab. The prefab value wins at runtime either way; keeping them
+    // in step means the code states what the game actually does, and lets this field move off
+    // the MonoBehaviour later without changing behaviour.
+    [SerializeField] private float healingAnimationTime = 2f;
     [SerializeField] private float magicAnimationTime = 1.5f;
     [SerializeField] private float chompTreeAnimationTime = 2f;
     [SerializeField] private float rakeAnimationTime = 3f;
@@ -126,10 +129,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     [NonSerialized] public float TimeSinceLastTaskChange = 9999f;
 
-    public float AttackRange = 1.8f;
+    // Default matches Player.prefab (and zerratar.prefab).
+    public float AttackRange = 2.4f;
     public float RangedAttackRange = 15F;
     public float MagicAttackRange = 15f;
-    public float HealingRange = 15f;
+    // Default matches Player.prefab.
+    public float HealingRange = 18f;
     public int PatreonTier;
 
     public EquipmentStats EquipmentStats = new EquipmentStats();

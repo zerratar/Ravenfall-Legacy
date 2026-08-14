@@ -17,7 +17,8 @@ public class EffectHandler : MonoBehaviour
 
     [Header("Heal Effect")]
     [SerializeField] private GameObject HealPrefab;
-    [SerializeField] private float HealDuration = 3f;
+    // Default matches Player.prefab.
+    [SerializeField] private float HealDuration = 2f;
 
     private GameObject magicProjectileInstance;
     private GameObject arrowProjectileInstance;
