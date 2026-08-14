@@ -69,6 +69,19 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     /// <summary>Passive out of combat health regeneration. See PlayerHealthRegeneration.</summary>
     public PlayerHealthRegeneration HealthRegeneration { get; private set; }
+
+    /// <summary>Attack and heal execution. See PlayerCombat.</summary>
+    public PlayerCombat Combat { get; private set; }
+
+    // Exposed for PlayerCombat. These stay on the controller because they are [SerializeField]
+    // and carry values set on the Player prefab, or because the task system shares them.
+    internal float AttackAnimationTime => attackAnimationTime;
+    internal float RangeAnimationTime => rangeAnimationTime;
+    internal float HealingAnimationTime => healingAnimationTime;
+    internal float MagicAnimationTime => magicAnimationTime;
+    internal float ChompTreeAnimationTime => chompTreeAnimationTime;
+    internal float ActionTimer { get => actionTimer; set => actionTimer = value; }
+    internal Skill LastTrainedSkill { get => lastTrainedSkill; set => lastTrainedSkill = value; }
     private ConcurrentDictionary<StatusEffectType, StatusEffect> statusEffects = new ConcurrentDictionary<StatusEffectType, StatusEffect>();
 
     // Snapshot of the active effects, rebuilt only when one is added or removed.
@@ -162,7 +175,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public Transform Target
     {
         get => attackTarget ?? (taskTarget as IAttackable)?.Transform ?? (taskTarget as Transform) ?? (taskTarget as MonoBehaviour)?.transform;
-        private set => attackTarget = value;
+        internal set => attackTarget = value;
     }
     public IAttackable CombatTarget
     {
@@ -222,8 +235,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public PlayerAnimationController Animations => playerAnimations;
 
     private IslandController _island;
-    private float lastHeal;
-
     [NonSerialized] public bool isDestroyed;
 
     private bool hasQueuedItemAdd;
@@ -505,6 +516,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         this.dungeonHandler = new DungeonHandler(this, FindObjectOfType<DungeonManager>());
         this.Progression = new PlayerProgression(this);
         this.HealthRegeneration = new PlayerHealthRegeneration(this);
+        this.Combat = new PlayerCombat(this);
     }
 
     void Start()
@@ -2035,7 +2047,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     private DateTime? badIslandReportTime = null;
     [NonSerialized] public float LastExecutedTaskTime;
 
-    private void SetExpGainState(ExpGainState state, SkillStat activeSkill)
+    internal void SetExpGainState(ExpGainState state, SkillStat activeSkill)
     {
         if (state != CurrentExpGainState)
         {
@@ -2389,254 +2401,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         return true;
     }
 
-    public bool Gather(GatherController gather)
-    {
-        LastExecutedTaskTime = Time.time;
-        actionTimer = rakeAnimationTime;
-        InCombat = false;
-        Movement.Lock();
-
-        Equipment.HideEquipments();
-        lastTrainedSkill = Skill.Gathering;
-        playerAnimations.Gather(gather.PlayKneelingAnimation);
-
-        LookAt(gather.transform);
-
-        var startTime = Time.time;
-
-        ActionSystem.Run(() => Gather(gather, startTime), true);
-
-        return true;
-    }
-
-    public bool Attack(PlayerController player)
-    {
-        if (player == this)
-        {
-            Shinobytes.Debug.LogError(player.PlayerName + ", You cant fight yourself :o");
-            return false;
-        }
-        if (player == null || !player)
-        {
-            return false;
-        }
-
-        return AttackEntity(player, true);
-    }
-    public bool Attack(EnemyController enemy)
-    {
-        if (enemy == null || !enemy) return false;
-        return AttackEntity(enemy);
-    }
-
-    public bool Heal(PlayerController target)
-    {
-        if (target == null || !target) return false;
-        return AttackEntity(target);
-    }
-
-    private bool AttackEntity(IAttackable target, bool damageOnDraw = false)
-    {
-        LastExecutedTaskTime = Time.time;
-        if (target == null)
-        {
-            return false;
-        }
-
-        if (!this || this.isDestroyed)
-        {
-            return false;
-        }
-        var targetTransform = target.Transform;
-        if (!targetTransform || target.Transform == null)
-        {
-            return false;
-        }
-
-        if (this.Stats.IsDead)
-        {
-            return true;
-        }
-
-        Target = targetTransform;
-        var attackType = GetAttackType();
-        InCombat = true;
-        HealthRegeneration.ResetTimer();
-        actionTimer = GetAttackAnimationTime(attackType);
-
-        var hitTime = actionTimer / 2;
-
-        if (TrainingHealing)
-        {
-            if (Time.time - this.lastHeal < hitTime)
-            {
-                return true;
-            }
-
-            this.lastHeal = Time.time;
-        }
-
-        Movement.Lock();
-
-        Equipment.ShowWeapon(attackType);
-
-        var weapon = Inventory.GetEquipmentOfCategory(ItemCategory.Weapon);
-        var weaponAnim = TrainingHealing ? 6 : TrainingMagic ? 4 : TrainingRanged ? 3 : weapon?.GetAnimation() ?? 0;
-        var attackAnimation = TrainingHealing || TrainingMagic || TrainingRanged ? 0 : weapon?.GetAnimationCount() ?? 4;
-
-        if (!playerAnimations.IsAttacking() || !lastTrainedSkill.IsCombatSkill())
-        {
-            lastTrainedSkill = ActiveSkill.IsCombatSkill() ? ActiveSkill : Skill.Attack;
-            playerAnimations.StartCombat(weaponAnim, Equipment.HasShield);
-            if (!damageOnDraw) return true;
-        }
-
-        playerAnimations.Attack(weaponAnim, UnityEngine.Random.Range(0, attackAnimation), Equipment.HasShield);
-
-        this._transform.LookAt(Target);
-
-        var startTime = Time.time;
-
-        if (TrainingHealing)
-        {
-            ActionSystem.Run(() => HealTarget(target, hitTime, startTime));
-            return true;
-            //StartCoroutine(HealTarget(target, hitTime, startTime));
-        }
-
-        ActionSystem.Run(() => DamageEnemy(target, hitTime, startTime));
-        //StartCoroutine(DamageEnemy(target, hitTime, startTime));
-        return true;
-    }
-
-    private float GetAttackAnimationTime(AttackType attackType)
-    {
-        switch (attackType)
-        {
-            case AttackType.Healing:
-                return healingAnimationTime / playerStatsModifiers.CastSpeedMultiplier;
-            case AttackType.Ranged:
-                return rangeAnimationTime / playerStatsModifiers.AttackSpeedMultiplier;
-            case AttackType.Magic:
-                return magicAnimationTime / playerStatsModifiers.CastSpeedMultiplier;
-            default:
-                return attackAnimationTime / playerStatsModifiers.AttackSpeedMultiplier;
-        }
-    }
-
-    public AttackType GetAttackType()
-    {
-        if (TrainingHealing) return AttackType.Healing;
-        if (TrainingRanged) return AttackType.Ranged;
-        if (TrainingMagic) return AttackType.Magic;
-        return AttackType.Melee;
-    }
-
-    public bool HealTarget(IAttackable target, float hitTime, float startTime)
-    {
-        LastExecutedTaskTime = Time.time;
-        var delta = Time.time - startTime;
-        if (delta < hitTime) return false;
-        try
-        {
-            if (target == null || !target.Transform || target.GetStats().IsDead)
-                return true;
-
-            var maxHeal = GameMath.MaxHit(Stats.Healing.MaxLevel, EquipmentStats.BaseMagicPower);
-            var heal = CalculateDamage(target);
-            if (!target.Heal(heal))
-                return true;
-
-            sessionStats.AddHealingDealt(heal);
-
-            // allow for some variation in gains based on how high you heal.
-            var state = ExpGainState.FullGain;
-            var factor = (1 + (heal / maxHeal * 0.2)) *
-                ((raidHandler.InRaid || dungeonHandler.InDungeon) ? 1.0 : Chunk?.CalculateExpFactor(this, out state) ?? 1.0);
-
-            SetExpGainState(state, Stats.Healing);
-
-            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Healing.Level)
-                AddExp(Skill.Healing, factor);
-        }
-        catch (Exception exc)
-        {
-            Shinobytes.Debug.LogError("Unable to heal target: " + exc.Message);
-        }
-        finally
-        {
-            InCombat = false;
-        }
-        return true;
-    }
-
-    public bool DamageEnemy(IAttackable enemy, float hitTime, float startTime)
-    {
-        LastExecutedTaskTime = Time.time;
-        var delta = Time.time - startTime;
-        if (delta < hitTime) return false;
-        if (enemy == null) return true;
-
-        if (TrainingRanged)
-        {
-            this.effectHandler.DestroyProjectile();
-        }
-
-        var damage = CalculateDamage(enemy);
-
-        sessionStats.AddDamageDealt(damage);
-
-        if (enemy == null || !enemy.TakeDamage(this, damage))
-            return true;
-
-        sessionStats.IncrementEnemiesKilled();
-        //Statistics.TotalDamageDone += damage;
-
-        var isPlayer = enemy is PlayerController playerController;
-        var enemyController = enemy as EnemyController;
-
-        try
-        {
-            var isMonster = enemyController != null;
-            if (isMonster && Island)
-                Island.Statistics.MonstersDefeated++;
-
-            if (!enemy.GivesExperienceWhenKilled)
-                return true;
-
-            // give all attackers exp for the kill, not just the one who gives the killing blow.
-            foreach (PlayerController player in enemy.GetAttackers())
-            {
-                if (player == null || !player || player.isDestroyed)
-                    continue;
-
-                //var combatExperience = enemy.GetExperience();
-                var activeSkill = player.ActiveSkill;
-                if (activeSkill.IsCombatSkill())
-                {
-                    //activeSkill = Skill.Health; // ALL
-                    var state = ExpGainState.FullGain;
-                    var factor = dungeonHandler.InDungeon ? 1d : Chunk?.CalculateExpFactor(player, out state) ?? 1d;
-
-                    player.SetExpGainState(state, null);
-
-                    if (isMonster)
-                    {
-                        factor *= System.Math.Max(1.0d, enemyController.ExpFactor);
-                    }
-
-                    if (player.AutoTrainTargetLevel <= 0 || player.AutoTrainTargetLevel > player.GetSkill(activeSkill).Level)
-                        player.AddExp(activeSkill, factor);
-                }
-            }
-        }
-        finally
-        {
-            InCombat = false;
-        }
-        return true;
-    }
-
     private bool Gather(GatherController gather, float startTime)
     {
         try
@@ -2686,53 +2450,44 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
     }
 
-    public bool DamageTree(TreeController tree, float startTime)
+    public bool Gather(GatherController gather)
     {
-        try
-        {
-            LastExecutedTaskTime = Time.time;
-            var delta = Time.time - startTime;
-            var actionTime = chompTreeAnimationTime / 2f;
-            if (delta < actionTime)
-                return false;
+        LastExecutedTaskTime = Time.time;
+        actionTimer = rakeAnimationTime;
+        InCombat = false;
+        Movement.Lock();
 
-            var damage = CalculateDamage(tree);
-            if (!tree.DoDamage(this, damage))
-                return true;
+        Equipment.HideEquipments();
+        lastTrainedSkill = Skill.Gathering;
+        playerAnimations.Gather(gather.PlayKneelingAnimation);
 
-            sessionStats.IncrementTreeCutDown();
+        LookAt(gather.transform);
 
-            if (Island)
-                Island.Statistics.TreesCutDown++;
+        var startTime = Time.time;
 
-            // give all attackers exp for the kill, not just the one who gives the killing blow.
-            foreach (var player in tree.WoodCutters)
-            {
-                if (player == null || !player || player.isDestroyed)
-                {
-                    continue;
-                }
+        ActionSystem.Run(() => Gather(gather, startTime), true);
 
-                //++player.Statistics.TotalTreesCutDown;
-
-                var factor = Chunk.CalculateExpFactor(player, out var state);
-
-                player.SetExpGainState(state, player.Stats.Woodcutting);
-
-                if (player.AutoTrainTargetLevel <= 0 || player.AutoTrainTargetLevel > player.Stats.Woodcutting.Level)
-                    player.AddExp(Skill.Woodcutting, factor);// tree.Experience);
-                                                             //var amount = (int)(tree.Resource * Mathf.FloorToInt(player.Stats.Woodcutting.CurrentValue / 10f));
-                                                             //player.Statistics.TotalWoodCollected += amount;
-            }
-            return true;
-        }
-        catch (Exception exc)
-        {
-            var pos = tree.Position;
-            Shinobytes.Debug.LogError($"Unable to damage tree ({tree.name} at x{pos.x} y{pos.y} z{pos.z}): " + exc.Message);
-            return false;
-        }
+        return true;
     }
+
+    // Attack and heal execution lives in PlayerCombat. These stay so every existing call site
+    // keeps working unchanged.
+    public bool Attack(PlayerController player) => Combat.Attack(player);
+
+    public bool Attack(EnemyController enemy) => Combat.Attack(enemy);
+
+    public bool Heal(PlayerController target) => Combat.Heal(target);
+
+    public AttackType GetAttackType() => Combat.GetAttackType();
+
+    public bool HealTarget(IAttackable target, float hitTime, float startTime)
+        => Combat.HealTarget(target, hitTime, startTime);
+
+    public bool DamageEnemy(IAttackable enemy, float hitTime, float startTime)
+        => Combat.DamageEnemy(enemy, hitTime, startTime);
+
+    public bool DamageTree(TreeController tree, float startTime) => Combat.DamageTree(tree, startTime);
+
 
     #region Manage EXP/Resources
 
@@ -3302,25 +3057,6 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             GotoClosest(Chunk.ChunkType);
     }
 
-    private int CalculateDamage(IAttackable enemy)
-    {
-        if (this == null || enemy == null) return 0;
-        if (TrainingHealing)
-            return (int)GameMath.CalculateHealing(this, enemy);
-
-        if (TrainingMagic)
-            return (int)GameMath.CalculateMagicDamage(this, enemy);
-
-        if (TrainingRanged)
-            return (int)GameMath.CalculateRangedDamage(this, enemy);
-
-        return (int)GameMath.CalculateMeleeDamage(this, enemy);
-    }
-
-    private int CalculateDamage(TreeController enemy)
-    {
-        return (int)GameMath.CalculateSkillDamage(Stats.Woodcutting, enemy.Level);
-    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool StartsWith(string str, string arg) => str.IndexOf(arg) == 0;
