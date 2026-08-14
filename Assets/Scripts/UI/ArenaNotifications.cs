@@ -14,6 +14,17 @@ public class ArenaNotifications : MonoBehaviour
     [SerializeField] private TextMeshProUGUI notificationText;
     [SerializeField] private TextMeshProUGUI winnerNameText;
 
+    /// <summary>
+    /// Optional UI Toolkit replacement. When assigned, announcements are drawn as text from
+    /// Localization instead of the pre-rendered banner images above, which is what makes them
+    /// translatable. The old objects stay in the scene and still work if this is cleared.
+    /// See docs/ui-toolkit-migration.md.
+    /// </summary>
+    [SerializeField] private Shinobytes.UI.NotificationScreenView uiToolkitScreen;
+
+    /// <summary>The chat command viewers type to join. Highlighted in the announcement.</summary>
+    private const string JoinCommand = "!arena";
+
     [SerializeField]
     private string activated_format =
         "<color=#df4639>{0} <color=#ffffff>more player required to start.";
@@ -47,6 +58,13 @@ public class ArenaNotifications : MonoBehaviour
     {
         activeTimer = 3f;
         DisableAll();
+
+        if (uiToolkitScreen != null)
+        {
+            uiToolkitScreen.Show(Localization.UI_ARENA_STARTED);
+            return;
+        }
+
         started.SetActive(true);
     }
 
@@ -54,6 +72,16 @@ public class ArenaNotifications : MonoBehaviour
     {
         activeTimer = 10f;
         DisableAll();
+
+        if (uiToolkitScreen != null)
+        {
+            uiToolkitScreen.Show(
+                Localization.UI_ARENA_NOW_ACTIVE,
+                Shinobytes.UI.NotificationScreenView.WithCommand(Localization.UI_ARENA_JOIN, JoinCommand),
+                string.Format(activated_format, playersRequired));
+            return;
+        }
+
         notificationText.text = string.Format(activated_format, playersRequired);
         activated.SetActive(true);
     }
@@ -63,14 +91,20 @@ public class ArenaNotifications : MonoBehaviour
         activeTimer = secondsLeft;
         DisableAll();
         //notificationText.text = string.Format(startingSoon_format, secondsLeft);
-        if (secondsLeft > 0)
+        var detail = secondsLeft > 0
+            ? "You have " + secondsLeft + " seconds left to join!"
+            : "Arena will start as soon as all players arrive.";
+
+        if (uiToolkitScreen != null)
         {
-            notificationText.text = "You have " + secondsLeft + " seconds left to join!";
+            uiToolkitScreen.Show(
+                Localization.UI_ARENA_ABOUT_TO_START,
+                Shinobytes.UI.NotificationScreenView.WithCommand(Localization.UI_ARENA_JOIN, JoinCommand),
+                detail);
+            return;
         }
-        else
-        {
-            notificationText.text = "Arena will start as soon as all players arrive.";
-        }
+
+        notificationText.text = detail;
         startingSoon.SetActive(true);
     }
 
@@ -78,6 +112,15 @@ public class ArenaNotifications : MonoBehaviour
     {
         activeTimer = 3f;
         DisableAll();
+
+        if (uiToolkitScreen != null)
+        {
+            // The winner's name leads rather than the congratulation. On stream the name is the
+            // news, and it is what the winner wants to see and screenshot.
+            uiToolkitScreen.Show(player.PlayerName, Localization.UI_ARENA_WINNER, null, rewardStyle: true);
+            return;
+        }
+
         winner.SetActive(true);
         winnerNameText.text = player.PlayerName;
     }
@@ -86,11 +129,27 @@ public class ArenaNotifications : MonoBehaviour
     {
         activeTimer = 3f;
         DisableAll();
+
+        if (uiToolkitScreen != null)
+        {
+            uiToolkitScreen.Show(
+                Localization.UI_ARENA_DRAW_TITLE,
+                Localization.UI_ARENA_DRAW_MESSAGE,
+                null,
+                rewardStyle: true);
+            return;
+        }
+
         draw.SetActive(true);
     }
 
     private void DisableAll()
     {
+        if (uiToolkitScreen != null)
+        {
+            uiToolkitScreen.Hide();
+        }
+
         notificationText.text = "";
         activated.SetActive(false);
         startingSoon.SetActive(false);
