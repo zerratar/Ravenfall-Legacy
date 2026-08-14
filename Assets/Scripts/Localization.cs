@@ -311,4 +311,28 @@ public static class Localization
     public static readonly string MSG_MARKET_ITEM_UNAVAILABLE = "{itemName} is not available on the marketplace.";
     public static readonly string MSG_MARKET_VALUE_COUNT = "There are currently {available} {itemName} sold on the marketplace. Cheapest can be bought for {minPrice}, max price is {maxPrice}, average price is {avgPrice}, to buy {amount} it would cost roughly {cost} coins";
     public static readonly string MSG_MARKET_VALUE = "There are currently {available} {itemName} sold on the marketplace. Cheapest can be bought for {minPrice}, max price is {maxPrice}, average price is {avgPrice}";
+
+    // ---- On screen notifications -------------------------------------------------------------
+    // These were previously baked into PNG images (ArenaIsAboutToStart.png and friends), which
+    // meant the wording could not be translated and every style change needed the art redrawn.
+    // Kept here with the rest of the strings so the localization pass has one place to work.
+    //
+    // {command} is substituted with the chat command and highlighted by the UI, preserving the
+    // red highlight the original images used to show viewers what to type.
+
+    public static readonly string UI_ARENA_ABOUT_TO_START = "Arena is about to start";
+    public static readonly string UI_ARENA_NOW_ACTIVE = "Arena is now active";
+    public static readonly string UI_ARENA_JOIN = "Type {command} to join";
+    public static readonly string UI_ARENA_STARTED = "May the best fighter win!";
+    public static readonly string UI_ARENA_DRAW_TITLE = "Draw";
+    public static readonly string UI_ARENA_DRAW_MESSAGE = "The arena ended in a Draw, everyone is rewarded a small gift";
+    public static readonly string UI_ARENA_WINNER = "Congratulations for winning the arena!";
+
+    public static readonly string UI_RAID_BOSS_APPEARED = "A boss appeared!!";
+    public static readonly string UI_RAID_JOIN = "Type {command} to join";
+    public static readonly string UI_RAID_REWARD_HINT = "To get a chance of being rewarded items!";
+    public static readonly string UI_RAID_COME_HELP = "Come help fight! Type {command}";
+
+    public static readonly string UI_DUNGEON_APPEARED = "A dungeon has appeared!";
+    public static readonly string UI_DUNGEON_JOIN = "Type {command} to join";
 }

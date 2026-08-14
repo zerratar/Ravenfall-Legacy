@@ -337,3 +337,68 @@
     border-top-width: 0;
     border-bottom-width: 0;
 }
+
+/* ---- notifications -----------------------------------------------------
+ * Arena, raid and dungeon announcements. These replace seven pre-rendered
+ * PNGs that had their English wording painted in, which could not be
+ * translated and had to be redrawn by hand on every style change.
+ *
+ * The root paints nothing: notifications sit over gameplay. The card uses a
+ * scrim so the world still reads underneath while the text stays legible
+ * after compression.
+ */
+
+.rf-notify-root {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0);
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.rf-notify {
+    background-color: var(--rf-overlay-scrim);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: var(--rf-border-width);
+    border-bottom-width: var(--rf-border-width);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    padding-left: var(--rf-space-6);
+    padding-right: var(--rf-space-6);
+    padding-top: var(--rf-space-4);
+    padding-bottom: var(--rf-space-4);
+    margin-top: var(--rf-space-6);
+    align-items: center;
+}
+
+/* The headline. Large because a viewer glances at this while reading chat,
+ * often at 720p on a phone. */
+.rf-notify__title {
+    font-size: var(--rf-font-heading);
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.rf-notify__title--reward {
+    color: var(--rf-accent);
+}
+
+.rf-notify__line {
+    font-size: var(--rf-font-title);
+    color: var(--rf-text-dim);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-top: var(--rf-space-2);
+}
+
+/* Chat commands. The original images highlighted these in red so viewers
+ * could see what to type; that intent is preserved, using the accent so it
+ * matches every other actionable thing in the interface and keeps its
+ * contrast against the scrim. */
+.rf-command {
+    color: var(--rf-accent);
+    -unity-font-style: bold;
+}

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      One template for every on screen announcement: arena, raid, dungeon.
+
+      This replaces seven pre-rendered PNGs, one per message, each with its English wording painted
+      in. That is why arena, raid and dungeon drifted apart visually over the years: the style lived
+      in Photoshop files rather than in one place. Now there is a single layout and a stylesheet, so
+      changing the look changes all of them together, and the wording comes from Localization.cs so
+      it can be translated.
+
+      Three text slots covers every existing message:
+        title  - "A boss appeared!!", "Arena is about to start", "Draw"
+        line1  - usually the join instruction, "Type !raid to join"
+        line2  - the optional extra, "To get a chance of being rewarded items!"
+
+      Nothing is positioned here beyond top centre; the driving script decides what is shown.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+
+    <engine:VisualElement class="rf-notify-root" picking-mode="Ignore">
+
+        <engine:VisualElement name="notify-card" class="rf-notify" picking-mode="Ignore"
+                              style="display: none;">
+
+            <engine:Label name="notify-title" text="" class="rf-notify__title" />
+            <engine:Label name="notify-line1" text="" class="rf-notify__line" />
+            <engine:Label name="notify-line2" text="" class="rf-notify__line" />
+
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</engine:UXML>
