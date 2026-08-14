@@ -141,6 +141,15 @@ Assets/_TerrainAutoUpgrade/*.*
 *.pdb.meta
 *.meta
 
+# ...except .meta for source we actually track. The committed scenes reference
+# these scripts by GUID (MainWorld.unity alone holds ~29k such references), and
+# the GUID lives only in the .meta. Without them a restore from this repo gives
+# you the scenes and the scripts but no way to reconnect them - every component
+# comes back as "missing script". ~890 files, ~197 KB.
+# Deliberately NOT un-ignoring .meta for untracked third-party/art assets.
+!Assets/Scripts/**/*.cs.meta
+!Assets/Scripts/**/*.asmdef.meta
+
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
 
