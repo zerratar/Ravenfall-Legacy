@@ -570,6 +570,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
 
     public Transform Transform => _transform;
 
+    public bool IsEnemy => true;
     public bool GivesExperienceWhenKilled { get; set; } = true;
 
     public Transform Target { get; private set; }

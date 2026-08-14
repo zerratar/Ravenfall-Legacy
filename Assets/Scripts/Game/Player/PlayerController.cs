@@ -188,6 +188,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public bool IsNPC => IsBot || PlayerName != null && PlayerName.StartsWith("Player ");
     public bool IsReadyForAction => actionTimer <= 0f;
     public string Name => PlayerName;
+    public bool IsEnemy => false;
     public bool GivesExperienceWhenKilled => false;
     public bool InCombat { get; set; }
     public float HealthBarOffset => 0f;

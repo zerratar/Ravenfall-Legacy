@@ -216,7 +216,7 @@ public static class GameMath
                      + (defenderDamageSkill / 4D) + (StyleBonus(defender, 1) * 2)) * defenseMultiplier);
 
         var hitChance = UnityEngine.Random.Range(0, 100) + (newAtt - newDef);
-        if (attacker is EnemyController)
+        if (attacker.IsEnemy)
         {
             hitChance -= 5;
         }
@@ -232,7 +232,7 @@ public static class GameMath
             multiplier = criticalHitDamage;
         }
 
-        var reqHitChance = Mathf.Min(minHitChance, (defender is EnemyController ? 40 : 50));
+        var reqHitChance = Mathf.Min(minHitChance, (defender.IsEnemy ? 40 : 50));
         if (hitChance > reqHitChance)
         {
             var newMax = 0;
