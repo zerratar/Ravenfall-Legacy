@@ -314,7 +314,9 @@ public class Skills : IComparable
         }
     }
 
-    internal SkillStat GetCombatSkill(CombatSkill skill)
+    // public rather than internal: callers such as ChunkManager live in Assembly-CSharp, which is
+    // now a different assembly to Ravenfall.Core.
+    public SkillStat GetCombatSkill(CombatSkill skill)
     {
         switch (skill)
         {
