@@ -250,3 +250,90 @@
     padding-top: var(--rf-space-3);
     padding-bottom: var(--rf-space-3);
 }
+
+/* ---- scrollbars --------------------------------------------------------
+ * UI Toolkit's default scroller is a thin light control from Unity's own
+ * theme, which looks wrong on a dark panel and is close to invisible once a
+ * stream encoder has been at it.
+ *
+ * Deliberately chunky: 14px of track. A 4px scrollbar is fine on a monitor
+ * at arm's length and gone entirely at 720p on a phone. The stepper arrows
+ * are hidden because they are too small to hit and add visual noise.
+ */
+
+.unity-scroll-view__vertical-scroller,
+.unity-scroll-view__horizontal-scroller {
+    background-color: transparent;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.unity-scroll-view__vertical-scroller {
+    width: 14px;
+}
+
+.unity-scroll-view__horizontal-scroller {
+    height: 14px;
+}
+
+/* the stepper arrows at each end */
+.unity-scroller__low-button,
+.unity-scroller__high-button {
+    display: none;
+}
+
+.unity-scroller .unity-base-slider {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.unity-scroller .unity-base-slider__tracker {
+    background-color: var(--rf-bg);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.unity-scroller .unity-base-slider__dragger {
+    background-color: var(--rf-border-strong);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    width: 10px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.unity-scroller .unity-base-slider__dragger:hover {
+    background-color: var(--rf-accent);
+}
+
+.unity-scroller .unity-base-slider--horizontal .unity-base-slider__dragger {
+    height: 10px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+/* the corner where two scrollers meet */
+.unity-scroll-view__content-viewport {
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
