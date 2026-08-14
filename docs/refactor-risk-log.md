@@ -78,6 +78,37 @@ next frame rather than the same one. No current effect does this.
 
 ---
 
+## Editor iteration speed
+
+Entering and exiting play mode takes 30 to 60 seconds, and the editor is unresponsive during
+"executing OnBeforeAssemblyReload callbacks". Not a regression from this work, but it costs more
+time than anything else being optimised here.
+
+**Disabling domain reload is the usual fix and is NOT safe in this project.**
+`ProjectSettings/EditorSettings.asset` has `m_EnterPlayModeOptionsEnabled: 1` with
+`m_EnterPlayModeOptions: 0`, so the feature is on but nothing is actually disabled and a full
+domain and scene reload still happens on every play.
+
+Turning on `DisableDomainReload` would require static state to survive being carried between play
+sessions, and there are **111 mutable static fields** in game code. The dangerous ones are in
+`GameCache`: `IsAwaitingGameRestore`, `stateCache` and `playerCache`. Stale restore state between
+sessions would produce confusing bugs that look like gameplay problems.
+
+An earlier note in this session claimed the codebase had zero mutable static state. That was
+wrong, the check that produced it silently matched nothing. The real figure is 111.
+
+Doing it properly means resetting those statics from
+`[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]`, which is real
+work but would pay for itself quickly at 30 to 60 seconds per iteration.
+
+**Unproven hypothesis worth testing first:** the project's own code registers exactly one
+`[InitializeOnLoad]` (`HierarchySeparator`), so the minute spent in assembly reload callbacks is
+coming from packages or plugins rather than game code. Odin is the prime suspect: it is already
+known to be incompatible with Unity 6.7, throws from two `InitializeOnLoad` handlers on every
+domain reload, and does heavy assembly scanning at editor time. This is a hypothesis, not a
+measurement. The editor log has no domain reload profiling enabled, so it could not be confirmed
+from here. Testing it means temporarily moving `Assets/Plugins/Sirenix` aside and timing a reload.
+
 ## Not a regression, but must not be forgotten
 
 - **Odin Inspector is broken on Unity 6.7.** `GUITimeHelper.Init` and `SdfIcons.FixBug` both throw
@@ -89,6 +120,23 @@ next frame rather than the same one. No current effect does this.
   built on top of it is currently spending an assumed budget rather than a real one.
 
 ---
+
+## Live play test, first session after the refactor
+
+Tested in the editor with a real Twitch chat connection: `!join` worked, the character joined and
+began training immediately, `!leave` worked, `!join` again worked, and after restarting the game the
+character was restored and auto joined correctly. No behavioural regression observed.
+
+Two things noted that are not yet explained:
+
+- Several seconds between typing `!join` and the character appearing, on an otherwise empty server.
+  Not measured against a pre refactor baseline, so it is not known whether this is new.
+- Profiler with one player: `PlayerDetails.Update` was the largest per frame allocation at 2.7 KB,
+  since fixed in `283ffdd`. `PlayerController` showed **0 B** allocated, which is the
+  `UpdateActiveEffects` fix confirmed under real measurement rather than by reasoning.
+
+No CPU comparison against the previous release exists yet, because the game had not been run for
+long enough before the changes to capture a baseline.
 
 ## Before the update ships
 
