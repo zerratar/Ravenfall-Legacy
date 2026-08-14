@@ -142,11 +142,11 @@ Then, smallest and most isolated first, so the cost per screen is learned somewh
 4. **Notifications** - small, self contained, high visibility on stream.
 5. **Game restore overlay** - text only, no interaction, but covers the whole screen so it is worth
    getting right early.
-5. **Player details** - the most seen panel, and the one that benefits most.
-6. **Player list and rows** - depends on virtualised lists; UI Toolkit's `ListView` replaces
+6. **Player details** - the most seen panel, and the one that benefits most.
+7. **Player list and rows** - depends on virtualised lists; UI Toolkit's `ListView` replaces
    SuperScrollView here.
-7. **Settings and its tabs** - the largest script at 522 lines, but low traffic and low risk.
-8. **Island details, inventory** - last.
+8. **Settings and its tabs** - the largest script at 522 lines, but low traffic and low risk.
+9. **Island details, inventory** - last.
 
 Each screen: build it in `.uxml` plus shared `.uss`, port the driving script to query the visual
 tree, delete the old hierarchy from the scene, play test, commit. One screen per commit so any of
