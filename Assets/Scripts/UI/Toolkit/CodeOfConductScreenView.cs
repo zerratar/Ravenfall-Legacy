@@ -10,6 +10,13 @@ namespace Shinobytes.UI
     /// <para>
     /// Second screen migrated off uGUI, after the updater. See docs/ui-toolkit-migration.md.
     /// </para>
+    ///
+    /// <para>
+    /// Values set on this view are held until the visual tree exists and then applied. Unity runs
+    /// every Awake before any OnEnable, and UIDocument builds its tree in OnEnable, so a controller
+    /// writing from Awake would otherwise be writing into nothing and the screen would come up
+    /// blank with no error.
+    /// </para>
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class CodeOfConductScreenView : MonoBehaviour, ICodeOfConductScreen
@@ -23,16 +30,33 @@ namespace Shinobytes.UI
 
         private Action onAccept;
         private Action onDecline;
-        private bool queried;
+
+        // Held until the tree is available.
+        private string pendingHeader;
+        private string pendingMessage;
+        private string pendingVersion;
+        private string pendingModified;
+
+        private bool bound;
 
         private void OnEnable()
         {
-            Query();
+            TryBind();
         }
 
-        private void Query()
+        private void Update()
         {
-            if (queried)
+            // Cheap no-op once bound. Covers the case where the document is not laid out on the
+            // first OnEnable, which happens depending on component order in the scene.
+            if (!bound)
+            {
+                TryBind();
+            }
+        }
+
+        private void TryBind()
+        {
+            if (bound)
             {
                 return;
             }
@@ -41,7 +65,6 @@ namespace Shinobytes.UI
             var root = doc != null ? doc.rootVisualElement : null;
             if (root == null)
             {
-                // Not laid out yet. Whatever the controller sets next will try again.
                 return;
             }
 
@@ -54,64 +77,59 @@ namespace Shinobytes.UI
 
             if (acceptButton != null)
             {
+                acceptButton.clicked -= HandleAccept;
                 acceptButton.clicked += HandleAccept;
             }
             if (declineButton != null)
             {
+                declineButton.clicked -= HandleDecline;
                 declineButton.clicked += HandleDecline;
             }
 
-            queried = true;
+            bound = true;
+
+            // Flush anything set before the tree existed.
+            if (pendingHeader != null) headerLabel.text = pendingHeader;
+            if (pendingMessage != null && messageLabel != null) messageLabel.text = pendingMessage;
+            if (pendingVersion != null && versionLabel != null) versionLabel.text = pendingVersion;
+            if (pendingModified != null && modifiedLabel != null) modifiedLabel.text = pendingModified;
         }
 
         private void OnDisable()
         {
-            if (acceptButton != null)
-            {
-                acceptButton.clicked -= HandleAccept;
-            }
-            if (declineButton != null)
-            {
-                declineButton.clicked -= HandleDecline;
-            }
-            queried = false;
+            if (acceptButton != null) acceptButton.clicked -= HandleAccept;
+            if (declineButton != null) declineButton.clicked -= HandleDecline;
+            bound = false;
         }
 
-        private void HandleAccept()
-        {
-            onAccept?.Invoke();
-        }
-
-        private void HandleDecline()
-        {
-            onDecline?.Invoke();
-        }
+        private void HandleAccept() => onAccept?.Invoke();
+        private void HandleDecline() => onDecline?.Invoke();
 
         public void BindActions(Action accept, Action decline)
         {
             onAccept = accept;
             onDecline = decline;
-            Query();
+            TryBind();
         }
 
         public string Header
         {
-            set { Query(); if (headerLabel != null) headerLabel.text = value; }
+            set { pendingHeader = value; TryBind(); if (bound && headerLabel != null) headerLabel.text = value; }
         }
 
         public string Message
         {
-            set { Query(); if (messageLabel != null) messageLabel.text = value; }
+            set { pendingMessage = value; TryBind(); if (bound && messageLabel != null) messageLabel.text = value; }
         }
 
         public string Version
         {
-            set { Query(); if (versionLabel != null) versionLabel.text = value; }
+            set { pendingVersion = value; TryBind(); if (bound && versionLabel != null) versionLabel.text = value; }
         }
 
         public string LastModified
         {
-            set { Query(); if (modifiedLabel != null) modifiedLabel.text = value; }
+            set { pendingModified = value; TryBind(); if (bound && modifiedLabel != null) modifiedLabel.text = value; }
         }
     }
 }

@@ -174,8 +174,21 @@
     min-height: 40px;
 }
 
+/*
+ * Every state sets BOTH background and text colour, never just one.
+ *
+ * Setting only the background is how the primary button ended up unreadable on hover: the base
+ * hover rule swapped the background while the primary variant's dark text colour stayed put,
+ * leaving dark on dark. A state that changes one half of a contrast pair has to change the other.
+ *
+ * Selectors are doubled up (.rf-button.rf-button--primary) so they outrank both the base hover
+ * rule and Unity's default .unity-button theme, which also styles hover and would otherwise win
+ * on ordering alone.
+ */
+
 .rf-button:hover {
     background-color: var(--rf-border);
+    color: var(--rf-text);
     border-left-color: var(--rf-accent);
     border-right-color: var(--rf-accent);
     border-top-color: var(--rf-accent);
@@ -185,15 +198,32 @@
 .rf-button:active {
     background-color: var(--rf-accent);
     color: var(--rf-text-on-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
 }
 
-.rf-button--primary {
+/* Primary: dark text on amber, at every state. The background only ever gets lighter or
+ * slightly dimmer, so the dark text stays legible throughout. */
+
+.rf-button.rf-button--primary {
     background-color: var(--rf-accent);
     color: var(--rf-text-on-accent);
     border-left-color: var(--rf-accent-bright);
     border-right-color: var(--rf-accent-bright);
     border-top-color: var(--rf-accent-bright);
     border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-button.rf-button--primary:hover {
+    background-color: var(--rf-accent-bright);
+    color: var(--rf-text-on-accent);
+}
+
+.rf-button.rf-button--primary:active {
+    background-color: var(--rf-accent-dim);
+    color: var(--rf-text);
 }
 
 /* ---- scroll regions ----------------------------------------------------
