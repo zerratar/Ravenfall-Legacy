@@ -66,6 +66,37 @@ real answer there.
 - `MessageBubbleManager`
 - DamageNumbersPro, an entire TMP based asset
 
+## Notifications carry text baked into images, which blocks localization
+
+The arena, raid, dungeon and duel notifications do not draw their headline text. They toggle
+GameObjects holding pre-rendered images with the English wording painted in, and only the dynamic
+parts (names, timers, levels) are real text.
+
+| Image | Size |
+|---|---|
+| `CongratulationsForWinning.png` | 997x76 |
+| `ArenaStart.png` | 866x99 |
+| `ComeFight.png` | 653x59 |
+| `ArenaIsAboutToStart.png` | 789x196 |
+| `ArenaIsNowActive.png` | 684x196 |
+| `ArenaDraw.png` | 841x314 |
+| `RaidBoss.png` | 980x307 |
+
+Those aspect ratios are the tell: they are lines of text, not artwork.
+
+This matters beyond consistency. **Text inside a PNG cannot be translated.** A Spanish speaking
+streamer currently gets English banners no matter what, because the words are pixels. The game
+already has `Localization.cs` with 261 string constants for bot messages, so the infrastructure
+exists; the UI is what was left behind.
+
+Each image also had to be redrawn by hand whenever the style changed, which is a large part of why
+these screens drifted apart from each other over the years.
+
+Converting them to real text in UXML therefore does three things at once: it makes the
+notifications consistent, it removes seven hand maintained assets, and it is the prerequisite for
+the localization pass later. That is why notifications rank above Player Details despite being less
+visible, even though Player Details is the more watched panel.
+
 ## Rule: never disable a Canvas GameObject, disable the Canvas component
 
 The project's convention is to put UI scripts **on the Canvas object and on its children**, because
