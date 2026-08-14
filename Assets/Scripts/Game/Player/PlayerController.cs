@@ -76,6 +76,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     /// <summary>Attack and heal execution. See PlayerCombat.</summary>
     public PlayerCombat Combat { get; private set; }
 
+    /// <summary>Equip and unequip operations. See PlayerEquipmentActions.</summary>
+    public PlayerEquipmentActions EquipmentActions { get; private set; }
+
     // Exposed for PlayerCombat. These stay on the controller because they are [SerializeField]
     // and carry values set on the Player prefab, or because the task system shares them.
     internal float AttackAnimationTime => attackAnimationTime;
@@ -522,6 +525,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         this.Progression = new PlayerProgression(this);
         this.HealthRegeneration = new PlayerHealthRegeneration(this);
         this.Combat = new PlayerCombat(this);
+        this.EquipmentActions = new PlayerEquipmentActions(this);
     }
 
     void Start()
@@ -1371,210 +1375,26 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public TaskType GetTask() => currentTask;//Chunk?.ChunkType ?? TaskType.None;
     public string GetTaskArgument() => taskArgument;
 
-    internal async Task<GameInventoryItem> CycleEquippedPetAsync()
-    {
-        var equippedPet = Inventory.GetEquipmentOfCategory(ItemCategory.Pet);
-        var pets = Inventory.GetInventoryItemsOfType(ItemCategory.Pet, ItemType.Pet);
-        if (pets.Count == 0) return null;
+    // Equip and unequip operations live in PlayerEquipmentActions. These stay so every existing
+    // call site keeps working unchanged.
+    internal Task<GameInventoryItem> CycleEquippedPetAsync() => EquipmentActions.CycleEquippedPetAsync();
 
-        var equippedPetId = equippedPet?.ItemId ?? Guid.Empty;
+    internal Task UnequipAllItemsAsync() => EquipmentActions.UnequipAllItemsAsync();
 
-        var petToEquip = pets
-            .Where(x => x.Item.Id != equippedPetId)
-            .DistinctBy(x => x.Item.Id)
-            .Random();
+    internal Task UnequipAsync(GameInventoryItem item) => EquipmentActions.UnequipAsync(item);
 
-        if (petToEquip == null)
-        {
-            var pet = pets.FirstOrDefault();
-            Inventory.Equip(pet);
-            return pet;
-        }
-
-        if (!IsBot)
-        {
-            await GameManager.RavenNest.Players.EquipInventoryItemAsync(Id, petToEquip.InstanceId);
-        }
-        Inventory.Equip(petToEquip);
-        return petToEquip;
-    }
-
-    internal async Task UnequipAllItemsAsync()
-    {
-        UnequipAllItems();
-        if (!IsBot)
-        {
-            await GameManager.RavenNest.Players.UnequipAllItemsAsync(Id);
-        }
-    }
-
-    internal async Task UnequipAsync(GameInventoryItem item)
-    {
-        Inventory.Unequip(item, true);
-        Inventory.UpdateEquipmentEffect();
-
-        if (!IsBot)
-        {
-            await GameManager.RavenNest.Players.UnequipInventoryItemAsync(Id, item.InstanceId);
-        }
-    }
-
-    internal void Unequip(GameInventoryItem item)
-    {
-        Inventory.Unequip(item);
-    }
+    internal void Unequip(GameInventoryItem item) => EquipmentActions.Unequip(item);
 
     public void Equip(GameInventoryItem item, bool reportShieldWarning = true)
-    {
-        if (item.Type == ItemType.Shield)
-        {
-            var thw = Inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedSword); // we will get either.
-            if (thw != null && (thw.Type == ItemType.TwoHandedAxe || thw.Type == ItemType.TwoHandedSword || thw.Type == ItemType.TwoHandedSpear))
-            {
-                if (reportShieldWarning)
-                {
-                    GameManager.RavenBot.SendReply(this, Localization.EQUIP_SHIELD_AND_TWOHANDED);
-                }
-                return;
-            }
-        }
-
-        if (item.Type == ItemType.OneHandedAxe || item.Type == ItemType.OneHandedSword)
-        {
-            var eqShield = Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Shield);
-            if (eqShield == null)
-            {
-                var shields = Inventory.GetInventoryItemsOfType(ItemCategory.Armor, ItemType.Shield);
-                var shield = shields.OrderByDescending(Inventory.GetItemValue)
-                    .FirstOrDefault(Inventory.CanEquipItem);
-
-                if (shield != null)
-                {
-                    Inventory.Equip(shield);
-                }
-            }
-        }
-
-        var equipped = Inventory.Equip(item);
-        if (!equipped)
-        {
-            if (!item.IsEquippableType)
-            {
-                GameManager.RavenBot.SendReply(this, "{itemName} can't be equipped.", item.Name);
-                return;
-            }
-
-            var reqLevels = new List<string>();
-            var requirement = "You require level ";
-            if (item.RequiredAttackLevel > Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
-            if (item.RequiredDefenseLevel > Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
-            if (item.RequiredMagicLevel > Stats.Magic.Level || item.RequiredMagicLevel > Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
-            if (item.RequiredRangedLevel > Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
-            if (item.RequiredSlayerLevel > Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
-            if (reqLevels.Count > 0)
-            {
-                GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
-            }
-            return;
-        }
-    }
+        => EquipmentActions.Equip(item, reportShieldWarning);
 
     public void AnnounceLevelToLowToEquip(GameInventoryItem item)
-    {
+        => EquipmentActions.AnnounceLevelToLowToEquip(item);
 
-        if (!item.IsEquippableType)
-        {
-            GameManager.RavenBot.SendReply(this, "{itemName} can't be equipped.", item.Name);
-            return;
-        }
+    internal Task<bool> EquipAsync(GameInventoryItem item) => EquipmentActions.EquipAsync(item);
 
-        var reqLevels = new List<string>();
-        var requirement = "You require level ";
-        if (item.RequiredAttackLevel > Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
-        if (item.RequiredDefenseLevel > Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
-        if (item.RequiredMagicLevel > Stats.Magic.Level || item.RequiredMagicLevel > Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
-        if (item.RequiredRangedLevel > Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
-        if (item.RequiredSlayerLevel > Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
-        if (reqLevels.Count > 0)
-        {
-            GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
-        }
-    }
+    internal Task<bool> EquipAsync(Item item) => EquipmentActions.EquipAsync(item);
 
-    internal async Task<bool> EquipAsync(GameInventoryItem item)
-    {
-        if (IsBot)
-        {
-            return true;
-        }
-
-        if (await GameManager.RavenNest.Players.EquipInventoryItemAsync(Id, item.InstanceId))
-        {
-            Equip(item);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    internal async Task<bool> EquipAsync(Item item)
-    {
-        if (item.Type == ItemType.Shield)
-        {
-            var thw = Inventory.GetEquipmentOfType(ItemCategory.Weapon, ItemType.TwoHandedSword); // we will get either.
-            if (thw != null && (thw.Type == ItemType.TwoHandedAxe || thw.Type == ItemType.TwoHandedSword || thw.Type == ItemType.TwoHandedSpear))
-            {
-                GameManager.RavenBot.SendReply(this, Localization.EQUIP_SHIELD_AND_TWOHANDED);
-                return false;
-            }
-        }
-
-        if (item.Type == ItemType.OneHandedAxe || item.Type == ItemType.OneHandedSword)
-        {
-            var eqShield = Inventory.GetEquipmentOfType(ItemCategory.Armor, ItemType.Shield);
-            if (eqShield == null)
-            {
-                var shields = Inventory.GetInventoryItemsOfType(ItemCategory.Armor, ItemType.Shield);
-                var shield = shields.OrderByDescending(Inventory.GetItemValue)
-                    .FirstOrDefault(Inventory.CanEquipItem);
-
-                if (shield != null)
-                {
-                    Inventory.Equip(shield);
-                }
-            }
-        }
-
-        var equipped = Inventory.EquipByItemId(item.Id);
-        if (!equipped)
-        {
-            var reqLevels = new List<string>();
-            var requirement = "You require level ";
-            if (item.RequiredAttackLevel > Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
-            if (item.RequiredDefenseLevel > Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
-            if (item.RequiredMagicLevel > Stats.Magic.Level || item.RequiredMagicLevel > Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
-            if (item.RequiredRangedLevel > Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
-            if (item.RequiredSlayerLevel > Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
-            if (reqLevels.Count > 0)
-            {
-                GameManager.RavenBot.SendReply(this, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
-            }
-            return false;
-        }
-
-        if (IsBot)
-        {
-            return true;
-        }
-
-        if (await GameManager.RavenNest.Players.EquipItemAsync(Id, item.Id))
-        {
-            return false;
-        }
-
-        return true;
-    }
 
     public void UpdateUser(User user)
     {
