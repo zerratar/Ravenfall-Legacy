@@ -64,7 +64,26 @@ public class GameUpdater : MonoBehaviour
         if (versionText) versionText.text = value;
     }
 
+    /// <summary>
+    /// Shows or hides the progress bar entirely. On the legacy path this toggles the GameObject,
+    /// which is what the original code did.
+    /// </summary>
     private void SetProgressVisible(bool value)
+    {
+        var screen = ToolkitScreen;
+        if (screen != null)
+        {
+            screen.ProgressVisible = value;
+            return;
+        }
+        if (progressBar) progressBar.gameObject.SetActive(value);
+    }
+
+    /// <summary>
+    /// Legacy GameProgressBar had a separate flag for whether the percentage text is drawn. The
+    /// UI Toolkit screen always draws it, so there the equivalent is simply making the bar visible.
+    /// </summary>
+    private void SetProgressDisplay(bool value)
     {
         var screen = ToolkitScreen;
         if (screen != null)
@@ -98,10 +117,10 @@ public class GameUpdater : MonoBehaviour
 
     private void Awake()
     {
-        if (versionText)
-        {
-            SetVersion("VERSION " + Ravenfall.Version);
-        }
+        // Guarded on neither UI directly: SetVersion routes to whichever screen is present, and
+        // guarding on the legacy field meant removing the old Canvas would silently stop the
+        // version from ever being set.
+        SetVersion("VERSION " + Ravenfall.Version);
     }
 
     private void Start()
@@ -123,10 +142,7 @@ public class GameUpdater : MonoBehaviour
 
         this.lastAcceptedVersion = PlayerPrefs.GetInt(CodeOfConductController.CoCLastAcceptedVersion_SettingsName, CodeOfConductController.CoCLastAcceptedVersion_DefaultValue);
 
-        if (progressBar)
-        {
-            progressBar.gameObject.SetActive(false);
-        }
+        SetProgressVisible(false);
 
         if (Application.isEditor)
         {
@@ -349,7 +365,7 @@ public class GameUpdater : MonoBehaviour
         if (progressBar)
         {
             progressBar.gameObject.SetActive(true);
-            SetProgressVisible(true);
+            SetProgressDisplay(true);
             SetProgress((float)progressPercent);
         }
     }
