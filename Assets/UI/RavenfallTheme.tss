@@ -1,0 +1,10 @@
+/*
+ * Runtime theme for Ravenfall's UI Toolkit screens.
+ *
+ * Imports Unity's default control theme so built in controls (Button, ScrollView, TextField and
+ * so on) have a working baseline, then layers our tokens and shared styles on top so anything we
+ * author matches the rest of the game.
+ */
+@import url("unity-theme://default");
+@import url("project://database/Assets/UI/Styles/ravenfall-tokens.uss");
+@import url("project://database/Assets/UI/Styles/ravenfall-core.uss");
