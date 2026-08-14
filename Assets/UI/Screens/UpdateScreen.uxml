@@ -20,9 +20,9 @@
 
         <engine:VisualElement class="rf-panel rf-stack" style="width: 560px; max-width: 90%;">
 
-            <engine:Label text="RAVENFALL"
-                          class="rf-text rf-text--display rf-text--center"
-                          style="margin-bottom: 4px;" />
+            <!-- The logotype, not set type. Styled in ravenfall-core.uss so the asset path
+                 lives in one place. -->
+            <engine:VisualElement name="logo" class="rf-logo" />
 
             <engine:Label name="version-label"
                           text="VERSION"

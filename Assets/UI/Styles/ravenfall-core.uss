@@ -93,6 +93,21 @@
     color: var(--rf-success);
 }
 
+/* ---- brand -------------------------------------------------------------
+ * The Ravenfall logotype. Kept as an image rather than set type: it is the
+ * one piece of the interface that should not be re-drawn by a stylesheet.
+ * Sized from the original uGUI screen (471 x 193) and scaled to fit so the
+ * aspect ratio holds however the panel resizes.
+ */
+
+.rf-logo {
+    background-image: url("project://database/Assets/Sprites/logo.png");
+    -unity-background-scale-mode: scale-to-fit;
+    width: 420px;
+    height: 172px;
+    align-self: center;
+}
+
 /* ---- progress bar ------------------------------------------------------
  * Solid fill on a solid track. No gradient, no thin outline: both are the
  * first things a video encoder destroys.
