@@ -31,7 +31,7 @@
 
             <engine:Label name="notify-title" text="" class="rf-notify__title" />
             <engine:Label name="notify-line1" text="" class="rf-notify__line" />
-            <engine:Label name="notify-line2" text="" class="rf-notify__line" />
+            <engine:Label name="notify-line2" text="" class="rf-notify__line rf-notify__line--secondary" />
 
         </engine:VisualElement>
 
