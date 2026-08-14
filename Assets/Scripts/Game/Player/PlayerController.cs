@@ -60,6 +60,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     [NonSerialized] public Transform _transform;
     private StatsModifiers playerStatsModifiers = new StatsModifiers();
+
+    /// <summary>
+    /// Experience gain: multipliers, how much an action is worth, and how it is spread across
+    /// skills. Split out of this class; see PlayerProgression.
+    /// </summary>
+    public PlayerProgression Progression { get; private set; }
     private ConcurrentDictionary<StatusEffectType, StatusEffect> statusEffects = new ConcurrentDictionary<StatusEffectType, StatusEffect>();
 
     // Snapshot of the active effects, rebuilt only when one is added or removed.
@@ -496,6 +502,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         this._transform = this.transform;
         // Initialize handlers that are no longer monobehaviours
         this.dungeonHandler = new DungeonHandler(this, FindObjectOfType<DungeonManager>());
+        this.Progression = new PlayerProgression(this);
     }
 
     void Start()
@@ -2777,164 +2784,26 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     #region Manage EXP/Resources
 
-    public double GetTierExpMultiplier()
-    {
-        var tierMulti = TwitchEventManager.TierExpMultis[GameManager.SessionSettings.SubscriberTier];
-        var subMulti = (this.IsSubscriber || GameManager.PlayerBoostRequirement > 0) ? tierMulti : 0;
-        var multi = subMulti;
-        if (PatreonTier > 0)
-        {
-            var patreonMulti = TwitchEventManager.TierExpMultis[PatreonTier];
-            if (patreonMulti > multi)
-            {
-                return patreonMulti;
-            }
-        }
-        return multi;
-    }
+    // Experience gain now lives in PlayerProgression. These remain so every existing call site
+    // keeps working unchanged; they are the public surface of this controller.
+    public double GetTierExpMultiplier() => Progression.GetTierExpMultiplier();
 
-    //public double GetExpMultiplier(Skill skill)
-    //{
-    //    var tierSub = GetTierExpMultiplier();
-    //    var multi = tierSub + gameManager.Village.GetExpBonusBySkill(skill);
-
-    //    if (gameManager.Boost.Active)
-    //    {
-    //        multi += gameManager.Boost.Multiplier;
-    //    }
-
-    //    multi = Math.Max(1, multi);
-    //    if (Rested.RestedTime > 0 && Rested.ExpBoost > 1)
-    //        multi *= (float)Rested.ExpBoost;
-
-    //    return multi * GameMath.ExpScale;
-    //}
-
-    public double GetExpMultiplier(Skill skill)
-    {
-        var tierSub = GetTierExpMultiplier();
-        var multi = (float)tierSub;
-        var boost = GameManager.Boost;
-        if (boost.Active)
-            multi += boost.Multiplier;
-
-        multi += GameManager.Village.GetExpBonusBySkill(skill);
-        multi = Math.Max(1, multi);
-        if (Rested.ExpBoost > 1 && Rested.RestedTime > 0)
-        {
-            var rexp = (float)Rested.ExpBoost;
-            multi = Mathf.Max(rexp * multi, rexp);
-        }
-
-        return multi;
-    }
+    public double GetExpMultiplier(Skill skill) => Progression.GetExpMultiplier(skill);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public double GetMultiplierFactor() => 1;
+    public double GetMultiplierFactor() => Progression.GetMultiplierFactor();
 
-    public double GetExpFactor(out ExpGainState state)
-    {
-        var skill = ActiveSkill;
-        state = ExpGainState.FullGain;
-        if (skill == Skill.Sailing || skill == Skill.Healing) return 1;
-        //if (skill == Skill.Health) return 1d / 3d;
-        return Chunk?.CalculateExpFactor(this, out state) ?? 1d;
-    }
+    public double GetExpFactor(out ExpGainState state) => Progression.GetExpFactor(out state);
 
-    public double GetExperience(Skill skill, double factor)
-    {
-        // check if we are training all. If so, take the avg level + 1
-        // we can't take the min level as if you have super high str and low the rest.
-        // exp gain shouldnt be super low. Don't want to punish those players
-        // we can't take the max level either as it would mean that you can focus leveling on
-        // one skill first and then gain the rest super quickly. using avg will still
-        // benefit the player but not as much that it can be abused.
-        // It will be more beneficial if the player have similar level on each skill (ATK,DEF,STR)
-        int nextLevel = skill == Skill.Health || skill == Skill.Melee
-            ? ((int)((GetSkill(Skill.Attack).Level + GetSkill(Skill.Defense).Level + GetSkill(Skill.Strength).Level) / 3f)) + 1
-            : GetSkill(skill).Level + 1;
+    public double GetExperience(Skill skill, double factor) => Progression.GetExperience(skill, factor);
 
-        var xp = GameMath.Exp.CalculateExperience(nextLevel, skill, factor, GetExpMultiplier(skill), GetMultiplierFactor());
+    public void AddExp(Skill skill, double factor = 1) => Progression.AddExp(skill, factor);
 
-        return xp * Mathf.Max(1, playerStatsModifiers.ExpMultiplier);
-    }
+    /// <summary>
+    ///     Adds experience based on the given factor to the currently trained skill.
+    /// </summary>
+    public bool AddExp(double factor = 1) => Progression.AddExp(factor);
 
-    public void AddExp(Skill skill, double factor = 1)
-    {
-        try
-        {
-            //exp *= GetExpMultiplier(skill);
-
-            if (factor == 0)
-            {
-                return;
-            }
-
-            var stat = Stats.GetSkill(skill);
-            if (stat == null)
-                return;
-
-            var exp = GetExperience(skill, factor);
-
-            //if (!isTimeExp && Application.isEditor)
-            //{
-            //    var expTickSkill = skill.IsCombatSkill() && skill != Skill.Healing ? Skill.Health : skill;
-            //    IslandStatisticsUI.Data.ExpTick(this.Island, expTickSkill);
-            //}
-
-            if (skill.IsCombatSkill())
-            {
-                if (Stats.Health.AddExp(exp / 3d, out var hpLevels))
-                    CelebrateSkillLevelUp(Skill.Health, hpLevels);
-
-                if (skill == Skill.Health || skill == Skill.Melee)
-                {
-                    var each = exp / 3d;
-                    var left = 3d;
-
-                    if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Attack.Level)
-                    {
-                        if (Stats.Attack.AddExp(each, out var a))
-                            CelebrateSkillLevelUp(Skill.Attack, a);
-                    }
-                    else
-                    {
-                        each = exp / --left;
-                    }
-
-                    if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Defense.Level)
-                    {
-                        if (Stats.Defense.AddExp(each, out var b))
-                            CelebrateSkillLevelUp(Skill.Defense, b);
-                    }
-                    else
-                    {
-                        each = exp / --left;
-                    }
-
-                    if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Strength.Level)
-                        if (Stats.Strength.AddExp(each, out var c))
-                            CelebrateSkillLevelUp(Skill.Strength, c);
-
-                    return;
-                }
-            }
-
-            if (stat.Type == Skill.Slayer || stat.Type == Skill.Sailing ||
-                stat.Type == Skill.Health || stat.Type == Skill.Melee ||
-                AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > stat.Level)
-            {
-                if (stat.AddExp(exp, out var atkLvls))
-                {
-                    CelebrateSkillLevelUp(skill, atkLvls);
-                }
-            }
-        }
-        catch (Exception exc)
-        {
-            Shinobytes.Debug.LogError("Unable to add exp to " + PlayerName + " training '" + skill + "': " + exc);
-        }
-    }
 
     public void RemoveResource(Resource resource, double amount)
     {
@@ -2994,24 +2863,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     //    }
     //}
 
-    /// <summary>
-    ///     Adds experience based on the given factor to the currently trained skill.
-    /// </summary>
-    /// <param name="factor"></param>
-    /// <returns></returns>
-    public bool AddExp(double factor = 1)
-    {
-        var skill = ActiveSkill;
-        if (skill != Skill.None)
-        {
-            AddExp(skill, factor);
-            return true;
-        }
-        return false;
-    }
-
     //AsSkill
-    private void CelebrateSkillLevelUp(Skill skill, int levelCount)
+    // internal rather than private: PlayerProgression raises this when a skill levels up.
+    internal void CelebrateSkillLevelUp(Skill skill, int levelCount)
     {
         CelebrateLevelUp();// skill.ToString(), levelCount);
     }
