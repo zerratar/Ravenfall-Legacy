@@ -70,6 +70,38 @@ surgery, and prefab and scene edits are the least reversible kind of change in t
 4. `FerryHandler` - only once its `LateUpdate` is driven from the player
 5. `RaidHandler`, `DuelHandler`, `BotPlayerController` - last, they need a coroutine host
 
+## What the prefab audit showed
+
+`tools/prefab-default-check.py` compares every serialized field on a prefab against its default in
+code. Run across all 364 prefabs it reports 1,545 differences, but almost all of them are exactly
+what `[SerializeField]` is for: `EnemyController.attackRange` is 2.5 on one enemy, 3.5 on another
+and 5.0 on a third. That is per-instance design data, not drift, and it is the reason those
+components have to stay components.
+
+Two useful conclusions came out of it.
+
+**Player.prefab was the exception.** Only four fields there disagreed with code, and all four are
+now aligned. That is why the player components are unusually good conversion candidates: their
+serialized fields are mostly just `player` and `gameManager` references, not tuned values.
+
+**Only two fields project-wide are uniformly overridden to a single value**, which is the shape
+that means the code default is simply wrong rather than varied:
+
+| Script | Field | Code | Every prefab | Instances |
+|---|---|---|---|---|
+| `ItemController` | `IsGenericModel` | `false` | `true` | 9 |
+| `TreeController` | `MaxActionDistance` | `5.0` | `6.0` | 5 |
+
+Both left alone deliberately. Neither unblocks any refactor, and `TreeController` appears in three
+scenes where an instance could be relying on the code default, so the risk outweighs the benefit.
+Worth revisiting only if those fields ever need to move.
+
+The wider lesson for the conversion plan: **check the prefab before moving any serialized field.**
+A field whose default matches the prefab can move freely. A field whose default disagrees is
+pinned, because moving it silently swaps the prefab value for the code one. That is not
+hypothetical: moving `healingAnimationTime` would have changed healing from 2 seconds to 3 for
+every player, compiling cleanly and passing every test.
+
 ## Where a system would beat a component
 
 Component-per-player is the wrong shape when the same work is done for every player every frame.
