@@ -616,10 +616,21 @@ are fixed now.
 saying "nothing built" was louder than the one saying "counting". Muted rather than faint, because
 a state word is a fact and not a label.
 
+**A modal must nest inside `rf-modal-backdrop`.** The backdrop is the flex box that centres it, so
+as siblings nothing centres the dialog and it renders below the fold. Every other converted page
+nests them and nothing enforces it, which is why it was worth getting wrong once to write down.
+
 The standing brief paid again, and mostly off maths rather than off fields: the town levelling rate
 was one linear function away from a real time estimate, and it turns out **a town levels at the
 same speed however many viewers are playing**, because the processor passes a fixed player count.
 Neither the game nor the site had ever said so.
+
+The page also makes the first write the dashboard conversion has added: choosing who lives on a
+plot. Worth recording as a pattern rather than as a feature. **A website write into state the game
+is holding needs to know how the client learns about it.** The Unity client loads the village once
+at session start and then waits for events, so the write pushes the `VillageInfo` event the server
+already sends at session start. A page that changes game state without answering that question
+leaves the client on stale data until it restarts.
 
 ### TV removal
 

@@ -154,7 +154,49 @@ Both in the bonus summary, both invisible without measuring.
 
 Verified at 1280, 760, 560 and 375. No horizontal document scroll at any of them.
 
-### Still not started
+### Choosing who lives on a plot
 
-Assigning a plot from the website. It is a write into live game state and belongs with the plan and
-commit work.
+Built after all, once the client side was understood well enough to know the write was safe.
+
+**Why it is safe.** `Assets/Scripts/VillageManager.cs` loads village info **once** when the session
+starts and then waits for events. `LoadVillageAsync` only runs while `state == LoadingState.None`
+and sets `Loaded` on success, so it is a retry rather than a poll. A website write would therefore
+be invisible to a running game until the next session start. `SetHouseOccupantAsync` pushes a
+`GameEventType.VillageInfo` event to the owner's session after every change, which is the same
+event `SessionManager` already sends at session start and which `VillageInfoEventHandler` turns
+into `Village.SetHouses`. That handler is guarded by `HousesAreUpdating`, so it will not fight an
+in game update in progress. With nothing running there is no event to send and none needed.
+
+**Only people playing on the stream can be chosen.** A plot given to anybody else contributes
+nothing until they arrive, which is the state the page exists to warn about, so offering it as a
+choice would be offering the problem. Emptying a plot works with the game off and is the useful
+half when it is: it frees a plot held by somebody who has stopped playing.
+
+**Candidates are ordered by what they would be worth in that plot.** That is the question being
+asked and nothing else answers it: `!village` assigns whoever typed it, with no notion of who
+would be best. A candidate already holding another plot says so, since choosing them moves them
+rather than adding them.
+
+**Two bugs in the existing path, worked around rather than inherited.**
+`VillageManager.AssignPlayerToHouse` sets `UserId` without touching `CharacterId`, and
+`RemoveHouse` clears `UserId` and leaves `CharacterId` behind. A slot can therefore carry a
+character id belonging to whoever held it before. `DescribeHouse` only trusts the named character
+when it still belongs to the assigned user, and the write here sets both fields together.
+`GetTownsAsync` has the same flaw and still does. Believing a stale id names the wrong person and
+lets their skill decide the bonus.
+
+**What is left alone.** House type. Deciding which skill a plot boosts is `!village`'s
+`SetVillageBoostTarget`, it moves every plot at once, and it is a different question from who lives
+in one.
+
+**A third layout fault**, from the same browser check: the dialog was a sibling of
+`rf-modal-backdrop` rather than a child of it. The backdrop is the flex box that centres the modal,
+so as siblings nothing centred it and it rendered below the fold. Every other converted page nests
+them; this is the one place the pattern is not enforced by anything.
+
+### Known and not fixed
+
+The write is last one wins against an in game `AssignVillage`, which rewrites every plot at once. A
+website assignment made in the same moment as a `!village` type change is overwritten. The
+consequence is one assignment lost, and closing it properly needs locking that nothing else in the
+village path has.
