@@ -588,13 +588,38 @@ Existing pages before new ones.
   [vendor-buy-and-command-config.md](vendor-buy-and-command-config.md), which depends on the plan
   and commit work in [trade-plan-commit-design.md](trade-plan-commit-design.md).
 - **Map**, showing where each character is.
-- **Town management.**
 - **Bestiary.** Still blocked. `NPC`, `NPCItemDrop` and `NPCSpawn` exist as entity sets with the
   right shape, but **the tables are empty and nothing seeds them**, so the original reasoning
   holds: the game client is the only thing that knows its own enemy and drop tables. See
   [feature-opportunities.md](feature-opportunities.md).
 - **Quests.** Route and nav slot deliberately kept. Design not settled; intended to be a major
   part of the next version.
+
+### The town page
+
+`/town` is new and is the first page here built from a design document rather than from an existing
+screen. Details are in [town-page-design.md](town-page-design.md); three things generalise.
+
+**A grid per row beats one grid for every row.** The bonus summary was a single grid with a column
+per field, which is tidier to write and reflows into nonsense the moment a breakpoint changes the
+column count: a bar told to span the full width cannot fit its own row, so it takes the next one
+and drags every following cell out of position. `grid-template-areas` on a per row grid cannot do
+that. This is the same lesson as `rf-facts` becoming `rf-statlist`, arrived at from the other
+direction.
+
+**Bars that are compared with each other need identical tracks.** Content sized side columns gave
+seven bars seven different widths, between 727 and 836 pixels. Each fill was a correct percentage
+of its own bar and the set was still unreadable, because the eye compares lengths. Both side tracks
+are fixed now.
+
+**`rf-badge--quiet`** is new. A plain badge is drawn in full ink, so on the plot grid the badge
+saying "nothing built" was louder than the one saying "counting". Muted rather than faint, because
+a state word is a fact and not a label.
+
+The standing brief paid again, and mostly off maths rather than off fields: the town levelling rate
+was one linear function away from a real time estimate, and it turns out **a town levels at the
+same speed however many viewers are playing**, because the processor passes a fixed player count.
+Neither the game nor the site had ever said so.
 
 ### TV removal
 
