@@ -185,9 +185,38 @@ when it still belongs to the assigned user, and the write here sets both fields 
 `GetTownsAsync` has the same flaw and still does. Believing a stale id names the wrong person and
 lets their skill decide the bonus.
 
-**What is left alone.** House type. Deciding which skill a plot boosts is `!village`'s
-`SetVillageBoostTarget`, it moves every plot at once, and it is a different question from who lives
-in one.
+### Building a plot, and setting them all
+
+Added after the above, from use: the page could change who lived on a plot but not what was built
+on it, which is the half that decides which skill is boosted.
+
+**Per plot**, the type picker sits above the occupant list in the same dialog. The two are decided
+together: the type decides which skill the plot reads, and the occupant list is ordered by exactly
+that skill. Changing the type keeps the occupant, the way the in game `BuildHouse` does, since a
+plot is normally retyped to suit whoever is already in it. Demolishing is the fifteenth chip,
+"Nothing", and does clear the occupant, because nobody lives on a bare plot; without it a plot
+could never go back to empty from the website.
+
+**Setting every plot** mirrors `SetVillageBoostTarget` exactly: one type on all of them, then
+everyone playing ranked by the skill that type reads, best into the lowest slot, as many as there
+are plots, remainder emptied. Two deliberate differences from the game.
+
+- **It shows the result first.** The command picks and commits in one keystroke, which is fine when
+  you are looking at the town and not fine for a control that rewrites forty plots and every
+  assignment on them. The preview names who moves in, which plot each lands on, what the town would
+  be worth, and says outright that anyone not in the list loses their plot. This is the plan and
+  commit idea applied to a control that already existed.
+- **Off stream it retypes the plots and leaves the occupants alone.** The game can only run this
+  while live, so it always has players to assign. With the game off there is nobody to move in, and
+  clearing every plot to replace them with nothing is destruction rather than a rearrangement.
+
+`rf-panel__head` is new, and general: a panel title with a control beside it, the third place to
+want that shape after `rf-inv__head` and `rf-adminuser__head`.
+
+**A harness trap worth recording.** The harness used `d-none` as its own mode class to hide a
+dialog. Bootstrap is loaded on these pages and defines `.d-none { display: none !important }`, so
+it hid the entire `body` and the page measured as zero by zero. Harness class names have to avoid
+the utility namespaces the real page loads, the same way page class names do.
 
 **A third layout fault**, from the same browser check: the dialog was a sibling of
 `rf-modal-backdrop` rather than a child of it. The backdrop is the flex box that centres the modal,
