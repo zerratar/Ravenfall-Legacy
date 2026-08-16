@@ -288,6 +288,20 @@ be on `/clan` too, and it should be the one thing a member can always do.
    is an editor for it.
 2. ~~**Make `Parse` tolerant of short permission strings.**~~ Done.
 3. **Plan and commit item movement**, per the existing design doc. The bank depends on it.
+   *Half done.* `TradePlan`, `ItemMove`, `CoinMove` and `TradeExecutor` exist in
+   `RavenNest.BusinessLogic/Game/Trading`, with validate-then-commit and exact rollback. Proved
+   against a fake world: a two seller purchase rolls fully back from each of its eight possible
+   failure points, and quantities are accumulated across the plan so two moves that are only
+   impossible together are refused before anything is written.
+
+   **What is left is the risky half:** nothing live uses it yet. `SellItemToVendor` still has
+   three implementations that disagree about which safety checks apply, and `BuyItem` still
+   interleaves selection, affordability and mutation. Moving those onto the executor is a change
+   to live economy code and wants its own review rather than being folded into the bank.
 4. **Clan bank**, including the log and the per rank daily limit from day one.
+   Schema is written and ready to run: `sql/clan-bank.sql` in the RavenNest repo creates
+   `ClanBankItem`, `ClanBankLog` and `ClanBankWithdrawalLimit`. It has to be run against the live
+   database *before* the DbSets are added, because GameData loads every set eagerly at boot and a
+   DbSet without a table takes the server down rather than degrading.
 5. **Clan activity feed**, which is the bank log generalised.
 6. **More clan skills**, once there is something for them to gate.
