@@ -115,10 +115,15 @@ which fact it used, and a fact that is never retrieved costs nothing.
 
 The ask: "if a user corrects the bot, it must remember the corrections so it can self improve."
 
-The failure mode is not subtle. Ravenfall is played through Twitch chat. Some fraction of any
-Twitch chat will, for entertainment, patiently explain something false to a bot that has announced
-it learns from corrections. The bot then tells everyone else. There is no version of
-"corrections become facts" that survives contact with that.
+The failure mode is not subtle: one player, confused or amusing themselves, explains something
+false to an assistant that has announced it learns from corrections, and it then tells everybody
+else. It does not take malice. Somebody confidently wrong about a mechanic is far more common than
+somebody deliberately poisoning it, and produces the same result.
+
+Being on the website rather than in chat helps but does not solve it. The audience is signed in
+through Twitch, so a correction has a name on it and can be traced and undone, and the population
+is smaller than a Twitch chat. That lowers the odds. It does not make "a correction becomes a fact
+everyone sees" a safe rule, and the queue that fixes it costs almost nothing.
 
 ### The rule, decided
 
@@ -138,11 +143,11 @@ what was asked for and also what I would have recommended.
 
 ### Per-user memory, separately
 
-**"It remembered what I told it" and "it learned something for everybody" are different promises.** "It remembered what I told it" and "it learned
-something for everybody" are different features, and the first is most of the felt benefit with
-almost none of the risk. A note attached to one user, applied only to their conversations, can be
-written instantly with no review. Worth having as well as the proposal queue, and worth naming
-differently in the interface so nobody thinks they have taught the bot something global.
+**"It remembered what I told it" and "it learned something for everybody" are different promises**,
+and the first is most of the felt benefit with almost none of the risk. A note attached to one
+person, applied only to their own conversations, can be written instantly with no review at all.
+Worth having alongside the proposal queue, and worth naming differently in the interface so nobody
+thinks they have taught the assistant something everyone will hear.
 
 ---
 
