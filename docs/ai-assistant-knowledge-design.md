@@ -1,8 +1,12 @@
 # AI assistant: knowledge, retrieval, and doing what the interface can do
 
 Written after the first assistant shipped and immediately ran out of things it knew. This is a
-design, not a plan of record. The open questions at the end are the ones I would want answered
-before building the parts that are hard to undo.
+design, not a plan of record.
+
+**Scope: the assistant on the website**, the bubble in the corner of the dashboard. Not the in-game
+chat bot. They may share a knowledge base one day, but they have different audiences, different
+authentication and different risks, and conflating them is how the safe answer for one becomes the
+wrong answer for the other.
 
 ## What exists today
 
@@ -116,22 +120,25 @@ Twitch chat will, for entertainment, patiently explain something false to a bot 
 it learns from corrections. The bot then tells everyone else. There is no version of
 "corrections become facts" that survives contact with that.
 
-### So corrections become proposals, not facts
+### The rule, decided
 
-- A correction from a player creates a `Proposed` fact. Nobody but an admin sees it.
-- An admin queue shows proposals with the conversation that produced them, and approves, edits or
-  discards.
+- **A player's correction becomes a `Proposed` fact.** Nobody else sees it. It appears in an admin
+  queue with the conversation that produced it, and an admin accepts, edits or discards it.
+- **An admin's or moderator's correction is accepted straight away.** They already have that
+  authority through the interface, and the principle below is that the chat is not a second, weaker
+  set of rules. Somebody who can fix a page can fix this.
 - The assistant may write proposals itself. That is the "create new facts itself" part, and it is
-  safe precisely because a proposal is inert.
+  safe precisely because a proposal is inert until somebody with authority publishes it.
 - **Publishing is the privileged act**, not proposing.
 
-### Two things worth considering on top
+Worth being clear about what the website scope changes here. The audience is signed in through
+Twitch rather than anonymous, so a bad correction has a name on it and can be traced and undone.
+That makes it less likely, not impossible, and the queue costs almost nothing. The rule above is
+what was asked for and also what I would have recommended.
 
-**A correction from an admin or moderator could publish immediately.** They already have that
-authority through the interface, and the whole principle below is that the chat should not be a
-second, weaker set of rules. This is consistent rather than a shortcut.
+### Per-user memory, separately
 
-**Per-user memory is a separate, cheaper thing.** "It remembered what I told it" and "it learned
+**"It remembered what I told it" and "it learned something for everybody" are different promises.** "It remembered what I told it" and "it learned
 something for everybody" are different features, and the first is most of the felt benefit with
 almost none of the risk. A note attached to one user, applied only to their conversations, can be
 written instantly with no review. Worth having as well as the proposal queue, and worth naming
@@ -201,24 +208,45 @@ fixes part of it.
 
 ---
 
-## 5. The wiki
+## 5. The wiki, measured rather than assumed
 
-`wiki.ravenfall.stream`, linked from About, Commands and Download, and described in our own copy as
-**community maintained**. That is the important fact about it.
+`ravenfall.fandom.com`. Fandom, so MediaWiki 1.43.9, and **`api.php` answers**: structured fetching
+rather than scraping HTML. That closes the question the first draft could not.
 
-- It is not ours and it is not authoritative. So: link to it, quote it briefly with attribution,
-  and never present it as fact of record. A wrong answer sourced from the wiki should be traceable
-  to the wiki.
-- The URL shape (`index.php/Page_Name`) looks like MediaWiki, which would mean `api.php` allows
-  structured fetching rather than scraping HTML. **Unverified**: it was not reachable from the
-  machine this was written on, which may be this environment's networking rather than the wiki
-  being down. Worth confirming before planning around it.
-- Ingest titles, summaries and URLs into the same fact store with `Source = Wiki` and a
-  `FetchedUtc`, on a schedule, so retrieval stays uniform and staleness is visible.
-- Always surface the link. The best outcome for a deep question is a correct short answer and a
-  pointer to the page that has the detail.
+What is actually there, as of writing:
 
----
+| | |
+|---|---|
+| Pages | 377 |
+| Real articles, redirects excluded | **30** |
+| Total wikitext | **92.7 KB, roughly 24,000 tokens** |
+| Active users | **1** |
+| Stubs under 400 bytes | 6 of 30 |
+
+Four things follow, and they matter more than being able to fetch it does.
+
+**It is small enough that retrieval is not a problem.** Thirty articles. A title and keyword match
+over thirty things is not a search problem, and anything vector shaped here would be engineering for
+a difficulty that does not exist. This is the strongest evidence for starting without embeddings.
+
+**One article is a quarter of the wiki.** `Weapons` is 24.6 KB on its own, about 6,000 tokens, and
+it is the article covering "what does weapon aim really do". Too big to hand back whole from a tool.
+It wants splitting by section, which the API supports directly, so retrieval returns the section
+rather than the page.
+
+**The stubs are exactly where players will ask.** Marketplace, Mining, Woodcutting, Farming and
+Fishing are all under 400 bytes. Those are skills people train, which is the "where should I train
+now" category. So ingesting the wiki does not answer the training questions. The fact store has to,
+and the proposal queue is how those gaps get found.
+
+**One active user.** It is not a living source that will fill its own gaps, so a refresh can be
+infrequent and nothing should be designed assuming the wiki improves. Community maintained also
+means it is not ours and not authoritative: link to it, quote briefly with attribution, and let a
+wrong answer be traceable to it.
+
+Ingest into the same fact store with `Source = Wiki`, a `SourceUrl` and a `FetchedUtc`, so retrieval
+stays uniform and staleness is visible. Always surface the link: the best answer to a deep question
+is a correct short one plus a pointer to the page with the detail.
 
 ## Suggested order
 
@@ -228,7 +256,8 @@ fixes part of it.
    anybody poison it.
 3. **Data tools for the pure lookups**: character state, pet, item search, training locations.
    This is where half those example questions get answered.
-4. **Wiki ingestion**, once the API question is settled.
+4. **Wiki ingestion.** Thirty articles, so one pass rather than a pipeline, with `Weapons` split
+   by section because it is a quarter of the corpus on its own.
 5. **Embeddings**, if and when the retrieval miss log justifies it.
 6. **Mutating tools** such as equipping, behind the gate that already exists.
 
@@ -239,15 +268,15 @@ liability.
 
 1. **Facts in a file or a table?** I would start with a file, for no DDL and readability. Moving
    later is cheap; starting with DDL is not.
-2. **Do moderator corrections publish immediately, or queue like a player's?** Publishing matches
-   the parity principle. Queueing is safer. I lean towards publishing for admins only, queueing for
-   moderators, but this is your call about your community.
+2. ~~**Do moderator corrections publish immediately?**~~ Answered: admins and moderators both
+   publish directly, players queue for review.
 3. **Per-user memory: yes?** It is most of the felt benefit for almost none of the risk, and it is a
    different promise from global learning. If yes, it needs its own name in the interface.
 4. **What is the cost ceiling?** The daily question cap exists, but retrieval and a larger tool set
    multiply the tokens per question. A monthly budget would let the defaults be set from something
    real rather than from caution.
-5. **Is the wiki API open?** Needed before step 4 can be planned rather than guessed at.
+5. ~~**Is the wiki API open?**~~ Answered: yes. Fandom, MediaWiki 1.43.9, and the whole thing is
+   thirty articles.
 6. **How much should the assistant volunteer that it does not know?** A bot that says "I have no
    fact about that, I have told an admin" is more useful than one that reasons plausibly from
    nothing, and it also produces the proposal queue for free. But it is a different personality and
