@@ -22,14 +22,17 @@ wrong answer for the other.
 What is proven: the confirmation gate and the scoping, both by construction rather than by prompt.
 What is not: any of it against a live API. Nothing has had a real conversation yet.
 
-## The five things being asked for, in order of how hard they are
+## The six things being asked for, in order of how hard they are
 
 1. **A fact store an admin manages.** Easy.
 2. **Retrieval the model can reach.** Easy, and the technique is a sizing question rather than a
    design question.
-3. **Wiki content.** Medium, and mostly about attribution rather than fetching.
-4. **Learning from corrections.** This is the dangerous one.
-5. **Doing anything through the chat that can be done through the interface.** This is not a feature
+3. **Facts derived from the code**, so the assistant is correct about rules the wiki never wrote
+   down. Easy, and the only part of this that cannot decay, provided it reads values rather than
+   copying them.
+4. **Wiki content.** Medium, and mostly about attribution rather than fetching.
+5. **Learning from corrections.** This is the dangerous one.
+6. **Doing anything through the chat that can be done through the interface.** This is not a feature
    at all, it is a standing commitment, and it is the one that shapes everything else.
 
 Taking them in the order they were described would deliver the fact store and leave the two that
@@ -253,6 +256,112 @@ Ingest into the same fact store with `Source = Wiki`, a `SourceUrl` and a `Fetch
 stays uniform and staleness is visible. Always surface the link: the best answer to a deep question
 is a correct short one plus a pointer to the page with the detail.
 
+## 6. Facts derived from the code
+
+The wiki has thirty articles and six of them are stubs, so a lot of what players ask is written
+down nowhere except in the code that decides it. Seeding facts from that code at startup is the
+right instinct, and there is a trap in the obvious version of it worth naming before anybody builds
+it.
+
+### The trap
+
+**A fact seeded as text is a copy of a value, and a copy goes stale silently.** Write "buying from
+the vendor costs at least three times what it pays" into a fact at startup, change
+`VendorBuyMultiplier` to four a year later, and the assistant now states the old number with total
+confidence and an authoritative looking source. That is worse than not knowing: "I do not know"
+sends somebody to ask a person, a wrong number does not.
+
+So the rule is: **read the value, never copy it.**
+
+### Tier one: derived facts, which cannot go stale
+
+The body is produced by a function that reads the live value when it is generated, and it is
+regenerated on every startup. The prose is a template; the number is interpolated from the constant
+itself.
+
+```csharp
+Derive("How many characters can I have?",
+    () => "Each account can have up to " + PlayerManager.MaxCharacterCount + " characters.");
+
+Derive("How long does a marketplace listing last?",
+    () => "A listing expires after " + MarketplaceManager.ListingLifetime.TotalDays + " days.");
+
+Derive("What does the vendor charge?",
+    () => "At least " + GameMath.VendorBuyMultiplier + " times what it pays for the same item, and " +
+          "never less than " + GameMath.MinimumVendorBuyPrice + " coins.");
+```
+
+There is a second guarantee here that is easy to miss and is the best part: **a derived fact
+references the constant in C#, so deleting or renaming the constant breaks the build.** The fact
+cannot outlive the thing it describes, and it fails at compile time rather than in front of a
+player. Nothing else in this document has that property.
+
+Candidates already in the code, all of which are questions somebody will ask:
+
+| Constant | Answers |
+|---|---|
+| `PlayerManager.MaxCharacterCount` | how many characters can I have |
+| `PlayerManager.AutoJoinDungeonCost`, `AutoJoinRaidCost` | what does auto join cost |
+| `PlayerManager.AutoRestCostPerSecond` | what does resting cost |
+| `PlayerManager.Enchanting_CooldownCoinsPerSecond` | what does skipping the enchant cooldown cost |
+| `MarketplaceManager.ListingLifetime` | how long do listings last |
+| `SessionManager.MaxPlayerExpMultiplier`, `ExpMultiplierMinutesPerScroll` | how do multipliers work |
+| `GameMath.VendorBuyMultiplier`, `MinimumVendorBuyPrice`, `MaxLevel` | vendor prices, level cap |
+| `ClanBankDefaults.ForRoleLevel` | what can my clan rank withdraw |
+
+Derived facts should be **not editable** in the admin panel, and say so. An edit would be
+overwritten at the next startup, and a field that silently discards what you typed is worse than a
+field that refuses.
+
+### The reflection driven ones are even better
+
+Some answers are not a constant but a list the code already enumerates. `SkillsExtended.AsList()`
+walks every skill by reflection, which is why adding a skill to the game made it appear in the
+assistant without anybody remembering to. The same shape covers the item catalogue, the command
+list and the clan rank defaults.
+
+These are the best kind of derived fact: **the fact is the query**. It cannot drift because there
+is nothing to drift from.
+
+### Tier two: guarded facts, for prose nobody can generate
+
+Most of what makes a good answer is not a number. "Weapon aim increases how often you hit in melee,
+so it matters more against high defence targets than raw power does" is a sentence a person writes,
+and no generator produces it. But it depends on values the code owns, and those can be watched.
+
+A hand written fact can declare what it depends on:
+
+```csharp
+public sealed class Fact
+{
+    // ... as above ...
+
+    /// <summary>Values from the code this fact's wording depends on, and what they were when it
+    /// was written. Checked at startup; a mismatch marks the fact stale rather than wrong.</summary>
+    public Dictionary<string, string> DependsOn;
+}
+```
+
+At startup, each declared value is read again and compared. A mismatch does not delete the fact and
+does not correct it, because neither can be done safely by a machine. It marks the fact **stale**
+and puts it in the same admin queue the player corrections use, saying what changed: *"this fact
+was written when VendorBuyMultiplier was 3, it is now 4"*.
+
+That is the answer to keeping these current as the game changes, and it is mechanical rather than a
+discipline somebody has to remember during a refactor.
+
+### What this does and does not cover
+
+It answers **how much, how many, how long, what are the rules**. That is a real and useful slice,
+and it is precisely the slice the wiki's stubs leave open.
+
+It does not answer **where should I train, what weapon should I get, is this worth it**. Those are
+judgement, and they come from admin written facts, the wiki, and eventually the accepted player
+corrections. Worth sizing honestly: derivation makes the assistant reliably correct about rules,
+not knowledgeable about the game.
+
+---
+
 ## Suggested order
 
 1. **Fact store, admin management, and a search tool.** The smallest change that makes answers
@@ -261,13 +370,16 @@ is a correct short one plus a pointer to the page with the detail.
    anybody poison it.
 3. **Data tools for the pure lookups**: character state, pet, item search, training locations.
    This is where half those example questions get answered.
-4. **Wiki ingestion.** Thirty articles, so one pass rather than a pipeline, with `Weapons` split
+4. **Derived facts from the code**, plus the staleness guard for hand written ones. Cheap,
+   cannot rot, and it covers the rules questions the wiki's stubs leave open.
+5. **Wiki ingestion.** Thirty articles, so one pass rather than a pipeline, with `Weapons` split
    by section because it is a quarter of the corpus on its own.
-5. **Embeddings**, if and when the retrieval miss log justifies it.
-6. **Mutating tools** such as equipping, behind the gate that already exists.
+6. **Embeddings**, if and when the retrieval miss log justifies it.
+7. **Mutating tools** such as equipping, behind the gate that already exists.
 
 Steps 1 and 3 together are what change the experience. Step 2 is what stops step 1 becoming a
-liability.
+liability. Step 4 is the cheapest of the lot and the only part that cannot decay, so it is worth
+doing before the corpus is large enough to hide a stale answer in.
 
 ## Open questions
 
