@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      The player list, rebuilt as a draggable window around a virtualised ListView.
+
+      Why a ListView rather than the old pooled row approach: the previous list instantiated rows up
+      to the visible count and then ran UpdateUI on every one of them every single frame, building
+      strings each time. ListView only creates elements for rows actually on screen and only binds
+      them when they scroll into view, so the cost stops depending on how many players joined. That
+      is the reason streamers were switching this off.
+
+      The header is the drag handle. It is a separate element from the body on purpose: making the
+      whole window draggable would swallow scroll and click events inside the list.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+
+    <engine:VisualElement name="playerlist-root" class="rf-window-layer" picking-mode="Ignore">
+
+        <engine:VisualElement name="playerlist-window" class="rf-window">
+
+            <engine:VisualElement name="playerlist-header" class="rf-window__header">
+                <engine:Label name="playerlist-title" text="Players" class="rf-window__title" />
+                <engine:Label name="playerlist-count" text="0" class="rf-window__badge" />
+            </engine:VisualElement>
+
+            <engine:ListView name="playerlist-view"
+                             class="rf-playerlist"
+                             virtualization-method="FixedHeight"
+                             fixed-item-height="64"
+                             selection-type="None"
+                             show-border="false"
+                             horizontal-scrolling="false" />
+
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</engine:UXML>

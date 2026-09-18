@@ -136,25 +136,57 @@ public class BuildSlotIconsManager : MonoBehaviour
 
     public void ShowHouseSelection()
     {
+        // Every sibling button handler logs when clicked; this one did not, which is why a build
+        // click that goes nowhere leaves no trace at all. The two states worth telling apart are
+        // "the click never arrived" and "it arrived and the dialog still did not appear".
+        Shinobytes.Debug.Log("Build house button clicked");
+
         HidePlayerAssignDialog();
-        if (selectBuildingDialog)
+
+        if (!selectBuildingDialog)
         {
-            selectBuildingDialog.gameObject.SetActive(true);
+            Shinobytes.Debug.LogError("Cannot show the building selection: no dialog is assigned on"
+                + " BuildSlotIconsManager. This silently did nothing before.");
+            return;
         }
+
+        selectBuildingDialog.gameObject.SetActive(true);
+
+        // activeInHierarchy rather than activeSelf: it is the one that reveals an inactive parent,
+        // which SetActive on the child cannot fix.
+        Shinobytes.Debug.Log("Building selection dialog activeInHierarchy="
+            + selectBuildingDialog.gameObject.activeInHierarchy);
     }
 
 
     public void ShowAssignPlayerDialog()
     {
+        Shinobytes.Debug.Log("Assign player button clicked");
+
         if (!playerAssignDialog)
+        {
+            Shinobytes.Debug.LogError("Cannot show the assign player dialog: none is assigned on"
+                + " BuildSlotIconsManager.");
             return;
+        }
 
         if (!activeSlot)
+        {
+            Shinobytes.Debug.LogError("Cannot show the assign player dialog: no slot is selected.");
             return;
+        }
 
-        var townHouseController = activeSlot.GetComponentInChildren<TownHouseController>();
+        // GetComponentInChildren skips inactive objects unless asked not to. If the building model
+        // is disabled for any reason the controller is invisible to this search, and the dialog
+        // then refused to open with no explanation. Inactive children are included so the failure
+        // becomes a real answer rather than silence.
+        var townHouseController = activeSlot.GetComponentInChildren<TownHouseController>(true);
         if (!townHouseController)
+        {
+            Shinobytes.Debug.LogError("Cannot show the assign player dialog: slot '"
+                + activeSlot.name + "' has no TownHouseController in its children.");
             return;
+        }
 
         HideBuildDialog();
         if (!townHouseController.Slot)

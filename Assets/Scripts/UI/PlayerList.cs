@@ -12,6 +12,17 @@ public class PlayerList : MonoBehaviour
     [SerializeField] private GameObject playerListItem; // prefabs
     [SerializeField] private GameObject listRoot;
 
+    /// <summary>
+    /// Optional UI Toolkit replacement. When assigned, every call is forwarded to it and the legacy
+    /// rows below are left alone, so this can be switched on and off by clearing one field.
+    /// </summary>
+    /// <remarks>
+    /// The toolkit version exists because this one is why streamers turn the player list off: it
+    /// refreshes every pooled row every frame and its tracked collection is linear on add, remove
+    /// and scroll. See Shinobytes.UI.PlayerListWindow.
+    /// </remarks>
+    [SerializeField] private Shinobytes.UI.PlayerListWindow uiToolkitWindow;
+
     private readonly List<PlayerController> trackedPlayers = new List<PlayerController>();
     private readonly List<PlayerListItem> instantiatedPlayerListItems = new List<PlayerListItem>();
 
@@ -113,12 +124,28 @@ public class PlayerList : MonoBehaviour
     public void Show()
     {
         isVisible = true;
+
+        if (uiToolkitWindow != null)
+        {
+            // The GameObject stays active deliberately. This component is the entry point the rest
+            // of the game calls, so deactivating it would stop the forwarding as well as the view.
+            uiToolkitWindow.SetVisible(true);
+            return;
+        }
+
         gameObject.SetActive(true);
     }
 
     public void Hide()
     {
         isVisible = false;
+
+        if (uiToolkitWindow != null)
+        {
+            uiToolkitWindow.SetVisible(false);
+            return;
+        }
+
         gameObject.SetActive(false);
     }
 
@@ -137,6 +164,12 @@ public class PlayerList : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (uiToolkitWindow != null)
+        {
+            // The toolkit window scrolls itself, and it does so without rotating the data.
+            return;
+        }
+
         UpdateScroll();
     }
 
@@ -179,6 +212,12 @@ public class PlayerList : MonoBehaviour
 
     public void AddPlayer(PlayerController player)
     {
+        if (uiToolkitWindow != null)
+        {
+            uiToolkitWindow.AddPlayer(player);
+            return;
+        }
+
         if (!player)
         {
             Shinobytes.Debug.LogWarning("Player already exists in the list?");
@@ -214,6 +253,12 @@ public class PlayerList : MonoBehaviour
 
     public void RemovePlayer(PlayerController player)
     {
+        if (uiToolkitWindow != null)
+        {
+            uiToolkitWindow.RemovePlayer(player);
+            return;
+        }
+
         if (!player)
         {
             return;

@@ -194,3 +194,122 @@ it can be reverted alone.
   third party dependency.
 - Keep a screenshot of each screen before migrating. Consistency is the goal, but changes should be
   deliberate rather than accidental.
+
+---
+
+## Window framework and player list
+
+### DraggableWindow
+
+`Assets/Scripts/UI/Toolkit/DraggableWindow.cs`. Attach it to any toolkit element with a drag
+handle and an id; it persists the position and keeps the window on screen.
+
+It replaces `Dragscript`, which had three faults that together explain the windows people kept
+losing:
+
+- **It clamped only while dragging.** A saved position was applied on load with no clamping, so a
+  window near the right edge of a 2560 wide screen was gone after relaunching at 1280, with no way
+  back short of clearing preferences.
+- **Nothing reacted to the game window resizing.** Same outcome without needing a restart. The new
+  one re-clamps on every `GeometryChangedEvent` of the container, which is the event the old system
+  had no equivalent of.
+- **Reset mixed coordinate spaces.** It restored `transform.position` (world) but saved through keys
+  read back as `localPosition`, so resetting could move a window somewhere new on the next launch
+  rather than back to its default.
+
+Positions are stored only as the top left corner in panel pixels. A window is allowed to hang off
+an edge but never by more than `MinVisible` (64px), and never above the top, so the title bar you
+grab it by is always reachable. That is the invariant: whatever the preferences file says, the
+window cannot be unreachable.
+
+`GameMenuHandler.ResetUIPositions` calls both the legacy `Dragscript.ResetPosition` and
+`DraggableWindow.ResetAllPositions`, so the existing settings menu button covers both systems
+during the migration.
+
+### Player list
+
+`Assets/Scripts/UI/Toolkit/PlayerListWindow.cs`, `Assets/UI/Screens/PlayerListWindow.uxml`,
+`Assets/UI/Styles/ravenfall-hud.uss`.
+
+Why the old one made streams stutter, measured from the code rather than guessed:
+
+- Rows were pooled to the visible count, then **every pooled row ran a full refresh every frame**.
+- Its `SetText` guard compared the finished string, so it avoided the text mesh rebuild but had
+  already paid for the concatenation and a `Trim` allocation to find out.
+- The tracked collection used `Contains` on add, `FirstOrDefault` on remove, and `RemoveAt(0)` on
+  every scroll step. All linear, so a thousand player stream paid a thousand element move per row of
+  scrolling, on top of the per frame row work.
+
+Three changes address that. Rows exist only while on screen, because `ListView` is virtualised.
+Rows refresh on an interval rather than per frame, and only the rows that exist. And each row caches
+the last value it displayed, so a string is built only when the number behind it actually changed.
+
+The auto scrolling ticker is kept, because it is how every viewer eventually sees their own row, but
+it now advances the scroll offset instead of rotating the data. That removes the `RemoveAt(0)`
+entirely. It also pauses while the pointer is over the list, which the old one could not do.
+
+`PlayerList` keeps its public surface and forwards to the toolkit window when the
+`uiToolkitWindow` field is assigned, falling back to the legacy rows when it is not. Note that
+`Hide()` no longer deactivates the GameObject in toolkit mode: this component is the entry point the
+rest of the game calls, so deactivating it would stop the forwarding along with the view.
+
+### Still to do
+
+- **Scene wiring.** A GameObject with a `UIDocument` pointing at `PlayerListWindow.uxml` and
+  `RavenfallPanelSettings`, with `PlayerListWindow` on it, then assign it to `PlayerList.uiToolkitWindow`.
+  Nothing is wired yet, so the legacy list is still what runs.
+- **Nothing has been compiled or play tested.** The editor held the assembly lock during this work.
+- ~~The experience progress calculation needs checking.~~ **Resolved, and it was already correct.**
+  `SkillStat.Experience` counts within the current level and resets on level up with overflow rolled
+  forward. `ExperienceForLevel(n)` returns `ExperienceArray[n - 2]`, the amount needed to go from
+  `n-1` to `n` rather than a running total, so for a level L skill `ExperienceForLevel(L + 1)` is the
+  size of the level currently being worked through and the division is a true 0..1 ratio. The
+  cumulative form is the obsolete `OldExperienceForLevel`; totalling across levels overflowed and
+  capped max level, which is why it resets per level now. `PlayerDetails` can use the same
+  calculation with confidence.
+- `PlayerDetails` is next, and should reuse `DraggableWindow` and the same row and bar classes.
+
+### Dragscript repaired rather than left to rot
+
+`Dragscript` still drives three windows: the PlayerDetails prefab
+(`Assets/Prefabs/ObservedPlayerDetails.prefab`), `ObservedIslandDetails` and `ObservedEnemyDetails`.
+Those keep using it until each is ported, so it was repaired in place rather than left broken behind
+the new system. Four faults, which together explain "draggable on some but lots of bugs":
+
+1. **Clamped only while dragging.** A saved position was applied on load untouched, so a window near
+   the right edge of a wide screen was off screen after relaunching on a narrow one. Now clamped on
+   load too.
+2. **No reaction to the game window resizing.** Same outcome without a restart. The canvas rect is
+   now polled and the position re-clamped when it changes.
+3. **The clamp read `sizeDelta` from the canvas.** For a stretched canvas that is `(0,0)`, so the
+   bounds collapsed; with min above max `Mathf.Clamp` returns the max, meaning the window snapped to
+   a fixed wrong spot instead of staying where it was dropped. Now reads `rect.size`.
+4. **Drag was not scale aware.** The raw screen pixel delta was applied to a local position, so on
+   any resolution where the CanvasScaler factor was not exactly 1 the window drifted away from the
+   cursor, worse the further you dragged. The original carried unused `scaleX`/`scaleY` fields, so
+   this was known about and never wired up. Now divided by `canvas.scaleFactor`.
+
+`ResetPosition` also deletes its saved keys rather than overwriting them with the current default, so
+a later change to the scene's layout is not permanently overridden by a stale saved value. It used to
+restore a world position through keys read back as local, which could move a window somewhere new
+rather than back.
+
+### Verification so far
+
+Driven through the Unity CLI against the live editor:
+
+- Scripts compile: `recompile_status` reports `completed, failed:false, errors:[]`.
+- Scene wiring is saved and resolves: the `UI Toolkit Player List` object exists in MainWorld with
+  its UIDocument, PanelSettings and UXML assigned at sorting order 10, and
+  `PlayerList.uiToolkitWindow` points at it as a prefab override with a real object reference.
+- The visual tree resolves structurally: `playerlist-window`, `playerlist-header`, `playerlist-view`
+  and `playerlist-count` are all found, all three stylesheets attach, and `fixed-item-height` came
+  through from the UXML. Those are the failures that happen silently, so they are the ones worth
+  checking this way.
+- No USS or UXML import errors. `text-shadow`, `translate`, `transition`, `cursor: pan`,
+  `text-overflow` and the `.unity-scroller` overrides all parse on 6000.7.0a4.
+
+Not yet verified, and it needs Play mode: geometry, dragging, position persistence, and whether rows
+actually render. MonoBehaviour callbacks do not run in edit mode, so the view never binds there; a
+probe confirmed `itemsSource` is null and resolved sizes are NaN outside Play mode. Entering Play
+mode starts a server session, so that is a decision for the person at the keyboard.

@@ -1,0 +1,20 @@
+﻿<Solution>
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="MessagePack.csproj" />
+  <Project Path="PipeSQL.csproj" />
+  <Project Path="Ravenfall.Core.csproj" />
+  <Project Path="PathCreator.csproj" />
+  <Project Path="Whinarn.UnityMeshSimplifier.Runtime.csproj" />
+  <Project Path="Shinobytes.Linq.csproj" />
+  <Project Path="MessagePack.Annotations.csproj" />
+  <Project Path="DamageNumbersPro.csproj" />
+  <Project Path="Tests.csproj" />
+  <Project Path="Assembly-CSharp-firstpass.csproj" />
+  <Project Path="Shinobytes.Core.csproj" />
+  <Project Path="Whinarn.UnityMeshSimplifier.Editor.csproj" />
+  <Project Path="PathCreatorEditor.csproj" />
+  <Project Path="Sirenix.OdinInspector.Modules.UnityMathematics.csproj" />
+  <Project Path="Ravenfall.Core.Editor.csproj" />
+  <Project Path="Polyperfect.Universal.csproj" />
+</Solution>

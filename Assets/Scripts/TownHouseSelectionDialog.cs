@@ -21,6 +21,7 @@ public class TownHouseSelectionDialog : MonoBehaviour
 
     private List<TownHouseButton> instantiatedButtons = new List<TownHouseButton>();
     private TownHouse selectedHouse;
+    private bool buttonsGenerated;
     public TownHouse SelectedHouse
     {
         get => selectedHouse;
@@ -38,11 +39,54 @@ public class TownHouseSelectionDialog : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        TryGenerateButtons();
+    }
+
+    private void OnEnable()
+    {
+        // Retried every time the dialog opens.
+        //
+        // This object ships active in the scene, so Start runs during scene load, well before the
+        // village has arrived from the server. Reading gameManager.Village.TownHouses that early
+        // throws, and because Start never runs twice the button list stayed empty for the rest of
+        // the session: the dialog would open with nothing in it. Generating on demand means the
+        // first open after the village exists succeeds.
+        TryGenerateButtons();
+    }
+
+    /// <summary>
+    /// Builds the building buttons once the data needed to build them exists. Safe to call
+    /// repeatedly; it does nothing after it has succeeded.
+    /// </summary>
+    private void TryGenerateButtons()
+    {
+        if (buttonsGenerated)
+        {
+            return;
+        }
+
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
-        if (!townHouseManager) townHouseManager = gameManager.Village.TownHouses;
         if (!townHouseRenderManager) townHouseRenderManager = FindAnyObjectByType<TownHouseRenderManager>();
 
+        if (!townHouseManager)
+        {
+            // Village is populated from the server, so this is null until a session is running.
+            townHouseManager = gameManager != null && gameManager.Village != null
+                ? gameManager.Village.TownHouses
+                : null;
+        }
+
+        if (!townHouseManager || townHouseManager.TownHouses == null || !townHouseRenderManager)
+        {
+            Shinobytes.Debug.LogWarning("Building selection has nothing to show yet."
+                + " townHouseManager=" + (townHouseManager ? "ok" : "missing")
+                + ", renderManager=" + (townHouseRenderManager ? "ok" : "missing")
+                + ". Will retry the next time the dialog opens.");
+            return;
+        }
+
         GenerateTownHouseButtons();
+        buttonsGenerated = true;
     }
 
     void Update()

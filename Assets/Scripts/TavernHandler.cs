@@ -30,6 +30,12 @@ public class TavernHandler : MonoBehaviour
 
     private float leaveTimer;
 
+    [Header("Diagnostics")]
+    [Tooltip("Logs the camera's distance to the tavern triggers, at most once a second. Temporary.")]
+    [SerializeField] private bool logProximity = true;
+    private float nextProximityLog;
+    private float lastLoggedDistance = float.MinValue;
+
     public TicTacToe TicTacToe => ticTacToeGame;
     public PetRacingGame PetRacing => petRacingGame;
     public ITavernGame ActiveGame => activeGame;
@@ -124,6 +130,58 @@ public class TavernHandler : MonoBehaviour
         activeTheme.SetActive(true);
     }
 
+
+    /// <summary>
+    /// World space centre of a sphere collider.
+    /// </summary>
+    /// <remarks>
+    /// This used to be written as <c>transform.position + collider.center</c>, which is only
+    /// correct when the collider's transform has no rotation and no scale. The tavern's transform
+    /// is rotated -90 degrees on Y, so a centre offset of (0.52, 0.49, 2.58) was being applied
+    /// along the wrong axes and put the trigger point about 2.6 units away from where it is drawn
+    /// in the editor. TransformPoint applies the rotation and scale the same way the physics system
+    /// does.
+    /// </remarks>
+    private static Vector3 WorldCenter(SphereCollider collider)
+    {
+        return collider.transform.TransformPoint(collider.center);
+    }
+
+    /// <summary>
+    /// World space radius of a sphere collider. <see cref="SphereCollider.radius"/> is in local
+    /// space, so a scaled transform makes the raw value disagree with the sphere actually drawn.
+    /// Unity scales a sphere collider by the largest axis, so this matches it.
+    /// </summary>
+    private static float WorldRadius(SphereCollider collider)
+    {
+        var scale = collider.transform.lossyScale;
+        var largest = Mathf.Max(Mathf.Abs(scale.x), Mathf.Max(Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
+        return collider.radius * largest;
+    }
+
+    /// <summary>
+    /// Reports how far the camera is from a tavern trigger, at most once a second and only when the
+    /// distance has actually moved. Temporary, to find out whether the tavern is failing because
+    /// proximity is never detected or because the fade never runs.
+    /// </summary>
+    private void LogProximity(string which, float distance, float radius)
+    {
+        if (!logProximity)
+        {
+            return;
+        }
+
+        if (Time.unscaledTime < nextProximityLog && Mathf.Abs(distance - lastLoggedDistance) < 1f)
+        {
+            return;
+        }
+
+        nextProximityLog = Time.unscaledTime + 1f;
+        lastLoggedDistance = distance;
+        Shinobytes.Debug.Log($"[Tavern] {which}: distance {distance:F1} of radius {radius:F1}"
+            + $", inside={insideTavern}, fadeActive={(fadeToBlack ? fadeToBlack.FadeActive.ToString() : "no fade component")}");
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -132,9 +190,10 @@ public class TavernHandler : MonoBehaviour
 
         if (!insideTavern)
         {
-            var enterTavernPoint = this.enterCollider.transform.position + enterCollider.center;
+            var enterTavernPoint = WorldCenter(enterCollider);
             var dist = Vector3.Distance(gameCamera.transform.position, enterTavernPoint);
-            if (dist <= enterCollider.radius)
+            LogProximity("enter", dist, WorldRadius(enterCollider));
+            if (dist <= WorldRadius(enterCollider))
             {
                 if (!fadeToBlack.FadeActive)
                 {
@@ -152,9 +211,10 @@ public class TavernHandler : MonoBehaviour
                 return;
             }
 
-            var exitTavernPoint = this.exitCollider.transform.position + exitCollider.center;
+            var exitTavernPoint = WorldCenter(exitCollider);
             var dist = Vector3.Distance(gameCamera.transform.position, exitTavernPoint);
-            if (dist >= exitCollider.radius)
+            LogProximity("exit", dist, WorldRadius(exitCollider));
+            if (dist >= WorldRadius(exitCollider))
             {
                 if (!fadeToBlack.FadeActive)
                 {

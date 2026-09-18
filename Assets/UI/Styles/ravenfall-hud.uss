@@ -1,0 +1,244 @@
+/*
+  Ravenfall in game HUD windows.
+
+  Everything here draws from ravenfall-tokens.uss. No raw colours.
+
+  This is stream UI, so it has one constraint the website does not: it is watched through Twitch's
+  H.264 encoder at 720p or 1080p on a moving background. Thin strokes, low contrast edges and small
+  text all fall apart under that compression. So borders here are 2px rather than hairlines, text
+  carries a shadow to hold its edge against whatever is behind it, and nothing important is smaller
+  than the caption size.
+*/
+
+/* The full screen layer windows are positioned within. Ignores picking so the world underneath
+   stays clickable everywhere the windows are not. */
+.rf-window-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.rf-window {
+    position: absolute;
+    background-color: var(--rf-surface);
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-left-width: var(--rf-border-width);
+    border-right-width: var(--rf-border-width);
+    border-top-width: var(--rf-border-width);
+    border-bottom-width: var(--rf-border-width);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    overflow: hidden;
+}
+
+/* ---- Header, which is also the drag handle -------------------------------- */
+
+.rf-window__header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: var(--rf-surface-raised);
+    border-bottom-color: var(--rf-border);
+    border-bottom-width: var(--rf-border-width);
+    /* Signals the whole strip is grabbable. */
+    cursor: pan;
+}
+
+.rf-window__title {
+    font-size: var(--rf-font-caption);
+    color: var(--rf-text-dim);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.rf-window__badge {
+    font-size: var(--rf-font-caption);
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    padding-left: var(--rf-space-2);
+    padding-right: var(--rf-space-2);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    min-width: 28px;
+}
+
+/* ---- The list ------------------------------------------------------------- */
+
+.rf-playerlist {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* Unity's own scroller parts, restyled so the list does not arrive wearing the
+   default editor grey. */
+.rf-playerlist .unity-scroller--vertical {
+    width: 8px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.rf-playerlist .unity-base-slider__dragger {
+    background-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    width: 6px;
+}
+
+.rf-playerlist .unity-scroller--vertical .unity-base-slider__dragger:hover {
+    background-color: var(--rf-accent-dim);
+}
+
+/* The arrow buttons on a Unity scroller look like editor chrome and are useless
+   on a stream overlay. */
+.rf-playerlist .unity-scroller__low-button,
+.rf-playerlist .unity-scroller__high-button {
+    display: none;
+}
+
+/* ---- A row ---------------------------------------------------------------- */
+
+.rf-player-row {
+    flex-direction: row;
+    align-items: center;
+    height: 64px;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    border-bottom-color: var(--rf-border);
+    border-bottom-width: 1px;
+}
+
+/* Alternating tint. Under stream compression a plain list of rows turns into a
+   grey blur; a faint stripe keeps the rows countable. */
+.rf-player-row--alt {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.rf-player-row__main {
+    flex-grow: 1;
+    /* Without this a long player name pushes the level and rate off the row. */
+    min-width: 0;
+    overflow: hidden;
+}
+
+.rf-player-row__name {
+    font-size: var(--rf-font-body);
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The streamer's own row, and anyone in their clan later. Accent only, no extra
+   weight, so it reads as "notable" rather than "alarming". */
+.rf-player-row--highlight .rf-player-row__name {
+    color: var(--rf-accent-bright);
+}
+
+.rf-player-row__sub {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.rf-player-row__skill {
+    font-size: var(--rf-font-caption);
+    color: var(--rf-text-dim);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.rf-player-row__rate {
+    font-size: var(--rf-font-caption);
+    color: var(--rf-success);
+    margin-left: var(--rf-space-2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.rf-player-row__level {
+    font-size: var(--rf-font-title);
+    color: var(--rf-accent);
+    -unity-font-style: bold;
+    -unity-text-align: middle-right;
+    min-width: 56px;
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.95);
+}
+
+/* ---- Progress bar --------------------------------------------------------- */
+
+.rf-bar {
+    height: 5px;
+    margin-top: 4px;
+    background-color: rgba(0, 0, 0, 0.55);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    overflow: hidden;
+}
+
+.rf-bar__fill {
+    height: 100%;
+    background-color: var(--rf-accent);
+    /* Width is set from code. Transitioned so experience ticks glide instead of
+       snapping, which is most of what made the old list feel dead. */
+    transition-property: width;
+    transition-duration: 0.25s;
+    transition-timing-function: ease-out;
+}
+
+.rf-bar--health .rf-bar__fill {
+    background-color: var(--rf-danger);
+}
+
+/* ---- Row entry animation --------------------------------------------------
+   A row fades and slides in when it is bound. Deliberately short: this is
+   peripheral UI on a stream and long animations read as lag. */
+
+.rf-player-row {
+    opacity: 1;
+    transition-property: opacity, translate;
+    transition-duration: 0.18s, 0.18s;
+    transition-timing-function: ease-out, ease-out;
+}
+
+.rf-player-row--entering {
+    opacity: 0;
+    translate: 12px 0;
+}
+
+/* ---- Player list window defaults ------------------------------------------
+   An absolutely positioned element with no size collapses: the header would
+   measure its own text and the ListView, which only has flex-grow, would resolve
+   to zero height. So the window needs real dimensions rather than inheriting any.
+
+   The position here is only a starting point. DraggableWindow overwrites left and
+   top from saved preferences on load, and "reset positions" in the settings menu
+   clears those inline values so these apply again. */
+
+#playerlist-window {
+    left: 24px;
+    top: 96px;
+    width: 340px;
+    height: 420px;
+}

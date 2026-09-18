@@ -54,10 +54,17 @@ public class GameMenuHandler : MonoBehaviour
 
     public void ResetUIPositions()
     {
+        // Legacy uGUI windows.
         foreach (var ds in GameObject.FindObjectsByType<Dragscript>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             ds.ResetPosition();
         }
+
+        // UI Toolkit windows. Handled separately because their positions live in preferences keyed
+        // by window id rather than on a component, so there is nothing to find in the scene. Both
+        // run while the migration is in progress; this call is harmless once no toolkit windows
+        // exist yet, and keeps working when the last Dragscript is gone.
+        Shinobytes.UI.DraggableWindow.ResetAllPositions();
     }
 
     private void Update()
