@@ -77,8 +77,16 @@ public class TownHallManager : MonoBehaviour
         }
     }
 
+    /// <summary>Houses built, for the town resource bar.</summary>
+    public int UsedSlots { get; private set; }
+
+    /// <summary>House slots the village has at its level.</summary>
+    public int SlotCount { get; private set; }
+
     internal void SetSlotCount(int usedCount, int count)
     {
+        UsedSlots = usedCount;
+        SlotCount = count;
         if (info)
         {
             info.UsedSlots = usedCount;

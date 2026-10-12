@@ -22,6 +22,30 @@
     <engine:VisualElement name="top-root" class="rf-top-layer" picking-mode="Ignore">
         <engine:VisualElement name="top-column" class="rf-top-column" picking-mode="Ignore">
 
+            <!-- Town resources, laid out after docs/mockups/town-resource-bar.webp. First in the column
+                 so the boost and any event stack under it. Shown in free camera mode, when the
+                 village is what is on screen. -->
+            <engine:VisualElement name="town-bar" class="rf-town" picking-mode="Ignore" style="display: none;">
+                <engine:VisualElement class="rf-town__section rf-town__section--village" picking-mode="Ignore">
+                    <engine:Label class="rf-icon rf-town__home" text="&#xf015;" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-town__text" picking-mode="Ignore">
+                        <engine:Label name="town-caption" class="rf-town__caption" picking-mode="Ignore" />
+                        <engine:Label name="town-level" class="rf-town__value" picking-mode="Ignore" />
+                        <engine:VisualElement class="rf-town__exp" picking-mode="Ignore">
+                            <engine:VisualElement name="town-exp-fill" class="rf-town__exp-fill" picking-mode="Ignore" />
+                        </engine:VisualElement>
+                    </engine:VisualElement>
+                </engine:VisualElement>
+                <engine:VisualElement name="town-resources" class="rf-town__resources" picking-mode="Ignore" />
+                <engine:VisualElement class="rf-town__section rf-town__section--houses" picking-mode="Ignore">
+                    <engine:Label class="rf-icon rf-town__houses-icon" text="&#xf1ad;" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-town__text" picking-mode="Ignore">
+                        <engine:Label name="town-houses-caption" class="rf-town__caption" picking-mode="Ignore" />
+                        <engine:Label name="town-houses" class="rf-town__value" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+            </engine:VisualElement>
+
             <!-- XP boost -->
             <engine:VisualElement name="xp-boost" class="rf-boost" picking-mode="Ignore" style="display: none;">
                 <engine:Label class="rf-icon rf-boost__icon" text="&#xf252;" picking-mode="Ignore" />

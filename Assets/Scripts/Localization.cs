@@ -339,6 +339,14 @@ public static class Localization
     public static readonly string UI_PLAYERS_COUNT = "{0} players";
     public static readonly string UI_PLAYERS_PARTIAL = "{0} of {1} players";
     public static readonly string UI_RESTED = "Rested {0}";
+    public static readonly string UI_TOWN_VILLAGE = "VILLAGE";
+    public static readonly string UI_TOWN_LEVEL = "LV {0}";
+    public static readonly string UI_TOWN_HOUSES = "HOUSES";
+    public static readonly string UI_TOWN_WOOD = "WOOD";
+    public static readonly string UI_TOWN_ORE = "ORE";
+    public static readonly string UI_TOWN_FISH = "FISH";
+    public static readonly string UI_TOWN_WHEAT = "WHEAT";
+    public static readonly string UI_TOWN_COINS = "COINS";
     public static readonly string UI_DUNGEON_TITLE = "DUNGEON";
     public static readonly string UI_DUNGEON_ROOM = "ROOM {0} / {1}";
     public static readonly string UI_DUNGEON_BOSS_ROOM = "BOSS ROOM";

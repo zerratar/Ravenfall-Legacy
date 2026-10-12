@@ -631,3 +631,40 @@ order 11, between the player list (10) and player details (12).
 Open: the meters header only drags from a thin strip at its top. The HUD panel's sort order (0)
 is below the legacy Canvas2D (2), so any active uGUI raycast target over a window wins the click.
 The culprit needs a live raycast in Play mode to name.
+
+## Town resource bar
+
+`TownBarView.cs`, in `TopStatus.uxml`. Laid out after `docs/mockups/town-resource-bar.webp`.
+
+Shows village level with its experience bar, then wood, ore, fish, wheat and coins with hourly
+rates, then houses built out of slots. It is first in the top status column, so the boost pill
+and any event stack beneath it. It shows in free camera mode, except in the tavern, which uses
+the free camera but has its own interface.
+
+The server only sends totals, so the rates are measured locally. The totals are sampled every 10
+seconds, and a rate is the change across the last 10 minutes. A rate only shows once a minute of
+history exists; earlier, a single server update would make it swing wildly. Falling totals show
+in red. `TownHallManager` now keeps the slot counts it used to hand only to the world space info
+panel. The resource icons are the town hall info panel's own sprites.
+
+The mockup's build mode button and building toolbar wait for build mode itself: free placement,
+limited by resources, with building types unlocked by village level.
+
+## UI scale
+
+`UiScale.cs`. One scale for all 2D interface, saved as `uiScale` in the game settings, applied on
+load. Ctrl+= and Ctrl+- change it in 5% steps between 60% and 160%. The keypad keys are left
+alone because they already set the free camera speed, and Ctrl+0 would also jump to stored camera
+position 0.
+
+- UI Toolkit panels: `PanelSettings.scale`.
+- Screen space canvases that scale with screen size: a smaller reference resolution.
+- Constant pixel size canvases: a multiplied scale factor.
+- World space canvases, such as name tags, are not touched.
+
+Original values are remembered the first time each is seen, so changes never compound. The panel
+settings are an asset, so their original scale is restored when the application quits, which in
+the editor is when Play mode ends.
+
+The settings menu needs a slider for it in the menu pass. The old player list scale and size
+sliders act on the hidden uGUI list and do nothing now; that is part of the same pass.

@@ -747,6 +747,8 @@ public class GameManager : MonoBehaviour, IGameManager
         PlayerList.Scale = settings.PlayerListScale.GetValueOrDefault(PlayerList.Scale);
         PlayerList.Speed = settings.PlayerListSpeed.GetValueOrDefault(PlayerList.Speed);
 
+        Shinobytes.UI.UiScale.Load();
+
         Raid.Notifications.volume = settings.RaidHornVolume.GetValueOrDefault(Raid.Notifications.volume);
         Music.volume = settings.MusicVolume.GetValueOrDefault(Music.volume);
 
@@ -1924,6 +1926,18 @@ public class GameManager : MonoBehaviour, IGameManager
         if (isControlDown && Input.GetKeyUp(KeyCode.F))
         {
             playerSearchHandler.Show();
+        }
+
+        // Interface scale, as in a browser. Main keyboard only: the keypad plus and minus already
+        // change the free camera speed, and Ctrl+0 would also jump to stored camera position 0.
+        if (isControlDown && Input.GetKeyDown(KeyCode.Equals))
+        {
+            Shinobytes.UI.UiScale.Increase();
+        }
+
+        if (isControlDown && Input.GetKeyDown(KeyCode.Minus))
+        {
+            Shinobytes.UI.UiScale.Decrease();
         }
 
 

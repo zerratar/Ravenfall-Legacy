@@ -913,3 +913,115 @@
     color: var(--rf-health-low);
     margin-right: var(--rf-space-2);
 }
+
+/* ---- Town resource bar --------------------------------------------------------------
+   Village level, the five resources with their hourly rates, and houses. Shown in free camera
+   mode, first in the top column, so the boost pill and any event stack beneath it. */
+
+.rf-town {
+    flex-direction: row;
+    align-items: center;
+    height: 80px;
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-2);
+    padding-right: var(--rf-space-2);
+    background-color: var(--rf-surface-glass);
+    border-top-color: var(--rf-accent);
+    border-top-width: 3px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-town__resources {
+    flex-direction: row;
+    align-items: center;
+    height: 100%;
+}
+
+.rf-town__section {
+    flex-direction: row;
+    align-items: center;
+    height: 100%;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    border-right-width: 1px;
+    border-right-color: var(--rf-divider);
+}
+
+.rf-town__section--houses {
+    border-right-width: 0;
+}
+
+.rf-town__res-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-3);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-top-layer .rf-town__home,
+.rf-top-layer .rf-town__houses-icon {
+    width: 40px;
+    font-size: 28px;
+    color: var(--rf-accent);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-town__text {
+    min-width: 92px;
+}
+
+.rf-top-layer .rf-town__caption {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    letter-spacing: 1px;
+}
+
+.rf-top-layer .rf-town__value {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+    font-size: 22px;
+    color: var(--rf-text);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-top-layer .rf-town__rate {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 13px;
+    color: var(--rf-success);
+}
+
+.rf-top-layer .rf-town__rate--down {
+    color: rgb(255, 110, 100);
+}
+
+.rf-town__exp {
+    height: 4px;
+    margin-top: 4px;
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+    overflow: hidden;
+}
+
+.rf-town__exp-fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--rf-accent);
+    transition-property: width;
+    transition-duration: 0.4s;
+}

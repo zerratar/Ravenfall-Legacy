@@ -27,6 +27,8 @@ public class PlayerSettings
     public float? RaidHornVolume;
     public float? MusicVolume;
     public float? DPIScale;
+    /// <summary>Scale of all 2D interface, 1 for the default size. See Shinobytes.UI.UiScale.</summary>
+    public float? UIScale;
     public float? ViewDistance;
     public float? CameraRotationSpeed;
 
@@ -351,6 +353,7 @@ public class PlayerSettings
             Serialize(sw, "raidHornVolume", obj.RaidHornVolume);
             Serialize(sw, "musicVolume", obj.MusicVolume);
             Serialize(sw, "dpiScale", obj.DPIScale);
+            Serialize(sw, "uiScale", obj.UIScale);
             Serialize(sw, "viewDistance", obj.ViewDistance);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
 
