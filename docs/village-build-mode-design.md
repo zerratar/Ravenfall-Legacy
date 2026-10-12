@@ -94,6 +94,83 @@ Plots become positions rather than fixed scene objects.
   anywhere valid, up to the slot limit.
 - Old clients keep receiving houses by slot index, and draw them at the legacy plot positions.
 
+### Next: a movable town hall, then town hall upgrades (plan, 2026-10-12)
+
+Two changes, shipped one after the other. The first only moves things, the second adds the first cost in
+the game. Neither touches the slot limit. Nothing here is built yet.
+
+#### Step A: the streamer can move and turn the town hall (no costs)
+
+Today all five tiers stand on one plaza at world (-23.6, 8, -109.7), and the client picks the tier from
+the village level (`TownHallManager.GetTownHallTier`: under 10, 30, 80 and 150, then tier 5).
+
+Server (RavenNest), following the house placement pattern from `109d2b8a`:
+
+- `Village` gains nullable `TownHallX`, `TownHallZ` and `TownHallRotation` (`double?`). Null means the
+  plaza, so every existing village stays as it is. The columns come from a new `sql/village-town-hall.sql`,
+  safe to run twice, run before deploy.
+- New endpoints on `VillageController`, authenticated with the session token like the placement ones:
+  `GET api/village/townhall` (position and, from step B, the tier), `POST api/village/townhall/place`
+  (X, Z, rotation) and `GET api/village/townhall/reset-placement`.
+- The server only rejects unusable numbers (NaN, infinity, beyond 10000), as it does for houses.
+- The answer is a new type. `VillageInfo` stays as it is, because it is compiled into every client.
+
+Client:
+
+- The five tier roots move and turn together, so an upgrade later appears where the old hall stood. The
+  height comes from the ground under the new position.
+- In build mode a click on the hall selects it, with a small hall panel: Move, Rotate and Reset position.
+  It uses the same controls as moving a plot (grid snap, R to turn, click to place, Esc to cancel).
+- Validation, client side like the plots:
+  - Inside the village.
+  - Clear of every plot.
+  - Not on water, not too steep.
+  - Recommended: the footprint checked is the largest tier's, shown as a faint outline, so the hall
+    always has room to grow and an upgrade never lands on a house.
+- Fixes that come with it:
+  - The village area is measured from the plaza, not from the active hall. Otherwise moving the hall
+    would move the whole buildable area.
+  - The mouse point uses a ground raycast instead of the manager's height.
+  - The resource piles refresh when a tier is switched on.
+- The halls are not part of the baked navmesh, so moving one leaves no hole and needs no rebake.
+  Players already walk through halls today; a NavMeshObstacle could stop that later.
+- Old clients ignore the new endpoint and draw the hall on the plaza.
+
+#### Step B: town hall upgrades bought with resources and a village level
+
+- **Stored tier.** `Village` gains a nullable `TownHallTier` (`int?`), returned by
+  `GET api/village/townhall`.
+  - Null means "follow the village level", which is today's behaviour.
+  - When the feature goes live, a village keeps the tier its level gives it today. The first read stores
+    that tier, so nobody ever loses a tier.
+  - From then on the tier only rises by buying it.
+- **Requirements.** Each tier above the stored one needs a village level and a resource cost.
+  - Today's thresholds (10, 30, 80, 150) are the natural level gates.
+  - The costs are open. They come from the user before any balancing.
+  - The table lives on the server, so it can be tuned without a game release.
+- **Buying.** `POST api/village/townhall/upgrade`:
+  - The server checks the level and the resources.
+  - It subtracts the cost from the village's `Resources` (the same check-then-subtract as player
+    crafting costs), raises the tier, and returns the new state.
+  - The client then calls `TownHallManager.SetTier`.
+- **Client.**
+  - When the server sends a stored tier, the three `SetTierByLevel` callers stop switching the tier
+    on level-up. The town bar shows "upgrade available" when the level is reached instead.
+  - The hall panel shows the current tier, a preview of the next one, each requirement as have and
+    need, and an Upgrade button that stays disabled until everything is met.
+  - Old clients keep deriving the tier from the level, which can show a tier the village has not
+    bought. That is acceptable during the transition, and a version check could close it later.
+- **Village coins never increase today.** Nothing on the server adds them. A coin cost would block
+  every upgrade, so step B either leaves coins out of the costs or gives the village a coin income
+  first.
+
+#### Open questions for this step
+
+- Placement footprint: the largest tier (recommended) or the current one?
+- Moving the hall: free (recommended), or a cost?
+- The level gate and resource cost for each tier, and whether coins are part of it.
+- At launch, keep each village's current tier (recommended), or reset every village to tier 1?
+
 ### Phase 3: production buildings, costs, upgrades and unlocks
 
 #### Two kinds of building, one slot limit
@@ -257,8 +334,8 @@ notes in its README.
   Drawer drew objects removed in the same editor frame. A clean render shows nothing there.
 - Next steps:
   - Phase 3: production buildings, costs, tiers and unlocks. Needs balancing numbers.
-  - Town hall upgrades bought with resources plus a level requirement.
-  - A movable town hall.
+  - A movable town hall, then town hall upgrades bought with resources plus a level requirement.
+    Planned in "Next: a movable town hall, then town hall upgrades" above, with open questions.
   - Phase 4: paths, decor and walls.
   - More custom Blender models. The first set is in: a clock tower for tier 3, round towers for tiers 4 and
     5, the tier 5 frontispiece and the fountain goose (`tools/village-rebuild/blender`).
