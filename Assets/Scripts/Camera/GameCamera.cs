@@ -48,6 +48,12 @@ public class GameCamera : MonoBehaviour
     public bool ForcedFreeCamera => forcedFreeCamera;
     public GameCameraType State => state;
 
+    /// <summary>
+    /// True while the free camera is actually the one in control. <see cref="State"/> is not a
+    /// reliable signal for this: it starts as Free and the automatic observe path never changes it.
+    /// </summary>
+    public bool IsFreeCameraActive => freeCamera && freeCamera.isActiveAndEnabled;
+
     public IslandController CurrentlyObservedIsland => islandObserveCamera.Island;
 
     public bool AllowJoinObserve

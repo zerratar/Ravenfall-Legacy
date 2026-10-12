@@ -59,6 +59,14 @@ namespace Shinobytes.UI
         private readonly Resource[] resources = new Resource[ResourceCount];
         private readonly Queue<Sample> samples = new Queue<Sample>();
         private readonly long[] current = new long[ResourceCount];
+        private long[] lastSample;
+
+        /// <summary>
+        /// A change between two samples larger than this fraction of the previous total, and more
+        /// than <see cref="JumpFloor"/>, is treated as new data rather than as gathering.
+        /// </summary>
+        private const double JumpFraction = 0.5;
+        private const long JumpFloor = 1000;
 
         private VisualElement bar;
         private Label level;
@@ -171,7 +179,11 @@ namespace Shinobytes.UI
 
             var gm = GameManager.Instance;
             var townHall = gm != null && gm.Village != null ? gm.Village.TownHall : null;
-            if (!townHall)
+
+            // Nothing to show, and nothing worth sampling, until the game has loaded and the village
+            // totals have come from the server. Before that every total reads 0.
+            var loaded = townHall && gm.IsLoaded && gm.RavenNest != null && gm.RavenNest.Authenticated;
+            if (!loaded)
             {
                 SetShown(false);
                 return;
@@ -193,9 +205,11 @@ namespace Shinobytes.UI
 
             // The village is what is on screen in free camera mode. The tavern also uses the free
             // camera, but it has its own interface and the bar would only be in the way there.
+            // IsFreeCameraActive rather than State == Free: State starts as Free and the automatic
+            // observe path never changes it, which left the bar up while a player was observed.
             var camera = gm.Camera;
             var visible = camera != null
-                && camera.State == GameCameraType.Free
+                && camera.IsFreeCameraActive
                 && !(gm.Tavern && gm.Tavern.IsActivated);
 
             SetShown(visible);
@@ -228,12 +242,64 @@ namespace Shinobytes.UI
         private void TakeSample(TownHallManager townHall, float now)
         {
             Read(townHall);
-            samples.Enqueue(new Sample { Time = now, Values = (long[])current.Clone() });
+
+            // Rates are only honest across samples of the same data. Start over when the totals
+            // first arrive (everything was 0 until then, which turned the whole stockpile into an
+            // hourly "gain") and when a total jumps by more than it could plausibly change in one
+            // interval, as on a reconnect or a state reload.
+            if (samples.Count > 0 && IsDiscontinuity(lastSample, current))
+            {
+                samples.Clear();
+            }
+
+            if (IsEmpty(current))
+            {
+                samples.Clear();
+                return;
+            }
+
+            var copy = (long[])current.Clone();
+            lastSample = copy;
+            samples.Enqueue(new Sample { Time = now, Values = copy });
 
             while (samples.Count > 0 && now - samples.Peek().Time > rateWindow)
             {
                 samples.Dequeue();
             }
+        }
+
+        private static bool IsEmpty(long[] values)
+        {
+            for (var i = 0; i < values.Length; ++i)
+            {
+                if (values[i] != 0) return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsDiscontinuity(long[] previous, long[] next)
+        {
+            if (previous == null)
+            {
+                return false;
+            }
+
+            if (IsEmpty(previous) != IsEmpty(next))
+            {
+                return true;
+            }
+
+            for (var i = 0; i < next.Length; ++i)
+            {
+                var delta = Math.Abs(next[i] - previous[i]);
+                if (delta > JumpFloor && delta > Math.Abs(previous[i]) * JumpFraction)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void Refresh(TownHallManager townHall, float now)
