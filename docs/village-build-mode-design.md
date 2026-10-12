@@ -170,6 +170,10 @@ Client:
 - Moving the hall is free, like moving plots.
 - At launch every village keeps the tier its level gives it today; only higher tiers are bought.
 - Upgrade costs leave coins out (wood, ore, fish and wheat only) until the village has a coin income.
+- Village coin income, first edition: defeating a raid or a dungeon pays the village coins, on top of
+  what the players earn. No taxes or cuts from player gains. Players should never feel they lose
+  something by helping, so the village is rewarded alongside them, not at their cost. The amounts need
+  numbers. Once this is in, coins can join the upgrade costs.
 
 Still open: the level gate and resource cost for each tier. Step B waits for those numbers.
 
