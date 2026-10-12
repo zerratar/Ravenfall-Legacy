@@ -21,6 +21,22 @@ public class VillageBuildMode : MonoBehaviour
     [Tooltip("Where the camera goes on entering build mode, relative to the town hall.")]
     [SerializeField] private Vector3 overviewOffset = new Vector3(0f, 42f, -38f);
 
+    [Header("Placement")]
+    [Tooltip("Grid cell size in metres. Positions snap to it.")]
+    [SerializeField] private float cellSize = 1f;
+
+    [Tooltip("Degrees per press of R. Hold Alt for quarter turns.")]
+    [SerializeField] private float rotationStep = 15f;
+
+    [Tooltip("How far past the outermost original plot buildings may go, in metres.")]
+    [SerializeField] private float villageMargin = 12f;
+
+    [Tooltip("Largest height difference across a footprint before the ground counts as too steep.")]
+    [SerializeField] private float maxSlope = 2f;
+
+    [Tooltip("Gap kept between buildings, in metres.")]
+    [SerializeField] private float spacing = 0.5f;
+
     public static VillageBuildMode Instance { get; private set; }
 
     /// <summary>Whether build mode is on.</summary>
@@ -37,6 +53,15 @@ public class VillageBuildMode : MonoBehaviour
     /// <summary>True while a server call is in flight; the interface disables its actions.</summary>
     public bool Busy { get; private set; }
 
+    /// <summary>The plot being moved, if any.</summary>
+    public TownHouseSlot Moving { get; private set; }
+
+    /// <summary>Whether the plot being moved can be dropped where it is.</summary>
+    public bool MoveValid { get; private set; }
+
+    /// <summary>Why the current spot is not valid, for the hint line.</summary>
+    public string MoveProblem { get; private set; }
+
     /// <summary>Raised when build mode turns on or off.</summary>
     public event Action<bool> ActiveChanged;
 
@@ -49,6 +74,14 @@ public class VillageBuildMode : MonoBehaviour
     private GameManager gameManager;
     private Camera worldCamera;
     private readonly RaycastHit[] hits = new RaycastHit[32];
+
+    private PlacementOverlay overlay;
+    private Vector3 moveStartPosition;
+    private Quaternion moveStartRotation;
+    private float moveRotation;
+    private Vector3 lastSnapped = new Vector3(float.NaN, 0f, 0f);
+    private float lastRotation = float.NaN;
+    private readonly Dictionary<TownHouseSlot, float> radiusCache = new Dictionary<TownHouseSlot, float>();
 
     private void Awake()
     {
@@ -103,6 +136,7 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
+        CancelMove();
         IsActive = false;
         Selected = null;
         Armed = null;
@@ -227,6 +261,12 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
+        if (Moving)
+        {
+            UpdateMove();
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (Armed.HasValue || Selected) ClearSelection();
@@ -263,6 +303,271 @@ public class VillageBuildMode : MonoBehaviour
         }
 
         return best;
+    }
+
+    // ---- Moving --------------------------------------------------------------------------
+
+    /// <summary>Picks a plot up. It follows the mouse until it is placed or the move is cancelled.</summary>
+    public void StartMove(TownHouseSlot slot)
+    {
+        if (!IsActive || Busy || !slot)
+        {
+            return;
+        }
+
+        CancelMove();
+        Moving = slot;
+        Selected = slot;
+        Armed = null;
+        moveStartPosition = slot.transform.position;
+        moveStartRotation = slot.transform.rotation;
+        moveRotation = Mathf.Round(slot.transform.eulerAngles.y / rotationStep) * rotationStep;
+        lastSnapped = new Vector3(float.NaN, 0f, 0f);
+        lastRotation = float.NaN;
+        radiusCache.Clear();
+
+        if (!overlay) overlay = PlacementOverlay.Create(cellSize);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Puts the plot back where it was before the move started.</summary>
+    public void CancelMove()
+    {
+        if (!Moving)
+        {
+            return;
+        }
+
+        Moving.transform.SetPositionAndRotation(moveStartPosition, moveStartRotation);
+        Moving = null;
+        MoveProblem = null;
+        if (overlay) overlay.Hide();
+        Changed?.Invoke();
+    }
+
+    private void UpdateMove()
+    {
+        // Saving: the plot stays where it was dropped until the server answers.
+        if (Busy)
+        {
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1))
+        {
+            CancelMove();
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            var alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+            var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            var step = alt ? 90f : rotationStep;
+            moveRotation = Mathf.Repeat(moveRotation + (shift ? -step : step), 360f);
+        }
+
+        if (!TryGetMousePoint(out var point))
+        {
+            return;
+        }
+
+        var snapped = new Vector3(Mathf.Round(point.x / cellSize) * cellSize, point.y, Mathf.Round(point.z / cellSize) * cellSize);
+        if (snapped.x != lastSnapped.x || snapped.z != lastSnapped.z || moveRotation != lastRotation)
+        {
+            lastSnapped = snapped;
+            lastRotation = moveRotation;
+
+            var ground = PlacementUtility.FindGroundPoint(snapped);
+            Moving.transform.SetPositionAndRotation(ground, Quaternion.Euler(0f, moveRotation, 0f));
+
+            MoveProblem = Validate(Moving, ground);
+            MoveValid = MoveProblem == null;
+            Changed?.Invoke();
+        }
+
+        if (overlay)
+        {
+            overlay.Show(Moving.transform.position, moveRotation, RadiusOf(Moving), MoveValid);
+        }
+
+        if (Input.GetMouseButtonDown(0) && !Shinobytes.UI.HudPointer.IsOverHud() && !UIUtility.IsPointerOverUIElement())
+        {
+            if (MoveValid) _ = CommitMoveAsync();
+            else Failed?.Invoke(MoveProblem);
+        }
+    }
+
+    /// <summary>
+    /// Where the mouse points on the village. The ray is cut against a horizontal plane at the
+    /// town hall's height rather than against the scene, so trees, houses and characters under the
+    /// cursor do not make the building jump; the ground height is found straight down from there.
+    /// </summary>
+    private bool TryGetMousePoint(out Vector3 point)
+    {
+        point = default;
+        if (!worldCamera || !worldCamera.isActiveAndEnabled) worldCamera = Camera.main;
+        var townHall = gameManager.Village.TownHall;
+        if (!worldCamera || !townHall) return false;
+
+        var plane = new Plane(Vector3.up, townHall.transform.position);
+        var ray = worldCamera.ScreenPointToRay(Input.mousePosition);
+        if (!plane.Raycast(ray, out var distance)) return false;
+        point = ray.GetPoint(distance);
+        return true;
+    }
+
+    /// <summary>Null when the plot can stand here, otherwise the reason it cannot.</summary>
+    private string Validate(TownHouseSlot slot, Vector3 position)
+    {
+        var townHall = gameManager.Village.TownHall;
+        var centre = townHall ? townHall.transform.position : position;
+        var radius = RadiusOf(slot);
+
+        // Inside the village: no further out than the outermost original plot, plus a margin.
+        var reach = 0f;
+        var allSlots = gameManager.Village.TownHouses.Slots;
+        foreach (var other in allSlots)
+        {
+            if (other) reach = Mathf.Max(reach, Flat(other.DefaultPosition - centre).magnitude);
+        }
+
+        if (Flat(position - centre).magnitude > reach + villageMargin)
+        {
+            return Localization.UI_BUILD_PLACE_OUTSIDE;
+        }
+
+        // Clear of the town hall.
+        var hallRadius = TownHallRadius();
+        if (hallRadius > 0f && Flat(position - centre).magnitude < hallRadius + radius + spacing)
+        {
+            return Localization.UI_BUILD_PLACE_TOWN_HALL;
+        }
+
+        // Clear of every other plot, built or not.
+        foreach (var other in Plots)
+        {
+            if (other == slot) continue;
+            if (Flat(position - other.transform.position).magnitude < radius + RadiusOf(other) + spacing)
+            {
+                return Localization.UI_BUILD_PLACE_OVERLAP;
+            }
+        }
+
+        // On ground, not water, and not too steep.
+        var low = float.MaxValue;
+        var high = float.MinValue;
+        var turn = Quaternion.Euler(0f, moveRotation, 0f);
+        for (var i = 0; i < 5; ++i)
+        {
+            var offset = i == 4 ? Vector3.zero : turn * new Vector3((i & 1) == 0 ? -radius : radius, 0f, (i & 2) == 0 ? -radius : radius);
+            var sample = position + offset;
+            if (IsWater(sample)) return Localization.UI_BUILD_PLACE_WATER;
+            var y = PlacementUtility.FindGroundPoint(sample).y;
+            low = Mathf.Min(low, y);
+            high = Mathf.Max(high, y);
+        }
+
+        if (high - low > maxSlope)
+        {
+            return Localization.UI_BUILD_PLACE_STEEP;
+        }
+
+        return null;
+    }
+
+    private static bool IsWater(Vector3 point)
+    {
+        var ray = new Ray(point + Vector3.up * 30f, Vector3.down);
+        var hits = Physics.RaycastAll(ray, 80f);
+        RaycastHit? first = null;
+        foreach (var hit in hits)
+        {
+            if (hit.collider.isTrigger || hit.collider.GetComponentInParent<TownHouseSlot>()) continue;
+            if (first == null || hit.distance < first.Value.distance) first = hit;
+        }
+
+        if (first == null) return false;
+        var name = first.Value.collider.name;
+        return name.IndexOf("water", StringComparison.OrdinalIgnoreCase) >= 0
+            || name.IndexOf("ocean", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    /// <summary>Half the width of a plot's footprint, from its colliders, or a sensible default.</summary>
+    private float RadiusOf(TownHouseSlot slot)
+    {
+        if (radiusCache.TryGetValue(slot, out var cached)) return cached;
+
+        var radius = 2.5f;
+        var colliders = slot.GetComponentsInChildren<Collider>();
+        if (colliders.Length > 0)
+        {
+            // Measured with the plot unrotated, so a turned building does not grow its footprint.
+            var rotation = slot.transform.rotation;
+            slot.transform.rotation = Quaternion.identity;
+            var bounds = colliders[0].bounds;
+            for (var i = 1; i < colliders.Length; ++i) bounds.Encapsulate(colliders[i].bounds);
+            slot.transform.rotation = rotation;
+            radius = Mathf.Max(2f, Mathf.Max(bounds.extents.x, bounds.extents.z) * 0.85f);
+        }
+
+        radiusCache[slot] = radius;
+        return radius;
+    }
+
+    private float TownHallRadius()
+    {
+        var townHall = gameManager.Village.TownHall;
+        if (!townHall) return 0f;
+        var renderers = townHall.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return 0f;
+        var bounds = renderers[0].bounds;
+        for (var i = 1; i < renderers.Length; ++i) bounds.Encapsulate(renderers[i].bounds);
+        return Mathf.Max(bounds.extents.x, bounds.extents.z) * 0.8f;
+    }
+
+    private static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
+
+    private async Task CommitMoveAsync()
+    {
+        var slot = Moving;
+        var position = slot.transform.position;
+        var rotation = moveRotation;
+
+        await Run(async () =>
+        {
+            if (!await gameManager.RavenNest.Village.PlaceHouseAsync(slot.Slot, position.x, position.z, rotation))
+            {
+                Failed?.Invoke(gameManager.Village.PlacementSupported
+                    ? Localization.UI_BUILD_PLACE_REJECTED
+                    : Localization.UI_BUILD_PLACE_UNSUPPORTED);
+                CancelMove();
+                return;
+            }
+
+            slot.ApplyPlacement(position.x, position.z, rotation);
+            Moving = null;
+            MoveProblem = null;
+            if (overlay) overlay.Hide();
+        });
+    }
+
+    /// <summary>Puts a moved plot back on its original position.</summary>
+    public async Task ResetPlacementAsync(TownHouseSlot slot)
+    {
+        if (!slot || Busy || !slot.IsMoved) return;
+        await Run(async () =>
+        {
+            if (!await gameManager.RavenNest.Village.ResetPlacementAsync(slot.Slot))
+            {
+                Failed?.Invoke(gameManager.Village.PlacementSupported
+                    ? Localization.UI_BUILD_PLACE_REJECTED
+                    : Localization.UI_BUILD_PLACE_UNSUPPORTED);
+                return;
+            }
+
+            slot.ResetPlacement();
+        });
     }
 
     // ---- Actions -------------------------------------------------------------------------

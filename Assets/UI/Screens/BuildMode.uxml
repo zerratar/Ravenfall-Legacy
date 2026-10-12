@@ -43,6 +43,12 @@
 
                 <engine:Label name="plot-empty-note" class="rf-build-side__note" />
 
+                <!-- Moving works for every plot, built or empty. -->
+                <engine:VisualElement class="rf-build-plot__actions">
+                    <engine:Button name="plot-move" class="rf-build-button" />
+                    <engine:Button name="plot-reset" class="rf-build-button rf-build-button--last" />
+                </engine:VisualElement>
+
                 <engine:VisualElement name="plot-built" class="rf-build-plot__built">
                     <engine:Label name="plot-resident-caption" class="rf-build-side__caption" />
                     <engine:VisualElement class="rf-build-plot__resident">

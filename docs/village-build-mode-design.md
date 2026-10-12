@@ -59,6 +59,22 @@ cleared, like every other migrated panel.
 
 ### Phase 2: placement (server stores positions, still no costs)
 
+**Built, awaiting a play test.** Server: RavenNest `109d2b8a`, which needs
+`sql/village-house-placement.sql` run first. What landed differs from the plan below in three ways:
+
+- Positions come from a separate `api/village/placements` endpoint rather than being added to
+  `VillageHouseInfo`, because that type is compiled into every client as a prebuilt library.
+- Plots are still the unit. Any plot, built or empty, can be moved, and new plots still come from
+  village level. Placing brand new buildings anywhere, with no plot first, needs the server to
+  create houses on demand and belongs with phase 3.
+- The client enforces the rules, and the server only rejects unusable numbers. The rules are: inside
+  the village (no further out than the outermost original plot plus a margin), clear of the town
+  hall and other plots, not on water, and not too steep.
+
+Controls: select a plot, press Move, and the plot follows the mouse snapped to a 1 m grid. R turns
+it 15 degrees (Shift+R back, Alt+R a quarter turn). Click places it when the outline is green, and
+Esc or a right click cancels. Reset position puts a moved plot back where the scene had it.
+
 Plots become positions rather than fixed scene objects.
 
 - `VillageHouse` gains nullable `PositionX`, `PositionZ` and `Rotation`. Null means "the legacy

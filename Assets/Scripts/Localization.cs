@@ -375,6 +375,17 @@ public static class Localization
     public static readonly string UI_BUILD_HINT_EMPTY = "Pick a building below to build it here";
     public static readonly string UI_BUILD_HINT_BUILT = "Pick a building below to replace this one";
     public static readonly string UI_BUILD_HINT_BUSY = "Working on it...";
+    public static readonly string UI_BUILD_HINT_MOVING = "Move the mouse to place  ·  R to rotate (Shift back, Alt 90°)  ·  Click to place  ·  Esc to cancel";
+    public static readonly string UI_BUILD_HINT_MOVING_BLOCKED = "{0}  ·  R to rotate  ·  Esc to cancel";
+    public static readonly string UI_BUILD_MOVE = "Move";
+    public static readonly string UI_BUILD_RESET_POSITION = "Reset position";
+    public static readonly string UI_BUILD_PLACE_OUTSIDE = "Too far from the village";
+    public static readonly string UI_BUILD_PLACE_TOWN_HALL = "Too close to the town hall";
+    public static readonly string UI_BUILD_PLACE_OVERLAP = "Too close to another building";
+    public static readonly string UI_BUILD_PLACE_WATER = "You can't build on water";
+    public static readonly string UI_BUILD_PLACE_STEEP = "The ground is too steep here";
+    public static readonly string UI_BUILD_PLACE_REJECTED = "The server did not accept the move. Try again in a moment.";
+    public static readonly string UI_BUILD_PLACE_UNSUPPORTED = "Moving buildings needs a server update.";
     public static readonly string UI_TOWN_VILLAGE = "VILLAGE";
     public static readonly string UI_TOWN_LEVEL = "LV {0}";
     public static readonly string UI_TOWN_HOUSES = "HOUSES";

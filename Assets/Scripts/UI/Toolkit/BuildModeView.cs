@@ -92,6 +92,8 @@ namespace Shinobytes.UI
         private Label bonusNote;
         private Button assignButton;
         private Button demolishButton;
+        private Button moveButton;
+        private Button resetButton;
         private VisualElement tray;
         private VisualElement toolbar;
         private Label hint;
@@ -164,6 +166,8 @@ namespace Shinobytes.UI
             bonusNote = root.Q<Label>("plot-bonus-note");
             assignButton = root.Q<Button>("plot-assign");
             demolishButton = root.Q<Button>("plot-demolish");
+            moveButton = root.Q<Button>("plot-move");
+            resetButton = root.Q<Button>("plot-reset");
             tray = root.Q<VisualElement>("build-tray");
             toolbar = root.Q<VisualElement>("build-toolbar");
             hint = root.Q<Label>("build-hint");
@@ -184,6 +188,10 @@ namespace Shinobytes.UI
             root.Q<Button>("assign-close").clicked += CloseAssign;
             assignButton.clicked += OpenAssign;
             demolishButton.clicked += OnDemolishClicked;
+            moveButton.text = Localization.UI_BUILD_MOVE;
+            resetButton.text = Localization.UI_BUILD_RESET_POSITION;
+            moveButton.clicked += () => { if (mode != null && mode.Selected) mode.StartMove(mode.Selected); };
+            resetButton.clicked += () => { if (mode != null && mode.Selected) _ = mode.ResetPlacementAsync(mode.Selected); };
 
             // A click on the dimmed backdrop closes the picker, a click on the panel does not.
             modal.RegisterCallback<PointerDownEvent>(evt =>
@@ -320,6 +328,7 @@ namespace Shinobytes.UI
             }
 
             demolishConfirmUntil = 0f;
+            root.EnableInClassList("rf-build--moving", mode.Moving);
             RefreshMarkers();
             RefreshSide();
             RefreshCards();
@@ -510,8 +519,10 @@ namespace Shinobytes.UI
             var target = mode.Armed.HasValue && empty;
             var muted = mode.Armed.HasValue && !empty;
             var name = empty ? string.Empty : ResidentName(slot);
+            var moving = mode.Moving == slot;
+            var blocked = moving && !mode.MoveValid;
 
-            var state = (int)slot.SlotType + "|" + selected + "|" + target + "|" + muted + "|" + name;
+            var state = (int)slot.SlotType + "|" + selected + "|" + target + "|" + muted + "|" + name + "|" + moving + "|" + blocked;
             if (state == marker.ShownState) return;
             marker.ShownState = state;
 
@@ -519,6 +530,8 @@ namespace Shinobytes.UI
             marker.Root.EnableInClassList("rf-plot--selected", selected);
             marker.Root.EnableInClassList("rf-plot--target", target);
             marker.Root.EnableInClassList("rf-plot--muted", muted);
+            marker.Root.EnableInClassList("rf-plot--moving", moving && !blocked);
+            marker.Root.EnableInClassList("rf-plot--moving-blocked", blocked);
 
             marker.Plus.style.display = empty ? DisplayStyle.Flex : DisplayStyle.None;
             marker.Icon.style.display = empty ? DisplayStyle.None : DisplayStyle.Flex;
@@ -550,6 +563,10 @@ namespace Shinobytes.UI
 
             var empty = VillageBuildMode.IsEmpty(slot);
             var house = HouseFor(slot.SlotType);
+
+            moveButton.SetEnabled(!mode.Busy && !mode.Moving);
+            resetButton.SetEnabled(!mode.Busy && !mode.Moving);
+            resetButton.style.display = slot.IsMoved ? DisplayStyle.Flex : DisplayStyle.None;
 
             plotTitle.text = empty ? Localization.UI_BUILD_EMPTY_PLOT : (house ? house.Name : slot.SlotType.ToString());
             plotSubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_PLOT_NUMBER, slot.Slot + 1);
@@ -745,6 +762,12 @@ namespace Shinobytes.UI
 
             string text;
             if (mode.Busy) text = Localization.UI_BUILD_HINT_BUSY;
+            else if (mode.Moving)
+            {
+                text = mode.MoveValid
+                    ? Localization.UI_BUILD_HINT_MOVING
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HINT_MOVING_BLOCKED, mode.MoveProblem);
+            }
             else if (mode.Armed.HasValue)
             {
                 var house = HouseFor(mode.Armed.Value);

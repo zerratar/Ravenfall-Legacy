@@ -63,6 +63,46 @@ namespace RavenNest.SDK.Endpoints
                    ApiRequestType.Get);
         }
 
+        /// <summary>
+        /// Positions of houses moved in build mode. Null when the server is older than build mode
+        /// placement or the call failed; houses missing from the list are at their original plots.
+        /// </summary>
+        public Task<HousePlacement[]> GetPlacementsAsync()
+        {
+            return request.Create()
+                .Method("placements")
+                .Build()
+                .SendAsync<HousePlacement[]>(
+                    ApiRequestTarget.Village,
+                    ApiRequestType.Get);
+        }
+
+        public Task<bool> PlaceHouseAsync(int slot, double x, double z, double rotation)
+        {
+            return request.Create()
+                .Identifier(slot.ToString())
+                .Method("place")
+                .Build()
+                .SendAsync<bool>(ApiRequestTarget.Village, ApiRequestType.Post, new HousePlacement
+                {
+                    Slot = slot,
+                    X = x,
+                    Z = z,
+                    Rotation = rotation
+                });
+        }
+
+        public Task<bool> ResetPlacementAsync(int slot)
+        {
+            return request.Create()
+                .Identifier(slot.ToString())
+                .Method("reset-placement")
+                .Build()
+                .SendAsync<bool>(
+                    ApiRequestTarget.Village,
+                    ApiRequestType.Get);
+        }
+
         public Task<bool> RemoveHouseAsync(int slot)
         {
             return request.Create()
@@ -73,6 +113,18 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestTarget.Village,
                     ApiRequestType.Get);
         }
+    }
+
+    /// <summary>
+    /// Mirrors RavenNest.Models.VillageHousePlacement. Defined here rather than in the shared
+    /// models library, which is a prebuilt DLL in this project.
+    /// </summary>
+    public class HousePlacement
+    {
+        public int Slot { get; set; }
+        public double X { get; set; }
+        public double Z { get; set; }
+        public double Rotation { get; set; }
     }
 
     public class VillageAssignRequest

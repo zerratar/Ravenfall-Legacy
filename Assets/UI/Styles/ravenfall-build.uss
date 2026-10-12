@@ -647,3 +647,30 @@
     font-size: 18px;
     color: var(--rf-success);
 }
+
+.rf-build .rf-build-button--last {
+    margin-right: 0;
+}
+
+/* The selected plot while it is being moved. */
+.rf-plot--moving .rf-plot__badge {
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-plot--moving-blocked .rf-plot__badge {
+    background-color: var(--rf-danger);
+    border-left-color: rgb(255, 140, 130);
+    border-right-color: rgb(255, 140, 130);
+    border-top-color: rgb(255, 140, 130);
+    border-bottom-color: rgb(255, 140, 130);
+}
+
+/* While moving, the tray and the panel step back: the world is what matters. */
+.rf-build--moving .rf-build-tray,
+.rf-build--moving .rf-build-toolbar {
+    opacity: 0.35;
+}

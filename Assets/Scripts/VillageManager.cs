@@ -27,6 +27,12 @@ namespace Assets.Scripts
 
         public bool HousesAreUpdating { get; private set; }
 
+        /// <summary>
+        /// False when the server did not answer the placements call, as an older server will not.
+        /// Build mode tells the streamer that moving buildings needs a server update.
+        /// </summary>
+        public bool PlacementSupported { get; private set; }
+
         // Start is called before the first frame update
         void Start()
         {
@@ -69,12 +75,61 @@ namespace Assets.Scripts
                             SetHouses(data.Houses);
                         }
                         TownHall.SetExp(data.Experience);
+                        await LoadPlacementsAsync();
                     }
                     state = LoadingState.Loaded;
                 }
             }
             catch { state = LoadingState.None; }
             //gameManager.SetLoadingState("village", state);
+        }
+
+        /// <summary>
+        /// Moves plots to where build mode placed them. Plots not in the server's list go back to
+        /// their original positions, so a reset made elsewhere is picked up too.
+        /// </summary>
+        public async Task LoadPlacementsAsync()
+        {
+            try
+            {
+                var placements = await gameManager.RavenNest.Village.GetPlacementsAsync();
+                PlacementSupported = placements != null;
+                if (placements == null)
+                {
+                    return;
+                }
+
+                var slots = townHouseManager.Slots;
+                if (slots == null)
+                {
+                    return;
+                }
+
+                var placed = new HashSet<int>();
+                foreach (var p in placements)
+                {
+                    if (p == null || p.Slot < 0 || p.Slot >= slots.Length || !slots[p.Slot])
+                    {
+                        continue;
+                    }
+
+                    slots[p.Slot].ApplyPlacement((float)p.X, (float)p.Z, (float)p.Rotation);
+                    placed.Add(p.Slot);
+                }
+
+                for (var i = 0; i < slots.Length; ++i)
+                {
+                    if (slots[i] && slots[i].IsMoved && !placed.Contains(i))
+                    {
+                        slots[i].ResetPlacement();
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                PlacementSupported = false;
+                Shinobytes.Debug.LogWarning("Could not load village placements: " + exc.Message);
+            }
         }
 
         public void SetHouses(IReadOnlyList<VillageHouseInfo> houses)

@@ -23,6 +23,57 @@ public class TownHouseSlot : MonoBehaviour
     public bool Selected { get; private set; }
     public float IconOffset => townHouseSource?.IconOffset ?? 0;
 
+    private bool defaultsCaptured;
+    private Vector3 defaultLocalPosition;
+    private Quaternion defaultLocalRotation;
+
+    /// <summary>True when build mode has moved the plot away from its original scene position.</summary>
+    public bool IsMoved { get; private set; }
+
+    /// <summary>The plot's original position in the scene, before any build mode move.</summary>
+    public Vector3 DefaultPosition
+    {
+        get
+        {
+            CaptureDefaults();
+            return transform.parent ? transform.parent.TransformPoint(defaultLocalPosition) : defaultLocalPosition;
+        }
+    }
+
+    /// <summary>
+    /// Remembers where the scene put this plot, so a moved plot can always go back. Done lazily:
+    /// plots start inactive, so Awake does not run for them until the village has enough levels.
+    /// </summary>
+    private void CaptureDefaults()
+    {
+        if (defaultsCaptured)
+        {
+            return;
+        }
+
+        defaultLocalPosition = transform.localPosition;
+        defaultLocalRotation = transform.localRotation;
+        defaultsCaptured = true;
+    }
+
+    /// <summary>Moves the plot, and whatever is built on it, to a position on the ground.</summary>
+    public void ApplyPlacement(float x, float z, float rotation)
+    {
+        CaptureDefaults();
+        transform.position = PlacementUtility.FindGroundPoint(new Vector3(x, transform.position.y, z));
+        transform.rotation = Quaternion.Euler(0f, rotation, 0f);
+        IsMoved = true;
+    }
+
+    /// <summary>Puts the plot back where the scene had it.</summary>
+    public void ResetPlacement()
+    {
+        CaptureDefaults();
+        transform.localPosition = defaultLocalPosition;
+        transform.localRotation = defaultLocalRotation;
+        IsMoved = false;
+    }
+
 
     [Button("Adjust Placement")]
     public void AdjustPlacement()
