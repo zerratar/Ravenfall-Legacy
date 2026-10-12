@@ -23,11 +23,14 @@ decoration, costs, upgrades and unlocks. Without breaking any existing village.
 
 - **Existing villages keep working throughout.** No streamer has to rebuild or reassign anything.
   Every phase is additive on the server, and old game clients keep seeing what they see today.
-- **The slot limit stays.** The number of buildings a village can have still comes from its level
-  and Patreon tier, now and after costs arrive.
+- **The slot limit stays for now.** The number of buildings a village can have still comes from its
+  level and Patreon tier, through the costs phase too. Whether it ever goes is decided later, once
+  costs are balanced and players are used to the new system.
 - **Experience is not affected by the global multiplier.** This is unchanged.
 - **One step at a time.** Phase 1 changes only the interface. Phase 2 adds placement. Costs,
-  upgrades and new building types come after, each as its own change.
+  upgrades and new building types come after, each as its own change. Players get time to settle
+  into each step before the next one. Changing the whole system at once could scare people and leave
+  them confused, especially before the numbers have been balance tested.
 
 ## Phases
 
