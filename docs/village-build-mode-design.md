@@ -251,6 +251,10 @@ notes in its README.
   - `sql/village-house-placement.sql` must be run before deploying.
   - Play-test fixes from the last round still need a re-test.
 - Island and town hall rebuild: done, as above.
+- Every building type has its own house, modelled in Blender (`tools/village-rebuild/blender/house_*.py`).
+  The building definitions point at the new prefabs in `Assets/Village/Prefabs`; the old prefabs are kept.
+- The dark chest and red standard seen by the west plots in offline renders were ghosts: the GPU Resident
+  Drawer drew objects removed in the same editor frame. A clean render shows nothing there.
 - Next steps:
   - Phase 3: production buildings, costs, tiers and unlocks. Needs balancing numbers.
   - Town hall upgrades bought with resources plus a level requirement.
