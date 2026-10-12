@@ -160,6 +160,14 @@ Assets/_TerrainAutoUpgrade/*.*
 !Assets/Prefabs/Buildings/*.asset
 !Assets/Prefabs/Buildings/*.asset.meta
 
+# The home island terrain, versioned through LFS (see .gitattributes) now that build mode reshapes
+# it. The two other terrain tiles are much larger and stay out until LFS quota is decided.
+!Assets/New Terrain.asset
+!Assets/New Terrain.asset.meta
+
+# Local safety copies made before reshaping terrain or scenes.
+Backups/
+
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
 
