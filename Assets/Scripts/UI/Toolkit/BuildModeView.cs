@@ -8,9 +8,11 @@ using Skill = RavenNest.Models.Skill;
 namespace Shinobytes.UI
 {
     /// <summary>
-    /// The interface for village build mode: plot markers over the world, the side panel, the
-    /// category toolbar and building tray, and the resident picker. State and server calls live in
-    /// <see cref="VillageBuildMode"/>; this class only draws it and forwards clicks.
+    /// The interface for village build mode, after docs/mockups/build-*.webp: markers over every plot,
+    /// village bonuses on the left, the selected building on the right, the category toolbar and
+    /// building tray at the bottom, a card for what is being placed, and the resident picker.
+    /// State and server calls live in <see cref="VillageBuildMode"/>; this class draws it and forwards
+    /// clicks.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class BuildModeView : MonoBehaviour
@@ -24,11 +26,16 @@ namespace Shinobytes.UI
 
         [SerializeField] private SkillIcon[] skillIcons = Array.Empty<SkillIcon>();
 
-        [Tooltip("How often the side panel and markers re-read residents and bonuses.")]
+        [Tooltip("How often the panels and markers re-read residents and bonuses.")]
         [SerializeField] private float refreshInterval = 0.5f;
 
         [Tooltip("Height of the plot markers above the plot, in metres.")]
         [SerializeField] private float markerHeight = 3f;
+
+        [Tooltip("Degrees the Rotate tile turns a building.")]
+        [SerializeField] private float rotateStep = 45f;
+
+        private const string BonusCollapsedKey = "rf_build_bonuses_collapsed";
 
         private sealed class Category
         {
@@ -39,18 +46,17 @@ namespace Shinobytes.UI
 
         /// <summary>
         /// Today's buildings grouped for the toolbar. Production, Decor and Paths join when those
-        /// exist (docs/village-build-mode-design.md, phase 4).
+        /// exist (docs/village-build-mode-design.md, phases 3 and 4).
         /// </summary>
         private static readonly Category[] Categories =
         {
             new Category { Name = "Combat", Glyph = "", Types = new[] { TownHouseSlotType.Melee, TownHouseSlotType.Ranged, TownHouseSlotType.Magic, TownHouseSlotType.Healing, TownHouseSlotType.Slayer } },
-            new Category { Name = "Gathering", Glyph = "", Types = new[] { TownHouseSlotType.Woodcutting, TownHouseSlotType.Mining, TownHouseSlotType.Fishing, TownHouseSlotType.Farming, TownHouseSlotType.Gathering } },
+            new Category { Name = "Gathering", Glyph = "", Types = new[] { TownHouseSlotType.Woodcutting, TownHouseSlotType.Mining, TownHouseSlotType.Fishing, TownHouseSlotType.Farming, TownHouseSlotType.Gathering } },
             new Category { Name = "Crafting", Glyph = "", Types = new[] { TownHouseSlotType.Cooking, TownHouseSlotType.Crafting, TownHouseSlotType.Alchemy, TownHouseSlotType.Sailing } },
         };
 
         private sealed class Marker
         {
-            public TownHouseSlot Slot;
             public VisualElement Root;
             public VisualElement Icon;
             public Label Plus;
@@ -66,47 +72,65 @@ namespace Shinobytes.UI
         }
 
         private readonly Dictionary<TownHouseSlot, Marker> markers = new Dictionary<TownHouseSlot, Marker>();
-        private readonly List<TownHouseSlot> markerScratch = new List<TownHouseSlot>();
+        private readonly List<TownHouseSlot> stale = new List<TownHouseSlot>();
         private readonly List<Card> cards = new List<Card>();
         private readonly List<Button> tabs = new List<Button>();
+        private readonly List<PlayerController> ranked = new List<PlayerController>();
         private readonly List<PlayerController> candidates = new List<PlayerController>();
         private readonly Dictionary<Skill, Sprite> iconBySkill = new Dictionary<Skill, Sprite>();
 
         private VisualElement root;
         private VisualElement markerLayer;
-        private VisualElement summary;
-        private Label summaryTitle;
-        private Label summarySubtitle;
-        private VisualElement summaryList;
-        private Label summaryEmpty;
-        private VisualElement plot;
+
+        private VisualElement bonusPanel;
+        private VisualElement bonusList;
+        private Label bonusEmpty;
+        private Label bonusFooter;
+
+        private VisualElement plotPanel;
         private VisualElement plotIcon;
+        private Label plotGlyph;
         private Label plotTitle;
         private Label plotSubtitle;
         private Label plotEmptyNote;
         private VisualElement plotBuilt;
-        private Label residentCaption;
         private Label resident;
         private Label residentLevel;
         private Label bonus;
         private Label bonusNote;
-        private Button assignButton;
-        private Button demolishButton;
         private Button moveButton;
+        private Button rotateButton;
+        private Button assignButton;
+        private Label assignLabel;
         private Button resetButton;
+        private Button demolishButton;
+        private Label demolishLabel;
+
+        private VisualElement placingCard;
+        private VisualElement placingIcon;
+        private Label placingTitle;
+        private Label placingBonus;
+        private Label placingPlots;
+
         private VisualElement tray;
+        private Label trayGlyph;
+        private Label trayTitle;
+        private VisualElement trayCards;
         private VisualElement toolbar;
         private Label hint;
         private Label toast;
+
         private VisualElement modal;
         private Label assignTitle;
+        private TextField assignSearch;
         private Label assignCurrent;
         private ListView assignList;
         private Label assignEmpty;
-        private bool bound;
 
+        private bool bound;
+        private bool modalOpen;
         private VillageBuildMode mode;
-        private int category;
+        private int openCategory = -1;
         private float nextRefresh;
         private float demolishConfirmUntil;
         private IVisualElementScheduledItem toastHide;
@@ -148,52 +172,76 @@ namespace Shinobytes.UI
             }
 
             markerLayer = root.Q<VisualElement>("build-markers");
-            summary = root.Q<VisualElement>("side-summary");
-            summaryTitle = root.Q<Label>("summary-title");
-            summarySubtitle = root.Q<Label>("summary-subtitle");
-            summaryList = root.Q<VisualElement>("summary-list");
-            summaryEmpty = root.Q<Label>("summary-empty");
-            plot = root.Q<VisualElement>("side-plot");
+
+            bonusPanel = root.Q<VisualElement>("bonus-panel");
+            bonusList = root.Q<VisualElement>("bonus-list");
+            bonusEmpty = root.Q<Label>("bonus-empty");
+            bonusFooter = root.Q<Label>("bonus-footer");
+
+            plotPanel = root.Q<VisualElement>("plot-panel");
             plotIcon = root.Q<VisualElement>("plot-icon");
+            plotGlyph = root.Q<Label>("plot-glyph");
             plotTitle = root.Q<Label>("plot-title");
             plotSubtitle = root.Q<Label>("plot-subtitle");
             plotEmptyNote = root.Q<Label>("plot-empty-note");
             plotBuilt = root.Q<VisualElement>("plot-built");
-            residentCaption = root.Q<Label>("plot-resident-caption");
             resident = root.Q<Label>("plot-resident");
             residentLevel = root.Q<Label>("plot-resident-level");
             bonus = root.Q<Label>("plot-bonus");
             bonusNote = root.Q<Label>("plot-bonus-note");
-            assignButton = root.Q<Button>("plot-assign");
-            demolishButton = root.Q<Button>("plot-demolish");
             moveButton = root.Q<Button>("plot-move");
+            rotateButton = root.Q<Button>("plot-rotate");
+            assignButton = root.Q<Button>("plot-assign");
+            assignLabel = root.Q<Label>("plot-assign-label");
             resetButton = root.Q<Button>("plot-reset");
+            demolishButton = root.Q<Button>("plot-demolish");
+            demolishLabel = root.Q<Label>("plot-demolish-label");
+
+            placingCard = root.Q<VisualElement>("placing-card");
+            placingIcon = root.Q<VisualElement>("placing-icon");
+            placingTitle = root.Q<Label>("placing-title");
+            placingBonus = root.Q<Label>("placing-bonus");
+            placingPlots = root.Q<Label>("placing-plots");
+
             tray = root.Q<VisualElement>("build-tray");
+            trayGlyph = root.Q<Label>("tray-glyph");
+            trayTitle = root.Q<Label>("tray-title");
+            trayCards = root.Q<VisualElement>("tray-cards");
             toolbar = root.Q<VisualElement>("build-toolbar");
             hint = root.Q<Label>("build-hint");
             toast = root.Q<Label>("build-toast");
+
             modal = root.Q<VisualElement>("assign-modal");
             assignTitle = root.Q<Label>("assign-title");
+            assignSearch = root.Q<TextField>("assign-search");
             assignCurrent = root.Q<Label>("assign-current");
             assignList = root.Q<ListView>("assign-list");
             assignEmpty = root.Q<Label>("assign-empty");
 
-            summaryTitle.text = Localization.UI_BUILD_SUMMARY_TITLE;
-            summaryEmpty.text = Localization.UI_BUILD_SUMMARY_EMPTY;
-            residentCaption.text = Localization.UI_BUILD_RESIDENT;
+            // Static text.
+            root.Q<Label>("bonus-title").text = Localization.UI_BUILD_SUMMARY_TITLE;
+            bonusEmpty.text = Localization.UI_BUILD_SUMMARY_EMPTY;
+            root.Q<Label>("plot-resident-caption").text = Localization.UI_BUILD_RESIDENT;
             plotEmptyNote.text = Localization.UI_BUILD_EMPTY_PLOT_NOTE;
-            assignEmpty.text = Localization.UI_BUILD_NO_PLAYERS;
-
-            root.Q<Button>("plot-close").clicked += () => mode?.ClearSelection();
-            root.Q<Button>("assign-close").clicked += CloseAssign;
-            assignButton.clicked += OpenAssign;
-            demolishButton.clicked += OnDemolishClicked;
-            moveButton.text = Localization.UI_BUILD_MOVE;
+            root.Q<Label>("plot-move-label").text = Localization.UI_BUILD_MOVE;
+            root.Q<Label>("plot-rotate-label").text = Localization.UI_BUILD_ROTATE;
             resetButton.text = Localization.UI_BUILD_RESET_POSITION;
-            moveButton.clicked += () => { if (mode != null && mode.Selected) mode.StartMove(mode.Selected); };
-            resetButton.clicked += () => { if (mode != null && mode.Selected) _ = mode.ResetPlacementAsync(mode.Selected); };
+            assignEmpty.text = Localization.UI_BUILD_NO_PLAYERS;
+            assignSearch.textEdition.placeholder = Localization.UI_BUILD_SEARCH;
 
-            // A click on the dimmed backdrop closes the picker, a click on the panel does not.
+            // Actions.
+            root.Q<VisualElement>("bonus-head").RegisterCallback<UnityEngine.UIElements.ClickEvent>(evt => ToggleBonuses());
+            root.Q<Button>("plot-close").clicked += () => mode?.ClearSelection();
+            root.Q<Button>("tray-close").clicked += () => OpenCategory(-1);
+            root.Q<Button>("assign-close").clicked += CloseAssign;
+            moveButton.clicked += () => { if (mode != null && mode.Selected) mode.StartMove(mode.Selected); };
+            rotateButton.clicked += () => { if (mode != null && mode.Selected) _ = mode.RotateInPlaceAsync(mode.Selected, rotateStep); };
+            assignButton.clicked += OpenAssign;
+            resetButton.clicked += () => { if (mode != null && mode.Selected) _ = mode.ResetPlacementAsync(mode.Selected); };
+            demolishButton.clicked += OnDemolishClicked;
+            assignSearch.RegisterValueChangedCallback(evt => FilterCandidates());
+
+            // A click on the dimmed backdrop closes the picker; a click on the panel does not.
             modal.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.target == modal) CloseAssign();
@@ -202,7 +250,12 @@ namespace Shinobytes.UI
             assignList.itemsSource = candidates;
             assignList.makeItem = MakeCandidateRow;
             assignList.bindItem = BindCandidateRow;
-            assignList.fixedItemHeight = 52f;
+            assignList.fixedItemHeight = 70f;
+
+            if (PlayerPrefs.GetInt(BonusCollapsedKey, 0) == 1)
+            {
+                bonusPanel.AddToClassList("rf-build-bonuses--collapsed");
+            }
 
             BuildToolbar();
 
@@ -256,15 +309,14 @@ namespace Shinobytes.UI
             if (Time.unscaledTime >= nextRefresh)
             {
                 nextRefresh = Time.unscaledTime + refreshInterval;
-                RefreshMarkers();
-                RefreshSide();
+                RefreshAll();
                 RefreshCardBonuses();
             }
 
             if (demolishConfirmUntil > 0f && Time.unscaledTime > demolishConfirmUntil)
             {
                 demolishConfirmUntil = 0f;
-                RefreshDemolishButton();
+                RefreshDemolish();
             }
         }
 
@@ -283,14 +335,10 @@ namespace Shinobytes.UI
             {
                 var slot = pair.Key;
                 var marker = pair.Value;
-                if (!slot)
-                {
-                    continue;
-                }
+                if (!slot) continue;
 
                 var world = slot.transform.position + Vector3.up * (markerHeight + slot.IconOffset);
-                var viewport = cam.WorldToViewportPoint(world);
-                var visible = viewport.z > 0f;
+                var visible = cam.WorldToViewportPoint(world).z > 0f;
                 marker.Root.style.visibility = visible ? Visibility.Visible : Visibility.Hidden;
                 if (!visible) continue;
 
@@ -307,30 +355,29 @@ namespace Shinobytes.UI
             if (!active)
             {
                 CloseAssign();
+                OpenCategory(-1);
                 markerLayer.Clear();
                 markers.Clear();
                 return;
             }
 
-            SelectCategory(category);
             nextRefresh = 0f;
         }
 
         private void OnChanged()
         {
             if (!bound || mode == null || !mode.IsActive) return;
-
-            // A selected building switches the tray to its category, so its replacements are there.
-            if (mode.Selected && !VillageBuildMode.IsEmpty(mode.Selected))
-            {
-                var index = CategoryOf(mode.Selected.SlotType);
-                if (index >= 0 && index != category) SelectCategory(index);
-            }
-
             demolishConfirmUntil = 0f;
             root.EnableInClassList("rf-build--moving", mode.Moving);
+            RefreshAll();
+        }
+
+        private void RefreshAll()
+        {
             RefreshMarkers();
-            RefreshSide();
+            RefreshBonuses();
+            RefreshPlot();
+            RefreshPlacing();
             RefreshCards();
             RefreshHint();
         }
@@ -344,45 +391,51 @@ namespace Shinobytes.UI
             for (var i = 0; i < Categories.Length; ++i)
             {
                 var index = i;
-                var tab = new Button(() => SelectCategory(index)) { text = Categories[i].Name };
+                var tab = new Button(() => OpenCategory(openCategory == index ? -1 : index));
                 tab.AddToClassList("rf-build-tab");
 
                 var glyph = new Label(Categories[i].Glyph) { pickingMode = PickingMode.Ignore };
                 glyph.AddToClassList("rf-icon");
                 glyph.AddToClassList("rf-build-tab__icon");
-                tab.Add(glyph);
 
+                var label = new Label(Categories[i].Name) { pickingMode = PickingMode.Ignore };
+                label.AddToClassList("rf-build-tab__label");
+
+                tab.Add(glyph);
+                tab.Add(label);
                 toolbar.Add(tab);
                 tabs.Add(tab);
             }
         }
 
-        private void SelectCategory(int index)
+        private void OpenCategory(int index)
         {
-            category = Mathf.Clamp(index, 0, Categories.Length - 1);
+            openCategory = index >= 0 && index < Categories.Length ? index : -1;
             for (var i = 0; i < tabs.Count; ++i)
             {
-                tabs[i].EnableInClassList("rf-build-tab--active", i == category);
+                tabs[i].EnableInClassList("rf-build-tab--active", i == openCategory);
             }
 
-            BuildTray();
+            tray.style.display = openCategory >= 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            if (openCategory >= 0)
+            {
+                BuildTray();
+            }
         }
 
         private void BuildTray()
         {
-            tray.Clear();
+            trayCards.Clear();
             cards.Clear();
-            if (mode == null) return;
+            if (mode == null || openCategory < 0) return;
 
-            var catalogue = mode.Catalogue;
-            foreach (var type in Categories[category].Types)
+            var category = Categories[openCategory];
+            trayGlyph.text = category.Glyph;
+            trayTitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_TRAY_TITLE, category.Name.ToUpperInvariant());
+
+            foreach (var type in category.Types)
             {
-                TownHouse house = null;
-                for (var i = 0; i < catalogue.Count; ++i)
-                {
-                    if (catalogue[i] && catalogue[i].Type == type) { house = catalogue[i]; break; }
-                }
-
+                var house = HouseFor(type);
                 if (!house) continue;
 
                 var card = new Card { Type = type, Root = new VisualElement() };
@@ -393,26 +446,33 @@ namespace Shinobytes.UI
                 var texture = BuildingPreview.Get(house.Prefab);
                 if (texture) preview.style.backgroundImage = new StyleBackground(texture);
 
+                var info = new VisualElement { pickingMode = PickingMode.Ignore };
+                info.AddToClassList("rf-build-card__info");
+                var ring = new VisualElement { pickingMode = PickingMode.Ignore };
+                ring.AddToClassList("rf-build-card__ring");
+                var icon = new VisualElement { pickingMode = PickingMode.Ignore };
+                icon.AddToClassList("rf-build-card__icon");
+                var sprite = IconFor(type);
+                if (sprite) icon.style.backgroundImage = new StyleBackground(sprite);
+                ring.Add(icon);
+
+                var text = new VisualElement { pickingMode = PickingMode.Ignore };
                 var name = new Label(house.Name) { pickingMode = PickingMode.Ignore };
                 name.AddToClassList("rf-build-card__name");
-
-                var skillRow = new VisualElement { pickingMode = PickingMode.Ignore };
-                skillRow.AddToClassList("rf-build-card__skill");
-                var skillIcon = new VisualElement { pickingMode = PickingMode.Ignore };
-                skillIcon.AddToClassList("rf-build-card__skill-icon");
-                var sprite = IconFor(type);
-                if (sprite) skillIcon.style.backgroundImage = new StyleBackground(sprite);
                 card.Bonus = new Label { pickingMode = PickingMode.Ignore };
                 card.Bonus.AddToClassList("rf-build-card__bonus");
-                skillRow.Add(skillIcon);
-                skillRow.Add(card.Bonus);
+                text.Add(name);
+                text.Add(card.Bonus);
+                info.Add(ring);
+                info.Add(text);
+
+                var build = new Button(() => mode?.Choose(type)) { text = Localization.UI_BUILD_BUILD };
+                build.AddToClassList("rf-build-card__build");
 
                 card.Root.Add(preview);
-                card.Root.Add(name);
-                card.Root.Add(skillRow);
-                card.Root.RegisterCallback<UnityEngine.UIElements.ClickEvent>(_ => mode?.Choose(type));
-
-                tray.Add(card.Root);
+                card.Root.Add(info);
+                card.Root.Add(build);
+                trayCards.Add(card.Root);
                 cards.Add(card);
             }
 
@@ -427,21 +487,25 @@ namespace Shinobytes.UI
             {
                 card.Root.EnableInClassList("rf-build-card--armed", mode.Armed == card.Type);
                 card.Root.EnableInClassList("rf-build-card--current", mode.Selected && mode.Selected.SlotType == card.Type);
-                card.Root.EnableInClassList("rf-build-card--disabled", mode.Busy);
+                card.Root.EnableInClassList("rf-build-card--disabled", mode.Busy || mode.Moving);
             }
         }
 
-        /// <summary>Each card shows the bonus the best available player would give, as a reason to pick it.</summary>
+        /// <summary>Each card shows the bonus the best player available would give, as a reason to pick it.</summary>
         private void RefreshCardBonuses()
         {
             if (mode == null) return;
             foreach (var card in cards)
             {
-                var ranked = mode.RankResidents(card.Type);
-                var best = ranked.Count > 0 ? VillageBuildMode.BonusFor(ranked[0], card.Type) : 0f;
-                var text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_CARD_BONUS, Mathf.RoundToInt(best), SkillName(card.Type));
+                var text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_BONUS, Mathf.RoundToInt(BestBonus(card.Type)), SkillName(card.Type));
                 if (card.Bonus.text != text) card.Bonus.text = text;
             }
+        }
+
+        private float BestBonus(TownHouseSlotType type)
+        {
+            var players = mode.RankResidents(type);
+            return players.Count > 0 ? VillageBuildMode.BonusFor(players[0], type) : 0f;
         }
 
         // ---- Markers -------------------------------------------------------------------------
@@ -450,14 +514,10 @@ namespace Shinobytes.UI
         {
             if (mode == null) return;
 
-            var plots = mode.Plots;
-            markerScratch.Clear();
-            foreach (var pair in markers)
-            {
-                markerScratch.Add(pair.Key);
-            }
+            stale.Clear();
+            stale.AddRange(markers.Keys);
 
-            foreach (var slot in plots)
+            foreach (var slot in mode.Plots)
             {
                 if (!markers.TryGetValue(slot, out var marker))
                 {
@@ -466,116 +526,205 @@ namespace Shinobytes.UI
                     markerLayer.Add(marker.Root);
                 }
 
-                markerScratch.Remove(slot);
-                UpdateMarker(marker);
+                stale.Remove(slot);
+                UpdateMarker(slot, marker);
             }
 
-            // Plots that went away, as when the slot count drops.
-            foreach (var stale in markerScratch)
+            foreach (var slot in stale)
             {
-                markers[stale].Root.RemoveFromHierarchy();
-                markers.Remove(stale);
+                markers[slot].Root.RemoveFromHierarchy();
+                markers.Remove(slot);
             }
         }
 
         private Marker MakeMarker(TownHouseSlot slot)
         {
-            var marker = new Marker { Slot = slot, Root = new VisualElement() };
+            var marker = new Marker { Root = new VisualElement { pickingMode = PickingMode.Ignore } };
             marker.Root.AddToClassList("rf-plot");
-            marker.Root.pickingMode = PickingMode.Ignore;
 
-            var badge = new VisualElement();
-            badge.AddToClassList("rf-plot__badge");
-            badge.RegisterCallback<PointerDownEvent>(evt =>
+            var pill = new VisualElement();
+            pill.AddToClassList("rf-plot__pill");
+            pill.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) return;
                 mode?.Select(slot);
                 evt.StopPropagation();
             });
 
+            var ring = new VisualElement { pickingMode = PickingMode.Ignore };
+            ring.AddToClassList("rf-plot__ring");
             marker.Icon = new VisualElement { pickingMode = PickingMode.Ignore };
             marker.Icon.AddToClassList("rf-plot__icon");
-
             marker.Plus = new Label("") { pickingMode = PickingMode.Ignore };
             marker.Plus.AddToClassList("rf-icon");
             marker.Plus.AddToClassList("rf-plot__plus");
-
-            badge.Add(marker.Icon);
-            badge.Add(marker.Plus);
+            ring.Add(marker.Icon);
+            ring.Add(marker.Plus);
 
             marker.Name = new Label { pickingMode = PickingMode.Ignore };
             marker.Name.AddToClassList("rf-plot__name");
 
-            marker.Root.Add(badge);
-            marker.Root.Add(marker.Name);
+            pill.Add(ring);
+            pill.Add(marker.Name);
+            marker.Root.Add(pill);
             return marker;
         }
 
-        private void UpdateMarker(Marker marker)
+        private void UpdateMarker(TownHouseSlot slot, Marker marker)
         {
-            var slot = marker.Slot;
             var empty = VillageBuildMode.IsEmpty(slot);
             var selected = mode.Selected == slot;
             var target = mode.Armed.HasValue && empty;
             var muted = mode.Armed.HasValue && !empty;
-            var name = empty ? string.Empty : ResidentName(slot);
             var moving = mode.Moving == slot;
             var blocked = moving && !mode.MoveValid;
 
-            var state = (int)slot.SlotType + "|" + selected + "|" + target + "|" + muted + "|" + name + "|" + moving + "|" + blocked;
+            // While moving to a spot that is not allowed, the pill says why, next to the building.
+            var house = HouseFor(slot.SlotType);
+            var name = blocked ? mode.MoveProblem : empty ? string.Empty : (house ? house.Name : slot.SlotType.ToString());
+
+            var state = (int)slot.SlotType + "|" + selected + "|" + target + "|" + muted + "|" + moving + "|" + blocked + "|" + name;
             if (state == marker.ShownState) return;
             marker.ShownState = state;
 
-            marker.Root.EnableInClassList("rf-plot--empty", empty);
-            marker.Root.EnableInClassList("rf-plot--selected", selected);
+            marker.Root.EnableInClassList("rf-plot--empty", empty && !blocked);
+            marker.Root.EnableInClassList("rf-plot--selected", selected && !moving);
             marker.Root.EnableInClassList("rf-plot--target", target);
             marker.Root.EnableInClassList("rf-plot--muted", muted);
             marker.Root.EnableInClassList("rf-plot--moving", moving && !blocked);
             marker.Root.EnableInClassList("rf-plot--moving-blocked", blocked);
 
-            marker.Plus.style.display = empty ? DisplayStyle.Flex : DisplayStyle.None;
-            marker.Icon.style.display = empty ? DisplayStyle.None : DisplayStyle.Flex;
-            if (!empty)
-            {
-                var sprite = IconFor(slot.SlotType);
-                marker.Icon.style.backgroundImage = sprite ? new StyleBackground(sprite) : new StyleBackground(StyleKeyword.None);
-            }
+            var sprite = empty ? null : IconFor(slot.SlotType);
+            marker.Plus.style.display = sprite ? DisplayStyle.None : DisplayStyle.Flex;
+            marker.Plus.text = blocked ? "" : "";
+            marker.Icon.style.display = sprite ? DisplayStyle.Flex : DisplayStyle.None;
+            if (sprite) marker.Icon.style.backgroundImage = new StyleBackground(sprite);
 
             marker.Name.text = name;
             marker.Name.style.display = string.IsNullOrEmpty(name) ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
-        // ---- Side panel ----------------------------------------------------------------------
+        // ---- Village bonuses -----------------------------------------------------------------
 
-        private void RefreshSide()
+        private void ToggleBonuses()
         {
-            if (mode == null) return;
+            var collapsed = !bonusPanel.ClassListContains("rf-build-bonuses--collapsed");
+            bonusPanel.EnableInClassList("rf-build-bonuses--collapsed", collapsed);
+            PlayerPrefs.SetInt(BonusCollapsedKey, collapsed ? 1 : 0);
+            PlayerPrefs.Save();
+        }
 
-            var slot = mode.Selected;
-            summary.style.display = slot ? DisplayStyle.None : DisplayStyle.Flex;
-            plot.style.display = slot ? DisplayStyle.Flex : DisplayStyle.None;
-
-            if (!slot)
+        private void RefreshBonuses()
+        {
+            // Buildings per type, and how many of them are actually giving a bonus.
+            var counts = new Dictionary<TownHouseSlotType, int>();
+            foreach (var slot in mode.Plots)
             {
-                RefreshSummary();
-                return;
+                if (VillageBuildMode.IsEmpty(slot)) continue;
+                counts.TryGetValue(slot.SlotType, out var n);
+                counts[slot.SlotType] = n + 1;
             }
+
+            var bonuses = mode.BonusByType();
+            var types = new List<TownHouseSlotType>(counts.Keys);
+            types.Sort((a, b) =>
+            {
+                bonuses.TryGetValue(a, out var ba);
+                bonuses.TryGetValue(b, out var bb);
+                return bb != ba ? bb.CompareTo(ba) : counts[b].CompareTo(counts[a]);
+            });
+
+            var top = 0f;
+            foreach (var value in bonuses.Values) top = Mathf.Max(top, value);
+
+            bonusList.Clear();
+            var contributing = 0;
+            foreach (var type in types)
+            {
+                bonuses.TryGetValue(type, out var value);
+                if (value > 0f) contributing += counts[type];
+                bonusList.Add(MakeBonusRow(type, value, top, counts[type]));
+            }
+
+            bonusEmpty.style.display = types.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            bonusFooter.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_SUMMARY_CONTRIBUTING, contributing);
+            bonusFooter.style.display = types.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private VisualElement MakeBonusRow(TownHouseSlotType type, float value, float top, int count)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("rf-build-bonuses__row");
+
+            var icon = new VisualElement();
+            icon.AddToClassList("rf-build-bonuses__icon");
+            var sprite = IconFor(type);
+            if (sprite) icon.style.backgroundImage = new StyleBackground(sprite);
+
+            var text = new VisualElement();
+            text.AddToClassList("rf-build-bonuses__text");
+
+            var line = new VisualElement();
+            line.AddToClassList("rf-build-bonuses__line");
+            var name = new Label(SkillName(type));
+            name.AddToClassList("rf-build-bonuses__name");
+            var amount = new Label("+" + Mathf.RoundToInt(value).ToString(CultureInfo.InvariantCulture) + "%");
+            amount.AddToClassList("rf-build-bonuses__value");
+            line.Add(name);
+            line.Add(amount);
+
+            var meter = new VisualElement();
+            meter.AddToClassList("rf-build-bonuses__meter");
+            var bar = new VisualElement();
+            bar.AddToClassList("rf-build-bonuses__bar");
+            var fill = new VisualElement();
+            fill.AddToClassList("rf-build-bonuses__fill");
+            fill.style.width = new Length(top > 0f ? value / top * 100f : 0f, LengthUnit.Percent);
+            bar.Add(fill);
+            var buildings = new Label(string.Format(CultureInfo.InvariantCulture, count == 1 ? Localization.UI_BUILD_ONE_BUILDING : Localization.UI_BUILD_BUILDINGS, count));
+            buildings.AddToClassList("rf-build-bonuses__count");
+            meter.Add(bar);
+            meter.Add(buildings);
+
+            text.Add(line);
+            text.Add(meter);
+            row.Add(icon);
+            row.Add(text);
+            return row;
+        }
+
+        // ---- Selected building ---------------------------------------------------------------
+
+        private void RefreshPlot()
+        {
+            var slot = mode.Selected;
+            plotPanel.style.display = slot && !modalOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!slot) return;
 
             var empty = VillageBuildMode.IsEmpty(slot);
             var house = HouseFor(slot.SlotType);
 
-            moveButton.SetEnabled(!mode.Busy && !mode.Moving);
-            resetButton.SetEnabled(!mode.Busy && !mode.Moving);
-            resetButton.style.display = slot.IsMoved ? DisplayStyle.Flex : DisplayStyle.None;
+            var sprite = empty ? null : IconFor(slot.SlotType);
+            plotIcon.style.display = sprite ? DisplayStyle.Flex : DisplayStyle.None;
+            if (sprite) plotIcon.style.backgroundImage = new StyleBackground(sprite);
+            plotGlyph.style.display = sprite ? DisplayStyle.None : DisplayStyle.Flex;
 
             plotTitle.text = empty ? Localization.UI_BUILD_EMPTY_PLOT : (house ? house.Name : slot.SlotType.ToString());
             plotSubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_PLOT_NUMBER, slot.Slot + 1);
-            var sprite = empty ? null : IconFor(slot.SlotType);
-            plotIcon.style.backgroundImage = sprite ? new StyleBackground(sprite) : new StyleBackground(StyleKeyword.None);
-            plotIcon.style.display = sprite ? DisplayStyle.Flex : DisplayStyle.None;
 
             plotEmptyNote.style.display = empty ? DisplayStyle.Flex : DisplayStyle.None;
             plotBuilt.style.display = empty ? DisplayStyle.None : DisplayStyle.Flex;
+
+            var idle = !mode.Busy && !mode.Moving;
+            moveButton.SetEnabled(idle);
+            rotateButton.SetEnabled(idle);
+            assignButton.SetEnabled(idle && !empty);
+            resetButton.SetEnabled(idle);
+            resetButton.style.display = slot.IsMoved ? DisplayStyle.Flex : DisplayStyle.None;
+            demolishButton.style.display = empty ? DisplayStyle.None : DisplayStyle.Flex;
+            RefreshDemolish();
+
+            assignLabel.text = slot.OwnerUserId.HasValue ? Localization.UI_BUILD_CHANGE_RESIDENT_SHORT : Localization.UI_BUILD_ASSIGN;
             if (empty) return;
 
             var hasResident = slot.OwnerUserId.HasValue;
@@ -586,7 +735,10 @@ namespace Shinobytes.UI
 
             var stats = player ? player.Stats : slot.PlayerSkills;
             var skill = stats != null ? GameMath.GetSkillByHouseType(stats, slot.SlotType) : null;
-            residentLevel.text = skill != null ? SkillName(slot.SlotType) + " " + ((int)skill.Level).ToString(CultureInfo.InvariantCulture) : string.Empty;
+            residentLevel.text = skill != null && hasResident
+                ? string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_SKILL_LEVEL, SkillName(slot.SlotType), (int)skill.Level)
+                : string.Empty;
+            residentLevel.style.display = string.IsNullOrEmpty(residentLevel.text) ? DisplayStyle.None : DisplayStyle.Flex;
 
             var value = skill != null && hasResident ? GameMath.CalculateHouseExpBonus(skill) : 0f;
             bonus.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_BONUS, Mathf.RoundToInt(value), SkillName(slot.SlotType));
@@ -595,58 +747,6 @@ namespace Shinobytes.UI
                 : !player ? Localization.UI_BUILD_RESIDENT_AWAY_NOTE
                 : string.Empty;
             bonusNote.style.display = string.IsNullOrEmpty(bonusNote.text) ? DisplayStyle.None : DisplayStyle.Flex;
-
-            assignButton.text = hasResident ? Localization.UI_BUILD_CHANGE_RESIDENT : Localization.UI_BUILD_ASSIGN;
-            assignButton.SetEnabled(!mode.Busy);
-            RefreshDemolishButton();
-        }
-
-        private void RefreshSummary()
-        {
-            var plots = mode.Plots;
-            var built = 0;
-            foreach (var p in plots) if (!VillageBuildMode.IsEmpty(p)) built++;
-            summarySubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_SUMMARY_PLOTS, built, plots.Count);
-
-            summaryList.Clear();
-            var bonuses = mode.BonusByType();
-            var top = 0f;
-            foreach (var b in bonuses.Values) top = Mathf.Max(top, b);
-
-            var ordered = new List<KeyValuePair<TownHouseSlotType, float>>(bonuses);
-            ordered.Sort((a, b) => b.Value.CompareTo(a.Value));
-
-            foreach (var pair in ordered)
-            {
-                var row = new VisualElement();
-                row.AddToClassList("rf-build-summary__row");
-
-                var icon = new VisualElement();
-                icon.AddToClassList("rf-build-summary__icon");
-                var sprite = IconFor(pair.Key);
-                if (sprite) icon.style.backgroundImage = new StyleBackground(sprite);
-
-                var name = new Label(SkillName(pair.Key));
-                name.AddToClassList("rf-build-summary__name");
-
-                var bar = new VisualElement();
-                bar.AddToClassList("rf-build-summary__bar");
-                var fill = new VisualElement();
-                fill.AddToClassList("rf-build-summary__fill");
-                fill.style.width = new Length(top > 0f ? pair.Value / top * 100f : 0f, LengthUnit.Percent);
-                bar.Add(fill);
-
-                var value = new Label("+" + Mathf.RoundToInt(pair.Value).ToString(CultureInfo.InvariantCulture) + "%");
-                value.AddToClassList("rf-build-summary__value");
-
-                row.Add(icon);
-                row.Add(name);
-                row.Add(bar);
-                row.Add(value);
-                summaryList.Add(row);
-            }
-
-            summaryEmpty.style.display = ordered.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void OnDemolishClicked()
@@ -657,7 +757,7 @@ namespace Shinobytes.UI
             if (demolishConfirmUntil <= 0f)
             {
                 demolishConfirmUntil = Time.unscaledTime + 3f;
-                RefreshDemolishButton();
+                RefreshDemolish();
                 return;
             }
 
@@ -665,12 +765,38 @@ namespace Shinobytes.UI
             _ = mode.DemolishAsync(mode.Selected);
         }
 
-        private void RefreshDemolishButton()
+        private void RefreshDemolish()
         {
             var confirming = demolishConfirmUntil > 0f;
-            demolishButton.text = confirming ? Localization.UI_BUILD_DEMOLISH_CONFIRM : Localization.UI_BUILD_DEMOLISH;
-            demolishButton.EnableInClassList("rf-build-button--confirm", confirming);
-            demolishButton.SetEnabled(mode != null && !mode.Busy);
+            demolishLabel.text = confirming ? Localization.UI_BUILD_DEMOLISH_CONFIRM : Localization.UI_BUILD_DEMOLISH;
+            demolishButton.EnableInClassList("rf-build-wide--confirm", confirming);
+            demolishButton.SetEnabled(mode != null && !mode.Busy && !mode.Moving);
+        }
+
+        // ---- What is being placed ------------------------------------------------------------
+
+        private void RefreshPlacing()
+        {
+            TownHouseSlotType? type = mode.Armed;
+            if (!type.HasValue && mode.Moving && !VillageBuildMode.IsEmpty(mode.Moving))
+            {
+                type = mode.Moving.SlotType;
+            }
+
+            if (!type.HasValue)
+            {
+                placingCard.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var house = HouseFor(type.Value);
+            var sprite = IconFor(type.Value);
+            placingIcon.style.backgroundImage = sprite ? new StyleBackground(sprite) : new StyleBackground(StyleKeyword.None);
+            placingTitle.text = house ? house.Name : type.Value.ToString();
+            placingBonus.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_BONUS, Mathf.RoundToInt(BestBonus(type.Value)), SkillName(type.Value));
+            var (free, total) = mode.PlotCounts();
+            placingPlots.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_PLOTS_FREE, free, total);
+            placingCard.style.display = DisplayStyle.Flex;
         }
 
         // ---- Resident picker -----------------------------------------------------------------
@@ -682,25 +808,52 @@ namespace Shinobytes.UI
             var slot = mode.Selected;
             var house = HouseFor(slot.SlotType);
             assignTitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_ASSIGN_TITLE, house ? house.Name : slot.SlotType.ToString());
-            assignCurrent.text = slot.OwnerUserId.HasValue
-                ? string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_ASSIGN_CURRENT, ResidentName(slot))
-                : Localization.UI_BUILD_NOBODY;
 
-            candidates.Clear();
-            foreach (var player in mode.RankResidents(slot.SlotType))
+            if (slot.OwnerUserId.HasValue)
             {
-                if (player.UserId != slot.OwnerUserId) candidates.Add(player);
+                var color = slot.Player ? ColorUtility.ToHtmlStringRGB(HudFormat.ReadableNameColor(slot.Player.PlayerNameHexColor)) : "FFF4D6";
+                assignCurrent.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_ASSIGN_CURRENT, "<color=#" + color + ">" + ResidentName(slot) + "</color>");
+                assignCurrent.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                assignCurrent.style.display = DisplayStyle.None;
+            }
+
+            ranked.Clear();
+            ranked.AddRange(mode.RankResidents(slot.SlotType));
+            assignSearch.SetValueWithoutNotify(string.Empty);
+            FilterCandidates();
+
+            modalOpen = true;
+            modal.style.display = DisplayStyle.Flex;
+            plotPanel.style.display = DisplayStyle.None;
+            assignSearch.Focus();
+        }
+
+        private void FilterCandidates()
+        {
+            var query = assignSearch.value?.Trim() ?? string.Empty;
+            candidates.Clear();
+            foreach (var player in ranked)
+            {
+                if (query.Length == 0 || (player.PlayerName != null && player.PlayerName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    candidates.Add(player);
+                }
             }
 
             assignList.RefreshItems();
-            assignList.ScrollToItem(0);
+            if (candidates.Count > 0) assignList.ScrollToItem(0);
             assignEmpty.style.display = candidates.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            modal.style.display = DisplayStyle.Flex;
         }
 
         private void CloseAssign()
         {
-            if (modal != null) modal.style.display = DisplayStyle.None;
+            if (modal == null) return;
+            modalOpen = false;
+            modal.style.display = DisplayStyle.None;
+            if (mode != null && mode.IsActive) RefreshPlot();
         }
 
         private VisualElement MakeCandidateRow()
@@ -710,56 +863,76 @@ namespace Shinobytes.UI
 
             var text = new VisualElement { pickingMode = PickingMode.Ignore };
             text.AddToClassList("rf-build-assign__text");
+
+            var line = new VisualElement { pickingMode = PickingMode.Ignore };
+            line.AddToClassList("rf-build-assign__line");
             var name = new Label { name = "name", pickingMode = PickingMode.Ignore };
             name.AddToClassList("rf-build-assign__name");
+            var tag = new Label { name = "tag", pickingMode = PickingMode.Ignore };
+            tag.AddToClassList("rf-build-assign__tag");
+            line.Add(name);
+            line.Add(tag);
+
             var level = new Label { name = "level", pickingMode = PickingMode.Ignore };
             level.AddToClassList("rf-build-assign__level");
-            text.Add(name);
+            text.Add(line);
             text.Add(level);
 
             var value = new Label { name = "bonus", pickingMode = PickingMode.Ignore };
             value.AddToClassList("rf-build-assign__bonus");
 
+            var assign = new Button { name = "assign", text = Localization.UI_BUILD_ASSIGN_BUTTON };
+            assign.AddToClassList("rf-build-assign__button");
+            assign.clicked += () => Assign(row.userData as PlayerController);
+
             row.Add(text);
             row.Add(value);
-            row.RegisterCallback<UnityEngine.UIElements.ClickEvent>(evt =>
-            {
-                if (row.userData is PlayerController player && mode != null && mode.Selected)
-                {
-                    CloseAssign();
-                    _ = mode.AssignAsync(mode.Selected, player);
-                }
-            });
+            row.Add(assign);
             return row;
+        }
+
+        private void Assign(PlayerController player)
+        {
+            if (!player || mode == null || !mode.Selected || player.UserId == mode.Selected.OwnerUserId) return;
+            var slot = mode.Selected;
+            CloseAssign();
+            _ = mode.AssignAsync(slot, player);
         }
 
         private void BindCandidateRow(VisualElement row, int index)
         {
             if (index < 0 || index >= candidates.Count || mode == null || !mode.Selected) return;
             var player = candidates[index];
-            var type = mode.Selected.SlotType;
+            var slot = mode.Selected;
+            var type = slot.SlotType;
             row.userData = player;
 
             var name = row.Q<Label>("name");
             name.text = player.PlayerName;
             name.style.color = HudFormat.ReadableNameColor(player.PlayerNameHexColor);
 
+            var isCurrent = player.UserId == slot.OwnerUserId;
+            var isBest = ranked.Count > 0 && ranked[0] == player && !isCurrent;
+            var tag = row.Q<Label>("tag");
+            tag.text = isCurrent ? Localization.UI_BUILD_TAG_CURRENT : isBest ? Localization.UI_BUILD_TAG_BEST : string.Empty;
+            tag.style.display = string.IsNullOrEmpty(tag.text) ? DisplayStyle.None : DisplayStyle.Flex;
+            tag.EnableInClassList("rf-build-assign__tag--best", isBest);
+
             var skill = player.Stats != null ? GameMath.GetSkillByHouseType(player.Stats, type) : null;
+            var level = skill != null ? string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_SKILL_LEVEL, SkillName(type), (int)skill.Level) : string.Empty;
             var home = mode.HomeOf(player);
-            var level = skill != null ? SkillName(type) + " " + ((int)skill.Level).ToString(CultureInfo.InvariantCulture) : string.Empty;
-            if (home) level += "  ·  " + string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_LIVES_IN, home.Slot + 1);
+            if (home && home != slot) level += "  ·  " + string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_LIVES_IN, home.Slot + 1);
             row.Q<Label>("level").text = level;
 
-            row.Q<Label>("bonus").text = "+" + Mathf.RoundToInt(VillageBuildMode.BonusFor(player, type)).ToString(CultureInfo.InvariantCulture) + "%";
-            row.EnableInClassList("rf-build-assign__row--best", index == 0);
+            row.Q<Label>("bonus").text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_BONUS, Mathf.RoundToInt(VillageBuildMode.BonusFor(player, type)), SkillName(type));
+            row.Q<Button>("assign").SetEnabled(!isCurrent && !mode.Busy);
+            row.EnableInClassList("rf-build-assign__row--best", isBest);
         }
 
         // ---- Hint and toast ------------------------------------------------------------------
 
         private void RefreshHint()
         {
-            if (mode == null) return;
-
             string text;
             if (mode.Busy) text = Localization.UI_BUILD_HINT_BUSY;
             else if (mode.Moving)
@@ -801,16 +974,6 @@ namespace Shinobytes.UI
             }
 
             return null;
-        }
-
-        private static int CategoryOf(TownHouseSlotType type)
-        {
-            for (var i = 0; i < Categories.Length; ++i)
-            {
-                if (Array.IndexOf(Categories[i].Types, type) >= 0) return i;
-            }
-
-            return -1;
         }
 
         private Sprite IconFor(TownHouseSlotType type)

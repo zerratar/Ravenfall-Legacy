@@ -91,7 +91,60 @@ Plots become positions rather than fixed scene objects.
   anywhere valid, up to the slot limit.
 - Old clients keep receiving houses by slot index, and draw them at the legacy plot positions.
 
-### Phase 3: costs, upgrades and unlocks
+### Phase 3: production buildings, costs, upgrades and unlocks
+
+#### Two kinds of building, one slot limit
+
+Every building takes a plot, and plots are limited by village level. That makes each plot a real
+choice, which is where the strategy comes from.
+
+- **Skill buildings** (today's houses: Lumbermill, Magic House and so on) need a resident. They
+  give that skill's experience bonus, from the resident's level, as now. New: a skill building for
+  a gathering skill also raises the village's share of that resource from players gathering it.
+  A Lumbermill with a good resident makes everyone's woodcutting feed the village more wood.
+- **Production buildings** need no resident. Their only job is resources: a Lumber Yard makes wood,
+  a Quarry ore, a Fishery fish, a Granary wheat and a Market coins, at a steady rate per hour that
+  rises with each tier.
+
+Players gathering still feed the village exactly as they do today. Production buildings add to
+that rather than replacing it.
+
+So the streamer chooses between experience now (skill buildings) and resources to grow the village
+(production buildings). Resources pay for upgrades and new building types.
+
+#### Rules
+
+- **Plots.** Both kinds count toward the same limit, which still comes from village level and
+  Patreon tier.
+- **Tiers.** Every building has tiers, 1 to 5 to start with. Upgrading costs resources, and raises
+  the bonus or the output. Tier pips show on the building panel, as in
+  `docs/mockups/build-selected-building.webp`.
+- **Unlocks.** Village level unlocks building types and higher tiers. Locked cards stay visible
+  with the level that unlocks them (`docs/mockups/build-tray.webp`).
+- **Costs.** Building, upgrading and demolishing follow the cost rules below.
+
+#### Server
+
+- **Catalogue.** It moves to the server, so rates and costs can be balanced without a game release.
+  Each entry has a kind (skill or production), category, required village level, maximum tier,
+  cost per tier, and its effect per tier (bonus percent, or resources per hour).
+- **Production tick.** Production runs in `VillageProcessor`, which already ticks every 15 seconds.
+  Resources are added in proportion to elapsed time, and capped so an offline village does not
+  come back to a mountain.
+- **Storage.** `VillageHouse` gains a tier. Production building types are numbered from 100, apart
+  from `TownHouseSlotType`, so they never collide with a skill.
+- **Old clients.** An older game client given a type it does not know shows the plot as empty and
+  applies no bonus; `TownHouseSlot.UpdateExpBonus` already catches the failed lookup. That is
+  acceptable, but a version check could hide production buildings from clients that cannot draw
+  them.
+
+#### Balancing to decide
+
+- Output per tier for each production building, against what players gather per hour today.
+- How big the gathering bonus from a skill building is, per tier.
+- Upgrade costs per tier, and the village level for each unlock.
+
+#### Costs, upgrades and unlocks
 
 - **Catalogue on the server.** Building definitions move to the server, so balancing does not need
   a client release. Each definition has a category, footprint, required village level, maximum

@@ -80,6 +80,8 @@ namespace Shinobytes.UI
         private int shownTotal = -1;
 
         private float nextRefresh;
+        private bool requestedVisible = true;
+        private bool hiddenForBuildMode;
 
         /// <summary>The player the camera is following, whose row is highlighted.</summary>
         private PlayerController observed;
@@ -366,6 +368,18 @@ namespace Shinobytes.UI
             if (!bound)
             {
                 TryBind();
+                return;
+            }
+
+            var building = VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive;
+            if (building != hiddenForBuildMode)
+            {
+                hiddenForBuildMode = building;
+                ApplyVisible();
+            }
+
+            if (building)
+            {
                 return;
             }
 
@@ -739,9 +753,26 @@ namespace Shinobytes.UI
 
         public void SetVisible(bool visible)
         {
-            if (window != null)
+            requestedVisible = visible;
+            ApplyVisible();
+        }
+
+        /// <summary>
+        /// Visible when the settings say so, except during village build mode, which uses the left
+        /// side of the screen for its bonuses panel.
+        /// </summary>
+        private void ApplyVisible()
+        {
+            if (window == null)
             {
-                window.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+                return;
+            }
+
+            var visible = requestedVisible && !hiddenForBuildMode;
+            var display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            if (window.style.display != display)
+            {
+                window.style.display = display;
             }
         }
     }

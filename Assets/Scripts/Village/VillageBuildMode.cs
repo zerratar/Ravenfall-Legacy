@@ -381,7 +381,7 @@ public class VillageBuildMode : MonoBehaviour
             var ground = PlacementUtility.FindGroundPoint(snapped);
             Moving.transform.SetPositionAndRotation(ground, Quaternion.Euler(0f, moveRotation, 0f));
 
-            MoveProblem = Validate(Moving, ground);
+            MoveProblem = Validate(Moving, ground, moveRotation);
             MoveValid = MoveProblem == null;
             Changed?.Invoke();
         }
@@ -418,7 +418,7 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>Null when the plot can stand here, otherwise the reason it cannot.</summary>
-    private string Validate(TownHouseSlot slot, Vector3 position)
+    private string Validate(TownHouseSlot slot, Vector3 position, float rotation)
     {
         var townHall = gameManager.Village.TownHall;
         var centre = townHall ? townHall.transform.position : position;
@@ -457,7 +457,7 @@ public class VillageBuildMode : MonoBehaviour
         // On ground, not water, and not too steep.
         var low = float.MaxValue;
         var high = float.MinValue;
-        var turn = Quaternion.Euler(0f, moveRotation, 0f);
+        var turn = Quaternion.Euler(0f, rotation, 0f);
         for (var i = 0; i < 5; ++i)
         {
             var offset = i == 4 ? Vector3.zero : turn * new Vector3((i & 1) == 0 ? -radius : radius, 0f, (i & 2) == 0 ? -radius : radius);
@@ -550,6 +550,47 @@ public class VillageBuildMode : MonoBehaviour
             MoveProblem = null;
             if (overlay) overlay.Hide();
         });
+    }
+
+    /// <summary>
+    /// Turns a plot where it stands, by <paramref name="degrees"/>, after checking the turned
+    /// footprint still fits. The Rotate tile on the building panel uses this.
+    /// </summary>
+    public async Task RotateInPlaceAsync(TownHouseSlot slot, float degrees)
+    {
+        if (!slot || Busy || Moving) return;
+
+        radiusCache.Clear();
+        var position = slot.transform.position;
+        var rotation = Mathf.Repeat(Mathf.Round(slot.transform.eulerAngles.y / rotationStep) * rotationStep + degrees, 360f);
+        var problem = Validate(slot, position, rotation);
+        if (problem != null)
+        {
+            Failed?.Invoke(problem);
+            return;
+        }
+
+        await Run(async () =>
+        {
+            if (!await gameManager.RavenNest.Village.PlaceHouseAsync(slot.Slot, position.x, position.z, rotation))
+            {
+                Failed?.Invoke(gameManager.Village.PlacementSupported
+                    ? Localization.UI_BUILD_PLACE_REJECTED
+                    : Localization.UI_BUILD_PLACE_UNSUPPORTED);
+                return;
+            }
+
+            slot.ApplyPlacement(position.x, position.z, rotation);
+        });
+    }
+
+    /// <summary>How many plots the village has, and how many of them are empty.</summary>
+    public (int free, int total) PlotCounts()
+    {
+        var plots = Plots;
+        var free = 0;
+        foreach (var plot in plots) if (IsEmpty(plot)) free++;
+        return (free, plots.Count);
     }
 
     /// <summary>Puts a moved plot back on its original position.</summary>

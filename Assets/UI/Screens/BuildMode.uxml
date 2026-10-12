@@ -5,12 +5,12 @@
     xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <!--
-      Village build mode. See docs/village-build-mode-design.md, phase 1.
+      Village build mode, after docs/mockups/build-*.webp.
 
-      Markers float over every plot. The side panel shows the village's bonuses, or the selected
-      plot with its resident and actions. The bottom has the category toolbar and the building tray.
-      The resident picker opens over everything. Shown only while build mode is on; the whole layer
-      ignores picking except the panels themselves, so the world stays clickable around them.
+      Left: village bonuses. Right: the selected building. Bottom: the category toolbar, with the
+      building tray opening above it. Bottom right: what is being placed. Markers float over every
+      plot. The resident picker opens over everything. The whole layer ignores picking except the
+      panels, so the world stays clickable around them.
     -->
 
     <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
@@ -22,46 +22,77 @@
 
         <engine:VisualElement name="build-markers" class="rf-build__markers" picking-mode="Ignore" />
 
-        <!-- Side panel -->
-        <engine:VisualElement name="build-side" class="rf-build-side">
-            <engine:VisualElement name="side-summary" class="rf-build-side__section">
-                <engine:Label name="summary-title" class="rf-build-side__title" />
-                <engine:Label name="summary-subtitle" class="rf-build-side__subtitle" />
-                <engine:VisualElement name="summary-list" class="rf-build-summary" />
-                <engine:Label name="summary-empty" class="rf-build-side__note" />
+        <!-- Village bonuses -->
+        <engine:VisualElement name="bonus-panel" class="rf-build-panel rf-build-bonuses">
+            <engine:VisualElement name="bonus-head" class="rf-build-panel__head rf-build-panel__head--clickable">
+                <engine:Label class="rf-icon rf-build-panel__glyph" text="&#xf015;" picking-mode="Ignore" />
+                <engine:Label name="bonus-title" class="rf-build-panel__title" picking-mode="Ignore" />
+                <engine:VisualElement class="rf-chevron rf-build-bonuses__chevron" picking-mode="Ignore" />
+            </engine:VisualElement>
+            <engine:VisualElement name="bonus-body" class="rf-build-bonuses__body">
+                <engine:VisualElement name="bonus-list" class="rf-build-bonuses__list" />
+                <engine:Label name="bonus-empty" class="rf-build-note" />
+                <engine:Label name="bonus-footer" class="rf-build-bonuses__footer" />
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- Selected building -->
+        <engine:VisualElement name="plot-panel" class="rf-build-panel rf-build-plot" style="display: none;">
+            <engine:VisualElement class="rf-build-panel__head">
+                <engine:VisualElement name="plot-icon-ring" class="rf-build-ring">
+                    <engine:VisualElement name="plot-icon" class="rf-build-ring__icon" picking-mode="Ignore" />
+                    <engine:Label name="plot-glyph" class="rf-icon rf-build-ring__glyph" text="&#xf067;" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:VisualElement class="rf-build-plot__titles" picking-mode="Ignore">
+                    <engine:Label name="plot-title" class="rf-build-plot__title" picking-mode="Ignore" />
+                    <engine:Label name="plot-subtitle" class="rf-build-plot__subtitle" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:Button name="plot-close" text="&#xf00d;" class="rf-window__button rf-icon rf-build__close" tooltip="Deselect (Esc)" />
             </engine:VisualElement>
 
-            <engine:VisualElement name="side-plot" class="rf-build-side__section" style="display: none;">
-                <engine:VisualElement class="rf-build-plot__head">
-                    <engine:VisualElement name="plot-icon" class="rf-build-plot__icon" />
-                    <engine:VisualElement class="rf-build-plot__titles">
-                        <engine:Label name="plot-title" class="rf-build-side__title" />
-                        <engine:Label name="plot-subtitle" class="rf-build-side__subtitle" />
-                    </engine:VisualElement>
-                    <engine:Button name="plot-close" text="&#xf00d;" class="rf-window__button rf-icon rf-build__close" tooltip="Deselect (Esc)" />
-                </engine:VisualElement>
+            <engine:Label name="plot-empty-note" class="rf-build-note" />
 
-                <engine:Label name="plot-empty-note" class="rf-build-side__note" />
-
-                <!-- Moving works for every plot, built or empty. -->
-                <engine:VisualElement class="rf-build-plot__actions">
-                    <engine:Button name="plot-move" class="rf-build-button" />
-                    <engine:Button name="plot-reset" class="rf-build-button rf-build-button--last" />
-                </engine:VisualElement>
-
-                <engine:VisualElement name="plot-built" class="rf-build-plot__built">
-                    <engine:Label name="plot-resident-caption" class="rf-build-side__caption" />
-                    <engine:VisualElement class="rf-build-plot__resident">
-                        <engine:Label name="plot-resident" class="rf-build-plot__resident-name" />
-                        <engine:Label name="plot-resident-level" class="rf-build-plot__resident-level" />
-                    </engine:VisualElement>
+            <engine:VisualElement name="plot-built" class="rf-build-plot__built">
+                <engine:Label name="plot-resident-caption" class="rf-build-caption" />
+                <engine:VisualElement class="rf-build-plot__resident">
+                    <engine:Label name="plot-resident" class="rf-build-plot__resident-name" />
+                    <engine:Label name="plot-resident-level" class="rf-build-plot__resident-level" />
                     <engine:Label name="plot-bonus" class="rf-build-plot__bonus" />
-                    <engine:Label name="plot-bonus-note" class="rf-build-side__note" />
+                    <engine:Label name="plot-bonus-note" class="rf-build-note" />
+                </engine:VisualElement>
+            </engine:VisualElement>
 
-                    <engine:VisualElement class="rf-build-plot__actions">
-                        <engine:Button name="plot-assign" class="rf-build-button rf-build-button--primary" />
-                        <engine:Button name="plot-demolish" class="rf-build-button rf-build-button--danger" />
-                    </engine:VisualElement>
+            <engine:VisualElement class="rf-build-tiles">
+                <engine:Button name="plot-move" class="rf-build-tile">
+                    <engine:Label class="rf-icon rf-build-tile__icon" text="&#xf047;" picking-mode="Ignore" />
+                    <engine:Label name="plot-move-label" class="rf-build-tile__label" picking-mode="Ignore" />
+                </engine:Button>
+                <engine:Button name="plot-rotate" class="rf-build-tile">
+                    <engine:Label class="rf-icon rf-build-tile__icon" text="&#xf2f9;" picking-mode="Ignore" />
+                    <engine:Label name="plot-rotate-label" class="rf-build-tile__label" picking-mode="Ignore" />
+                </engine:Button>
+                <engine:Button name="plot-assign" class="rf-build-tile">
+                    <engine:Label class="rf-icon rf-build-tile__icon" text="&#xf007;" picking-mode="Ignore" />
+                    <engine:Label name="plot-assign-label" class="rf-build-tile__label" picking-mode="Ignore" />
+                </engine:Button>
+            </engine:VisualElement>
+
+            <engine:Button name="plot-reset" class="rf-build-wide" />
+
+            <engine:Button name="plot-demolish" class="rf-build-wide rf-build-wide--danger">
+                <engine:Label class="rf-icon rf-build-wide__icon" text="&#xf2ed;" picking-mode="Ignore" />
+                <engine:Label name="plot-demolish-label" class="rf-build-wide__label" picking-mode="Ignore" />
+            </engine:Button>
+        </engine:VisualElement>
+
+        <!-- What is being placed -->
+        <engine:VisualElement name="placing-card" class="rf-build-panel rf-build-placing" picking-mode="Ignore" style="display: none;">
+            <engine:VisualElement class="rf-build-placing__row" picking-mode="Ignore">
+                <engine:VisualElement name="placing-icon" class="rf-build-placing__icon" picking-mode="Ignore" />
+                <engine:VisualElement picking-mode="Ignore">
+                    <engine:Label name="placing-title" class="rf-build-plot__title" picking-mode="Ignore" />
+                    <engine:Label name="placing-bonus" class="rf-build-placing__bonus" picking-mode="Ignore" />
+                    <engine:Label name="placing-plots" class="rf-build-plot__subtitle" picking-mode="Ignore" />
                 </engine:VisualElement>
             </engine:VisualElement>
         </engine:VisualElement>
@@ -69,29 +100,40 @@
         <!-- Bottom: hint, tray, toolbar -->
         <engine:VisualElement class="rf-build-bottom" picking-mode="Ignore">
             <engine:Label name="build-hint" class="rf-build-hint" picking-mode="Ignore" />
-            <engine:VisualElement name="build-tray" class="rf-build-tray" />
-            <engine:VisualElement name="build-toolbar" class="rf-build-toolbar" />
+
+            <engine:VisualElement name="build-tray" class="rf-build-panel rf-build-tray" style="display: none;">
+                <engine:VisualElement class="rf-build-panel__head">
+                    <engine:Label name="tray-glyph" class="rf-icon rf-build-panel__glyph" picking-mode="Ignore" />
+                    <engine:Label name="tray-title" class="rf-build-panel__title" picking-mode="Ignore" />
+                    <engine:Button name="tray-close" text="&#xf00d;" class="rf-window__button rf-icon rf-build__close" tooltip="Close" />
+                </engine:VisualElement>
+                <engine:VisualElement name="tray-cards" class="rf-build-tray__cards" />
+            </engine:VisualElement>
+
+            <engine:VisualElement name="build-toolbar" class="rf-build-panel rf-build-toolbar" />
         </engine:VisualElement>
 
-        <!-- Messages -->
         <engine:Label name="build-toast" class="rf-build-toast" picking-mode="Ignore" />
 
         <!-- Resident picker -->
         <engine:VisualElement name="assign-modal" class="rf-build-modal" style="display: none;">
-            <engine:VisualElement class="rf-build-modal__panel">
+            <engine:VisualElement class="rf-build-panel rf-build-modal__panel">
                 <engine:VisualElement class="rf-build-modal__head">
-                    <engine:Label name="assign-title" class="rf-build-side__title" />
+                    <engine:Label name="assign-title" class="rf-build-modal__title" />
                     <engine:Button name="assign-close" text="&#xf00d;" class="rf-window__button rf-icon rf-build__close" tooltip="Close" />
                 </engine:VisualElement>
-                <engine:Label name="assign-current" class="rf-build-side__subtitle" />
+                <engine:VisualElement class="rf-build-modal__tools">
+                    <engine:TextField name="assign-search" class="rf-build-search" />
+                    <engine:Label name="assign-current" class="rf-build-current" />
+                </engine:VisualElement>
                 <engine:ListView name="assign-list"
                                  class="rf-build-assign rf-playerlist"
                                  virtualization-method="FixedHeight"
-                                 fixed-item-height="52"
+                                 fixed-item-height="64"
                                  selection-type="None"
                                  show-border="false"
                                  horizontal-scrolling="false" />
-                <engine:Label name="assign-empty" class="rf-build-side__note" />
+                <engine:Label name="assign-empty" class="rf-build-note" />
             </engine:VisualElement>
         </engine:VisualElement>
 
