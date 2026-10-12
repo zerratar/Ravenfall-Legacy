@@ -125,8 +125,8 @@ Client:
   - Inside the village.
   - Clear of every plot.
   - Not on water, not too steep.
-  - Recommended: the footprint checked is the largest tier's, shown as a faint outline, so the hall
-    always has room to grow and an upgrade never lands on a house.
+  - The footprint checked is the largest tier's, shown as a faint outline, so the hall always has
+    room to grow and an upgrade never lands on a house.
 - Fixes that come with it:
   - The village area is measured from the plaza, not from the active hall. Otherwise moving the hall
     would move the whole buildable area.
@@ -164,12 +164,14 @@ Client:
   every upgrade, so step B either leaves coins out of the costs or gives the village a coin income
   first.
 
-#### Open questions for this step
+#### Decided (2026-10-12)
 
-- Placement footprint: the largest tier (recommended) or the current one?
-- Moving the hall: free (recommended), or a cost?
-- The level gate and resource cost for each tier, and whether coins are part of it.
-- At launch, keep each village's current tier (recommended), or reset every village to tier 1?
+- Placement checks the largest tier's footprint, so the hall always has room to grow.
+- Moving the hall is free, like moving plots.
+- At launch every village keeps the tier its level gives it today; only higher tiers are bought.
+- Upgrade costs leave coins out (wood, ore, fish and wheat only) until the village has a coin income.
+
+Still open: the level gate and resource cost for each tier. Step B waits for those numbers.
 
 ### Phase 3: production buildings, costs, upgrades and unlocks
 
