@@ -197,8 +197,10 @@ When an upgrade can be bought, a small green arrow shows on the town bar's BUILD
 - Upgrade costs leave coins out (wood, ore, fish and wheat only) until the village has a coin income.
 - Village coin income, first edition: defeating a raid or a dungeon pays the village coins, on top of
   what the players earn. No taxes or cuts from player gains. Players should never feel they lose
-  something by helping, so the village is rewarded alongside them, not at their cost. The amounts need
-  numbers. Once this is in, coins can join the upgrade costs.
+  something by helping, so the village is rewarded alongside them, not at their cost. Built as a first
+  draft in RavenNest (`VillageCoinRewards`): a raid pays 500 plus 50 per player, a dungeon 800 plus 60 per
+  player, times 1.0 (common) to 3.0 (legendary); players count up to 50. Paid from the existing raid and
+  dungeon reward calls. Once it has run for a while, coins can join the upgrade costs.
 
 
 ### Phase 3: production buildings, costs, upgrades and unlocks
