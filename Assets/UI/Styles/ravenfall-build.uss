@@ -28,6 +28,7 @@
 .rf-build .rf-build-tile__label,
 .rf-build .rf-build-wide,
 .rf-build .rf-build-wide__label,
+.rf-build .rf-build-hall__need,
 .rf-build .rf-build-hint,
 .rf-build .rf-build-toast,
 .rf-build .rf-plot__name,
@@ -106,6 +107,40 @@
     font-size: 13px;
     color: var(--rf-text-dim);
     letter-spacing: 1.2px;
+}
+
+/* The town hall's upgrade section: the next tier, what it needs (met in green, missing in red). */
+.rf-build .rf-build-hall {
+    margin-top: var(--rf-space-3);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+}
+
+.rf-build .rf-build-hall .rf-build-wide {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.rf-build .rf-build-hall__needs {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: var(--rf-space-2);
+}
+
+.rf-build .rf-build-hall__need {
+    font-size: 15px;
+    color: var(--rf-danger);
+    margin-right: var(--rf-space-4);
+    margin-bottom: 4px;
+}
+
+.rf-build .rf-build-hall__need--met {
+    color: var(--rf-success);
+}
+
+.rf-build .rf-build-wide.rf-build-wide--upgrade {
+    color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
 }
 
 .rf-build .rf-build-note {

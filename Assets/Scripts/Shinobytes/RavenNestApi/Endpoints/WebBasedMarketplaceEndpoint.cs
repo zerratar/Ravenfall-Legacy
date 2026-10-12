@@ -131,6 +131,18 @@ namespace RavenNest.SDK.Endpoints
                 });
         }
 
+        /// <summary>Buys the next town hall tier. The town hall afterwards, or null when it was not possible.</summary>
+        public Task<TownHallPlacement> UpgradeTownHallAsync()
+        {
+            return request.Create()
+                .Identifier("townhall")
+                .Method("upgrade")
+                .Build()
+                .SendAsync<TownHallPlacement>(
+                    ApiRequestTarget.Village,
+                    ApiRequestType.Get);
+        }
+
         public Task<bool> ResetTownHallPlacementAsync()
         {
             return request.Create()
@@ -175,6 +187,17 @@ namespace RavenNest.SDK.Endpoints
         public double? X { get; set; }
         public double? Z { get; set; }
         public double Rotation { get; set; }
+
+        /// <summary>The tier the village has bought, 0 to MaxTier. Null from a server without upgrades.</summary>
+        public int? Tier { get; set; }
+        public int? MaxTier { get; set; }
+
+        /// <summary>What the next tier needs. All zero at the last tier.</summary>
+        public int NextLevel { get; set; }
+        public int NextWood { get; set; }
+        public int NextOre { get; set; }
+        public int NextFish { get; set; }
+        public int NextWheat { get; set; }
     }
 
     public class VillageAssignRequest

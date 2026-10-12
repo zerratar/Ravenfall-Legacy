@@ -54,6 +54,12 @@
 
             <engine:Label name="plot-empty-note" class="rf-build-note" />
 
+            <engine:VisualElement name="hall-upgrade" class="rf-build-hall" style="display: none;">
+                <engine:Label name="hall-next" class="rf-build-caption" />
+                <engine:VisualElement name="hall-needs" class="rf-build-hall__needs" />
+                <engine:Button name="hall-upgrade-button" class="rf-build-wide rf-build-wide--upgrade" />
+            </engine:VisualElement>
+
             <engine:VisualElement name="plot-built" class="rf-build-plot__built">
                 <engine:Label name="plot-resident-caption" class="rf-build-caption" />
                 <engine:VisualElement class="rf-build-plot__resident">

@@ -104,6 +104,10 @@ namespace Shinobytes.UI
         private Button assignButton;
         private Label assignLabel;
         private Button resetButton;
+        private VisualElement hallUpgrade;
+        private Label hallNext;
+        private VisualElement hallNeeds;
+        private Button hallUpgradeButton;
         private Button demolishButton;
         private Label demolishLabel;
 
@@ -204,6 +208,10 @@ namespace Shinobytes.UI
             assignButton = root.Q<Button>("plot-assign");
             assignLabel = root.Q<Label>("plot-assign-label");
             resetButton = root.Q<Button>("plot-reset");
+            hallUpgrade = root.Q<VisualElement>("hall-upgrade");
+            hallNext = root.Q<Label>("hall-next");
+            hallNeeds = root.Q<VisualElement>("hall-needs");
+            hallUpgradeButton = root.Q<Button>("hall-upgrade-button");
             demolishButton = root.Q<Button>("plot-demolish");
             demolishLabel = root.Q<Label>("plot-demolish-label");
 
@@ -268,6 +276,8 @@ namespace Shinobytes.UI
                 else if (mode.Selected) _ = mode.ResetPlacementAsync(mode.Selected);
             };
             demolishButton.clicked += OnDemolishClicked;
+            hallUpgradeButton.text = Localization.UI_BUILD_HALL_UPGRADE;
+            hallUpgradeButton.clicked += () => { if (mode != null) _ = mode.UpgradeHallAsync(); };
             assignSearch.RegisterValueChangedCallback(evt => FilterCandidates());
 
             // A click on the dimmed backdrop closes the picker; a click on the panel does not.
@@ -746,6 +756,7 @@ namespace Shinobytes.UI
 
             plotEmptyNote.text = Localization.UI_BUILD_EMPTY_PLOT_NOTE;
             assignButton.style.display = DisplayStyle.Flex;
+            hallUpgrade.style.display = DisplayStyle.None;
             plotGlyph.text = "\uf067";
 
             var empty = VillageBuildMode.IsEmpty(slot);
@@ -809,8 +820,9 @@ namespace Shinobytes.UI
             plotIcon.style.display = DisplayStyle.None;
             plotGlyph.style.display = DisplayStyle.Flex;
             plotGlyph.text = "\uf66f";
+            var tier = Mathf.Clamp(townHall.Tier, 0, Localization.UI_BUILD_HALL_NAMES.Length - 1);
             plotTitle.text = Localization.UI_BUILD_HALL_TITLE;
-            plotSubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_TIER, Mathf.Max(0, townHall.Tier) + 1);
+            plotSubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_TIER_NAMED, tier + 1, Localization.UI_BUILD_HALL_NAMES[tier]);
             plotEmptyNote.text = Localization.UI_BUILD_HALL_NOTE;
             plotEmptyNote.style.display = DisplayStyle.Flex;
             plotBuilt.style.display = DisplayStyle.None;
@@ -822,6 +834,56 @@ namespace Shinobytes.UI
             resetButton.SetEnabled(idle);
             resetButton.style.display = townHall.IsMoved ? DisplayStyle.Flex : DisplayStyle.None;
             demolishButton.style.display = DisplayStyle.None;
+            RefreshHallUpgrade(townHall, idle);
+        }
+
+        /// <summary>
+        /// The upgrade section: the next tier, each requirement with what the village has (met in green,
+        /// missing in red), and the Upgrade button, enabled when everything is met. Hidden when the server
+        /// does not sell tiers.
+        /// </summary>
+        private void RefreshHallUpgrade(TownHallManager townHall, bool idle)
+        {
+            if (!townHall.BoughtTier.HasValue)
+            {
+                hallUpgrade.style.display = DisplayStyle.None;
+                return;
+            }
+
+            hallUpgrade.style.display = DisplayStyle.Flex;
+            hallNeeds.Clear();
+            if (!townHall.HasNextTier)
+            {
+                hallNext.text = Localization.UI_BUILD_HALL_MAX;
+                hallUpgradeButton.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var next = Mathf.Clamp(townHall.BoughtTier.Value + 1, 0, Localization.UI_BUILD_HALL_NAMES.Length - 1);
+            hallNext.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_NEXT, Localization.UI_BUILD_HALL_NAMES[next].ToUpperInvariant());
+            AddNeed(string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_NEED_LEVEL, townHall.NextLevel), townHall.Level >= townHall.NextLevel);
+            AddResourceNeed(Localization.UI_TOWN_WOOD, townHall.Wood, townHall.NextWood);
+            AddResourceNeed(Localization.UI_TOWN_ORE, townHall.Ore, townHall.NextOre);
+            AddResourceNeed(Localization.UI_TOWN_FISH, townHall.Fish, townHall.NextFish);
+            AddResourceNeed(Localization.UI_TOWN_WHEAT, townHall.Wheat, townHall.NextWheat);
+
+            hallUpgradeButton.style.display = DisplayStyle.Flex;
+            hallUpgradeButton.SetEnabled(idle && townHall.CanUpgrade);
+        }
+
+        private void AddResourceNeed(string name, long have, int need)
+        {
+            if (need <= 0) return;
+            AddNeed(string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_NEED, name,
+                Math.Min(have, need).ToString("N0", CultureInfo.InvariantCulture), need.ToString("N0", CultureInfo.InvariantCulture)), have >= need);
+        }
+
+        private void AddNeed(string text, bool met)
+        {
+            var label = new Label(text);
+            label.AddToClassList("rf-build-hall__need");
+            label.EnableInClassList("rf-build-hall__need--met", met);
+            hallNeeds.Add(label);
         }
 
         private void OnDemolishClicked()

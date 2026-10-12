@@ -145,6 +145,24 @@ Client:
 
 #### Step B: town hall upgrades bought with resources and a village level
 
+**Built 2026-10-12, awaiting a play test.** Server: RavenNest `6b9e4da6`; run
+`sql/village-town-hall-tier.sql` before deploying it. The town hall panel in build mode shows the next
+tier, what it needs (met in green, missing in red) and an Upgrade button. First draft numbers, in
+`TownHallTiers` on the server, to be tuned from play rather than from existing stockpiles, which have
+grown for years with nothing to spend them on:
+
+| Tier | Hall | Level | Wood | Ore | Fish | Wheat |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2 | Town hall | 10 | 2,000 | 1,000 | - | - |
+| 3 | Guild hall | 30 | 8,000 | 6,000 | 3,000 | 3,000 |
+| 4 | Keep | 80 | 20,000 | 30,000 | 10,000 | 10,000 |
+| 5 | Castle | 150 | 60,000 | 90,000 | 30,000 | 30,000 |
+
+A gathering player adds one resource to the village every 10 seconds (360 an hour), so a small stream
+with about three players on a resource earns roughly a thousand of it an hour.
+
+Not done yet: an "upgrade available" sign outside build mode, for example on the town bar.
+
 - **Stored tier.** `Village` gains a nullable `TownHallTier` (`int?`), returned by
   `GET api/village/townhall`.
   - Null means "follow the village level", which is today's behaviour.
@@ -182,7 +200,6 @@ Client:
   something by helping, so the village is rewarded alongside them, not at their cost. The amounts need
   numbers. Once this is in, coins can join the upgrade costs.
 
-Still open: the level gate and resource cost for each tier. Step B waits for those numbers.
 
 ### Phase 3: production buildings, costs, upgrades and unlocks
 

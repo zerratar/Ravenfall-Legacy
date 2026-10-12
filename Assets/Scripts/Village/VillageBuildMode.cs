@@ -892,6 +892,30 @@ public class VillageBuildMode : MonoBehaviour
         });
     }
 
+    /// <summary>
+    /// Buys the next town hall tier. The server checks the level and the resources and spends them; the
+    /// new tier appears where the hall stands.
+    /// </summary>
+    public async Task UpgradeHallAsync()
+    {
+        var townHall = gameManager.Village.TownHall;
+        if (!townHall || Busy || IsMoving || !townHall.CanUpgrade) return;
+
+        long wood = townHall.NextWood, ore = townHall.NextOre, fish = townHall.NextFish, wheat = townHall.NextWheat;
+        await Run(async () =>
+        {
+            var state = await gameManager.RavenNest.Village.UpgradeTownHallAsync();
+            if (state == null || !state.Tier.HasValue)
+            {
+                Failed?.Invoke(Localization.UI_BUILD_HALL_UPGRADE_FAILED);
+                return;
+            }
+
+            townHall.Spend(wood, ore, fish, wheat);
+            gameManager.Village.ApplyTownHallTier(state);
+        });
+    }
+
     /// <summary>Puts a moved town hall back on the plaza.</summary>
     public async Task ResetHallPlacementAsync()
     {

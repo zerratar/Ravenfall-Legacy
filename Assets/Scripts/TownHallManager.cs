@@ -76,6 +76,26 @@ public class TownHallManager : MonoBehaviour
 
     public Rect Area => area;
 
+    /// <summary>
+    /// The tier the village has bought, from the server. Null when the server does not sell tiers yet,
+    /// and the tier then follows the village level as it always did.
+    /// </summary>
+    public int? BoughtTier { get; private set; }
+    public int MaxTier { get; private set; } = 4;
+
+    /// <summary>What the next tier needs: village level and resources.</summary>
+    public int NextLevel { get; private set; }
+    public int NextWood { get; private set; }
+    public int NextOre { get; private set; }
+    public int NextFish { get; private set; }
+    public int NextWheat { get; private set; }
+
+    /// <summary>Whether there is a tier to buy.</summary>
+    public bool HasNextTier => BoughtTier.HasValue && BoughtTier.Value < MaxTier;
+
+    /// <summary>Whether the village can buy the next tier now.</summary>
+    public bool CanUpgrade => HasNextTier && level >= NextLevel && wood >= NextWood && ore >= NextOre && fish >= NextFish && wheat >= NextWheat;
+
     public double Experience => exp;
     public int Level => level;
     public int Tier => tier;
@@ -93,9 +113,30 @@ public class TownHallManager : MonoBehaviour
         if (this.level != level)
         {
             SetLevel(level);
-            SetTier(GetTownHallTier(level));
+            // A bought tier stays until the next one is bought; levelling up only makes it buyable.
+            SetTier(BoughtTier ?? GetTownHallTier(level));
             if (info) info.MakeDirty();
         }
+    }
+
+    /// <summary>The tier the village has bought and what the next one needs, from the server.</summary>
+    public void SetBoughtTier(int tier, int maxTier, int nextLevel, int nextWood, int nextOre, int nextFish, int nextWheat)
+    {
+        BoughtTier = tier;
+        MaxTier = maxTier;
+        NextLevel = nextLevel;
+        NextWood = nextWood;
+        NextOre = nextOre;
+        NextFish = nextFish;
+        NextWheat = nextWheat;
+        SetTier(tier);
+        if (info) info.MakeDirty();
+    }
+
+    /// <summary>Takes resources spent on an upgrade off the village's stock, until the server's next update.</summary>
+    public void Spend(long wood, long ore, long fish, long wheat)
+    {
+        SetResources(coins, this.ore - ore, this.wood - wood, this.fish - fish, this.wheat - wheat);
     }
 
     public void SetTier(int tier)

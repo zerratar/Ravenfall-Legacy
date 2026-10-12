@@ -159,12 +159,25 @@ namespace Assets.Scripts
                 {
                     townHallManager.ResetPlacement();
                 }
+
+                ApplyTownHallTier(placement);
             }
             catch (Exception exc)
             {
                 TownHallPlacementSupported = false;
                 Shinobytes.Debug.LogWarning("Could not load the town hall placement: " + exc.Message);
             }
+        }
+
+        /// <summary>The bought tier and the next tier's needs, when the server sells tiers.</summary>
+        public void ApplyTownHallTier(RavenNest.SDK.Endpoints.TownHallPlacement state)
+        {
+            if (state == null || !state.Tier.HasValue || !townHallManager)
+            {
+                return;
+            }
+
+            townHallManager.SetBoughtTier(state.Tier.Value, state.MaxTier ?? 4, state.NextLevel, state.NextWood, state.NextOre, state.NextFish, state.NextWheat);
         }
 
         public void SetHouses(IReadOnlyList<VillageHouseInfo> houses)
