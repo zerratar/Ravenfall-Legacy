@@ -101,5 +101,6 @@
     Keep(root, "Chr_FantasyHero_Preset_113", new UnityEngine.Vector3(5f, 0, 22f), 200);
     Keep(root, "SM_Prop_Wall_Banner_01", new UnityEngine.Vector3(-5f, 5.5f, Z1 - 0.45f), 180);
     var box = root.GetComponent<UnityEngine.BoxCollider>(); box.center = new UnityEngine.Vector3(0, 10f, 17.5f); box.size = new UnityEngine.Vector3(29f, 20f, 18f);
+    GrowCollider(root);
     sb.Append("tier5 built, children=").Append(hall.childCount).Append(" goose=").Append(goose != null).Append(" chicken=").Append(chicken != null).Append(" raven=").Append(raven != null).Append(" || ");
 }

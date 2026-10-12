@@ -150,6 +150,25 @@ System.Action<UnityEngine.Transform, UnityEngine.GameObject> FitCollider = (root
     box.size = new UnityEngine.Vector3(b.size.x, b.size.y, b.size.z);
 };
 
+// Grows the tier's click collider to take in its Blender towers and frontispiece, so clicks on them hit the hall.
+System.Action<UnityEngine.Transform> GrowCollider = root =>
+{
+    var box = root.GetComponent<UnityEngine.BoxCollider>();
+    var lo = box.center - box.size / 2; var hi = box.center + box.size / 2;
+    foreach (var r in root.GetComponentsInChildren<UnityEngine.Renderer>(true))
+    {
+        var n = r.name;
+        if (!(n.StartsWith("Village_Tower_") || n.StartsWith("Village_Turret") || n.StartsWith("Village_Frontispiece"))) continue;
+        var b = r.bounds;
+        foreach (var c in new[] { b.min, b.max })
+        {
+            var l = root.InverseTransformPoint(c);
+            lo = UnityEngine.Vector3.Min(lo, l); hi = UnityEngine.Vector3.Max(hi, l);
+        }
+    }
+    box.center = (lo + hi) / 2; box.size = hi - lo;
+};
+
 // Castle kit walls span -5..0 on their local x. Lays pieces[i] along +x (axis 0) or +z (axis 1) from a start point.
 System.Action<UnityEngine.Transform, string[], float, float, int, float> WallRun = (parent, pieces, x0, z0, axis, y) =>
 {

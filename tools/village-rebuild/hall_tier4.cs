@@ -57,5 +57,6 @@
     var keepBox = new UnityEngine.GameObject("Keep Bounds"); keepBox.transform.SetParent(hall, false);
     var box = root.GetComponent<UnityEngine.BoxCollider>(); box.center = new UnityEngine.Vector3(0, 7.5f, 13f); box.size = new UnityEngine.Vector3(19f, 15f, 14f);
     UnityEngine.Object.DestroyImmediate(keepBox);
+    GrowCollider(root);
     sb.Append("tier4 built, children=").Append(hall.childCount).Append(" || ");
 }
