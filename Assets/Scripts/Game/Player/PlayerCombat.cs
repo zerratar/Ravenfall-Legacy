@@ -175,6 +175,7 @@ public class PlayerCombat
                 return true;
 
             owner.SessionStats.AddHealingDealt(heal);
+            if (owner.dungeonHandler != null && owner.dungeonHandler.InDungeon) CombatMeter.Dungeon.AddHealing(owner, heal);
 
             // allow for some variation in gains based on how high you heal.
             var state = ExpGainState.FullGain;
@@ -212,6 +213,7 @@ public class PlayerCombat
         var damage = CalculateDamage(enemy);
 
         owner.SessionStats.AddDamageDealt(damage);
+        if (owner.dungeonHandler != null && owner.dungeonHandler.InDungeon) CombatMeter.Dungeon.AddDamage(owner, damage);
 
         if (enemy == null || !enemy.TakeDamage(owner, damage))
             return true;

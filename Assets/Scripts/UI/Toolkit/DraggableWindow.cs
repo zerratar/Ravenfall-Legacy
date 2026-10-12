@@ -46,14 +46,30 @@ namespace Shinobytes.UI
         /// </summary>
         private const string IndexKey = "rf_win_index";
 
-        /// <summary>
-        /// How much of a window must remain inside the container. A margin rather than requiring the
-        /// whole window to fit, so a large panel on a small screen stays usable: it may hang off an
-        /// edge, but never far enough to lose the bar you grab it by.
-        /// </summary>
-        private const float MinVisible = 64f;
-
         private static readonly List<DraggableWindow> live = new List<DraggableWindow>();
+
+        /// <summary>Windows the pointer is currently over.</summary>
+        private static readonly HashSet<VisualElement> hovered = new HashSet<VisualElement>();
+
+        /// <summary>
+        /// True while the pointer is over a visible HUD window. The cameras read this to leave the
+        /// scroll wheel alone, so scrolling a list does not also zoom the world behind it.
+        /// </summary>
+        public static bool IsPointerOverWindow
+        {
+            get
+            {
+                foreach (var w in hovered)
+                {
+                    if (w.panel != null && w.resolvedStyle.display == DisplayStyle.Flex && w.resolvedStyle.visibility == Visibility.Visible)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         private readonly VisualElement window;
         private readonly VisualElement handle;
@@ -63,6 +79,20 @@ namespace Shinobytes.UI
         private Vector2 windowStart;
         private bool dragging;
         private bool restored;
+
+        private VisualElement container;
+        private VisualElement grip;
+        private Vector2 minSize;
+        private bool resizing;
+        private Vector2 resizePointerStart;
+        private Vector2 resizeSizeStart;
+        private bool collapsed;
+
+        /// <summary>Raised when the window is collapsed or expanded, with the new state.</summary>
+        public event Action<bool> CollapsedChanged;
+
+        /// <summary>Whether the window is folded down to its header.</summary>
+        public bool IsCollapsed => collapsed;
 
         private DraggableWindow(VisualElement window, VisualElement handle, string id)
         {
@@ -98,8 +128,17 @@ namespace Shinobytes.UI
             handle.RegisterCallback<PointerMoveEvent>(w.OnPointerMove);
             handle.RegisterCallback<PointerUpEvent>(w.OnPointerUp);
 
+            window.RegisterCallback<PointerEnterEvent>(w.OnPointerEnterWindow);
+            window.RegisterCallback<PointerLeaveEvent>(w.OnPointerLeaveWindow);
+
             // Restoring needs a resolved size, which does not exist until the first layout pass.
             window.RegisterCallback<GeometryChangedEvent>(w.OnGeometryChanged);
+
+            // The container is watched as well as the window. A window with a fixed pixel size and
+            // position does not change geometry when the game window is resized, only its container
+            // does, so listening on the window alone meant the resize re-clamp never fired.
+            w.container = window.parent;
+            w.container?.RegisterCallback<GeometryChangedEvent>(w.OnContainerGeometryChanged);
 
             live.Add(w);
             RegisterId(id);
@@ -116,7 +155,176 @@ namespace Shinobytes.UI
             handle.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             handle.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             window.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            window.UnregisterCallback<PointerEnterEvent>(OnPointerEnterWindow);
+            window.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveWindow);
+            hovered.Remove(window);
+            container?.UnregisterCallback<GeometryChangedEvent>(OnContainerGeometryChanged);
+
+            if (grip != null)
+            {
+                grip.UnregisterCallback<PointerDownEvent>(OnGripDown);
+                grip.UnregisterCallback<PointerMoveEvent>(OnGripMove);
+                grip.UnregisterCallback<PointerUpEvent>(OnGripUp);
+            }
+
             live.Remove(this);
+        }
+
+        /// <summary>
+        /// Lets the window be resized by dragging <paramref name="resizeGrip"/>, usually a corner
+        /// element. The size is saved per window id alongside the position.
+        /// </summary>
+        /// <param name="resizeGrip">The element to drag. Must sit inside the window.</param>
+        /// <param name="minimum">
+        /// Smallest allowed size. Below a certain width the content stops being legible on stream,
+        /// so each window decides its own floor rather than sharing one.
+        /// </param>
+        public void EnableResize(VisualElement resizeGrip, Vector2 minimum)
+        {
+            if (resizeGrip == null || grip != null)
+            {
+                return;
+            }
+
+            grip = resizeGrip;
+            minSize = minimum;
+            grip.RegisterCallback<PointerDownEvent>(OnGripDown);
+            grip.RegisterCallback<PointerMoveEvent>(OnGripMove);
+            grip.RegisterCallback<PointerUpEvent>(OnGripUp);
+        }
+
+        /// <summary>
+        /// Folds the window down to its header, or opens it again. The state is remembered.
+        /// </summary>
+        public void SetCollapsed(bool value)
+        {
+            ApplyCollapsed(value);
+            PlayerPrefs.SetInt(Key("c"), value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+
+        public void ToggleCollapsed()
+        {
+            SetCollapsed(!collapsed);
+        }
+
+        private void ApplyCollapsed(bool value)
+        {
+            collapsed = value;
+            window.EnableInClassList("rf-window--collapsed", value);
+
+            if (value)
+            {
+                // Auto rather than a remembered pixel height: the header decides how tall a folded
+                // window is, and the saved height is kept for when it opens again.
+                window.style.height = StyleKeyword.Auto;
+            }
+            else if (PlayerPrefs.HasKey(Key("h")))
+            {
+                window.style.height = new Length(PlayerPrefs.GetFloat(Key("h")), LengthUnit.Pixel);
+            }
+            else
+            {
+                window.style.height = StyleKeyword.Null;
+            }
+
+            CollapsedChanged?.Invoke(value);
+        }
+
+        private string Key(string suffix)
+        {
+            return KeyPrefix + id + "_" + suffix;
+        }
+
+        private void OnGripDown(PointerDownEvent evt)
+        {
+            if (evt.button != 0 || collapsed)
+            {
+                return;
+            }
+
+            resizing = true;
+            resizePointerStart = evt.position;
+            resizeSizeStart = new Vector2(window.resolvedStyle.width, window.resolvedStyle.height);
+            grip.CapturePointer(evt.pointerId);
+            evt.StopPropagation();
+        }
+
+        private void OnGripMove(PointerMoveEvent evt)
+        {
+            if (!resizing || !grip.HasPointerCapture(evt.pointerId))
+            {
+                return;
+            }
+
+            var delta = (Vector2)evt.position - resizePointerStart;
+            ApplySize(resizeSizeStart + delta);
+            evt.StopPropagation();
+        }
+
+        private void OnGripUp(PointerUpEvent evt)
+        {
+            if (!resizing)
+            {
+                return;
+            }
+
+            resizing = false;
+            if (grip.HasPointerCapture(evt.pointerId))
+            {
+                grip.ReleasePointer(evt.pointerId);
+            }
+
+            PlayerPrefs.SetFloat(Key("w"), window.resolvedStyle.width);
+            PlayerPrefs.SetFloat(Key("h"), window.resolvedStyle.height);
+            PlayerPrefs.Save();
+            evt.StopPropagation();
+        }
+
+        /// <summary>
+        /// Writes a size after limiting it to the minimum and to what fits between the window's
+        /// position and the container's far edges.
+        /// </summary>
+        private void ApplySize(Vector2 size)
+        {
+            if (container == null)
+            {
+                return;
+            }
+
+            var bounds = container.contentRect;
+            if (float.IsNaN(bounds.width) || bounds.width <= 0)
+            {
+                return;
+            }
+
+            var left = window.resolvedStyle.left;
+            var top = window.resolvedStyle.top;
+            var maxW = Mathf.Max(minSize.x, bounds.width - left);
+            var maxH = Mathf.Max(minSize.y, bounds.height - top);
+
+            window.style.width = new Length(Mathf.Clamp(size.x, minSize.x, maxW), LengthUnit.Pixel);
+            if (!collapsed)
+            {
+                window.style.height = new Length(Mathf.Clamp(size.y, minSize.y, maxH), LengthUnit.Pixel);
+            }
+        }
+
+        private void OnContainerGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (!restored)
+            {
+                return;
+            }
+
+            ApplyClamped(new Vector2(window.resolvedStyle.left, window.resolvedStyle.top));
+
+            // A window resized to fill a large screen would otherwise stay that size on a smaller
+            // one and run off the edge.
+            if (grip != null && !resizing)
+            {
+                ApplySize(new Vector2(window.resolvedStyle.width, window.resolvedStyle.height));
+            }
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -132,9 +340,19 @@ namespace Shinobytes.UI
             ApplyClamped(new Vector2(window.resolvedStyle.left, window.resolvedStyle.top));
         }
 
+        private void OnPointerEnterWindow(PointerEnterEvent evt)
+        {
+            hovered.Add(window);
+        }
+
+        private void OnPointerLeaveWindow(PointerLeaveEvent evt)
+        {
+            hovered.Remove(window);
+        }
+
         private void OnPointerDown(PointerDownEvent evt)
         {
-            if (evt.button != 0)
+            if (evt.button != 0 || IsOnControl(evt.target as VisualElement))
             {
                 return;
             }
@@ -147,6 +365,26 @@ namespace Shinobytes.UI
             // faster than layout updates drops the drag.
             handle.CapturePointer(evt.pointerId);
             evt.StopPropagation();
+        }
+
+        /// <summary>
+        /// True when a press landed on a control inside the handle, such as a collapse button.
+        /// </summary>
+        /// <remarks>
+        /// Without this, pressing a header button started a drag: the handle captured the pointer on
+        /// the way up the tree, and the button never received the release it needs to count a click.
+        /// </remarks>
+        private bool IsOnControl(VisualElement target)
+        {
+            for (var e = target; e != null && e != handle; e = e.parent)
+            {
+                if (e is Button || e is Toggle || e is TextField)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void OnPointerMove(PointerMoveEvent evt)
@@ -190,19 +428,23 @@ namespace Shinobytes.UI
             }
 
             var bounds = container.contentRect;
-            var size = window.contentRect;
+            var size = window.layout.size;
 
             // Before the first layout these are NaN or zero. Writing then would pin the window to
             // the top left corner and look like the saved position had been lost.
-            if (float.IsNaN(bounds.width) || float.IsNaN(size.width) || bounds.width <= 0)
+            if (float.IsNaN(bounds.width) || float.IsNaN(size.x) || bounds.width <= 0)
             {
                 return;
             }
 
-            var maxX = Mathf.Max(0f, bounds.width - MinVisible);
-            var maxY = Mathf.Max(0f, bounds.height - MinVisible);
-            var minX = Mathf.Min(0f, MinVisible - size.width);
-            const float minY = 0f; // The title bar must stay reachable, so never above the top edge.
+            // The whole window stays on screen. An earlier version let it hang off the left, right
+            // and bottom edges as long as a strip stayed visible, which read as a bug rather than a
+            // feature. When the window is larger than the container, it pins to the top left so the
+            // title bar is still reachable.
+            var maxX = Mathf.Max(0f, bounds.width - size.x);
+            var maxY = Mathf.Max(0f, bounds.height - size.y);
+            const float minX = 0f;
+            const float minY = 0f;
 
             var x = Mathf.Clamp(position.x, minX, maxX);
             var y = Mathf.Clamp(position.y, minY, maxY);
@@ -213,6 +455,14 @@ namespace Shinobytes.UI
 
         private void Restore()
         {
+            if (grip != null && PlayerPrefs.HasKey(Key("w")))
+            {
+                window.style.width = new Length(Mathf.Max(minSize.x, PlayerPrefs.GetFloat(Key("w"))), LengthUnit.Pixel);
+            }
+
+            // Applies the saved height too, unless the window was left collapsed.
+            ApplyCollapsed(PlayerPrefs.GetInt(Key("c"), 0) == 1);
+
             var kx = KeyPrefix + id + "_x";
             var ky = KeyPrefix + id + "_y";
 
@@ -235,8 +485,8 @@ namespace Shinobytes.UI
         }
 
         /// <summary>
-        /// Returns every window to the position its stylesheet gives it and forgets the saved
-        /// coordinates. This is what the settings menu calls.
+        /// Returns every window to the position and size its stylesheet gives it, expands any that
+        /// were collapsed, and forgets the saved values. This is what the settings menu calls.
         /// </summary>
         public static void ResetAllPositions()
         {
@@ -253,6 +503,9 @@ namespace Shinobytes.UI
 
                     PlayerPrefs.DeleteKey(KeyPrefix + saved[i] + "_x");
                     PlayerPrefs.DeleteKey(KeyPrefix + saved[i] + "_y");
+                    PlayerPrefs.DeleteKey(KeyPrefix + saved[i] + "_w");
+                    PlayerPrefs.DeleteKey(KeyPrefix + saved[i] + "_h");
+                    PlayerPrefs.DeleteKey(KeyPrefix + saved[i] + "_c");
                 }
             }
 
@@ -265,6 +518,8 @@ namespace Shinobytes.UI
                 var w = live[i];
                 w.window.style.left = StyleKeyword.Null;
                 w.window.style.top = StyleKeyword.Null;
+                w.window.style.width = StyleKeyword.Null;
+                w.ApplyCollapsed(false);
                 w.ApplyClamped(new Vector2(w.window.resolvedStyle.left, w.window.resolvedStyle.top));
             }
         }

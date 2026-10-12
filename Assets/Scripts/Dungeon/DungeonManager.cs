@@ -877,6 +877,9 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             RequiredCode = null;
 
+            // Frozen rather than cleared, so the meters can show the result after the run.
+            CombatMeter.Dungeon.End();
+
             if (!this.gameManager.Tavern.IsActivated)
             {
                 gameManager.Camera.ReleaseFreeCamera();
@@ -998,6 +1001,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             }
             startedTime = DateTime.UtcNow;
             state = DungeonManagerState.Started;
+            CombatMeter.Dungeon.Begin();
             currentDungeon.Enter();
         }
 

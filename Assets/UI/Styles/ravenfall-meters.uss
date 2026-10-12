@@ -1,0 +1,346 @@
+/*
+  Dungeon meters window. Laid out after docs/mockups/dungeon-meters.webp.
+
+  Builds on ravenfall-hud.uss for window chrome, fonts, the label reset, and the player list's
+  scrollbar styling (the list carries rf-playerlist for that). Label rules use two classes so they
+  outrank the reset there.
+*/
+
+/* ---- Fonts ---- */
+
+.rf-meters .rf-meters__room,
+.rf-meters .rf-meters__timer,
+.rf-meters .rf-meters__tab,
+.rf-meters .rf-meter-row__name,
+.rf-meters .rf-meter-row__rank,
+.rf-meters .rf-meters__total-caption,
+.rf-meters .rf-meters__col {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+.rf-meters .rf-meter-row__total,
+.rf-meters .rf-meters__total,
+.rf-meters .rf-meters__total-rate {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+}
+
+/* ---- Window ---- */
+
+/* Lower left, beside the player list rather than on top of it. Anchored by top, not bottom:
+   with both set, collapsing to an auto height stretched the window between the two edges
+   instead of folding it to its header. */
+#meters-window {
+    left: 520px;
+    top: 52%;
+    width: 600px;
+    height: 460px;
+}
+
+.rf-meters__body {
+    flex-direction: column;
+}
+
+.rf-meters__spacer {
+    flex-grow: 1;
+}
+
+.rf-meters .rf-meters__close {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+}
+
+.rf-meters .rf-meters__close:hover {
+    color: var(--rf-text);
+}
+
+.rf-meters__linger {
+    height: 3px;
+    flex-shrink: 0;
+    background-color: var(--rf-bar-track);
+    display: none;
+}
+
+.rf-meters__linger-fill {
+    height: 100%;
+    width: 100%;
+    background-color: var(--rf-accent-dim);
+    transition-property: width;
+    transition-duration: 0.5s;
+    transition-timing-function: linear;
+}
+
+.rf-window--collapsed .rf-meters__linger {
+    display: none;
+}
+
+.rf-meters__summary {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    height: 48px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+}
+
+.rf-meters .rf-meters__room {
+    font-size: 22px;
+    color: var(--rf-accent);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-meters .rf-meters__timer {
+    font-size: 22px;
+    color: var(--rf-accent);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+/* ---- Tabs ---- */
+
+.rf-meters__tabs {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-left: var(--rf-space-2);
+    margin-right: var(--rf-space-2);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-meters .rf-meters__tab {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 38px;
+    margin-left: 0;
+    margin-right: 2px;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    background-color: var(--rf-row-alt);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    cursor: link;
+}
+
+.rf-meters .rf-meters__tab:hover {
+    color: var(--rf-text);
+    background-color: var(--rf-row-hover);
+}
+
+.rf-meters .rf-meters__tab--active {
+    color: var(--rf-text);
+    background-color: var(--rf-accent-wash);
+    border-bottom-color: var(--rf-accent);
+}
+
+/* ---- Column headings ---- */
+
+/* Same structure and padding as a row (3px edge plus 8px padding on the left), so every heading
+   sits over its column at any window width. */
+.rf-meters__columns {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    height: 30px;
+    padding-left: 11px;
+    padding-right: var(--rf-space-4);
+}
+
+.rf-meters__col-lead {
+    width: 64px;
+    flex-shrink: 0;
+}
+
+.rf-meters .rf-meters__col {
+    font-size: 12px;
+    color: var(--rf-text-dim);
+    letter-spacing: 1px;
+}
+
+/* When the window is resized, the extra width is shared: the player column takes three parts and
+   each number column one, so the numbers get room too instead of only the bar growing. */
+.rf-meters .rf-meters__col--player {
+    flex-grow: 3;
+    flex-basis: 0;
+    min-width: 0;
+    padding-right: var(--rf-space-3);
+}
+
+.rf-meters .rf-meters__col--num {
+    flex-grow: 1;
+    flex-basis: 84px;
+    -unity-text-align: middle-right;
+}
+
+.rf-meters .rf-meters__col--pct {
+    flex-grow: 1;
+    flex-basis: 76px;
+    -unity-text-align: middle-right;
+}
+
+/* ---- Rows ---- */
+
+.rf-meters__list {
+    flex-grow: 1;
+}
+
+.rf-meter-row {
+    flex-direction: row;
+    align-items: center;
+    height: 48px;
+    padding-left: var(--rf-space-2);
+    padding-right: var(--rf-space-4);
+    border-left-width: 3px;
+    border-left-color: rgba(0, 0, 0, 0);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-meters__list .rf-meter-row.unity-collection-view__item:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-meters__list .rf-meter-row.unity-collection-view__item--selected,
+.rf-meters__list .rf-meter-row.unity-collection-view__item:checked {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* The top of the chart, as in the mockup. */
+.rf-meters__list .rf-meter-row.rf-meter-row--first {
+    background-color: var(--rf-highlight-wash);
+    border-left-color: var(--rf-accent);
+}
+
+.rf-meters .rf-meter-row__rank {
+    width: 28px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-center;
+}
+
+.rf-meters .rf-meter-row__icon {
+    width: 28px;
+    font-size: 17px;
+    margin-right: var(--rf-space-2);
+}
+
+.rf-meter-row__main {
+    flex-grow: 3;
+    flex-basis: 0;
+    min-width: 0;
+    overflow: hidden;
+    padding-right: var(--rf-space-3);
+}
+
+.rf-meters .rf-meter-row__name {
+    font-size: 16px;
+    color: var(--rf-text);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    text-shadow: 1px 1px 1px var(--rf-text-shadow-strong);
+}
+
+.rf-meter-row__bar {
+    height: 7px;
+    margin-top: 4px;
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    overflow: hidden;
+}
+
+.rf-meter-row__fill {
+    height: 100%;
+    width: 0;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    transition-property: width;
+    transition-duration: 0.4s;
+    transition-timing-function: ease-out;
+}
+
+/* Bar and icon colours by combat style, matching the mockup. */
+.rf-meter-row--melee .rf-meter-row__fill { background-color: rgb(214, 70, 70); }
+.rf-meter-row--ranged .rf-meter-row__fill { background-color: rgb(96, 186, 74); }
+.rf-meter-row--magic .rf-meter-row__fill { background-color: rgb(150, 90, 225); }
+.rf-meter-row--healing .rf-meter-row__fill { background-color: rgb(76, 195, 160); }
+
+.rf-meters .rf-meter-row--melee .rf-meter-row__icon { color: rgb(236, 96, 90); }
+.rf-meters .rf-meter-row--ranged .rf-meter-row__icon { color: rgb(120, 205, 96); }
+.rf-meters .rf-meter-row--magic .rf-meter-row__icon { color: rgb(180, 130, 245); }
+.rf-meters .rf-meter-row--healing .rf-meter-row__icon { color: rgb(96, 215, 180); }
+
+.rf-meters .rf-meter-row__total {
+    flex-grow: 1;
+    flex-basis: 84px;
+    font-size: 17px;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+}
+
+.rf-meters .rf-meter-row__rate {
+    flex-grow: 1;
+    flex-basis: 84px;
+    font-size: 16px;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+}
+
+.rf-meters .rf-meter-row__pct {
+    flex-grow: 1;
+    flex-basis: 76px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-right;
+}
+
+.rf-meters .rf-meter-row--first .rf-meter-row__total,
+.rf-meters .rf-meter-row--first .rf-meter-row__pct {
+    color: var(--rf-accent);
+}
+
+.rf-meters .rf-meters__empty {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-center;
+    margin-top: var(--rf-space-5);
+}
+
+/* ---- Footer ---- */
+
+.rf-meters__footer {
+    height: 44px;
+}
+
+.rf-meters .rf-meters__total-caption {
+    font-size: 16px;
+    color: var(--rf-text);
+    letter-spacing: 1px;
+    margin-right: var(--rf-space-5);
+}
+
+.rf-meters .rf-meters__total {
+    font-size: 18px;
+    color: var(--rf-accent);
+    margin-right: var(--rf-space-5);
+}
+
+.rf-meters .rf-meters__total-rate {
+    font-size: 18px;
+    color: var(--rf-accent);
+}

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      Dungeon meters: damage done, healing done and damage taken per player, in the style of the
+      meters raiders know from MMO addons. Laid out after docs/mockups/dungeon-meters.webp.
+
+      Opens when a run starts and stays up for a while after it ends, so the result can be read.
+      Draggable, resizable and collapsible like every HUD window. The list is virtualised, because a
+      dungeon can hold far more players than fit on screen.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-meters.uss" />
+
+    <engine:VisualElement name="meters-root" class="rf-window-layer" picking-mode="Ignore">
+
+        <engine:VisualElement name="meters-window" class="rf-window rf-meters" style="display: none;">
+
+            <engine:VisualElement name="meters-header" class="rf-window__header">
+                <engine:Label name="meters-title" text="DUNGEON" class="rf-window__title" />
+                <engine:VisualElement class="rf-window__header-actions">
+                    <engine:Button name="meters-collapse" text="" class="rf-window__button" tooltip="Collapse or expand">
+                        <engine:VisualElement class="rf-chevron" picking-mode="Ignore" />
+                    </engine:Button>
+                    <engine:Button name="meters-close" text="&#xf00d;" class="rf-window__button rf-icon rf-meters__close" tooltip="Hide until the next dungeon" />
+                </engine:VisualElement>
+            </engine:VisualElement>
+
+            <!-- Drains while the result is up after a run, so it is clear the window will close. -->
+            <engine:VisualElement name="meters-linger" class="rf-meters__linger" picking-mode="Ignore">
+                <engine:VisualElement name="meters-linger-fill" class="rf-meters__linger-fill" picking-mode="Ignore" />
+            </engine:VisualElement>
+
+            <engine:VisualElement class="rf-window__body rf-meters__body">
+
+                <!-- Room, enemies left and run time. -->
+                <engine:VisualElement class="rf-meters__summary">
+                    <engine:Label name="meters-room" class="rf-meters__room" />
+                    <engine:VisualElement class="rf-meters__spacer" />
+                    <engine:Label name="meters-timer" class="rf-meters__timer" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-meters__tabs">
+                    <engine:Button name="meters-tab-damage" class="rf-meters__tab" />
+                    <engine:Button name="meters-tab-healing" class="rf-meters__tab" />
+                    <engine:Button name="meters-tab-taken" class="rf-meters__tab" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-meters__columns">
+                    <!-- Stands in for the rank and icon, so the headings line up with the row columns. -->
+                    <engine:VisualElement class="rf-meters__col-lead" />
+                    <engine:Label text="PLAYER" class="rf-meters__col rf-meters__col--player" />
+                    <engine:Label text="TOTAL" class="rf-meters__col rf-meters__col--num" />
+                    <engine:Label name="meters-rate-header" text="DPS" class="rf-meters__col rf-meters__col--num" />
+                    <engine:Label text="%" class="rf-meters__col rf-meters__col--pct" />
+                </engine:VisualElement>
+
+                <engine:ListView name="meters-list"
+                                 class="rf-meters__list rf-playerlist"
+                                 virtualization-method="FixedHeight"
+                                 fixed-item-height="48"
+                                 selection-type="None"
+                                 show-border="false"
+                                 horizontal-scrolling="false" />
+
+                <engine:Label name="meters-empty" class="rf-meters__empty" />
+            </engine:VisualElement>
+
+            <engine:VisualElement class="rf-window__footer rf-meters__footer">
+                <engine:Label name="meters-total-caption" class="rf-meters__total-caption" />
+                <engine:Label name="meters-total" class="rf-meters__total" />
+                <engine:Label name="meters-total-rate" class="rf-meters__total-rate" />
+            </engine:VisualElement>
+
+            <engine:VisualElement name="meters-grip" class="rf-window__grip" tooltip="Drag to resize" />
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</engine:UXML>

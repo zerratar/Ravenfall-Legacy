@@ -5,16 +5,16 @@
     xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <!--
-      The player list, rebuilt as a draggable window around a virtualised ListView.
+      The player list, as a draggable, resizable, collapsible window around a virtualised ListView.
 
-      Why a ListView rather than the old pooled row approach: the previous list instantiated rows up
-      to the visible count and then ran UpdateUI on every one of them every single frame, building
-      strings each time. ListView only creates elements for rows actually on screen and only binds
-      them when they scroll into view, so the cost stops depending on how many players joined. That
-      is the reason streamers were switching this off.
+      Why a ListView rather than the old pooled rows: the previous list ran a full refresh on every
+      pooled row every frame, building strings each time. ListView only creates elements for rows
+      on screen and binds them as they scroll into view, so the cost stops depending on how many
+      players joined. That is the reason streamers were switching it off.
 
-      The header is the drag handle. It is a separate element from the body on purpose: making the
-      whole window draggable would swallow scroll and click events inside the list.
+      The header is the drag handle and is separate from the body on purpose: making the whole
+      window draggable would swallow scroll and click events inside the list. The grip in the
+      bottom right corner resizes; it sits last so it draws above the list.
     -->
 
     <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
@@ -26,17 +26,30 @@
         <engine:VisualElement name="playerlist-window" class="rf-window">
 
             <engine:VisualElement name="playerlist-header" class="rf-window__header">
-                <engine:Label name="playerlist-title" text="Players" class="rf-window__title" />
-                <engine:Label name="playerlist-count" text="0" class="rf-window__badge" />
+                <engine:Label name="playerlist-title" text="PLAYERS" class="rf-window__title" />
+                <engine:VisualElement class="rf-window__header-actions">
+                    <engine:Label name="playerlist-count" text="0" class="rf-window__badge" />
+                    <engine:Button name="playerlist-collapse" text="" class="rf-window__button" tooltip="Collapse or expand">
+                        <engine:VisualElement class="rf-chevron" picking-mode="Ignore" />
+                    </engine:Button>
+                </engine:VisualElement>
             </engine:VisualElement>
 
             <engine:ListView name="playerlist-view"
-                             class="rf-playerlist"
+                             class="rf-playerlist rf-window__body"
                              virtualization-method="FixedHeight"
-                             fixed-item-height="64"
+                             fixed-item-height="96"
                              selection-type="None"
                              show-border="false"
                              horizontal-scrolling="false" />
+
+            <!-- "8 of 11 players": the list scrolls on its own, so this is how a viewer knows how many
+                 more there are beyond what is showing. -->
+            <engine:VisualElement name="playerlist-footer" class="rf-window__footer">
+                <engine:Label name="playerlist-visible" class="rf-window__footer-text" />
+            </engine:VisualElement>
+
+            <engine:VisualElement name="playerlist-grip" class="rf-window__grip" tooltip="Drag to resize" />
 
         </engine:VisualElement>
 

@@ -363,13 +363,16 @@
     border-bottom-width: 3px;
     border-top-color: var(--rf-accent);
     border-bottom-color: var(--rf-accent);
-    padding-left: var(--rf-space-7);
-    padding-right: var(--rf-space-7);
-    padding-top: var(--rf-space-5);
-    padding-bottom: var(--rf-space-5);
-    margin-top: var(--rf-space-7);
+    padding-left: var(--rf-space-6);
+    padding-right: var(--rf-space-6);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-4);
+    /* Below the experience multiplier banner, which is still uGUI and owns the top of the screen.
+       Sized to its text and capped rather than given a minimum: the old min-width of 60% made the
+       card 1150px wide on a 1080p stream and covered the fight. */
+    margin-top: 120px;
     align-items: center;
-    min-width: 60%;
+    max-width: 720px;
 }
 
 /* The headline.
@@ -386,7 +389,7 @@
  * 720p on a phone, so it needs to land in one look.
  */
 .rf-notify__title {
-    font-size: var(--rf-font-display);
+    font-size: 36px;
     color: var(--rf-text);
     -unity-font-style: bold-and-italic;
     -unity-text-align: middle-center;
@@ -403,7 +406,7 @@
 }
 
 .rf-notify__line {
-    font-size: var(--rf-font-title);
+    font-size: 20px;
     color: var(--rf-text);
     -unity-font-style: bold-and-italic;
     -unity-text-align: middle-center;

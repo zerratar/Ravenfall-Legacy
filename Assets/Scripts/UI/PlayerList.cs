@@ -111,6 +111,42 @@ public class PlayerList : MonoBehaviour
     private void Awake()
     {
         isVisible = true;
+
+        if (uiToolkitWindow != null)
+        {
+            SuppressLegacyVisuals();
+        }
+    }
+
+    /// <summary>
+    /// Stops the old list from drawing or catching clicks while the toolkit window is in use.
+    /// </summary>
+    /// <remarks>
+    /// The old list's ScrollRect viewport is an Image at alpha 0 with raycasting on, covering a
+    /// strip down the left of the screen about 560 by 1070. Invisible, but uGUI still lets it catch
+    /// pointer events, and it sits exactly where the toolkit window opens, so it swallowed the
+    /// presses that should have started a drag or a resize.
+    ///
+    /// <para>
+    /// A CanvasGroup on the list root switches the whole subtree off for input and drawing without
+    /// deactivating anything, so this component keeps receiving calls and forwarding them. Nothing
+    /// in the scene is changed; clearing uiToolkitWindow brings the old list back as it was.
+    /// </para>
+    /// </remarks>
+    private void SuppressLegacyVisuals()
+    {
+        var scroll = GetComponentInParent<UnityEngine.UI.ScrollRect>(true);
+        var root = scroll != null ? scroll.gameObject : (listRoot != null ? listRoot : gameObject);
+
+        var group = root.GetComponent<CanvasGroup>();
+        if (group == null)
+        {
+            group = root.AddComponent<CanvasGroup>();
+        }
+
+        group.alpha = 0f;
+        group.blocksRaycasts = false;
+        group.interactable = false;
     }
 
     // Start is called before the first frame update

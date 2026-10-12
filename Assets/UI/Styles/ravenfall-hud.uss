@@ -1,17 +1,85 @@
 /*
-  Ravenfall in game HUD windows.
+  Ravenfall in game HUD.
 
-  Everything here draws from ravenfall-tokens.uss. No raw colours.
+  Matches the reference mockups in docs/mockups. Colours come from ravenfall-tokens.uss.
 
-  This is stream UI, so it has one constraint the website does not: it is watched through Twitch's
-  H.264 encoder at 720p or 1080p on a moving background. Thin strokes, low contrast edges and small
-  text all fall apart under that compression. So borders here are 2px rather than hairlines, text
-  carries a shadow to hold its edge against whatever is behind it, and nothing important is smaller
-  than the caption size.
+  This is stream UI, so it carries one constraint the website does not: it is watched through
+  Twitch's encoder at 720p or 1080p over a moving 3D scene. Thin strokes, low contrast edges and
+  small text fall apart under that compression. So panels are nearly opaque, borders are at least
+  2px where they carry meaning, important text carries an outline as well as a shadow, and nothing
+  that matters is small.
+
+  Type is FOT-NewRodin Pro, the face the rest of the game's UI already uses, so new and old screens
+  read as one game. Weight is chosen by font file rather than faked with bold: M for running text,
+  B for names and labels, EB for the numbers a viewer reads at a glance. Icons are Font Awesome 5
+  Pro Solid, drawn by codepoint.
 */
 
-/* The full screen layer windows are positioned within. Ignores picking so the world underneath
-   stays clickable everywhere the windows are not. */
+/* ==========================================================================
+   Fonts
+   ========================================================================== */
+
+.rf-window-layer,
+.rf-top-layer {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20M.otf?fileID=12800000&guid=13c778c6119df5b498e1a3cabdbc6c0e&type=3#FOT-NewRodin Pro M");
+}
+
+.rf-icon {
+    -unity-font-definition: url("project://database/Assets/Fonts/Font%20Awesome%205%20Pro-Solid-900.otf?fileID=12800000&guid=c6721fa5d6acc8846bd75dd92b372278&type=3#Font Awesome 5 Pro-Solid-900");
+    -unity-font-style: normal;
+    -unity-text-align: middle-center;
+}
+
+/* Bold weight, applied by class so the real B cut is used rather than a synthesised bold. */
+.rf-font-b,
+.rf-window .rf-window__title,
+.rf-window .rf-window__badge,
+.rf-player-row .rf-player-row__name,
+.rf-player-row .rf-player-row__percent,
+.rf-player-row .rf-player-row__rate,
+.rf-top-layer .rf-boost__label,
+.rf-top-layer .rf-boost__time,
+.rf-raid .rf-raid__level,
+.rf-raid .rf-raid__timer,
+.rf-raid .rf-raid__hp,
+.rf-raid .rf-raid__raiders {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+/* Extra bold, for the numbers people glance at. */
+.rf-font-eb,
+.rf-player-row .rf-player-row__level,
+.rf-raid .rf-raid__title,
+.rf-raid .rf-raid__percent,
+.rf-raid .rf-raid__announce {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+}
+
+/* Unity's default theme gives every Label padding and margin. In dense rows that opened gaps,
+   floated captions away from their numbers, and pushed rows past their fixed height, where the
+   ListView item clips them. Zeroed here so the rules below are the only thing deciding spacing.
+   Two classes, so it outranks the theme's one. Rules below that set label spacing also use two
+   classes and win by coming later. */
+.rf-window .unity-label,
+.rf-top-layer .unity-label {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* ==========================================================================
+   Window chrome
+   ========================================================================== */
+
+/* The full screen layer windows live in. Ignores picking so the world underneath stays clickable
+   everywhere the windows are not. */
 .rf-window-layer {
     position: absolute;
     left: 0;
@@ -22,15 +90,17 @@
 
 .rf-window {
     position: absolute;
-    background-color: var(--rf-surface);
+    background-color: var(--rf-surface-glass);
     border-left-color: var(--rf-border);
     border-right-color: var(--rf-border);
-    border-top-color: var(--rf-border);
     border-bottom-color: var(--rf-border);
-    border-left-width: var(--rf-border-width);
-    border-right-width: var(--rf-border-width);
-    border-top-width: var(--rf-border-width);
-    border-bottom-width: var(--rf-border-width);
+    /* The gold top edge from the mockups. It is the one ornament on the window, and it marks the
+       window as part of the game's HUD rather than a generic panel. */
+    border-top-color: var(--rf-accent);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 3px;
+    border-bottom-width: 1px;
     border-top-left-radius: var(--rf-radius-lg);
     border-top-right-radius: var(--rf-radius-lg);
     border-bottom-left-radius: var(--rf-radius-lg);
@@ -38,158 +108,365 @@
     overflow: hidden;
 }
 
-/* ---- Header, which is also the drag handle -------------------------------- */
-
 .rf-window__header {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding-left: var(--rf-space-3);
-    padding-right: var(--rf-space-3);
-    padding-top: var(--rf-space-2);
-    padding-bottom: var(--rf-space-2);
+    flex-shrink: 0;
+    height: 44px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-2);
     background-color: var(--rf-surface-raised);
-    border-bottom-color: var(--rf-border);
-    border-bottom-width: var(--rf-border-width);
+    border-bottom-color: var(--rf-divider);
+    border-bottom-width: 1px;
     /* Signals the whole strip is grabbable. */
     cursor: pan;
 }
 
-.rf-window__title {
-    font-size: var(--rf-font-caption);
-    color: var(--rf-text-dim);
-    -unity-font-style: bold;
-    letter-spacing: 1px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+.rf-window .rf-window__title {
+    font-size: 17px;
+    color: var(--rf-text);
+    letter-spacing: 1.5px;
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
 }
 
-.rf-window__badge {
-    font-size: var(--rf-font-caption);
+.rf-window__header-actions {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-window .rf-window__badge {
+    font-size: 15px;
     color: var(--rf-text-on-accent);
     background-color: var(--rf-accent);
+    min-width: 30px;
+    height: 24px;
     padding-left: var(--rf-space-2);
     padding-right: var(--rf-space-2);
-    border-top-left-radius: var(--rf-radius);
-    border-top-right-radius: var(--rf-radius);
-    border-bottom-left-radius: var(--rf-radius);
-    border-bottom-right-radius: var(--rf-radius);
-    -unity-font-style: bold;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
     -unity-text-align: middle-center;
-    min-width: 28px;
 }
 
-/* ---- The list ------------------------------------------------------------- */
-
-.rf-playerlist {
-    flex-grow: 1;
+/* Header buttons. Unity's Button arrives with editor styling: a grey fill, a border, padding and
+   margin. All of it is cleared so the button is just its icon until hovered. Every state sets both
+   background and icon colour, since changing only one is how hover states end up unreadable. */
+.rf-window__button {
+    width: 30px;
+    height: 30px;
+    margin-left: var(--rf-space-2);
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
     background-color: rgba(0, 0, 0, 0);
-}
-
-/* Unity's own scroller parts, restyled so the list does not arrive wearing the
-   default editor grey. */
-.rf-playerlist .unity-scroller--vertical {
-    width: 8px;
-    background-color: rgba(0, 0, 0, 0);
-}
-
-.rf-playerlist .unity-base-slider__dragger {
-    background-color: var(--rf-border-strong);
-    border-top-left-radius: var(--rf-radius);
-    border-top-right-radius: var(--rf-radius);
-    border-bottom-left-radius: var(--rf-radius);
-    border-bottom-right-radius: var(--rf-radius);
     border-left-width: 0;
     border-right-width: 0;
     border-top-width: 0;
     border-bottom-width: 0;
-    width: 6px;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    align-items: center;
+    justify-content: center;
+    cursor: link;
+}
+
+.rf-window__button:hover {
+    background-color: var(--rf-accent-wash);
+}
+
+.rf-window__button:active {
+    background-color: var(--rf-accent-dim);
+}
+
+/* A chevron drawn from two borders and a rotation, so it needs no glyph or image. Points up while
+   expanded and turns to point down when collapsed. */
+.rf-chevron {
+    width: 9px;
+    height: 9px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-right-color: var(--rf-text);
+    border-bottom-color: var(--rf-text);
+    rotate: -135deg;
+    translate: 0 2px;
+    transition-property: rotate, translate, border-color;
+    transition-duration: 0.2s, 0.2s, 0.12s;
+    transition-timing-function: ease-out, ease-out, ease-out;
+}
+
+.rf-window__button:hover .rf-chevron {
+    border-right-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-window--collapsed .rf-chevron {
+    rotate: 45deg;
+    translate: 0 -2px;
+}
+
+.rf-window__body {
+    flex-grow: 1;
+}
+
+.rf-window__footer {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    height: 34px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-6);
+    border-top-color: var(--rf-divider);
+    border-top-width: 1px;
+}
+
+.rf-window .rf-window__footer-text {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+.rf-window--collapsed .rf-window__body,
+.rf-window--collapsed .rf-window__footer,
+.rf-window--collapsed .rf-window__grip {
+    display: none;
+}
+
+.rf-window--collapsed .rf-window__header {
+    border-bottom-width: 0;
+}
+
+/* Resize grip: an L drawn from two borders in the bottom right corner. */
+.rf-window__grip {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    width: 14px;
+    height: 14px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-right-color: var(--rf-text-faint);
+    border-bottom-color: var(--rf-text-faint);
+    border-bottom-right-radius: 2px;
+    cursor: resize-up-left;
+}
+
+.rf-window__grip:hover {
+    border-right-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+/* ==========================================================================
+   Player list
+   ========================================================================== */
+
+.rf-playerlist {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* ListView prints "List is empty" with no rows, which would end up on stream. The badge already
+   says zero. */
+.rf-playerlist .unity-list-view__empty-label {
+    display: none;
+}
+
+.rf-playerlist .unity-scroller--vertical {
+    width: 8px;
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+}
+
+.rf-playerlist .unity-scroller--vertical .unity-base-slider__tracker {
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.rf-playerlist .unity-base-slider__dragger {
+    background-color: var(--rf-border-strong);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    width: 5px;
+    margin-left: 1px;
 }
 
 .rf-playerlist .unity-scroller--vertical .unity-base-slider__dragger:hover {
     background-color: var(--rf-accent-dim);
 }
 
-/* The arrow buttons on a Unity scroller look like editor chrome and are useless
-   on a stream overlay. */
 .rf-playerlist .unity-scroller__low-button,
 .rf-playerlist .unity-scroller__high-button {
     display: none;
 }
 
-/* ---- A row ---------------------------------------------------------------- */
+/* ---- Row ------------------------------------------------------------------ */
 
 .rf-player-row {
     flex-direction: row;
     align-items: center;
-    height: 64px;
-    padding-left: var(--rf-space-3);
-    padding-right: var(--rf-space-3);
-    border-bottom-color: var(--rf-border);
+    height: 96px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    border-bottom-color: var(--rf-divider);
     border-bottom-width: 1px;
+    border-left-width: 3px;
+    border-left-color: rgba(0, 0, 0, 0);
+    opacity: 1;
+    translate: 0 0;
+    transition-property: opacity, translate, background-color;
+    transition-duration: 0.18s, 0.18s, 0.12s;
+    transition-timing-function: ease-out, ease-out, ease-out;
 }
 
-/* Alternating tint. Under stream compression a plain list of rows turns into a
-   grey blur; a faint stripe keeps the rows countable. */
 .rf-player-row--alt {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--rf-row-alt);
+}
+
+/* Overrides Unity's default ListView hover, a flat light grey wash that killed the contrast on the
+   name and the gold level. More specific than the theme's own rule, so it wins regardless of which
+   stylesheet the panel resolves first. */
+.rf-playerlist .rf-player-row.unity-collection-view__item:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-playerlist .rf-player-row.unity-collection-view__item--selected,
+.rf-playerlist .rf-player-row.unity-collection-view__item:checked {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/* The player the camera is following: a gold edge and a warm wash. */
+.rf-playerlist .rf-player-row.rf-player-row--highlight {
+    background-color: var(--rf-highlight-wash);
+    border-left-color: var(--rf-accent);
+}
+
+/* Entry animation, short because this is peripheral UI on a stream. The class is added on bind and
+   removed a frame later, so the transition above plays. */
+.rf-player-row--entering {
+    opacity: 0;
+    translate: 14px 0;
 }
 
 .rf-player-row__main {
     flex-grow: 1;
-    /* Without this a long player name pushes the level and rate off the row. */
+    /* Without this a long name pushes the level column off the row. */
     min-width: 0;
     overflow: hidden;
 }
 
-.rf-player-row__name {
-    font-size: var(--rf-font-body);
-    color: var(--rf-text);
-    -unity-font-style: bold;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* The streamer's own row, and anyone in their clan later. Accent only, no extra
-   weight, so it reads as "notable" rather than "alarming". */
-.rf-player-row--highlight .rf-player-row__name {
-    color: var(--rf-accent-bright);
-}
-
-.rf-player-row__sub {
+.rf-player-row__line {
     flex-direction: row;
     align-items: center;
-    margin-top: 2px;
 }
 
-.rf-player-row__skill {
-    font-size: var(--rf-font-caption);
+.rf-player-row .rf-player-row__name {
+    font-size: 22px;
+    color: var(--rf-text);
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* An outline as well as a shadow. It keeps a hard edge on every glyph whatever the scene behind
+       is doing, and survives the stream encoder far better than a blur alone. */
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 1px 2px 2px var(--rf-text-shadow-strong);
+}
+
+/* Neutral rather than gold: rested is information, not an achievement. */
+.rf-player-row .rf-player-row__rested {
+    font-size: 13px;
     color: var(--rf-text-dim);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+    background-color: var(--rf-chip);
+    margin-left: var(--rf-space-3);
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    flex-shrink: 0;
 }
 
-.rf-player-row__rate {
-    font-size: var(--rf-font-caption);
+.rf-player-row__meta {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 6px;
+}
+
+/* Skill name in regular weight; its level is set in bold by rich text inside the label. */
+.rf-player-row .rf-player-row__skill {
+    font-size: 17px;
+    color: var(--rf-text);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-player-row .rf-player-row__percent {
+    font-size: 17px;
+    color: var(--rf-accent-bright);
+    margin-left: var(--rf-space-4);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+/* Pushes the rate to the right edge of the text column so rates line up row to row. */
+.rf-player-row__spacer {
+    flex-grow: 1;
+}
+
+.rf-player-row .rf-player-row__rate {
+    font-size: 16px;
     color: var(--rf-success);
-    margin-left: var(--rf-space-2);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
 }
 
-.rf-player-row__level {
-    font-size: var(--rf-font-title);
-    color: var(--rf-accent);
-    -unity-font-style: bold;
-    -unity-text-align: middle-right;
+/* ---- Level column ------------------------------------------------------------ */
+
+/* Sized to its number rather than a fixed width. A fixed 82px let a four digit level spill left
+   over the rate and the bars; growing with the number makes the text column give way instead. */
+.rf-player-row__level-col {
     min-width: 56px;
-    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.95);
+    flex-shrink: 0;
+    align-items: flex-end;
+    justify-content: center;
+    margin-left: var(--rf-space-3);
 }
 
-/* ---- Progress bar --------------------------------------------------------- */
+.rf-player-row .rf-player-row__level-caption {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    letter-spacing: 1px;
+}
+
+.rf-player-row .rf-player-row__level {
+    font-size: 30px;
+    color: var(--rf-accent);
+    -unity-text-align: middle-right;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 1px 2px 3px var(--rf-text-shadow-strong);
+}
+
+/* ---- Bars ------------------------------------------------------------------------- */
 
 .rf-bar {
-    height: 5px;
-    margin-top: 4px;
-    background-color: rgba(0, 0, 0, 0.55);
+    height: 6px;
+    background-color: var(--rf-bar-track);
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
     border-bottom-left-radius: 3px;
@@ -197,48 +474,442 @@
     overflow: hidden;
 }
 
+.rf-bar--health {
+    margin-top: 8px;
+}
+
+.rf-bar--exp {
+    margin-top: 5px;
+}
+
 .rf-bar__fill {
     height: 100%;
-    background-color: var(--rf-accent);
-    /* Width is set from code. Transitioned so experience ticks glide instead of
-       snapping, which is most of what made the old list feel dead. */
-    transition-property: width;
-    transition-duration: 0.25s;
-    transition-timing-function: ease-out;
-}
-
-.rf-bar--health .rf-bar__fill {
-    background-color: var(--rf-danger);
-}
-
-/* ---- Row entry animation --------------------------------------------------
-   A row fades and slides in when it is bound. Deliberately short: this is
-   peripheral UI on a stream and long animations read as lag. */
-
-.rf-player-row {
-    opacity: 1;
-    transition-property: opacity, translate;
-    transition-duration: 0.18s, 0.18s;
+    width: 0;
+    /* Width is set from code. Transitioned so ticks glide instead of snapping. */
+    transition-property: width, background-color;
+    transition-duration: 0.3s, 0.2s;
     transition-timing-function: ease-out, ease-out;
 }
 
-.rf-player-row--entering {
-    opacity: 0;
-    translate: 12px 0;
+.rf-bar--exp .rf-bar__fill {
+    background-color: var(--rf-accent);
 }
 
-/* ---- Player list window defaults ------------------------------------------
-   An absolutely positioned element with no size collapses: the header would
-   measure its own text and the ListView, which only has flex-grow, would resolve
-   to zero height. So the window needs real dimensions rather than inheriting any.
+.rf-bar--health .rf-bar__fill {
+    background-color: var(--rf-health);
+}
 
-   The position here is only a starting point. DraggableWindow overwrites left and
-   top from saved preferences on load, and "reset positions" in the settings menu
-   clears those inline values so these apply again. */
+/* Below a third, the bar brightens so a dying player stands out in a long list. */
+.rf-bar--low .rf-bar__fill {
+    background-color: var(--rf-health-low);
+}
 
+/* Starting position and size only. DraggableWindow overwrites both from saved preferences, and
+   "reset positions" in the settings menu brings these back. */
 #playerlist-window {
     left: 24px;
     top: 96px;
-    width: 340px;
-    height: 420px;
+    width: 480px;
+    height: 860px;
+}
+
+/* ==========================================================================
+   Top centre status column
+   ==========================================================================
+   The XP boost pill, then any active event underneath. One flex column, so they stack instead of
+   landing on top of each other. */
+
+.rf-top-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+}
+
+.rf-top-column {
+    position: absolute;
+    top: 14px;
+    align-items: center;
+}
+
+/* ---- XP boost pill -------------------------------------------------------------- */
+
+.rf-boost {
+    flex-direction: row;
+    align-items: center;
+    height: 46px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    background-color: var(--rf-surface-glass);
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.rf-top-layer .rf-boost__icon {
+    font-size: 20px;
+    color: var(--rf-accent);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-top-layer .rf-boost__label {
+    font-size: 19px;
+    color: var(--rf-text);
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-top-layer .rf-boost__sep {
+    font-size: 19px;
+    color: var(--rf-text-dim);
+    margin-left: var(--rf-space-2);
+    margin-right: var(--rf-space-2);
+}
+
+.rf-top-layer .rf-boost__time {
+    font-size: 19px;
+    color: var(--rf-accent-bright);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-boost__bar {
+    width: 96px;
+    height: 10px;
+    margin-left: var(--rf-space-4);
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    overflow: hidden;
+}
+
+.rf-boost__fill {
+    height: 100%;
+    width: 100%;
+    background-color: var(--rf-accent);
+    transition-property: width;
+    transition-duration: 0.5s;
+}
+
+/* The reason for the boost: a viewer to thank, or a message sent along with it. On its own chip
+   rather than floating on the world: an outline on thin text read as hollow letters, while a dark
+   backing gives plain text the contrast it needs over grass, snow or water alike. */
+.rf-top-layer .rf-boost__thanks {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 16px;
+    color: var(--rf-text);
+    background-color: var(--rf-surface-glass);
+    margin-top: 6px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    max-width: 720px;
+}
+
+/* ---- Raid panel ---------------------------------------------------------------------
+   Everything a raid has to say, in one panel under the boost pill: boss level, time left, health,
+   raiders, and how to join. It replaces a full width card, a timer floating over the fight and a
+   separate health bar, because viewers are here to watch the fight. */
+
+.rf-raid {
+    width: 780px;
+    margin-top: var(--rf-space-3);
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-3);
+    background-color: var(--rf-surface-glass);
+    border-top-color: var(--rf-accent);
+    border-top-width: 3px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    opacity: 1;
+    translate: 0 0;
+    transition-property: opacity, translate;
+    transition-duration: 0.25s, 0.25s;
+    transition-timing-function: ease-out, ease-out;
+}
+
+/* Drops in from slightly above. Added on show, removed a frame later. */
+.rf-raid--entering {
+    opacity: 0;
+    translate: 0 -16px;
+}
+
+/* The announcement: open for a few seconds when the boss appears, then folded away. Height and
+   opacity both transition so it collapses smoothly rather than the panel jumping up. */
+.rf-raid .rf-raid__announce {
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    font-size: 30px;
+    color: var(--rf-accent-bright);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 2px 2px 4px var(--rf-text-shadow-strong);
+    transition-property: height, opacity, margin-bottom;
+    transition-duration: 0.35s, 0.3s, 0.35s;
+    transition-timing-function: ease-out, ease-out, ease-out;
+}
+
+.rf-raid--announce .rf-raid__announce {
+    height: 44px;
+    opacity: 1;
+    margin-bottom: var(--rf-space-1);
+}
+
+.rf-raid__top {
+    flex-direction: row;
+    align-items: center;
+    height: 42px;
+}
+
+.rf-raid .rf-raid__title {
+    font-size: 28px;
+    color: var(--rf-text);
+    letter-spacing: 1px;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 1px 2px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-raid .rf-raid__level {
+    font-size: 24px;
+    /* The "LV" prefix; RaidHudView colours the number itself gold through rich text. */
+    color: var(--rf-text);
+    margin-left: var(--rf-space-5);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-raid__spacer {
+    flex-grow: 1;
+}
+
+/* Glacier blue: live and world state, as in the palette. */
+.rf-live-dot {
+    width: 12px;
+    height: 12px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: var(--rf-live);
+    margin-right: var(--rf-space-4);
+}
+
+.rf-top-layer .rf-raid__clock {
+    font-size: 20px;
+    color: var(--rf-text);
+    margin-right: var(--rf-space-2);
+}
+
+.rf-raid .rf-raid__timer {
+    font-size: 24px;
+    color: var(--rf-text);
+    min-width: 64px;
+    -unity-text-align: middle-right;
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+    transition-property: color;
+    transition-duration: 0.3s;
+}
+
+/* Under a minute left. */
+.rf-raid .rf-raid__timer--low {
+    color: var(--rf-health-low);
+}
+
+/* Two fills. The ghost trails the real health with a slower, delayed transition, so a heavy hit
+   leaves a lighter band that drains a moment later, which is how players read "that one landed". */
+.rf-raid__bar {
+    height: 34px;
+    margin-top: var(--rf-space-1);
+    background-color: var(--rf-bar-track);
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    overflow: hidden;
+}
+
+.rf-raid__ghost,
+.rf-raid__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+}
+
+.rf-raid__ghost {
+    background-color: var(--rf-health-ghost);
+    transition-property: width;
+    transition-duration: 0.6s;
+    transition-delay: 0.35s;
+    transition-timing-function: ease-in-out;
+}
+
+/* A lighter top edge on the fill reads as a highlight, so the bar looks lit rather than flat. */
+.rf-raid__fill {
+    background-color: var(--rf-health);
+    border-top-width: 2px;
+    border-top-color: var(--rf-health-shine);
+    transition-property: width;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+}
+
+.rf-raid .rf-raid__hp {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    font-size: 20px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+/* Bottom line: raiders left, health percentage centred, join instruction right. The two sides share
+   the spare width equally so the percentage stays centred whether or not the join pill shows. */
+.rf-raid__bottom {
+    flex-direction: row;
+    align-items: center;
+    height: 46px;
+    margin-top: var(--rf-space-2);
+}
+
+.rf-raid__side {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-raid__side--end {
+    justify-content: flex-end;
+}
+
+.rf-top-layer .rf-raid__people {
+    font-size: 22px;
+    color: var(--rf-live);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-raid .rf-raid__raiders {
+    font-size: 21px;
+    color: var(--rf-text);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-raid .rf-raid__percent {
+    font-size: 32px;
+    color: var(--rf-accent);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 1px 2px 3px var(--rf-text-shadow-strong);
+}
+
+.rf-raid__join-pill {
+    flex-direction: row;
+    align-items: center;
+    height: 40px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-top-layer .rf-raid__chat {
+    font-size: 18px;
+    color: var(--rf-text);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-raid .rf-raid__join {
+    font-size: 19px;
+    color: var(--rf-text);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+/* ---- Dungeon panel ------------------------------------------------------------------
+   The raid panel's layout with a purple edge and dot, so a viewer can tell at a glance which
+   kind of event is running. The health bar only appears in the boss room; before that the bar
+   would have nothing to say. */
+
+.rf-raid--dungeon {
+    border-top-color: var(--rf-dungeon);
+}
+
+.rf-raid--dungeon .rf-live-dot {
+    background-color: var(--rf-dungeon);
+}
+
+.rf-raid--dungeon .rf-raid__percent {
+    color: var(--rf-dungeon-bright);
+}
+
+.rf-raid--no-bar .rf-raid__bar {
+    display: none;
+}
+
+.rf-dungeon__enemies {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-top-layer .rf-dungeon__skull {
+    font-size: 20px;
+    color: var(--rf-health-low);
+    margin-right: var(--rf-space-2);
 }

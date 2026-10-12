@@ -1,0 +1,858 @@
+/*
+  Player details window and the shared HUD tooltip. Laid out after
+  docs/mockups/character-details.webp.
+
+  Builds on ravenfall-hud.uss for window chrome, fonts and the label reset. Rules that set label
+  spacing or fonts use two classes, so they outrank the reset there (.rf-window .unity-label).
+*/
+
+/* ==========================================================================
+   Fonts
+   ========================================================================== */
+
+.rf-details .rf-details__name,
+.rf-details .rf-details__coin-amount,
+.rf-details .rf-badge,
+.rf-details .rf-details__rested,
+.rf-details .rf-training__title,
+.rf-details .rf-training__percent,
+.rf-details .rf-training__next,
+.rf-details .rf-training__rate,
+.rf-details .rf-skill__name,
+.rf-details .rf-gear-header__title,
+.rf-details .rf-scroll-chip__count,
+.rf-details .rf-stat__caption,
+.rf-tooltip .rf-tooltip__title,
+.rf-tooltip .rf-tooltip__value {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+.rf-details .rf-details__level,
+.rf-details .rf-skill__level,
+.rf-details .rf-stat__power {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+}
+
+.rf-tooltip {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20M.otf?fileID=12800000&guid=13c778c6119df5b498e1a3cabdbc6c0e&type=3#FOT-NewRodin Pro M");
+}
+
+.rf-tooltip .unity-label {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* ==========================================================================
+   Window
+   ========================================================================== */
+
+/* Top right by default, where the old panel sat. DraggableWindow takes over once moved. */
+/* Below the settings cog in the top right corner, which otherwise covers the header buttons. */
+#details-window {
+    right: 24px;
+    top: 64px;
+    width: 640px;
+}
+
+.rf-details__spacer {
+    flex-grow: 1;
+}
+
+/* ---- Header ---- */
+
+.rf-details__header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 76px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-2);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: var(--rf-surface-raised);
+    cursor: pan;
+}
+
+.rf-details__identity {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.rf-details .rf-details__name {
+    font-size: 28px;
+    color: var(--rf-text);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.rf-details .rf-details__clan {
+    font-size: 17px;
+    color: var(--rf-text-dim);
+    margin-top: 2px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.rf-details__summary {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: var(--rf-space-3);
+}
+
+.rf-details__coins {
+    flex-direction: row;
+    align-items: center;
+    margin-right: var(--rf-space-5);
+}
+
+.rf-details__coin-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-details .rf-details__coin-amount {
+    font-size: 20px;
+    color: var(--rf-text);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-details__level-box {
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.rf-details .rf-details__level-caption {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    margin-right: 6px;
+    margin-bottom: 6px;
+}
+
+.rf-details .rf-details__level {
+    font-size: 38px;
+    color: var(--rf-accent);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-details__actions {
+    flex-direction: row;
+    align-items: center;
+    align-self: flex-start;
+    margin-left: var(--rf-space-2);
+}
+
+.rf-details .rf-details__close {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+}
+
+.rf-details .rf-details__close:hover {
+    color: var(--rf-text);
+}
+
+/* ---- Observe timer ---- */
+
+.rf-details__observe {
+    height: 3px;
+    flex-shrink: 0;
+    background-color: var(--rf-bar-track);
+}
+
+.rf-details__observe-fill {
+    height: 100%;
+    width: 100%;
+    background-color: var(--rf-accent-dim);
+    transition-property: width;
+    transition-duration: 0.25s;
+    transition-timing-function: linear;
+}
+
+/* ---- Badges ---- */
+
+.rf-details__body {
+    padding-bottom: var(--rf-space-2);
+}
+
+.rf-details__badges {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-2);
+    min-height: 12px;
+}
+
+.rf-details .rf-badge {
+    font-size: 14px;
+    color: rgb(255, 255, 255);
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.rf-badge--broadcaster { background-color: rgb(196, 52, 52); }
+.rf-badge--moderator { background-color: rgb(70, 92, 196); }
+.rf-badge--subscriber { background-color: rgb(130, 60, 220); }
+.rf-badge--vip { background-color: rgb(200, 40, 160); }
+
+.rf-details .rf-badge--dev {
+    background-color: var(--rf-accent);
+    color: var(--rf-text-on-accent);
+    text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.rf-details .rf-details__rested {
+    font-size: 14px;
+    color: var(--rf-text);
+    background-color: var(--rf-chip);
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Resting in the onsen: the time is going up rather than down. */
+.rf-details .rf-details__rested--gaining {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+}
+
+/* ==========================================================================
+   Training card
+   ========================================================================== */
+
+.rf-training {
+    flex-direction: row;
+    align-items: center;
+    margin-left: var(--rf-space-4);
+    margin-right: var(--rf-space-4);
+    margin-top: var(--rf-space-2);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background-color: var(--rf-accent-wash);
+    border-left-width: 3px;
+    border-left-color: var(--rf-accent);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-training--idle {
+    background-color: var(--rf-chip);
+    border-left-color: var(--rf-text-faint);
+}
+
+.rf-training--warning {
+    background-color: rgba(229, 72, 77, 0.12);
+    border-left-color: var(--rf-danger);
+}
+
+/* Resting in the onsen: glacier blue, the colour of world state rather than progress. */
+.rf-training--resting {
+    background-color: rgba(95, 168, 199, 0.12);
+    border-left-color: var(--rf-live);
+}
+
+.rf-training--resting .rf-training__fill {
+    background-color: var(--rf-live);
+}
+
+.rf-details .rf-training__glyph {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-3);
+    font-size: 26px;
+    color: var(--rf-text-dim);
+    display: none;
+}
+
+.rf-training--resting .rf-training__glyph {
+    color: var(--rf-live);
+}
+
+.rf-training--done {
+    background-color: rgba(76, 195, 138, 0.12);
+    border-left-color: var(--rf-success);
+}
+
+.rf-training__icon {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-3);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-training__main {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-training__line {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-details .rf-training__title {
+    font-size: 18px;
+    color: var(--rf-text);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-details .rf-training__percent {
+    font-size: 18px;
+    color: var(--rf-accent);
+    margin-left: var(--rf-space-2);
+}
+
+.rf-training__bar {
+    height: 10px;
+    margin-top: 6px;
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    overflow: hidden;
+}
+
+.rf-training__fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--rf-accent);
+    transition-property: width;
+    transition-duration: 0.4s;
+    transition-timing-function: ease-out;
+}
+
+.rf-training--done .rf-training__fill {
+    background-color: var(--rf-success);
+}
+
+.rf-details .rf-training__status {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    margin-top: 4px;
+}
+
+.rf-details .rf-training__status--warning { color: rgb(255, 120, 110); }
+.rf-details .rf-training__status--done { color: var(--rf-success); }
+.rf-details .rf-training__status--max { color: var(--rf-accent-bright); }
+
+.rf-training__side {
+    flex-shrink: 0;
+    align-items: flex-end;
+    margin-left: var(--rf-space-4);
+    min-width: 150px;
+}
+
+.rf-details .rf-training__next {
+    font-size: 16px;
+    color: var(--rf-text);
+}
+
+.rf-details .rf-training__rate {
+    font-size: 16px;
+    color: var(--rf-success);
+    margin-top: 2px;
+}
+
+.rf-details .rf-training__hint {
+    font-size: 14px;
+    color: var(--rf-live);
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   Skills
+   ========================================================================== */
+
+.rf-skills {
+    flex-direction: row;
+    padding-left: var(--rf-space-4);
+    padding-right: 10px;
+    padding-top: var(--rf-space-3);
+}
+
+.rf-skills__column {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 6px;
+}
+
+.rf-skill {
+    flex-direction: row;
+    align-items: center;
+    height: 48px;
+    margin-bottom: 6px;
+    padding-left: 6px;
+    padding-right: 8px;
+    background-color: var(--rf-row-alt);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-divider);
+    border-right-color: var(--rf-divider);
+    border-top-color: var(--rf-divider);
+    border-bottom-color: var(--rf-divider);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-skill:hover {
+    background-color: var(--rf-row-hover);
+}
+
+/* The skill being trained right now. */
+.rf-skill--active {
+    background-color: var(--rf-highlight-wash);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-skill--locked {
+    opacity: 0.45;
+}
+
+.rf-skill__icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    margin-right: 6px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-details .rf-skill__lock {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    margin-right: 6px;
+    font-size: 18px;
+    color: var(--rf-text-dim);
+}
+
+.rf-skill__info {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.rf-skill__line {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.rf-details .rf-skill__name {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rf-details .rf-skill__level {
+    font-size: 17px;
+    color: var(--rf-text);
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
+.rf-details .rf-skill__level--max { color: var(--rf-accent-bright); }
+.rf-details .rf-skill__level--boosted { color: var(--rf-success); }
+.rf-details .rf-skill__level--drained { color: rgb(255, 110, 100); }
+
+.rf-skill__bar {
+    flex-grow: 1;
+    height: 4px;
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+    overflow: hidden;
+}
+
+.rf-skill__fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--rf-accent);
+}
+
+/* ==========================================================================
+   Equipment
+   ========================================================================== */
+
+.rf-gear-header {
+    flex-direction: row;
+    align-items: center;
+    height: 44px;
+    margin-top: var(--rf-space-1);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-2);
+    border-top-width: 1px;
+    border-top-color: var(--rf-divider);
+}
+
+.rf-details .rf-gear-header__title {
+    font-size: 16px;
+    color: var(--rf-text);
+    letter-spacing: 1.5px;
+    margin-right: var(--rf-space-4);
+}
+
+.rf-gear-header__scrolls {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-scroll-chip {
+    flex-direction: row;
+    align-items: center;
+    margin-right: var(--rf-space-3);
+}
+
+.rf-scroll-chip__icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 4px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-details .rf-scroll-chip__count {
+    font-size: 15px;
+    color: var(--rf-text);
+}
+
+.rf-details .rf-scroll-chip--empty {
+    opacity: 0.4;
+}
+
+/* The gear section's chevron points down while closed, like a collapsed window's. */
+.rf-details--gear-closed .rf-gear-header .rf-chevron {
+    rotate: 45deg;
+    translate: 0 -2px;
+}
+
+.rf-details--gear-closed .rf-gear {
+    display: none;
+}
+
+.rf-gear {
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-bottom: var(--rf-space-2);
+}
+
+.rf-gear__top {
+    flex-direction: row;
+}
+
+/* The face camera. It renders on a transparent background, so the panel behind it shows through
+   and the character stands in the frame rather than in a box. */
+.rf-preview {
+    flex-grow: 1;
+    height: 312px;
+    margin-right: var(--rf-space-4);
+    background-color: rgba(0, 0, 0, 0.3);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-divider);
+    border-right-color: var(--rf-divider);
+    border-top-color: var(--rf-divider);
+    border-bottom-color: var(--rf-divider);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    overflow: hidden;
+}
+
+/* Larger than the frame and hanging past its bottom edge. The camera frames the whole character
+   with room to spare, which left them small and floating in the middle of the box; growing the
+   image downward scales them up and lowers them together, so the feet sit just above the turn
+   buttons. */
+.rf-preview__image {
+    position: absolute;
+    left: -17.5%;
+    top: 0;
+    right: -17.5%;
+    bottom: -35%;
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.rf-preview__controls {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 8px;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+}
+
+.rf-details .rf-preview__turn {
+    font-size: 18px;
+    color: var(--rf-accent);
+    width: 36px;
+    height: 36px;
+    margin-left: 0;
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+.rf-slots {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 232px;
+    flex-shrink: 0;
+    align-content: flex-start;
+}
+
+.rf-slot {
+    width: 72px;
+    height: 72px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    background-color: rgba(0, 0, 0, 0.35);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+/* Three per row: the last in each row has no right margin, so the grid is exactly 232px wide. */
+.rf-slot--row-end {
+    margin-right: 0;
+}
+
+.rf-slot--equipped {
+    border-left-color: var(--rf-accent-dim);
+    border-right-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent-dim);
+    border-bottom-color: var(--rf-accent-dim);
+}
+
+/* Enchanted gear gets the purple frame from the mockup. */
+.rf-slot--enchanted {
+    border-left-color: rgb(150, 90, 225);
+    border-right-color: rgb(150, 90, 225);
+    border-top-color: rgb(150, 90, 225);
+    border-bottom-color: rgb(150, 90, 225);
+}
+
+.rf-slot:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-slot__image {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    right: 8px;
+    bottom: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* The outline icon shown in an empty slot, so it reads as "nothing here" rather than as an item. */
+.rf-slot__image--placeholder {
+    opacity: 0.22;
+}
+
+/* ---- Combat stats ---- */
+
+.rf-stats {
+    flex-direction: row;
+    margin-top: var(--rf-space-1);
+}
+
+.rf-stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: row;
+    align-items: center;
+    height: 64px;
+    margin-right: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: var(--rf-row-alt);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-divider);
+    border-right-color: var(--rf-divider);
+    border-top-color: var(--rf-divider);
+    border-bottom-color: var(--rf-divider);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-stat--last {
+    margin-right: 0;
+}
+
+/* The style the player is fighting with right now. */
+.rf-stat--active {
+    background-color: var(--rf-highlight-wash);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+/* The styles they are not using: still readable, clearly secondary. */
+.rf-stat--dim {
+    opacity: 0.55;
+}
+
+.rf-stat__icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-stat__text {
+    flex-grow: 1;
+}
+
+.rf-details .rf-stat__caption {
+    font-size: 12px;
+    color: var(--rf-text-dim);
+    letter-spacing: 1px;
+}
+
+.rf-details .rf-stat__power {
+    font-size: 22px;
+    color: var(--rf-text);
+}
+
+.rf-details .rf-stat__power--bonus {
+    color: var(--rf-success);
+}
+
+.rf-details .rf-stat__aim {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+}
+
+/* ==========================================================================
+   Tooltip
+   ========================================================================== */
+
+.rf-tooltip {
+    position: absolute;
+    max-width: 340px;
+    min-width: 180px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background-color: var(--rf-surface-glass);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-top-width: 2px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-color: var(--rf-accent);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-tooltip .rf-tooltip__title {
+    font-size: 16px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-tooltip__rows {
+    margin-top: 6px;
+}
+
+.rf-tooltip__row {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 2px;
+}
+
+.rf-tooltip .rf-tooltip__label {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    margin-right: 16px;
+}
+
+.rf-tooltip .rf-tooltip__value {
+    font-size: 14px;
+    color: var(--rf-text);
+    -unity-text-align: upper-right;
+}
+
+.rf-tooltip .rf-tooltip__value--good { color: var(--rf-success); }
+.rf-tooltip .rf-tooltip__value--bad { color: rgb(255, 110, 100); }
+.rf-tooltip .rf-tooltip__value--gold { color: var(--rf-accent-bright); }
+.rf-tooltip .rf-tooltip__value--magic { color: rgb(190, 140, 255); }
+
+.rf-tooltip .rf-tooltip__note {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    margin-top: 8px;
+    white-space: normal;
+}

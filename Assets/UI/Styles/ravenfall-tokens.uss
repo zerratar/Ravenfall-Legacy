@@ -88,4 +88,34 @@
     --rf-font-title: 24px;
     --rf-font-heading: 32px;
     --rf-font-display: 48px;
+
+    /* ---- HUD windows ---------------------------------------------------------
+       Translucent rather than solid: a HUD panel that blocks the world reads as an
+       application window pasted over the game. Kept dark enough that text still
+       holds its contrast against bright terrain behind it. */
+    /* Nearly opaque. 0.9 measured correctly but read far more see-through than that, because
+       UI Toolkit blends in linear colour space, which makes a dark panel over bright terrain look
+       much lighter than its alpha suggests. Legibility on stream wins over the glass look. */
+    --rf-surface-glass: rgba(20, 18, 15, 0.97);
+    --rf-divider: rgba(255, 244, 214, 0.07);
+    --rf-row-alt: rgba(255, 244, 214, 0.025);
+    --rf-row-hover: rgba(255, 244, 214, 0.07);
+    --rf-accent-wash: rgba(232, 163, 61, 0.1);
+    /* Outline and shadow for text drawn over a moving 3D scene. */
+    --rf-text-outline: rgba(0, 0, 0, 0.85);
+    --rf-text-shadow-strong: rgba(0, 0, 0, 1);
+    --rf-bar-track: rgba(0, 0, 0, 0.5);
+    --rf-health: rgb(214, 70, 70);
+    --rf-health-low: rgb(255, 96, 70);
+    /* Raid bar: the trailing band left behind by a heavy hit, and the lit top edge of the fill. */
+    --rf-health-ghost: rgba(255, 220, 190, 0.45);
+    --rf-health-shine: rgba(255, 170, 160, 0.55);
+    /* The streamer's own row in the player list. */
+    --rf-highlight-wash: rgba(232, 163, 61, 0.16);
+    /* Neutral chips such as "Rested", which are information rather than achievements. */
+    --rf-chip: rgba(255, 244, 214, 0.1);
+    /* Glacier blue: live and world state, the cool pole of the palette. */
+    --rf-live: rgb(95, 168, 199);
+    --rf-dungeon: rgb(150, 90, 225);
+    --rf-dungeon-bright: rgb(190, 140, 255);
 }

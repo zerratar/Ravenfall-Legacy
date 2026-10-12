@@ -313,3 +313,321 @@ Not yet verified, and it needs Play mode: geometry, dragging, position persisten
 actually render. MonoBehaviour callbacks do not run in edit mode, so the view never binds there; a
 probe confirmed `itemsSource` is null and resolved sizes are NaN outside Play mode. Entering Play
 mode starts a server session, so that is a decision for the person at the keyboard.
+
+### Player list, second pass (after the first play test)
+
+Feedback from the first play test: hover looked bad, no health bar or experience percentage, and
+the window could be dragged but not resized.
+
+- **Hover.** The grey wash was Unity's default ListView hover style, never overridden. The
+  override selectors are now more specific than the theme's own (`.rf-playerlist
+  .rf-player-row.unity-collection-view__item:hover`), so they win whichever stylesheet the panel
+  resolves first. The default "List is empty" label is hidden too, since it would show on stream.
+- **Row.** Name in the player's own Twitch colour, lifted toward white when its relative luminance
+  is under 0.45 so dark blues and purples stay readable after stream compression. Rested time as a
+  pill. Full skill name with level, experience percentage, and xp/h aligned right. A health bar
+  (brightens below a third) above the experience bar. Combat level in its own captioned column. The
+  streamer's own row gets a brass edge and a warm wash.
+- **Percent text uses the invariant culture.** The game runs on Swedish and other locales that
+  would print `42,1%` next to English text.
+- **Resize.** `DraggableWindow.EnableResize` takes a grip element and a minimum size. Size is saved
+  per window id with the position, and clamped so the window cannot grow past the container edges.
+- **Collapse.** A chevron button in the header folds the window to its header, remembered per
+  window. Rows are not refreshed or auto scrolled while collapsed.
+- **Reset** now clears saved size and collapsed state as well as position.
+
+Two bugs in the first version, found while doing this:
+
+- The resize re-clamp listened for geometry changes on the window. A window with a fixed pixel
+  size and position does not change geometry when the game window resizes, only its container
+  does, so the clamp could never fire. The container is now watched as well.
+- A button inside a drag handle would never receive its click: the handle captured the pointer on
+  the press as it bubbled up. Presses on buttons, toggles and text fields inside the handle are now
+  ignored by the drag.
+
+### Player list, third pass (after the second play test)
+
+- **Drag and resize did nothing until the menu had been opened.** The old list's ScrollRect
+  `Playerlist/Viewport` is an Image at alpha 0 with raycasting on, roughly 560 by 1070 down the left
+  of the screen. Invisible, but uGUI still lets it catch pointer events, and it sits exactly where
+  the toolkit window opens. `PlayerList.Awake` now puts a CanvasGroup with `blocksRaycasts = false`
+  and alpha 0 on the old list root when the toolkit window is assigned. Nothing in the scene
+  changes. Worth remembering for every later migration: an old uGUI panel left in place can block
+  input to its UI Toolkit replacement even when it draws nothing.
+- **Windows could be dragged off the left, right and bottom edges.** That was deliberate in the first
+  version, which kept only a 64px strip on screen. It read as a bug, so windows now stay fully on
+  screen, pinning to the top left only when larger than the screen. The size used for clamping is
+  now the laid out size rather than the content rect, which excluded the border.
+- **Spacing, and the missing experience bar.** Unity's default theme gives every Label padding and
+  margin. In a dense row that opened a large gap between the name and stats line, floated the level
+  caption above its number, and pushed the row past its fixed height, where the ListView item clips,
+  hiding the experience bar. Labels inside `.rf-window` are now zeroed.
+- **Legibility.** The background now reads as nearly solid. 0.9 alpha measured correctly but looked
+  far more see-through, because UI Toolkit blends in linear colour space. Names and levels use
+  `-unity-text-outline` rather than only a soft shadow. An outline keeps a hard glyph edge against
+  any terrain and survives stream compression better than a blur. Font sizes are up a step and rows
+  are 80px.
+
+### Dev tools toggle
+
+`GameManager.isDebugMenuVisible` was a plain field: forgotten every launch, and ignored completely
+in DEBUG builds, so the settings toggle did nothing in the editor. It is now a property persisted in
+PlayerPrefs, honoured in every build, defaulting to shown in the editor and hidden in builds (what
+each did before). OnGUI draws a small "Hide dev tools" / "Show dev tools" button above the stack for
+administrators.
+
+## Raid strip
+
+`Assets/Scripts/UI/Toolkit/RaidHudView.cs`, raid section of `ravenfall-hud.uss`. The strip first
+lived in its own `RaidHud.uxml`; it is now part of `TopStatus.uxml` (see "Mockup pass" below), and
+the layout described here was superseded by that pass.
+
+The old raid put three things on screen: a "A boss appeared" card about 1150 by 230 across the top,
+a "897 seconds left" timer floating in the middle of the fight, and a health bar at the bottom. On a
+play test it covered too much of the screen, overlapped the experience multiplier banner, and put
+text right over the fight viewers came to watch.
+
+All of it is now one 600px strip at the top centre, below the multiplier banner:
+
+- Boss level, raider count, and time left as `m:ss` rather than a three digit second count. The
+  timer turns red under a minute.
+- A health bar with the numbers on it and a trailing "ghost" fill. The ghost follows the real fill
+  with a slower, delayed transition, so a heavy hit leaves a lighter band that drains a moment later.
+- "Type !raid to join" while joining is open, hidden once the boss drops below the join threshold.
+- The announcement moment is kept but brief: the strip opens with a large "A boss appeared!!" line,
+  which folds away after four seconds.
+- Nothing in it takes clicks.
+
+Every value is cached, and labels are only rewritten when the displayed text changes. RaidManager
+pushes health, level and time every frame, so that matters.
+
+`RaidNotifications.raidHud` forwards everything when assigned and falls back to the old objects when
+cleared. RaidManager now also passes the raider count.
+
+Wiring: a `UI Toolkit Raid HUD` object in MainWorld with its UIDocument at sorting order 15, above
+the player list (10) so a window dragged to the top cannot cover the raid, and below the
+announcement documents (100).
+
+The shared announcement card used by the arena was also the source of the oversized look:
+`min-width: 60%` made it 1150px wide at 1080p. It is now sized to its text, capped at 720px, sits
+120px down to clear the multiplier banner, and uses smaller type.
+
+Dungeons still use the old boss health bar; they are next for the same treatment.
+
+## Mockup pass
+
+Reference images in `docs/mockups/`: `player-list`, `raid-panel`, `character-details`,
+`dungeon-meters` and `town-resource-bar`. They were generated as a direction, not a spec. Where the
+game has information a mockup leaves out, the game wins.
+
+### Top status column
+
+`Assets/UI/Screens/TopStatus.uxml`, `RaidHudView.cs`, `XpBoostView.cs`.
+
+The XP multiplier banner and the raid panel were separate pieces of UI that each assumed they owned
+the top of the screen, so they overlapped. They are now one flex column at the top centre: the XP
+boost pill first, then whichever event is running underneath it. Whatever combination is active,
+they stack.
+
+- **XP boost pill.** Multiplier, time left as "8h 41m", a thin drain bar, and "Thanks to name"
+  underneath when a viewer started it. `BATimer.toolkitView` forwards to `XpBoostView`; while it is
+  assigned, the uGUI banner stays hidden. Clearing it brings the banner back. GameManager now also
+  passes the multiplier as a number through `BATimer.SetMultiplier`.
+- **Raid panel.** 780px wide, matching the mockup. The top line has the boss title, "LV" with a
+  gold level, a live dot and an `m:ss` clock. Below that is a 34px health bar with
+  "7,560,000 / 12,000,000 HP" on it and the trailing ghost fill. The bottom line has the raider
+  count, a large centred percentage, and a gold bordered "Type !raid to join" pill. The pill is
+  hidden by visibility rather than display, so the percentage stays centred after joining closes.
+
+Scene: the `UI Toolkit Raid HUD` object is renamed `UI Toolkit Top Status`, its UIDocument points
+at `TopStatus.uxml`, and it carries both `RaidHudView` and `XpBoostView`. Sorting order is still 15.
+
+### Player list
+
+- Rows are 96px. The name is 22px in the viewer's Twitch colour, lifted to a readable luminance.
+  The level is 32px extra bold.
+- The skill level is bold through rich text. The experience rate is compact: "1.76M xp/h" rather
+  than a seven digit number. Rested reads "Rested 1h" or "Rested 25m".
+- A footer shows "8 of 11 players" when the list scrolls, and "11 players" when it all fits. Only
+  fully visible rows count.
+
+### Fonts
+
+The HUD now uses the game's own font, FOT-NewRodin Pro, referenced straight from the `.otf` files:
+M for body text, B for numbers in running text, and EB for the large numbers people glance at.
+Icons come from Font Awesome 5 Pro Solid, through the `rf-icon` class.
+
+### Formatting
+
+`HudFormat` is shared by every window and always uses invariant culture, so Swedish and other
+locales do not print decimal commas in English text. It provides:
+
+- `Compact`: three significant figures with a suffix, such as 842K or 1.76M.
+- `Grouped`: comma separated thousands.
+- `Clock`: `m:ss`.
+- `Duration`: the two largest units, such as 8h 41m.
+
+`Utility.FormatValue` rounds to one decimal and inserts a leading space for digit counts that are
+multiples of three, so the HUD no longer uses it.
+
+### Character details, combat stats
+
+The mockup only shows Armor and Power. The game has an aim and a power value for each of melee,
+ranged and magic. The plan for the port is a row of four tiles: Armor, Melee, Ranged and Magic.
+Each style's tile shows power as the large number with aim small beneath it. The tile for the
+player's current combat style gets the gold border, and the other two are dimmed. This replaces the
+Armor/Power row, takes the same height, and answers "how strong is this character at what they are
+doing right now" at a glance, without hiding the other styles.
+
+## Player details
+
+`Assets/UI/Screens/PlayerDetailsWindow.uxml`, `Assets/Scripts/UI/Toolkit/PlayerDetailsWindow.cs`,
+`Assets/Scripts/UI/Toolkit/HudTooltip.cs`, `Assets/UI/Styles/ravenfall-details.uss`.
+
+Laid out after `docs/mockups/character-details.webp`, from the top in the order a viewer asks:
+
+- **Header.** Name in the viewer's Twitch colour, lifted to a readable luminance; clan; coins;
+  combat level. Badges (Streamer, Moderator, Subscriber, VIP, Developer) and a rested chip, which
+  turns gold while resting in the onsen.
+- **Observe timer.** A thin line under the header that drains until the camera moves on, in place
+  of the "(20s)" label.
+- **Training card.** Skill icon, "TRAINING · MAGIC 511", percent, progress bar, time to the next
+  level, xp/h, and the recommended island when the player is not on it. It covers the same cases as
+  the old panel, in the same order: target level reached, max level, level too high or too low for
+  the island (with the `!sail` hint), not able to train here. The card turns red or green for those.
+  Training all now reports whichever of attack, defence and strength levels first; the old panel
+  compared defence twice and never looked at attack.
+- **Skills.** 18 tiles in four columns: combat, then support, then gathering and crafting. Each tile
+  has an icon, the current value (green when boosted, red when drained, gold at max level) and an
+  experience bar. The skill being trained gets the gold frame. Enchanting is the clan skill and
+  shows locked when the clan has not unlocked it. Hovering a tile shows level, progress,
+  experience, rate and time to the next level.
+- **Equipment.** Folds away and remembers whether it was open, like the old inventory toggle. It
+  holds:
+  - The live face camera, with buttons that turn it around the character.
+  - A 3 by 4 slot grid: gold frames for equipped items and purple for enchanted ones.
+  - Exp, raid and dungeon scroll counts.
+  - The combat stat tiles: Armor, Melee, Ranged and Magic. Each shows power as the large number
+    with aim beneath. The style in use gets the gold frame and the others are dimmed. Hovering
+    splits base and enchantment bonus.
+- **Item tooltips.** Item stats, enchantments in purple and transmog status. They are built as
+  label and value rows, since the old version padded with spaces inside a monospace tag.
+
+`PlayerDetails` remains the controller: who is observed, the timeout, camera switching, F2 and the
+settings toggle. With `uiToolkitWindow` assigned it forwards to the window, switches off the uGUI
+panel's children so their per frame observers stop running, and skips the old observers in
+`ForceUpdate`. Clearing the field brings the old panel back.
+
+Refreshing:
+
+- Header, training card and skill tiles refresh every 0.25s.
+- Gear stats, scroll counts and the clan skill refresh every second.
+- Slots refresh when equipment changes.
+- Every element keeps the value it last showed.
+
+`PlayerObserveCamera.Rotate` adds a yaw offset that eases into place and resets when a different
+player is observed. `EquipmentSlot.GetItemSprite` is now shared, so both panels use one item icon
+lookup and cache.
+
+Scene: a `UI Toolkit Player Details` object with its UIDocument at sorting order 12, above the
+player list (10) and below the top status column (15). The icon sprites were copied from the old
+panel's own images, so both use the same art.
+
+The combat stat tiles are kept as one small, data driven piece of the window. Equipment stats may
+move away from aim and power to an elemental system later, and that should only need to replace
+this part.
+
+### Player details, first play test fixes
+
+- The scroll counts sat in dark boxes overlapping the header line. `.rf-scroll` was already the
+  core sheet's ScrollView frame, so the chips inherited its background and border. They are now
+  `rf-scroll-chip`.
+- Skill names were cut to five letters ("Atta...", "Fishi..."), because name and level shared one
+  line. The name now has its own line, with the bar and level beneath it.
+- The character in the preview was small and floating mid frame. The camera image now extends
+  past the frame's bottom edge, which scales the character up and lowers them so the feet sit just
+  above the turn buttons.
+
+## Dungeon
+
+`DungeonHudView.cs` (in `TopStatus.uxml`), `DungeonMetersWindow.cs` with `DungeonMeters.uxml` and
+`ravenfall-meters.uss`, and `Game/CombatMeter.cs`.
+
+### Panel
+
+The dungeon gets the raid panel's layout in the top status column, with a purple edge and dot so
+viewers can tell the two apart.
+
+- **Joining:** boss level, a countdown to the start, how many have joined, and a "Type !dungeon to
+  join" pill. It opens with "A dungeon has appeared!", which folds away after four seconds.
+- **Running:** the room as "ROOM 3 / 5" or "BOSS ROOM", the run clock, players alive out of
+  joined, and enemies left.
+- **Boss:** the health bar and percentage appear in the boss room, or as soon as the boss is hurt.
+
+The view reads `DungeonManager` on a 0.1s interval rather than being pushed values. The old
+notifications only ever received part of the state, and polling keeps it all in step.
+`DungeonNotifications.hudView` forwards the announcement, since the join code is only known then,
+and hides the old objects. The horn, stream labels and dungeon stats work either way. Clearing the
+field brings the old UI back.
+
+### Meters
+
+Damage done, healing done and damage taken per player, in the style of MMO combat meters. Tabs
+switch the metric, and the choice is remembered. Each row shows:
+
+- Rank and a combat style icon.
+- The name in the viewer's colour, with a bar relative to the leader in the style's colour: red
+  melee, green ranged, purple magic, teal healing.
+- Total, per second over the run, and share of the group.
+
+The leader's row is highlighted. The footer shows the group total and group rate.
+
+The window opens on its own when a run starts. It stays up for a minute after the run ends, with
+"RESULT" in place of the room, so the outcome can be read. Closing it hides it until the next run.
+It is draggable, resizable and collapsible like the other windows, and virtualised, so a hundred
+player run costs the same to draw as a six player one.
+
+### Recording
+
+`CombatMeter.Dungeon` records three numbers per player per run: damage, healing and damage taken.
+Each hit is a dictionary lookup on the player id and three additions; sorting is left to the
+window, on its interval. The hooks are in `PlayerCombat.DamageEnemy`, the heal path, and
+`PlayerController.TakeDamage`. Each only records while that player is in the dungeon.
+`DungeonManager` begins the meter when the run starts and ends it in `ResetDungeon`. Ending
+freezes the numbers rather than clearing them, so the result can be shown afterwards.
+
+The meter is not tied to dungeons, so raids could get the same window by recording into a second
+instance.
+
+Scene: `DungeonHudView` sits on `UI Toolkit Top Status`. `UI Toolkit Dungeon Meters` is at sorting
+order 11, between the player list (10) and player details (12).
+
+### Second play test fixes
+
+- **Player list highlight** now marks the observed player, not the broadcaster. Recycled rows
+  kept the old highlight class, because the cache reset to "off" while the class stayed on the
+  element. The cache now starts unknown, so the first refresh always writes it.
+- **Clicking a row** observes that player.
+- **Level overlap:** the level column sizes to its number instead of a fixed 82px, so a four digit
+  level no longer spills over the rate and bars.
+- **Scroll wheel:** `DraggableWindow.IsPointerOverWindow` tracks hover on every HUD window, and the
+  orbit, island and mouse orbit cameras ignore the wheel while it is true. Scrolling a list no
+  longer zooms the world.
+- **Boost reason:** on a dark chip in the bold weight. The outline on thin text read as hollow
+  letters.
+- **Dungeon boss bar:** the maximum is `Health.Level`. Boss health is scaled by writing Level and
+  CurrentValue directly, which leaves MaxLevel unscaled, so the bar read "79,510 / 751".
+- **Meters:**
+  - Anchored by top rather than bottom. With both set, collapsing to an auto height stretched the
+    window between the edges instead of folding it.
+  - Number columns share extra width when resized, and the percent column fits "100.0%".
+  - After a run a line drains under the header, with "closes in 45s" next to RESULT.
+- **Training card:**
+  - Idle shows no bar, just a prompt to type `!train [skill]`.
+  - Resting in the onsen shows the rested pool filling toward its two hour cap, "1h 14m of 2h 00m",
+    and how long until it is full. Rested time builds at twice real time.
+- **Player details** opens at 64px from the top, below the settings cog.
+
+Open: the meters header only drags from a thin strip at its top. The HUD panel's sort order (0)
+is below the legacy Canvas2D (2), so any active uGUI raycast target over a window wins the click.
+The culprit needs a live raycast in Play mode to name.

@@ -43,12 +43,17 @@ public class PlayerDetails : MonoBehaviour
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private Dragscript dragscript;
     [SerializeField] private TooltipViewer playerDetailsTooltip;
+
+    [Tooltip("Optional UI Toolkit window. When assigned, this component keeps deciding who is observed and for how long, but the window does the drawing and the uGUI panel stays hidden. Clear it to bring the old panel back.")]
+    [SerializeField] private Shinobytes.UI.PlayerDetailsWindow uiToolkitWindow;
+
     public PlayerController ObservedPlayer => observedPlayer;
 
     public static bool IsMoving { get; private set; }
     public static bool IsExpanded { get; private set; }
 
     private float observedPlayerTimeout;
+    private float observedPlayerTimeoutTotal;
     private RectTransform rectTransform;
     private bool visible = true;
     private ExpGainState CurrentExpGainState;
@@ -64,11 +69,51 @@ public class PlayerDetails : MonoBehaviour
         // above the actual time left, keep track on this one so we can change it
         // to "Recommended island" when needed
         defaultTimeToLevelUpLabelText = lblLevelUpTimeLabel.text;
+
+        if (uiToolkitWindow)
+        {
+            SuppressLegacyVisuals();
+            uiToolkitWindow.CloseRequested += () => SetVisibility(false);
+            uiToolkitWindow.SetVisible(visible);
+        }
+    }
+
+    /// <summary>
+    /// Hides the uGUI panel for good while the UI Toolkit window is in use. The panel's children are
+    /// switched off so their per frame observers stop running, except the face camera image, which
+    /// PlayerObserveCamera switches on and off itself; the canvas group keeps that invisible and
+    /// stops anything here from catching clicks meant for the new window.
+    /// </summary>
+    private void SuppressLegacyVisuals()
+    {
+        if (canvasGroup)
+        {
+            canvasGroup.alpha = 0f;
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.interactable = false;
+        }
+
+        for (var i = 0; i < transform.childCount; ++i)
+        {
+            var child = transform.GetChild(i);
+            if (!child.GetComponent<UnityEngine.UI.RawImage>())
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+
+        if (playerDetailsTooltip) playerDetailsTooltip.Disable();
     }
     public bool IsObservingPlayer => visible && observedPlayerTimeout > 0 && observedPlayer != null;
     public void ToggleVisibility()
     {
         this.visible = !this.visible;
+        if (uiToolkitWindow)
+        {
+            uiToolkitWindow.SetVisible(this.visible);
+            return;
+        }
+
         if (this.visible)
         {
             canvasGroup.alpha = 1;
@@ -90,6 +135,12 @@ public class PlayerDetails : MonoBehaviour
 
     public void ToggleInventory()
     {
+        if (uiToolkitWindow)
+        {
+            IsExpanded = uiToolkitWindow.ToggleGear();
+            return;
+        }
+
         IsExpanded = playerInventory.ToggleVisibility();
     }
 
@@ -119,7 +170,7 @@ public class PlayerDetails : MonoBehaviour
             return;
         }
 
-        if (canvasGroup.alpha != 1)
+        if (!uiToolkitWindow && canvasGroup.alpha != 1)
             canvasGroup.alpha = 1;
 
         IsMoving = dragscript.IsDragging;
@@ -135,7 +186,10 @@ public class PlayerDetails : MonoBehaviour
         if (Time.unscaledTime >= nextTextRefresh)
         {
             nextTextRefresh = Time.unscaledTime + TextRefreshInterval;
-            RefreshTexts();
+            if (uiToolkitWindow)
+                uiToolkitWindow.SetObserveTime(observedPlayerTimeout, observedPlayerTimeoutTotal);
+            else
+                RefreshTexts();
         }
 
         if (observedPlayerTimeout < 0)
@@ -401,6 +455,13 @@ public class PlayerDetails : MonoBehaviour
 
         this.gameObject.SetActive(player != null);
         observedPlayerTimeout = timeout;
+        observedPlayerTimeoutTotal = timeout;
+
+        if (uiToolkitWindow)
+        {
+            uiToolkitWindow.Observe(player);
+            uiToolkitWindow.SetObserveTime(timeout, timeout);
+        }
     }
 
     public void ForceUpdate()
@@ -409,6 +470,13 @@ public class PlayerDetails : MonoBehaviour
         //{
         //    return;
         //}
+
+        if (uiToolkitWindow)
+        {
+            // The window reads the player itself; the uGUI observers are switched off.
+            gameManager.Overlay.SendObservePlayer(observedPlayer);
+            return;
+        }
 
         attributeStatsManager.Observe(observedPlayer);
         equipmentSlotManager.Observe(observedPlayer);
@@ -449,6 +517,12 @@ public class PlayerDetails : MonoBehaviour
     {
         if (!visible || observedPlayer == null || !observedPlayer || observedPlayer.Id != player.Id)
             return;
+
+        if (uiToolkitWindow)
+        {
+            uiToolkitWindow.EquipmentChanged();
+            return;
+        }
 
         equipmentSlotManager.Observe(observedPlayer);
     }

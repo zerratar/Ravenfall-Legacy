@@ -150,6 +150,11 @@ Assets/_TerrainAutoUpgrade/*.*
 !Assets/Scripts/**/*.cs.meta
 !Assets/Scripts/**/*.asmdef.meta
 
+# The same for the UI Toolkit screens, styles and panel settings: scenes reference the UXML
+# documents and panel settings by GUID, so without these a restore leaves every HUD document empty.
+!Assets/UI/**/*.meta
+!Assets/UI/**/*.asset
+
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
 

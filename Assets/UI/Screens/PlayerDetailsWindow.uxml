@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      The observed player's details: who they are, what they are training and how it is going, every
+      skill, and their gear. Laid out after docs/mockups/character-details.webp.
+
+      Built from the top in order of what a viewer asks first. Whose character is this, what are
+      they doing right now, how good are they at everything, and only then what they are wearing.
+      Gear is the tallest part and the least often wanted, so it folds away and remembers whether
+      it was open, as the old panel's inventory toggle did.
+
+      The skill tiles, equipment slots and combat stat tiles are created in code from definition
+      lists in PlayerDetailsWindow, so adding a skill is one line there rather than another copy of
+      the same markup here.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-details.uss" />
+
+    <engine:VisualElement name="details-root" class="rf-window-layer" picking-mode="Ignore">
+
+        <engine:VisualElement name="details-window" class="rf-window rf-details" style="display: none;">
+
+            <!-- Header: the drag handle. Name and clan on the left, coins and level on the right. -->
+            <engine:VisualElement name="details-header" class="rf-details__header">
+                <engine:VisualElement class="rf-details__identity" picking-mode="Ignore">
+                    <engine:Label name="details-name" class="rf-details__name" picking-mode="Ignore" />
+                    <engine:Label name="details-clan" class="rf-details__clan" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-details__summary" picking-mode="Ignore">
+                    <engine:VisualElement name="details-coins" class="rf-details__coins">
+                        <engine:VisualElement name="details-coin-icon" class="rf-details__coin-icon" picking-mode="Ignore" />
+                        <engine:Label name="details-coin-amount" class="rf-details__coin-amount" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:VisualElement class="rf-details__level-box" picking-mode="Ignore">
+                        <engine:Label text="LV" class="rf-details__level-caption" picking-mode="Ignore" />
+                        <engine:Label name="details-level" class="rf-details__level" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-details__actions">
+                    <engine:Button name="details-collapse" text="" class="rf-window__button" tooltip="Collapse or expand">
+                        <engine:VisualElement class="rf-chevron" picking-mode="Ignore" />
+                    </engine:Button>
+                    <engine:Button name="details-close" text="&#xf00d;" class="rf-window__button rf-icon rf-details__close" tooltip="Hide (F2)" />
+                </engine:VisualElement>
+            </engine:VisualElement>
+
+            <!-- How long until the camera moves on to someone else. A thin line that drains, rather
+                 than a "(20s)" in the corner: it says the same thing without being read. -->
+            <engine:VisualElement class="rf-details__observe" picking-mode="Ignore">
+                <engine:VisualElement name="details-observe-fill" class="rf-details__observe-fill" picking-mode="Ignore" />
+            </engine:VisualElement>
+
+            <engine:VisualElement name="details-body" class="rf-window__body rf-details__body">
+
+                <!-- Badges and the rested chip. -->
+                <engine:VisualElement name="details-badges" class="rf-details__badges">
+                    <engine:Label name="badge-broadcaster" text="Streamer" class="rf-badge rf-badge--broadcaster" />
+                    <engine:Label name="badge-moderator" text="Moderator" class="rf-badge rf-badge--moderator" />
+                    <engine:Label name="badge-subscriber" text="Subscriber" class="rf-badge rf-badge--subscriber" />
+                    <engine:Label name="badge-vip" text="VIP" class="rf-badge rf-badge--vip" />
+                    <engine:Label name="badge-dev" text="Developer" class="rf-badge rf-badge--dev" />
+                    <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
+                    <engine:Label name="details-rested" class="rf-details__rested" />
+                </engine:VisualElement>
+
+                <!-- What they are doing right now. -->
+                <engine:VisualElement name="details-training" class="rf-training">
+                    <engine:VisualElement name="training-icon" class="rf-training__icon" picking-mode="Ignore" />
+                    <engine:Label name="training-glyph" class="rf-icon rf-training__glyph" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-training__main" picking-mode="Ignore">
+                        <engine:VisualElement class="rf-training__line" picking-mode="Ignore">
+                            <engine:Label name="training-title" class="rf-training__title" picking-mode="Ignore" />
+                            <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
+                            <engine:Label name="training-percent" class="rf-training__percent" picking-mode="Ignore" />
+                        </engine:VisualElement>
+                        <engine:VisualElement name="training-bar" class="rf-training__bar" picking-mode="Ignore">
+                            <engine:VisualElement name="training-fill" class="rf-training__fill" picking-mode="Ignore" />
+                        </engine:VisualElement>
+                        <engine:Label name="training-status" class="rf-training__status" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:VisualElement class="rf-training__side" picking-mode="Ignore">
+                        <engine:Label name="training-next" class="rf-training__next" picking-mode="Ignore" />
+                        <engine:Label name="training-rate" class="rf-training__rate" picking-mode="Ignore" />
+                        <engine:Label name="training-hint" class="rf-training__hint" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+
+                <!-- Every skill. Columns are filled top to bottom in code. -->
+                <engine:VisualElement name="details-skills" class="rf-skills" />
+
+                <!-- Gear, folded away by default. -->
+                <engine:VisualElement name="details-gear-header" class="rf-gear-header">
+                    <engine:Label text="EQUIPMENT" class="rf-gear-header__title" picking-mode="Ignore" />
+                    <engine:VisualElement name="details-scrolls" class="rf-gear-header__scrolls" />
+                    <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
+                    <engine:Button name="details-gear-toggle" text="" class="rf-window__button" tooltip="Show or hide equipment">
+                        <engine:VisualElement class="rf-chevron" picking-mode="Ignore" />
+                    </engine:Button>
+                </engine:VisualElement>
+
+                <engine:VisualElement name="details-gear" class="rf-gear">
+                    <engine:VisualElement class="rf-gear__top">
+                        <engine:VisualElement name="details-preview" class="rf-preview">
+                            <engine:VisualElement name="details-preview-image" class="rf-preview__image" picking-mode="Ignore" />
+                            <engine:VisualElement class="rf-preview__controls" picking-mode="Ignore">
+                                <engine:Button name="details-turn-left" text="&#xf2ea;" class="rf-window__button rf-icon rf-preview__turn" tooltip="Turn" />
+                                <engine:Button name="details-turn-right" text="&#xf2f9;" class="rf-window__button rf-icon rf-preview__turn" tooltip="Turn" />
+                            </engine:VisualElement>
+                        </engine:VisualElement>
+                        <engine:VisualElement name="details-slots" class="rf-slots" />
+                    </engine:VisualElement>
+                    <engine:VisualElement name="details-stats" class="rf-stats" />
+                </engine:VisualElement>
+
+            </engine:VisualElement>
+
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</engine:UXML>

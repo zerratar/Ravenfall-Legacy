@@ -542,6 +542,7 @@ public class RaidManager : MonoBehaviour, IEvent
             notifications.SetRaidBossLevel(Boss.Enemy.Stats.CombatLevel);
             notifications.SetHealthBarValue(proc, Boss.Enemy.Stats.Health.Level);
             notifications.UpdateRaidTimer(timeoutTimer);
+            notifications.SetRaiderCount(Raiders.Count);
         }
     }
 

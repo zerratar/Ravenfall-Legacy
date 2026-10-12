@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      Top centre status column: the XP boost pill, then whatever event is running underneath it.
+
+      These used to be separate pieces of UI that each claimed the top of the screen on their own,
+      so a raid announcement landed on top of the multiplier banner. In one flex column they stack
+      instead, whatever combination is active, and nothing has to know where anything else is.
+
+      Nothing here takes clicks. Every element ignores picking so the world underneath stays usable.
+      Icons are Font Awesome 5 Pro codepoints, drawn with the rf-icon class.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+
+    <engine:VisualElement name="top-root" class="rf-top-layer" picking-mode="Ignore">
+        <engine:VisualElement name="top-column" class="rf-top-column" picking-mode="Ignore">
+
+            <!-- XP boost -->
+            <engine:VisualElement name="xp-boost" class="rf-boost" picking-mode="Ignore" style="display: none;">
+                <engine:Label class="rf-icon rf-boost__icon" text="&#xf252;" picking-mode="Ignore" />
+                <engine:Label name="xp-boost-label" class="rf-boost__label" picking-mode="Ignore" />
+                <engine:Label class="rf-boost__sep" text="&#x2022;" picking-mode="Ignore" />
+                <engine:Label name="xp-boost-time" class="rf-boost__time" picking-mode="Ignore" />
+                <engine:VisualElement class="rf-boost__bar" picking-mode="Ignore">
+                    <engine:VisualElement name="xp-boost-fill" class="rf-boost__fill" picking-mode="Ignore" />
+                </engine:VisualElement>
+            </engine:VisualElement>
+            <engine:Label name="xp-boost-thanks" class="rf-boost__thanks" picking-mode="Ignore" style="display: none;" />
+
+            <!-- Raid -->
+            <engine:VisualElement name="raid-hud" class="rf-raid" picking-mode="Ignore" style="display: none;">
+
+                <engine:Label name="raid-announce" class="rf-raid__announce" picking-mode="Ignore" />
+
+                <engine:VisualElement class="rf-raid__top" picking-mode="Ignore">
+                    <engine:Label name="raid-title" class="rf-raid__title" picking-mode="Ignore" />
+                    <engine:Label name="raid-level" class="rf-raid__level" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-raid__spacer" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-live-dot" picking-mode="Ignore" />
+                    <engine:Label class="rf-icon rf-raid__clock" text="&#xf017;" picking-mode="Ignore" />
+                    <engine:Label name="raid-timer" class="rf-raid__timer" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-raid__bar" picking-mode="Ignore">
+                    <engine:VisualElement name="raid-hp-ghost" class="rf-raid__ghost" picking-mode="Ignore" />
+                    <engine:VisualElement name="raid-hp-fill" class="rf-raid__fill" picking-mode="Ignore" />
+                    <engine:Label name="raid-hp-text" class="rf-raid__hp" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-raid__bottom" picking-mode="Ignore">
+                    <engine:VisualElement class="rf-raid__side" picking-mode="Ignore">
+                        <engine:Label class="rf-icon rf-raid__people" text="&#xf0c0;" picking-mode="Ignore" />
+                        <engine:Label name="raid-raiders" class="rf-raid__raiders" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:Label name="raid-percent" class="rf-raid__percent" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-raid__side rf-raid__side--end" picking-mode="Ignore">
+                        <engine:VisualElement name="raid-join-pill" class="rf-raid__join-pill" picking-mode="Ignore">
+                            <engine:Label class="rf-icon rf-raid__chat" text="&#xf075;" picking-mode="Ignore" />
+                            <engine:Label name="raid-join" class="rf-raid__join" picking-mode="Ignore" />
+                        </engine:VisualElement>
+                    </engine:VisualElement>
+                </engine:VisualElement>
+
+            </engine:VisualElement>
+
+            <!-- Dungeon. The raid panel's layout and classes, so the two read as one family. While
+                 joining: boss level, countdown, how many joined and how to join. While running: the
+                 room, the run clock, who is alive and how many enemies are left, and the boss health
+                 bar once the boss room is reached. -->
+            <engine:VisualElement name="dungeon-hud" class="rf-raid rf-raid--dungeon" picking-mode="Ignore" style="display: none;">
+
+                <engine:Label name="dungeon-announce" class="rf-raid__announce" picking-mode="Ignore" />
+
+                <engine:VisualElement class="rf-raid__top" picking-mode="Ignore">
+                    <engine:Label name="dungeon-title" class="rf-raid__title" picking-mode="Ignore" />
+                    <engine:Label name="dungeon-level" class="rf-raid__level" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-raid__spacer" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-live-dot" picking-mode="Ignore" />
+                    <engine:Label name="dungeon-clock" class="rf-icon rf-raid__clock" text="&#xf017;" picking-mode="Ignore" />
+                    <engine:Label name="dungeon-timer" class="rf-raid__timer" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="dungeon-bar" class="rf-raid__bar" picking-mode="Ignore">
+                    <engine:VisualElement name="dungeon-hp-ghost" class="rf-raid__ghost" picking-mode="Ignore" />
+                    <engine:VisualElement name="dungeon-hp-fill" class="rf-raid__fill" picking-mode="Ignore" />
+                    <engine:Label name="dungeon-hp-text" class="rf-raid__hp" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-raid__bottom" picking-mode="Ignore">
+                    <engine:VisualElement class="rf-raid__side" picking-mode="Ignore">
+                        <engine:Label class="rf-icon rf-raid__people" text="&#xf0c0;" picking-mode="Ignore" />
+                        <engine:Label name="dungeon-players" class="rf-raid__raiders" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:Label name="dungeon-percent" class="rf-raid__percent" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-raid__side rf-raid__side--end" picking-mode="Ignore">
+                        <engine:VisualElement name="dungeon-join-pill" class="rf-raid__join-pill" picking-mode="Ignore">
+                            <engine:Label class="rf-icon rf-raid__chat" text="&#xf075;" picking-mode="Ignore" />
+                            <engine:Label name="dungeon-join" class="rf-raid__join" picking-mode="Ignore" />
+                        </engine:VisualElement>
+                        <engine:VisualElement name="dungeon-enemies-box" class="rf-dungeon__enemies" picking-mode="Ignore">
+                            <engine:Label class="rf-icon rf-dungeon__skull" text="&#xf54c;" picking-mode="Ignore" />
+                            <engine:Label name="dungeon-enemies" class="rf-raid__raiders" picking-mode="Ignore" />
+                        </engine:VisualElement>
+                    </engine:VisualElement>
+                </engine:VisualElement>
+
+            </engine:VisualElement>
+
+        </engine:VisualElement>
+    </engine:VisualElement>
+
+</engine:UXML>

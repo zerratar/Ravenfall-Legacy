@@ -180,7 +180,42 @@ public class GameManager : MonoBehaviour, IGameManager
     public Overlay Overlay => overlay;
     public bool IsSaving => saveCounter > 0;
 
-    [NonSerialized] public bool isDebugMenuVisible;
+    private const string DevToolsVisibleKey = "rf_dev_tools_visible";
+    private bool? debugMenuVisible;
+
+    /// <summary>
+    /// Whether the administrator debug buttons drawn by OnGUI are shown.
+    /// </summary>
+    /// <remarks>
+    /// Remembered between sessions, and honoured in the editor too. It used to be a plain field that
+    /// was forgotten on every launch and ignored entirely in DEBUG builds, so the settings toggle for
+    /// it did nothing while running from the editor, which is exactly when the buttons cover the
+    /// player details panel. Defaults to shown in the editor and hidden in builds, which is what each
+    /// did before.
+    /// </remarks>
+    public bool isDebugMenuVisible
+    {
+        get
+        {
+            if (debugMenuVisible == null)
+            {
+#if DEBUG
+                const int defaultVisible = 1;
+#else
+                const int defaultVisible = 0;
+#endif
+                debugMenuVisible = PlayerPrefs.GetInt(DevToolsVisibleKey, defaultVisible) == 1;
+            }
+
+            return debugMenuVisible.Value;
+        }
+        set
+        {
+            debugMenuVisible = value;
+            PlayerPrefs.SetInt(DevToolsVisibleKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
 
     public StreamLabel uptimeLabel;
     public StreamLabel villageBoostLabel;
@@ -1941,17 +1976,31 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-#if !DEBUG
+        int buttonWidth = 150;
+        int buttonMarginY = 5;
+        int buttonHeight = 40;
+
+        // Folded down to just the toggle, the stack has no buttons, so it sits at screen centre.
+        if (!isDebugMenuVisible)
+        {
+            lastButtonIndex = 0;
+        }
+
+        int buttonStartY = (Screen.height / 2) - (lastButtonIndex * (buttonHeight / 2));//60;
+
+        // Always drawn for administrators, above the stack, so the debug buttons can be put away
+        // and brought back without going through the settings menu.
+        const int toggleHeight = 24;
+        var toggleRect = new Rect(Screen.width - buttonWidth - 20, buttonStartY - toggleHeight - buttonMarginY, buttonWidth, toggleHeight);
+        if (GUI.Button(toggleRect, isDebugMenuVisible ? "Hide dev tools" : "Show dev tools"))
+        {
+            isDebugMenuVisible = !isDebugMenuVisible;
+        }
+
         if (!isDebugMenuVisible)
         {
             return;
         }
-#endif
-
-        int buttonWidth = 150;
-        int buttonMarginY = 5;
-        int buttonHeight = 40;
-        int buttonStartY = (Screen.height / 2) - (lastButtonIndex * (buttonHeight / 2));//60;
 
         Rect GetButtonRect(int i) => new Rect(Screen.width - buttonWidth - 20, buttonStartY + ((buttonHeight + buttonMarginY) * i), buttonWidth, buttonHeight);
 
@@ -2634,6 +2683,7 @@ public class GameManager : MonoBehaviour, IGameManager
                 timeLeft = $"{Mathf.FloorToInt(secondsLeftInt / 60f)} mins";
             boostTimer.SetSubscriber(subEventManager.CurrentBoost.EventName, !subEventManager.CurrentBoost.EventName.Contains(" "));
             boostTimer.SetText($"EXP Multiplier x{subEventManager.CurrentBoost.Multiplier} - {timeLeft}");
+            boostTimer.SetMultiplier(subEventManager.CurrentBoost.Multiplier);
             boostTimer.SetTime(secondsLeft, secondsTotal);
         }
 

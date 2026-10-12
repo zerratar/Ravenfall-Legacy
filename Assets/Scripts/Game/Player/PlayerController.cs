@@ -2627,6 +2627,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         Stats.Health.Add(-damage);
+        if (dungeonHandler != null && dungeonHandler.InDungeon) CombatMeter.Dungeon.AddTaken(this, damage);
         //if (damage > 0)
         //{
         //    Statistics.TotalDamageTaken += damage;

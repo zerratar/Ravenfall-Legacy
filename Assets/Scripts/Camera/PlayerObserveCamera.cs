@@ -17,6 +17,19 @@ public class PlayerObserveCamera : MonoBehaviour
 
     public bool HasTarget => player != null;
 
+    /// <summary>The camera's angle around the player, relative to straight in front of them.</summary>
+    private float yaw;
+    private float targetYaw;
+
+    /// <summary>
+    /// Turns the camera around the observed player. Used by the turn buttons on the details
+    /// preview; the angle goes back to the front whenever a different player is observed.
+    /// </summary>
+    public void Rotate(float degrees)
+    {
+        targetYaw += degrees;
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -54,10 +67,14 @@ public class PlayerObserveCamera : MonoBehaviour
             return;
         }
 
+        // Eases toward the requested angle so a turn button swings the camera rather than cutting.
+        yaw = Mathf.Lerp(yaw, targetYaw, 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime));
+
         var t = player.transform;
         var playerScale = t.localScale.y;
+        var direction = Quaternion.Euler(0f, yaw, 0f) * t.forward;
         //var position = player.PositionInternal + t.forward * (playerScale * distance);
-        var position = t.position + t.forward * (playerScale * distance);
+        var position = t.position + direction * (playerScale * distance);
 
         transform.position = position + positionOffsetY * Vector3.up;
         transform.LookAt(t.position + new Vector3(0, viewOffsetY, 0));
@@ -69,6 +86,12 @@ public class PlayerObserveCamera : MonoBehaviour
         {
             this.player.RevokeControl();
             ResetPlayerLayer();
+        }
+
+        if (this.player != player)
+        {
+            yaw = 0f;
+            targetYaw = 0f;
         }
 
         this.player = player;

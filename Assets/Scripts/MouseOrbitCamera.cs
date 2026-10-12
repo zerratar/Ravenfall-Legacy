@@ -136,7 +136,7 @@ namespace FlatKit
             Quaternion rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(_y, _x, 0),
                 GameTime.deltaTime * damping);
 
-            if (allowZoom)
+            if (allowZoom && !Shinobytes.UI.DraggableWindow.IsPointerOverWindow)
             {
                 distanceHorizontal = Mathf.Clamp(
                     distanceHorizontal - Input.GetAxis("Mouse ScrollWheel") * 5, distanceMin, distanceMax);

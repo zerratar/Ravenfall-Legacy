@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
 // Aliased rather than importing RavenNest.Models wholesale, matching PlayerListItem. The
@@ -8,7 +9,8 @@ using Skill = RavenNest.Models.Skill;
 namespace Shinobytes.UI
 {
     /// <summary>
-    /// The player list, rebuilt on UI Toolkit as a draggable window around a virtualised list.
+    /// The player list, rebuilt on UI Toolkit as a draggable, resizable, collapsible window around a
+    /// virtualised list.
     /// </summary>
     /// <remarks>
     /// The old list is why streamers turned this off. It instantiated rows up to the visible count,
@@ -47,7 +49,14 @@ namespace Shinobytes.UI
         [Tooltip("Rows per second when auto scrolling.")]
         [SerializeField] private float autoScrollSpeed = 0.35f;
 
-        private const float RowHeight = 64f;
+        [Tooltip("Smallest size the window can be resized to. Below this the rows stop being legible on stream.")]
+        [SerializeField] private Vector2 minimumSize = new Vector2(260f, 150f);
+
+        /// <summary>Must match the row height in ravenfall-hud.uss and the UXML.</summary>
+        private const float RowHeight = 96f;
+
+        /// <summary>Health below this fraction switches the bar to its brighter warning colour.</summary>
+        private const float LowHealth = 0.34f;
 
         private readonly List<PlayerController> players = new List<PlayerController>();
 
@@ -63,9 +72,17 @@ namespace Shinobytes.UI
         private Label countLabel;
         private ListView listView;
         private ScrollView scrollView;
+        private Button collapseButton;
+        private Label visibleLabel;
         private DraggableWindow drag;
 
+        private int shownVisible = -1;
+        private int shownTotal = -1;
+
         private float nextRefresh;
+
+        /// <summary>The player the camera is following, whose row is highlighted.</summary>
+        private PlayerController observed;
         private bool bound;
         private bool pointerInside;
 
@@ -77,18 +94,45 @@ namespace Shinobytes.UI
         {
             public VisualElement Root;
             public Label Name;
+            public Label Rested;
             public Label Level;
             public Label SkillLabel;
+            public Label Percent;
             public Label Rate;
-            public VisualElement BarFill;
+            public VisualElement HealthBar;
+            public VisualElement HealthFill;
+            public VisualElement ExpFill;
 
             public PlayerController Player;
             public string LastName;
+            public string LastColorHex;
+            /// <summary>-1 unknown, so a recycled row always writes its highlight on first refresh.</summary>
+            public int LastHighlight = -1;
             public int LastCombatLevel = -1;
             public int LastSkillLevel = -1;
             public Skill LastSkill = Skill.None;
             public long LastRate = -1;
             public float LastProgress = -1f;
+            public int LastPercentTenths = -1;
+            public float LastHealth = -1f;
+            public bool LastHealthLow;
+            public int LastRestedMinutes = -1;
+
+            public void Reset()
+            {
+                LastName = null;
+                LastColorHex = null;
+                LastHighlight = -1;
+                LastCombatLevel = -1;
+                LastSkillLevel = -1;
+                LastSkill = Skill.None;
+                LastRate = -1;
+                LastProgress = -1f;
+                LastPercentTenths = -1;
+                LastHealth = -1f;
+                LastHealthLow = false;
+                LastRestedMinutes = -1;
+            }
         }
 
         private void OnEnable()
@@ -99,6 +143,13 @@ namespace Shinobytes.UI
         private void OnDisable()
         {
             bound = false;
+
+            if (collapseButton != null)
+            {
+                collapseButton.clicked -= OnCollapseClicked;
+                collapseButton = null;
+            }
+
             if (drag != null)
             {
                 drag.Detach();
@@ -124,6 +175,9 @@ namespace Shinobytes.UI
             header = root.Q<VisualElement>("playerlist-header");
             countLabel = root.Q<Label>("playerlist-count");
             listView = root.Q<ListView>("playerlist-view");
+            collapseButton = root.Q<Button>("playerlist-collapse");
+            visibleLabel = root.Q<Label>("playerlist-visible");
+            var grip = root.Q<VisualElement>("playerlist-grip");
 
             if (window == null || listView == null)
             {
@@ -151,9 +205,29 @@ namespace Shinobytes.UI
             if (header != null)
             {
                 drag = DraggableWindow.Attach(window, header, "playerlist");
+
+                // Enabled before the first layout pass, which is when the saved size is restored.
+                drag?.EnableResize(grip, minimumSize);
+            }
+
+            if (collapseButton != null)
+            {
+                collapseButton.clicked += OnCollapseClicked;
             }
 
             bound = true;
+        }
+
+        private void OnCollapseClicked()
+        {
+            drag?.ToggleCollapsed();
+
+            // Rows were not refreshed while folded away, so bring them current straight away rather
+            // than showing stale values for up to one refresh interval.
+            if (drag != null && !drag.IsCollapsed)
+            {
+                nextRefresh = 0f;
+            }
         }
 
         private VisualElement MakeRow()
@@ -161,51 +235,96 @@ namespace Shinobytes.UI
             var row = new VisualElement();
             row.AddToClassList("rf-player-row");
 
+            // ---- left: text and bars ----
             var main = new VisualElement();
             main.AddToClassList("rf-player-row__main");
+
+            var nameLine = new VisualElement();
+            nameLine.AddToClassList("rf-player-row__line");
 
             var name = new Label();
             name.AddToClassList("rf-player-row__name");
 
-            var sub = new VisualElement();
-            sub.AddToClassList("rf-player-row__sub");
+            var rested = new Label();
+            rested.AddToClassList("rf-player-row__rested");
+            rested.style.display = DisplayStyle.None;
+
+            nameLine.Add(name);
+            nameLine.Add(rested);
+
+            var meta = new VisualElement();
+            meta.AddToClassList("rf-player-row__meta");
 
             var skill = new Label();
             skill.AddToClassList("rf-player-row__skill");
 
+            var percent = new Label();
+            percent.AddToClassList("rf-player-row__percent");
+
+            var spacer = new VisualElement();
+            spacer.AddToClassList("rf-player-row__spacer");
+
             var rate = new Label();
             rate.AddToClassList("rf-player-row__rate");
 
-            sub.Add(skill);
-            sub.Add(rate);
+            meta.Add(skill);
+            meta.Add(percent);
+            meta.Add(spacer);
+            meta.Add(rate);
 
-            var bar = new VisualElement();
-            bar.AddToClassList("rf-bar");
-            var fill = new VisualElement();
-            fill.AddToClassList("rf-bar__fill");
-            bar.Add(fill);
+            var healthBar = new VisualElement();
+            healthBar.AddToClassList("rf-bar");
+            healthBar.AddToClassList("rf-bar--health");
+            var healthFill = new VisualElement();
+            healthFill.AddToClassList("rf-bar__fill");
+            healthBar.Add(healthFill);
 
-            main.Add(name);
-            main.Add(sub);
-            main.Add(bar);
+            var expBar = new VisualElement();
+            expBar.AddToClassList("rf-bar");
+            expBar.AddToClassList("rf-bar--exp");
+            var expFill = new VisualElement();
+            expFill.AddToClassList("rf-bar__fill");
+            expBar.Add(expFill);
+
+            main.Add(nameLine);
+            main.Add(meta);
+            main.Add(healthBar);
+            main.Add(expBar);
+
+            // ---- right: combat level ----
+            var levelCol = new VisualElement();
+            levelCol.AddToClassList("rf-player-row__level-col");
+
+            var levelCaption = new Label("LV");
+            levelCaption.AddToClassList("rf-player-row__level-caption");
 
             var level = new Label();
             level.AddToClassList("rf-player-row__level");
 
+            levelCol.Add(levelCaption);
+            levelCol.Add(level);
+
             row.Add(main);
-            row.Add(level);
+            row.Add(levelCol);
 
             var state = new RowState
             {
                 Root = row,
                 Name = name,
+                Rested = rested,
                 Level = level,
                 SkillLabel = skill,
+                Percent = percent,
                 Rate = rate,
-                BarFill = fill
+                HealthBar = healthBar,
+                HealthFill = healthFill,
+                ExpFill = expFill
             };
 
             row.userData = state;
+
+            // Clicking a row points the camera at that player, as clicking a name did in the old list.
+            row.RegisterCallback<UnityEngine.UIElements.ClickEvent>(_ => ObserveRow(state));
             rows.Add(state);
             return row;
         }
@@ -221,24 +340,15 @@ namespace Shinobytes.UI
 
             // Reset the caches so a recycled row does not keep the previous player's values and skip
             // the update that would correct them.
-            state.LastName = null;
-            state.LastCombatLevel = -1;
-            state.LastSkillLevel = -1;
-            state.LastSkill = Skill.None;
-            state.LastRate = -1;
-            state.LastProgress = -1f;
+            state.Reset();
 
             element.EnableInClassList("rf-player-row--alt", (index & 1) == 1);
 
             Refresh(state);
 
-            // Play the entry transition.
-            //
-            // The stylesheet defines rf-player-row--entering as the offset, transparent state, and
-            // the transition on the base class animates back out of it. Nothing applied the class
-            // until now, so the animation was declared and never ran. It has to be removed on a
-            // later frame than it is added: setting and clearing a property within one layout pass
-            // gives the transition no start value to move from, so it snaps.
+            // Play the entry transition. The class is the offset, transparent state; removing it on a
+            // later frame lets the transition on the base class animate back. Adding and removing it
+            // in the same layout pass gives the transition no start value, so it would snap.
             element.AddToClassList("rf-player-row--entering");
             element.schedule.Execute(() => element.RemoveFromClassList("rf-player-row--entering")).StartingIn(0);
         }
@@ -259,6 +369,12 @@ namespace Shinobytes.UI
                 return;
             }
 
+            // Folded away, nothing is visible, so there is nothing worth refreshing or scrolling.
+            if (drag != null && drag.IsCollapsed)
+            {
+                return;
+            }
+
             AutoScroll();
 
             nextRefresh -= Time.unscaledDeltaTime;
@@ -269,9 +385,71 @@ namespace Shinobytes.UI
 
             nextRefresh = refreshInterval;
 
+            var gm = GameManager.Instance;
+            observed = gm != null && gm.Camera != null && gm.Camera.Observer != null ? gm.Camera.Observer.ObservedPlayer : null;
+
             for (var i = 0; i < rows.Count; ++i)
             {
                 Refresh(rows[i]);
+            }
+
+            RefreshFooter();
+        }
+
+        private void ObserveRow(RowState state)
+        {
+            var player = state.Player;
+            var gm = GameManager.Instance;
+            if (!player || gm == null || gm.Camera == null)
+            {
+                return;
+            }
+
+            gm.Camera.ObservePlayer(player);
+            observed = player;
+
+            // Move the highlight straight away rather than on the next refresh.
+            for (var i = 0; i < rows.Count; ++i)
+            {
+                if (rows[i].Player)
+                {
+                    RefreshIdentity(rows[i], rows[i].Player, rows[i].Player == player);
+                }
+            }
+        }
+
+        /// <summary>
+        /// "8 of 11 players" when the list is taller than the window, "11 players" when it all fits.
+        /// Only fully visible rows count, so a row cut in half by the bottom edge is not claimed as seen.
+        /// </summary>
+        private void RefreshFooter()
+        {
+            if (visibleLabel == null || scrollView == null)
+            {
+                return;
+            }
+
+            var viewport = scrollView.contentViewport.contentRect.height;
+            var fits = float.IsNaN(viewport) ? players.Count : Mathf.FloorToInt(viewport / RowHeight);
+            var visible = Mathf.Clamp(fits, 0, players.Count);
+
+            if (visible == shownVisible && players.Count == shownTotal)
+            {
+                return;
+            }
+
+            shownVisible = visible;
+            shownTotal = players.Count;
+
+            if (visible >= players.Count)
+            {
+                visibleLabel.text = players.Count == 1
+                    ? Localization.UI_PLAYERS_ONE
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_PLAYERS_COUNT, players.Count);
+            }
+            else
+            {
+                visibleLabel.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_PLAYERS_PARTIAL, visible, players.Count);
             }
         }
 
@@ -313,19 +491,91 @@ namespace Shinobytes.UI
                 return;
             }
 
+            RefreshIdentity(state, player, observed != null && observed == player);
+            RefreshHealth(state, player);
+            RefreshRested(state, player);
+            RefreshSkill(state, player);
+        }
+
+        private static void RefreshIdentity(RowState state, PlayerController player, bool isObserved)
+        {
             if (state.LastName != player.PlayerName)
             {
                 state.LastName = player.PlayerName;
                 state.Name.text = player.PlayerName;
             }
 
+            if (!string.Equals(state.LastColorHex, player.PlayerNameHexColor, System.StringComparison.Ordinal))
+            {
+                state.LastColorHex = player.PlayerNameHexColor;
+                state.Name.style.color = HudFormat.ReadableNameColor(player.PlayerNameHexColor);
+            }
+
+            // The highlight follows the observed player, so the list and the camera agree on who is
+            // on screen. It used to mark the broadcaster, and a recycled row could keep that class
+            // for whoever it showed next, because the cache reset to "off" while the class stayed on.
+            var highlight = isObserved ? 1 : 0;
+            if (highlight != state.LastHighlight)
+            {
+                state.LastHighlight = highlight;
+                state.Root.EnableInClassList("rf-player-row--highlight", isObserved);
+            }
+
             var combatLevel = player.Stats != null ? player.Stats.CombatLevel : 0;
             if (combatLevel != state.LastCombatLevel)
             {
                 state.LastCombatLevel = combatLevel;
-                state.Level.text = combatLevel.ToString();
+                state.Level.text = combatLevel.ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        private static void RefreshHealth(RowState state, PlayerController player)
+        {
+            var health = player.Stats != null ? player.Stats.Health : null;
+            var fraction = 0f;
+            if (health != null)
+            {
+                int current = health.CurrentValue;
+                int max = health.Level;
+                fraction = max > 0 ? Mathf.Clamp01((float)current / max) : 0f;
             }
 
+            if (SetFill(state.HealthFill, fraction, ref state.LastHealth))
+            {
+                var low = fraction < LowHealth;
+                if (low != state.LastHealthLow)
+                {
+                    state.LastHealthLow = low;
+                    state.HealthBar.EnableInClassList("rf-bar--low", low);
+                }
+            }
+        }
+
+        private static void RefreshRested(RowState state, PlayerController player)
+        {
+            var seconds = player.Rested != null ? player.Rested.RestedTime : 0d;
+            var minutes = seconds > 0 ? (int)(seconds / 60d) : 0;
+            if (minutes == state.LastRestedMinutes)
+            {
+                return;
+            }
+
+            state.LastRestedMinutes = minutes;
+            if (seconds <= 0)
+            {
+                state.Rested.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var restedText = minutes >= 60
+                ? (minutes / 60).ToString(CultureInfo.InvariantCulture) + "h"
+                : minutes.ToString(CultureInfo.InvariantCulture) + "m";
+            state.Rested.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RESTED, restedText);
+            state.Rested.style.display = DisplayStyle.Flex;
+        }
+
+        private static void RefreshSkill(RowState state, PlayerController player)
+        {
             // Wrapped because GetActiveSkillStat has thrown in the past when a player is mid state
             // change; the old row logged and swallowed it the same way, just noisier.
             SkillStat skill = null;
@@ -342,76 +592,97 @@ namespace Shinobytes.UI
 
             if (skill == null)
             {
-                if (state.LastSkill != Skill.None)
+                if (state.LastSkill != Skill.None || state.LastProgress < 0f)
                 {
                     state.LastSkill = Skill.None;
-                    state.SkillLabel.text = string.Empty;
+                    state.SkillLabel.text = "Idle";
+                    state.Percent.text = string.Empty;
                     state.Rate.text = string.Empty;
-                    SetFill(state, 0f);
+                    state.LastPercentTenths = -1;
+                    state.LastRate = -1;
+                    SetFill(state.ExpFill, 0f, ref state.LastProgress);
                 }
                 return;
             }
+
+            // Health and melee have no meaningful level or progress readout here, matching the old
+            // row. They train the combat stats underneath rather than a single skill of their own.
+            var levelled = activeSkill != Skill.Health && activeSkill != Skill.Melee;
 
             if (activeSkill != state.LastSkill || skill.Level != state.LastSkillLevel)
             {
                 state.LastSkill = activeSkill;
                 state.LastSkillLevel = skill.Level;
 
-                // Health and melee have no meaningful level readout here, matching the old row.
-                state.SkillLabel.text = activeSkill == Skill.Health || activeSkill == Skill.Melee
-                    ? activeSkill.GetShortName()
-                    : activeSkill.GetShortName() + " " + skill.Level;
+                // Full names rather than the three letter codes. The level now has its own column,
+                // so there is room, and "Woodcutting" reads at a glance where "Woo" did not.
+                state.SkillLabel.text = levelled
+                    ? activeSkill.ToString() + "  <b>" + skill.Level + "</b>"
+                    : activeSkill.ToString();
             }
 
-            if (activeSkill == Skill.Health || activeSkill == Skill.Melee)
+            if (!levelled)
             {
                 if (state.LastRate != 0)
                 {
                     state.LastRate = 0;
                     state.Rate.text = string.Empty;
+                    state.Percent.text = string.Empty;
+                    state.LastPercentTenths = -1;
                 }
-            }
-            else
-            {
-                var perHour = (long)skill.GetExperiencePerHour();
-                if (perHour != state.LastRate)
-                {
-                    state.LastRate = perHour;
-                    state.Rate.text = perHour > 0 ? Utility.FormatValue(perHour) + " xp/h" : string.Empty;
-                }
-            }
 
-            // Confirmed correct rather than merely copied.
-            //
-            // SkillStat.Experience counts within the current level and resets on level up, carrying
-            // any overflow forward. ExperienceForLevel(n) returns ExperienceArray[n - 2], which is
-            // the amount needed to get from n-1 to n rather than a running total, so for a level L
-            // skill ExperienceForLevel(L + 1) is exactly the size of the level being worked through.
-            // Experience over that is a true 0..1 ratio.
-            //
-            // The cumulative form is the obsolete OldExperienceForLevel: totalling experience across
-            // levels eventually overflowed and put a ceiling on max level, which is why it resets
-            // per level now.
-            var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
-            var progress = skill.Experience > 0 && nextLevelExp > 0
-                ? (float)(skill.Experience / nextLevelExp)
-                : 0f;
-
-            SetFill(state, progress);
-        }
-
-        private static void SetFill(RowState state, float progress)
-        {
-            progress = Mathf.Clamp01(progress);
-
-            // Sub pixel changes are invisible and still cost a layout pass.
-            if (Mathf.Abs(progress - state.LastProgress) < 0.005f)
-            {
+                SetFill(state.ExpFill, 0f, ref state.LastProgress);
                 return;
             }
 
-            state.LastProgress = progress;
-            state.BarFill.style.width = new Length(progress * 100f, LengthUnit.Percent);
+            var perHour = (long)skill.GetExperiencePerHour();
+            if (perHour != state.LastRate)
+            {
+                state.LastRate = perHour;
+                state.Rate.text = perHour > 0 ? HudFormat.Compact(perHour) + " xp/h" : string.Empty;
+            }
+
+            // SkillStat.Experience counts within the current level and resets on level up, carrying
+            // any overflow forward. ExperienceForLevel(n) returns the amount needed to get from n-1
+            // to n rather than a running total, so for a level L skill ExperienceForLevel(L + 1) is
+            // exactly the size of the level being worked through and this is a true 0..1 ratio. The
+            // cumulative form is the obsolete OldExperienceForLevel, which overflowed and capped the
+            // maximum level.
+            var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
+            var progress = skill.Experience > 0 && nextLevelExp > 0
+                ? Mathf.Clamp01((float)(skill.Experience / nextLevelExp))
+                : 0f;
+
+            SetFill(state.ExpFill, progress, ref state.LastProgress);
+
+            // Tenths of a percent, so the label only rebuilds when the shown digit changes.
+            var tenths = (int)(progress * 1000f);
+            if (tenths != state.LastPercentTenths)
+            {
+                state.LastPercentTenths = tenths;
+
+                // Invariant culture on purpose: the game runs on machines set to Swedish and other
+                // locales that would print 42,1 and mix decimal marks with the English text around it.
+                state.Percent.text = (tenths / 10f).ToString("0.0", CultureInfo.InvariantCulture) + "%";
+            }
+        }
+
+        /// <summary>
+        /// Sets a bar fill, skipping changes too small to see. Returns true when it wrote.
+        /// </summary>
+        private static bool SetFill(VisualElement fill, float fraction, ref float last)
+        {
+            fraction = Mathf.Clamp01(fraction);
+
+            // Sub pixel changes are invisible and still cost a layout pass.
+            if (last >= 0f && Mathf.Abs(fraction - last) < 0.005f)
+            {
+                return false;
+            }
+
+            last = fraction;
+            fill.style.width = new Length(fraction * 100f, LengthUnit.Percent);
+            return true;
         }
 
         // ---- Data ----------------------------------------------------------------
@@ -453,9 +724,12 @@ namespace Shinobytes.UI
 
         private void OnPlayersChanged()
         {
+            // The footer depends on the count as much as on the window size.
+            shownTotal = -1;
+
             if (countLabel != null)
             {
-                countLabel.text = players.Count.ToString();
+                countLabel.text = players.Count.ToString(CultureInfo.InvariantCulture);
             }
 
             // RefreshItems rebinds what is on screen and re-measures the scroll range without

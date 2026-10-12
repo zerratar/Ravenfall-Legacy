@@ -25,6 +25,14 @@ public class RaidNotifications : MonoBehaviour
     /// </summary>
     [SerializeField] private Shinobytes.UI.NotificationScreenView uiToolkitScreen;
 
+    /// <summary>
+    /// Optional UI Toolkit raid strip. When assigned it replaces the whole raid UI: the
+    /// announcement, the floating timer and the bottom health bar all become one slim strip at the
+    /// top of the screen, so the fight itself stays visible. The old objects are left in the scene
+    /// and still work if this is cleared.
+    /// </summary>
+    [SerializeField] private Shinobytes.UI.RaidHudView raidHud;
+
     /// <summary>The chat command viewers type to join. Highlighted in the announcement.</summary>
     private const string JoinCommand = "!raid";
 
@@ -55,6 +63,7 @@ public class RaidNotifications : MonoBehaviour
 
     public void HideRaidInfo()
     {
+        if (raidHud != null) raidHud.Hide();
         if (uiToolkitScreen != null) uiToolkitScreen.Hide();
         if (raidBossAppeared) raidBossAppeared.SetActive(false);
         if (raidBossHealth) raidBossHud.SetActive(false);
@@ -65,6 +74,12 @@ public class RaidNotifications : MonoBehaviour
 
     public void HideRaidJoinInfo()
     {
+        if (raidHud != null)
+        {
+            raidHud.SetJoinable(false);
+            return;
+        }
+
         lblComeJoinText.enabled = false;
         raidTimer.rectTransform.localPosition = new Vector3(0, 112f);
     }
@@ -89,6 +104,19 @@ public class RaidNotifications : MonoBehaviour
             var o = ExternalResources.GetAudioClip(raidSound);
             if (o != null) audioSource.clip = o;
             audioSource.Play();
+        }
+
+        if (raidHud != null)
+        {
+            // The strip replaces the announcement, the floating timer and the bottom health bar
+            // together, so all of the old pieces stay off.
+            raidBossHud.SetActive(false);
+            raidBossAppeared.SetActive(false);
+            if (uiToolkitScreen != null) uiToolkitScreen.Hide();
+
+            var command = string.IsNullOrWhiteSpace(code) ? JoinCommand : JoinCommand + " " + code.Trim();
+            raidHud.Show(command);
+            return;
         }
 
         // The HUD comes up either way; it is not part of the announcement.
@@ -131,12 +159,33 @@ public class RaidNotifications : MonoBehaviour
 
     public void SetHealthBarValue(float proc, float maxValue = 1f)
     {
+        if (raidHud != null)
+        {
+            raidHud.SetHealth(proc, maxValue);
+            return;
+        }
+
         raidBossHealth.MaxValue = maxValue;
         raidBossHealth.Progress = proc;
     }
 
+    /// <summary>How many players are in the raid. Only the toolkit strip shows it.</summary>
+    public void SetRaiderCount(int count)
+    {
+        if (raidHud != null)
+        {
+            raidHud.SetRaiders(count);
+        }
+    }
+
     public void UpdateRaidTimer(float timeoutTimer)
     {
+        if (raidHud != null)
+        {
+            raidHud.SetTimer(timeoutTimer);
+            return;
+        }
+
         if (!raidTimer)
         {
             return;
@@ -147,6 +196,12 @@ public class RaidNotifications : MonoBehaviour
 
     public void SetRaidBossLevel(int combatLevel)
     {
+        if (raidHud != null)
+        {
+            raidHud.SetLevel(combatLevel);
+            return;
+        }
+
         if (lbLRaidBossLevel) lbLRaidBossLevel.text = $"Lv: <b>{combatLevel}";
     }
 

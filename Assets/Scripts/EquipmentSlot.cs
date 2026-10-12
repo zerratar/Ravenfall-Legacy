@@ -31,6 +31,31 @@ public class EquipmentSlot : MonoBehaviour
         tooltip.Enable();
         iconImage.gameObject.SetActive(false);
 
+        var sprite = GetItemSprite(item);
+
+        if (sprite)
+        {
+            itemImage.gameObject.SetActive(true);
+        }
+
+        itemImage.sprite = sprite;
+
+
+        tooltip.Title = item.InventoryItem.Name ?? item.Item.Name;
+        tooltip.Body = GenerateItemTooltipContent(item);
+    }
+
+    /// <summary>
+    /// The icon for an equipped item, following any transmogrification, cached per item id. Shared
+    /// with the UI Toolkit details window so both use the same lookup and the same cache.
+    /// </summary>
+    internal static Sprite GetItemSprite(GameInventoryItem item)
+    {
+        if (item == null || item.Item == null)
+        {
+            return null;
+        }
+
         var itemId = item.Item.Id;
         var itemName = item.Item.Name;
         if (item.TransmogrificationId != null)
@@ -54,16 +79,7 @@ public class EquipmentSlot : MonoBehaviour
             loadedItemImages[itemId] = sprite;
         }
 
-        if (sprite)
-        {
-            itemImage.gameObject.SetActive(true);
-        }
-
-        itemImage.sprite = sprite;
-
-
-        tooltip.Title = item.InventoryItem.Name ?? item.Item.Name;
-        tooltip.Body = GenerateItemTooltipContent(item);
+        return sprite;
     }
 
     private string GenerateItemTooltipContent(GameInventoryItem item)

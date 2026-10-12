@@ -21,6 +21,9 @@ public class DungeonNotifications : MonoBehaviour
 
     [SerializeField] private GameObject dungeonDetailsObject;
 
+    [Tooltip("Optional UI Toolkit panel. When assigned it shows the dungeon instead of the uGUI objects above, which stay hidden. The horn, stream labels and dungeon stats work either way. Clear it to bring the old UI back.")]
+    [SerializeField] private Shinobytes.UI.DungeonHudView hudView;
+
 
     private string lblDungeonJoinFormat;
     private string lblDungeonJoin2Format;
@@ -68,6 +71,8 @@ public class DungeonNotifications : MonoBehaviour
     }
     private void Update()
     {
+        if (hudView) return;
+
         if (activatedObject.gameObject.activeSelf)
         {
             timeBeforeTimer -= GameTime.deltaTime;
@@ -99,25 +104,35 @@ public class DungeonNotifications : MonoBehaviour
             if (o != null) audioSource.clip = o;
             audioSource.Play();
         }
+        ++dungeonCount;
+
+        if (hudView)
+        {
+            hudView.Announce(code);
+            return;
+        }
+
         timerObject.gameObject.SetActive(false);
         dungeonBossHealth.gameObject.SetActive(false);
         activatedObject.gameObject.SetActive(true);
-        ++dungeonCount;
     }
 
     public void SetLevel(int level)
     {
+        if (hudView) return;
         lblDungeonLevel.text = $"Lv. <b>{level}";
     }
 
     public void SetTimeout(float timeout)
     {
+        if (hudView) return;
         timerObject.Timeout = timeout;
         timerObject.Reset();
     }
 
     public void SetHealthBarValue(float proc, float maxValue = 1f)
     {
+        if (hudView) return;
         if (proc > 0f) ShowHealthBar();
         dungeonBossHealth.Progress = proc;
         dungeonBossHealth.MaxValue = maxValue;
@@ -126,6 +141,7 @@ public class DungeonNotifications : MonoBehaviour
 
     public void ShowHealthBar()
     {
+        if (hudView) return;
         if (!dungeonBossHealth.gameObject.activeSelf)
             dungeonBossHealth.gameObject.SetActive(true);
     }
@@ -138,6 +154,7 @@ public class DungeonNotifications : MonoBehaviour
 
     public void UpdateTimer(TimeSpan timeLeft)
     {
+        if (hudView) return;
         lblDungeonTimer.text = $"{timeLeft.Minutes:00}:{timeLeft.Seconds:00}";
     }
 
@@ -165,7 +182,10 @@ public class DungeonNotifications : MonoBehaviour
     internal void UpdateInformation(int alivePlayerCount, int aliveEnemyCount, DungeonBossController boss)
     {
         if (!dungeonDetailsObject) return;
-        if (!dungeonDetailsObject.activeSelf)
+
+        // With the UI Toolkit panel in use the details object stays hidden, but the run time, stream
+        // labels and dungeon stats below are still kept up to date.
+        if (!hudView && !dungeonDetailsObject.activeSelf)
         {
             dungeonDetailsObject.SetActive(true);
 
@@ -181,9 +201,12 @@ public class DungeonNotifications : MonoBehaviour
 
         runTime += GameTime.deltaTime;
 
-        lblDungeonActiveTimer.text = string.Format(lblDungeonActiveTimerFormat, Utility.FormatTime(runTime / 60f / 60f));
-        lblPlayers.text = string.Format(lblPlayersFormat, alivePlayerCount);
-        lblEnemies.text = string.Format(lblEnemiesFormat, aliveEnemyCount);
+        if (!hudView)
+        {
+            lblDungeonActiveTimer.text = string.Format(lblDungeonActiveTimerFormat, Utility.FormatTime(runTime / 60f / 60f));
+            lblPlayers.text = string.Format(lblPlayersFormat, alivePlayerCount);
+            lblEnemies.text = string.Format(lblEnemiesFormat, aliveEnemyCount);
+        }
 
         var dungeonStats = gameManager.GetDungeonStats();
 

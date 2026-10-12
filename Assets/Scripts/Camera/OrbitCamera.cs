@@ -70,7 +70,8 @@ public class OrbitCamera : MonoBehaviour
             orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * rotateChangeSpeed));
         }
 
-        var scrollValue = Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
+        // Scrolling over a HUD window scrolls the window, not the camera.
+        var scrollValue = Shinobytes.UI.DraggableWindow.IsPointerOverWindow ? 0f : Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
         
         Distance = Mathf.Clamp(Distance + scrollValue, MinZoom, MaxZoom);
     }

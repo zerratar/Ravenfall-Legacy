@@ -49,7 +49,8 @@ public class IslandObserveCamera : MonoBehaviour
 
     private void Update()
     {
-        var scrollValue = Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
+        // Scrolling over a HUD window scrolls the window, not the camera.
+        var scrollValue = Shinobytes.UI.DraggableWindow.IsPointerOverWindow ? 0f : Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
         var oldDistance = Distance;
         var oldAngle = orbitAngles.x;
         Distance = Mathf.Clamp(Distance + scrollValue, MinZoom, MaxZoom);
