@@ -19,12 +19,44 @@ glass.EnableKeyword("_EMISSION");
 glass.globalIlluminationFlags = UnityEngine.MaterialGlobalIlluminationFlags.RealtimeEmissive;
 UnityEditor.EditorUtility.SetDirty(glass);
 
+// Materials of our own: a kit material with another kit texture (the same list as DERIVED in blender/common.py),
+// and the normal map to go with it.
+var derived = new[] {
+    new[] { "Village_Wall_Stucco", "PolygonFantasyKingdom_Mat_Castle_Wall", "PolygonFantasyKingdon_Texture_Wall_Stucco_01", "PolygonFantasyKingdon_Texture_Wall_Stucco_Normal" },
+    new[] { "Village_Roof_Tile_Brown", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Tile_02", "keep" },
+    new[] { "Village_Roof_Tile_Red", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Tile_03", "keep" },
+    new[] { "Village_Roof_Tile_Teal", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Tile_04", "keep" },
+    new[] { "Village_Roof_Slat_Blue", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Slat_01", "" },
+    new[] { "Village_Roof_Slat_Brown", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Slat_02", "" },
+    new[] { "Village_Roof_Slat_Red", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Slat_03", "" },
+    new[] { "Village_Roof_Slat_Teal", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Slat_04", "" },
+};
+var derivedPaths = new System.Collections.Generic.Dictionary<string, string>();
+foreach (var d in derived)
+{
+    var path = MATDIR + d[0] + ".mat";
+    var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
+    if (!m)
+    {
+        m = new UnityEngine.Material(UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/PolygonFantasyKingdom/Materials/" + d[1] + ".mat"));
+        UnityEditor.AssetDatabase.CreateAsset(m, path);
+    }
+    var tex = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>("Assets/PolygonFantasyKingdom/Textures/Castle/" + d[2] + ".png");
+    foreach (var prop in new[] { "_BaseMap", "_MainTex" }) if (m.HasProperty(prop)) m.SetTexture(prop, tex);
+    // the fourth entry: a normal map of its own, "keep" for the copied one, or empty for none (the slats have none)
+    if (d[3] != "keep" && m.HasProperty("_BumpMap"))
+        m.SetTexture("_BumpMap", d[3] == "" ? null : UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>("Assets/PolygonFantasyKingdom/Textures/Castle/" + d[3] + ".png"));
+    UnityEditor.EditorUtility.SetDirty(m);
+    derivedPaths[d[0]] = path;
+}
+
 var kitMats = new System.Collections.Generic.Dictionary<string, string> {
     { "PolygonFantasyKingdom_Mat_01_A", "Assets/PolygonFantasyKingdom/Materials/PolygonFantasyKingdom_Mat_01_A.mat" },
     { "PolygonFantasyKingdom_Mat_Castle_Wall", "Assets/PolygonFantasyKingdom/Materials/PolygonFantasyKingdom_Mat_Castle_Wall.mat" },
     { "PolygonFantasyKingdom_Mat_Castle_Wall Darker", "Assets/PolygonFantasyKingdom/Materials/PolygonFantasyKingdom_Mat_Castle_Wall Darker.mat" },
     { "PolygonFantasyKingdom_Mat_Castle_Roof", "Assets/PolygonFantasyKingdom/Materials/PolygonFantasyKingdom_Mat_Castle_Roof.mat" },
     { "Village_StainedGlass", glassPath } };
+foreach (var kv in derivedPaths) kitMats[kv.Key] = kv.Value;
 UnityEditor.AssetDatabase.Refresh();
 foreach (var path in System.IO.Directory.GetFiles(DIR, "*.fbx"))
 {

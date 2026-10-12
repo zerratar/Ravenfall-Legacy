@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 1
   Name: Lumbermill
-  Description: "Build this house to increase your woodcutting experience gained up
-    to {0}% for your players.\x03\x03Assign a player with a high level woodcutting
-    to unlock the bonus."
+  Description: "Build this house to increase your woodcutting experience gained up to {0}% for your players.\x03\x03Assign a player with a high level woodcutting to unlock the bonus."
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 0.84, y: 0, z: 2.4}
   IconOffset: 0
-  Prefab: {fileID: 3563551150921237704, guid: 10f2b93fed420dd46ab1f292c509f604, type: 3}
+  Prefab: {fileID: 1788193736091287050, guid: 414ef3a5e55ddce4a9612682dc363769, type: 3}

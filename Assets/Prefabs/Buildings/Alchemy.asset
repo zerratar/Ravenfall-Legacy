@@ -19,4 +19,4 @@ MonoBehaviour:
   BuildStoneCost: 1000
   CameraOffset: {x: 0.84, y: 0, z: 2.4}
   IconOffset: 0
-  Prefab: {fileID: 1794188126026390180, guid: f4907effec0dd4c4cb77036914ed9a16, type: 3}
+  Prefab: {fileID: 3232823567524123168, guid: 5363853082fdb3c41be15e17c44e1840, type: 3}

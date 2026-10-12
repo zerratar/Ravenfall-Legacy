@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 9
   Name: Sailor's log
-  Description: Build this house to increase your sailing experience gained up to
-    {0}% for your players. Assign a player with a high level sailing to unlock the
-    bonus.
+  Description: Build this house to increase your sailing experience gained up to {0}% for your players. Assign a player with a high level sailing to unlock the bonus.
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 0.84, y: 0, z: 2.4}
   IconOffset: 0
-  Prefab: {fileID: 1794188126026390180, guid: f4907effec0dd4c4cb77036914ed9a16, type: 3}
+  Prefab: {fileID: 8963108298345898314, guid: 8f26f1de1ed90a2458eda88e63cdc559, type: 3}

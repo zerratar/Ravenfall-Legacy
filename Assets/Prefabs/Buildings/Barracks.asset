@@ -14,10 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 4
   Name: Barracks
-  Description: Build this house to increase your melee experience gained up to {0}%
-    for your players. Assign a player with a high level melee to unlock the bonus.
+  Description: Build this house to increase your melee experience gained up to {0}% for your players. Assign a player with a high level melee to unlock the bonus.
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: -0.3, y: 0, z: 1}
   IconOffset: 0
-  Prefab: {fileID: 2601058818395481626, guid: 76601f242ea7c5e4e8f3249001942e76, type: 3}
+  Prefab: {fileID: 931239513938363314, guid: 725b25d16130430448731bbc30927ed0, type: 3}

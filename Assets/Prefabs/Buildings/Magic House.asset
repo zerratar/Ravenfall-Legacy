@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 2
   Name: Magic House
-  Description: "Build this house to increase your magic experience gained up to {0}%
-    for your players.\x03\x03Assign a player with a high level magic to unlock the
-    bonus."
+  Description: "Build this house to increase your magic experience gained up to {0}% for your players.\x03\x03Assign a player with a high level magic to unlock the bonus."
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: -0.89, y: 9.5, z: 17.94}
   IconOffset: 19
-  Prefab: {fileID: 6099886845289109472, guid: 117e5cb82d14f2b4b8938ca1763a26ed, type: 3}
+  Prefab: {fileID: 7538165827920287831, guid: 75db1bcd22d3c63499f2a981a0f0828c, type: 3}

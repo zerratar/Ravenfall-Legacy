@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 12
   Name: Medical Tent
-  Description: "Build this house to increase your healing experience gained up to
-    {0}% for your players.\x03\x03Assign a player with a high level healing to unlock
-    the bonus."
+  Description: "Build this house to increase your healing experience gained up to {0}% for your players.\x03\x03Assign a player with a high level healing to unlock the bonus."
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 1.36, y: 0, z: 1.34}
   IconOffset: 2
-  Prefab: {fileID: 5706335805931662804, guid: 886da94ad8859f045bd3fcd8901de92c, type: 3}
+  Prefab: {fileID: 6677786801660840338, guid: 81e8545bde1eae14b87461445f710dd8, type: 3}

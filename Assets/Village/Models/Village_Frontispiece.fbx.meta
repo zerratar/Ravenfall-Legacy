@@ -27,8 +27,48 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Village_Roof_Slat_Blue
+    second: {fileID: 2100000, guid: 54f6a07de2c39d748b0b8a71130c0782, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Village_Roof_Slat_Brown
+    second: {fileID: 2100000, guid: 667ad4fcca814034bbd19692348db15b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Village_Roof_Slat_Red
+    second: {fileID: 2100000, guid: 2165693bb851443469e9eb13933bcbb2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Village_Roof_Slat_Teal
+    second: {fileID: 2100000, guid: aa69a870c5819d94aacc54a9ad82654e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Village_Roof_Tile_Brown
+    second: {fileID: 2100000, guid: 843de60ae6878ec4cb0c00bdacce5fc0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Village_Roof_Tile_Red
+    second: {fileID: 2100000, guid: 22fbdaa3e424fe74c97b2aa9db6c288f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Village_Roof_Tile_Teal
+    second: {fileID: 2100000, guid: d529debafd4693d408cd211d87597fbb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Village_StainedGlass
     second: {fileID: 2100000, guid: 3301679f7903a414da9b71f347df7a5d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Village_Wall_Stucco
+    second: {fileID: 2100000, guid: c2296fa565f9b404591960cc7a22d644, type: 2}
   materials:
     materialImportMode: 1
     materialName: 0

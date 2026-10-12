@@ -14,10 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 3
   Name: Archer Range
-  Description: Build this house to increase your ranged experience gained up to {0}%
-    for your players. Assign a player with a high level ranged to unlock the bonus.
+  Description: Build this house to increase your ranged experience gained up to {0}% for your players. Assign a player with a high level ranged to unlock the bonus.
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 1.36, y: 0, z: 1.34}
   IconOffset: 0
-  Prefab: {fileID: 2665859645175380799, guid: 161bc0d78f5c83c489c3190ab41d98cd, type: 3}
+  Prefab: {fileID: 3345635763822907159, guid: 0a94f95ee20f63249a24bc010c698d2a, type: 3}

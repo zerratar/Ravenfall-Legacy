@@ -72,6 +72,21 @@ MAT = {
     "ROOF": _tex_mat("PolygonFantasyKingdom_Mat_Castle_Roof", KIT + "Textures/Castle/PolygonFantasyKingdon_Texture_Roof_Tile_01.png"),
     "GLASS": _tex_mat("Village_StainedGlass", KIT + "Textures/PolygonFantasyKingdom_Texture_01_A.png", emission=0.8),
 }
+# Materials of our own made from a kit material with another kit texture (models_import.cs makes the Unity
+# side the same way): key -> (material name, kit material it copies, texture under Textures/Castle).
+DERIVED = {
+    "STUCCO": ("Village_Wall_Stucco", "PolygonFantasyKingdom_Mat_Castle_Wall", "PolygonFantasyKingdon_Texture_Wall_Stucco_01.png"),
+    "ROOF_BROWN": ("Village_Roof_Tile_Brown", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Tile_02.png"),
+    "ROOF_RED": ("Village_Roof_Tile_Red", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Tile_03.png"),
+    "ROOF_TEAL": ("Village_Roof_Tile_Teal", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Tile_04.png"),
+    "SLAT_BLUE": ("Village_Roof_Slat_Blue", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Slat_01.png"),
+    "SLAT_BROWN": ("Village_Roof_Slat_Brown", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Slat_02.png"),
+    "SLAT_RED": ("Village_Roof_Slat_Red", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Slat_03.png"),
+    "SLAT_TEAL": ("Village_Roof_Slat_Teal", "PolygonFantasyKingdom_Mat_Castle_Roof", "PolygonFantasyKingdon_Texture_Roof_Slat_04.png"),
+}
+for _k, (_name, _base, _tex) in DERIVED.items():
+    MAT[_k] = _tex_mat(_name, KIT + "Textures/Castle/" + _tex)
+ROOFLIKE = ("ROOF", "ROOF_BROWN", "ROOF_RED", "ROOF_TEAL", "SLAT_BLUE", "SLAT_BROWN", "SLAT_RED", "SLAT_TEAL")
 
 _wd = MAT["WALLD"].node_tree; _mix = _wd.nodes.new("ShaderNodeMix"); _mix.data_type = 'RGBA'; _mix.blend_type = 'MULTIPLY'
 _mix.inputs[0].default_value = 1.0; _mix.inputs[7].default_value = (0.62, 0.6, 0.58, 1)
@@ -99,7 +114,7 @@ class Builder:
                 u, v = swatch(col)
                 for l in f.loops: l[self.uv].uv = (u, v)
             else:
-                tu, tv = tile or ((5.0, 2.5) if key in ("WALL", "WALLD") else (6.0, 6.0))
+                tu, tv = tile or ((5.0, 2.5) if key in ("WALL", "WALLD") else (4.0, 4.0) if key == "STUCCO" else (6.0, 6.0))
                 n = f.normal
                 ax = max(range(3), key=lambda i: abs(n[i]))
                 for l in f.loops:
@@ -118,9 +133,10 @@ class Builder:
         return out
 
     # primitives. Blender axes: x right, y back (the front of a model faces -y), z up.
-    def box(self, c, s, key, col=None, tile=None, rot_z=0.0, skip=()):
+    def box(self, c, s, key, col=None, tile=None, rot_z=0.0, skip=(), rot=None):
+        """rot, a 3x3 Matrix, turns the box freely; otherwise rot_z turns it about the vertical."""
         hx, hy, hz = s[0] / 2, s[1] / 2, s[2] / 2
-        R = Matrix.Rotation(rot_z, 3, 'Z')
+        R = rot if rot is not None else Matrix.Rotation(rot_z, 3, 'Z')
         vs = [Vector(c) + R @ Vector((x, y, z)) for z in (-hz, hz) for y in (-hy, hy) for x in (-hx, hx)]
         quads = {"bottom": (0, 2, 3, 1), "top": (4, 5, 7, 6), "front": (0, 1, 5, 4), "back": (2, 6, 7, 3), "left": (0, 4, 6, 2), "right": (1, 3, 7, 5)}
         fs = self.add(vs, [q for k, q in quads.items() if k not in skip])
@@ -210,6 +226,27 @@ class Builder:
         fs = self.add(vs, [(3, 2, 1, 0), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)])
         for f in fs: f.normal_update()
         return self.paint(fs, key, col)
+
+    def face(self, pts, want, key, col=None):
+        """One flat face, turned to face the direction want."""
+        fs = self.add([Vector(p) for p in pts], [tuple(range(len(pts)))])
+        for f in fs:
+            f.normal_update()
+            if f.normal.dot(Vector(want)) < 0: f.normal_flip()
+        return self.paint(fs, key, col)
+
+    def solid_xz(self, outline, y0, y1, key, col=None, rot_z=0.0, origin=(0, 0, 0), tile=None):
+        """A slab with an (x, z) outline from y0 to y1, then turned by rot_z about the vertical and moved to
+        origin. Turning keeps the winding, so the faces stay outward."""
+        area = sum(outline[i][0] * outline[(i + 1) % len(outline)][1] - outline[(i + 1) % len(outline)][0] * outline[i][1] for i in range(len(outline)))
+        pts = outline if area > 0 else outline[::-1]
+        m = len(pts)
+        R = Matrix.Rotation(rot_z, 3, 'Z'); O = Vector(origin)
+        vs = [O + R @ Vector((x, y0, z)) for x, z in pts] + [O + R @ Vector((x, y1, z)) for x, z in pts]
+        idx = [tuple(range(m)), tuple(reversed(range(m, 2 * m)))] + [(k, m + k, m + (k + 1) % m, (k + 1) % m) for k in range(m)]
+        fs = self.add(vs, idx)
+        for f in fs: f.normal_update()
+        return self.paint(fs, key, col, tile)
 
     def finish(self, smooth=False, recalc=True):
         """recalc lets Blender guess the face directions, which suits closed shapes. Models built from open

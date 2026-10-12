@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 11
   Name: Fisher's log
-  Description: Build this house to increase your fishing experience gained up to
-    {0}% for your players. Assign a player with a high level fishing to unlock the
-    bonus.
+  Description: Build this house to increase your fishing experience gained up to {0}% for your players. Assign a player with a high level fishing to unlock the bonus.
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 0.84, y: 0.49, z: 2.4}
   IconOffset: 0
-  Prefab: {fileID: 3209364766477096189, guid: cfffc98bb65e3da4aabf3e936b97f306, type: 3}
+  Prefab: {fileID: 3451109723134816251, guid: 2640e109dbc76e547ab1059a507286fa, type: 3}

@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 6
   Name: Crafting House
-  Description: Build this house to increase your crafting experience gained up to
-    {0}% for your players. Assign a player with a high level crafting to unlock the
-    bonus.
+  Description: Build this house to increase your crafting experience gained up to {0}% for your players. Assign a player with a high level crafting to unlock the bonus.
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 0.84, y: 0, z: 4}
   IconOffset: 0
-  Prefab: {fileID: 9120657723914641661, guid: 8a4e62ed4e7360c46949ebf73896cedb, type: 3}
+  Prefab: {fileID: 6794140551634249840, guid: c4a1a32f09ecab840a34372c456238bd, type: 3}

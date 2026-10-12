@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 5
   Name: Cooking House
-  Description: Build this house to increase your cooking experience gained up to
-    {0}% for your players. Assign a player with a high level cooking to unlock the
-    bonus.
+  Description: Build this house to increase your cooking experience gained up to {0}% for your players. Assign a player with a high level cooking to unlock the bonus.
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 0.84, y: 0, z: 2}
   IconOffset: 0
-  Prefab: {fileID: 8418048663847442477, guid: 90e75ebbc60de2649ba090d59d31d953, type: 3}
+  Prefab: {fileID: 2832620717037486315, guid: e01f5f6b3ed2a174c8e0749bf17455c7, type: 3}

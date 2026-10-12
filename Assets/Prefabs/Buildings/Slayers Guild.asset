@@ -14,10 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 10
   Name: Slayers Guild
-  Description: Build this house to increase your slayer experience gained up to {0}%
-    for your players. Assign a player with a high level slayer to unlock the bonus.
+  Description: Build this house to increase your slayer experience gained up to {0}% for your players. Assign a player with a high level slayer to unlock the bonus.
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 0.84, y: 0, z: 2.4}
   IconOffset: 0
-  Prefab: {fileID: 1794188126026390180, guid: f4907effec0dd4c4cb77036914ed9a16, type: 3}
+  Prefab: {fileID: 8076780615889564666, guid: 2beb524a71eeecd43918ede9df991a6a, type: 3}

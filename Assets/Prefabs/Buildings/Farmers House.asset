@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 7
   Name: Farmer's House
-  Description: Build this house to increase your farming experience gained up to
-    {0}% for your players. Assign a player with a high level farming to unlock the
-    bonus.
+  Description: Build this house to increase your farming experience gained up to {0}% for your players. Assign a player with a high level farming to unlock the bonus.
   BuildWoodCost: 1000
   BuildStoneCost: 1000
   CameraOffset: {x: 0.2, y: 0.85, z: 1}
   IconOffset: 0
-  Prefab: {fileID: 1084967374664312558, guid: 018953ed21912134ba9e0acf573e5fff, type: 3}
+  Prefab: {fileID: 7610310016666106751, guid: 08d1a7de338b99d438d8ea1516f6f006, type: 3}

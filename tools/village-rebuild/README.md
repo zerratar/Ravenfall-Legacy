@@ -63,11 +63,45 @@ kits), so the scripts are the source and the models can be rebuilt at any time.
 | `tower.py` | Round towers without the kit's stacked doorways: cone, onion and needle roofs, plus a corbelled turret | Tiers 4 and 5 |
 | `frontispiece.py` | The tier 5 centre bay from the ground to a gable: buttresses, portal, lancets, rose window | Tier 5, in the two middle front wall slots |
 | `goose.py` | Sir Honksworth the Crowned, the fountain goose | Tier 5 |
+| `house_*.py` | One house per building type (see Houses) | Every plot |
+
+### Houses
+
+Every building type has its own house, built by `blender/house_<type>.py` on a shared kit:
+
+- `house_kit.py`: timber framed cottages (stone plinth, plaster walls, a gabled roof in any of the kit's tile or
+  slat colours), windows, doors, signboards with an emblem per trade, yards.
+- `house_props.py`: fences, trees, hay, sacks, logs, dummies, targets, boats, a well, a round hut and more.
+
+Each house is a lot of about 9 x 9 m facing -z, towards the village camera and the build mode card camera.
+To rebuild one and put it in the game:
+
+```
+sh blender/run.sh house_mining
+```
+
+Then run `models_import.cs` and `houses_prefabs.cs` in the editor. `houses_prefabs.cs` makes
+`Assets/Village/Prefabs/House_<Type>.prefab` (TownHouseController and a footprint BoxCollider on the root, the
+model as a child) and points the building definitions in `Assets/Prefabs/Buildings` at them.
+`house_lineup.cs` lines them all up for review shots, in three runs.
+
+The old prefabs stay in `Assets/Prefabs/Buildings/Objects`. To go back for a type, point its definition's
+Prefab at the old one: Lumbermill, Magic House, archery_range, Barracks, Cooking House, Crafting House,
+Farmers House, Fishers Log and Healing Tent. Mining, Sailing, Slayer, Gathering and Alchemy all used
+DefaultHouse.
+
+Easter eggs in the houses: a beaver at the lumbermill, a black cat on the wizard's step, an apple shot
+through on the archery range, a knocked-over dummy at the barracks and the same dummy bandaged at the
+infirmary, a pie on the bakery windowsill, a horseshoe over the smithy door, a pumpkin-headed scarecrow, a
+rubber duck in the fisher's tub, a gull on the boathouse ridge, glowing eyes in the slayers' cage, and a
+garden gnome by the forager's hut.
 
 How they fit the kits:
 
 - **Materials by name.** Faces use materials named after the kit materials (`PolygonFantasyKingdom_Mat_01_A`,
-  `..._Castle_Wall`, `..._Castle_Wall Darker`, `..._Castle_Roof`), and `models_import.cs` remaps them, so the
+  `..._Castle_Wall`, `..._Castle_Wall Darker`, `..._Castle_Roof`), or after our own copies of them with other kit
+  textures (`Village_Wall_Stucco`, `Village_Roof_Tile_Red` and so on, `DERIVED` in `common.py`). `models_import.cs`
+  makes those copies and remaps every slot, so the
   new pieces share the kit textures. Palette colours are picked by collapsing a face's UVs onto the nearest
   swatch of the palette atlas, as Synty does. Brick and roof tiles are box or cylinder projected at the kit's
   density (5 m per U and 2.5 m per V for brick).
