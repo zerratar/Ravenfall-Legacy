@@ -175,10 +175,40 @@ hall the biggest thing to save resources for, and the clearest sign of progress.
 
 ### Phase 4: new building types, roads and decoration
 
-- **Paths:** paint roads cell by cell.
+- **Roads:** drawn by the streamer as editable splines. See "Roads" below.
 - **Decor:** fences, lamps, trees, flower beds, statues. Cheap, no effect beyond looks.
 - **Production buildings:** a lumber mill, quarry and so on that add to village resource income.
 - **New art:** models per building and tier, made in Blender.
+
+#### Roads
+
+Requirements set by the user on 2026-10-12. This is not designed in detail yet; it belongs in phase 4,
+after costs exist.
+
+- **Drawn, not painted.** The streamer draws a road by placing points, the way city builders such as
+  SimCity and Cities: Skylines do. The road is a runtime spline through those points, and the game builds
+  its mesh. A grid snap (the same 1 m grid as placement) and an angle snap keep layouts tidy, and a modifier
+  key gives free curves.
+- **Editable in game.** A road can be selected at any time to drag, insert or delete points, change its
+  type, or remove it. Picking must work even where a plot or a new building now overlaps the road: roads
+  get their own pick layer in build mode, and their point handles draw on top of everything.
+- **Town hall upgrades.** A new tier has a bigger footprint, and new plots appear as the village levels.
+  Roads that now cross the town hall or a plot are flagged, for example drawn red with a warning, and stay
+  editable. They are never deleted or rerouted automatically.
+- **Road types and costs.** Each type has a width, a look and a cost per metre in village resources: a dirt
+  road is free or cheap, cobbles and paving cost ore and more. Removing a road refunds part of its cost.
+  Better types unlock with town hall tiers. The numbers come from the user, like the other phase 3 costs.
+- **Mesh.** The spline is sampled into a strip of the type's width that follows the terrain, with UVs
+  running along its length. Junctions start simple (overlapping ends sit flush), with proper intersection
+  meshes later.
+- **Server (RavenNest).** A village stores its roads separately from its houses, so old clients ignore
+  them: an id, a type and a list of (x, z) points per road. A new endpoint saves and loads them, and the
+  server checks the cost and the unlocks. Roads do not use building slots.
+- **Possible gameplay later.** A navmesh area cost could make villagers and players prefer roads, and a
+  road could give a small walking speed boost.
+
+Open: grid only, freeform only, or both (recommended: freeform splines with an optional grid snap), and
+whether one road can have more than one width.
 
 ### The island for free placement
 
