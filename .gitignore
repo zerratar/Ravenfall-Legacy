@@ -155,6 +155,11 @@ Assets/_TerrainAutoUpgrade/*.*
 !Assets/UI/**/*.meta
 !Assets/UI/**/*.asset
 
+# Building definitions (TownHouse assets). The village references them by GUID, and the type each
+# one carries decides which skill a house boosts, so they must be versioned with their metas.
+!Assets/Prefabs/Buildings/*.asset
+!Assets/Prefabs/Buildings/*.asset.meta
+
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
 

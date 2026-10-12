@@ -34,6 +34,45 @@ public class PlacementOverlay : MonoBehaviour
     private float drawnSize = float.NaN;
     private bool drawnValid;
 
+    private static readonly Color GhostValidTint = new Color(0.55f, 1f, 0.62f, 1f);
+    private static readonly Color GhostInvalidTint = new Color(1f, 0.42f, 0.40f, 1f);
+    private static MaterialPropertyBlock ghostBlock;
+
+    /// <summary>
+    /// A copy of a building to place: no behaviour, no colliders (so it never catches the mouse ray
+    /// or blocks other checks), tinted with <see cref="TintGhost"/>.
+    /// </summary>
+    public static GameObject MakeGhost(GameObject prefab)
+    {
+        var ghost = Instantiate(prefab);
+        ghost.name = prefab.name + " (Placing)";
+        foreach (var behaviour in ghost.GetComponentsInChildren<MonoBehaviour>(true)) behaviour.enabled = false;
+        foreach (var collider in ghost.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+        TintGhost(ghost, true);
+        return ghost;
+    }
+
+    /// <summary>
+    /// Tints the ghost green when it can be placed and red when it cannot. A property block keeps
+    /// the building's own materials, so its shape and lighting still read, rather than turning it
+    /// into a flat silhouette.
+    /// </summary>
+    public static void TintGhost(GameObject ghost, bool valid)
+    {
+        if (!ghost) return;
+        if (ghostBlock == null) ghostBlock = new MaterialPropertyBlock();
+
+        var tint = valid ? GhostValidTint : GhostInvalidTint;
+        foreach (var renderer in ghost.GetComponentsInChildren<Renderer>())
+        {
+            renderer.GetPropertyBlock(ghostBlock);
+            ghostBlock.SetColor("_BaseColor", tint);
+            ghostBlock.SetColor("_Color", tint);
+            renderer.SetPropertyBlock(ghostBlock);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+    }
+
     public static PlacementOverlay Create(float cell)
     {
         var go = new GameObject("Build Mode Placement Overlay");

@@ -371,7 +371,7 @@ public static class Localization
     public static readonly string UI_BUILD_LIVES_IN = "lives in plot {0}";
     public static readonly string UI_BUILD_NO_PLAYERS = "No players in the game to choose from.";
     public static readonly string UI_BUILD_HINT_IDLE = "Click a plot to select it  ·  Pick a building to place it  ·  Esc to exit";
-    public static readonly string UI_BUILD_HINT_ARMED = "Click an empty plot to build the {0}  ·  Esc to cancel";
+    public static readonly string UI_BUILD_HINT_ARMED = "Click an empty plot or any free spot to build the {0}  ·  R to rotate  ·  Esc to cancel";
     public static readonly string UI_BUILD_HINT_EMPTY = "Pick a building below to build it here";
     public static readonly string UI_BUILD_HINT_BUILT = "Pick a building below to replace this one";
     public static readonly string UI_BUILD_HINT_BUSY = "Working on it...";
@@ -392,8 +392,9 @@ public static class Localization
     public static readonly string UI_BUILD_TAG_CURRENT = "CURRENT";
     public static readonly string UI_BUILD_TAG_BEST = "BEST";
     public static readonly string UI_BUILD_RESET_POSITION = "Reset position";
-    public static readonly string UI_BUILD_PLACE_OUTSIDE = "Too far from the village";
-    public static readonly string UI_BUILD_PLACE_TOWN_HALL = "Too close to the town hall";
+    public static readonly string UI_BUILD_PLACE_OUTSIDE = "Too far from the town hall";
+    public static readonly string UI_BUILD_PLACE_TOWN_HALL = "Overlaps the town hall";
+    public static readonly string UI_BUILD_NO_FREE_PLOTS = "No free plots. Demolish a building, or level the village up for more.";
     public static readonly string UI_BUILD_PLACE_OVERLAP = "Too close to another building";
     public static readonly string UI_BUILD_PLACE_WATER = "You can't build on water";
     public static readonly string UI_BUILD_PLACE_STEEP = "The ground is too steep here";

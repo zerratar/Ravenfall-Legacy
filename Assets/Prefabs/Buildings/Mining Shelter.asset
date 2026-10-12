@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21db79b660358f04d8e15a3794898d7e, type: 3}
+  m_Name: Mining Shelter
+  m_EditorClassIdentifier: 
+  Type: 8
+  Name: Mining Shelter
+  Description: Build this house to increase your mining experience gained up to {0}%
+    for your players. Assign a player with a high level mining to unlock the bonus.
+  BuildWoodCost: 1000
+  BuildStoneCost: 1000
+  CameraOffset: {x: 0.84, y: 0, z: 2.4}
+  IconOffset: 0
+  Prefab: {fileID: 1794188126026390180, guid: f4907effec0dd4c4cb77036914ed9a16, type: 3}

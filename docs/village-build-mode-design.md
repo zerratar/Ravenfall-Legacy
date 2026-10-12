@@ -102,9 +102,11 @@ choice, which is where the strategy comes from.
   give that skill's experience bonus, from the resident's level, as now. New: a skill building for
   a gathering skill also raises the village's share of that resource from players gathering it.
   A Lumbermill with a good resident makes everyone's woodcutting feed the village more wood.
-- **Production buildings** need no resident. Their only job is resources: a Lumber Yard makes wood,
-  a Quarry ore, a Fishery fish, a Granary wheat and a Market coins, at a steady rate per hour that
-  rises with each tier.
+- **Production buildings** exist only for resources: a Lumber Yard makes wood, a Quarry ore, a
+  Fishery fish, a Granary wheat and a Market coins, at a rate per hour that rises with each tier.
+  Like skill buildings, they work only while a resident is assigned and that player is in the game.
+  An empty or abandoned building produces nothing, so production follows the stream's activity
+  rather than running unattended.
 
 Players gathering still feed the village exactly as they do today. Production buildings add to
 that rather than replacing it.
@@ -128,9 +130,10 @@ So the streamer chooses between experience now (skill buildings) and resources t
 - **Catalogue.** It moves to the server, so rates and costs can be balanced without a game release.
   Each entry has a kind (skill or production), category, required village level, maximum tier,
   cost per tier, and its effect per tier (bonus percent, or resources per hour).
-- **Production tick.** Production runs in `VillageProcessor`, which already ticks every 15 seconds.
-  Resources are added in proportion to elapsed time, and capped so an offline village does not
-  come back to a mountain.
+- **Production tick.** Production runs in `VillageProcessor`, which already ticks every 15 seconds,
+  for each production building whose resident is in the session. Resources are added in proportion
+  to elapsed time. Because it needs a player present, an offline village produces nothing and
+  there is no backlog to cap.
 - **Storage.** `VillageHouse` gains a tier. Production building types are numbered from 100, apart
   from `TownHouseSlotType`, so they never collide with a skill.
 - **Old clients.** An older game client given a type it does not know shows the plot as empty and

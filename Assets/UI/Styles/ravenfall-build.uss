@@ -75,8 +75,9 @@
     padding-bottom: var(--rf-space-3);
 }
 
-.rf-build-panel__head--clickable {
-    cursor: link;
+/* Panel headers are drag handles, like every other HUD window. */
+.rf-build-panel__head--drag {
+    cursor: pan;
 }
 
 .rf-build .rf-build-panel__glyph {
@@ -287,7 +288,7 @@
 }
 
 .rf-build-bonuses__chevron {
-    margin-right: var(--rf-space-3);
+    margin-right: 0;
 }
 
 .rf-build-bonuses--collapsed .rf-build-bonuses__body {
@@ -386,7 +387,7 @@
     position: absolute;
     right: 24px;
     top: 120px;
-    width: 420px;
+    width: 470px;
     padding-bottom: var(--rf-space-4);
 }
 
@@ -527,6 +528,8 @@
     margin-top: 8px;
     font-size: 14px;
     color: var(--rf-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
 }
 
 /* ---- Wide buttons ---- */
@@ -882,15 +885,30 @@
    Toast
    ========================================================================== */
 
+/* Messages: a red chip centred under the top bar, impossible to miss. */
 .rf-build .rf-build-toast {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 120px;
-    -unity-text-align: upper-center;
-    font-size: 17px;
-    color: rgb(255, 150, 140);
-    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+    top: 180px;
+    align-self: center;
+    font-size: 18px;
+    color: rgb(255, 235, 230);
+    background-color: rgba(120, 26, 30, 0.95);
+    padding-left: 18px;
+    padding-right: 18px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(255, 120, 110);
+    border-right-color: rgb(255, 120, 110);
+    border-top-color: rgb(255, 120, 110);
+    border-bottom-color: rgb(255, 120, 110);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
     opacity: 0;
     transition-property: opacity;
     transition-duration: 0.3s;
@@ -1133,4 +1151,35 @@
 
 .rf-build .rf-build-assign__button:disabled {
     opacity: 0.4;
+}
+
+/* Far from the camera, built plots show just their icon, so a village of thirty buildings is not a
+   wall of labels. Hovering shows the name again. */
+.rf-plot--far .rf-plot__pill {
+    padding-right: 0;
+}
+
+.rf-plot--far .rf-plot__ring {
+    margin-right: 0;
+}
+
+.rf-plot--far .rf-plot__name {
+    display: none;
+}
+
+.rf-plot--far .rf-plot__pill:hover {
+    padding-right: 14px;
+}
+
+.rf-plot--far .rf-plot__pill:hover .rf-plot__ring {
+    margin-right: 10px;
+}
+
+.rf-plot--far .rf-plot__pill:hover .rf-plot__name {
+    display: flex;
+}
+
+.rf-plot--no-name .rf-plot__name,
+.rf-plot--no-name .rf-plot__pill:hover .rf-plot__name {
+    display: none;
 }

@@ -19,7 +19,7 @@ using UnityEngine;
 public class VillageBuildMode : MonoBehaviour
 {
     [Tooltip("Where the camera goes on entering build mode, relative to the town hall.")]
-    [SerializeField] private Vector3 overviewOffset = new Vector3(0f, 42f, -38f);
+    [SerializeField] private Vector3 overviewOffset = new Vector3(0f, 30f, -28f);
 
     [Header("Placement")]
     [Tooltip("Grid cell size in metres. Positions snap to it.")]
@@ -50,6 +50,12 @@ public class VillageBuildMode : MonoBehaviour
     /// </summary>
     public TownHouseSlotType? Armed { get; private set; }
 
+    /// <summary>
+    /// While a building is armed: the empty plot under the mouse it would snap to, if any.
+    /// Otherwise it would go where the ghost stands, on a free plot moved there.
+    /// </summary>
+    public TownHouseSlot SnapTarget { get; private set; }
+
     /// <summary>True while a server call is in flight; the interface disables its actions.</summary>
     public bool Busy { get; private set; }
 
@@ -76,6 +82,9 @@ public class VillageBuildMode : MonoBehaviour
     private readonly RaycastHit[] hits = new RaycastHit[32];
 
     private PlacementOverlay overlay;
+    private GameObject ghost;
+    private float ghostRadius = 2.5f;
+    private float oceanLevel = float.NaN;
     private Vector3 moveStartPosition;
     private Quaternion moveStartRotation;
     private float moveRotation;
@@ -137,9 +146,9 @@ public class VillageBuildMode : MonoBehaviour
         }
 
         CancelMove();
+        SetArmed(null);
         IsActive = false;
         Selected = null;
-        Armed = null;
         gameManager.Camera.ReleaseFreeCamera();
         ActiveChanged?.Invoke(false);
         Changed?.Invoke();
@@ -154,7 +163,8 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
-        var centre = townHall.transform.position;
+        // The manager sits at the world origin; the building is what the camera should look at.
+        var centre = townHall.ActiveHall.position;
         cam.transform.position = centre + overviewOffset;
         cam.transform.LookAt(centre);
     }
@@ -202,20 +212,20 @@ public class VillageBuildMode : MonoBehaviour
         if (Armed.HasValue && slot && IsEmpty(slot))
         {
             var type = Armed.Value;
-            Armed = null;
+            SetArmed(null);
             _ = BuildAsync(slot, type);
             return;
         }
 
         Selected = slot;
-        Armed = null;
+        SetArmed(null);
         Changed?.Invoke();
     }
 
     public void ClearSelection()
     {
         Selected = null;
-        Armed = null;
+        SetArmed(null);
         Changed?.Invoke();
     }
 
@@ -236,8 +246,48 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
-        Armed = Armed == type ? (TownHouseSlotType?)null : type;
+        if (Armed != type && PlotCounts().free == 0)
+        {
+            Failed?.Invoke(Localization.UI_BUILD_NO_FREE_PLOTS);
+            return;
+        }
+
+        SetArmed(Armed == type ? (TownHouseSlotType?)null : type);
         Changed?.Invoke();
+    }
+
+    /// <summary>Arms or disarms a building, creating or removing the ghost that follows the mouse.</summary>
+    private void SetArmed(TownHouseSlotType? type)
+    {
+        if (Armed == type)
+        {
+            return;
+        }
+
+        Armed = type;
+        SnapTarget = null;
+        lastSnapped = new Vector3(float.NaN, 0f, 0f);
+        lastRotation = float.NaN;
+
+        if (ghost) Destroy(ghost);
+        ghost = null;
+        if (overlay) overlay.Hide();
+
+        if (!type.HasValue)
+        {
+            return;
+        }
+
+        var house = Catalogue.FirstOrDefault(x => x && x.Type == type.Value);
+        if (!house || !house.Prefab)
+        {
+            return;
+        }
+
+        ghost = PlacementOverlay.MakeGhost(house.Prefab);
+        ghostRadius = GhostRadius(ghost);
+        moveRotation = 0f;
+        if (!overlay) overlay = PlacementOverlay.Create(cellSize);
     }
 
     public static bool IsEmpty(TownHouseSlot slot)
@@ -264,6 +314,12 @@ public class VillageBuildMode : MonoBehaviour
         if (Moving)
         {
             UpdateMove();
+            return;
+        }
+
+        if (Armed.HasValue && ghost)
+        {
+            UpdatePlacing();
             return;
         }
 
@@ -353,19 +409,15 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1))
+        // Esc only: the right mouse button turns the camera, which is exactly what someone does
+        // while lining a building up.
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             CancelMove();
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            var alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
-            var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            var step = alt ? 90f : rotationStep;
-            moveRotation = Mathf.Repeat(moveRotation + (shift ? -step : step), 360f);
-        }
+        ReadRotationKeys();
 
         if (!TryGetMousePoint(out var point))
         {
@@ -381,7 +433,7 @@ public class VillageBuildMode : MonoBehaviour
             var ground = PlacementUtility.FindGroundPoint(snapped);
             Moving.transform.SetPositionAndRotation(ground, Quaternion.Euler(0f, moveRotation, 0f));
 
-            MoveProblem = Validate(Moving, ground, moveRotation);
+            MoveProblem = Validate(Moving, RadiusOf(Moving), ground, moveRotation);
             MoveValid = MoveProblem == null;
             Changed?.Invoke();
         }
@@ -418,11 +470,10 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>Null when the plot can stand here, otherwise the reason it cannot.</summary>
-    private string Validate(TownHouseSlot slot, Vector3 position, float rotation)
+    private string Validate(TownHouseSlot slot, float radius, Vector3 position, float rotation)
     {
         var townHall = gameManager.Village.TownHall;
-        var centre = townHall ? townHall.transform.position : position;
-        var radius = RadiusOf(slot);
+        var centre = townHall ? townHall.ActiveHall.position : position;
 
         // Inside the village: no further out than the outermost original plot, plus a margin.
         var reach = 0f;
@@ -437,9 +488,9 @@ public class VillageBuildMode : MonoBehaviour
             return Localization.UI_BUILD_PLACE_OUTSIDE;
         }
 
-        // Clear of the town hall.
-        var hallRadius = TownHallRadius();
-        if (hallRadius > 0f && Flat(position - centre).magnitude < hallRadius + radius + spacing)
+        // Not overlapping the town hall: its footprint, not a circle around it, so buildings can
+        // stand right beside it.
+        if (OverlapsTownHall(position, radius))
         {
             return Localization.UI_BUILD_PLACE_TOWN_HALL;
         }
@@ -476,8 +527,16 @@ public class VillageBuildMode : MonoBehaviour
         return null;
     }
 
-    private static bool IsWater(Vector3 point)
+    private bool IsWater(Vector3 point)
     {
+        // The sea has no collider, so the ground under it is the seabed; it counts as water when
+        // that ground is below the sea's surface. Lakes have colliders, handled below.
+        if (float.IsNaN(oceanLevel)) oceanLevel = FindOceanLevel();
+        if (!float.IsNegativeInfinity(oceanLevel) && PlacementUtility.FindGroundPoint(point).y < oceanLevel + 0.2f)
+        {
+            return true;
+        }
+
         var ray = new Ray(point + Vector3.up * 30f, Vector3.down);
         var hits = Physics.RaycastAll(ray, 80f);
         RaycastHit? first = null;
@@ -515,15 +574,204 @@ public class VillageBuildMode : MonoBehaviour
         return radius;
     }
 
-    private float TownHallRadius()
+    /// <summary>
+    /// Whether a footprint of <paramref name="radius"/> at <paramref name="position"/> overlaps the
+    /// standing town hall, measured against the hall's own colliders.
+    /// </summary>
+    private bool OverlapsTownHall(Vector3 position, float radius)
     {
         var townHall = gameManager.Village.TownHall;
-        if (!townHall) return 0f;
-        var renderers = townHall.GetComponentsInChildren<Renderer>();
-        if (renderers.Length == 0) return 0f;
+        if (!townHall) return false;
+
+        var hall = townHall.ActiveHall;
+        var colliders = hall.GetComponentsInChildren<Collider>();
+        Bounds bounds;
+        if (colliders.Length > 0)
+        {
+            bounds = colliders[0].bounds;
+            for (var i = 1; i < colliders.Length; ++i) bounds.Encapsulate(colliders[i].bounds);
+        }
+        else
+        {
+            var renderers = hall.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0) return false;
+            bounds = renderers[0].bounds;
+            for (var i = 1; i < renderers.Length; ++i) bounds.Encapsulate(renderers[i].bounds);
+        }
+
+        // Distance from the footprint's centre to the hall's rectangle, on the ground plane.
+        var dx = Mathf.Max(bounds.min.x - position.x, 0f, position.x - bounds.max.x);
+        var dz = Mathf.Max(bounds.min.z - position.z, 0f, position.z - bounds.max.z);
+        return Mathf.Sqrt(dx * dx + dz * dz) < radius * 0.8f;
+    }
+
+    /// <summary>Height of the sea surface: the largest water renderer in the scene.</summary>
+    private static float FindOceanLevel()
+    {
+        Renderer best = null;
+        foreach (var r in FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            if (r.gameObject.name.IndexOf("water", StringComparison.OrdinalIgnoreCase) < 0) continue;
+            if (!best || r.bounds.size.x * r.bounds.size.z > best.bounds.size.x * best.bounds.size.z) best = r;
+        }
+
+        // Anything smaller than a few hundred metres across is a lake or a fountain, not the sea.
+        return best && best.bounds.size.x > 500f ? best.bounds.center.y : float.NegativeInfinity;
+    }
+
+    private void ReadRotationKeys()
+    {
+        if (!Input.GetKeyDown(KeyCode.R)) return;
+        var alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+        var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        var step = alt ? 90f : rotationStep;
+        moveRotation = Mathf.Repeat(moveRotation + (shift ? -step : step), 360f);
+    }
+
+    // ---- Placing a new building --------------------------------------------------------------
+
+    /// <summary>
+    /// A building is armed: its ghost follows the mouse. Over an empty plot it snaps there and
+    /// building uses that plot as it is. Anywhere else valid, a free plot is moved to the ghost and
+    /// built on, so the streamer places buildings freely while the plot limit still holds.
+    /// </summary>
+    private void UpdatePlacing()
+    {
+        if (Busy) return;
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            ClearSelection();
+            return;
+        }
+
+        ReadRotationKeys();
+
+        if (!TryGetMousePoint(out var point))
+        {
+            return;
+        }
+
+        var snapped = new Vector3(Mathf.Round(point.x / cellSize) * cellSize, point.y, Mathf.Round(point.z / cellSize) * cellSize);
+        var target = EmptyPlotNear(point);
+
+        if (target != SnapTarget || snapped.x != lastSnapped.x || snapped.z != lastSnapped.z || moveRotation != lastRotation)
+        {
+            SnapTarget = target;
+            lastSnapped = snapped;
+            lastRotation = moveRotation;
+
+            if (target)
+            {
+                ghost.transform.SetPositionAndRotation(target.transform.position, target.transform.rotation);
+                MoveProblem = null;
+            }
+            else
+            {
+                var ground = PlacementUtility.FindGroundPoint(snapped);
+                ghost.transform.SetPositionAndRotation(ground, Quaternion.Euler(0f, moveRotation, 0f));
+                MoveProblem = Validate(null, ghostRadius, ground, moveRotation);
+            }
+
+            MoveValid = MoveProblem == null;
+            PlacementOverlay.TintGhost(ghost, MoveValid);
+            Changed?.Invoke();
+        }
+
+        if (overlay)
+        {
+            overlay.Show(ghost.transform.position, ghost.transform.eulerAngles.y, ghostRadius, MoveValid);
+        }
+
+        if (Input.GetMouseButtonDown(0) && !Shinobytes.UI.HudPointer.IsOverHud() && !UIUtility.IsPointerOverUIElement())
+        {
+            if (!MoveValid)
+            {
+                Failed?.Invoke(MoveProblem);
+                return;
+            }
+
+            _ = PlaceNewAsync(Armed.Value, SnapTarget, ghost.transform.position, ghost.transform.eulerAngles.y);
+        }
+    }
+
+    /// <summary>The empty plot whose footprint the point falls inside, if any.</summary>
+    private TownHouseSlot EmptyPlotNear(Vector3 point)
+    {
+        TownHouseSlot best = null;
+        var bestDistance = float.MaxValue;
+        foreach (var plot in Plots)
+        {
+            if (!IsEmpty(plot)) continue;
+            var distance = Flat(point - plot.transform.position).magnitude;
+            if (distance < RadiusOf(plot) && distance < bestDistance)
+            {
+                best = plot;
+                bestDistance = distance;
+            }
+        }
+
+        return best;
+    }
+
+    private async Task PlaceNewAsync(TownHouseSlotType type, TownHouseSlot target, Vector3 position, float rotation)
+    {
+        // Snapped onto a plot: build there, no move needed.
+        if (target)
+        {
+            SetArmed(null);
+            await BuildAsync(target, type);
+            return;
+        }
+
+        // Anywhere else: take the nearest free plot to where the building is going.
+        TownHouseSlot carrier = null;
+        var nearest = float.MaxValue;
+        foreach (var plot in Plots)
+        {
+            if (!IsEmpty(plot)) continue;
+            var distance = Flat(plot.transform.position - position).magnitude;
+            if (distance < nearest)
+            {
+                carrier = plot;
+                nearest = distance;
+            }
+        }
+
+        if (!carrier)
+        {
+            Failed?.Invoke(Localization.UI_BUILD_NO_FREE_PLOTS);
+            return;
+        }
+
+        SetArmed(null);
+        await Run(async () =>
+        {
+            if (!await gameManager.RavenNest.Village.PlaceHouseAsync(carrier.Slot, position.x, position.z, rotation))
+            {
+                Failed?.Invoke(gameManager.Village.PlacementSupported
+                    ? Localization.UI_BUILD_PLACE_REJECTED
+                    : Localization.UI_BUILD_PLACE_UNSUPPORTED);
+                return;
+            }
+
+            carrier.ApplyPlacement(position.x, position.z, rotation);
+            radiusCache.Remove(carrier);
+        });
+
+        if (carrier.IsMoved)
+        {
+            await BuildAsync(carrier, type);
+        }
+    }
+
+    private static float GhostRadius(GameObject instance)
+    {
+        var renderers = instance.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return 2.5f;
         var bounds = renderers[0].bounds;
         for (var i = 1; i < renderers.Length; ++i) bounds.Encapsulate(renderers[i].bounds);
-        return Mathf.Max(bounds.extents.x, bounds.extents.z) * 0.8f;
+        return Mathf.Max(2f, Mathf.Max(bounds.extents.x, bounds.extents.z) * 0.85f);
     }
 
     private static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
@@ -563,7 +811,7 @@ public class VillageBuildMode : MonoBehaviour
         radiusCache.Clear();
         var position = slot.transform.position;
         var rotation = Mathf.Repeat(Mathf.Round(slot.transform.eulerAngles.y / rotationStep) * rotationStep + degrees, 360f);
-        var problem = Validate(slot, position, rotation);
+        var problem = Validate(slot, RadiusOf(slot), position, rotation);
         if (problem != null)
         {
             Failed?.Invoke(problem);

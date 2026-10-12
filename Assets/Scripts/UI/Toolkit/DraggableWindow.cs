@@ -88,6 +88,9 @@ namespace Shinobytes.UI
         private Vector2 resizeSizeStart;
         private bool collapsed;
 
+        /// <summary>The position last written, so a hidden and shown window returns to it.</summary>
+        private Vector2? lastPosition;
+
         /// <summary>Raised when the window is collapsed or expanded, with the new state.</summary>
         public event Action<bool> CollapsedChanged;
 
@@ -312,12 +315,12 @@ namespace Shinobytes.UI
 
         private void OnContainerGeometryChanged(GeometryChangedEvent evt)
         {
-            if (!restored)
+            if (!restored || !IsShown())
             {
                 return;
             }
 
-            ApplyClamped(new Vector2(window.resolvedStyle.left, window.resolvedStyle.top));
+            ApplyClamped(CurrentPosition());
 
             // A window resized to fill a large screen would otherwise stay that size on a smaller
             // one and run off the edge.
@@ -329,6 +332,15 @@ namespace Shinobytes.UI
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
+            // A hidden window lays out at zero size and position. Clamping that wrote 0,0 back as
+            // the window's position, so a window hidden and shown again (player details, every time
+            // the camera moved between a player and the free camera) came back in the top left
+            // corner. Hidden windows are left alone, and come back where they were.
+            if (!IsShown())
+            {
+                return;
+            }
+
             if (!restored)
             {
                 restored = true;
@@ -337,7 +349,28 @@ namespace Shinobytes.UI
             }
 
             // Also fires when the container resizes, which is the case the old system missed.
-            ApplyClamped(new Vector2(window.resolvedStyle.left, window.resolvedStyle.top));
+            ApplyClamped(CurrentPosition());
+        }
+
+        /// <summary>Whether the window is displayed and has been laid out at a real size.</summary>
+        private bool IsShown()
+        {
+            if (window.panel == null || window.resolvedStyle.display == DisplayStyle.None)
+            {
+                return false;
+            }
+
+            var size = window.layout.size;
+            return !float.IsNaN(size.x) && size.x > 0f && size.y > 0f;
+        }
+
+        /// <summary>
+        /// Where the window should be: the last position it was clamped to, when it has one. The
+        /// resolved style is only trusted before that, since a hide and show passes through zero.
+        /// </summary>
+        private Vector2 CurrentPosition()
+        {
+            return lastPosition ?? new Vector2(window.resolvedStyle.left, window.resolvedStyle.top);
         }
 
         private void OnPointerEnterWindow(PointerEnterEvent evt)
@@ -451,6 +484,7 @@ namespace Shinobytes.UI
 
             window.style.left = new Length(x, LengthUnit.Pixel);
             window.style.top = new Length(y, LengthUnit.Pixel);
+            lastPosition = new Vector2(x, y);
         }
 
         private void Restore()
@@ -518,6 +552,7 @@ namespace Shinobytes.UI
                 var w = live[i];
                 w.window.style.left = StyleKeyword.Null;
                 w.window.style.top = StyleKeyword.Null;
+                w.lastPosition = null;
                 w.window.style.width = StyleKeyword.Null;
                 w.ApplyCollapsed(false);
                 w.ApplyClamped(new Vector2(w.window.resolvedStyle.left, w.window.resolvedStyle.top));

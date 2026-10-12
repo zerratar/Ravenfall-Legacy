@@ -24,10 +24,12 @@
 
         <!-- Village bonuses -->
         <engine:VisualElement name="bonus-panel" class="rf-build-panel rf-build-bonuses">
-            <engine:VisualElement name="bonus-head" class="rf-build-panel__head rf-build-panel__head--clickable">
+            <engine:VisualElement name="bonus-head" class="rf-build-panel__head rf-build-panel__head--drag">
                 <engine:Label class="rf-icon rf-build-panel__glyph" text="&#xf015;" picking-mode="Ignore" />
                 <engine:Label name="bonus-title" class="rf-build-panel__title" picking-mode="Ignore" />
-                <engine:VisualElement class="rf-chevron rf-build-bonuses__chevron" picking-mode="Ignore" />
+                <engine:Button name="bonus-toggle" text="" class="rf-window__button" tooltip="Collapse or expand">
+                    <engine:VisualElement class="rf-chevron rf-build-bonuses__chevron" picking-mode="Ignore" />
+                </engine:Button>
             </engine:VisualElement>
             <engine:VisualElement name="bonus-body" class="rf-build-bonuses__body">
                 <engine:VisualElement name="bonus-list" class="rf-build-bonuses__list" />
@@ -38,7 +40,7 @@
 
         <!-- Selected building -->
         <engine:VisualElement name="plot-panel" class="rf-build-panel rf-build-plot" style="display: none;">
-            <engine:VisualElement class="rf-build-panel__head">
+            <engine:VisualElement name="plot-head" class="rf-build-panel__head rf-build-panel__head--drag">
                 <engine:VisualElement name="plot-icon-ring" class="rf-build-ring">
                     <engine:VisualElement name="plot-icon" class="rf-build-ring__icon" picking-mode="Ignore" />
                     <engine:Label name="plot-glyph" class="rf-icon rf-build-ring__glyph" text="&#xf067;" picking-mode="Ignore" />

@@ -62,6 +62,7 @@ namespace Shinobytes.UI
             public Label Plus;
             public Label Name;
             public string ShownState;
+            public bool Far;
         }
 
         private sealed class Card
@@ -135,6 +136,11 @@ namespace Shinobytes.UI
         private float demolishConfirmUntil;
         private IVisualElementScheduledItem toastHide;
         private Camera cam;
+        private DraggableWindow bonusDrag;
+        private DraggableWindow plotDrag;
+
+        /// <summary>Beyond this many metres from the camera, built plots show only their icon.</summary>
+        private const float NameDistance = 50f;
 
         private void Awake()
         {
@@ -153,6 +159,10 @@ namespace Shinobytes.UI
         {
             bound = false;
             Unhook();
+            bonusDrag?.Detach();
+            plotDrag?.Detach();
+            bonusDrag = null;
+            plotDrag = null;
         }
 
         // ---- Binding -------------------------------------------------------------------------
@@ -230,7 +240,11 @@ namespace Shinobytes.UI
             assignSearch.textEdition.placeholder = Localization.UI_BUILD_SEARCH;
 
             // Actions.
-            root.Q<VisualElement>("bonus-head").RegisterCallback<UnityEngine.UIElements.ClickEvent>(evt => ToggleBonuses());
+            root.Q<Button>("bonus-toggle").clicked += ToggleBonuses;
+
+            // Both side panels move like every other HUD window and remember where they were left.
+            bonusDrag = DraggableWindow.Attach(bonusPanel, root.Q<VisualElement>("bonus-head"), "buildbonuses");
+            plotDrag = DraggableWindow.Attach(plotPanel, root.Q<VisualElement>("plot-head"), "buildplot");
             root.Q<Button>("plot-close").clicked += () => mode?.ClearSelection();
             root.Q<Button>("tray-close").clicked += () => OpenCategory(-1);
             root.Q<Button>("assign-close").clicked += CloseAssign;
@@ -344,6 +358,14 @@ namespace Shinobytes.UI
 
                 var point = RuntimePanelUtils.CameraTransformWorldToPanel(panel, world, cam);
                 marker.Root.style.translate = new Translate(point.x, point.y);
+
+                var far = slot != mode.Selected && slot != mode.Moving
+                    && Vector3.Distance(cam.transform.position, world) > NameDistance;
+                if (far != marker.Far)
+                {
+                    marker.Far = far;
+                    marker.Root.EnableInClassList("rf-plot--far", far);
+                }
             }
         }
 
@@ -601,7 +623,7 @@ namespace Shinobytes.UI
             if (sprite) marker.Icon.style.backgroundImage = new StyleBackground(sprite);
 
             marker.Name.text = name;
-            marker.Name.style.display = string.IsNullOrEmpty(name) ? DisplayStyle.None : DisplayStyle.Flex;
+            marker.Root.EnableInClassList("rf-plot--no-name", string.IsNullOrEmpty(name));
         }
 
         // ---- Village bonuses -----------------------------------------------------------------

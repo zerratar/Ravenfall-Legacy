@@ -29,6 +29,27 @@ public class TownHallManager : MonoBehaviour
             activeTownHall = townHallBuildings[0];
     }
 
+    /// <summary>
+    /// The town hall building currently standing, for its position and size. The manager itself
+    /// sits at the world origin, so anything measuring distance to the town hall must use this.
+    /// </summary>
+    public Transform ActiveHall
+    {
+        get
+        {
+            if (activeTownHall && activeTownHall.gameObject.activeInHierarchy) return activeTownHall.transform;
+            if (townHallBuildings != null)
+            {
+                foreach (var hall in townHallBuildings)
+                {
+                    if (hall && hall.gameObject.activeInHierarchy) return hall.transform;
+                }
+            }
+
+            return activeTownHall ? activeTownHall.transform : transform;
+        }
+    }
+
     public double Experience => exp;
     public int Level => level;
     public int Tier => tier;
