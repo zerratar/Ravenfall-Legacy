@@ -179,20 +179,49 @@ hall the biggest thing to save resources for, and the clearest sign of progress.
 
 ### The island for free placement
 
-Today the town hall tiers are whole complexes: the hall plus castle walls, battlements, paths, trees
-and a statue, about 700 renderers in tier 5. The village ground around them is uneven. Both were
-made for fixed plots.
+Done in October 2026, following `docs/mockups/island-overview.webp` and
+`docs/mockups/townhall-tiers.webp`. The scripts that did it are in `tools/village-rebuild/`, with
+notes in its README.
 
-For free placement the town area should become open, mostly level ground the streamer fills
-themselves:
+- **Terrain.** The old terraces, walls, stairs, paths and inner cliffs are gone. The town is one
+  plateau at about 8 m, with a gentle slope down to the north beach and the bridge, and cliffs on
+  the other sides. The cliff faces are dark stone, mossy rocks line the rim and a belt of trees runs
+  round the edge.
+- **Town hall tiers.** All five stand on one plaza in the middle of the island, facing south:
+  1. Longhouse.
+  2. Town hall with a bell tower.
+  3. Guild hall on a terrace.
+  4. Keep with onion-dome towers.
+  5. Grand castle.
 
-- **Town hall tiers** keep the building and its immediate steps, and lose the walls, battlements
-  and paths.
-- **Terrain.** The town area is levelled into a few broad terraces. It is a Unity Terrain, so it
-  can be reshaped from a script with a backup of the terrain data first. Cliffs, trees and rocks
-  are moved or removed where they block building.
-- **Plots.** Default positions are reset onto the new ground. Moved houses keep their saved
-  positions.
+  The keeps have no roof, so you look down into a great hall. Each tier is self-contained under
+  its `TownHall_Tier_n` root, so moving the town hall later only needs a stored position.
+- **Easter eggs.** Kept:
+  - The screaming lady, in the great hall from tier 3 up.
+  - The QR tapestry.
+  - The jester and the guards.
+  - The quest board.
+
+  New on tier 5:
+  - Sir Clucksworth the Crowned on the fountain.
+  - A raven in a party hat on a plinth.
+  - A knight statue wearing a traffic cone.
+- **Plots.** All plots were put back on the new ground. Three that sat inside the tier 5 footprint
+  moved outward. Moved houses keep their saved positions.
+
+### Status (2026-10-12)
+
+- Phase 1 (interface) and phase 2 (placement, plus "place anywhere") are done.
+  - Server side: RavenNest commit 109d2b8a.
+  - `sql/village-house-placement.sql` must be run before deploying.
+  - Play-test fixes from the last round still need a re-test.
+- Island and town hall rebuild: done, as above.
+- Next steps:
+  - Phase 3: production buildings, costs, tiers and unlocks. Needs balancing numbers.
+  - Town hall upgrades bought with resources plus a level requirement.
+  - A movable town hall.
+  - Phase 4: paths, decor and walls.
+  - Custom Blender models once a session has the Blender MCP.
 
 ### Walls
 

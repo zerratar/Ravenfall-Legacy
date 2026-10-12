@@ -1,0 +1,25 @@
+Assets/PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Fountain_01.prefab
+Assets/PolygonElvenRealm/Prefabs/Props/SM_Prop_Fountain_01.prefab
+Assets/PolygonPirates/Prefabs/Props/SM_Prop_Fountain_01.prefab
+Assets/PolygonDungeon/Prefabs/Environments/Misc/SM_Env_Stone_Fountain_01.prefab
+Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Fountain_04.prefab
+Assets/PolygonAncientEmpire/Prefabs/Environment/SM_Env_Cobblestone_01.prefab
+Assets/PolygonKnights/Prefabs/Environments/SM_Env_Path_Cobble_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/Paths/SM_Prop_Path_Brick_Group_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/Paths/SM_Prop_Path_Rock_Group_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_FirePit_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Quest_Board_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Stage_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Gazebo_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Statue_Knight_02.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Statue_Hero_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Statue_Plinth_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Street_Lamp_02.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Bunting_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Market_Stall_02.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Market_Stall_03.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Well_Plinth_01.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Torch_03.prefab
+Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_PlanterBox_Preset_01.prefab
+Assets/Malbers Animations/Animals Packs/02 Birds Pack/Raven/Model/Raven Poly Art.prefab
+Assets/EpiXR_PolygonHats/Prefabs/Lp_PartyHat01.prefab
