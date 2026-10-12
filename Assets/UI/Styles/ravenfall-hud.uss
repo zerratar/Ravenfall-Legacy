@@ -1072,6 +1072,23 @@
     background-color: var(--rf-accent-wash);
 }
 
+/* A town hall upgrade can be bought: a small green arrow on the corner of the build button. */
+.rf-top-layer .rf-town__build-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    -unity-text-align: middle-center;
+    color: var(--rf-text);
+    background-color: var(--rf-success);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
 .rf-top-layer .rf-town__build-icon {
     font-size: 22px;
     color: var(--rf-text-on-accent);

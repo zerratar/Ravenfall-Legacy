@@ -74,6 +74,8 @@ namespace Shinobytes.UI
         private Label houses;
         private Button build;
         private Label buildLabel;
+        private Label buildBadge;
+        private bool shownUpgrade;
         private bool shownBuildActive;
         private bool bound;
         private bool shown;
@@ -114,6 +116,7 @@ namespace Shinobytes.UI
             houses = root.Q<Label>("town-houses");
             build = root.Q<Button>("town-build");
             buildLabel = root.Q<Label>("town-build-label");
+            buildBadge = root.Q<Label>("town-build-badge");
             if (build != null)
             {
                 build.clicked += () => VillageBuildMode.Instance?.Toggle();
@@ -277,7 +280,7 @@ namespace Shinobytes.UI
             }
         }
 
-        private void RefreshBuildButton()
+        private void RefreshBuildButton(TownHallManager townHall)
         {
             if (build == null)
             {
@@ -287,6 +290,16 @@ namespace Shinobytes.UI
             var mode = VillageBuildMode.Instance;
             build.style.display = mode ? DisplayStyle.Flex : DisplayStyle.None;
             var active = mode && mode.IsActive;
+
+            // The next town hall tier can be bought: say so on the button that leads to it.
+            var upgrade = !active && townHall && townHall.CanUpgrade;
+            if (upgrade != shownUpgrade && buildBadge != null)
+            {
+                shownUpgrade = upgrade;
+                buildBadge.style.display = upgrade ? DisplayStyle.Flex : DisplayStyle.None;
+                build.tooltip = upgrade ? Localization.UI_TOWN_UPGRADE_READY : string.Empty;
+            }
+
             if (active == shownBuildActive)
             {
                 return;
@@ -333,7 +346,7 @@ namespace Shinobytes.UI
 
         private void Refresh(TownHallManager townHall, float now)
         {
-            RefreshBuildButton();
+            RefreshBuildButton(townHall);
 
             int villageLevel = townHall.Level;
             if (villageLevel != shownLevel)

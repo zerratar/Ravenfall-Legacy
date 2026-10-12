@@ -161,7 +161,7 @@ grown for years with nothing to spend them on:
 A gathering player adds one resource to the village every 10 seconds (360 an hour), so a small stream
 with about three players on a resource earns roughly a thousand of it an hour.
 
-Not done yet: an "upgrade available" sign outside build mode, for example on the town bar.
+When an upgrade can be bought, a small green arrow shows on the town bar's BUILD button.
 
 - **Stored tier.** `Village` gains a nullable `TownHallTier` (`int?`), returned by
   `GET api/village/townhall`.

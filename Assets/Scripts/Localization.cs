@@ -410,6 +410,7 @@ public static class Localization
     public static readonly string UI_BUILD_HALL_NEXT = "NEXT: {0}";
     public static readonly string UI_BUILD_HALL_MAX = "This is the grandest town hall there is.";
     public static readonly string UI_BUILD_HALL_UPGRADE = "Upgrade";
+    public static readonly string UI_TOWN_UPGRADE_READY = "A town hall upgrade is ready. Open build mode and select the town hall.";
     public static readonly string UI_BUILD_HALL_UPGRADE_FAILED = "The upgrade did not go through. Check the requirements and try again.";
     public static readonly string UI_BUILD_HALL_NEED_LEVEL = "Village level {0}";
     public static readonly string UI_BUILD_HALL_NEED = "{0} {1} / {2}";

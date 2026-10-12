@@ -48,6 +48,8 @@
                 <engine:Button name="town-build" class="rf-town__build" text="">
                     <engine:Label class="rf-icon rf-town__build-icon" text="&#xf6e3;" picking-mode="Ignore" />
                     <engine:Label name="town-build-label" class="rf-town__build-label" picking-mode="Ignore" />
+                    <!-- Shown when the next town hall tier can be bought. -->
+                    <engine:Label name="town-build-badge" class="rf-icon rf-town__build-badge" text="&#xf062;" picking-mode="Ignore" style="display: none;" />
                 </engine:Button>
             </engine:VisualElement>
 
