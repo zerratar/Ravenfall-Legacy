@@ -207,8 +207,8 @@ after costs exist.
 - **Possible gameplay later.** A navmesh area cost could make villagers and players prefer roads, and a
   road could give a small walking speed boost.
 
-Open: grid only, freeform only, or both (recommended: freeform splines with an optional grid snap), and
-whether one road can have more than one width.
+Decided: freeform splines with an optional grid snap, so both styles work. Open: whether one road can
+have more than one width.
 
 ### The island for free placement
 
