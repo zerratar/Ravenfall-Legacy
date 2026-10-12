@@ -18,10 +18,12 @@
     WallRun(hall, new[] { "Battlements_01", "Battlements_01", "Battlements_01" }, -7.5f, 8f, 0, 10f);
     WallRun(hall, new[] { "Battlements_01", "Battlements_01", "Battlements_01" }, -7.5f, 18f, 0, 10f);
     // towers: big ones at the front corners, small at the back
-    Tower(hall, "Wall_Tower_L_01", "Roof_Cap_Round_06", new UnityEngine.Vector3(-7.5f, 0, 8f), 3);
-    Tower(hall, "Wall_Tower_L_01", "Roof_Cap_Round_06", new UnityEngine.Vector3(7.5f, 0, 8f), 3);
-    Tower(hall, "Wall_Tower_M_01", "Roof_Cap_Round_03", new UnityEngine.Vector3(-7.5f, 0, 18f), 2);
-    Tower(hall, "Wall_Tower_M_01", "Roof_Cap_Round_03", new UnityEngine.Vector3(7.5f, 0, 18f), 2);
+    // our own round towers (blender/tower.py); the kit's tower segments have a doorway on every level
+    foreach (var x in new[] { -7.5f, 7.5f })
+    {
+        Put(hall, VM + "Village_Tower_T4_Front.fbx", new UnityEngine.Vector3(x, 0, 8f), 0, 1f);
+        Put(hall, VM + "Village_Tower_T4_Back.fbx", new UnityEngine.Vector3(x, 0, 18f), 0, 1f);
+    }
     // banners down the front wall
     Banner(hall, new UnityEngine.Vector3(-3.6f, 9.6f, 7.55f), 0, 1f);
     Banner(hall, new UnityEngine.Vector3(3.6f, 9.6f, 7.55f), 0, 1f);

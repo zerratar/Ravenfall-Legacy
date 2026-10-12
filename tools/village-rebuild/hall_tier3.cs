@@ -18,6 +18,11 @@
         step.transform.localScale = new UnityEngine.Vector3(1.5f, T * (2 - st) / 3f, 0.35f);
     }
     var house = Put(hall, FKB + "SM_Bld_Preset_House_10_Optimized.prefab", new UnityEngine.Vector3(1f, T, 18f), 0, 1.15f);
+    // the house's own little tower is trimmed off (everything above the ridge) and the clock and bell
+    // tower from blender/clock_tower.py stands in its place; it is modelled in the house's space
+    var houseMf = house.GetComponent<UnityEngine.MeshFilter>();
+    houseMf.sharedMesh = TrimAbove(houseMf.sharedMesh, 10.2f, "SM_Bld_Preset_House_10_NoTower");
+    Put(house.transform, VM + "Village_ClockTower.fbx", UnityEngine.Vector3.zero, 0, 1f).name = "Clock Tower";
     // torches on pillars either side of the steps, planters along the terrace edge
     foreach (var x in new[] { -4.5f, 4.5f })
     {

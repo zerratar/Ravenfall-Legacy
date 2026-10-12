@@ -206,7 +206,9 @@ notes in its README.
   - The quest board.
 
   New on tier 5:
-  - Sir Clucksworth the Crowned on the fountain.
+  - Sir Honksworth the Crowned, a goose modelled for the fountain.
+  - Sir Clucksworth, the chicken who held the fountain before him, dethroned and sulking at its foot with a
+    paper bag on his head.
   - A raven in a party hat on a plinth.
   - A knight statue wearing a traffic cone.
 - **Plots.** All plots were put back on the new ground. Three that sat inside the tier 5 footprint
@@ -224,7 +226,8 @@ notes in its README.
   - Town hall upgrades bought with resources plus a level requirement.
   - A movable town hall.
   - Phase 4: paths, decor and walls.
-  - Custom Blender models once a session has the Blender MCP.
+  - More custom Blender models. The first set is in: a clock tower for tier 3, round towers for tiers 4 and
+    5, the tier 5 frontispiece and the fountain goose (`tools/village-rebuild/blender`).
 
 ### Walls
 

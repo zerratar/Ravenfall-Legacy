@@ -165,6 +165,14 @@ Assets/_TerrainAutoUpgrade/*.*
 !Assets/New Terrain.asset
 !Assets/New Terrain.asset.meta
 
+# Our own village models, built from code by tools/village-rebuild/blender, and their materials. The scenes
+# reference them by GUID, so the metas are versioned too. Derived/ holds edited copies of kit meshes, which
+# stay out like the kits themselves.
+!Assets/Village.meta
+!Assets/Village/**
+Assets/Village/Derived/
+Assets/Village/Derived.meta
+
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
 

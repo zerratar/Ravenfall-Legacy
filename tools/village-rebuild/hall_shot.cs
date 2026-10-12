@@ -1,9 +1,17 @@
 // Renders one tier (TIER) on its own: front view from the south, and a 3/4 view like the build camera.
+// Run it twice. The GPU Resident Drawer applies activation changes at the next editor frame, so a render in
+// the same eval as SetActive still draws the tiers that were just hidden (ghosts). The first run switches to
+// the tier and stops; the second renders. The tier is left showing; run with TIER 5 twice to go back.
 var dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath, "../Temp/village-shots")) + "/"; System.IO.Directory.CreateDirectory(dir);
 var mgr = UnityEngine.Object.FindAnyObjectByType<TownHallManager>(UnityEngine.FindObjectsInactive.Include);
 var tier = TIER;
-var states = new System.Collections.Generic.Dictionary<UnityEngine.GameObject, bool>();
-foreach (UnityEngine.Transform t in mgr.transform) { states[t.gameObject] = t.gameObject.activeSelf; t.gameObject.SetActive(t.name == "TownHall_Tier_" + tier); }
+var switched = false;
+foreach (UnityEngine.Transform t in mgr.transform)
+{
+    var want = t.name == "TownHall_Tier_" + tier;
+    if (t.gameObject.activeSelf != want) { t.gameObject.SetActive(want); switched = true; }
+}
+if (switched) { UnityEngine.Debug.Log("HSHOT|switched to tier " + tier + ", run again to render"); return null; }
 var c = mgr.transform.Find("TownHall_Tier_" + tier).position;
 var go = new UnityEngine.GameObject("ReviewCam");
 var cam = go.AddComponent<UnityEngine.Camera>();
@@ -25,5 +33,4 @@ shot("tier" + tier + "_front", c + new UnityEngine.Vector3(0, dist * 0.45f, -dis
 shot("tier" + tier + "_34", c + new UnityEngine.Vector3(dist * 0.7f, dist * 0.75f, -dist * 0.7f), c + new UnityEngine.Vector3(0, dist * 0.08f, 0));
 UnityEngine.RenderTexture.active = null;
 UnityEngine.Object.DestroyImmediate(go); rt.Release();
-foreach (var kv in states) kv.Key.SetActive(kv.Value);
 UnityEngine.Debug.Log("HSHOT|done tier " + tier);

@@ -50,6 +50,33 @@ const string FKB = "Assets/PolygonFantasyKingdom/Prefabs/Buildings/Preset_Houses
 const string FKC = "Assets/PolygonFantasyKingdom/Prefabs/Castle/SM_Bld_Castle_";
 const string KN = "Assets/PolygonKnights/Prefabs/";
 const string AE = "Assets/PolygonAncientEmpire/Prefabs/";
+const string VM = "Assets/Village/Models/"; // our own models, built by blender/*.py (run models_import.cs after a rebuild)
+
+// Copies a kit mesh without the triangles that lie wholly above a height (mesh space), into a mesh asset
+// under Assets/Village/Derived. The asset is reused on reruns, so scene references to it stay valid.
+// Derived/ is git-ignored like the kits it comes from.
+System.Func<UnityEngine.Mesh, float, string, UnityEngine.Mesh> TrimAbove = (src, maxY, name) =>
+{
+    if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/Village/Derived")) UnityEditor.AssetDatabase.CreateFolder("Assets/Village", "Derived");
+    var path = "Assets/Village/Derived/" + name + ".asset";
+    var dst = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(path);
+    if (!dst) { dst = new UnityEngine.Mesh(); UnityEditor.AssetDatabase.CreateAsset(dst, path); }
+    dst.Clear(); dst.name = name;
+    dst.indexFormat = src.indexFormat;
+    var v = src.vertices;
+    dst.vertices = v; dst.normals = src.normals; dst.tangents = src.tangents; dst.uv = src.uv; dst.colors = src.colors;
+    dst.subMeshCount = src.subMeshCount;
+    for (var s = 0; s < src.subMeshCount; ++s)
+    {
+        var t = src.GetTriangles(s); var keep = new System.Collections.Generic.List<int>(t.Length);
+        for (var i = 0; i < t.Length; i += 3)
+            if (v[t[i]].y <= maxY || v[t[i + 1]].y <= maxY || v[t[i + 2]].y <= maxY) { keep.Add(t[i]); keep.Add(t[i + 1]); keep.Add(t[i + 2]); }
+        dst.SetTriangles(keep, s);
+    }
+    dst.RecalculateBounds();
+    UnityEditor.EditorUtility.SetDirty(dst);
+    return dst;
+};
 
 // Ground materials for patches under the halls, made once from the terrain's own textures.
 System.Func<string, string, UnityEngine.Color, UnityEngine.Material> groundMat = (name, layerName, tint) =>
