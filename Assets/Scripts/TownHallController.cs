@@ -48,6 +48,12 @@ public class TownHallController : MonoBehaviour
                 return;
             }
 
+            // In build mode a click on the hall selects it for moving instead.
+            if (VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive)
+            {
+                return;
+            }
+
             if (hitCollider && Input.GetMouseButtonUp(0))
             {
                 var activeCamera = Camera.main;

@@ -248,10 +248,25 @@ namespace Shinobytes.UI
             root.Q<Button>("plot-close").clicked += () => mode?.ClearSelection();
             root.Q<Button>("tray-close").clicked += () => OpenCategory(-1);
             root.Q<Button>("assign-close").clicked += CloseAssign;
-            moveButton.clicked += () => { if (mode != null && mode.Selected) mode.StartMove(mode.Selected); };
-            rotateButton.clicked += () => { if (mode != null && mode.Selected) _ = mode.RotateInPlaceAsync(mode.Selected, rotateStep); };
+            moveButton.clicked += () =>
+            {
+                if (mode == null) return;
+                if (mode.HallSelected) mode.StartHallMove();
+                else if (mode.Selected) mode.StartMove(mode.Selected);
+            };
+            rotateButton.clicked += () =>
+            {
+                if (mode == null) return;
+                if (mode.HallSelected) _ = mode.RotateHallInPlaceAsync(rotateStep);
+                else if (mode.Selected) _ = mode.RotateInPlaceAsync(mode.Selected, rotateStep);
+            };
             assignButton.clicked += OpenAssign;
-            resetButton.clicked += () => { if (mode != null && mode.Selected) _ = mode.ResetPlacementAsync(mode.Selected); };
+            resetButton.clicked += () =>
+            {
+                if (mode == null) return;
+                if (mode.HallSelected) _ = mode.ResetHallPlacementAsync();
+                else if (mode.Selected) _ = mode.ResetPlacementAsync(mode.Selected);
+            };
             demolishButton.clicked += OnDemolishClicked;
             assignSearch.RegisterValueChangedCallback(evt => FilterCandidates());
 
@@ -390,7 +405,7 @@ namespace Shinobytes.UI
         {
             if (!bound || mode == null || !mode.IsActive) return;
             demolishConfirmUntil = 0f;
-            root.EnableInClassList("rf-build--moving", mode.Moving);
+            root.EnableInClassList("rf-build--moving", mode.IsMoving);
             RefreshAll();
         }
 
@@ -509,7 +524,7 @@ namespace Shinobytes.UI
             {
                 card.Root.EnableInClassList("rf-build-card--armed", mode.Armed == card.Type);
                 card.Root.EnableInClassList("rf-build-card--current", mode.Selected && mode.Selected.SlotType == card.Type);
-                card.Root.EnableInClassList("rf-build-card--disabled", mode.Busy || mode.Moving);
+                card.Root.EnableInClassList("rf-build-card--disabled", mode.Busy || mode.IsMoving);
             }
         }
 
@@ -719,9 +734,19 @@ namespace Shinobytes.UI
 
         private void RefreshPlot()
         {
+            if (mode.HallSelected)
+            {
+                RefreshHall();
+                return;
+            }
+
             var slot = mode.Selected;
             plotPanel.style.display = slot && !modalOpen ? DisplayStyle.Flex : DisplayStyle.None;
             if (!slot) return;
+
+            plotEmptyNote.text = Localization.UI_BUILD_EMPTY_PLOT_NOTE;
+            assignButton.style.display = DisplayStyle.Flex;
+            plotGlyph.text = "\uf067";
 
             var empty = VillageBuildMode.IsEmpty(slot);
             var house = HouseFor(slot.SlotType);
@@ -737,7 +762,7 @@ namespace Shinobytes.UI
             plotEmptyNote.style.display = empty ? DisplayStyle.Flex : DisplayStyle.None;
             plotBuilt.style.display = empty ? DisplayStyle.None : DisplayStyle.Flex;
 
-            var idle = !mode.Busy && !mode.Moving;
+            var idle = !mode.Busy && !mode.IsMoving;
             moveButton.SetEnabled(idle);
             rotateButton.SetEnabled(idle);
             assignButton.SetEnabled(idle && !empty);
@@ -771,6 +796,34 @@ namespace Shinobytes.UI
             bonusNote.style.display = string.IsNullOrEmpty(bonusNote.text) ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
+        /// <summary>
+        /// The town hall in the building panel: its tier, a note on the outline it moves with, and Move,
+        /// Rotate and Reset position. No resident and no demolishing.
+        /// </summary>
+        private void RefreshHall()
+        {
+            var townHall = GameManager.Instance && GameManager.Instance.Village != null ? GameManager.Instance.Village.TownHall : null;
+            plotPanel.style.display = townHall && !modalOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!townHall) return;
+
+            plotIcon.style.display = DisplayStyle.None;
+            plotGlyph.style.display = DisplayStyle.Flex;
+            plotGlyph.text = "\uf66f";
+            plotTitle.text = Localization.UI_BUILD_HALL_TITLE;
+            plotSubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_TIER, Mathf.Max(0, townHall.Tier) + 1);
+            plotEmptyNote.text = Localization.UI_BUILD_HALL_NOTE;
+            plotEmptyNote.style.display = DisplayStyle.Flex;
+            plotBuilt.style.display = DisplayStyle.None;
+
+            var idle = !mode.Busy && !mode.IsMoving;
+            moveButton.SetEnabled(idle);
+            rotateButton.SetEnabled(idle);
+            assignButton.style.display = DisplayStyle.None;
+            resetButton.SetEnabled(idle);
+            resetButton.style.display = townHall.IsMoved ? DisplayStyle.Flex : DisplayStyle.None;
+            demolishButton.style.display = DisplayStyle.None;
+        }
+
         private void OnDemolishClicked()
         {
             if (mode == null || !mode.Selected) return;
@@ -792,7 +845,7 @@ namespace Shinobytes.UI
             var confirming = demolishConfirmUntil > 0f;
             demolishLabel.text = confirming ? Localization.UI_BUILD_DEMOLISH_CONFIRM : Localization.UI_BUILD_DEMOLISH;
             demolishButton.EnableInClassList("rf-build-wide--confirm", confirming);
-            demolishButton.SetEnabled(mode != null && !mode.Busy && !mode.Moving);
+            demolishButton.SetEnabled(mode != null && !mode.Busy && !mode.IsMoving);
         }
 
         // ---- What is being placed ------------------------------------------------------------
@@ -957,7 +1010,7 @@ namespace Shinobytes.UI
         {
             string text;
             if (mode.Busy) text = Localization.UI_BUILD_HINT_BUSY;
-            else if (mode.Moving)
+            else if (mode.IsMoving)
             {
                 text = mode.MoveValid
                     ? Localization.UI_BUILD_HINT_MOVING
@@ -968,6 +1021,7 @@ namespace Shinobytes.UI
                 var house = HouseFor(mode.Armed.Value);
                 text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HINT_ARMED, house ? house.Name : mode.Armed.Value.ToString());
             }
+            else if (mode.HallSelected) text = Localization.UI_BUILD_HINT_HALL;
             else if (mode.Selected && VillageBuildMode.IsEmpty(mode.Selected)) text = Localization.UI_BUILD_HINT_EMPTY;
             else if (mode.Selected) text = Localization.UI_BUILD_HINT_BUILT;
             else text = Localization.UI_BUILD_HINT_IDLE;

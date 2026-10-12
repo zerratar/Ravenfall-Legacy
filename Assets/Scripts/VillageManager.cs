@@ -33,6 +33,9 @@ namespace Assets.Scripts
         /// </summary>
         public bool PlacementSupported { get; private set; }
 
+        /// <summary>Whether the server can store where the town hall was moved to.</summary>
+        public bool TownHallPlacementSupported { get; private set; }
+
         // Start is called before the first frame update
         void Start()
         {
@@ -76,6 +79,7 @@ namespace Assets.Scripts
                         }
                         TownHall.SetExp(data.Experience);
                         await LoadPlacementsAsync();
+                        await LoadTownHallPlacementAsync();
                     }
                     state = LoadingState.Loaded;
                 }
@@ -129,6 +133,37 @@ namespace Assets.Scripts
             {
                 PlacementSupported = false;
                 Shinobytes.Debug.LogWarning("Could not load village placements: " + exc.Message);
+            }
+        }
+
+        /// <summary>
+        /// Moves the town hall to where build mode placed it, or back to the plaza when it has not been
+        /// moved, so a reset made elsewhere is picked up too.
+        /// </summary>
+        public async Task LoadTownHallPlacementAsync()
+        {
+            try
+            {
+                var placement = await gameManager.RavenNest.Village.GetTownHallAsync();
+                TownHallPlacementSupported = placement != null;
+                if (placement == null || !townHallManager)
+                {
+                    return;
+                }
+
+                if (placement.X.HasValue && placement.Z.HasValue)
+                {
+                    townHallManager.ApplyPlacement((float)placement.X.Value, (float)placement.Z.Value, (float)placement.Rotation);
+                }
+                else if (townHallManager.IsMoved)
+                {
+                    townHallManager.ResetPlacement();
+                }
+            }
+            catch (Exception exc)
+            {
+                TownHallPlacementSupported = false;
+                Shinobytes.Debug.LogWarning("Could not load the town hall placement: " + exc.Message);
             }
         }
 

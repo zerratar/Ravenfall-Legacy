@@ -103,6 +103,45 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        /// <summary>
+        /// Where the streamer moved the town hall. Null when the server is older than the movable town
+        /// hall or the call failed; null X and Z mean the plaza.
+        /// </summary>
+        public Task<TownHallPlacement> GetTownHallAsync()
+        {
+            return request.Create()
+                .Method("townhall")
+                .Build()
+                .SendAsync<TownHallPlacement>(
+                    ApiRequestTarget.Village,
+                    ApiRequestType.Get);
+        }
+
+        public Task<bool> PlaceTownHallAsync(double x, double z, double rotation)
+        {
+            return request.Create()
+                .Identifier("townhall")
+                .Method("place")
+                .Build()
+                .SendAsync<bool>(ApiRequestTarget.Village, ApiRequestType.Post, new TownHallPlacement
+                {
+                    X = x,
+                    Z = z,
+                    Rotation = rotation
+                });
+        }
+
+        public Task<bool> ResetTownHallPlacementAsync()
+        {
+            return request.Create()
+                .Identifier("townhall")
+                .Method("reset-placement")
+                .Build()
+                .SendAsync<bool>(
+                    ApiRequestTarget.Village,
+                    ApiRequestType.Get);
+        }
+
         public Task<bool> RemoveHouseAsync(int slot)
         {
             return request.Create()
@@ -124,6 +163,17 @@ namespace RavenNest.SDK.Endpoints
         public int Slot { get; set; }
         public double X { get; set; }
         public double Z { get; set; }
+        public double Rotation { get; set; }
+    }
+
+    /// <summary>
+    /// Mirrors RavenNest.Models.VillageTownHall, defined here for the same reason as HousePlacement.
+    /// Null X and Z mean the town hall stands on the plaza.
+    /// </summary>
+    public class TownHallPlacement
+    {
+        public double? X { get; set; }
+        public double? Z { get; set; }
         public double Rotation { get; set; }
     }
 

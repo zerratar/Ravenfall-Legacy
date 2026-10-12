@@ -32,6 +32,7 @@ public class PlacementOverlay : MonoBehaviour
     private Vector3 drawnCenter = new Vector3(float.NaN, 0f, 0f);
     private float drawnRotation = float.NaN;
     private float drawnSize = float.NaN;
+    private float drawnSizeZ = float.NaN;
     private bool drawnValid;
 
     private static readonly Color GhostValidTint = new Color(0.55f, 1f, 0.62f, 1f);
@@ -134,19 +135,30 @@ public class PlacementOverlay : MonoBehaviour
     /// <param name="halfSize">Half the width of its footprint, in metres.</param>
     public void Show(Vector3 center, float rotation, float halfSize, bool valid)
     {
+        Show(center, rotation, halfSize, halfSize, valid);
+    }
+
+    /// <summary>A rectangular footprint, for the town hall area.</summary>
+    /// <param name="center">The middle of the footprint.</param>
+    /// <param name="rotation">Its rotation around the vertical axis, in degrees.</param>
+    /// <param name="halfX">Half its width along its own x, in metres.</param>
+    /// <param name="halfZ">Half its depth along its own z, in metres.</param>
+    public void Show(Vector3 center, float rotation, float halfX, float halfZ, bool valid)
+    {
         if (!gameObject.activeSelf)
         {
             gameObject.SetActive(true);
         }
 
-        if (center == drawnCenter && rotation == drawnRotation && halfSize == drawnSize && valid == drawnValid)
+        if (center == drawnCenter && rotation == drawnRotation && halfX == drawnSize && halfZ == drawnSizeZ && valid == drawnValid)
         {
             return;
         }
 
         drawnCenter = center;
         drawnRotation = rotation;
-        drawnSize = halfSize;
+        drawnSize = halfX;
+        drawnSizeZ = halfZ;
         drawnValid = valid;
 
         var color = valid ? ValidColor : InvalidColor;
@@ -164,14 +176,14 @@ public class PlacementOverlay : MonoBehaviour
             Drape(grid[index++], origin + new Vector3(-extent, 0f, offset), origin + new Vector3(extent, 0f, offset));
         }
 
-        // Footprint: a square turned with the building, its sides draped over the ground too.
+        // Footprint: a rectangle turned with the building, its sides draped over the ground too.
         var turn = Quaternion.Euler(0f, rotation, 0f);
         var corners = new[]
         {
-            center + turn * new Vector3(-halfSize, 0f, -halfSize),
-            center + turn * new Vector3(-halfSize, 0f, halfSize),
-            center + turn * new Vector3(halfSize, 0f, halfSize),
-            center + turn * new Vector3(halfSize, 0f, -halfSize),
+            center + turn * new Vector3(-halfX, 0f, -halfZ),
+            center + turn * new Vector3(-halfX, 0f, halfZ),
+            center + turn * new Vector3(halfX, 0f, halfZ),
+            center + turn * new Vector3(halfX, 0f, -halfZ),
         };
 
         var perSide = footprint.positionCount / 4;

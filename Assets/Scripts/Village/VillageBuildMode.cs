@@ -37,6 +37,9 @@ public class VillageBuildMode : MonoBehaviour
     [Tooltip("Gap kept between buildings, in metres.")]
     [SerializeField] private float spacing = 0.5f;
 
+    [Tooltip("Largest height difference across the town hall area before the ground counts as too steep.")]
+    [SerializeField] private float maxHallSlope = 4f;
+
     public static VillageBuildMode Instance { get; private set; }
 
     /// <summary>Whether build mode is on.</summary>
@@ -62,7 +65,16 @@ public class VillageBuildMode : MonoBehaviour
     /// <summary>The plot being moved, if any.</summary>
     public TownHouseSlot Moving { get; private set; }
 
-    /// <summary>Whether the plot being moved can be dropped where it is.</summary>
+    /// <summary>Whether the town hall is selected (its panel shows Move, Rotate and Reset position).</summary>
+    public bool HallSelected { get; private set; }
+
+    /// <summary>Whether the town hall is following the mouse.</summary>
+    public bool MovingHall { get; private set; }
+
+    /// <summary>Whether a plot or the town hall is being moved.</summary>
+    public bool IsMoving => Moving || MovingHall;
+
+    /// <summary>Whether the plot or town hall being moved can be dropped where it is.</summary>
     public bool MoveValid { get; private set; }
 
     /// <summary>Why the current spot is not valid, for the hint line.</summary>
@@ -91,6 +103,8 @@ public class VillageBuildMode : MonoBehaviour
     private Vector3 lastSnapped = new Vector3(float.NaN, 0f, 0f);
     private float lastRotation = float.NaN;
     private readonly Dictionary<TownHouseSlot, float> radiusCache = new Dictionary<TownHouseSlot, float>();
+    private Vector3 hallStartPosition;
+    private float hallStartRotation;
 
     private void Awake()
     {
@@ -146,9 +160,11 @@ public class VillageBuildMode : MonoBehaviour
         }
 
         CancelMove();
+        CancelHallMove();
         SetArmed(null);
         IsActive = false;
         Selected = null;
+        HallSelected = false;
         gameManager.Camera.ReleaseFreeCamera();
         ActiveChanged?.Invoke(false);
         Changed?.Invoke();
@@ -239,6 +255,21 @@ public class VillageBuildMode : MonoBehaviour
         }
 
         Selected = slot;
+        HallSelected = false;
+        SetArmed(null);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Selects the town hall, for moving or turning it.</summary>
+    public void SelectHall()
+    {
+        if (!IsActive)
+        {
+            return;
+        }
+
+        Selected = null;
+        HallSelected = true;
         SetArmed(null);
         Changed?.Invoke();
     }
@@ -246,6 +277,7 @@ public class VillageBuildMode : MonoBehaviour
     public void ClearSelection()
     {
         Selected = null;
+        HallSelected = false;
         SetArmed(null);
         Changed?.Invoke();
     }
@@ -338,6 +370,12 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
+        if (MovingHall)
+        {
+            UpdateHallMove();
+            return;
+        }
+
         if (Armed.HasValue && ghost)
         {
             UpdatePlacing();
@@ -346,21 +384,27 @@ public class VillageBuildMode : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (Armed.HasValue || Selected) ClearSelection();
+            if (Armed.HasValue || Selected || HallSelected) ClearSelection();
             else Exit();
             return;
         }
 
         if (Input.GetMouseButtonDown(0) && !Shinobytes.UI.HudPointer.IsOverHud() && !UIUtility.IsPointerOverUIElement())
         {
-            var slot = PlotUnderMouse();
+            var slot = PlotUnderMouse(out var hall);
             if (slot) Select(slot);
-            else if (Selected || Armed.HasValue) ClearSelection();
+            else if (hall) SelectHall();
+            else if (Selected || HallSelected || Armed.HasValue) ClearSelection();
         }
     }
 
-    private TownHouseSlot PlotUnderMouse()
+    /// <summary>
+    /// The plot under the mouse. When the town hall is the nearest thing hit, returns none and sets
+    /// <paramref name="hall"/>.
+    /// </summary>
+    private TownHouseSlot PlotUnderMouse(out bool hall)
     {
+        hall = false;
         if (!worldCamera || !worldCamera.isActiveAndEnabled) worldCamera = Camera.main;
         if (!worldCamera) return null;
 
@@ -368,6 +412,7 @@ public class VillageBuildMode : MonoBehaviour
         var count = Physics.RaycastNonAlloc(ray, hits, 2000f);
         TownHouseSlot best = null;
         var bestDistance = float.MaxValue;
+        var hallDistance = float.MaxValue;
         for (var i = 0; i < count; ++i)
         {
             var hit = hits[i];
@@ -377,10 +422,22 @@ public class VillageBuildMode : MonoBehaviour
                 best = slot;
                 bestDistance = hit.distance;
             }
+            else if (!slot && hit.distance < hallDistance && hit.collider.GetComponent<TownHallController>())
+            {
+                hallDistance = hit.distance;
+            }
+        }
+
+        if (hallDistance < bestDistance)
+        {
+            hall = true;
+            return null;
         }
 
         return best;
     }
+
+    private TownHouseSlot PlotUnderMouse() => PlotUnderMouse(out _);
 
     // ---- Moving --------------------------------------------------------------------------
 
@@ -393,8 +450,10 @@ public class VillageBuildMode : MonoBehaviour
         }
 
         CancelMove();
+        CancelHallMove();
         Moving = slot;
         Selected = slot;
+        HallSelected = false;
         Armed = null;
         moveStartPosition = slot.transform.position;
         moveStartRotation = slot.transform.rotation;
@@ -473,8 +532,10 @@ public class VillageBuildMode : MonoBehaviour
 
     /// <summary>
     /// Where the mouse points on the village. The ray is cut against a horizontal plane at the
-    /// town hall's height rather than against the scene, so trees, houses and characters under the
+    /// plaza's height rather than against the scene, so trees, houses and characters under the
     /// cursor do not make the building jump; the ground height is found straight down from there.
+    /// The manager itself sits at the world origin, eight metres below the village, and a plane at
+    /// its height put the building metres away from the cursor.
     /// </summary>
     private bool TryGetMousePoint(out Vector3 point)
     {
@@ -483,7 +544,7 @@ public class VillageBuildMode : MonoBehaviour
         var townHall = gameManager.Village.TownHall;
         if (!worldCamera || !townHall) return false;
 
-        var plane = new Plane(Vector3.up, townHall.transform.position);
+        var plane = new Plane(Vector3.up, townHall.Plaza);
         var ray = worldCamera.ScreenPointToRay(Input.mousePosition);
         if (!plane.Raycast(ray, out var distance)) return false;
         point = ray.GetPoint(distance);
@@ -494,7 +555,9 @@ public class VillageBuildMode : MonoBehaviour
     private string Validate(TownHouseSlot slot, float radius, Vector3 position, float rotation)
     {
         var townHall = gameManager.Village.TownHall;
-        var centre = townHall ? townHall.ActiveHall.position : position;
+        // Measured from the plaza, the middle of the village, so moving the town hall does not move
+        // the area buildings may stand in.
+        var centre = townHall ? townHall.Plaza : position;
 
         // Inside the village: no further out than the outermost original plot, plus a margin.
         var reach = 0f;
@@ -596,25 +659,15 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>
-    /// Whether a footprint of <paramref name="radius"/> at <paramref name="position"/> overlaps the
-    /// standing town hall, measured against the hall's own colliders.
+    /// Whether a footprint of <paramref name="radius"/> at <paramref name="position"/> reaches into the
+    /// town hall area: the ground the biggest tier covers (building, plaza and yard), turned with the
+    /// hall, so an upgrade never lands on a house.
     /// </summary>
     private bool OverlapsTownHall(Vector3 position, float radius)
     {
         var townHall = gameManager.Village.TownHall;
         if (!townHall) return false;
-
-        // The hall's own collider only. Each town hall tier is a whole complex (walls, paths, trees,
-        // a statue), and the bounds of all of it covered most of the village.
-        var hall = townHall.ActiveHall;
-        var own = hall.GetComponent<Collider>();
-        if (!own) return false;
-        var bounds = own.bounds;
-
-        // Distance from the footprint's centre to the hall's rectangle, on the ground plane.
-        var dx = Mathf.Max(bounds.min.x - position.x, 0f, position.x - bounds.max.x);
-        var dz = Mathf.Max(bounds.min.z - position.z, 0f, position.z - bounds.max.z);
-        return Mathf.Sqrt(dx * dx + dz * dz) < radius * 0.8f;
+        return townHall.AreaOverlaps(townHall.HallPosition, townHall.HallRotation, position, radius * 0.8f);
     }
 
     /// <summary>Height of the sea surface: the largest water renderer in the scene.</summary>
@@ -638,6 +691,237 @@ public class VillageBuildMode : MonoBehaviour
         var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         var step = alt ? 90f : rotationStep;
         moveRotation = Mathf.Repeat(moveRotation + (shift ? -step : step), 360f);
+    }
+
+    // ---- Moving the town hall ------------------------------------------------------------------
+
+    /// <summary>Picks the town hall up. It follows the mouse until it is placed or the move is cancelled.</summary>
+    public void StartHallMove()
+    {
+        var townHall = gameManager.Village.TownHall;
+        if (!IsActive || Busy || !townHall)
+        {
+            return;
+        }
+
+        CancelMove();
+        CancelHallMove();
+        MovingHall = true;
+        HallSelected = true;
+        Selected = null;
+        Armed = null;
+        hallStartPosition = townHall.HallPosition;
+        hallStartRotation = townHall.HallRotation;
+        moveRotation = Mathf.Repeat(Mathf.Round(hallStartRotation / rotationStep) * rotationStep, 360f);
+        lastSnapped = new Vector3(float.NaN, 0f, 0f);
+        lastRotation = float.NaN;
+        radiusCache.Clear();
+
+        if (!overlay) overlay = PlacementOverlay.Create(cellSize);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Puts the town hall back where it was before the move started.</summary>
+    public void CancelHallMove()
+    {
+        if (!MovingHall)
+        {
+            return;
+        }
+
+        var townHall = gameManager.Village.TownHall;
+        if (townHall) townHall.MoveTo(hallStartPosition, hallStartRotation);
+        MovingHall = false;
+        MoveProblem = null;
+        if (overlay) overlay.Hide();
+        Changed?.Invoke();
+    }
+
+    private void UpdateHallMove()
+    {
+        var townHall = gameManager.Village.TownHall;
+        if (Busy || !townHall)
+        {
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            CancelHallMove();
+            return;
+        }
+
+        ReadRotationKeys();
+
+        if (!TryGetMousePoint(out var point))
+        {
+            return;
+        }
+
+        var snapped = new Vector3(Mathf.Round(point.x / cellSize) * cellSize, point.y, Mathf.Round(point.z / cellSize) * cellSize);
+        if (snapped.x != lastSnapped.x || snapped.z != lastSnapped.z || moveRotation != lastRotation)
+        {
+            lastSnapped = snapped;
+            lastRotation = moveRotation;
+            townHall.MoveTo(snapped, moveRotation);
+            MoveProblem = ValidateHall(townHall.HallPosition, moveRotation);
+            MoveValid = MoveProblem == null;
+            Changed?.Invoke();
+        }
+
+        if (overlay)
+        {
+            var area = townHall.Area;
+            var centre = townHall.HallPosition + Quaternion.Euler(0f, moveRotation, 0f) * new Vector3(area.center.x, 0f, area.center.y);
+            overlay.Show(centre, moveRotation, area.width / 2f, area.height / 2f, MoveValid);
+        }
+
+        if (Input.GetMouseButtonDown(0) && !Shinobytes.UI.HudPointer.IsOverHud() && !UIUtility.IsPointerOverUIElement())
+        {
+            if (MoveValid) _ = CommitHallMoveAsync();
+            else Failed?.Invoke(MoveProblem);
+        }
+    }
+
+    /// <summary>
+    /// Null when the town hall can stand here, otherwise the reason it cannot. The whole town hall area
+    /// (the biggest tier's ground) must fit: inside the village, clear of every plot, on dry and level
+    /// enough ground.
+    /// </summary>
+    private string ValidateHall(Vector3 position, float rotation)
+    {
+        var townHall = gameManager.Village.TownHall;
+        var plaza = townHall.Plaza;
+
+        var reach = 0f;
+        foreach (var other in gameManager.Village.TownHouses.Slots)
+        {
+            if (other) reach = Mathf.Max(reach, Flat(other.DefaultPosition - plaza).magnitude);
+        }
+
+        var corners = townHall.AreaCorners(position, rotation);
+        foreach (var corner in corners)
+        {
+            if (Flat(corner - plaza).magnitude > reach + villageMargin)
+            {
+                return Localization.UI_BUILD_HALL_OUTSIDE;
+            }
+        }
+
+        foreach (var plot in Plots)
+        {
+            if (townHall.AreaOverlaps(position, rotation, plot.transform.position, RadiusOf(plot) + spacing))
+            {
+                return Localization.UI_BUILD_HALL_PLOT;
+            }
+        }
+
+        // Corners, edge middles and centre: dry ground, and not too uneven for the hall to sit on.
+        var low = float.MaxValue;
+        var high = float.MinValue;
+        for (var i = 0; i < 9; ++i)
+        {
+            var sample = i < 4 ? corners[i]
+                : i < 8 ? (corners[i - 4] + corners[(i - 3) % 4]) / 2f
+                : (corners[0] + corners[2]) / 2f;
+            if (IsWater(sample)) return Localization.UI_BUILD_PLACE_WATER;
+            var y = townHall.GroundHeight(sample);
+            low = Mathf.Min(low, y);
+            high = Mathf.Max(high, y);
+        }
+
+        if (high - low > maxHallSlope)
+        {
+            return Localization.UI_BUILD_PLACE_STEEP;
+        }
+
+        return null;
+    }
+
+    private async Task CommitHallMoveAsync()
+    {
+        var townHall = gameManager.Village.TownHall;
+        var position = townHall.HallPosition;
+        var rotation = moveRotation;
+
+        await Run(async () =>
+        {
+            if (!await gameManager.RavenNest.Village.PlaceTownHallAsync(position.x, position.z, rotation))
+            {
+                Failed?.Invoke(gameManager.Village.TownHallPlacementSupported
+                    ? Localization.UI_BUILD_PLACE_REJECTED
+                    : Localization.UI_BUILD_PLACE_UNSUPPORTED);
+                CancelHallMove();
+                return;
+            }
+
+            townHall.ApplyPlacement(position.x, position.z, rotation);
+            MovingHall = false;
+            MoveProblem = null;
+            if (overlay) overlay.Hide();
+        });
+    }
+
+    /// <summary>Turns the town hall where it stands, after checking the turned area still fits.</summary>
+    public async Task RotateHallInPlaceAsync(float degrees)
+    {
+        var townHall = gameManager.Village.TownHall;
+        if (!townHall || Busy || IsMoving) return;
+
+        radiusCache.Clear();
+        var position = townHall.HallPosition;
+        var rotation = Mathf.Repeat(Mathf.Round(townHall.HallRotation / rotationStep) * rotationStep + degrees, 360f);
+        var problem = ValidateHall(position, rotation);
+        if (problem != null)
+        {
+            Failed?.Invoke(problem);
+            return;
+        }
+
+        await Run(async () =>
+        {
+            if (!await gameManager.RavenNest.Village.PlaceTownHallAsync(position.x, position.z, rotation))
+            {
+                Failed?.Invoke(gameManager.Village.TownHallPlacementSupported
+                    ? Localization.UI_BUILD_PLACE_REJECTED
+                    : Localization.UI_BUILD_PLACE_UNSUPPORTED);
+                return;
+            }
+
+            townHall.ApplyPlacement(position.x, position.z, rotation);
+        });
+    }
+
+    /// <summary>Puts a moved town hall back on the plaza.</summary>
+    public async Task ResetHallPlacementAsync()
+    {
+        var townHall = gameManager.Village.TownHall;
+        if (!townHall || Busy || !townHall.IsMoved) return;
+
+        // The plaza must be clear too: plots may have been placed there after the hall moved away.
+        radiusCache.Clear();
+        var plaza = townHall.Plaza;
+        foreach (var plot in Plots)
+        {
+            if (townHall.AreaOverlaps(plaza, 0f, plot.transform.position, RadiusOf(plot) + spacing))
+            {
+                Failed?.Invoke(Localization.UI_BUILD_HALL_PLOT);
+                return;
+            }
+        }
+
+        await Run(async () =>
+        {
+            if (!await gameManager.RavenNest.Village.ResetTownHallPlacementAsync())
+            {
+                Failed?.Invoke(gameManager.Village.TownHallPlacementSupported
+                    ? Localization.UI_BUILD_PLACE_REJECTED
+                    : Localization.UI_BUILD_PLACE_UNSUPPORTED);
+                return;
+            }
+
+            townHall.ResetPlacement();
+        });
     }
 
     // ---- Placing a new building --------------------------------------------------------------

@@ -400,6 +400,12 @@ public static class Localization
     public static readonly string UI_BUILD_PLACE_STEEP = "The ground is too steep here";
     public static readonly string UI_BUILD_PLACE_REJECTED = "The server did not accept the move. Try again in a moment.";
     public static readonly string UI_BUILD_PLACE_UNSUPPORTED = "Moving buildings needs a server update.";
+    public static readonly string UI_BUILD_HALL_TITLE = "Town hall";
+    public static readonly string UI_BUILD_HALL_TIER = "Tier {0}";
+    public static readonly string UI_BUILD_HALL_NOTE = "Move the town hall anywhere in the village. Its outline is the room the biggest town hall needs, so there is always space to upgrade.";
+    public static readonly string UI_BUILD_HALL_PLOT = "The town hall needs this space; a building is in the way";
+    public static readonly string UI_BUILD_HALL_OUTSIDE = "The town hall must stay inside the village";
+    public static readonly string UI_BUILD_HINT_HALL = "Move or rotate the town hall. Esc to deselect.";
     public static readonly string UI_TOWN_VILLAGE = "VILLAGE";
     public static readonly string UI_TOWN_LEVEL = "LV {0}";
     public static readonly string UI_TOWN_HOUSES = "HOUSES";

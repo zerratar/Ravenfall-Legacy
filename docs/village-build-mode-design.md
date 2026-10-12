@@ -101,6 +101,13 @@ the game. Neither touches the slot limit. Nothing here is built yet.
 
 #### Step A: the streamer can move and turn the town hall (no costs)
 
+**Built 2026-10-12, awaiting a play test.** Server: RavenNest `b1e1e439`; run `sql/village-town-hall.sql`
+before deploying it. In build mode, click the town hall to select it; its panel has Move, Rotate and Reset
+position. Houses now also keep off the whole town hall area (about 49 x 45 m round the hall), not just the
+building, so an upgrade never lands on one. The same change fixed the mouse point while moving: it was cut
+against a plane at the manager's height, eight metres under the village, so buildings followed a spot away
+from the cursor.
+
 Today all five tiers stand on one plaza at world (-23.6, 8, -109.7), and the client picks the tier from
 the village level (`TownHallManager.GetTownHallTier`: under 10, 30, 80 and 150, then tier 5).
 
