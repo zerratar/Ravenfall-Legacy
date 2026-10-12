@@ -151,11 +151,6 @@ public class BuildSlotIconsManager : MonoBehaviour
         }
 
         selectBuildingDialog.gameObject.SetActive(true);
-
-        // activeInHierarchy rather than activeSelf: it is the one that reveals an inactive parent,
-        // which SetActive on the child cannot fix.
-        Shinobytes.Debug.Log("Building selection dialog activeInHierarchy="
-            + selectBuildingDialog.gameObject.activeInHierarchy);
     }
 
 

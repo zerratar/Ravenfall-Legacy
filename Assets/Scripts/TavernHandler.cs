@@ -30,12 +30,6 @@ public class TavernHandler : MonoBehaviour
 
     private float leaveTimer;
 
-    [Header("Diagnostics")]
-    [Tooltip("Logs the camera's distance to the tavern triggers, at most once a second. Temporary.")]
-    [SerializeField] private bool logProximity = true;
-    private float nextProximityLog;
-    private float lastLoggedDistance = float.MinValue;
-
     public TicTacToe TicTacToe => ticTacToeGame;
     public PetRacingGame PetRacing => petRacingGame;
     public ITavernGame ActiveGame => activeGame;
@@ -159,29 +153,6 @@ public class TavernHandler : MonoBehaviour
         return collider.radius * largest;
     }
 
-    /// <summary>
-    /// Reports how far the camera is from a tavern trigger, at most once a second and only when the
-    /// distance has actually moved. Temporary, to find out whether the tavern is failing because
-    /// proximity is never detected or because the fade never runs.
-    /// </summary>
-    private void LogProximity(string which, float distance, float radius)
-    {
-        if (!logProximity)
-        {
-            return;
-        }
-
-        if (Time.unscaledTime < nextProximityLog && Mathf.Abs(distance - lastLoggedDistance) < 1f)
-        {
-            return;
-        }
-
-        nextProximityLog = Time.unscaledTime + 1f;
-        lastLoggedDistance = distance;
-        Shinobytes.Debug.Log($"[Tavern] {which}: distance {distance:F1} of radius {radius:F1}"
-            + $", inside={insideTavern}, fadeActive={(fadeToBlack ? fadeToBlack.FadeActive.ToString() : "no fade component")}");
-    }
-
     // Update is called once per frame
     void Update()
     {
@@ -192,7 +163,6 @@ public class TavernHandler : MonoBehaviour
         {
             var enterTavernPoint = WorldCenter(enterCollider);
             var dist = Vector3.Distance(gameCamera.transform.position, enterTavernPoint);
-            LogProximity("enter", dist, WorldRadius(enterCollider));
             if (dist <= WorldRadius(enterCollider))
             {
                 if (!fadeToBlack.FadeActive)
@@ -213,7 +183,6 @@ public class TavernHandler : MonoBehaviour
 
             var exitTavernPoint = WorldCenter(exitCollider);
             var dist = Vector3.Distance(gameCamera.transform.position, exitTavernPoint);
-            LogProximity("exit", dist, WorldRadius(exitCollider));
             if (dist >= WorldRadius(exitCollider))
             {
                 if (!fadeToBlack.FadeActive)
