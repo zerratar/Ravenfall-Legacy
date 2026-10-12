@@ -139,7 +139,7 @@ public class FreeCamera : MonoBehaviour
                     this.btnDown.Add(btn);
                 }
             }
-            else if (enemyObserveDialog && !UIUtility.IsPointerOverUIElement())
+            else if (enemyObserveDialog && !UIUtility.IsPointerOverUIElement() && !Shinobytes.UI.DraggableWindow.IsPointerOverWindow)
             {
                 var ec = hit.collider.gameObject.GetComponent<EnemyController>();
                 if (ec)// && !enemyObserveDialog.IsVisible)

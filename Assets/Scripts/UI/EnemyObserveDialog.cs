@@ -22,10 +22,15 @@ public class EnemyObserveDialog : MonoBehaviour
     [SerializeField] private TextMeshProUGUI lblKillCount;
 
 
+    [Tooltip("Optional UI Toolkit target frame. When assigned, it shows the enemy and this uGUI dialog stays hidden. Clear it to bring the old dialog back.")]
+    [SerializeField] private Shinobytes.UI.EnemyDetailsWindow uiToolkitWindow;
+
     private EnemyController target;
     private int lastDeathCount;
     private int lastPlayerKill;
     public bool IsVisible { get; private set; }
+    private bool closeHooked;
+
     public void Awake()
     {
         Close();
@@ -34,6 +39,21 @@ public class EnemyObserveDialog : MonoBehaviour
     public void ShowDialog(EnemyController ec)
     {
         this.target = ec;
+
+        if (uiToolkitWindow)
+        {
+            // Hooked here rather than in Awake: with the window in use this object is never
+            // activated, so Awake may never run.
+            if (!closeHooked)
+            {
+                uiToolkitWindow.CloseRequested += Close;
+                closeHooked = true;
+            }
+
+            uiToolkitWindow.Show(ec);
+            IsVisible = true;
+            return;
+        }
 
 #if UNITY_EDITOR
         UnityEngine.Debug.Log("Show Enemy Observe Dialog: " + target.Name);
@@ -46,6 +66,7 @@ public class EnemyObserveDialog : MonoBehaviour
 
     public void Close()
     {
+        if (uiToolkitWindow) uiToolkitWindow.Hide();
         this.gameObject.SetActive(false);
         IsVisible = false;
     }

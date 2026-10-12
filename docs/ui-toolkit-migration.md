@@ -668,3 +668,53 @@ the editor is when Play mode ends.
 
 The settings menu needs a slider for it in the menu pass. The old player list scale and size
 sliders act on the hidden uGUI list and do nothing now; that is part of the same pass.
+
+## Combat numbers
+
+`FloatingTextView.cs`, `FloatingText.uxml`, `ravenfall-floating.uss`.
+
+These replace a world space canvas per number, each with a comic "pow" burst behind it. Every
+number is now a pooled label on one screen space layer, projected from the world each frame, below
+every window in sorting order.
+
+- **Colour says what happened:**
+  - White for damage dealt, gold for a standout hit.
+  - Red for damage a player takes. These sink rather than rise, so they never read as a hit the
+    player landed.
+  - Green with a plus for healing.
+  - A smaller grey "Miss" in place of a 0.
+- **Size says how much:** relative to the biggest recent hit on the same target, with that peak
+  decaying over time. The big hits stand out at any scale, from a goblin to a raid boss. Distance
+  from the camera shrinks numbers further away.
+- **Motion:** each number pops in large and slightly tilted, settles upright with a little
+  overshoot, rises on a sideways arc and fades over its last 40%.
+- **Merged numbers:** bosses merge hits into one climbing total, which pops again on every hit.
+
+`DamageCounterManager.toolkitView` forwards every call; clearing it brings the old counters back.
+
+## Island details and enemy target frame
+
+`IslandDetailsWindow.cs`, `EnemyDetailsWindow.cs`, their UXML, and `ravenfall-observe.uss`.
+
+**Island details** shares the player details corner, since the camera observes one or the other.
+- The header has the island's name, a level requirement chip, an onsen chip when there is a resting
+  area, and the player count. The observe timer line drains under it.
+- What people are training there is a ranked bar chart rather than fourteen fixed counters, most of
+  them zero.
+- The island's statistics follow in two columns.
+- It refreshes twice a second; the old panel rebuilt everything every frame.
+- The old panel showed the Health counter in the Healing row, so healers never appeared. Healing is
+  counted as itself now.
+
+**Enemy target frame** opens for an enemy clicked in free camera mode. It shows:
+- Name and combat level.
+- A health bar, measured against `Health.Level` for the same reason as the dungeon boss bar.
+- Attack, defense and strength.
+- Armor and weapon power and aim.
+- Players defeated and deaths.
+
+Clicking an enemy no longer goes through a HUD window to the world beneath it.
+
+`IslandDetails.uiToolkitWindow` and `EnemyObserveDialog.uiToolkitWindow` forward when assigned.
+The window's close button is hooked on the first show rather than in `Awake`, because with the
+window in use the old dialog's object is never activated.

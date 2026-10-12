@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      The island the camera is touring: its name and level requirement, who is there and what they
+      are training, and what has happened on it. Shown in the same corner as player details, which
+      it takes turns with: the camera observes either a player or an island, never both.
+
+      The training chart and statistics are built in code from definition lists in
+      IslandDetailsWindow.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-observe.uss" />
+
+    <engine:VisualElement name="island-root" class="rf-window-layer" picking-mode="Ignore">
+        <engine:VisualElement name="island-window" class="rf-window rf-observe rf-island" style="display: none;">
+
+            <engine:VisualElement name="island-header" class="rf-observe__header">
+                <engine:VisualElement class="rf-observe__identity" picking-mode="Ignore">
+                    <engine:Label name="island-name" class="rf-observe__name" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-observe__chips" picking-mode="Ignore">
+                        <engine:Label name="island-level" class="rf-observe__chip" picking-mode="Ignore" />
+                        <engine:Label name="island-onsen" class="rf-observe__chip rf-observe__chip--onsen" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+                <engine:VisualElement class="rf-observe__count" picking-mode="Ignore">
+                    <engine:Label class="rf-icon rf-observe__count-icon" text="&#xf0c0;" picking-mode="Ignore" />
+                    <engine:Label name="island-players" class="rf-observe__count-value" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:Button name="island-collapse" text="" class="rf-window__button rf-observe__action" tooltip="Collapse or expand">
+                    <engine:VisualElement class="rf-chevron" picking-mode="Ignore" />
+                </engine:Button>
+            </engine:VisualElement>
+
+            <engine:VisualElement class="rf-observe__timer" picking-mode="Ignore">
+                <engine:VisualElement name="island-timer-fill" class="rf-observe__timer-fill" picking-mode="Ignore" />
+            </engine:VisualElement>
+
+            <engine:VisualElement class="rf-window__body rf-observe__body">
+                <engine:Label name="island-training-title" class="rf-observe__section" />
+                <engine:VisualElement name="island-training" class="rf-island__training" />
+                <engine:Label name="island-training-empty" class="rf-observe__empty" />
+
+                <engine:Label name="island-stats-title" class="rf-observe__section" />
+                <engine:VisualElement name="island-stats" class="rf-island__stats" />
+            </engine:VisualElement>
+
+        </engine:VisualElement>
+    </engine:VisualElement>
+
+</engine:UXML>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      Target frame for an enemy clicked in free camera mode: who it is, how much health it has left,
+      what it fights with, and its record against players. Compact on purpose; it sits over the world
+      while the streamer looks around.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-observe.uss" />
+
+    <engine:VisualElement name="enemy-root" class="rf-window-layer" picking-mode="Ignore">
+        <engine:VisualElement name="enemy-window" class="rf-window rf-observe rf-enemy" style="display: none;">
+
+            <engine:VisualElement name="enemy-header" class="rf-observe__header">
+                <engine:VisualElement class="rf-observe__identity" picking-mode="Ignore">
+                    <engine:Label name="enemy-name" class="rf-observe__name" picking-mode="Ignore" />
+                    <engine:Label name="enemy-level" class="rf-enemy__level" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:Button name="enemy-close" text="&#xf00d;" class="rf-window__button rf-icon rf-observe__close" tooltip="Close" />
+            </engine:VisualElement>
+
+            <engine:VisualElement class="rf-observe__body">
+                <engine:VisualElement class="rf-enemy__health" picking-mode="Ignore">
+                    <engine:VisualElement name="enemy-health-fill" class="rf-enemy__health-fill" picking-mode="Ignore" />
+                    <engine:Label name="enemy-health" class="rf-enemy__health-text" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="enemy-stats" class="rf-enemy__stats" />
+
+                <engine:VisualElement class="rf-enemy__record" picking-mode="Ignore">
+                    <engine:VisualElement class="rf-enemy__record-item" picking-mode="Ignore">
+                        <engine:Label class="rf-icon rf-enemy__record-icon rf-enemy__record-icon--kills" text="&#xf714;" picking-mode="Ignore" />
+                        <engine:Label name="enemy-kills" class="rf-enemy__record-text" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:VisualElement class="rf-enemy__record-item" picking-mode="Ignore">
+                        <engine:Label class="rf-icon rf-enemy__record-icon" text="&#xf54c;" picking-mode="Ignore" />
+                        <engine:Label name="enemy-deaths" class="rf-enemy__record-text" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+            </engine:VisualElement>
+
+        </engine:VisualElement>
+    </engine:VisualElement>
+
+</engine:UXML>

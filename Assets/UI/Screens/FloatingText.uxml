@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      Combat numbers. FloatingTextView adds pooled labels to the layer and positions them over
+      characters every frame. Below every window in sorting order, and nothing here takes clicks.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-floating.uss" />
+
+    <engine:VisualElement name="floating-layer" class="rf-float-layer" picking-mode="Ignore" />
+
+</engine:UXML>

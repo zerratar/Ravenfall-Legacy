@@ -1,0 +1,359 @@
+/*
+  Island details and enemy target frame. Builds on ravenfall-hud.uss for window chrome, fonts and
+  the label reset; label rules here use two classes so they outrank that reset.
+*/
+
+/* ---- Fonts ---- */
+
+.rf-observe .rf-observe__name,
+.rf-observe .rf-observe__chip,
+.rf-observe .rf-observe__count-value,
+.rf-observe .rf-observe__section,
+.rf-observe .rf-island__skill-name,
+.rf-observe .rf-island__stat-value,
+.rf-observe .rf-enemy__level,
+.rf-observe .rf-enemy__health-text,
+.rf-observe .rf-enemy__stat-caption,
+.rf-observe .rf-enemy__record-text {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+.rf-observe .rf-island__skill-count,
+.rf-observe .rf-enemy__stat-value {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+}
+
+/* ---- Shared ---- */
+
+#island-window {
+    right: 24px;
+    top: 64px;
+    width: 460px;
+}
+
+#enemy-window {
+    left: 520px;
+    top: 140px;
+    width: 400px;
+}
+
+.rf-observe__header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 64px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-2);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: var(--rf-surface-raised);
+    cursor: pan;
+}
+
+.rf-observe__identity {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.rf-observe .rf-observe__name {
+    font-size: 24px;
+    color: var(--rf-text);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.rf-observe__chips {
+    flex-direction: row;
+    margin-top: 4px;
+}
+
+.rf-observe .rf-observe__chip {
+    font-size: 13px;
+    color: var(--rf-text);
+    background-color: var(--rf-chip);
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    margin-right: 6px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-observe .rf-observe__chip--onsen {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-live);
+}
+
+.rf-observe__count {
+    flex-direction: row;
+    align-items: center;
+    margin-left: var(--rf-space-3);
+}
+
+.rf-observe .rf-observe__count-icon {
+    font-size: 18px;
+    color: var(--rf-live);
+    margin-right: 6px;
+}
+
+.rf-observe .rf-observe__count-value {
+    font-size: 20px;
+    color: var(--rf-text);
+}
+
+.rf-observe__action {
+    margin-left: var(--rf-space-3);
+}
+
+.rf-observe .rf-observe__close {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+}
+
+.rf-observe .rf-observe__close:hover {
+    color: var(--rf-text);
+}
+
+.rf-observe__timer {
+    height: 3px;
+    flex-shrink: 0;
+    background-color: var(--rf-bar-track);
+}
+
+.rf-observe__timer-fill {
+    height: 100%;
+    width: 100%;
+    background-color: var(--rf-accent-dim);
+    transition-property: width;
+    transition-duration: 0.5s;
+    transition-timing-function: linear;
+}
+
+.rf-observe__body {
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-bottom: var(--rf-space-3);
+}
+
+.rf-observe .rf-observe__section {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    letter-spacing: 1.5px;
+    margin-top: var(--rf-space-3);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-observe .rf-observe__empty {
+    font-size: 14px;
+    color: var(--rf-text-faint);
+}
+
+/* ---- Island: training chart ---- */
+
+.rf-island__skill {
+    flex-direction: row;
+    align-items: center;
+    height: 26px;
+    margin-bottom: 3px;
+}
+
+.rf-island__skill-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-observe .rf-island__skill-name {
+    width: 96px;
+    font-size: 14px;
+    color: var(--rf-text);
+}
+
+.rf-island__skill-bar {
+    flex-grow: 1;
+    height: 8px;
+    margin-left: 6px;
+    margin-right: 10px;
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    overflow: hidden;
+}
+
+.rf-island__skill-fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--rf-accent);
+    transition-property: width;
+    transition-duration: 0.4s;
+    transition-timing-function: ease-out;
+}
+
+.rf-observe .rf-island__skill-count {
+    width: 40px;
+    font-size: 16px;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+}
+
+/* ---- Island: statistics ---- */
+
+.rf-island__stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.rf-island__stat {
+    flex-direction: row;
+    align-items: center;
+    width: 50%;
+    height: 30px;
+    padding-right: var(--rf-space-3);
+}
+
+.rf-observe .rf-island__stat-icon {
+    width: 24px;
+    font-size: 14px;
+    color: var(--rf-accent);
+    margin-right: 6px;
+}
+
+.rf-observe .rf-island__stat-label {
+    flex-grow: 1;
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+.rf-observe .rf-island__stat-value {
+    font-size: 15px;
+    color: var(--rf-text);
+}
+
+/* ---- Enemy target frame ---- */
+
+.rf-observe .rf-enemy__level {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    margin-top: 2px;
+}
+
+.rf-enemy__health {
+    height: 26px;
+    margin-top: var(--rf-space-3);
+    background-color: var(--rf-bar-track);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    overflow: hidden;
+}
+
+.rf-enemy__health-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: var(--rf-health);
+    border-top-width: 2px;
+    border-top-color: var(--rf-health-shine);
+    transition-property: width;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
+}
+
+.rf-observe .rf-enemy__health-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    font-size: 15px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+}
+
+.rf-enemy__stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: var(--rf-space-3);
+}
+
+.rf-enemy__stat {
+    flex-direction: row;
+    align-items: center;
+    width: 33.33%;
+    height: 48px;
+}
+
+.rf-enemy__stat-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-observe .rf-enemy__stat-caption {
+    font-size: 11px;
+    color: var(--rf-text-dim);
+    letter-spacing: 1px;
+}
+
+.rf-observe .rf-enemy__stat-value {
+    font-size: 18px;
+    color: var(--rf-text);
+}
+
+.rf-enemy__record {
+    flex-direction: row;
+    margin-top: var(--rf-space-2);
+    padding-top: var(--rf-space-2);
+    border-top-width: 1px;
+    border-top-color: var(--rf-divider);
+}
+
+.rf-enemy__record-item {
+    flex-direction: row;
+    align-items: center;
+    margin-right: var(--rf-space-5);
+}
+
+.rf-observe .rf-enemy__record-icon {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    margin-right: 8px;
+}
+
+.rf-observe .rf-enemy__record-icon--kills {
+    color: var(--rf-health-low);
+}
+
+.rf-observe .rf-enemy__record-text {
+    font-size: 14px;
+    color: var(--rf-text);
+}

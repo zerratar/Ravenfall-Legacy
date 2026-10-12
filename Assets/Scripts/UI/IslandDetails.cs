@@ -7,6 +7,9 @@ public class IslandDetails : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
 
+    [Tooltip("Optional UI Toolkit window. When assigned, it shows the observed island and this uGUI panel stays hidden. Clear it to bring the old panel back.")]
+    [SerializeField] private Shinobytes.UI.IslandDetailsWindow uiToolkitWindow;
+
     [Header("Island")]
     [SerializeField] private TMPro.TextMeshProUGUI islandName;
     [SerializeField] private TMPro.TextMeshProUGUI requiredLevel;
@@ -68,6 +71,13 @@ public class IslandDetails : MonoBehaviour
 
     private void Update()
     {
+        if (uiToolkitWindow)
+        {
+            // The window draws; this panel stays switched off so its per frame rebuild never runs.
+            gameObject.SetActive(false);
+            return;
+        }
+
         if (target == null)
         {
             this.gameObject.SetActive(false);
@@ -82,6 +92,13 @@ public class IslandDetails : MonoBehaviour
     internal void Observe(IslandController island, float timer)
     {
         this.errorHasBeenLogged = false;
+        if (uiToolkitWindow)
+        {
+            this.target = island;
+            uiToolkitWindow.Observe(island, timer);
+            return;
+        }
+
         if (island == null)
         {
             this.target = null;

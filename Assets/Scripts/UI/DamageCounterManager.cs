@@ -7,6 +7,9 @@ public class DamageCounterManager : MonoBehaviour
 {
     [SerializeField] private GameObject damageCounterPrefab;
 
+    [Tooltip("Optional UI Toolkit layer. When assigned, every number is drawn there instead of as a world space canvas with a burst behind it. Clear it to bring the old counters back.")]
+    [SerializeField] private Shinobytes.UI.FloatingTextView toolkitView;
+
     private readonly Stack<DamageCounter> availableDamageCounters
         = new Stack<DamageCounter>();
 
@@ -16,6 +19,12 @@ public class DamageCounterManager : MonoBehaviour
 
     public void Add(Transform target, int damage, bool isHeal = false, bool allowMerge = false)
     {
+        if (toolkitView)
+        {
+            toolkitView.Add(target, damage, isHeal, allowMerge);
+            return;
+        }
+
         if (!allowMerge)
         {
             AddDamageCounter(target, damage, isHeal);

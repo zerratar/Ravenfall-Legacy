@@ -1,0 +1,58 @@
+/*
+  Combat numbers over characters. See FloatingTextView.
+
+  No background: the number is the whole message, so it gets the extra bold cut, a hard dark
+  outline that holds its edge over any scene, and a drop shadow that lifts it off the ground.
+*/
+
+.rf-float-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* A fixed box centred on its bottom edge, so translate can put that point exactly over the head
+   and scale and rotate turn around the middle of the text. */
+.rf-float {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 320px;
+    height: 80px;
+    margin-left: -160px;
+    margin-top: -80px;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    -unity-text-align: lower-center;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+    font-size: 28px;
+    color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgba(28, 22, 18, 0.95);
+    text-shadow: 2px 3px 2px rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+}
+
+/* A hit near the top of what this target has been taking. */
+.rf-float--big {
+    color: rgb(255, 214, 110);
+}
+
+/* Damage a player takes. */
+.rf-float--taken {
+    color: rgb(255, 92, 78);
+}
+
+.rf-float--heal {
+    color: rgb(110, 230, 140);
+}
+
+.rf-float--miss {
+    color: rgb(200, 192, 176);
+    -unity-text-outline-width: 1.5px;
+}

@@ -339,6 +339,14 @@ public static class Localization
     public static readonly string UI_PLAYERS_COUNT = "{0} players";
     public static readonly string UI_PLAYERS_PARTIAL = "{0} of {1} players";
     public static readonly string UI_RESTED = "Rested {0}";
+    public static readonly string UI_ISLAND_TRAINING = "TRAINING HERE";
+    public static readonly string UI_ISLAND_STATISTICS = "ISLAND STATISTICS";
+    public static readonly string UI_ISLAND_NOBODY = "Nobody is training here right now.";
+    public static readonly string UI_ISLAND_ONSEN = "Onsen";
+    public static readonly string UI_ISLAND_LEVEL = "Level {0}+";
+    public static readonly string UI_ENEMY_LEVEL = "Combat level {0}";
+    public static readonly string UI_ENEMY_KILLS = "{0} players defeated";
+    public static readonly string UI_ENEMY_DEATHS = "{0} deaths";
     public static readonly string UI_TOWN_VILLAGE = "VILLAGE";
     public static readonly string UI_TOWN_LEVEL = "LV {0}";
     public static readonly string UI_TOWN_HOUSES = "HOUSES";
