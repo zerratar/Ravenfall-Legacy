@@ -44,6 +44,11 @@
                         <engine:Label name="town-houses" class="rf-town__value" picking-mode="Ignore" />
                     </engine:VisualElement>
                 </engine:VisualElement>
+                <!-- The only thing in the top column that takes clicks. -->
+                <engine:Button name="town-build" class="rf-town__build" text="">
+                    <engine:Label class="rf-icon rf-town__build-icon" text="&#xf6e3;" picking-mode="Ignore" />
+                    <engine:Label name="town-build-label" class="rf-town__build-label" picking-mode="Ignore" />
+                </engine:Button>
             </engine:VisualElement>
 
             <!-- XP boost -->

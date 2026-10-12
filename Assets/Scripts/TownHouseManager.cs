@@ -37,6 +37,14 @@ public class TownHouseManager : MonoBehaviour
 
     void Update()
     {
+        // Village build mode owns village clicks when it exists, and only acts while it is on. This
+        // older handling selected plots on any click in free camera, which made it easy to start
+        // building by accident while just looking around.
+        if (VillageBuildMode.Instance)
+        {
+            return;
+        }
+
         if (Input.GetMouseButtonDown(0))
         {
             if (UIUtility.IsPointerOverUIElement())

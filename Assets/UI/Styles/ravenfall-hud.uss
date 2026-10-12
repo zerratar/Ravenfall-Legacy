@@ -1025,3 +1025,67 @@
     transition-property: width;
     transition-duration: 0.4s;
 }
+
+/* The build mode button at the end of the town bar, gold like the mockup. */
+.rf-top-layer .rf-town__build {
+    flex-direction: row;
+    align-items: center;
+    height: 56px;
+    margin-left: var(--rf-space-2);
+    margin-right: var(--rf-space-1);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: var(--rf-accent);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    cursor: link;
+}
+
+.rf-top-layer .rf-town__build:hover {
+    background-color: var(--rf-accent-bright);
+}
+
+/* While build mode is on the button turns dark with a gold edge and reads "exit". */
+.rf-top-layer .rf-town__build--active {
+    background-color: var(--rf-surface-raised);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-top-layer .rf-town__build--active:hover {
+    background-color: var(--rf-accent-wash);
+}
+
+.rf-top-layer .rf-town__build-icon {
+    font-size: 22px;
+    color: var(--rf-text-on-accent);
+    margin-right: var(--rf-space-2);
+}
+
+.rf-top-layer .rf-town__build-label {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+    font-size: 16px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-top-layer .rf-town__build--active .rf-town__build-icon,
+.rf-top-layer .rf-town__build--active .rf-town__build-label {
+    color: var(--rf-accent);
+}

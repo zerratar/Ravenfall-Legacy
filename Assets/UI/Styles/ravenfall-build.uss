@@ -1,0 +1,649 @@
+/*
+  Village build mode. Matches the HUD: dark glass panels, gold top edge, NewRodin type.
+  Label rules use two classes to outrank the label reset below.
+*/
+
+.rf-build .unity-label {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.rf-build .rf-build-side__title,
+.rf-build .rf-build-side__caption,
+.rf-build .rf-build-plot__resident-name,
+.rf-build .rf-build-card__name,
+.rf-build .rf-build-tab,
+.rf-build .rf-build-button,
+.rf-build .rf-build-hint,
+.rf-build .rf-build-toast,
+.rf-build .rf-plot__name,
+.rf-build .rf-build-summary__name,
+.rf-build .rf-build-assign__name {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+.rf-build .rf-build-plot__bonus,
+.rf-build .rf-build-summary__value,
+.rf-build .rf-build-assign__bonus {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+}
+
+/* Shared glass panel look. */
+.rf-build-side,
+.rf-build-tray,
+.rf-build-toolbar,
+.rf-build-modal__panel {
+    background-color: var(--rf-surface-glass);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-top-width: 3px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-color: var(--rf-accent);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-build__close {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+}
+
+/* ==========================================================================
+   Plot markers
+   ========================================================================== */
+
+.rf-build__markers {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Centred on its bottom edge, like the combat numbers, so translate puts it over the plot. */
+.rf-plot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 160px;
+    height: 84px;
+    margin-left: -80px;
+    margin-top: -84px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.rf-plot__badge {
+    width: 46px;
+    height: 46px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--rf-surface-glass);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 23px;
+    border-top-right-radius: 23px;
+    border-bottom-left-radius: 23px;
+    border-bottom-right-radius: 23px;
+    transition-property: scale, border-color, background-color;
+    transition-duration: 0.12s;
+    cursor: link;
+}
+
+.rf-plot:hover .rf-plot__badge {
+    scale: 1.12 1.12;
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-plot__icon {
+    width: 30px;
+    height: 30px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-build .rf-plot__plus {
+    font-size: 20px;
+    color: var(--rf-accent);
+}
+
+.rf-build .rf-plot__name {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--rf-text);
+    background-color: var(--rf-surface-glass);
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    white-space: nowrap;
+}
+
+.rf-plot--empty .rf-plot__badge {
+    border-left-color: var(--rf-accent-dim);
+    border-right-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent-dim);
+    border-bottom-color: var(--rf-accent-dim);
+}
+
+.rf-plot--selected .rf-plot__badge {
+    scale: 1.18 1.18;
+    background-color: var(--rf-accent-dim);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+/* A building is armed: empty plots are targets, the rest step back. */
+.rf-plot--target .rf-plot__badge {
+    background-color: rgba(76, 195, 138, 0.35);
+    border-left-color: var(--rf-success);
+    border-right-color: var(--rf-success);
+    border-top-color: var(--rf-success);
+    border-bottom-color: var(--rf-success);
+}
+
+.rf-plot--target .rf-plot__plus {
+    color: var(--rf-success);
+}
+
+.rf-plot--muted {
+    opacity: 0.35;
+}
+
+/* ==========================================================================
+   Side panel
+   ========================================================================== */
+
+.rf-build-side {
+    position: absolute;
+    right: 24px;
+    top: 120px;
+    width: 360px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-4);
+}
+
+.rf-build .rf-build-side__title {
+    font-size: 20px;
+    color: var(--rf-text);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-build .rf-build-side__subtitle {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    margin-top: 2px;
+}
+
+.rf-build .rf-build-side__caption {
+    font-size: 12px;
+    color: var(--rf-text-dim);
+    letter-spacing: 1.2px;
+    margin-top: var(--rf-space-3);
+}
+
+.rf-build .rf-build-side__note {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    margin-top: var(--rf-space-3);
+    white-space: normal;
+}
+
+.rf-build-summary {
+    margin-top: var(--rf-space-3);
+}
+
+.rf-build-summary__row {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+}
+
+.rf-build-summary__icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-build .rf-build-summary__name {
+    width: 110px;
+    font-size: 14px;
+    color: var(--rf-text);
+}
+
+.rf-build-summary__bar {
+    flex-grow: 1;
+    height: 6px;
+    margin-right: 10px;
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    overflow: hidden;
+}
+
+.rf-build-summary__fill {
+    height: 100%;
+    background-color: var(--rf-success);
+}
+
+.rf-build .rf-build-summary__value {
+    width: 64px;
+    font-size: 15px;
+    color: var(--rf-success);
+    -unity-text-align: middle-right;
+}
+
+.rf-build-plot__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-build-plot__icon {
+    width: 44px;
+    height: 44px;
+    margin-right: var(--rf-space-3);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-build-plot__titles {
+    flex-grow: 1;
+}
+
+.rf-build-plot__resident {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.rf-build .rf-build-plot__resident-name {
+    font-size: 18px;
+    color: var(--rf-text);
+}
+
+.rf-build .rf-build-plot__resident-level {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+.rf-build .rf-build-plot__bonus {
+    font-size: 30px;
+    color: var(--rf-success);
+    margin-top: var(--rf-space-3);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-build-plot__actions {
+    flex-direction: row;
+    margin-top: var(--rf-space-4);
+}
+
+/* ---- Buttons ---- */
+
+.rf-build .rf-build-button {
+    flex-grow: 1;
+    height: 40px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 15px;
+    color: var(--rf-text);
+    background-color: var(--rf-chip);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    cursor: link;
+}
+
+.rf-build .rf-build-button:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-build .rf-build-button--primary {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+}
+
+.rf-build .rf-build-button--primary:hover {
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-build .rf-build-button--danger {
+    margin-right: 0;
+    color: rgb(255, 130, 120);
+    background-color: rgba(229, 72, 77, 0.14);
+}
+
+.rf-build .rf-build-button--danger:hover {
+    background-color: rgba(229, 72, 77, 0.3);
+}
+
+/* Second click needed: the button says so in its text and turns solid. */
+.rf-build .rf-build-button--confirm {
+    color: rgb(255, 255, 255);
+    background-color: var(--rf-danger);
+}
+
+.rf-build .rf-build-button:disabled {
+    opacity: 0.45;
+}
+
+/* ==========================================================================
+   Bottom: hint, tray, toolbar
+   ========================================================================== */
+
+.rf-build-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 20px;
+    align-items: center;
+}
+
+.rf-build .rf-build-hint {
+    font-size: 15px;
+    color: var(--rf-text);
+    background-color: var(--rf-surface-glass);
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-bottom: var(--rf-space-3);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.rf-build-tray {
+    flex-direction: row;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-build-card {
+    width: 150px;
+    margin-left: 6px;
+    margin-right: 6px;
+    padding-bottom: 10px;
+    align-items: center;
+    background-color: var(--rf-row-alt);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    transition-property: translate, border-color, background-color;
+    transition-duration: 0.12s;
+    cursor: link;
+}
+
+.rf-build-card:hover {
+    translate: 0 -4px;
+    background-color: var(--rf-row-hover);
+    border-left-color: var(--rf-accent-dim);
+    border-right-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent-dim);
+    border-bottom-color: var(--rf-accent-dim);
+}
+
+/* Picked: waiting for a plot. */
+.rf-build-card--armed {
+    background-color: var(--rf-accent-wash);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+/* What the selected plot already has. */
+.rf-build-card--current {
+    border-left-color: var(--rf-success);
+    border-right-color: var(--rf-success);
+    border-top-color: var(--rf-success);
+    border-bottom-color: var(--rf-success);
+}
+
+.rf-build-card--disabled {
+    opacity: 0.5;
+}
+
+.rf-build-card__preview {
+    width: 130px;
+    height: 104px;
+    margin-top: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+    background-color: rgba(0, 0, 0, 0.25);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-build .rf-build-card__name {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.rf-build-card__skill {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.rf-build-card__skill-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-build .rf-build-card__bonus {
+    font-size: 13px;
+    color: var(--rf-success);
+}
+
+.rf-build-toolbar {
+    flex-direction: row;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.rf-build .rf-build-tab {
+    width: 110px;
+    height: 64px;
+    margin-left: 4px;
+    margin-right: 4px;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    font-size: 14px;
+    color: var(--rf-text);
+    background-color: var(--rf-row-alt);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    -unity-text-align: lower-center;
+    cursor: link;
+}
+
+.rf-build .rf-build-tab:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-build .rf-build-tab--active {
+    background-color: var(--rf-accent-wash);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-build .rf-build-tab__icon {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 8px;
+    font-size: 22px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+}
+
+.rf-build .rf-build-tab--active .rf-build-tab__icon {
+    color: var(--rf-accent);
+}
+
+/* ==========================================================================
+   Toast and resident picker
+   ========================================================================== */
+
+.rf-build .rf-build-toast {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 120px;
+    -unity-text-align: upper-center;
+    font-size: 16px;
+    color: rgb(255, 140, 130);
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.3s;
+}
+
+.rf-build .rf-build-toast--visible {
+    opacity: 1;
+}
+
+.rf-build-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.45);
+}
+
+.rf-build-modal__panel {
+    width: 520px;
+    height: 560px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+}
+
+.rf-build-modal__head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rf-build-assign {
+    flex-grow: 1;
+    margin-top: var(--rf-space-3);
+}
+
+.rf-build-assign__row {
+    flex-direction: row;
+    align-items: center;
+    height: 52px;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-build-assign .rf-build-assign__row.unity-collection-view__item:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-build-assign__row--best {
+    background-color: var(--rf-highlight-wash);
+}
+
+.rf-build-assign__text {
+    flex-grow: 1;
+}
+
+.rf-build .rf-build-assign__name {
+    font-size: 16px;
+    color: var(--rf-text);
+}
+
+.rf-build .rf-build-assign__level {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+}
+
+.rf-build .rf-build-assign__bonus {
+    font-size: 18px;
+    color: var(--rf-success);
+}

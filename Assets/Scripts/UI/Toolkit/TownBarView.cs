@@ -72,6 +72,9 @@ namespace Shinobytes.UI
         private Label level;
         private VisualElement expFill;
         private Label houses;
+        private Button build;
+        private Label buildLabel;
+        private bool shownBuildActive;
         private bool bound;
         private bool shown;
 
@@ -109,6 +112,13 @@ namespace Shinobytes.UI
             level = root.Q<Label>("town-level");
             expFill = root.Q<VisualElement>("town-exp-fill");
             houses = root.Q<Label>("town-houses");
+            build = root.Q<Button>("town-build");
+            buildLabel = root.Q<Label>("town-build-label");
+            if (build != null)
+            {
+                build.clicked += () => VillageBuildMode.Instance?.Toggle();
+                if (buildLabel != null) buildLabel.text = Localization.UI_TOWN_BUILD;
+            }
 
             var caption = root.Q<Label>("town-caption");
             if (caption != null) caption.text = Localization.UI_TOWN_VILLAGE;
@@ -268,6 +278,26 @@ namespace Shinobytes.UI
             }
         }
 
+        private void RefreshBuildButton()
+        {
+            if (build == null)
+            {
+                return;
+            }
+
+            var mode = VillageBuildMode.Instance;
+            build.style.display = mode ? DisplayStyle.Flex : DisplayStyle.None;
+            var active = mode && mode.IsActive;
+            if (active == shownBuildActive)
+            {
+                return;
+            }
+
+            shownBuildActive = active;
+            build.EnableInClassList("rf-town__build--active", active);
+            if (buildLabel != null) buildLabel.text = active ? Localization.UI_TOWN_BUILD_EXIT : Localization.UI_TOWN_BUILD;
+        }
+
         private static bool IsEmpty(long[] values)
         {
             for (var i = 0; i < values.Length; ++i)
@@ -304,6 +334,8 @@ namespace Shinobytes.UI
 
         private void Refresh(TownHallManager townHall, float now)
         {
+            RefreshBuildButton();
+
             int villageLevel = townHall.Level;
             if (villageLevel != shownLevel)
             {
