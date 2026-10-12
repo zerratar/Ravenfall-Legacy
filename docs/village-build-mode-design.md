@@ -164,12 +164,42 @@ So the streamer chooses between experience now (skill buildings) and resources t
   layout from spending resources. It is the same pattern as the marketplace plan and commit
   design.
 
+#### Town hall
+
+The town hall stops upgrading itself as the village levels. Each new tier needs the village level
+it requires and a resource cost, and the streamer chooses when to build it. That makes the town
+hall the biggest thing to save resources for, and the clearest sign of progress.
+
 ### Phase 4: new building types, roads and decoration
 
 - **Paths:** paint roads cell by cell.
 - **Decor:** fences, lamps, trees, flower beds, statues. Cheap, no effect beyond looks.
 - **Production buildings:** a lumber mill, quarry and so on that add to village resource income.
 - **New art:** models per building and tier, made in Blender.
+
+### The island for free placement
+
+Today the town hall tiers are whole complexes: the hall plus castle walls, battlements, paths, trees
+and a statue, about 700 renderers in tier 5. The village ground around them is uneven. Both were
+made for fixed plots.
+
+For free placement the town area should become open, mostly level ground the streamer fills
+themselves:
+
+- **Town hall tiers** keep the building and its immediate steps, and lose the walls, battlements
+  and paths.
+- **Terrain.** The town area is levelled into a few broad terraces. It is a Unity Terrain, so it
+  can be reshaped from a script with a backup of the terrain data first. Cliffs, trees and rocks
+  are moved or removed where they block building.
+- **Plots.** Default positions are reset onto the new ground. Moved houses keep their saved
+  positions.
+
+### Walls
+
+Walls become something the streamer builds, from the Decor or a Defence category: segments placed
+like paths, with gates and towers. A possible use beyond looks: a raid boss that spawns on the
+home island attacks the town if it is not killed in time, and stronger walls buy more time before
+anything bad happens. Undecided; walls may stay decoration only.
 
 ### Later: clan construction
 

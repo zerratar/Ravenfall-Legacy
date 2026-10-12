@@ -206,13 +206,8 @@ namespace Shinobytes.UI
                 TakeSample(townHall, now);
             }
 
-            if (now < nextRefresh)
-            {
-                return;
-            }
-
-            nextRefresh = now + refreshInterval;
-
+            // Checked every frame, which is two flag reads, so the bar goes the moment the camera
+            // leaves the village. Only the contents wait for the refresh interval.
             // The village is what is on screen in free camera mode. The tavern also uses the free
             // camera, but it has its own interface and the bar would only be in the way there.
             // IsFreeCameraActive rather than State == Free: State starts as Free and the automatic
@@ -222,11 +217,15 @@ namespace Shinobytes.UI
                 && camera.IsFreeCameraActive
                 && !(gm.Tavern && gm.Tavern.IsActivated);
 
+            var appearing = visible && !shown;
             SetShown(visible);
-            if (visible)
+            if (!visible || (now < nextRefresh && !appearing))
             {
-                Refresh(townHall, now);
+                return;
             }
+
+            nextRefresh = now + refreshInterval;
+            Refresh(townHall, now);
         }
 
         private void SetShown(bool value)

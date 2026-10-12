@@ -129,7 +129,7 @@ public class VillageBuildMode : MonoBehaviour
         // Forcing the free camera stops the automatic tour from pulling the camera to a player
         // in the middle of building.
         gameManager.Camera.ForceFreeCamera(false);
-        FlyToVillage();
+        StartCoroutine(FlyToVillage());
 
         IsActive = true;
         Selected = null;
@@ -154,19 +154,40 @@ public class VillageBuildMode : MonoBehaviour
         Changed?.Invoke();
     }
 
-    private void FlyToVillage()
+    /// <summary>
+    /// Eases the camera over the town hall. Waits first: switching to the free camera starts a
+    /// coroutine in GameCamera that puts the camera back where it was after a frame and a physics
+    /// step, and moving the camera before that just flickered it.
+    /// </summary>
+    private System.Collections.IEnumerator FlyToVillage()
     {
+        yield return null;
+        yield return new WaitForFixedUpdate();
+        yield return null;
+
         var townHall = gameManager.Village.TownHall;
         var cam = Camera.main;
-        if (!townHall || !cam)
+        if (!townHall || !cam || !IsActive)
         {
-            return;
+            yield break;
         }
 
         // The manager sits at the world origin; the building is what the camera should look at.
         var centre = townHall.ActiveHall.position;
-        cam.transform.position = centre + overviewOffset;
-        cam.transform.LookAt(centre);
+        var fromPosition = cam.transform.position;
+        var fromRotation = cam.transform.rotation;
+        var toPosition = centre + overviewOffset;
+        var toRotation = Quaternion.LookRotation(centre - toPosition);
+
+        const float duration = 0.6f;
+        for (var t = 0f; t < 1f && IsActive; t += Time.unscaledDeltaTime / duration)
+        {
+            var e = 1f - (1f - t) * (1f - t) * (1f - t);
+            cam.transform.SetPositionAndRotation(Vector3.Lerp(fromPosition, toPosition, e), Quaternion.Slerp(fromRotation, toRotation, e));
+            yield return null;
+        }
+
+        if (IsActive) cam.transform.SetPositionAndRotation(toPosition, toRotation);
     }
 
     // ---- Selection -----------------------------------------------------------------------
@@ -583,21 +604,12 @@ public class VillageBuildMode : MonoBehaviour
         var townHall = gameManager.Village.TownHall;
         if (!townHall) return false;
 
+        // The hall's own collider only. Each town hall tier is a whole complex (walls, paths, trees,
+        // a statue), and the bounds of all of it covered most of the village.
         var hall = townHall.ActiveHall;
-        var colliders = hall.GetComponentsInChildren<Collider>();
-        Bounds bounds;
-        if (colliders.Length > 0)
-        {
-            bounds = colliders[0].bounds;
-            for (var i = 1; i < colliders.Length; ++i) bounds.Encapsulate(colliders[i].bounds);
-        }
-        else
-        {
-            var renderers = hall.GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0) return false;
-            bounds = renderers[0].bounds;
-            for (var i = 1; i < renderers.Length; ++i) bounds.Encapsulate(renderers[i].bounds);
-        }
+        var own = hall.GetComponent<Collider>();
+        if (!own) return false;
+        var bounds = own.bounds;
 
         // Distance from the footprint's centre to the hall's rectangle, on the ground plane.
         var dx = Mathf.Max(bounds.min.x - position.x, 0f, position.x - bounds.max.x);
