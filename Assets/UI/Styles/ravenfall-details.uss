@@ -1,4 +1,4 @@
-/*
+﻿/*
   Player details window and the shared HUD tooltip. Laid out after
   docs/mockups/character-details.webp.
 
@@ -321,6 +321,8 @@
 .rf-training__main {
     flex-grow: 1;
     flex-shrink: 1;
+    /* Keeps "TRAINING - MAGIC 34.6%" in one piece when the side column has a lot to say. */
+    min-width: 200px;
 }
 
 .rf-training__line {
@@ -374,11 +376,20 @@
 .rf-details .rf-training__status--done { color: var(--rf-success); }
 .rf-details .rf-training__status--max { color: var(--rf-accent-bright); }
 
+/* Long texts like "Next level in When hell freezes over" wrap here instead of running into the title. */
 .rf-training__side {
-    flex-shrink: 0;
+    flex-shrink: 1;
     align-items: flex-end;
     margin-left: var(--rf-space-4);
     min-width: 150px;
+    max-width: 45%;
+}
+
+.rf-details .rf-training__next,
+.rf-details .rf-training__rate,
+.rf-details .rf-training__hint {
+    white-space: normal;
+    -unity-text-align: upper-right;
 }
 
 .rf-details .rf-training__next {
