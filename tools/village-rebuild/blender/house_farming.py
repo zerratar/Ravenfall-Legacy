@@ -25,7 +25,7 @@ fw = hf.sub(0, 2.0, 0)
 for k in range(9):
     x = -2.1 + k * 0.52
     b.box(fw.p(x, 0.02, 1.85), (0.04, 0.04, 3.0), "PAL", "5d252c", rot_z=fw.rot)
-# big double doors with white braces, a hay loft door above
+# big double doors with white braces
 b.box(fw.p(0.5, 0.06, 1.25), (2.2, 0.08, 2.3), "PAL", BARN, rot_z=fw.rot)
 for x0, x1 in ((-0.6, 0.5), (0.5, 1.6)):
     for a, c in (((x0, 0.15), (x1, 2.35)), ((x0, 2.35), (x1, 0.15))):
@@ -34,15 +34,18 @@ for x0, x1 in ((-0.6, 0.5), (0.5, 1.6)):
         bar(b, fw.p(x0, 0.12, z), fw.p(x1, 0.12, z), 0.14, 0.05, "PAL", WHITE)
     for x in (x0, x1):
         bar(b, fw.p(x, 0.12, 0.1), fw.p(x, 0.12, 2.4), 0.14, 0.05, "PAL", WHITE)
-b.box(fw.p(0.5, 0.05, 3.75), (1.0, 0.08, 0.9), "PAL", DARK, rot_z=fw.rot)
-for x in (0.0, 1.0):
-    bar(b, fw.p(x, 0.1, 3.3), fw.p(x, 0.1, 4.2), 0.1, 0.05, "PAL", WHITE)
-bar(b, fw.p(0.0, 0.1, 4.2), fw.p(1.0, 0.1, 4.2), 0.1, 0.05, "PAL", WHITE)
+# the hay loft door high on the gable end, hay spilling out, and a hoist beam under the ridge
+lw = hf.sub(-2.5, 0, math.pi / 2)
+b.box(lw.p(0, 0.12, 4.0), (1.0, 0.08, 0.9), "PAL", DARK, rot_z=lw.rot)
+for x in (-0.5, 0.5):
+    bar(b, lw.p(x, 0.17, 3.55), lw.p(x, 0.17, 4.45), 0.1, 0.05, "PAL", WHITE)
+for z in (3.55, 4.45):
+    bar(b, lw.p(-0.55, 0.17, z), lw.p(0.55, 0.17, z), 0.1, 0.05, "PAL", WHITE)
 for k in range(6):
-    b.prism(fw.p(0.12 + k * 0.15, 0.1, 3.32), 0.09, 0.32 + 0.1 * (k % 2), 4, "PAL", HAY, r_top=0.0, rot=k)
-bar(b, fw.p(0.5, 0.0, ridge - 0.3), fw.p(0.5, 0.9, ridge - 0.3), 0.12, 0.12, "PAL", TIMBER)              # hay hoist
-b.box(fw.p(0.5, 0.88, ridge - 0.65), (0.02, 0.02, 0.6), "PAL", "c6a177", rot_z=fw.rot)
-b.lathe(fw.p(0.5, 0.88, ridge - 1.0), [(0.0, 0.0), (0.1, 0.03), (0.1, 0.08), (0.0, 0.1)], 6, "PAL", DARK)
+    b.prism(lw.p(-0.38 + k * 0.15, 0.18, 3.58), 0.09, 0.32 + 0.1 * (k % 2), 4, "PAL", HAY, r_top=0.0, rot=k)
+bar(b, lw.p(0, -0.3, ridge - 0.35), lw.p(0, 1.0, ridge - 0.35), 0.14, 0.14, "PAL", TIMBER)
+b.box(lw.p(0, 0.95, ridge - 0.75), (0.02, 0.02, 0.7), "PAL", "c6a177", rot_z=lw.rot)
+b.lathe(lw.p(0, 0.95, ridge - 1.15), [(0.0, 0.0), (0.1, 0.03), (0.1, 0.08), (0.0, 0.1)], 6, "PAL", DARK)
 sign(b, fw, -2.55, 2.6, 0.0, wheat_emblem)
 
 # the field: soil rows, wheat and cabbages, a fence round it

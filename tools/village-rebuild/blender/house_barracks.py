@@ -36,9 +36,9 @@ cottage(b, hf, 6.6, 3.6, 3.2, roof="ROOF_RED", pitch=40, overhang=0.45, plinth=0
 fw = hf.sub(0, 1.8, 0)
 sign(b, fw, 3.35, 2.6, 0.0, swords_emblem)
 for x, col in ((-1.15, RED), (1.15, BLUE_C)):
-    shield(b, fw.p(x, 0.06, 2.3), fw.R @ Vector((0, 1, 0)), 0.36, col)
+    shield(b, fw.p(x, 0.06, 2.3), fw.R @ Vector((0, 1, 0)), 0.3, col)
     for s in (-1, 1):
-        sword(b, fw.p(x - s * 0.45, 0.1, 1.85), fw.p(x + s * 0.48, 0.1, 2.75))
+        sword(b, fw.p(x - s * 0.3, 0.1, 1.95), fw.p(x + s * 0.32, 0.1, 2.68))
 
 # the training yard: three dummies standing, one knocked flat
 dummy(b, f, -3.1, 0.9, yaw=0.2)

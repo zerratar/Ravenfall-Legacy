@@ -25,7 +25,7 @@ yard(b, f, 4.6, 4.4, DIRT, seed=9.0)
 
 # the hut, its door facing the front
 round_hut(b, f, -0.9, -1.0, r=2.1, h=2.3, roof="SLAT_BROWN", door_angle=math.pi / 2)
-signpost(b, f, 1.0, 1.9, mushroom_emblem, yaw=0.0, h=2.0)
+signpost(b, f, 1.9, 1.5, mushroom_emblem, yaw=-0.5, h=2.0)
 
 # drying rack with bundles of herbs
 rf = f.sub(2.6, -1.9, -0.3)
