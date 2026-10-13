@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.AI;
@@ -220,6 +220,13 @@ public class PlayerMovementController : MonoBehaviour
 
     internal void SetPosition(Vector3 position)
     {
+        // Warp snaps to the nearest navmesh, which can be the seabed far below a dock or pier.
+        // Pick navmesh close to the requested height first so teleports land where they were aimed.
+        if (navMeshAgent.enabled && NavMeshHelper.SampleNearHeight(position, 1f, 3f, out var onNavMesh))
+        {
+            position = onNavMesh;
+        }
+
         SetPositionImpl(position);
         AdjustPlayerPositionToNavmesh(0.5f);
     }
