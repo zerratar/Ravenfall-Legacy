@@ -82,15 +82,16 @@ b.face([sc.p(-0.1, 0.21, 1.88), sc.p(0.1, 0.21, 1.88), sc.p(0.0, 0.21, 1.84)], s
 b.lathe(sc.p(0, 0, 2.12), [(0.42, 0.0), (0.42, 0.03), (0.2, 0.05), (0.18, 0.22), (0.0, 0.24)], 9, "PAL", HAY)
 b.lathe(sc.p(0, 0, 2.12), [(0.0, -0.005), (0.42, -0.005)], 9, "PAL", HAY)
 
-# the haystack with a pitchfork, bales, a cart wheel and a water trough
-hs = f.sub(3.0, 1.8, 0.0)
-b.lathe(hs.p(0, 0, 0), [(1.0, -0.1), (1.05, 0.5), (0.85, 1.2), (0.4, 1.75), (0.0, 1.9)], 10, "PAL", HAY)
-bar(b, hs.p(-0.5, 0.75, 0.0), hs.p(-0.2, 0.55, 1.75), 0.05, 0.05, "PAL", TIMBER_L)
+# the haystack with a pitchfork, bales, a cart wheel and a water trough. The barn doors span x 1.0 to 3.2, so the
+# haystack sits in the corner to their right and the bales stand lengthwise between them and the field fence.
+hs = f.sub(3.9, 1.5, 0.0)
+b.lathe(hs.p(0, 0, 0), [(0.75, -0.1), (0.79, 0.45), (0.64, 1.05), (0.3, 1.5), (0.0, 1.65)], 10, "PAL", HAY)
+bar(b, hs.p(-0.38, 0.56, 0.0), hs.p(-0.15, 0.42, 1.5), 0.05, 0.05, "PAL", TIMBER_L)
 for k in (-1, 0, 1):
-    bar(b, hs.p(-0.2 + k * 0.06, 0.55, 1.75), hs.p(-0.17 + k * 0.08, 0.5, 2.05), 0.025, 0.025, "PAL", "8b8b8b")
-hay_bale(b, f, 1.2, 1.6, yaw=0.2)
-hay_bale(b, f, 1.4, 2.3, yaw=-0.3)
-hay_bale(b, f, 1.3, 1.95, z=0.6, yaw=0.0)
+    bar(b, hs.p(-0.15 + k * 0.06, 0.42, 1.5), hs.p(-0.12 + k * 0.08, 0.37, 1.8), 0.025, 0.025, "PAL", "8b8b8b")
+hay_bale(b, f, -0.05, 2.0, yaw=1.62)
+hay_bale(b, f, 0.52, 2.1, yaw=1.5)
+hay_bale(b, f, 0.25, 2.05, z=0.6, yaw=1.57)
 b.box(f.p(3.4, 3.6, 0.25), (1.4, 0.5, 0.5), "PAL", TIMBER_L, rot_z=f.rot)
 b.face([f.p(2.75, 3.4, 0.51), f.p(4.05, 3.4, 0.51), f.p(4.05, 3.8, 0.51), f.p(2.75, 3.8, 0.51)], (0, 0, 1), "GLASS", "396b7c")
 tree(b, f, -3.6, -2.8, h=4.0, r=1.3)

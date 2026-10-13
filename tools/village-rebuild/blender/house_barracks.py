@@ -40,18 +40,19 @@ for x, col in ((-1.15, RED), (1.15, BLUE_C)):
     for s in (-1, 1):
         sword(b, fw.p(x - s * 0.3, 0.1, 1.95), fw.p(x + s * 0.32, 0.1, 2.68))
 
-# the training yard: three dummies standing, one knocked flat
-dummy(b, f, -3.1, 0.9, yaw=0.2)
-dummy(b, f, -1.6, 1.4, yaw=-0.1)
-dummy(b, f, -0.1, 0.8, yaw=0.3)
+# the training yard: three dummies standing out at the far edge of the sand, beside and between the openings
+# rather than in front of them, one knocked flat nearer the hall where it hides nothing
+dummy(b, f, -3.5, 1.1, yaw=0.2)
+dummy(b, f, -2.6, 3.0, yaw=-0.1)
+dummy(b, f, -0.6, 3.1, yaw=0.3)
 # the fallen one, flat on its back with its bucket rolled away
-ff = f.sub(-2.3, 3.0, 0.4)
+ff = f.sub(-1.8, 1.4, 0.4)
 b.box(ff.p(0, 0, 0.1), (1.6, 0.12, 0.12), "PAL", TIMBER, rot_z=ff.rot)
 b.lathe(ff.p(-0.1, 0, 0.0), [(0.0, 0.0), (0.3, 0.05), (0.24, 0.3), (0.0, 0.32)], 7, "PAL", HAY)
 bar(b, ff.p(0.3, -0.6, 0.12), ff.p(0.3, 0.6, 0.12), 0.1, 0.1, "PAL", TIMBER_L)
 b.lathe(ff.p(1.15, 0.35, 0.0), [(0.0, 0.0), (0.16, 0.0), (0.16, 0.24), (0.12, 0.24)], 8, "PAL", "8b8b8b")
-# the weapon rack: swords and spears
-rf = f.sub(3.2, 1.2, -math.pi / 2)
+# the weapon rack: swords and spears, past the end of the hall so it stays clear of the window
+rf = f.sub(4.15, 1.3, -math.pi / 2)
 for s in (-1, 1):
     b.box(rf.p(s * 0.8, 0, 0.75), (0.14, 0.14, 1.5), "PAL", TIMBER, rot_z=rf.rot)
 for z in (0.25, 1.35):
@@ -62,12 +63,13 @@ for k, x in enumerate((-0.55, -0.2, 0.2, 0.55)):
     else:
         bar(b, rf.p(x, 0.12, 0.1), rf.p(x, 0.14, 2.0), 0.05, 0.05, "PAL", TIMBER_L)
         b.prism(rf.p(x, 0.14, 2.0), 0.06, 0.28, 4, "PAL", STEEL, r_top=0.0)
-# a banner pole, a water barrel and a bench
-b.box(f.p(3.6, 3.4, 1.6), (0.12, 0.12, 3.2), "PAL", TIMBER, rot_z=f.rot)
-bar(b, f.p(3.6, 3.4, 3.1), f.p(3.6, 2.6, 3.1), 0.08, 0.08, "PAL", TIMBER)
+# a banner pole (out at the yard's corner, past the end of the hall), a water barrel and a bench
+BX = 4.2
+b.box(f.p(BX, 3.5, 1.6), (0.12, 0.12, 3.2), "PAL", TIMBER, rot_z=f.rot)
+bar(b, f.p(BX, 3.5, 3.1), f.p(BX, 2.7, 3.1), 0.08, 0.08, "PAL", TIMBER)
 for s in (1, -1):
-    b.face([f.p(3.6, 2.65, 3.05), f.p(3.6, 3.35, 3.05), f.p(3.6, 3.35, 1.8), f.p(3.6, 3.0, 2.05), f.p(3.6, 2.65, 1.8)], (s, 0, 0), "PAL", RED)
-b.sphere(f.p(3.6, 3.4, 3.25), 0.08, "PAL", GOLD, seg=6, rings=3)
+    b.face([f.p(BX, 2.75, 3.05), f.p(BX, 3.45, 3.05), f.p(BX, 3.45, 1.8), f.p(BX, 3.1, 2.05), f.p(BX, 2.75, 1.8)], (s, 0, 0), "PAL", RED)
+b.sphere(f.p(BX, 3.5, 3.25), 0.08, "PAL", GOLD, seg=6, rings=3)
 barrel(b, f, 2.2, 0.0)
 b.lathe(f.p(2.2, 0.0, 0.0), [(0.26, 0.76), (0.0, 0.76)], 10, "GLASS", "396b7c")
 b.box(f.p(2.0, 3.3, 0.45), (1.6, 0.45, 0.08), "PAL", TIMBER_L, rot_z=f.rot)

@@ -30,7 +30,7 @@ cottage(b, hf, 4.2, 3.4, 2.9, roof="SLAT_TEAL", pitch=42, overhang=0.42, plinth=
         front_windows=(-1.0,), side_windows=(0.0,), back_windows=(0.0,), door_x=0.85, chimney=(-1.2, -0.6))
 fw = hf.sub(0, 1.7, 0)
 sign(b, fw, 2.15, 2.4, 0.0, fish_emblem)
-for k, x in enumerate((-1.75, -1.6)):
+for k, x in enumerate((1.55, 1.7)):                       # between the door and the corner, clear of the shutters
     bar(b, fw.p(x, 0.35, 0.0), fw.p(x + 0.1, 0.18, 2.6), 0.035, 0.035, "PAL", TIMBER_L)            # rods
     b.box(fw.p(x + 0.1, 0.18, 2.45), (0.01, 0.01, 0.3), "PAL", WHITE, rot_z=fw.rot)
 

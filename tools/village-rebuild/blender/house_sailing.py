@@ -41,7 +41,7 @@ b.sphere(gl.p(0, 0.15, GZ + 0.1), 0.09, "PAL", WHITE, seg=6, rings=3)
 b.prism(gl.p(0, 0.24, GZ + 0.08), 0.03, 0.12, 4, "PAL", "e4aa60", r_top=0.0)
 for s in (-1, 1): b.box(gl.p(s * 0.13, -0.03, GZ + 0.02), (0.04, 0.26, 0.08), "PAL", "8b8b8b", rot_z=gl.rot)
 
-# the boat on its cradle, mast up, sail set
+# the boat on its cradle, mast up, sail furled
 bf = f.sub(-1.5, 1.2, 0.25)
 for u in (-1.2, 1.2):
     for s in (-1, 1):
@@ -53,9 +53,13 @@ for u in (-0.9, 0.7):
     b.box(bf.p(u, 0, 1.05), (0.3, 1.3, 0.08), "PAL", TIMBER_L, rot_z=bf.rot)               # thwarts
 b.prism(bf.p(0.35, 0, 0.75), 0.08, 4.6, 6, "PAL", TIMBER_L, r_top=0.05)
 bar(b, bf.p(0.35, 0, 1.55), bf.p(-1.9, 0, 1.5), 0.07, 0.07, "PAL", TIMBER_L)
-sail = [bf.p(0.3, 0.02, 1.62), bf.p(-1.85, 0.02, 1.56), bf.p(0.3, 0.02, 5.1)]
-b.face(sail, bf.R @ Vector((0, 1, 0)), "PAL", SAIL)
-b.face([bf.p(0.3, -0.02, 1.62), bf.p(-1.85, -0.02, 1.56), bf.p(0.3, -0.02, 5.1)], bf.R @ Vector((0, -1, 0)), "PAL", SAIL)
+# the sail furled along the boom and lashed down, as it would be with the boat out of the water; set, it hid the
+# side of the boathouse and the gable window
+bar(b, bf.p(0.25, 0, 1.68), bf.p(-0.8, 0, 1.67), 0.26, 0.22, "PAL", SAIL)
+bar(b, bf.p(-0.8, 0, 1.67), bf.p(-1.8, 0, 1.63), 0.18, 0.16, "PAL", SAIL)
+for u in (0.0, -0.55, -1.1, -1.55):
+    w = 0.29 if u > -0.8 else 0.21
+    bar(b, bf.p(u + 0.04, 0, 1.68), bf.p(u - 0.04, 0, 1.67), w, w - 0.03, "PAL", "c6a177")
 for s in (1, -1):
     b.face([bf.p(0.4, s * 0.01, 5.3), bf.p(1.0, s * 0.01, 5.18), bf.p(0.4, s * 0.01, 5.05)], bf.R @ Vector((0, s, 0)), "PAL", RED)
 

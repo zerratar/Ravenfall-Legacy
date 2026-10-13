@@ -72,7 +72,7 @@ for qx in (2.6, 3.0):
         a = k * 1.6
         arrow(b, (qc[0] + math.cos(a) * 0.06, qc[1] + math.sin(a) * 0.06, 1.12), (qc[0] + math.cos(a) * 0.05, qc[1] + math.sin(a) * 0.05, 0.6))
 barrel(b, f, 3.8, 0.6)
-tree(b, f, -3.8, 3.4, h=3.6, r=1.1)
+tree(b, f, -3.6, -3.7, h=3.6, r=1.1)                      # behind the targets, clear of the range
 
 house = b.finish(recalc=False)
 export_fbx([house], "Village_House_Archery")

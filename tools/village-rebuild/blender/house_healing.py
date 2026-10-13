@@ -33,7 +33,7 @@ for x in (-2.0, 2.0):
         b.sphere(fw.p(x - 0.4 + k * 0.2, 0.3, 1.55), 0.08, "PAL", ("c04531", "f5f5f5", "e4aa60", "564888", "f5f5f5")[k], seg=5, rings=3)
 
 # herb beds: raised boxes with plants and flowers
-for k, (x, y) in enumerate(((-3.0, 0.8), (-3.0, 2.4), (-1.2, 3.4))):
+for k, (x, y) in enumerate(((-3.0, 0.8), (-3.0, 2.4), (-1.6, 3.6))):
     bf = f.sub(x, y, 0.0 if k < 2 else math.pi / 2)
     b.box(bf.p(0, 0, 0.2), (1.6, 0.8, 0.4), "PAL", TIMBER_L, rot_z=bf.rot)
     b.box(bf.p(0, 0, 0.4), (1.45, 0.65, 0.04), "PAL", "4d3828", rot_z=bf.rot)
@@ -41,15 +41,15 @@ for k, (x, y) in enumerate(((-3.0, 0.8), (-3.0, 2.4), (-1.2, 3.4))):
         px, py = -0.55 + (j % 3) * 0.55, -0.15 + (j // 3) * 0.3
         b.prism(bf.p(px, py, 0.42), 0.12, 0.3 + 0.1 * ((j + k) % 2), 5, "PAL", HERB if j % 2 else LEAF_D, r_top=0.0, rot=j)
         if (j + k) % 3 == 0: b.sphere(bf.p(px, py, 0.78), 0.06, "PAL", ("f5f5f5", "564888", "e4aa60")[k], seg=5, rings=3)
-# the healing spring: a stone basin of glowing water with a little spout
-sp = f.sub(1.6, 1.4, 0.0)
-b.lathe(sp.p(0, 0, 0), [(0.95, -0.2), (0.95, 0.5), (0.8, 0.55), (0.75, 0.35)], 12, "WALL", cyl_radius=0.9)
-b.lathe(sp.p(0, 0, 0), [(0.75, 0.38), (0.0, 0.38)], 12, "GLASS", SPRING)
+# the healing spring: a stone basin of glowing water with a little spout, left of the path to the door (x 1.0)
+sp = f.sub(-0.3, 2.4, 0.0)
+b.lathe(sp.p(0, 0, 0), [(0.8, -0.2), (0.8, 0.5), (0.67, 0.55), (0.63, 0.35)], 12, "WALL", cyl_radius=0.76)
+b.lathe(sp.p(0, 0, 0), [(0.63, 0.38), (0.0, 0.38)], 12, "GLASS", SPRING)
 b.lathe(sp.p(0, 0, 0), [(0.18, 0.38), (0.15, 0.95), (0.25, 1.05), (0.0, 1.12)], 8, "WALL", cyl_radius=0.2)
 b.lathe(sp.p(0, 0, 1.12), [(0.0, 0.0), (0.09, 0.08), (0.0, 0.3)], 6, "GLASS", SPRING)
 for k in range(5):
     a = k * 1.3
-    b.sphere(sp.p(math.cos(a) * 0.45, math.sin(a) * 0.45, 0.6 + 0.25 * (k % 3)), 0.04, "GLASS", "e6e6e6", seg=4, rings=3)
+    b.sphere(sp.p(math.cos(a) * 0.38, math.sin(a) * 0.38, 0.6 + 0.25 * (k % 3)), 0.04, "GLASS", "e6e6e6", seg=4, rings=3)
 well(b, f, 3.6, 3.2)
 
 # the patient: a training dummy, bandaged, on a bench, arm in a sling
