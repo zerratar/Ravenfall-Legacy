@@ -30,6 +30,7 @@ something.
 | `hall_tier1.cs` ... `hall_tier5.cs` | One town hall tier each. Each one replaces the tier's `Hall` child and moves the kept pieces (resources, info point, streamer flag, lady, QR banner, jester, guards) into place. |
 | `hall_finish.cs` | Places each tier's resource yard by its bounds, and moves default plots out of the tier 5 footprint. Leaves tier 5 active and saves. |
 | `navmesh_full.cs` | Rebuilds the `WORLD` navmesh over the full world bounds and saves it. |
+| `navmesh_seabed.cs` | Adds the `Sea Floor Not Walkable` volume under `WORLD` (y -31 to -4, the whole terrain). Run `navmesh_full.cs` after it. |
 | `models_import.cs` | Sets up the models in `Assets/Village/Models` (see below): maps their materials onto the kit materials and makes the stained glass material. Run after building a model. |
 | `swap_castle_pieces.cs` | One-off: put the Blender towers and the frontispiece into tiers 4 and 5 in place, without rebuilding the halls, so hand edits survive. Run as `hall_common.cs` + this file. Does not save. |
 | `hall_shot.cs` | Renders one tier on its own to `Temp/village-shots/`. Replace `TIER` (1-5) and `DIST` (32f to 70f) first, and run it twice (see the ghost trap below). |
@@ -117,6 +118,11 @@ How they fit the kits:
   give it. Updating with town-sized bounds wiped the navmesh for every other island. Always pass the
   surface's full world bounds; `navmesh_full.cs` does. The town halls are not under `WORLD`, so they
   are not part of the navmesh, the same as before.
+- **Sea floor.** The terrain's floor at y -30 covers the whole map, and without the sea floor volume
+  it baked as walkable: 6.1 of 6.5 million m2 of navmesh was ocean floor. A teleport over water
+  (the Eldara spawn sits past the end of its dock) snapped players onto it with no way back. The
+  water surface is at y -3.31, so the volume starts at -4; the dungeons sit at -56 and below,
+  outside it.
 - **Editor time limit.** The eval server gives up after about 5 s on the main thread, while the
   script keeps running. A script that renders in a loop (one tried hundreds of renders) can hang
   and crash the editor. Keep renders to a handful per eval.
