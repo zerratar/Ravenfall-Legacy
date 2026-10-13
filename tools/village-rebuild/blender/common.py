@@ -290,6 +290,9 @@ def world_bounds(objs):
 def preview(objs, name, views=((35, 25),), res=(1000, 1000), focus=None, dist_mul=1.6):
     """Renders the objects from (azimuth, elevation) pairs in degrees, 0 azimuth = from the front (-y)."""
     bpy.context.view_layer.update()   # world matrices are stale after moving objects in the same run
+    if os.environ.get("VILLAGE_CLOSEUP"):
+        # close checks: straight on and both front corners, low, for timbers, windows and props
+        views = ((180, 6), (135, 10), (225, 10)); dist_mul = 0.62; name = name + "_close"
     scene.render.engine = 'BLENDER_EEVEE'
     scene.render.resolution_x, scene.render.resolution_y = res
     scene.render.film_transparent = False

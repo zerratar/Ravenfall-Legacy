@@ -1,4 +1,4 @@
-﻿namespace RavenNest.SDK.Endpoints
+namespace RavenNest.SDK.Endpoints
 {
     public class ProductionEndpoint : IAppSettings
     {
@@ -60,5 +60,44 @@
         public string TcpApiEndpoint => "127.0.0.1";
         public string RavenbotEndpoint => "127.0.0.1";
         public int TcpApiPort => 1337;
+    }
+
+    /// <summary>
+    /// A RavenNest running on this machine the way the server's own settings start it: plain HTTP on
+    /// port 80 and the game socket on 3920. For testing server changes before they are deployed.
+    /// </summary>
+    public class LocalDevServerEndpoint : IAppSettings
+    {
+        public string WebApiEndpoint => "http://localhost/api/";
+        public string WebApiAuthEndpoint => "http://localhost/api/";
+        public string WebSocketEndpoint => "ws://localhost/api/stream";
+        public string TcpApiEndpoint => "127.0.0.1";
+        public string RavenbotEndpoint => "ravenbot.ravenfall.stream";
+        public int TcpApiPort => 3920;
+    }
+
+    /// <summary>
+    /// Whether to use the local server: Ravenfall > Use Local RavenNest Server in the editor, or
+    /// -localserver on the command line of a build. Production otherwise.
+    /// </summary>
+    public static class LocalDevServer
+    {
+        public const string PrefKey = "Ravenfall.UseLocalRavenNest";
+
+        public static bool Enabled
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (UnityEditor.EditorPrefs.GetBool(PrefKey, false)) return true;
+#endif
+                foreach (var arg in System.Environment.GetCommandLineArgs())
+                {
+                    if (string.Equals(arg, "-localserver", System.StringComparison.OrdinalIgnoreCase)) return true;
+                }
+
+                return false;
+            }
+        }
     }
 }

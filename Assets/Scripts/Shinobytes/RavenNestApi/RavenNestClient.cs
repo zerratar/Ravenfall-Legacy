@@ -41,7 +41,7 @@ namespace RavenNest.SDK
             ILogger logger,
             GameManager gameManager)
         {
-            Settings =
+            Settings = LocalDevServer.Enabled ? new LocalDevServerEndpoint() :
                         //new UnsecureLocalRavenNestStreamSettings()
                         new ProductionEndpoint()
                         //new StagingRavenNestStreamSettings()
