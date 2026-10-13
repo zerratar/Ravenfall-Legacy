@@ -44,6 +44,8 @@ public class SettingsMenuView : MenuView
     [SerializeField] private Slider playerListScaleSlider = null;
     [SerializeField] private Toggle playerNameToggle;
     [SerializeField] private Toggle playerListToggle;
+    [Tooltip("Shows the keyboard shortcut bar along the bottom of the screen.")]
+    [SerializeField] private Toggle shortcutBarToggle;
     [SerializeField] private Toggle playerDetailsToggle;
 
     [Header("Graphics Settings")]
@@ -168,6 +170,12 @@ public class SettingsMenuView : MenuView
 
         playerDetailsToggle.isOn = gameManager.Camera.Observer.IsVisible;
         playerListToggle.isOn = gameManager.PlayerList.IsVisible;
+        if (shortcutBarToggle)
+        {
+            shortcutBarToggle.isOn = settings.ShortcutBarVisible.GetValueOrDefault(true);
+            shortcutBarToggle.onValueChanged.RemoveListener(Shinobytes.UI.ShortcutBarView.SetEnabled);
+            shortcutBarToggle.onValueChanged.AddListener(Shinobytes.UI.ShortcutBarView.SetEnabled);
+        }
 
         foreach (var toggle in botMessageFilter)
         {
@@ -290,7 +298,8 @@ public class SettingsMenuView : MenuView
         settings.BotMessageFilters = botMessageFilter.Where(x => x.isOn).Select(x => x.name).ToArray();
         OnBotMessageFiltersChanged();
 
-        gameManager.PlayerList.SetVisibility(playerListToggle.isOn);
+        SetPlayerListVisible(playerListToggle.isOn);
+        if (shortcutBarToggle) settings.ShortcutBarVisible = shortcutBarToggle.isOn;
         gameManager.Camera.Observer.SetVisibility(playerDetailsToggle.isOn);
         gameManager.isDebugMenuVisible = debugControlsEnabled.isOn;
         PlayerSettings.Save();
@@ -384,7 +393,14 @@ public class SettingsMenuView : MenuView
 
     public void OnPlayerListToggle()
     {
-        gameManager.PlayerList.SetVisibility(playerListToggle.isOn);
+        SetPlayerListVisible(playerListToggle.isOn);
+    }
+
+    /// <summary>Through the HUD, so F1, the list's close button and this setting agree and it is saved.</summary>
+    private void SetPlayerListVisible(bool visible)
+    {
+        if (HUDController.Instance) HUDController.Instance.SetPlayerListVisible(visible);
+        else gameManager.PlayerList.SetVisibility(visible);
     }
 
     public void OnPlayerDetailsToggle()

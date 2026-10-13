@@ -88,6 +88,9 @@ namespace Shinobytes.UI
 
         private void OnEnable()
         {
+            // The shortcut bar shares this document; it needs no scene object of its own.
+            if (!GetComponent<ShortcutBarView>()) gameObject.AddComponent<ShortcutBarView>();
+
             TryBind();
         }
 

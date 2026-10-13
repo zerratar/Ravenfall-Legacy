@@ -85,7 +85,7 @@ public class GraphicsToggler : MonoBehaviour
         GraphicsEnabled = graphicsEnabled;
     }
 
-    private void ToggleAllGraphics()
+    public void ToggleAllGraphics()
     {
         StartCoroutine(ToggleGraphicsImpl());
     }

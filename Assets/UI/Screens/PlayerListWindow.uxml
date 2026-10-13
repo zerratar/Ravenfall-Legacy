@@ -32,6 +32,7 @@
                     <engine:Button name="playerlist-collapse" text="" class="rf-window__button" tooltip="Collapse or expand">
                         <engine:VisualElement class="rf-chevron" picking-mode="Ignore" />
                     </engine:Button>
+                    <engine:Button name="playerlist-close" text="&#xf00d;" class="rf-window__button rf-icon rf-playerlist__close" tooltip="Hide the player list. F1 or the UI settings bring it back." />
                 </engine:VisualElement>
             </engine:VisualElement>
 

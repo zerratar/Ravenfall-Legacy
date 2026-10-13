@@ -11,6 +11,7 @@ public class PlayerSettings
     public bool? RealTimeDayNightCycle;
     public bool? AlertExpiredStateCacheInChat;
     public bool? PlayerListVisible;
+    public bool? ShortcutBarVisible;
     public bool? PlayerNamesVisible;
     public bool? LocalBotServerDisabled;
     public bool? AutoKickAfkPlayers;
@@ -275,6 +276,11 @@ public class PlayerSettings
             wasUpdated = true;
         }
 
+        if (Instance.ShortcutBarVisible == null)
+        {
+            Instance.ShortcutBarVisible = true;
+        }
+
         if (Instance.PlayerListVisible == null)
         {
             Instance.PlayerListVisible = true;
@@ -326,6 +332,7 @@ public class PlayerSettings
             Serialize(sw, "realTimeDayNightCycle", obj.RealTimeDayNightCycle);
             Serialize(sw, "alertExpiredStateCacheInChat", obj.AlertExpiredStateCacheInChat);
             Serialize(sw, "playerListVisible", obj.PlayerListVisible);
+            Serialize(sw, "shortcutBarVisible", obj.ShortcutBarVisible);
             Serialize(sw, "playerNamesVisible", obj.PlayerNamesVisible);
 
             Serialize(sw, "autoKickAfkPlayers", obj.AutoKickAfkPlayers);

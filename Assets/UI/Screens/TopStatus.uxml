@@ -20,6 +20,9 @@
     <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
 
     <engine:VisualElement name="top-root" class="rf-top-layer" picking-mode="Ignore">
+        <!-- Keyboard shortcuts along the bottom, each a button doing the same as its key (ShortcutBarView). -->
+        <engine:VisualElement name="shortcut-bar" class="rf-shortcuts" style="display: none;" />
+
         <engine:VisualElement name="top-column" class="rf-top-column" picking-mode="Ignore">
 
             <!-- Town resources, laid out after docs/mockups/town-resource-bar.webp. First in the column

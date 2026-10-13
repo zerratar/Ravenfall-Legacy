@@ -173,6 +173,18 @@ public class GameManager : MonoBehaviour, IGameManager
     public GameCamera Camera => gameCamera;
     public GameEventManager Events => events;
     public PlayerList PlayerList => playerList;
+
+    /// <summary>Opens the game menu, as Esc does.</summary>
+    public void ShowMenu()
+    {
+        if (!menuHandler.Visible && !playerSearchHandler.Visible) menuHandler.Show();
+    }
+
+    /// <summary>Opens the player search, as Ctrl+F does.</summary>
+    public void ShowPlayerSearch()
+    {
+        playerSearchHandler.Show();
+    }
     public ServerNotificationManager ServerNotifications => serverNotificationManager;
 
     public OnsenManager Onsen => onsen;

@@ -82,6 +82,8 @@ namespace Shinobytes.UI
         private float nextRefresh;
         private bool requestedVisible = true;
         private bool hiddenForBuildMode;
+        // Until the game has loaded and logged in, so the list does not sit over the login screen.
+        private bool hiddenBeforeLogin;
 
         /// <summary>The player the camera is following, whose row is highlighted.</summary>
         private PlayerController observed;
@@ -215,6 +217,16 @@ namespace Shinobytes.UI
             if (collapseButton != null)
             {
                 collapseButton.clicked += OnCollapseClicked;
+            }
+
+            var closeButton = root.Q<Button>("playerlist-close");
+            if (closeButton != null)
+            {
+                closeButton.clicked += () =>
+                {
+                    if (HUDController.Instance) HUDController.Instance.SetPlayerListVisible(false);
+                    else SetVisible(false);
+                };
             }
 
             bound = true;
@@ -368,6 +380,19 @@ namespace Shinobytes.UI
             if (!bound)
             {
                 TryBind();
+                return;
+            }
+
+            var game = GameManager.Instance;
+            var waiting = !(game && game.IsLoaded && game.RavenNest != null && game.RavenNest.Authenticated);
+            if (waiting != hiddenBeforeLogin)
+            {
+                hiddenBeforeLogin = waiting;
+                ApplyVisible();
+            }
+
+            if (waiting)
+            {
                 return;
             }
 
@@ -758,8 +783,8 @@ namespace Shinobytes.UI
         }
 
         /// <summary>
-        /// Visible when the settings say so, except during village build mode, which uses the left
-        /// side of the screen for its bonuses panel.
+        /// Visible when the settings say so, except before login and during village build mode, which
+        /// uses the left side of the screen for its bonuses panel.
         /// </summary>
         private void ApplyVisible()
         {
@@ -768,7 +793,7 @@ namespace Shinobytes.UI
                 return;
             }
 
-            var visible = requestedVisible && !hiddenForBuildMode;
+            var visible = requestedVisible && !hiddenForBuildMode && !hiddenBeforeLogin;
             var display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             if (window.style.display != display)
             {
