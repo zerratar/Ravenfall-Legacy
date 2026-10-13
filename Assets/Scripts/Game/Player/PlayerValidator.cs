@@ -114,6 +114,15 @@ public class PlayerValidator
                         enemyController.Unstuck();
                     }
 
+                    // Unstuck teleports to the island spawn, which only helps a player cut off from the
+                    // island. A player who can still walk to the spawn is fine where they are; it is only
+                    // the target that is out of reach, and teleporting every few seconds would just put
+                    // them in a loop of running off and being pulled back.
+                    if (!movement.IsStrandedFrom(player.Island.SpawnPosition))
+                    {
+                        return true;
+                    }
+
                     player.IsStuck = true;
                     // record position, target, island, any details here, only one record per target is necessary.
                     return false;

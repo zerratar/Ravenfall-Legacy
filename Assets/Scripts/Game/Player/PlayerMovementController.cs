@@ -34,6 +34,9 @@ public class PlayerMovementController : MonoBehaviour
     private Transform internalTransform;
     private bool hasInternalTransform;
     private int navmeshErrorCount;
+    private NavMeshPath strandedPath;
+    private float strandedCheckTime = float.MinValue;
+    private bool stranded;
 
     //private NavigationAgent navAgentState;
 
@@ -246,6 +249,45 @@ public class PlayerMovementController : MonoBehaviour
 
         Position = position;
         return success;
+    }
+
+    /// <summary>
+    /// True when the player stands on a patch of navmesh with no path to the given point, such as the
+    /// sea floor or a ledge cut off from the island. Cached for a few seconds, since a path check per
+    /// player adds up on a busy stream.
+    /// </summary>
+    internal bool IsStrandedFrom(Vector3 point)
+    {
+        var now = GameTime.time;
+        if (now - strandedCheckTime < 5f)
+        {
+            return stranded;
+        }
+
+        strandedCheckTime = now;
+        if (!navMeshAgent.isActiveAndEnabled || !navMeshAgent.isOnNavMesh)
+        {
+            stranded = true;
+            return stranded;
+        }
+
+        if (!NavMeshHelper.SampleNearHeight(point, 1f, 3f, out var onNavMesh))
+        {
+            if (!NavMesh.SamplePosition(point, out var hit, 10f, NavMesh.AllAreas))
+            {
+                // nothing to measure against, so do not claim the player is stranded
+                stranded = false;
+                return stranded;
+            }
+
+            onNavMesh = hit.position;
+        }
+
+        if (strandedPath == null)
+            strandedPath = new NavMeshPath();
+
+        stranded = !navMeshAgent.CalculatePath(onNavMesh, strandedPath) || strandedPath.status != NavMeshPathStatus.PathComplete;
+        return stranded;
     }
 
     public void AdjustPlayerPositionToNavmesh(float maxDistance = 20f)
