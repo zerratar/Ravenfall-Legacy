@@ -775,8 +775,13 @@ public class GameManager : MonoBehaviour, IGameManager
             SettingsMenuView.SetResolutionScale(1);
         }
 
-        settingsView.UpdateSettingsUI();
+        SettingsApplier.ApplyOnLoad(this);
 
+        // The uGUI settings menu only comes into it when the scene has no UI Toolkit settings window.
+        if (settingsView && !FindAnyObjectByType<Shinobytes.UI.SettingsWindow>(FindObjectsInactive.Include))
+        {
+            settingsView.UpdateSettingsUI();
+        }
     }
 
     internal void OnSessionStart()
@@ -1111,7 +1116,7 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (Input.GetKeyUp(KeyCode.Escape) && !menuHandler.Visible && !playerSearchHandler.Visible)
+        if (Input.GetKeyUp(KeyCode.Escape) && !menuHandler.Visible && !menuHandler.ClosedThisFrame && !playerSearchHandler.Visible && !Shinobytes.UI.SettingsWindow.IsOpen)
         {
             menuHandler.Show();
         }
@@ -1433,7 +1438,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         var i = PlayerSettings.Instance.PathfindingQualitySettings.GetValueOrDefault(1);
         var qMin = SettingsMenuView.PathfindingQualityMin;
-        var qMax = SettingsMenuView.PathfindingQualityMin;
+        var qMax = SettingsMenuView.PathfindingQualityMax;
         if (i >= 0 && i < qMin.Length && i < qMax.Length)
         {
             var min = qMin[i];

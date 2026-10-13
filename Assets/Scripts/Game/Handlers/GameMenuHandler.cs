@@ -6,6 +6,10 @@ public class GameMenuHandler : MonoBehaviour
 {
     [SerializeField] private MenuView playerManagementView;
     [SerializeField] private MenuView settingsView;
+    [Tooltip("The UI Toolkit settings window. When set it replaces the uGUI settings view.")]
+    [SerializeField] private Shinobytes.UI.SettingsWindow toolkitSettings;
+    [Tooltip("The UI Toolkit game menu. When set it replaces the uGUI menu panel.")]
+    [SerializeField] private Shinobytes.UI.GameMenuWindow toolkitMenu;
     [SerializeField] private MenuView raidView;
 
     [SerializeField] private MenuView menuView;
@@ -19,7 +23,15 @@ public class GameMenuHandler : MonoBehaviour
     [SerializeField] private FadeInOut fadeToBlack;
     [SerializeField] private UnityEngine.UI.Button signOutButton;
 
-    public bool Visible => gameObject.activeSelf;
+    public bool Visible => toolkitMenu ? toolkitMenu.IsOpen : gameObject.activeSelf;
+    private int shownFrame = -1;
+    private int hiddenFrame = -1;
+
+    /// <summary>
+    /// The menu closed during this frame. Esc closes it, and GameManager, which opens it on Esc,
+    /// must not take the same key press as a reason to open it again.
+    /// </summary>
+    public bool ClosedThisFrame => hiddenFrame == Time.frameCount;
     private bool IsAuthenticated => gameManager && gameManager.RavenNest != null && gameManager.RavenNest.Authenticated;
     private void Awake()
     {
@@ -31,6 +43,8 @@ public class GameMenuHandler : MonoBehaviour
 
         if (!loginScreen) loginScreen = FindAnyObjectByType<LoginHandler>(FindObjectsInactive.Include);
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>(FindObjectsInactive.Include);
+        if (!toolkitSettings) toolkitSettings = FindAnyObjectByType<Shinobytes.UI.SettingsWindow>(FindObjectsInactive.Include);
+        if (!toolkitMenu) toolkitMenu = FindAnyObjectByType<Shinobytes.UI.GameMenuWindow>(FindObjectsInactive.Include);
 
         settingsView.Hide(false);
 
@@ -85,7 +99,9 @@ public class GameMenuHandler : MonoBehaviour
 
         UpdateDetailsLabel();
 
-        if (Input.GetKeyUp(KeyCode.Escape))
+        // Not in the frame the menu came back in: the settings window closes on that same Esc and
+        // reopens the menu, which would otherwise shut again straight away.
+        if (Input.GetKeyUp(KeyCode.Escape) && Time.frameCount != shownFrame)
         {
             Hide();
         }
@@ -119,6 +135,17 @@ public class GameMenuHandler : MonoBehaviour
 
     public void Show()
     {
+        shownFrame = Time.frameCount;
+
+        if (toolkitMenu)
+        {
+            // The uGUI panel stays switched off; the toolkit menu handles its own Esc and buttons.
+            if (loginScreen && !IsAuthenticated) loginScreen.HideView();
+            gameObject.SetActive(false);
+            toolkitMenu.Open();
+            return;
+        }
+
         gameObject.SetActive(true);
         signOutButton.gameObject.SetActive(gameManager.RavenNest.Authenticated);
 
@@ -132,6 +159,8 @@ public class GameMenuHandler : MonoBehaviour
 
     public void Hide()
     {
+        if (Visible) hiddenFrame = Time.frameCount;
+        if (toolkitMenu) toolkitMenu.Close();
         gameObject.SetActive(false);
 
         if (loginScreen && !IsAuthenticated)
@@ -147,6 +176,16 @@ public class GameMenuHandler : MonoBehaviour
 
     public void ShowSettingsMenu()
     {
+        if (toolkitSettings)
+        {
+            // The menu steps aside while settings are open and comes back when they close. (The
+            // uGUI one also draws above every UI Toolkit panel, so it could not stay up anyway.)
+            if (toolkitMenu) toolkitMenu.Close();
+            gameObject.SetActive(false);
+            toolkitSettings.Open(Show);
+            return;
+        }
+
         ActivateMenu(settingsView);
     }
 

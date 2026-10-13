@@ -470,6 +470,127 @@ public static class Localization
     public static readonly string UI_DETAILS_TRANSMOGRIFIED = "Transmogrified";
     public static readonly string UI_RAID_JOIN = "Type {command} to join";
     public static readonly string UI_RAID_REWARD_HINT = "To get a chance of being rewarded items!";
+    public static readonly string UI_MENU_CONTINUE = "Continue";
+    public static readonly string UI_MENU_SETTINGS = "Settings";
+    public static readonly string UI_MENU_LOGOUT = "Log out";
+    public static readonly string UI_MENU_EXIT = "Exit game";
+    public static readonly string UI_MENU_CONFIRM_LOGOUT = "Click again to log out";
+    public static readonly string UI_MENU_CONFIRM_EXIT = "Click again to exit";
+    public static readonly string UI_MENU_LOG_FOLDER = "Open log folder";
+    public static readonly string[] UI_MENU_INFO = { "Version", "Graphics", "Graphics memory", "System memory", "System", "Uptime" };
+    public static readonly string[] UI_MENU_TIPS =
+    {
+        "Tip: Sir Clucksworth sees everything.",
+        "Tip: Potato mode is not a setting, it is a lifestyle.",
+        "Tip: The raid horn volume goes all the way up to BWAAAH.",
+        "Tip: Spin the observer camera as fast as it goes. Wheee!",
+        "Tip: Ravens are smarter than they look.",
+        "Tip: Press F1 when you want the world to yourself.",
+        "Tip: The training dummies have been through a lot. Be gentle.",
+        "Tip: Somewhere, a rubber duck is floating in a fishing tub.",
+    };
+
+    public static readonly string UI_SETTINGS_TITLE = "SETTINGS";
+    public static readonly string UI_SETTINGS_FOOTER = "Changes apply right away and are saved when you close settings.";
+    public static readonly string UI_SETTINGS_DONE = "Done";
+    public static readonly string UI_SETTINGS_TAB_GAME = "Game";
+    public static readonly string UI_SETTINGS_TAB_GRAPHICS = "Graphics";
+    public static readonly string UI_SETTINGS_TAB_SOUND = "Sound";
+    public static readonly string UI_SETTINGS_TAB_INTERFACE = "Interface";
+    public static readonly string UI_SETTINGS_TAB_BOT = "Bot messages";
+    public static readonly string UI_SETTINGS_TAB_ADMIN = "Admin";
+    public static readonly string UI_SETTINGS_ON = "On";
+    public static readonly string UI_SETTINGS_OFF = "Off";
+
+    public static readonly string UI_SETTINGS_SECTION_CAMERA = "CAMERA";
+    public static readonly string UI_SETTINGS_SECTION_PLAYERS = "PLAYERS";
+    public static readonly string UI_SETTINGS_SECTION_CHAT = "CHAT";
+    public static readonly string UI_SETTINGS_SECTION_WORLD = "WORLD";
+    public static readonly string UI_SETTINGS_CAMERA_ROTATION = "Observer camera rotation";
+    public static readonly string UI_SETTINGS_CAMERA_ROTATION_HINT = "How fast the camera circles the player you are watching, and which way.";
+    public static readonly string UI_SETTINGS_CAMERA_STILL = "No rotation";
+    public static readonly string UI_SETTINGS_CAMERA_WHEE = "Wheee!";
+    public static readonly string UI_SETTINGS_BOOST = "Subscriber exp bonus";
+    public static readonly string UI_SETTINGS_BOOST_HINT = "Who gets the extra exp from your channel's subscription tier.";
+    public static readonly string[] UI_SETTINGS_BOOST_OPTIONS = { "Subscribers", "Everyone" };
+    public static readonly string UI_SETTINGS_EXPIRY = "Keep players after a restart";
+    public static readonly string UI_SETTINGS_EXPIRY_HINT = "How long players stay in the saved game state when the game restarts.";
+    public static readonly string[] UI_SETTINGS_EXPIRY_OPTIONS = { "Don't keep", "2 hours", "4 hours", "8 hours", "12 hours", "24 hours", "36 hours", "48 hours", "Forever" };
+    public static readonly string UI_SETTINGS_EXPIRY_ALERT = "Tell chat when saved players expire";
+    public static readonly string UI_SETTINGS_DROPS = "Item drop messages";
+    public static readonly string UI_SETTINGS_DROPS_HINT = "How raid and dungeon loot is announced in chat. For example:";
+    public static readonly string[] UI_SETTINGS_DROPS_OPTIONS = { "One item per message", "One player per message", "All in one message", "Items and counts", "Item names only", "No messages" };
+    public static readonly string UI_SETTINGS_DROPS_NONE = "(nothing is posted)";
+    public static readonly string UI_SETTINGS_PATHFINDING = "Navigation quality";
+    public static readonly string UI_SETTINGS_PATHFINDING_HINT = "How much time players get to find their way each frame. Higher is smoother with many players, and costs more CPU.";
+    public static readonly string[] UI_SETTINGS_PATHFINDING_OPTIONS = { "Low", "Normal", "High", "Ultra" };
+    public static readonly string UI_SETTINGS_HOUSES = "Give empty houses to players";
+    public static readonly string UI_SETTINGS_HOUSES_HINT = "Moves players into village houses that have nobody living in them.";
+    public static readonly string UI_SETTINGS_LABELS = "Write stream label files";
+    public static readonly string UI_SETTINGS_LABELS_HINT = "Text and json files your streaming software can show.";
+    public static readonly string UI_SETTINGS_NO_RAIDS = "Turn off raids";
+    public static readonly string UI_SETTINGS_NO_DUNGEONS = "Turn off dungeons";
+
+    public static readonly string UI_SETTINGS_SECTION_QUALITY = "QUALITY";
+    public static readonly string UI_SETTINGS_SECTION_DAYNIGHT = "DAY AND NIGHT";
+    public static readonly string UI_SETTINGS_SECTION_PERFORMANCE = "PERFORMANCE";
+    public static readonly string UI_SETTINGS_QUALITY = "Graphics quality";
+    public static readonly string[] UI_SETTINGS_QUALITY_OPTIONS = { "Low", "Medium", "High" };
+    public static readonly string UI_SETTINGS_POTATO = "Potato mode";
+    public static readonly string UI_SETTINGS_POTATO_HINT = "The lowest graphics there are, for computers that are struggling.";
+    public static readonly string UI_SETTINGS_AUTO_POTATO = "Potato mode while in the background";
+    public static readonly string UI_SETTINGS_AUTO_POTATO_HINT = "Saves power when another window has focus.";
+    public static readonly string UI_SETTINGS_POST = "Post processing";
+    public static readonly string UI_SETTINGS_POST_HINT = "Bloom and colour grading.";
+    public static readonly string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
+    public static readonly string UI_SETTINGS_REALTIME = "Follow the clock";
+    public static readonly string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";
+    public static readonly string UI_SETTINGS_TIME = "Time of day";
+    public static readonly string UI_SETTINGS_TIME_HINT = "Used while the day and night cycle is off.";
+    public static readonly string UI_SETTINGS_DAY = "Day";
+    public static readonly string UI_SETTINGS_NIGHT = "Night";
+    public static readonly string UI_SETTINGS_VIEW_DISTANCE = "View distance";
+    public static readonly string UI_SETTINGS_RESOLUTION = "Render resolution";
+    public static readonly string UI_SETTINGS_RESOLUTION_HINT = "Draws the world at a lower resolution to save GPU time.";
+    public static readonly string UI_SETTINGS_CLAN_CACHE = "Clan logos";
+    public static readonly string UI_SETTINGS_CLAN_CACHE_HINT = "Throws away the downloaded logos so they are fetched again.";
+    public static readonly string UI_SETTINGS_CLAN_CACHE_BUTTON = "Clear cache";
+
+    public static readonly string UI_SETTINGS_MUSIC = "Music";
+    public static readonly string UI_SETTINGS_EVENTS = "Raid horns and dungeon gongs";
+    public static readonly string UI_SETTINGS_EVENTS_HINT = "Also the alert when another stream raids yours.";
+    public static readonly string UI_SETTINGS_SILENCE = "Silence";
+    public static readonly string UI_SETTINGS_BWAAAH = "BWAAAH";
+
+    public static readonly string UI_SETTINGS_UI_SCALE = "Interface size";
+    public static readonly string UI_SETTINGS_UI_SCALE_HINT = "Also Ctrl and + or - while playing.";
+    public static readonly string UI_SETTINGS_NAMES = "Player names over heads";
+    public static readonly string UI_SETTINGS_PLAYER_LIST = "Player list";
+    public static readonly string UI_SETTINGS_PLAYER_DETAILS = "Player details";
+    public static readonly string UI_SETTINGS_PLAYER_DETAILS_HINT = "The panel for the player the camera is watching (F2).";
+    public static readonly string UI_SETTINGS_SHORTCUTS = "Shortcut bar";
+    public static readonly string UI_SETTINGS_SHORTCUTS_HINT = "The row of keyboard shortcuts along the bottom.";
+    public static readonly string UI_SETTINGS_RESET_WINDOWS = "Window positions";
+    public static readonly string UI_SETTINGS_RESET_WINDOWS_HINT = "Puts every window back where it started.";
+    public static readonly string UI_SETTINGS_RESET_WINDOWS_BUTTON = "Reset";
+
+    public static readonly string UI_SETTINGS_BOT_HINT = "Which messages the bot posts in your chat.";
+    public static readonly string UI_SETTINGS_BOT_EXP = "Exp multiplier running out";
+    public static readonly string UI_SETTINGS_BOT_WELCOME = "Players joining and leaving";
+    public static readonly string UI_SETTINGS_BOT_DISEMBARK = "Ferry arrivals";
+    public static readonly string UI_SETTINGS_BOT_TRAIN = "Training warnings";
+    public static readonly string UI_SETTINGS_BOT_TRAIN_HINT = "When a player trains something their island can't teach them.";
+    public static readonly string UI_SETTINGS_BOT_DUNGEON = "Dungeon results";
+    public static readonly string UI_SETTINGS_BOT_RAID = "Raid results";
+    public static readonly string UI_SETTINGS_BOT_ITEMS = "Item drops";
+    public static readonly string UI_SETTINGS_BOT_ITEMS_HINT = "Loot from raids and dungeons. How they read is under Game.";
+
+    public static readonly string UI_SETTINGS_DEV_TOOLS = "Developer tools";
+    public static readonly string UI_SETTINGS_DEV_TOOLS_HINT = "Shows the dev tools button.";
+    public static readonly string UI_SETTINGS_DISCONNECT = "Server connection";
+    public static readonly string UI_SETTINGS_DISCONNECT_HINT = "Drops the connection to test that the game reconnects.";
+    public static readonly string UI_SETTINGS_DISCONNECT_BUTTON = "Disconnect";
+
     public static readonly string UI_RAID_COME_HELP = "Come help fight! Type {command}";
 
     public static readonly string UI_DUNGEON_APPEARED = "A dungeon has appeared!";

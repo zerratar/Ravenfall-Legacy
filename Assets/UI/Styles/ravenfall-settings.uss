@@ -1,0 +1,453 @@
+/* ==========================================================================
+   Settings window
+   A movable, resizable window: tabs down the left, rows of settings on the right. The controls are drawn
+   here rather than from Unity's Toggle and DropdownField: a switch is two elements and a class, and
+   a short list of choices is a row of buttons, so nothing depends on the runtime dropdown popup.
+   ========================================================================== */
+
+/* Sized and placed as shares of the screen so the first open fits at any interface size. Once
+   moved or resized, DraggableWindow keeps the window where it was left. */
+#settings-window {
+    left: 17%;
+    top: 9%;
+    width: 66%;
+    height: 80%;
+}
+
+.rf-window.rf-settings {
+    min-width: 860px;
+    min-height: 520px;
+    /* solid rather than the HUD's glass: this is a page to read, not a window over the action */
+    background-color: var(--rf-bg);
+    flex-direction: column;
+}
+
+.rf-settings .rf-window__button {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+}
+
+.rf-settings .rf-window__button:hover {
+    color: var(--rf-text);
+}
+
+.rf-settings__body {
+    flex-grow: 1;
+    flex-direction: row;
+    min-height: 0;
+}
+
+/* ---- Tabs ---- */
+
+.rf-settings__tabs {
+    width: 230px;
+    flex-shrink: 0;
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    background-color: var(--rf-row-alt);
+    border-right-width: 1px;
+    border-right-color: var(--rf-divider);
+}
+
+.rf-settings .rf-settings__tab {
+    flex-direction: row;
+    align-items: center;
+    height: 46px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 2px;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-3);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 3px;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-left-color: rgba(0, 0, 0, 0);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    cursor: link;
+}
+
+.rf-settings .rf-settings__tab:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-settings .rf-settings__tab--active {
+    background-color: var(--rf-accent-wash);
+    border-left-color: var(--rf-accent);
+}
+
+.rf-settings .rf-settings__tab-icon {
+    width: 26px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-center;
+    margin-right: var(--rf-space-3);
+}
+
+.rf-settings .rf-settings__tab-text {
+    font-size: 17px;
+    color: var(--rf-text-dim);
+}
+
+.rf-settings .rf-settings__tab--active .rf-settings__tab-icon,
+.rf-settings .rf-settings__tab--active .rf-settings__tab-text,
+.rf-settings .rf-settings__tab:hover .rf-settings__tab-text {
+    color: var(--rf-text);
+}
+
+.rf-settings .rf-settings__tab--active .rf-settings__tab-icon {
+    color: var(--rf-accent);
+}
+
+/* ---- Content ---- */
+
+.rf-scroll.rf-settings__content {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.rf-settings__content .unity-scroll-view__content-container {
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-5);
+}
+
+.rf-settings .rf-settings__intro {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+    margin-top: var(--rf-space-3);
+    margin-bottom: var(--rf-space-1);
+}
+
+.rf-settings .rf-settings__section {
+    font-size: 13px;
+    color: var(--rf-accent);
+    letter-spacing: 2px;
+    margin-top: var(--rf-space-5);
+    margin-bottom: var(--rf-space-1);
+    padding-bottom: 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+/* ---- Rows ---- */
+
+.rf-settings-row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 56px;
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    padding-left: var(--rf-space-2);
+    padding-right: var(--rf-space-2);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-settings-row--clickable {
+    cursor: link;
+}
+
+.rf-settings-row--clickable:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-settings-row:disabled {
+    opacity: 0.45;
+}
+
+.rf-settings-row__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: var(--rf-space-4);
+}
+
+.rf-settings .rf-settings-row__label {
+    font-size: 17px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-settings .rf-settings-row__hint {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+    margin-top: 2px;
+}
+
+.rf-settings .rf-settings-row__example {
+    font-size: 13px;
+    color: var(--rf-live);
+    white-space: normal;
+    margin-top: 6px;
+    padding-left: var(--rf-space-2);
+    border-left-width: 2px;
+    border-left-color: var(--rf-divider);
+}
+
+.rf-settings-row__control {
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-settings .rf-settings-row__value {
+    min-width: 84px;
+    font-size: 15px;
+    color: var(--rf-accent);
+    -unity-text-align: middle-right;
+    margin-left: var(--rf-space-3);
+}
+
+/* ---- Switch ---- */
+
+.rf-settings .rf-switch__state {
+    font-size: 14px;
+    color: var(--rf-text-faint);
+    margin-right: var(--rf-space-2);
+    min-width: 28px;
+    -unity-text-align: middle-right;
+}
+
+.rf-switch {
+    width: 52px;
+    height: 28px;
+    padding-left: 3px;
+    padding-right: 3px;
+    justify-content: center;
+    background-color: var(--rf-bar-track);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    transition-property: background-color, border-color;
+    transition-duration: 0.15s;
+}
+
+.rf-switch__knob {
+    width: 20px;
+    height: 20px;
+    background-color: var(--rf-text-dim);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    transition-property: translate, background-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+}
+
+.rf-switch--on {
+    background-color: var(--rf-accent-dim);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-switch--on .rf-switch__knob {
+    translate: 24px 0;
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-settings .rf-switch--on-state {
+    color: var(--rf-accent);
+}
+
+/* ---- Slider ---- */
+
+.rf-slider {
+    width: 260px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.rf-slider .unity-base-slider__input {
+    height: 28px;
+}
+
+.rf-slider .unity-base-slider__tracker {
+    height: 6px;
+    margin-top: -3px;
+    background-color: var(--rf-bar-track);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.rf-slider .unity-base-slider__dragger {
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+    background-color: var(--rf-accent);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+    border-top-left-radius: 9px;
+    border-top-right-radius: 9px;
+    border-bottom-left-radius: 9px;
+    border-bottom-right-radius: 9px;
+}
+
+.rf-slider .unity-base-slider__dragger-border {
+    display: none;
+}
+
+/* ---- Segmented choice ---- */
+
+.rf-segmented {
+    flex-direction: row;
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.rf-settings .rf-segmented__item {
+    height: 32px;
+    min-width: 72px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    cursor: link;
+}
+
+.rf-settings .rf-segmented__item:hover {
+    color: var(--rf-text);
+    background-color: var(--rf-row-hover);
+}
+
+.rf-settings .rf-segmented__item.rf-segmented__item--active {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+}
+
+/* ---- Stepper ---- */
+
+.rf-stepper {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-settings .rf-stepper__arrow {
+    width: 32px;
+    height: 32px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 13px;
+    color: var(--rf-text);
+    background-color: var(--rf-bar-track);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    cursor: link;
+}
+
+.rf-settings .rf-stepper__arrow:hover {
+    background-color: var(--rf-accent-wash);
+    color: var(--rf-accent-bright);
+}
+
+.rf-settings .rf-stepper__arrow:disabled {
+    opacity: 0.3;
+}
+
+.rf-settings .rf-stepper__value {
+    width: 210px;
+    font-size: 15px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+}
+
+/* ---- Buttons in rows and the footer ---- */
+
+.rf-settings .rf-settings-row__button {
+    min-height: 36px;
+    font-size: 15px;
+}
+
+.rf-settings__footer {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    height: 64px;
+    padding-left: var(--rf-space-5);
+    /* room for the resize grip in the corner */
+    padding-right: 30px;
+    background-color: var(--rf-surface-raised);
+    border-top-width: 1px;
+    border-top-color: var(--rf-divider);
+}
+
+.rf-settings .rf-settings__footer-text {
+    flex-grow: 1;
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+.rf-settings .rf-settings__done {
+    min-width: 120px;
+}

@@ -73,6 +73,11 @@ public abstract class ObjectJsonSerializer<T> where T : new()
         sw.WriteLine($"  \"{name}\": " + (value != null ? $"\"{EscapeString(value)}\"" : "null") + ",");
     }
 
+    public void Serialize(StringWriter sw, string name, string[] array)
+    {
+        sw.WriteLine($"  \"{name}\": " + (array == null ? "null" : "[" + string.Join(", ", array.Select(x => $"\"{EscapeString(x)}\"")) + "]") + ",");
+    }
+
     public void Serialize(StringWriter sw, string name, float[] array)
     {
         sw.WriteLine($"  \"{name}\": " + Serialize(array) + ",");

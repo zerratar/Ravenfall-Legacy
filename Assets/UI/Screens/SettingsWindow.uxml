@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      Settings, opened from the game menu. A window that can be moved by its header and resized from
+      the corner, without a backdrop, so graphics changes can be watched as they are made. Tabs down
+      the left, the chosen tab's settings on the right. The rows themselves are built by SettingsWindow.cs from SettingsApplier, so every
+      switch, slider and choice looks and behaves the same.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-settings.uss" />
+
+    <engine:VisualElement name="settings-root" class="rf-window-layer" picking-mode="Ignore">
+        <engine:VisualElement name="settings-modal" class="rf-window-layer" picking-mode="Ignore" style="display: none;">
+            <engine:VisualElement name="settings-window" class="rf-window rf-settings">
+
+                <engine:VisualElement class="rf-window__header rf-settings__header">
+                    <engine:Label name="settings-title" class="rf-window__title" picking-mode="Ignore" />
+                    <engine:Button name="settings-close" text="&#xf00d;" class="rf-window__button rf-icon" tooltip="Close" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-settings__body">
+                    <engine:VisualElement name="settings-tabs" class="rf-settings__tabs" />
+                    <engine:ScrollView name="settings-content" class="rf-scroll rf-settings__content" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-settings__footer">
+                    <engine:Label name="settings-footer" class="rf-settings__footer-text" picking-mode="Ignore" />
+                    <engine:Button name="settings-done" class="rf-button rf-button--primary rf-settings__done" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="settings-grip" class="rf-window__grip" tooltip="Drag to resize" />
+
+            </engine:VisualElement>
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

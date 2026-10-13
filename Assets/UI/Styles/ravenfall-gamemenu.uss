@@ -1,0 +1,219 @@
+/* ==========================================================================
+   Game menu
+   Esc or the cog. A centred panel over a dimmed screen: logo and tip, big buttons, and the system
+   details in small print at the bottom.
+   ========================================================================== */
+
+.rf-gamemenu-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.rf-window.rf-gamemenu {
+    position: relative;
+    width: 560px;
+    background-color: var(--rf-bg);
+    padding-bottom: 0;
+}
+
+.rf-gamemenu__top {
+    align-items: center;
+    padding-top: var(--rf-space-5);
+    padding-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+}
+
+.rf-logo.rf-gamemenu__logo {
+    width: 360px;
+    height: 148px;
+}
+
+.rf-gamemenu .rf-gamemenu__tip {
+    margin-top: var(--rf-space-2);
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    -unity-font-style: italic;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+/* ---- Buttons ---- */
+
+.rf-gamemenu__buttons {
+    padding-left: var(--rf-space-6);
+    padding-right: var(--rf-space-6);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-5);
+}
+
+.rf-gamemenu__divider {
+    height: 1px;
+    margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-3);
+    background-color: var(--rf-divider);
+}
+
+.rf-gamemenu .rf-gamemenu__button {
+    flex-direction: row;
+    align-items: center;
+    height: 58px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: var(--rf-space-2);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    background-color: var(--rf-surface-raised);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    cursor: link;
+    transition-property: background-color, border-color, translate;
+    transition-duration: 0.12s;
+}
+
+.rf-gamemenu .rf-gamemenu__button:hover {
+    background-color: var(--rf-row-hover);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    translate: 4px 0;
+}
+
+.rf-gamemenu .rf-gamemenu__button:active {
+    background-color: var(--rf-accent-dim);
+}
+
+.rf-gamemenu .rf-gamemenu__icon {
+    width: 34px;
+    font-size: 20px;
+    color: var(--rf-accent);
+    -unity-text-align: middle-center;
+    margin-right: var(--rf-space-3);
+}
+
+.rf-gamemenu .rf-gamemenu__text {
+    flex-grow: 1;
+    font-size: 21px;
+    color: var(--rf-text);
+    /* Button centres its text, and the label inside inherits that */
+    -unity-text-align: middle-left;
+}
+
+/* Continue: the one to press, in the accent colour. Every state sets text and background together. */
+.rf-gamemenu .rf-gamemenu__button--primary {
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-gamemenu .rf-gamemenu__button--primary:hover {
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-gamemenu .rf-gamemenu__button--primary .rf-gamemenu__icon,
+.rf-gamemenu .rf-gamemenu__button--primary .rf-gamemenu__text {
+    color: var(--rf-text-on-accent);
+}
+
+/* Log out and exit ask twice; while they wait for the second click they turn red. */
+.rf-gamemenu .rf-gamemenu__button--danger:hover {
+    border-left-color: var(--rf-danger);
+    border-right-color: var(--rf-danger);
+    border-top-color: var(--rf-danger);
+    border-bottom-color: var(--rf-danger);
+}
+
+.rf-gamemenu .rf-gamemenu__button--danger .rf-gamemenu__icon {
+    color: var(--rf-text-dim);
+}
+
+.rf-gamemenu .rf-gamemenu__button--confirm {
+    background-color: rgba(229, 72, 77, 0.22);
+    border-left-color: var(--rf-danger);
+    border-right-color: var(--rf-danger);
+    border-top-color: var(--rf-danger);
+    border-bottom-color: var(--rf-danger);
+}
+
+.rf-gamemenu .rf-gamemenu__button--confirm .rf-gamemenu__icon,
+.rf-gamemenu .rf-gamemenu__button--confirm .rf-gamemenu__text {
+    color: var(--rf-danger);
+}
+
+/* ---- Footer ---- */
+
+.rf-gamemenu__footer {
+    flex-direction: row;
+    align-items: flex-end;
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    background-color: var(--rf-surface-raised);
+    border-top-width: 1px;
+    border-top-color: var(--rf-divider);
+}
+
+.rf-gamemenu__info {
+    flex-grow: 1;
+}
+
+.rf-gamemenu__info-row {
+    flex-direction: row;
+    align-items: center;
+    height: 21px;
+}
+
+.rf-gamemenu .rf-gamemenu__info-key {
+    width: 150px;
+    font-size: 14px;
+    color: var(--rf-text-faint);
+}
+
+.rf-gamemenu .rf-gamemenu__info-value {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+.rf-gamemenu .rf-gamemenu__link {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-2);
+    padding-right: var(--rf-space-2);
+    height: 30px;
+    font-size: 13px;
+    color: var(--rf-live);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    cursor: link;
+}
+
+.rf-gamemenu .rf-gamemenu__link:hover {
+    color: var(--rf-text);
+    background-color: var(--rf-row-hover);
+}

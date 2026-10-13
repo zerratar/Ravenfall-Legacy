@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      The game menu, on Esc or the cog: the logo with a tip under it, the big buttons, and what the
+      game is running on at the bottom. GameMenuHandler stays the entry point and drives this view.
+      Clicking the dimmed backdrop closes the menu, like Continue.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-gamemenu.uss" />
+
+    <engine:VisualElement name="gamemenu-root" class="rf-window-layer" picking-mode="Ignore">
+        <engine:VisualElement name="gamemenu-modal" class="rf-gamemenu-modal" style="display: none;">
+            <engine:VisualElement name="gamemenu-panel" class="rf-window rf-gamemenu">
+
+                <engine:VisualElement class="rf-gamemenu__top" picking-mode="Ignore">
+                    <engine:VisualElement class="rf-logo rf-gamemenu__logo" picking-mode="Ignore" />
+                    <engine:Label name="gamemenu-tip" class="rf-gamemenu__tip" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="gamemenu-buttons" class="rf-gamemenu__buttons" />
+
+                <engine:VisualElement class="rf-gamemenu__footer">
+                    <engine:VisualElement name="gamemenu-info" class="rf-gamemenu__info" picking-mode="Ignore" />
+                    <engine:Button name="gamemenu-logs" class="rf-gamemenu__link" />
+                </engine:VisualElement>
+
+            </engine:VisualElement>
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

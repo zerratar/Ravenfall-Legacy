@@ -383,6 +383,9 @@ public class PlayerSettings
 
             // Serialize array
             Serialize(sw, "expMultiplierAnnouncements", obj.ExpMultiplierAnnouncements);
+            // the messages the streamer switched off; these were never written before, so they were lost on restart
+            Serialize(sw, "botMessageFilters", obj.BotMessageFilters);
+            if (obj.Loot != null) sw.WriteLine("  \"loot\": { \"includeOrigin\": " + obj.Loot.IncludeOrigin.ToString().ToLower() + " },");
 
             // Serialize custom class instances
             sw.WriteLine("  \"streamLabels\": " + SerializeStreamLabelSettings(obj.StreamLabels) + ",");

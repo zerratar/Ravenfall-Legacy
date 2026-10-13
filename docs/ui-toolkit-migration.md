@@ -718,3 +718,54 @@ Clicking an enemy no longer goes through a HUD window to the world beneath it.
 `IslandDetails.uiToolkitWindow` and `EnemyObserveDialog.uiToolkitWindow` forward when assigned.
 The window's close button is hooked on the first show rather than in `Awake`, because with the
 window in use the old dialog's object is never activated.
+
+## Settings and the game menu
+
+`SettingsWindow.cs`, `GameMenuWindow.cs`, `SettingsApplier.cs`, their UXML, `ravenfall-settings.uss`
+and `ravenfall-gamemenu.uss`. Scene objects are added by `tools/ui/settings_window_setup.cs` and
+`tools/ui/game_menu_setup.cs`.
+
+**The game menu** (Esc or the cog) is a centred panel over a dimmed screen:
+- The logo, with a random tip under it each time it opens. The tips are easter eggs; keep adding them.
+- Continue, Settings, Log out and Exit game. Log out and exit ask for a second click within three
+  seconds and turn red while they wait.
+- Version, graphics API, memory, system and uptime in small print, and the log folder link.
+- Clicking the backdrop closes it, like Continue. The old Players and Raid and exit buttons were
+  already switched off and are not carried over.
+
+`GameMenuHandler` stays the entry point. With `toolkitMenu` assigned it opens and closes the toolkit
+view and leaves the uGUI panel switched off; the buttons call back into it, so the login screen,
+log out and exit behave as before.
+
+**Settings** is a window that moves by its header and resizes from the corner, both remembered.
+There is no backdrop, so graphics changes can be watched as they are made. It first opens at 66% by
+80% of the screen. Tabs: Game, Graphics, Sound, Interface, Bot messages, and Admin for
+administrators.
+- The rows are built in code from one set of controls: an on/off switch where the whole row is the
+  click target, a slider with its value beside it, a row of buttons for up to four choices, and
+  arrows either side of the value for longer lists. None of Unity's Toggle or DropdownField is
+  used, so nothing depends on the runtime dropdown popup.
+- The item drop setting shows an example made by the real `PlayerItemDropText`, so it always
+  matches what chat gets.
+- The Interface tab has the UI scale slider this page asked for, and the dead player list size and
+  scale sliders are gone.
+- Changes apply at once and the file is written when the window closes.
+
+`SettingsApplier` holds what each setting does, for the window and for `GameManager` on load. Bugs
+fixed on the way, all from the old menu:
+- The camera rotation speed was saved with both signs in turn, so it flipped direction every time the
+  menu closed.
+- Bot message filters were stored inverted and never written to the file, so they were lost on
+  restart. A message the game was never told about counts as filtered, so every one is set on load.
+- The quality, player state expiry and navigation dropdowns all called the boost requirement
+  handler, so quality only applied on close and navigation quality never did. Navigation also used
+  the minimum table for its maximum.
+- The DungeonJoin and RaidJoin bot filters are not checked anywhere and are left out.
+
+Esc closes the settings window and brings the menu back. Both windows report the frame they closed
+in (`SettingsWindow.IsOpen`, `GameMenuHandler.ClosedThisFrame`), so `GameManager` does not take the
+same key press as a reason to open the menu again.
+
+The uGUI `SettingsMenuView` is still in the scene, unused while the toolkit window is assigned, and
+`GameManager` only falls back to it when there is none. Delete its hierarchy once this has been
+played with for a while.
