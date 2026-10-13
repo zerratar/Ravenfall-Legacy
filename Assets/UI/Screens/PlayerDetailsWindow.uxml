@@ -86,10 +86,11 @@
                             <engine:VisualElement name="training-fill" class="rf-training__fill" picking-mode="Ignore" />
                         </engine:VisualElement>
                         <engine:Label name="training-status" class="rf-training__status" picking-mode="Ignore" />
-                    </engine:VisualElement>
-                    <engine:VisualElement class="rf-training__side" picking-mode="Ignore">
-                        <engine:Label name="training-next" class="rf-training__next" picking-mode="Ignore" />
-                        <engine:Label name="training-rate" class="rf-training__rate" picking-mode="Ignore" />
+                        <engine:VisualElement class="rf-training__line" picking-mode="Ignore">
+                            <engine:Label name="training-next" class="rf-training__next" picking-mode="Ignore" />
+                            <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
+                            <engine:Label name="training-rate" class="rf-training__rate" picking-mode="Ignore" />
+                        </engine:VisualElement>
                         <engine:Label name="training-hint" class="rf-training__hint" picking-mode="Ignore" />
                     </engine:VisualElement>
                 </engine:VisualElement>

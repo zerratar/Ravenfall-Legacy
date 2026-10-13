@@ -321,8 +321,7 @@
 .rf-training__main {
     flex-grow: 1;
     flex-shrink: 1;
-    /* Keeps "TRAINING - MAGIC 34.6%" in one piece when the side column has a lot to say. */
-    min-width: 200px;
+    min-width: 0;
 }
 
 .rf-training__line {
@@ -331,6 +330,9 @@
 }
 
 .rf-details .rf-training__title {
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 18px;
     color: var(--rf-text);
     text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
@@ -376,34 +378,25 @@
 .rf-details .rf-training__status--done { color: var(--rf-success); }
 .rf-details .rf-training__status--max { color: var(--rf-accent-bright); }
 
-/* Long texts like "Next level in When hell freezes over" wrap here instead of running into the title. */
-.rf-training__side {
-    flex-shrink: 1;
-    align-items: flex-end;
-    margin-left: var(--rf-space-4);
-    min-width: 150px;
-    max-width: 45%;
-}
-
-.rf-details .rf-training__next,
-.rf-details .rf-training__rate,
-.rf-details .rf-training__hint {
-    white-space: normal;
-    -unity-text-align: upper-right;
-}
-
+/* Under the bar: the time to the next level on the left, the xp rate on the right, the island hint below.
+   Long times ("When hell freezes over") get the whole width instead of squeezing the title. */
 .rf-details .rf-training__next {
-    font-size: 16px;
+    flex-shrink: 1;
+    font-size: 14px;
     color: var(--rf-text);
+    margin-top: 4px;
 }
 
 .rf-details .rf-training__rate {
-    font-size: 16px;
+    flex-shrink: 0;
+    font-size: 14px;
     color: var(--rf-success);
-    margin-top: 2px;
+    margin-top: 4px;
+    margin-left: var(--rf-space-3);
 }
 
 .rf-details .rf-training__hint {
+    white-space: normal;
     font-size: 14px;
     color: var(--rf-live);
     margin-top: 2px;
