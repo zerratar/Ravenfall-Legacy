@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
@@ -1421,6 +1421,13 @@ namespace Shinobytes.UI
             shownRestedMinutes = int.MinValue;
             shownTrainingFill = -1f;
             shownObserve = -1f;
+
+            // The training row caches its icon and state class as well. A rebuilt tree starts without
+            // them, and a cache left pointing at the old sprite meant the icon was never set again.
+            if (training != null && shownTrainingClass != null) training.RemoveFromClassList(shownTrainingClass);
+            shownTrainingClass = null;
+            if (trainingIcon != null) trainingIcon.style.backgroundImage = new StyleBackground(StyleKeyword.None);
+            shownTrainingIcon = null;
 
             for (var i = 0; i < skillTiles.Count; ++i)
             {
