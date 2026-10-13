@@ -45,7 +45,7 @@ for y, z in ((-0.12, 1.8), (0.12, 1.55)):
         x = -1.0 + k * 0.4
         fish(b, rf.p(x, y, z - 0.26), (0, 0, 1), rf.R @ Vector((1, 0, 0)), length=0.42 - 0.04 * (k % 2), col=FISH if (k + int(z * 10)) % 2 else FISH_B)
 # the net on its frame, with orange floats
-nf = f.sub(0.4, -0.2, -0.25)
+nf = f.sub(-0.4, 1.0, -0.2)                     # out in the yard, clear of the hut window
 for x in (-1.2, 1.2):
     b.box(nf.p(x, 0, 1.1), (0.12, 0.12, 2.2), "PAL", TIMBER, rot_z=nf.rot)
 bar(b, nf.p(-1.35, 0, 2.15), nf.p(1.35, 0, 2.15), 0.1, 0.1, "PAL", TIMBER_L)

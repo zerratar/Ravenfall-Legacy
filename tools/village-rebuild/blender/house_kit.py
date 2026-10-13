@@ -49,8 +49,39 @@ def window(b, f, x, z, side_y, w=0.8, h=1.0, shutters="blue", lit=True):
     b.box(f.p(x, y + 0.12, z - h / 2 - 0.13), (w + 0.36, 0.24, 0.1), "PAL", TIMBER_L, rot_z=f.rot)
     if shutters:
         for s in (-1, 1):
-            b.box(f.p(x + s * (w / 2 + 0.22), y + 0.07, z), (w * 0.42, 0.06, h + 0.05), "PAL", SHUTTER[shutters], rot_z=f.rot)
-            b.box(f.p(x + s * (w / 2 + 0.22), y + 0.11, z), (w * 0.42, 0.03, 0.08), "PAL", TIMBER, rot_z=f.rot)
+            b.box(f.p(x + s * (w / 2 + 0.24), y + 0.07, z), (w * 0.4, 0.06, h + 0.05), "PAL", SHUTTER[shutters], rot_z=f.rot)
+
+def window_half_width(w=0.8, shutters=True):
+    """Half the width a window takes on a wall, shutters included, for the framing to keep clear of."""
+    return w / 2 + 0.24 + w * 0.2 + 0.05 if shutters else w / 2 + 0.15
+
+def frame_wall(b, wf, length, h, plinth, openings, n, beams=True, braces=True):
+    """Half-timbering on one wall, laid out round its openings (x centre, half width, bottom, top in the
+    wall's own space): sill and head beams, posts either side of every opening, a rail at window-sill
+    height through the panels without an opening, and braces in the corner panels that are wide enough,
+    rising from the panel's inner edge into the corner post. Nothing crosses a window or a door."""
+    z0, z1 = plinth + 0.1, h - 0.1
+    if beams:
+        for z in (z0, z1):
+            b.box(wf.p(0, 0.04, z), (length + 0.06, 0.12, 0.2), "PAL", TIMBER, rot_z=wf.rot)
+    studs = []
+    for x, hw, zb, zt in openings:
+        for side in (-1, 1):
+            sx = x + side * (hw + 0.08)
+            if abs(sx) < length / 2 - 0.25:
+                studs.append(sx)
+                b.box(wf.p(sx, 0.03, (z0 + z1) / 2), (0.16, 0.1, z1 - z0), "PAL", TIMBER, rot_z=wf.rot)
+    edges = sorted([-length / 2 + 0.13] + studs + [length / 2 - 0.13])
+    sill = min([zb for x, hw, zb, zt in openings if zb > 0.5], default=plinth + (h - plinth) * 0.4)
+    for i in range(len(edges) - 1):
+        a, c = edges[i], edges[i + 1]
+        if c - a < 0.3 or any(a - 0.01 < x < c + 0.01 for x, hw, zb, zt in openings):
+            continue
+        bar(b, wf.p(a, 0.03, sill), wf.p(c, 0.03, sill), 0.14, 0.09, "PAL", TIMBER, normal=n)
+        corner = i == 0 or i == len(edges) - 2
+        if braces and corner and c - a >= 0.6:
+            outer, inner = (a, c) if i == 0 else (c, a)
+            bar(b, wf.p(inner, 0.05, z0 + 0.1), wf.p(outer, 0.05, z1 - 0.1), 0.14, 0.09, "PAL", TIMBER, normal=n)
 
 def door(b, f, x, side_y, w=1.1, h=2.1, col=TIMBER_L, arch=True):
     y = side_y
@@ -81,15 +112,14 @@ def cottage(b, f, w, d, h, roof="ROOF_RED", pitch=40, overhang=0.45, plinth=0.45
             b.box(f.p(sx * w / 2, sy * d / 2, (plinth + h) / 2), (0.26, 0.26, h - plinth + 0.02), "PAL", post_col, rot_z=f.rot)
     walls = [(Frame(*f.p(0, d / 2, 0)[:2], f.rot), w), (Frame(*f.p(0, -d / 2, 0)[:2], f.rot + math.pi), w),
              (Frame(*f.p(w / 2, 0, 0)[:2], f.rot - math.pi / 2), d), (Frame(*f.p(-w / 2, 0, 0)[:2], f.rot + math.pi / 2), d)]
-    for wf, length in walls:
-        n = wf.R @ Vector((0, 1, 0))
-        for z in ((plinth + 0.1, h - 0.1) if beams else ()):
-            b.box(wf.p(0, 0.04, z), (length + 0.06, 0.12, 0.2), "PAL", TIMBER, rot_z=wf.rot)
-        if braces:
-            for s in (-1, 1):
-                bar(b, wf.p(s * (length / 2 - 0.15), 0.05, plinth + 0.2), wf.p(s * (length / 2 - 0.95), 0.05, h - 0.2), 0.14, 0.1, "PAL", TIMBER, normal=n)
     fw = walls[0][0]; bw = walls[1][0]; rw = walls[2][0]; lw = walls[3][0]
     wz = plinth + (h - plinth) * 0.55
+    hw = window_half_width(shutters=bool(shutters))
+    win = lambda xs: [(x, hw, wz - 0.5 - 0.2, wz + 0.5 + 0.12) for x in xs]
+    openings = [win(front_windows), win(back_windows), win(side_windows), win(side_windows)]
+    if door_x is not None: openings[0].append((door_x, 0.55 + 0.14, 0.0, 2.25))
+    for (wf, length), ops in zip(walls, openings):
+        frame_wall(b, wf, length, h, plinth, ops, wf.R @ Vector((0, 1, 0)), beams=beams, braces=braces)
     for x in front_windows: window(b, fw, x, wz, 0.0, shutters=shutters)
     for x in back_windows: window(b, bw, x, wz, 0.0, shutters=shutters)
     for x in side_windows:
@@ -108,6 +138,7 @@ def cottage(b, f, w, d, h, roof="ROOF_RED", pitch=40, overhang=0.45, plinth=0.45
         if (lo[1] - lo[0]).cross(lo[2] - lo[1]).z < 0: lo = lo[::-1]
         fs = b.quad_box(lo, [v + nv for v in lo], roof)
         b.paint([fs[0]], "PAL", TIMBER)
+        b.paint(fs[1:], roof, tile=(3.0, 3.0))
     for sx in (-1, 1):
         gf = f.sub(sx * w / 2, 0, -sx * math.pi / 2)
         b.solid_xz([(-d / 2, h), (d / 2, h), (0, ridge)], -0.14, 0.02, wall, wall_col, rot_z=gf.rot, origin=gf.o)

@@ -29,15 +29,15 @@ for i, (dx, dy, dz, r) in enumerate([(0.1, 0.0, 1.6, 0.22), (-0.15, 0.1, 2.0, 0.
     b.sphere(sf.p(1.7 + dx, -0.7 + dy, ridge + dz), r, "GLASS", GREEN, seg=6, rings=4)
 fw = sf.sub(0, 1.9, 0)
 sign(b, fw, -2.05, 2.5, 0.0, flask)
-# a shelf of bottles against the front wall
-for z in (0.75, 1.35):
+# a low shelf of bottles against the front wall, under the window sill
+for z in (0.45, 0.95):
     b.box(fw.p(1.4, 0.32, z), (1.5, 0.4, 0.06), "PAL", TIMBER_L, rot_z=fw.rot)
 for s in (-1, 1):
-    b.box(fw.p(1.4 + s * 0.72, 0.32, 0.75), (0.06, 0.4, 1.5), "PAL", TIMBER, rot_z=fw.rot)
+    b.box(fw.p(1.4 + s * 0.72, 0.32, 0.55), (0.06, 0.4, 1.1), "PAL", TIMBER, rot_z=fw.rot)
 cols = [RED, BLUE, GREEN, PURPLE, "e4aa60", GREEN, RED, BLUE]
 for i in range(8):
-    z = 0.78 if i < 4 else 1.38
-    bottle(b, fw, 0.85 + (i % 4) * 0.36, 0.34, z, cols[i], s=1.0 + 0.25 * ((i * 7) % 3 == 0))
+    z = 0.48 if i < 4 else 0.98
+    bottle(b, fw, 0.85 + (i % 4) * 0.36, 0.34, z, cols[i], s=0.9 + 0.2 * ((i * 7) % 3 == 0))
 
 # the turret at the front left: plaster, small lit windows, a purple spire with a gold star
 tc = Vector(f.p(-3.0, 0.2, 0)); TR = 1.15; TH = 4.9

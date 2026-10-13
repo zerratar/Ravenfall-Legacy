@@ -98,9 +98,8 @@ for i, (dx, dy, col) in enumerate([(-0.2, -0.25, ROCK), (0.2, 0.1, ROCK_D), (-0.
 
 # tool shed with the sign
 sf = f.sub(2.5, -0.6, 0.0)
-cottage(b, sf, 3.4, 3.0, 2.7, roof="SLAT_BROWN", pitch=36, overhang=0.4, plinth=0.35, shutters="brown",
-        front_windows=(), side_windows=(0.0,), back_windows=(), door_x=0.55, chimney=None, braces=True)
-window(b, sf.sub(0, 1.5, 0), -0.85, 1.6, 0.0, w=0.6, h=0.7, shutters="brown")
+cottage(b, sf, 3.4, 3.0, 2.7, roof="SLAT_BROWN", pitch=36, overhang=0.4, plinth=0.35, shutters=None,
+        front_windows=(-0.85,), side_windows=(0.0,), back_windows=(), door_x=0.6, chimney=None, braces=True)
 sign(b, sf.sub(0, 1.5, 0), -1.75, 2.0, 0.0, pickaxe)
 
 # ore pile, a pickaxe leaning on a crate, crates, a lantern by the mine
