@@ -101,8 +101,10 @@ the game. Neither touches the slot limit. Nothing here is built yet.
 
 #### Step A: the streamer can move and turn the town hall (no costs)
 
-**Built 2026-10-12, awaiting a play test.** Server: RavenNest `b1e1e439`; run `sql/village-town-hall.sql`
-before deploying it. In build mode, click the town hall to select it; its panel has Move, Rotate and Reset
+**Built 2026-10-12, tested 2026-10-13 against a local RavenNest** (Ravenfall > Use Local RavenNest Server):
+moving the hall, reloading after a restart and resetting all round-trip. The test found that every move was
+refused (the request type carried int tier fields the client sends as null); fixed in RavenNest `9bcd5c1d`.
+Server: RavenNest `b1e1e439`. The columns are added at startup by `DatabaseSchema`; the SQL files are optional. In build mode, click the town hall to select it; its panel has Move, Rotate and Reset
 position. Houses now also keep off the whole town hall area (about 49 x 45 m round the hall), not just the
 building, so an upgrade never lands on one. The same change fixed the mouse point while moving: it was cut
 against a plane at the manager's height, eight metres under the village, so buildings followed a spot away
@@ -145,8 +147,10 @@ Client:
 
 #### Step B: town hall upgrades bought with resources and a village level
 
-**Built 2026-10-12, awaiting a play test.** Server: RavenNest `6b9e4da6`; run
-`sql/village-town-hall-tier.sql` before deploying it. The town hall panel in build mode shows the next
+**Built 2026-10-12, tested 2026-10-13 against a local RavenNest:** a level 135 village kept tier 3 when
+the tier was first stored; the castle was refused for want of level 150 with nothing spent; with the stored
+tier set back to 2, buying tier 3 through the Upgrade button's path spent exactly 20,000 wood, 30,000 ore,
+10,000 fish and 10,000 wheat, and the tier held after a reload. Server: RavenNest `6b9e4da6`. The town hall panel in build mode shows the next
 tier, what it needs (met in green, missing in red) and an Upgrade button. First draft numbers, in
 `TownHallTiers` on the server, to be tuned from play rather than from existing stockpiles, which have
 grown for years with nothing to spend them on:
