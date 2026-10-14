@@ -64,6 +64,19 @@ namespace Shinobytes.UI
             drag = null;
         }
 
+        /// <summary>
+        /// Forgets what was last drawn, so a freshly built tree gets every value written. Called on
+        /// each bind: after a change of language or a live reload the tree is new, and a cache that
+        /// still matched the old one left labels empty.
+        /// </summary>
+        private void ResetShown()
+        {
+            shownFill = -1f;
+            shownHp = int.MinValue;
+            shownKills = int.MinValue;
+            shownDeaths = int.MinValue;
+        }
+
         private void TryBind()
         {
             if (bound)
@@ -90,12 +103,12 @@ namespace Shinobytes.UI
             if (stats != null)
             {
                 stats.Clear();
-                attack = AddStat(stats, "ATTACK", attackIcon);
-                defense = AddStat(stats, "DEFENSE", defenseIcon);
-                strength = AddStat(stats, "STRENGTH", strengthIcon);
-                armor = AddStat(stats, "ARMOR", armorIcon);
-                power = AddStat(stats, "POWER", meleeIcon);
-                aim = AddStat(stats, "AIM", meleeIcon);
+                attack = AddStat(stats, Localization.UI_ENEMY_ATTACK, attackIcon);
+                defense = AddStat(stats, Localization.UI_ENEMY_DEFENSE, defenseIcon);
+                strength = AddStat(stats, Localization.UI_ENEMY_STRENGTH, strengthIcon);
+                armor = AddStat(stats, Localization.UI_ENEMY_ARMOR, armorIcon);
+                power = AddStat(stats, Localization.UI_ENEMY_POWER, meleeIcon);
+                aim = AddStat(stats, Localization.UI_ENEMY_AIM, meleeIcon);
             }
 
             var close = root.Q<Button>("enemy-close");
@@ -107,6 +120,7 @@ namespace Shinobytes.UI
                 drag = DraggableWindow.Attach(window, header, "enemydetails");
             }
 
+            ResetShown();
             bound = true;
             window.style.display = target ? DisplayStyle.Flex : DisplayStyle.None;
         }

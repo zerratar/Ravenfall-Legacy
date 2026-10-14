@@ -252,7 +252,7 @@ public class GameUpdater : MonoBehaviour
 
         if (updateResult != UpdateResult.CheckingForUpdate && !UnityEngine.Application.isEditor && UnityEngine.Debug.isDebugBuild)
         {
-            SetStatus("Starting game...");
+            SetStatus(Localization.UI_UPDATE_STARTING);
             loadingScene = true;
             UnityEngine.SceneManagement.SceneManager.LoadScene(1);
             return;
@@ -275,7 +275,7 @@ public class GameUpdater : MonoBehaviour
 
         if (updateResult == UpdateResult.UpToDate)
         {
-            SetStatus("Game is up to date. Starting game...");
+            SetStatus(Localization.UI_UPDATE_UP_TO_DATE);
 
             loadingScene = true;
 
@@ -327,7 +327,7 @@ public class GameUpdater : MonoBehaviour
     {
         if (label)
         {
-            SetStatus("Error occurred when trying to update the game. \r\nPress space to open the log folder.");
+            SetStatus(Localization.UI_UPDATE_ERROR);
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 TryOpenLogFolder();
@@ -349,7 +349,7 @@ public class GameUpdater : MonoBehaviour
     {
         if (label)
         {
-            SetStatus("Unable to connect to the server. Please check your internet connection.");
+            SetStatus(Localization.UI_UPDATE_NO_CONNECTION);
         }
     }
 
@@ -359,7 +359,7 @@ public class GameUpdater : MonoBehaviour
         if (label)
         {
             var updateInfo = gameUpdater.GetUpdateInfo();
-            SetStatus("Downloading update " + updateInfo?.Version);
+            SetStatus(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_UPDATE_DOWNLOADING, updateInfo?.Version));
         }
 
         if (progressBar)
@@ -378,7 +378,7 @@ public class GameUpdater : MonoBehaviour
 
         if (label)
         {
-            SetStatus("Initializing update.");
+            SetStatus(Localization.UI_UPDATE_INITIALIZING);
         }
 
         // 2. start patcher

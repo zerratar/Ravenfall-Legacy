@@ -99,6 +99,21 @@ namespace Shinobytes.UI
             bound = false;
         }
 
+        /// <summary>
+        /// Forgets what was last drawn, so a freshly built tree gets every value written. Called on
+        /// each bind: after a change of language or a live reload the tree is new, and a cache that
+        /// still matched the old one left labels empty.
+        /// </summary>
+        private void ResetShown()
+        {
+            shownUpgrade = false;
+            shownBuildActive = false;
+            shown = false;
+            shownLevel = int.MinValue;
+            shownExp = -1f;
+            shownHouses = null;
+        }
+
         private void TryBind()
         {
             if (bound)
@@ -144,6 +159,7 @@ namespace Shinobytes.UI
 
             bar.style.display = DisplayStyle.None;
             shown = false;
+            ResetShown();
             bound = true;
         }
 
@@ -409,7 +425,7 @@ namespace Shinobytes.UI
                     r.ShownRate = perHour;
                     var magnitude = Math.Abs(perHour);
                     var text = magnitude < 100_000 ? HudFormat.Grouped(magnitude) : HudFormat.Compact(magnitude);
-                    r.Rate.text = (perHour > 0 ? "+" : "-") + text + "/h";
+                    r.Rate.text = (perHour > 0 ? "+" : "-") + string.Format(CultureInfo.InvariantCulture, Localization.UI_TOWN_RATE, text);
                     r.Rate.EnableInClassList("rf-town__rate--down", perHour < 0);
                 }
             }

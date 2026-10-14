@@ -185,6 +185,8 @@ namespace Shinobytes.UI
             window = root.Q<VisualElement>("playerlist-window");
             header = root.Q<VisualElement>("playerlist-header");
             countLabel = root.Q<Label>("playerlist-count");
+            var titleLabel = root.Q<Label>("playerlist-title");
+            if (titleLabel != null) titleLabel.text = Localization.UI_PLAYERLIST_TITLE;
             listView = root.Q<ListView>("playerlist-view");
             collapseButton = root.Q<Button>("playerlist-collapse");
             visibleLabel = root.Q<Label>("playerlist-visible");
@@ -316,7 +318,7 @@ namespace Shinobytes.UI
             var levelCol = new VisualElement();
             levelCol.AddToClassList("rf-player-row__level-col");
 
-            var levelCaption = new Label("LV");
+            var levelCaption = new Label(Localization.UI_PLAYERLIST_LEVEL);
             levelCaption.AddToClassList("rf-player-row__level-caption");
 
             var level = new Label();
@@ -641,7 +643,7 @@ namespace Shinobytes.UI
                 if (state.LastSkill != Skill.None || state.LastProgress < 0f)
                 {
                     state.LastSkill = Skill.None;
-                    state.SkillLabel.text = "Idle";
+                    state.SkillLabel.text = Localization.UI_PLAYERLIST_IDLE;
                     state.Percent.text = string.Empty;
                     state.Rate.text = string.Empty;
                     state.LastPercentTenths = -1;
@@ -663,8 +665,8 @@ namespace Shinobytes.UI
                 // Full names rather than the three letter codes. The level now has its own column,
                 // so there is room, and "Woodcutting" reads at a glance where "Woo" did not.
                 state.SkillLabel.text = levelled
-                    ? activeSkill.ToString() + "  <b>" + skill.Level + "</b>"
-                    : activeSkill.ToString();
+                    ? Localization.SkillName(activeSkill) + "  <b>" + skill.Level + "</b>"
+                    : Localization.SkillName(activeSkill);
             }
 
             if (!levelled)
@@ -703,7 +705,7 @@ namespace Shinobytes.UI
                 switch (mode)
                 {
                     case ExpDisplayLeft:
-                        state.Rate.text = HudFormat.Compact(rateKey) + " xp left";
+                        state.Rate.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RATE_LEFT, HudFormat.Compact(rateKey));
                         break;
                     case ExpDisplayTime:
                         state.Rate.text = perHour > 0 ? HudFormat.TimeToLevel(skill.GetEstimatedTimeToLevelUp() - System.DateTime.UtcNow, out _) : string.Empty;
@@ -712,7 +714,7 @@ namespace Shinobytes.UI
                         state.Rate.text = string.Empty;
                         break;
                     default:
-                        state.Rate.text = perHour > 0 ? HudFormat.Compact(perHour) + " xp/h" : string.Empty;
+                        state.Rate.text = perHour > 0 ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RATE_PER_HOUR, HudFormat.Compact(perHour)) : string.Empty;
                         break;
                 }
             }

@@ -75,6 +75,24 @@ namespace Shinobytes.UI
             bound = false;
         }
 
+        /// <summary>
+        /// Forgets what was last drawn, so a freshly built tree gets every value written. Called on
+        /// each bind: after a change of language or a live reload the tree is new, and a cache that
+        /// still matched the old one left labels empty.
+        /// </summary>
+        private void ResetShown()
+        {
+            shownPhase = Phase.Hidden;
+            shownLevel = null;
+            shownSeconds = int.MinValue;
+            shownPlayers = null;
+            shownEnemies = int.MinValue;
+            shownBar = false;
+            shownFill = -1f;
+            shownHp = long.MinValue;
+            shownPercentTenths = int.MinValue;
+        }
+
         private void TryBind()
         {
             if (bound)
@@ -109,6 +127,7 @@ namespace Shinobytes.UI
 
             shownPhase = Phase.Hidden;
             hud.style.display = DisplayStyle.None;
+            ResetShown();
             bound = true;
         }
 

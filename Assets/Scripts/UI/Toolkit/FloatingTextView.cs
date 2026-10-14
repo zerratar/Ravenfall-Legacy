@@ -206,7 +206,7 @@ namespace Shinobytes.UI
         private void Write(Number n)
         {
             var label = n.Label;
-            label.text = n.Kind == Kind.Miss ? "Miss"
+            label.text = n.Kind == Kind.Miss ? Localization.UI_FLOAT_MISS
                 : n.Kind == Kind.Heal ? "+" + n.Value.ToString(CultureInfo.InvariantCulture)
                 : n.Value.ToString(CultureInfo.InvariantCulture);
 

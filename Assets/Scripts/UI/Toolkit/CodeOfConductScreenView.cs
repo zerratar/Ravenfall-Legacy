@@ -74,6 +74,8 @@ namespace Shinobytes.UI
             modifiedLabel = root.Q<Label>("modified-label");
             acceptButton = root.Q<Button>("accept-button");
             declineButton = root.Q<Button>("decline-button");
+            if (acceptButton != null) acceptButton.text = Localization.UI_COC_ACCEPT;
+            if (declineButton != null) declineButton.text = Localization.UI_COC_DECLINE;
 
             if (acceptButton != null)
             {

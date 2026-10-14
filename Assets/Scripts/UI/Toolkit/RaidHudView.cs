@@ -94,6 +94,22 @@ namespace Shinobytes.UI
             }
         }
 
+        /// <summary>
+        /// Forgets what was last drawn, so a freshly built tree gets every value written. Called on
+        /// each bind: after a change of language or a live reload the tree is new, and a cache that
+        /// still matched the old one left labels empty.
+        /// </summary>
+        private void ResetShown()
+        {
+            shownLevel = int.MinValue;
+            shownRaiders = int.MinValue;
+            shownSeconds = int.MinValue;
+            shownLowTime = false;
+            shownHp = long.MinValue;
+            shownPercentTenths = int.MinValue;
+            shownFill = -1f;
+        }
+
         private void TryBind()
         {
             if (bound)
@@ -126,6 +142,7 @@ namespace Shinobytes.UI
                 return;
             }
 
+            ResetShown();
             bound = true;
 
             if (title != null) title.text = Localization.UI_RAID_TITLE;

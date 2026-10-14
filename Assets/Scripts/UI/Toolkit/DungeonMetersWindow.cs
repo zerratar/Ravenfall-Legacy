@@ -117,6 +117,11 @@ namespace Shinobytes.UI
             }
 
             title = root.Q<Label>("meters-title");
+            if (title != null) title.text = Localization.UI_METER_TITLE;
+            var playerColumn = root.Q<Label>("meters-col-player");
+            if (playerColumn != null) playerColumn.text = Localization.UI_METER_PLAYER;
+            var totalColumn = root.Q<Label>("meters-col-total");
+            if (totalColumn != null) totalColumn.text = Localization.UI_METER_TOTAL;
             room = root.Q<Label>("meters-room");
             timer = root.Q<Label>("meters-timer");
             tabs[0] = root.Q<Button>("meters-tab-damage");
@@ -243,7 +248,7 @@ namespace Shinobytes.UI
 
             if (rateHeader != null)
             {
-                rateHeader.text = metric == Metric.Damage ? "DPS" : metric == Metric.Healing ? "HPS" : "DTPS";
+                rateHeader.text = metric == Metric.Damage ? Localization.UI_METER_DPS : metric == Metric.Healing ? Localization.UI_METER_HPS : Localization.UI_METER_DTPS;
             }
         }
 

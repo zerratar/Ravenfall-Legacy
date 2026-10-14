@@ -53,6 +53,19 @@ namespace Shinobytes.UI
             }
         }
 
+        /// <summary>
+        /// Forgets what was last drawn, so a freshly built tree gets every value written. Called on
+        /// each bind: after a change of language or a live reload the tree is new, and a cache that
+        /// still matched the old one left labels empty.
+        /// </summary>
+        private void ResetShown()
+        {
+            shownMultiplier = float.NaN;
+            shownSeconds = int.MinValue;
+            shownFill = -1f;
+            shownThanks = null;
+        }
+
         private void TryBind()
         {
             if (bound)
@@ -78,6 +91,7 @@ namespace Shinobytes.UI
                 return;
             }
 
+            ResetShown();
             bound = true;
 
             shownMultiplier = float.NaN;

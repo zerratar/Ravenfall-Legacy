@@ -286,6 +286,11 @@ namespace Shinobytes.UI
                 return;
             }
 
+            var levelCaption = root.Q<Label>("details-level-caption");
+            if (levelCaption != null) levelCaption.text = Localization.UI_DETAILS_LEVEL_CAPTION;
+            var gearTitle = root.Q<Label>("gear-title");
+            if (gearTitle != null) gearTitle.text = Localization.UI_DETAILS_EQUIPMENT;
+
             header = root.Q<VisualElement>("details-header");
             nameLabel = root.Q<Label>("details-name");
             clanLabel = root.Q<Label>("details-clan");
@@ -301,6 +306,7 @@ namespace Shinobytes.UI
             foreach (var id in new[] { "broadcaster", "moderator", "subscriber", "vip", "dev" })
             {
                 var badge = root.Q<Label>("badge-" + id);
+                if (badge != null) badge.text = BadgeText(id);
                 if (badge != null)
                 {
                     badges[id] = badge;
@@ -486,7 +492,7 @@ namespace Shinobytes.UI
             var line = new VisualElement { pickingMode = PickingMode.Ignore };
             line.AddToClassList("rf-skill__line");
 
-            tile.Name = new Label(isClan ? "Enchanting" : skill.ToString()) { pickingMode = PickingMode.Ignore };
+            tile.Name = new Label(isClan ? Localization.UI_SKILL_ENCHANTING : Localization.SkillName(skill)) { pickingMode = PickingMode.Ignore };
             tile.Name.AddToClassList("rf-skill__name");
 
             tile.Level = new Label { pickingMode = PickingMode.Ignore };
@@ -556,10 +562,10 @@ namespace Shinobytes.UI
             container.Clear();
             statTiles.Clear();
 
-            AddStat(container, StatKind.Armor, "ARMOR", armorIcon);
-            AddStat(container, StatKind.Melee, "MELEE", meleeIcon);
-            AddStat(container, StatKind.Ranged, "RANGED", rangedIcon);
-            AddStat(container, StatKind.Magic, "MAGIC", magicIcon).Root.AddToClassList("rf-stat--last");
+            AddStat(container, StatKind.Armor, Localization.UI_DETAILS_STAT_ARMOR, armorIcon);
+            AddStat(container, StatKind.Melee, Localization.UI_DETAILS_STAT_MELEE, meleeIcon);
+            AddStat(container, StatKind.Ranged, Localization.UI_DETAILS_STAT_RANGED, rangedIcon);
+            AddStat(container, StatKind.Magic, Localization.UI_DETAILS_STAT_MAGIC, magicIcon).Root.AddToClassList("rf-stat--last");
         }
 
         private StatTile AddStat(VisualElement container, StatKind kind, string caption, Sprite icon)
@@ -614,9 +620,9 @@ namespace Shinobytes.UI
             container.Clear();
             scrolls.Clear();
 
-            AddScroll(container, "exp", "Exp scrolls", expScrollIcon);
-            AddScroll(container, "raid", "Raid scrolls", raidScrollIcon);
-            AddScroll(container, "dungeon", "Dungeon scrolls", dungeonScrollIcon);
+            AddScroll(container, "exp", Localization.UI_DETAILS_SCROLL_EXP, expScrollIcon);
+            AddScroll(container, "raid", Localization.UI_DETAILS_SCROLL_RAID, raidScrollIcon);
+            AddScroll(container, "dungeon", Localization.UI_DETAILS_SCROLL_DUNGEON, dungeonScrollIcon);
         }
 
         private void AddScroll(VisualElement container, string match, string title, Sprite icon)
@@ -642,7 +648,7 @@ namespace Shinobytes.UI
             tooltip?.Attach(chip.Root, t =>
             {
                 t.SetTitle(title);
-                t.AddRow("Owned", HudFormat.Grouped(Math.Max(0, chip.Last)));
+                t.AddRow(Localization.UI_DETAILS_OWNED, HudFormat.Grouped(Math.Max(0, chip.Last)));
             });
 
             container.Add(chip.Root);
@@ -789,7 +795,7 @@ namespace Shinobytes.UI
             if (isSailing)
             {
                 skill = player.Stats.Sailing;
-                skillName = "Sailing";
+                skillName = Localization.SkillName(Skill.Sailing);
             }
             else if (isTraining)
             {
@@ -805,7 +811,7 @@ namespace Shinobytes.UI
                 if (skill != null)
                 {
                     trainingAll = skill == player.GetSkill(Skill.Health);
-                    skillName = trainingAll ? "All" : skill.Name;
+                    skillName = trainingAll ? Localization.UI_SKILL_ALL : Localization.SkillName(skill.Name);
                 }
             }
 
@@ -827,7 +833,7 @@ namespace Shinobytes.UI
             var icon = trainingAll ? IconFor(Skill.Attack) : IconFor(skill.Type);
 
             var perHour = skill.GetExperiencePerHour();
-            var rate = perHour > 0 ? HudFormat.Compact(perHour) + " xp/h" : string.Empty;
+            var rate = perHour > 0 ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RATE_PER_HOUR, HudFormat.Compact(perHour)) : string.Empty;
 
             var recommended = IslandManager.GetSuitableIsland(skillLevel);
             var currentIsland = player.Island ? player.Island.Island : RavenNest.Models.Island.Ferry;
@@ -1147,7 +1153,7 @@ namespace Shinobytes.UI
                 if (aim != tile.LastAim)
                 {
                     tile.LastAim = aim;
-                    tile.Aim.text = "Aim " + HudFormat.Grouped(aim);
+                    tile.Aim.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_DETAILS_AIM, HudFormat.Grouped(aim));
                 }
 
                 // 0 neutral, 1 the style in use, 2 a style not in use. Armor always counts, and while
@@ -1220,7 +1226,7 @@ namespace Shinobytes.UI
         {
             if (tile.Stat == null)
             {
-                t.SetTitle(tile.IsClan ? "Enchanting" : tile.Skill.ToString());
+                t.SetTitle(tile.IsClan ? Localization.UI_SKILL_ENCHANTING : Localization.SkillName(tile.Skill));
                 t.SetNote(tile.IsClan ? Localization.UI_DETAILS_CLAN_SKILL_LOCKED : string.Empty);
                 return;
             }
@@ -1229,10 +1235,10 @@ namespace Shinobytes.UI
             int level = stat.Level;
             int current = stat.CurrentValue;
 
-            t.SetTitle(tile.IsClan ? "Enchanting" : tile.Skill.ToString());
-            t.AddRow("Level", level.ToString(CultureInfo.InvariantCulture), level >= GameMath.MaxLevel ? "rf-tooltip__value--gold" : null);
-            if (current > level) t.AddRow("Boosted to", current.ToString(CultureInfo.InvariantCulture), "rf-tooltip__value--good");
-            if (current < level) t.AddRow("Drained to", current.ToString(CultureInfo.InvariantCulture), "rf-tooltip__value--bad");
+            t.SetTitle(tile.IsClan ? Localization.UI_SKILL_ENCHANTING : Localization.SkillName(tile.Skill));
+            t.AddRow(Localization.UI_TIP_LEVEL, level.ToString(CultureInfo.InvariantCulture), level >= GameMath.MaxLevel ? "rf-tooltip__value--gold" : null);
+            if (current > level) t.AddRow(Localization.UI_TIP_BOOSTED, current.ToString(CultureInfo.InvariantCulture), "rf-tooltip__value--good");
+            if (current < level) t.AddRow(Localization.UI_TIP_DRAINED, current.ToString(CultureInfo.InvariantCulture), "rf-tooltip__value--bad");
 
             if (level >= GameMath.MaxLevel)
             {
@@ -1244,16 +1250,16 @@ namespace Shinobytes.UI
             double exp = stat.Experience;
             if (nextExp > 0)
             {
-                t.AddRow("Progress", HudFormat.Percent((float)(exp / nextExp)));
-                t.AddRow("Experience", HudFormat.Compact(exp) + " / " + HudFormat.Compact(nextExp));
+                t.AddRow(Localization.UI_TIP_PROGRESS, HudFormat.Percent((float)(exp / nextExp)));
+                t.AddRow(Localization.UI_TIP_EXPERIENCE, HudFormat.Compact(exp) + " / " + HudFormat.Compact(nextExp));
             }
 
             var perHour = stat.GetExperiencePerHour();
             if (perHour > 0)
             {
-                t.AddRow("Rate", HudFormat.Compact(perHour) + " xp/h", "rf-tooltip__value--good");
+                t.AddRow(Localization.UI_TIP_RATE, string.Format(CultureInfo.InvariantCulture, Localization.UI_RATE_PER_HOUR, HudFormat.Compact(perHour)), "rf-tooltip__value--good");
                 var time = HudFormat.TimeToLevel(stat.GetEstimatedTimeToLevelUp() - DateTime.UtcNow, out _);
-                t.AddRow("Next level", time);
+                t.AddRow(Localization.UI_TIP_NEXT_LEVEL, time);
             }
         }
 
@@ -1271,7 +1277,7 @@ namespace Shinobytes.UI
 
             if (item.Item.Type == ItemType.Pet)
             {
-                t.SetNote("Aww! What a cute little pet!");
+                t.SetNote(Localization.UI_TIP_PET);
                 return;
             }
 
@@ -1321,25 +1327,25 @@ namespace Shinobytes.UI
             switch (tile.Kind)
             {
                 case StatKind.Armor:
-                    t.SetTitle("Armor");
-                    AddSplit(t, "Armor power", eq.BaseArmorPower, eq.ArmorPowerBonus);
-                    t.SetNote("Reduces damage taken from every attack style.");
+                    t.SetTitle(Localization.UI_TIP_ARMOR);
+                    AddSplit(t, Localization.UI_TIP_ARMOR_POWER, eq.BaseArmorPower, eq.ArmorPowerBonus);
+                    t.SetNote(Localization.UI_TIP_ARMOR_NOTE);
                     break;
                 case StatKind.Melee:
-                    t.SetTitle("Melee");
-                    AddSplit(t, "Weapon power", eq.BaseWeaponPower, eq.WeaponPowerBonus);
-                    AddSplit(t, "Weapon aim", eq.BaseWeaponAim, eq.WeaponAimBonus);
+                    t.SetTitle(Localization.UI_TIP_MELEE);
+                    AddSplit(t, Localization.UI_TIP_WEAPON_POWER, eq.BaseWeaponPower, eq.WeaponPowerBonus);
+                    AddSplit(t, Localization.UI_TIP_WEAPON_AIM, eq.BaseWeaponAim, eq.WeaponAimBonus);
                     break;
                 case StatKind.Ranged:
-                    t.SetTitle("Ranged");
-                    AddSplit(t, "Ranged power", eq.BaseRangedPower, eq.RangedPowerBonus);
-                    AddSplit(t, "Ranged aim", eq.BaseRangedAim, eq.RangedAimBonus);
+                    t.SetTitle(Localization.UI_TIP_RANGED);
+                    AddSplit(t, Localization.UI_TIP_RANGED_POWER, eq.BaseRangedPower, eq.RangedPowerBonus);
+                    AddSplit(t, Localization.UI_TIP_RANGED_AIM, eq.BaseRangedAim, eq.RangedAimBonus);
                     break;
                 default:
-                    t.SetTitle("Magic");
-                    AddSplit(t, "Magic power", eq.BaseMagicPower, eq.MagicPowerBonus);
-                    AddSplit(t, "Magic aim", eq.BaseMagicAim, eq.MagicAimBonus);
-                    AddSplit(t, "Healing power", eq.BaseHealingPower, eq.HealingPowerBonus);
+                    t.SetTitle(Localization.UI_TIP_MAGIC);
+                    AddSplit(t, Localization.UI_TIP_MAGIC_POWER, eq.BaseMagicPower, eq.MagicPowerBonus);
+                    AddSplit(t, Localization.UI_TIP_MAGIC_AIM, eq.BaseMagicAim, eq.MagicAimBonus);
+                    AddSplit(t, Localization.UI_TIP_HEALING_POWER, eq.BaseHealingPower, eq.HealingPowerBonus);
                     break;
             }
         }
@@ -1470,16 +1476,22 @@ namespace Shinobytes.UI
             return null;
         }
 
+        private static string BadgeText(string id)
+        {
+            switch (id)
+            {
+                case "broadcaster": return Localization.UI_BADGE_BROADCASTER;
+                case "moderator": return Localization.UI_BADGE_MODERATOR;
+                case "subscriber": return Localization.UI_BADGE_SUBSCRIBER;
+                case "vip": return Localization.UI_BADGE_VIP;
+                case "dev": return Localization.UI_BADGE_DEV;
+                default: return id;
+            }
+        }
+
         private static string SlotName(ItemSlot slot)
         {
-            switch (slot)
-            {
-                case ItemSlot.MeleeWeapon: return "Melee weapon";
-                case ItemSlot.RangedWeapon: return "Ranged weapon";
-                case ItemSlot.MagicWeapon: return "Magic weapon";
-                case ItemSlot.Head: return "Helmet";
-                default: return slot.ToString();
-            }
+            return Localization.SlotName(slot);
         }
 
         private void SetBadge(string id, bool value)

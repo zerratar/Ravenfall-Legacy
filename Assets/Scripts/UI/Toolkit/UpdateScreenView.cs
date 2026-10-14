@@ -79,8 +79,8 @@ namespace Shinobytes.UI
             progressLabel = root.Q<Label>("progress-label");
             bound = true;
 
-            if (pendingStatus != null && statusLabel != null) statusLabel.text = pendingStatus;
-            if (pendingVersion != null && versionLabel != null) versionLabel.text = pendingVersion;
+            if (statusLabel != null) statusLabel.text = pendingStatus ?? Localization.UI_UPDATE_CHECKING;
+            if (versionLabel != null) versionLabel.text = pendingVersion ?? Localization.UI_UPDATE_VERSION;
             if (pendingProgressVisible.HasValue) ApplyProgressVisible(pendingProgressVisible.Value);
             if (pendingProgress.HasValue) ApplyProgress(pendingProgress.Value);
         }

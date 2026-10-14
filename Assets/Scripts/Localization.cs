@@ -555,6 +555,147 @@ public static class Localization
     public static string UI_SETTINGS_RELOAD_BUTTON = "Reload now";
     public static string UI_SETTINGS_EXP_TIMES = "Warn when this much is left";
     public static string[] UI_SETTINGS_EXP_TIME_OPTIONS = { "10 min", "5 min", "3 min", "1 min", "30 s", "When it ends" };
+    public static string UI_SKILL_ATTACK = "Attack";
+    public static string UI_SKILL_DEFENSE = "Defense";
+    public static string UI_SKILL_STRENGTH = "Strength";
+    public static string UI_SKILL_HEALTH = "Health";
+    public static string UI_SKILL_WOODCUTTING = "Woodcutting";
+    public static string UI_SKILL_FISHING = "Fishing";
+    public static string UI_SKILL_MINING = "Mining";
+    public static string UI_SKILL_CRAFTING = "Crafting";
+    public static string UI_SKILL_COOKING = "Cooking";
+    public static string UI_SKILL_FARMING = "Farming";
+    public static string UI_SKILL_SLAYER = "Slayer";
+    public static string UI_SKILL_MAGIC = "Magic";
+    public static string UI_SKILL_RANGED = "Ranged";
+    public static string UI_SKILL_SAILING = "Sailing";
+    public static string UI_SKILL_HEALING = "Healing";
+    public static string UI_SKILL_GATHERING = "Gathering";
+    public static string UI_SKILL_ALCHEMY = "Alchemy";
+    public static string UI_SKILL_MELEE = "Melee";
+    public static string UI_SKILL_ALL = "All";
+    public static string UI_SKILL_ENCHANTING = "Enchanting";
+    public static string UI_SLOT_HEAD = "Helmet";
+    public static string UI_SLOT_AMULET = "Amulet";
+    public static string UI_SLOT_RING = "Ring";
+    public static string UI_SLOT_CHEST = "Chest";
+    public static string UI_SLOT_GLOVES = "Gloves";
+    public static string UI_SLOT_BELT = "Belt";
+    public static string UI_SLOT_LEGGINGS = "Leggings";
+    public static string UI_SLOT_BOOTS = "Boots";
+    public static string UI_SLOT_MELEEWEAPON = "Melee weapon";
+    public static string UI_SLOT_MAGICWEAPON = "Magic weapon";
+    public static string UI_SLOT_RANGEDWEAPON = "Ranged weapon";
+    public static string UI_SLOT_SHIELD = "Shield";
+    public static string UI_SLOT_PET = "Pet";
+    public static string UI_SLOT_CAPE = "Cape";
+    public static string UI_HOUSE_WOODCUTTING = "Lumbermill";
+    public static string UI_HOUSE_MAGIC = "Magic house";
+    public static string UI_HOUSE_RANGED = "Archer range";
+    public static string UI_HOUSE_MELEE = "Barracks";
+    public static string UI_HOUSE_COOKING = "Cooking house";
+    public static string UI_HOUSE_CRAFTING = "Crafting house";
+    public static string UI_HOUSE_FARMING = "Farmer's house";
+    public static string UI_HOUSE_MINING = "Mining shelter";
+    public static string UI_HOUSE_SAILING = "Sailor's log";
+    public static string UI_HOUSE_SLAYER = "Slayers' guild";
+    public static string UI_HOUSE_FISHING = "Fisher's log";
+    public static string UI_HOUSE_HEALING = "Healing house";
+    public static string UI_HOUSE_GATHERING = "Gathering hut";
+    public static string UI_HOUSE_ALCHEMY = "Alchemist's house";
+    public static string UI_TIME_UNKNOWN = "Unknown";
+    public static string UI_TIME_NEVER = "When hell freezes over";
+    public static string UI_TIME_UNREASONABLE = "Unreasonably long";
+    public static string UI_TIME_TOO_LONG = "Way too long";
+    public static string UI_TIME_WEEKS = "{0} weeks";
+    public static string UI_TIME_DAYS = "{0}d {1}h";
+    public static string UI_TIME_HOURS = "{0}h {1}m";
+    public static string UI_TIME_MINUTES = "{0}m {1}s";
+    public static string UI_TIME_SECONDS = "{0}s";
+    public static string UI_RATE_PER_HOUR = "{0} xp/h";
+    public static string UI_RATE_LEFT = "{0} xp left";
+    public static string UI_TOWN_RATE = "{0}/h";
+    public static string UI_PLAYERLIST_TITLE = "PLAYERS";
+    public static string UI_PLAYERLIST_LEVEL = "LV";
+    public static string UI_PLAYERLIST_IDLE = "Idle";
+    public static string UI_DETAILS_LEVEL_CAPTION = "LV";
+    public static string UI_DETAILS_EQUIPMENT = "EQUIPMENT";
+    public static string UI_BADGE_BROADCASTER = "Streamer";
+    public static string UI_BADGE_MODERATOR = "Moderator";
+    public static string UI_BADGE_SUBSCRIBER = "Subscriber";
+    public static string UI_BADGE_VIP = "VIP";
+    public static string UI_BADGE_DEV = "Developer";
+    public static string UI_DETAILS_STAT_ARMOR = "ARMOR";
+    public static string UI_DETAILS_STAT_MELEE = "MELEE";
+    public static string UI_DETAILS_STAT_RANGED = "RANGED";
+    public static string UI_DETAILS_STAT_MAGIC = "MAGIC";
+    public static string UI_DETAILS_SCROLL_EXP = "Exp scrolls";
+    public static string UI_DETAILS_SCROLL_RAID = "Raid scrolls";
+    public static string UI_DETAILS_SCROLL_DUNGEON = "Dungeon scrolls";
+    public static string UI_DETAILS_OWNED = "Owned";
+    public static string UI_DETAILS_AIM = "Aim {0}";
+    public static string UI_TIP_LEVEL = "Level";
+    public static string UI_TIP_BOOSTED = "Boosted to";
+    public static string UI_TIP_DRAINED = "Drained to";
+    public static string UI_TIP_PROGRESS = "Progress";
+    public static string UI_TIP_EXPERIENCE = "Experience";
+    public static string UI_TIP_RATE = "Rate";
+    public static string UI_TIP_NEXT_LEVEL = "Next level";
+    public static string UI_TIP_PET = "Aww! What a cute little pet!";
+    public static string UI_TIP_ARMOR = "Armor";
+    public static string UI_TIP_ARMOR_POWER = "Armor power";
+    public static string UI_TIP_ARMOR_NOTE = "Reduces damage taken from every attack style.";
+    public static string UI_TIP_MELEE = "Melee";
+    public static string UI_TIP_WEAPON_POWER = "Weapon power";
+    public static string UI_TIP_WEAPON_AIM = "Weapon aim";
+    public static string UI_TIP_RANGED = "Ranged";
+    public static string UI_TIP_RANGED_POWER = "Ranged power";
+    public static string UI_TIP_RANGED_AIM = "Ranged aim";
+    public static string UI_TIP_MAGIC = "Magic";
+    public static string UI_TIP_MAGIC_POWER = "Magic power";
+    public static string UI_TIP_MAGIC_AIM = "Magic aim";
+    public static string UI_TIP_HEALING_POWER = "Healing power";
+    public static string UI_ISLAND_STAT_MONSTERS = "Monsters defeated";
+    public static string UI_ISLAND_STAT_PLAYERS_KILLED = "Players killed";
+    public static string UI_ISLAND_STAT_RAID_BOSSES = "Raid bosses";
+    public static string UI_ISLAND_STAT_ITEMS_GATHERED = "Items gathered";
+    public static string UI_ISLAND_STAT_TREES = "Trees cut down";
+    public static string UI_ISLAND_STAT_ROCKS = "Rocks mined";
+    public static string UI_ISLAND_STAT_FISH = "Fish caught";
+    public static string UI_ISLAND_STAT_CROPS = "Crops harvested";
+    public static string UI_ISLAND_STAT_FOOD = "Food cooked";
+    public static string UI_ISLAND_STAT_CRAFTED = "Items crafted";
+    public static string UI_ISLAND_STAT_POTIONS = "Potions brewed";
+    public static string UI_ENEMY_ATTACK = "ATTACK";
+    public static string UI_ENEMY_DEFENSE = "DEFENSE";
+    public static string UI_ENEMY_STRENGTH = "STRENGTH";
+    public static string UI_ENEMY_ARMOR = "ARMOR";
+    public static string UI_ENEMY_POWER = "POWER";
+    public static string UI_ENEMY_AIM = "AIM";
+    public static string UI_FLOAT_MISS = "Miss";
+    public static string UI_BUILD_CATEGORY_COMBAT = "Combat";
+    public static string UI_BUILD_CATEGORY_GATHERING = "Gathering";
+    public static string UI_BUILD_CATEGORY_CRAFTING = "Crafting";
+    public static string UI_METER_TITLE = "DUNGEON";
+    public static string UI_METER_PLAYER = "PLAYER";
+    public static string UI_METER_TOTAL = "TOTAL";
+    public static string UI_METER_DPS = "DPS";
+    public static string UI_METER_HPS = "HPS";
+    public static string UI_METER_DTPS = "DTPS";
+    public static string UI_COC_TITLE = "Code of Conduct";
+    public static string UI_COC_VERSION = "Version {0}";
+    public static string UI_COC_MODIFIED = "Last Modified {0}";
+    public static string UI_COC_LOADING = "Loading the current code of conduct from the server...";
+    public static string UI_COC_DECLINE = "Decline and Exit";
+    public static string UI_COC_ACCEPT = "Accept";
+    public static string UI_UPDATE_VERSION = "VERSION";
+    public static string UI_UPDATE_CHECKING = "Checking for updates.";
+    public static string UI_UPDATE_STARTING = "Starting game...";
+    public static string UI_UPDATE_UP_TO_DATE = "Game is up to date. Starting game...";
+    public static string UI_UPDATE_ERROR = "Error occurred when trying to update the game. \r\nPress space to open the log folder.";
+    public static string UI_UPDATE_NO_CONNECTION = "Unable to connect to the server. Please check your internet connection.";
+    public static string UI_UPDATE_DOWNLOADING = "Downloading update {0}";
+    public static string UI_UPDATE_INITIALIZING = "Initializing update.";
     public static string UI_SETTINGS_RESET_PAGE = "Reset page";
     public static string UI_SETTINGS_LANGUAGE = "Language";
     public static string UI_SETTINGS_LANGUAGE_HINT = "For the interface and the bot's messages in your chat. A few windows switch over when the game reloads.";
@@ -715,4 +856,82 @@ public static class Localization
 
     public static string UI_DUNGEON_APPEARED = "A dungeon has appeared!";
     public static string UI_DUNGEON_JOIN = "Type {command} to join";
+
+    // ---- Names from enums, looked up so they follow the language --------------------------------
+
+    /// <summary>A skill's name in the current language; the enum name when there is none.</summary>
+    public static string SkillName(RavenNest.Models.Skill skill) => SkillName(skill.ToString());
+
+    public static string SkillName(string skill)
+    {
+        switch (skill)
+        {
+            case "Attack": return UI_SKILL_ATTACK;
+            case "Defense": return UI_SKILL_DEFENSE;
+            case "Strength": return UI_SKILL_STRENGTH;
+            case "Health": return UI_SKILL_HEALTH;
+            case "Woodcutting": return UI_SKILL_WOODCUTTING;
+            case "Fishing": return UI_SKILL_FISHING;
+            case "Mining": return UI_SKILL_MINING;
+            case "Crafting": return UI_SKILL_CRAFTING;
+            case "Cooking": return UI_SKILL_COOKING;
+            case "Farming": return UI_SKILL_FARMING;
+            case "Slayer": return UI_SKILL_SLAYER;
+            case "Magic": return UI_SKILL_MAGIC;
+            case "Ranged": return UI_SKILL_RANGED;
+            case "Sailing": return UI_SKILL_SAILING;
+            case "Healing": return UI_SKILL_HEALING;
+            case "Gathering": return UI_SKILL_GATHERING;
+            case "Alchemy": return UI_SKILL_ALCHEMY;
+            case "Melee": return UI_SKILL_MELEE;
+            default: return skill;
+        }
+    }
+
+    public static string SlotName(ItemSlot slot)
+    {
+        switch (slot)
+        {
+            case ItemSlot.Head: return UI_SLOT_HEAD;
+            case ItemSlot.Amulet: return UI_SLOT_AMULET;
+            case ItemSlot.Ring: return UI_SLOT_RING;
+            case ItemSlot.Chest: return UI_SLOT_CHEST;
+            case ItemSlot.Gloves: return UI_SLOT_GLOVES;
+            case ItemSlot.Belt: return UI_SLOT_BELT;
+            case ItemSlot.Leggings: return UI_SLOT_LEGGINGS;
+            case ItemSlot.Boots: return UI_SLOT_BOOTS;
+            case ItemSlot.MeleeWeapon: return UI_SLOT_MELEEWEAPON;
+            case ItemSlot.MagicWeapon: return UI_SLOT_MAGICWEAPON;
+            case ItemSlot.RangedWeapon: return UI_SLOT_RANGEDWEAPON;
+            case ItemSlot.Shield: return UI_SLOT_SHIELD;
+            case ItemSlot.Pet: return UI_SLOT_PET;
+            case ItemSlot.Cape: return UI_SLOT_CAPE;
+            default: return slot.ToString();
+        }
+    }
+
+    /// <summary>A village house's name in the current language, for its type.</summary>
+    public static string HouseName(TownHouseSlotType type)
+    {
+        switch (type)
+        {
+            case TownHouseSlotType.Woodcutting: return UI_HOUSE_WOODCUTTING;
+            case TownHouseSlotType.Magic: return UI_HOUSE_MAGIC;
+            case TownHouseSlotType.Ranged: return UI_HOUSE_RANGED;
+            case TownHouseSlotType.Melee: return UI_HOUSE_MELEE;
+            case TownHouseSlotType.Cooking: return UI_HOUSE_COOKING;
+            case TownHouseSlotType.Crafting: return UI_HOUSE_CRAFTING;
+            case TownHouseSlotType.Farming: return UI_HOUSE_FARMING;
+            case TownHouseSlotType.Mining: return UI_HOUSE_MINING;
+            case TownHouseSlotType.Sailing: return UI_HOUSE_SAILING;
+            case TownHouseSlotType.Slayer: return UI_HOUSE_SLAYER;
+            case TownHouseSlotType.Fishing: return UI_HOUSE_FISHING;
+            case TownHouseSlotType.Healing: return UI_HOUSE_HEALING;
+            case TownHouseSlotType.Gathering: return UI_HOUSE_GATHERING;
+            case TownHouseSlotType.Alchemy: return UI_HOUSE_ALCHEMY;
+            default: return type.ToString();
+        }
+    }
+
+    public static string HouseName(TownHouse house, TownHouseSlotType fallback) => HouseName(house ? house.Type : fallback);
 }

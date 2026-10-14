@@ -40,7 +40,7 @@
                         <engine:Label name="details-coin-amount" class="rf-details__coin-amount" picking-mode="Ignore" />
                     </engine:VisualElement>
                     <engine:VisualElement class="rf-details__level-box" picking-mode="Ignore">
-                        <engine:Label text="LV" class="rf-details__level-caption" picking-mode="Ignore" />
+                        <engine:Label name="details-level-caption" text="LV" class="rf-details__level-caption" picking-mode="Ignore" />
                         <engine:Label name="details-level" class="rf-details__level" picking-mode="Ignore" />
                     </engine:VisualElement>
                 </engine:VisualElement>
@@ -100,7 +100,7 @@
 
                 <!-- Gear, folded away by default. -->
                 <engine:VisualElement name="details-gear-header" class="rf-gear-header">
-                    <engine:Label text="EQUIPMENT" class="rf-gear-header__title" picking-mode="Ignore" />
+                    <engine:Label name="gear-title" text="EQUIPMENT" class="rf-gear-header__title" picking-mode="Ignore" />
                     <engine:VisualElement name="details-scrolls" class="rf-gear-header__scrolls" />
                     <engine:VisualElement class="rf-details__spacer" picking-mode="Ignore" />
                     <engine:Button name="details-gear-toggle" text="" class="rf-window__button" tooltip="Show or hide equipment">

@@ -84,17 +84,17 @@ namespace Shinobytes.UI
             if (seconds < 0) seconds = 0;
             if (seconds >= 3600)
             {
-                return (seconds / 3600).ToString(CultureInfo.InvariantCulture) + "h "
-                    + (seconds / 60 % 60).ToString("00", CultureInfo.InvariantCulture) + "m";
+                return string.Format(CultureInfo.InvariantCulture, Localization.UI_TIME_HOURS,
+                    seconds / 3600, (seconds / 60 % 60).ToString("00", CultureInfo.InvariantCulture));
             }
 
             if (seconds >= 60)
             {
-                return (seconds / 60).ToString(CultureInfo.InvariantCulture) + "m "
-                    + (seconds % 60).ToString("00", CultureInfo.InvariantCulture) + "s";
+                return string.Format(CultureInfo.InvariantCulture, Localization.UI_TIME_MINUTES,
+                    seconds / 60, (seconds % 60).ToString("00", CultureInfo.InvariantCulture));
             }
 
-            return seconds.ToString(CultureInfo.InvariantCulture) + "s";
+            return string.Format(CultureInfo.InvariantCulture, Localization.UI_TIME_SECONDS, seconds);
         }
 
         /// <summary>
@@ -109,15 +109,15 @@ namespace Shinobytes.UI
             if (left.TotalSeconds <= 0)
             {
                 tone = 2;
-                return "Unknown";
+                return Localization.UI_TIME_UNKNOWN;
             }
 
             var days = left.TotalDays;
-            if (days >= 365d * 10000d) { tone = 2; return "When hell freezes over"; }
-            if (days >= 365d * 1000d) { tone = 2; return "Unreasonably long"; }
-            if (days >= 365d) { tone = 2; return "Way too long"; }
-            if (days > 21d) { tone = 1; return ((int)(days / 7d)).ToString(CultureInfo.InvariantCulture) + " weeks"; }
-            if (left.Days > 0) { tone = 1; return left.Days.ToString(CultureInfo.InvariantCulture) + "d " + left.Hours.ToString(CultureInfo.InvariantCulture) + "h"; }
+            if (days >= 365d * 10000d) { tone = 2; return Localization.UI_TIME_NEVER; }
+            if (days >= 365d * 1000d) { tone = 2; return Localization.UI_TIME_UNREASONABLE; }
+            if (days >= 365d) { tone = 2; return Localization.UI_TIME_TOO_LONG; }
+            if (days > 21d) { tone = 1; return string.Format(CultureInfo.InvariantCulture, Localization.UI_TIME_WEEKS, (int)(days / 7d)); }
+            if (left.Days > 0) { tone = 1; return string.Format(CultureInfo.InvariantCulture, Localization.UI_TIME_DAYS, left.Days, left.Hours); }
 
             return Duration((int)left.TotalSeconds);
         }

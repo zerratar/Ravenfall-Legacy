@@ -55,8 +55,8 @@
                 <engine:VisualElement class="rf-meters__columns">
                     <!-- Stands in for the rank and icon, so the headings line up with the row columns. -->
                     <engine:VisualElement class="rf-meters__col-lead" />
-                    <engine:Label text="PLAYER" class="rf-meters__col rf-meters__col--player" />
-                    <engine:Label text="TOTAL" class="rf-meters__col rf-meters__col--num" />
+                    <engine:Label name="meters-col-player" text="PLAYER" class="rf-meters__col rf-meters__col--player" />
+                    <engine:Label name="meters-col-total" text="TOTAL" class="rf-meters__col rf-meters__col--num" />
                     <engine:Label name="meters-rate-header" text="DPS" class="rf-meters__col rf-meters__col--num" />
                     <engine:Label text="%" class="rf-meters__col rf-meters__col--pct" />
                 </engine:VisualElement>

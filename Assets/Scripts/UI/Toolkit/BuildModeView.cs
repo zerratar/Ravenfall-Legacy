@@ -445,7 +445,7 @@ namespace Shinobytes.UI
                 glyph.AddToClassList("rf-icon");
                 glyph.AddToClassList("rf-build-tab__icon");
 
-                var label = new Label(Categories[i].Name) { pickingMode = PickingMode.Ignore };
+                var label = new Label(CategoryName(Categories[i])) { pickingMode = PickingMode.Ignore };
                 label.AddToClassList("rf-build-tab__label");
 
                 tab.Add(glyph);
@@ -478,7 +478,7 @@ namespace Shinobytes.UI
 
             var category = Categories[openCategory];
             trayGlyph.text = category.Glyph;
-            trayTitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_TRAY_TITLE, category.Name.ToUpperInvariant());
+            trayTitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_TRAY_TITLE, CategoryName(category).ToUpperInvariant());
 
             foreach (var type in category.Types)
             {
@@ -504,7 +504,7 @@ namespace Shinobytes.UI
                 ring.Add(icon);
 
                 var text = new VisualElement { pickingMode = PickingMode.Ignore };
-                var name = new Label(house.Name) { pickingMode = PickingMode.Ignore };
+                var name = new Label(Localization.HouseName(house.Type)) { pickingMode = PickingMode.Ignore };
                 name.AddToClassList("rf-build-card__name");
                 card.Bonus = new Label { pickingMode = PickingMode.Ignore };
                 card.Bonus.AddToClassList("rf-build-card__bonus");
@@ -628,7 +628,7 @@ namespace Shinobytes.UI
 
             // While moving to a spot that is not allowed, the pill says why, next to the building.
             var house = HouseFor(slot.SlotType);
-            var name = blocked ? mode.MoveProblem : empty ? string.Empty : (house ? house.Name : slot.SlotType.ToString());
+            var name = blocked ? mode.MoveProblem : empty ? string.Empty : (Localization.HouseName(house, slot.SlotType));
 
             var state = (int)slot.SlotType + "|" + selected + "|" + target + "|" + muted + "|" + moving + "|" + blocked + "|" + name;
             if (state == marker.ShownState) return;
@@ -767,7 +767,7 @@ namespace Shinobytes.UI
             if (sprite) plotIcon.style.backgroundImage = new StyleBackground(sprite);
             plotGlyph.style.display = sprite ? DisplayStyle.None : DisplayStyle.Flex;
 
-            plotTitle.text = empty ? Localization.UI_BUILD_EMPTY_PLOT : (house ? house.Name : slot.SlotType.ToString());
+            plotTitle.text = empty ? Localization.UI_BUILD_EMPTY_PLOT : (Localization.HouseName(house, slot.SlotType));
             plotSubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_PLOT_NUMBER, slot.Slot + 1);
 
             plotEmptyNote.style.display = empty ? DisplayStyle.Flex : DisplayStyle.None;
@@ -929,7 +929,7 @@ namespace Shinobytes.UI
             var house = HouseFor(type.Value);
             var sprite = IconFor(type.Value);
             placingIcon.style.backgroundImage = sprite ? new StyleBackground(sprite) : new StyleBackground(StyleKeyword.None);
-            placingTitle.text = house ? house.Name : type.Value.ToString();
+            placingTitle.text = Localization.HouseName(house, type.Value);
             placingBonus.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_BONUS, Mathf.RoundToInt(BestBonus(type.Value)), SkillName(type.Value));
             var (free, total) = mode.PlotCounts();
             placingPlots.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_PLOTS_FREE, free, total);
@@ -944,7 +944,7 @@ namespace Shinobytes.UI
 
             var slot = mode.Selected;
             var house = HouseFor(slot.SlotType);
-            assignTitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_ASSIGN_TITLE, house ? house.Name : slot.SlotType.ToString());
+            assignTitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_ASSIGN_TITLE, Localization.HouseName(house, slot.SlotType));
 
             if (slot.OwnerUserId.HasValue)
             {
@@ -1081,7 +1081,7 @@ namespace Shinobytes.UI
             else if (mode.Armed.HasValue)
             {
                 var house = HouseFor(mode.Armed.Value);
-                text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HINT_ARMED, house ? house.Name : mode.Armed.Value.ToString());
+                text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HINT_ARMED, Localization.HouseName(house, mode.Armed.Value));
             }
             else if (mode.HallSelected) text = Localization.UI_BUILD_HINT_HALL;
             else if (mode.Selected && VillageBuildMode.IsEmpty(mode.Selected)) text = Localization.UI_BUILD_HINT_EMPTY;
@@ -1126,7 +1126,18 @@ namespace Shinobytes.UI
 
         private static string SkillName(TownHouseSlotType type)
         {
-            return type.ToString();
+            return Localization.SkillName(type.ToString());
+        }
+
+        private static string CategoryName(Category category)
+        {
+            switch (category.Name)
+            {
+                case "Combat": return Localization.UI_BUILD_CATEGORY_COMBAT;
+                case "Gathering": return Localization.UI_BUILD_CATEGORY_GATHERING;
+                case "Crafting": return Localization.UI_BUILD_CATEGORY_CRAFTING;
+                default: return category.Name;
+            }
         }
 
         private static string ResidentName(TownHouseSlot slot)

@@ -56,17 +56,17 @@ public class CodeOfConductController : MonoBehaviour
 
     private void Populate()
     {
-        SetHeader(CodeOfConduct.Title ?? "Code of Conduct");
+        SetHeader(CodeOfConduct.Title ?? Localization.UI_COC_TITLE);
         SetMessage(CodeOfConduct.Message);
-        SetVersion("Version " + CodeOfConduct.Revision);
-        SetLastModified("Last Modified " + CodeOfConduct.LastModified);
+        SetVersion(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_COC_VERSION, CodeOfConduct.Revision));
+        SetLastModified(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_COC_MODIFIED, CodeOfConduct.LastModified));
     }
 
 #if UNITY_EDITOR
     private System.Collections.IEnumerator FetchForPreview()
     {
-        SetHeader("Code of Conduct");
-        SetMessage("Loading the current code of conduct from the server...");
+        SetHeader(Localization.UI_COC_TITLE);
+        SetMessage(Localization.UI_COC_LOADING);
 
         const string url = "https://www.ravenfall.stream/api/version/check";
         using (var req = UnityEngine.Networking.UnityWebRequest.Get(url))

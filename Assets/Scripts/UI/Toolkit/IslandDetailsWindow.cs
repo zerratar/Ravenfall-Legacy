@@ -94,6 +94,16 @@ namespace Shinobytes.UI
             drag = null;
         }
 
+        /// <summary>
+        /// Forgets what was last drawn, so a freshly built tree gets every value written. Called on
+        /// each bind: after a change of language or a live reload the tree is new, and a cache that
+        /// still matched the old one left labels empty.
+        /// </summary>
+        private void ResetShown()
+        {
+            shownOrder = null;
+        }
+
         private void TryBind()
         {
             if (bound)
@@ -135,6 +145,7 @@ namespace Shinobytes.UI
             if (collapse != null) collapse.clicked += () => drag?.ToggleCollapsed();
 
             window.style.display = DisplayStyle.None;
+            ResetShown();
             bound = true;
             ApplyVisibility();
         }
@@ -221,17 +232,17 @@ namespace Shinobytes.UI
             statRows.Clear();
 
             // Font Awesome 5 Pro Solid glyphs.
-            AddStat(container, "", "Monsters defeated", s => s.MonstersDefeated);
-            AddStat(container, "", "Players killed", s => s.PlayersKilled);
-            AddStat(container, "", "Raid bosses", s => s.RaidBossesSpawned);
-            AddStat(container, "", "Items gathered", s => s.ItemsGathered);
-            AddStat(container, "", "Trees cut down", s => s.TreesCutDown);
-            AddStat(container, "", "Rocks mined", s => s.RocksMined);
-            AddStat(container, "", "Fish caught", s => s.FishCaught);
-            AddStat(container, "", "Crops harvested", s => s.CropsHarvested);
-            AddStat(container, "", "Food cooked", s => s.FoodCooked);
-            AddStat(container, "", "Items crafted", s => s.ItemsCrafted);
-            AddStat(container, "", "Potions brewed", s => s.PotionsBrewed);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_MONSTERS, s => s.MonstersDefeated);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_PLAYERS_KILLED, s => s.PlayersKilled);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_RAID_BOSSES, s => s.RaidBossesSpawned);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_ITEMS_GATHERED, s => s.ItemsGathered);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_TREES, s => s.TreesCutDown);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_ROCKS, s => s.RocksMined);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_FISH, s => s.FishCaught);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_CROPS, s => s.CropsHarvested);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_FOOD, s => s.FoodCooked);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_CRAFTED, s => s.ItemsCrafted);
+            AddStat(container, "", Localization.UI_ISLAND_STAT_POTIONS, s => s.PotionsBrewed);
         }
 
         private void AddStat(VisualElement container, string glyph, string label, Func<IslandStatistics, long> read)
