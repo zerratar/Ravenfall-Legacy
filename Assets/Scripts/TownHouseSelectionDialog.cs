@@ -52,6 +52,9 @@ public class TownHouseSelectionDialog : MonoBehaviour
         // the session: the dialog would open with nothing in it. Generating on demand means the
         // first open after the village exists succeeds.
         TryGenerateButtons();
+
+        // the building pictures are taken now, once, rather than by cameras running every frame
+        if (buttonsGenerated && townHouseRenderManager) townHouseRenderManager.RenderAll();
     }
 
     /// <summary>
