@@ -56,12 +56,48 @@ readable at runtime, so the editor bakes each layer's average colour into the gr
   bending blades more at the tip, and a shrink to nothing at the end of the grass distance so cells never pop.
 - When the terrain changes (village build mode reshapes it), the cells over the change are generated again.
 
+## How it came out
+
+- **The blades** are generated clumps of ten blades fanning out from the middle, so from the game camera above
+  their faces show instead of thin edges; past half the grass distance a clump is five single-segment blades
+  (5 triangles instead of 50). The profile has 14 clumps per square metre at full density.
+- **The accents** are two Fantasy Kingdom grass tufts and five small flowers (Adventure and Fantasy Kingdom), the
+  flowers only where the ground is lush: Home, Kyojin and Atria get flowery meadows, dry Small Island and snowy
+  Iceheim none.
+- **Blending:** a blade's root has the ground's colour and is lit as if it faced up, as the terrain is; the tip is
+  lighter. Far grass melts into the ground colour. The profile no longer tints the ground green, so the snow grass
+  is white. Broad noise patches make parts of a meadow lighter or drier.
+- **Tricks that cost almost nothing:** blades bending in the wind catch more light, so gusts roll across a meadow;
+  tips glow a little with the sun behind them; no alpha test, so the GPU keeps early depth rejection; no shadows
+  cast.
+- **Roads:** village roads and the roads drawn in the Scene view (`WorldRoad`) tell the grass their middle and
+  width, and nothing grows on the solid road and 0.3 m beyond. **Village plots** (`TownHouseSlot`) keep grass off
+  the box round their plot, house and yard. Building, moving or removing either grows the cells under it again.
+- **The mask** (`GrassMask`) is a byte per square metre in 32 m tiles, kept only where painted; the brush in the
+  field's inspector has More, Less and Reset.
+- **Settings:** Graphics > Quality: Grass, Grass distance (20 to 120 m, 60 by default) and Grass density. Potato
+  mode keeps grass off without changing the setting.
+- Not done: grass on islands whose ground is a mesh rather than the terrain (the village island from the rebuild):
+  only a few tufts poke through there. Growing on meshes would need a height pass over them.
+
+## Numbers
+
+Measured in the editor on 2026-10-14 (the editor adds its own cost; a build will be faster):
+
+- Around the camera: about 215 cells and 100,000 to 175,000 instances grown, depending on the island; growing all of
+  them takes about 40 ms once (the ground is read in a Burst job), and moving the camera grows only the edge.
+- The Home view from the game camera draws 6,500 near and 15,600 far clumps, about 405,000 triangles (250,000 in the
+  play mode view).
+- Play mode, the game camera on Home: 33.8 ms a frame with grass, 30.7 ms without (about 3 ms; editor, not in
+  focus).
+- GPU memory: about 35 MB at 60 m (the slots for every cell that can be in range); the CPU keeps the points (5 MB)
+  and the ground maps (12 MB).
+
 ## Steps
 
-1. **Blades from the terrain.** `GrassProfile`, `GrassField`, the cell generator, `GrassRenderer` and the grass
-   shader, with generated blade clumps on the grass layers. Shots of every island, numbers for the frame time.
-2. **Accents.** Synty tufts and flowers as further kinds, sparser.
-3. **The brush.** The mask and its brush; village roads and buildings keep grass off without painting.
-4. **Settings and numbers.** On/off, distance and density in the settings; the profiler with grass on and off.
+1. **Blades from the terrain.** Done.
+2. **Accents.** Done.
+3. **The brush, roads and plots.** Done.
+4. **Settings and numbers.** Done; profiling a build is still to do.
 
-Afterwards: grass bending around players and animals.
+Afterwards: grass bending around players and animals; grass on mesh ground.
