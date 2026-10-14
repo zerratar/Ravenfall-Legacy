@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 227977ad64c2b4a4dadc997f5695b05e, type: 3}
+  m_Name: Grass Profile
+  m_EditorClassIdentifier: Assembly-CSharp::GrassProfile
+  layers:
+  - terrainLayer: {fileID: 8574412962073106934, guid: 224d63e1442241943b8cafe00b71bdbd, type: 2}
+    density: 0.7
+    colour: {r: 0.600685, g: 0.5244617, b: 0.43802175, a: 1}
+  - terrainLayer: {fileID: 8574412962073106934, guid: 927c01133fc01cf449019fb21429322d, type: 2}
+    density: 0
+    colour: {r: 0.50125587, g: 0.46267018, b: 0.35645112, a: 1}
+  - terrainLayer: {fileID: 8574412962073106934, guid: e8a19b753c680d24c98f0aee4c3f6f1a, type: 2}
+    density: 1
+    colour: {r: 0.40214083, g: 0.46447244, b: 0.13130778, a: 1}
+  - terrainLayer: {fileID: 8574412962073106934, guid: f5816bdc445560c4fac91b4e187feb46, type: 2}
+    density: 1
+    colour: {r: 0.29394147, g: 0.34289768, b: 0.16075602, a: 1}
+  - terrainLayer: {fileID: 8574412962073106934, guid: 190b0e2637dfce44091cff6d83f98c88, type: 2}
+    density: 0
+    colour: {r: 0.2608021, g: 0.21884151, b: 0.17098854, a: 1}
+  - terrainLayer: {fileID: 8574412962073106934, guid: 3850d5e5657440747b3f01682c207671, type: 2}
+    density: 0.5
+    colour: {r: 0.63895804, g: 0.74966955, b: 0.8396226, a: 1}
+  - terrainLayer: {fileID: 8574412962073106934, guid: cda7cd11cbcfe20439b9e3dc794e61c0, type: 2}
+    density: 0
+    colour: {r: 0.47689852, g: 0.44721237, b: 0.4196563, a: 1}
+  kinds:
+  - name: Blades
+    mesh: {fileID: 0}
+    blades: 10
+    bladeWidth: 0.08
+    material: {fileID: 2100000, guid: 9148e3a5bbfa9184fac8bce8cad3cdf6, type: 2}
+    perSquareMetre: 14
+    size: {x: 0.25, y: 0.45}
+    minDensity: 0
+    enabled: 1
+  waterLevel: -3
+  maxSlope: 40
+  tint: {r: 0.92, g: 1, b: 0.8, a: 1}
+  colourJitter: 0.08

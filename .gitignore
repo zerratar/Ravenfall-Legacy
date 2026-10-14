@@ -184,6 +184,10 @@ Assets/Village/Derived.meta
 !Assets/World/WorldResources/Types/*.asset
 !Assets/World/WorldResources/Types/*.asset.meta
 
+# Grass: the shader, its materials and the profile, all ours. The blades are generated in code.
+!Assets/World/Grass.meta
+!Assets/World/Grass/**
+
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
 
