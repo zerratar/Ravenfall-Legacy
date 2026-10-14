@@ -394,6 +394,7 @@ public class VillageBuildMode : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            EscapeKey.Claim();
             if (Armed.HasValue || Selected || HallSelected) ClearSelection();
             else Exit();
             return;
@@ -503,6 +504,7 @@ public class VillageBuildMode : MonoBehaviour
         // while lining a building up.
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            EscapeKey.Claim();
             CancelMove();
             return;
         }
@@ -771,6 +773,7 @@ public class VillageBuildMode : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            EscapeKey.Claim();
             CancelHallMove();
             return;
         }
@@ -1075,6 +1078,7 @@ public class VillageBuildMode : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            EscapeKey.Claim();
             ClearSelection();
             return;
         }

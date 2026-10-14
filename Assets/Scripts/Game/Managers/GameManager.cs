@@ -1116,7 +1116,7 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (Input.GetKeyUp(KeyCode.Escape) && !menuHandler.Visible && !menuHandler.ClosedThisFrame && !playerSearchHandler.Visible && !Shinobytes.UI.SettingsWindow.IsOpen)
+        if (EscapeKey.ReleasedUnclaimed() && !menuHandler.Visible && !menuHandler.ClosedThisFrame && !playerSearchHandler.Visible && !Shinobytes.UI.SettingsWindow.IsOpen)
         {
             menuHandler.Show();
         }

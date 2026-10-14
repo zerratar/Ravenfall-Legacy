@@ -376,3 +376,36 @@ public static class Keybinds
         return Enum.TryParse(name, true, out key);
     }
 }
+
+/// <summary>
+/// Esc means "back" to whatever has something to back out of: a move, a selection, build mode.
+/// The game menu opens on Esc too, but on the release, frames after the press was used; so a press
+/// that cancelled a move also opened the menu. Whoever uses a press calls <see cref="Claim"/> on it,
+/// and the menu only opens for a press nobody claimed.
+/// </summary>
+public static class EscapeKey
+{
+    private static bool claimed;
+    private static float claimedAt;
+
+    /// <summary>The current Esc press was used; its release should not open the menu.</summary>
+    public static void Claim()
+    {
+        claimed = true;
+        claimedAt = Time.unscaledTime;
+    }
+
+    /// <summary>
+    /// Esc released this frame by a press nobody used. Read once a frame, by the game menu; it
+    /// also forgets the claim, ready for the next press.
+    /// </summary>
+    public static bool ReleasedUnclaimed()
+    {
+        if (!Input.GetKeyUp(KeyCode.Escape)) return false;
+        // a claim lasts the press, not forever: one the menu did not get to read (a frame that
+        // returned early) must not swallow a later press
+        var wasClaimed = claimed && Time.unscaledTime - claimedAt < 2f;
+        claimed = false;
+        return !wasClaimed;
+    }
+}
