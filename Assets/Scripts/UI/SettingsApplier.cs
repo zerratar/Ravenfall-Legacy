@@ -70,6 +70,9 @@ public static class SettingsApplier
         public const bool RealTimeDayNight = false;
         public const float TimeOfDay = 0.5f;
         public const float ViewDistance = 0.5f;
+        public const bool Grass = true;
+        public const float GrassDistance = 0.4f;
+        public const float GrassDensity = 1f;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -123,6 +126,7 @@ public static class SettingsApplier
     {
         var settings = PlayerSettings.Instance;
         ApplyViewDistance(game, settings.ViewDistance.GetValueOrDefault(0.5f));
+        ApplyGrass();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -502,6 +506,45 @@ public static class SettingsApplier
     {
         PlayerSettings.Instance.DayNightTime = value;
         game.DayNightCycleProgress = value;
+    }
+
+    // ---- Grass -----------------------------------------------------------------------------------
+    // On or off, how far it grows (20 to 120 m) and how dense. Potato mode turns it off as well, without
+    // changing the setting.
+
+    public const float GrassDistanceMin = 20f;
+    public const float GrassDistanceMax = 120f;
+
+    public static bool Grass => PlayerSettings.Instance.GrassEnabled.GetValueOrDefault(Defaults.Grass);
+    public static float GrassDistance => PlayerSettings.Instance.GrassDistance.GetValueOrDefault(Defaults.GrassDistance);
+    public static float GrassDensity => PlayerSettings.Instance.GrassDensity.GetValueOrDefault(Defaults.GrassDensity);
+
+    /// <summary>The grass distance a 0 to 1 setting stands for, in metres.</summary>
+    public static float GrassMetres(float value) => Mathf.Lerp(GrassDistanceMin, GrassDistanceMax, value);
+
+    public static void SetGrass(bool value)
+    {
+        PlayerSettings.Instance.GrassEnabled = value;
+        ApplyGrass();
+    }
+
+    public static void SetGrassDistance(float value)
+    {
+        PlayerSettings.Instance.GrassDistance = Mathf.Clamp01(value);
+        ApplyGrass();
+    }
+
+    public static void SetGrassDensity(float value)
+    {
+        PlayerSettings.Instance.GrassDensity = Mathf.Clamp(value, 0.25f, 1f);
+        ApplyGrass();
+    }
+
+    private static void ApplyGrass()
+    {
+        GrassRenderer.Enabled = Grass;
+        GrassRenderer.Distance = GrassMetres(GrassDistance);
+        GrassRenderer.Density = GrassDensity;
     }
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);

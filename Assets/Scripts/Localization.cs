@@ -948,6 +948,13 @@ public static class Localization
     public static string UI_SETTINGS_AUTO_POTATO_HINT = "Saves power when another window has focus.";
     public static string UI_SETTINGS_POST = "Post processing";
     public static string UI_SETTINGS_POST_HINT = "Bloom and colour grading.";
+    public static string UI_SETTINGS_GRASS = "Grass";
+    public static string UI_SETTINGS_GRASS_HINT = "Dense grass and flowers on the islands. Turn it off on slower computers; potato mode turns it off as well.";
+    public static string UI_SETTINGS_GRASS_DISTANCE = "Grass distance";
+    public static string UI_SETTINGS_GRASS_DISTANCE_HINT = "How far from the camera grass grows. Lower is faster.";
+    public static string UI_SETTINGS_GRASS_METRES = "{0} m";
+    public static string UI_SETTINGS_GRASS_DENSITY = "Grass density";
+    public static string UI_SETTINGS_GRASS_DENSITY_HINT = "How thick the grass is. Lower is faster.";
     public static string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
     public static string UI_SETTINGS_REALTIME = "Follow the clock";
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";

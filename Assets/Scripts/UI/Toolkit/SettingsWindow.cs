@@ -424,6 +424,20 @@ namespace Shinobytes.UI
                 v => SettingsApplier.SetAutoPotatoMode(g, v));
             Switch(c, Localization.UI_SETTINGS_POST, Localization.UI_SETTINGS_POST_HINT, SettingsApplier.PostProcessing(g), SettingsApplier.Defaults.PostProcessing,
                 v => SettingsApplier.SetPostProcessing(g, v));
+            VisualElement grassDistanceRow = null, grassDensityRow = null;
+            Switch(c, Localization.UI_SETTINGS_GRASS, Localization.UI_SETTINGS_GRASS_HINT, SettingsApplier.Grass, SettingsApplier.Defaults.Grass, v =>
+            {
+                SettingsApplier.SetGrass(v);
+                grassDistanceRow.SetEnabled(v);
+                grassDensityRow.SetEnabled(v);
+            });
+            grassDistanceRow = SliderRow(c, Localization.UI_SETTINGS_GRASS_DISTANCE, Localization.UI_SETTINGS_GRASS_DISTANCE_HINT, 0f, 1f, SettingsApplier.GrassDistance,
+                SettingsApplier.Defaults.GrassDistance, v => string.Format(CultureInfo.InvariantCulture, Localization.UI_SETTINGS_GRASS_METRES, Mathf.RoundToInt(SettingsApplier.GrassMetres(v))),
+                SettingsApplier.SetGrassDistance);
+            grassDensityRow = SliderRow(c, Localization.UI_SETTINGS_GRASS_DENSITY, Localization.UI_SETTINGS_GRASS_DENSITY_HINT, 0.25f, 1f, SettingsApplier.GrassDensity,
+                SettingsApplier.Defaults.GrassDensity, Percent, SettingsApplier.SetGrassDensity);
+            grassDistanceRow.SetEnabled(SettingsApplier.Grass);
+            grassDensityRow.SetEnabled(SettingsApplier.Grass);
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;

@@ -31,6 +31,9 @@ public class PlayerSettings
     /// <summary>Scale of all 2D interface, 1 for the default size. See Shinobytes.UI.UiScale.</summary>
     public float? UIScale;
     public float? ViewDistance;
+    public bool? GrassEnabled;
+    public float? GrassDistance;
+    public float? GrassDensity;
     public float? CameraRotationSpeed;
 
     /// <summary>A UnityEngine.FullScreenMode value; null leaves the window as Unity last had it.</summary>
@@ -398,6 +401,9 @@ public class PlayerSettings
             Serialize(sw, "dpiScale", obj.DPIScale);
             Serialize(sw, "uiScale", obj.UIScale);
             Serialize(sw, "viewDistance", obj.ViewDistance);
+            Serialize(sw, "grassEnabled", obj.GrassEnabled);
+            Serialize(sw, "grassDistance", obj.GrassDistance);
+            Serialize(sw, "grassDensity", obj.GrassDensity);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
             Serialize(sw, "masterVolume", obj.MasterVolume);
             Serialize(sw, "freeCameraSpeed", obj.FreeCameraSpeed);

@@ -119,6 +119,12 @@ public static unsafe class GrassRenderer
         set { if (enabled != value) { enabled = value; dirty = true; } }
     }
 
+    /// <summary>
+    /// Not drawn and not grown for now (potato mode), keeping what is grown so it is back at once. Unlike
+    /// <see cref="Enabled"/> this is not a setting of its own.
+    /// </summary>
+    public static bool Suppressed { get; set; }
+
     /// <summary>How far from the camera grass grows, in metres.</summary>
     public static float Distance
     {
@@ -285,7 +291,7 @@ public static unsafe class GrassRenderer
         using (UpdateMarker.Auto())
         {
             if (dirty) Rebuild();
-            if (buffer == null || !field) return;
+            if (buffer == null || !field || Suppressed) return;
 
             Shader.SetGlobalVector(WindId, new Vector4(0.8f, 0.6f, 0.12f, 1.7f));
             Shader.SetGlobalVector(FadeId, new Vector4(distance * 0.7f, distance, 0f, 0f));
@@ -911,7 +917,7 @@ public static unsafe class GrassRenderer
 
     private static JobHandle OnPerformCulling(BatchRendererGroup rendererGroup, BatchCullingContext context, BatchCullingOutput output, IntPtr userContext)
     {
-        if (buffer == null || cellSlot.Count == 0) return default;
+        if (buffer == null || cellSlot.Count == 0 || Suppressed) return default;
         // no shadows from grass, and nothing to pick in the Scene view
         if (context.viewType != BatchCullingViewType.Camera) return default;
 
