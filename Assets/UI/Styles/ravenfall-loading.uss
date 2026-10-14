@@ -1,0 +1,120 @@
+/* ==========================================================================
+   Getting the game ready
+   The card between signing in and the game being ready. In the middle of the screen, where the
+   login card was a moment ago, so the eye does not have to go looking for it; fades in and out
+   and never takes a click.
+   ========================================================================== */
+
+.rf-loading-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.rf-window.rf-loading {
+    position: relative;
+    width: 400px;
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-5);
+    padding-bottom: var(--rf-space-5);
+    background-color: var(--rf-bg);
+    opacity: 0;
+    translate: 0 8px;
+    transition-property: opacity, translate;
+    transition-duration: 0.25s;
+    transition-timing-function: ease-out;
+}
+
+.rf-window.rf-loading.rf-loading--shown {
+    opacity: 1;
+    translate: 0 0;
+}
+
+.rf-loading__head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--rf-space-4);
+}
+
+/* A quarter ring, as on the sign in button. */
+.rf-loading__spinner {
+    width: 26px;
+    height: 26px;
+    margin-right: var(--rf-space-3);
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: rgba(232, 163, 61, 0.22);
+    border-right-color: rgba(232, 163, 61, 0.22);
+    border-bottom-color: rgba(232, 163, 61, 0.22);
+    border-top-color: var(--rf-accent);
+    border-top-left-radius: 13px;
+    border-top-right-radius: 13px;
+    border-bottom-left-radius: 13px;
+    border-bottom-right-radius: 13px;
+}
+
+/* Done: the ring closes into a full circle for the moment before the card goes. */
+.rf-loading--done .rf-loading__spinner {
+    border-left-color: var(--rf-success);
+    border-right-color: var(--rf-success);
+    border-bottom-color: var(--rf-success);
+    border-top-color: var(--rf-success);
+}
+
+.rf-loading .rf-loading__title {
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: var(--rf-text);
+}
+
+/* ---- Steps ---- */
+
+.rf-loading__step {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+}
+
+.rf-loading .rf-loading__mark {
+    width: 24px;
+    margin-right: var(--rf-space-2);
+    font-size: 7px;
+    color: var(--rf-text-faint);
+}
+
+.rf-loading .rf-loading__text {
+    font-size: 15px;
+    color: var(--rf-text-faint);
+}
+
+.rf-loading__step--active .rf-loading__mark {
+    font-size: 14px;
+    color: var(--rf-accent);
+}
+
+.rf-loading__step--active .rf-loading__text {
+    color: var(--rf-text);
+}
+
+.rf-loading__step--done .rf-loading__mark {
+    font-size: 13px;
+    color: var(--rf-success);
+}
+
+.rf-loading__step--done .rf-loading__text {
+    color: var(--rf-text-dim);
+}
+
+.rf-loading .rf-loading__slow {
+    margin-top: var(--rf-space-3);
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}

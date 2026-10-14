@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      Between signing in and the game being ready: a card in the middle of the screen with a ring
+      and the steps the game waits on, ticked off as they finish. GameLoadingView fills the texts
+      and fades the card in and out; it never takes a click.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-loading.uss" />
+
+    <engine:VisualElement name="loading-root" class="rf-loading-layer" picking-mode="Ignore">
+        <engine:VisualElement name="loading-card" class="rf-window rf-loading" picking-mode="Ignore">
+            <engine:VisualElement class="rf-loading__head" picking-mode="Ignore">
+                <engine:VisualElement name="loading-spinner" class="rf-loading__spinner" picking-mode="Ignore" />
+                <engine:Label name="loading-title" class="rf-loading__title" picking-mode="Ignore" />
+            </engine:VisualElement>
+
+            <engine:VisualElement class="rf-loading__steps" picking-mode="Ignore">
+                <engine:VisualElement name="loading-step-0" class="rf-loading__step" picking-mode="Ignore">
+                    <engine:Label class="rf-icon rf-loading__mark" picking-mode="Ignore" />
+                    <engine:Label class="rf-loading__text" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:VisualElement name="loading-step-1" class="rf-loading__step" picking-mode="Ignore">
+                    <engine:Label class="rf-icon rf-loading__mark" picking-mode="Ignore" />
+                    <engine:Label class="rf-loading__text" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:VisualElement name="loading-step-2" class="rf-loading__step" picking-mode="Ignore">
+                    <engine:Label class="rf-icon rf-loading__mark" picking-mode="Ignore" />
+                    <engine:Label class="rf-loading__text" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:VisualElement name="loading-step-3" class="rf-loading__step" picking-mode="Ignore">
+                    <engine:Label class="rf-icon rf-loading__mark" picking-mode="Ignore" />
+                    <engine:Label class="rf-loading__text" picking-mode="Ignore" />
+                </engine:VisualElement>
+            </engine:VisualElement>
+
+            <engine:Label name="loading-slow" class="rf-loading__slow" picking-mode="Ignore" style="display: none;" />
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

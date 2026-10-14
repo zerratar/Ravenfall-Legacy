@@ -840,6 +840,15 @@ public static class Localization
     public static string UI_CONN_OUTDATED = "This version of Ravenfall is out of date";
     public static string UI_CONN_OUTDATED_NOTE = "Restart the game to update it.";
 
+    // Getting the game ready after signing in
+    public static string UI_LOADING_TITLE = "Getting your game ready";
+    public static string UI_LOADING_READY = "Ready";
+    public static string UI_LOADING_SESSION = "Starting your session";
+    public static string UI_LOADING_SERVER = "Connecting to the game server";
+    public static string UI_LOADING_ITEMS = "Loading items";
+    public static string UI_LOADING_VILLAGE = "Loading your village";
+    public static string UI_LOADING_SLOW = "This is taking longer than usual. The game keeps trying; if it stays here, check your connection.";
+
     public static string UI_SETTINGS_SECTION_QUALITY = "QUALITY";
     public static string UI_SETTINGS_SECTION_DAYNIGHT = "DAY AND NIGHT";
     public static string UI_SETTINGS_SECTION_PERFORMANCE = "PERFORMANCE";

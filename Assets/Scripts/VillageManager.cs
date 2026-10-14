@@ -21,6 +21,9 @@ namespace Assets.Scripts
         private readonly ConcurrentDictionary<TownHouseSlotType, TownHouseExpBonus> expBonusByType = new ConcurrentDictionary<TownHouseSlotType, TownHouseExpBonus>();
 
         private LoadingState state = LoadingState.None;
+
+        /// <summary>Whether the village has come from the server once, for the loading panel.</summary>
+        public bool IsLoaded => state == LoadingState.Loaded;
         private DateTime lastVillageLoad = DateTime.UnixEpoch;
         public TownHallManager TownHall => townHallManager;
         public TownHouseManager TownHouses => townHouseManager;
