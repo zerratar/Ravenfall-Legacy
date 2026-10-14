@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8b89dbc8b2c154dad2deda912dae96, type: 3}
+  m_Name: Flowers_Fantasy_Kingdom
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceType
+  kind: 1
+  variants:
+  - name: SM_Env_Flowers_07
+    weight: 1
+    lods:
+    - mesh: {fileID: -7779863442091963850, guid: 20c789283f2f0ee409a3e4fe47903b12, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 71e41e43b459a244abaf5acca76b89ee, type: 2}
+      maxDistance: 0
+  depleted:
+    name: Depleted
+    weight: 1
+    lods: []
+  health: 15
+  respawnSeconds: 15
+  actionDistance: 3
+  kneelToGather: 1
+  castShadows: 1
+  randomYaw: 1
+  scaleRange: {x: 0.9, y: 1.1}

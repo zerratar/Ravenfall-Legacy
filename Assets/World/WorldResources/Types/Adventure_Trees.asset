@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8b89dbc8b2c154dad2deda912dae96, type: 3}
+  m_Name: Adventure_Trees
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceType
+  kind: 0
+  variants:
+  - name: SM_Env_Tree_09
+    weight: 1
+    lods:
+    - mesh: {fileID: 8642843301613475217, guid: 1f5b640a1873d624ba218634cef63140, type: 3}
+      materials:
+      - {fileID: 2100000, guid: fa8eda4ec55ee1a4e99ca991c5828dbf, type: 2}
+      maxDistance: 0
+  - name: SM_Env_Tree_08
+    weight: 1
+    lods:
+    - mesh: {fileID: 7541362900673817334, guid: 1f5b640a1873d624ba218634cef63140, type: 3}
+      materials:
+      - {fileID: 2100000, guid: fa8eda4ec55ee1a4e99ca991c5828dbf, type: 2}
+      maxDistance: 0
+  - name: SM_Env_Tree_03
+    weight: 1
+    lods:
+    - mesh: {fileID: -6444198930895099277, guid: 1f5b640a1873d624ba218634cef63140, type: 3}
+      materials:
+      - {fileID: 2100000, guid: fa8eda4ec55ee1a4e99ca991c5828dbf, type: 2}
+      maxDistance: 0
+  - name: SM_Env_Tree_016
+    weight: 1
+    lods:
+    - mesh: {fileID: -4231116182075291143, guid: 1f5b640a1873d624ba218634cef63140, type: 3}
+      materials:
+      - {fileID: 2100000, guid: fa8eda4ec55ee1a4e99ca991c5828dbf, type: 2}
+      maxDistance: 0
+  depleted:
+    name: Stump
+    weight: 1
+    lods:
+    - mesh: {fileID: 4028964110315646791, guid: 1f5b640a1873d624ba218634cef63140, type: 3}
+      materials:
+      - {fileID: 2100000, guid: fa8eda4ec55ee1a4e99ca991c5828dbf, type: 2}
+      maxDistance: 0
+  health: 4
+  respawnSeconds: 15
+  actionDistance: 3
+  kneelToGather: 1
+  castShadows: 1
+  randomYaw: 1
+  scaleRange: {x: 0.9, y: 1.1}

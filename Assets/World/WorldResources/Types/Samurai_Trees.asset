@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8b89dbc8b2c154dad2deda912dae96, type: 3}
+  m_Name: Samurai_Trees
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceType
+  kind: 0
+  variants:
+  - name: SM_Env_Tree_04
+    weight: 1
+    lods:
+    - mesh: {fileID: -5295189497078357932, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 114.96343
+    - mesh: {fileID: 2981343592384532121, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 345.39877
+    - mesh: {fileID: -3389275101300603346, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 1732.0518
+  - name: SM_Env_Tree_01
+    weight: 1
+    lods:
+    - mesh: {fileID: -2026981993090142653, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 255.6325
+    - mesh: {fileID: -3664015039328518114, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 827.435
+    - mesh: {fileID: 1921157562702439226, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 3769.984
+  - name: SM_Env_Tree_02
+    weight: 1
+    lods:
+    - mesh: {fileID: 2871165115206608095, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 118.7173
+    - mesh: {fileID: 1790737619946202047, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 372.8577
+    - mesh: {fileID: -1078858043099258464, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 1732.0518
+  - name: SM_Env_Tree_03
+    weight: 1
+    lods:
+    - mesh: {fileID: 2942671837879053922, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 116.817696
+    - mesh: {fileID: 9041333250599629503, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 352.20428
+    - mesh: {fileID: 8401274090925580530, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 1732.0518
+  depleted:
+    name: Stump
+    weight: 1
+    lods:
+    - mesh: {fileID: 159148040840294675, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 108.191925
+    - mesh: {fileID: 4091126539852132907, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 247.24063
+    - mesh: {fileID: 8663258756294342676, guid: 538dee0420b0657429fa582f2e5677b8, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 545.70026
+  health: 15
+  respawnSeconds: 20
+  actionDistance: 3.0000005
+  kneelToGather: 1
+  castShadows: 1
+  randomYaw: 1
+  scaleRange: {x: 0.9, y: 1.1}

@@ -10,82 +10,82 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce8b89dbc8b2c154dad2deda912dae96, type: 3}
-  m_Name: Tree_Lv_1000
+  m_Name: Snowy_Pines
   m_EditorClassIdentifier: Assembly-CSharp::ResourceType
   kind: 0
   variants:
   - name: SM_Env_Tree_Pine_Large_02_Snow
     weight: 1
     lods:
-    - mesh: {fileID: 2266935367422199887, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -3415945641076313447, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 50.571247
-    - mesh: {fileID: 2881171681846636321, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: 531088214932937783, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 128.78027
-    - mesh: {fileID: -1227478928198312842, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -4739402808013225460, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 1287.8029
   - name: SM_Env_Tree_Pine_Large_01_Snow
     weight: 1
     lods:
-    - mesh: {fileID: -3535023334784678662, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: 6716518271937681199, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 66.09449
-    - mesh: {fileID: 4170481964811495665, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: 4754277898142928751, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 168.3104
-    - mesh: {fileID: 1956062774195812455, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -7497221609382182667, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 1683.1041
   - name: SM_Env_Tree_Pine_Large_03_Snow
     weight: 1
     lods:
-    - mesh: {fileID: -4639733017497807187, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -4330361849819414639, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 56.474808
-    - mesh: {fileID: 297822061307661065, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: 8712597915289569290, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 143.81377
-    - mesh: {fileID: -4868861138841416173, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: 8418813410365357540, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 1438.1377
   - name: SM_Env_Tree_Pine_03_Snow
     weight: 1
     lods:
-    - mesh: {fileID: 1824445423690211267, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -1263959844328157203, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 21.621582
-    - mesh: {fileID: 4592592501846889750, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -2922572735962788352, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 55.059616
-    - mesh: {fileID: -5152964611544043183, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -5089059576739647238, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 550.5962
   - name: SM_Env_Tree_Pine_02_Snow
     weight: 1
     lods:
-    - mesh: {fileID: -4052640768561255743, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: 6558767176753977344, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 24.624874
-    - mesh: {fileID: 1557373596540923992, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -7306228982062710631, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 62.707535
-    - mesh: {fileID: 3480986070259158999, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: 2662621079232610484, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
       maxDistance: 627.0754
@@ -93,15 +93,15 @@ MonoBehaviour:
     name: Stump
     weight: 1
     lods:
-    - mesh: {fileID: -625359686891651821, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -2014186838423262287, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
       maxDistance: 30.397612
-    - mesh: {fileID: -4455023287337526739, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -256614138074490998, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
       maxDistance: 69.464745
-    - mesh: {fileID: 5417710316092892301, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+    - mesh: {fileID: -85722605558987967, guid: 966c279175c19bd49b4513713b324c33, type: 3}
       materials:
       - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
       maxDistance: 153.31998

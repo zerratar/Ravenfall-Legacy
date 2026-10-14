@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8b89dbc8b2c154dad2deda912dae96, type: 3}
+  m_Name: Ancient_Empire_Trees
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceType
+  kind: 0
+  variants:
+  - name: SM_Env_Tree_Large_01
+    weight: 1
+    lods:
+    - mesh: {fileID: 9221608126782799429, guid: 30b11a60daaac3b4cac032ed2f54ee85, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 09a84924202a7c14dbbdcc7846bd818a, type: 2}
+      maxDistance: 0
+  - name: SM_Env_Tree_Large_02
+    weight: 1
+    lods:
+    - mesh: {fileID: 1654565130244121303, guid: 30b11a60daaac3b4cac032ed2f54ee85, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 09a84924202a7c14dbbdcc7846bd818a, type: 2}
+      maxDistance: 0
+  - name: SM_Env_Tree_Large_03
+    weight: 1
+    lods:
+    - mesh: {fileID: -5979157781099748466, guid: 30b11a60daaac3b4cac032ed2f54ee85, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 09a84924202a7c14dbbdcc7846bd818a, type: 2}
+      maxDistance: 0
+  - name: SM_Env_Tree_Palm_02
+    weight: 1
+    lods:
+    - mesh: {fileID: 7938431890050409078, guid: 30b11a60daaac3b4cac032ed2f54ee85, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 09a84924202a7c14dbbdcc7846bd818a, type: 2}
+      maxDistance: 0
+  - name: SM_Env_Tree_Palm_01
+    weight: 1
+    lods:
+    - mesh: {fileID: -3272502880579752329, guid: 30b11a60daaac3b4cac032ed2f54ee85, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 09a84924202a7c14dbbdcc7846bd818a, type: 2}
+      maxDistance: 0
+  - name: SM_Env_Tree_Palm_03
+    weight: 1
+    lods:
+    - mesh: {fileID: 8002455078891677943, guid: 30b11a60daaac3b4cac032ed2f54ee85, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 09a84924202a7c14dbbdcc7846bd818a, type: 2}
+      maxDistance: 0
+  depleted:
+    name: Stump
+    weight: 1
+    lods:
+    - mesh: {fileID: 8054922890633478517, guid: 30b11a60daaac3b4cac032ed2f54ee85, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 0
+  health: 30
+  respawnSeconds: 20
+  actionDistance: 3
+  kneelToGather: 1
+  castShadows: 1
+  randomYaw: 1
+  scaleRange: {x: 0.9, y: 1.1}

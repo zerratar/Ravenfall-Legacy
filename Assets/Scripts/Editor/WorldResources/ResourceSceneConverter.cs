@@ -246,11 +246,12 @@ public static class ResourceSceneConverter
     private static void Place(ResourceField field, ResourceType type, int variant, Matrix4x4 matrix, string where, List<string> problems)
     {
         Vector3 x = matrix.GetColumn(0), y = matrix.GetColumn(1), z = matrix.GetColumn(2);
-        var scale = (x.magnitude + y.magnitude + z.magnitude) / 3f;
+        // the height decides the size, so a stretched tree keeps its height and loses its stretch
+        var scale = y.magnitude;
         var tilt = Vector3.Angle(y, Vector3.up);
         var stretch = Mathf.Max(x.magnitude, y.magnitude, z.magnitude) / Mathf.Max(0.0001f, Mathf.Min(x.magnitude, y.magnitude, z.magnitude)) - 1f;
         if (tilt > ReportTilt) problems.Add(where + ": tilted " + tilt.ToString("0") + " degrees, now upright");
-        if (stretch > ReportStretch) problems.Add(where + ": stretched " + (stretch * 100f).ToString("0") + "%, now even");
+        if (stretch > ReportStretch) problems.Add(where + ": stretched " + (stretch * 100f).ToString("0") + "%, now even at its height");
 
         // the turn about up: the forward axis seen from above, or the right axis when forward points up or down
         var flat = new Vector3(z.x, 0f, z.z);
