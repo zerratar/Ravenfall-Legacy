@@ -46,6 +46,8 @@
                 </engine:VisualElement>
             </engine:VisualElement>
 
+            <engine:VisualElement name="enemy-grip" class="rf-window__grip" />
+
         </engine:VisualElement>
     </engine:VisualElement>
 

@@ -253,6 +253,9 @@ namespace Shinobytes.UI
             // Both side panels move like every other HUD window and remember where they were left.
             bonusDrag = DraggableWindow.Attach(bonusPanel, root.Q<VisualElement>("bonus-head"), "buildbonuses");
             plotDrag = DraggableWindow.Attach(plotPanel, root.Q<VisualElement>("plot-head"), "buildplot");
+            // wider only: the height follows what is shown
+            bonusDrag?.EnableResize(root.Q<VisualElement>("bonus-grip"), new Vector2(340f, 0f), widthOnly: true);
+            plotDrag?.EnableResize(root.Q<VisualElement>("plot-grip"), new Vector2(380f, 0f), widthOnly: true);
             root.Q<Button>("plot-close").clicked += () => mode?.ClearSelection();
             root.Q<Button>("tray-close").clicked += () => OpenCategory(-1);
             root.Q<Button>("assign-close").clicked += CloseAssign;

@@ -51,6 +51,8 @@
                 <engine:VisualElement name="island-stats" class="rf-island__stats" />
             </engine:VisualElement>
 
+            <engine:VisualElement name="island-grip" class="rf-window__grip" />
+
         </engine:VisualElement>
     </engine:VisualElement>
 

@@ -84,6 +84,7 @@ namespace Shinobytes.UI
         private VisualElement grip;
         private Vector2 minSize;
         private bool resizing;
+        private bool resizeWidthOnly;
         private Vector2 resizePointerStart;
         private Vector2 resizeSizeStart;
         private bool collapsed;
@@ -182,7 +183,11 @@ namespace Shinobytes.UI
         /// Smallest allowed size. Below a certain width the content stops being legible on stream,
         /// so each window decides its own floor rather than sharing one.
         /// </param>
-        public void EnableResize(VisualElement resizeGrip, Vector2 minimum)
+        /// <param name="widthOnly">
+        /// Only the width follows the grip. For windows whose height comes from their content, such
+        /// as the details windows, where a fixed height would clip a section that opens later.
+        /// </param>
+        public void EnableResize(VisualElement resizeGrip, Vector2 minimum, bool widthOnly = false)
         {
             if (resizeGrip == null || grip != null)
             {
@@ -191,6 +196,9 @@ namespace Shinobytes.UI
 
             grip = resizeGrip;
             minSize = minimum;
+            resizeWidthOnly = widthOnly;
+            grip.tooltip = widthOnly ? Localization.UI_WINDOW_RESIZE_WIDTH : Localization.UI_WINDOW_RESIZE;
+            grip.EnableInClassList("rf-window__grip--width", widthOnly);
             grip.RegisterCallback<PointerDownEvent>(OnGripDown);
             grip.RegisterCallback<PointerMoveEvent>(OnGripMove);
             grip.RegisterCallback<PointerUpEvent>(OnGripUp);
@@ -241,7 +249,7 @@ namespace Shinobytes.UI
 
         private void OnGripDown(PointerDownEvent evt)
         {
-            if (evt.button != 0 || collapsed)
+            if (evt.button != 0 || (collapsed && !resizeWidthOnly))
             {
                 return;
             }
@@ -279,7 +287,10 @@ namespace Shinobytes.UI
             }
 
             PlayerPrefs.SetFloat(Key("w"), window.resolvedStyle.width);
-            PlayerPrefs.SetFloat(Key("h"), window.resolvedStyle.height);
+            if (!resizeWidthOnly)
+            {
+                PlayerPrefs.SetFloat(Key("h"), window.resolvedStyle.height);
+            }
             PlayerPrefs.Save();
             evt.StopPropagation();
         }
@@ -307,7 +318,7 @@ namespace Shinobytes.UI
             var maxH = Mathf.Max(minSize.y, bounds.height - top);
 
             window.style.width = new Length(Mathf.Clamp(size.x, minSize.x, maxW), LengthUnit.Pixel);
-            if (!collapsed)
+            if (!collapsed && !resizeWidthOnly)
             {
                 window.style.height = new Length(Mathf.Clamp(size.y, minSize.y, maxH), LengthUnit.Pixel);
             }

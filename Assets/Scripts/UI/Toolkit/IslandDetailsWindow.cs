@@ -139,6 +139,8 @@ namespace Shinobytes.UI
             if (header != null)
             {
                 drag = DraggableWindow.Attach(window, header, "islanddetails");
+                // wider only: the height follows what is shown
+                drag?.EnableResize(root.Q<VisualElement>("island-grip"), new Vector2(380f, 0f), widthOnly: true);
             }
 
             var collapse = root.Q<Button>("island-collapse");

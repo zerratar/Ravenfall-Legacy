@@ -112,6 +112,7 @@
                     <engine:VisualElement class="rf-gear__top">
                         <engine:VisualElement name="details-preview" class="rf-preview">
                             <engine:VisualElement name="details-preview-image" class="rf-preview__image" picking-mode="Ignore" />
+                            <engine:Button name="details-preview-reset" text="&#xf05b;" class="rf-window__button rf-icon rf-preview__reset" />
                             <engine:VisualElement class="rf-preview__controls" picking-mode="Ignore">
                                 <engine:Button name="details-turn-left" text="&#xf2ea;" class="rf-window__button rf-icon rf-preview__turn" tooltip="Turn" />
                                 <engine:Button name="details-turn-right" text="&#xf2f9;" class="rf-window__button rf-icon rf-preview__turn" tooltip="Turn" />
@@ -123,6 +124,8 @@
                 </engine:VisualElement>
 
             </engine:VisualElement>
+
+            <engine:VisualElement name="details-grip" class="rf-window__grip" />
 
         </engine:VisualElement>
 

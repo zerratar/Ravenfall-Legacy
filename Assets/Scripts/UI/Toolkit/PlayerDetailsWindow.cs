@@ -52,6 +52,8 @@ namespace Shinobytes.UI
 
         [Tooltip("Degrees the preview turns per button press.")]
         [SerializeField] private float turnDegrees = 45f;
+        [Tooltip("Degrees the preview turns per pixel dragged.")]
+        [SerializeField] private float previewTurnSpeed = 0.5f;
 
         [Header("Icons")]
         [SerializeField] private SkillIcon[] skillIcons = Array.Empty<SkillIcon>();
@@ -347,6 +349,8 @@ namespace Shinobytes.UI
             if (header != null)
             {
                 drag = DraggableWindow.Attach(window, header, "playerdetails");
+                // wider only: the height follows what is shown
+                drag?.EnableResize(root.Q<VisualElement>("details-grip"), new Vector2(520f, 0f), widthOnly: true);
             }
 
             if (collapseButton != null) collapseButton.clicked += OnCollapseClicked;
@@ -354,6 +358,7 @@ namespace Shinobytes.UI
             if (gearToggle != null) gearToggle.clicked += () => ToggleGear();
             if (turnLeft != null) turnLeft.clicked += () => Turn(-turnDegrees);
             if (turnRight != null) turnRight.clicked += () => Turn(turnDegrees);
+            BindPreviewControls(root.Q<VisualElement>("details-preview"), root.Q<Button>("details-preview-reset"));
 
             bound = true;
             ApplyGearOpen();
@@ -1294,7 +1299,7 @@ namespace Shinobytes.UI
                     var value = HudFormat.Grouped(s.Value);
                     if (s.Bonus > 0) value += "  +" + HudFormat.Grouped(s.Bonus);
                     else if (s.Bonus < 0) value += "  " + HudFormat.Grouped(s.Bonus);
-                    t.AddRow(s.Name, value, s.Bonus > 0 ? "rf-tooltip__value--good" : s.Bonus < 0 ? "rf-tooltip__value--bad" : null);
+                    t.AddRow(Localization.StatName(s.Name), value, s.Bonus > 0 ? "rf-tooltip__value--good" : s.Bonus < 0 ? "rf-tooltip__value--bad" : null);
                 }
             }
 
@@ -1306,7 +1311,7 @@ namespace Shinobytes.UI
                     var value = e.ValueType == RavenNest.Models.AttributeValueType.Percent
                         ? "+" + ((int)(e.Value * 100)).ToString(CultureInfo.InvariantCulture) + "%"
                         : "+" + e.Value.ToString("0.##", CultureInfo.InvariantCulture);
-                    t.AddRow(e.Name, value, "rf-tooltip__value--magic");
+                    t.AddRow(Localization.StatName(e.Name), value, "rf-tooltip__value--magic");
                 }
             }
 
@@ -1379,6 +1384,93 @@ namespace Shinobytes.UI
             {
                 observeCamera.Rotate(degrees);
             }
+        }
+
+        /// <summary>
+        /// Mouse control of the preview, as in a model viewer: drag to turn and tilt, scroll to zoom,
+        /// drag with the middle button to move the view, and the corner button to put it back.
+        /// </summary>
+        private void BindPreviewControls(VisualElement preview, Button reset)
+        {
+            if (preview == null)
+            {
+                return;
+            }
+
+            if (reset != null)
+            {
+                reset.clicked += () => observeCamera?.ResetView();
+                // the corner button is also where the mouse controls are explained
+                tooltip?.Attach(reset, t =>
+                {
+                    t.SetTitle(Localization.UI_DETAILS_PREVIEW_RESET);
+                    t.SetNote(Localization.UI_DETAILS_PREVIEW_HINT);
+                });
+            }
+
+            var button = -1;
+            var last = Vector2.zero;
+
+            preview.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                // the turn and reset buttons handle their own clicks
+                if (evt.target is Button || (evt.button != 0 && evt.button != 2))
+                {
+                    return;
+                }
+
+                button = evt.button;
+                last = evt.position;
+                preview.CapturePointer(evt.pointerId);
+                evt.StopPropagation();
+            });
+
+            preview.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if (button < 0 || !preview.HasPointerCapture(evt.pointerId) || observeCamera == null)
+                {
+                    return;
+                }
+
+                var delta = (Vector2)evt.position - last;
+                last = evt.position;
+                if (button == 0)
+                {
+                    observeCamera.Rotate(delta.x * previewTurnSpeed);
+                    observeCamera.Tilt(delta.y * previewTurnSpeed);
+                }
+                else
+                {
+                    // the view follows the pointer: dragging right moves the character right
+                    var height = Mathf.Max(1f, preview.resolvedStyle.height);
+                    observeCamera.Pan(new Vector2(-delta.x, delta.y) / height);
+                }
+                evt.StopPropagation();
+            });
+
+            void Release(IPointerEvent evt)
+            {
+                if (button < 0)
+                {
+                    return;
+                }
+
+                button = -1;
+                if (preview.HasPointerCapture(evt.pointerId))
+                {
+                    preview.ReleasePointer(evt.pointerId);
+                }
+            }
+
+            preview.RegisterCallback<PointerUpEvent>(evt => Release(evt));
+            preview.RegisterCallback<PointerCaptureOutEvent>(_ => button = -1);
+
+            preview.RegisterCallback<WheelEvent>(evt =>
+            {
+                // scrolling up comes closer
+                observeCamera?.Zoom(Mathf.Pow(1.12f, evt.delta.y > 0 ? 1f : -1f));
+                evt.StopPropagation();
+            });
         }
 
         private void ApplyVisibility()

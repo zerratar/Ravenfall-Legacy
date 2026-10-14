@@ -262,6 +262,21 @@
     border-bottom-color: var(--rf-accent);
 }
 
+/* A window that only grows sideways, its height following its content: a short bar on the middle
+   of the right edge, so the corner L does not promise a height it will not take. */
+.rf-window__grip--width {
+    right: 0;
+    bottom: auto;
+    top: 50%;
+    width: 10px;
+    height: 44px;
+    translate: 0 -50%;
+    border-bottom-width: 0;
+    border-right-width: 3px;
+    border-bottom-right-radius: 0;
+    cursor: resize-horizontal;
+}
+
 /* ==========================================================================
    Player list
    ========================================================================== */

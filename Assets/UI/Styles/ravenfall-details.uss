@@ -647,6 +647,19 @@
     background-color: rgba(0, 0, 0, 0.35);
 }
 
+/* Puts the view back on the player after it was turned, zoomed or moved with the mouse. */
+.rf-details .rf-preview__reset {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 14px;
+    color: var(--rf-accent);
+    width: 28px;
+    height: 28px;
+    margin-left: 0;
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
 .rf-slots {
     flex-direction: row;
     flex-wrap: wrap;

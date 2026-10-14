@@ -36,6 +36,7 @@
                 <engine:Label name="bonus-empty" class="rf-build-note" />
                 <engine:Label name="bonus-footer" class="rf-build-bonuses__footer" />
             </engine:VisualElement>
+            <engine:VisualElement name="bonus-grip" class="rf-window__grip" />
         </engine:VisualElement>
 
         <!-- Selected building -->
@@ -91,6 +92,7 @@
                 <engine:Label class="rf-icon rf-build-wide__icon" text="&#xf2ed;" picking-mode="Ignore" />
                 <engine:Label name="plot-demolish-label" class="rf-build-wide__label" picking-mode="Ignore" />
             </engine:Button>
+            <engine:VisualElement name="plot-grip" class="rf-window__grip" />
         </engine:VisualElement>
 
         <!-- What is being placed -->

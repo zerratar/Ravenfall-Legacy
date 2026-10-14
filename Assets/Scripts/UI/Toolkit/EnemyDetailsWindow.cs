@@ -118,6 +118,8 @@ namespace Shinobytes.UI
             if (header != null)
             {
                 drag = DraggableWindow.Attach(window, header, "enemydetails");
+                // wider only: the height follows what is shown
+                drag?.EnableResize(root.Q<VisualElement>("enemy-grip"), new Vector2(340f, 0f), widthOnly: true);
             }
 
             ResetShown();
