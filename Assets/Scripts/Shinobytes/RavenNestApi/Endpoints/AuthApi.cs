@@ -16,13 +16,17 @@ namespace RavenNest.SDK.Endpoints
             this.request = request;
         }
 
+        /// <summary>
+        /// A token, or null when the server turned the name and password down. Throws when the server
+        /// could not be reached, so the login screen can tell the two apart.
+        /// </summary>
         public Task<AuthToken> AuthenticateAsync(string username, string password)
         {
             return request.Create()
                 .AddParameter("Username", username)
                 .AddParameter("Password", password)
                 .Build()
-                .SendAsync<AuthToken>(ApiRequestTarget.Auth, ApiRequestType.Post);
+                .SendAsync<AuthToken>(ApiRequestTarget.Auth, ApiRequestType.Post, throwOnError: true);
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Shinobytes.UI
 
             foreach (var doc in FindObjectsByType<UIDocument>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
             {
-                if (doc.GetComponent<SettingsWindow>() || doc.GetComponent<GameMenuWindow>()) continue;
+                if (doc.GetComponent<SettingsWindow>() || doc.GetComponent<GameMenuWindow>() || doc.GetComponent<LoginScreenView>()) continue;
                 var go = doc.gameObject;
                 go.SetActive(false);
                 go.SetActive(true);

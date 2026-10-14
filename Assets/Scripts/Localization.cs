@@ -794,6 +794,27 @@ public static class Localization
     public static string UI_SETTINGS_JOIN_CODE = "Join with a code";
     public static string UI_SETTINGS_JOIN_CODE_HINT = "Raids and dungeons show a word on stream, and viewers join by typing it, such as !raid apple. Keeps out those who are not watching. From the next raid or dungeon.";
 
+    // Login screen
+    public static string UI_LOGIN_TITLE = "Sign in";
+    public static string UI_LOGIN_LEAD = "Use your Ravenfall username and the password you set for the game.";
+    public static string UI_LOGIN_USERNAME = "USERNAME";
+    public static string UI_LOGIN_PASSWORD = "PASSWORD";
+    public static string UI_LOGIN_SHOW_PASSWORD = "Show password";
+    public static string UI_LOGIN_HIDE_PASSWORD = "Hide password";
+    public static string UI_LOGIN_REMEMBER = "Remember me";
+    public static string UI_LOGIN_FORGOT = "Forgot your password?";
+    public static string UI_LOGIN_SUBMIT = "SIGN IN";
+    public static string UI_LOGIN_BUSY = "SIGNING IN...";
+    public static string UI_LOGIN_FAILED_TITLE = "That did not match";
+    public static string UI_LOGIN_FAILED = "This is the password you set for the game client, not your Twitch password. If you have never set one, sign in with Twitch on ravenfall.stream and set one there.";
+    public static string UI_LOGIN_UNREACHABLE_TITLE = "Could not reach the server";
+    public static string UI_LOGIN_UNREACHABLE = "Check your internet connection and try again. If it keeps happening, the server may be down for a moment.";
+    public static string UI_LOGIN_MISSING = "Fill in both your username and your password.";
+    public static string UI_LOGIN_NO_PASSWORD = "No game password yet?";
+    public static string UI_LOGIN_SET_PASSWORD = "Set one on ravenfall.stream";
+    public static string UI_LOGIN_VERSION = "Ravenfall v{0}";
+    public static string UI_LOGIN_QUIT = "Quit";
+
     public static string UI_SETTINGS_SECTION_QUALITY = "QUALITY";
     public static string UI_SETTINGS_SECTION_DAYNIGHT = "DAY AND NIGHT";
     public static string UI_SETTINGS_SECTION_PERFORMANCE = "PERFORMANCE";

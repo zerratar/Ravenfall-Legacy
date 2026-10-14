@@ -1,25 +1,28 @@
-﻿using System;
 using System.Collections;
 using System.Threading.Tasks;
-using TMPro;
+using RavenNest.SDK;
+using Shinobytes.UI;
 using UnityEngine;
-using UnityEngine.UI;
 
+/// <summary>
+/// Signing in: a remembered account or an autologin file signs in on its own, otherwise the
+/// login screen asks. The screen itself is <see cref="LoginScreenView"/>; this keeps what it was
+/// typed, what to remember and when to try.
+/// </summary>
 public class LoginHandler : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
-    [SerializeField] private TMP_InputField txtUsername;
-    [SerializeField] private TMP_InputField txtPassword;
-
-    [SerializeField] private TextMeshProUGUI loginBtnText;
-    [SerializeField] private TextMeshProUGUI invalidUsername;
-    [SerializeField] private Toggle rememberMeToggle;
-
-    [SerializeField] private GameObject view;
-    //[SerializeField] private LoadingHandler loading;
+    [SerializeField] private LoginScreenView screen;
 
     const string AutoLoginFile = "autologin.conf";
     const string TmpAutoLoginFile = "tmpautologin.conf";
+
+    private string username = string.Empty;
+    private string password = string.Empty;
+    private bool rememberMe;
+    private bool loggingIn;
+
+    private LoginScreenView Screen => screen ? screen : (screen = FindAnyObjectByType<LoginScreenView>(FindObjectsInactive.Include));
 
     void Start()
     {
@@ -28,26 +31,38 @@ public class LoginHandler : MonoBehaviour
             Shinobytes.Debug.Log("Login handler started");
         }
 
-        invalidUsername.gameObject.SetActive(false);
+        if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
+        if (Screen) Screen.Submitted += OnSubmitted;
+
         var savedUsername = PlayerPrefs.GetString("LoginUsername", string.Empty);
         var savedPassword = PlayerPrefs.GetString("LoginPassword", string.Empty);
-        if (string.IsNullOrEmpty(savedUsername))
+
+        // an account that was remembered stays remembered unless the box is cleared
+        rememberMe = !string.IsNullOrEmpty(savedPassword);
+        username = savedUsername;
+        if (!string.IsNullOrEmpty(savedUsername) && !string.IsNullOrEmpty(savedPassword))
         {
-            txtUsername.Select();
-        }
-        else
-        {
-            txtUsername.text = savedUsername;
-            if (!string.IsNullOrEmpty(savedPassword))
-            {
-                txtPassword.text = savedPassword;
-                txtPassword.Select();
-                StartCoroutine(DelayedLogin());
-                return;
-            }
+            password = savedPassword;
+            FillScreen();
+            StartCoroutine(DelayedLogin());
+            return;
         }
 
+        FillScreen();
         HandleAutoLogin();
+    }
+
+    private void OnDestroy()
+    {
+        if (screen) screen.Submitted -= OnSubmitted;
+    }
+
+    private void OnSubmitted()
+    {
+        username = Screen.Username?.Trim() ?? string.Empty;
+        password = Screen.Password ?? string.Empty;
+        rememberMe = Screen.RememberMe;
+        Login();
     }
 
     public async void Login()
@@ -59,50 +74,74 @@ public class LoginHandler : MonoBehaviour
     {
         PlayerPrefs.SetString("LoginUsername", null);
         PlayerPrefs.SetString("LoginPassword", null);
-        txtUsername.text = "";
-        txtPassword.text = "";
+        username = string.Empty;
+        password = string.Empty;
+        rememberMe = false;
+        FillScreen();
     }
 
     private async Task LoginImplementation()
     {
+        if (loggingIn)
+        {
+            return;
+        }
+
         if (Ravenfall.isBatchMode)
         {
             Shinobytes.Debug.Log("Attempting to login...");
         }
 
-        loginBtnText.text = "LOGGING IN...";
-        if (txtUsername.text.Length == 0 || txtPassword.text.Length == 0)
+        if (username.Length == 0 || password.Length == 0)
         {
             if (Ravenfall.isBatchMode)
                 Shinobytes.Debug.Log("User/pass not set, login cannot proceed.");
             return;
         }
-        if (await gameManager.RavenNestLoginAsync(txtUsername.text, txtPassword.text))
-        {
-            HideView();
-            invalidUsername.enabled = false;
 
-            if (rememberMeToggle != null && rememberMeToggle && rememberMeToggle.isOn)
+        loggingIn = true;
+        if (Screen) Screen.SetBusy(true);
+        try
+        {
+            if (await gameManager.RavenNestLoginAsync(username, password))
             {
-                PlayerPrefs.SetString("LoginUsername", txtUsername.text);
-                PlayerPrefs.SetString("LoginPassword", txtPassword.text);
+                if (rememberMe)
+                {
+                    PlayerPrefs.SetString("LoginUsername", username);
+                    PlayerPrefs.SetString("LoginPassword", password);
+                }
+                else
+                {
+                    // unticking the box forgets an account that was remembered before
+                    PlayerPrefs.DeleteKey("LoginUsername");
+                    PlayerPrefs.DeleteKey("LoginPassword");
+                }
+
+                HideView();
+                return;
+            }
+
+            if (Screen)
+            {
+                var failure = gameManager.RavenNest != null ? gameManager.RavenNest.LastLoginFailure : LoginFailure.Unreachable;
+                Screen.ShowFailure(failure == LoginFailure.None ? LoginFailure.WrongCredentials : failure);
             }
         }
-        else
+        finally
         {
-            invalidUsername.gameObject.SetActive(true);
-            invalidUsername.enabled = true;
-            loginBtnText.text = "LOGIN";
+            loggingIn = false;
+            if (Screen) Screen.SetBusy(false);
         }
     }
 
     public void ActivateTempAutoLogin()
     {
         Shinobytes.IO.File.WriteAllLines(TmpAutoLoginFile, new string[] {
-            "user=" + txtUsername.text,
-            "pass=" + txtPassword.text
+            "user=" + username,
+            "pass=" + password
         });
     }
+
     private void HandleAutoLogin()
     {
         if (!Shinobytes.IO.File.Exists(AutoLoginFile) && !Shinobytes.IO.File.Exists(TmpAutoLoginFile))
@@ -142,8 +181,9 @@ public class LoginHandler : MonoBehaviour
             return;
         }
 
-        txtUsername.text = loginInfo.Username;
-        txtPassword.text = loginInfo.Password;
+        username = loginInfo.Username;
+        password = loginInfo.Password;
+        FillScreen();
 
         if (Ravenfall.isBatchMode)
         {
@@ -156,8 +196,14 @@ public class LoginHandler : MonoBehaviour
 
     private IEnumerator DelayedLogin()
     {
+        if (Screen) Screen.SetBusy(true);
         yield return new WaitForSeconds(1f);
         Login();
+    }
+
+    private void FillScreen()
+    {
+        if (Screen) Screen.Fill(username, password, rememberMe);
     }
 
     private AutoLoginInfo ParseAutoLoginConfig(string[] vs)
@@ -195,12 +241,12 @@ public class LoginHandler : MonoBehaviour
 
     internal void ShowView()
     {
-        this.view.SetActive(true);
+        if (Screen) Screen.Show();
     }
 
     internal void HideView()
     {
-        this.view.SetActive(false);
+        if (Screen) Screen.Hide();
     }
 
     private struct AutoLoginInfo

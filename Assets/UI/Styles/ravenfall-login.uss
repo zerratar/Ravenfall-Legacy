@@ -1,0 +1,422 @@
+/* ==========================================================================
+   Login screen
+   The logo and one card in the middle of the screen over the world, which keeps turning behind
+   a light scrim; version, language and quit in the bottom corners. Sized for a streamer at a
+   desk rather than a viewer on a phone, but kept as solid and high in contrast as the rest.
+   ========================================================================== */
+
+.rf-login {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(10, 9, 7, 0.5);
+}
+
+.rf-login__center {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: var(--rf-space-6);
+}
+
+.rf-logo.rf-login__logo {
+    width: 460px;
+    height: 188px;
+    margin-bottom: var(--rf-space-4);
+}
+
+/* ---- Card ---- */
+
+.rf-window.rf-login__card {
+    position: relative;
+    width: 480px;
+    padding-left: var(--rf-space-6);
+    padding-right: var(--rf-space-6);
+    padding-top: var(--rf-space-5);
+    padding-bottom: var(--rf-space-6);
+    background-color: var(--rf-bg);
+}
+
+.rf-login .rf-login__title {
+    font-size: 30px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    margin-bottom: var(--rf-space-1);
+}
+
+.rf-login .rf-login__lead {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-login .rf-login__label {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+/* A field with its icon inside on the left, and for the password an eye on the right. The frame
+   belongs to the row, so the icon and the eye sit inside the same box as the text. */
+.rf-login__input {
+    flex-direction: row;
+    align-items: center;
+    height: 48px;
+    margin-bottom: var(--rf-space-4);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-1);
+    background-color: var(--rf-bar-track);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    transition-property: border-color;
+    transition-duration: 0.12s;
+}
+
+.rf-login__input--focus {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-login .rf-login__input-icon {
+    width: 24px;
+    font-size: 16px;
+    color: var(--rf-text-faint);
+    -unity-text-align: middle-center;
+    margin-right: var(--rf-space-2);
+}
+
+.rf-login__input--focus .rf-login__input-icon {
+    color: var(--rf-accent);
+}
+
+.rf-login__field {
+    flex-grow: 1;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Unity's own frame around the text goes; the row draws it instead. */
+.rf-login__field > .unity-text-field__input,
+.rf-login__field .unity-base-text-field__input {
+    height: 44px;
+    padding-left: 0;
+    padding-right: var(--rf-space-2);
+    padding-top: 0;
+    padding-bottom: 0;
+    -unity-text-align: middle-left;
+    font-size: 19px;
+    color: var(--rf-text);
+    --unity-selection-color: rgba(232, 163, 61, 0.35);
+    --unity-cursor-color: var(--rf-accent);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.rf-login .rf-login__reveal {
+    width: 40px;
+    height: 40px;
+    margin-left: 0;
+    margin-right: 0;
+    font-size: 17px;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    cursor: link;
+}
+
+.rf-login .rf-login__reveal:hover {
+    color: var(--rf-accent);
+}
+
+/* ---- Remember me and the forgotten password link ---- */
+
+.rf-login__row {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--rf-space-1);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-login__spacer {
+    flex-grow: 1;
+}
+
+.rf-login__check {
+    flex-direction: row;
+    align-items: center;
+    cursor: link;
+}
+
+.rf-login__check-box {
+    width: 22px;
+    height: 22px;
+    margin-right: var(--rf-space-2);
+    align-items: center;
+    justify-content: center;
+    background-color: var(--rf-bar-track);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-login .rf-login__check-mark {
+    font-size: 12px;
+    color: var(--rf-text-on-accent);
+    display: none;
+}
+
+.rf-login__check:hover .rf-login__check-box {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-login__check--on .rf-login__check-box {
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-login__check--on .rf-login__check-mark {
+    display: flex;
+}
+
+.rf-login .rf-login__check-text {
+    font-size: 15px;
+    color: var(--rf-text);
+}
+
+/* Links are buttons drawn as text: underlined amber, no frame. */
+.rf-login .rf-login__link {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 15px;
+    color: var(--rf-accent);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    cursor: link;
+}
+
+.rf-login .rf-login__link:hover {
+    color: var(--rf-accent-bright);
+    -unity-font-style: bold;
+}
+
+/* ---- What went wrong ---- */
+
+.rf-login__error {
+    flex-direction: row;
+    margin-bottom: var(--rf-space-4);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    background-color: rgba(229, 72, 77, 0.14);
+    border-left-width: 3px;
+    border-left-color: var(--rf-danger);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-login .rf-login__error-icon {
+    width: 22px;
+    font-size: 16px;
+    color: var(--rf-danger);
+    margin-right: var(--rf-space-2);
+    margin-top: 1px;
+    -unity-text-align: upper-center;
+}
+
+.rf-login__error-body {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-login .rf-login__error-title {
+    font-size: 16px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.rf-login .rf-login__error-text {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+    margin-top: 2px;
+}
+
+/* ---- Sign in ---- */
+
+.rf-button.rf-login__submit {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    height: 54px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: var(--rf-space-1);
+    margin-bottom: 0;
+}
+
+.rf-login .rf-login__submit-text {
+    font-size: 19px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    color: var(--rf-text-on-accent);
+}
+
+/* A quarter ring that turns while the server is asked; only there while it is. */
+.rf-login__spinner {
+    width: 20px;
+    height: 20px;
+    margin-right: var(--rf-space-3);
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: rgba(20, 18, 15, 0.25);
+    border-right-color: rgba(20, 18, 15, 0.25);
+    border-bottom-color: rgba(20, 18, 15, 0.25);
+    border-top-color: var(--rf-text-on-accent);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    display: none;
+}
+
+.rf-login--busy .rf-login__spinner {
+    display: flex;
+}
+
+/* Disabled while busy, but it should still read as the button being pressed, not greyed out. */
+.rf-login--busy .rf-button.rf-login__submit:disabled {
+    opacity: 1;
+    background-color: var(--rf-accent-dim);
+}
+
+/* ---- Under the card ---- */
+
+.rf-login__below {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--rf-space-4);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: rgba(10, 9, 7, 0.6);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-login .rf-login__below-text {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    margin-right: var(--rf-space-2);
+}
+
+/* ---- Corners ---- */
+
+.rf-login__footer {
+    position: absolute;
+    left: var(--rf-space-5);
+    right: var(--rf-space-5);
+    bottom: var(--rf-space-4);
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-login .rf-login__version {
+    font-size: 15px;
+    color: var(--rf-text);
+    opacity: 0.8;
+    text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
+}
+
+.rf-login .rf-login__chip {
+    flex-direction: row;
+    align-items: center;
+    height: 36px;
+    margin-left: var(--rf-space-2);
+    margin-right: 0;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    background-color: rgba(20, 18, 15, 0.85);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+    cursor: link;
+}
+
+.rf-login .rf-login__chip:hover {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-login .rf-login__chip-icon {
+    font-size: 14px;
+    color: var(--rf-accent);
+    margin-right: var(--rf-space-2);
+}
+
+.rf-login .rf-login__chip-text {
+    font-size: 14px;
+    color: var(--rf-text);
+}

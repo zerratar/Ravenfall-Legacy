@@ -195,8 +195,12 @@ namespace RavenNest.SDK
             if (Tcp != null) Tcp.SavePlayerState(players);
         }
 
+        /// <summary>Why the last login failed, for the login screen.</summary>
+        public LoginFailure LastLoginFailure { get; private set; }
+
         public async Task<bool> LoginAsync(string username, string password)
         {
+            LastLoginFailure = LoginFailure.None;
             try
             {
                 if (Ravenfall.isBatchMode)
@@ -213,9 +217,13 @@ namespace RavenNest.SDK
                     gameManager.OnAuthenticated();
                     return true;
                 }
+
+                LastLoginFailure = LoginFailure.WrongCredentials;
             }
             catch (Exception exc)
             {
+                // a refusal comes back as Forbidden; anything else means the request never got an answer
+                LastLoginFailure = exc.Message.Contains("Forbidden") ? LoginFailure.WrongCredentials : LoginFailure.Unreachable;
                 logger.WriteError(exc.Message);
             }
             finally
@@ -483,5 +491,14 @@ namespace RavenNest.SDK
             });
 
         }
+    }
+
+    public enum LoginFailure
+    {
+        None,
+        /// <summary>The server answered and turned the name and password down.</summary>
+        WrongCredentials,
+        /// <summary>No answer from the server: offline, blocked, or the server is down.</summary>
+        Unreachable,
     }
 }

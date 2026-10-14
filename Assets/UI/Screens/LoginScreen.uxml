@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      The login screen: the logo, a card with the form, and a line under it for people who have no
+      game password yet, over the world turning behind. Version, language and quit sit in the
+      bottom corners. LoginScreenView fills every text; LoginHandler does the signing in.
+
+      The help texts say the same as the website's sign in page: the password here is the one set
+      for the game client, not the Twitch password, which is the likeliest reason a login fails.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-login.uss" />
+
+    <engine:VisualElement name="login-root" class="rf-login">
+
+        <engine:VisualElement class="rf-login__center" picking-mode="Ignore">
+            <engine:VisualElement class="rf-logo rf-login__logo" picking-mode="Ignore" />
+
+            <engine:VisualElement name="login-card" class="rf-window rf-login__card">
+                <engine:Label name="login-title" class="rf-login__title" picking-mode="Ignore" />
+                <engine:Label name="login-lead" class="rf-login__lead" picking-mode="Ignore" />
+
+                <engine:Label name="login-user-label" class="rf-login__label" picking-mode="Ignore" />
+                <engine:VisualElement class="rf-login__input">
+                    <engine:Label text="&#xf007;" class="rf-icon rf-login__input-icon" picking-mode="Ignore" />
+                    <engine:TextField name="login-user" class="rf-login__field" max-length="64" />
+                </engine:VisualElement>
+
+                <engine:Label name="login-pass-label" class="rf-login__label" picking-mode="Ignore" />
+                <engine:VisualElement class="rf-login__input">
+                    <engine:Label text="&#xf023;" class="rf-icon rf-login__input-icon" picking-mode="Ignore" />
+                    <engine:TextField name="login-pass" class="rf-login__field" max-length="128" />
+                    <engine:Button name="login-reveal" class="rf-icon rf-login__reveal" focusable="false" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-login__row">
+                    <engine:VisualElement name="login-remember" class="rf-login__check">
+                        <engine:VisualElement class="rf-login__check-box" picking-mode="Ignore">
+                            <engine:Label text="&#xf00c;" class="rf-icon rf-login__check-mark" picking-mode="Ignore" />
+                        </engine:VisualElement>
+                        <engine:Label name="login-remember-text" class="rf-login__check-text" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:VisualElement class="rf-login__spacer" picking-mode="Ignore" />
+                    <engine:Button name="login-forgot" class="rf-login__link" focusable="false" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="login-error" class="rf-login__error" style="display: none;">
+                    <engine:Label text="&#xf071;" class="rf-icon rf-login__error-icon" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-login__error-body" picking-mode="Ignore">
+                        <engine:Label name="login-error-title" class="rf-login__error-title" picking-mode="Ignore" />
+                        <engine:Label name="login-error-text" class="rf-login__error-text" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+
+                <engine:Button name="login-submit" class="rf-button rf-button--primary rf-login__submit">
+                    <engine:VisualElement name="login-spinner" class="rf-login__spinner" picking-mode="Ignore" />
+                    <engine:Label name="login-submit-text" class="rf-login__submit-text" picking-mode="Ignore" />
+                </engine:Button>
+            </engine:VisualElement>
+
+            <engine:VisualElement class="rf-login__below" picking-mode="Ignore">
+                <engine:Label name="login-no-password" class="rf-login__below-text" picking-mode="Ignore" />
+                <engine:Button name="login-set-password" class="rf-login__link" focusable="false" />
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <engine:VisualElement class="rf-login__footer" picking-mode="Ignore">
+            <engine:Label name="login-version" class="rf-login__version" picking-mode="Ignore" />
+            <engine:VisualElement class="rf-login__spacer" picking-mode="Ignore" />
+            <engine:Button name="login-language" class="rf-login__chip" focusable="false">
+                <engine:Label text="&#xf0ac;" class="rf-icon rf-login__chip-icon" picking-mode="Ignore" />
+                <engine:Label name="login-language-text" class="rf-login__chip-text" picking-mode="Ignore" />
+            </engine:Button>
+            <engine:Button name="login-quit" class="rf-login__chip" focusable="false">
+                <engine:Label text="&#xf011;" class="rf-icon rf-login__chip-icon" picking-mode="Ignore" />
+                <engine:Label name="login-quit-text" class="rf-login__chip-text" picking-mode="Ignore" />
+            </engine:Button>
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+</engine:UXML>
