@@ -1,6 +1,7 @@
 # Farmer's House: a red barn with big doors and a loft full of hay, a fenced field of wheat and cabbages, a
 # haystack with a pitchfork, hay bales, and a pumpkin-headed scarecrow in a straw hat.
-# About 9 x 9 m, facing +y (Unity -z).
+# The fence, cabbages, bales and tree are Synty props; the barn, the wheat, the haystack, the pitchfork, the trough
+# and the scarecrow are ours. About 9 x 9 m, facing +y (Unity -z).
 exec(open('house_kit.py').read())
 b = Builder("Village_House_Farming")
 f = Frame()
@@ -64,8 +65,7 @@ for k in range(5):
                 b.prism(f.p(px, py, 0.15), 0.025, 0.55, 4, "PAL", "a37f48")
                 b.prism(f.p(px, py, 0.62), 0.05, 0.2, 4, "PAL", WHEAT, r_top=0.0, rot=a)
         else:
-            b.sphere(f.p(x, y, 0.3), 0.19, "PAL", CABBAGE, seg=6, rings=4, sz=0.85)
-            b.sphere(f.p(x, y, 0.36), 0.12, "PAL", "6b8f4f" if j % 2 else LEAF_D, seg=6, rings=3)
+            anchor(f, "cabbage", x, y, 0.15, yaw=j * 1.7)
 # the scarecrow, pumpkin head and straw hat
 sc = f.sub(-2.35, 1.9, 0.2)
 b.box(sc.p(0, 0, 1.0), (0.1, 0.1, 2.0), "PAL", TIMBER, rot_z=sc.rot)
@@ -85,10 +85,12 @@ b.lathe(sc.p(0, 0, 2.12), [(0.0, -0.005), (0.42, -0.005)], 9, "PAL", HAY)
 # the haystack with a pitchfork, bales, a cart wheel and a water trough. The barn doors span x 1.0 to 3.2, so the
 # haystack sits in the corner to their right and the bales stand lengthwise between them and the field fence.
 hs = f.sub(3.9, 1.5, 0.0)
+# our haystack: the Synty hay pile reads as a dark mound at this size
 b.lathe(hs.p(0, 0, 0), [(0.75, -0.1), (0.79, 0.45), (0.64, 1.05), (0.3, 1.5), (0.0, 1.65)], 10, "PAL", HAY)
-bar(b, hs.p(-0.38, 0.56, 0.0), hs.p(-0.15, 0.42, 1.5), 0.05, 0.05, "PAL", TIMBER_L)
+# the pitchfork stuck in the side of it, leaning out
+bar(b, hs.p(-0.75, 0.75, 0.0), hs.p(-0.5, 0.55, 1.5), 0.05, 0.05, "PAL", TIMBER_L)
 for k in (-1, 0, 1):
-    bar(b, hs.p(-0.15 + k * 0.06, 0.42, 1.5), hs.p(-0.12 + k * 0.08, 0.37, 1.8), 0.025, 0.025, "PAL", "8b8b8b")
+    bar(b, hs.p(-0.5 + k * 0.06, 0.55, 1.5), hs.p(-0.47 + k * 0.08, 0.5, 1.8), 0.025, 0.025, "PAL", "8b8b8b")
 hay_bale(b, f, -0.05, 2.0, yaw=1.62)
 hay_bale(b, f, 0.52, 2.1, yaw=1.5)
 hay_bale(b, f, 0.25, 2.05, z=0.6, yaw=1.57)

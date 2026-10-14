@@ -7,7 +7,7 @@
 // One house per run, to stay inside the editor's time limit: the name is read from
 // Temp/village-shots/houses_synty_house.txt (for example "Barracks"). Run models_import.cs first.
 //
-// KEYS: key | prefab under Assets/ | size in metres | which size (h height, x length, z depth, w widest) |
+// KEYS: key | prefab under Assets/ (several joined with + are placed together, sized by the first) | size in metres | which size (h height, x length, z depth, w widest) |
 // turn in degrees to make the prefab face Unity -z | how it stands (pivot: as modelled, sit: bottom on the anchor).
 var KEYS = new string[] {
     "barrel|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Barrel_01|0.85|h|0|pivot",
@@ -59,6 +59,50 @@ var KEYS = new string[] {
     "cart|PolygonFantasyKingdom/Prefabs/Vehicles/SM_Veh_Cart_01|3.0|z|0|pivot",
     "firepit|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_FirePit_01|1.0|x|0|pivot",
     "rock|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Rock_01|1.0|w|0|sit",
+    "cheese|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Cheese_Wheel_01|0.34|w|0|sit",
+    "sausages|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Meat_Sausages_01|0.85|h|0|pivot",
+    "bellows|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Bellows_01|0.9|w|0|pivot",
+    "forge|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Forge_01|1.6|h|0|pivot",
+    "grindstone|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Grinding_Wheel_01|1.1|h|0|pivot",
+    "hammer|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Hammer_01|0.45|h|0|pivot",
+    "pickaxe|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Pickaxe_01|0.85|h|0|pivot",
+    "saw|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Saw_01|0.7|h|0|pivot",
+    "shovel|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Shovel_01|1.2|h|0|pivot",
+    "cage_cart|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Cage_Cart_01|2|h|0|pivot",
+    "lectern|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Church_Lectern_01|1.25|h|0|pivot",
+    "book|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Book_01|0.3|w|0|pivot",
+    "books|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Books_01|0.45|w|0|pivot",
+    "crystal|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Crystal_01|1|h|0|pivot",
+    "broom|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Broom_01|1.4|h|0|pivot",
+    "herbs|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Herb_Bunch_01|0.45|h|0|pivot",
+    "planter|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_PlanterBox_Preset_01|1.4|x|0|pivot",
+    "cabbage|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Cabbage_01|0.32|w|0|pivot",
+    "oar|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Oar_01|2.2|w|0|pivot",
+    "log|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Log_01|2.4|w|0|pivot",
+    "plank|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Plank_01|2.4|w|0|pivot",
+    "planks|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Ground_Planks_01|2.4|w|0|pivot",
+    "bucket|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Bucket_01|0.4|h|0|pivot",
+    "tub|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Wash_Bucket_01|0.9|w|0|pivot",
+    "horseshoe|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Forge_Horseshoe_01|0.3|w|0|pivot",
+    "candles|PolygonFantasyKingdom/Prefabs/Props/Preset/SM_Prop_Candle_Melted_Group_01|0.3|h|0|pivot",
+    "garlic|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Garlic_Rope_01|0.8|h|0|pivot",
+    "anvil2|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Anvil_02|0.75|w|0|pivot",
+    "chopping_board|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Chopping_Board_01|0.5|w|0|pivot",
+    "ship_wheel|PolygonPirates/Prefabs/Props/SM_Prop_ShipWheel_01|1.1|h|0|pivot",
+    "ship_anchor|PolygonPirates/Prefabs/Props/SM_Prop_Anchor_01|1.4|h|0|pivot",
+    "lantern|PolygonPirates/Prefabs/Props/SM_Prop_Lantern_01|0.45|h|0|pivot",
+    "fishing_rod|PolygonPirates/Prefabs/Props/SM_Prop_FishingRod_01|2.4|h|0|pivot",
+    "chest|PolygonPirates/Prefabs/Props/SM_Prop_Chest_01|0.7|w|0|pivot",
+    "rope|PolygonVikings/Prefabs/Props/SM_Prop_Rope_01|0.7|w|0|pivot",
+    "fish_pile|PolygonVikings/Prefabs/Props/SM_Prop_Fish_Pile_01|0.9|w|0|pivot",
+    "fish_hanging|PolygonVikings/Prefabs/Props/SM_Prop_Fish_Hanging_01|0.8|h|0|pivot",
+    "skull|PolygonVikings/Prefabs/Props/SM_Prop_Skull_01|0.35|w|0|sit",
+    "skull_pole|PolygonVikings/Prefabs/Props/SM_Prop_Skull_Pole_01|2.2|h|0|pivot",
+    "spike|PolygonVikings/Prefabs/Props/SM_Prop_Wood_Spike_01|1.8|h|0|pivot",
+    "cow_skull|PolygonVikings/Prefabs/Props/SM_Prop_Cow_Skull_01|0.6|w|0|pivot",
+    "quiver|PolygonElvenRealm/Prefabs/Characters/Attachments/SM_Prop_Quiver_01+PolygonElvenRealm/Prefabs/Characters/Attachments/SM_Prop_Quiver_01_Arrows_01|1.0|h|0|sit",
+    "flowers|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Bush_Flowers_01|0.7|h|0|pivot",
+    "sunflower|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Sunflower_01|1.6|h|0|pivot",
 };
 
 var log = new System.Text.StringBuilder("SYNTY|");
@@ -119,11 +163,19 @@ foreach (var a in anchors)
     }
     string[] spec;
     if (!specs.TryGetValue(key, out spec)) { log.Append("unknown key " + key + "; "); continue; }
-    var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/" + spec[1] + ".prefab");
-    if (!prefab) { log.Append("missing prefab " + spec[1] + "; "); continue; }
+    // one prefab, or several placed together as one (a quiver and its arrows)
+    var paths = spec[1].Split('+');
+    var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/" + paths[0] + ".prefab");
+    if (!prefab) { log.Append("missing prefab " + paths[0] + "; "); continue; }
 
     var prop = (UnityEngine.GameObject)UnityEngine.Object.Instantiate(prefab);
     prop.transform.position = UnityEngine.Vector3.zero; prop.transform.rotation = UnityEngine.Quaternion.identity; prop.transform.localScale = UnityEngine.Vector3.one;
+    for (var pi = 1; pi < paths.Length; ++pi)
+    {
+        var extra = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/" + paths[pi] + ".prefab");
+        if (extra) ((UnityEngine.GameObject)UnityEngine.Object.Instantiate(extra, prop.transform, false)).transform.localPosition = UnityEngine.Vector3.zero;
+        else log.Append("missing prefab " + paths[pi] + "; ");
+    }
     var natural = boundsOf(prop);
     var size = float.Parse(spec[2], inv);
     var axis = spec[3];

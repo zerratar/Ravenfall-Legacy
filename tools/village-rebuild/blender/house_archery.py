@@ -1,6 +1,7 @@
 # Archer Range (ranged): a fletcher's hut, a shooting lane of three targets on hay bales with arrows in them, a
 # shooting line, a bow rack and quivers. The middle target has an apple on top with an arrow through it.
-# About 9 x 9 m, facing +y (Unity -z).
+# The hay, rack, bows, quivers, barrel and tree are Synty props; the targets (their arrows and the apple belong to
+# them), the hut and the shooting line are ours. About 9 x 9 m, facing +y (Unity -z).
 exec(open('house_kit.py').read())
 b = Builder("Village_House_Archery")
 f = Frame()
@@ -23,16 +24,7 @@ def arrow(b, a, c):
         b.face([tuple(a + d * 0.02), tuple(a + d * 0.16), tuple(a + d * 0.04 + s * 0.06 * sg)], s.cross(d) * sg, "PAL", FLETCH)
         b.face([tuple(a + d * 0.02), tuple(a + d * 0.04 + s * 0.06 * sg), tuple(a + d * 0.16)], -s.cross(d) * sg, "PAL", FLETCH)
 
-def bow(b, f, x, y, z0, h=1.3):
-    """A bow standing on end against a rack: a curved stave and its string."""
-    pts = [f.p(x, y + math.sin(math.pi * k / 6) * 0.18, z0 + h * k / 6) for k in range(7)]
-    for i in range(6): bar(b, pts[i], pts[i + 1], 0.045, 0.045, "PAL", TIMBER)
-    bar(b, pts[0], pts[-1], 0.01, 0.01, "PAL", WHITE)
-
 yard(b, f, 4.6, 4.4, DIRT, seed=8.0)
-# grass in the lane
-for k in range(2):
-    b.box(f.p(-1.4, -0.4 + k * 1.6, 0.06), (5.0, 1.55, 0.06), "PAL", "666f4a" if k % 2 else "5c7a46", rot_z=f.rot)
 
 # the fletcher's hut
 hf = f.sub(2.5, -2.4, 0.0)
@@ -57,20 +49,14 @@ b.box(tuple(ac + Vector((0, 0, 0.14))), (0.02, 0.02, 0.07), "PAL", TIMBER, rot_z
 b.box(tuple(ac + Vector((0.04, 0, 0.15))), (0.07, 0.02, 0.04), "PAL", LEAF, rot_z=0.4)
 arrow(b, tuple(ac + Vector((0.55, 0.3, 0.02))), tuple(ac + Vector((-0.25, -0.13, -0.01))))
 # the shooting line, a bow rack and two quivers
-bar(b, f.p(-4.0, 2.75, 0.1), f.p(0.6, 2.75, 0.1), 0.18, 0.16, "PAL", TIMBER_L)            # the shooting line
+for x in (-4.0, -1.7):            # the shooting line: two planks, each laid from its end
+    anchor(f, "plank", x, 2.75, yaw=math.pi / 2, s=0.95)
 rf = f.sub(1.2, 2.2, 0.0)
-for s in (-1, 1):
-    b.box(rf.p(s * 0.8, 0, 0.6), (0.12, 0.12, 1.2), "PAL", TIMBER, rot_z=rf.rot)
-bar(b, rf.p(-0.9, 0, 1.15), rf.p(0.9, 0, 1.15), 0.1, 0.1, "PAL", TIMBER_L)
-bar(b, rf.p(-0.9, 0.2, 0.1), rf.p(0.9, 0.2, 0.1), 0.1, 0.1, "PAL", TIMBER_L)
+anchor(rf, "weapon_rack", 0, 0)
 for x in (-0.5, 0.0, 0.5):
-    bow(b, rf, x, 0.12, 0.08)
+    anchor(rf, "bow", x, 0.22, 0.66, tilt=math.radians(-12))
 for qx in (2.6, 3.0):
-    qc = f.p(qx, 2.6, 0.0)
-    b.lathe(qc, [(0.12, 0.0), (0.14, 0.75), (0.0, 0.75)], 8, "PAL", "6f4f3a")
-    for k in range(4):
-        a = k * 1.6
-        arrow(b, (qc[0] + math.cos(a) * 0.06, qc[1] + math.sin(a) * 0.06, 1.12), (qc[0] + math.cos(a) * 0.05, qc[1] + math.sin(a) * 0.05, 0.6))
+    anchor(f, "quiver", qx, 2.6, yaw=qx * 2.0)
 barrel(b, f, 3.8, 0.6)
 tree(b, f, -3.6, -3.7, h=3.6, r=1.1)                      # behind the targets, clear of the range
 

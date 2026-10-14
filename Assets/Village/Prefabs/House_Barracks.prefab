@@ -33,7 +33,7 @@ Transform:
   m_Children:
   - {fileID: 6149204034581708208}
   - {fileID: 1577208414726138964}
-  - {fileID: 8781034655874111207}
+  - {fileID: 4349856060743023849}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7308004630147180401
@@ -71,7 +71,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 8.488571, y: 5.8403788, z: 8.351603}
   m_Center: {x: -0.38869667, y: 2.9201894, z: 0.7027564}
---- !u!1 &7174378420967699331
+--- !u!1 &7462248671830644462
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -79,8 +79,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8781034655874111207}
-  - component: {fileID: 4047346270047268496}
+  - component: {fileID: 4349856060743023849}
+  - component: {fileID: 8279464320750049210}
   m_Layer: 0
   m_Name: Yard
   m_TagString: Untagged
@@ -88,13 +88,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8781034655874111207
+--- !u!4 &4349856060743023849
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7174378420967699331}
+  m_GameObject: {fileID: 7462248671830644462}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
   m_LocalPosition: {x: 1.2, y: 0, z: -1.9}
@@ -103,13 +103,13 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5144551302369635359}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4047346270047268496
+--- !u!114 &8279464320750049210
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7174378420967699331}
+  m_GameObject: {fileID: 7462248671830644462}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64ac437ad0a71c5408f7eac1faa561dc, type: 3}

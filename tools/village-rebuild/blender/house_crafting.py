@@ -1,6 +1,8 @@
 # Crafting House: a workshop with an open smithy beside it: a glowing forge under a brick hood, an anvil on its
 # stump, bellows, a quench barrel, a grindstone, a tool rack, a workbench with a new sword on it, and a lucky
-# horseshoe over the door. About 9 x 9 m, facing +y (Unity -z).
+# horseshoe over the door. The bellows, anvil, stump, hammer, grindstone, workbench, sword, chest, barrel and crate
+# are Synty props; the workshop, the smithy and its forge, the tool rack and the horseshoe are ours.
+# About 9 x 9 m, facing +y (Unity -z).
 exec(open('house_kit.py').read())
 b = Builder("Village_House_Crafting")
 f = Frame()
@@ -50,38 +52,16 @@ for s in (-1, 1):
     b.box(gf.p(s * 0.62, 0.4, 1.25), (0.12, 0.12, 0.85), "PAL", STONE_D, rot_z=gf.rot)
 # bellows beside the forge
 bw = gf.sub(1.15, 0.1, 0.0)
-b.quad_box([bw.p(-0.2, -0.45, 0.55), bw.p(0.2, -0.45, 0.55), bw.p(0.2, 0.35, 0.55), bw.p(-0.2, 0.35, 0.55)],
-           [bw.p(-0.2, -0.45, 0.8), bw.p(0.2, -0.45, 0.8), bw.p(0.05, 0.35, 0.62), bw.p(-0.05, 0.35, 0.62)], "PAL", LEATHER)
-for z in (0.5, 0.82):
-    b.box(bw.p(0, -0.05, z), (0.46, 0.85, 0.05), "PAL", TIMBER_L, rot_z=bw.rot)
-b.box(bw.p(0, 0.25, 0.27), (0.4, 0.4, 0.54), "PAL", TIMBER, rot_z=bw.rot)
-# the anvil on its stump
+anchor(bw, "bellows", 0, 0, yaw=-math.pi / 2)
+# the anvil on its stump, a hammer on it and a bar still glowing
 af = f.sub(-1.8, -0.9, 0.4)
-b.lathe(af.p(0, 0, 0), [(0.36, 0.0), (0.3, 0.1), (0.3, 0.55), (0.0, 0.55)], 9, "PAL", TIMBER)
-b.box(af.p(0, 0, 0.6), (0.5, 0.3, 0.1), "PAL", IRON_D, rot_z=af.rot)
-b.box(af.p(0, 0, 0.72), (0.26, 0.18, 0.16), "PAL", IRON_D, rot_z=af.rot)
-b.box(af.p(-0.05, 0, 0.87), (0.6, 0.24, 0.14), "PAL", IRON_D, rot_z=af.rot)
-log(b, af.p(0.25, 0, 0.88), af.p(0.5, 0, 0.9), 0.08, bark=IRON_D, end=IRON_D, n=6)
-b.sphere(af.p(0.53, 0, 0.9), 0.045, "PAL", IRON_D, seg=5, rings=3)
-b.box(af.p(-0.1, 0.0, 0.96), (0.32, 0.06, 0.03), "GLASS", EMBER, rot_z=af.rot + 0.3)                     # a bar still glowing
-hm = af.sub(0.1, 0.05, 0.9)
-bar(b, hm.p(0, 0, 0.97), hm.p(0.3, 0, 0.97), 0.035, 0.035, "PAL", TIMBER_L)
-b.box(hm.p(0, 0, 0.99), (0.08, 0.14, 0.08), "PAL", STEEL, rot_z=hm.rot)
+anchor(af, "stump", 0, 0, s=1.1)
+anchor(af, "anvil", 0, 0, 0.52, yaw=math.pi / 2)
+b.box(af.p(-0.05, 0.0, 0.99), (0.32, 0.06, 0.03), "GLASS", EMBER, rot_z=af.rot + 0.3)
+anchor(af, "hammer", 0.2, 0.12, 0.98, tilt=math.pi / 2)
 # the quench barrel and the grindstone
 barrel(b, f, -0.9, -2.6, r=0.34, h=0.75)
-b.lathe(f.p(-0.9, -2.6, 0), [(0.28, 0.71), (0.0, 0.71)], 10, "GLASS", "396b7c")
-gs = f.sub(-1.2, 0.6, 0.6)
-for s in (-1, 1):
-    b.box(gs.p(s * 0.25, 0, 0.4), (0.08, 0.5, 0.8), "PAL", TIMBER, rot_z=gs.rot)
-c = Vector(gs.p(0, 0, 0.82)); ax = gs.R @ Vector((1, 0, 0)); fwd = gs.R @ Vector((0, 1, 0)); up = Vector((0, 0, 1))
-r0 = [c - ax * 0.07 + (fwd * math.cos(2 * math.pi * i / 10) + up * math.sin(2 * math.pi * i / 10)) * 0.38 for i in range(10)]
-r1 = [v + ax * 0.14 for v in r0]
-b.face([tuple(v) for v in r1], ax, "PAL", STONE); b.face([tuple(v) for v in r0], -ax, "PAL", STONE)
-for i in range(10):
-    j = (i + 1) % 10
-    b.face([tuple(r0[i]), tuple(r0[j]), tuple(r1[j]), tuple(r1[i])], (r0[i] + r0[j]) / 2 - (c - ax * 0.07), "PAL", STONE_D)
-bar(b, gs.p(-0.32, 0, 0.82), gs.p(0.42, 0, 0.82), 0.04, 0.04, "PAL", IRON_D)
-bar(b, gs.p(0.42, 0, 0.82), gs.p(0.42, 0.18, 0.62), 0.04, 0.04, "PAL", IRON_D)
+anchor(f, "grindstone", -1.2, 0.6, yaw=0.6)
 
 # tool rack on the workshop's east wall: hammers and tongs
 tw = hf.sub(-2.2, 0.2, math.pi / 2)
@@ -89,21 +69,11 @@ b.box(tw.p(0, 0.06, 1.7), (1.4, 0.06, 0.12), "PAL", TIMBER_L, rot_z=tw.rot)
 for k, x in enumerate((-0.45, -0.15, 0.15, 0.45)):
     bar(b, tw.p(x, 0.12, 1.65), tw.p(x, 0.12, 1.05), 0.035, 0.035, "PAL", TIMBER_L if k % 2 == 0 else IRON_D)
     if k % 2 == 0: b.box(tw.p(x, 0.12, 1.66), (0.18, 0.07, 0.08), "PAL", STEEL, rot_z=tw.rot)
-# the workbench with a new sword and a chest waiting for its lock
+# the workbench with a new sword on it, and a chest waiting for its lock
 wb = f.sub(1.4, 1.5, 0.0)
-b.box(wb.p(0, 0, 0.82), (1.8, 0.8, 0.1), "PAL", TIMBER_L, rot_z=wb.rot)
-for x in (-0.8, 0.8):
-    for y in (-0.32, 0.32):
-        b.box(wb.p(x, y, 0.4), (0.12, 0.12, 0.8), "PAL", TIMBER, rot_z=wb.rot)
-bar(b, wb.p(-0.6, 0.0, 0.89), wb.p(-0.38, 0.0, 0.89), 0.04, 0.04, "PAL", TIMBER)
-bar(b, wb.p(-0.38, -0.12, 0.89), wb.p(-0.38, 0.12, 0.89), 0.04, 0.04, "PAL", GOLD)
-bar(b, wb.p(-0.36, 0.0, 0.88), wb.p(0.55, 0.0, 0.88), 0.07, 0.02, "PAL", STEEL)
-cf = f.sub(3.3, 0.8, -0.3)
-b.box(cf.p(0, 0, 0.3), (0.9, 0.6, 0.6), "PAL", TIMBER_L, rot_z=cf.rot)
-b.box(cf.p(0, 0, 0.66), (0.92, 0.62, 0.14), "PAL", TIMBER, rot_z=cf.rot)
-for x in (-0.3, 0.3):
-    b.box(cf.p(x, 0, 0.36), (0.07, 0.63, 0.74), "PAL", IRON_D, rot_z=cf.rot)
-b.box(cf.p(0, 0.31, 0.5), (0.1, 0.03, 0.12), "PAL", GOLD, rot_z=cf.rot)
+anchor(wb, "workbench", 0, 0)
+anchor(wb, "sword", 0.0, 0.05, 0.86, yaw=math.pi / 2, tilt=math.pi / 2, s=0.9)
+anchor(f, "chest", 3.3, 0.8, yaw=-0.3)
 # a stack of bars and a crate of ore
 for k in range(3):
     for j in range(3 - k):
