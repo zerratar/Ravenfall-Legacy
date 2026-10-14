@@ -14,6 +14,7 @@
     <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
     <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
     <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-details.uss" />
     <engine:Style src="project://database/Assets/UI/Styles/ravenfall-connection.uss" />
 
     <engine:VisualElement name="conn-layer" class="rf-conn-layer" picking-mode="Ignore">
