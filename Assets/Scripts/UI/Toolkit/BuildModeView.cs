@@ -101,6 +101,8 @@ namespace Shinobytes.UI
         private VisualElement roadRing;
         private Label roadTypeCaption;
         private Label roadCostCaption;
+        private Label roadShapeCaption;
+        private VisualElement roadShape;
         private VisualElement roadCosts;
         private VisualElement roadKeys;
         private VisualElement roadActions;
@@ -224,6 +226,8 @@ namespace Shinobytes.UI
             roadRing = root.Q<VisualElement>("road-ring");
             roadTypeCaption = root.Q<Label>("road-type-caption");
             roadCostCaption = root.Q<Label>("road-cost-caption");
+            roadShapeCaption = root.Q<Label>("road-shape-caption");
+            roadShape = root.Q<VisualElement>("road-shape");
             roadCosts = root.Q<VisualElement>("road-costs");
             roadKeys = root.Q<VisualElement>("road-keys");
             roadActions = root.Q<VisualElement>("road-actions");
@@ -1335,6 +1339,42 @@ namespace Shinobytes.UI
                 roadTypes.Add(chip);
             }
 
+            // Shape, while editing: the picked point's width, and how round each end is.
+            roadShapeCaption.style.display = drawing ? DisplayStyle.None : DisplayStyle.Flex;
+            roadShape.style.display = drawing ? DisplayStyle.None : DisplayStyle.Flex;
+            roadShape.Clear();
+            if (!drawing)
+            {
+                roadShapeCaption.text = Localization.UI_ROAD_SHAPE_CAPTION;
+                if (tool.SelectedPoint >= 0)
+                {
+                    var row = new VisualElement();
+                    row.AddToClassList("rf-build-road-shape-row");
+                    var label = new Label(string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_POINT_WIDTH, tool.SelectedPoint + 1)) { pickingMode = PickingMode.Ignore };
+                    label.AddToClassList("rf-build-road-shape-row__name");
+                    var narrower = new Button(() => mode?.Roads.ChangePointWidth(-0.1f)) { text = "\uf068" };
+                    narrower.AddToClassList("rf-icon");
+                    narrower.AddToClassList("rf-build-road-step");
+                    narrower.SetEnabled(!tool.Busy && tool.PointWidth > VillageRoads.MinWidth + 0.001f);
+                    var value = new Label(string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_WIDTH_VALUE, tool.PointWidth.ToString("0.0", CultureInfo.InvariantCulture))) { pickingMode = PickingMode.Ignore };
+                    value.AddToClassList("rf-build-road-shape-row__value");
+                    var wider = new Button(() => mode?.Roads.ChangePointWidth(0.1f)) { text = "\uf067" };
+                    wider.AddToClassList("rf-icon");
+                    wider.AddToClassList("rf-build-road-step");
+                    wider.SetEnabled(!tool.Busy && tool.PointWidth < VillageRoads.MaxWidth - 0.001f);
+                    row.Add(label); row.Add(narrower); row.Add(value); row.Add(wider);
+                    roadShape.Add(row);
+                }
+                else
+                {
+                    var hint = new Label(Localization.UI_ROAD_PICK_POINT) { pickingMode = PickingMode.Ignore };
+                    hint.AddToClassList("rf-build-road-shape-hint");
+                    roadShape.Add(hint);
+                }
+                AddEndRow(Localization.UI_ROAD_START, true, road.StartRound);
+                AddEndRow(Localization.UI_ROAD_END, false, road.EndRound);
+            }
+
             // Cost: what the road drawn so far costs, or what applying the change costs or gives back.
             roadCosts.Clear();
             if (drawing)
@@ -1349,6 +1389,14 @@ namespace Shinobytes.UI
                 AddRoadRow("\uf545", Localization.UI_ROAD_ROW_LENGTH, string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_CHANGE_TO,
                     string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_METRES, Mathf.RoundToInt(tool.SavedLength)),
                     string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_METRES, Mathf.RoundToInt(tool.EditLength))), null, null);
+                if (tool.WidthsChanged)
+                {
+                    // the average width along the road, as the price counts it
+                    float Average(IReadOnlyList<Vector2> p, IReadOnlyList<float> w) { var l = VillageRoads.PaidLength(p); return l > 0f ? VillageRoads.PaidLength(p, w) / l : 1f; }
+                    var before = string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_WIDTH_VALUE, tool.SavedAverageWidth.ToString("0.00", CultureInfo.InvariantCulture));
+                    var after = string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_WIDTH_VALUE, Average(road.Points, road.Widths).ToString("0.00", CultureInfo.InvariantCulture));
+                    AddRoadRow("\uf337", Localization.UI_ROAD_ROW_WIDTH, string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_CHANGE_TO, before, after), null, null);
+                }
                 if (tool.SavedType != road.Type)
                 {
                     AddRoadRow("\uf018", Localization.UI_ROAD_ROW_TYPE, string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_CHANGE_TO, RoadName(tool.SavedType), RoadName(road.Type)), null, null);
@@ -1384,6 +1432,7 @@ namespace Shinobytes.UI
                 AddRoadKey(Localization.UI_ROAD_KEYNAME_DRAG, Localization.UI_ROAD_KEY_MOVE);
                 AddRoadKey(Localization.UI_ROAD_KEYNAME_CTRL_CLICK, Localization.UI_ROAD_KEY_ADD);
                 AddRoadKey(Localization.UI_ROAD_KEYNAME_RIGHT_CLICK, Localization.UI_ROAD_KEY_REMOVE);
+                AddRoadKey("[ ]", Localization.UI_ROAD_KEY_WIDTH);
                 AddRoadKey("Esc", dirty ? Localization.UI_ROAD_KEY_UNDO_CHANGES : Localization.UI_ROAD_KEY_DESELECT);
                 if (dirty) AddRoadKey("Enter", Localization.UI_ROAD_APPLY);
             }
@@ -1468,6 +1517,26 @@ namespace Shinobytes.UI
                 row.Add(note);
             }
             roadCosts.Add(row);
+        }
+
+        /// <summary>One end of the road: round, soft or square, the one it is lit.</summary>
+        private void AddEndRow(string name, bool start, float round)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("rf-build-road-shape-row");
+            var label = new Label(name) { pickingMode = PickingMode.Ignore };
+            label.AddToClassList("rf-build-road-shape-row__name");
+            row.Add(label);
+            foreach (var (text, value) in new[] { (Localization.UI_ROAD_END_ROUND, 1f), (Localization.UI_ROAD_END_SOFT, 0.5f), (Localization.UI_ROAD_END_SQUARE, 0f) })
+            {
+                var chip = new Button(() => mode?.Roads.SetEnd(start, value)) { text = text };
+                chip.AddToClassList("rf-build-road-chip");
+                chip.AddToClassList("rf-build-road-chip--small");
+                chip.EnableInClassList("rf-build-road-chip--current", Mathf.Abs(round - value) < 0.26f);
+                chip.SetEnabled(!mode.Roads.Busy);
+                row.Add(chip);
+            }
+            roadShape.Add(row);
         }
 
         private void AddRoadKey(string key, string text)

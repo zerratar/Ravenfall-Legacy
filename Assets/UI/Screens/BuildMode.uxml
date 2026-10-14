@@ -116,6 +116,9 @@
                 <engine:Label name="road-type-caption" class="rf-build-caption rf-build-road__caption" />
                 <engine:VisualElement name="road-types" class="rf-build-road__types" />
 
+                <engine:Label name="road-shape-caption" class="rf-build-caption rf-build-road__caption" />
+                <engine:VisualElement name="road-shape" class="rf-build-road__shape" />
+
                 <engine:Label name="road-cost-caption" class="rf-build-caption rf-build-road__caption" />
                 <engine:VisualElement name="road-costs" class="rf-build-road__costs" />
 

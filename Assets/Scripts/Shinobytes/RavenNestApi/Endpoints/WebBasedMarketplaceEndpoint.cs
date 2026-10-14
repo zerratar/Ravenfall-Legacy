@@ -91,16 +91,16 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<RoadInfo[]>(ApiRequestTarget.Village, ApiRequestType.Get);
         }
 
-        public Task<RoadResult> BuildRoadAsync(int type, double[] points)
+        public Task<RoadResult> BuildRoadAsync(int type, double[] points, double[] widths = null, double startRound = 1, double endRound = 1)
         {
             return request.Create().Identifier("roads").Method("build").Build()
-                .SendAsync<RoadResult, RoadRequest>(ApiRequestTarget.Village, ApiRequestType.Post, new RoadRequest { Type = type, Points = points });
+                .SendAsync<RoadResult, RoadRequest>(ApiRequestTarget.Village, ApiRequestType.Post, new RoadRequest { Type = type, Points = points, Widths = widths, StartRound = startRound, EndRound = endRound });
         }
 
-        public Task<RoadResult> ChangeRoadAsync(Guid id, int type, double[] points)
+        public Task<RoadResult> ChangeRoadAsync(Guid id, int type, double[] points, double[] widths = null, double startRound = 1, double endRound = 1)
         {
             return request.Create().Identifier("roads").Method(id.ToString()).AddParameter("change").Build()
-                .SendAsync<RoadResult, RoadRequest>(ApiRequestTarget.Village, ApiRequestType.Post, new RoadRequest { Type = type, Points = points });
+                .SendAsync<RoadResult, RoadRequest>(ApiRequestTarget.Village, ApiRequestType.Post, new RoadRequest { Type = type, Points = points, Widths = widths, StartRound = startRound, EndRound = endRound });
         }
 
         public Task<RoadResult> RemoveRoadAsync(Guid id)
@@ -214,18 +214,27 @@ namespace RavenNest.SDK.Endpoints
         public double Coins { get; set; }
     }
 
-    /// <summary>Mirrors RavenNest.Models.VillageRoadInfo. Points are x, z pairs.</summary>
+    /// <summary>
+    /// Mirrors RavenNest.Models.VillageRoadInfo. Points are x, z pairs; Widths one per point (null: 1
+    /// everywhere); the ends 1 round to 0 square.
+    /// </summary>
     public class RoadInfo
     {
         public Guid Id { get; set; }
         public int Type { get; set; }
         public double[] Points { get; set; }
+        public double[] Widths { get; set; }
+        public double StartRound { get; set; } = 1;
+        public double EndRound { get; set; } = 1;
     }
 
     public class RoadRequest
     {
         public int Type { get; set; }
         public double[] Points { get; set; }
+        public double[] Widths { get; set; }
+        public double? StartRound { get; set; }
+        public double? EndRound { get; set; }
     }
 
     /// <summary>Mirrors RavenNest.Models.VillageRoadResult, with the village's resources after it.</summary>

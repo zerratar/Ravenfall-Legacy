@@ -16,7 +16,9 @@ using UnityEngine;
 /// </para>
 /// <para>
 /// <b>Editing.</b> Click a road to select it. Drag a point to move it, Ctrl click the road to add
-/// a point, right click a point to take it away, pick another type in the panel. Nothing is spent
+/// a point, right click a point to take it away, pick another type in the panel. Click a point to
+/// pick it, then [ and ] (or the panel) make the road narrower or wider there; the panel also shapes
+/// each end, round to square. Nothing is spent
 /// until Apply: the panel shows what the change costs, or gives back, first. Cancel or Esc puts the
 /// road back as it was. A road under a building is reached by clicking the building again.
 /// </para>
@@ -37,10 +39,10 @@ public class VillageRoadTool : MonoBehaviour
     private Vector2 cursor;
     private bool hasCursor;
 
-    // editing: the selected road's points and type as they are being changed, and as saved
-    private List<Vector2> savedPoints;
-    private int savedType;
+    // editing: the selected road as it is saved, to compare with and go back to
+    private VillageRoads.Shape saved;
     private int dragIndex = -1;
+    private const float WidthStep = 0.1f;
 
     private readonly List<LineRenderer> handles = new List<LineRenderer>();
     private Material handleMaterial;
@@ -57,12 +59,29 @@ public class VillageRoadTool : MonoBehaviour
     public int DrawPointCount => drawPoints.Count;
 
     /// <summary>The selected road has changes that are not saved yet.</summary>
-    public bool Dirty => Selected != null && (Selected.Type != savedType || !SamePoints(Selected.Points, savedPoints));
+    public bool Dirty => Selected != null && saved != null && !saved.Same(Selected);
 
     /// <summary>The selected road's length as saved, and as it would be after Apply.</summary>
-    public float SavedLength => savedPoints != null ? VillageRoads.PaidLength(savedPoints) : 0f;
+    public float SavedLength => saved != null ? VillageRoads.PaidLength(saved.Points) : 0f;
     public float EditLength => Selected != null ? VillageRoads.PaidLength(Selected.Points) : 0f;
-    public int SavedType => savedType;
+    public int SavedType => saved != null ? saved.Type : 0;
+
+    /// <summary>The point of the selected road that width changes apply to, or -1.</summary>
+    public int SelectedPoint { get; private set; } = -1;
+
+    public float PointWidth => Selected != null && SelectedPoint >= 0 && SelectedPoint < Selected.Widths.Count ? Selected.Widths[SelectedPoint] : 1f;
+    public bool WidthsChanged => saved != null && Selected != null && !SameWidths(saved.Widths, Selected.Widths);
+
+    /// <summary>The saved road's average width along its length, as the price counts it.</summary>
+    public float SavedAverageWidth
+    {
+        get
+        {
+            if (saved == null) return 1f;
+            var length = VillageRoads.PaidLength(saved.Points);
+            return length > 0f ? VillageRoads.PaidLength(saved.Points, saved.Widths) / length : 1f;
+        }
+    }
 
     public event Action Changed;
     public event Action<string> Failed;
@@ -136,8 +155,8 @@ public class VillageRoadTool : MonoBehaviour
         if (Selected == road) return;
         if (Selected != null) Revert();
         Selected = road;
-        savedPoints = new List<Vector2>(road.Points);
-        savedType = road.Type;
+        saved = VillageRoads.Shape.Of(road);
+        SelectedPoint = -1;
         DrawHandles();
         Changed?.Invoke();
     }
@@ -148,7 +167,8 @@ public class VillageRoadTool : MonoBehaviour
         if (Selected == null) return;
         Revert();
         Selected = null;
-        savedPoints = null;
+        saved = null;
+        SelectedPoint = -1;
         dragIndex = -1;
         HideHandles();
         Changed?.Invoke();
@@ -164,6 +184,34 @@ public class VillageRoadTool : MonoBehaviour
         if (info == null || !info.Unlocked) return;
 
         road.Type = type;
+        roads.Rebuild(road);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Makes the road narrower or wider at the selected point, saved with Apply.</summary>
+    public void ChangePointWidth(float delta)
+    {
+        var road = Selected;
+        var roads = Roads;
+        if (road == null || roads == null || Busy || SelectedPoint < 0) return;
+        VillageRoads.EnsureWidths(road);
+        var now = road.Widths[SelectedPoint];
+        var next = Mathf.Clamp(Mathf.Round((now + delta) * 10f) / 10f, VillageRoads.MinWidth, VillageRoads.MaxWidth);
+        if (Mathf.Approximately(now, next)) return;
+        road.Widths[SelectedPoint] = next;
+        roads.Rebuild(road);
+        DrawHandles();
+        Changed?.Invoke();
+    }
+
+    /// <summary>How round an end of the selected road is, 1 round to 0 square; saved with Apply.</summary>
+    public void SetEnd(bool start, float round)
+    {
+        var road = Selected;
+        var roads = Roads;
+        if (road == null || roads == null || Busy) return;
+        round = Mathf.Clamp01(round);
+        if (start) road.StartRound = round; else road.EndRound = round;
         roads.Rebuild(road);
         Changed?.Invoke();
     }
@@ -193,15 +241,15 @@ public class VillageRoadTool : MonoBehaviour
         Changed?.Invoke();
         try
         {
-            var error = await roads.ChangeAsync(road, road.Type, new List<Vector2>(road.Points), savedPoints, savedType);
+            var error = await roads.ChangeAsync(road, saved);
             if (error != null)
             {
                 Failed?.Invoke(ErrorText(error));
             }
 
             // saved, or put back by ChangeAsync on failure: either way, this is now the saved road
-            savedPoints = new List<Vector2>(road.Points);
-            savedType = road.Type;
+            saved = VillageRoads.Shape.Of(road);
+            if (SelectedPoint >= road.Points.Count) SelectedPoint = -1;
             if (Selected == road) DrawHandles();
         }
         finally
@@ -226,7 +274,8 @@ public class VillageRoadTool : MonoBehaviour
             else
             {
                 Selected = null;
-                savedPoints = null;
+                saved = null;
+                SelectedPoint = -1;
                 HideHandles();
             }
         }
@@ -245,8 +294,9 @@ public class VillageRoadTool : MonoBehaviour
     {
         var roads = Roads;
         if (roads == null || Selected == null) return default;
-        var after = roads.Cost(Selected.Type, EditLength);
-        var before = roads.Cost(savedType, SavedLength);
+        // as the server prices it: length times width
+        var after = roads.Cost(Selected.Type, VillageRoads.PaidLength(Selected.Points, Selected.Widths));
+        var before = roads.Cost(saved.Type, VillageRoads.PaidLength(saved.Points, saved.Widths));
         return (after.wood - before.wood, after.ore - before.ore, after.fish - before.fish, after.wheat - before.wheat, after.coins - before.coins);
     }
 
@@ -263,10 +313,10 @@ public class VillageRoadTool : MonoBehaviour
         var road = Selected;
         var roads = Roads;
         // while saving, the server's answer decides what the road is
-        if (road == null || roads == null || savedPoints == null || Busy) return;
-        if (road.Type == savedType && SamePoints(road.Points, savedPoints)) return;
-        road.Type = savedType;
-        road.Points = new List<Vector2>(savedPoints);
+        if (road == null || roads == null || saved == null || Busy) return;
+        if (saved.Same(road)) return;
+        saved.ApplyTo(road);
+        if (SelectedPoint >= road.Points.Count) SelectedPoint = -1;
         roads.Rebuild(road);
     }
 
@@ -404,6 +454,10 @@ public class VillageRoadTool : MonoBehaviour
             return true;
         }
 
+        // [ and ] narrow or widen the road at the picked point
+        if (SelectedPoint >= 0 && Input.GetKeyDown(KeyCode.LeftBracket)) { ChangePointWidth(-WidthStep); return true; }
+        if (SelectedPoint >= 0 && Input.GetKeyDown(KeyCode.RightBracket)) { ChangePointWidth(WidthStep); return true; }
+
         // dragging a point
         if (dragIndex >= 0)
         {
@@ -429,7 +483,14 @@ public class VillageRoadTool : MonoBehaviour
         var handle = HandleUnderMouse(road.Points);
         if (Input.GetMouseButtonDown(0) && handle >= 0)
         {
+            // a click picks the point (for its width) and starts dragging it
             dragIndex = handle;
+            if (SelectedPoint != handle)
+            {
+                SelectedPoint = handle;
+                DrawHandles();
+                Changed?.Invoke();
+            }
             return true;
         }
 
@@ -441,7 +502,11 @@ public class VillageRoadTool : MonoBehaviour
                 return true;
             }
 
+            VillageRoads.EnsureWidths(road);
             road.Points.RemoveAt(handle);
+            road.Widths.RemoveAt(handle);
+            if (SelectedPoint == handle) SelectedPoint = -1;
+            else if (SelectedPoint > handle) SelectedPoint--;
             roads.Rebuild(road);
             DrawHandles();
             Changed?.Invoke();
@@ -452,7 +517,12 @@ public class VillageRoadTool : MonoBehaviour
         if (Input.GetMouseButtonDown(0) && ctrl && mode.TryGetMousePoint(out var insertPoint))
         {
             var flat = Snap(new Vector2(insertPoint.x, insertPoint.z), null, road);
-            road.Points.Insert(InsertIndex(road.Points, flat), flat);
+            VillageRoads.EnsureWidths(road);
+            var at = InsertIndex(road.Points, flat);
+            // the new point takes the width between its neighbours
+            road.Points.Insert(at, flat);
+            road.Widths.Insert(at, (road.Widths[at - 1] + road.Widths[Mathf.Min(at, road.Widths.Count - 1)]) / 2f);
+            if (SelectedPoint >= at) SelectedPoint++;
             roads.Rebuild(road);
             DrawHandles();
             Changed?.Invoke();
@@ -516,6 +586,13 @@ public class VillageRoadTool : MonoBehaviour
     {
         var hall = gameManager.Village ? gameManager.Village.TownHall : null;
         return hall && hall.Wood >= c.wood && hall.Ore >= c.ore && hall.Fish >= c.fish && hall.Wheat >= c.wheat && hall.Coins >= c.coins;
+    }
+
+    private static bool SameWidths(IReadOnlyList<float> a, IReadOnlyList<float> b)
+    {
+        if (a.Count != b.Count) return false;
+        for (var i = 0; i < a.Count; ++i) if (Mathf.Abs(a[i] - b[i]) > 0.001f) return false;
+        return true;
     }
 
     private static bool SamePoints(IReadOnlyList<Vector2> a, IReadOnlyList<Vector2> b)
@@ -649,6 +726,8 @@ public class VillageRoadTool : MonoBehaviour
             handles.Add(line);
         }
 
+        // the picked point (its width changes with [ and ]) gets a bigger, bolder ring
+        var picked = Selected != null && ReferenceEquals(points, Selected.Points) ? SelectedPoint : -1;
         for (var i = 0; i < handles.Count; ++i)
         {
             var show = i < points.Count;
@@ -657,10 +736,12 @@ public class VillageRoadTool : MonoBehaviour
 
             var p = points[i];
             var height = roads.GroundHeight(new Vector3(p.x, 0f, p.y)) + 0.25f;
+            var radius = i == picked ? 0.8f : 0.55f;
+            handles[i].widthMultiplier = i == picked ? 0.3f : 0.18f;
             for (var k = 0; k < HandleRingPoints; ++k)
             {
                 var a = k / (float)HandleRingPoints * Mathf.PI * 2f;
-                handles[i].SetPosition(k, new Vector3(p.x + Mathf.Cos(a) * 0.55f, height, p.y + Mathf.Sin(a) * 0.55f));
+                handles[i].SetPosition(k, new Vector3(p.x + Mathf.Cos(a) * radius, height, p.y + Mathf.Sin(a) * radius));
             }
         }
     }

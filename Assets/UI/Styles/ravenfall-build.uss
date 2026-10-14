@@ -1563,6 +1563,78 @@
     color: var(--rf-text-dim);
 }
 
+/* The shape of the selected road: the picked point's width, and its ends. */
+.rf-build-road__shape {
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-build-road-shape-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-build .rf-build-road-shape-row__name {
+    width: 120px;
+    font-size: 14px;
+    color: var(--rf-text);
+}
+
+.rf-build .rf-build-road-shape-row__value {
+    width: 56px;
+    font-size: 15px;
+    color: var(--rf-accent-bright);
+    -unity-text-align: middle-center;
+}
+
+.rf-build .rf-build-road-shape-hint {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-build .rf-build-road-step {
+    width: 34px;
+    height: 30px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 13px;
+    color: var(--rf-text);
+    background-color: var(--rf-surface-raised);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+.rf-build .rf-build-road-step:hover {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-build .rf-build-road-step:disabled {
+    opacity: 0.4;
+}
+
+.rf-build .rf-build-road-chip--small {
+    height: 28px;
+    margin-bottom: 0;
+    font-size: 13px;
+}
+
 /* What the mouse and keys do: key caps flowing in rows. */
 .rf-build-road__keys {
     flex-direction: row;

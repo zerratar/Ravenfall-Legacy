@@ -16,12 +16,71 @@ public class VillageRoads : MonoBehaviour
         public Guid Id;
         public int Type;
         public List<Vector2> Points = new List<Vector2>();
+        /// <summary>The width at each point, a multiple of the type's width (MinWidth to MaxWidth).</summary>
+        public List<float> Widths = new List<float>();
+        /// <summary>How round each end is: 1 a half circle, 0 a square end that stops at the point.</summary>
+        public float StartRound = 1f;
+        public float EndRound = 1f;
         public List<Vector2> Samples = new List<Vector2>();
         public GameObject Object;
         public MeshRenderer Renderer;
         public Mesh Mesh;
         /// <summary>Drawn red: the road being drawn when the village cannot pay for it.</summary>
         public bool Tinted;
+    }
+
+    /// <summary>The narrowest and widest a village road may be at a point, as the server allows.</summary>
+    public const float MinWidth = 0.5f;
+    public const float MaxWidth = 2f;
+
+    /// <summary>
+    /// A road's type, points, widths and ends, as a copy: what is saved, to compare with and go back to
+    /// while it is being changed.
+    /// </summary>
+    public sealed class Shape
+    {
+        public int Type;
+        public List<Vector2> Points;
+        public List<float> Widths;
+        public float StartRound;
+        public float EndRound;
+
+        public static Shape Of(Road road)
+        {
+            EnsureWidths(road);
+            return new Shape { Type = road.Type, Points = new List<Vector2>(road.Points), Widths = new List<float>(road.Widths), StartRound = road.StartRound, EndRound = road.EndRound };
+        }
+
+        public void ApplyTo(Road road)
+        {
+            road.Type = Type;
+            road.Points = new List<Vector2>(Points);
+            road.Widths = new List<float>(Widths);
+            road.StartRound = StartRound;
+            road.EndRound = EndRound;
+        }
+
+        public bool Same(Road road)
+        {
+            if (road.Type != Type || Mathf.Abs(road.StartRound - StartRound) > 0.001f || Mathf.Abs(road.EndRound - EndRound) > 0.001f) return false;
+            if (road.Points.Count != Points.Count || road.Widths.Count != Widths.Count) return false;
+            for (var i = 0; i < Points.Count; ++i)
+            {
+                if ((road.Points[i] - Points[i]).sqrMagnitude > 0.0001f) return false;
+            }
+            for (var i = 0; i < Widths.Count; ++i)
+            {
+                if (Mathf.Abs(road.Widths[i] - Widths[i]) > 0.001f) return false;
+            }
+            return true;
+        }
+    }
+
+    /// <summary>One width per point: 1 for any missing.</summary>
+    public static void EnsureWidths(Road road)
+    {
+        while (road.Widths.Count < road.Points.Count) road.Widths.Add(1f);
+        if (road.Widths.Count > road.Points.Count) road.Widths.RemoveRange(road.Points.Count, road.Widths.Count - road.Points.Count);
     }
 
     private readonly List<Road> roads = new List<Road>();
@@ -74,7 +133,7 @@ public class VillageRoads : MonoBehaviour
                 roads.Clear();
                 foreach (var info in loaded)
                 {
-                    var road = new Road { Id = info.Id, Type = info.Type, Points = ToPoints(info.Points) };
+                    var road = FromInfo(info);
                     roads.Add(road);
                     Rebuild(road);
                 }
@@ -99,29 +158,36 @@ public class VillageRoads : MonoBehaviour
         Apply(result);
         if (result == null || !result.Ok || result.Road == null) return (null, result?.Error ?? "unknown");
 
-        var road = new Road { Id = result.Road.Id, Type = result.Road.Type, Points = ToPoints(result.Road.Points) };
+        var road = FromInfo(result.Road);
         roads.Add(road);
         Rebuild(road);
         Changed?.Invoke();
         return (road, null);
     }
 
-    /// <summary>Saves a changed road. On failure the road goes back to what the server has.</summary>
-    public async Task<string> ChangeAsync(Road road, int type, IReadOnlyList<Vector2> points, IReadOnlyList<Vector2> before, int typeBefore)
+    /// <summary>
+    /// Saves a road as it is now: type, points, widths and ends. On failure it goes back to
+    /// <paramref name="before"/>, what the server has.
+    /// </summary>
+    public async Task<string> ChangeAsync(Road road, Shape before)
     {
-        var result = await gameManager.RavenNest.Village.ChangeRoadAsync(road.Id, type, ToArray(points));
+        EnsureWidths(road);
+        var result = await gameManager.RavenNest.Village.ChangeRoadAsync(road.Id, road.Type, ToArray(road.Points), ToWidths(road.Widths), road.StartRound, road.EndRound);
         Apply(result);
         if (result == null || !result.Ok)
         {
-            road.Type = typeBefore;
-            road.Points = new List<Vector2>(before);
+            before.ApplyTo(road);
             Rebuild(road);
             Changed?.Invoke();
             return result?.Error ?? "unknown";
         }
 
-        road.Type = result.Road.Type;
-        road.Points = ToPoints(result.Road.Points);
+        var saved = FromInfo(result.Road);
+        road.Type = saved.Type;
+        road.Points = saved.Points;
+        road.Widths = saved.Widths;
+        road.StartRound = saved.StartRound;
+        road.EndRound = saved.EndRound;
         Rebuild(road);
         Changed?.Invoke();
         return null;
@@ -157,13 +223,29 @@ public class VillageRoads : MonoBehaviour
     }
 
     /// <summary>
-    /// The length the server charges for: straight lines between the points. The drawn curve is a
-    /// little longer round bends, but the price follows what is stored.
+    /// The length of the centre line as the server counts it: straight lines between the points. The
+    /// drawn curve is a little longer round bends, but the price follows what is stored.
     /// </summary>
     public static float PaidLength(IReadOnlyList<Vector2> points)
     {
         var length = 0f;
         for (var i = 1; i < points.Count; ++i) length += Vector2.Distance(points[i - 1], points[i]);
+        return length;
+    }
+
+    /// <summary>
+    /// The length the server charges for once widths count: each stretch between two points times
+    /// their average width, so a road twice as wide costs twice as much per metre.
+    /// </summary>
+    public static float PaidLength(IReadOnlyList<Vector2> points, IReadOnlyList<float> widths)
+    {
+        var length = 0f;
+        for (var i = 1; i < points.Count; ++i)
+        {
+            var a = widths != null && i - 1 < widths.Count ? widths[i - 1] : 1f;
+            var b = widths != null && i < widths.Count ? widths[i] : 1f;
+            length += Vector2.Distance(points[i - 1], points[i]) * (a + b) / 2f;
+        }
         return length;
     }
 
@@ -184,9 +266,11 @@ public class VillageRoads : MonoBehaviour
         }
 
         road.Samples = RoadMesh.Sample(road.Points);
+        EnsureWidths(road);
         // the better road a little higher, so where two meet the cobbles lie over the dirt rather
         // than flickering with it
-        RoadMesh.Build(road.Mesh, road.Samples, WidthOf(road.Type), GroundHeight, RoadMesh.Lift + Mathf.Clamp(road.Type, 0, 4) * 0.012f);
+        RoadMesh.Build(road.Mesh, road.Samples, WidthOf(road.Type), RoadMesh.SampleWidths(road.Points, road.Widths), GroundHeight,
+            RoadMesh.Lift + Mathf.Clamp(road.Type, 0, 4) * 0.012f, road.StartRound, road.EndRound);
         road.Renderer.sharedMaterials = DrawMaterialsFor(road.Type);
         ApplyTint(road);
     }
@@ -264,6 +348,25 @@ public class VillageRoads : MonoBehaviour
     {
         var townHall = gameManager && gameManager.Village ? gameManager.Village.TownHall : null;
         return townHall ? townHall.GroundHeight(point) : PlacementUtility.FindGroundPoint(point).y;
+    }
+
+    private static Road FromInfo(RoadInfo info)
+    {
+        var road = new Road { Id = info.Id, Type = info.Type, Points = ToPoints(info.Points), StartRound = (float)info.StartRound, EndRound = (float)info.EndRound };
+        if (info.Widths != null) foreach (var w in info.Widths) road.Widths.Add((float)w);
+        EnsureWidths(road);
+        return road;
+    }
+
+    /// <summary>The widths to send: none when they are all 1, as older roads have.</summary>
+    private static double[] ToWidths(IReadOnlyList<float> widths)
+    {
+        var plain = true;
+        foreach (var w in widths) if (Mathf.Abs(w - 1f) > 0.001f) plain = false;
+        if (plain) return null;
+        var flat = new double[widths.Count];
+        for (var i = 0; i < widths.Count; ++i) flat[i] = Math.Round(widths[i], 2);
+        return flat;
     }
 
     private static List<Vector2> ToPoints(double[] flat)

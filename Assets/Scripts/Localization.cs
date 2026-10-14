@@ -492,6 +492,17 @@ public static class Localization
     public static string UI_ROAD_KEY_REMOVE = "Remove a point";
     public static string UI_ROAD_KEY_UNDO_CHANGES = "Undo the changes";
     public static string UI_ROAD_KEY_DESELECT = "Deselect";
+    public static string UI_ROAD_SHAPE_CAPTION = "SHAPE";
+    public static string UI_ROAD_POINT_WIDTH = "Point {0} width";
+    public static string UI_ROAD_WIDTH_VALUE = "{0}x";
+    public static string UI_ROAD_PICK_POINT = "Click a point to make the road narrower or wider there.";
+    public static string UI_ROAD_START = "Start";
+    public static string UI_ROAD_END = "End";
+    public static string UI_ROAD_END_ROUND = "Round";
+    public static string UI_ROAD_END_SOFT = "Soft";
+    public static string UI_ROAD_END_SQUARE = "Square";
+    public static string UI_ROAD_KEY_WIDTH = "Narrower, wider";
+    public static string UI_ROAD_ROW_WIDTH = "Width";
     public static string UI_BUILD_HALL_GETS = "WHAT YOU GET";
     public static string UI_BUILD_HALL_GET_HALL = "A new town hall: the {0}";
     public static string UI_BUILD_HALL_GET_ROOM = "Room to build grows from {0} m to {1} m round the plaza";
