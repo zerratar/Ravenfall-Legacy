@@ -1,69 +1,50 @@
-﻿using Shinobytes.Linq;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class GatheringTask : ChunkTask
 {
-    private readonly Func<GatherController[]> lazyTargets;
+    private readonly Func<IReadOnlyList<ResourceTarget>> lazyTargets;
 
-    public GatheringTask(Func<GatherController[]> lazyTargets)
+    public GatheringTask(Func<IReadOnlyList<ResourceTarget>> lazyTargets)
     {
         this.lazyTargets = lazyTargets;
     }
+
     public override bool IsCompleted(PlayerController player, object target)
     {
-        var gather = target as GatherController;
-        if (!gather || gather.IsDepleted) return true;
-        return false;
+        return target is not ResourceTarget spot || !spot.IsAvailable;
     }
+
     public override object GetTarget(PlayerController player)
     {
-        var gatherSpots = lazyTargets();
-        var totalCount = gatherSpots.Length;
-        var availableTargets = gatherSpots.AsList(x => !x.IsDepleted);
-        var left = (float)availableTargets.Count / totalCount;
-        // if less than 25% of the trees are available, decrease respawn time
-        if (left <= 0.25)
-        {
-            foreach (var t in gatherSpots) t.DecreaseRespawnTime();
-        }
-        // if more than 50% of the trees are available, increase respawn time
-        else if (left >= 0.5)
-        {
-            foreach (var t in gatherSpots) t.IncreaseRespawnTime();
-        }
-
-        return availableTargets
-            .OrderBy(x => Vector3.Distance(player.Position, x.Position) + (UnityEngine.Random.value * 15f))
-            .FirstOrDefault();
+        return ResourceTarget.PickFor(player, lazyTargets());
     }
 
     public override bool Execute(PlayerController player, object target)
     {
-        var gatherSpot = target as GatherController;
-        if (target == null || !gatherSpot || !player)
+        if (target is not ResourceTarget spot || !player)
         {
             return false;
         }
 
-        return player.Gather(gatherSpot);
+        return player.Gather(spot);
     }
 
     public override bool CanExecute(PlayerController player, object targetObject, out TaskExecutionStatus reason)
     {
         reason = TaskExecutionStatus.NotReady;
-        if (targetObject is not GatherController target)
+        if (targetObject is not ResourceTarget target)
         {
             return false;
         }
 
-        if (!target || !player || player.Stats.IsDead || !player.IsReadyForAction || targetObject == null)
+        if (!player || player.Stats.IsDead || !player.IsReadyForAction)
         {
             return false;
         }
 
-        if (target.IsDepleted)
+        if (!target.IsAvailable)
         {
             reason = TaskExecutionStatus.NotReady;
             return false;
@@ -75,9 +56,10 @@ public class GatheringTask : ChunkTask
             return false;
         }
 
-        target.AddGatherer(player);
+        // targeting is enough to share in the exp when it is gathered
+        target.AddTargeter(player);
 
-        if (Vector3.Distance(player.Position, target.Position) >= target.MaxActionDistance)
+        if (Vector3.Distance(player.Position, target.Position) >= target.ActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;
@@ -89,27 +71,26 @@ public class GatheringTask : ChunkTask
 
     internal override bool TargetExistsImpl(object target)
     {
-        var tar = target as GatherController;
-        if (!tar)
+        if (target is not ResourceTarget spot)
         {
             return false;
         }
 
         var possibleTargets = lazyTargets();
-        return possibleTargets.Any(x => x.GetEntityId() == tar.GetEntityId());
+        for (var i = 0; i < possibleTargets.Count; ++i)
+        {
+            if (possibleTargets[i] == spot) return true;
+        }
+        return false;
     }
 
     internal override void SetTargetInvalid(object target)
     {
-        if (target != null && target is MonoBehaviour mb)
+        if (target is ResourceTarget spot && badPathReported.Add(spot))
         {
-            var path = mb.GetHierarchyPath();
-            if (badPathReported.Add(path))
-            {
-                Shinobytes.Debug.LogError(path + " is unreachable.");
-            }
+            Shinobytes.Debug.LogError(spot.Name + " is unreachable.");
         }
     }
 
-    private System.Collections.Generic.HashSet<string> badPathReported = new();
+    private readonly HashSet<ResourceTarget> badPathReported = new();
 }

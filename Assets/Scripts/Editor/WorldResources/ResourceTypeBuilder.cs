@@ -34,6 +34,14 @@ public static class ResourceTypeBuilder
         public string name;
         public GameObject source;
         public Transform space;
+        /// <summary>What makes it this look (see <see cref="LookKey"/>).</summary>
+        public string key;
+
+        /// <summary>
+        /// From the look object's space to the baked space. Another object with the same look stands at
+        /// <c>its localToWorldMatrix * FromLook</c>, so it can be drawn exactly where it is.
+        /// </summary>
+        public Matrix4x4 FromLook => source.transform.worldToLocalMatrix * space.localToWorldMatrix;
     }
 
     [MenuItem("Ravenfall/World Resources/Create Type From Selection")]
@@ -56,32 +64,85 @@ public static class ResourceTypeBuilder
     }
 
     /// <summary>A tree type from a TreeController: its variants, its stump and its numbers.</summary>
-    public static ResourceType FromTree(TreeController tree, string name)
-    {
-        var so = new SerializedObject(tree);
-        var variants = new List<LookSource>();
-        var list = so.FindProperty("trees");
-        for (var i = 0; i < list.arraySize; ++i)
-        {
-            var go = list.GetArrayElementAtIndex(i).objectReferenceValue as GameObject;
-            if (go) variants.Add(new LookSource { name = go.name, source = go, space = tree.transform });
-        }
-        var stump = so.FindProperty("stump").objectReferenceValue as GameObject;
-        var depleted = stump ? new LookSource { name = "Stump", source = stump, space = tree.transform } : default;
+    public static ResourceType FromTree(TreeController tree, string name) => FromTrees(new[] { tree }, name, out _);
 
-        var type = Build(name, ResourceType.ResourceKind.Tree, variants, depleted);
+    /// <summary>
+    /// A tree type from several TreeControllers: every distinct look among their variants, the first stump, and
+    /// the numbers most of them have. <paramref name="looks"/> are the variants in the type's order.
+    /// </summary>
+    public static ResourceType FromTrees(IList<TreeController> trees, string name, out List<LookSource> looks)
+    {
+        looks = new List<LookSource>();
+        var seen = new HashSet<string>();
+        LookSource depleted = default;
+        foreach (var tree in trees)
+        {
+            foreach (var go in TreeLooks(tree))
+            {
+                var key = LookKey(go);
+                if (seen.Add(key)) looks.Add(new LookSource { name = UniqueName(looks, LookName(go)), source = go, space = tree.transform, key = key });
+            }
+            var stump = new SerializedObject(tree).FindProperty("stump").objectReferenceValue as GameObject;
+            if (stump && !depleted.source) depleted = new LookSource { name = "Stump", source = stump, space = tree.transform, key = LookKey(stump) };
+        }
+
+        var type = Build(name, ResourceType.ResourceKind.Tree, looks, depleted);
         if (!type) return null;
-        type.health = Mathf.Max(1, so.FindProperty("maxHealth").intValue);
-        type.respawnSeconds = Mathf.Max(1f, so.FindProperty("respawnTimeSeconds").floatValue);
-        type.actionDistance = ReachOf(tree.gameObject, 3f);
+        type.health = Mathf.Max(1, MostCommon(trees.Select(t => new SerializedObject(t).FindProperty("maxHealth").intValue)));
+        type.respawnSeconds = Mathf.Max(1f, MostCommon(trees.Select(t => new SerializedObject(t).FindProperty("respawnTimeSeconds").floatValue)));
+        type.actionDistance = ReachOf(trees[0].gameObject, 3f);
         Save(type);
         return type;
     }
 
-    /// <summary>A gather type whose looks are the distinct looks among the selected spots or objects.</summary>
-    public static ResourceType FromGatherLooks(IEnumerable<GameObject> sources, string name)
+    /// <summary>The looks a tree picks from, as its TreeController lists them.</summary>
+    public static List<GameObject> TreeLooks(TreeController tree)
     {
-        var variants = new List<LookSource>();
+        var looks = new List<GameObject>();
+        var list = new SerializedObject(tree).FindProperty("trees");
+        for (var i = 0; i < list.arraySize; ++i)
+        {
+            var go = list.GetArrayElementAtIndex(i).objectReferenceValue as GameObject;
+            if (go) looks.Add(go);
+        }
+        return looks;
+    }
+
+    /// <summary>
+    /// What a look is: its meshes and their materials. Two objects with the same key look the same, whatever
+    /// they are called; the same mesh in another colour is another look.
+    /// </summary>
+    public static string LookKey(GameObject look)
+    {
+        var parts = new List<string>();
+        foreach (var r in look.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            var filter = r.GetComponent<MeshFilter>();
+            if (!filter || !filter.sharedMesh) continue;
+            parts.Add(filter.sharedMesh.name + ":" + string.Join(",", r.sharedMaterials.Select(m => m ? m.name : "-")));
+        }
+        return string.Join("|", parts);
+    }
+
+    private static string UniqueName(List<LookSource> looks, string name)
+    {
+        if (looks.All(l => l.name != name)) return name;
+        for (var n = 2; ; ++n)
+        {
+            var candidate = name + " " + n;
+            if (looks.All(l => l.name != candidate)) return candidate;
+        }
+    }
+
+    private static T MostCommon<T>(IEnumerable<T> values) => values.GroupBy(v => v).OrderByDescending(g => g.Count()).First().Key;
+
+    /// <summary>A gather type whose looks are the distinct looks among the selected spots or objects.</summary>
+    public static ResourceType FromGatherLooks(IEnumerable<GameObject> sources, string name) => FromGatherLooks(sources, name, out _);
+
+    /// <summary>The same, handing back the looks in the type's order.</summary>
+    public static ResourceType FromGatherLooks(IEnumerable<GameObject> sources, string name, out List<LookSource> looks)
+    {
+        var variants = looks = new List<LookSource>();
         var seen = new HashSet<string>();
         GatherController first = null;
         foreach (var go in sources)
@@ -92,9 +153,9 @@ public static class ResourceTypeBuilder
             // object is its own look
             var look = gather ? LookOf(gather) : go;
             if (!look) continue;
-            var key = LookName(look);
+            var key = LookKey(look);
             if (!seen.Add(key)) continue;
-            variants.Add(new LookSource { name = key, source = look, space = gather ? gather.transform : go.transform });
+            variants.Add(new LookSource { name = UniqueName(variants, LookName(look)), source = look, space = gather ? gather.transform : go.transform, key = key });
         }
 
         var type = Build(name, ResourceType.ResourceKind.Gatherable, variants, default);

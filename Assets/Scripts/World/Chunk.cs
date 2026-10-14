@@ -10,10 +10,10 @@ public class Chunk : MonoBehaviour
     private RockController[] miningSpots;
     private FishingController[] fishingSpots;
     private EnemyController[] enemies;
-    private TreeController[] trees;
+    private ResourceTarget[] trees;
     private CraftingStation[] craftingStations;
     private FarmController[] farmingPatches;
-    private GatherController[] gatheringSpots;
+    private ResourceTarget[] gatheringSpots;
     private ChunkTask task;
 
     public TaskType Type;
@@ -43,18 +43,32 @@ public class Chunk : MonoBehaviour
         Island = GetComponentInParent<IslandController>();
 
         enemies = gameObject.GetComponentsInChildren<EnemyController>();
-        trees = gameObject.GetComponentsInChildren<TreeController>();
+        trees = ResourceTargets(ResourceType.ResourceKind.Tree);
         fishingSpots = gameObject.GetComponentsInChildren<FishingController>();
         miningSpots = gameObject.GetComponentsInChildren<RockController>();
         craftingStations = gameObject.GetComponentsInChildren<CraftingStation>();
         farmingPatches = gameObject.GetComponentsInChildren<FarmController>();
-        gatheringSpots = gameObject.GetComponentsInChildren<GatherController>();
+        gatheringSpots = ResourceTargets(ResourceType.ResourceKind.Gatherable);
 
         task = GetChunkTask(Type);
 
         started = true;
 
         gameObject.name = $"{Type} Lv. " + Mathf.Max(RequiredSkilllevel, RequiredCombatLevel);
+    }
+
+    /// <summary>The trees or gather spots of this chunk's resource fields.</summary>
+    private ResourceTarget[] ResourceTargets(ResourceType.ResourceKind kind)
+    {
+        var found = new System.Collections.Generic.List<ResourceTarget>();
+        foreach (var field in gameObject.GetComponentsInChildren<ResourceField>())
+        {
+            foreach (var target in field.Targets)
+            {
+                if (target.Type && target.Type.kind == kind) found.Add(target);
+            }
+        }
+        return found.ToArray();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

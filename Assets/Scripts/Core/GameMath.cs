@@ -510,8 +510,10 @@ public static class GameMath
 
     public static float CalculateSkillDamage(SkillStat skillStat, int targetLevel)
     {
+        // a player below the target's level hits for 1 (it used to be the size of the gap, so the further
+        // below, the harder the hit); above it, more the further above, up to 15
         var levelDiff = Mathf.Min(skillStat.MaxLevel - targetLevel, 15);
-        var hit = Mathf.Max(1f, Math.Abs(levelDiff));
+        var hit = Mathf.Max(1f, levelDiff);
 
         hit = UnityEngine.Random.Range(hit, hit * 2);
 

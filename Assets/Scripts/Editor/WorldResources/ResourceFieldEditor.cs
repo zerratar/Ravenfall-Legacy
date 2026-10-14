@@ -123,6 +123,11 @@ public class ResourceFieldEditor : Editor
         EditorGUILayout.LabelField("Instances", field.Count.ToString());
         EditorGUILayout.LabelField("Drawn in the scene", ResourceRenderer.InstanceCount + " (all fields)");
 
+        serializedObject.Update();
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("treeHealth"), new GUIContent("Tree health", "Hits to cut a tree here down; 0 uses each type's own."));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("respawnSeconds"), new GUIContent("Respawn seconds", "Seconds until a tree or spot here is back; 0 uses each type's own."));
+        serializedObject.ApplyModifiedProperties();
+
         EditorGUILayout.Space();
         var chosen = (Mode)GUILayout.Toolbar((int)mode, ModeNames);
         if (chosen != mode)

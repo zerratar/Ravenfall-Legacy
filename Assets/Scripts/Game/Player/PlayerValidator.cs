@@ -91,9 +91,9 @@ public class PlayerValidator
             {
                 // if the path is partial, can we check if last point is close enough to do the task or not.
                 var distanceToTarget = 9999f;
-                if (movement.PathStatus == UnityEngine.AI.NavMeshPathStatus.PathPartial && player.Target && movement.CurrentPath != null)
+                if (movement.PathStatus == UnityEngine.AI.NavMeshPathStatus.PathPartial && player.HasTarget && movement.CurrentPath != null)
                 {
-                    var targetPos = player.Target.position;
+                    var targetPos = player.TargetPosition;
                     var lastCorner = movement.CurrentPath.corners[^1];
 
                     distanceToTarget = UnityEngine.Vector3.Distance(lastCorner, targetPos);
@@ -103,12 +103,12 @@ public class PlayerValidator
                 {
 #if DEBUG
                     Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island.Identifier +
-                        ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill + ", target: " + player.Target.name);// + ", distance: " + distanceToTarget);
+                        ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill + ", target: " + player.TargetName);// + ", distance: " + distanceToTarget);
                                                                                                                                                        // can be target being stuck too.
 #endif
                     // Try unstucking the target as well if its an EnemyController
 
-                    var enemyController = player.Target.GetComponent<EnemyController>();
+                    var enemyController = player.Target ? player.Target.GetComponent<EnemyController>() : null;
                     if (enemyController)
                     {
                         enemyController.Unstuck();
@@ -139,7 +139,7 @@ public class PlayerValidator
                 && player.ferryHandler.State != PlayerFerryState.Embarking // if we are embarking the ferry we will be standing still.
                 && ((movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) && timeSinceLastExecutedTask >= 5) ||
                     (movement.IdleTime >= 15 && timeSinceLastExecutedTask >= 15))
-                && player.Target)
+                && player.HasTarget)
             {
                 // if we are training Ranged or Magic, we could potentially be standing for a long time
                 // so we also have to check "last activation" time of either magic or ranged skill

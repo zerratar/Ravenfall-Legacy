@@ -267,7 +267,7 @@ public class PlayerCombat
     }
 
 
-    public bool DamageTree(TreeController tree, float startTime)
+    public bool DamageTree(ResourceTarget tree, float startTime)
     {
         try
         {
@@ -286,9 +286,12 @@ public class PlayerCombat
             if (owner.Island)
                 owner.Island.Statistics.TreesCutDown++;
 
-            // give all attackers exp for the kill, not just the one who gives the killing blow.
-            foreach (var player in tree.WoodCutters)
+            // give everyone who targeted the tree exp for it, not just the one who gives the killing blow, hit or
+            // not: on a crowded server most would otherwise never gain anything. Deliberate.
+            var woodcutters = tree.Targeters;
+            for (var i = 0; i < woodcutters.Count; ++i)
             {
+                var player = woodcutters[i];
                 if (player == null || !player || player.isDestroyed)
                 {
                     continue;
@@ -310,7 +313,7 @@ public class PlayerCombat
         catch (Exception exc)
         {
             var pos = tree.Position;
-            Shinobytes.Debug.LogError($"Unable to damage tree ({tree.name} at x{pos.x} y{pos.y} z{pos.z}): " + exc.Message);
+            Shinobytes.Debug.LogError($"Unable to damage tree ({tree.Name} at x{pos.x} y{pos.y} z{pos.z}): " + exc.Message);
             return false;
         }
     }
@@ -330,8 +333,8 @@ public class PlayerCombat
         return (int)GameMath.CalculateMeleeDamage(owner, enemy);
     }
 
-    private int CalculateDamage(TreeController enemy)
+    private int CalculateDamage(ResourceTarget tree)
     {
-        return (int)GameMath.CalculateSkillDamage(owner.Stats.Woodcutting, enemy.Level);
+        return (int)GameMath.CalculateSkillDamage(owner.Stats.Woodcutting, tree.Level);
     }
 }

@@ -3,7 +3,8 @@ using System.Collections.Concurrent;
 using UnityEngine;
 public abstract class ChunkTask
 {
-    private readonly ConcurrentDictionary<EntityId, bool> targetLookup = new ConcurrentDictionary<EntityId, bool>();
+    // by the target itself: plain targets such as ResourceTarget have no entity id
+    private readonly ConcurrentDictionary<object, bool> targetLookup = new ConcurrentDictionary<object, bool>();
     public abstract bool IsCompleted(PlayerController player, object target);
 
     public abstract bool Execute(PlayerController player, object target);
@@ -17,14 +18,14 @@ public abstract class ChunkTask
     }
     internal bool TargetExists(object target)
     {
-        var id = GetTargetEntityId(target);
-        if (targetLookup.TryGetValue(id, out var result))
+        if (target == null) return false;
+        if (targetLookup.TryGetValue(target, out var result))
         {
             return result;
         }
 
         result = TargetExistsImpl(target);
-        targetLookup[id] = result;
+        targetLookup[target] = result;
         return result;
     }
 

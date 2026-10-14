@@ -185,6 +185,18 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         get => attackTarget ?? (taskTarget as IAttackable)?.Transform ?? (taskTarget as Transform) ?? (taskTarget as MonoBehaviour)?.transform;
         internal set => attackTarget = value;
     }
+    /// <summary>
+    /// Whether there is something to go for: an attack target, or a task target, which can be a tree or gather
+    /// spot without a transform (see <see cref="ResourceTarget"/>).
+    /// </summary>
+    public bool HasTarget => Target || taskTarget is ResourceTarget;
+
+    /// <summary>Where the current target is, for the stuck checks.</summary>
+    public Vector3 TargetPosition => Target ? Target.position : taskTarget is ResourceTarget resource ? resource.Position : Position;
+
+    /// <summary>The current target's name, for logs.</summary>
+    public string TargetName => Target ? Target.name : (taskTarget as ResourceTarget)?.Name;
+
     public IAttackable CombatTarget
     {
         get => (attackTarget as IAttackable) ?? (taskTarget as IAttackable);
@@ -2196,7 +2208,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         return true;
     }
 
-    public bool Cut(TreeController tree)
+    public bool Cut(ResourceTarget tree)
     {
         LastExecutedTaskTime = Time.time;
         actionTimer = chompTreeAnimationTime;
@@ -2223,7 +2235,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         return true;
     }
 
-    private bool Gather(GatherController gather, float startTime)
+    private bool Gather(ResourceTarget gather, float startTime)
     {
         try
         {
@@ -2247,8 +2259,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             if (Island)
                 Island.Statistics.ItemsGathered++;
 
-            foreach (var player in gather.Gatherers)
+            // everyone who targeted the spot gets the exp, gathered by them or not; deliberate
+            var gatherers = gather.Targeters;
+            for (var i = 0; i < gatherers.Count; ++i)
             {
+                var player = gatherers[i];
                 if (player == null || !player || player.isDestroyed)
                 {
                     continue;
@@ -2267,12 +2282,12 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         catch (Exception exc)
         {
             var pos = gather.Position;
-            Shinobytes.Debug.LogError($"Unable to gather from {gather.name} at x{pos.x} y{pos.y} z{pos.z}: " + exc.Message);
+            Shinobytes.Debug.LogError($"Unable to gather from {gather.Name} at x{pos.x} y{pos.y} z{pos.z}: " + exc.Message);
             return false;
         }
     }
 
-    public bool Gather(GatherController gather)
+    public bool Gather(ResourceTarget gather)
     {
         LastExecutedTaskTime = Time.time;
         actionTimer = rakeAnimationTime;
@@ -2281,9 +2296,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         Equipment.HideEquipments();
         lastTrainedSkill = Skill.Gathering;
-        playerAnimations.Gather(gather.PlayKneelingAnimation);
+        playerAnimations.Gather(gather.KneelToGather);
 
-        LookAt(gather.transform);
+        LookAt(gather.Position);
 
         var startTime = Time.time;
 
@@ -2308,7 +2323,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     public bool DamageEnemy(IAttackable enemy, float hitTime, float startTime)
         => Combat.DamageEnemy(enemy, hitTime, startTime);
 
-    public bool DamageTree(TreeController tree, float startTime) => Combat.DamageTree(tree, startTime);
+    public bool DamageTree(ResourceTarget tree, float startTime) => Combat.DamageTree(tree, startTime);
 
 
     #region Manage EXP/Resources
@@ -2506,6 +2521,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return b.transform.position;
         }
 
+        if (obj is ResourceTarget resource)
+        {
+            return resource.Position;
+        }
+
         return Position;
     }
 
@@ -2518,8 +2538,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     private void LookAt(Transform targetTransform)
     {
+        LookAt(targetTransform.position);
+    }
+
+    private void LookAt(Vector3 targetPosition)
+    {
         var rotBefore = transform.eulerAngles;
-        transform.LookAt(targetTransform);
+        transform.LookAt(targetPosition);
 
         var rotAfter = transform.eulerAngles;
         transform.rotation = Quaternion.Euler(rotAfter.x, rotBefore.y, rotAfter.z);

@@ -101,10 +101,10 @@ public class BotPlayerController : MonoBehaviour
         {
             // if the path is partial, can we check if last point is close enough to do the task or not.
             var distanceToTarget = 9999f;
-            var hasTarget = !!player.Target;
+            var hasTarget = player.HasTarget;
             if (movement.PathStatus == UnityEngine.AI.NavMeshPathStatus.PathPartial && hasTarget && movement.CurrentPath != null)
             {
-                var targetPos = player.Target.position;
+                var targetPos = player.TargetPosition;
                 var lastCorner = movement.CurrentPath.corners[^1];
 
                 distanceToTarget = Vector3.Distance(lastCorner, targetPos);
@@ -113,9 +113,9 @@ public class BotPlayerController : MonoBehaviour
             if (distanceToTarget > 2 && hasTarget) // distance to target needs to be based on actual target.
             {
                 Shinobytes.Debug.LogWarning(player.Name + ", island: " + player.Island?.Identifier +
-                    ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill + ", target: " + player.Target?.name);// + ", distance: " + distanceToTarget);
+                    ", has incomplete path: " + movement.PathStatus + ", current task: " + player.ActiveSkill + ", target: " + player.TargetName);// + ", distance: " + distanceToTarget);
                                                                                                                                                     // can be target being stuck too.
-                var enemyController = player.Target.GetComponent<EnemyController>();
+                var enemyController = player.Target ? player.Target.GetComponent<EnemyController>() : null;
                 if (enemyController)
                 {
                     enemyController.Unstuck();
@@ -135,7 +135,7 @@ public class BotPlayerController : MonoBehaviour
             && !player.onsenHandler.InOnsen
             && ((movement.IdleTime >= ExpectedMaxIdleTime(player.ActiveSkill) && timeSinceLastExecutedTask >= 5) ||
                 (movement.IdleTime >= 15 && timeSinceLastExecutedTask >= 15))
-            && player.Target)
+            && player.HasTarget)
         {
 
             // if we are training Ranged or Magic, we could potentially be standing for a long time

@@ -1,55 +1,29 @@
-﻿using Shinobytes.Linq;
 using System;
-//using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class WoodcuttingTask : ChunkTask
 {
-    private readonly Func<TreeController[]> lazyTrees;
+    private readonly Func<IReadOnlyList<ResourceTarget>> lazyTrees;
 
-    public WoodcuttingTask(Func<TreeController[]> lazyTrees)
+    public WoodcuttingTask(Func<IReadOnlyList<ResourceTarget>> lazyTrees)
     {
         this.lazyTrees = lazyTrees;
     }
 
     public override bool IsCompleted(PlayerController player, object target)
     {
-        var tree = target as TreeController;
-        if (!tree)
-        {
-            return true;
-        }
-
-        return tree.IsStump;
+        return target is not ResourceTarget tree || !tree.IsAvailable;
     }
 
     public override object GetTarget(PlayerController player)
     {
-        var trees = lazyTrees();
-
-        var totalCount = trees.Length;
-        var availableTargets = trees.AsList(x => !x.IsStump);
-        var left = (float)availableTargets.Count / totalCount;
-        // if less than 25% of the trees are available, decrease respawn time
-        if (left <= 0.25)
-        {
-            foreach (var t in trees) t.DecreaseRespawnTime();
-        }
-        // if more than 50% of the trees are available, increase respawn time
-        else if (left >= 0.5)
-        {
-            foreach (var t in trees) t.IncreaseRespawnTime();
-        }
-
-        return availableTargets
-            .OrderBy(x => Vector3.Distance(player.Position, x.Position) + (UnityEngine.Random.value * 15f))
-            .FirstOrDefault();
+        return ResourceTarget.PickFor(player, lazyTrees());
     }
 
     public override bool Execute(PlayerController player, object target)
     {
-        var tree = target as TreeController;
-        return player.Cut(tree);
+        return target is ResourceTarget tree && player.Cut(tree);
     }
 
     public override bool CanExecute(PlayerController player, object target, out TaskExecutionStatus reason)
@@ -71,7 +45,7 @@ public class WoodcuttingTask : ChunkTask
             return false;
         }
 
-        if (target is not TreeController tree)
+        if (target is not ResourceTarget tree)
         {
             return false;
         }
@@ -82,7 +56,8 @@ public class WoodcuttingTask : ChunkTask
             return false;
         }
 
-        tree.AddWoodcutter(player);
+        // targeting is enough to share in the exp when it falls
+        tree.AddTargeter(player);
 
         if (!player.IsReadyForAction)
         {
@@ -90,7 +65,7 @@ public class WoodcuttingTask : ChunkTask
         }
 
         var distance = Vector3.Distance(player.Position, tree.Position);
-        if (distance >= tree.MaxActionDistance)
+        if (distance >= tree.ActionDistance)
         {
             reason = TaskExecutionStatus.OutOfRange;
             return false;
@@ -102,27 +77,26 @@ public class WoodcuttingTask : ChunkTask
 
     internal override bool TargetExistsImpl(object target)
     {
-        var tar = target as TreeController;
-        if (!tar)
+        if (target is not ResourceTarget tree)
         {
             return false;
         }
 
         var possibleTargets = lazyTrees();
-        return possibleTargets.Any(x => x.GetEntityId() == tar.GetEntityId());
+        for (var i = 0; i < possibleTargets.Count; ++i)
+        {
+            if (possibleTargets[i] == tree) return true;
+        }
+        return false;
     }
 
     internal override void SetTargetInvalid(object target)
     {
-        if (target != null && target is MonoBehaviour mb)
+        if (target is ResourceTarget tree && badPathReported.Add(tree))
         {
-            var path = mb.GetHierarchyPath();
-            if (badPathReported.Add(path))
-            {
-                Shinobytes.Debug.LogError(path + " is unreachable.");
-            }
+            Shinobytes.Debug.LogError(tree.Name + " is unreachable.");
         }
     }
 
-    private System.Collections.Generic.HashSet<string> badPathReported = new();
+    private readonly HashSet<ResourceTarget> badPathReported = new();
 }
