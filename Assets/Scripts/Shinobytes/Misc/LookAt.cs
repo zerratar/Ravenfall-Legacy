@@ -34,8 +34,9 @@ public class LookAt : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void FixedUpdate()
+    // once a frame, after the camera has moved: it only turns something to face the camera, and in FixedUpdate it
+    // ran two or three times a frame for every name tag
+    void LateUpdate()
     {
         if (!GraphicsToggler.GraphicsEnabled)
         {

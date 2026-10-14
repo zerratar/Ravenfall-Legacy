@@ -79,8 +79,19 @@ public class PlayerAnimationController : MonoBehaviour
         activeAnimator = defaultAnimator;
     }
 
+    /// <summary>
+    /// A player nobody can see is not animated at all. Nothing in the game reads the animation back (the animation
+    /// events only start effects), and with players spread over the islands most are out of view, so this saves most
+    /// of the animation cost of a big stream.
+    /// </summary>
+    private static void StopWhenUnseen(Animator animator)
+    {
+        if (animator) animator.cullingMode = AnimatorCullingMode.CullCompletely;
+    }
+
     public void SetActiveAnimator(Animator animator)
     {
+        StopWhenUnseen(animator);
         activeAnimator = animator;
         for (var i = 0; i < defaultAnimator.parameterCount; ++i)
         {
@@ -470,6 +481,7 @@ public class PlayerAnimationController : MonoBehaviour
             if (!behaviour || !behaviour.transform) return false;
             activeAnimator = behaviour.transform.GetComponentInChildren<Animator>();
             defaultAnimator = activeAnimator;
+            StopWhenUnseen(activeAnimator);
         }
         hasAnimator = activeAnimator != null;
         return activeAnimator;

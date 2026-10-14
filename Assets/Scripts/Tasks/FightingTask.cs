@@ -71,7 +71,8 @@ public class FightingTask : ChunkTask
                     continue;
                 }
 
-                var hd = x.Stats.Health.MaxLevel - x.Stats.Health.CurrentValue;
+                // plain numbers: an obscured value would take two new keys just to be compared
+                var hd = (int)x.Stats.Health.MaxLevel - (int)x.Stats.Health.CurrentValue;
                 if (hd >= healthDif)
                 {
                     healthDif = hd;
