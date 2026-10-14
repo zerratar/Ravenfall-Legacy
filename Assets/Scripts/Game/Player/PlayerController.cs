@@ -2014,7 +2014,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
             var factor = GetExpFactor(out var state);
             SetExpGainState(state, Stats.Fishing);
-            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Farming.Level)
+            if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Fishing.Level)
                 AddExp(Skill.Fishing, factor);
 
             //var amount = fishingSpot.Resource * Mathf.FloorToInt(Stats.Fishing.CurrentValue / 10f);
