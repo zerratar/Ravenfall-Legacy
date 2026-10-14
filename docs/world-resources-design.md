@@ -34,8 +34,9 @@ These are design choices, kept exactly:
   otherwise never gain anything. The targeter lists move into the new state; the rule does not change.
 - **Experience comes from the player, island and chunk**, not the tree: `Chunk.CalculateExpFactor`, the island level
   ranges in `IslandManager`, and `GameMath.Exp`. A tree's level only feeds the damage roll.
-- **The damage roll** in `GameMath.CalculateSkillDamage` (the `Math.Abs` on the level difference lets a player far
-  below a tree's level hit it hard). Kept unless you say otherwise; see Questions.
+- **The damage roll** in `GameMath.CalculateSkillDamage`, apart from one fix: the `Math.Abs` on the level difference
+  lets a player far below a tree's level hit it hard. Step 3 makes it `Max(1, difference)`. Players can only train
+  where they meet the island's requirement, so today only the Lv 50 chunk on Away (with level 90 trees) is affected.
 - **Adaptive respawn**: when a quarter or less of a chunk's trees stand, respawn speeds up by a second, down to 1 s;
   at half or more it slows back to the type's time. Same for gather spots.
 - **Target choice**: the nearest available spot, give or take a random 0 to 15 m, so players spread out. Done in
@@ -49,14 +50,14 @@ These are design choices, kept exactly:
 
 ### Resource types (ScriptableObject assets)
 
-`Assets/World/Resources/Types/<Name>.asset`, one per kind of tree or gather spot:
+`Assets/World/WorldResources/Types/<Name>.asset`, one per kind of tree or gather spot (not under a `Resources`
+folder, so Unity does not pack them all into every build):
 
 | Field | Meaning |
 |---|---|
 | `Kind` | Tree or Gatherable. |
 | `Variants` | The looks an instance can have, picked per instance (today's random child). Each variant is a list of LOD levels, each LOD a mesh, its materials and the distance it shows to. |
 | `Depleted` | The look once cut or gathered: the stump for trees, nothing for gather spots (they vanish until they regrow). |
-| `Level` | The level fed to the damage roll (trees). |
 | `Health` | Hits to cut it down (trees); gather spots deplete in one gather, as today. |
 | `RespawnSeconds` | The base respawn time. |
 | `ActionDistance` | How close a player must be to chop or gather: today's trigger SphereCollider radius (3 m). |
@@ -64,13 +65,18 @@ These are design choices, kept exactly:
 | `CastShadows` | Per type. |
 | Brush defaults | Rotation, scale range and variant weights for painting. |
 
-The existing prefabs give the first types: `Tree Lv 1`, `Tree Lv 90`, `Tree Lv 150`, `Tree Lv 600`, `Tree Lv 1000`,
-the 58 hand-placed palm/elf trees (levels 500 and 700), and one type per gather look in use (Mushroom group,
-Mushroom, Garden plants, Coconut, Flowers, and so on). A tool makes a type from a prefab: variants from its children,
-the stump, LOD meshes and distances from the LODGroups, and the numbers from the `TreeController`/`GatherController`.
+**A tree's level is the level its chunk requires**, not part of the type. The scene's per-instance levels already
+match their chunk everywhere but Away, whose Lv 50 chunk has level 90 trees; those become 50. A type is therefore
+only a look and its numbers, and one type can be used on any island.
 
-The scene overrides some levels per instance (for example 15 `Tree Lv 1` set to 100, the `Tree Lv 600` set to 200).
-These become types of their own, or a per-instance level override if you prefer fewer types (see Questions).
+The existing prefabs give the first types: `Tree Lv 1`, `Tree Lv 90`, `Tree Lv 150`, `Tree Lv 600`, `Tree Lv 1000`
+and the 58 hand-placed palm/elf trees. Gather spots are grouped, each group picking a random look per spot:
+Mushrooms, Garden plants, Flowers and Coconuts, plus the few one-offs (mushroom houses, fairies) as types of their
+own. **Ravenfall > World Resources > Create Type From Selection** makes a type: variants from the tree's children
+or the selected spots' looks, the stump, LOD meshes and distances from the LODGroups, and the numbers from the
+`TreeController`/`GatherController`. Each look's parts are baked into one mesh per LOD (one submesh per material)
+and saved to `WorldResources/Models/<Name>.fbx`. Those models are copies of kit meshes, so they stay out of git
+like the kits; the type assets are versioned.
 
 ### Resource fields (component in the scene)
 
@@ -125,12 +131,12 @@ A `ResourceRenderer` keeps one `BatchRendererGroup`:
 - one GPU buffer of instance transforms, written at load and when a field changes in the editor (trees do not move
   at runtime);
 - a culling callback per camera and per shadow pass that tests each instance against the view, picks its LOD by
-  distance and its look by state (standing variant or depleted look), and emits draw commands. A Burst job, since
-  `com.unity.burst` is already in the project.
+  distance and its look by state (standing variant or depleted look), and emits draw commands. A plain loop for
+  now; step 5 measures it and moves it to a Burst job if it shows.
 
-It runs in the Scene view in edit mode as well as in play mode, so fields show while placing. Fallback: a material
-whose shader cannot take instanced data is drawn with `Graphics.RenderMeshInstanced` and logged once, so nothing
-silently disappears.
+It runs in the Scene view in edit mode as well as in play mode, so fields show while placing. Every tree and gather
+spot material uses the one Shader Graph Lit shader, which takes instanced data; a fallback with
+`Graphics.RenderMeshInstanced` is added only if a type turns up that does not.
 
 ### Removed when the conversion is done
 
@@ -145,7 +151,7 @@ tree and gather spot helpers in `Editor/RavenfallTools.cs` and `Editor/Ravenfall
   - Shift to erase.
   - Ctrl+click to pick one instance, then move it, turn it, or change its variant or type.
   - Everything snaps to the ground and is undoable.
-- **Ravenfall > World Resources > Create Type From Prefab**, for the existing tree and gather prefabs.
+- **Ravenfall > World Resources > Create Type From Selection**, for the existing tree prefabs and gather spots.
 - **Ravenfall > World Resources > Convert Scene**: writes every `TreeController` and `GatherController` in the open
   scene into the field of its chunk, at the same place, look, level and respawn, and lists anything it could not
   convert. Then it removes the old GameObjects. The scene is saved to a copy first
@@ -155,8 +161,8 @@ tree and gather spot helpers in `Editor/RavenfallTools.cs` and `Editor/Ravenfall
 
 Each step is a commit, tested in play mode and in the editor before the next.
 
-1. **Types, fields and drawing.** `ResourceType`, `ResourceField`, `ResourceRenderer` (BRG), Create Type From Prefab,
-   and a small test field next to the existing trees to compare looks, LODs and shadows in the Scene and Game views.
+1. **Types, fields and drawing.** `ResourceType`, `ResourceField`, `ResourceRenderer` (BRG), Create Type From
+   Selection, and test fields in place of the Home and Heim trees to compare looks, LODs and shadows. Done.
 2. **The brush.** Painting, erasing and picking in the Scene view.
 3. **Gameplay.** `WorldResources`, `ResourceTarget`, the two tasks, the player changes, the shared exp and adaptive
    respawn. Tested on the test field alongside the old trees, which keep working until step 4.
@@ -177,11 +183,8 @@ Fixed in step 3, since that code is rewritten anyway:
 - `PlayerController.Fish` (L2017) checks the auto-train target against `Stats.Farming` instead of `Stats.Fishing`. A
   one-line fix, done separately and first.
 
-## Questions
+## Answers
 
-1. **Damage roll:** is the `Math.Abs` in `GameMath.CalculateSkillDamage` intended? It gives a player far below a tree's
-   level a big hit. The plan keeps it as is.
-2. **Per-instance levels:** a type for each level used (simple, more types), or a level override per instance (fewer
-   types)? The plan uses types.
-3. **Gather spot looks:** keep one type per look, as the scene has them, or group them (for example "Mushrooms" with
-   the four mushroom looks as variants, picked at random), which makes painting a mixed patch one brush stroke?
+1. **Damage roll:** the `Math.Abs` is a bug; it becomes `Max(1, difference)` in step 3 (see above).
+2. **Levels:** from the chunk's requirement, not per type or per instance.
+3. **Gather spot looks:** grouped, with a random look per spot.

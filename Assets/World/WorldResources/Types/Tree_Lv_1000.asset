@@ -1,0 +1,114 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8b89dbc8b2c154dad2deda912dae96, type: 3}
+  m_Name: Tree_Lv_1000
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceType
+  kind: 0
+  variants:
+  - name: SM_Env_Tree_Pine_Large_02_Snow
+    weight: 1
+    lods:
+    - mesh: {fileID: 2266935367422199887, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 50.571247
+    - mesh: {fileID: 2881171681846636321, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 128.78027
+    - mesh: {fileID: -1227478928198312842, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 1287.8029
+  - name: SM_Env_Tree_Pine_Large_01_Snow
+    weight: 1
+    lods:
+    - mesh: {fileID: -3535023334784678662, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 66.09449
+    - mesh: {fileID: 4170481964811495665, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 168.3104
+    - mesh: {fileID: 1956062774195812455, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 1683.1041
+  - name: SM_Env_Tree_Pine_Large_03_Snow
+    weight: 1
+    lods:
+    - mesh: {fileID: -4639733017497807187, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 56.474808
+    - mesh: {fileID: 297822061307661065, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 143.81377
+    - mesh: {fileID: -4868861138841416173, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 1438.1377
+  - name: SM_Env_Tree_Pine_03_Snow
+    weight: 1
+    lods:
+    - mesh: {fileID: 1824445423690211267, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 21.621582
+    - mesh: {fileID: 4592592501846889750, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 55.059616
+    - mesh: {fileID: -5152964611544043183, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 550.5962
+  - name: SM_Env_Tree_Pine_02_Snow
+    weight: 1
+    lods:
+    - mesh: {fileID: -4052640768561255743, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 24.624874
+    - mesh: {fileID: 1557373596540923992, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 62.707535
+    - mesh: {fileID: 3480986070259158999, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: eb83b2b658dfc194e8b26c4421e3c748, type: 2}
+      maxDistance: 627.0754
+  depleted:
+    name: Stump
+    weight: 1
+    lods:
+    - mesh: {fileID: -625359686891651821, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 30.397612
+    - mesh: {fileID: -4455023287337526739, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 69.464745
+    - mesh: {fileID: 5417710316092892301, guid: 7c16738bdd997914684eb0099a4284cd, type: 3}
+      materials:
+      - {fileID: 2100000, guid: 4eaaa3032586832468e97a6452e498a4, type: 2}
+      maxDistance: 153.31998
+  health: 15
+  respawnSeconds: 20
+  actionDistance: 3.0000005
+  kneelToGather: 1
+  castShadows: 1
+  randomYaw: 1
+  scaleRange: {x: 0.9, y: 1.1}

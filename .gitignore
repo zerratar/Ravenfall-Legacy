@@ -175,6 +175,15 @@ Assets/_TerrainAutoUpgrade/*.*
 Assets/Village/Derived/
 Assets/Village/Derived.meta
 
+# World resource types (trees, gather spots). Fields in the scenes reference them by GUID. The meshes they
+# draw are baked from kit models into WorldResources/Models and stay out like the kits; rebuild them with
+# Ravenfall > World Resources > Create Type From Selection.
+!Assets/World.meta
+!Assets/World/WorldResources.meta
+!Assets/World/WorldResources/Types.meta
+!Assets/World/WorldResources/Types/*.asset
+!Assets/World/WorldResources/Types/*.asset.meta
+
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
 

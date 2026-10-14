@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8b89dbc8b2c154dad2deda912dae96, type: 3}
+  m_Name: Mushrooms
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceType
+  kind: 1
+  variants:
+  - name: SM_Prop_Mushroom_Group_05
+    weight: 1
+    lods:
+    - mesh: {fileID: 6372354705025593653, guid: c02d4c40ec2800c41b4454cf4672678a, type: 3}
+      materials:
+      - {fileID: 2100000, guid: c6030e4939d206544a563fc12dc8518f, type: 2}
+      maxDistance: 0
+  - name: SM_Prop_Mushroom_Group_02
+    weight: 1
+    lods:
+    - mesh: {fileID: -1621784746010136072, guid: c02d4c40ec2800c41b4454cf4672678a, type: 3}
+      materials:
+      - {fileID: 2100000, guid: c6030e4939d206544a563fc12dc8518f, type: 2}
+      maxDistance: 0
+  - name: SM_Prop_Mushroom_Group_03
+    weight: 1
+    lods:
+    - mesh: {fileID: 8944898129739574356, guid: c02d4c40ec2800c41b4454cf4672678a, type: 3}
+      materials:
+      - {fileID: 2100000, guid: c6030e4939d206544a563fc12dc8518f, type: 2}
+      maxDistance: 0
+  - name: SM_Prop_Mushroom_01
+    weight: 1
+    lods:
+    - mesh: {fileID: 4032445807512978079, guid: c02d4c40ec2800c41b4454cf4672678a, type: 3}
+      materials:
+      - {fileID: 2100000, guid: c6030e4939d206544a563fc12dc8518f, type: 2}
+      maxDistance: 0
+  depleted:
+    name: Depleted
+    weight: 1
+    lods: []
+  health: 15
+  respawnSeconds: 15
+  actionDistance: 3
+  kneelToGather: 1
+  castShadows: 1
+  randomYaw: 1
+  scaleRange: {x: 0.9, y: 1.1}
