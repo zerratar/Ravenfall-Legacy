@@ -11,14 +11,19 @@ using UnityEngine;
 /// loop or overshoot when points are close together or far apart. It is sampled every
 /// <see cref="Step"/> metres; each sample gets three vertices across the road (both edges and the
 /// middle) set on the terrain, so the road follows bumps rather than floating over or sinking into
-/// them. Texture coordinates run across the road from 0 to 1 and along it in road widths, so the
-/// surface tiles evenly whatever the length. Both ends are rounded, so two roads that meet at a
-/// point overlap in a clean circle rather than in two square corners.
+/// them. The strip is wider than the road by <see cref="Shoulders"/>: the road shader fades the
+/// surface out into the ground over the extra, so the solid part is as wide as the road. The first
+/// texture coordinate is how far from the middle a vertex lies, 0 there and 1 at the edge, which
+/// is what the shader blends by; the second runs along the road in road widths. Both ends are
+/// rounded, so two roads that meet at a point overlap in a clean circle rather than in two square
+/// corners.
 /// </remarks>
 public static class RoadMesh
 {
     public const float Step = 0.5f;
     public const float Lift = 0.07f;
+    /// <summary>How much wider than the road the strip is, for the edge to fade out over.</summary>
+    public const float Shoulders = 1.45f;
     private const int CapSegments = 10;
 
     /// <summary>Points along the curve through <paramref name="points"/>, about <see cref="Step"/> apart.</summary>
@@ -73,7 +78,7 @@ public static class RoadMesh
         var vertices = new Vector3[count * 3 + capVertices * 2];
         var uvs = new Vector2[vertices.Length];
         var triangles = new int[(count - 1) * 12 + CapSegments * 3 * 2];
-        var half = width / 2f;
+        var half = width * Shoulders / 2f;
         var along = 0f;
 
         for (var i = 0; i < count; ++i)
@@ -91,7 +96,7 @@ public static class RoadMesh
                 var point = new Vector3(flat.x, 0f, flat.y);
                 point.y = groundHeight(point) + lift;
                 vertices[i * 3 + c] = point;
-                uvs[i * 3 + c] = new Vector2(c * 0.5f, along / width);
+                uvs[i * 3 + c] = new Vector2(c == 1 ? 0f : 1f, along / width);
             }
         }
 
@@ -118,15 +123,15 @@ public static class RoadMesh
             var outward = (centre - other).normalized;
             var side = new Vector2(outward.y, -outward.x) * direction;
             vertices[first] = Ground(centre);
-            uvs[first] = new Vector2(0.5f, alongAt / width);
+            uvs[first] = new Vector2(0f, alongAt / width);
             for (var k = 0; k <= CapSegments; ++k)
             {
                 var angle = Mathf.PI * k / CapSegments;
                 var offset = (side * Mathf.Cos(angle) + outward * Mathf.Sin(angle)) * half;
                 vertices[first + 1 + k] = Ground(centre + offset);
-                // the surface carries on past the end, so the cap is not a smear of one row
+                // the rim is the road's edge all the way round, so the end fades out like the sides
                 var forward = Vector2.Dot(offset, outward) * (at == 0 ? -1f : 1f);
-                uvs[first + 1 + k] = new Vector2(0.5f + Vector2.Dot(offset, side) / width, (alongAt + forward) / width);
+                uvs[first + 1 + k] = new Vector2(1f, (alongAt + forward) / width);
             }
 
             for (var k = 0; k < CapSegments; ++k)
@@ -202,8 +207,8 @@ public static class RoadMesh
     }
 
     // ---- Surfaces ----------------------------------------------------------------------------------
-    // Drawn here rather than imported: flat, low contrast colours like the rest of the low poly
-    // village, and nothing to wire up in the scene.
+    // Only used when the road materials (Resources/Roads, on the island's terrain textures) are
+    // missing: flat colours, so a road still shows.
 
     /// <summary>A tiling surface for road type <paramref name="type"/>: 0 dirt, 1 gravel, 2 cobbles.</summary>
     public static Texture2D MakeSurface(int type)

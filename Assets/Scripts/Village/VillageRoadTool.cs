@@ -21,8 +21,9 @@ using UnityEngine;
 /// road back as it was. A road under a building is reached by clicking the building again.
 /// </para>
 /// <para>
-/// Roads through a building or the town hall are drawn red while build mode is on. They are never
-/// moved or removed for it: the streamer decides.
+/// Where a road runs through a building or the town hall, that stretch is outlined red while build
+/// mode is on; the road itself keeps its look, so it can be judged as it will be. It is never moved
+/// or removed for it: the streamer decides.
 /// </para>
 /// </remarks>
 public class VillageRoadTool : MonoBehaviour
@@ -47,7 +48,9 @@ public class VillageRoadTool : MonoBehaviour
     private int dragIndex = -1;
 
     private readonly List<LineRenderer> handles = new List<LineRenderer>();
+    private readonly List<LineRenderer> flagOutlines = new List<LineRenderer>();
     private Material handleMaterial;
+    private Material flagMaterial;
 
     /// <summary>The road type being drawn, or null.</summary>
     public int? DrawType { get; private set; }
@@ -300,23 +303,86 @@ public class VillageRoadTool : MonoBehaviour
         return best;
     }
 
-    /// <summary>Marks every road that runs through a building or the town hall, or clears the marks.</summary>
+    /// <summary>
+    /// Marks every road that runs through a building or the town hall and outlines the stretches
+    /// that do, or clears it all.
+    /// </summary>
     public void RefreshFlags(bool show)
     {
         var roads = Roads;
         if (roads == null) return;
+        var used = 0;
         foreach (var road in roads.Roads)
         {
             var flagged = false;
             if (show)
             {
-                for (var i = 0; i < road.Samples.Count && !flagged; i += 3)
+                // runs of samples under a building, each outlined on its own
+                var start = -1;
+                for (var i = 0; i <= road.Samples.Count; ++i)
                 {
-                    flagged = mode.IsBuilt(road.Samples[i]);
+                    var inside = i < road.Samples.Count && mode.IsBuilt(road.Samples[i]);
+                    if (inside && start < 0) start = i;
+                    if (!inside && start >= 0)
+                    {
+                        Outline(used++, road, Mathf.Max(0, start - 1), Mathf.Min(road.Samples.Count - 1, i));
+                        flagged = true;
+                        start = -1;
+                    }
                 }
             }
             roads.SetFlagged(road, flagged);
         }
+
+        for (var i = used; i < flagOutlines.Count; ++i) flagOutlines[i].gameObject.SetActive(false);
+    }
+
+    /// <summary>A red ring round samples <paramref name="from"/> to <paramref name="to"/> of a road.</summary>
+    private void Outline(int index, VillageRoads.Road road, int from, int to)
+    {
+        var roads = Roads;
+        if (!flagMaterial)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+            flagMaterial = new Material(shader);
+            var colour = new Color(1f, 0.3f, 0.28f);
+            flagMaterial.SetColor("_BaseColor", colour);
+            flagMaterial.color = colour;
+            // over the building it runs under, so the stretch can be seen
+            flagMaterial.SetFloat("_ZTest", (float)UnityEngine.Rendering.CompareFunction.Always);
+            flagMaterial.renderQueue = 3990;
+        }
+
+        while (flagOutlines.Count <= index)
+        {
+            var go = new GameObject("Road Flag " + flagOutlines.Count);
+            go.transform.SetParent(transform, false);
+            var made = go.AddComponent<LineRenderer>();
+            made.sharedMaterial = flagMaterial;
+            made.widthMultiplier = 0.16f;
+            made.loop = true;
+            made.useWorldSpace = true;
+            made.numCornerVertices = 2;
+            made.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            flagOutlines.Add(made);
+        }
+
+        var line = flagOutlines[index];
+        line.gameObject.SetActive(true);
+        var half = roads.WidthOf(road.Type) / 2f;
+        var samples = road.Samples;
+        var count = to - from + 1;
+        line.positionCount = count * 2;
+        for (var i = 0; i < count; ++i)
+        {
+            var s = from + i;
+            var tangent = (samples[Mathf.Min(samples.Count - 1, s + 1)] - samples[Mathf.Max(0, s - 1)]).normalized;
+            var side = new Vector2(-tangent.y, tangent.x) * half;
+            line.SetPosition(i, Lifted(samples[s] + side));
+            line.SetPosition(count * 2 - 1 - i, Lifted(samples[s] - side));
+        }
+
+        Vector3 Lifted(Vector2 p) => new Vector3(p.x, roads.GroundHeight(new Vector3(p.x, 0f, p.y)) + 0.3f, p.y);
     }
 
     // ---- Input ---------------------------------------------------------------------------------
@@ -621,7 +687,7 @@ public class VillageRoadTool : MonoBehaviour
         {
             roads.Rebuild(preview);
             preview.Object.SetActive(true);
-            roads.SetFlagged(preview, !DrawAffordable);
+            roads.SetTinted(preview, !DrawAffordable);
         }
         else if (preview.Object)
         {
@@ -712,5 +778,6 @@ public class VillageRoadTool : MonoBehaviour
     private void OnDestroy()
     {
         if (handleMaterial) Destroy(handleMaterial);
+        if (flagMaterial) Destroy(flagMaterial);
     }
 }

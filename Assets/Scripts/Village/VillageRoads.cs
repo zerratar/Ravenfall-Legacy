@@ -20,12 +20,18 @@ public class VillageRoads : MonoBehaviour
         public GameObject Object;
         public MeshRenderer Renderer;
         public Mesh Mesh;
-        /// <summary>Runs through a building or the town hall: drawn red in build mode, never moved.</summary>
+        /// <summary>Runs through a building or the town hall: outlined red in build mode, never moved.</summary>
         public bool Flagged;
+        /// <summary>Drawn red: the road being drawn when the village cannot pay for it.</summary>
+        public bool Tinted;
     }
 
     private readonly List<Road> roads = new List<Road>();
     private readonly Dictionary<int, Material> materials = new Dictionary<int, Material>();
+    // the second pass of the road shader: only the middle, a queue later than every fringe
+    private readonly Dictionary<int, Material[]> drawMaterials = new Dictionary<int, Material[]>();
+    // made here rather than loaded, so ours to destroy, textures and all
+    private readonly HashSet<Material> generated = new HashSet<Material>();
     private RoadType[] types = Array.Empty<RoadType>();
     private MaterialPropertyBlock block;
     private GameManager gameManager;
@@ -183,38 +189,81 @@ public class VillageRoads : MonoBehaviour
         // the better road a little higher, so where two meet the cobbles lie over the dirt rather
         // than flickering with it
         RoadMesh.Build(road.Mesh, road.Samples, WidthOf(road.Type), GroundHeight, RoadMesh.Lift + Mathf.Clamp(road.Type, 0, 4) * 0.012f);
-        road.Renderer.sharedMaterial = MaterialFor(road.Type);
-        ApplyFlag(road);
+        road.Renderer.sharedMaterials = DrawMaterialsFor(road.Type);
+        ApplyTint(road);
     }
 
+    /// <summary>Marks a road as running through a building. Build mode outlines that stretch.</summary>
     public void SetFlagged(Road road, bool flagged)
     {
-        if (road.Flagged == flagged) return;
         road.Flagged = flagged;
-        ApplyFlag(road);
     }
 
-    private void ApplyFlag(Road road)
+    public void SetTinted(Road road, bool tinted)
+    {
+        if (road.Tinted == tinted) return;
+        road.Tinted = tinted;
+        ApplyTint(road);
+    }
+
+    private void ApplyTint(Road road)
     {
         if (!road.Renderer) return;
         if (block == null) block = new MaterialPropertyBlock();
         road.Renderer.GetPropertyBlock(block);
-        var tint = road.Flagged ? new Color(1f, 0.45f, 0.42f) : Color.white;
-        block.SetColor("_BaseColor", tint);
+        block.SetColor("_BaseColor", road.Tinted ? new Color(1f, 0.45f, 0.42f) : Color.white);
         road.Renderer.SetPropertyBlock(block);
     }
 
+    /// <summary>
+    /// What a road of the type draws with. With the road shader, its material and a copy that
+    /// draws the middle only, later: a renderer with more materials than the mesh has parts draws
+    /// the mesh once with each.
+    /// </summary>
+    private Material[] DrawMaterialsFor(int type)
+    {
+        if (drawMaterials.TryGetValue(type, out var existing) && existing[0]) return existing;
+        var material = MaterialFor(type);
+        Material[] made;
+        if (material.HasProperty("_Core"))
+        {
+            var core = new Material(material) { name = material.name + " Middle" };
+            core.SetFloat("_Core", 1f);
+            core.renderQueue = material.renderQueue + 1;
+            made = new[] { material, core };
+        }
+        else made = new[] { material };
+        drawMaterials[type] = made;
+        return made;
+    }
+
+    /// <summary>
+    /// The material for a road type: Resources/Roads/Road_&lt;type&gt;, the road shader on the island's
+    /// own terrain textures. Without one, a plain surface drawn here.
+    /// </summary>
     public Material MaterialFor(int type)
     {
         if (materials.TryGetValue(type, out var existing) && existing) return existing;
-        var shader = Shader.Find("Universal Render Pipeline/Lit");
-        var material = new Material(shader) { name = "Road " + type };
-        var surface = RoadMesh.MakeSurface(type);
-        material.SetTexture("_BaseMap", surface);
-        material.mainTexture = surface;
-        material.SetFloat("_Smoothness", 0.05f);
-        // drawn after the ground, so the strip never flickers with the terrain under it
-        material.renderQueue = 2010;
+
+        Material material;
+        var asset = Resources.Load<Material>("Roads/Road_" + type);
+        if (asset)
+        {
+            material = new Material(asset) { name = asset.name };
+        }
+        else
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            material = new Material(shader) { name = "Road " + type };
+            var surface = RoadMesh.MakeSurface(type);
+            material.SetTexture("_BaseMap", surface);
+            material.mainTexture = surface;
+            material.SetFloat("_Smoothness", 0.05f);
+            // drawn after the ground, so the strip never flickers with the terrain under it
+            material.renderQueue = 2010;
+            generated.Add(material);
+        }
+
         materials[type] = material;
         return material;
     }
@@ -249,8 +298,13 @@ public class VillageRoads : MonoBehaviour
         foreach (var material in materials.Values)
         {
             if (!material) continue;
-            if (material.mainTexture) Destroy(material.mainTexture);
+            // the textures of a loaded material are assets, not ours
+            if (generated.Contains(material) && material.mainTexture) Destroy(material.mainTexture);
             Destroy(material);
+        }
+        foreach (var set in drawMaterials.Values)
+        {
+            for (var i = 1; i < set.Length; ++i) if (set[i]) Destroy(set[i]);
         }
         foreach (var road in roads)
         {
