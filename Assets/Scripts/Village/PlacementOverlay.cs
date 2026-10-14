@@ -23,6 +23,10 @@ public class PlacementOverlay : MonoBehaviour
 
     private readonly List<LineRenderer> grid = new List<LineRenderer>();
     private LineRenderer footprint;
+    // red rings under the buildings in the way, as many as there are; the extra ones are hidden
+    private readonly List<LineRenderer> blockerRings = new List<LineRenderer>();
+    private Material blockerMaterial;
+    private const int RingPoints = 40;
     private Material gridMaterial;
     private Material footprintMaterial;
     private float cellSize = 1f;
@@ -128,6 +132,36 @@ public class PlacementOverlay : MonoBehaviour
     {
         gameObject.SetActive(false);
         drawnCenter = new Vector3(float.NaN, 0f, 0f);
+        ShowBlockers(null);
+    }
+
+    /// <summary>
+    /// Rings the buildings in the way of a placement, in the invalid colour, so the streamer can see
+    /// which ones to move instead of trying them one by one. Null or empty clears them.
+    /// </summary>
+    public void ShowBlockers(IReadOnlyList<(Vector3 centre, float radius)> blockers)
+    {
+        var count = blockers?.Count ?? 0;
+        if (count > 0 && !blockerMaterial) blockerMaterial = MakeMaterial(InvalidColor);
+        while (blockerRings.Count < count)
+        {
+            blockerRings.Add(MakeLine("Blocker " + blockerRings.Count, blockerMaterial, 0.32f, RingPoints, true));
+        }
+
+        for (var i = 0; i < blockerRings.Count; ++i)
+        {
+            var ring = blockerRings[i];
+            var show = i < count;
+            ring.gameObject.SetActive(show);
+            if (!show) continue;
+
+            var (centre, radius) = blockers[i];
+            for (var p = 0; p < RingPoints; ++p)
+            {
+                var angle = p / (float)RingPoints * Mathf.PI * 2f;
+                ring.SetPosition(p, Ground(centre + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius)));
+            }
+        }
     }
 
     /// <param name="center">Where the building stands.</param>
@@ -216,5 +250,6 @@ public class PlacementOverlay : MonoBehaviour
     {
         if (gridMaterial) Destroy(gridMaterial);
         if (footprintMaterial) Destroy(footprintMaterial);
+        if (blockerMaterial) Destroy(blockerMaterial);
     }
 }

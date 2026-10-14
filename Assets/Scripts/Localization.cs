@@ -400,6 +400,8 @@ public static class Localization
     public static string UI_BUILD_PLACE_TOWN_HALL = "Overlaps the town hall";
     public static string UI_BUILD_NO_FREE_PLOTS = "No free plots. Demolish a building, or level the village up for more.";
     public static string UI_BUILD_PLACE_OVERLAP = "Too close to another building";
+    public static string UI_BUILD_BLOCKED_BY = "In the way: {0}";
+    public static string UI_BUILD_BLOCKED_MORE = "and {0} more";
     public static string UI_BUILD_PLACE_WATER = "You can't build on water";
     public static string UI_BUILD_PLACE_STEEP = "The ground is too steep here";
     public static string UI_BUILD_PLACE_REJECTED = "The server did not accept the move. Try again in a moment.";
@@ -407,7 +409,7 @@ public static class Localization
     public static string UI_BUILD_HALL_TITLE = "Town hall";
     public static string UI_BUILD_HALL_TIER = "Tier {0}";
     public static string UI_BUILD_HALL_NOTE = "Move the town hall anywhere in the village. Its outline is the room the biggest town hall needs, so there is always space to upgrade.";
-    public static string UI_BUILD_HALL_PLOT = "The town hall needs this space; a building is in the way";
+    public static string UI_BUILD_HALL_PLOT = "The town hall needs this space";
     public static string UI_BUILD_HALL_OUTSIDE = "The town hall must stay inside the village";
     public static string UI_BUILD_HINT_HALL = "Move, rotate or upgrade the town hall. Esc to deselect.";
     public static string UI_BUILD_HALL_TIER_NAMED = "Tier {0}: {1}";

@@ -101,6 +101,7 @@ namespace Shinobytes.UI
         private Label bonusNote;
         private Button moveButton;
         private Button rotateButton;
+        private bool rotateHovered;
         private Button assignButton;
         private Label assignLabel;
         private Button resetButton;
@@ -265,11 +266,18 @@ namespace Shinobytes.UI
                 if (mode.HallSelected) mode.StartHallMove();
                 else if (mode.Selected) mode.StartMove(mode.Selected);
             };
-            rotateButton.clicked += () =>
+            // Pointing at Rotate shows the turn first: the turned footprint, green or red, and the
+            // buildings in the way ringed, as moving does. Before, a turn that did not fit only said
+            // so, without showing where or what was in the way.
+            rotateButton.RegisterCallback<PointerEnterEvent>(_ => { rotateHovered = true; mode?.PreviewRotation(rotateStep); });
+            rotateButton.RegisterCallback<PointerLeaveEvent>(_ => { rotateHovered = false; mode?.EndPreview(); });
+            rotateButton.clicked += async () =>
             {
                 if (mode == null) return;
-                if (mode.HallSelected) _ = mode.RotateHallInPlaceAsync(rotateStep);
-                else if (mode.Selected) _ = mode.RotateInPlaceAsync(mode.Selected, rotateStep);
+                if (mode.HallSelected) await mode.RotateHallInPlaceAsync(rotateStep);
+                else if (mode.Selected) await mode.RotateInPlaceAsync(mode.Selected, rotateStep);
+                // still pointing at it: show the next turn
+                if (rotateHovered && mode != null) mode.PreviewRotation(rotateStep);
             };
             assignButton.clicked += OpenAssign;
             resetButton.clicked += () =>

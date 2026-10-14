@@ -103,6 +103,14 @@ public class VillageBuildMode : MonoBehaviour
     private Vector3 lastSnapped = new Vector3(float.NaN, 0f, 0f);
     private float lastRotation = float.NaN;
     private readonly Dictionary<TownHouseSlot, float> radiusCache = new Dictionary<TownHouseSlot, float>();
+
+    // The plots in the way of the placement last checked, for the overlay's rings and the message.
+    private readonly List<TownHouseSlot> blockers = new List<TownHouseSlot>();
+    private readonly List<(Vector3, float)> blockerRings = new List<(Vector3, float)>();
+    private bool previewing;
+
+    /// <summary>The buildings in the way of the placement last checked.</summary>
+    public IReadOnlyList<TownHouseSlot> Blockers => blockers;
     private Vector3 hallStartPosition;
     private float hallStartRotation;
 
@@ -159,6 +167,7 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
+        EndPreview();
         CancelMove();
         CancelHallMove();
         SetArmed(null);
@@ -276,6 +285,7 @@ public class VillageBuildMode : MonoBehaviour
 
     public void ClearSelection()
     {
+        EndPreview();
         Selected = null;
         HallSelected = false;
         SetArmed(null);
@@ -516,6 +526,12 @@ public class VillageBuildMode : MonoBehaviour
             MoveProblem = Validate(Moving, RadiusOf(Moving), ground, moveRotation);
             MoveValid = MoveProblem == null;
             Changed?.Invoke();
+
+            if (overlay)
+            {
+                overlay.Show(Moving.transform.position, moveRotation, RadiusOf(Moving), MoveValid);
+                RingBlockers();
+            }
         }
 
         if (overlay)
@@ -554,6 +570,7 @@ public class VillageBuildMode : MonoBehaviour
     /// <summary>Null when the plot can stand here, otherwise the reason it cannot.</summary>
     private string Validate(TownHouseSlot slot, float radius, Vector3 position, float rotation)
     {
+        blockers.Clear();
         var townHall = gameManager.Village.TownHall;
         // Measured from the plaza, the middle of the village, so moving the town hall does not move
         // the area buildings may stand in.
@@ -579,14 +596,21 @@ public class VillageBuildMode : MonoBehaviour
             return Localization.UI_BUILD_PLACE_TOWN_HALL;
         }
 
-        // Clear of every other plot, built or not.
+        // Clear of every other plot, built or not. All of them are collected, so the message can
+        // name them and the overlay ring them: a streamer used to move buildings one by one to find
+        // the one in the way.
         foreach (var other in Plots)
         {
             if (other == slot) continue;
             if (Flat(position - other.transform.position).magnitude < radius + RadiusOf(other) + spacing)
             {
-                return Localization.UI_BUILD_PLACE_OVERLAP;
+                blockers.Add(other);
             }
+        }
+
+        if (blockers.Count > 0)
+        {
+            return WithBlockers(Localization.UI_BUILD_PLACE_OVERLAP);
         }
 
         // On ground, not water, and not too steep.
@@ -767,6 +791,7 @@ public class VillageBuildMode : MonoBehaviour
             MoveProblem = ValidateHall(townHall.HallPosition, moveRotation);
             MoveValid = MoveProblem == null;
             Changed?.Invoke();
+            if (overlay) ShowHallArea(townHall, moveRotation, MoveValid);
         }
 
         if (overlay)
@@ -790,6 +815,7 @@ public class VillageBuildMode : MonoBehaviour
     /// </summary>
     private string ValidateHall(Vector3 position, float rotation)
     {
+        blockers.Clear();
         var townHall = gameManager.Village.TownHall;
         var plaza = townHall.Plaza;
 
@@ -812,8 +838,13 @@ public class VillageBuildMode : MonoBehaviour
         {
             if (townHall.AreaOverlaps(position, rotation, plot.transform.position, RadiusOf(plot) + spacing))
             {
-                return Localization.UI_BUILD_HALL_PLOT;
+                blockers.Add(plot);
             }
+        }
+
+        if (blockers.Count > 0)
+        {
+            return WithBlockers(Localization.UI_BUILD_HALL_PLOT);
         }
 
         // Corners, edge middles and centre: dry ground, and not too uneven for the hall to sit on.
@@ -860,6 +891,89 @@ public class VillageBuildMode : MonoBehaviour
             MoveProblem = null;
             if (overlay) overlay.Hide();
         });
+    }
+
+    // ---- Previewing a turn -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Shows where the selected building or the town hall would stand turned by
+    /// <paramref name="degrees"/>, green or red, with the buildings in the way ringed. The Rotate
+    /// tile shows it while the pointer is over it, so a turn can be judged before it is made, as a
+    /// move can.
+    /// </summary>
+    public string PreviewRotation(float degrees)
+    {
+        if (!IsActive || Busy || IsMoving) return null;
+
+        var townHall = gameManager.Village.TownHall;
+        if (!overlay) overlay = PlacementOverlay.Create(cellSize);
+        radiusCache.Clear();
+        string problem = null;
+
+        if (HallSelected && townHall)
+        {
+            var rotation = Mathf.Repeat(Mathf.Round(townHall.HallRotation / rotationStep) * rotationStep + degrees, 360f);
+            problem = ValidateHall(townHall.HallPosition, rotation);
+            ShowHallArea(townHall, rotation, problem == null, townHall.HallPosition);
+        }
+        else if (Selected)
+        {
+            var rotation = Mathf.Repeat(Mathf.Round(Selected.transform.eulerAngles.y / rotationStep) * rotationStep + degrees, 360f);
+            problem = Validate(Selected, RadiusOf(Selected), Selected.transform.position, rotation);
+            overlay.Show(Selected.transform.position, rotation, RadiusOf(Selected), problem == null);
+            RingBlockers();
+        }
+        else
+        {
+            return null;
+        }
+
+        previewing = true;
+        return problem;
+    }
+
+    /// <summary>Takes the turn preview away, unless a move has the overlay now.</summary>
+    public void EndPreview()
+    {
+        if (!previewing) return;
+        previewing = false;
+        if (!IsMoving && overlay) overlay.Hide();
+    }
+
+    private void ShowHallArea(TownHallManager townHall, float rotation, bool valid, Vector3? at = null)
+    {
+        var position = at ?? townHall.HallPosition;
+        var area = townHall.Area;
+        var centre = position + Quaternion.Euler(0f, rotation, 0f) * new Vector3(area.center.x, 0f, area.center.y);
+        overlay.Show(centre, rotation, area.width / 2f, area.height / 2f, valid);
+        RingBlockers();
+    }
+
+    private void RingBlockers()
+    {
+        if (!overlay) return;
+        blockerRings.Clear();
+        foreach (var plot in blockers)
+        {
+            // a little outside the footprint, so the ring is not hidden under the walls
+            if (plot) blockerRings.Add((plot.transform.position, RadiusOf(plot) + 0.8f));
+        }
+        overlay.ShowBlockers(blockerRings);
+    }
+
+    /// <summary>The problem, and which buildings are in the way: "In the way: Sawmill, Farm".</summary>
+    private string WithBlockers(string problem)
+    {
+        var names = new List<string>();
+        foreach (var plot in blockers)
+        {
+            var name = IsEmpty(plot) ? Localization.UI_BUILD_EMPTY_PLOT : Localization.HouseName(plot.SlotType);
+            if (!names.Contains(name)) names.Add(name);
+        }
+
+        if (names.Count == 0) return problem;
+        var shown = names.Count > 3 ? string.Join(", ", names.GetRange(0, 3)) + " " + string.Format(Localization.UI_BUILD_BLOCKED_MORE, names.Count - 3) : string.Join(", ", names);
+        return problem + ". " + string.Format(Localization.UI_BUILD_BLOCKED_BY, shown);
     }
 
     /// <summary>Turns the town hall where it stands, after checking the turned area still fits.</summary>
@@ -985,6 +1099,7 @@ public class VillageBuildMode : MonoBehaviour
             {
                 ghost.transform.SetPositionAndRotation(target.transform.position, target.transform.rotation);
                 MoveProblem = null;
+                blockers.Clear();
             }
             else
             {
@@ -996,6 +1111,7 @@ public class VillageBuildMode : MonoBehaviour
             MoveValid = MoveProblem == null;
             PlacementOverlay.TintGhost(ghost, MoveValid);
             Changed?.Invoke();
+            RingBlockers();
         }
 
         if (overlay)
