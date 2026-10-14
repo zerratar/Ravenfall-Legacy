@@ -88,6 +88,14 @@ public class ResourceField : MonoBehaviour
         Changed();
     }
 
+    /// <summary>Removes every instance that matches, in one change; returns how many went.</summary>
+    public int RemoveAll(Predicate<Instance> match)
+    {
+        var removed = instances.RemoveAll(match);
+        if (removed > 0) Changed();
+        return removed;
+    }
+
     public void Clear()
     {
         instances.Clear();

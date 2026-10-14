@@ -145,12 +145,20 @@ tree and gather spot helpers in `Editor/RavenfallTools.cs` and `Editor/Ravenfall
 
 ## Editor tools
 
-- **Inspector of a ResourceField:** its types with counts; a type palette; Paint and Erase modes.
-- **Painting in the Scene view:**
-  - Click or drag to paint, with radius, spacing and random yaw, scale and variant from the type's brush defaults.
-  - Shift to erase.
-  - Ctrl+click to pick one instance, then move it, turn it, or change its variant or type.
-  - Everything snaps to the ground and is undoable.
+- **GameObject > Ravenfall > Resource Field** adds a field under the selected chunk, ready to paint.
+- **Inspector of a ResourceField:** its types with counts, Snap All To Ground, and four modes (Off, Paint, Erase,
+  Pick). A field starts in Off when selected, so a click in the scene never paints by accident.
+- **Painting in the Scene view** (Paint):
+  - Click or drag to paint the brush type, picked from a palette of every type in the project, with a size, an
+    amount per dab, a spacing kept to everything already in the field and a max slope. The look is random by the
+    type's weights or a chosen one; turn and size come from the type's brush defaults. An amount of 1 places one
+    exactly under the mouse.
+  - Shift to erase while painting; Erase mode removes everything in the circle, or only the brush type.
+  - [ and ] change the brush size, Escape leaves the mode.
+- **Pick:** click a tree or spot, then drag the arrows to move it (it follows the ground), the ring to turn it and
+  the cube to size it, or change its type, look, turn and size in the inspector; Delete removes it.
+- Ground is the terrain or any ground mesh, never old trees, players, buildings, water or roads. One undo per
+  stroke.
 - **Ravenfall > World Resources > Create Type From Selection**, for the existing tree prefabs and gather spots.
 - **Ravenfall > World Resources > Convert Scene**: writes every `TreeController` and `GatherController` in the open
   scene into the field of its chunk, at the same place, look, level and respawn, and lists anything it could not
@@ -163,7 +171,7 @@ Each step is a commit, tested in play mode and in the editor before the next.
 
 1. **Types, fields and drawing.** `ResourceType`, `ResourceField`, `ResourceRenderer` (BRG), Create Type From
    Selection, and test fields in place of the Home and Heim trees to compare looks, LODs and shadows. Done.
-2. **The brush.** Painting, erasing and picking in the Scene view.
+2. **The brush.** Painting, erasing and picking in the Scene view. Done.
 3. **Gameplay.** `WorldResources`, `ResourceTarget`, the two tasks, the player changes, the shared exp and adaptive
    respawn. Tested on the test field alongside the old trees, which keep working until step 4.
 4. **Conversion.** Convert MainWorld, check every chunk's counts against the old ones, play-test chopping and gathering on

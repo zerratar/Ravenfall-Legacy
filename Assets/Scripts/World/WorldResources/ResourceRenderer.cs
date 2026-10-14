@@ -56,7 +56,7 @@ public static unsafe class ResourceRenderer
     private static readonly List<int> lodKeys = new List<int>();
     private struct LookInfo { public int firstLod; public int lodCount; }
     private static readonly List<LookInfo> looks = new List<LookInfo>();
-    private static readonly Dictionary<(ResourceType, int), int> lookLookup = new Dictionary<(ResourceType, int), int>();
+    private static readonly Dictionary<(ResourceType, int, byte), int> lookLookup = new Dictionary<(ResourceType, int, byte), int>();
 
     // per instance, in buffer order
     private static int count;
@@ -99,6 +99,8 @@ public static unsafe class ResourceRenderer
         Application.quitting += Dispose;
 #if UNITY_EDITOR
         UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += Dispose;
+        // an undone or redone brush stroke
+        UnityEditor.Undo.undoRedoPerformed += MarkDirty;
 #endif
     }
 
@@ -189,15 +191,16 @@ public static unsafe class ResourceRenderer
         metadata.Dispose();
     }
 
-    /// <summary>The look of a type (a variant, or -1 for its depleted look) with its levels of detail and draw keys, or -1 when it draws nothing.</summary>
+    /// <summary>The look of a type (a variant, or -1 for its depleted look) with its levels of detail and draw keys, or -1 when it draws nothing.
+    /// Per layer, since the draw keys carry the layer of the field.</summary>
     private static int LookIndex(ResourceType type, int variant, byte layer)
     {
-        if (lookLookup.TryGetValue((type, variant), out var known)) return known;
+        if (lookLookup.TryGetValue((type, variant, layer), out var known)) return known;
 
         var look = variant < 0 ? type.depleted : type.variants[variant];
         if (look == null || look.IsEmpty)
         {
-            lookLookup[(type, variant)] = -1;
+            lookLookup[(type, variant, layer)] = -1;
             return -1;
         }
 
@@ -218,7 +221,7 @@ public static unsafe class ResourceRenderer
         }
 
         looks.Add(info);
-        lookLookup[(type, variant)] = looks.Count - 1;
+        lookLookup[(type, variant, layer)] = looks.Count - 1;
         return looks.Count - 1;
     }
 
