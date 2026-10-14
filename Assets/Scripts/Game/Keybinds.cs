@@ -92,29 +92,30 @@ public static class Keybinds
         public Action Action;
         public Binding Default;
         public Trigger Trigger;
-        public string Name;
+        /// <summary>Read when asked, so it follows the language.</summary>
+        public Func<string> Name;
         public bool AdminOnly;
     }
 
     private static readonly List<Def> defs = new List<Def>
     {
-        new Def { Action = Action.ToggleHud, Default = new Binding(KeyCode.F1), Trigger = Trigger.Down, Name = Localization.UI_KEY_HUD },
-        new Def { Action = Action.PlayerDetails, Default = new Binding(KeyCode.F2), Trigger = Trigger.Up, Name = Localization.UI_KEY_DETAILS },
-        new Def { Action = Action.NextPlayer, Default = new Binding(KeyCode.Tab), Trigger = Trigger.Down, Name = Localization.UI_KEY_NEXT_PLAYER },
-        new Def { Action = Action.FreeCamera, Default = new Binding(KeyCode.Tab, Mods.Shift), Trigger = Trigger.Held, Name = Localization.UI_KEY_FREE_CAMERA },
-        new Def { Action = Action.NextIsland, Default = new Binding(KeyCode.I, Mods.Ctrl), Trigger = Trigger.Down, Name = Localization.UI_KEY_NEXT_ISLAND },
-        new Def { Action = Action.ControlPlayer, Default = new Binding(KeyCode.F3), Trigger = Trigger.Up, Name = Localization.UI_KEY_CONTROL_PLAYER },
-        new Def { Action = Action.Search, Default = new Binding(KeyCode.F, Mods.Ctrl), Trigger = Trigger.Up, Name = Localization.UI_KEY_SEARCH },
-        new Def { Action = Action.ExpRate, Default = new Binding(KeyCode.I), Trigger = Trigger.Up, Name = Localization.UI_KEY_EXP },
-        new Def { Action = Action.Logos, Default = new Binding(KeyCode.Q), Trigger = Trigger.Up, Name = Localization.UI_KEY_LOGOS },
-        new Def { Action = Action.UiBigger, Default = new Binding(KeyCode.Equals, Mods.Ctrl), Trigger = Trigger.Down, Name = Localization.UI_KEY_UI_BIGGER },
-        new Def { Action = Action.UiSmaller, Default = new Binding(KeyCode.Minus, Mods.Ctrl), Trigger = Trigger.Down, Name = Localization.UI_KEY_UI_SMALLER },
-        new Def { Action = Action.Graphics, Default = new Binding(KeyCode.F9), Trigger = Trigger.Down, Name = Localization.UI_KEY_GRAPHICS },
-        new Def { Action = Action.Physics, Default = new Binding(KeyCode.F4), Trigger = Trigger.Up, Name = Localization.UI_KEY_PHYSICS },
-        new Def { Action = Action.SaveState, Default = new Binding(KeyCode.S, Mods.Ctrl), Trigger = Trigger.Up, Name = Localization.UI_KEY_SAVE },
-        new Def { Action = Action.Reload, Default = new Binding(KeyCode.F5), Trigger = Trigger.Down, Name = Localization.UI_KEY_RELOAD },
-        new Def { Action = Action.StartRaid, Default = new Binding(KeyCode.P, Mods.Ctrl), Trigger = Trigger.Up, Name = Localization.UI_KEY_RAID, AdminOnly = true },
-        new Def { Action = Action.StartDungeon, Default = new Binding(KeyCode.O, Mods.Ctrl), Trigger = Trigger.Up, Name = Localization.UI_KEY_DUNGEON, AdminOnly = true },
+        new Def { Action = Action.ToggleHud, Default = new Binding(KeyCode.F1), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_HUD },
+        new Def { Action = Action.PlayerDetails, Default = new Binding(KeyCode.F2), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_DETAILS },
+        new Def { Action = Action.NextPlayer, Default = new Binding(KeyCode.Tab), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_NEXT_PLAYER },
+        new Def { Action = Action.FreeCamera, Default = new Binding(KeyCode.Tab, Mods.Shift), Trigger = Trigger.Held, Name = () => Localization.UI_KEY_FREE_CAMERA },
+        new Def { Action = Action.NextIsland, Default = new Binding(KeyCode.I, Mods.Ctrl), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_NEXT_ISLAND },
+        new Def { Action = Action.ControlPlayer, Default = new Binding(KeyCode.F3), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_CONTROL_PLAYER },
+        new Def { Action = Action.Search, Default = new Binding(KeyCode.F, Mods.Ctrl), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_SEARCH },
+        new Def { Action = Action.ExpRate, Default = new Binding(KeyCode.I), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_EXP },
+        new Def { Action = Action.Logos, Default = new Binding(KeyCode.Q), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_LOGOS },
+        new Def { Action = Action.UiBigger, Default = new Binding(KeyCode.Equals, Mods.Ctrl), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_UI_BIGGER },
+        new Def { Action = Action.UiSmaller, Default = new Binding(KeyCode.Minus, Mods.Ctrl), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_UI_SMALLER },
+        new Def { Action = Action.Graphics, Default = new Binding(KeyCode.F9), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_GRAPHICS },
+        new Def { Action = Action.Physics, Default = new Binding(KeyCode.F4), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_PHYSICS },
+        new Def { Action = Action.SaveState, Default = new Binding(KeyCode.S, Mods.Ctrl), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_SAVE },
+        new Def { Action = Action.Reload, Default = new Binding(KeyCode.F5), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_RELOAD },
+        new Def { Action = Action.StartRaid, Default = new Binding(KeyCode.P, Mods.Ctrl), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_RAID, AdminOnly = true },
+        new Def { Action = Action.StartDungeon, Default = new Binding(KeyCode.O, Mods.Ctrl), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_DUNGEON, AdminOnly = true },
     };
 
     private static readonly Dictionary<Action, Binding> current = new Dictionary<Action, Binding>();
@@ -128,7 +129,7 @@ public static class Keybinds
 
     public static IEnumerable<Action> All => defs.Select(d => d.Action);
 
-    public static string Name(Action action) => Find(action).Name;
+    public static string Name(Action action) => Find(action).Name();
     public static bool AdminOnly(Action action) => Find(action).AdminOnly;
     public static Binding Default(Action action) => Find(action).Default;
 

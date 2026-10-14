@@ -27,6 +27,7 @@ namespace Shinobytes.UI
         private Label uptimeValue;
 
         private bool bound;
+        private bool logsHooked;
         private bool open;
         private int openedFrame = -1;
         private float nextInfoRefresh;
@@ -67,11 +68,25 @@ namespace Shinobytes.UI
             if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         }
 
-        private void OnEnable() => TryBind();
+        private void OnEnable()
+        {
+            Languages.Changed += OnLanguageChanged;
+            TryBind();
+        }
 
         private void OnDisable()
         {
+            Languages.Changed -= OnLanguageChanged;
             bound = false;
+        }
+
+        private void OnLanguageChanged()
+        {
+            if (!bound) return;
+            var root = GetComponent<UIDocument>().rootVisualElement;
+            BuildButtons(root);
+            BuildInfo(root.Q<VisualElement>("gamemenu-info"));
+            if (open) ShowNow();
         }
 
         private void Update()
@@ -137,6 +152,17 @@ namespace Shinobytes.UI
                 if (e.target == modal) handler.Hide();
             });
 
+            BuildButtons(root);
+            BuildInfo(root.Q<VisualElement>("gamemenu-info"));
+
+            bound = true;
+            if (open) ShowNow();
+            else modal.style.display = DisplayStyle.None;
+        }
+
+        /// <summary>The buttons and the log folder link, again after a change of language.</summary>
+        private void BuildButtons(VisualElement root)
+        {
             var buttons = root.Q<VisualElement>("gamemenu-buttons");
             buttons.Clear();
             AddButton(buttons, "\uf04b", Localization.UI_MENU_CONTINUE, "rf-gamemenu__button--primary", () => handler.Hide());
@@ -149,13 +175,11 @@ namespace Shinobytes.UI
 
             var logs = root.Q<Button>("gamemenu-logs");
             logs.text = "→ " + Localization.UI_MENU_LOG_FOLDER;
-            logs.clicked += () => handler.OpenPlayerLogFolder();
-
-            BuildInfo(root.Q<VisualElement>("gamemenu-info"));
-
-            bound = true;
-            if (open) ShowNow();
-            else modal.style.display = DisplayStyle.None;
+            if (!logsHooked)
+            {
+                logs.clicked += () => handler.OpenPlayerLogFolder();
+                logsHooked = true;
+            }
         }
 
         private void ShowNow()

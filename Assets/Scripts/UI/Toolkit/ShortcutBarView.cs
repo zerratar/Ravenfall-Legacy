@@ -50,12 +50,14 @@ namespace Shinobytes.UI
         {
             Instance = this;
             Keybinds.Changed += RefreshKeys;
+            Languages.Changed += RefreshKeys;
             TryBind();
         }
 
         private void OnDisable()
         {
             Keybinds.Changed -= RefreshKeys;
+            Languages.Changed -= RefreshKeys;
             if (Instance == this) Instance = null;
         }
 

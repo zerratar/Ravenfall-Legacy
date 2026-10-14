@@ -64,6 +64,8 @@ public class PlayerSettings
     /// everyone whose file says true.
     /// </summary>
     public bool? SimulatePhysics;
+    /// <summary>The language code, see Languages; null or "en" for English.</summary>
+    public string Language;
 
     public int? LocalBotPort;
     public int? PlayerBoostRequirement;
@@ -434,6 +436,7 @@ public class PlayerSettings
             Serialize(sw, "playerDetailsVisible", obj.PlayerDetailsVisible);
             Serialize(sw, "graphicsOff", obj.GraphicsOff);
             Serialize(sw, "simulatePhysics", obj.SimulatePhysics);
+            Serialize(sw, "language", obj.Language);
             if (obj.Loot != null) sw.WriteLine("  \"loot\": { \"includeOrigin\": " + obj.Loot.IncludeOrigin.ToString().ToLower() + " },");
 
             // Serialize custom class instances

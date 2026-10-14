@@ -30,7 +30,8 @@ namespace Shinobytes.UI
 
         private struct Tab
         {
-            public string Title;
+            /// <summary>Read when drawn, so it follows the language.</summary>
+            public Func<string> Title;
             public string Glyph;
             public Action<VisualElement> Build;
             public Func<bool> Visible;
@@ -55,6 +56,8 @@ namespace Shinobytes.UI
         private Button closeButton;
         private Button doneButton;
         private Button resetPageButton;
+        private Label titleLabel;
+        private Label footerLabel;
 
         private bool bound;
         private bool open;
@@ -74,13 +77,13 @@ namespace Shinobytes.UI
             Instance = this;
             if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_GAME, Glyph = "\uf11b", Build = BuildGame });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_GRAPHICS, Glyph = "\uf108", Build = BuildGraphics });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_SOUND, Glyph = "\uf028", Build = BuildSound });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_INTERFACE, Glyph = "\uf2d0", Build = BuildInterface, ExtraReset = ResetWindowPositions });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_BOT, Glyph = "\uf544", Build = BuildBotMessages });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_KEYS, Glyph = "\uf11c", Build = BuildKeys, ExtraReset = Keybinds.ResetAll });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_ADMIN, Glyph = "\uf505", Build = BuildAdmin, Visible = IsAdministrator });
+            tabs.Add(new Tab { Title = () => Localization.UI_SETTINGS_TAB_GAME, Glyph = "\uf11b", Build = BuildGame });
+            tabs.Add(new Tab { Title = () => Localization.UI_SETTINGS_TAB_GRAPHICS, Glyph = "\uf108", Build = BuildGraphics });
+            tabs.Add(new Tab { Title = () => Localization.UI_SETTINGS_TAB_SOUND, Glyph = "\uf028", Build = BuildSound });
+            tabs.Add(new Tab { Title = () => Localization.UI_SETTINGS_TAB_INTERFACE, Glyph = "\uf2d0", Build = BuildInterface, ExtraReset = ResetWindowPositions });
+            tabs.Add(new Tab { Title = () => Localization.UI_SETTINGS_TAB_BOT, Glyph = "\uf544", Build = BuildBotMessages });
+            tabs.Add(new Tab { Title = () => Localization.UI_SETTINGS_TAB_KEYS, Glyph = "\uf11c", Build = BuildKeys, ExtraReset = Keybinds.ResetAll });
+            tabs.Add(new Tab { Title = () => Localization.UI_SETTINGS_TAB_ADMIN, Glyph = "\uf505", Build = BuildAdmin, Visible = IsAdministrator });
         }
 
         private void OnDestroy()
@@ -88,10 +91,24 @@ namespace Shinobytes.UI
             if (Instance == this) Instance = null;
         }
 
-        private void OnEnable() => TryBind();
+        private void OnEnable()
+        {
+            Languages.Changed += OnLanguageChanged;
+            TryBind();
+        }
+
+        /// <summary>Every text in the window is drawn again in the new language.</summary>
+        private void OnLanguageChanged()
+        {
+            if (!bound) return;
+            ApplyTexts();
+            BuildTabButtons();
+            if (open) ShowNow();
+        }
 
         private void OnDisable()
         {
+            Languages.Changed -= OnLanguageChanged;
             if (open) SettingsApplier.Save();
             bound = false;
             tabButtons.Clear();
@@ -179,17 +196,12 @@ namespace Shinobytes.UI
             doneButton = root.Q<Button>("settings-done");
             resetPageButton = root.Q<Button>("settings-reset-page");
 
-            root.Q<Label>("settings-title").text = Localization.UI_SETTINGS_TITLE;
-            root.Q<Label>("settings-footer").text = Localization.UI_SETTINGS_FOOTER;
-            doneButton.text = Localization.UI_SETTINGS_DONE;
+            titleLabel = root.Q<Label>("settings-title");
+            footerLabel = root.Q<Label>("settings-footer");
             closeButton.clicked += Close;
             doneButton.clicked += Close;
-            if (resetPageButton != null)
-            {
-                resetPageButton.text = Localization.UI_SETTINGS_RESET_PAGE;
-                resetPageButton.tooltip = Localization.UI_SETTINGS_RESET_PAGE_HINT;
-                resetPageButton.clicked += ResetPage;
-            }
+            if (resetPageButton != null) resetPageButton.clicked += ResetPage;
+            ApplyTexts();
 
             content.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
@@ -197,6 +209,28 @@ namespace Shinobytes.UI
             drag = DraggableWindow.Attach(window, root.Q<VisualElement>(className: "rf-settings__header"), "settings");
             drag?.EnableResize(root.Q<VisualElement>("settings-grip"), minimumSize);
 
+            BuildTabButtons();
+
+            bound = true;
+            if (open) ShowNow();
+            else modal.style.display = DisplayStyle.None;
+        }
+
+        /// <summary>The window's own labels, apart from the pages, which are built when shown.</summary>
+        private void ApplyTexts()
+        {
+            if (titleLabel != null) titleLabel.text = Localization.UI_SETTINGS_TITLE;
+            if (footerLabel != null) footerLabel.text = Localization.UI_SETTINGS_FOOTER;
+            doneButton.text = Localization.UI_SETTINGS_DONE;
+            if (resetPageButton != null)
+            {
+                resetPageButton.text = Localization.UI_SETTINGS_RESET_PAGE;
+                resetPageButton.tooltip = Localization.UI_SETTINGS_RESET_PAGE_HINT;
+            }
+        }
+
+        private void BuildTabButtons()
+        {
             tabButtons.Clear();
             tabColumn.Clear();
             for (var i = 0; i < tabs.Count; ++i)
@@ -207,17 +241,13 @@ namespace Shinobytes.UI
                 var icon = new Label(tabs[i].Glyph) { pickingMode = PickingMode.Ignore };
                 icon.AddToClassList("rf-icon");
                 icon.AddToClassList("rf-settings__tab-icon");
-                var text = new Label(tabs[i].Title) { pickingMode = PickingMode.Ignore };
+                var text = new Label(tabs[i].Title()) { pickingMode = PickingMode.Ignore };
                 text.AddToClassList("rf-settings__tab-text");
                 button.Add(icon);
                 button.Add(text);
                 tabColumn.Add(button);
                 tabButtons.Add(button);
             }
-
-            bound = true;
-            if (open) ShowNow();
-            else modal.style.display = DisplayStyle.None;
         }
 
         private void ShowNow()
@@ -424,6 +454,21 @@ namespace Shinobytes.UI
         private void BuildInterface(VisualElement c)
         {
             var g = gameManager;
+            var languages = Languages.Available;
+            var names = new string[languages.Count];
+            var current = 0;
+            for (var i = 0; i < languages.Count; ++i)
+            {
+                names[i] = languages[i].Name;
+                if (languages[i].Code == Languages.Current) current = i;
+            }
+
+            Choice(c, Localization.UI_SETTINGS_LANGUAGE, Localization.UI_SETTINGS_LANGUAGE_HINT, names, current, 0, i =>
+            {
+                // the window redraws itself in the new language when it is applied
+                Languages.Set(languages[i].Code);
+            }, forceStepper: true);
+
             // Applied when the slider is let go: the window scales with the setting, so applying while
             // dragging moved the slider under the pointer and made it jump back and forth.
             SliderRow(c, Localization.UI_SETTINGS_UI_SCALE, string.Format(CultureInfo.InvariantCulture, Localization.UI_SETTINGS_UI_SCALE_HINT, Keybinds.Label(Keybinds.Action.UiBigger), Keybinds.Label(Keybinds.Action.UiSmaller)), UiScale.Min, UiScale.Max, UiScale.Value,
