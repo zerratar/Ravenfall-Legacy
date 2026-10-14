@@ -1411,6 +1411,74 @@
     border-bottom-right-radius: var(--rf-radius);
 }
 
+/* ---- Village area ---- */
+
+/* A building outside the area its town hall allows: amber, kept, never moved for the streamer. */
+.rf-plot--outside .rf-plot__ring {
+    background-color: rgba(185, 110, 15, 0.92);
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: rgb(255, 205, 120);
+    border-right-color: rgb(255, 205, 120);
+    border-top-color: rgb(255, 205, 120);
+    border-bottom-color: rgb(255, 205, 120);
+}
+
+.rf-plot--outside .rf-plot__pill {
+    border-left-color: rgb(240, 170, 60);
+    border-right-color: rgb(240, 170, 60);
+    border-top-color: rgb(240, 170, 60);
+    border-bottom-color: rgb(240, 170, 60);
+}
+
+.rf-build .rf-build-plot__outside {
+    font-size: 14px;
+    color: rgb(255, 222, 170);
+    white-space: normal;
+    margin-left: var(--rf-space-4);
+    margin-right: var(--rf-space-4);
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: rgba(150, 95, 20, 0.4);
+    border-left-width: 3px;
+    border-left-color: rgb(240, 170, 60);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+/* The ring the next town hall tier opens, named where it lies. */
+.rf-build .rf-build-area-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    translate: -50% -50%;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-1);
+    padding-bottom: var(--rf-space-1);
+    font-size: 14px;
+    color: rgb(215, 228, 250);
+    background-color: rgba(20, 30, 50, 0.7);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(160, 185, 230, 0.6);
+    border-right-color: rgba(160, 185, 230, 0.6);
+    border-top-color: rgba(160, 185, 230, 0.6);
+    border-bottom-color: rgba(160, 185, 230, 0.6);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
 /* ---- Road panel ---- */
 
 .rf-build-road {

@@ -53,6 +53,7 @@
                 <engine:Button name="plot-close" text="&#xf00d;" class="rf-window__button rf-icon rf-build__close" tooltip="Deselect (Esc)" />
             </engine:VisualElement>
 
+            <engine:Label name="plot-outside" class="rf-build-plot__outside" style="display: none;" />
             <engine:Label name="plot-empty-note" class="rf-build-note" />
 
             <engine:VisualElement name="hall-upgrade" class="rf-build-hall" style="display: none;">

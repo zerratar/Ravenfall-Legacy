@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
@@ -93,6 +93,8 @@ namespace Shinobytes.UI
 
         private VisualElement plotPanel;
         private VisualElement roadPanel;
+        private Label plotOutside;
+        private Label areaLabel;
         private Label roadTitle;
         private Label roadSubtitle;
         private Label roadFlag;
@@ -215,6 +217,7 @@ namespace Shinobytes.UI
 
             plotPanel = root.Q<VisualElement>("plot-panel");
             roadPanel = root.Q<VisualElement>("road-panel");
+            plotOutside = root.Q<Label>("plot-outside");
             roadTitle = root.Q<Label>("road-title");
             roadSubtitle = root.Q<Label>("road-subtitle");
             roadFlag = root.Q<Label>("road-flag");
@@ -417,14 +420,18 @@ namespace Shinobytes.UI
 
         private void LateUpdate()
         {
-            if (mode == null || !mode.IsActive || markers.Count == 0)
+            if (mode == null || !mode.IsActive)
             {
+                if (areaLabel != null) areaLabel.style.display = DisplayStyle.None;
                 return;
             }
 
             if (!cam || !cam.isActiveAndEnabled) cam = Camera.main;
             var panel = markerLayer.panel;
             if (!cam || panel == null) return;
+
+            PlaceAreaLabel(panel);
+            if (markers.Count == 0) return;
 
             foreach (var pair in markers)
             {
@@ -448,6 +455,29 @@ namespace Shinobytes.UI
                     marker.Root.EnableInClassList("rf-plot--far", far);
                 }
             }
+        }
+
+        /// <summary>
+        /// Names the ring the next town hall tier opens, on the ring itself, on the side in view.
+        /// </summary>
+        private void PlaceAreaLabel(IPanel panel)
+        {
+            if (areaLabel == null)
+            {
+                areaLabel = new Label { pickingMode = PickingMode.Ignore };
+                areaLabel.AddToClassList("rf-build-area-label");
+                markerLayer.Add(areaLabel);
+            }
+
+            var world = Vector3.zero;
+            var show = !mode.IsMoving && mode.TryGetNextAreaLabelPoint(cam, out world)
+                && cam.WorldToViewportPoint(world).z > 0f;
+            areaLabel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!show) return;
+
+            areaLabel.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_AREA_NEXT, mode.NextAreaTier, Mathf.RoundToInt(mode.NextAreaRadius));
+            var point = RuntimePanelUtils.CameraTransformWorldToPanel(panel, world + Vector3.up, cam);
+            areaLabel.style.translate = new Translate(point.x, point.y);
         }
 
         private void OnActiveChanged(bool active)
@@ -693,7 +723,10 @@ namespace Shinobytes.UI
             var house = HouseFor(slot.SlotType);
             var name = blocked ? mode.MoveProblem : empty ? string.Empty : (Localization.HouseName(house, slot.SlotType));
 
-            var state = (int)slot.SlotType + "|" + selected + "|" + target + "|" + muted + "|" + moving + "|" + blocked + "|" + name;
+            // standing outside the area the town hall allows: kept, but marked
+            var outside = !moving && mode.IsOutsideArea(slot);
+
+            var state = (int)slot.SlotType + "|" + selected + "|" + target + "|" + muted + "|" + moving + "|" + blocked + "|" + outside + "|" + name;
             if (state == marker.ShownState) return;
             marker.ShownState = state;
 
@@ -703,6 +736,7 @@ namespace Shinobytes.UI
             marker.Root.EnableInClassList("rf-plot--muted", muted);
             marker.Root.EnableInClassList("rf-plot--moving", moving && !blocked);
             marker.Root.EnableInClassList("rf-plot--moving-blocked", blocked);
+            marker.Root.EnableInClassList("rf-plot--outside", outside);
 
             var sprite = empty ? null : IconFor(slot.SlotType);
             marker.Plus.style.display = sprite ? DisplayStyle.None : DisplayStyle.Flex;
@@ -835,6 +869,12 @@ namespace Shinobytes.UI
 
             plotEmptyNote.style.display = empty ? DisplayStyle.Flex : DisplayStyle.None;
             plotBuilt.style.display = empty ? DisplayStyle.None : DisplayStyle.Flex;
+            if (plotOutside != null)
+            {
+                var outside = mode.IsOutsideArea(slot) && !mode.IsMoving;
+                plotOutside.style.display = outside ? DisplayStyle.Flex : DisplayStyle.None;
+                plotOutside.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_OUTSIDE_NOTE, Mathf.RoundToInt(mode.AreaRadius));
+            }
 
             var idle = !mode.Busy && !mode.IsMoving;
             moveButton.SetEnabled(idle);
@@ -938,9 +978,11 @@ namespace Shinobytes.UI
             hallGetsCaption.text = Localization.UI_BUILD_HALL_GETS;
             hallGetsCaption.style.display = DisplayStyle.Flex;
             AddGet("\ue0de", string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_GET_HALL, Localization.UI_BUILD_HALL_NAMES[next]));
-            if (mode.RoomPerTier > 0f)
+            var areaNow = mode.AreaRadiusFor(townHall.BoughtTier.Value);
+            var areaNext = mode.AreaRadiusFor(townHall.BoughtTier.Value + 1);
+            if (areaNext > areaNow)
             {
-                AddGet("\uf31d", string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_GET_ROOM, Mathf.RoundToInt(mode.RoomPerTier)));
+                AddGet("\uf31d", string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_GET_ROOM, Mathf.RoundToInt(areaNow), Mathf.RoundToInt(areaNext)));
             }
             var roads = GameManager.Instance.Village.Roads;
             if (roads != null)

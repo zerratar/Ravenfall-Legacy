@@ -396,7 +396,9 @@ public static class Localization
     public static string UI_BUILD_TAG_CURRENT = "CURRENT";
     public static string UI_BUILD_TAG_BEST = "BEST";
     public static string UI_BUILD_RESET_POSITION = "Reset position";
-    public static string UI_BUILD_PLACE_OUTSIDE = "Too far from the town hall";
+    public static string UI_BUILD_PLACE_OUTSIDE = "Outside the village area";
+    public static string UI_BUILD_OUTSIDE_NOTE = "Outside the village area ({0} m round the plaza). It can stay here, but can only be moved to somewhere inside.";
+    public static string UI_BUILD_AREA_NEXT = "Town hall tier {0}: room out to {1} m";
     public static string UI_BUILD_PLACE_TOWN_HALL = "Overlaps the town hall";
     public static string UI_BUILD_NO_FREE_PLOTS = "No free plots. Demolish a building, or level the village up for more.";
     public static string UI_BUILD_PLACE_OVERLAP = "Too close to another building";
@@ -493,7 +495,7 @@ public static class Localization
     public static string UI_ROAD_KEY_DESELECT = "Deselect";
     public static string UI_BUILD_HALL_GETS = "WHAT YOU GET";
     public static string UI_BUILD_HALL_GET_HALL = "A new town hall: the {0}";
-    public static string UI_BUILD_HALL_GET_ROOM = "{0} m more room to build in, all round the village";
+    public static string UI_BUILD_HALL_GET_ROOM = "Room to build grows from {0} m to {1} m round the plaza";
     public static string UI_BUILD_HALL_GET_ROAD = "{0} to build";
     public static string[] UI_BUILD_HALL_NAMES = { "Longhouse", "Town hall", "Guild hall", "Keep", "Castle" };
     public static string UI_TOWN_VILLAGE = "VILLAGE";

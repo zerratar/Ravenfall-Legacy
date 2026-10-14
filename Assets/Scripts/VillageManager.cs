@@ -88,6 +88,7 @@ namespace Assets.Scripts
                         TownHall.SetExp(data.Experience);
                         await LoadPlacementsAsync();
                         await LoadTownHallPlacementAsync();
+                        if (VillageBuildMode.Instance) VillageBuildMode.Instance.SettlePlots();
                         if (!Roads.Loaded) await Roads.LoadAsync();
                     }
                     state = LoadingState.Loaded;
@@ -214,6 +215,8 @@ namespace Assets.Scripts
         public void SetSlotCount(int count)
         {
             townHouseManager.SetSlotCount(count);
+            // a plot that just opened may stand where an older house already is
+            if (VillageBuildMode.Instance) VillageBuildMode.Instance.SettlePlots();
             var usedSlots = 0;
             if (this.TownHouses?.TownHouses != null && this.TownHouses?.TownHouses.Length > 0)
             {

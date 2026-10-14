@@ -28,10 +28,8 @@ public class VillageBuildMode : MonoBehaviour
     [Tooltip("Degrees per press of R. Hold Alt for quarter turns.")]
     [SerializeField] private float rotationStep = 15f;
 
-    [Tooltip("How far past the outermost original plot buildings may go, in metres.")]
-    [SerializeField] private float villageMargin = 12f;
-    [Tooltip("How much further out buildings may stand for each town hall tier, in metres. The village grows with its hall.")]
-    [SerializeField] private float roomPerTier = 6f;
+    [Tooltip("How far from the plaza buildings may stand, in metres, for each town hall tier (1 to 5). The village grows with its hall; the last covers the whole island.")]
+    [SerializeField] private float[] areaByTier = { 45f, 60f, 75f, 95f, 150f };
 
     [Tooltip("Largest height difference across a footprint before the ground counts as too steep.")]
     [SerializeField] private float maxSlope = 2f;
@@ -174,23 +172,17 @@ public class VillageBuildMode : MonoBehaviour
 
     /// <summary>
     /// The grid over everywhere a building may stand: the same circle round the plaza that
-    /// <see cref="Validate"/> keeps buildings inside.
+    /// <see cref="Validate"/> keeps buildings inside, with its edge drawn, and the ring the next
+    /// town hall tier opens shown dimmer beyond it.
     /// </summary>
     private void ShowVillageGrid()
     {
         var townHall = gameManager.Village.TownHall;
         if (!townHall) return;
 
-        var centre = townHall.Plaza;
-        var reach = 0f;
-        foreach (var other in gameManager.Village.TownHouses.Slots)
-        {
-            if (other) reach = Mathf.Max(reach, Flat(other.DefaultPosition - centre).magnitude);
-        }
-
         if (float.IsNaN(oceanLevel)) oceanLevel = FindOceanLevel();
         if (!villageGrid) villageGrid = VillageGrid.Create();
-        villageGrid.Show(centre, reach + villageMargin + TierRoom(), cellSize, townHall.GroundHeight,
+        villageGrid.Show(townHall.Plaza, AreaRadius, NextAreaRadius, cellSize, townHall.GroundHeight,
             float.IsNegativeInfinity(oceanLevel) ? float.NegativeInfinity : oceanLevel);
     }
 
@@ -624,7 +616,7 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>Null when the plot can stand here, otherwise the reason it cannot.</summary>
-    private string Validate(TownHouseSlot slot, Footprint footprint, Vector3 position, float rotation)
+    private string Validate(TownHouseSlot slot, Footprint footprint, Vector3 position, float rotation, bool checkArea = true)
     {
         blockers.Clear();
         hallBlocks = false;
@@ -633,15 +625,9 @@ public class VillageBuildMode : MonoBehaviour
         // the area buildings may stand in.
         var centre = townHall ? townHall.Plaza : position;
 
-        // Inside the village: no further out than the outermost original plot, plus a margin.
-        var reach = 0f;
-        var allSlots = gameManager.Village.TownHouses.Slots;
-        foreach (var other in allSlots)
-        {
-            if (other) reach = Mathf.Max(reach, Flat(other.DefaultPosition - centre).magnitude);
-        }
-
-        if (Flat(position - centre).magnitude > reach + villageMargin + TierRoom())
+        // Inside the village: the circle the town hall's tier allows. A building already outside it
+        // (the area was larger before tiers set it) may stay, but only moves to somewhere inside.
+        if (checkArea && (Flat(position - centre).magnitude > AreaRadius || (villageGrid && !villageGrid.IsOnVillageLand(position))))
         {
             return Localization.UI_BUILD_PLACE_OUTSIDE;
         }
@@ -752,14 +738,67 @@ public class VillageBuildMode : MonoBehaviour
         return Footprint.Overlaps(HallFootprint(townHall), townHall.HallPosition, townHall.HallRotation, footprint, position, rotation);
     }
 
-    /// <summary>Metres of building room each town hall tier adds round the village.</summary>
-    public float RoomPerTier => roomPerTier;
+    /// <summary>How far from the plaza buildings may stand with a town hall of <paramref name="tier"/> (0 to 4).</summary>
+    public float AreaRadiusFor(int tier)
+    {
+        if (areaByTier == null || areaByTier.Length == 0) return float.MaxValue;
+        return areaByTier[Mathf.Clamp(tier, 0, areaByTier.Length - 1)];
+    }
 
-    /// <summary>The room the current town hall tier adds to the village's area.</summary>
-    private float TierRoom()
+    /// <summary>How far from the plaza buildings may stand now.</summary>
+    public float AreaRadius
+    {
+        get
+        {
+            var townHall = gameManager.Village.TownHall;
+            return AreaRadiusFor(townHall ? townHall.Tier : 0);
+        }
+    }
+
+    /// <summary>The area the next town hall tier opens, or the current one at the last tier.</summary>
+    public float NextAreaRadius
+    {
+        get
+        {
+            var townHall = gameManager.Village.TownHall;
+            return AreaRadiusFor(townHall ? townHall.Tier + 1 : 1);
+        }
+    }
+
+    /// <summary>The town hall tier, shown 1 to 5, that opens the next ring; 0 at the last tier.</summary>
+    public int NextAreaTier
+    {
+        get
+        {
+            var townHall = gameManager.Village.TownHall;
+            var tier = townHall ? townHall.Tier : 0;
+            return NextAreaRadius > AreaRadius ? tier + 2 : 0;
+        }
+    }
+
+    /// <summary>A plot standing outside the area its town hall allows, from before tiers set it.</summary>
+    public bool IsOutsideArea(TownHouseSlot slot)
     {
         var townHall = gameManager.Village.TownHall;
-        return townHall ? Mathf.Max(0, townHall.Tier) * roomPerTier : 0f;
+        if (!slot || !townHall) return false;
+        return Flat(slot.transform.position - townHall.Plaza).magnitude > AreaRadius;
+    }
+
+    /// <summary>
+    /// Where the next tier's ring is labelled: half way across it, on the side the camera looks at,
+    /// so the label is in view.
+    /// </summary>
+    public bool TryGetNextAreaLabelPoint(Camera camera, out Vector3 point)
+    {
+        point = default;
+        var townHall = gameManager.Village.TownHall;
+        if (!townHall || !camera || NextAreaTier == 0) return false;
+        var centre = townHall.Plaza;
+        var look = Flat(camera.transform.position + camera.transform.forward * 60f - centre);
+        if (look.sqrMagnitude < 1f) look = Vector3.forward;
+        var flat = centre + look.normalized * ((AreaRadius + NextAreaRadius) / 2f);
+        point = new Vector3(flat.x, townHall.GroundHeight(flat), flat.z);
+        return true;
     }
 
     /// <summary>Picks a road for editing; the building selection goes.</summary>
@@ -949,16 +988,10 @@ public class VillageBuildMode : MonoBehaviour
         var townHall = gameManager.Village.TownHall;
         var plaza = townHall.Plaza;
 
-        var reach = 0f;
-        foreach (var other in gameManager.Village.TownHouses.Slots)
-        {
-            if (other) reach = Mathf.Max(reach, Flat(other.DefaultPosition - plaza).magnitude);
-        }
-
         var corners = townHall.AreaCorners(position, rotation);
         foreach (var corner in corners)
         {
-            if (Flat(corner - plaza).magnitude > reach + villageMargin + TierRoom())
+            if (Flat(corner - plaza).magnitude > AreaRadius)
             {
                 return Localization.UI_BUILD_HALL_OUTSIDE;
             }
@@ -1438,6 +1471,106 @@ public class VillageBuildMode : MonoBehaviour
 
     // ---- Actions -------------------------------------------------------------------------
 
+    // ---- Settling plots ---------------------------------------------------------------------
+
+    // The ground a plot needs whatever is built on it later: the biggest house type, about 10 by 10 m.
+    private static readonly Footprint HouseRoom = new Footprint(new Vector2(5f, 5f), Vector2.zero);
+
+    /// <summary>
+    /// Moves plots with no stored position off spots that are taken. The default layout changed:
+    /// existing villages keep their houses where the old layout put them (the server stores those
+    /// positions), and a plot that opens later at its new default could land on one of them, or on
+    /// the town hall or in water. Such a plot goes to the nearest free spot instead. An empty one
+    /// only for this session; one with a building has the spot saved, so the building stays put.
+    /// Being outside the village area is not a reason: those plots stay, marked, like any other.
+    /// </summary>
+    public void SettlePlots()
+    {
+        if (IsMoving || Busy) return;
+        var village = gameManager ? gameManager.Village : null;
+        if (!village || !village.TownHall) return;
+        var houses = village.TownHouses;
+        var slots = houses.Slots;
+        if (slots == null) return;
+
+        var count = Mathf.Min(houses.SlotCount, slots.Length);
+        for (var i = 0; i < count; ++i)
+        {
+            var slot = slots[i];
+            if (!slot || !slot.gameObject.activeInHierarchy || slot.IsMoved) continue;
+
+            var room = IsEmpty(slot) ? HouseRoom : FootprintOf(slot);
+            var position = slot.transform.position;
+            var rotation = slot.transform.eulerAngles.y;
+            // a nudged plot first tries its own spot again: it may be free now
+            if (slot.IsNudged)
+            {
+                var original = slot.DefaultPosition;
+                if (Validate(slot, room, original, rotation, false) == null)
+                {
+                    slot.ResetPlacement();
+                    continue;
+                }
+            }
+
+            if (Validate(slot, room, position, rotation, false) == null) continue;
+            if (!TryFindFreeSpot(slot, room, position, out var spot, out var yaw)) continue;
+
+            slot.Nudge(spot.x, spot.z, yaw);
+            if (!IsEmpty(slot)) SaveNudge(slot);
+        }
+
+        blockers.Clear();
+        hallBlocks = false;
+    }
+
+    /// <summary>The nearest spot round <paramref name="from"/> where the plot fits, facing the plaza.</summary>
+    private bool TryFindFreeSpot(TownHouseSlot slot, Footprint room, Vector3 from, out Vector3 spot, out float yaw)
+    {
+        var plaza = gameManager.Village.TownHall.Plaza;
+        for (var r = 2f; r <= 40f; r += 2f)
+        {
+            var steps = Mathf.Max(8, Mathf.CeilToInt(2f * Mathf.PI * r / 2f));
+            for (var k = 0; k < steps; ++k)
+            {
+                var a = k * Mathf.PI * 2f / steps;
+                var flat = from + new Vector3(Mathf.Sin(a) * r, 0f, Mathf.Cos(a) * r);
+                var candidate = PlacementUtility.FindGroundPoint(new Vector3(flat.x, from.y + 20f, flat.z));
+                // the front (local -Z) to the plaza, as the default layout has them
+                var facing = Mathf.Round(Mathf.Atan2(candidate.x - plaza.x, candidate.z - plaza.z) * Mathf.Rad2Deg / rotationStep) * rotationStep;
+                if (Validate(slot, room, candidate, facing, false) != null) continue;
+                spot = candidate;
+                yaw = facing;
+                return true;
+            }
+        }
+
+        spot = default;
+        yaw = 0f;
+        return false;
+    }
+
+    /// <summary>Stores a nudged plot's spot, so the building on it stays there.</summary>
+    private async void SaveNudge(TownHouseSlot slot)
+    {
+        if (!gameManager.Village.PlacementSupported || !slot.IsNudged) return;
+        var position = slot.transform.position;
+        var rotation = slot.transform.eulerAngles.y;
+        try
+        {
+            if (await gameManager.RavenNest.Village.PlaceHouseAsync(slot.Slot, position.x, position.z, rotation))
+            {
+                slot.ApplyPlacement(position.x, position.z, rotation);
+            }
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Could not save the spot of plot " + slot.Slot + ": " + exc.Message);
+        }
+    }
+
+    // ---- Actions -------------------------------------------------------------------------
+
     /// <summary>Builds <paramref name="type"/> on the plot, or replaces what is there.</summary>
     public async Task BuildAsync(TownHouseSlot slot, TownHouseSlotType type)
     {
@@ -1454,6 +1587,8 @@ public class VillageBuildMode : MonoBehaviour
             // TownHouseManager.SetHouse would clear it.
             var prefab = Catalogue.FirstOrDefault(x => x.Type == type);
             slot.SetHouse(new VillageHouseInfo { Slot = slot.Slot, Type = (int)type, OwnerUserId = slot.OwnerUserId }, prefab);
+            // built on a plot that was moved off a taken spot: keep the building where it is
+            if (slot.IsNudged) SaveNudge(slot);
             Selected = slot;
         });
     }

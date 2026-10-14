@@ -30,6 +30,12 @@ public class TownHouseSlot : MonoBehaviour
     /// <summary>True when build mode has moved the plot away from its original scene position.</summary>
     public bool IsMoved { get; private set; }
 
+    /// <summary>
+    /// Moved off its original position because something else stands there, for this session only:
+    /// not a placement the server has. See <see cref="VillageBuildMode.SettlePlots"/>.
+    /// </summary>
+    public bool IsNudged { get; private set; }
+
     /// <summary>The plot's original position in the scene, before any build mode move.</summary>
     public Vector3 DefaultPosition
     {
@@ -63,6 +69,19 @@ public class TownHouseSlot : MonoBehaviour
         transform.position = PlacementUtility.FindGroundPoint(new Vector3(x, transform.position.y, z));
         transform.rotation = Quaternion.Euler(0f, rotation, 0f);
         IsMoved = true;
+        IsNudged = false;
+    }
+
+    /// <summary>
+    /// Moves a plot whose original spot is taken to a free one nearby, without making it a
+    /// placement: it is not "moved", and goes back to its original spot when that is free again.
+    /// </summary>
+    public void Nudge(float x, float z, float rotation)
+    {
+        CaptureDefaults();
+        transform.position = PlacementUtility.FindGroundPoint(new Vector3(x, transform.position.y, z));
+        transform.rotation = Quaternion.Euler(0f, rotation, 0f);
+        IsNudged = true;
     }
 
     /// <summary>Puts the plot back where the scene had it.</summary>
@@ -72,6 +91,7 @@ public class TownHouseSlot : MonoBehaviour
         transform.localPosition = defaultLocalPosition;
         transform.localRotation = defaultLocalRotation;
         IsMoved = false;
+        IsNudged = false;
     }
 
 
