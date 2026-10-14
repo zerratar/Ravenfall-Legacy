@@ -269,8 +269,11 @@ public class VillageRoads : MonoBehaviour
         EnsureWidths(road);
         // the better road a little higher, so where two meet the cobbles lie over the dirt rather
         // than flickering with it
-        RoadMesh.Build(road.Mesh, road.Samples, WidthOf(road.Type), RoadMesh.SampleWidths(road.Points, road.Widths), GroundHeight,
+        var sampleWidths = RoadMesh.SampleWidths(road.Points, road.Widths);
+        RoadMesh.Build(road.Mesh, road.Samples, WidthOf(road.Type), sampleWidths, GroundHeight,
             RoadMesh.Lift + Mathf.Clamp(road.Type, 0, 4) * 0.012f, road.StartRound, road.EndRound);
+        // no grass on the road; it grows back by itself once the road object is destroyed
+        GrassRenderer.SetRoad(road.Object, road.Samples, WidthOf(road.Type), sampleWidths);
         road.Renderer.sharedMaterials = DrawMaterialsFor(road.Type);
         ApplyTint(road);
     }

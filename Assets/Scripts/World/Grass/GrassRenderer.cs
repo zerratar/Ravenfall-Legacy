@@ -94,10 +94,19 @@ public static unsafe class GrassRenderer
         public float minUp;
         public float3 tint;
         public float jitter;
+        public float patches;
     }
     private static Ground ground;
     private static NativeArray<float> heights;
     private static NativeArray<uint> groundMap;
+
+    // roads keep grass off: each a run of capsules along its middle, as wide as its solid part and a little more
+    private const float RoadMargin = 0.3f;
+    private struct Segment { public float2 a; public float2 b; public float radius; }
+    private sealed class Blocker { public Segment[] segments; public float4 bounds; }
+    private static readonly Dictionary<object, Blocker> blockers = new Dictionary<object, Blocker>();
+    // where grass has to grow again: a road came, went or changed there (min x, min z, max x, max z)
+    private static readonly List<float4> regrow = new List<float4>();
 
     /// <summary>Grass on or off.</summary>
     public static bool Enabled
@@ -160,6 +169,48 @@ public static unsafe class GrassRenderer
         if (fields.Remove(grassField)) dirty = groundDirty = true;
     }
 
+    /// <summary>
+    /// Keeps grass off a road: <paramref name="samples"/> its middle in world x and z, <paramref name="width"/> the
+    /// width of its solid part, <paramref name="scales"/> a multiple of it per sample (or null). Call it again when
+    /// the road changes; the grass under the old and the new road grows again. A road that is a Unity object leaves
+    /// by itself when it is destroyed, or call <see cref="RemoveRoad"/>.
+    /// </summary>
+    public static void SetRoad(object owner, IReadOnlyList<Vector2> samples, float width, IReadOnlyList<float> scales)
+    {
+        if (owner == null) return;
+        if (samples == null || samples.Count == 0)
+        {
+            RemoveRoad(owner);
+            return;
+        }
+
+        float Half(int i) => width * 0.5f * (scales != null && i < scales.Count ? scales[i] : 1f) + RoadMargin;
+        var segments = new Segment[Mathf.Max(1, samples.Count - 1)];
+        var bounds = new float4(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
+        for (var i = 0; i < segments.Length; ++i)
+        {
+            var next = Mathf.Min(i + 1, samples.Count - 1);
+            var a = (float2)samples[i];
+            var b = (float2)samples[next];
+            var radius = math.max(Half(i), Half(next));
+            segments[i] = new Segment { a = a, b = b, radius = radius };
+            bounds = new float4(math.min(bounds.xy, math.min(a, b) - radius), math.max(bounds.zw, math.max(a, b) + radius));
+        }
+
+        if (blockers.TryGetValue(owner, out var old)) regrow.Add(old.bounds);
+        blockers[owner] = new Blocker { segments = segments, bounds = bounds };
+        regrow.Add(bounds);
+        Hook();
+    }
+
+    /// <summary>The road is gone: grass grows where it was.</summary>
+    public static void RemoveRoad(object owner)
+    {
+        if (owner == null || !blockers.TryGetValue(owner, out var old)) return;
+        blockers.Remove(owner);
+        regrow.Add(old.bounds);
+    }
+
     /// <summary>Grows everything again, on the next frame (a profile or setting changed).</summary>
     public static void Regrow() => dirty = true;
 
@@ -219,6 +270,31 @@ public static unsafe class GrassRenderer
         var reach = distance + CellSize * 0.75f;
         var centre = new float2(focus.x, focus.z);
 
+        // roads whose objects were destroyed are gone; cells under a road that came, went or changed grow again
+        List<object> gone = null;
+        foreach (var pair in blockers)
+        {
+            if (pair.Key is UnityEngine.Object unityObject && !unityObject) (gone ??= new List<object>()).Add(pair.Key);
+        }
+        if (gone != null) foreach (var owner in gone) RemoveRoad(owner);
+        if (regrow.Count > 0)
+        {
+            for (var s = 0; s < slotCount; ++s)
+            {
+                if (slotUsed[s] == 0) continue;
+                var min = (float2)slotCell[s] * CellSize;
+                foreach (var area in regrow)
+                {
+                    if (min.x > area.z || min.y > area.w || min.x + CellSize < area.x || min.y + CellSize < area.y) continue;
+                    slotUsed[s] = 0;
+                    cellSlot.Remove(slotCell[s]);
+                    freeSlots.Push(s);
+                    break;
+                }
+            }
+            regrow.Clear();
+        }
+
         // cells out of range give their slots back
         for (var s = 0; s < slotCount; ++s)
         {
@@ -258,6 +334,29 @@ public static unsafe class GrassRenderer
             grow.Add(s);
         }
 
+        // the road segments over each grown cell
+        var segments = new NativeList<Segment>(64, Allocator.TempJob);
+        var segmentRanges = new NativeArray<int2>(grow.Length, Allocator.TempJob);
+        for (var g = 0; g < grow.Length; ++g)
+        {
+            var min = (float2)slotCell[grow[g]] * CellSize;
+            var max = min + CellSize;
+            var first = segments.Length;
+            foreach (var blocker in blockers.Values)
+            {
+                var b = blocker.bounds;
+                if (b.x > max.x || b.y > max.y || b.z < min.x || b.w < min.y) continue;
+                foreach (var segment in blocker.segments)
+                {
+                    var from = math.min(segment.a, segment.b) - segment.radius;
+                    var to = math.max(segment.a, segment.b) + segment.radius;
+                    if (from.x > max.x || from.y > max.y || to.x < min.x || to.y < min.y) continue;
+                    segments.Add(segment);
+                }
+            }
+            segmentRanges[g] = new int2(first, segments.Length - first);
+        }
+
         // the grown cells' transforms, inverses and colours, in three runs, on their way to the GPU
         var uploadInstances = grow.Length * cellCapacity;
         var upload = new NativeArray<float>(uploadInstances * 28, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
@@ -270,6 +369,8 @@ public static unsafe class GrassRenderer
             points = points,
             upload = upload,
             uploadInstances = uploadInstances,
+            segments = segments.AsArray(),
+            segmentRanges = segmentRanges,
             kinds = kinds,
             heights = heights,
             groundMap = groundMap,
@@ -290,6 +391,8 @@ public static unsafe class GrassRenderer
             buffer.SetData(upload, uploadInstances * 24 + from * 4, HeaderFloats + total * 24 + first * 4, cellCapacity * 4);
         }
         upload.Dispose();
+        segments.Dispose();
+        segmentRanges.Dispose();
         grow.Dispose();
 
         var count = 0;
@@ -478,6 +581,7 @@ public static unsafe class GrassRenderer
             minUp = math.cos(math.radians(profile.maxSlope)),
             tint = new float3(profile.tint.linear.r, profile.tint.linear.g, profile.tint.linear.b),
             jitter = profile.colourJitter,
+            patches = profile.patches,
         };
     }
 
@@ -545,6 +649,8 @@ public static unsafe class GrassRenderer
         [ReadOnly] public NativeArray<KindInfo> kinds;
         [ReadOnly] public NativeArray<float> heights;
         [ReadOnly] public NativeArray<uint> groundMap;
+        [ReadOnly] public NativeArray<Segment> segments;
+        [ReadOnly] public NativeArray<int2> segmentRanges;
         [NativeDisableParallelForRestriction] public NativeArray<int> slotCounts;
         [NativeDisableParallelForRestriction] public NativeArray<float2> slotHeights;
         [NativeDisableParallelForRestriction] public NativeArray<float4> points;
@@ -559,6 +665,7 @@ public static unsafe class GrassRenderer
         {
             var slot = slots[index];
             var cell = slotCell[slot];
+            var roads = segmentRanges[index];
             var corner = (float2)cell * CellSize;
             var low = float.MaxValue;
             var high = float.MinValue;
@@ -587,12 +694,16 @@ public static unsafe class GrassRenderer
                         if (groundAt.x < kind.minDensity || keep > groundAt.x * chance) continue;
                         var height = SampleHeight(at, out var up);
                         if (height < ground.waterLevel || up < ground.minUp) continue;
+                        if (OnRoad(at, roads)) continue;
 
                         var position = new float3(at.x, height - 0.03f * size, at.y);
                         points[slot * cellCapacity + kind.offset + written] = new float4(position, rank);
                         var u = index * cellCapacity + kind.offset + written;
                         WriteMatrices(u, position, turn, size);
-                        var colour = groundAt.yzw * ground.tint * shade;
+                        // broad patches, some lighter and some drier, so a meadow is not one flat colour
+                        var patch = Patches(at);
+                        var colour = groundAt.yzw * ground.tint * shade * (1f + (patch.x - 0.5f) * ground.patches);
+                        colour = math.lerp(colour, colour * new float3(1.12f, 1.04f, 0.7f), patch.y * ground.patches);
                         var c = uploadInstances * 24 + u * 4;
                         upload[c] = colour.x; upload[c + 1] = colour.y; upload[c + 2] = colour.z; upload[c + 3] = 1f;
                         low = math.min(low, height);
@@ -623,6 +734,24 @@ public static unsafe class GrassRenderer
             upload[w + 9] = -(cos * p.x - sin * p.z) * inv;
             upload[w + 10] = -p.y * inv;
             upload[w + 11] = -(sin * p.x + cos * p.z) * inv;
+        }
+
+        // two smooth noises over the ground, one patch every 12 m or so: brightness and dryness
+        private static float2 Patches(float2 at)
+        {
+            return new float2(noise.snoise(at / 12f) * 0.5f + 0.5f, math.saturate(noise.snoise(at / 19f + 37f) * 0.7f + 0.2f));
+        }
+
+        private bool OnRoad(float2 at, int2 range)
+        {
+            for (var r = range.x; r < range.x + range.y; ++r)
+            {
+                var segment = segments[r];
+                var along = segment.b - segment.a;
+                var t = math.saturate(math.dot(at - segment.a, along) / math.max(math.dot(along, along), 1e-6f));
+                if (math.distancesq(at, segment.a + along * t) < segment.radius * segment.radius) return true;
+            }
+            return false;
         }
 
         // x the grass density, yzw the ground colour, blended between the four texels round the point

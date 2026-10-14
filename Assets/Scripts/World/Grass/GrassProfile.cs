@@ -55,10 +55,12 @@ public class GrassProfile : ScriptableObject
     [Range(0f, 90f)] public float maxSlope = 40f;
 
     [Header("Colour")]
-    [Tooltip("Multiplied into the ground's colour: grass is a little greener and darker than the ground texture's average.")]
-    public Color tint = new Color(0.95f, 1.05f, 0.85f);
+    [Tooltip("Multiplied into the ground's colour. White keeps the ground's own colour, so snow grass is as white as the snow.")]
+    public Color tint = Color.white;
     [Tooltip("How much the brightness changes from one clump to the next.")]
     [Range(0f, 0.3f)] public float colourJitter = 0.08f;
+    [Tooltip("How strong the broad patches are, some lighter and some drier, that keep a meadow from being one flat colour.")]
+    [Range(0f, 0.6f)] public float patches = 0.25f;
 
     /// <summary>Raised when the profile changes in the editor, so the grass grows again.</summary>
     public static event Action<GrassProfile> Changed;

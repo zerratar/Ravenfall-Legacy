@@ -33,9 +33,11 @@ Material:
     - _Cutoff: 0.5
     - _GroundTint: 0.1
     - _Height: 0.4391638
-    - _RootShade: 0.15
+    - _RootShade: 0.1
     - _TipLight: 0.1
-    - _UpNormals: 0.5
+    - _Translucency: 0.15
+    - _UpNormals: 0.4
+    - _WindLight: 0.1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

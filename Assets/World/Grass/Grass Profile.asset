@@ -109,5 +109,6 @@ MonoBehaviour:
     enabled: 1
   waterLevel: -3
   maxSlope: 40
-  tint: {r: 0.92, g: 1, b: 0.8, a: 1}
+  tint: {r: 1, g: 1, b: 1, a: 1}
   colourJitter: 0.08
+  patches: 0.25

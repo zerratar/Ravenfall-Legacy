@@ -4,11 +4,17 @@
 //
 // The same shader draws the generated blade clumps (white texture, coloured all by the instance) and the Synty tufts
 // and flowers (their own texture, pulled towards the ground colour by _GroundTint). The mesh's height decides how
-// far a vertex bends and how light it is: the root is darker, as if shaded by the blades around it, and the tip
-// catches the light.
+// far a vertex bends and how light it is.
 //
-// Normals lean towards straight up (_UpNormals), so grass is lit like the ground it stands on and blends into it,
-// instead of every blade showing its own facets. It receives shadows and casts none.
+// Blending into the ground: at the root a blade has the ground's colour and is lit as if it faced straight up, as
+// the terrain is, so grass grows out of the ground without a seam; towards the tip it gets lighter and its own
+// normal shows more (_UpNormals). Towards the end of the grass distance it melts into the ground colour, so the
+// edge of the grass never shows as a line.
+//
+// The little tricks: a blade bending in the wind catches more light (_WindLight), so gusts roll across a meadow as
+// waves of lighter grass; and with the sun behind it a blade's tip glows a little (_Translucency). Both cost a few
+// instructions. Opaque, no alpha test, so the GPU keeps its early depth rejection; it receives shadows and casts
+// none.
 Shader "Ravenfall/Grass"
 {
     Properties
@@ -17,11 +23,12 @@ Shader "Ravenfall/Grass"
         [MainColor] _BaseColor("Colour (per instance)", Color) = (1, 1, 1, 1)
         _GroundTint("Ground colour, 0 texture only to 1 ground only", Range(0, 1)) = 1
         _Height("Mesh height (object units)", Float) = 1
-        _RootShade("Root shade", Range(0, 1)) = 0.45
-        _TipLight("Tip light", Range(0, 1)) = 0.2
-        _UpNormals("Lit like the ground", Range(0, 1)) = 0.75
+        _RootShade("Root shade", Range(0, 1)) = 0.1
+        _TipLight("Tip light", Range(0, 1)) = 0.3
+        _UpNormals("Lit like the ground at the tip", Range(0, 1)) = 0.6
         _Bend("Wind bend", Range(0, 2)) = 1
-        _Cutoff("Alpha cutoff", Range(0, 1)) = 0.5
+        _WindLight("Light from bending", Range(0, 1)) = 0.35
+        _Translucency("Sun through the tips", Range(0, 1)) = 0.35
     }
 
     HLSLINCLUDE
@@ -38,7 +45,8 @@ Shader "Ravenfall/Grass"
         half _TipLight;
         half _UpNormals;
         half _Bend;
-        half _Cutoff;
+        half _WindLight;
+        half _Translucency;
     CBUFFER_END
 
     #ifdef UNITY_DOTS_INSTANCING_ENABLED
@@ -67,6 +75,8 @@ Shader "Ravenfall/Grass"
         half3 normalWS : TEXCOORD1;
         float2 uv : TEXCOORD2;
         half height : TEXCOORD3;
+        half bend : TEXCOORD4;      // how far the wind bends it now, 0 to 1
+        half far : TEXCOORD5;       // 0 near, 1 at the end of the grass distance
         UNITY_VERTEX_INPUT_INSTANCE_ID
         UNITY_VERTEX_OUTPUT_STEREO
     };
@@ -91,15 +101,20 @@ Shader "Ravenfall/Grass"
         float along = dot(rootWS.xz, direction);
         float wave = sin(_Time.y * _GrassWind.w - along * 0.35 + rootWS.x * 0.11) * 0.5 + 0.5;
         float gust = sin(_Time.y * _GrassWind.w * 0.23 - along * 0.05) * 0.5 + 0.5;
-        float bend = _GrassWind.z * _Bend * height * height * (0.35 + wave * 0.65) * (0.5 + gust);
+        float push = (0.35 + wave * 0.65) * (0.5 + gust);
+        float bend = _GrassWind.z * _Bend * height * height * push;
         positionWS.xz += direction * bend;
         positionWS.y -= bend * bend * 0.35;
 
         output.positionWS = positionWS;
         output.positionCS = TransformWorldToHClip(positionWS);
-        output.normalWS = normalize(lerp(TransformObjectToWorldNormal(input.normalOS), float3(0, 1, 0), _UpNormals));
+        // straight up at the root, like the ground; the blade's own normal shows more towards the tip
+        float up = lerp(1, _UpNormals, height);
+        output.normalWS = normalize(lerp(TransformObjectToWorldNormal(input.normalOS), float3(0, 1, 0), up));
         output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
         output.height = height;
+        output.bend = saturate(push * 0.67) * height;
+        output.far = saturate(distance / max(_GrassFade.y, 0.001));
         return output;
     }
     ENDHLSL
@@ -134,17 +149,23 @@ Shader "Ravenfall/Grass"
             {
                 UNITY_SETUP_INSTANCE_ID(input);
                 half4 texel = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
-                clip(texel.a - _Cutoff);
 
                 half3 ground = _BaseColor.rgb;
-                half3 albedo = lerp(texel.rgb, ground, _GroundTint) * lerp(1 - _RootShade, 1 + _TipLight, input.height);
+                half3 albedo = lerp(texel.rgb, ground, _GroundTint);
+                // darker at the root, lighter at the tip, lighter still while the wind bends it
+                albedo *= lerp(1 - _RootShade, 1 + _TipLight, input.height) * (1 + _WindLight * input.bend);
+                // far away it becomes the ground, so the end of the grass is not a line
+                albedo = lerp(albedo, ground, input.far * input.far * 0.8);
 
                 float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
                 Light light = GetMainLight(shadowCoord);
                 half3 normal = normalize(input.normalWS);
+                half shadow = light.shadowAttenuation * light.distanceAttenuation;
                 // soft wrap: grass is never fully dark on its far side, light shines through blades
                 half diffuse = saturate(dot(normal, light.direction) * 0.6 + 0.4);
-                half3 lit = albedo * (SampleSH(normal) + light.color * diffuse * light.shadowAttenuation * light.distanceAttenuation);
+                half3 view = normalize(GetWorldSpaceViewDir(input.positionWS));
+                half through = pow(saturate(dot(-view, light.direction)), 3) * input.height * _Translucency;
+                half3 lit = albedo * (SampleSH(normal) + light.color * (diffuse + through) * shadow);
 
                 half fog = ComputeFogFactor(TransformWorldToHClip(input.positionWS).z);
                 return half4(MixFog(lit, fog), 1);
@@ -168,7 +189,6 @@ Shader "Ravenfall/Grass"
             half DepthFragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                clip(SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a - _Cutoff);
                 return input.positionCS.z;
             }
             ENDHLSL
@@ -189,7 +209,6 @@ Shader "Ravenfall/Grass"
             half4 DepthNormalsFragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                clip(SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a - _Cutoff);
                 return half4(NormalizeNormalPerPixel(input.normalWS), 0);
             }
             ENDHLSL

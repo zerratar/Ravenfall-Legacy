@@ -129,6 +129,7 @@ public class WorldRoad : MonoBehaviour
 
     private void OnDisable()
     {
+        GrassRenderer.RemoveRoad(this);
         if (view) DestroyNow(view);
         view = null;
     }
@@ -176,7 +177,10 @@ public class WorldRoad : MonoBehaviour
         }
         // the better surface a little higher, as in the village, so crossings do not flicker
         SyncWidths();
-        RoadMesh.Build(mesh, samples, width, RoadMesh.SampleWidths(flat, widths), GroundHeight, RoadMesh.Lift + (int)surface * 0.012f, startRound, endRound);
+        var sampleWidths = RoadMesh.SampleWidths(flat, widths);
+        RoadMesh.Build(mesh, samples, width, sampleWidths, GroundHeight, RoadMesh.Lift + (int)surface * 0.012f, startRound, endRound);
+        // no grass on the road
+        GrassRenderer.SetRoad(this, samples, width, sampleWidths);
 
         // the mesh is made in world space; the view sits on this object, so bring it into its space
         if (mesh.vertexCount > 0)
