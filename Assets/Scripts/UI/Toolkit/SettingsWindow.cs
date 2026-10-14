@@ -351,6 +351,7 @@ namespace Shinobytes.UI
                 SettingsApplier.Defaults.AutoAssignHouses, SettingsApplier.SetAutoAssignHouses);
             Switch(c, Localization.UI_SETTINGS_NO_RAIDS, Localization.UI_SETTINGS_NO_RAIDS_HINT, SettingsApplier.DisableRaids, SettingsApplier.Defaults.DisableRaids, SettingsApplier.SetDisableRaids);
             Switch(c, Localization.UI_SETTINGS_NO_DUNGEONS, Localization.UI_SETTINGS_NO_DUNGEONS_HINT, SettingsApplier.DisableDungeons, SettingsApplier.Defaults.DisableDungeons, SettingsApplier.SetDisableDungeons);
+            Switch(c, Localization.UI_SETTINGS_JOIN_CODE, Localization.UI_SETTINGS_JOIN_CODE_HINT, SettingsApplier.RequireJoinCode, SettingsApplier.Defaults.RequireJoinCode, SettingsApplier.SetRequireJoinCode);
             Switch(c, Localization.UI_SETTINGS_PHYSICS, WithKey(Localization.UI_SETTINGS_PHYSICS_HINT, Keybinds.Action.Physics), SettingsApplier.Physics, SettingsApplier.Defaults.Physics, SettingsApplier.SetPhysics);
 
             Section(c, Localization.UI_SETTINGS_SECTION_OVERLAYS);

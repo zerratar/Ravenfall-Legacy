@@ -52,6 +52,7 @@
             </engine:VisualElement>
 
             <engine:VisualElement name="island-grip" class="rf-window__grip" />
+            <engine:VisualElement name="island-grip-left" class="rf-window__grip" />
 
         </engine:VisualElement>
     </engine:VisualElement>

@@ -49,4 +49,19 @@ public class EventCode
             return wordList.Random();
         }
     }
+
+    /// <summary>
+    /// Whether <paramref name="typed"/> is the code a raid or dungeon asks for. No code asked
+    /// for lets anything through. Case and surrounding spaces are ignored, since chat and phone
+    /// keyboards capitalise as they please.
+    /// </summary>
+    public static bool Matches(string required, string typed)
+    {
+        if (string.IsNullOrWhiteSpace(required))
+        {
+            return true;
+        }
+
+        return typed != null && string.Equals(required.Trim(), typed.Trim(), System.StringComparison.OrdinalIgnoreCase);
+    }
 }

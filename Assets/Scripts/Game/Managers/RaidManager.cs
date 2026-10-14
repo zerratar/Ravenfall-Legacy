@@ -94,7 +94,7 @@ public class RaidManager : MonoBehaviour, IEvent
     public RaidJoinResult CanJoin(PlayerController player, string code)
     {
         var canJoin = CanJoin(player);
-        if (canJoin == RaidJoinResult.CanJoin && !string.IsNullOrEmpty(this.RequiredCode) && code != this.RequiredCode)
+        if (canJoin == RaidJoinResult.CanJoin && !EventCode.Matches(this.RequiredCode, code))
         {
             return RaidJoinResult.WrongCode;
         }
@@ -175,8 +175,7 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             this.HasBeenAnnounced = false;
 
-            if (gameManager.RequireCodeForDungeonOrRaid)
-                RequiredCode = EventCode.New();
+            RequiredCode = gameManager.RequireCodeForDungeonOrRaid ? EventCode.New() : null;
 
             var raidBossSpawned = SpawnRaidBoss();
             if (!raidBossSpawned)

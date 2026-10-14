@@ -64,7 +64,7 @@ public class DungeonJoin : ChatBotCommandHandler<string>
                     break;
                 case DungeonJoinResult.WrongCode:
                     client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_WRONG_CODE);
-                    break;
+                    return;
             }
         }
         catch (Exception exc)

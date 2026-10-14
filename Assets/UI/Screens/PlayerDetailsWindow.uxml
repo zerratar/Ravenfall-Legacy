@@ -126,6 +126,7 @@
             </engine:VisualElement>
 
             <engine:VisualElement name="details-grip" class="rf-window__grip" />
+            <engine:VisualElement name="details-grip-left" class="rf-window__grip" />
 
         </engine:VisualElement>
 

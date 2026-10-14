@@ -307,7 +307,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private Overlay overlay;
 
-    public bool RequireCodeForDungeonOrRaid;
+    /// <summary>Whether joining a raid or dungeon takes the word shown on stream. A setting.</summary>
+    public bool RequireCodeForDungeonOrRaid => PlayerSettings.Instance.RequireJoinCode.GetValueOrDefault();
     private GameCache.LoadStateResult gameCacheStateFileLoadResult;
     private bool stateFileStatusReported;
 

@@ -351,6 +351,7 @@ namespace Shinobytes.UI
                 drag = DraggableWindow.Attach(window, header, "playerdetails");
                 // wider only: the height follows what is shown
                 drag?.EnableResize(root.Q<VisualElement>("details-grip"), new Vector2(520f, 0f), widthOnly: true);
+                drag?.EnableLeftResize(root.Q<VisualElement>("details-grip-left"));
             }
 
             if (collapseButton != null) collapseButton.clicked += OnCollapseClicked;
@@ -1443,7 +1444,7 @@ namespace Shinobytes.UI
                 {
                     // the view follows the pointer: dragging right moves the character right
                     var height = Mathf.Max(1f, preview.resolvedStyle.height);
-                    observeCamera.Pan(new Vector2(-delta.x, delta.y) / height);
+                    observeCamera.Pan(new Vector2(delta.x, delta.y) / height);
                 }
                 evt.StopPropagation();
             });

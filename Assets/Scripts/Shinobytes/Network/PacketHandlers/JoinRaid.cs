@@ -63,7 +63,7 @@ public class RaidJoin : ChatBotCommandHandler<string>
                     return;
                 case RaidJoinResult.WrongCode:
                     client.SendReply(gm, Localization.MSG_RAID_JOIN_WRONG_CODE);
-                    break;
+                    return;
             }
 
 

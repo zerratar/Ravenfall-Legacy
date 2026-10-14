@@ -262,19 +262,41 @@
     border-bottom-color: var(--rf-accent);
 }
 
-/* A window that only grows sideways, its height following its content: a short bar on the middle
-   of the right edge, so the corner L does not promise a height it will not take. */
+/* A window that only grows sideways, its height following its content: a pill on the middle of
+   the side edge, so the corner L does not promise a height it will not take. Visible at rest, so a
+   streamer can find it, and lit when the window is pointed at. */
 .rf-window__grip--width {
-    right: 0;
+    right: 3px;
     bottom: auto;
     top: 50%;
-    width: 10px;
-    height: 44px;
+    width: 7px;
+    height: 64px;
     translate: 0 -50%;
+    border-right-width: 0;
     border-bottom-width: 0;
-    border-right-width: 3px;
-    border-bottom-right-radius: 0;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    background-color: var(--rf-text-faint);
+    opacity: 0.55;
     cursor: resize-horizontal;
+}
+
+.rf-window:hover .rf-window__grip--width,
+.rf-build-panel:hover .rf-window__grip--width {
+    opacity: 0.9;
+}
+
+.rf-window__grip--width:hover {
+    background-color: var(--rf-accent);
+    opacity: 1;
+}
+
+/* The same on the left edge, for windows that sit against the right of the screen. */
+.rf-window__grip--left {
+    right: auto;
+    left: 3px;
 }
 
 /* ==========================================================================

@@ -61,6 +61,7 @@ public static class SettingsApplier
         public const bool StreamLabelFiles = true;
         public const bool DisableRaids = false;
         public const bool DisableDungeons = false;
+        public const bool RequireJoinCode = false;
         public const int QualityLevel = 1;
         public const bool PotatoMode = false;
         public const bool AutoPotatoMode = false;
@@ -637,6 +638,11 @@ public static class SettingsApplier
     public static bool DisableDungeons => PlayerSettings.Instance.DisableDungeons.GetValueOrDefault();
 
     public static void SetDisableDungeons(bool value) => PlayerSettings.Instance.DisableDungeons = value;
+
+    public static bool RequireJoinCode => PlayerSettings.Instance.RequireJoinCode.GetValueOrDefault();
+
+    /// <summary>Takes effect from the next raid or dungeon; one already open keeps its code, or none.</summary>
+    public static void SetRequireJoinCode(bool value) => PlayerSettings.Instance.RequireJoinCode = value;
 
     public static bool StreamLabelTextFiles => PlayerSettings.Instance.StreamLabels == null || PlayerSettings.Instance.StreamLabels.SaveTextFiles;
 

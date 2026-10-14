@@ -417,10 +417,7 @@ public class DungeonManager : MonoBehaviour, IEvent
                     state = DungeonManagerState.Active;
                     dungeonStartTimer = timeForDungeonStart;
                     nextDungeonTimer = 0f;
-                    if (gameManager.RequireCodeForDungeonOrRaid)
-                    {
-                        RequiredCode = EventCode.New();
-                    }
+                    RequiredCode = gameManager.RequireCodeForDungeonOrRaid ? EventCode.New() : null;
 
                     if (onActivated != null)
                     {
@@ -557,7 +554,7 @@ public class DungeonManager : MonoBehaviour, IEvent
     public DungeonJoinResult CanJoin(PlayerController player, string code)
     {
         var result = CanJoin(player);
-        if (result == DungeonJoinResult.CanJoin && !string.IsNullOrEmpty(this.RequiredCode) && code != this.RequiredCode)
+        if (result == DungeonJoinResult.CanJoin && !EventCode.Matches(this.RequiredCode, code))
         {
             return DungeonJoinResult.WrongCode;
         }

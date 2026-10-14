@@ -791,6 +791,8 @@ public static class Localization
     public static string UI_SETTINGS_LABELS_HINT = "Text and json files your streaming software can show.";
     public static string UI_SETTINGS_NO_RAIDS = "Turn off raids";
     public static string UI_SETTINGS_NO_DUNGEONS = "Turn off dungeons";
+    public static string UI_SETTINGS_JOIN_CODE = "Join with a code";
+    public static string UI_SETTINGS_JOIN_CODE_HINT = "Raids and dungeons show a word on stream, and viewers join by typing it, such as !raid apple. Keeps out those who are not watching. From the next raid or dungeon.";
 
     public static string UI_SETTINGS_SECTION_QUALITY = "QUALITY";
     public static string UI_SETTINGS_SECTION_DAYNIGHT = "DAY AND NIGHT";

@@ -81,6 +81,7 @@ public class PlayerSettings
 
     public bool? DisableDungeons;
     public bool? DisableRaids;
+    public bool? RequireJoinCode;
     public bool? AutoAssignVacantHouses;
     public bool? AnnounceNoExpGain;
 
@@ -376,6 +377,7 @@ public class PlayerSettings
             Serialize(sw, "physicsEnabled", obj.PhysicsEnabled);
 
             Serialize(sw, "disableRaids", obj.DisableRaids);
+            Serialize(sw, "requireJoinCode", obj.RequireJoinCode);
             Serialize(sw, "disableDungeons", obj.DisableDungeons);
             Serialize(sw, "autoAssignVacantHouses", obj.AutoAssignVacantHouses);
             Serialize(sw, "enableIslandCameraOnStart", obj.EnableIslandCameraOnStart);

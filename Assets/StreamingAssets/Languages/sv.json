@@ -1060,6 +1060,8 @@
     "UI_SETTINGS_INVERT_LOOK_HINT": "När du för musen uppåt tittar du nedåt.",
     "UI_SETTINGS_INVERT_ZOOM": "Invertera zoomen",
     "UI_SETTINGS_INVERT_ZOOM_HINT": "När du scrollar uppåt zoomar du ut.",
+    "UI_SETTINGS_JOIN_CODE": "Gå med med en kod",
+    "UI_SETTINGS_JOIN_CODE_HINT": "Raider och grottor visar ett ord i streamen, och tittarna går med genom att skriva det, till exempel !raid apple. Håller borta dem som inte tittar. Gäller från nästa raid eller grotta.",
     "UI_SETTINGS_KEYS_FIXED": "Esc öppnar alltid menyn och backar ur fönster, och den fria kameran flyger med WASD, Q och E.",
     "UI_SETTINGS_KEYS_HINT": "Klicka på en tangent för att ändra den och tryck sedan på den nya. Esc avbryter, Backsteg lämnar den tom. En tangent som redan används byter plats.",
     "UI_SETTINGS_KEYS_PRESS": "Tryck på en tangent",

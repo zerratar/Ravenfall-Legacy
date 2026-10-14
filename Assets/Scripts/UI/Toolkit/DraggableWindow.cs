@@ -82,6 +82,9 @@ namespace Shinobytes.UI
 
         private VisualElement container;
         private VisualElement grip;
+        private VisualElement leftGrip;
+        private bool resizingLeft;
+        private float resizeLeftStart;
         private Vector2 minSize;
         private bool resizing;
         private bool resizeWidthOnly;
@@ -171,6 +174,13 @@ namespace Shinobytes.UI
                 grip.UnregisterCallback<PointerUpEvent>(OnGripUp);
             }
 
+            if (leftGrip != null)
+            {
+                leftGrip.UnregisterCallback<PointerDownEvent>(OnLeftGripDown);
+                leftGrip.UnregisterCallback<PointerMoveEvent>(OnLeftGripMove);
+                leftGrip.UnregisterCallback<PointerUpEvent>(OnLeftGripUp);
+            }
+
             live.Remove(this);
         }
 
@@ -202,6 +212,78 @@ namespace Shinobytes.UI
             grip.RegisterCallback<PointerDownEvent>(OnGripDown);
             grip.RegisterCallback<PointerMoveEvent>(OnGripMove);
             grip.RegisterCallback<PointerUpEvent>(OnGripUp);
+        }
+
+        /// <summary>
+        /// Adds a second grip on the left edge that changes the width from that side, the right edge
+        /// staying put. For a window that usually sits against the right of the screen, where the
+        /// right grip has nowhere to go. Call after <see cref="EnableResize"/>, whose minimum it uses.
+        /// </summary>
+        public void EnableLeftResize(VisualElement resizeGrip)
+        {
+            if (resizeGrip == null || leftGrip != null || grip == null)
+            {
+                return;
+            }
+
+            leftGrip = resizeGrip;
+            leftGrip.tooltip = Localization.UI_WINDOW_RESIZE_WIDTH;
+            leftGrip.AddToClassList("rf-window__grip--width");
+            leftGrip.AddToClassList("rf-window__grip--left");
+            leftGrip.RegisterCallback<PointerDownEvent>(OnLeftGripDown);
+            leftGrip.RegisterCallback<PointerMoveEvent>(OnLeftGripMove);
+            leftGrip.RegisterCallback<PointerUpEvent>(OnLeftGripUp);
+        }
+
+        private void OnLeftGripDown(PointerDownEvent evt)
+        {
+            if (evt.button != 0)
+            {
+                return;
+            }
+
+            resizingLeft = true;
+            resizeLeftStart = window.resolvedStyle.left;
+            resizePointerStart = evt.position;
+            resizeSizeStart = new Vector2(window.resolvedStyle.width, window.resolvedStyle.height);
+            leftGrip.CapturePointer(evt.pointerId);
+            evt.StopPropagation();
+        }
+
+        private void OnLeftGripMove(PointerMoveEvent evt)
+        {
+            if (!resizingLeft || !leftGrip.HasPointerCapture(evt.pointerId))
+            {
+                return;
+            }
+
+            // the right edge stays where it was: what the width gains, the left side gives up,
+            // down to the screen's left edge
+            var right = resizeLeftStart + resizeSizeStart.x;
+            var width = Mathf.Clamp(resizeSizeStart.x - (evt.position.x - resizePointerStart.x), minSize.x, Mathf.Max(minSize.x, right));
+            var left = right - width;
+            window.style.width = new Length(width, LengthUnit.Pixel);
+            window.style.left = new Length(left, LengthUnit.Pixel);
+            lastPosition = new Vector2(left, window.resolvedStyle.top);
+            evt.StopPropagation();
+        }
+
+        private void OnLeftGripUp(PointerUpEvent evt)
+        {
+            if (!resizingLeft)
+            {
+                return;
+            }
+
+            resizingLeft = false;
+            if (leftGrip.HasPointerCapture(evt.pointerId))
+            {
+                leftGrip.ReleasePointer(evt.pointerId);
+            }
+
+            PlayerPrefs.SetFloat(Key("w"), window.resolvedStyle.width);
+            Save();
+            evt.StopPropagation();
         }
 
         /// <summary>
@@ -335,7 +417,7 @@ namespace Shinobytes.UI
 
             // A window resized to fill a large screen would otherwise stay that size on a smaller
             // one and run off the edge.
-            if (grip != null && !resizing)
+            if (grip != null && !resizing && !resizingLeft)
             {
                 ApplySize(new Vector2(window.resolvedStyle.width, window.resolvedStyle.height));
             }
