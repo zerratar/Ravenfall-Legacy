@@ -95,6 +95,10 @@ public class VillageBuildMode : MonoBehaviour
 
     private PlacementOverlay overlay;
     private VillageGrid villageGrid;
+    private VillageRoadTool roadTool;
+
+    /// <summary>Drawing and editing roads, which shares this mode's input.</summary>
+    public VillageRoadTool Roads => roadTool ? roadTool : (roadTool = GetComponent<VillageRoadTool>() ?? gameObject.AddComponent<VillageRoadTool>());
     private GameObject ghost;
     private Footprint ghostFootprint = Footprint.Default;
     private float oceanLevel = float.NaN;
@@ -159,6 +163,7 @@ public class VillageBuildMode : MonoBehaviour
         Selected = null;
         Armed = null;
         ShowVillageGrid();
+        Roads.RefreshFlags(true);
         ActiveChanged?.Invoke(true);
         Changed?.Invoke();
     }
@@ -197,6 +202,9 @@ public class VillageBuildMode : MonoBehaviour
         CancelHallMove();
         SetArmed(null);
         if (villageGrid) villageGrid.Hide();
+        Roads.CancelDrawing();
+        Roads.Deselect();
+        Roads.RefreshFlags(false);
         IsActive = false;
         Selected = null;
         HallSelected = false;
@@ -275,6 +283,8 @@ public class VillageBuildMode : MonoBehaviour
 
     public void Select(TownHouseSlot slot)
     {
+        Roads.Deselect();
+        Roads.CancelDrawing();
         if (!IsActive)
         {
             return;
@@ -298,6 +308,8 @@ public class VillageBuildMode : MonoBehaviour
     /// <summary>Selects the town hall, for moving or turning it.</summary>
     public void SelectHall()
     {
+        Roads.Deselect();
+        Roads.CancelDrawing();
         if (!IsActive)
         {
             return;
@@ -312,6 +324,7 @@ public class VillageBuildMode : MonoBehaviour
     public void ClearSelection()
     {
         EndPreview();
+        Roads.Deselect();
         Selected = null;
         HallSelected = false;
         SetArmed(null);
@@ -324,6 +337,8 @@ public class VillageBuildMode : MonoBehaviour
     /// </summary>
     public void Choose(TownHouseSlotType type)
     {
+        Roads.Deselect();
+        Roads.CancelDrawing();
         if (!IsActive || Busy)
         {
             return;
@@ -400,6 +415,11 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
+        if (Roads.HandleInput())
+        {
+            return;
+        }
+
         if (Moving)
         {
             UpdateMove();
@@ -429,9 +449,12 @@ public class VillageBuildMode : MonoBehaviour
         if (Input.GetMouseButtonDown(0) && !Shinobytes.UI.HudPointer.IsOverHud() && !UIUtility.IsPointerOverUIElement())
         {
             var slot = PlotUnderMouse(out var hall);
-            if (slot) Select(slot);
+            var road = Roads.RoadUnderMouse();
+            var again = (slot && slot == Selected) || (hall && HallSelected);
+            if (road != null && (again || (!slot && !hall))) SelectRoad(road);
+            else if (slot) Select(slot);
             else if (hall) SelectHall();
-            else if (Selected || HallSelected || Armed.HasValue) ClearSelection();
+            else if (Selected || HallSelected || Armed.HasValue || Roads.Selected != null) ClearSelection();
         }
     }
 
@@ -582,7 +605,7 @@ public class VillageBuildMode : MonoBehaviour
     /// The manager itself sits at the world origin, eight metres below the village, and a plane at
     /// its height put the building metres away from the cursor.
     /// </summary>
-    private bool TryGetMousePoint(out Vector3 point)
+    public bool TryGetMousePoint(out Vector3 point)
     {
         point = default;
         if (!worldCamera || !worldCamera.isActiveAndEnabled) worldCamera = Camera.main;
@@ -721,6 +744,43 @@ public class VillageBuildMode : MonoBehaviour
         var townHall = gameManager.Village.TownHall;
         if (!townHall) return false;
         return Footprint.Overlaps(HallFootprint(townHall), townHall.HallPosition, townHall.HallRotation, footprint, position, rotation);
+    }
+
+    /// <summary>Picks a road for editing; the building selection goes.</summary>
+    public void SelectRoad(VillageRoads.Road road)
+    {
+        EndPreview();
+        Selected = null;
+        HallSelected = false;
+        SetArmed(null);
+        Roads.Select(road);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Starts drawing a road of <paramref name="type"/>; the building selection goes.</summary>
+    public void ChooseRoad(int type)
+    {
+        EndPreview();
+        Selected = null;
+        HallSelected = false;
+        SetArmed(null);
+        Roads.StartDrawing(type);
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Whether a point lies under a plot (built or empty) or in the town hall's area: where a road
+    /// is in the way. Roads there are drawn red in build mode.
+    /// </summary>
+    public bool IsBuilt(Vector2 point)
+    {
+        var townHall = gameManager.Village.TownHall;
+        if (townHall && HallFootprint(townHall).Contains(townHall.HallPosition, townHall.HallRotation, point)) return true;
+        foreach (var plot in Plots)
+        {
+            if (plot && FootprintOf(plot).Contains(plot.transform.position, plot.transform.eulerAngles.y, point)) return true;
+        }
+        return false;
     }
 
     /// <summary>The town hall's area, the room its biggest tier needs, as a footprint.</summary>

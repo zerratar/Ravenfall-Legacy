@@ -42,6 +42,8 @@ namespace Shinobytes.UI
             public string Name;
             public string Glyph;
             public TownHouseSlotType[] Types;
+            /// <summary>The roads tab: road types to draw instead of buildings.</summary>
+            public bool Roads;
         }
 
         /// <summary>
@@ -53,6 +55,7 @@ namespace Shinobytes.UI
             new Category { Name = "Combat", Glyph = "", Types = new[] { TownHouseSlotType.Melee, TownHouseSlotType.Ranged, TownHouseSlotType.Magic, TownHouseSlotType.Healing, TownHouseSlotType.Slayer } },
             new Category { Name = "Gathering", Glyph = "", Types = new[] { TownHouseSlotType.Woodcutting, TownHouseSlotType.Mining, TownHouseSlotType.Fishing, TownHouseSlotType.Farming, TownHouseSlotType.Gathering } },
             new Category { Name = "Crafting", Glyph = "", Types = new[] { TownHouseSlotType.Cooking, TownHouseSlotType.Crafting, TownHouseSlotType.Alchemy, TownHouseSlotType.Sailing } },
+            new Category { Name = "Roads", Glyph = "\uf018", Types = new TownHouseSlotType[0], Roads = true },
         };
 
         private sealed class Marker
@@ -89,6 +92,13 @@ namespace Shinobytes.UI
         private Label bonusFooter;
 
         private VisualElement plotPanel;
+        private VisualElement roadPanel;
+        private Label roadTitle;
+        private Label roadSubtitle;
+        private Label roadFlag;
+        private VisualElement roadTypes;
+        private Button roadRemove;
+        private float roadRemoveConfirmUntil;
         private VisualElement plotIcon;
         private Label plotGlyph;
         private Label plotTitle;
@@ -194,6 +204,19 @@ namespace Shinobytes.UI
             bonusFooter = root.Q<Label>("bonus-footer");
 
             plotPanel = root.Q<VisualElement>("plot-panel");
+            roadPanel = root.Q<VisualElement>("road-panel");
+            roadTitle = root.Q<Label>("road-title");
+            roadSubtitle = root.Q<Label>("road-subtitle");
+            roadFlag = root.Q<Label>("road-flag");
+            roadTypes = root.Q<VisualElement>("road-types");
+            roadRemove = root.Q<Button>("road-remove");
+            var roadClose = root.Q<Button>("road-close");
+            if (roadClose != null) roadClose.clicked += () => mode?.ClearSelection();
+            if (roadRemove != null) roadRemove.clicked += OnRoadRemoveClicked;
+            var roadNote = root.Q<Label>("road-note");
+            if (roadNote != null) roadNote.text = Localization.UI_ROAD_EDIT_NOTE;
+            var roadTypeCaption = root.Q<Label>("road-type-caption");
+            if (roadTypeCaption != null) roadTypeCaption.text = Localization.UI_ROAD_TYPE;
             plotIcon = root.Q<VisualElement>("plot-icon");
             plotGlyph = root.Q<Label>("plot-glyph");
             plotTitle = root.Q<Label>("plot-title");
@@ -324,6 +347,8 @@ namespace Shinobytes.UI
             mode.ActiveChanged += OnActiveChanged;
             mode.Changed += OnChanged;
             mode.Failed += ShowToast;
+            mode.Roads.Changed += OnChanged;
+            mode.Roads.Failed += ShowToast;
             OnActiveChanged(mode.IsActive);
         }
 
@@ -337,6 +362,8 @@ namespace Shinobytes.UI
             mode.ActiveChanged -= OnActiveChanged;
             mode.Changed -= OnChanged;
             mode.Failed -= ShowToast;
+            mode.Roads.Changed -= OnChanged;
+            mode.Roads.Failed -= ShowToast;
             mode = null;
         }
 
@@ -437,6 +464,7 @@ namespace Shinobytes.UI
             RefreshPlot();
             RefreshPlacing();
             RefreshCards();
+            RefreshRoad();
             RefreshHint();
         }
 
@@ -490,6 +518,12 @@ namespace Shinobytes.UI
             var category = Categories[openCategory];
             trayGlyph.text = category.Glyph;
             trayTitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_TRAY_TITLE, CategoryName(category).ToUpperInvariant());
+
+            if (category.Roads)
+            {
+                BuildRoadTray();
+                return;
+            }
 
             foreach (var type in category.Types)
             {
@@ -1077,12 +1111,145 @@ namespace Shinobytes.UI
             row.EnableInClassList("rf-build-assign__row--best", isBest);
         }
 
+        // ---- Roads ---------------------------------------------------------------------------
+
+        private void BuildRoadTray()
+        {
+            var roads = GameManager.Instance && GameManager.Instance.Village ? GameManager.Instance.Village.Roads : null;
+            if (roads == null || roads.Types.Count == 0)
+            {
+                var none = new Label(Localization.UI_ROAD_NONE) { pickingMode = PickingMode.Ignore };
+                none.AddToClassList("rf-build-note");
+                trayCards.Add(none);
+                return;
+            }
+
+            foreach (var type in roads.Types)
+            {
+                var id = type.Id;
+                var card = new VisualElement();
+                card.AddToClassList("rf-build-card");
+                card.AddToClassList("rf-build-card--road");
+                card.EnableInClassList("rf-build-card--locked", !type.Unlocked);
+                card.EnableInClassList("rf-build-card--armed", mode.Roads.DrawType == id);
+
+                // a patch of the road itself, as the house cards show the house
+                var swatch = new VisualElement { pickingMode = PickingMode.Ignore };
+                swatch.AddToClassList("rf-build-card__preview");
+                swatch.AddToClassList("rf-build-road-swatch");
+                var material = roads.MaterialFor(id);
+                if (material && material.mainTexture is Texture2D surface) swatch.style.backgroundImage = new StyleBackground(surface);
+
+                var text = new VisualElement { pickingMode = PickingMode.Ignore };
+                text.AddToClassList("rf-build-card__info");
+                var column = new VisualElement { pickingMode = PickingMode.Ignore };
+                var name = new Label(RoadName(id)) { pickingMode = PickingMode.Ignore };
+                name.AddToClassList("rf-build-card__name");
+                var cost = new Label(type.Unlocked
+                    ? string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_PER_METRE, CostText(id, 1f))
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_LOCKED, type.Tier + 1)) { pickingMode = PickingMode.Ignore };
+                cost.AddToClassList("rf-build-card__bonus");
+                column.Add(name);
+                column.Add(cost);
+                text.Add(column);
+
+                var draw = new Button(() => mode?.ChooseRoad(id)) { text = Localization.UI_ROAD_DRAW };
+                draw.AddToClassList("rf-build-card__build");
+                draw.SetEnabled(type.Unlocked);
+
+                card.Add(swatch);
+                card.Add(text);
+                card.Add(draw);
+                trayCards.Add(card);
+            }
+        }
+
+        private void RefreshRoad()
+        {
+            if (roadPanel == null || mode == null) return;
+            var road = mode.Roads.Selected;
+            var roads = GameManager.Instance && GameManager.Instance.Village ? GameManager.Instance.Village.Roads : null;
+            roadPanel.style.display = road != null && roads != null && !modalOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            if (road == null || roads == null) return;
+
+            roadTitle.text = RoadName(road.Type);
+            roadSubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_LENGTH, Mathf.RoundToInt(VillageRoads.PaidLength(road.Points)));
+            roadFlag.style.display = road.Flagged ? DisplayStyle.Flex : DisplayStyle.None;
+            roadFlag.text = Localization.UI_ROAD_FLAGGED;
+
+            roadTypes.Clear();
+            foreach (var type in roads.Types)
+            {
+                var id = type.Id;
+                var chip = new Button(() => mode?.Roads.SetType(id)) { text = RoadName(id) };
+                chip.AddToClassList("rf-build-road-chip");
+                chip.EnableInClassList("rf-build-road-chip--current", road.Type == id);
+                chip.SetEnabled(type.Unlocked && !mode.Roads.Busy);
+                if (!type.Unlocked) chip.tooltip = string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_LOCKED, type.Tier + 1);
+                roadTypes.Add(chip);
+            }
+
+            var confirming = Time.unscaledTime < roadRemoveConfirmUntil;
+            roadRemove.text = confirming ? Localization.UI_ROAD_REMOVE_CONFIRM : Localization.UI_ROAD_REMOVE;
+            roadRemove.SetEnabled(!mode.Roads.Busy);
+        }
+
+        private void OnRoadRemoveClicked()
+        {
+            // a second click within a few seconds, as demolishing a building asks
+            if (Time.unscaledTime < roadRemoveConfirmUntil)
+            {
+                roadRemoveConfirmUntil = 0f;
+                mode?.Roads.RemoveSelected();
+                return;
+            }
+
+            roadRemoveConfirmUntil = Time.unscaledTime + 3f;
+            RefreshRoad();
+            roadRemove.schedule.Execute(RefreshRoad).StartingIn(3100);
+        }
+
+        private static string RoadName(int type)
+        {
+            switch (type)
+            {
+                case 0: return Localization.UI_ROAD_DIRT;
+                case 1: return Localization.UI_ROAD_GRAVEL;
+                case 2: return Localization.UI_ROAD_COBBLES;
+                default: return Localization.UI_BUILD_CATEGORY_ROADS;
+            }
+        }
+
+        /// <summary>"24 wood, 4 coins": what that much road of the type costs.</summary>
+        private static string CostText(int type, float length)
+        {
+            var roads = GameManager.Instance && GameManager.Instance.Village ? GameManager.Instance.Village.Roads : null;
+            if (roads == null) return string.Empty;
+            var c = roads.Cost(type, length);
+            var parts = new List<string>();
+            if (c.wood > 0) parts.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_COST_WOOD, c.wood));
+            if (c.ore > 0) parts.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_COST_ORE, c.ore));
+            if (c.fish > 0) parts.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_COST_FISH, c.fish));
+            if (c.wheat > 0) parts.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_COST_WHEAT, c.wheat));
+            if (c.coins > 0) parts.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_COST_COINS, c.coins));
+            return parts.Count == 0 ? Localization.UI_ROAD_FREE : string.Join(", ", parts);
+        }
+
         // ---- Hint and toast ------------------------------------------------------------------
 
         private void RefreshHint()
         {
             string text;
-            if (mode.Busy) text = Localization.UI_BUILD_HINT_BUSY;
+            var tool = mode.Roads;
+            if (mode.Busy || tool.Busy) text = Localization.UI_BUILD_HINT_BUSY;
+            else if (tool.Drawing)
+            {
+                var length = Mathf.RoundToInt(tool.DrawLength);
+                var cost = CostText(tool.DrawType.Value, tool.DrawLength);
+                text = length <= 0 ? Localization.UI_ROAD_HINT_START
+                    : string.Format(CultureInfo.InvariantCulture, tool.DrawAffordable ? Localization.UI_ROAD_HINT_DRAWING : Localization.UI_ROAD_HINT_TOO_DEAR, length, cost);
+            }
+            else if (tool.Selected != null) text = Localization.UI_ROAD_HINT_SELECTED;
             else if (mode.IsMoving)
             {
                 text = mode.MoveValid
@@ -1147,6 +1314,7 @@ namespace Shinobytes.UI
                 case "Combat": return Localization.UI_BUILD_CATEGORY_COMBAT;
                 case "Gathering": return Localization.UI_BUILD_CATEGORY_GATHERING;
                 case "Crafting": return Localization.UI_BUILD_CATEGORY_CRAFTING;
+                case "Roads": return Localization.UI_BUILD_CATEGORY_ROADS;
                 default: return category.Name;
             }
         }

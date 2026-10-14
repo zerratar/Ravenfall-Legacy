@@ -1,0 +1,238 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// Turns the points a streamer placed into a road: a smooth curve through them, and a strip of the
+/// road's width laid over the ground along it.
+/// </summary>
+/// <remarks>
+/// The curve is a centripetal Catmull-Rom spline, which passes through every point and does not
+/// loop or overshoot when points are close together or far apart. It is sampled every
+/// <see cref="Step"/> metres; each sample gets three vertices across the road (both edges and the
+/// middle) set on the terrain, so the road follows bumps rather than floating over or sinking into
+/// them. Texture coordinates run across the road from 0 to 1 and along it in road widths, so the
+/// surface tiles evenly whatever the length.
+/// </remarks>
+public static class RoadMesh
+{
+    public const float Step = 0.5f;
+    private const float Lift = 0.07f;
+
+    /// <summary>Points along the curve through <paramref name="points"/>, about <see cref="Step"/> apart.</summary>
+    public static List<Vector2> Sample(IReadOnlyList<Vector2> points)
+    {
+        var samples = new List<Vector2>();
+        if (points == null || points.Count == 0) return samples;
+        if (points.Count == 1)
+        {
+            samples.Add(points[0]);
+            return samples;
+        }
+
+        samples.Add(points[0]);
+        for (var i = 0; i < points.Count - 1; ++i)
+        {
+            var p0 = i > 0 ? points[i - 1] : points[i] * 2f - points[i + 1];
+            var p1 = points[i];
+            var p2 = points[i + 1];
+            var p3 = i + 2 < points.Count ? points[i + 2] : points[i + 1] * 2f - points[i];
+
+            var steps = Mathf.Max(1, Mathf.CeilToInt(Vector2.Distance(p1, p2) / Step));
+            for (var s = 1; s <= steps; ++s)
+            {
+                samples.Add(CatmullRom(p0, p1, p2, p3, s / (float)steps));
+            }
+        }
+
+        return samples;
+    }
+
+    /// <summary>The length of the curve, in metres.</summary>
+    public static float Length(IReadOnlyList<Vector2> samples)
+    {
+        var length = 0f;
+        for (var i = 1; i < samples.Count; ++i) length += Vector2.Distance(samples[i - 1], samples[i]);
+        return length;
+    }
+
+    /// <summary>
+    /// The road's strip along <paramref name="samples"/>, <paramref name="width"/> wide, with
+    /// <paramref name="groundHeight"/> giving the terrain height under a point.
+    /// </summary>
+    public static void Build(Mesh mesh, IReadOnlyList<Vector2> samples, float width, Func<Vector3, float> groundHeight)
+    {
+        mesh.Clear();
+        if (samples == null || samples.Count < 2) return;
+
+        var count = samples.Count;
+        var vertices = new Vector3[count * 3];
+        var uvs = new Vector2[count * 3];
+        var triangles = new int[(count - 1) * 12];
+        var half = width / 2f;
+        var along = 0f;
+
+        for (var i = 0; i < count; ++i)
+        {
+            var previous = samples[Mathf.Max(0, i - 1)];
+            var next = samples[Mathf.Min(count - 1, i + 1)];
+            var tangent = (next - previous).normalized;
+            var side = new Vector2(-tangent.y, tangent.x);
+            if (i > 0) along += Vector2.Distance(samples[i - 1], samples[i]);
+
+            for (var c = 0; c < 3; ++c)
+            {
+                var across = (c - 1) * half;
+                var flat = samples[i] + side * across;
+                var point = new Vector3(flat.x, 0f, flat.y);
+                point.y = groundHeight(point) + Lift;
+                vertices[i * 3 + c] = point;
+                uvs[i * 3 + c] = new Vector2(c * 0.5f, along / width);
+            }
+        }
+
+        var t = 0;
+        for (var i = 0; i < count - 1; ++i)
+        {
+            for (var c = 0; c < 2; ++c)
+            {
+                var a = i * 3 + c;
+                var b = a + 1;
+                var d = a + 3;
+                var e = d + 1;
+                // clockwise seen from above, which Unity draws as the front
+                triangles[t++] = a; triangles[t++] = b; triangles[t++] = d;
+                triangles[t++] = b; triangles[t++] = e; triangles[t++] = d;
+            }
+        }
+
+        mesh.vertices = vertices;
+        mesh.uv = uvs;
+        mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+    }
+
+    /// <summary>Distance from <paramref name="point"/> to the closest part of the curve.</summary>
+    public static float DistanceTo(IReadOnlyList<Vector2> samples, Vector2 point, out int segment)
+    {
+        segment = -1;
+        var best = float.MaxValue;
+        for (var i = 1; i < samples.Count; ++i)
+        {
+            var d = DistanceToSegment(point, samples[i - 1], samples[i]);
+            if (d < best)
+            {
+                best = d;
+                segment = i - 1;
+            }
+        }
+        return best;
+    }
+
+    public static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a;
+        var t = ab.sqrMagnitude > 0f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
+        return Vector2.Distance(p, a + ab * t);
+    }
+
+    // centripetal: alpha 0.5, through p1 and p2
+    private static Vector2 CatmullRom(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
+    {
+        float Knot(float k, Vector2 a, Vector2 b) => k + Mathf.Max(0.0001f, Mathf.Sqrt(Vector2.Distance(a, b)));
+        var t0 = 0f;
+        var t1 = Knot(t0, p0, p1);
+        var t2 = Knot(t1, p1, p2);
+        var t3 = Knot(t2, p2, p3);
+        var u = Mathf.Lerp(t1, t2, t);
+
+        var a1 = (t1 - u) / (t1 - t0) * p0 + (u - t0) / (t1 - t0) * p1;
+        var a2 = (t2 - u) / (t2 - t1) * p1 + (u - t1) / (t2 - t1) * p2;
+        var a3 = (t3 - u) / (t3 - t2) * p2 + (u - t2) / (t3 - t2) * p3;
+        var b1 = (t2 - u) / (t2 - t0) * a1 + (u - t0) / (t2 - t0) * a2;
+        var b2 = (t3 - u) / (t3 - t1) * a2 + (u - t1) / (t3 - t1) * a3;
+        return (t2 - u) / (t2 - t1) * b1 + (u - t1) / (t2 - t1) * b2;
+    }
+
+    // ---- Surfaces ----------------------------------------------------------------------------------
+    // Drawn here rather than imported: flat, low contrast colours like the rest of the low poly
+    // village, and nothing to wire up in the scene.
+
+    /// <summary>A tiling surface for road type <paramref name="type"/>: 0 dirt, 1 gravel, 2 cobbles.</summary>
+    public static Texture2D MakeSurface(int type)
+    {
+        const int size = 128;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, true)
+        {
+            name = "Road surface " + type,
+            wrapMode = TextureWrapMode.Repeat,
+            filterMode = FilterMode.Bilinear,
+            anisoLevel = 4,
+        };
+
+        var pixels = new Color[size * size];
+        var random = new System.Random(1337 + type);
+        for (var y = 0; y < size; ++y)
+        {
+            for (var x = 0; x < size; ++x)
+            {
+                var u = x / (float)size;
+                var v = y / (float)size;
+                pixels[y * size + x] = type == 2 ? Cobble(u, v) : type == 1 ? Gravel(u, v, random) : Dirt(u, v);
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply(true);
+        return texture;
+    }
+
+    private static float Noise(float u, float v, float scale)
+    {
+        // tiles: the noise repeats every texture, as the road surface does
+        var a = Mathf.PerlinNoise(u * scale, v * scale);
+        var b = Mathf.PerlinNoise((u - 1f) * scale, v * scale);
+        var c = Mathf.PerlinNoise(u * scale, (v - 1f) * scale);
+        var d = Mathf.PerlinNoise((u - 1f) * scale, (v - 1f) * scale);
+        return Mathf.Lerp(Mathf.Lerp(a, b, u), Mathf.Lerp(c, d, u), v);
+    }
+
+    private static Color Dirt(float u, float v)
+    {
+        var baseColor = new Color(0.55f, 0.42f, 0.29f);
+        var n = Noise(u, v, 6f) * 0.6f + Noise(u, v, 18f) * 0.4f;
+        var edge = Mathf.Abs(u - 0.5f) * 2f;
+        // darker, worn ruts a third of the way in from each side
+        var rut = Mathf.Exp(-Mathf.Pow((edge - 0.45f) * 8f, 2f)) * 0.08f;
+        return baseColor * (0.88f + n * 0.22f - rut);
+    }
+
+    private static Color Gravel(float u, float v, System.Random random)
+    {
+        var baseColor = new Color(0.62f, 0.60f, 0.55f);
+        var n = Noise(u, v, 10f);
+        var speck = random.NextDouble() < 0.18 ? (float)(random.NextDouble() * 0.25 - 0.12) : 0f;
+        return baseColor * (0.9f + n * 0.15f + speck);
+    }
+
+    private static Color Cobble(float u, float v)
+    {
+        // four rows of stones a tile, every other row shifted by half a stone
+        const float rows = 4f;
+        const float columns = 3f;
+        var row = Mathf.Floor(v * rows);
+        var shifted = u * columns + (row % 2f) * 0.5f;
+        var cx = shifted - Mathf.Floor(shifted) - 0.5f;
+        var cy = v * rows - row - 0.5f;
+        var inside = Mathf.Max(Mathf.Abs(cx) * 1.15f, Mathf.Abs(cy));
+        var mortar = inside > 0.43f;
+        if (mortar) return new Color(0.30f, 0.28f, 0.26f);
+
+        // each stone a slightly different grey, darker towards its edges
+        var id = Mathf.Floor(shifted) * 7.3f + row * 3.1f;
+        var tint = 0.85f + Mathf.Repeat(Mathf.Sin(id) * 43758.5f, 1f) * 0.25f;
+        var shade = 1f - inside * 0.35f;
+        return new Color(0.58f, 0.56f, 0.53f) * tint * shade;
+    }
+}

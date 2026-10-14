@@ -77,6 +77,38 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
+        // ---- Roads: api/village/roads ----
+
+        public Task<RoadType[]> GetRoadTypesAsync()
+        {
+            return request.Create().Identifier("roads").Method("types").Build()
+                .SendAsync<RoadType[]>(ApiRequestTarget.Village, ApiRequestType.Get);
+        }
+
+        public Task<RoadInfo[]> GetRoadsAsync()
+        {
+            return request.Create().Identifier("roads").Build()
+                .SendAsync<RoadInfo[]>(ApiRequestTarget.Village, ApiRequestType.Get);
+        }
+
+        public Task<RoadResult> BuildRoadAsync(int type, double[] points)
+        {
+            return request.Create().Identifier("roads").Method("build").Build()
+                .SendAsync<RoadResult, RoadRequest>(ApiRequestTarget.Village, ApiRequestType.Post, new RoadRequest { Type = type, Points = points });
+        }
+
+        public Task<RoadResult> ChangeRoadAsync(Guid id, int type, double[] points)
+        {
+            return request.Create().Identifier("roads").Method(id.ToString()).AddParameter("change").Build()
+                .SendAsync<RoadResult, RoadRequest>(ApiRequestTarget.Village, ApiRequestType.Post, new RoadRequest { Type = type, Points = points });
+        }
+
+        public Task<RoadResult> RemoveRoadAsync(Guid id)
+        {
+            return request.Create().Identifier("roads").Method(id.ToString()).AddParameter("remove").Build()
+                .SendAsync<RoadResult>(ApiRequestTarget.Village, ApiRequestType.Post);
+        }
+
         public Task<bool> PlaceHouseAsync(int slot, double x, double z, double rotation)
         {
             return request.Create()
@@ -164,6 +196,50 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestTarget.Village,
                     ApiRequestType.Get);
         }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageRoadType: a kind of road, and what a metre of it costs.</summary>
+    public class RoadType
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public double Width { get; set; }
+        /// <summary>The town hall tier it unlocks at, 0 to 4 (shown as 1 to 5).</summary>
+        public int Tier { get; set; }
+        public bool Unlocked { get; set; }
+        public double Wood { get; set; }
+        public double Ore { get; set; }
+        public double Fish { get; set; }
+        public double Wheat { get; set; }
+        public double Coins { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageRoadInfo. Points are x, z pairs.</summary>
+    public class RoadInfo
+    {
+        public Guid Id { get; set; }
+        public int Type { get; set; }
+        public double[] Points { get; set; }
+    }
+
+    public class RoadRequest
+    {
+        public int Type { get; set; }
+        public double[] Points { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageRoadResult, with the village's resources after it.</summary>
+    public class RoadResult
+    {
+        public bool Ok { get; set; }
+        /// <summary>locked, resources, invalid or unknown.</summary>
+        public string Error { get; set; }
+        public RoadInfo Road { get; set; }
+        public double Wood { get; set; }
+        public double Ore { get; set; }
+        public double Fish { get; set; }
+        public double Wheat { get; set; }
+        public double Coins { get; set; }
     }
 
     /// <summary>

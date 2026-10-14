@@ -24,6 +24,11 @@ namespace Assets.Scripts
 
         /// <summary>Whether the village has come from the server once, for the loading panel.</summary>
         public bool IsLoaded => state == LoadingState.Loaded;
+
+        private VillageRoads roads;
+
+        /// <summary>The roads the streamer drew, loaded with the village.</summary>
+        public VillageRoads Roads => roads ? roads : (roads = GetComponent<VillageRoads>() ?? gameObject.AddComponent<VillageRoads>());
         private DateTime lastVillageLoad = DateTime.UnixEpoch;
         public TownHallManager TownHall => townHallManager;
         public TownHouseManager TownHouses => townHouseManager;
@@ -83,6 +88,7 @@ namespace Assets.Scripts
                         TownHall.SetExp(data.Experience);
                         await LoadPlacementsAsync();
                         await LoadTownHallPlacementAsync();
+                        if (!Roads.Loaded) await Roads.LoadAsync();
                     }
                     state = LoadingState.Loaded;
                 }

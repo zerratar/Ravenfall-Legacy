@@ -103,6 +103,14 @@ public struct Footprint
         return found;
     }
 
+    /// <summary>Whether the point (x, z) lies inside the rectangle.</summary>
+    public bool Contains(Vector3 position, float rotation, Vector2 point)
+    {
+        var centre = Centre(position, rotation);
+        var local = Quaternion.Euler(0f, -rotation, 0f) * new Vector3(point.x - centre.x, 0f, point.y - centre.z);
+        return Mathf.Abs(local.x) <= Half.x && Mathf.Abs(local.z) <= Half.y;
+    }
+
     /// <summary>Whether two turned rectangles overlap, by the separating axis test.</summary>
     public static bool Overlaps(Footprint a, Vector3 positionA, float rotationA, Footprint b, Vector3 positionB, float rotationB)
     {

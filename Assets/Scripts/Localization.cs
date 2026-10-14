@@ -402,6 +402,37 @@ public static class Localization
     public static string UI_BUILD_PLACE_OVERLAP = "Too close to another building";
     public static string UI_BUILD_BLOCKED_BY = "In the way: {0}";
     public static string UI_BUILD_BLOCKED_MORE = "and {0} more";
+
+    // Roads, drawn in build mode
+    public static string UI_BUILD_CATEGORY_ROADS = "Roads";
+    public static string UI_ROAD_DIRT = "Dirt road";
+    public static string UI_ROAD_GRAVEL = "Gravel road";
+    public static string UI_ROAD_COBBLES = "Cobbles";
+    public static string UI_ROAD_DRAW = "Draw";
+    public static string UI_ROAD_PER_METRE = "{0} a metre";
+    public static string UI_ROAD_LOCKED = "Needs town hall tier {0}";
+    public static string UI_ROAD_LENGTH = "{0} m long";
+    public static string UI_ROAD_TYPE = "TYPE";
+    public static string UI_ROAD_FLAGGED = "Runs through a building. Move a point or the building; nothing is moved for you.";
+    public static string UI_ROAD_EDIT_NOTE = "Drag a point to move it. Ctrl click the road to add a point, right click a point to take it away. Delete removes the road.";
+    public static string UI_ROAD_REMOVE = "Remove road (half the cost back)";
+    public static string UI_ROAD_REMOVE_CONFIRM = "Click again to remove";
+    public static string UI_ROAD_NONE = "Roads are not available on this server yet.";
+    public static string UI_ROAD_HINT_START = "Click to place the first point of the road. Esc to stop.";
+    public static string UI_ROAD_HINT_DRAWING = "{0} m, costs {1}. Click to add points, Enter or right click to finish, Backspace takes one back. Alt places freely, Shift keeps to 15 degree turns.";
+    public static string UI_ROAD_HINT_TOO_DEAR = "{0} m would cost {1}, more than the village has. Backspace takes a point back.";
+    public static string UI_ROAD_HINT_SELECTED = "Drag the points to reshape the road. Esc to deselect.";
+    public static string UI_ROAD_COST_WOOD = "{0} wood";
+    public static string UI_ROAD_COST_ORE = "{0} ore";
+    public static string UI_ROAD_COST_FISH = "{0} fish";
+    public static string UI_ROAD_COST_WHEAT = "{0} wheat";
+    public static string UI_ROAD_COST_COINS = "{0} coins";
+    public static string UI_ROAD_FREE = "nothing";
+    public static string UI_ROAD_TWO_POINTS = "A road needs at least two points.";
+    public static string UI_ROAD_ERROR_RESOURCES = "The village does not have the resources for that.";
+    public static string UI_ROAD_ERROR_LOCKED = "That road type is not unlocked yet.";
+    public static string UI_ROAD_ERROR_INVALID = "That road cannot be built: too short, too long or with too many points.";
+    public static string UI_ROAD_ERROR_UNKNOWN = "The road could not be saved. Try again.";
     public static string UI_BUILD_PLACE_WATER = "You can't build on water";
     public static string UI_BUILD_PLACE_STEEP = "The ground is too steep here";
     public static string UI_BUILD_PLACE_REJECTED = "The server did not accept the move. Try again in a moment.";

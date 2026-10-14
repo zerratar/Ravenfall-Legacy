@@ -95,6 +95,28 @@
             <engine:VisualElement name="plot-grip" class="rf-window__grip" />
         </engine:VisualElement>
 
+        <!-- Selected road: its type, how long, whether it runs through a building, and removing it.
+             Shares the building panel's place; only one of them shows at a time. -->
+        <engine:VisualElement name="road-panel" class="rf-build-panel rf-build-plot rf-build-road" style="display: none;">
+            <engine:VisualElement class="rf-build-panel__head">
+                <engine:VisualElement class="rf-build-ring" picking-mode="Ignore">
+                    <engine:Label class="rf-icon rf-build-ring__glyph" text="&#xf018;" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:VisualElement class="rf-build-plot__titles" picking-mode="Ignore">
+                    <engine:Label name="road-title" class="rf-build-plot__title" picking-mode="Ignore" />
+                    <engine:Label name="road-subtitle" class="rf-build-plot__subtitle" picking-mode="Ignore" />
+                </engine:VisualElement>
+                <engine:Button name="road-close" text="&#xf00d;" class="rf-window__button rf-icon rf-build__close" />
+            </engine:VisualElement>
+
+            <engine:Label name="road-flag" class="rf-build-note rf-build-road__flag" style="display: none;" />
+            <engine:Label name="road-type-caption" class="rf-build-caption" />
+            <engine:VisualElement name="road-types" class="rf-build-road__types" />
+            <engine:Label name="road-note" class="rf-build-note" />
+
+            <engine:Button name="road-remove" class="rf-build-wide rf-build-wide--danger" />
+        </engine:VisualElement>
+
         <!-- What is being placed -->
         <engine:VisualElement name="placing-card" class="rf-build-panel rf-build-placing" picking-mode="Ignore" style="display: none;">
             <engine:VisualElement class="rf-build-placing__row" picking-mode="Ignore">

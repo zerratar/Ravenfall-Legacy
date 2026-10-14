@@ -1218,3 +1218,70 @@
 .rf-plot--no-name .rf-plot__pill:hover .rf-plot__name {
     display: none;
 }
+
+/* ---- Roads ---- */
+
+/* The road card shows a patch of the road's surface where house cards show the house. */
+.rf-build-road-swatch {
+    -unity-background-scale-mode: scale-and-crop;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+}
+
+.rf-build-card--locked {
+    opacity: 0.55;
+}
+
+.rf-build-road__types {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-build .rf-build-road-chip {
+    height: 34px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: var(--rf-space-2);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    font-size: 14px;
+    color: var(--rf-text);
+    background-color: var(--rf-surface-raised);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 17px;
+    border-top-right-radius: 17px;
+    border-bottom-left-radius: 17px;
+    border-bottom-right-radius: 17px;
+}
+
+.rf-build .rf-build-road-chip:hover {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-build .rf-build-road-chip--current {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+/* A road through a building: said in words as well as the red road. */
+.rf-build .rf-build-road__flag {
+    color: var(--rf-danger);
+    -unity-font-style: bold;
+}
+
