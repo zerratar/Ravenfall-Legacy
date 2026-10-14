@@ -57,6 +57,27 @@ public static class RoadMesh
         return samples;
     }
 
+    /// <summary>
+    /// The width at each sample <see cref="Sample"/> makes from the same points, easing from one point's
+    /// width to the next. A width per point lets a road widen or narrow along its length.
+    /// </summary>
+    public static List<float> SampleWidths(IReadOnlyList<Vector2> points, IReadOnlyList<float> widths)
+    {
+        var result = new List<float>();
+        if (points == null || points.Count == 0) return result;
+        float At(int i) => widths != null && i < widths.Count ? widths[i] : 1f;
+        result.Add(At(0));
+        for (var i = 0; i < points.Count - 1; ++i)
+        {
+            var steps = Mathf.Max(1, Mathf.CeilToInt(Vector2.Distance(points[i], points[i + 1]) / Step));
+            for (var s = 1; s <= steps; ++s)
+            {
+                result.Add(Mathf.Lerp(At(i), At(i + 1), Mathf.SmoothStep(0f, 1f, s / (float)steps)));
+            }
+        }
+        return result;
+    }
+
     /// <summary>The length of the curve, in metres.</summary>
     public static float Length(IReadOnlyList<Vector2> samples)
     {
@@ -72,11 +93,24 @@ public static class RoadMesh
     /// </summary>
     public static void Build(Mesh mesh, IReadOnlyList<Vector2> samples, float width, Func<Vector3, float> groundHeight, float lift = Lift)
     {
+        Build(mesh, samples, width, null, groundHeight, lift, 1f, 1f);
+    }
+
+    /// <summary>
+    /// The strip as above, with <paramref name="scales"/> (one per sample, or null) multiplying the width
+    /// along the road, and how round each end is: 1 a half disc, 0 a square end that stops at the last
+    /// point and does not fade there, so the road can butt up against a bridge or a doorstep.
+    /// </summary>
+    public static void Build(Mesh mesh, IReadOnlyList<Vector2> samples, float width, IReadOnlyList<float> scales, Func<Vector3, float> groundHeight,
+        float lift, float startRound, float endRound)
+    {
         mesh.Clear();
         if (samples == null || samples.Count < 2) return;
 
         var count = samples.Count;
-        var half = width * Shoulders / 2f;
+        float HalfAt(int i) => width * Shoulders / 2f * (scales != null && i < scales.Count ? Mathf.Max(0.05f, scales[i]) : 1f);
+        var half = 0f;
+        for (var i = 0; i < count; ++i) half = Mathf.Max(half, HalfAt(i));
         // a vertex across the road about every Across metres, so the strip follows the ground between its
         // edges: with only the edges and the middle it was flat there, and wherever the ground bulged the
         // terrain showed through in its own square tiles
@@ -95,10 +129,12 @@ public static class RoadMesh
             var side = new Vector2(-tangent.y, tangent.x);
             if (i > 0) along += Vector2.Distance(samples[i - 1], samples[i]);
 
+            // with no cap past it, the last row is a straight cut at full strength: a square end
+            var halfHere = HalfAt(i);
             for (var c = 0; c < columns; ++c)
             {
                 var t = (c - perSide) / (float)perSide;           // -1 at one edge, 0 down the middle, 1 at the other
-                vertices.Add(Ground(samples[i] + side * (t * half)));
+                vertices.Add(Ground(samples[i] + side * (t * halfHere)));
                 uvs.Add(new Vector2(Mathf.Abs(t), along / width));
             }
         }
@@ -119,8 +155,10 @@ public static class RoadMesh
 
         // the round ends: half discs past the first and the last sample, in rings, so they follow the
         // ground too; the rim is the road's edge all the way round, so the end fades out like the sides
-        void Cap(int at, float alongAt)
+        void Cap(int at, float alongAt, float round)
         {
+            if (round <= 0f) return;
+            var half = HalfAt(at);
             var centre = samples[at];
             var other = samples[at == 0 ? 1 : count - 2];
             var outward = (centre - other).normalized;
@@ -135,7 +173,8 @@ public static class RoadMesh
                 for (var k = 0; k <= CapSegments; ++k)
                 {
                     var angle = Mathf.PI * k / CapSegments;
-                    var offset = (side * Mathf.Cos(angle) + outward * Mathf.Sin(angle)) * (half * r);
+                    // a half ellipse: as wide as the road, as long as roundness says
+                    var offset = (side * Mathf.Cos(angle) * half + outward * Mathf.Sin(angle) * (half * round)) * r;
                     vertices.Add(Ground(centre + offset));
                     uvs.Add(new Vector2(r, (alongAt + Vector2.Dot(offset, outward) * sign) / width));
                 }
@@ -169,8 +208,8 @@ public static class RoadMesh
             return point;
         }
 
-        Cap(0, 0f);
-        Cap(count - 1, along);
+        Cap(0, 0f, startRound);
+        Cap(count - 1, along, endRound);
 
         mesh.indexFormat = vertices.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
         mesh.SetVertices(vertices);

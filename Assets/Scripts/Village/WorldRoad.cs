@@ -6,9 +6,12 @@ using UnityEngine;
 /// shader as the roads streamers draw in their village, but saved with the scene rather than on
 /// the server. Draw and edit it in the Scene view (see WorldRoadEditor): Shift click to add points,
 /// drag them, Ctrl click to insert or remove. GameObject > Ravenfall > Road makes a new one.
+/// Each point has its own width (a multiple of the road's), so a road can widen or narrow, and each end
+/// can be anything from round to square: a square end stops at its last point without fading, so the
+/// road meets a bridge or a doorstep instead of spilling over it.
 /// </summary>
 /// <remarks>
-/// Only the points, the surface and the width are saved. The mesh is built again whenever the road
+/// Only the points, their widths, the ends, the surface and the width are saved. The mesh is built again whenever the road
 /// is enabled or changed, on a hidden child that is never saved, so the scene stays small, nothing
 /// generated ends up in it, and a change to the road shader or its materials shows everywhere.
 /// The points are kept relative to this object, so moving it moves the road; their heights come
@@ -25,8 +28,17 @@ public class WorldRoad : MonoBehaviour
     [Tooltip("Width of the solid part of the road, in metres. Village roads are 2.5 (dirt), 3 (gravel) and 3.5 (cobbles).")]
     [SerializeField, Min(0.5f)] private float width = 2.5f;
 
+    [Tooltip("How round the start is: 1 a half circle, 0 a square end that stops at the first point without fading.")]
+    [SerializeField, Range(0f, 1f)] private float startRound = 1f;
+
+    [Tooltip("How round the end is: 1 a half circle, 0 a square end that stops at the last point without fading.")]
+    [SerializeField, Range(0f, 1f)] private float endRound = 1f;
+
     [Tooltip("The points the road curves through, relative to this object. Heights are ignored: the road follows the ground.")]
     [SerializeField] private List<Vector3> points = new List<Vector3>();
+
+    [Tooltip("The width at each point, as a multiple of Width. The road eases from one to the next.")]
+    [SerializeField] private List<float> widths = new List<float>();
 
     private GameObject view;
     private Mesh mesh;
@@ -39,8 +51,71 @@ public class WorldRoad : MonoBehaviour
     public Surface RoadSurface { get => surface; set { surface = value; Rebuild(); } }
     public float Width { get => width; set { width = Mathf.Max(0.5f, value); Rebuild(); } }
 
-    /// <summary>The points, relative to this object. Call <see cref="Rebuild"/> after changing them.</summary>
+    public float StartRound { get => startRound; set { startRound = Mathf.Clamp01(value); Rebuild(); } }
+    public float EndRound { get => endRound; set { endRound = Mathf.Clamp01(value); Rebuild(); } }
+
+    /// <summary>
+    /// The points, relative to this object. Change them through <see cref="AddPoint"/>,
+    /// <see cref="InsertPoint"/>, <see cref="RemovePoint"/> and <see cref="ReversePoints"/>, which keep each
+    /// point's width with it; moving one in place is fine. Call <see cref="Rebuild"/> after.
+    /// </summary>
     public List<Vector3> Points => points;
+
+    /// <summary>The width at a point, as a multiple of <see cref="Width"/>.</summary>
+    public float PointWidth(int index) => index >= 0 && index < widths.Count ? widths[index] : 1f;
+
+    public void SetPointWidth(int index, float scale)
+    {
+        if (index < 0 || index >= points.Count) return;
+        SyncWidths();
+        widths[index] = Mathf.Clamp(scale, 0.1f, 5f);
+    }
+
+    public void AddPoint(Vector3 local, float scale = -1f)
+    {
+        SyncWidths();
+        points.Add(local);
+        widths.Add(scale > 0f ? scale : (widths.Count > 0 ? widths[widths.Count - 1] : 1f));
+    }
+
+    public void InsertPoint(int index, Vector3 local, float scale = -1f)
+    {
+        SyncWidths();
+        index = Mathf.Clamp(index, 0, points.Count);
+        // a new point between two takes the width between them
+        var guess = index > 0 && index < points.Count ? (widths[index - 1] + widths[index]) / 2f : (points.Count > 0 ? widths[Mathf.Min(index, widths.Count - 1)] : 1f);
+        points.Insert(index, local);
+        widths.Insert(index, scale > 0f ? scale : guess);
+    }
+
+    public void RemovePoint(int index)
+    {
+        if (index < 0 || index >= points.Count) return;
+        SyncWidths();
+        points.RemoveAt(index);
+        widths.RemoveAt(index);
+    }
+
+    public void ReversePoints()
+    {
+        SyncWidths();
+        points.Reverse();
+        widths.Reverse();
+        (startRound, endRound) = (endRound, startRound);
+    }
+
+    public void ClearPoints()
+    {
+        points.Clear();
+        widths.Clear();
+    }
+
+    /// <summary>One width per point: roads saved before widths existed get 1 for each.</summary>
+    private void SyncWidths()
+    {
+        while (widths.Count < points.Count) widths.Add(1f);
+        if (widths.Count > points.Count) widths.RemoveRange(points.Count, widths.Count - points.Count);
+    }
 
     /// <summary>The curve the mesh follows, in world x and z.</summary>
     public IReadOnlyList<Vector2> Samples => samples;
@@ -100,7 +175,8 @@ public class WorldRoad : MonoBehaviour
             gizmoLine[i] = new Vector3(at.x, GroundHeight(at) + 0.2f, at.z);
         }
         // the better surface a little higher, as in the village, so crossings do not flicker
-        RoadMesh.Build(mesh, samples, width, GroundHeight, RoadMesh.Lift + (int)surface * 0.012f);
+        SyncWidths();
+        RoadMesh.Build(mesh, samples, width, RoadMesh.SampleWidths(flat, widths), GroundHeight, RoadMesh.Lift + (int)surface * 0.012f, startRound, endRound);
 
         // the mesh is made in world space; the view sits on this object, so bring it into its space
         if (mesh.vertexCount > 0)

@@ -10,7 +10,9 @@ using UnityEngine;
 /// starting on a point of the first; the road shader joins them). With nothing selected, Shift click
 /// adds to the end. Dragging a point moves it along the ground, Ctrl click on the road inserts a
 /// point, Ctrl click on a point or Delete removes it. Points snap onto the points of other roads close
-/// by, so roads join; hold Shift while dragging to place freely. Everything is undoable.
+/// by, so roads join; hold Shift while dragging to place freely. The selected point has a width handle
+/// (the cube on the ring round it) and a slider in the inspector; Start and End round shape the ends.
+/// Everything is undoable.
 /// </summary>
 [CustomEditor(typeof(WorldRoad))]
 public class WorldRoadEditor : Editor
@@ -62,10 +64,23 @@ public class WorldRoadEditor : Editor
         var before = surface.enumValueIndex;
         EditorGUILayout.PropertyField(surface);
         EditorGUILayout.PropertyField(width);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("startRound"), new GUIContent("Start Round", "1 a half circle, 0 a square end that stops at the first point without fading"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("endRound"), new GUIContent("End Round", "1 a half circle, 0 a square end that stops at the last point without fading"));
         // a new surface brings its usual width, as village roads have
         if (surface.enumValueIndex != before) width.floatValue = WorldRoad.DefaultWidth((WorldRoad.Surface)surface.enumValueIndex);
 
         EditorGUILayout.LabelField("Points", road.Points.Count.ToString());
+        if (selected >= 0 && selected < road.Points.Count)
+        {
+            EditorGUI.BeginChangeCheck();
+            var scale = EditorGUILayout.Slider(new GUIContent("Point " + selected + " Width", "This point's width, as a multiple of Width"), road.PointWidth(selected), 0.1f, 5f);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(road, "Road point width");
+                road.SetPointWidth(selected, scale);
+                Changed(road);
+            }
+        }
         EditorGUILayout.LabelField("Length", RoadMesh.Length(road.Samples).ToString("0.0") + " m");
         serializedObject.ApplyModifiedProperties();
 
@@ -75,14 +90,15 @@ public class WorldRoadEditor : Editor
             "    from the last or first point the road grows, from a middle point a new road branches off\n" +
             "Drag a point: move it (it snaps onto other roads' points; hold Shift to place freely)\n" +
             "Ctrl click the road: insert a point\n" +
-            "Ctrl click a point, or Delete: remove it", MessageType.None);
+            "Ctrl click a point, or Delete: remove it\n" +
+            "Selected point: drag the cube on its ring to change its width", MessageType.None);
 
         using (new EditorGUILayout.HorizontalScope())
         {
             if (GUILayout.Button("Reverse"))
             {
                 Undo.RecordObject(road, "Reverse road");
-                road.Points.Reverse();
+                road.ReversePoints();
                 Changed(road);
             }
 
@@ -101,7 +117,7 @@ public class WorldRoadEditor : Editor
             if (GUILayout.Button("Clear"))
             {
                 Undo.RecordObject(road, "Clear road");
-                road.Points.Clear();
+                road.ClearPoints();
                 Changed(road);
             }
         }
@@ -167,7 +183,7 @@ public class WorldRoadEditor : Editor
                 && RoadMesh.DistanceTo(road.Samples, new Vector2(onGround.x, onGround.z), out _) < road.Width)
             {
                 Undo.RecordObject(road, "Insert road point");
-                road.Points.Insert(InsertIndex(road, onGround), road.transform.InverseTransformPoint(onGround));
+                road.InsertPoint(InsertIndex(road, onGround), road.transform.InverseTransformPoint(onGround));
                 Changed(road);
                 e.Use();
                 return;
@@ -188,13 +204,13 @@ public class WorldRoadEditor : Editor
                 else if (selected == 0 && road.Points.Count > 1)
                 {
                     Undo.RecordObject(road, "Add road point");
-                    road.Points.Insert(0, road.transform.InverseTransformPoint(onGround));
+                    road.InsertPoint(0, road.transform.InverseTransformPoint(onGround));
                     Changed(road);
                 }
                 else
                 {
                     Undo.RecordObject(road, "Add road point");
-                    road.Points.Add(road.transform.InverseTransformPoint(onGround));
+                    road.AddPoint(road.transform.InverseTransformPoint(onGround));
                     selected = road.Points.Count - 1;
                     Changed(road);
                 }
@@ -202,6 +218,8 @@ public class WorldRoadEditor : Editor
                 return;
             }
         }
+
+        if (selected >= 0 && selected < world.Count) WidthHandle(road, world[selected]);
 
         // drag the points; the selected one is white and a little bigger
         for (var i = 0; i < world.Count; ++i)
@@ -224,10 +242,29 @@ public class WorldRoadEditor : Editor
         }
     }
 
+    /// <summary>A ring as wide as the road at the selected point, and a cube on it that drags its width.</summary>
+    private void WidthHandle(WorldRoad road, Vector3 at)
+    {
+        var scale = road.PointWidth(selected);
+        var radius = road.Width * scale / 2f;
+        Handles.color = SelectedColour;
+        Handles.DrawWireDisc(at, Vector3.up, radius);
+        EditorGUI.BeginChangeCheck();
+        var size = HandleUtility.GetHandleSize(at) * 0.08f;
+        var moved = Handles.Slider(at + Vector3.right * radius, Vector3.right, size, Handles.CubeHandleCap, 0f);
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(road, "Road point width");
+            road.SetPointWidth(selected, Mathf.Max(0.1f, (moved.x - at.x) * 2f / road.Width));
+            Changed(road);
+            Repaint();
+        }
+    }
+
     private static void RemovePoint(WorldRoad road, int index)
     {
         Undo.RecordObject(road, "Remove road point");
-        road.Points.RemoveAt(index);
+        road.RemovePoint(index);
         Changed(road);
     }
 
@@ -247,8 +284,8 @@ public class WorldRoadEditor : Editor
         var made = Undo.AddComponent<WorldRoad>(go);
         made.RoadSurface = road.RoadSurface;
         made.Width = road.Width;
-        made.Points.Add(go.transform.InverseTransformPoint(from));
-        made.Points.Add(go.transform.InverseTransformPoint(to));
+        made.AddPoint(go.transform.InverseTransformPoint(from), road.PointWidth(index));
+        made.AddPoint(go.transform.InverseTransformPoint(to), road.PointWidth(index));
         Changed(made);
         branched = made;
         Selection.activeGameObject = go;
