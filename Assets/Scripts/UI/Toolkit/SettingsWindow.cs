@@ -63,6 +63,12 @@ namespace Shinobytes.UI
         private Action onClosed;
         private DraggableWindow drag;
 
+        // waiting for a key to bind
+        private Keybinds.Action? capturing;
+        private bool releaseBeforeKeys;
+        private string keyNote;
+        private static KeyCode[] bindableKeys;
+
         private void Awake()
         {
             Instance = this;
@@ -73,6 +79,7 @@ namespace Shinobytes.UI
             tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_SOUND, Glyph = "\uf028", Build = BuildSound });
             tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_INTERFACE, Glyph = "\uf2d0", Build = BuildInterface, ExtraReset = ResetWindowPositions });
             tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_BOT, Glyph = "\uf544", Build = BuildBotMessages });
+            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_KEYS, Glyph = "\uf11c", Build = BuildKeys, ExtraReset = Keybinds.ResetAll });
             tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_ADMIN, Glyph = "\uf505", Build = BuildAdmin, Visible = IsAdministrator });
         }
 
@@ -113,6 +120,20 @@ namespace Shinobytes.UI
                 if (!bound) return;
             }
 
+            // Keys stay off until everything is let go after binding one, so the new key does not
+            // also do its job (or the old one's) on the way up.
+            if (releaseBeforeKeys && !Input.anyKey)
+            {
+                releaseBeforeKeys = false;
+                Keybinds.Suspended = false;
+            }
+
+            if (capturing.HasValue)
+            {
+                PollCapture();
+                return;
+            }
+
             if (open && Input.GetKeyUp(KeyCode.Escape))
             {
                 Close();
@@ -131,6 +152,7 @@ namespace Shinobytes.UI
         {
             if (!open) return;
             open = false;
+            if (capturing.HasValue) EndCapture();
             closedFrame = Time.frameCount;
             SettingsApplier.Save();
             if (modal != null) modal.style.display = DisplayStyle.None;
@@ -233,7 +255,8 @@ namespace Shinobytes.UI
             }
 
             tabs[activeTab].ExtraReset?.Invoke();
-            RefreshResetPage();
+            // rebuilt so every row shows its value again
+            SelectTab(activeTab);
         }
 
         /// <summary>The page reset is only offered when something on the page has been changed.</summary>
@@ -270,6 +293,17 @@ namespace Shinobytes.UI
             Switch(c, Localization.UI_SETTINGS_OBSERVE_EMPTY, Localization.UI_SETTINGS_OBSERVE_EMPTY_HINT,
                 SettingsApplier.ObserveEmptyIslands, SettingsApplier.Defaults.ObserveEmptyIslands, SettingsApplier.SetObserveEmptyIslands);
 
+            Section(c, Localization.UI_SETTINGS_SECTION_FREE_CAMERA);
+            SliderRow(c, Localization.UI_SETTINGS_FREE_SPEED, Localization.UI_SETTINGS_FREE_SPEED_HINT, 10f, 200f,
+                SettingsApplier.FreeCameraSpeed, SettingsApplier.Defaults.FreeCameraSpeed, v => Mathf.RoundToInt(v).ToString(CultureInfo.InvariantCulture),
+                SettingsApplier.SetFreeCameraSpeed, step: 5f);
+            SliderRow(c, Localization.UI_SETTINGS_LOOK, Localization.UI_SETTINGS_LOOK_HINT, 0.25f, 3f,
+                SettingsApplier.LookSensitivity, SettingsApplier.Defaults.Sensitivity, Times, SettingsApplier.SetLookSensitivity, step: 0.05f);
+            Switch(c, Localization.UI_SETTINGS_INVERT_LOOK, null, SettingsApplier.InvertLook, SettingsApplier.Defaults.InvertLook, SettingsApplier.SetInvertLook);
+            SliderRow(c, Localization.UI_SETTINGS_ZOOM, Localization.UI_SETTINGS_ZOOM_HINT, 0.25f, 3f,
+                SettingsApplier.ZoomSensitivity, SettingsApplier.Defaults.Sensitivity, Times, SettingsApplier.SetZoomSensitivity, step: 0.05f);
+            Switch(c, Localization.UI_SETTINGS_INVERT_ZOOM, null, SettingsApplier.InvertZoom, SettingsApplier.Defaults.InvertZoom, SettingsApplier.SetInvertZoom);
+
             Section(c, Localization.UI_SETTINGS_SECTION_PLAYERS);
             Choice(c, Localization.UI_SETTINGS_BOOST, Localization.UI_SETTINGS_BOOST_HINT, Localization.UI_SETTINGS_BOOST_OPTIONS,
                 Mathf.Clamp(SettingsApplier.BoostRequirement(g), 0, 1), SettingsApplier.Defaults.BoostRequirement, v => SettingsApplier.SetBoostRequirement(g, v));
@@ -288,7 +322,7 @@ namespace Shinobytes.UI
             Switch(c, Localization.UI_SETTINGS_NO_RAIDS, null, SettingsApplier.DisableRaids, SettingsApplier.Defaults.DisableRaids, SettingsApplier.SetDisableRaids);
             Switch(c, Localization.UI_SETTINGS_NO_DUNGEONS, null, SettingsApplier.DisableDungeons, SettingsApplier.Defaults.DisableDungeons, SettingsApplier.SetDisableDungeons);
 
-            Section(c, Localization.UI_SETTINGS_SECTION_LABELS);
+            Section(c, Localization.UI_SETTINGS_SECTION_OVERLAYS);
             VisualElement textRow = null, jsonRow = null;
             Switch(c, Localization.UI_SETTINGS_LABELS, Localization.UI_SETTINGS_LABELS_HINT, SettingsApplier.StreamLabels, SettingsApplier.Defaults.StreamLabels, v =>
             {
@@ -300,11 +334,43 @@ namespace Shinobytes.UI
             jsonRow = Switch(c, Localization.UI_SETTINGS_LABELS_JSON, null, SettingsApplier.StreamLabelJsonFiles, SettingsApplier.Defaults.StreamLabelFiles, SettingsApplier.SetStreamLabelJsonFiles);
             textRow.SetEnabled(SettingsApplier.StreamLabels);
             jsonRow.SetEnabled(SettingsApplier.StreamLabels);
+
+            VisualElement addressRow = null;
+            Switch(c, Localization.UI_SETTINGS_QUERY, Localization.UI_SETTINGS_QUERY_HINT, SettingsApplier.QueryEngine, SettingsApplier.Defaults.QueryEngine, v =>
+            {
+                SettingsApplier.SetQueryEngine(v);
+                addressRow.SetEnabled(v);
+            });
+            addressRow = TextRow(c, Localization.UI_SETTINGS_QUERY_ADDRESS, null, SettingsApplier.QueryEngineAddress, SettingsApplier.Defaults.QueryEngineAddress,
+                SettingsApplier.SetQueryEngineAddress);
+            addressRow.SetEnabled(SettingsApplier.QueryEngine);
+            ReloadRow(c);
         }
 
         private void BuildGraphics(VisualElement c)
         {
             var g = gameManager;
+            Section(c, Localization.UI_SETTINGS_SECTION_DISPLAY);
+            Choice(c, Localization.UI_SETTINGS_WINDOW_MODE, Localization.UI_SETTINGS_WINDOW_MODE_HINT, Localization.UI_SETTINGS_WINDOW_MODE_OPTIONS,
+                SettingsApplier.WindowMode, SettingsApplier.Defaults.WindowMode, SettingsApplier.SetWindowMode);
+            var sizes = SettingsApplier.Resolutions;
+            var sizeNames = new string[sizes.Length];
+            for (var i = 0; i < sizes.Length; ++i)
+            {
+                sizeNames[i] = string.Format(CultureInfo.InvariantCulture, i == 0 ? Localization.UI_SETTINGS_SCREEN_NATIVE : Localization.UI_SETTINGS_SCREEN_SIZE_VALUE, sizes[i].x, sizes[i].y);
+            }
+
+            Choice(c, Localization.UI_SETTINGS_SCREEN_SIZE, null, sizeNames, SettingsApplier.ResolutionIndex, SettingsApplier.Defaults.Resolution, SettingsApplier.SetResolutionIndex, forceStepper: true);
+            VisualElement capRow = null;
+            Switch(c, Localization.UI_SETTINGS_VSYNC, Localization.UI_SETTINGS_VSYNC_HINT, SettingsApplier.VSync, SettingsApplier.Defaults.VSync, v =>
+            {
+                SettingsApplier.SetVSync(v);
+                capRow.SetEnabled(!v);
+            });
+            capRow = Choice(c, Localization.UI_SETTINGS_FPS, Localization.UI_SETTINGS_FPS_HINT, Localization.UI_SETTINGS_FPS_OPTIONS,
+                SettingsApplier.FrameRateCap, SettingsApplier.Defaults.FrameRateCap, SettingsApplier.SetFrameRateCap);
+            capRow.SetEnabled(!SettingsApplier.VSync);
+
             Section(c, Localization.UI_SETTINGS_SECTION_QUALITY);
             Choice(c, Localization.UI_SETTINGS_QUALITY, null, Localization.UI_SETTINGS_QUALITY_OPTIONS,
                 Mathf.Clamp(SettingsApplier.QualityLevel, 0, 2), SettingsApplier.Defaults.QualityLevel, SettingsApplier.SetQualityLevel);
@@ -344,6 +410,8 @@ namespace Shinobytes.UI
         private void BuildSound(VisualElement c)
         {
             var g = gameManager;
+            SliderRow(c, Localization.UI_SETTINGS_MASTER, Localization.UI_SETTINGS_MASTER_HINT, 0f, 1f, SettingsApplier.MasterVolume, SettingsApplier.Defaults.MasterVolume,
+                v => v <= 0.001f ? Localization.UI_SETTINGS_SILENCE : Percent(v), SettingsApplier.SetMasterVolume);
             SliderRow(c, Localization.UI_SETTINGS_MUSIC, null, 0f, 1f, SettingsApplier.MusicVolume(g), SettingsApplier.Defaults.MusicVolume,
                 v => v <= 0.001f ? Localization.UI_SETTINGS_SILENCE : Percent(v), v => SettingsApplier.SetMusicVolume(g, v));
             SliderRow(c, Localization.UI_SETTINGS_EVENTS, Localization.UI_SETTINGS_EVENTS_HINT, 0f, 1f, SettingsApplier.EventVolume(g), SettingsApplier.Defaults.EventVolume,
@@ -377,7 +445,11 @@ namespace Shinobytes.UI
             Intro(c, Localization.UI_SETTINGS_BOT_HINT);
 
             Section(c, Localization.UI_SETTINGS_SECTION_MESSAGES);
-            BotSwitch(c, "ExpMultiplierExpire", Localization.UI_SETTINGS_BOT_EXP, null);
+            VisualElement expTimes = null;
+            BotSwitch(c, "ExpMultiplierExpire", Localization.UI_SETTINGS_BOT_EXP, null, on => expTimes.SetEnabled(on));
+            expTimes = Chips(c, Localization.UI_SETTINGS_EXP_TIMES, null, Localization.UI_SETTINGS_EXP_TIME_OPTIONS,
+                SettingsApplier.ExpAnnouncement, SettingsApplier.SetExpAnnouncement, SettingsApplier.Defaults.ExpAnnouncements);
+            expTimes.SetEnabled(SettingsApplier.BotMessageEnabled("ExpMultiplierExpire"));
             BotSwitch(c, "PlayerWelcome", Localization.UI_SETTINGS_BOT_WELCOME, null);
             BotSwitch(c, "Disembark", Localization.UI_SETTINGS_BOT_DISEMBARK, null);
             BotSwitch(c, "TrainWarning", Localization.UI_SETTINGS_BOT_TRAIN, Localization.UI_SETTINGS_BOT_TRAIN_HINT);
@@ -410,6 +482,23 @@ namespace Shinobytes.UI
             Switch(c, Localization.UI_SETTINGS_LOOT_ORIGIN, Localization.UI_SETTINGS_LOOT_ORIGIN_HINT, SettingsApplier.LootOrigin, SettingsApplier.Defaults.LootOrigin,
                 SettingsApplier.SetLootOrigin);
 
+            Section(c, Localization.UI_SETTINGS_SECTION_CONNECTION);
+            TextRow(c, Localization.UI_SETTINGS_BOT_SERVER, Localization.UI_SETTINGS_BOT_SERVER_HINT, SettingsApplier.BotServer, SettingsApplier.Defaults.BotServer,
+                SettingsApplier.SetBotServer);
+            VisualElement portRow = null;
+            Switch(c, Localization.UI_SETTINGS_LOCAL_BOT, Localization.UI_SETTINGS_LOCAL_BOT_HINT, SettingsApplier.LocalBot, SettingsApplier.Defaults.LocalBot, v =>
+            {
+                SettingsApplier.SetLocalBot(v);
+                portRow.SetEnabled(v);
+            });
+            portRow = TextRow(c, Localization.UI_SETTINGS_LOCAL_PORT, null, SettingsApplier.LocalBotPort.ToString(CultureInfo.InvariantCulture),
+                SettingsApplier.Defaults.LocalBotPort.ToString(CultureInfo.InvariantCulture), v =>
+                {
+                    if (int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var port)) SettingsApplier.SetLocalBotPort(port);
+                }, numeric: true);
+            portRow.SetEnabled(SettingsApplier.LocalBot);
+            ReloadRow(c);
+
             void BotSwitch(VisualElement parent, string key, string title, string hint, Action<bool> also = null)
             {
                 Switch(parent, title, hint, SettingsApplier.BotMessageEnabled(key), SettingsApplier.Defaults.BotMessage, v =>
@@ -439,6 +528,8 @@ namespace Shinobytes.UI
         // ---- Value texts ----------------------------------------------------------------------------
 
         private static string Percent(float v) => Mathf.RoundToInt(v * 100f).ToString(CultureInfo.InvariantCulture) + "%";
+
+        private static string Times(float v) => string.Format(CultureInfo.InvariantCulture, Localization.UI_SETTINGS_TIMES, v.ToString("0.00", CultureInfo.InvariantCulture));
 
         private static string Seconds(float v) => string.Format(CultureInfo.InvariantCulture, Localization.UI_SETTINGS_SECONDS, Mathf.RoundToInt(v));
 
@@ -652,7 +743,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>A row of buttons for up to four choices, arrows either side of the value for more.</summary>
-        private VisualElement Choice(VisualElement parent, string title, string hint, string[] options, int value, int defaultValue, Action<int> changed)
+        private VisualElement Choice(VisualElement parent, string title, string hint, string[] options, int value, int defaultValue, Action<int> changed, bool forceStepper = false)
         {
             var row = Row(parent, title, hint, out var control);
             value = Mathf.Clamp(value, 0, options.Length - 1);
@@ -669,7 +760,7 @@ namespace Shinobytes.UI
 
             var reset = ResetButton(control, () => Set(defaultValue));
 
-            if (options.Length <= 4)
+            if (options.Length <= 4 && !forceStepper)
             {
                 var group = new VisualElement();
                 group.AddToClassList("rf-segmented");
@@ -719,6 +810,214 @@ namespace Shinobytes.UI
             show();
             pageRows.Add(new RowState { IsDefault = () => value == defaultValue, Reset = () => Set(defaultValue) });
             return row;
+        }
+
+        /// <summary>The connection and query engine are read when the game starts; a reload applies them.</summary>
+        private void ReloadRow(VisualElement parent)
+        {
+            ButtonRow(parent, Localization.UI_SETTINGS_RELOAD_NOTE, null, Localization.UI_SETTINGS_RELOAD_BUTTON, () =>
+            {
+                Close();
+                if (gameManager) gameManager.SaveStateAndLoadScene();
+            });
+        }
+
+        /// <summary>A text box, committed when Enter is pressed or it loses the keyboard.</summary>
+        private VisualElement TextRow(VisualElement parent, string title, string hint, string value, string defaultValue, Action<string> changed, bool numeric = false)
+        {
+            var row = Row(parent, title, hint, out var control);
+            Button reset = null;
+            var field = new TextField { value = value ?? string.Empty, isDelayed = true };
+            field.AddToClassList("rf-settings-field");
+            if (numeric) field.AddToClassList("rf-settings-field--short");
+
+            void Commit(string v)
+            {
+                value = v;
+                changed(v);
+                ShowReset(reset, value != defaultValue);
+                RefreshResetPage();
+            }
+
+            reset = ResetButton(control, () =>
+            {
+                field.SetValueWithoutNotify(defaultValue);
+                Commit(defaultValue);
+            });
+            control.Add(field);
+            ShowReset(reset, value != defaultValue);
+
+            // isDelayed: the value only changes on Enter or when the field loses focus
+            field.RegisterValueChangedCallback(e => Commit(e.newValue));
+
+            pageRows.Add(new RowState
+            {
+                IsDefault = () => value == defaultValue,
+                Reset = () =>
+                {
+                    field.SetValueWithoutNotify(defaultValue);
+                    Commit(defaultValue);
+                }
+            });
+            return row;
+        }
+
+        /// <summary>Several choices that can each be on or off, as a row of chips.</summary>
+        private VisualElement Chips(VisualElement parent, string title, string hint, string[] options, Func<int, bool> isOn, Action<int, bool> set, bool[] defaults)
+        {
+            var row = Row(parent, title, hint, out var control);
+            Button reset = null;
+            var chips = new Button[options.Length];
+
+            bool AllDefault()
+            {
+                for (var i = 0; i < options.Length; ++i) if (isOn(i) != defaults[i]) return false;
+                return true;
+            }
+
+            void Show()
+            {
+                for (var i = 0; i < chips.Length; ++i) chips[i].EnableInClassList("rf-chip--on", isOn(i));
+                ShowReset(reset, !AllDefault());
+            }
+
+            void ResetAll()
+            {
+                for (var i = 0; i < options.Length; ++i) if (isOn(i) != defaults[i]) set(i, defaults[i]);
+                Show();
+                RefreshResetPage();
+            }
+
+            reset = ResetButton(control, ResetAll);
+            var group = new VisualElement();
+            group.AddToClassList("rf-chips");
+            for (var i = 0; i < options.Length; ++i)
+            {
+                var index = i;
+                chips[i] = new Button(() =>
+                {
+                    set(index, !isOn(index));
+                    Show();
+                    RefreshResetPage();
+                }) { text = options[i] };
+                chips[i].AddToClassList("rf-chip");
+                group.Add(chips[i]);
+            }
+
+            control.Add(group);
+            Show();
+            pageRows.Add(new RowState { IsDefault = AllDefault, Reset = ResetAll });
+            return row;
+        }
+
+        // ---- Keys -----------------------------------------------------------------------------------
+
+        private void BuildKeys(VisualElement c)
+        {
+            Intro(c, string.IsNullOrEmpty(keyNote) ? Localization.UI_SETTINGS_KEYS_HINT : keyNote);
+            keyNote = null;
+
+            Section(c, Localization.UI_SETTINGS_SECTION_KEYS_CAMERA);
+            KeyRow(c, Keybinds.Action.NextPlayer);
+            KeyRow(c, Keybinds.Action.FreeCamera);
+            KeyRow(c, Keybinds.Action.NextIsland);
+            KeyRow(c, Keybinds.Action.PlayerDetails);
+            KeyRow(c, Keybinds.Action.ControlPlayer);
+
+            Section(c, Localization.UI_SETTINGS_SECTION_KEYS_INTERFACE);
+            KeyRow(c, Keybinds.Action.ToggleHud);
+            KeyRow(c, Keybinds.Action.Search);
+            KeyRow(c, Keybinds.Action.ExpRate);
+            KeyRow(c, Keybinds.Action.Logos);
+            KeyRow(c, Keybinds.Action.UiBigger);
+            KeyRow(c, Keybinds.Action.UiSmaller);
+
+            Section(c, Localization.UI_SETTINGS_SECTION_KEYS_GAME);
+            KeyRow(c, Keybinds.Action.Graphics);
+            KeyRow(c, Keybinds.Action.Physics);
+            KeyRow(c, Keybinds.Action.SaveState);
+            KeyRow(c, Keybinds.Action.Reload);
+
+            if (IsAdministrator())
+            {
+                Section(c, Localization.UI_SETTINGS_SECTION_KEYS_ADMIN);
+                KeyRow(c, Keybinds.Action.StartRaid);
+                KeyRow(c, Keybinds.Action.StartDungeon);
+            }
+
+            Intro(c, Localization.UI_SETTINGS_KEYS_FIXED);
+        }
+
+        private void KeyRow(VisualElement parent, Keybinds.Action action)
+        {
+            var row = Row(parent, Keybinds.Name(action), null, out var control);
+            var reset = ResetButton(control, () =>
+            {
+                Keybinds.Reset(action);
+                SelectTab(activeTab);
+            });
+            var cap = new Button(() => BeginCapture(action)) { text = Keybinds.Label(action) };
+            cap.AddToClassList("rf-keycap");
+            if (capturing == action)
+            {
+                cap.text = Localization.UI_SETTINGS_KEYS_PRESS;
+                cap.AddToClassList("rf-keycap--waiting");
+            }
+
+            control.Add(cap);
+            ShowReset(reset, !Keybinds.IsDefault(action));
+            pageRows.Add(new RowState { IsDefault = () => Keybinds.IsDefault(action), Reset = () => Keybinds.Reset(action) });
+        }
+
+        private void BeginCapture(Keybinds.Action action)
+        {
+            capturing = action;
+            Keybinds.Suspended = true;
+            SelectTab(activeTab);
+        }
+
+        private void EndCapture()
+        {
+            capturing = null;
+            // stay suspended until every key is up, see Update
+            releaseBeforeKeys = true;
+        }
+
+        private void PollCapture()
+        {
+            if (!Input.anyKeyDown) return;
+
+            var action = capturing.Value;
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                EndCapture();
+                SelectTab(activeTab);
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Backspace))
+            {
+                Keybinds.Set(action, Keybinds.Binding.None);
+                EndCapture();
+                SelectTab(activeTab);
+                return;
+            }
+
+            if (bindableKeys == null)
+            {
+                var all = (KeyCode[])Enum.GetValues(typeof(KeyCode));
+                bindableKeys = Array.FindAll(all, Keybinds.IsBindable);
+            }
+
+            foreach (var key in bindableKeys)
+            {
+                if (!Input.GetKeyDown(key)) continue;
+                var swapped = Keybinds.Set(action, new Keybinds.Binding(key, Keybinds.HeldMods()));
+                if (swapped.HasValue) keyNote = string.Format(CultureInfo.InvariantCulture, Localization.UI_SETTINGS_KEYS_SWAPPED, Keybinds.Name(swapped.Value));
+                EndCapture();
+                SelectTab(activeTab);
+                return;
+            }
         }
 
         private static VisualElement ButtonRow(VisualElement parent, string title, string hint, string buttonText, Action clicked)

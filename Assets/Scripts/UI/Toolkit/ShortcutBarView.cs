@@ -28,12 +28,14 @@ namespace Shinobytes.UI
         private sealed class Shortcut
         {
             public Group Group;
-            public string Key;
+            /// <summary>The rebindable action, or none for the menu, which is always Esc.</summary>
+            public Keybinds.Action? Action;
             public string Icon;
-            public string Caption;
             public Action Run;
             public bool AdminOnly;
             public Button Button;
+            public Label KeyLabel;
+            public string Caption;
         }
 
         private readonly List<Shortcut> shortcuts = new List<Shortcut>();
@@ -47,13 +49,38 @@ namespace Shinobytes.UI
         private void OnEnable()
         {
             Instance = this;
+            Keybinds.Changed += RefreshKeys;
             TryBind();
         }
 
         private void OnDisable()
         {
+            Keybinds.Changed -= RefreshKeys;
             if (Instance == this) Instance = null;
         }
+
+        /// <summary>Badges and captions follow the keys as they are now, after any rebinding.</summary>
+        private void RefreshKeys()
+        {
+            foreach (var s in shortcuts)
+            {
+                if (s.KeyLabel == null) continue;
+                if (s.Action.HasValue)
+                {
+                    var label = Keybinds.Label(s.Action.Value);
+                    s.KeyLabel.text = Badge(label);
+                    s.Caption = Keybinds.Name(s.Action.Value) + " (" + label + ")";
+                }
+                else
+                {
+                    s.KeyLabel.text = "Esc";
+                    s.Caption = Localization.UI_SHORTCUT_MENU;
+                }
+            }
+        }
+
+        /// <summary>Shift as an arrow keeps the badge short enough for its button.</summary>
+        private static string Badge(string label) => label.Replace("Shift+", "\u2191");
 
         private void TryBind()
         {
@@ -104,13 +131,14 @@ namespace Shinobytes.UI
                 var icon = new Label(s.Icon) { pickingMode = PickingMode.Ignore };
                 icon.AddToClassList("rf-icon");
                 icon.AddToClassList("rf-shortcut__icon");
-                var key = new Label(s.Key) { pickingMode = PickingMode.Ignore };
+                var key = new Label { pickingMode = PickingMode.Ignore };
                 key.AddToClassList("rf-shortcut__key");
                 button.Add(icon);
                 button.Add(key);
+                s.KeyLabel = key;
 
-                var text = s.Caption;
-                button.RegisterCallback<PointerEnterEvent>(e => ShowCaption(text));
+                var shortcut = s;
+                button.RegisterCallback<PointerEnterEvent>(e => ShowCaption(shortcut.Caption));
                 button.RegisterCallback<PointerLeaveEvent>(e => ShowCaption(null));
 
                 var run = s.Run;
@@ -123,6 +151,7 @@ namespace Shinobytes.UI
                 group.Add(button);
             }
 
+            RefreshKeys();
             ShowCaption(null);
             shownAdmin = true;
             bound = true;
@@ -139,28 +168,28 @@ namespace Shinobytes.UI
         private void Define()
         {
             shortcuts.Clear();
-            Add(Group.Camera, "F2", "\uf2c2", Localization.UI_SHORTCUT_DETAILS, () => GameManager.Instance.Camera.Observer.ToggleVisibility());
-            Add(Group.Camera, "Tab", "\uf061", Localization.UI_SHORTCUT_NEXT_PLAYER, () => GameManager.Instance.Camera.ObserveNextPlayer());
-            Add(Group.Camera, "\u2191Tab", "\uf03d", Localization.UI_SHORTCUT_FREE_CAMERA, ToggleFreeCamera);
+            Add(Group.Camera, Keybinds.Action.PlayerDetails, "\uf2c2", () => GameManager.Instance.Camera.Observer.ToggleVisibility());
+            Add(Group.Camera, Keybinds.Action.NextPlayer, "\uf061", () => GameManager.Instance.Camera.ObserveNextPlayer());
+            Add(Group.Camera, Keybinds.Action.FreeCamera, "\uf03d", ToggleFreeCamera);
 
-            Add(Group.Players, "Ctrl+F", "\uf002", Localization.UI_SHORTCUT_SEARCH, () => GameManager.Instance.ShowPlayerSearch());
-            Add(Group.Players, "I", "\uf201", Localization.UI_SHORTCUT_EXP, () => GameManager.Instance.PlayerList.ToggleExpRate());
+            Add(Group.Players, Keybinds.Action.Search, "\uf002", () => GameManager.Instance.ShowPlayerSearch());
+            Add(Group.Players, Keybinds.Action.ExpRate, "\uf201", () => GameManager.Instance.PlayerList.ToggleExpRate());
 
-            Add(Group.Interface, "F1", "\uf06e", Localization.UI_SHORTCUT_HUD, () => { if (HUDController.Instance) HUDController.Instance.CycleState(); });
-            Add(Group.Interface, "Q", "\uf070", Localization.UI_SHORTCUT_LOGOS, () => GameManager.Instance.LogoCensor = !GameManager.Instance.LogoCensor);
-            Add(Group.Interface, "Ctrl+", "\uf00e", Localization.UI_SHORTCUT_UI_BIGGER, () => UiScale.Increase());
-            Add(Group.Interface, "Ctrl-", "\uf010", Localization.UI_SHORTCUT_UI_SMALLER, () => UiScale.Decrease());
-            Add(Group.Interface, "F9", "\uf108", Localization.UI_SHORTCUT_GRAPHICS, () => GameManager.Instance.Graphics.ToggleAllGraphics());
+            Add(Group.Interface, Keybinds.Action.ToggleHud, "\uf06e", () => { if (HUDController.Instance) HUDController.Instance.CycleState(); });
+            Add(Group.Interface, Keybinds.Action.Logos, "\uf070", () => GameManager.Instance.LogoCensor = !GameManager.Instance.LogoCensor);
+            Add(Group.Interface, Keybinds.Action.UiBigger, "\uf00e", () => UiScale.Increase());
+            Add(Group.Interface, Keybinds.Action.UiSmaller, "\uf010", () => UiScale.Decrease());
+            Add(Group.Interface, Keybinds.Action.Graphics, "\uf108", () => GameManager.Instance.Graphics.ToggleAllGraphics());
 
-            Add(Group.Admin, "Ctrl+P", "\uf6d5", Localization.UI_SHORTCUT_RAID, () => GameManager.Instance.Raid.ForceStartRaid(), adminOnly: true);
-            Add(Group.Admin, "Ctrl+O", "\uf6d9", Localization.UI_SHORTCUT_DUNGEON, () => GameManager.Instance.Dungeons.ForceActivateDungeon(), adminOnly: true);
+            Add(Group.Admin, Keybinds.Action.StartRaid, "\uf6d5", () => GameManager.Instance.Raid.ForceStartRaid(), adminOnly: true);
+            Add(Group.Admin, Keybinds.Action.StartDungeon, "\uf6d9", () => GameManager.Instance.Dungeons.ForceActivateDungeon(), adminOnly: true);
 
-            Add(Group.Menu, "Esc", "\uf0c9", Localization.UI_SHORTCUT_MENU, () => GameManager.Instance.ShowMenu());
+            Add(Group.Menu, null, "\uf0c9", () => GameManager.Instance.ShowMenu());
         }
 
-        private void Add(Group group, string key, string icon, string caption, Action run, bool adminOnly = false)
+        private void Add(Group group, Keybinds.Action? action, string icon, Action run, bool adminOnly = false)
         {
-            shortcuts.Add(new Shortcut { Group = group, Key = key, Icon = icon, Caption = caption, Run = run, AdminOnly = adminOnly });
+            shortcuts.Add(new Shortcut { Group = group, Action = action, Icon = icon, Run = run, AdminOnly = adminOnly });
         }
 
         /// <summary>The key is held to fly; a click switches the free camera on or off instead.</summary>

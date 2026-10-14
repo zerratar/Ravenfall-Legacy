@@ -300,7 +300,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
     private void UpdateDungeon()
     {
-        if (Input.GetKeyDown(KeyCode.Tab) && !gameManager.Tavern.IsActivated)
+        if (Keybinds.Pressed(Keybinds.Action.NextPlayer) && !gameManager.Tavern.IsActivated)
         {
             if (gameManager.Camera.ForcedFreeCamera)
             {
@@ -320,17 +320,22 @@ public class DungeonManager : MonoBehaviour, IEvent
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Tab))
+        // In a dungeon the next player key leaves the free camera and the free camera key toggles it,
+        // since the dungeon camera does not follow players one by one.
+        if (Keybinds.Pressed(Keybinds.Action.FreeCamera))
         {
-            var modifier = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftControl);
             if (gameManager.Camera.ForcedFreeCamera)
             {
                 gameManager.Camera.ReleaseFreeCamera();
             }
-            else if (modifier)
+            else
             {
                 gameManager.Camera.ForceFreeCamera(false);
             }
+        }
+        else if (Keybinds.Pressed(Keybinds.Action.NextPlayer) && gameManager.Camera.ForcedFreeCamera)
+        {
+            gameManager.Camera.ReleaseFreeCamera();
         }
 
         gameManager.Camera.EnableDungeonCamera();

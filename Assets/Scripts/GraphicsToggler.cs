@@ -77,7 +77,7 @@ public class GraphicsToggler : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.F9))
+        if (Keybinds.Pressed(Keybinds.Action.Graphics))
         {
             ToggleAllGraphics();
         }

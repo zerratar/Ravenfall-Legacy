@@ -33,6 +33,26 @@ public class PlayerSettings
     public float? ViewDistance;
     public float? CameraRotationSpeed;
 
+    /// <summary>A UnityEngine.FullScreenMode value; null leaves the window as Unity last had it.</summary>
+    public int? WindowMode;
+    /// <summary>Null keeps the screen's native resolution.</summary>
+    public int? ResolutionWidth;
+    public int? ResolutionHeight;
+    /// <summary>Frames per second to stop at; 0 or null for no limit.</summary>
+    public int? FrameRateCap;
+    public bool? VSync;
+    /// <summary>Everything the game plays, through the audio listener, 0 to 1.</summary>
+    public float? MasterVolume;
+    /// <summary>Free camera base speed in metres per second.</summary>
+    public float? FreeCameraSpeed;
+    /// <summary>Multipliers on the cameras' own speeds, 1 for as they come.</summary>
+    public float? LookSensitivity;
+    public float? ZoomSensitivity;
+    public bool? InvertLook;
+    public bool? InvertZoom;
+    /// <summary>Rebound keys as "action=binding", only the ones that differ from the defaults. See Keybinds.</summary>
+    public string[] KeyBindings;
+
     public int? LocalBotPort;
     public int? PlayerBoostRequirement;
     public int? PlayerCacheExpiryTime;
@@ -363,6 +383,17 @@ public class PlayerSettings
             Serialize(sw, "uiScale", obj.UIScale);
             Serialize(sw, "viewDistance", obj.ViewDistance);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
+            Serialize(sw, "masterVolume", obj.MasterVolume);
+            Serialize(sw, "freeCameraSpeed", obj.FreeCameraSpeed);
+            Serialize(sw, "lookSensitivity", obj.LookSensitivity);
+            Serialize(sw, "zoomSensitivity", obj.ZoomSensitivity);
+            Serialize(sw, "invertLook", obj.InvertLook);
+            Serialize(sw, "invertZoom", obj.InvertZoom);
+            Serialize(sw, "vSync", obj.VSync);
+            Serialize(sw, "windowMode", obj.WindowMode);
+            Serialize(sw, "resolutionWidth", obj.ResolutionWidth);
+            Serialize(sw, "resolutionHeight", obj.ResolutionHeight);
+            Serialize(sw, "frameRateCap", obj.FrameRateCap);
 
             // Serialize all nullable int properties
             Serialize(sw, "playerBoostRequirement", obj.PlayerBoostRequirement);
@@ -385,6 +416,7 @@ public class PlayerSettings
             Serialize(sw, "expMultiplierAnnouncements", obj.ExpMultiplierAnnouncements);
             // the messages the streamer switched off; these were never written before, so they were lost on restart
             Serialize(sw, "botMessageFilters", obj.BotMessageFilters);
+            Serialize(sw, "keyBindings", obj.KeyBindings);
             if (obj.Loot != null) sw.WriteLine("  \"loot\": { \"includeOrigin\": " + obj.Loot.IncludeOrigin.ToString().ToLower() + " },");
 
             // Serialize custom class instances

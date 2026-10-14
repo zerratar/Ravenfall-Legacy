@@ -1048,6 +1048,8 @@ public class GameManager : MonoBehaviour, IGameManager
             if (currentQualityLevel != 0)
             {
                 QualitySettings.SetQualityLevel(0);
+                // each quality level brings its own vertical sync; put the player's back
+                SettingsApplier.ApplyFrameRate();
             }
 
             //if (URP_LowQuality)
@@ -1060,7 +1062,7 @@ public class GameManager : MonoBehaviour, IGameManager
         else
         {
             var targetQualitySettings = PlayerSettings.Instance.QualityLevel.GetValueOrDefault(1);
-            if (targetQualitySettings < 0 || targetQualitySettings > QualitySettings.count)
+            if (targetQualitySettings < 0 || targetQualitySettings >= QualitySettings.count)
             {
                 targetQualitySettings = QualitySettings.count - 1;
             }
@@ -1068,6 +1070,7 @@ public class GameManager : MonoBehaviour, IGameManager
             if (currentQualityLevel != targetQualitySettings)
             {
                 QualitySettings.SetQualityLevel(targetQualitySettings);
+                SettingsApplier.ApplyFrameRate();
             }
 
             //if (URP_DefaultQuality)
@@ -1101,7 +1104,7 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.F5))
+        if (Keybinds.Pressed(Keybinds.Action.Reload))
         {
             SaveStateAndLoadScene();
             return;
@@ -1117,7 +1120,7 @@ public class GameManager : MonoBehaviour, IGameManager
             menuHandler.Show();
         }
 
-        if (Input.GetKeyUp(KeyCode.F4))
+        if (Keybinds.Pressed(Keybinds.Action.Physics))
         {
             if (GraphicsToggler.SimulationMode == SimulationMode.Script)
             {
@@ -1916,45 +1919,42 @@ public class GameManager : MonoBehaviour, IGameManager
         RavenBot.HandleNextPacket(ravenbotArgs);
     }
 
+    /// <summary>The rebindable shortcuts; see <see cref="Keybinds"/>.</summary>
     private void HandleKeyDown()
     {
-        var isShiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-        var isControlDown = isShiftDown || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-
-        if (Input.GetKeyUp(KeyCode.F2))
+        if (Keybinds.Pressed(Keybinds.Action.PlayerDetails))
         {
             Camera.Observer.ToggleVisibility();
         }
 
-        if (Input.GetKeyUp(KeyCode.Q))
+        if (Keybinds.Pressed(Keybinds.Action.Logos))
         {
             LogoCensor = !LogoCensor;
         }
 
-        if (!isControlDown && Input.GetKeyUp(KeyCode.I))
+        if (Keybinds.Pressed(Keybinds.Action.ExpRate))
         {
             playerList.ToggleExpRate();
         }
 
-        if (isControlDown && Input.GetKeyUp(KeyCode.F))
+        if (Keybinds.Pressed(Keybinds.Action.Search))
         {
             playerSearchHandler.Show();
         }
 
-        // Interface scale, as in a browser. Main keyboard only: the keypad plus and minus already
-        // change the free camera speed, and Ctrl+0 would also jump to stored camera position 0.
-        if (isControlDown && Input.GetKeyDown(KeyCode.Equals))
+        // Interface scale, as in a browser. Main keyboard by default: the keypad plus and minus
+        // already change the free camera speed, and Ctrl+0 would also jump to stored camera position 0.
+        if (Keybinds.Pressed(Keybinds.Action.UiBigger))
         {
             Shinobytes.UI.UiScale.Increase();
         }
 
-        if (isControlDown && Input.GetKeyDown(KeyCode.Minus))
+        if (Keybinds.Pressed(Keybinds.Action.UiSmaller))
         {
             Shinobytes.UI.UiScale.Decrease();
         }
 
-
-        if (isControlDown && Input.GetKeyUp(KeyCode.S))
+        if (Keybinds.Pressed(Keybinds.Action.SaveState))
         {
             SavePlayerExperience(false);
             SavePlayerState();
@@ -1975,7 +1975,7 @@ public class GameManager : MonoBehaviour, IGameManager
             //    return;
             //}
 
-            if (isControlDown && Input.GetKeyUp(KeyCode.P))
+            if (Keybinds.Pressed(Keybinds.Action.StartRaid))
             {
                 Raid.ForceStartRaid();
             }
@@ -1986,7 +1986,7 @@ public class GameManager : MonoBehaviour, IGameManager
             //    Dungeons.RewardItemDrops(players);
             //}
 
-            if (isControlDown && Input.GetKeyUp(KeyCode.O))
+            if (Keybinds.Pressed(Keybinds.Action.StartDungeon))
             {
                 Dungeons.ForceActivateDungeon();
             }

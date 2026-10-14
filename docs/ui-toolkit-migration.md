@@ -785,6 +785,24 @@ badge on its button. Runtime UI Toolkit shows no tooltips, so a caption above th
 hovered button. It dims while the mouse is elsewhere. The raid and dungeon buttons only show for
 administrators, whose keys are the only ones that work.
 
+**Second round of settings.**
+- Graphics: window mode and resolution (applied by `SettingsApplier.ApplyScreen`, which does nothing
+  until one is chosen, and nothing in the editor), vertical sync and a frame rate limit. Every
+  quality level turns vertical sync on by itself, so GameManager calls `ApplyFrameRate` after each
+  quality change, or potato mode would quietly undo the player's choice.
+- Sound: a master volume through the audio listener. There are no interface sounds and no ambient
+  sounds to give their own sliders. `MusicManager` stopped bringing back the track it had faded
+  out: the old track kept looping at zero and the volume setter turned both up.
+- Camera: free camera speed, mouse look, scroll zoom and inverting either, in `CameraSettings`.
+  Scroll zoom no longer scales with frame time, which made each wheel tick zoom less the higher the
+  frame rate, and keypad minus can no longer fly the free camera backwards.
+- Keys: the Keys page rebinds every shortcut, through `Keybinds`, which every hotkey check now goes
+  through. Modifiers match exactly (Shift no longer counts as Ctrl), and nothing fires while a text
+  field has the keyboard or while a key is being bound. Esc stays Esc.
+- Bot: the warning times for the exp multiplier, and the RavenBot connection and query engine,
+  which apply when the game reloads. A boost that arrived with under a minute left used to get
+  three warnings at once; now passed warning times share one message.
+
 The admins' OnGUI "Show dev tools" button is gone; the Admin page's Developer tools switch does
 the same.
 

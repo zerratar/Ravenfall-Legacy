@@ -12,9 +12,6 @@ public class MusicManager : MonoBehaviour
     private IEnumerator[] fader = new IEnumerator[2];
     private int ActivePlayer = 0;
 
-    //Note: If the volumeChangesPerSecond value is higher than the fps, the duration of the fading will be extended!
-    private int volumeChangesPerSecond = 15;
-
     public float fadeDuration = 1.0f;
 
     [Range(0.0f, 1.0f)]
@@ -28,15 +25,15 @@ public class MusicManager : MonoBehaviour
         }
         set
         {
-            if (_player != null && _player.Length > 0)
-            {
-                foreach (var player in _player)
-                {
-                    player.volume = value;
-                }
-            }
-
             _volume = value;
+
+            // Only the track that is playing follows the setting. Setting both brought back the
+            // track that had faded out, which kept looping silently, every time the slider moved.
+            // A fade in progress picks the new value up by itself.
+            if (_player != null && _player.Length > 0 && fader[1] == null)
+            {
+                _player[ActivePlayer].volume = value;
+            }
         }
     }
 
@@ -78,8 +75,6 @@ public class MusicManager : MonoBehaviour
     /// </summary>
     private void Awake()
     {
-        volume = PlayerPrefs.GetFloat("MusicVolume", volume);
-
         //Generate the two AudioSources
         _player = new AudioSource[2]{
             gameObject.AddComponent<AudioSource>(),
@@ -106,18 +101,19 @@ public class MusicManager : MonoBehaviour
             return;
         }
         //Kill all playing
-        foreach (IEnumerator i in fader)
+        for (var i = 0; i < fader.Length; ++i)
         {
-            if (i != null)
+            if (fader[i] != null)
             {
-                StopCoroutine(i);
+                StopCoroutine(fader[i]);
+                fader[i] = null;
             }
         }
 
         //Fade-out the active play, if it is not silent (eg: first start)
         if (_player[ActivePlayer].volume > 0)
         {
-            fader[0] = FadeAudioSource(_player[ActivePlayer], fadeDuration, 0.0f, () => { fader[0] = null; });
+            fader[0] = FadeAudioSource(_player[ActivePlayer], fadeDuration, false, () => { fader[0] = null; });
             StartCoroutine(fader[0]);
         }
 
@@ -125,40 +121,31 @@ public class MusicManager : MonoBehaviour
         int NextPlayer = (ActivePlayer + 1) % _player.Length;
         _player[NextPlayer].clip = clip;
         _player[NextPlayer].Play();
-        fader[1] = FadeAudioSource(_player[NextPlayer], fadeDuration, volume, () => { fader[1] = null; });
+        fader[1] = FadeAudioSource(_player[NextPlayer], fadeDuration, true, () => { fader[1] = null; });
         StartCoroutine(fader[1]);
 
         //Register new active player
         ActivePlayer = NextPlayer;
     }
     /// <summary>
-    /// Fades an AudioSource(player) during a given amount of time(duration) to a specific volume(targetVolume)
+    /// Fades a player in to the music volume or out to silence over <paramref name="duration"/>. The
+    /// target is read every frame, so a volume change during a fade is kept. A player faded out is
+    /// stopped, rather than left looping at zero.
     /// </summary>
-    /// <param name="player">AudioSource to be modified</param>
-    /// <param name="duration">Duration of the fading</param>
-    /// <param name="targetVolume">Target volume, the player is faded to</param>
-    /// <param name="finishedCallback">Called when finshed</param>
-    /// <returns></returns>
-    IEnumerator FadeAudioSource(AudioSource player, float duration, float targetVolume, System.Action finishedCallback)
+    IEnumerator FadeAudioSource(AudioSource player, float duration, bool fadeIn, System.Action finishedCallback)
     {
-        //Calculate the steps
-        int Steps = (int)(volumeChangesPerSecond * duration);
-        float StepTime = duration / Steps;
-        float StepSize = (targetVolume - player.volume) / Steps;
-
-        //Fade now
-        for (int i = 1; i < Steps; i++)
+        var start = player.volume;
+        var elapsed = 0f;
+        while (elapsed < duration)
         {
-            player.volume += StepSize;
-            yield return new WaitForSeconds(StepTime);
+            elapsed += Time.unscaledDeltaTime;
+            player.volume = Mathf.Lerp(start, fadeIn ? _volume : 0f, elapsed / duration);
+            yield return null;
         }
-        //Make sure the targetVolume is set
-        player.volume = targetVolume;
 
-        //Callback
-        if (finishedCallback != null)
-        {
-            finishedCallback();
-        }
+        player.volume = fadeIn ? _volume : 0f;
+        if (!fadeIn) player.Stop();
+
+        finishedCallback?.Invoke();
     }
 }

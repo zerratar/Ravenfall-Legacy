@@ -85,6 +85,22 @@ public static class SettingsApplier
         public const bool AnnounceNoExp = false;
         public const int NoExpMinutes = 1;           // index into NoExpMinuteOptions, 5 minutes
         public const bool LootOrigin = true;
+        public const bool VSync = true;
+        public const int FrameRateCap = 0;
+        public const int WindowMode = 0;              // borderless
+        public const int Resolution = 0;              // the largest, the monitor's own
+        public const float MasterVolume = 1f;
+        public const float FreeCameraSpeed = 50f;
+        public const float Sensitivity = 1f;
+        public const bool InvertLook = false;
+        public const bool InvertZoom = false;
+        public const string BotServer = "ravenbot.ravenfall.stream:4041";
+        public const bool LocalBot = true;
+        public const int LocalBotPort = 4040;
+        public const bool QueryEngine = true;
+        public const string QueryEngineAddress = "localhost:8888/ravenfall/";
+        /// <summary>TwitchEventManager's own: 5 min, 3 min, 1 min and when it ends.</summary>
+        public static readonly bool[] ExpAnnouncements = { false, true, true, true, false, true };
     }
 
     /// <summary>Reads the defaults that live in the scene. Call before the saved settings are applied.</summary>
@@ -106,6 +122,218 @@ public static class SettingsApplier
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
         game.UpdatePathfindingIterations();
+        ApplyScreen();
+        ApplyFrameRate();
+        AudioListener.volume = MasterVolume;
+        ApplyCamera();
+        ApplyExpAnnouncements();
+    }
+
+    // ---- Display --------------------------------------------------------------------------------
+
+    /// <summary>The window modes offered, in the order shown.</summary>
+    public static readonly FullScreenMode[] WindowModes = { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.Windowed };
+
+    public static int WindowMode
+    {
+        get
+        {
+            var mode = (FullScreenMode)PlayerSettings.Instance.WindowMode.GetValueOrDefault((int)Screen.fullScreenMode);
+            if (mode == FullScreenMode.MaximizedWindow) mode = FullScreenMode.Windowed;
+            var i = Array.IndexOf(WindowModes, mode);
+            return i < 0 ? 0 : i;
+        }
+    }
+
+    public static void SetWindowMode(int index)
+    {
+        PlayerSettings.Instance.WindowMode = (int)WindowModes[Mathf.Clamp(index, 0, WindowModes.Length - 1)];
+        ApplyScreen();
+    }
+
+    private static Vector2Int[] resolutions;
+
+    /// <summary>The monitor's sizes, largest first, each once whatever its refresh rates.</summary>
+    public static Vector2Int[] Resolutions
+    {
+        get
+        {
+            if (resolutions == null || resolutions.Length == 0)
+            {
+                resolutions = Screen.resolutions
+                    .Select(r => new Vector2Int(r.width, r.height))
+                    .Distinct()
+                    .OrderByDescending(r => r.x * r.y)
+                    .ToArray();
+                if (resolutions.Length == 0) resolutions = new[] { new Vector2Int(Screen.currentResolution.width, Screen.currentResolution.height) };
+            }
+
+            return resolutions;
+        }
+    }
+
+    /// <summary>Index into <see cref="Resolutions"/>; 0, the largest, when nothing is chosen.</summary>
+    public static int ResolutionIndex
+    {
+        get
+        {
+            var s = PlayerSettings.Instance;
+            if (!s.ResolutionWidth.HasValue || !s.ResolutionHeight.HasValue) return 0;
+            var i = Array.IndexOf(Resolutions, new Vector2Int(s.ResolutionWidth.Value, s.ResolutionHeight.Value));
+            return i < 0 ? 0 : i;
+        }
+    }
+
+    public static void SetResolutionIndex(int index)
+    {
+        var r = Resolutions[Mathf.Clamp(index, 0, Resolutions.Length - 1)];
+        PlayerSettings.Instance.ResolutionWidth = r.x;
+        PlayerSettings.Instance.ResolutionHeight = r.y;
+        ApplyScreen();
+    }
+
+    /// <summary>
+    /// Window mode and size, once either has been chosen; until then the window stays as Unity
+    /// remembers it. Has no effect in the editor game view.
+    /// </summary>
+    public static void ApplyScreen()
+    {
+        var s = PlayerSettings.Instance;
+        if (!s.WindowMode.HasValue && !s.ResolutionWidth.HasValue) return;
+        var mode = (FullScreenMode)s.WindowMode.GetValueOrDefault((int)Screen.fullScreenMode);
+        var size = s.ResolutionWidth.HasValue && s.ResolutionHeight.HasValue
+            ? new Vector2Int(s.ResolutionWidth.Value, s.ResolutionHeight.Value)
+            : Resolutions[0];
+        if (Screen.width == size.x && Screen.height == size.y && Screen.fullScreenMode == mode) return;
+        Screen.SetResolution(size.x, size.y, mode);
+    }
+
+    /// <summary>Frame rate limits offered; 0 is no limit.</summary>
+    public static readonly int[] FrameRateCaps = { 0, 30, 60, 90, 120, 144, 165, 240 };
+
+    public static bool VSync => PlayerSettings.Instance.VSync.GetValueOrDefault(Defaults.VSync);
+
+    public static void SetVSync(bool value)
+    {
+        PlayerSettings.Instance.VSync = value;
+        ApplyFrameRate();
+    }
+
+    public static int FrameRateCap
+    {
+        get
+        {
+            var i = Array.IndexOf(FrameRateCaps, PlayerSettings.Instance.FrameRateCap.GetValueOrDefault(0));
+            return i < 0 ? 0 : i;
+        }
+    }
+
+    public static void SetFrameRateCap(int index)
+    {
+        PlayerSettings.Instance.FrameRateCap = FrameRateCaps[Mathf.Clamp(index, 0, FrameRateCaps.Length - 1)];
+        ApplyFrameRate();
+    }
+
+    /// <summary>
+    /// Vertical sync and the frame rate limit. Every quality level turns vertical sync on by itself,
+    /// so GameManager calls this again after each change of quality level (potato mode, focus).
+    /// Unity ignores the frame rate limit while vertical sync is on.
+    /// </summary>
+    public static void ApplyFrameRate()
+    {
+        QualitySettings.vSyncCount = VSync ? 1 : 0;
+        var cap = PlayerSettings.Instance.FrameRateCap.GetValueOrDefault(0);
+        Application.targetFrameRate = !VSync && cap > 0 ? cap : -1;
+    }
+
+    // ---- Master volume --------------------------------------------------------------------------
+
+    public static float MasterVolume => PlayerSettings.Instance.MasterVolume.GetValueOrDefault(Defaults.MasterVolume);
+
+    public static void SetMasterVolume(float value)
+    {
+        PlayerSettings.Instance.MasterVolume = value;
+        AudioListener.volume = value;
+    }
+
+    // ---- Camera ---------------------------------------------------------------------------------
+
+    public static float FreeCameraSpeed => PlayerSettings.Instance.FreeCameraSpeed.GetValueOrDefault(Defaults.FreeCameraSpeed);
+    public static float LookSensitivity => PlayerSettings.Instance.LookSensitivity.GetValueOrDefault(Defaults.Sensitivity);
+    public static float ZoomSensitivity => PlayerSettings.Instance.ZoomSensitivity.GetValueOrDefault(Defaults.Sensitivity);
+    public static bool InvertLook => PlayerSettings.Instance.InvertLook.GetValueOrDefault(Defaults.InvertLook);
+    public static bool InvertZoom => PlayerSettings.Instance.InvertZoom.GetValueOrDefault(Defaults.InvertZoom);
+
+    public static void SetFreeCameraSpeed(float value) { PlayerSettings.Instance.FreeCameraSpeed = value; ApplyCamera(); }
+    public static void SetLookSensitivity(float value) { PlayerSettings.Instance.LookSensitivity = value; ApplyCamera(); }
+    public static void SetZoomSensitivity(float value) { PlayerSettings.Instance.ZoomSensitivity = value; ApplyCamera(); }
+    public static void SetInvertLook(bool value) { PlayerSettings.Instance.InvertLook = value; ApplyCamera(); }
+    public static void SetInvertZoom(bool value) { PlayerSettings.Instance.InvertZoom = value; ApplyCamera(); }
+
+    private static void ApplyCamera()
+    {
+        CameraSettings.FreeCameraSpeed = FreeCameraSpeed;
+        CameraSettings.LookSensitivity = LookSensitivity;
+        CameraSettings.ZoomSensitivity = ZoomSensitivity;
+        CameraSettings.InvertLook = InvertLook;
+        CameraSettings.InvertZoom = InvertZoom;
+    }
+
+    // ---- Connection (applies on reload) ---------------------------------------------------------
+
+    public static string BotServer => PlayerSettings.Instance.RavenBotServer ?? string.Empty;
+
+    /// <summary>Empty puts the default back.</summary>
+    public static void SetBotServer(string value)
+    {
+        value = (value ?? string.Empty).Trim();
+        PlayerSettings.Instance.RavenBotServer = value.Length == 0 ? Defaults.BotServer : value;
+    }
+
+    public static bool LocalBot => !PlayerSettings.Instance.LocalBotServerDisabled.GetValueOrDefault(false);
+    public static void SetLocalBot(bool value) => PlayerSettings.Instance.LocalBotServerDisabled = !value;
+
+    public static int LocalBotPort => PlayerSettings.Instance.LocalBotPort.GetValueOrDefault(Defaults.LocalBotPort);
+    public static void SetLocalBotPort(int value) => PlayerSettings.Instance.LocalBotPort = Mathf.Clamp(value, 1, 65535);
+
+    public static bool QueryEngine => PlayerSettings.Instance.QueryEngineEnabled.GetValueOrDefault(Defaults.QueryEngine);
+    public static void SetQueryEngine(bool value) => PlayerSettings.Instance.QueryEngineEnabled = value;
+
+    public static string QueryEngineAddress => PlayerSettings.Instance.QueryEngineApiPrefix ?? Defaults.QueryEngineAddress;
+
+    public static void SetQueryEngineAddress(string value)
+    {
+        value = (value ?? string.Empty).Trim();
+        PlayerSettings.Instance.QueryEngineApiPrefix = value.Length == 0 ? Defaults.QueryEngineAddress : value;
+    }
+
+    // ---- Exp multiplier announcements ------------------------------------------------------------
+
+    /// <summary>The times the bot can warn at, in seconds left, matching the settings choices.</summary>
+    public static readonly float[] ExpAnnouncementOptions = { 600f, 300f, 180f, 60f, 30f, 0.3f };
+
+    public static bool ExpAnnouncement(int index)
+    {
+        var times = PlayerSettings.Instance.ExpMultiplierAnnouncements ?? TwitchEventManager.AnnouncementTimersSeconds;
+        var t = ExpAnnouncementOptions[index];
+        return times.Any(x => Mathf.Abs(x - t) < 0.01f);
+    }
+
+    public static void SetExpAnnouncement(int index, bool on)
+    {
+        var list = (PlayerSettings.Instance.ExpMultiplierAnnouncements ?? TwitchEventManager.AnnouncementTimersSeconds).ToList();
+        var t = ExpAnnouncementOptions[index];
+        list.RemoveAll(x => Mathf.Abs(x - t) < 0.01f);
+        if (on) list.Add(t);
+        // a new array, sorted from the most time left: the announcer walks it in that order
+        PlayerSettings.Instance.ExpMultiplierAnnouncements = list.OrderByDescending(x => x).ToArray();
+        ApplyExpAnnouncements();
+    }
+
+    private static void ApplyExpAnnouncements()
+    {
+        var times = PlayerSettings.Instance.ExpMultiplierAnnouncements;
+        if (times != null) TwitchEventManager.AnnouncementTimersSeconds = times.OrderByDescending(x => x).ToArray();
     }
 
     // ---- Sound ----------------------------------------------------------------------------------

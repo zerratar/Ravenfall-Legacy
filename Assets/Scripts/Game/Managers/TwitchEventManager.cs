@@ -64,20 +64,22 @@ public class TwitchEventManager : MonoBehaviour
         var timeLeft = CurrentBoost.Duration - CurrentBoost.Elapsed;
         var timeLeftSeconds = (float)timeLeft.TotalSeconds;
 
+        // Every warning time already passed counts as done, with one message between them: a boost
+        // that arrived with 50 seconds left used to send the 5, 3 and 1 minute warnings on three
+        // frames in a row, each saying 50 seconds.
+        var due = false;
         for (var i = 0; i < AnnouncementTimersSeconds.Length; i++)
         {
-            if (announced[i]) // this has already been announced. Continue.
+            if (!announced[i] && timeLeftSeconds <= AnnouncementTimersSeconds[i])
             {
-                continue;
-            }
-
-            var time = AnnouncementTimersSeconds[i];
-            if (timeLeftSeconds <= time)
-            {
-                AnnounceExpMultiplierEnding(timeLeftSeconds);
                 announced[i] = true;
-                break;
+                due = true;
             }
+        }
+
+        if (due)
+        {
+            AnnounceExpMultiplierEnding(timeLeftSeconds);
         }
     }
 

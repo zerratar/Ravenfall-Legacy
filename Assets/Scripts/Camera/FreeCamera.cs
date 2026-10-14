@@ -53,6 +53,13 @@ public class FreeCamera : MonoBehaviour
             return;
         }
 
+        // WASD, Q and E, the digits and the keypad belong to a text field while it has the keyboard
+        if (Keybinds.IsTyping)
+        {
+            lastMousePosition = Input.mousePosition;
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.KeypadPlus))
         {
             moveSpeedModifier += moveSpeedModifierDelta;
@@ -91,7 +98,9 @@ public class FreeCamera : MonoBehaviour
          */
         {
             var mouseDeltaPosition = newMousePosition - lastMousePosition;
-            mouseDeltaPosition = new Vector3(-mouseDeltaPosition.y * lookSpeed * mouseSpeed, mouseDeltaPosition.x * lookSpeed * mouseSpeed, 0);
+            var look = lookSpeed * mouseSpeed * CameraSettings.LookSensitivity;
+            var pitch = CameraSettings.InvertLook ? mouseDeltaPosition.y : -mouseDeltaPosition.y;
+            mouseDeltaPosition = new Vector3(pitch * look, mouseDeltaPosition.x * look, 0);
             mouseDeltaPosition = new Vector3(transform.eulerAngles.x + mouseDeltaPosition.x, transform.eulerAngles.y + mouseDeltaPosition.y, 0);
             transform.eulerAngles = mouseDeltaPosition;
         }
@@ -197,9 +206,13 @@ public class FreeCamera : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// The base speed from the settings, or the camera's own, plus the keypad adjustment. Never below
+    /// 1: keypad minus had no floor, so enough presses stopped the camera and then flew it backwards.
+    /// </summary>
     private float GetMoveSpeed()
     {
-        return this.moveSpeed + moveSpeedModifier;
+        return Mathf.Max(1f, CameraSettings.FreeCameraSpeed.GetValueOrDefault(this.moveSpeed) + moveSpeedModifier);
     }
 
     private bool GotoStoredPosition()

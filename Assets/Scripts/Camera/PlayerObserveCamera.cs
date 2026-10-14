@@ -40,7 +40,7 @@ public class PlayerObserveCamera : MonoBehaviour
             return;
         }
 
-        if (CanControlPlayer && Input.GetKeyUp(KeyCode.F3))
+        if (CanControlPlayer && Keybinds.Pressed(Keybinds.Action.ControlPlayer))
         {
             player.ToggleControl();
             if (player.Controlled)

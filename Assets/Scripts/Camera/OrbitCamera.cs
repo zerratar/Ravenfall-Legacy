@@ -51,27 +51,27 @@ public class OrbitCamera : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKey(KeyCode.DownArrow))
+        if (ArrowHeld(KeyCode.DownArrow))
         {
             var newAngle = Mathf.Clamp(orbitAngles.x + (GameTime.deltaTime * orbitChangeSpeed), MinAngle, MaxAngle);
             orbitAngles = new Vector2(newAngle, orbitAngles.y);
         }
-        if (Input.GetKey(KeyCode.UpArrow))
+        if (ArrowHeld(KeyCode.UpArrow))
         {
             var newAngle = Mathf.Clamp(orbitAngles.x + (GameTime.deltaTime * -orbitChangeSpeed), MinAngle, MaxAngle);
             orbitAngles = new Vector2(newAngle, orbitAngles.y);
         }
-        if (Input.GetKey(KeyCode.LeftArrow))
+        if (ArrowHeld(KeyCode.LeftArrow))
         {
             orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * -rotateChangeSpeed));
         }
-        if (Input.GetKey(KeyCode.RightArrow))
+        if (ArrowHeld(KeyCode.RightArrow))
         {
             orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * rotateChangeSpeed));
         }
 
         // Scrolling over a HUD window scrolls the window, not the camera.
-        var scrollValue = Shinobytes.UI.DraggableWindow.IsPointerOverWindow ? 0f : Input.mouseScrollDelta.y * GameTime.deltaTime * zoomChangeSpeed;
+        var scrollValue = Shinobytes.UI.DraggableWindow.IsPointerOverWindow ? 0f : CameraSettings.ZoomStep(zoomChangeSpeed);
         
         Distance = Mathf.Clamp(Distance + scrollValue, MinZoom, MaxZoom);
     }
@@ -121,4 +121,7 @@ public class OrbitCamera : MonoBehaviour
             focusPoint = targetPoint;
         }
     }
+
+    /// <summary>Arrow keys move the caret while a text field has the keyboard, not the camera.</summary>
+    private static bool ArrowHeld(KeyCode key) => !Keybinds.IsTyping && Input.GetKey(key);
 }

@@ -493,3 +493,158 @@
     color: var(--rf-accent-bright);
     background-color: var(--rf-accent-wash);
 }
+
+/* ---- Text fields ---- */
+
+.rf-settings-field {
+    width: 320px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.rf-settings-field.rf-settings-field--short {
+    width: 120px;
+}
+
+.rf-settings-field > .unity-text-field__input,
+.rf-settings-field .unity-base-text-field__input {
+    height: 34px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 0;
+    padding-bottom: 0;
+    -unity-text-align: middle-left;
+    font-size: 15px;
+    color: var(--rf-text);
+    background-color: var(--rf-bar-track);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-settings-field:focus > .unity-text-field__input,
+.rf-settings-field:focus .unity-base-text-field__input {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+/* ---- Chips: several choices, each on or off ---- */
+
+.rf-chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 600px;
+}
+
+.rf-settings .rf-chip {
+    height: 30px;
+    margin-left: 4px;
+    margin-right: 0;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    background-color: var(--rf-bar-track);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    cursor: link;
+}
+
+.rf-settings .rf-chip:hover {
+    color: var(--rf-text);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-settings .rf-chip.rf-chip--on {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+/* ---- Key caps ---- */
+
+.rf-settings .rf-keycap {
+    min-width: 150px;
+    height: 36px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    font-size: 15px;
+    -unity-font-style: bold;
+    color: var(--rf-text);
+    background-color: var(--rf-surface-raised);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 3px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    cursor: link;
+}
+
+.rf-settings .rf-keycap:hover {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-settings .rf-keycap.rf-keycap--waiting {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+/* the text inside the field brings its own margins, which cut the bottom of the letters off */
+.rf-settings-field .unity-text-element {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}

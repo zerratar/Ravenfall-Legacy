@@ -96,7 +96,7 @@ public class HUDController : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.F1))
+        if (Keybinds.Pressed(Keybinds.Action.ToggleHud))
         {
             CycleState();
         }

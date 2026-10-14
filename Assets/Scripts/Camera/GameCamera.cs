@@ -125,20 +125,17 @@ public class GameCamera : MonoBehaviour
             }
 
 
-            var leftCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-
-            if (//state != GameCameraType.Free &&
-                leftCtrl && Input.GetKey(KeyCode.Tab))
+            if (Keybinds.Held(Keybinds.Action.FreeCamera))
             {
                 EnableFreeCamera();
                 return;
             }
-            else if (leftCtrl && Input.GetKeyDown(KeyCode.I))
+            else if (Keybinds.Pressed(Keybinds.Action.NextIsland))
             {
                 ObserveNextIsland();
                 return;
             }
-            else if (canObserveNextPlayer && Input.GetKeyDown(KeyCode.Tab))
+            else if (canObserveNextPlayer && Keybinds.Pressed(Keybinds.Action.NextPlayer))
             {
                 ObserveNextPlayer();
                 return;
