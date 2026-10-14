@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      The connection warnings, stacked in the bottom left corner where nothing else sits: the game's
+      own link to the server (lost, or the client out of date) above the chat link (the bot offline
+      or connecting, or not in the channel). Each shows only while something is wrong;
+      ConnectionStatusView picks icon, text and colour, and the hover note says what to do.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-connection.uss" />
+
+    <engine:VisualElement name="conn-layer" class="rf-conn-layer" picking-mode="Ignore">
+        <engine:VisualElement class="rf-conn-stack" picking-mode="Ignore">
+
+            <engine:VisualElement name="conn-server" class="rf-conn-server" picking-mode="Ignore" style="display: none;">
+                <engine:Label name="conn-server-icon" class="rf-icon rf-conn-server__icon" picking-mode="Ignore" />
+                <engine:VisualElement class="rf-conn-server__body" picking-mode="Ignore">
+                    <engine:Label name="conn-server-title" class="rf-conn-server__title" picking-mode="Ignore" />
+                    <engine:Label name="conn-server-note" class="rf-conn-server__note" picking-mode="Ignore" />
+                </engine:VisualElement>
+            </engine:VisualElement>
+
+            <engine:VisualElement name="conn-root" class="rf-conn" picking-mode="Ignore" style="display: none;">
+                <engine:VisualElement name="conn-chip" class="rf-conn__chip">
+                    <engine:VisualElement class="rf-conn__badge" picking-mode="Ignore">
+                        <engine:Label name="conn-icon" class="rf-icon rf-conn__icon" picking-mode="Ignore" />
+                        <engine:VisualElement class="rf-conn__dot" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:Label name="conn-text" class="rf-conn__text" picking-mode="Ignore" />
+                </engine:VisualElement>
+            </engine:VisualElement>
+
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

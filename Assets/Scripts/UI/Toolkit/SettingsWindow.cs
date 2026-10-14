@@ -157,6 +157,16 @@ namespace Shinobytes.UI
             }
         }
 
+        /// <summary>The Bot tab, with the bot messages and the bot connection.</summary>
+        public const int BotTab = 4;
+
+        /// <summary>Opens on a given tab, such as <see cref="BotTab"/>.</summary>
+        public void OpenTab(int tab, Action closed = null)
+        {
+            activeTab = Mathf.Clamp(tab, 0, tabs.Count - 1);
+            Open(closed);
+        }
+
         /// <param name="closed">Called when the window closes, for the menu to come back.</param>
         public void Open(Action closed = null)
         {

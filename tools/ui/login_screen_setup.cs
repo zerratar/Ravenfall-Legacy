@@ -15,8 +15,14 @@ var uxml = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.Visu
 if (uxml == null) { UnityEngine.Debug.Log("LOGINUI|LoginScreen.uxml not imported yet"); return null; }
 
 var parent = sibling.transform.parent;
-var existing = parent != null ? parent.Find("UI Toolkit Login") : null;
-var go = existing != null ? existing.gameObject : null;
+// the toolkit objects sit at the scene root, so look there too, and keep only the first
+UnityEngine.GameObject go = null;
+foreach (var d in UnityEngine.Object.FindObjectsByType<UnityEngine.UIElements.UIDocument>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.InstanceID))
+{
+    if (d.name != "UI Toolkit Login") continue;
+    if (go == null) go = d.gameObject;
+    else UnityEditor.Undo.DestroyObjectImmediate(d.gameObject);
+}
 var created = go == null;
 if (created)
 {

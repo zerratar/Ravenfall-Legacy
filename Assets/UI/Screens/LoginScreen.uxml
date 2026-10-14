@@ -72,8 +72,9 @@
         </engine:VisualElement>
 
         <engine:VisualElement class="rf-login__footer" picking-mode="Ignore">
-            <engine:Label name="login-version" class="rf-login__version" picking-mode="Ignore" />
+            <!-- Everything on the right: the bottom left is where the chat connection warning shows. -->
             <engine:VisualElement class="rf-login__spacer" picking-mode="Ignore" />
+            <engine:Label name="login-version" class="rf-login__version" picking-mode="Ignore" />
             <engine:Button name="login-language" class="rf-login__chip" focusable="false">
                 <engine:Label text="&#xf0ac;" class="rf-icon rf-login__chip-icon" picking-mode="Ignore" />
                 <engine:Label name="login-language-text" class="rf-login__chip-text" picking-mode="Ignore" />

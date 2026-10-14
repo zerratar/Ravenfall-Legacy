@@ -239,6 +239,12 @@ namespace Shinobytes.UI
             }
 
             bound = true;
+
+            // A new tree starts shown. The hidden states are only written when they change, so after
+            // a rebuild (a change of language at the login screen) the list came up before login.
+            var game = GameManager.Instance;
+            hiddenBeforeLogin = !(game && game.IsLoaded && game.RavenNest != null && game.RavenNest.Authenticated);
+            ApplyVisible();
         }
 
         private void OnCollapseClicked()

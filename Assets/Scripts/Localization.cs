@@ -815,6 +815,19 @@ public static class Localization
     public static string UI_LOGIN_VERSION = "Ravenfall v{0}";
     public static string UI_LOGIN_QUIT = "Quit";
 
+    // Chat connection warning
+    public static string UI_CONN_BOT_OFFLINE = "Bot offline";
+    public static string UI_CONN_BOT_CONNECTING = "Connecting to the bot";
+    public static string UI_CONN_NOT_IN_CHAT = "Not in your chat";
+    public static string UI_CONN_BOT_OFFLINE_NOTE = "The game cannot reach the bot that reads your Twitch chat, so chat commands do nothing for now. It keeps trying on its own. Click to check the bot connection in the settings.";
+    public static string UI_CONN_BOT_CONNECTING_NOTE = "Reaching the bot that reads your Twitch chat. This usually takes a few seconds.";
+    public static string UI_CONN_NOT_IN_CHAT_SIGN_IN_NOTE = "The bot is connected, and joins your Twitch channel once you are signed in.";
+    public static string UI_CONN_NOT_IN_CHAT_NOTE = "The bot is connected but has not joined your Twitch channel, so it cannot see chat. It usually joins within a few seconds. Click to check the bot settings if it does not.";
+    public static string UI_CONN_SERVER_LOST = "Connection to the server lost";
+    public static string UI_CONN_SERVER_LOST_NOTE = "Keep the game running. It reconnects on its own and nothing is lost, but restarting now could lose progress.";
+    public static string UI_CONN_OUTDATED = "This version of Ravenfall is out of date";
+    public static string UI_CONN_OUTDATED_NOTE = "Restart the game to update it.";
+
     public static string UI_SETTINGS_SECTION_QUALITY = "QUALITY";
     public static string UI_SETTINGS_SECTION_DAYNIGHT = "DAY AND NIGHT";
     public static string UI_SETTINGS_SECTION_PERFORMANCE = "PERFORMANCE";

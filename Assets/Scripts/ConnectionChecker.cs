@@ -13,7 +13,9 @@ public class ConnectionChecker : MonoBehaviour
     void Start()
     {
         if (!Graphics) return;
-        SetVisibility(false);
+        // straight away: SetVisibility waits a quarter second between changes, counted from zero,
+        // so the first hide was skipped and a banner saved as shown stayed up until login
+        Graphics.SetActive(false);
     }
 
     // Update is called once per frame

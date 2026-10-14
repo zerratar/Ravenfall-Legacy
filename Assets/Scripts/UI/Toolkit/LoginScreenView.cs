@@ -205,49 +205,56 @@ namespace Shinobytes.UI
             username.SetValueWithoutNotify(cachedUsername);
             password.SetValueWithoutNotify(cachedPassword);
 
-            // Enter in the name moves on to the password; Enter in the password signs in
-            username.RegisterCallback<KeyDownEvent>(evt =>
+            // Hooked once per tree. A bind that got this far and then failed used to hook
+            // everything again on the retry, so each click ran twice and the toggles flipped back.
+            if (screen.userData != (object)this)
             {
-                if (!IsEnter(evt)) return;
-                if (string.IsNullOrEmpty(password.value)) password.Focus(); else Submit();
-                evt.StopPropagation();
-            }, TrickleDown.TrickleDown);
-            password.RegisterCallback<KeyDownEvent>(evt =>
-            {
-                if (!IsEnter(evt)) return;
-                Submit();
-                evt.StopPropagation();
-            }, TrickleDown.TrickleDown);
+                screen.userData = this;
 
-            // the row around each field draws the frame, so it lights up on the field's focus
-            foreach (var field in new[] { username, password })
-            {
-                var row = field.parent;
-                field.RegisterCallback<FocusInEvent>(_ => row.AddToClassList("rf-login__input--focus"));
-                field.RegisterCallback<FocusOutEvent>(_ => row.RemoveFromClassList("rf-login__input--focus"));
+                // Enter in the name moves on to the password; Enter in the password signs in
+                username.RegisterCallback<KeyDownEvent>(evt =>
+                {
+                    if (!IsEnter(evt)) return;
+                    if (string.IsNullOrEmpty(password.value)) password.Focus(); else Submit();
+                    evt.StopPropagation();
+                }, TrickleDown.TrickleDown);
+                password.RegisterCallback<KeyDownEvent>(evt =>
+                {
+                    if (!IsEnter(evt)) return;
+                    Submit();
+                    evt.StopPropagation();
+                }, TrickleDown.TrickleDown);
+
+                // the row around each field draws the frame, so it lights up on the field's focus
+                foreach (var field in new[] { username, password })
+                {
+                    var row = field.parent;
+                    field.RegisterCallback<FocusInEvent>(_ => row.AddToClassList("rf-login__input--focus"));
+                    field.RegisterCallback<FocusOutEvent>(_ => row.RemoveFromClassList("rf-login__input--focus"));
+                }
+
+                // typing again clears an old complaint
+                username.RegisterValueChangedCallback(_ => ClearMissing());
+                password.RegisterValueChangedCallback(_ => ClearMissing());
+
+                submit.clicked += Submit;
+                if (reveal != null) reveal.clicked += ToggleReveal;
+                if (rememberBox != null)
+                {
+                    rememberBox.RegisterCallback<UnityEngine.UIElements.ClickEvent>(_ => { remember = !remember; ApplyRemember(); });
+                }
+
+                var forgot = root.Q<Button>("login-forgot");
+                if (forgot != null) forgot.clicked += () => Application.OpenURL(PasswordPage);
+                var setPassword = root.Q<Button>("login-set-password");
+                if (setPassword != null) setPassword.clicked += () => Application.OpenURL(PasswordPage);
+                var quit = root.Q<Button>("login-quit");
+                if (quit != null) quit.clicked += () => Quit();
+                if (language != null) language.clicked += NextLanguage;
             }
-
-            // typing again clears an old complaint
-            username.RegisterValueChangedCallback(_ => ClearMissing());
-            password.RegisterValueChangedCallback(_ => ClearMissing());
-
-            submit.clicked += Submit;
-            if (reveal != null) reveal.clicked += ToggleReveal;
-            if (rememberBox != null)
-            {
-                rememberBox.RegisterCallback<UnityEngine.UIElements.ClickEvent>(_ => { remember = !remember; ApplyRemember(); });
-            }
-
-            var forgot = root.Q<Button>("login-forgot");
-            if (forgot != null) forgot.clicked += () => Application.OpenURL(PasswordPage);
-            var setPassword = root.Q<Button>("login-set-password");
-            if (setPassword != null) setPassword.clicked += () => Application.OpenURL(PasswordPage);
-            var quit = root.Q<Button>("login-quit");
-            if (quit != null) quit.clicked += () => Quit();
-            if (language != null) language.clicked += NextLanguage;
 
             var version = root.Q<Label>("login-version");
-            if (version != null) version.text = string.Format(Localization.UI_LOGIN_VERSION, Ravenfall.Version);
+            if (version != null) version.text = string.Format(Localization.UI_LOGIN_VERSION, SafeVersion());
 
             bound = true;
             ApplyTexts();
@@ -363,6 +370,12 @@ namespace Shinobytes.UI
             var gm = GameManager.Instance;
             if (gm != null) gm.SaveStateAndShutdownGame(false);
             else Application.Quit();
+        }
+
+        private static string SafeVersion()
+        {
+            try { return Ravenfall.Version; }
+            catch { return Application.version; }
         }
 
         private static bool IsEnter(KeyDownEvent evt)
