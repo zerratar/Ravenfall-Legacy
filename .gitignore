@@ -69,6 +69,8 @@ Build Temp/*
 Assets/Editor Default Resources/*
 Assets/ErbGameArt/*
 Assets/Fonts/Font Awesome*
+# Font Awesome 7 Pro, licensed: never in the public repository
+Assets/Fonts/FontAwesome7/
 Assets/Fonts/FOT-*
 Assets/MT Assets/*
 Assets/Tayx/*
@@ -182,3 +184,6 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Font Awesome 7 metadata (icons.json and friends), local reference only: over 150 MB
+tools/fontawesome7-metadata/

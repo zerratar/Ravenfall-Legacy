@@ -25,7 +25,7 @@
 }
 
 .rf-icon {
-    -unity-font-definition: url("project://database/Assets/Fonts/Font%20Awesome%205%20Pro-Solid-900.otf?fileID=12800000&guid=c6721fa5d6acc8846bd75dd92b372278&type=3#Font Awesome 5 Pro-Solid-900");
+    -unity-font-definition: url("project://database/Assets/Fonts/FontAwesome7/Font%20Awesome%207%20Pro-Solid-900.otf");
     -unity-font-style: normal;
     -unity-text-align: middle-center;
 }

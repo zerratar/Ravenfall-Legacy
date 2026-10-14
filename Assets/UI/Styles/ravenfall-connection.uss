@@ -7,7 +7,7 @@
 
 /* Font Awesome's brand icons live in their own font. */
 .rf-icon.rf-icon--brand {
-    -unity-font-definition: url("project://database/Assets/Fonts/Font%20Awesome%205%20Brands-Regular-400.otf?fileID=12800000&guid=5bb100e4738f7924397e35bcc55afb86&type=3#Font Awesome 5 Brands-Regular-400");
+    -unity-font-definition: url("project://database/Assets/Fonts/FontAwesome7/Font%20Awesome%207%20Brands-Regular-400.otf");
 }
 
 .rf-conn-layer {
