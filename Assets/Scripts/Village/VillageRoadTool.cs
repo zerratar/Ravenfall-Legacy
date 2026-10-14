@@ -9,16 +9,16 @@ using UnityEngine;
 /// <remarks>
 /// <para>
 /// <b>Drawing.</b> Pick a road type in the tray, then click to place points; the road curves
-/// through them. Points snap to the 1 m grid, Alt places them freely, Shift keeps the direction
-/// to 15 degree steps. Backspace takes the last point back, Enter, a right click or a click on the
-/// last point finishes, Esc stops. The road is drawn as it will look, red when the village cannot
-/// pay for it.
+/// through them. Points snap to the 1 m grid and onto the points of other roads close by, so roads
+/// join; Alt places them freely, Shift keeps the direction to 15 degree steps. Backspace takes the
+/// last point back, Enter, a right click or a click on the last point finishes, Esc stops. The
+/// road panel shows the length and cost as it grows, red when the village cannot pay.
 /// </para>
 /// <para>
 /// <b>Editing.</b> Click a road to select it. Drag a point to move it, Ctrl click the road to add
-/// a point, right click a point to take it away, Delete removes the road. Every change is saved
-/// when the mouse is let go. A road under a building is reached by clicking the building again:
-/// the second click goes to the road beneath, so no road is ever stuck where it cannot be picked.
+/// a point, right click a point to take it away, pick another type in the panel. Nothing is spent
+/// until Apply: the panel shows what the change costs, or gives back, first. Cancel or Esc puts the
+/// road back as it was. A road under a building is reached by clicking the building again.
 /// </para>
 /// <para>
 /// Roads through a building or the town hall are drawn red while build mode is on. They are never
@@ -29,6 +29,7 @@ public class VillageRoadTool : MonoBehaviour
 {
     private const float HandlePixels = 16f;
     private const float AngleStep = 15f;
+    private const float JoinDistance = 1.2f;
     private const int HandleRingPoints = 24;
 
     private VillageBuildMode mode;
@@ -40,10 +41,10 @@ public class VillageRoadTool : MonoBehaviour
     private Vector2 cursor;
     private bool hasCursor;
 
-    // editing
+    // editing: the selected road's points and type as they are being changed, and as saved
+    private List<Vector2> savedPoints;
+    private int savedType;
     private int dragIndex = -1;
-    private List<Vector2> dragBefore;
-    private bool dragMoved;
 
     private readonly List<LineRenderer> handles = new List<LineRenderer>();
     private Material handleMaterial;
@@ -54,9 +55,18 @@ public class VillageRoadTool : MonoBehaviour
     public bool Busy { get; private set; }
     public bool Drawing => DrawType.HasValue;
 
-    /// <summary>The road being drawn: its length and what it costs.</summary>
+    /// <summary>The road being drawn: its length so far and whether the village can pay for it.</summary>
     public float DrawLength { get; private set; }
     public bool DrawAffordable { get; private set; } = true;
+    public int DrawPointCount => drawPoints.Count;
+
+    /// <summary>The selected road has changes that are not saved yet.</summary>
+    public bool Dirty => Selected != null && (Selected.Type != savedType || !SamePoints(Selected.Points, savedPoints));
+
+    /// <summary>The selected road's length as saved, and as it would be after Apply.</summary>
+    public float SavedLength => savedPoints != null ? VillageRoads.PaidLength(savedPoints) : 0f;
+    public float EditLength => Selected != null ? VillageRoads.PaidLength(Selected.Points) : 0f;
+    public int SavedType => savedType;
 
     public event Action Changed;
     public event Action<string> Failed;
@@ -71,7 +81,7 @@ public class VillageRoadTool : MonoBehaviour
         if (mode) mode.Changed += () => { if (mode.IsActive && !mode.IsMoving) RefreshFlags(true); };
     }
 
-    // ---- Called by build mode and its view --------------------------------------------------------
+    // ---- Drawing ---------------------------------------------------------------------------------
 
     public void StartDrawing(int type)
     {
@@ -96,26 +106,62 @@ public class VillageRoadTool : MonoBehaviour
         Changed?.Invoke();
     }
 
+    /// <summary>Another type for the road being drawn; the points stay.</summary>
+    public void SetDrawType(int type)
+    {
+        var info = Roads != null ? Roads.TypeOf(type) : null;
+        if (!Drawing || info == null || !info.Unlocked || DrawType == type) return;
+        DrawType = type;
+        UpdatePreview();
+    }
+
+    /// <summary>Takes the last placed point back.</summary>
+    public void UndoPoint()
+    {
+        if (!Drawing || drawPoints.Count == 0) return;
+        drawPoints.RemoveAt(drawPoints.Count - 1);
+        UpdatePreview();
+    }
+
+    /// <summary>Builds the road drawn so far, from the panel's Finish.</summary>
+    public void Finish()
+    {
+        if (!Drawing || Busy) return;
+        if (drawPoints.Count >= 2) _ = FinishDrawing();
+        else Failed?.Invoke(Localization.UI_ROAD_TWO_POINTS);
+    }
+
+    // ---- Editing ---------------------------------------------------------------------------------
+
     public void Select(VillageRoads.Road road)
     {
         if (road == null || Busy) return;
         CancelDrawing();
+        // the same road again keeps its changes, and what it was before them: what is saved is
+        // only ever what the server has
+        if (Selected == road) return;
+        if (Selected != null) Revert();
         Selected = road;
+        savedPoints = new List<Vector2>(road.Points);
+        savedType = road.Type;
         DrawHandles();
         Changed?.Invoke();
     }
 
+    /// <summary>Lets go of the road. Changes not applied are put back.</summary>
     public void Deselect()
     {
         if (Selected == null) return;
+        Revert();
         Selected = null;
+        savedPoints = null;
         dragIndex = -1;
         HideHandles();
         Changed?.Invoke();
     }
 
-    /// <summary>Gives the selected road another type, paying or getting back the difference.</summary>
-    public async void SetType(int type)
+    /// <summary>Another type for the selected road, shown at once and saved with Apply.</summary>
+    public void SetType(int type)
     {
         var road = Selected;
         var roads = Roads;
@@ -123,7 +169,53 @@ public class VillageRoadTool : MonoBehaviour
         var info = roads.TypeOf(type);
         if (info == null || !info.Unlocked) return;
 
-        await Save(road, type, road.Points, new List<Vector2>(road.Points), road.Type);
+        road.Type = type;
+        roads.Rebuild(road);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Puts the selected road back as it is saved.</summary>
+    public void CancelEdit()
+    {
+        if (!Dirty) return;
+        Revert();
+        DrawHandles();
+        Changed?.Invoke();
+    }
+
+    /// <summary>Saves the changes: the server charges the difference or gives it back.</summary>
+    public async void Apply()
+    {
+        var road = Selected;
+        var roads = Roads;
+        if (road == null || roads == null || Busy || !Dirty) return;
+        if (!EditAffordable())
+        {
+            Failed?.Invoke(ErrorText("resources"));
+            return;
+        }
+
+        Busy = true;
+        Changed?.Invoke();
+        try
+        {
+            var error = await roads.ChangeAsync(road, road.Type, new List<Vector2>(road.Points), savedPoints, savedType);
+            if (error != null)
+            {
+                Failed?.Invoke(ErrorText(error));
+            }
+
+            // saved, or put back by ChangeAsync on failure: either way, this is now the saved road
+            savedPoints = new List<Vector2>(road.Points);
+            savedType = road.Type;
+            if (Selected == road) DrawHandles();
+            RefreshFlags(true);
+        }
+        finally
+        {
+            Busy = false;
+            Changed?.Invoke();
+        }
     }
 
     public async void RemoveSelected()
@@ -138,7 +230,12 @@ public class VillageRoadTool : MonoBehaviour
         {
             var error = await roads.RemoveAsync(road);
             if (error != null) Failed?.Invoke(ErrorText(error));
-            else Deselect();
+            else
+            {
+                Selected = null;
+                savedPoints = null;
+                HideHandles();
+            }
         }
         finally
         {
@@ -146,6 +243,42 @@ public class VillageRoadTool : MonoBehaviour
             Changed?.Invoke();
         }
     }
+
+    /// <summary>
+    /// What Apply would cost: positive amounts to pay, negative ones given back. Priced as the
+    /// server does: the road as it would be, against the road as it is.
+    /// </summary>
+    public (long wood, long ore, long fish, long wheat, long coins) EditCost()
+    {
+        var roads = Roads;
+        if (roads == null || Selected == null) return default;
+        var after = roads.Cost(Selected.Type, EditLength);
+        var before = roads.Cost(savedType, SavedLength);
+        return (after.wood - before.wood, after.ore - before.ore, after.fish - before.fish, after.wheat - before.wheat, after.coins - before.coins);
+    }
+
+    public bool EditAffordable()
+    {
+        var hall = gameManager.Village ? gameManager.Village.TownHall : null;
+        if (!hall) return false;
+        var c = EditCost();
+        return hall.Wood >= c.wood && hall.Ore >= c.ore && hall.Fish >= c.fish && hall.Wheat >= c.wheat && hall.Coins >= c.coins;
+    }
+
+    private void Revert()
+    {
+        var road = Selected;
+        var roads = Roads;
+        // while saving, the server's answer decides what the road is
+        if (road == null || roads == null || savedPoints == null || Busy) return;
+        if (road.Type == savedType && SamePoints(road.Points, savedPoints)) return;
+        road.Type = savedType;
+        road.Points = new List<Vector2>(savedPoints);
+        roads.Rebuild(road);
+        RefreshFlags(true);
+    }
+
+    // ---- Shared ----------------------------------------------------------------------------------
 
     /// <summary>The road under the mouse, nearest first, or null.</summary>
     public VillageRoads.Road RoadUnderMouse()
@@ -206,16 +339,12 @@ public class VillageRoadTool : MonoBehaviour
             return true;
         }
 
-        if (Input.GetKeyDown(KeyCode.Backspace) && drawPoints.Count > 0)
-        {
-            drawPoints.RemoveAt(drawPoints.Count - 1);
-            UpdatePreview();
-        }
+        if (Input.GetKeyDown(KeyCode.Backspace)) UndoPoint();
 
         hasCursor = mode.TryGetMousePoint(out var point);
         if (hasCursor)
         {
-            var next = Snap(new Vector2(point.x, point.z), drawPoints.Count > 0 ? drawPoints[drawPoints.Count - 1] : (Vector2?)null);
+            var next = Snap(new Vector2(point.x, point.z), drawPoints.Count > 0 ? drawPoints[drawPoints.Count - 1] : (Vector2?)null, null);
             if (next != cursor)
             {
                 cursor = next;
@@ -234,7 +363,6 @@ public class VillageRoadTool : MonoBehaviour
             {
                 drawPoints.Add(cursor);
                 UpdatePreview();
-                Changed?.Invoke();
             }
         }
 
@@ -251,7 +379,10 @@ public class VillageRoadTool : MonoBehaviour
     {
         var roads = Roads;
         if (roads == null || !DrawType.HasValue) return;
-        if (!DrawAffordable)
+
+        // the cursor's piece is part of the preview only: price what is placed
+        var length = VillageRoads.PaidLength(drawPoints);
+        if (!CanPay(roads.Cost(DrawType.Value, length)))
         {
             Failed?.Invoke(ErrorText("resources"));
             return;
@@ -289,49 +420,44 @@ public class VillageRoadTool : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             EscapeKey.Claim();
-            Deselect();
+            // the first Esc undoes the changes, the next lets go of the road
+            if (Dirty) CancelEdit();
+            else Deselect();
             return true;
         }
 
-        if (Input.GetKeyDown(KeyCode.Delete))
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
         {
-            RemoveSelected();
+            Apply();
             return true;
         }
-
-        var overUi = Shinobytes.UI.HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement();
 
         // dragging a point
         if (dragIndex >= 0)
         {
             if (mode.TryGetMousePoint(out var dragPoint))
             {
-                var snapped = Snap(new Vector2(dragPoint.x, dragPoint.z), null);
+                var snapped = Snap(new Vector2(dragPoint.x, dragPoint.z), null, road);
                 if (road.Points[dragIndex] != snapped)
                 {
                     road.Points[dragIndex] = snapped;
-                    dragMoved = true;
                     roads.Rebuild(road);
                     DrawHandles();
+                    Changed?.Invoke();
                 }
             }
 
-            if (!Input.GetMouseButton(0))
-            {
-                dragIndex = -1;
-                if (dragMoved) _ = Save(road, road.Type, road.Points, dragBefore, road.Type);
-            }
+            if (!Input.GetMouseButton(0)) dragIndex = -1;
             return true;
         }
 
+        var overUi = Shinobytes.UI.HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement();
         if (overUi) return false;
 
-        var handle = HandleUnderMouse(road);
+        var handle = HandleUnderMouse(road.Points);
         if (Input.GetMouseButtonDown(0) && handle >= 0)
         {
             dragIndex = handle;
-            dragBefore = new List<Vector2>(road.Points);
-            dragMoved = false;
             return true;
         }
 
@@ -343,24 +469,21 @@ public class VillageRoadTool : MonoBehaviour
                 return true;
             }
 
-            var before = new List<Vector2>(road.Points);
             road.Points.RemoveAt(handle);
             roads.Rebuild(road);
             DrawHandles();
-            _ = Save(road, road.Type, road.Points, before, road.Type);
+            Changed?.Invoke();
             return true;
         }
 
         var ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
         if (Input.GetMouseButtonDown(0) && ctrl && mode.TryGetMousePoint(out var insertPoint))
         {
-            var flat = Snap(new Vector2(insertPoint.x, insertPoint.z), null);
-            var at = InsertIndex(road.Points, flat);
-            var before = new List<Vector2>(road.Points);
-            road.Points.Insert(at, flat);
+            var flat = Snap(new Vector2(insertPoint.x, insertPoint.z), null, road);
+            road.Points.Insert(InsertIndex(road.Points, flat), flat);
             roads.Rebuild(road);
             DrawHandles();
-            _ = Save(road, road.Type, road.Points, before, road.Type);
+            Changed?.Invoke();
             return true;
         }
 
@@ -368,32 +491,19 @@ public class VillageRoadTool : MonoBehaviour
         return false;
     }
 
-    private async Task Save(VillageRoads.Road road, int type, IReadOnlyList<Vector2> points, IReadOnlyList<Vector2> before, int typeBefore)
-    {
-        var roads = Roads;
-        if (roads == null) return;
-        Busy = true;
-        Changed?.Invoke();
-        try
-        {
-            var error = await roads.ChangeAsync(road, type, new List<Vector2>(points), before, typeBefore);
-            if (error != null) Failed?.Invoke(ErrorText(error));
-            if (Selected == road) DrawHandles();
-            RefreshFlags(true);
-        }
-        finally
-        {
-            Busy = false;
-            Changed?.Invoke();
-        }
-    }
-
     // ---- Helpers -------------------------------------------------------------------------------
 
-    private static Vector2 Snap(Vector2 point, Vector2? from)
+    /// <summary>
+    /// The point the mouse means: onto a nearby point of another road first, so roads meet end to
+    /// end; else the 1 m grid, or free with Alt; Shift keeps the turn from <paramref name="from"/>
+    /// to 15 degree steps.
+    /// </summary>
+    private Vector2 Snap(Vector2 point, Vector2? from, VillageRoads.Road except)
     {
         var alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
         var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+        if (!alt && TryJoin(point, except, out var joined)) return joined;
 
         if (shift && from.HasValue)
         {
@@ -404,6 +514,46 @@ public class VillageRoadTool : MonoBehaviour
         }
 
         return alt ? point : new Vector2(Mathf.Round(point.x), Mathf.Round(point.y));
+    }
+
+    private bool TryJoin(Vector2 point, VillageRoads.Road except, out Vector2 joined)
+    {
+        joined = point;
+        var roads = Roads;
+        if (roads == null) return false;
+        var best = JoinDistance;
+        var found = false;
+        foreach (var road in roads.Roads)
+        {
+            if (road == except) continue;
+            foreach (var p in road.Points)
+            {
+                var d = Vector2.Distance(p, point);
+                if (d < best)
+                {
+                    best = d;
+                    joined = p;
+                    found = true;
+                }
+            }
+        }
+        return found;
+    }
+
+    private bool CanPay((long wood, long ore, long fish, long wheat, long coins) c)
+    {
+        var hall = gameManager.Village ? gameManager.Village.TownHall : null;
+        return hall && hall.Wood >= c.wood && hall.Ore >= c.ore && hall.Fish >= c.fish && hall.Wheat >= c.wheat && hall.Coins >= c.coins;
+    }
+
+    private static bool SamePoints(IReadOnlyList<Vector2> a, IReadOnlyList<Vector2> b)
+    {
+        if (a == null || b == null || a.Count != b.Count) return a == b;
+        for (var i = 0; i < a.Count; ++i)
+        {
+            if ((a[i] - b[i]).sqrMagnitude > 0.0001f) return false;
+        }
+        return true;
     }
 
     /// <summary>Where a new point goes: into the segment it lies closest to.</summary>
@@ -423,16 +573,16 @@ public class VillageRoadTool : MonoBehaviour
         return best;
     }
 
-    private int HandleUnderMouse(VillageRoads.Road road)
+    private int HandleUnderMouse(IReadOnlyList<Vector2> points)
     {
         var camera = Camera.main;
-        if (!camera || road == null) return -1;
         var roads = Roads;
+        if (!camera || points == null || roads == null) return -1;
         var best = -1;
         var bestDistance = HandlePixels;
-        for (var i = 0; i < road.Points.Count; ++i)
+        for (var i = 0; i < points.Count; ++i)
         {
-            var p = road.Points[i];
+            var p = points[i];
             var world = new Vector3(p.x, roads.GroundHeight(new Vector3(p.x, 0f, p.y)), p.y);
             var screen = camera.WorldToScreenPoint(world);
             if (screen.z < 0f) continue;
@@ -462,12 +612,10 @@ public class VillageRoadTool : MonoBehaviour
         preview.Type = DrawType.Value;
         preview.Points = points;
 
-        // what the placed points cost; the bit to the cursor is shown but not counted until placed
+        // what it would cost to finish here, the bit to the cursor included, so the number does not
+        // jump when the point is placed
         DrawLength = VillageRoads.PaidLength(points);
-        var cost = roads.Cost(DrawType.Value, DrawLength);
-        var hall = gameManager.Village.TownHall;
-        DrawAffordable = hall && hall.Wood >= cost.wood && hall.Ore >= cost.ore && hall.Fish >= cost.fish
-            && hall.Wheat >= cost.wheat && hall.Coins >= cost.coins;
+        DrawAffordable = CanPay(roads.Cost(DrawType.Value, DrawLength));
 
         if (points.Count >= 2)
         {

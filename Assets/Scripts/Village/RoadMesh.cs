@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,12 +12,14 @@ using UnityEngine;
 /// <see cref="Step"/> metres; each sample gets three vertices across the road (both edges and the
 /// middle) set on the terrain, so the road follows bumps rather than floating over or sinking into
 /// them. Texture coordinates run across the road from 0 to 1 and along it in road widths, so the
-/// surface tiles evenly whatever the length.
+/// surface tiles evenly whatever the length. Both ends are rounded, so two roads that meet at a
+/// point overlap in a clean circle rather than in two square corners.
 /// </remarks>
 public static class RoadMesh
 {
     public const float Step = 0.5f;
-    private const float Lift = 0.07f;
+    public const float Lift = 0.07f;
+    private const int CapSegments = 10;
 
     /// <summary>Points along the curve through <paramref name="points"/>, about <see cref="Step"/> apart.</summary>
     public static List<Vector2> Sample(IReadOnlyList<Vector2> points)
@@ -58,17 +60,19 @@ public static class RoadMesh
 
     /// <summary>
     /// The road's strip along <paramref name="samples"/>, <paramref name="width"/> wide, with
-    /// <paramref name="groundHeight"/> giving the terrain height under a point.
+    /// <paramref name="groundHeight"/> giving the terrain height under a point and
+    /// <paramref name="lift"/> how far above it the road lies.
     /// </summary>
-    public static void Build(Mesh mesh, IReadOnlyList<Vector2> samples, float width, Func<Vector3, float> groundHeight)
+    public static void Build(Mesh mesh, IReadOnlyList<Vector2> samples, float width, Func<Vector3, float> groundHeight, float lift = Lift)
     {
         mesh.Clear();
         if (samples == null || samples.Count < 2) return;
 
         var count = samples.Count;
-        var vertices = new Vector3[count * 3];
-        var uvs = new Vector2[count * 3];
-        var triangles = new int[(count - 1) * 12];
+        var capVertices = CapSegments + 2;
+        var vertices = new Vector3[count * 3 + capVertices * 2];
+        var uvs = new Vector2[vertices.Length];
+        var triangles = new int[(count - 1) * 12 + CapSegments * 3 * 2];
         var half = width / 2f;
         var along = 0f;
 
@@ -85,7 +89,7 @@ public static class RoadMesh
                 var across = (c - 1) * half;
                 var flat = samples[i] + side * across;
                 var point = new Vector3(flat.x, 0f, flat.y);
-                point.y = groundHeight(point) + Lift;
+                point.y = groundHeight(point) + lift;
                 vertices[i * 3 + c] = point;
                 uvs[i * 3 + c] = new Vector2(c * 0.5f, along / width);
             }
@@ -105,6 +109,48 @@ public static class RoadMesh
                 triangles[t++] = b; triangles[t++] = e; triangles[t++] = d;
             }
         }
+
+        // the round ends: a half disc of fan triangles past the first and the last sample
+        void Cap(int at, float direction, float alongAt, int first)
+        {
+            var centre = samples[at];
+            var other = samples[at == 0 ? 1 : count - 2];
+            var outward = (centre - other).normalized;
+            var side = new Vector2(outward.y, -outward.x) * direction;
+            vertices[first] = Ground(centre);
+            uvs[first] = new Vector2(0.5f, alongAt / width);
+            for (var k = 0; k <= CapSegments; ++k)
+            {
+                var angle = Mathf.PI * k / CapSegments;
+                var offset = (side * Mathf.Cos(angle) + outward * Mathf.Sin(angle)) * half;
+                vertices[first + 1 + k] = Ground(centre + offset);
+                // the surface carries on past the end, so the cap is not a smear of one row
+                var forward = Vector2.Dot(offset, outward) * (at == 0 ? -1f : 1f);
+                uvs[first + 1 + k] = new Vector2(0.5f + Vector2.Dot(offset, side) / width, (alongAt + forward) / width);
+            }
+
+            for (var k = 0; k < CapSegments; ++k)
+            {
+                var a = first;
+                var b = first + 1 + k;
+                var d = first + 2 + k;
+                // clockwise seen from above, as the strip is
+                var ab = vertices[b] - vertices[a];
+                var ad = vertices[d] - vertices[a];
+                if (ab.z * ad.x - ab.x * ad.z < 0f) (b, d) = (d, b);
+                triangles[t++] = a; triangles[t++] = b; triangles[t++] = d;
+            }
+        }
+
+        Vector3 Ground(Vector2 flat)
+        {
+            var point = new Vector3(flat.x, 0f, flat.y);
+            point.y = groundHeight(point) + lift;
+            return point;
+        }
+
+        Cap(0, 1f, 0f, count * 3);
+        Cap(count - 1, -1f, along, count * 3 + capVertices);
 
         mesh.vertices = vertices;
         mesh.uv = uvs;
@@ -179,7 +225,13 @@ public static class RoadMesh
             {
                 var u = x / (float)size;
                 var v = y / (float)size;
-                pixels[y * size + x] = type == 2 ? Cobble(u, v) : type == 1 ? Gravel(u, v, random) : Dirt(u, v);
+                var colour = type == 2 ? Cobble(u, v) : type == 1 ? Gravel(u, v, random) : Dirt(u, v);
+                // a darker band along both edges, worn and trodden, so the road has a border
+                var fromEdge = Mathf.Min(u, 1f - u);
+                var band = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(fromEdge / 0.11f));
+                colour *= Mathf.Lerp(type == 2 ? 0.62f : 0.74f, 1f, band);
+                colour.a = 1f;
+                pixels[y * size + x] = colour;
             }
         }
 

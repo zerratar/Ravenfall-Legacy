@@ -1,4 +1,4 @@
-/*
+﻿/*
   Village build mode, after docs/mockups/build-*.webp. Dark glass panels with a gold top edge,
   NewRodin type, gold for actions, green for bonuses, red for anything destructive or invalid.
   Label rules use two classes to outrank the label reset just below.
@@ -36,7 +36,11 @@
 .rf-build .rf-build-current,
 .rf-build .rf-build-assign__name,
 .rf-build .rf-build-assign__tag,
-.rf-build .rf-build-assign__button {
+.rf-build .rf-build-assign__button,
+.rf-build .rf-build-road-row__name,
+.rf-build .rf-build-road-row__value,
+.rf-build .rf-build-road-key__cap,
+.rf-build .rf-build-road__button {
     -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
     -unity-font-style: normal;
 }
@@ -1392,7 +1396,225 @@
 
 /* A road through a building: said in words as well as the red road. */
 .rf-build .rf-build-road__flag {
+    font-size: 14px;
+    color: rgb(255, 200, 195);
+    white-space: normal;
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: rgba(140, 32, 36, 0.45);
+    border-left-width: 3px;
+    border-left-color: var(--rf-danger);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+/* ---- Road panel ---- */
+
+.rf-build-road {
+    width: 420px;
+}
+
+/* The ring shows the road's surface. */
+.rf-build-road__ring {
+    -unity-background-scale-mode: scale-and-crop;
+    overflow: hidden;
+}
+
+.rf-build-road__body {
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    border-top-width: 1px;
+    border-top-color: var(--rf-divider);
+}
+
+.rf-build .rf-build-road__caption {
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-build-road__costs {
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: rgba(0, 0, 0, 0.28);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+/* Changes not applied yet: the cost box gets the gold edge, like an action waiting. */
+.rf-build-road--dirty .rf-build-road__costs {
+    border-left-width: 3px;
+    border-left-color: var(--rf-accent);
+    background-color: var(--rf-accent-wash);
+}
+
+.rf-build-road-row {
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+}
+
+.rf-build .rf-build-road-row__icon {
+    width: 24px;
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    margin-right: var(--rf-space-2);
+    -unity-text-align: middle-center;
+}
+
+.rf-build .rf-build-road-row__name {
+    flex-grow: 1;
+    flex-shrink: 0;
+    font-size: 15px;
+    color: var(--rf-text);
+}
+
+.rf-build .rf-build-road-row__value {
+    font-size: 15px;
+    color: var(--rf-accent-bright);
+}
+
+.rf-build .rf-build-road-row__aside {
+    width: 132px;
+    margin-left: var(--rf-space-3);
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-right;
+}
+
+/* Short of it: the amount and what the village has go red. */
+.rf-build .rf-build-road-row--short .rf-build-road-row__value,
+.rf-build .rf-build-road-row--short .rf-build-road-row__aside,
+.rf-build .rf-build-road-row--short .rf-build-road-row__icon {
     color: var(--rf-danger);
-    -unity-font-style: bold;
+}
+
+/* Given back, or free. */
+.rf-build .rf-build-road-row--refund .rf-build-road-row__value,
+.rf-build .rf-build-road-row--refund .rf-build-road-row__icon,
+.rf-build .rf-build-road-row--refund .rf-build-road-row__aside {
+    color: var(--rf-success);
+}
+
+/* The type it was, when another is picked. */
+.rf-build .rf-build-road-chip--saved {
+    border-left-color: var(--rf-accent-dim);
+    border-right-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent-dim);
+    border-bottom-color: var(--rf-accent-dim);
+    color: var(--rf-text-dim);
+}
+
+/* What the mouse and keys do: key caps flowing in rows. */
+.rf-build-road__keys {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: var(--rf-space-1);
+}
+
+.rf-build-road-key {
+    flex-direction: row;
+    align-items: center;
+    margin-right: var(--rf-space-3);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-build .rf-build-road-key__cap {
+    min-width: 28px;
+    height: 22px;
+    padding-left: 6px;
+    padding-right: 6px;
+    margin-right: var(--rf-space-2);
+    font-size: 12px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-build .rf-build-road-key__text {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+}
+
+/* Build or apply, beside undo or cancel. */
+.rf-build-road__actions {
+    flex-direction: row;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    border-top-width: 1px;
+    border-top-color: var(--rf-divider);
+}
+
+.rf-build .rf-build-road__button {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 44px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 16px;
+    color: var(--rf-text);
+    background-color: rgba(0, 0, 0, 0.3);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    cursor: link;
+}
+
+.rf-build .rf-build-road__button:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-build .rf-build-road__button--primary {
+    flex-grow: 1.6;
+    margin-right: var(--rf-space-2);
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-build .rf-build-road__button--primary:hover {
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-build .rf-build-road__button:disabled {
+    opacity: 0.4;
+}
+
+.rf-build-road > .rf-build-wide--danger {
+    margin-top: var(--rf-space-1);
 }
 

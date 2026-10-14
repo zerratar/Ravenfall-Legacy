@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using RavenNest.SDK.Endpoints;
@@ -180,7 +180,9 @@ public class VillageRoads : MonoBehaviour
         }
 
         road.Samples = RoadMesh.Sample(road.Points);
-        RoadMesh.Build(road.Mesh, road.Samples, WidthOf(road.Type), GroundHeight);
+        // the better road a little higher, so where two meet the cobbles lie over the dirt rather
+        // than flickering with it
+        RoadMesh.Build(road.Mesh, road.Samples, WidthOf(road.Type), GroundHeight, RoadMesh.Lift + Mathf.Clamp(road.Type, 0, 4) * 0.012f);
         road.Renderer.sharedMaterial = MaterialFor(road.Type);
         ApplyFlag(road);
     }

@@ -97,13 +97,12 @@
             <engine:VisualElement name="plot-grip" class="rf-window__grip" />
         </engine:VisualElement>
 
-        <!-- Selected road: its type, how long, whether it runs through a building, and removing it.
-             Shares the building panel's place; only one of them shows at a time. -->
+        <!-- The road being drawn or edited: its type, length, what it costs or what a change
+             costs, and the buttons to build, apply or cancel. Shares the building panel's place;
+             only one of them shows at a time. -->
         <engine:VisualElement name="road-panel" class="rf-build-panel rf-build-plot rf-build-road" style="display: none;">
             <engine:VisualElement class="rf-build-panel__head">
-                <engine:VisualElement class="rf-build-ring" picking-mode="Ignore">
-                    <engine:Label class="rf-icon rf-build-ring__glyph" text="&#xf018;" picking-mode="Ignore" />
-                </engine:VisualElement>
+                <engine:VisualElement name="road-ring" class="rf-build-ring rf-build-road__ring" picking-mode="Ignore" />
                 <engine:VisualElement class="rf-build-plot__titles" picking-mode="Ignore">
                     <engine:Label name="road-title" class="rf-build-plot__title" picking-mode="Ignore" />
                     <engine:Label name="road-subtitle" class="rf-build-plot__subtitle" picking-mode="Ignore" />
@@ -111,11 +110,22 @@
                 <engine:Button name="road-close" text="&#xf00d;" class="rf-window__button rf-icon rf-build__close" />
             </engine:VisualElement>
 
-            <engine:Label name="road-flag" class="rf-build-note rf-build-road__flag" style="display: none;" />
-            <engine:Label name="road-type-caption" class="rf-build-caption" />
-            <engine:VisualElement name="road-types" class="rf-build-road__types" />
-            <engine:Label name="road-note" class="rf-build-note" />
+            <engine:VisualElement class="rf-build-road__body">
+                <engine:Label name="road-flag" class="rf-build-road__flag" style="display: none;" />
 
+                <engine:Label name="road-type-caption" class="rf-build-caption rf-build-road__caption" />
+                <engine:VisualElement name="road-types" class="rf-build-road__types" />
+
+                <engine:Label name="road-cost-caption" class="rf-build-caption rf-build-road__caption" />
+                <engine:VisualElement name="road-costs" class="rf-build-road__costs" />
+
+                <engine:VisualElement name="road-keys" class="rf-build-road__keys" />
+            </engine:VisualElement>
+
+            <engine:VisualElement name="road-actions" class="rf-build-road__actions">
+                <engine:Button name="road-primary" class="rf-build-road__button rf-build-road__button--primary" />
+                <engine:Button name="road-secondary" class="rf-build-road__button" />
+            </engine:VisualElement>
             <engine:Button name="road-remove" class="rf-build-wide rf-build-wide--danger" />
         </engine:VisualElement>
 

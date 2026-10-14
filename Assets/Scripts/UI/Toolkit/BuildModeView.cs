@@ -52,9 +52,9 @@ namespace Shinobytes.UI
         /// </summary>
         private static readonly Category[] Categories =
         {
-            new Category { Name = "Combat", Glyph = "", Types = new[] { TownHouseSlotType.Melee, TownHouseSlotType.Ranged, TownHouseSlotType.Magic, TownHouseSlotType.Healing, TownHouseSlotType.Slayer } },
-            new Category { Name = "Gathering", Glyph = "", Types = new[] { TownHouseSlotType.Woodcutting, TownHouseSlotType.Mining, TownHouseSlotType.Fishing, TownHouseSlotType.Farming, TownHouseSlotType.Gathering } },
-            new Category { Name = "Crafting", Glyph = "", Types = new[] { TownHouseSlotType.Cooking, TownHouseSlotType.Crafting, TownHouseSlotType.Alchemy, TownHouseSlotType.Sailing } },
+            new Category { Name = "Combat", Glyph = "\uf71c", Types = new[] { TownHouseSlotType.Melee, TownHouseSlotType.Ranged, TownHouseSlotType.Magic, TownHouseSlotType.Healing, TownHouseSlotType.Slayer } },
+            new Category { Name = "Gathering", Glyph = "\uf6e3", Types = new[] { TownHouseSlotType.Woodcutting, TownHouseSlotType.Mining, TownHouseSlotType.Fishing, TownHouseSlotType.Farming, TownHouseSlotType.Gathering } },
+            new Category { Name = "Crafting", Glyph = "\uf6e3", Types = new[] { TownHouseSlotType.Cooking, TownHouseSlotType.Crafting, TownHouseSlotType.Alchemy, TownHouseSlotType.Sailing } },
             new Category { Name = "Roads", Glyph = "\uf018", Types = new TownHouseSlotType[0], Roads = true },
         };
 
@@ -97,6 +97,14 @@ namespace Shinobytes.UI
         private Label roadSubtitle;
         private Label roadFlag;
         private VisualElement roadTypes;
+        private VisualElement roadRing;
+        private Label roadTypeCaption;
+        private Label roadCostCaption;
+        private VisualElement roadCosts;
+        private VisualElement roadKeys;
+        private VisualElement roadActions;
+        private Button roadPrimary;
+        private Button roadSecondary;
         private Button roadRemove;
         private float roadRemoveConfirmUntil;
         private VisualElement plotIcon;
@@ -212,13 +220,19 @@ namespace Shinobytes.UI
             roadFlag = root.Q<Label>("road-flag");
             roadTypes = root.Q<VisualElement>("road-types");
             roadRemove = root.Q<Button>("road-remove");
+            roadRing = root.Q<VisualElement>("road-ring");
+            roadTypeCaption = root.Q<Label>("road-type-caption");
+            roadCostCaption = root.Q<Label>("road-cost-caption");
+            roadCosts = root.Q<VisualElement>("road-costs");
+            roadKeys = root.Q<VisualElement>("road-keys");
+            roadActions = root.Q<VisualElement>("road-actions");
+            roadPrimary = root.Q<Button>("road-primary");
+            roadSecondary = root.Q<Button>("road-secondary");
             var roadClose = root.Q<Button>("road-close");
-            if (roadClose != null) roadClose.clicked += () => mode?.ClearSelection();
+            if (roadClose != null) roadClose.clicked += OnRoadCloseClicked;
             if (roadRemove != null) roadRemove.clicked += OnRoadRemoveClicked;
-            var roadNote = root.Q<Label>("road-note");
-            if (roadNote != null) roadNote.text = Localization.UI_ROAD_EDIT_NOTE;
-            var roadTypeCaption = root.Q<Label>("road-type-caption");
-            if (roadTypeCaption != null) roadTypeCaption.text = Localization.UI_ROAD_TYPE;
+            if (roadPrimary != null) roadPrimary.clicked += OnRoadPrimaryClicked;
+            if (roadSecondary != null) roadSecondary.clicked += OnRoadSecondaryClicked;
             plotIcon = root.Q<VisualElement>("plot-icon");
             plotGlyph = root.Q<Label>("plot-glyph");
             plotTitle = root.Q<Label>("plot-title");
@@ -651,7 +665,7 @@ namespace Shinobytes.UI
             ring.AddToClassList("rf-plot__ring");
             marker.Icon = new VisualElement { pickingMode = PickingMode.Ignore };
             marker.Icon.AddToClassList("rf-plot__icon");
-            marker.Plus = new Label("") { pickingMode = PickingMode.Ignore };
+            marker.Plus = new Label("\uf067") { pickingMode = PickingMode.Ignore };
             marker.Plus.AddToClassList("rf-icon");
             marker.Plus.AddToClassList("rf-plot__plus");
             ring.Add(marker.Icon);
@@ -692,7 +706,7 @@ namespace Shinobytes.UI
 
             var sprite = empty ? null : IconFor(slot.SlotType);
             marker.Plus.style.display = sprite ? DisplayStyle.None : DisplayStyle.Flex;
-            marker.Plus.text = blocked ? "" : "";
+            marker.Plus.text = blocked ? "\uf00d" : "\uf067";
             marker.Icon.style.display = sprite ? DisplayStyle.Flex : DisplayStyle.None;
             if (sprite) marker.Icon.style.backgroundImage = new StyleBackground(sprite);
 
@@ -1219,7 +1233,12 @@ namespace Shinobytes.UI
                 column.Add(cost);
                 text.Add(column);
 
-                var draw = new Button(() => mode?.ChooseRoad(id)) { text = Localization.UI_ROAD_DRAW };
+                var draw = new Button(() =>
+                {
+                    mode?.ChooseRoad(id);
+                    // the road panel takes over while drawing; the tray would only be in the way
+                    OpenCategory(-1);
+                }) { text = Localization.UI_ROAD_DRAW };
                 draw.AddToClassList("rf-build-card__build");
                 draw.SetEnabled(type.Unlocked);
 
@@ -1233,31 +1252,221 @@ namespace Shinobytes.UI
         private void RefreshRoad()
         {
             if (roadPanel == null || mode == null) return;
-            var road = mode.Roads.Selected;
+            var tool = mode.Roads;
+            var road = tool.Selected;
             var roads = GameManager.Instance && GameManager.Instance.Village ? GameManager.Instance.Village.Roads : null;
-            roadPanel.style.display = road != null && roads != null && !modalOpen ? DisplayStyle.Flex : DisplayStyle.None;
-            if (road == null || roads == null) return;
+            var hall = GameManager.Instance && GameManager.Instance.Village ? GameManager.Instance.Village.TownHall : null;
+            var show = (road != null || tool.Drawing) && roads != null && hall && !modalOpen;
+            roadPanel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!show) return;
 
-            roadTitle.text = RoadName(road.Type);
-            roadSubtitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_LENGTH, Mathf.RoundToInt(VillageRoads.PaidLength(road.Points)));
-            roadFlag.style.display = road.Flagged ? DisplayStyle.Flex : DisplayStyle.None;
+            var drawing = tool.Drawing;
+            var dirty = !drawing && tool.Dirty;
+            var type = drawing ? tool.DrawType.Value : road.Type;
+
+            // the ring shows the surface, as the tray's cards do
+            var material = roads.MaterialFor(type);
+            roadRing.style.backgroundImage = material && material.mainTexture is Texture2D surface ? new StyleBackground(surface) : new StyleBackground();
+
+            roadTitle.text = RoadName(type);
+            roadSubtitle.text = drawing
+                ? string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_DRAWING_SUBTITLE, Mathf.RoundToInt(tool.DrawLength))
+                : string.Format(CultureInfo.InvariantCulture, dirty ? Localization.UI_ROAD_EDITED_SUBTITLE : Localization.UI_ROAD_LENGTH, Mathf.RoundToInt(tool.EditLength));
+            roadPanel.EnableInClassList("rf-build-road--dirty", dirty);
+
+            roadFlag.style.display = !drawing && road.Flagged ? DisplayStyle.Flex : DisplayStyle.None;
             roadFlag.text = Localization.UI_ROAD_FLAGGED;
 
+            // Type: a chip each. Drawing, it changes what is drawn; editing, it is a change like any other.
+            roadTypeCaption.text = Localization.UI_ROAD_TYPE;
             roadTypes.Clear();
-            foreach (var type in roads.Types)
+            foreach (var info in roads.Types)
             {
-                var id = type.Id;
-                var chip = new Button(() => mode?.Roads.SetType(id)) { text = RoadName(id) };
+                var id = info.Id;
+                var chip = new Button(() =>
+                {
+                    if (mode == null) return;
+                    if (mode.Roads.Drawing) mode.Roads.SetDrawType(id);
+                    else mode.Roads.SetType(id);
+                }) { text = RoadName(id) };
                 chip.AddToClassList("rf-build-road-chip");
-                chip.EnableInClassList("rf-build-road-chip--current", road.Type == id);
-                chip.SetEnabled(type.Unlocked && !mode.Roads.Busy);
-                if (!type.Unlocked) chip.tooltip = string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_LOCKED, type.Tier + 1);
+                chip.EnableInClassList("rf-build-road-chip--current", type == id);
+                chip.EnableInClassList("rf-build-road-chip--saved", dirty && tool.SavedType == id && type != id);
+                chip.SetEnabled(info.Unlocked && !tool.Busy);
+                if (!info.Unlocked) chip.text = RoadName(id) + "  " + string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_TIER_SHORT, info.Tier + 1);
                 roadTypes.Add(chip);
             }
 
-            var confirming = Time.unscaledTime < roadRemoveConfirmUntil;
-            roadRemove.text = confirming ? Localization.UI_ROAD_REMOVE_CONFIRM : Localization.UI_ROAD_REMOVE;
-            roadRemove.SetEnabled(!mode.Roads.Busy);
+            // Cost: what the road drawn so far costs, or what applying the change costs or gives back.
+            roadCosts.Clear();
+            if (drawing)
+            {
+                roadCostCaption.text = Localization.UI_ROAD_COST_CAPTION;
+                AddRoadRow("\uf545", Localization.UI_ROAD_ROW_LENGTH, string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_METRES, Mathf.RoundToInt(tool.DrawLength)), null, null);
+                AddPayRows(roads.Cost(type, tool.DrawLength), roads.Cost(type, 1f), hall, false);
+            }
+            else if (dirty)
+            {
+                roadCostCaption.text = Localization.UI_ROAD_CHANGE_CAPTION;
+                AddRoadRow("\uf545", Localization.UI_ROAD_ROW_LENGTH, string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_CHANGE_TO,
+                    string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_METRES, Mathf.RoundToInt(tool.SavedLength)),
+                    string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_METRES, Mathf.RoundToInt(tool.EditLength))), null, null);
+                if (tool.SavedType != road.Type)
+                {
+                    AddRoadRow("\uf018", Localization.UI_ROAD_ROW_TYPE, string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_CHANGE_TO, RoadName(tool.SavedType), RoadName(road.Type)), null, null);
+                }
+                var c = tool.EditCost();
+                if (c.wood == 0 && c.ore == 0 && c.fish == 0 && c.wheat == 0 && c.coins == 0)
+                {
+                    AddRoadRow("\uf00c", Localization.UI_ROAD_NO_COST, string.Empty, null, "rf-build-road-row--refund");
+                }
+                else AddPayRows(c, default, hall, true);
+            }
+            else
+            {
+                roadCostCaption.text = Localization.UI_ROAD_ABOUT_CAPTION;
+                AddRoadRow("\uf545", Localization.UI_ROAD_ROW_LENGTH, string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_METRES, Mathf.RoundToInt(tool.EditLength)), null, null);
+                AddRoadRow("\uf3c5", Localization.UI_ROAD_ROW_POINTS, road.Points.Count.ToString(CultureInfo.InvariantCulture), null, null);
+                AddRoadRow("\uf51e", Localization.UI_ROAD_ROW_PRICE, string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_PER_METRE, CostText(type, 1f)), null, null);
+            }
+
+            // Keys: what the mouse and keyboard do right now.
+            roadKeys.Clear();
+            if (drawing)
+            {
+                AddRoadKey(Localization.UI_ROAD_KEYNAME_CLICK, Localization.UI_ROAD_KEY_ADD);
+                AddRoadKey("Enter", Localization.UI_ROAD_KEY_BUILD);
+                AddRoadKey(Localization.UI_ROAD_KEYNAME_BACKSPACE, Localization.UI_ROAD_UNDO);
+                AddRoadKey("Esc", Localization.UI_ROAD_KEY_STOP);
+                AddRoadKey("Alt", Localization.UI_ROAD_KEY_FREE);
+                AddRoadKey("Shift", Localization.UI_ROAD_KEY_ANGLE);
+            }
+            else
+            {
+                AddRoadKey(Localization.UI_ROAD_KEYNAME_DRAG, Localization.UI_ROAD_KEY_MOVE);
+                AddRoadKey(Localization.UI_ROAD_KEYNAME_CTRL_CLICK, Localization.UI_ROAD_KEY_ADD);
+                AddRoadKey(Localization.UI_ROAD_KEYNAME_RIGHT_CLICK, Localization.UI_ROAD_KEY_REMOVE);
+                AddRoadKey("Esc", dirty ? Localization.UI_ROAD_KEY_UNDO_CHANGES : Localization.UI_ROAD_KEY_DESELECT);
+                if (dirty) AddRoadKey("Enter", Localization.UI_ROAD_APPLY);
+            }
+
+            // Buttons: build and undo while drawing, apply and cancel with changes, else remove.
+            var idle = !tool.Busy;
+            if (drawing)
+            {
+                roadActions.style.display = DisplayStyle.Flex;
+                roadPrimary.text = tool.Busy ? Localization.UI_BUILD_HINT_BUSY : Localization.UI_ROAD_BUILD;
+                roadPrimary.SetEnabled(idle && tool.DrawPointCount >= 2 && tool.DrawAffordable);
+                roadSecondary.text = Localization.UI_ROAD_UNDO;
+                roadSecondary.SetEnabled(idle && tool.DrawPointCount > 0);
+                roadRemove.style.display = DisplayStyle.None;
+            }
+            else if (dirty)
+            {
+                roadActions.style.display = DisplayStyle.Flex;
+                roadPrimary.text = tool.Busy ? Localization.UI_BUILD_HINT_BUSY : Localization.UI_ROAD_APPLY;
+                roadPrimary.SetEnabled(idle && tool.EditAffordable());
+                roadSecondary.text = Localization.UI_ROAD_CANCEL;
+                roadSecondary.SetEnabled(idle);
+                roadRemove.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                roadActions.style.display = DisplayStyle.None;
+                roadRemove.style.display = DisplayStyle.Flex;
+                var confirming = Time.unscaledTime < roadRemoveConfirmUntil;
+                roadRemove.text = confirming ? Localization.UI_ROAD_REMOVE_CONFIRM : Localization.UI_ROAD_REMOVE;
+                roadRemove.EnableInClassList("rf-build-wide--confirm", confirming);
+                roadRemove.SetEnabled(idle);
+            }
+        }
+
+        /// <summary>
+        /// A row per resource the road costs. With <paramref name="change"/> the amounts are a
+        /// difference, and negative ones are given back. Short of something, the row goes red.
+        /// </summary>
+        private void AddPayRows((long wood, long ore, long fish, long wheat, long coins) c, (long wood, long ore, long fish, long wheat, long coins) perMetre, TownHallManager hall, bool change)
+        {
+            void Row(string glyph, string name, long amount, long rate, long have)
+            {
+                // drawing, every resource of the type shows from the first point on
+                if (amount == 0 && (change || rate == 0)) return;
+                if (amount < 0)
+                {
+                    AddRoadRow(glyph, name, "+" + (-amount).ToString("N0", CultureInfo.InvariantCulture), Localization.UI_ROAD_BACK, "rf-build-road-row--refund");
+                    return;
+                }
+                AddRoadRow(glyph, name, amount.ToString("N0", CultureInfo.InvariantCulture),
+                    string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_HAVE, have.ToString("N0", CultureInfo.InvariantCulture)),
+                    have < amount ? "rf-build-road-row--short" : null);
+            }
+
+            Row("\uf1bb", Localization.UI_ROAD_RESOURCE_WOOD, c.wood, perMetre.wood, hall.Wood);
+            Row("\uf3a5", Localization.UI_ROAD_RESOURCE_ORE, c.ore, perMetre.ore, hall.Ore);
+            Row("\uf578", Localization.UI_ROAD_RESOURCE_FISH, c.fish, perMetre.fish, hall.Fish);
+            Row("\ue2cd", Localization.UI_ROAD_RESOURCE_WHEAT, c.wheat, perMetre.wheat, hall.Wheat);
+            Row("\uf51e", Localization.UI_ROAD_RESOURCE_COINS, c.coins, perMetre.coins, hall.Coins);
+        }
+
+        private void AddRoadRow(string glyph, string name, string value, string aside, string modifier)
+        {
+            var row = new VisualElement { pickingMode = PickingMode.Ignore };
+            row.AddToClassList("rf-build-road-row");
+            if (modifier != null) row.AddToClassList(modifier);
+            var icon = new Label(glyph) { pickingMode = PickingMode.Ignore };
+            icon.AddToClassList("rf-icon");
+            icon.AddToClassList("rf-build-road-row__icon");
+            var label = new Label(name) { pickingMode = PickingMode.Ignore };
+            label.AddToClassList("rf-build-road-row__name");
+            var amount = new Label(value) { pickingMode = PickingMode.Ignore };
+            amount.AddToClassList("rf-build-road-row__value");
+            row.Add(icon);
+            row.Add(label);
+            row.Add(amount);
+            if (aside != null)
+            {
+                var note = new Label(aside) { pickingMode = PickingMode.Ignore };
+                note.AddToClassList("rf-build-road-row__aside");
+                row.Add(note);
+            }
+            roadCosts.Add(row);
+        }
+
+        private void AddRoadKey(string key, string text)
+        {
+            var pair = new VisualElement { pickingMode = PickingMode.Ignore };
+            pair.AddToClassList("rf-build-road-key");
+            var cap = new Label(key) { pickingMode = PickingMode.Ignore };
+            cap.AddToClassList("rf-build-road-key__cap");
+            var label = new Label(text) { pickingMode = PickingMode.Ignore };
+            label.AddToClassList("rf-build-road-key__text");
+            pair.Add(cap);
+            pair.Add(label);
+            roadKeys.Add(pair);
+        }
+
+        private void OnRoadPrimaryClicked()
+        {
+            var tool = mode?.Roads;
+            if (tool == null) return;
+            if (tool.Drawing) tool.Finish();
+            else tool.Apply();
+        }
+
+        private void OnRoadSecondaryClicked()
+        {
+            var tool = mode?.Roads;
+            if (tool == null) return;
+            if (tool.Drawing) tool.UndoPoint();
+            else tool.CancelEdit();
+        }
+
+        private void OnRoadCloseClicked()
+        {
+            var tool = mode?.Roads;
+            if (tool == null) return;
+            if (tool.Drawing) tool.CancelDrawing();
+            else mode.ClearSelection();
         }
 
         private void OnRoadRemoveClicked()
