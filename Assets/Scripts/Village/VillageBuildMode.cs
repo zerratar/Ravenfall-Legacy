@@ -94,8 +94,9 @@ public class VillageBuildMode : MonoBehaviour
     private readonly RaycastHit[] hits = new RaycastHit[32];
 
     private PlacementOverlay overlay;
+    private VillageGrid villageGrid;
     private GameObject ghost;
-    private float ghostRadius = 2.5f;
+    private Footprint ghostFootprint = Footprint.Default;
     private float oceanLevel = float.NaN;
     private Vector3 moveStartPosition;
     private Quaternion moveStartRotation;
@@ -103,10 +104,11 @@ public class VillageBuildMode : MonoBehaviour
     private Vector3 lastSnapped = new Vector3(float.NaN, 0f, 0f);
     private float lastRotation = float.NaN;
     private readonly Dictionary<TownHouseSlot, float> radiusCache = new Dictionary<TownHouseSlot, float>();
+    private readonly Dictionary<TownHouseSlot, Footprint> footprintCache = new Dictionary<TownHouseSlot, Footprint>();
 
     // The plots in the way of the placement last checked, for the overlay's rings and the message.
     private readonly List<TownHouseSlot> blockers = new List<TownHouseSlot>();
-    private readonly List<(Vector3, float)> blockerRings = new List<(Vector3, float)>();
+    private readonly List<(Vector3, float, Vector2)> blockerRings = new List<(Vector3, float, Vector2)>();
     private bool previewing;
 
     /// <summary>The buildings in the way of the placement last checked.</summary>
@@ -156,8 +158,31 @@ public class VillageBuildMode : MonoBehaviour
         IsActive = true;
         Selected = null;
         Armed = null;
+        ShowVillageGrid();
         ActiveChanged?.Invoke(true);
         Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// The grid over everywhere a building may stand: the same circle round the plaza that
+    /// <see cref="Validate"/> keeps buildings inside.
+    /// </summary>
+    private void ShowVillageGrid()
+    {
+        var townHall = gameManager.Village.TownHall;
+        if (!townHall) return;
+
+        var centre = townHall.Plaza;
+        var reach = 0f;
+        foreach (var other in gameManager.Village.TownHouses.Slots)
+        {
+            if (other) reach = Mathf.Max(reach, Flat(other.DefaultPosition - centre).magnitude);
+        }
+
+        if (float.IsNaN(oceanLevel)) oceanLevel = FindOceanLevel();
+        if (!villageGrid) villageGrid = VillageGrid.Create();
+        villageGrid.Show(centre, reach + villageMargin, cellSize, townHall.GroundHeight,
+            float.IsNegativeInfinity(oceanLevel) ? float.NegativeInfinity : oceanLevel);
     }
 
     public void Exit()
@@ -171,6 +196,7 @@ public class VillageBuildMode : MonoBehaviour
         CancelMove();
         CancelHallMove();
         SetArmed(null);
+        if (villageGrid) villageGrid.Hide();
         IsActive = false;
         Selected = null;
         HallSelected = false;
@@ -348,7 +374,7 @@ public class VillageBuildMode : MonoBehaviour
         }
 
         ghost = PlacementOverlay.MakeGhost(house.Prefab);
-        ghostRadius = GhostRadius(ghost);
+        ghostFootprint = Footprint.Measure(ghost, useRenderers: true);
         moveRotation = 0f;
         if (!overlay) overlay = PlacementOverlay.Create(cellSize);
     }
@@ -472,6 +498,7 @@ public class VillageBuildMode : MonoBehaviour
         lastSnapped = new Vector3(float.NaN, 0f, 0f);
         lastRotation = float.NaN;
         radiusCache.Clear();
+        footprintCache.Clear();
 
         if (!overlay) overlay = PlacementOverlay.Create(cellSize);
         Changed?.Invoke();
@@ -525,20 +552,20 @@ public class VillageBuildMode : MonoBehaviour
             var ground = PlacementUtility.FindGroundPoint(snapped);
             Moving.transform.SetPositionAndRotation(ground, Quaternion.Euler(0f, moveRotation, 0f));
 
-            MoveProblem = Validate(Moving, RadiusOf(Moving), ground, moveRotation);
+            MoveProblem = Validate(Moving, FootprintOf(Moving), ground, moveRotation);
             MoveValid = MoveProblem == null;
             Changed?.Invoke();
 
             if (overlay)
             {
-                overlay.Show(Moving.transform.position, moveRotation, RadiusOf(Moving), MoveValid);
+                ShowFootprint(FootprintOf(Moving), Moving.transform.position, moveRotation, MoveValid);
                 RingBlockers();
             }
         }
 
         if (overlay)
         {
-            overlay.Show(Moving.transform.position, moveRotation, RadiusOf(Moving), MoveValid);
+            ShowFootprint(FootprintOf(Moving), Moving.transform.position, moveRotation, MoveValid);
         }
 
         if (Input.GetMouseButtonDown(0) && !Shinobytes.UI.HudPointer.IsOverHud() && !UIUtility.IsPointerOverUIElement())
@@ -570,7 +597,7 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>Null when the plot can stand here, otherwise the reason it cannot.</summary>
-    private string Validate(TownHouseSlot slot, float radius, Vector3 position, float rotation)
+    private string Validate(TownHouseSlot slot, Footprint footprint, Vector3 position, float rotation)
     {
         blockers.Clear();
         var townHall = gameManager.Village.TownHall;
@@ -593,7 +620,7 @@ public class VillageBuildMode : MonoBehaviour
 
         // Not overlapping the town hall: its footprint, not a circle around it, so buildings can
         // stand right beside it.
-        if (OverlapsTownHall(position, radius))
+        if (OverlapsTownHall(footprint, position, rotation))
         {
             return Localization.UI_BUILD_PLACE_TOWN_HALL;
         }
@@ -604,7 +631,8 @@ public class VillageBuildMode : MonoBehaviour
         foreach (var other in Plots)
         {
             if (other == slot) continue;
-            if (Flat(position - other.transform.position).magnitude < radius + RadiusOf(other) + spacing)
+            if (Footprint.Overlaps(footprint.Grown(spacing / 2f), position, rotation,
+                    FootprintOf(other).Grown(spacing / 2f), other.transform.position, other.transform.eulerAngles.y))
             {
                 blockers.Add(other);
             }
@@ -618,11 +646,10 @@ public class VillageBuildMode : MonoBehaviour
         // On ground, not water, and not too steep.
         var low = float.MaxValue;
         var high = float.MinValue;
-        var turn = Quaternion.Euler(0f, rotation, 0f);
+        var corners = footprint.Corners(position, rotation);
         for (var i = 0; i < 5; ++i)
         {
-            var offset = i == 4 ? Vector3.zero : turn * new Vector3((i & 1) == 0 ? -radius : radius, 0f, (i & 2) == 0 ? -radius : radius);
-            var sample = position + offset;
+            var sample = i == 4 ? footprint.Centre(position, rotation) : corners[i];
             if (IsWater(sample)) return Localization.UI_BUILD_PLACE_WATER;
             var y = PlacementUtility.FindGroundPoint(sample).y;
             low = Mathf.Min(low, y);
@@ -685,15 +712,37 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>
-    /// Whether a footprint of <paramref name="radius"/> at <paramref name="position"/> reaches into the
+    /// Whether a footprint at <paramref name="position"/>, turned by <paramref name="rotation"/>, reaches into the
     /// town hall area: the ground the biggest tier covers (building, plaza and yard), turned with the
     /// hall, so an upgrade never lands on a house.
     /// </summary>
-    private bool OverlapsTownHall(Vector3 position, float radius)
+    private bool OverlapsTownHall(Footprint footprint, Vector3 position, float rotation)
     {
         var townHall = gameManager.Village.TownHall;
         if (!townHall) return false;
-        return townHall.AreaOverlaps(townHall.HallPosition, townHall.HallRotation, position, radius * 0.8f);
+        return Footprint.Overlaps(HallFootprint(townHall), townHall.HallPosition, townHall.HallRotation, footprint, position, rotation);
+    }
+
+    /// <summary>The town hall's area, the room its biggest tier needs, as a footprint.</summary>
+    private static Footprint HallFootprint(TownHallManager townHall)
+    {
+        var area = townHall.Area;
+        return new Footprint(new Vector2(area.width / 2f, area.height / 2f), area.center);
+    }
+
+    /// <summary>A plot's rectangle, measured once from its building and kept until something changes.</summary>
+    private Footprint FootprintOf(TownHouseSlot slot)
+    {
+        if (!slot) return Footprint.Default;
+        if (footprintCache.TryGetValue(slot, out var cached)) return cached;
+        var footprint = Footprint.Measure(slot.gameObject);
+        footprintCache[slot] = footprint;
+        return footprint;
+    }
+
+    private void ShowFootprint(Footprint footprint, Vector3 position, float rotation, bool valid)
+    {
+        overlay.Show(footprint.Centre(position, rotation), rotation, footprint.Half.x, footprint.Half.y, valid);
     }
 
     /// <summary>Height of the sea surface: the largest water renderer in the scene.</summary>
@@ -742,6 +791,7 @@ public class VillageBuildMode : MonoBehaviour
         lastSnapped = new Vector3(float.NaN, 0f, 0f);
         lastRotation = float.NaN;
         radiusCache.Clear();
+        footprintCache.Clear();
 
         if (!overlay) overlay = PlacementOverlay.Create(cellSize);
         Changed?.Invoke();
@@ -839,7 +889,8 @@ public class VillageBuildMode : MonoBehaviour
 
         foreach (var plot in Plots)
         {
-            if (townHall.AreaOverlaps(position, rotation, plot.transform.position, RadiusOf(plot) + spacing))
+            if (Footprint.Overlaps(HallFootprint(townHall), position, rotation,
+                    FootprintOf(plot).Grown(spacing), plot.transform.position, plot.transform.eulerAngles.y))
             {
                 blockers.Add(plot);
             }
@@ -911,6 +962,7 @@ public class VillageBuildMode : MonoBehaviour
         var townHall = gameManager.Village.TownHall;
         if (!overlay) overlay = PlacementOverlay.Create(cellSize);
         radiusCache.Clear();
+        footprintCache.Clear();
         string problem = null;
 
         if (HallSelected && townHall)
@@ -922,8 +974,8 @@ public class VillageBuildMode : MonoBehaviour
         else if (Selected)
         {
             var rotation = Mathf.Repeat(Mathf.Round(Selected.transform.eulerAngles.y / rotationStep) * rotationStep + degrees, 360f);
-            problem = Validate(Selected, RadiusOf(Selected), Selected.transform.position, rotation);
-            overlay.Show(Selected.transform.position, rotation, RadiusOf(Selected), problem == null);
+            problem = Validate(Selected, FootprintOf(Selected), Selected.transform.position, rotation);
+            ShowFootprint(FootprintOf(Selected), Selected.transform.position, rotation, problem == null);
             RingBlockers();
         }
         else
@@ -958,8 +1010,11 @@ public class VillageBuildMode : MonoBehaviour
         blockerRings.Clear();
         foreach (var plot in blockers)
         {
-            // a little outside the footprint, so the ring is not hidden under the walls
-            if (plot) blockerRings.Add((plot.transform.position, RadiusOf(plot) + 0.8f));
+            // a little outside the footprint, so the outline is not hidden under the walls
+            if (!plot) continue;
+            var footprint = FootprintOf(plot).Grown(0.6f);
+            var rotation = plot.transform.eulerAngles.y;
+            blockerRings.Add((footprint.Centre(plot.transform.position, rotation), rotation, footprint.Half));
         }
         overlay.ShowBlockers(blockerRings);
     }
@@ -986,6 +1041,7 @@ public class VillageBuildMode : MonoBehaviour
         if (!townHall || Busy || IsMoving) return;
 
         radiusCache.Clear();
+        footprintCache.Clear();
         var position = townHall.HallPosition;
         var rotation = Mathf.Repeat(Mathf.Round(townHall.HallRotation / rotationStep) * rotationStep + degrees, 360f);
         var problem = ValidateHall(position, rotation);
@@ -1041,10 +1097,12 @@ public class VillageBuildMode : MonoBehaviour
 
         // The plaza must be clear too: plots may have been placed there after the hall moved away.
         radiusCache.Clear();
+        footprintCache.Clear();
         var plaza = townHall.Plaza;
         foreach (var plot in Plots)
         {
-            if (townHall.AreaOverlaps(plaza, 0f, plot.transform.position, RadiusOf(plot) + spacing))
+            if (Footprint.Overlaps(HallFootprint(townHall), plaza, 0f,
+                    FootprintOf(plot).Grown(spacing), plot.transform.position, plot.transform.eulerAngles.y))
             {
                 Failed?.Invoke(Localization.UI_BUILD_HALL_PLOT);
                 return;
@@ -1109,7 +1167,7 @@ public class VillageBuildMode : MonoBehaviour
             {
                 var ground = PlacementUtility.FindGroundPoint(snapped);
                 ghost.transform.SetPositionAndRotation(ground, Quaternion.Euler(0f, moveRotation, 0f));
-                MoveProblem = Validate(null, ghostRadius, ground, moveRotation);
+                MoveProblem = Validate(null, ghostFootprint, ground, moveRotation);
             }
 
             MoveValid = MoveProblem == null;
@@ -1120,7 +1178,7 @@ public class VillageBuildMode : MonoBehaviour
 
         if (overlay)
         {
-            overlay.Show(ghost.transform.position, ghost.transform.eulerAngles.y, ghostRadius, MoveValid);
+            ShowFootprint(ghostFootprint, ghost.transform.position, ghost.transform.eulerAngles.y, MoveValid);
         }
 
         if (Input.GetMouseButtonDown(0) && !Shinobytes.UI.HudPointer.IsOverHud() && !UIUtility.IsPointerOverUIElement())
@@ -1205,15 +1263,6 @@ public class VillageBuildMode : MonoBehaviour
         }
     }
 
-    private static float GhostRadius(GameObject instance)
-    {
-        var renderers = instance.GetComponentsInChildren<Renderer>();
-        if (renderers.Length == 0) return 2.5f;
-        var bounds = renderers[0].bounds;
-        for (var i = 1; i < renderers.Length; ++i) bounds.Encapsulate(renderers[i].bounds);
-        return Mathf.Max(2f, Mathf.Max(bounds.extents.x, bounds.extents.z) * 0.85f);
-    }
-
     private static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
 
     private async Task CommitMoveAsync()
@@ -1249,9 +1298,10 @@ public class VillageBuildMode : MonoBehaviour
         if (!slot || Busy || Moving) return;
 
         radiusCache.Clear();
+        footprintCache.Clear();
         var position = slot.transform.position;
         var rotation = Mathf.Repeat(Mathf.Round(slot.transform.eulerAngles.y / rotationStep) * rotationStep + degrees, 360f);
-        var problem = Validate(slot, RadiusOf(slot), position, rotation);
+        var problem = Validate(slot, FootprintOf(slot), position, rotation);
         if (problem != null)
         {
             Failed?.Invoke(problem);

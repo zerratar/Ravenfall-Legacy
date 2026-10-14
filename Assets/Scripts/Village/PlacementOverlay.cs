@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The ground guide shown while moving a building in build mode: a grid patch that follows the
-/// terrain around the building, and its footprint outlined in green when the spot is valid and red
-/// when it is not.
+/// The ground guide shown while placing a building in build mode: its footprint outlined in green
+/// when the spot is valid and red when it is not, and the buildings in the way outlined in red. The
+/// grid itself is VillageGrid, over the whole buildable area.
 /// </summary>
 /// <remarks>
 /// Built from line renderers with an unlit material made at runtime, so it needs no assets. Lines
@@ -13,21 +13,16 @@ using UnityEngine;
 /// </remarks>
 public class PlacementOverlay : MonoBehaviour
 {
-    private const int GridHalfCells = 6;
-    private const int PointsPerLine = 13;
     private const float Lift = 0.06f;
 
-    private static readonly Color GridColor = new Color(1f, 0.96f, 0.84f, 1f);
     private static readonly Color ValidColor = new Color(0.30f, 0.85f, 0.52f, 1f);
     private static readonly Color InvalidColor = new Color(0.95f, 0.32f, 0.30f, 1f);
 
-    private readonly List<LineRenderer> grid = new List<LineRenderer>();
     private LineRenderer footprint;
     // red rings under the buildings in the way, as many as there are; the extra ones are hidden
     private readonly List<LineRenderer> blockerRings = new List<LineRenderer>();
     private Material blockerMaterial;
     private const int RingPoints = 40;
-    private Material gridMaterial;
     private Material footprintMaterial;
     private float cellSize = 1f;
 
@@ -90,14 +85,8 @@ public class PlacementOverlay : MonoBehaviour
 
     private void Build()
     {
-        gridMaterial = MakeMaterial(GridColor);
         footprintMaterial = MakeMaterial(ValidColor);
 
-        var lines = (GridHalfCells * 2 + 1) * 2;
-        for (var i = 0; i < lines; ++i)
-        {
-            grid.Add(MakeLine("Grid " + i, gridMaterial, 0.03f, PointsPerLine, false));
-        }
 
         footprint = MakeLine("Footprint", footprintMaterial, 0.14f, 4 * 8, true);
     }
@@ -136,10 +125,11 @@ public class PlacementOverlay : MonoBehaviour
     }
 
     /// <summary>
-    /// Rings the buildings in the way of a placement, in the invalid colour, so the streamer can see
-    /// which ones to move instead of trying them one by one. Null or empty clears them.
+    /// Outlines the buildings in the way of a placement, in the invalid colour, so the streamer can
+    /// see which ones to move instead of trying them one by one. Each is its own footprint: middle,
+    /// turn and half size. Null or empty clears them.
     /// </summary>
-    public void ShowBlockers(IReadOnlyList<(Vector3 centre, float radius)> blockers)
+    public void ShowBlockers(IReadOnlyList<(Vector3 centre, float rotation, Vector2 half)> blockers)
     {
         var count = blockers?.Count ?? 0;
         if (count > 0 && !blockerMaterial) blockerMaterial = MakeMaterial(InvalidColor);
@@ -155,11 +145,22 @@ public class PlacementOverlay : MonoBehaviour
             ring.gameObject.SetActive(show);
             if (!show) continue;
 
-            var (centre, radius) = blockers[i];
-            for (var p = 0; p < RingPoints; ++p)
+            var (centre, rotation, half) = blockers[i];
+            var turn = Quaternion.Euler(0f, rotation, 0f);
+            var corners = new[]
             {
-                var angle = p / (float)RingPoints * Mathf.PI * 2f;
-                ring.SetPosition(p, Ground(centre + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius)));
+                centre + turn * new Vector3(-half.x, 0f, -half.y),
+                centre + turn * new Vector3(-half.x, 0f, half.y),
+                centre + turn * new Vector3(half.x, 0f, half.y),
+                centre + turn * new Vector3(half.x, 0f, -half.y),
+            };
+            var perSide = RingPoints / 4;
+            for (var side = 0; side < 4; ++side)
+            {
+                for (var p = 0; p < perSide; ++p)
+                {
+                    ring.SetPosition(side * perSide + p, Ground(Vector3.Lerp(corners[side], corners[(side + 1) % 4], p / (float)perSide)));
+                }
             }
         }
     }
@@ -199,16 +200,8 @@ public class PlacementOverlay : MonoBehaviour
         footprintMaterial.SetColor("_BaseColor", color);
         footprintMaterial.color = color;
 
-        // The grid is aligned to the world, like the snapping, not to the building.
-        var origin = new Vector3(Mathf.Round(center.x / cellSize) * cellSize, center.y, Mathf.Round(center.z / cellSize) * cellSize);
-        var extent = GridHalfCells * cellSize;
-        var index = 0;
-        for (var i = -GridHalfCells; i <= GridHalfCells; ++i)
-        {
-            var offset = i * cellSize;
-            Drape(grid[index++], origin + new Vector3(offset, 0f, -extent), origin + new Vector3(offset, 0f, extent));
-            Drape(grid[index++], origin + new Vector3(-extent, 0f, offset), origin + new Vector3(extent, 0f, offset));
-        }
+        // No patch of grid round the building any more: VillageGrid covers the whole buildable area
+        // for as long as build mode is on, which says "grid" far better than a 13 m square did.
 
         // Footprint: a rectangle turned with the building, its sides draped over the ground too.
         var turn = Quaternion.Euler(0f, rotation, 0f);
@@ -233,14 +226,6 @@ public class PlacementOverlay : MonoBehaviour
         }
     }
 
-    private void Drape(LineRenderer line, Vector3 from, Vector3 to)
-    {
-        for (var p = 0; p < PointsPerLine; ++p)
-        {
-            line.SetPosition(p, Ground(Vector3.Lerp(from, to, p / (float)(PointsPerLine - 1))));
-        }
-    }
-
     private static Vector3 Ground(Vector3 point)
     {
         return PlacementUtility.FindGroundPoint(point) + Vector3.up * Lift;
@@ -248,7 +233,6 @@ public class PlacementOverlay : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (gridMaterial) Destroy(gridMaterial);
         if (footprintMaterial) Destroy(footprintMaterial);
         if (blockerMaterial) Destroy(blockerMaterial);
     }
