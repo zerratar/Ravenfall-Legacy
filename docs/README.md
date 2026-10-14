@@ -35,6 +35,7 @@ Ravenfall is a **Twitch-integrated Idle RPG** where viewers can join a streamer'
 - [Player Component Architecture](./player-component-architecture.md) - which MonoBehaviours should stay components, and where a system fits better
 - [UI Toolkit Migration](./ui-toolkit-migration.md) - plan for moving the UI off uGUI, one screen at a time
 - [Refactor Risk Log](./refactor-risk-log.md) - behaviour changes to verify before shipping an update
+- [World Resources](./world-resources-design.md) - trees and gather spots as data in fields, drawn instanced (plan)
 
 ### Setup
 - [Unity 6.7 Local Fixes](./unity-6.7-local-fixes.md) - Required patches that live outside version control (third-party assets, URP settings, generated collider data)
