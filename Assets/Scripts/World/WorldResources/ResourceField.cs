@@ -131,6 +131,7 @@ public class ResourceField : MonoBehaviour
         if (index < 0 || index >= instances.Count) return;
         if (depleted.Length != instances.Count) Array.Resize(ref depleted, instances.Count);
         depleted[index] = value;
+        ResourceRenderer.SetDepleted(this, index, value);
     }
 
     /// <summary>The index of a type in this field, added if it is new.</summary>

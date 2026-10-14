@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using Unity.Mathematics;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -16,14 +19,18 @@ using UnityEngine.Rendering.Universal;
 /// </summary>
 /// <remarks>
 /// The buffer is built again only when fields or types change (painting in the editor, a field loading); at
-/// runtime only the standing/used-up state changes, and that is read while culling. The culling is plain C# for
-/// now; the step after the gameplay measures it and moves it to a Burst job if it shows.
+/// runtime only the standing/used-up state changes, one byte per instance kept here. The culling is a Burst job
+/// the render pipeline waits on only when it draws, so it runs off the main thread.
 /// </remarks>
 public static unsafe class ResourceRenderer
 {
     private const int HeaderBytes = 64;          // a zero matrix in front, as BatchRendererGroup expects
     private const int MatrixBytes = 48;          // a packed 3x4 matrix
     private const float ReferenceTanHalfFov = 0.57735f;   // tan(30 degrees): LOD distances are at a 60 degree view
+
+    // in the Profiler as their own entries, under Render; the culling itself shows as CullJob on a worker
+    private static readonly ProfilerMarker RebuildMarker = new ProfilerMarker(ProfilerCategory.Render, "ResourceRenderer.Rebuild");
+    private static readonly ProfilerMarker CullMarker = new ProfilerMarker(ProfilerCategory.Render, "ResourceRenderer.Cull");
 
     private static readonly int ObjectToWorldId = Shader.PropertyToID("unity_ObjectToWorld");
     private static readonly int WorldToObjectId = Shader.PropertyToID("unity_WorldToObject");
@@ -33,8 +40,11 @@ public static unsafe class ResourceRenderer
     private static BatchID batch;
     private static bool dirty = true;
     private static bool hooked;
+    // the culling jobs in flight, finished before anything they read changes
+    private static JobHandle culling;
 
     private static readonly List<ResourceField> fields = new List<ResourceField>();
+    private static readonly Dictionary<ResourceField, int> fieldStart = new Dictionary<ResourceField, int>();
     private static readonly Dictionary<Mesh, BatchMeshID> meshIds = new Dictionary<Mesh, BatchMeshID>();
     private static readonly Dictionary<Material, BatchMaterialID> materialIds = new Dictionary<Material, BatchMaterialID>();
 
@@ -58,19 +68,18 @@ public static unsafe class ResourceRenderer
     private static readonly List<LookInfo> looks = new List<LookInfo>();
     private static readonly Dictionary<(ResourceType, int, byte), int> lookLookup = new Dictionary<(ResourceType, int, byte), int>();
 
-    // per instance, in buffer order
+    // what the culling job reads, in buffer order, made when the buffer is
     private static int count;
-    private static Vector3[] centres = Array.Empty<Vector3>();
-    private static float[] radii = Array.Empty<float>();
-    private static int[] standingLook = Array.Empty<int>();
-    private static int[] depletedLook = Array.Empty<int>();
-    private static ResourceField[] ownerField = Array.Empty<ResourceField>();
-    private static int[] ownerIndex = Array.Empty<int>();
-
-    // scratch for culling, kept between calls
-    private static int[] chosenLod = Array.Empty<int>();
-    private static int[] keyCounts = Array.Empty<int>();
-    private static int[] keyFill = Array.Empty<int>();
+    private static NativeArray<float3> centres;
+    private static NativeArray<float> radii;
+    private static NativeArray<int> standingLook;
+    private static NativeArray<int> depletedLook;
+    private static NativeArray<LookInfo> nativeLooks;
+    private static NativeArray<LodInfo> nativeLods;
+    private static NativeArray<int> nativeLodKeys;
+    private static NativeArray<DrawKey> nativeKeys;
+    // whether each instance is used up, written by the game; each cull takes a copy
+    private static byte[] depleted = Array.Empty<byte>();
 
     /// <summary>How many instances are drawn, for the field inspectors and the profiler numbers.</summary>
     public static int InstanceCount => count;
@@ -90,6 +99,14 @@ public static unsafe class ResourceRenderer
 
     public static void MarkDirty() => dirty = true;
 
+    /// <summary>Shows an instance standing or used up (its stump, or nothing) from the next frame on.</summary>
+    public static void SetDepleted(ResourceField field, int index, bool value)
+    {
+        if (dirty || !fieldStart.TryGetValue(field, out var start)) return;   // the rebuild reads it from the field
+        var at = start + index;
+        if (at >= 0 && at < count) depleted[at] = value ? (byte)1 : (byte)0;
+    }
+
     private static void Hook()
     {
         if (hooked) return;
@@ -106,14 +123,18 @@ public static unsafe class ResourceRenderer
 
     private static void BeforeRendering(ScriptableRenderContext context, List<Camera> cameras)
     {
+        // last frame's culling is long done; start the new frame's list
+        culling.Complete();
+        culling = default;
         if (!dirty) return;
         dirty = false;
-        Rebuild();
+        using (RebuildMarker.Auto()) Rebuild();
     }
 
     /// <summary>Everything again: the meshes and materials, the draw keys, the looks and the instance buffer.</summary>
     private static void Rebuild()
     {
+        culling.Complete();
         fields.RemoveAll(f => !f);
         if (group == null)
         {
@@ -138,24 +159,25 @@ public static unsafe class ResourceRenderer
         lodKeys.Clear();
         looks.Clear();
         lookLookup.Clear();
+        fieldStart.Clear();
+        DisposeNative();
 
         count = 0;
         foreach (var field in fields) if (field.isActiveAndEnabled) count += field.Count;
         if (count == 0) return;
 
-        Resize(ref centres, count);
-        Resize(ref radii, count);
-        Resize(ref standingLook, count);
-        Resize(ref depletedLook, count);
-        Resize(ref ownerField, count);
-        Resize(ref ownerIndex, count);
-        Resize(ref chosenLod, count);
+        centres = new NativeArray<float3>(count, Allocator.Persistent);
+        radii = new NativeArray<float>(count, Allocator.Persistent);
+        standingLook = new NativeArray<int>(count, Allocator.Persistent);
+        depletedLook = new NativeArray<int>(count, Allocator.Persistent);
+        depleted = new byte[count];
 
         var matrices = new float[(HeaderBytes + count * MatrixBytes * 2) / 4];
         var n = 0;
         foreach (var field in fields)
         {
             if (!field.isActiveAndEnabled) continue;
+            fieldStart[field] = n;
             var layer = (byte)field.gameObject.layer;
             for (var i = 0; i < field.Count; ++i)
             {
@@ -165,13 +187,12 @@ public static unsafe class ResourceRenderer
                 var variant = type != null && type.variants.Length > 0 ? Mathf.Clamp(instance.variant, 0, type.variants.Length - 1) : -1;
                 standingLook[n] = type != null && variant >= 0 ? LookIndex(type, variant, layer) : -1;
                 depletedLook[n] = type != null ? LookIndex(type, -1, layer) : -1;
+                depleted[n] = field.IsDepleted(i) ? (byte)1 : (byte)0;
 
                 // a sphere round the standing look, for culling; the stump fits inside it
                 var bounds = type != null && variant >= 0 && !type.variants[variant].IsEmpty ? type.variants[variant].lods[0].mesh.bounds : new Bounds(Vector3.zero, Vector3.one);
                 centres[n] = matrix.MultiplyPoint3x4(bounds.center);
                 radii[n] = bounds.extents.magnitude * (instance.scale > 0f ? instance.scale : 1f);
-                ownerField[n] = field;
-                ownerIndex[n] = i;
 
                 WritePacked(matrices, (HeaderBytes + n * MatrixBytes) / 4, matrix);
                 WritePacked(matrices, (HeaderBytes + (count + n) * MatrixBytes) / 4, matrix.inverse);
@@ -179,8 +200,10 @@ public static unsafe class ResourceRenderer
             }
         }
 
-        Resize(ref keyCounts, keys.Count);
-        Resize(ref keyFill, keys.Count);
+        nativeLooks = ToNative(looks);
+        nativeLods = ToNative(lods);
+        nativeLodKeys = ToNative(lodKeys);
+        nativeKeys = ToNative(keys);
 
         buffer = new GraphicsBuffer(GraphicsBuffer.Target.Raw, matrices.Length, 4);
         buffer.SetData(matrices);
@@ -241,145 +264,210 @@ public static unsafe class ResourceRenderer
         if (count == 0 || buffer == null) return default;
         if (context.viewType == BatchCullingViewType.Picking || context.viewType == BatchCullingViewType.SelectionOutline) return default;
 
-        var shadowPass = context.viewType == BatchCullingViewType.Light;
-        var planes = context.cullingPlanes;
-        var lod = context.lodParameters;
-        var camera = lod.cameraPosition;
-        // distances as if seen at 60 degrees, so a zoomed in camera keeps detail further out
-        var lodScale = lod.isOrthographic ? 1f : Mathf.Tan(lod.fieldOfView * 0.5f * Mathf.Deg2Rad) / ReferenceTanHalfFov;
-        var shadowDistance = ShadowDistance();
-
-        Array.Clear(keyCounts, 0, keys.Count);
-        var visible = 0;
-        for (var i = 0; i < count; ++i)
+        using (CullMarker.Auto())
         {
-            chosenLod[i] = -1;
-            var field = ownerField[i];
-            var look = field && field.IsDepleted(ownerIndex[i]) ? depletedLook[i] : standingLook[i];
-            if (look < 0) continue;
+            var shadowPass = context.viewType == BatchCullingViewType.Light;
+            var lod = context.lodParameters;
 
-            var centre = centres[i];
-            var radius = radii[i];
-            var distance = Vector3.Distance(camera, centre);
-            if (shadowPass)
+            // the view's planes, and this frame's standing state, for the job to own
+            var planes = new NativeArray<float4>(shadowPass ? 0 : context.cullingPlanes.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            for (var p = 0; p < planes.Length; ++p)
             {
-                // shadow cascades come as one set of planes per split; the caster distance is enough to keep
-                // far trees out of the shadow maps
-                if (distance - radius > shadowDistance) continue;
+                var plane = context.cullingPlanes[p];
+                planes[p] = new float4(plane.normal, plane.distance);
             }
-            else
+            var state = new NativeArray<byte>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            NativeArray<byte>.Copy(depleted, state, count);
+
+            var job = new CullJob
             {
-                var inside = true;
-                for (var p = 0; p < planes.Length && inside; ++p)
-                {
-                    var plane = planes[p];
-                    inside = Vector3.Dot(plane.normal, centre) + plane.distance >= -radius;
-                }
-                if (!inside) continue;
-            }
-
-            var info = looks[look];
-            var seen = distance * lodScale;
-            var chosen = -1;
-            for (var l = 0; l < info.lodCount; ++l)
-            {
-                var d = lods[info.firstLod + l].maxDistance;
-                if (d <= 0f || seen <= d)
-                {
-                    chosen = info.firstLod + l;
-                    break;
-                }
-            }
-            if (chosen < 0) continue;
-
-            chosenLod[i] = chosen;
-            var lodInfo = lods[chosen];
-            for (var k = 0; k < lodInfo.keyCount; ++k) keyCounts[lodKeys[lodInfo.firstKey + k]]++;
-            visible += lodInfo.keyCount;
-        }
-
-        if (visible == 0) return default;
-
-        var commandCount = 0;
-        for (var k = 0; k < keys.Count; ++k) if (keyCounts[k] > 0) commandCount++;
-
-        var commands = new BatchCullingOutputDrawCommands
-        {
-            drawCommandCount = commandCount,
-            drawCommands = Malloc<BatchDrawCommand>(commandCount),
-            drawRangeCount = commandCount,
-            drawRanges = Malloc<BatchDrawRange>(commandCount),
-            visibleInstanceCount = visible,
-            visibleInstances = Malloc<int>(visible),
-            drawCommandPickingEntityIds = null,
-            instanceSortingPositions = null,
-            instanceSortingPositionFloatCount = 0,
-        };
-
-        // where each key's instances start in the visible list
-        var offset = 0;
-        var command = 0;
-        for (var k = 0; k < keys.Count; ++k)
-        {
-            keyFill[k] = offset;
-            if (keyCounts[k] == 0) continue;
-            var key = keys[k];
-            commands.drawCommands[command] = new BatchDrawCommand
-            {
-                visibleOffset = (uint)offset,
-                visibleCount = (uint)keyCounts[k],
-                batchID = batch,
-                materialID = key.material,
-                meshID = key.mesh,
-                submeshIndex = key.submesh,
-                splitVisibilityMask = 0xff,
-                flags = BatchDrawCommandFlags.None,
-                sortingPosition = 0,
+                centres = centres,
+                radii = radii,
+                standingLook = standingLook,
+                depletedLook = depletedLook,
+                depleted = state,
+                planes = planes,
+                looks = nativeLooks,
+                lods = nativeLods,
+                lodKeys = nativeLodKeys,
+                keys = nativeKeys,
+                batch = batch,
+                shadowPass = shadowPass,
+                camera = lod.cameraPosition,
+                // distances as if seen at 60 degrees, so a zoomed in camera keeps detail further out
+                lodScale = lod.isOrthographic ? 1f : Mathf.Tan(lod.fieldOfView * 0.5f * Mathf.Deg2Rad) / ReferenceTanHalfFov,
+                shadowDistance = ShadowDistance(),
+                output = output.drawCommands,
             };
-            commands.drawRanges[command] = new BatchDrawRange
-            {
-                drawCommandsType = BatchDrawCommandType.Direct,
-                drawCommandsBegin = (uint)command,
-                drawCommandsCount = 1,
-                filterSettings = new BatchFilterSettings
-                {
-                    renderingLayerMask = 0xffffffff,
-                    layer = key.layer,
-                    shadowCastingMode = key.shadows,
-                    receiveShadows = true,
-                    staticShadowCaster = false,
-                    allDepthSorted = false,
-                },
-            };
-            offset += keyCounts[k];
-            command++;
+            var handle = job.Schedule();
+            planes.Dispose(handle);
+            state.Dispose(handle);
+            culling = JobHandle.CombineDependencies(culling, handle);
+            return handle;
         }
+    }
 
-        for (var i = 0; i < count; ++i)
+    /// <summary>
+    /// Culls every instance to the view (or, for shadows, to the shadow distance), picks each one's level of
+    /// detail, and writes one draw command per mesh, submesh and material that has any instances to draw.
+    /// </summary>
+    [BurstCompile]
+    private struct CullJob : IJob
+    {
+        [ReadOnly] public NativeArray<float3> centres;
+        [ReadOnly] public NativeArray<float> radii;
+        [ReadOnly] public NativeArray<int> standingLook;
+        [ReadOnly] public NativeArray<int> depletedLook;
+        [ReadOnly] public NativeArray<byte> depleted;
+        [ReadOnly] public NativeArray<float4> planes;
+        [ReadOnly] public NativeArray<LookInfo> looks;
+        [ReadOnly] public NativeArray<LodInfo> lods;
+        [ReadOnly] public NativeArray<int> lodKeys;
+        [ReadOnly] public NativeArray<DrawKey> keys;
+        public BatchID batch;
+        public bool shadowPass;
+        public float3 camera;
+        public float lodScale;
+        public float shadowDistance;
+        public NativeArray<BatchCullingOutputDrawCommands> output;
+
+        public void Execute()
         {
-            var chosen = chosenLod[i];
-            if (chosen < 0) continue;
-            var lodInfo = lods[chosen];
-            for (var k = 0; k < lodInfo.keyCount; ++k)
+            var n = centres.Length;
+            var chosenLod = new NativeArray<int>(n, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            var keyCounts = new NativeArray<int>(keys.Length, Allocator.Temp);
+            var visible = 0;
+            for (var i = 0; i < n; ++i)
             {
-                var key = lodKeys[lodInfo.firstKey + k];
-                commands.visibleInstances[keyFill[key]++] = i;
+                chosenLod[i] = -1;
+                var look = depleted[i] != 0 ? depletedLook[i] : standingLook[i];
+                if (look < 0) continue;
+
+                var centre = centres[i];
+                var radius = radii[i];
+                var distance = math.distance(camera, centre);
+                if (shadowPass)
+                {
+                    // shadow cascades come as one set of planes per split; the caster distance is enough to keep
+                    // far trees out of the shadow maps
+                    if (distance - radius > shadowDistance) continue;
+                }
+                else
+                {
+                    var inside = true;
+                    for (var p = 0; p < planes.Length && inside; ++p)
+                    {
+                        var plane = planes[p];
+                        inside = math.dot(plane.xyz, centre) + plane.w >= -radius;
+                    }
+                    if (!inside) continue;
+                }
+
+                var info = looks[look];
+                var seen = distance * lodScale;
+                var chosen = -1;
+                for (var l = 0; l < info.lodCount; ++l)
+                {
+                    var d = lods[info.firstLod + l].maxDistance;
+                    if (d <= 0f || seen <= d)
+                    {
+                        chosen = info.firstLod + l;
+                        break;
+                    }
+                }
+                if (chosen < 0) continue;
+
+                chosenLod[i] = chosen;
+                var lodInfo = lods[chosen];
+                for (var k = 0; k < lodInfo.keyCount; ++k) keyCounts[lodKeys[lodInfo.firstKey + k]]++;
+                visible += lodInfo.keyCount;
             }
+
+            if (visible == 0) return;
+
+            var commandCount = 0;
+            for (var k = 0; k < keys.Length; ++k) if (keyCounts[k] > 0) commandCount++;
+
+            var commands = new BatchCullingOutputDrawCommands
+            {
+                drawCommandCount = commandCount,
+                drawCommands = Malloc<BatchDrawCommand>(commandCount),
+                drawRangeCount = commandCount,
+                drawRanges = Malloc<BatchDrawRange>(commandCount),
+                visibleInstanceCount = visible,
+                visibleInstances = Malloc<int>(visible),
+                drawCommandPickingEntityIds = null,
+                instanceSortingPositions = null,
+                instanceSortingPositionFloatCount = 0,
+            };
+
+            // where each key's instances start in the visible list
+            var keyFill = new NativeArray<int>(keys.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            var offset = 0;
+            var command = 0;
+            for (var k = 0; k < keys.Length; ++k)
+            {
+                keyFill[k] = offset;
+                if (keyCounts[k] == 0) continue;
+                var key = keys[k];
+                commands.drawCommands[command] = new BatchDrawCommand
+                {
+                    visibleOffset = (uint)offset,
+                    visibleCount = (uint)keyCounts[k],
+                    batchID = batch,
+                    materialID = key.material,
+                    meshID = key.mesh,
+                    submeshIndex = key.submesh,
+                    splitVisibilityMask = 0xff,
+                    flags = BatchDrawCommandFlags.None,
+                    sortingPosition = 0,
+                };
+                commands.drawRanges[command] = new BatchDrawRange
+                {
+                    drawCommandsType = BatchDrawCommandType.Direct,
+                    drawCommandsBegin = (uint)command,
+                    drawCommandsCount = 1,
+                    filterSettings = new BatchFilterSettings
+                    {
+                        renderingLayerMask = 0xffffffff,
+                        layer = key.layer,
+                        shadowCastingMode = key.shadows,
+                        receiveShadows = true,
+                        staticShadowCaster = false,
+                        allDepthSorted = false,
+                    },
+                };
+                offset += keyCounts[k];
+                command++;
+            }
+
+            for (var i = 0; i < n; ++i)
+            {
+                var chosen = chosenLod[i];
+                if (chosen < 0) continue;
+                var lodInfo = lods[chosen];
+                for (var k = 0; k < lodInfo.keyCount; ++k)
+                {
+                    var key = lodKeys[lodInfo.firstKey + k];
+                    commands.visibleInstances[keyFill[key]] = i;
+                    keyFill[key] = keyFill[key] + 1;
+                }
+            }
+
+            output[0] = commands;
         }
 
-        output.drawCommands[0] = commands;
-        return default;
+        // freed by the render pipeline once it has drawn
+        private static T* Malloc<T>(int n) where T : unmanaged
+        {
+            return (T*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<T>() * math.max(1, n), UnsafeUtility.AlignOf<T>(), Allocator.TempJob);
+        }
     }
 
     private static float ShadowDistance()
     {
         var asset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
         return asset ? asset.shadowDistance : QualitySettings.shadowDistance;
-    }
-
-    private static T* Malloc<T>(int n) where T : unmanaged
-    {
-        return (T*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<T>() * Mathf.Max(1, n), UnsafeUtility.AlignOf<T>(), Allocator.TempJob);
     }
 
     // the packed 3x4 layout the instancing shaders read: three rows of each column, column by column
@@ -391,13 +479,29 @@ public static unsafe class ResourceRenderer
         into[at + 9] = m.m03; into[at + 10] = m.m13; into[at + 11] = m.m23;
     }
 
-    private static void Resize<T>(ref T[] array, int size)
+    private static NativeArray<T> ToNative<T>(List<T> list) where T : unmanaged
     {
-        if (array.Length < size) array = new T[Mathf.NextPowerOfTwo(size)];
+        var array = new NativeArray<T>(Mathf.Max(1, list.Count), Allocator.Persistent);
+        for (var i = 0; i < list.Count; ++i) array[i] = list[i];
+        return array;
+    }
+
+    private static void DisposeNative()
+    {
+        if (centres.IsCreated) centres.Dispose();
+        if (radii.IsCreated) radii.Dispose();
+        if (standingLook.IsCreated) standingLook.Dispose();
+        if (depletedLook.IsCreated) depletedLook.Dispose();
+        if (nativeLooks.IsCreated) nativeLooks.Dispose();
+        if (nativeLods.IsCreated) nativeLods.Dispose();
+        if (nativeLodKeys.IsCreated) nativeLodKeys.Dispose();
+        if (nativeKeys.IsCreated) nativeKeys.Dispose();
     }
 
     private static void Dispose()
     {
+        culling.Complete();
+        culling = default;
         if (group != null)
         {
             if (buffer != null) group.RemoveBatch(batch);
@@ -408,8 +512,10 @@ public static unsafe class ResourceRenderer
         }
         buffer?.Dispose();
         buffer = null;
+        DisposeNative();
         meshIds.Clear();
         materialIds.Clear();
+        fieldStart.Clear();
         count = 0;
         dirty = true;
     }

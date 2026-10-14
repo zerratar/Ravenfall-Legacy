@@ -130,9 +130,10 @@ A `ResourceRenderer` keeps one `BatchRendererGroup`:
 - one batch per mesh and material used by any variant, LOD or stump;
 - one GPU buffer of instance transforms, written at load and when a field changes in the editor (trees do not move
   at runtime);
-- a culling callback per camera and per shadow pass that tests each instance against the view, picks its LOD by
-  distance and its look by state (standing variant or depleted look), and emits draw commands. A plain loop for
-  now; step 5 measures it and moves it to a Burst job if it shows.
+- a culling callback per camera and per shadow pass that schedules a Burst job: it tests each instance against
+  the view, picks its LOD by distance and its look by state (standing variant or depleted look), and writes the
+  draw commands. The render pipeline waits on the job only when it draws, so the main thread only copies the
+  view's planes and one byte of state per instance. (Step 1 had a plain loop; step 5 measured it and moved it.)
 
 It runs in the Scene view in edit mode as well as in play mode, so fields show while placing. Every tree and gather
 spot material uses the one Shader Graph Lit shader, which takes instanced data; a fallback with
@@ -181,11 +182,45 @@ Each step is a commit, tested in play mode and in the editor before the next.
    count the same as before. Tested in play mode: every chunk has its targets on its island at its level, trees fall
    after their health in hits and show their stump, spots cannot be gathered twice, and both come back on time. The
    old components and code are removed. Done; a play-test with players chopping and gathering is still to do.
-5. **Numbers.** Profiler before and after: GameObject count, scene load time, memory, and the frame time with 50 players
-   chopping. Plus a stress field of 10,000 trees to show the headroom.
+5. **Numbers.** Measured, and the culling moved to a Burst job; see Numbers below. Done.
 
 Afterwards, on the same system: rocks, fishing spots and farm patches; village decor; then NPCs. Those are animated and
 skinned, so they need another technique (GPU-baked animation, for example), designed separately.
+
+## Numbers
+
+Measured in the editor on 2026-10-14 (editor timings are noisy and slower than a build; the comparisons hold).
+
+**The scene, loaded** (MainWorld before the conversion, against after):
+
+| | Before | After | Less |
+|---|---|---|---|
+| GameObjects | 57,218 | 54,315 | 2,903 |
+| Mesh renderers | 24,334 | 22,844 | 1,490 |
+| Colliders | 17,742 (675 triggers) | 16,883 (288 triggers) | 859 |
+| LOD groups | 574 | 325 | 249 |
+| Behaviours | 28,019 | 27,033 | 986 |
+
+In edit mode every variant of an old tree was active; at runtime each tree showed one, so the renderers saved while
+playing are fewer than 1,490 (about 400 trees and spots, with their LOD levels). Opening the scene in the editor
+took 3.4 s before and 3.2 s after. The 387 instances cost 28 bytes each in the scene and 96 bytes each on the GPU.
+
+**Drawing**, the Home island view from above (main view and its shadow passes), with 387 instances and with a
+temporary field of 10,000 more trees on top:
+
+| | 387 | 10,387 |
+|---|---|---|
+| Culling on the main thread, per render, plain loop (step 1) | 0.09 ms | 3.8 ms |
+| Culling on the main thread, per render, Burst job | 0.1 to 0.2 ms | 0.15 to 0.23 ms |
+| Whole camera render, plain loop | 2.8 ms | 8.4 ms |
+| Whole camera render, Burst job | 4 to 5 ms | 3 to 6 ms (the same, within the noise) |
+| Rebuilding the buffer (once per change) | | 10 ms |
+
+The 10,000 trees drew correctly, stumps came and went with the Burst job, and nothing leaked.
+
+**Gameplay:** picking a target for 50 players takes 0.26 ms over a chunk's 47 trees. It is a straight pass, so a
+chunk of 10,000 would take 1 ms a pick in the editor; no chunk comes near that, but a far bigger field would want a
+grid. A field with nothing cut costs one comparison per frame.
 
 ## Bugs found on the way
 

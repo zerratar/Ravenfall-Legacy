@@ -60,7 +60,10 @@ public sealed class ResourceTarget
     /// spread out. Also speeds up the chunk's respawns when a quarter or less stand, and slows them back down
     /// when half or more do. Null when none stand.
     /// </summary>
-    public static ResourceTarget PickFor(PlayerController player, IReadOnlyList<ResourceTarget> targets)
+    public static ResourceTarget PickFor(PlayerController player, IReadOnlyList<ResourceTarget> targets) => PickFor(player.Position, targets);
+
+    /// <summary>The same, from a position.</summary>
+    public static ResourceTarget PickFor(Vector3 from, IReadOnlyList<ResourceTarget> targets)
     {
         if (targets == null || targets.Count == 0) return null;
 
@@ -72,7 +75,10 @@ public sealed class ResourceTarget
             var target = targets[i];
             if (!target.IsAvailable) continue;
             standing++;
-            var score = Vector3.Distance(player.Position, target.Position) + Random.value * 15f;
+            // the random part only adds, so one already further than the best cannot win; the odds stay the same
+            var distance = Vector3.Distance(from, target.Position);
+            if (distance >= bestScore) continue;
+            var score = distance + Random.value * 15f;
             if (score < bestScore)
             {
                 bestScore = score;
