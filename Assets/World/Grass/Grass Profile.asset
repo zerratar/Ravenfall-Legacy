@@ -44,6 +44,69 @@ MonoBehaviour:
     size: {x: 0.25, y: 0.45}
     minDensity: 0
     enabled: 1
+  - name: SM_Env_Grass_Tuft_02
+    mesh: {fileID: 4300000, guid: 96c416707740c674f8a2ca6499252d14, type: 3}
+    blades: 7
+    bladeWidth: 0.05
+    material: {fileID: 2100000, guid: 07f8b5d0c6c718f418bedde3a1546cf4, type: 2}
+    perSquareMetre: 0.3
+    size: {x: 0.45, y: 0.75}
+    minDensity: 0.3
+    enabled: 1
+  - name: SM_Env_Grass_Tuft_03
+    mesh: {fileID: 4300000, guid: cfa32c4f366e5ff4a8732de0ba0b086d, type: 3}
+    blades: 7
+    bladeWidth: 0.05
+    material: {fileID: 2100000, guid: 377e1d12a28acf846b8757851a032134, type: 2}
+    perSquareMetre: 0.2
+    size: {x: 0.4, y: 0.7}
+    minDensity: 0.3
+    enabled: 1
+  - name: SM_Env_Flower_01
+    mesh: {fileID: 4300000, guid: ce6fbdc6baa4d3b468d9f9e66afc7869, type: 3}
+    blades: 7
+    bladeWidth: 0.05
+    material: {fileID: 2100000, guid: 46f9546973d7f70439bf562760ed4f3b, type: 2}
+    perSquareMetre: 0.06
+    size: {x: 0.8, y: 1.2}
+    minDensity: 0.75
+    enabled: 1
+  - name: SM_Env_Flower_02
+    mesh: {fileID: 4300000, guid: e74c4c9858cbf1c40afb19ed3200fbaf, type: 3}
+    blades: 7
+    bladeWidth: 0.05
+    material: {fileID: 2100000, guid: be329fb95aeaead48aa215e8ecd4369b, type: 2}
+    perSquareMetre: 0.04
+    size: {x: 0.8, y: 1.1}
+    minDensity: 0.75
+    enabled: 1
+  - name: SM_Env_Flowers_12
+    mesh: {fileID: 4300000, guid: 3cbda8234d0de564e847d1f371391034, type: 3}
+    blades: 7
+    bladeWidth: 0.05
+    material: {fileID: 2100000, guid: 1549877710c605e449a2443fd4c84a86, type: 2}
+    perSquareMetre: 0.05
+    size: {x: 0.7, y: 1}
+    minDensity: 0.8
+    enabled: 1
+  - name: SM_Env_Flowers_15
+    mesh: {fileID: 4300000, guid: 2ad22f3827667b24e843d2e19e848366, type: 3}
+    blades: 7
+    bladeWidth: 0.05
+    material: {fileID: 2100000, guid: 0dd015ff2885af24093badee282ad85f, type: 2}
+    perSquareMetre: 0.05
+    size: {x: 0.7, y: 1}
+    minDensity: 0.8
+    enabled: 1
+  - name: SM_Env_Flowers_18
+    mesh: {fileID: 4300000, guid: fcf18cc7db6d2de4e8d4ea915dd23c9c, type: 3}
+    blades: 7
+    bladeWidth: 0.05
+    material: {fileID: 2100000, guid: 576d98979a8b60343af2ce0360448297, type: 2}
+    perSquareMetre: 0.04
+    size: {x: 0.7, y: 1}
+    minDensity: 0.8
+    enabled: 1
   waterLevel: -3
   maxSlope: 40
   tint: {r: 0.92, g: 1, b: 0.8, a: 1}
