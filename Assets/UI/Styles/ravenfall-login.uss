@@ -153,6 +153,162 @@
     color: var(--rf-accent);
 }
 
+/* ---- Twitch ----
+   First, and in Twitch's purple, as on the website: most streamers have a Twitch account and
+   no game password. */
+
+.rf-login .rf-login__twitch {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    height: 54px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    background-color: rgb(145, 70, 255);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    cursor: link;
+}
+
+.rf-login .rf-login__twitch:hover {
+    background-color: rgb(165, 104, 255);
+}
+
+.rf-login .rf-login__twitch:active {
+    background-color: rgb(119, 44, 232);
+}
+
+.rf-login .rf-login__twitch-icon {
+    font-size: 20px;
+    color: rgb(255, 255, 255);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-login .rf-login__twitch-text {
+    font-size: 19px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+}
+
+/* "or use a game password", between two lines */
+.rf-login__or {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--rf-space-4);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-login__or-line {
+    flex-grow: 1;
+    height: 1px;
+    background-color: var(--rf-divider);
+}
+
+.rf-login .rf-login__or-text {
+    margin-left: var(--rf-space-3);
+    margin-right: var(--rf-space-3);
+    font-size: 13px;
+    color: var(--rf-text-dim);
+}
+
+/* ---- Waiting for the website ---- */
+
+.rf-login__wait {
+    align-items: stretch;
+}
+
+/* the wait says what to do itself; the lead about choosing how to sign in is beside the point */
+.rf-login--waiting .rf-login__lead {
+    display: none;
+}
+
+.rf-login .rf-login__wait-title {
+    font-size: 19px;
+    -unity-font-style: bold;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+/* The code to compare with the website, as large as the card allows. */
+.rf-login .rf-login__wait-code {
+    margin-top: var(--rf-space-4);
+    margin-bottom: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    font-size: 40px;
+    -unity-font-style: bold;
+    letter-spacing: 6px;
+    -unity-text-align: middle-center;
+    color: var(--rf-accent);
+    background-color: rgba(232, 163, 61, 0.1);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-accent-dim);
+    border-right-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent-dim);
+    border-bottom-color: var(--rf-accent-dim);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-login .rf-login__wait-text {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-login__wait-status {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--rf-space-4);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-login__wait-spinner {
+    width: 18px;
+    height: 18px;
+    margin-right: var(--rf-space-3);
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: rgba(232, 163, 61, 0.25);
+    border-right-color: rgba(232, 163, 61, 0.25);
+    border-bottom-color: rgba(232, 163, 61, 0.25);
+    border-top-color: var(--rf-accent);
+    border-top-left-radius: 9px;
+    border-top-right-radius: 9px;
+    border-bottom-left-radius: 9px;
+    border-bottom-right-radius: 9px;
+}
+
+.rf-login .rf-login__wait-status-text {
+    font-size: 15px;
+    color: var(--rf-text);
+}
+
+.rf-login__wait-actions {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-button.rf-login__wait-cancel {
+    margin-left: 0;
+    margin-right: 0;
+}
+
 /* ---- Remember me and the forgotten password link ---- */
 
 .rf-login__row {

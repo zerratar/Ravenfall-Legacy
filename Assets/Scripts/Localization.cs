@@ -796,7 +796,7 @@ public static class Localization
 
     // Login screen
     public static string UI_LOGIN_TITLE = "Sign in";
-    public static string UI_LOGIN_LEAD = "Use your Ravenfall username and the password you set for the game.";
+    public static string UI_LOGIN_LEAD = "Sign in with Twitch, or with your username and the password you set for the game.";
     public static string UI_LOGIN_USERNAME = "USERNAME";
     public static string UI_LOGIN_PASSWORD = "PASSWORD";
     public static string UI_LOGIN_SHOW_PASSWORD = "Show password";
@@ -806,7 +806,7 @@ public static class Localization
     public static string UI_LOGIN_SUBMIT = "SIGN IN";
     public static string UI_LOGIN_BUSY = "SIGNING IN...";
     public static string UI_LOGIN_FAILED_TITLE = "That did not match";
-    public static string UI_LOGIN_FAILED = "This is the password you set for the game client, not your Twitch password. If you have never set one, sign in with Twitch on ravenfall.stream and set one there.";
+    public static string UI_LOGIN_FAILED = "This is the password you set for the game client, not your Twitch password. If you have never set one, use Sign in with Twitch above.";
     public static string UI_LOGIN_UNREACHABLE_TITLE = "Could not reach the server";
     public static string UI_LOGIN_UNREACHABLE = "Check your internet connection and try again. If it keeps happening, the server may be down for a moment.";
     public static string UI_LOGIN_MISSING = "Fill in both your username and your password.";
@@ -814,6 +814,19 @@ public static class Localization
     public static string UI_LOGIN_SET_PASSWORD = "Set one on ravenfall.stream";
     public static string UI_LOGIN_VERSION = "Ravenfall v{0}";
     public static string UI_LOGIN_QUIT = "Quit";
+    public static string UI_LOGIN_TWITCH = "Sign in with Twitch";
+    public static string UI_LOGIN_OR = "or use a game password";
+    public static string UI_LOGIN_WAIT_TITLE = "Approve the sign in in your browser";
+    public static string UI_LOGIN_WAIT_TEXT = "The Ravenfall website opened in your browser. Check that it shows this same code, and approve it there. The game signs in by itself, and from then on every time it starts.";
+    public static string UI_LOGIN_WAITING = "Waiting for you to approve...";
+    public static string UI_LOGIN_WAIT_REOPEN = "Open the page again";
+    public static string UI_LOGIN_WAIT_CANCEL = "Cancel";
+    public static string UI_LOGIN_TWITCH_DENIED_TITLE = "Sign in cancelled";
+    public static string UI_LOGIN_TWITCH_DENIED = "The sign in was turned down on the website.";
+    public static string UI_LOGIN_TWITCH_EXPIRED_TITLE = "The sign in ran out";
+    public static string UI_LOGIN_TWITCH_EXPIRED = "It was not approved within ten minutes. Try again.";
+    public static string UI_LOGIN_DEVICE_EXPIRED_TITLE = "Sign in again";
+    public static string UI_LOGIN_DEVICE_EXPIRED = "The saved sign in for this computer no longer works. It was signed out somewhere else, or not used for a long time.";
 
     // Chat connection warning
     public static string UI_CONN_BOT_OFFLINE = "Bot offline";

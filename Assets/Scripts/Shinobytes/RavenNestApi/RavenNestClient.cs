@@ -198,6 +198,58 @@ namespace RavenNest.SDK
         /// <summary>Why the last login failed, for the login screen.</summary>
         public LoginFailure LastLoginFailure { get; private set; }
 
+        /// <summary>The website these endpoints belong to, "https://www.ravenfall.stream", for links to it.</summary>
+        public string WebsiteUrl
+        {
+            get
+            {
+                var url = Settings.WebApiAuthEndpoint ?? string.Empty;
+                var api = url.IndexOf("/api", StringComparison.OrdinalIgnoreCase);
+                return (api > 0 ? url.Substring(0, api) : url).TrimEnd('/');
+            }
+        }
+
+        /// <summary>Signs in with a device token, from a Twitch sign in or remember me.</summary>
+        public async Task<bool> LoginWithDeviceAsync(string deviceToken)
+        {
+            LastLoginFailure = LoginFailure.None;
+            try
+            {
+                Interlocked.Increment(ref activeRequestCount);
+                var result = await Auth.DeviceLoginAsync(deviceToken);
+                if (result != null && result.AuthToken != null)
+                {
+                    return CompleteLogin(result.AuthToken);
+                }
+
+                LastLoginFailure = LoginFailure.WrongCredentials;
+            }
+            catch (Exception exc)
+            {
+                LastLoginFailure = LoginFailure.Unreachable;
+                logger.WriteError(exc.Message);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref activeRequestCount);
+            }
+            return false;
+        }
+
+        /// <summary>Takes a token the server handed out some other way than a password, such as an approved Twitch sign in.</summary>
+        public bool CompleteLogin(AuthToken authToken)
+        {
+            if (authToken == null || authToken.UserId == Guid.Empty || authToken.Expired)
+            {
+                return false;
+            }
+
+            currentAuthToken = authToken;
+            tokenProvider.SetAuthToken(currentAuthToken);
+            gameManager.OnAuthenticated();
+            return true;
+        }
+
         public async Task<bool> LoginAsync(string username, string password)
         {
             LastLoginFailure = LoginFailure.None;

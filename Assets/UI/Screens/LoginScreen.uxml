@@ -5,7 +5,7 @@
     xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <!--
-      The login screen: the logo, a card with the form, and a line under it for people who have no
+      The login screen: the logo, a card with Twitch and the password form, and a line under it for people who have no
       game password yet, over the world turning behind. Version, language and quit sit in the
       bottom corners. LoginScreenView fills every text; LoginHandler does the signing in.
 
@@ -26,31 +26,6 @@
             <engine:VisualElement name="login-card" class="rf-window rf-login__card">
                 <engine:Label name="login-title" class="rf-login__title" picking-mode="Ignore" />
                 <engine:Label name="login-lead" class="rf-login__lead" picking-mode="Ignore" />
-
-                <engine:Label name="login-user-label" class="rf-login__label" picking-mode="Ignore" />
-                <engine:VisualElement class="rf-login__input">
-                    <engine:Label text="&#xf007;" class="rf-icon rf-login__input-icon" picking-mode="Ignore" />
-                    <engine:TextField name="login-user" class="rf-login__field" max-length="64" />
-                </engine:VisualElement>
-
-                <engine:Label name="login-pass-label" class="rf-login__label" picking-mode="Ignore" />
-                <engine:VisualElement class="rf-login__input">
-                    <engine:Label text="&#xf023;" class="rf-icon rf-login__input-icon" picking-mode="Ignore" />
-                    <engine:TextField name="login-pass" class="rf-login__field" max-length="128" />
-                    <engine:Button name="login-reveal" class="rf-icon rf-login__reveal" focusable="false" />
-                </engine:VisualElement>
-
-                <engine:VisualElement class="rf-login__row">
-                    <engine:VisualElement name="login-remember" class="rf-login__check">
-                        <engine:VisualElement class="rf-login__check-box" picking-mode="Ignore">
-                            <engine:Label text="&#xf00c;" class="rf-icon rf-login__check-mark" picking-mode="Ignore" />
-                        </engine:VisualElement>
-                        <engine:Label name="login-remember-text" class="rf-login__check-text" picking-mode="Ignore" />
-                    </engine:VisualElement>
-                    <engine:VisualElement class="rf-login__spacer" picking-mode="Ignore" />
-                    <engine:Button name="login-forgot" class="rf-login__link" focusable="false" />
-                </engine:VisualElement>
-
                 <engine:VisualElement name="login-error" class="rf-login__error" style="display: none;">
                     <engine:Label text="&#xf071;" class="rf-icon rf-login__error-icon" picking-mode="Ignore" />
                     <engine:VisualElement class="rf-login__error-body" picking-mode="Ignore">
@@ -59,10 +34,63 @@
                     </engine:VisualElement>
                 </engine:VisualElement>
 
-                <engine:Button name="login-submit" class="rf-button rf-button--primary rf-login__submit">
-                    <engine:VisualElement name="login-spinner" class="rf-login__spinner" picking-mode="Ignore" />
-                    <engine:Label name="login-submit-text" class="rf-login__submit-text" picking-mode="Ignore" />
-                </engine:Button>
+                <!-- Everything to sign in here; swapped for the wait below while the browser is open. -->
+                <engine:VisualElement name="login-form" class="rf-login__form">
+                    <engine:Button name="login-twitch" class="rf-login__twitch">
+                        <engine:Label text="&#xf1e8;" class="rf-icon rf-icon--brand rf-login__twitch-icon" picking-mode="Ignore" />
+                        <engine:Label name="login-twitch-text" class="rf-login__twitch-text" picking-mode="Ignore" />
+                    </engine:Button>
+                    <engine:VisualElement class="rf-login__or" picking-mode="Ignore">
+                        <engine:VisualElement class="rf-login__or-line" picking-mode="Ignore" />
+                        <engine:Label name="login-or-text" class="rf-login__or-text" picking-mode="Ignore" />
+                        <engine:VisualElement class="rf-login__or-line" picking-mode="Ignore" />
+                    </engine:VisualElement>
+
+                    <engine:Label name="login-user-label" class="rf-login__label" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-login__input">
+                        <engine:Label text="&#xf007;" class="rf-icon rf-login__input-icon" picking-mode="Ignore" />
+                        <engine:TextField name="login-user" class="rf-login__field" max-length="64" />
+                    </engine:VisualElement>
+
+                    <engine:Label name="login-pass-label" class="rf-login__label" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-login__input">
+                        <engine:Label text="&#xf023;" class="rf-icon rf-login__input-icon" picking-mode="Ignore" />
+                        <engine:TextField name="login-pass" class="rf-login__field" max-length="128" />
+                        <engine:Button name="login-reveal" class="rf-icon rf-login__reveal" focusable="false" />
+                    </engine:VisualElement>
+
+                    <engine:VisualElement class="rf-login__row">
+                        <engine:VisualElement name="login-remember" class="rf-login__check">
+                            <engine:VisualElement class="rf-login__check-box" picking-mode="Ignore">
+                                <engine:Label text="&#xf00c;" class="rf-icon rf-login__check-mark" picking-mode="Ignore" />
+                            </engine:VisualElement>
+                            <engine:Label name="login-remember-text" class="rf-login__check-text" picking-mode="Ignore" />
+                        </engine:VisualElement>
+                        <engine:VisualElement class="rf-login__spacer" picking-mode="Ignore" />
+                        <engine:Button name="login-forgot" class="rf-login__link" focusable="false" />
+                    </engine:VisualElement>
+
+                    <engine:Button name="login-submit" class="rf-button rf-button--primary rf-login__submit">
+                        <engine:VisualElement name="login-spinner" class="rf-login__spinner" picking-mode="Ignore" />
+                        <engine:Label name="login-submit-text" class="rf-login__submit-text" picking-mode="Ignore" />
+                    </engine:Button>
+                </engine:VisualElement>
+
+                <!-- Waiting for the website: the code to compare, and a way back. -->
+                <engine:VisualElement name="login-wait" class="rf-login__wait" style="display: none;">
+                    <engine:Label name="login-wait-title" class="rf-login__wait-title" picking-mode="Ignore" />
+                    <engine:Label name="login-wait-code" class="rf-login__wait-code" picking-mode="Ignore" />
+                    <engine:Label name="login-wait-text" class="rf-login__wait-text" picking-mode="Ignore" />
+                    <engine:VisualElement class="rf-login__wait-status" picking-mode="Ignore">
+                        <engine:VisualElement name="login-wait-spinner" class="rf-login__wait-spinner" picking-mode="Ignore" />
+                        <engine:Label name="login-wait-status" class="rf-login__wait-status-text" picking-mode="Ignore" />
+                    </engine:VisualElement>
+                    <engine:VisualElement class="rf-login__wait-actions">
+                        <engine:Button name="login-wait-reopen" class="rf-login__link" focusable="false" />
+                        <engine:VisualElement class="rf-login__spacer" picking-mode="Ignore" />
+                        <engine:Button name="login-wait-cancel" class="rf-button rf-login__wait-cancel" focusable="false" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
             </engine:VisualElement>
 
             <engine:VisualElement class="rf-login__below" picking-mode="Ignore">

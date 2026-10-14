@@ -5,11 +5,6 @@
    how bad, and the text says it in words, so neither colour nor icon has to carry it alone.
    ========================================================================== */
 
-/* Font Awesome's brand icons live in their own font. */
-.rf-icon.rf-icon--brand {
-    -unity-font-definition: url("project://database/Assets/Fonts/FontAwesome7/Font%20Awesome%207%20Brands-Regular-400.otf");
-}
-
 .rf-conn-layer {
     position: absolute;
     left: 0;

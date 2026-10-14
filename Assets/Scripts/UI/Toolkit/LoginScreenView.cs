@@ -18,7 +18,16 @@ namespace Shinobytes.UI
     [RequireComponent(typeof(UIDocument))]
     public class LoginScreenView : MonoBehaviour
     {
-        public const string PasswordPage = "https://www.ravenfall.stream/password";
+        /// <summary>The password page of the site the game talks to; the local one in development.</summary>
+        private static string PasswordPage
+        {
+            get
+            {
+                var site = GameManager.Instance != null && GameManager.Instance.RavenNest != null
+                    ? GameManager.Instance.RavenNest.WebsiteUrl : "https://www.ravenfall.stream";
+                return site + "/password";
+            }
+        }
 
         [SerializeField] private LoginHandler handler;
         [Tooltip("Degrees per second the busy ring on the button turns.")]
@@ -26,6 +35,12 @@ namespace Shinobytes.UI
 
         /// <summary>Raised when the form is sent, by the button or Enter.</summary>
         public event Action Submitted;
+
+        /// <summary>Raised by the Twitch button: the handler starts the sign in through the website.</summary>
+        public event Action TwitchRequested;
+
+        /// <summary>Raised when the wait for the website is cancelled.</summary>
+        public event Action TwitchCancelled;
 
         public string Username => username != null ? username.value : cachedUsername;
         public string Password => password != null ? password.value : cachedPassword;
@@ -45,6 +60,17 @@ namespace Shinobytes.UI
         private Label errorText;
         private Button language;
         private Label languageText;
+        private Button twitch;
+        private VisualElement form;
+        private VisualElement wait;
+        private Label waitCode;
+        private VisualElement waitSpinner;
+
+        // the wait for the website, kept for when the tree is built again
+        private string waitingCode;
+        private string waitingUrl;
+        private string noticeTitle;
+        private string noticeText;
 
         private bool bound;
         private bool visible = true;
@@ -92,6 +118,12 @@ namespace Shinobytes.UI
                 if (!bound) return;
             }
 
+            if (!string.IsNullOrEmpty(waitingCode) && waitSpinner != null)
+            {
+                spin = (spin + spinnerSpeed * Time.unscaledDeltaTime) % 360f;
+                waitSpinner.style.rotate = new Rotate(spin);
+            }
+
             if (busy && spinner != null)
             {
                 spin = (spin + spinnerSpeed * Time.unscaledDeltaTime) % 360f;
@@ -133,6 +165,7 @@ namespace Shinobytes.UI
             if (!bound) return;
             screen.EnableInClassList("rf-login--busy", value);
             submit.SetEnabled(!value);
+            twitch?.SetEnabled(!value);
             username.SetEnabled(!value);
             password.SetEnabled(!value);
             submitText.text = value ? Localization.UI_LOGIN_BUSY : Localization.UI_LOGIN_SUBMIT;
@@ -144,6 +177,8 @@ namespace Shinobytes.UI
         {
             shownFailure = failure;
             missingShown = false;
+            noticeTitle = null;
+            noticeText = null;
             if (!bound) return;
 
             if (failure == LoginFailure.None)
@@ -162,6 +197,46 @@ namespace Shinobytes.UI
                 // most people who get this have the name right and the password wrong
                 password.schedule.Execute(() => { password.Focus(); password.SelectAll(); });
             }
+        }
+
+        /// <summary>A message of the handler's own in the same box, such as a Twitch sign in that ran out.</summary>
+        public void ShowNotice(string title, string text)
+        {
+            shownFailure = LoginFailure.None;
+            missingShown = false;
+            noticeTitle = title;
+            noticeText = text;
+            if (!bound) return;
+            errorTitle.text = title ?? string.Empty;
+            errorText.text = text ?? string.Empty;
+            error.style.display = DisplayStyle.Flex;
+        }
+
+        /// <summary>Swaps the form for the wait while the streamer approves in the browser.</summary>
+        public void ShowTwitchWaiting(string displayCode, string url)
+        {
+            waitingCode = displayCode;
+            waitingUrl = url;
+            ShowFailure(LoginFailure.None);
+            ApplyWaiting();
+        }
+
+        public void EndTwitchWaiting()
+        {
+            waitingCode = null;
+            waitingUrl = null;
+            ApplyWaiting();
+        }
+
+        private void ApplyWaiting()
+        {
+            if (!bound) return;
+            var waiting = !string.IsNullOrEmpty(waitingCode);
+            screen.EnableInClassList("rf-login--waiting", waiting);
+            if (form != null) form.style.display = waiting ? DisplayStyle.None : DisplayStyle.Flex;
+            if (wait != null) wait.style.display = waiting ? DisplayStyle.Flex : DisplayStyle.None;
+            if (waitCode != null) waitCode.text = waitingCode ?? string.Empty;
+            if (!waiting && visible) FocusFirstEmpty();
         }
 
         private void ShowMissing()
@@ -197,6 +272,11 @@ namespace Shinobytes.UI
             errorText = root.Q<Label>("login-error-text");
             language = root.Q<Button>("login-language");
             languageText = root.Q<Label>("login-language-text");
+            twitch = root.Q<Button>("login-twitch");
+            form = root.Q<VisualElement>("login-form");
+            wait = root.Q<VisualElement>("login-wait");
+            waitCode = root.Q<Label>("login-wait-code");
+            waitSpinner = root.Q<VisualElement>("login-wait-spinner");
 
             if (username == null || password == null || submit == null) return;
 
@@ -251,6 +331,11 @@ namespace Shinobytes.UI
                 var quit = root.Q<Button>("login-quit");
                 if (quit != null) quit.clicked += () => Quit();
                 if (language != null) language.clicked += NextLanguage;
+                if (twitch != null) twitch.clicked += () => { if (!busy) TwitchRequested?.Invoke(); };
+                var reopen = root.Q<Button>("login-wait-reopen");
+                if (reopen != null) reopen.clicked += () => { if (!string.IsNullOrEmpty(waitingUrl)) Application.OpenURL(waitingUrl); };
+                var cancel = root.Q<Button>("login-wait-cancel");
+                if (cancel != null) cancel.clicked += () => TwitchCancelled?.Invoke();
             }
 
             var version = root.Q<Label>("login-version");
@@ -261,7 +346,8 @@ namespace Shinobytes.UI
             ApplyRemember();
             ApplyReveal();
             SetBusy(busy);
-            if (missingShown) ShowMissing(); else ShowFailure(shownFailure);
+            RestoreMessage();
+            ApplyWaiting();
 
             screen.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             if (visible) FocusFirstEmpty();
@@ -290,8 +376,23 @@ namespace Shinobytes.UI
             // more than one language to choose between
             if (language != null) language.style.display = Languages.Available.Count > 1 ? DisplayStyle.Flex : DisplayStyle.None;
 
+            SetText("login-twitch-text", Localization.UI_LOGIN_TWITCH);
+            SetText("login-or-text", Localization.UI_LOGIN_OR);
+            SetText("login-wait-title", Localization.UI_LOGIN_WAIT_TITLE);
+            SetText("login-wait-text", Localization.UI_LOGIN_WAIT_TEXT);
+            SetText("login-wait-status", Localization.UI_LOGIN_WAITING);
+            SetButton("login-wait-reopen", Localization.UI_LOGIN_WAIT_REOPEN);
+            SetButton("login-wait-cancel", Localization.UI_LOGIN_WAIT_CANCEL);
+
             ApplyReveal();
-            if (missingShown) ShowMissing(); else ShowFailure(shownFailure);
+            RestoreMessage();
+        }
+
+        private void RestoreMessage()
+        {
+            if (missingShown) ShowMissing();
+            else if (noticeTitle != null) ShowNotice(noticeTitle, noticeText);
+            else ShowFailure(shownFailure);
         }
 
         private void SetText(string name, string text)
@@ -330,7 +431,7 @@ namespace Shinobytes.UI
 
         private void ClearMissing()
         {
-            if (missingShown || shownFailure != LoginFailure.None)
+            if (missingShown || shownFailure != LoginFailure.None || noticeTitle != null)
             {
                 ShowFailure(LoginFailure.None);
             }

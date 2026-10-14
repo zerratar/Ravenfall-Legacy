@@ -30,6 +30,11 @@
     -unity-text-align: middle-center;
 }
 
+/* Font Awesome's brand icons live in their own font. */
+.rf-icon.rf-icon--brand {
+    -unity-font-definition: url("project://database/Assets/Fonts/FontAwesome7/Font%20Awesome%207%20Brands-Regular-400.otf");
+}
+
 /* Bold weight, applied by class so the real B cut is used rather than a synthesised bold. */
 .rf-font-b,
 .rf-window .rf-window__title,
