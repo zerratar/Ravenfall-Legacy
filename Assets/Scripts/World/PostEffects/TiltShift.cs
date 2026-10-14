@@ -11,7 +11,8 @@ using UnityEngine.Rendering.Universal;
 /// <remarks>
 /// The pass is added to the game camera each frame from here, so no renderer asset has to carry it. It runs before
 /// URP's own post processing (bloom, colour grading), at half and quarter resolution for the blur: a handful of small
-/// passes. Only the main camera gets it; potato mode keeps it off (<see cref="Suppressed"/>).
+/// passes. Only the main camera gets it; potato mode keeps it off (<see cref="Suppressed"/>). The game camera sets
+/// <see cref="FocusPoint"/> to the observed player, so the band follows them.
 /// </remarks>
 public static class TiltShift
 {
@@ -43,8 +44,17 @@ public static class TiltShift
         set => strength = Mathf.Clamp01(value);
     }
 
-    /// <summary>Where the sharp band is, 0 the bottom of the screen to 1 the top; the game camera looks at the middle.</summary>
+    /// <summary>Where the sharp band rests when there is nothing to follow: 0 the bottom of the screen, 1 the top.</summary>
     public static float Focus { get; set; } = 0.47f;
+
+    /// <summary>
+    /// A point in the world to keep sharp, the observed player, or null for none: the band follows it up and down
+    /// the screen, easing so it never jumps.
+    /// </summary>
+    public static Vector3? FocusPoint { get; set; }
+
+    // where the band is now, easing towards the focus point
+    private static float band = -1f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Hook()
@@ -63,8 +73,17 @@ public static class TiltShift
             material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
         }
 
+        // the band follows the focus point, kept off the very edges, easing over about a quarter of a second
+        var aim = Focus;
+        if (FocusPoint.HasValue)
+        {
+            var onScreen = camera.WorldToViewportPoint(FocusPoint.Value);
+            if (onScreen.z > 0f) aim = Mathf.Clamp(onScreen.y, 0.2f, 0.8f);
+        }
+        band = band < 0f ? aim : Mathf.Lerp(band, aim, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 8f));
+
         // a stronger setting narrows the sharp band and blurs further from it
-        material.SetFloat(FocusId, Focus);
+        material.SetFloat(FocusId, band);
         material.SetFloat(BandId, Mathf.Lerp(0.22f, 0.06f, strength));
         material.SetFloat(FalloffId, Mathf.Lerp(0.45f, 0.28f, strength));
         material.SetFloat(StrengthId, Mathf.Lerp(0.55f, 1f, strength));

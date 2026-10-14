@@ -103,6 +103,10 @@ public class GameCamera : MonoBehaviour
         LookAt.HasGameCameraRotation = true;
         Rotation = LookAt.GameCameraRotation = transform.rotation;
 
+        // the tilt shift keeps the observed player in its sharp band; with the free camera there is no one to follow
+        var observed = !IsFreeCameraActive && playerObserver ? playerObserver.ObservedPlayer : null;
+        TiltShift.FocusPoint = observed ? observed.Position + Vector3.up : (Vector3?)null;
+
 
         if (gameManager.PotatoMode)
         {
