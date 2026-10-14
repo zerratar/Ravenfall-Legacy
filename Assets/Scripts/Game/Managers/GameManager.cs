@@ -1124,13 +1124,15 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             if (GraphicsToggler.SimulationMode == SimulationMode.Script)
             {
-                Shinobytes.Debug.Log("Physics Turned ON, press F4 to turn off.");
-                GraphicsToggler.EnablePhysics();
+                Shinobytes.Debug.Log("Physics Turned ON, press " + Keybinds.Label(Keybinds.Action.Physics) + " to turn off.");
+                SettingsApplier.SetPhysics(true);
+                SettingsApplier.Save();
             }
             else
             {
-                Shinobytes.Debug.Log("Physics Turned OFF, press F4 to turn on.");
-                GraphicsToggler.DisablePhysics();
+                Shinobytes.Debug.Log("Physics Turned OFF, press " + Keybinds.Label(Keybinds.Action.Physics) + " to turn on.");
+                SettingsApplier.SetPhysics(false);
+                SettingsApplier.Save();
             }
         }
 
@@ -1922,19 +1924,20 @@ public class GameManager : MonoBehaviour, IGameManager
     /// <summary>The rebindable shortcuts; see <see cref="Keybinds"/>.</summary>
     private void HandleKeyDown()
     {
+        // These three switch a saved setting, so the game starts as the streamer left it.
         if (Keybinds.Pressed(Keybinds.Action.PlayerDetails))
         {
-            Camera.Observer.ToggleVisibility();
+            SettingsApplier.TogglePlayerDetails(this);
         }
 
         if (Keybinds.Pressed(Keybinds.Action.Logos))
         {
-            LogoCensor = !LogoCensor;
+            SettingsApplier.ToggleHideLogos(this);
         }
 
         if (Keybinds.Pressed(Keybinds.Action.ExpRate))
         {
-            playerList.ToggleExpRate();
+            SettingsApplier.CycleExpDisplay(this);
         }
 
         if (Keybinds.Pressed(Keybinds.Action.Search))

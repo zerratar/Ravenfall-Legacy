@@ -86,6 +86,10 @@ public static class SettingsApplier
         public const int NoExpMinutes = 1;           // index into NoExpMinuteOptions, 5 minutes
         public const bool LootOrigin = true;
         public const bool VSync = true;
+        public const bool HideLogos = false;
+        public const int ExpDisplay = 0;              // exp per hour
+        public const bool GraphicsOff = false;
+        public const bool Physics = false;            // physics has always started off
         public const int FrameRateCap = 0;
         public const int WindowMode = 0;              // borderless
         public const int Resolution = 0;              // the largest, the monitor's own
@@ -127,6 +131,87 @@ public static class SettingsApplier
         AudioListener.volume = MasterVolume;
         ApplyCamera();
         ApplyExpAnnouncements();
+
+        var s = PlayerSettings.Instance;
+        game.LogoCensor = HideLogos;
+        Shinobytes.UI.PlayerListWindow.ExpDisplay = ExpDisplay;
+        if (s.PlayerDetailsVisible.HasValue) ApplyPlayerDetails(game, s.PlayerDetailsVisible.Value);
+        if (GraphicsOff && game.Graphics && game.Graphics.IsGraphicsEnabled) game.Graphics.ToggleAllGraphics();
+    }
+
+    // ---- What the shortcut keys switch -----------------------------------------------------------
+    // The keys and the settings page change the same saved setting, so the game starts the way the
+    // streamer left it, whichever they used.
+
+    public static bool HideLogos => PlayerSettings.Instance.HideLogos.GetValueOrDefault(Defaults.HideLogos);
+
+    public static void SetHideLogos(GameManager game, bool value)
+    {
+        PlayerSettings.Instance.HideLogos = value;
+        game.LogoCensor = value;
+    }
+
+    public static void ToggleHideLogos(GameManager game)
+    {
+        SetHideLogos(game, !game.LogoCensor);
+        Save();
+    }
+
+    public static int ExpDisplay => Mathf.Clamp(PlayerSettings.Instance.PlayerListExpDisplay.GetValueOrDefault(Defaults.ExpDisplay), 0, 3);
+
+    public static void SetExpDisplay(GameManager game, int value)
+    {
+        PlayerSettings.Instance.PlayerListExpDisplay = Mathf.Clamp(value, 0, 3);
+        Shinobytes.UI.PlayerListWindow.ExpDisplay = ExpDisplay;
+    }
+
+    public static void CycleExpDisplay(GameManager game)
+    {
+        SetExpDisplay(game, (ExpDisplay + 1) % 4);
+        // the old list, still behind the toolkit one, keeps its own cycle in step
+        if (game.PlayerList) game.PlayerList.ToggleExpRate();
+        Save();
+    }
+
+    public static void TogglePlayerDetails(GameManager game)
+    {
+        SetPlayerDetails(game, !PlayerDetails(game));
+        Save();
+    }
+
+    private static void ApplyPlayerDetails(GameManager game, bool value)
+    {
+        if (game.Camera && game.Camera.Observer) game.Camera.Observer.SetVisibility(value);
+    }
+
+    public static bool GraphicsOff => PlayerSettings.Instance.GraphicsOff.GetValueOrDefault(Defaults.GraphicsOff);
+
+    public static void SetGraphicsOff(GameManager game, bool off)
+    {
+        PlayerSettings.Instance.GraphicsOff = off;
+        if (game.Graphics && game.Graphics.IsGraphicsEnabled == off) game.Graphics.ToggleAllGraphics();
+    }
+
+    public static void ToggleGraphics(GameManager game)
+    {
+        if (!game.Graphics) return;
+        SetGraphicsOff(game, game.Graphics.IsGraphicsEnabled);
+        Save();
+    }
+
+    public static bool Physics => PlayerSettings.Instance.SimulatePhysics.GetValueOrDefault(Defaults.Physics);
+
+    public static void SetPhysics(bool on)
+    {
+        PlayerSettings.Instance.SimulatePhysics = on;
+        if (on) GraphicsToggler.EnablePhysics();
+        else GraphicsToggler.DisablePhysics();
+    }
+
+    public static void TogglePhysics()
+    {
+        SetPhysics(GraphicsToggler.SimulationMode == SimulationMode.Script);
+        Save();
     }
 
     // ---- Display --------------------------------------------------------------------------------
@@ -472,10 +557,10 @@ public static class SettingsApplier
 
     public static bool PlayerDetails(GameManager game) => game.Camera && game.Camera.Observer && game.Camera.Observer.IsVisible;
 
-    /// <summary>Not saved, as before: the details panel follows the observed player each session.</summary>
     public static void SetPlayerDetails(GameManager game, bool value)
     {
-        if (game.Camera && game.Camera.Observer) game.Camera.Observer.SetVisibility(value);
+        PlayerSettings.Instance.PlayerDetailsVisible = value;
+        ApplyPlayerDetails(game, value);
     }
 
     public static bool ShortcutBar => PlayerSettings.Instance.ShortcutBarVisible.GetValueOrDefault(true);

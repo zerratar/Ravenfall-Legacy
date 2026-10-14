@@ -280,15 +280,15 @@ namespace Shinobytes.UI
                 -20f, 20f, SettingsApplier.CameraRotation, SettingsApplier.Defaults.CameraRotation, RotationText, SettingsApplier.SetCameraRotation, step: 1f);
             SliderRow(c, Localization.UI_SETTINGS_OBSERVE, Localization.UI_SETTINGS_OBSERVE_HINT, 5f, 120f,
                 SettingsApplier.ObserveSeconds, SettingsApplier.Defaults.ObserveSeconds, Seconds, SettingsApplier.SetObserveSeconds, step: 1f);
-            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_SUB, null, 5f, 120f,
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_SUB, Localization.UI_SETTINGS_OBSERVE_SUB_HINT, 5f, 120f,
                 SettingsApplier.ObserveSubscriberSeconds, SettingsApplier.Defaults.ObserveSecondsSpecial, Seconds, SettingsApplier.SetObserveSubscriberSeconds, step: 1f);
-            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_VIP, null, 5f, 120f,
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_VIP, Localization.UI_SETTINGS_OBSERVE_VIP_HINT, 5f, 120f,
                 SettingsApplier.ObserveVipSeconds, SettingsApplier.Defaults.ObserveSecondsSpecial, Seconds, SettingsApplier.SetObserveVipSeconds, step: 1f);
-            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_MOD, null, 5f, 120f,
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_MOD, Localization.UI_SETTINGS_OBSERVE_MOD_HINT, 5f, 120f,
                 SettingsApplier.ObserveModeratorSeconds, SettingsApplier.Defaults.ObserveSecondsSpecial, Seconds, SettingsApplier.SetObserveModeratorSeconds, step: 1f);
             SliderRow(c, Localization.UI_SETTINGS_OBSERVE_EVENT, Localization.UI_SETTINGS_OBSERVE_EVENT_HINT, 5f, 120f,
                 SettingsApplier.ObserveEventSeconds, SettingsApplier.Defaults.ObserveSecondsSpecial, Seconds, SettingsApplier.SetObserveEventSeconds, step: 1f);
-            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_ISLAND, null, 5f, 60f,
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_ISLAND, Localization.UI_SETTINGS_OBSERVE_ISLAND_HINT, 5f, 60f,
                 SettingsApplier.IslandObserveSeconds, SettingsApplier.Defaults.IslandObserveSeconds, Seconds, SettingsApplier.SetIslandObserveSeconds, step: 1f);
             Switch(c, Localization.UI_SETTINGS_OBSERVE_EMPTY, Localization.UI_SETTINGS_OBSERVE_EMPTY_HINT,
                 SettingsApplier.ObserveEmptyIslands, SettingsApplier.Defaults.ObserveEmptyIslands, SettingsApplier.SetObserveEmptyIslands);
@@ -299,10 +299,10 @@ namespace Shinobytes.UI
                 SettingsApplier.SetFreeCameraSpeed, step: 5f);
             SliderRow(c, Localization.UI_SETTINGS_LOOK, Localization.UI_SETTINGS_LOOK_HINT, 0.25f, 3f,
                 SettingsApplier.LookSensitivity, SettingsApplier.Defaults.Sensitivity, Times, SettingsApplier.SetLookSensitivity, step: 0.05f);
-            Switch(c, Localization.UI_SETTINGS_INVERT_LOOK, null, SettingsApplier.InvertLook, SettingsApplier.Defaults.InvertLook, SettingsApplier.SetInvertLook);
+            Switch(c, Localization.UI_SETTINGS_INVERT_LOOK, Localization.UI_SETTINGS_INVERT_LOOK_HINT, SettingsApplier.InvertLook, SettingsApplier.Defaults.InvertLook, SettingsApplier.SetInvertLook);
             SliderRow(c, Localization.UI_SETTINGS_ZOOM, Localization.UI_SETTINGS_ZOOM_HINT, 0.25f, 3f,
                 SettingsApplier.ZoomSensitivity, SettingsApplier.Defaults.Sensitivity, Times, SettingsApplier.SetZoomSensitivity, step: 0.05f);
-            Switch(c, Localization.UI_SETTINGS_INVERT_ZOOM, null, SettingsApplier.InvertZoom, SettingsApplier.Defaults.InvertZoom, SettingsApplier.SetInvertZoom);
+            Switch(c, Localization.UI_SETTINGS_INVERT_ZOOM, Localization.UI_SETTINGS_INVERT_ZOOM_HINT, SettingsApplier.InvertZoom, SettingsApplier.Defaults.InvertZoom, SettingsApplier.SetInvertZoom);
 
             Section(c, Localization.UI_SETTINGS_SECTION_PLAYERS);
             Choice(c, Localization.UI_SETTINGS_BOOST, Localization.UI_SETTINGS_BOOST_HINT, Localization.UI_SETTINGS_BOOST_OPTIONS,
@@ -311,7 +311,7 @@ namespace Shinobytes.UI
                 SettingsApplier.AfkKick, SettingsApplier.Defaults.AfkKick, SettingsApplier.SetAfkKick);
             Choice(c, Localization.UI_SETTINGS_EXPIRY, Localization.UI_SETTINGS_EXPIRY_HINT, Localization.UI_SETTINGS_EXPIRY_OPTIONS,
                 SettingsApplier.PlayerStateExpiry, SettingsApplier.Defaults.PlayerStateExpiry, SettingsApplier.SetPlayerStateExpiry);
-            Switch(c, Localization.UI_SETTINGS_EXPIRY_ALERT, null, SettingsApplier.AlertExpiredState(g), SettingsApplier.Defaults.AlertExpiredState,
+            Switch(c, Localization.UI_SETTINGS_EXPIRY_ALERT, Localization.UI_SETTINGS_EXPIRY_ALERT_HINT, SettingsApplier.AlertExpiredState(g), SettingsApplier.Defaults.AlertExpiredState,
                 v => SettingsApplier.SetAlertExpiredState(g, v));
 
             Section(c, Localization.UI_SETTINGS_SECTION_WORLD);
@@ -319,8 +319,9 @@ namespace Shinobytes.UI
                 SettingsApplier.PathfindingQuality, SettingsApplier.Defaults.PathfindingQuality, v => SettingsApplier.SetPathfindingQuality(g, v));
             Switch(c, Localization.UI_SETTINGS_HOUSES, Localization.UI_SETTINGS_HOUSES_HINT, SettingsApplier.AutoAssignHouses,
                 SettingsApplier.Defaults.AutoAssignHouses, SettingsApplier.SetAutoAssignHouses);
-            Switch(c, Localization.UI_SETTINGS_NO_RAIDS, null, SettingsApplier.DisableRaids, SettingsApplier.Defaults.DisableRaids, SettingsApplier.SetDisableRaids);
-            Switch(c, Localization.UI_SETTINGS_NO_DUNGEONS, null, SettingsApplier.DisableDungeons, SettingsApplier.Defaults.DisableDungeons, SettingsApplier.SetDisableDungeons);
+            Switch(c, Localization.UI_SETTINGS_NO_RAIDS, Localization.UI_SETTINGS_NO_RAIDS_HINT, SettingsApplier.DisableRaids, SettingsApplier.Defaults.DisableRaids, SettingsApplier.SetDisableRaids);
+            Switch(c, Localization.UI_SETTINGS_NO_DUNGEONS, Localization.UI_SETTINGS_NO_DUNGEONS_HINT, SettingsApplier.DisableDungeons, SettingsApplier.Defaults.DisableDungeons, SettingsApplier.SetDisableDungeons);
+            Switch(c, Localization.UI_SETTINGS_PHYSICS, WithKey(Localization.UI_SETTINGS_PHYSICS_HINT, Keybinds.Action.Physics), SettingsApplier.Physics, SettingsApplier.Defaults.Physics, SettingsApplier.SetPhysics);
 
             Section(c, Localization.UI_SETTINGS_SECTION_OVERLAYS);
             VisualElement textRow = null, jsonRow = null;
@@ -330,8 +331,8 @@ namespace Shinobytes.UI
                 textRow.SetEnabled(v);
                 jsonRow.SetEnabled(v);
             });
-            textRow = Switch(c, Localization.UI_SETTINGS_LABELS_TEXT, null, SettingsApplier.StreamLabelTextFiles, SettingsApplier.Defaults.StreamLabelFiles, SettingsApplier.SetStreamLabelTextFiles);
-            jsonRow = Switch(c, Localization.UI_SETTINGS_LABELS_JSON, null, SettingsApplier.StreamLabelJsonFiles, SettingsApplier.Defaults.StreamLabelFiles, SettingsApplier.SetStreamLabelJsonFiles);
+            textRow = Switch(c, Localization.UI_SETTINGS_LABELS_TEXT, Localization.UI_SETTINGS_LABELS_TEXT_HINT, SettingsApplier.StreamLabelTextFiles, SettingsApplier.Defaults.StreamLabelFiles, SettingsApplier.SetStreamLabelTextFiles);
+            jsonRow = Switch(c, Localization.UI_SETTINGS_LABELS_JSON, Localization.UI_SETTINGS_LABELS_JSON_HINT, SettingsApplier.StreamLabelJsonFiles, SettingsApplier.Defaults.StreamLabelFiles, SettingsApplier.SetStreamLabelJsonFiles);
             textRow.SetEnabled(SettingsApplier.StreamLabels);
             jsonRow.SetEnabled(SettingsApplier.StreamLabels);
 
@@ -341,7 +342,7 @@ namespace Shinobytes.UI
                 SettingsApplier.SetQueryEngine(v);
                 addressRow.SetEnabled(v);
             });
-            addressRow = TextRow(c, Localization.UI_SETTINGS_QUERY_ADDRESS, null, SettingsApplier.QueryEngineAddress, SettingsApplier.Defaults.QueryEngineAddress,
+            addressRow = TextRow(c, Localization.UI_SETTINGS_QUERY_ADDRESS, Localization.UI_SETTINGS_QUERY_ADDRESS_HINT, SettingsApplier.QueryEngineAddress, SettingsApplier.Defaults.QueryEngineAddress,
                 SettingsApplier.SetQueryEngineAddress);
             addressRow.SetEnabled(SettingsApplier.QueryEngine);
             ReloadRow(c);
@@ -360,7 +361,7 @@ namespace Shinobytes.UI
                 sizeNames[i] = string.Format(CultureInfo.InvariantCulture, i == 0 ? Localization.UI_SETTINGS_SCREEN_NATIVE : Localization.UI_SETTINGS_SCREEN_SIZE_VALUE, sizes[i].x, sizes[i].y);
             }
 
-            Choice(c, Localization.UI_SETTINGS_SCREEN_SIZE, null, sizeNames, SettingsApplier.ResolutionIndex, SettingsApplier.Defaults.Resolution, SettingsApplier.SetResolutionIndex, forceStepper: true);
+            Choice(c, Localization.UI_SETTINGS_SCREEN_SIZE, Localization.UI_SETTINGS_SCREEN_SIZE_HINT, sizeNames, SettingsApplier.ResolutionIndex, SettingsApplier.Defaults.Resolution, SettingsApplier.SetResolutionIndex, forceStepper: true);
             VisualElement capRow = null;
             Switch(c, Localization.UI_SETTINGS_VSYNC, Localization.UI_SETTINGS_VSYNC_HINT, SettingsApplier.VSync, SettingsApplier.Defaults.VSync, v =>
             {
@@ -372,8 +373,10 @@ namespace Shinobytes.UI
             capRow.SetEnabled(!SettingsApplier.VSync);
 
             Section(c, Localization.UI_SETTINGS_SECTION_QUALITY);
-            Choice(c, Localization.UI_SETTINGS_QUALITY, null, Localization.UI_SETTINGS_QUALITY_OPTIONS,
+            Choice(c, Localization.UI_SETTINGS_QUALITY, Localization.UI_SETTINGS_QUALITY_HINT, Localization.UI_SETTINGS_QUALITY_OPTIONS,
                 Mathf.Clamp(SettingsApplier.QualityLevel, 0, 2), SettingsApplier.Defaults.QualityLevel, SettingsApplier.SetQualityLevel);
+            Switch(c, Localization.UI_SETTINGS_DRAW_WORLD, WithKey(Localization.UI_SETTINGS_DRAW_WORLD_HINT, Keybinds.Action.Graphics), !SettingsApplier.GraphicsOff, !SettingsApplier.Defaults.GraphicsOff,
+                v => SettingsApplier.SetGraphicsOff(g, !v));
             Switch(c, Localization.UI_SETTINGS_POTATO, Localization.UI_SETTINGS_POTATO_HINT, SettingsApplier.PotatoMode(g), SettingsApplier.Defaults.PotatoMode,
                 v => SettingsApplier.SetPotatoMode(g, v));
             Switch(c, Localization.UI_SETTINGS_AUTO_POTATO, Localization.UI_SETTINGS_AUTO_POTATO_HINT, SettingsApplier.AutoPotatoMode(g), SettingsApplier.Defaults.AutoPotatoMode,
@@ -383,7 +386,7 @@ namespace Shinobytes.UI
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;
-            Switch(c, Localization.UI_SETTINGS_DAYNIGHT, null, SettingsApplier.DayNightCycle, SettingsApplier.Defaults.DayNightCycle, v =>
+            Switch(c, Localization.UI_SETTINGS_DAYNIGHT, Localization.UI_SETTINGS_DAYNIGHT_HINT, SettingsApplier.DayNightCycle, SettingsApplier.Defaults.DayNightCycle, v =>
             {
                 SettingsApplier.SetDayNightCycle(g, v);
                 timeRow.SetEnabled(!v);
@@ -395,7 +398,7 @@ namespace Shinobytes.UI
             timeRow.SetEnabled(!SettingsApplier.DayNightCycle);
 
             Section(c, Localization.UI_SETTINGS_SECTION_PERFORMANCE);
-            SliderRow(c, Localization.UI_SETTINGS_VIEW_DISTANCE, null, 0f, 1f, SettingsApplier.ViewDistance, SettingsApplier.Defaults.ViewDistance,
+            SliderRow(c, Localization.UI_SETTINGS_VIEW_DISTANCE, Localization.UI_SETTINGS_VIEW_DISTANCE_HINT, 0f, 1f, SettingsApplier.ViewDistance, SettingsApplier.Defaults.ViewDistance,
                 Percent, v => SettingsApplier.SetViewDistance(g, v));
             if (SettingsApplier.ResolutionScaleSupported)
             {
@@ -412,7 +415,7 @@ namespace Shinobytes.UI
             var g = gameManager;
             SliderRow(c, Localization.UI_SETTINGS_MASTER, Localization.UI_SETTINGS_MASTER_HINT, 0f, 1f, SettingsApplier.MasterVolume, SettingsApplier.Defaults.MasterVolume,
                 v => v <= 0.001f ? Localization.UI_SETTINGS_SILENCE : Percent(v), SettingsApplier.SetMasterVolume);
-            SliderRow(c, Localization.UI_SETTINGS_MUSIC, null, 0f, 1f, SettingsApplier.MusicVolume(g), SettingsApplier.Defaults.MusicVolume,
+            SliderRow(c, Localization.UI_SETTINGS_MUSIC, Localization.UI_SETTINGS_MUSIC_HINT, 0f, 1f, SettingsApplier.MusicVolume(g), SettingsApplier.Defaults.MusicVolume,
                 v => v <= 0.001f ? Localization.UI_SETTINGS_SILENCE : Percent(v), v => SettingsApplier.SetMusicVolume(g, v));
             SliderRow(c, Localization.UI_SETTINGS_EVENTS, Localization.UI_SETTINGS_EVENTS_HINT, 0f, 1f, SettingsApplier.EventVolume(g), SettingsApplier.Defaults.EventVolume,
                 v => v >= 0.999f ? Localization.UI_SETTINGS_BWAAAH : v <= 0.001f ? Localization.UI_SETTINGS_OFF : Percent(v), v => SettingsApplier.SetEventVolume(g, v));
@@ -423,17 +426,21 @@ namespace Shinobytes.UI
             var g = gameManager;
             // Applied when the slider is let go: the window scales with the setting, so applying while
             // dragging moved the slider under the pointer and made it jump back and forth.
-            SliderRow(c, Localization.UI_SETTINGS_UI_SCALE, Localization.UI_SETTINGS_UI_SCALE_HINT, UiScale.Min, UiScale.Max, UiScale.Value,
+            SliderRow(c, Localization.UI_SETTINGS_UI_SCALE, string.Format(CultureInfo.InvariantCulture, Localization.UI_SETTINGS_UI_SCALE_HINT, Keybinds.Label(Keybinds.Action.UiBigger), Keybinds.Label(Keybinds.Action.UiSmaller)), UiScale.Min, UiScale.Max, UiScale.Value,
                 SettingsApplier.Defaults.UiScale, Percent, v =>
                 {
                     // the file is written when the window closes, not on every change
                     UiScale.Set(v, save: false);
                     PlayerSettings.Instance.UIScale = UiScale.Value;
                 }, step: UiScale.Step, applyOnRelease: true);
-            Switch(c, Localization.UI_SETTINGS_NAMES, null, SettingsApplier.PlayerNames(g), SettingsApplier.Defaults.PlayerNames, v => SettingsApplier.SetPlayerNames(g, v));
-            Switch(c, Localization.UI_SETTINGS_PLAYER_LIST, null, SettingsApplier.PlayerList(g), SettingsApplier.Defaults.PlayerList, v => SettingsApplier.SetPlayerList(g, v));
-            Switch(c, Localization.UI_SETTINGS_PLAYER_DETAILS, Localization.UI_SETTINGS_PLAYER_DETAILS_HINT, SettingsApplier.PlayerDetails(g), SettingsApplier.Defaults.PlayerDetails,
+            Switch(c, Localization.UI_SETTINGS_NAMES, Localization.UI_SETTINGS_NAMES_HINT, SettingsApplier.PlayerNames(g), SettingsApplier.Defaults.PlayerNames, v => SettingsApplier.SetPlayerNames(g, v));
+            Switch(c, Localization.UI_SETTINGS_PLAYER_LIST, WithKey(Localization.UI_SETTINGS_PLAYER_LIST_HINT, Keybinds.Action.ToggleHud), SettingsApplier.PlayerList(g), SettingsApplier.Defaults.PlayerList, v => SettingsApplier.SetPlayerList(g, v));
+            Choice(c, Localization.UI_SETTINGS_EXP_DISPLAY, WithKey(Localization.UI_SETTINGS_EXP_DISPLAY_HINT, Keybinds.Action.ExpRate), Localization.UI_SETTINGS_EXP_DISPLAY_OPTIONS,
+                SettingsApplier.ExpDisplay, SettingsApplier.Defaults.ExpDisplay, v => SettingsApplier.SetExpDisplay(g, v));
+            Switch(c, Localization.UI_SETTINGS_PLAYER_DETAILS, WithKey(Localization.UI_SETTINGS_PLAYER_DETAILS_HINT, Keybinds.Action.PlayerDetails), SettingsApplier.PlayerDetails(g), SettingsApplier.Defaults.PlayerDetails,
                 v => SettingsApplier.SetPlayerDetails(g, v));
+            Switch(c, Localization.UI_SETTINGS_HIDE_LOGOS, WithKey(Localization.UI_SETTINGS_HIDE_LOGOS_HINT, Keybinds.Action.Logos), SettingsApplier.HideLogos, SettingsApplier.Defaults.HideLogos,
+                v => SettingsApplier.SetHideLogos(g, v));
             Switch(c, Localization.UI_SETTINGS_SHORTCUTS, Localization.UI_SETTINGS_SHORTCUTS_HINT, SettingsApplier.ShortcutBar, SettingsApplier.Defaults.ShortcutBar,
                 SettingsApplier.SetShortcutBar);
             ButtonRow(c, Localization.UI_SETTINGS_RESET_WINDOWS, Localization.UI_SETTINGS_RESET_WINDOWS_HINT, Localization.UI_SETTINGS_RESET_WINDOWS_BUTTON, ResetWindowPositions);
@@ -446,12 +453,12 @@ namespace Shinobytes.UI
 
             Section(c, Localization.UI_SETTINGS_SECTION_MESSAGES);
             VisualElement expTimes = null;
-            BotSwitch(c, "ExpMultiplierExpire", Localization.UI_SETTINGS_BOT_EXP, null, on => expTimes.SetEnabled(on));
-            expTimes = Chips(c, Localization.UI_SETTINGS_EXP_TIMES, null, Localization.UI_SETTINGS_EXP_TIME_OPTIONS,
+            BotSwitch(c, "ExpMultiplierExpire", Localization.UI_SETTINGS_BOT_EXP, Localization.UI_SETTINGS_BOT_EXP_HINT, on => expTimes.SetEnabled(on));
+            expTimes = Chips(c, Localization.UI_SETTINGS_EXP_TIMES, Localization.UI_SETTINGS_EXP_TIMES_HINT, Localization.UI_SETTINGS_EXP_TIME_OPTIONS,
                 SettingsApplier.ExpAnnouncement, SettingsApplier.SetExpAnnouncement, SettingsApplier.Defaults.ExpAnnouncements);
             expTimes.SetEnabled(SettingsApplier.BotMessageEnabled("ExpMultiplierExpire"));
-            BotSwitch(c, "PlayerWelcome", Localization.UI_SETTINGS_BOT_WELCOME, null);
-            BotSwitch(c, "Disembark", Localization.UI_SETTINGS_BOT_DISEMBARK, null);
+            BotSwitch(c, "PlayerWelcome", Localization.UI_SETTINGS_BOT_WELCOME, Localization.UI_SETTINGS_BOT_WELCOME_HINT);
+            BotSwitch(c, "Disembark", Localization.UI_SETTINGS_BOT_DISEMBARK, Localization.UI_SETTINGS_BOT_DISEMBARK_HINT);
             BotSwitch(c, "TrainWarning", Localization.UI_SETTINGS_BOT_TRAIN, Localization.UI_SETTINGS_BOT_TRAIN_HINT);
             VisualElement minutesRow = null;
             Switch(c, Localization.UI_SETTINGS_NO_EXP, Localization.UI_SETTINGS_NO_EXP_HINT, SettingsApplier.AnnounceNoExp, SettingsApplier.Defaults.AnnounceNoExp, v =>
@@ -462,12 +469,12 @@ namespace Shinobytes.UI
             minutesRow = Choice(c, Localization.UI_SETTINGS_NO_EXP_TIME, Localization.UI_SETTINGS_NO_EXP_TIME_HINT, Localization.UI_SETTINGS_NO_EXP_OPTIONS,
                 SettingsApplier.NoExpMinutes, SettingsApplier.Defaults.NoExpMinutes, SettingsApplier.SetNoExpMinutes);
             minutesRow.SetEnabled(SettingsApplier.AnnounceNoExp);
-            BotSwitch(c, "DungeonResult", Localization.UI_SETTINGS_BOT_DUNGEON, null);
-            BotSwitch(c, "RaidResult", Localization.UI_SETTINGS_BOT_RAID, null);
+            BotSwitch(c, "DungeonResult", Localization.UI_SETTINGS_BOT_DUNGEON, Localization.UI_SETTINGS_BOT_DUNGEON_HINT);
+            BotSwitch(c, "RaidResult", Localization.UI_SETTINGS_BOT_RAID, Localization.UI_SETTINGS_BOT_RAID_HINT);
 
             Section(c, Localization.UI_SETTINGS_SECTION_LOOT);
             VisualElement dropsRow = null;
-            BotSwitch(c, "ItemDrop", Localization.UI_SETTINGS_BOT_ITEMS, null, on => dropsRow.SetEnabled(on));
+            BotSwitch(c, "ItemDrop", Localization.UI_SETTINGS_BOT_ITEMS, Localization.UI_SETTINGS_BOT_ITEMS_HINT, on => dropsRow.SetEnabled(on));
             Label example = null;
             dropsRow = Choice(c, Localization.UI_SETTINGS_DROPS, Localization.UI_SETTINGS_DROPS_HINT, Localization.UI_SETTINGS_DROPS_OPTIONS,
                 SettingsApplier.ItemDropMessages(g), SettingsApplier.Defaults.ItemDropMessages, v =>
@@ -491,7 +498,7 @@ namespace Shinobytes.UI
                 SettingsApplier.SetLocalBot(v);
                 portRow.SetEnabled(v);
             });
-            portRow = TextRow(c, Localization.UI_SETTINGS_LOCAL_PORT, null, SettingsApplier.LocalBotPort.ToString(CultureInfo.InvariantCulture),
+            portRow = TextRow(c, Localization.UI_SETTINGS_LOCAL_PORT, Localization.UI_SETTINGS_LOCAL_PORT_HINT, SettingsApplier.LocalBotPort.ToString(CultureInfo.InvariantCulture),
                 SettingsApplier.Defaults.LocalBotPort.ToString(CultureInfo.InvariantCulture), v =>
                 {
                     if (int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var port)) SettingsApplier.SetLocalBotPort(port);
@@ -528,6 +535,9 @@ namespace Shinobytes.UI
         // ---- Value texts ----------------------------------------------------------------------------
 
         private static string Percent(float v) => Mathf.RoundToInt(v * 100f).ToString(CultureInfo.InvariantCulture) + "%";
+
+        /// <summary>A hint naming the shortcut for the same thing, as it is bound now.</summary>
+        private static string WithKey(string format, Keybinds.Action action) => string.Format(CultureInfo.InvariantCulture, format, Keybinds.Label(action));
 
         private static string Times(float v) => string.Format(CultureInfo.InvariantCulture, Localization.UI_SETTINGS_TIMES, v.ToString("0.00", CultureInfo.InvariantCulture));
 

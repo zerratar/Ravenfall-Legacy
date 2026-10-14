@@ -57,8 +57,9 @@ public class GraphicsToggler : MonoBehaviour
         //this.meshRenderers = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None);
         this.previousTargetFramerate = Application.targetFrameRate;
 
-        // disable physics per default
-        DisablePhysics();
+        // physics starts off unless the streamer switched it on (settings, or the physics key)
+        if (PlayerSettings.Instance.SimulatePhysics.GetValueOrDefault()) EnablePhysics();
+        else DisablePhysics();
 
         if (Ravenfall.isBatchMode)
         {
@@ -79,7 +80,10 @@ public class GraphicsToggler : MonoBehaviour
 
         if (Keybinds.Pressed(Keybinds.Action.Graphics))
         {
-            ToggleAllGraphics();
+            // through the settings, so it is remembered for next time
+            var gm = GameManager.Instance;
+            if (gm) SettingsApplier.ToggleGraphics(gm);
+            else ToggleAllGraphics();
         }
 
         GraphicsEnabled = graphicsEnabled;

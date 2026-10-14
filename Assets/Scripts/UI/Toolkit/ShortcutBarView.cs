@@ -168,18 +168,18 @@ namespace Shinobytes.UI
         private void Define()
         {
             shortcuts.Clear();
-            Add(Group.Camera, Keybinds.Action.PlayerDetails, "\uf2c2", () => GameManager.Instance.Camera.Observer.ToggleVisibility());
+            Add(Group.Camera, Keybinds.Action.PlayerDetails, "\uf2c2", () => SettingsApplier.TogglePlayerDetails(GameManager.Instance));
             Add(Group.Camera, Keybinds.Action.NextPlayer, "\uf061", () => GameManager.Instance.Camera.ObserveNextPlayer());
             Add(Group.Camera, Keybinds.Action.FreeCamera, "\uf03d", ToggleFreeCamera);
 
             Add(Group.Players, Keybinds.Action.Search, "\uf002", () => GameManager.Instance.ShowPlayerSearch());
-            Add(Group.Players, Keybinds.Action.ExpRate, "\uf201", () => GameManager.Instance.PlayerList.ToggleExpRate());
+            Add(Group.Players, Keybinds.Action.ExpRate, "\uf201", () => SettingsApplier.CycleExpDisplay(GameManager.Instance));
 
             Add(Group.Interface, Keybinds.Action.ToggleHud, "\uf06e", () => { if (HUDController.Instance) HUDController.Instance.CycleState(); });
-            Add(Group.Interface, Keybinds.Action.Logos, "\uf070", () => GameManager.Instance.LogoCensor = !GameManager.Instance.LogoCensor);
+            Add(Group.Interface, Keybinds.Action.Logos, "\uf070", () => SettingsApplier.ToggleHideLogos(GameManager.Instance));
             Add(Group.Interface, Keybinds.Action.UiBigger, "\uf00e", () => UiScale.Increase());
             Add(Group.Interface, Keybinds.Action.UiSmaller, "\uf010", () => UiScale.Decrease());
-            Add(Group.Interface, Keybinds.Action.Graphics, "\uf108", () => GameManager.Instance.Graphics.ToggleAllGraphics());
+            Add(Group.Interface, Keybinds.Action.Graphics, "\uf108", () => SettingsApplier.ToggleGraphics(GameManager.Instance));
 
             Add(Group.Admin, Keybinds.Action.StartRaid, "\uf6d5", () => GameManager.Instance.Raid.ForceStartRaid(), adminOnly: true);
             Add(Group.Admin, Keybinds.Action.StartDungeon, "\uf6d9", () => GameManager.Instance.Dungeons.ForceActivateDungeon(), adminOnly: true);

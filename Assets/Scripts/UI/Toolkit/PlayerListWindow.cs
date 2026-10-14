@@ -94,6 +94,11 @@ namespace Shinobytes.UI
         /// Cached per row so a refresh can tell whether anything actually changed before building a
         /// string. This is what keeps the list off the allocation graph.
         /// </summary>
+        /// <summary>What each row shows on its right: exp per hour, exp left to the next level, time to the
+        /// next level, or nothing. Set from the settings; the exp key cycles it.</summary>
+        public static int ExpDisplay;
+        public const int ExpDisplayPerHour = 0, ExpDisplayLeft = 1, ExpDisplayTime = 2, ExpDisplayNothing = 3;
+
         private sealed class RowState
         {
             public VisualElement Root;
@@ -116,6 +121,7 @@ namespace Shinobytes.UI
             public int LastSkillLevel = -1;
             public Skill LastSkill = Skill.None;
             public long LastRate = -1;
+            public int LastRateMode = -1;
             public float LastProgress = -1f;
             public int LastPercentTenths = -1;
             public float LastHealth = -1f;
@@ -131,6 +137,7 @@ namespace Shinobytes.UI
                 LastSkillLevel = -1;
                 LastSkill = Skill.None;
                 LastRate = -1;
+                LastRateMode = -1;
                 LastProgress = -1f;
                 LastPercentTenths = -1;
                 LastHealth = -1f;
@@ -674,11 +681,40 @@ namespace Shinobytes.UI
                 return;
             }
 
+            var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
             var perHour = (long)skill.GetExperiencePerHour();
-            if (perHour != state.LastRate)
+
+            // What the right of the row shows, as chosen in the settings or cycled with the exp key.
+            // The key is what the text is built from, so the label only rebuilds when it changes.
+            var mode = ExpDisplay;
+            long rateKey;
+            switch (mode)
             {
-                state.LastRate = perHour;
-                state.Rate.text = perHour > 0 ? HudFormat.Compact(perHour) + " xp/h" : string.Empty;
+                case ExpDisplayLeft: rateKey = (long)System.Math.Max(0d, nextLevelExp - skill.Experience); break;
+                case ExpDisplayTime: rateKey = perHour > 0 ? (long)(skill.GetEstimatedTimeToLevelUp() - System.DateTime.UtcNow).TotalMinutes : -3; break;
+                case ExpDisplayNothing: rateKey = -2; break;
+                default: rateKey = perHour; break;
+            }
+
+            if (rateKey != state.LastRate || mode != state.LastRateMode)
+            {
+                state.LastRate = rateKey;
+                state.LastRateMode = mode;
+                switch (mode)
+                {
+                    case ExpDisplayLeft:
+                        state.Rate.text = HudFormat.Compact(rateKey) + " xp left";
+                        break;
+                    case ExpDisplayTime:
+                        state.Rate.text = perHour > 0 ? HudFormat.TimeToLevel(skill.GetEstimatedTimeToLevelUp() - System.DateTime.UtcNow, out _) : string.Empty;
+                        break;
+                    case ExpDisplayNothing:
+                        state.Rate.text = string.Empty;
+                        break;
+                    default:
+                        state.Rate.text = perHour > 0 ? HudFormat.Compact(perHour) + " xp/h" : string.Empty;
+                        break;
+                }
             }
 
             // SkillStat.Experience counts within the current level and resets on level up, carrying
@@ -687,7 +723,6 @@ namespace Shinobytes.UI
             // exactly the size of the level being worked through and this is a true 0..1 ratio. The
             // cumulative form is the obsolete OldExperienceForLevel, which overflowed and capped the
             // maximum level.
-            var nextLevelExp = GameMath.ExperienceForLevel(skill.Level + 1);
             var progress = skill.Experience > 0 && nextLevelExp > 0
                 ? Mathf.Clamp01((float)(skill.Experience / nextLevelExp))
                 : 0f;

@@ -52,6 +52,18 @@ public class PlayerSettings
     public bool? InvertZoom;
     /// <summary>Rebound keys as "action=binding", only the ones that differ from the defaults. See Keybinds.</summary>
     public string[] KeyBindings;
+    /// <summary>What the player list rows show on the right: 0 exp per hour, 1 exp left, 2 time to level, 3 nothing.</summary>
+    public int? PlayerListExpDisplay;
+    public bool? HideLogos;
+    public bool? PlayerDetailsVisible;
+    /// <summary>The world drawn or a black screen (F9).</summary>
+    public bool? GraphicsOff;
+    /// <summary>
+    /// Physics simulation (F4). The older PhysicsEnabled defaulted to true but was never honoured:
+    /// physics always started off. A new field keeps that, rather than switching physics on for
+    /// everyone whose file says true.
+    /// </summary>
+    public bool? SimulatePhysics;
 
     public int? LocalBotPort;
     public int? PlayerBoostRequirement;
@@ -417,6 +429,11 @@ public class PlayerSettings
             // the messages the streamer switched off; these were never written before, so they were lost on restart
             Serialize(sw, "botMessageFilters", obj.BotMessageFilters);
             Serialize(sw, "keyBindings", obj.KeyBindings);
+            Serialize(sw, "playerListExpDisplay", obj.PlayerListExpDisplay);
+            Serialize(sw, "hideLogos", obj.HideLogos);
+            Serialize(sw, "playerDetailsVisible", obj.PlayerDetailsVisible);
+            Serialize(sw, "graphicsOff", obj.GraphicsOff);
+            Serialize(sw, "simulatePhysics", obj.SimulatePhysics);
             if (obj.Loot != null) sw.WriteLine("  \"loot\": { \"includeOrigin\": " + obj.Loot.IncludeOrigin.ToString().ToLower() + " },");
 
             // Serialize custom class instances
