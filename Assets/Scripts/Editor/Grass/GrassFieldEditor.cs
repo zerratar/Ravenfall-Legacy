@@ -4,19 +4,87 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// The inspector of a <see cref="GrassField"/>: what is grown now, the settings to try out, and reading the
-/// terrain layers' colours into the profile. Ravenfall &gt; Grass &gt; Add Grass To Terrain sets a terrain up with a
+/// The inspector of a <see cref="GrassField"/>: what is grown now, the settings to try out, reading the terrain
+/// layers' colours into the profile, and the brush that paints grass in or out:
+/// <list type="bullet">
+/// <item>More: click or drag to fill in grass, up to full grass whatever the ground.</item>
+/// <item>Less: thin it out, down to none (under a market stall, a dance floor, a beach).</item>
+/// <item>Reset: back to the terrain's own grass.</item>
+/// </list>
+/// [ and ] change the brush size, Escape leaves the mode, one undo per stroke. Roads and village plots keep grass
+/// off by themselves and need no painting. Ravenfall &gt; Grass &gt; Add Grass To Terrain sets a terrain up with a
 /// profile and a blade material in Assets/World/Grass.
 /// </summary>
 [CustomEditor(typeof(GrassField))]
 public class GrassFieldEditor : Editor
 {
+    private enum Mode { Off, More, Less, Reset }
+
     private const string Folder = "Assets/World/Grass";
+    private const string PrefsPrefix = "Ravenfall.GrassBrush.";
+    private static readonly string[] ModeNames = { "Off", "More", "Less", "Reset" };
+
+    private static Mode mode;
+    private int strokeGroup = -1;
+    private Vector3 lastDab;
+    private Vector2 strokeMin, strokeMax;
+
+    private static float Radius
+    {
+        get => EditorPrefs.GetFloat(PrefsPrefix + "Radius", 4f);
+        set => EditorPrefs.SetFloat(PrefsPrefix + "Radius", Mathf.Clamp(value, 0.5f, 40f));
+    }
+
+    private static float Strength
+    {
+        get => EditorPrefs.GetFloat(PrefsPrefix + "Strength", 0.5f);
+        set => EditorPrefs.SetFloat(PrefsPrefix + "Strength", Mathf.Clamp(value, 0.05f, 1f));
+    }
+
+    private void OnEnable()
+    {
+        mode = Mode.Off;
+        Undo.undoRedoPerformed += Undone;
+    }
+
+    private void OnDisable()
+    {
+        Undo.undoRedoPerformed -= Undone;
+        EndStroke();
+        Tools.hidden = false;
+    }
+
+    private void Undone()
+    {
+        if (target) GrassRenderer.GroundChanged((GrassField)target);
+    }
 
     public override void OnInspectorGUI()
     {
         DrawDefaultInspector();
         var field = (GrassField)target;
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Brush", EditorStyles.boldLabel);
+        if (!field.Mask)
+        {
+            if (GUILayout.Button("Create Mask To Paint")) field.Mask = CreateMask();
+        }
+        else
+        {
+            var chosen = (Mode)GUILayout.Toolbar((int)mode, ModeNames);
+            if (chosen != mode)
+            {
+                mode = chosen;
+                SceneView.RepaintAll();
+            }
+            if (mode != Mode.Off)
+            {
+                Radius = EditorGUILayout.Slider("Size", Radius, 0.5f, 40f);
+                Strength = EditorGUILayout.Slider("Strength", Strength, 0.05f, 1f);
+                EditorGUILayout.HelpBox("Click or drag on the ground. [ and ] change the size, Escape stops. Roads and village plots keep grass off by themselves.", MessageType.None);
+            }
+        }
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Grown now", GrassRenderer.CellCount + " cells, " + GrassRenderer.InstanceCount.ToString("N0") + " instances");
@@ -43,6 +111,127 @@ public class GrassFieldEditor : Editor
             }
         }
         if (GUI.changed) SceneView.RepaintAll();
+    }
+
+    private void OnSceneGUI()
+    {
+        var field = (GrassField)target;
+        Tools.hidden = mode != Mode.Off;
+        if (mode == Mode.Off || !field.Mask || !field.Terrain) return;
+
+        var e = Event.current;
+        var control = GUIUtility.GetControlID(FocusType.Passive);
+        if (e.type == EventType.Layout) HandleUtility.AddDefaultControl(control);
+        if (e.type == EventType.MouseMove) HandleUtility.Repaint();
+
+        if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
+        {
+            mode = Mode.Off;
+            Tools.hidden = false;
+            e.Use();
+            Repaint();
+            return;
+        }
+        if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.LeftBracket || e.keyCode == KeyCode.RightBracket))
+        {
+            Radius *= e.keyCode == KeyCode.RightBracket ? 1.15f : 1f / 1.15f;
+            e.Use();
+            Repaint();
+        }
+
+        if (!ResourceGround.UnderMouse(e.mousePosition, out var ground))
+        {
+            if (e.type == EventType.MouseUp && GUIUtility.hotControl == control) EndStroke();
+            return;
+        }
+
+        Handles.color = mode == Mode.More ? new Color(0.45f, 0.95f, 0.5f) : mode == Mode.Less ? new Color(1f, 0.55f, 0.35f) : new Color(0.8f, 0.8f, 0.8f);
+        Handles.DrawWireDisc(ground.point, ground.normal, Radius, 2f);
+        Handles.DrawWireDisc(ground.point, ground.normal, Radius * 0.5f, 1f);
+
+        if (e.alt || e.button != 0) return;
+        if (e.type == EventType.MouseDown && HandleUtility.nearestControl == control)
+        {
+            GUIUtility.hotControl = control;
+            Undo.IncrementCurrentGroup();
+            strokeGroup = Undo.GetCurrentGroup();
+            strokeMin = new Vector2(float.MaxValue, float.MaxValue);
+            strokeMax = new Vector2(float.MinValue, float.MinValue);
+            Dab(field, ground.point);
+            lastDab = ground.point;
+            e.Use();
+        }
+        else if (e.type == EventType.MouseDrag && GUIUtility.hotControl == control)
+        {
+            if (Vector3.Distance(ground.point, lastDab) >= Radius * 0.3f)
+            {
+                Dab(field, ground.point);
+                lastDab = ground.point;
+            }
+            e.Use();
+        }
+        else if (e.type == EventType.MouseUp && GUIUtility.hotControl == control)
+        {
+            EndStroke();
+            e.Use();
+        }
+    }
+
+    /// <summary>
+    /// Paints the mask round a point, strongest in the middle and fading to the edge of the brush, then grows the
+    /// grass there again.
+    /// </summary>
+    private void Dab(GrassField field, Vector3 centre)
+    {
+        var mask = field.Mask;
+        Undo.RecordObject(mask, "Paint grass");
+        var target = mode == Mode.More ? 255f : mode == Mode.Less ? 0f : GrassMask.Neutral;
+        var origin = field.Terrain.transform.position;
+        var metres = mask.MetresPerTexel;
+        var radius = Radius;
+        var from = Vector2Int.FloorToInt(new Vector2(centre.x - radius - origin.x, centre.z - radius - origin.z) / metres);
+        var to = Vector2Int.CeilToInt(new Vector2(centre.x + radius - origin.x, centre.z + radius - origin.z) / metres);
+        for (var y = Mathf.Max(0, from.y); y <= to.y; ++y)
+        {
+            for (var x = Mathf.Max(0, from.x); x <= to.x; ++x)
+            {
+                var at = new Vector2(origin.x + (x + 0.5f) * metres, origin.z + (y + 0.5f) * metres);
+                var d = Vector2.Distance(at, new Vector2(centre.x, centre.z)) / radius;
+                if (d >= 1f) continue;
+                var weight = Strength * (1f - d * d);
+                var value = Mathf.Lerp(mask.Get(x, y), target, weight);
+                mask.Set(x, y, (byte)Mathf.Clamp(Mathf.RoundToInt(value), 0, 255));
+            }
+        }
+        EditorUtility.SetDirty(mask);
+
+        var min = new Vector2(centre.x - radius, centre.z - radius);
+        var max = new Vector2(centre.x + radius, centre.z + radius);
+        strokeMin = Vector2.Min(strokeMin, min);
+        strokeMax = Vector2.Max(strokeMax, max);
+        GrassRenderer.MaskChanged(field, min, max);
+        SceneView.RepaintAll();
+    }
+
+    private void EndStroke()
+    {
+        if (strokeGroup >= 0)
+        {
+            Undo.CollapseUndoOperations(strokeGroup);
+            var field = target as GrassField;
+            if (field && field.Mask) field.Mask.Tidy();
+        }
+        strokeGroup = -1;
+        if (GUIUtility.hotControl != 0) GUIUtility.hotControl = 0;
+    }
+
+    private static GrassMask CreateMask()
+    {
+        EnsureFolder(Folder);
+        var mask = CreateInstance<GrassMask>();
+        AssetDatabase.CreateAsset(mask, AssetDatabase.GenerateUniqueAssetPath(Folder + "/Grass Mask.asset"));
+        AssetDatabase.SaveAssets();
+        return mask;
     }
 
     [MenuItem("Ravenfall/Grass/Add Grass To Terrain")]

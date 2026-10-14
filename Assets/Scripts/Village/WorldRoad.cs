@@ -129,7 +129,7 @@ public class WorldRoad : MonoBehaviour
 
     private void OnDisable()
     {
-        GrassRenderer.RemoveRoad(this);
+        GrassRenderer.Remove(this);
         if (view) DestroyNow(view);
         view = null;
     }

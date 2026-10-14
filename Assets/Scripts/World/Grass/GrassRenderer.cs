@@ -95,10 +95,14 @@ public static unsafe class GrassRenderer
         public float3 tint;
         public float jitter;
         public float patches;
+        public float maskMetres;     // metres per mask texel
+        public int2 maskSize;        // texels across and down; 0 for no mask
     }
     private static Ground ground;
     private static NativeArray<float> heights;
     private static NativeArray<uint> groundMap;
+    // the painted mask over the terrain, one byte per texel (128 the terrain's own grass)
+    private static NativeArray<byte> maskMap;
 
     // roads keep grass off: each a run of capsules along its middle, as wide as its solid part and a little more
     private const float RoadMargin = 0.3f;
@@ -173,14 +177,14 @@ public static unsafe class GrassRenderer
     /// Keeps grass off a road: <paramref name="samples"/> its middle in world x and z, <paramref name="width"/> the
     /// width of its solid part, <paramref name="scales"/> a multiple of it per sample (or null). Call it again when
     /// the road changes; the grass under the old and the new road grows again. A road that is a Unity object leaves
-    /// by itself when it is destroyed, or call <see cref="RemoveRoad"/>.
+    /// by itself when it is destroyed, or call <see cref="Remove"/>.
     /// </summary>
     public static void SetRoad(object owner, IReadOnlyList<Vector2> samples, float width, IReadOnlyList<float> scales)
     {
         if (owner == null) return;
         if (samples == null || samples.Count == 0)
         {
-            RemoveRoad(owner);
+            Remove(owner);
             return;
         }
 
@@ -197,14 +201,59 @@ public static unsafe class GrassRenderer
             bounds = new float4(math.min(bounds.xy, math.min(a, b) - radius), math.max(bounds.zw, math.max(a, b) + radius));
         }
 
+        SetBlocker(owner, segments, bounds);
+    }
+
+    /// <summary>
+    /// Keeps grass off a rectangle on the ground (a village plot and what is built on it): its middle, half its size
+    /// along its own x and z, and its turn in degrees. Call it again when it moves or changes.
+    /// </summary>
+    public static void SetArea(object owner, Vector3 centre, Vector2 halfSize, float turn)
+    {
+        if (owner == null) return;
+        // a capsule along the long side, as wide as the short side, nearly to the corners
+        var rotation = Quaternion.Euler(0f, turn, 0f);
+        var alongX = halfSize.x >= halfSize.y;
+        var axis = rotation * (alongX ? Vector3.right : Vector3.forward);
+        var radius = (alongX ? halfSize.y : halfSize.x) + RoadMargin;
+        var length = Mathf.Max(0f, (alongX ? halfSize.x : halfSize.y) - radius * 0.3f);
+        var c = new float2(centre.x, centre.z);
+        var d = new float2(axis.x, axis.z) * length;
+        var segment = new Segment { a = c - d, b = c + d, radius = radius };
+        var bounds = new float4(math.min(segment.a, segment.b) - radius, math.max(segment.a, segment.b) + radius);
+        SetBlocker(owner, new[] { segment }, bounds);
+    }
+
+    private static void SetBlocker(object owner, Segment[] segments, float4 bounds)
+    {
         if (blockers.TryGetValue(owner, out var old)) regrow.Add(old.bounds);
         blockers[owner] = new Blocker { segments = segments, bounds = bounds };
         regrow.Add(bounds);
         Hook();
     }
 
-    /// <summary>The road is gone: grass grows where it was.</summary>
-    public static void RemoveRoad(object owner)
+    /// <summary>
+    /// The field's mask was painted between these world corners (x and z): read that part again and grow the grass
+    /// there again.
+    /// </summary>
+    public static void MaskChanged(GrassField grassField, Vector2 min, Vector2 max)
+    {
+        if (grassField != field || !maskMap.IsCreated || ground.maskSize.x == 0 || !grassField.Mask) return;
+        var mask = grassField.Mask;
+        var from = (int2)math.floor((new float2(min.x, min.y) - ground.origin) / ground.maskMetres);
+        var to = (int2)math.ceil((new float2(max.x, max.y) - ground.origin) / ground.maskMetres);
+        from = math.clamp(from, 0, ground.maskSize - 1);
+        to = math.clamp(to, 0, ground.maskSize - 1);
+        culling.Complete();
+        for (var y = from.y; y <= to.y; ++y)
+        {
+            for (var x = from.x; x <= to.x; ++x) maskMap[y * ground.maskSize.x + x] = mask.Get(x, y);
+        }
+        regrow.Add(new float4(min.x, min.y, max.x, max.y));
+    }
+
+    /// <summary>The road or area is gone: grass grows where it was.</summary>
+    public static void Remove(object owner)
     {
         if (owner == null || !blockers.TryGetValue(owner, out var old)) return;
         blockers.Remove(owner);
@@ -276,7 +325,7 @@ public static unsafe class GrassRenderer
         {
             if (pair.Key is UnityEngine.Object unityObject && !unityObject) (gone ??= new List<object>()).Add(pair.Key);
         }
-        if (gone != null) foreach (var owner in gone) RemoveRoad(owner);
+        if (gone != null) foreach (var owner in gone) Remove(owner);
         if (regrow.Count > 0)
         {
             for (var s = 0; s < slotCount; ++s)
@@ -374,6 +423,7 @@ public static unsafe class GrassRenderer
             kinds = kinds,
             heights = heights,
             groundMap = groundMap,
+            maskMap = maskMap,
             ground = ground,
             density = density,
             cellCapacity = cellCapacity,
@@ -571,6 +621,35 @@ public static unsafe class GrassRenderer
         empty.Dispose();
         layers.Dispose();
 
+        // the painted mask, neutral where nothing is painted
+        var maskAsset = field.Mask;
+        var maskSize = int2.zero;
+        var maskMetres = 1f;
+        if (maskAsset)
+        {
+            maskMetres = maskAsset.MetresPerTexel;
+            maskSize = new int2(Mathf.CeilToInt(data.size.x / maskMetres), Mathf.CeilToInt(data.size.z / maskMetres));
+            maskMap = new NativeArray<byte>(maskSize.x * maskSize.y, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            for (var i = 0; i < maskMap.Length; ++i) maskMap[i] = GrassMask.Neutral;
+            foreach (var tile in maskAsset.Tiles)
+            {
+                for (var ty = 0; ty < GrassMask.TileSize; ++ty)
+                {
+                    var y = tile.y * GrassMask.TileSize + ty;
+                    if (y < 0 || y >= maskSize.y) continue;
+                    for (var tx = 0; tx < GrassMask.TileSize; ++tx)
+                    {
+                        var x = tile.x * GrassMask.TileSize + tx;
+                        if (x >= 0 && x < maskSize.x) maskMap[y * maskSize.x + x] = tile.values[ty * GrassMask.TileSize + tx];
+                    }
+                }
+            }
+        }
+        else
+        {
+            maskMap = new NativeArray<byte>(1, Allocator.Persistent);
+        }
+
         ground = new Ground
         {
             origin = new float2(position.x, position.z),
@@ -582,6 +661,8 @@ public static unsafe class GrassRenderer
             tint = new float3(profile.tint.linear.r, profile.tint.linear.g, profile.tint.linear.b),
             jitter = profile.colourJitter,
             patches = profile.patches,
+            maskMetres = maskMetres,
+            maskSize = maskSize,
         };
     }
 
@@ -649,6 +730,7 @@ public static unsafe class GrassRenderer
         [ReadOnly] public NativeArray<KindInfo> kinds;
         [ReadOnly] public NativeArray<float> heights;
         [ReadOnly] public NativeArray<uint> groundMap;
+        [ReadOnly] public NativeArray<byte> maskMap;
         [ReadOnly] public NativeArray<Segment> segments;
         [ReadOnly] public NativeArray<int2> segmentRanges;
         [NativeDisableParallelForRestriction] public NativeArray<int> slotCounts;
@@ -691,6 +773,7 @@ public static unsafe class GrassRenderer
                         var shade = 1f + (random.NextFloat() * 2f - 1f) * ground.jitter;
 
                         var groundAt = SampleGround(at);
+                        groundAt.x = Painted(groundAt.x, SampleMask(at));
                         if (groundAt.x < kind.minDensity || keep > groundAt.x * chance) continue;
                         var height = SampleHeight(at, out var up);
                         if (height < ground.waterLevel || up < ground.minUp) continue;
@@ -734,6 +817,31 @@ public static unsafe class GrassRenderer
             upload[w + 9] = -(cos * p.x - sin * p.z) * inv;
             upload[w + 10] = -p.y * inv;
             upload[w + 11] = -(sin * p.x + cos * p.z) * inv;
+        }
+
+        // the mask over the terrain's own grass: below half it thins it out to none, above half it fills it in
+        private static float Painted(float grass, float mask)
+        {
+            return mask < 0.5f ? grass * mask * 2f : math.lerp(grass, 1f, (mask - 0.5f) * 2f);
+        }
+
+        private float SampleMask(float2 at)
+        {
+            if (ground.maskSize.x == 0) return GrassMask.Neutral / 255f;
+            var uv = (at - ground.origin) / ground.maskMetres - 0.5f;
+            var i = (int2)math.floor(uv);
+            var f = uv - i;
+            var a = Mask(i);
+            var b = Mask(i + new int2(1, 0));
+            var c = Mask(i + new int2(0, 1));
+            var d = Mask(i + new int2(1, 1));
+            return math.lerp(math.lerp(a, b, f.x), math.lerp(c, d, f.x), f.y) / 255f;
+        }
+
+        private float Mask(int2 i)
+        {
+            i = math.clamp(i, 0, ground.maskSize - 1);
+            return maskMap[i.y * ground.maskSize.x + i.x];
         }
 
         // two smooth noises over the ground, one patch every 12 m or so: brightness and dryness
@@ -1030,6 +1138,7 @@ public static unsafe class GrassRenderer
     {
         if (heights.IsCreated) heights.Dispose();
         if (groundMap.IsCreated) groundMap.Dispose();
+        if (maskMap.IsCreated) maskMap.Dispose();
     }
 
     private static void Dispose()

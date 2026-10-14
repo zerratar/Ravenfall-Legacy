@@ -70,6 +70,7 @@ public class TownHouseSlot : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, rotation, 0f);
         IsMoved = true;
         IsNudged = false;
+        KeepGrassOff();
     }
 
     /// <summary>
@@ -82,6 +83,7 @@ public class TownHouseSlot : MonoBehaviour
         transform.position = PlacementUtility.FindGroundPoint(new Vector3(x, transform.position.y, z));
         transform.rotation = Quaternion.Euler(0f, rotation, 0f);
         IsNudged = true;
+        KeepGrassOff();
     }
 
     /// <summary>Puts the plot back where the scene had it.</summary>
@@ -92,6 +94,37 @@ public class TownHouseSlot : MonoBehaviour
         transform.localRotation = defaultLocalRotation;
         IsMoved = false;
         IsNudged = false;
+        KeepGrassOff();
+    }
+
+    /// <summary>
+    /// No grass on the plot or what is built on it: the box round everything drawn on the slot, in its own space,
+    /// so it turns with the slot. Again whenever the slot moves or its house changes.
+    /// </summary>
+    public void KeepGrassOff()
+    {
+        var toLocal = transform.worldToLocalMatrix;
+        var min = new Vector3(float.MaxValue, 0f, float.MaxValue);
+        var max = new Vector3(float.MinValue, 0f, float.MinValue);
+        foreach (var filter in GetComponentsInChildren<MeshFilter>())
+        {
+            if (!filter.sharedMesh || !filter.TryGetComponent<MeshRenderer>(out var r) || !r.enabled) continue;
+            var b = filter.sharedMesh.bounds;
+            var m = toLocal * filter.transform.localToWorldMatrix;
+            for (var c = 0; c < 8; ++c)
+            {
+                var p = m.MultiplyPoint3x4(new Vector3((c & 1) == 0 ? b.min.x : b.max.x, (c & 2) == 0 ? b.min.y : b.max.y, (c & 4) == 0 ? b.min.z : b.max.z));
+                min = Vector3.Min(min, p);
+                max = Vector3.Max(max, p);
+            }
+        }
+        if (min.x > max.x)
+        {
+            GrassRenderer.Remove(this);
+            return;
+        }
+        var centre = transform.TransformPoint((min + max) * 0.5f);
+        GrassRenderer.SetArea(this, centre, new Vector2(max.x - min.x, max.z - min.z) * 0.5f, transform.eulerAngles.y);
     }
 
 
@@ -108,6 +141,7 @@ public class TownHouseSlot : MonoBehaviour
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
         if (!playerManager) playerManager = FindAnyObjectByType<PlayerManager>();
         if (!meshRenderer) meshRenderer = GetComponentInChildren<MeshRenderer>();
+        KeepGrassOff();
     }
 
     public void SetHouse(VillageHouseInfo houseInfo, TownHouse townHouse, bool updateExpBonus = true)
@@ -167,6 +201,7 @@ public class TownHouseSlot : MonoBehaviour
         finally
         {
             UpdateExpBonus(updateExpBonus);
+            KeepGrassOff();
         }
     }
 
