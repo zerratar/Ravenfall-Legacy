@@ -10,8 +10,9 @@ using UnityEngine.Rendering;
 /// <remarks>
 /// A tree's level is not set here: it is the level its chunk requires, so a chunk's trees always match
 /// what players need to train there. Experience comes from the player, island and chunk, as it always has.
-/// The looks are baked meshes, one per level of detail, made from the existing prefabs by
-/// Ravenfall &gt; World Resources &gt; Create Type From Selection.
+/// The looks are baked meshes, one per level of detail, made from objects or prefabs by Ravenfall &gt; World
+/// Resources &gt; Create Tree Type From Selection (or Gather). A field can make its trees tougher or slower to
+/// come back than the type, as some chunks do.
 /// </remarks>
 [CreateAssetMenu(menuName = "Ravenfall/World Resource Type", fileName = "Resource Type")]
 public class ResourceType : ScriptableObject
