@@ -142,20 +142,36 @@ Shader "Ravenfall/Village Road"
                 return frac(p.x * p.y);
             }
 
-            float ValueNoise(float2 p)
+            // Gradient noise, not value noise: value noise's contours follow its grid, and at a steep fade
+            // they showed as square notches along the road's edge.
+            float2 Gradient(float2 cell)
+            {
+                float a = Hash(cell) * 6.2831853;
+                return float2(cos(a), sin(a));
+            }
+
+            float GradientNoise(float2 p)
             {
                 float2 i = floor(p);
                 float2 f = frac(p);
-                float2 u = f * f * (3.0 - 2.0 * f);
-                return lerp(lerp(Hash(i), Hash(i + float2(1, 0)), u.x),
-                            lerp(Hash(i + float2(0, 1)), Hash(i + float2(1, 1)), u.x), u.y);
+                float2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+                float n00 = dot(Gradient(i), f);
+                float n10 = dot(Gradient(i + float2(1, 0)), f - float2(1, 0));
+                float n01 = dot(Gradient(i + float2(0, 1)), f - float2(0, 1));
+                float n11 = dot(Gradient(i + float2(1, 1)), f - float2(1, 1));
+                return lerp(lerp(n00, n10, u.x), lerp(n01, n11, u.x), u.y) * 1.4142;
             }
 
-            // -1 to 1: big wobbles with some finer ones on top
+            // -1 to 1: big wobbles with some finer ones on top, each octave turned so no grid lines up
             float EdgeNoise(float2 p)
             {
-                float n = ValueNoise(p) * 0.6 + ValueNoise(p * 2.7 + 13.1) * 0.3 + ValueNoise(p * 7.3 + 5.7) * 0.1;
-                return n * 2.0 - 1.0;
+                const float2x2 turn = float2x2(0.8, -0.6, 0.6, 0.8);
+                float n = GradientNoise(p) * 0.6;
+                p = mul(turn, p) * 2.7 + 13.1;
+                n += GradientNoise(p) * 0.3;
+                p = mul(turn, p) * 2.7 + 5.7;
+                n += GradientNoise(p) * 0.1;
+                return clamp(n * 1.5, -1.0, 1.0);
             }
 
             half4 Fragment(Varyings input) : SV_Target

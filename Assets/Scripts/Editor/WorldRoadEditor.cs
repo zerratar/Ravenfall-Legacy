@@ -4,10 +4,13 @@ using UnityEngine;
 
 /// <summary>
 /// Draws and edits a <see cref="WorldRoad"/> in the Scene view, much as build mode does in the
-/// village: Shift click on the ground adds a point at the end, dragging a point moves it along the
-/// ground, Ctrl click on the road inserts a point there and Ctrl click on a point removes it.
-/// Points snap onto the points of other roads close by, so roads join; hold Shift while dragging to
-/// place freely. Everything is undoable.
+/// village. Click a point to select it. Shift click on the ground then carries on from it: from the
+/// last point the road gets longer, from the first it grows the other way, and from a point in the
+/// middle a new road branches off there (a road is one line of points, so a fork is a second road
+/// starting on a point of the first; the road shader joins them). With nothing selected, Shift click
+/// adds to the end. Dragging a point moves it along the ground, Ctrl click on the road inserts a
+/// point, Ctrl click on a point or Delete removes it. Points snap onto the points of other roads close
+/// by, so roads join; hold Shift while dragging to place freely. Everything is undoable.
 /// </summary>
 [CustomEditor(typeof(WorldRoad))]
 public class WorldRoadEditor : Editor
@@ -15,6 +18,21 @@ public class WorldRoadEditor : Editor
     private const float JoinDistance = 1.2f;
     private static readonly Color PointColour = new Color(1f, 0.82f, 0.38f);
     private static readonly Color LineColour = new Color(1f, 0.82f, 0.38f, 0.6f);
+    private static readonly Color SelectedColour = Color.white;
+
+    // the point Shift click carries on from; -1 for the end
+    private int selected = -1;
+    // a road just branched off another: the editor made for it picks up its far end as the selection
+    private static WorldRoad branched;
+
+    private void OnEnable()
+    {
+        if (branched && branched == target)
+        {
+            selected = branched.Points.Count - 1;
+            branched = null;
+        }
+    }
 
     [MenuItem("GameObject/Ravenfall/Road", false, 10)]
     private static void CreateRoad(MenuCommand command)
@@ -52,10 +70,12 @@ public class WorldRoadEditor : Editor
         serializedObject.ApplyModifiedProperties();
 
         EditorGUILayout.HelpBox(
-            "Shift click the ground: add a point at the end\n" +
+            "Click a point: select it\n" +
+            "Shift click the ground: carry on from the selected point (the end when none is):\n" +
+            "    from the last or first point the road grows, from a middle point a new road branches off\n" +
             "Drag a point: move it (it snaps onto other roads' points; hold Shift to place freely)\n" +
             "Ctrl click the road: insert a point\n" +
-            "Ctrl click a point: remove it", MessageType.None);
+            "Ctrl click a point, or Delete: remove it", MessageType.None);
 
         using (new EditorGUILayout.HorizontalScope())
         {
@@ -105,15 +125,40 @@ public class WorldRoadEditor : Editor
             Handles.DrawAAPolyLine(3f, world.ToArray());
         }
 
+        if (selected >= road.Points.Count) selected = -1;
+
+        // a plain click on a point selects it; the drag handle still gets the click, to move it
+        if (e.type == EventType.MouseDown && e.button == 0 && !e.control && !e.shift && !e.alt)
+        {
+            var hit = PointUnderMouse(world, e.mousePosition);
+            if (hit >= 0) { selected = hit; Repaint(); }
+        }
+
+        // Delete removes the selected point, rather than the whole road object
+        if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace) && selected >= 0)
+        {
+            RemovePoint(road, selected);
+            selected = Mathf.Min(selected, road.Points.Count - 1);
+            e.Use();
+            return;
+        }
+        if (e.type == EventType.ValidateCommand && (e.commandName == "Delete" || e.commandName == "SoftDelete") && selected >= 0) e.Use();
+        if (e.type == EventType.ExecuteCommand && (e.commandName == "Delete" || e.commandName == "SoftDelete") && selected >= 0)
+        {
+            RemovePoint(road, selected);
+            selected = Mathf.Min(selected, road.Points.Count - 1);
+            e.Use();
+            return;
+        }
+
         // Ctrl click on a point removes it
         if (e.type == EventType.MouseDown && e.button == 0 && e.control && !e.alt)
         {
             var hit = PointUnderMouse(world, e.mousePosition);
             if (hit >= 0)
             {
-                Undo.RecordObject(road, "Remove road point");
-                road.Points.RemoveAt(hit);
-                Changed(road);
+                RemovePoint(road, hit);
+                if (selected >= road.Points.Count) selected = road.Points.Count - 1;
                 e.Use();
                 return;
             }
@@ -129,25 +174,40 @@ public class WorldRoadEditor : Editor
             }
         }
 
-        // Shift click on the ground adds a point at the end
+        // Shift click on the ground carries on from the selected point
         if (e.type == EventType.MouseDown && e.button == 0 && e.shift && !e.control && !e.alt && PointUnderMouse(world, e.mousePosition) < 0)
         {
             if (TryGround(e.mousePosition, out var onGround))
             {
                 onGround = Join(road, onGround);
-                Undo.RecordObject(road, "Add road point");
-                road.Points.Add(road.transform.InverseTransformPoint(onGround));
-                Changed(road);
+                var last = road.Points.Count - 1;
+                if (selected > 0 && selected < last)
+                {
+                    Branch(road, selected, onGround);
+                }
+                else if (selected == 0 && road.Points.Count > 1)
+                {
+                    Undo.RecordObject(road, "Add road point");
+                    road.Points.Insert(0, road.transform.InverseTransformPoint(onGround));
+                    Changed(road);
+                }
+                else
+                {
+                    Undo.RecordObject(road, "Add road point");
+                    road.Points.Add(road.transform.InverseTransformPoint(onGround));
+                    selected = road.Points.Count - 1;
+                    Changed(road);
+                }
                 e.Use();
                 return;
             }
         }
 
-        // drag the points
-        Handles.color = PointColour;
+        // drag the points; the selected one is white and a little bigger
         for (var i = 0; i < world.Count; ++i)
         {
-            var size = HandleUtility.GetHandleSize(world[i]) * 0.09f;
+            Handles.color = i == selected ? SelectedColour : PointColour;
+            var size = HandleUtility.GetHandleSize(world[i]) * (i == selected ? 0.12f : 0.09f);
             EditorGUI.BeginChangeCheck();
             var moved = Handles.FreeMoveHandle(world[i], size, Vector3.zero, Handles.SphereHandleCap);
             if (!EditorGUI.EndChangeCheck()) continue;
@@ -159,8 +219,39 @@ public class WorldRoadEditor : Editor
             target.y = WorldRoad.GroundHeight(target);
             Undo.RecordObject(road, "Move road point");
             road.Points[i] = road.transform.InverseTransformPoint(target);
+            selected = i;
             Changed(road);
         }
+    }
+
+    private static void RemovePoint(WorldRoad road, int index)
+    {
+        Undo.RecordObject(road, "Remove road point");
+        road.Points.RemoveAt(index);
+        Changed(road);
+    }
+
+    /// <summary>
+    /// A new road from point <paramref name="index"/> of <paramref name="road"/> to <paramref name="to"/>,
+    /// with the same surface and width, beside it in the hierarchy, and selected so drawing carries on
+    /// along it.
+    /// </summary>
+    private static void Branch(WorldRoad road, int index, Vector3 to)
+    {
+        var from = road.WorldPoint(index);
+        var go = new GameObject(road.name + " Branch");
+        Undo.RegisterCreatedObjectUndo(go, "Branch road");
+        go.transform.SetParent(road.transform.parent, false);
+        go.transform.position = from;
+        go.layer = road.gameObject.layer;
+        var made = Undo.AddComponent<WorldRoad>(go);
+        made.RoadSurface = road.RoadSurface;
+        made.Width = road.Width;
+        made.Points.Add(go.transform.InverseTransformPoint(from));
+        made.Points.Add(go.transform.InverseTransformPoint(to));
+        Changed(made);
+        branched = made;
+        Selection.activeGameObject = go;
     }
 
     private static void Changed(WorldRoad road)

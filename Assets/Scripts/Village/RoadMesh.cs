@@ -21,7 +21,9 @@ using UnityEngine;
 public static class RoadMesh
 {
     public const float Step = 0.5f;
-    public const float Lift = 0.07f;
+    public const float Lift = 0.09f;
+    /// <summary>The most room between two vertices across the road, in metres.</summary>
+    private const float Across = 0.5f;
     /// <summary>How much wider than the road the strip is, for the edge to fade out over.</summary>
     public const float Shoulders = 1.45f;
     private const int CapSegments = 10;
@@ -74,11 +76,15 @@ public static class RoadMesh
         if (samples == null || samples.Count < 2) return;
 
         var count = samples.Count;
-        var capVertices = CapSegments + 2;
-        var vertices = new Vector3[count * 3 + capVertices * 2];
-        var uvs = new Vector2[vertices.Length];
-        var triangles = new int[(count - 1) * 12 + CapSegments * 3 * 2];
         var half = width * Shoulders / 2f;
+        // a vertex across the road about every Across metres, so the strip follows the ground between its
+        // edges: with only the edges and the middle it was flat there, and wherever the ground bulged the
+        // terrain showed through in its own square tiles
+        var perSide = Mathf.Max(1, Mathf.CeilToInt(half / Across));
+        var columns = perSide * 2 + 1;
+        var vertices = new List<Vector3>(count * columns + 2 * (1 + perSide * (CapSegments + 1)));
+        var uvs = new List<Vector2>(vertices.Capacity);
+        var triangles = new List<int>((count - 1) * (columns - 1) * 6 + 2 * CapSegments * (perSide * 2 - 1) * 3);
         var along = 0f;
 
         for (var i = 0; i < count; ++i)
@@ -89,62 +95,71 @@ public static class RoadMesh
             var side = new Vector2(-tangent.y, tangent.x);
             if (i > 0) along += Vector2.Distance(samples[i - 1], samples[i]);
 
-            for (var c = 0; c < 3; ++c)
+            for (var c = 0; c < columns; ++c)
             {
-                var across = (c - 1) * half;
-                var flat = samples[i] + side * across;
-                var point = new Vector3(flat.x, 0f, flat.y);
-                point.y = groundHeight(point) + lift;
-                vertices[i * 3 + c] = point;
-                uvs[i * 3 + c] = new Vector2(c == 1 ? 0f : 1f, along / width);
+                var t = (c - perSide) / (float)perSide;           // -1 at one edge, 0 down the middle, 1 at the other
+                vertices.Add(Ground(samples[i] + side * (t * half)));
+                uvs.Add(new Vector2(Mathf.Abs(t), along / width));
             }
         }
 
-        var t = 0;
         for (var i = 0; i < count - 1; ++i)
         {
-            for (var c = 0; c < 2; ++c)
+            for (var c = 0; c < columns - 1; ++c)
             {
-                var a = i * 3 + c;
+                var a = i * columns + c;
                 var b = a + 1;
-                var d = a + 3;
+                var d = a + columns;
                 var e = d + 1;
                 // clockwise seen from above, which Unity draws as the front
-                triangles[t++] = a; triangles[t++] = b; triangles[t++] = d;
-                triangles[t++] = b; triangles[t++] = e; triangles[t++] = d;
+                triangles.Add(a); triangles.Add(b); triangles.Add(d);
+                triangles.Add(b); triangles.Add(e); triangles.Add(d);
             }
         }
 
-        // the round ends: a half disc of fan triangles past the first and the last sample
-        void Cap(int at, float direction, float alongAt, int first)
+        // the round ends: half discs past the first and the last sample, in rings, so they follow the
+        // ground too; the rim is the road's edge all the way round, so the end fades out like the sides
+        void Cap(int at, float alongAt)
         {
             var centre = samples[at];
             var other = samples[at == 0 ? 1 : count - 2];
             var outward = (centre - other).normalized;
-            var side = new Vector2(outward.y, -outward.x) * direction;
-            vertices[first] = Ground(centre);
-            uvs[first] = new Vector2(0f, alongAt / width);
-            for (var k = 0; k <= CapSegments; ++k)
+            var side = new Vector2(-outward.y, outward.x);
+            var sign = at == 0 ? -1f : 1f;
+            var first = vertices.Count;
+            vertices.Add(Ground(centre));
+            uvs.Add(new Vector2(0f, alongAt / width));
+            for (var ring = 1; ring <= perSide; ++ring)
             {
-                var angle = Mathf.PI * k / CapSegments;
-                var offset = (side * Mathf.Cos(angle) + outward * Mathf.Sin(angle)) * half;
-                vertices[first + 1 + k] = Ground(centre + offset);
-                // the rim is the road's edge all the way round, so the end fades out like the sides
-                var forward = Vector2.Dot(offset, outward) * (at == 0 ? -1f : 1f);
-                uvs[first + 1 + k] = new Vector2(1f, (alongAt + forward) / width);
+                var r = ring / (float)perSide;
+                for (var k = 0; k <= CapSegments; ++k)
+                {
+                    var angle = Mathf.PI * k / CapSegments;
+                    var offset = (side * Mathf.Cos(angle) + outward * Mathf.Sin(angle)) * (half * r);
+                    vertices.Add(Ground(centre + offset));
+                    uvs.Add(new Vector2(r, (alongAt + Vector2.Dot(offset, outward) * sign) / width));
+                }
             }
 
+            int At(int ring, int k) => ring == 0 ? first : first + 1 + (ring - 1) * (CapSegments + 1) + k;
             for (var k = 0; k < CapSegments; ++k)
             {
-                var a = first;
-                var b = first + 1 + k;
-                var d = first + 2 + k;
-                // clockwise seen from above, as the strip is
-                var ab = vertices[b] - vertices[a];
-                var ad = vertices[d] - vertices[a];
-                if (ab.z * ad.x - ab.x * ad.z < 0f) (b, d) = (d, b);
-                triangles[t++] = a; triangles[t++] = b; triangles[t++] = d;
+                Face(At(0, 0), At(1, k), At(1, k + 1));
+                for (var ring = 1; ring < perSide; ++ring)
+                {
+                    Face(At(ring, k), At(ring + 1, k), At(ring + 1, k + 1));
+                    Face(At(ring, k), At(ring + 1, k + 1), At(ring, k + 1));
+                }
             }
+        }
+
+        // clockwise seen from above, whichever way round the corners came
+        void Face(int a, int b, int d)
+        {
+            var ab = vertices[b] - vertices[a];
+            var ad = vertices[d] - vertices[a];
+            if (ab.z * ad.x - ab.x * ad.z < 0f) (b, d) = (d, b);
+            triangles.Add(a); triangles.Add(b); triangles.Add(d);
         }
 
         Vector3 Ground(Vector2 flat)
@@ -154,12 +169,13 @@ public static class RoadMesh
             return point;
         }
 
-        Cap(0, 1f, 0f, count * 3);
-        Cap(count - 1, -1f, along, count * 3 + capVertices);
+        Cap(0, 0f);
+        Cap(count - 1, along);
 
-        mesh.vertices = vertices;
-        mesh.uv = uvs;
-        mesh.triangles = triangles;
+        mesh.indexFormat = vertices.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
+        mesh.SetVertices(vertices);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(triangles, 0);
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
     }
