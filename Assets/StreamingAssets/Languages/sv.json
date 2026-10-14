@@ -1018,7 +1018,6 @@
     "UI_ROAD_ERROR_LOCKED": "Den vägtypen är inte upplåst än.",
     "UI_ROAD_ERROR_RESOURCES": "Byn har inte resurserna för det.",
     "UI_ROAD_ERROR_UNKNOWN": "Vägen kunde inte sparas. Försök igen.",
-    "UI_ROAD_FLAGGED": "Går genom en byggnad. Flytta en punkt eller byggnaden; inget flyttas åt dig.",
     "UI_ROAD_FREE": "ingenting",
     "UI_ROAD_GRAVEL": "Grusväg",
     "UI_ROAD_HAVE": "av {0}",

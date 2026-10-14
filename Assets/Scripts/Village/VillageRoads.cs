@@ -20,8 +20,6 @@ public class VillageRoads : MonoBehaviour
         public GameObject Object;
         public MeshRenderer Renderer;
         public Mesh Mesh;
-        /// <summary>Runs through a building or the town hall: outlined red in build mode, never moved.</summary>
-        public bool Flagged;
         /// <summary>Drawn red: the road being drawn when the village cannot pay for it.</summary>
         public bool Tinted;
     }
@@ -191,12 +189,6 @@ public class VillageRoads : MonoBehaviour
         RoadMesh.Build(road.Mesh, road.Samples, WidthOf(road.Type), GroundHeight, RoadMesh.Lift + Mathf.Clamp(road.Type, 0, 4) * 0.012f);
         road.Renderer.sharedMaterials = DrawMaterialsFor(road.Type);
         ApplyTint(road);
-    }
-
-    /// <summary>Marks a road as running through a building. Build mode outlines that stretch.</summary>
-    public void SetFlagged(Road road, bool flagged)
-    {
-        road.Flagged = flagged;
     }
 
     public void SetTinted(Road road, bool tinted)

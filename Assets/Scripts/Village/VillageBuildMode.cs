@@ -165,7 +165,6 @@ public class VillageBuildMode : MonoBehaviour
         Selected = null;
         Armed = null;
         ShowVillageGrid();
-        Roads.RefreshFlags(true);
         ActiveChanged?.Invoke(true);
         Changed?.Invoke();
     }
@@ -200,7 +199,6 @@ public class VillageBuildMode : MonoBehaviour
         if (villageGrid) villageGrid.Hide();
         Roads.CancelDrawing();
         Roads.Deselect();
-        Roads.RefreshFlags(false);
         IsActive = false;
         Selected = null;
         HallSelected = false;
@@ -821,21 +819,6 @@ public class VillageBuildMode : MonoBehaviour
         SetArmed(null);
         Roads.StartDrawing(type);
         Changed?.Invoke();
-    }
-
-    /// <summary>
-    /// Whether a point lies under a plot (built or empty) or in the town hall's area: where a road
-    /// is in the way. Roads there are drawn red in build mode.
-    /// </summary>
-    public bool IsBuilt(Vector2 point)
-    {
-        var townHall = gameManager.Village.TownHall;
-        if (townHall && HallFootprint(townHall).Contains(townHall.HallPosition, townHall.HallRotation, point)) return true;
-        foreach (var plot in Plots)
-        {
-            if (plot && FootprintOf(plot).Contains(plot.transform.position, plot.transform.eulerAngles.y, point)) return true;
-        }
-        return false;
     }
 
     /// <summary>The town hall's area, the room its biggest tier needs, as a footprint.</summary>

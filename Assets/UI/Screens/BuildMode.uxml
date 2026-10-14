@@ -112,7 +112,6 @@
             </engine:VisualElement>
 
             <engine:VisualElement class="rf-build-road__body">
-                <engine:Label name="road-flag" class="rf-build-road__flag" style="display: none;" />
 
                 <engine:Label name="road-type-caption" class="rf-build-caption rf-build-road__caption" />
                 <engine:VisualElement name="road-types" class="rf-build-road__types" />

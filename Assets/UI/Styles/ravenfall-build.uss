@@ -1394,23 +1394,6 @@
     border-bottom-color: var(--rf-accent-bright);
 }
 
-/* A road through a building: said in words as well as the red road. */
-.rf-build .rf-build-road__flag {
-    font-size: 14px;
-    color: rgb(255, 200, 195);
-    white-space: normal;
-    margin-bottom: var(--rf-space-3);
-    padding-left: var(--rf-space-3);
-    padding-right: var(--rf-space-3);
-    padding-top: var(--rf-space-2);
-    padding-bottom: var(--rf-space-2);
-    background-color: rgba(140, 32, 36, 0.45);
-    border-left-width: 3px;
-    border-left-color: var(--rf-danger);
-    border-top-right-radius: var(--rf-radius);
-    border-bottom-right-radius: var(--rf-radius);
-}
-
 /* ---- Village area ---- */
 
 /* A building outside the area its town hall allows: amber, kept, never moved for the streamer. */

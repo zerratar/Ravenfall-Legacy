@@ -97,7 +97,6 @@ namespace Shinobytes.UI
         private Label areaLabel;
         private Label roadTitle;
         private Label roadSubtitle;
-        private Label roadFlag;
         private VisualElement roadTypes;
         private VisualElement roadRing;
         private Label roadTypeCaption;
@@ -220,7 +219,6 @@ namespace Shinobytes.UI
             plotOutside = root.Q<Label>("plot-outside");
             roadTitle = root.Q<Label>("road-title");
             roadSubtitle = root.Q<Label>("road-subtitle");
-            roadFlag = root.Q<Label>("road-flag");
             roadTypes = root.Q<VisualElement>("road-types");
             roadRemove = root.Q<Button>("road-remove");
             roadRing = root.Q<VisualElement>("road-ring");
@@ -1316,8 +1314,6 @@ namespace Shinobytes.UI
                 : string.Format(CultureInfo.InvariantCulture, dirty ? Localization.UI_ROAD_EDITED_SUBTITLE : Localization.UI_ROAD_LENGTH, Mathf.RoundToInt(tool.EditLength));
             roadPanel.EnableInClassList("rf-build-road--dirty", dirty);
 
-            roadFlag.style.display = !drawing && road.Flagged ? DisplayStyle.Flex : DisplayStyle.None;
-            roadFlag.text = Localization.UI_ROAD_FLAGGED;
 
             // Type: a chip each. Drawing, it changes what is drawn; editing, it is a change like any other.
             roadTypeCaption.text = Localization.UI_ROAD_TYPE;

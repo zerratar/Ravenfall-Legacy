@@ -415,7 +415,6 @@ public static class Localization
     public static string UI_ROAD_LOCKED = "Needs town hall tier {0}";
     public static string UI_ROAD_LENGTH = "{0} m long";
     public static string UI_ROAD_TYPE = "TYPE";
-    public static string UI_ROAD_FLAGGED = "Runs through a building. Move a point or the building; nothing is moved for you.";
     public static string UI_ROAD_REMOVE = "Remove road (half the cost back)";
     public static string UI_ROAD_REMOVE_CONFIRM = "Click again to remove";
     public static string UI_ROAD_NONE = "Roads are not available on this server yet.";
