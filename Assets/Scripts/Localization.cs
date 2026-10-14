@@ -810,8 +810,7 @@ public static class Localization
     public static string UI_LOGIN_UNREACHABLE_TITLE = "Could not reach the server";
     public static string UI_LOGIN_UNREACHABLE = "Check your internet connection and try again. If it keeps happening, the server may be down for a moment.";
     public static string UI_LOGIN_MISSING = "Fill in both your username and your password.";
-    public static string UI_LOGIN_NO_PASSWORD = "No game password yet?";
-    public static string UI_LOGIN_SET_PASSWORD = "Set one on ravenfall.stream";
+    public static string UI_LOGIN_NO_PASSWORD = "New to Ravenfall? Signing in with Twitch makes your account, there is nothing else to fill in.";
     public static string UI_LOGIN_VERSION = "Ravenfall v{0}";
     public static string UI_LOGIN_QUIT = "Quit";
     public static string UI_LOGIN_TWITCH = "Sign in with Twitch";

@@ -95,7 +95,6 @@
 
             <engine:VisualElement class="rf-login__below" picking-mode="Ignore">
                 <engine:Label name="login-no-password" class="rf-login__below-text" picking-mode="Ignore" />
-                <engine:Button name="login-set-password" class="rf-login__link" focusable="false" />
             </engine:VisualElement>
         </engine:VisualElement>
 

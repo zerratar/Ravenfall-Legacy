@@ -176,6 +176,20 @@
     width: 420px;
 }
 
+/* Labels bring margins and padding of their own; both lines set theirs, so the gap between
+   them is the 2px here and nothing else. */
+.rf-conn-server .rf-conn-server__title,
+.rf-conn-server .rf-conn-server__note {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
 .rf-conn-server .rf-conn-server__title {
     margin-bottom: 2px;
     font-size: 17px;

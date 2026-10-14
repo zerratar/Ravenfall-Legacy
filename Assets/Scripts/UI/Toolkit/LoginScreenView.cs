@@ -326,8 +326,6 @@ namespace Shinobytes.UI
 
                 var forgot = root.Q<Button>("login-forgot");
                 if (forgot != null) forgot.clicked += () => Application.OpenURL(PasswordPage);
-                var setPassword = root.Q<Button>("login-set-password");
-                if (setPassword != null) setPassword.clicked += () => Application.OpenURL(PasswordPage);
                 var quit = root.Q<Button>("login-quit");
                 if (quit != null) quit.clicked += () => Quit();
                 if (language != null) language.clicked += NextLanguage;
@@ -364,7 +362,6 @@ namespace Shinobytes.UI
             SetText("login-remember-text", Localization.UI_LOGIN_REMEMBER);
             SetText("login-no-password", Localization.UI_LOGIN_NO_PASSWORD);
             SetButton("login-forgot", Localization.UI_LOGIN_FORGOT);
-            SetButton("login-set-password", Localization.UI_LOGIN_SET_PASSWORD);
             SetText("login-quit-text", Localization.UI_LOGIN_QUIT);
 
             submitText.text = busy ? Localization.UI_LOGIN_BUSY : Localization.UI_LOGIN_SUBMIT;
