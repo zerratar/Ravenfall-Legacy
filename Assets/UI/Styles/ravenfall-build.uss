@@ -122,9 +122,102 @@
 }
 
 .rf-build .rf-build-hall__needs {
-    flex-direction: row;
-    flex-wrap: wrap;
     margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-3);
+}
+
+/* ---- A requirement: icon, name, have / need and a tick, over a bar of how far along ---- */
+
+.rf-build-need {
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-build-need__line {
+    flex-direction: row;
+    align-items: center;
+    height: 24px;
+}
+
+.rf-build .rf-build-need__icon {
+    width: 22px;
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    margin-right: var(--rf-space-2);
+}
+
+.rf-build .rf-build-need__name {
+    flex-grow: 1;
+    font-size: 15px;
+    color: var(--rf-text);
+}
+
+.rf-build .rf-build-need__amount {
+    font-size: 15px;
+    color: var(--rf-danger);
+    -unity-font-style: bold;
+}
+
+.rf-build .rf-build-need__tick {
+    width: 22px;
+    margin-left: var(--rf-space-1);
+    font-size: 13px;
+    color: var(--rf-success);
+}
+
+.rf-build-need__bar {
+    height: 6px;
+    margin-top: 3px;
+    margin-left: 30px;
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    overflow: hidden;
+}
+
+.rf-build-need__fill {
+    height: 100%;
+    background-color: var(--rf-accent);
+}
+
+.rf-build-need--met .rf-build-need__fill {
+    background-color: var(--rf-success);
+}
+
+.rf-build .rf-build-need--met .rf-build-need__amount {
+    color: var(--rf-success);
+}
+
+.rf-build .rf-build-need--met .rf-build-need__icon {
+    color: var(--rf-success);
+}
+
+/* ---- What the next tier gives ---- */
+
+.rf-build .rf-build-hall__gets {
+    margin-top: var(--rf-space-1);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-build-get {
+    flex-direction: row;
+    align-items: center;
+    min-height: 26px;
+}
+
+.rf-build .rf-build-get__icon {
+    width: 22px;
+    font-size: 13px;
+    color: var(--rf-accent);
+    margin-right: var(--rf-space-2);
+}
+
+.rf-build .rf-build-get__text {
+    flex-shrink: 1;
+    font-size: 15px;
+    color: var(--rf-text);
+    white-space: normal;
 }
 
 .rf-build .rf-build-hall__need {
@@ -301,6 +394,24 @@
     border-right-color: rgb(255, 120, 110);
     border-top-color: rgb(255, 120, 110);
     border-bottom-color: rgb(255, 120, 110);
+}
+
+/* The reason can be long ("too close to another building. In the way: Barracks, Farm"): the
+   marker widens and the text wraps, growing upwards from the building, so it is never cut off
+   past the end of the pill. */
+.rf-plot.rf-plot--moving-blocked {
+    width: 520px;
+    margin-left: -260px;
+}
+
+.rf-build .rf-plot--moving-blocked .rf-plot__name {
+    white-space: normal;
+    max-width: 420px;
+}
+
+.rf-plot--moving-blocked .rf-plot__pill {
+    padding-top: 4px;
+    padding-bottom: 4px;
 }
 
 .rf-plot--moving-blocked .rf-plot__ring {

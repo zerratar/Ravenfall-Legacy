@@ -452,6 +452,16 @@ public static class Localization
     public static string UI_BUILD_HALL_UPGRADE_FAILED = "The upgrade did not go through. Check the requirements and try again.";
     public static string UI_BUILD_HALL_NEED_LEVEL = "Village level {0}";
     public static string UI_BUILD_HALL_NEED = "{0} {1} / {2}";
+    public static string UI_BUILD_HALL_NEED_LEVEL_NAME = "Village level";
+    public static string UI_BUILD_HALL_NEED_AMOUNT = "{0} / {1}";
+    public static string UI_ROAD_RESOURCE_WOOD = "Wood";
+    public static string UI_ROAD_RESOURCE_ORE = "Ore";
+    public static string UI_ROAD_RESOURCE_FISH = "Fish";
+    public static string UI_ROAD_RESOURCE_WHEAT = "Wheat";
+    public static string UI_BUILD_HALL_GETS = "WHAT YOU GET";
+    public static string UI_BUILD_HALL_GET_HALL = "A new town hall: the {0}";
+    public static string UI_BUILD_HALL_GET_ROOM = "{0} m more room to build in, all round the village";
+    public static string UI_BUILD_HALL_GET_ROAD = "{0} to build";
     public static string[] UI_BUILD_HALL_NAMES = { "Longhouse", "Town hall", "Guild hall", "Keep", "Castle" };
     public static string UI_TOWN_VILLAGE = "VILLAGE";
     public static string UI_TOWN_LEVEL = "LV {0}";

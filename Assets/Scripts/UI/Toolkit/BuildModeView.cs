@@ -118,6 +118,8 @@ namespace Shinobytes.UI
         private VisualElement hallUpgrade;
         private Label hallNext;
         private VisualElement hallNeeds;
+        private VisualElement hallGets;
+        private Label hallGetsCaption;
         private Button hallUpgradeButton;
         private Button demolishButton;
         private Label demolishLabel;
@@ -235,6 +237,8 @@ namespace Shinobytes.UI
             hallUpgrade = root.Q<VisualElement>("hall-upgrade");
             hallNext = root.Q<Label>("hall-next");
             hallNeeds = root.Q<VisualElement>("hall-needs");
+            hallGets = root.Q<VisualElement>("hall-gets");
+            hallGetsCaption = root.Q<Label>("hall-gets-caption");
             hallUpgradeButton = root.Q<Button>("hall-upgrade-button");
             demolishButton = root.Q<Button>("plot-demolish");
             demolishLabel = root.Q<Label>("plot-demolish-label");
@@ -897,38 +901,100 @@ namespace Shinobytes.UI
 
             hallUpgrade.style.display = DisplayStyle.Flex;
             hallNeeds.Clear();
+            hallGets.Clear();
             if (!townHall.HasNextTier)
             {
                 hallNext.text = Localization.UI_BUILD_HALL_MAX;
+                hallGetsCaption.style.display = DisplayStyle.None;
                 hallUpgradeButton.style.display = DisplayStyle.None;
                 return;
             }
 
+            // What it takes: one row each, with what the village has, how far along, and a tick
+            // once it is there. The red text alone did not read as requirements at all.
             var next = Mathf.Clamp(townHall.BoughtTier.Value + 1, 0, Localization.UI_BUILD_HALL_NAMES.Length - 1);
             hallNext.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_NEXT, Localization.UI_BUILD_HALL_NAMES[next].ToUpperInvariant());
-            AddNeed(string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_NEED_LEVEL, townHall.NextLevel), townHall.Level >= townHall.NextLevel);
-            AddResourceNeed(Localization.UI_TOWN_WOOD, townHall.Wood, townHall.NextWood);
-            AddResourceNeed(Localization.UI_TOWN_ORE, townHall.Ore, townHall.NextOre);
-            AddResourceNeed(Localization.UI_TOWN_FISH, townHall.Fish, townHall.NextFish);
-            AddResourceNeed(Localization.UI_TOWN_WHEAT, townHall.Wheat, townHall.NextWheat);
+            AddNeed("\uf005", Localization.UI_BUILD_HALL_NEED_LEVEL_NAME, townHall.Level, townHall.NextLevel);
+            AddNeed("\uf1bb", Localization.UI_ROAD_RESOURCE_WOOD, townHall.Wood, townHall.NextWood);
+            AddNeed("\uf3a5", Localization.UI_ROAD_RESOURCE_ORE, townHall.Ore, townHall.NextOre);
+            AddNeed("\uf578", Localization.UI_ROAD_RESOURCE_FISH, townHall.Fish, townHall.NextFish);
+            AddNeed("\ue2cd", Localization.UI_ROAD_RESOURCE_WHEAT, townHall.Wheat, townHall.NextWheat);
+
+            // What it gives: the new hall, more room to build in, and the road types it unlocks.
+            hallGetsCaption.text = Localization.UI_BUILD_HALL_GETS;
+            hallGetsCaption.style.display = DisplayStyle.Flex;
+            AddGet("\ue0de", string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_GET_HALL, Localization.UI_BUILD_HALL_NAMES[next]));
+            if (mode.RoomPerTier > 0f)
+            {
+                AddGet("\uf31d", string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_GET_ROOM, Mathf.RoundToInt(mode.RoomPerTier)));
+            }
+            var roads = GameManager.Instance.Village.Roads;
+            if (roads != null)
+            {
+                foreach (var type in roads.Types)
+                {
+                    if (type.Tier == townHall.BoughtTier.Value + 1)
+                    {
+                        AddGet("\uf018", string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_GET_ROAD, RoadName(type.Id)));
+                    }
+                }
+            }
 
             hallUpgradeButton.style.display = DisplayStyle.Flex;
             hallUpgradeButton.SetEnabled(idle && townHall.CanUpgrade);
         }
 
-        private void AddResourceNeed(string name, long have, int need)
+        private void AddNeed(string glyph, string name, long have, long need)
         {
             if (need <= 0) return;
-            AddNeed(string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_NEED, name,
-                Math.Min(have, need).ToString("N0", CultureInfo.InvariantCulture), need.ToString("N0", CultureInfo.InvariantCulture)), have >= need);
+            var met = have >= need;
+
+            var row = new VisualElement { pickingMode = PickingMode.Ignore };
+            row.AddToClassList("rf-build-need");
+            row.EnableInClassList("rf-build-need--met", met);
+
+            var line = new VisualElement { pickingMode = PickingMode.Ignore };
+            line.AddToClassList("rf-build-need__line");
+            var icon = new Label(glyph) { pickingMode = PickingMode.Ignore };
+            icon.AddToClassList("rf-icon");
+            icon.AddToClassList("rf-build-need__icon");
+            var label = new Label(name) { pickingMode = PickingMode.Ignore };
+            label.AddToClassList("rf-build-need__name");
+            var amount = new Label(string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HALL_NEED_AMOUNT,
+                Math.Min(have, need).ToString("N0", CultureInfo.InvariantCulture), need.ToString("N0", CultureInfo.InvariantCulture))) { pickingMode = PickingMode.Ignore };
+            amount.AddToClassList("rf-build-need__amount");
+            var tick = new Label(met ? "\uf00c" : string.Empty) { pickingMode = PickingMode.Ignore };
+            tick.AddToClassList("rf-icon");
+            tick.AddToClassList("rf-build-need__tick");
+            line.Add(icon);
+            line.Add(label);
+            line.Add(amount);
+            line.Add(tick);
+
+            var bar = new VisualElement { pickingMode = PickingMode.Ignore };
+            bar.AddToClassList("rf-build-need__bar");
+            var fill = new VisualElement { pickingMode = PickingMode.Ignore };
+            fill.AddToClassList("rf-build-need__fill");
+            fill.style.width = Length.Percent(Mathf.Clamp01(have / (float)need) * 100f);
+            bar.Add(fill);
+
+            row.Add(line);
+            row.Add(bar);
+            hallNeeds.Add(row);
         }
 
-        private void AddNeed(string text, bool met)
+        private void AddGet(string glyph, string text)
         {
-            var label = new Label(text);
-            label.AddToClassList("rf-build-hall__need");
-            label.EnableInClassList("rf-build-hall__need--met", met);
-            hallNeeds.Add(label);
+            var row = new VisualElement { pickingMode = PickingMode.Ignore };
+            row.AddToClassList("rf-build-get");
+            var icon = new Label(glyph) { pickingMode = PickingMode.Ignore };
+            icon.AddToClassList("rf-icon");
+            icon.AddToClassList("rf-build-get__icon");
+            var label = new Label(text) { pickingMode = PickingMode.Ignore };
+            label.AddToClassList("rf-build-get__text");
+            row.Add(icon);
+            row.Add(label);
+            hallGets.Add(row);
         }
 
         private void OnDemolishClicked()

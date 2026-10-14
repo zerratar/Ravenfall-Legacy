@@ -58,6 +58,8 @@
             <engine:VisualElement name="hall-upgrade" class="rf-build-hall" style="display: none;">
                 <engine:Label name="hall-next" class="rf-build-caption" />
                 <engine:VisualElement name="hall-needs" class="rf-build-hall__needs" />
+                <engine:Label name="hall-gets-caption" class="rf-build-caption" />
+                <engine:VisualElement name="hall-gets" class="rf-build-hall__gets" />
                 <engine:Button name="hall-upgrade-button" class="rf-build-wide rf-build-wide--upgrade" />
             </engine:VisualElement>
 

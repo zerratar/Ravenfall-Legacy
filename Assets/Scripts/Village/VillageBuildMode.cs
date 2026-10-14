@@ -30,6 +30,8 @@ public class VillageBuildMode : MonoBehaviour
 
     [Tooltip("How far past the outermost original plot buildings may go, in metres.")]
     [SerializeField] private float villageMargin = 12f;
+    [Tooltip("How much further out buildings may stand for each town hall tier, in metres. The village grows with its hall.")]
+    [SerializeField] private float roomPerTier = 6f;
 
     [Tooltip("Largest height difference across a footprint before the ground counts as too steep.")]
     [SerializeField] private float maxSlope = 2f;
@@ -112,6 +114,8 @@ public class VillageBuildMode : MonoBehaviour
 
     // The plots in the way of the placement last checked, for the overlay's rings and the message.
     private readonly List<TownHouseSlot> blockers = new List<TownHouseSlot>();
+    // the town hall's area is in the way too: outlined red like a building
+    private bool hallBlocks;
     private readonly List<(Vector3, float, Vector2)> blockerRings = new List<(Vector3, float, Vector2)>();
     private bool previewing;
 
@@ -186,7 +190,7 @@ public class VillageBuildMode : MonoBehaviour
 
         if (float.IsNaN(oceanLevel)) oceanLevel = FindOceanLevel();
         if (!villageGrid) villageGrid = VillageGrid.Create();
-        villageGrid.Show(centre, reach + villageMargin, cellSize, townHall.GroundHeight,
+        villageGrid.Show(centre, reach + villageMargin + TierRoom(), cellSize, townHall.GroundHeight,
             float.IsNegativeInfinity(oceanLevel) ? float.NegativeInfinity : oceanLevel);
     }
 
@@ -623,6 +627,7 @@ public class VillageBuildMode : MonoBehaviour
     private string Validate(TownHouseSlot slot, Footprint footprint, Vector3 position, float rotation)
     {
         blockers.Clear();
+        hallBlocks = false;
         var townHall = gameManager.Village.TownHall;
         // Measured from the plaza, the middle of the village, so moving the town hall does not move
         // the area buildings may stand in.
@@ -636,7 +641,7 @@ public class VillageBuildMode : MonoBehaviour
             if (other) reach = Mathf.Max(reach, Flat(other.DefaultPosition - centre).magnitude);
         }
 
-        if (Flat(position - centre).magnitude > reach + villageMargin)
+        if (Flat(position - centre).magnitude > reach + villageMargin + TierRoom())
         {
             return Localization.UI_BUILD_PLACE_OUTSIDE;
         }
@@ -645,6 +650,7 @@ public class VillageBuildMode : MonoBehaviour
         // stand right beside it.
         if (OverlapsTownHall(footprint, position, rotation))
         {
+            hallBlocks = true;
             return Localization.UI_BUILD_PLACE_TOWN_HALL;
         }
 
@@ -744,6 +750,16 @@ public class VillageBuildMode : MonoBehaviour
         var townHall = gameManager.Village.TownHall;
         if (!townHall) return false;
         return Footprint.Overlaps(HallFootprint(townHall), townHall.HallPosition, townHall.HallRotation, footprint, position, rotation);
+    }
+
+    /// <summary>Metres of building room each town hall tier adds round the village.</summary>
+    public float RoomPerTier => roomPerTier;
+
+    /// <summary>The room the current town hall tier adds to the village's area.</summary>
+    private float TierRoom()
+    {
+        var townHall = gameManager.Village.TownHall;
+        return townHall ? Mathf.Max(0, townHall.Tier) * roomPerTier : 0f;
     }
 
     /// <summary>Picks a road for editing; the building selection goes.</summary>
@@ -929,6 +945,7 @@ public class VillageBuildMode : MonoBehaviour
     private string ValidateHall(Vector3 position, float rotation)
     {
         blockers.Clear();
+        hallBlocks = false;
         var townHall = gameManager.Village.TownHall;
         var plaza = townHall.Plaza;
 
@@ -941,7 +958,7 @@ public class VillageBuildMode : MonoBehaviour
         var corners = townHall.AreaCorners(position, rotation);
         foreach (var corner in corners)
         {
-            if (Flat(corner - plaza).magnitude > reach + villageMargin)
+            if (Flat(corner - plaza).magnitude > reach + villageMargin + TierRoom())
             {
                 return Localization.UI_BUILD_HALL_OUTSIDE;
             }
@@ -1076,6 +1093,13 @@ public class VillageBuildMode : MonoBehaviour
             var rotation = plot.transform.eulerAngles.y;
             blockerRings.Add((footprint.Centre(plot.transform.position, rotation), rotation, footprint.Half));
         }
+
+        var townHall = gameManager.Village.TownHall;
+        if (hallBlocks && townHall)
+        {
+            var hall = HallFootprint(townHall).Grown(0.3f);
+            blockerRings.Add((hall.Centre(townHall.HallPosition, townHall.HallRotation), townHall.HallRotation, hall.Half));
+        }
         overlay.ShowBlockers(blockerRings);
     }
 
@@ -1146,6 +1170,8 @@ public class VillageBuildMode : MonoBehaviour
 
             townHall.Spend(wood, ore, fish, wheat);
             gameManager.Village.ApplyTownHallTier(state);
+            // a bigger hall, a bigger village: the grid grows to the new room
+            if (IsActive) ShowVillageGrid();
         });
     }
 
@@ -1222,6 +1248,7 @@ public class VillageBuildMode : MonoBehaviour
                 ghost.transform.SetPositionAndRotation(target.transform.position, target.transform.rotation);
                 MoveProblem = null;
                 blockers.Clear();
+                hallBlocks = false;
             }
             else
             {
