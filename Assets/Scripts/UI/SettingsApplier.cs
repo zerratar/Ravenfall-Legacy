@@ -73,6 +73,8 @@ public static class SettingsApplier
         public const bool Grass = true;
         public const float GrassDistance = 0.4f;
         public const float GrassDensity = 1f;
+        public const bool TiltShift = false;
+        public const float TiltShiftStrength = 0.5f;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -127,6 +129,7 @@ public static class SettingsApplier
         var settings = PlayerSettings.Instance;
         ApplyViewDistance(game, settings.ViewDistance.GetValueOrDefault(0.5f));
         ApplyGrass();
+        ApplyTiltShift();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -545,6 +548,30 @@ public static class SettingsApplier
         GrassRenderer.Enabled = Grass;
         GrassRenderer.Distance = GrassMetres(GrassDistance);
         GrassRenderer.Density = GrassDensity;
+    }
+
+    // ---- Tilt shift --------------------------------------------------------------------------------
+    // The miniature look: off by default. Potato mode turns it off as well, without changing the setting.
+
+    public static bool TiltShiftEnabled => PlayerSettings.Instance.TiltShiftEnabled.GetValueOrDefault(Defaults.TiltShift);
+    public static float TiltShiftStrength => PlayerSettings.Instance.TiltShiftStrength.GetValueOrDefault(Defaults.TiltShiftStrength);
+
+    public static void SetTiltShift(bool value)
+    {
+        PlayerSettings.Instance.TiltShiftEnabled = value;
+        ApplyTiltShift();
+    }
+
+    public static void SetTiltShiftStrength(float value)
+    {
+        PlayerSettings.Instance.TiltShiftStrength = Mathf.Clamp01(value);
+        ApplyTiltShift();
+    }
+
+    private static void ApplyTiltShift()
+    {
+        TiltShift.Enabled = TiltShiftEnabled;
+        TiltShift.Strength = TiltShiftStrength;
     }
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);

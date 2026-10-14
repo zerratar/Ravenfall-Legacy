@@ -34,6 +34,8 @@ public class PlayerSettings
     public bool? GrassEnabled;
     public float? GrassDistance;
     public float? GrassDensity;
+    public bool? TiltShiftEnabled;
+    public float? TiltShiftStrength;
     public float? CameraRotationSpeed;
 
     /// <summary>A UnityEngine.FullScreenMode value; null leaves the window as Unity last had it.</summary>
@@ -404,6 +406,8 @@ public class PlayerSettings
             Serialize(sw, "grassEnabled", obj.GrassEnabled);
             Serialize(sw, "grassDistance", obj.GrassDistance);
             Serialize(sw, "grassDensity", obj.GrassDensity);
+            Serialize(sw, "tiltShiftEnabled", obj.TiltShiftEnabled);
+            Serialize(sw, "tiltShiftStrength", obj.TiltShiftStrength);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
             Serialize(sw, "masterVolume", obj.MasterVolume);
             Serialize(sw, "freeCameraSpeed", obj.FreeCameraSpeed);

@@ -438,6 +438,15 @@ namespace Shinobytes.UI
                 SettingsApplier.Defaults.GrassDensity, Percent, SettingsApplier.SetGrassDensity);
             grassDistanceRow.SetEnabled(SettingsApplier.Grass);
             grassDensityRow.SetEnabled(SettingsApplier.Grass);
+            VisualElement tiltStrengthRow = null;
+            Switch(c, Localization.UI_SETTINGS_TILT_SHIFT, Localization.UI_SETTINGS_TILT_SHIFT_HINT, SettingsApplier.TiltShiftEnabled, SettingsApplier.Defaults.TiltShift, v =>
+            {
+                SettingsApplier.SetTiltShift(v);
+                tiltStrengthRow.SetEnabled(v);
+            });
+            tiltStrengthRow = SliderRow(c, Localization.UI_SETTINGS_TILT_SHIFT_STRENGTH, Localization.UI_SETTINGS_TILT_SHIFT_STRENGTH_HINT, 0f, 1f, SettingsApplier.TiltShiftStrength,
+                SettingsApplier.Defaults.TiltShiftStrength, Percent, SettingsApplier.SetTiltShiftStrength);
+            tiltStrengthRow.SetEnabled(SettingsApplier.TiltShiftEnabled);
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;

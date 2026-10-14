@@ -188,6 +188,10 @@ Assets/Village/Derived.meta
 !Assets/World/Grass.meta
 !Assets/World/Grass/**
 
+# Our post effects (tilt shift), loaded from their Resources folder.
+!Assets/World/PostEffects.meta
+!Assets/World/PostEffects/**
+
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
 
