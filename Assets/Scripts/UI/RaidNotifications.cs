@@ -56,7 +56,7 @@ public class RaidNotifications : MonoBehaviour
         if (!audioSource) audioSource = GetComponent<AudioSource>();
 
         raidTimerStartPos = raidTimer.rectTransform.localPosition;
-        audioSource.volume = PlayerPrefs.GetFloat(SettingsMenuView.SettingsName_RaidHornVolume, 1f);
+        audioSource.volume = PlayerSettings.Instance.RaidHornVolume.GetValueOrDefault(1f);
 
         HideRaidInfo();
     }

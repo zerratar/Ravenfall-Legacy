@@ -766,6 +766,10 @@ Esc closes the settings window and brings the menu back. Both windows report the
 in (`SettingsWindow.IsOpen`, `GameMenuHandler.ClosedThisFrame`), so `GameManager` does not take the
 same key press as a reason to open the menu again.
 
-The uGUI `SettingsMenuView` is still in the scene, unused while the toolkit window is assigned, and
-`GameManager` only falls back to it when there is none. Delete its hierarchy once this has been
-played with for a while.
+The uGUI menu and settings are gone: the hierarchy under `Game Menu` (Panel, Main, Players, Settings,
+RaidAndExit; 438 objects) was deleted with `tools/ui/remove_old_menu.cs`, and `SettingsMenuView`,
+`MenuView` and the empty `SoundsSettings`, `UISettings` and `GraphicsSettings` went with it. The
+`Game Menu` object stays, switched off, as the home of `GameMenuHandler`; since it never wakes, the
+handler finds its references on first use. Before deleting, the scene file was scanned offline for
+anything outside the hierarchy pointing into it. Do not run that scan inside the editor: walking every
+serialized property of every component in MainWorld crashed Unity.

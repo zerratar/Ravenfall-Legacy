@@ -163,7 +163,7 @@ namespace Assets.Scripts
                     Shinobytes.Debug.Log("Loading player state data file...");
                 }
 
-                var expiryTime = SettingsMenuView.GetPlayerCacheExpiryTime();
+                var expiryTime = SettingsApplier.GetPlayerCacheExpiryTime();
                 if (expiryTime == TimeSpan.Zero)
                 {
                     if (Ravenfall.isBatchMode)

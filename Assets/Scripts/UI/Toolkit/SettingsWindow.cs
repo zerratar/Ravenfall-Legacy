@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 namespace Shinobytes.UI
 {
     /// <summary>
-    /// The settings window, opened from the game menu in place of the old uGUI SettingsMenuView.
+    /// The settings window, opened from the game menu.
     /// Moved by its header and resized from the corner; both are remembered. Tabs down the left; each tab's rows are built when it is shown, from the current values in
     /// <see cref="SettingsApplier"/>, which applies every change straight away. The settings file is
     /// written when the window closes.

@@ -20,6 +20,26 @@ public static class SettingsApplier
         "ExpMultiplierExpire", "PlayerWelcome", "Disembark", "TrainWarning", "DungeonResult", "RaidResult", "ItemDrop"
     };
 
+    /// <summary>How long players are kept in the saved game state, by the expiry setting's index.</summary>
+    public static readonly TimeSpan[] PlayerCacheExpiry =
+    {
+        TimeSpan.Zero,
+        TimeSpan.FromHours(2),
+        TimeSpan.FromHours(4),
+        TimeSpan.FromHours(8),
+        TimeSpan.FromHours(12),
+        TimeSpan.FromHours(24),
+        TimeSpan.FromHours(36),
+        TimeSpan.FromHours(48),
+        TimeSpan.FromDays(9999), // forever
+    };
+
+    /// <summary>Pathfinding iterations per frame for Low, Normal, High and Ultra navigation quality.</summary>
+    public static readonly int[] PathfindingQualityMin = { 50, 100, 100, 100 };
+    public static readonly int[] PathfindingQualityMax = { 100, 200, 500, 1000 };
+
+    public static TimeSpan GetPlayerCacheExpiryTime() => PlayerCacheExpiry[Mathf.Clamp(PlayerStateExpiry, 0, PlayerCacheExpiry.Length - 1)];
+
     public static void Save() => PlayerSettings.Save();
 
     /// <summary>
@@ -140,7 +160,15 @@ public static class SettingsApplier
     public static void SetResolutionScale(float value)
     {
         PlayerSettings.Instance.DPIScale = value;
-        SettingsMenuView.SetResolutionScale(value);
+        ApplyResolutionScale(value);
+    }
+
+    public static void ApplyResolutionScale(float factor)
+    {
+        if (!ResolutionScaleSupported) return;
+        factor = Mathf.Clamp(factor, 0.05f, 1f);
+        QualitySettings.resolutionScalingFixedDPIFactor = factor;
+        ScalableBufferManager.ResizeBuffers(factor, factor);
     }
 
     // ---- Interface ------------------------------------------------------------------------------
@@ -198,7 +226,7 @@ public static class SettingsApplier
         game.PlayerBoostRequirement = value;
     }
 
-    public static int PlayerStateExpiry => PlayerSettings.Instance.PlayerCacheExpiryTime.GetValueOrDefault(SettingsMenuView.PlayerCacheExpiry.Length - 1);
+    public static int PlayerStateExpiry => PlayerSettings.Instance.PlayerCacheExpiryTime.GetValueOrDefault(PlayerCacheExpiry.Length - 1);
 
     public static void SetPlayerStateExpiry(int value) => PlayerSettings.Instance.PlayerCacheExpiryTime = value;
 
