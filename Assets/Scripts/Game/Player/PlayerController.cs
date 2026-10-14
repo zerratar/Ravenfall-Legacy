@@ -16,6 +16,15 @@ using Sirenix.OdinInspector;
 
 public class PlayerController : MonoBehaviour, IAttackable, IPollable
 {
+    // the parts of a player's update, as their own entries in the Profiler: with hundreds of players the update as
+    // a whole is one of the bigger costs of a frame, and this shows which part
+    private static readonly Unity.Profiling.ProfilerMarker BotMarker = new Unity.Profiling.ProfilerMarker("Player.Bot");
+    private static readonly Unity.Profiling.ProfilerMarker AnimationMarker = new Unity.Profiling.ProfilerMarker("Player.Animations");
+    private static readonly Unity.Profiling.ProfilerMarker MovementMarker = new Unity.Profiling.ProfilerMarker("Player.Movement");
+    private static readonly Unity.Profiling.ProfilerMarker HandlersMarker = new Unity.Profiling.ProfilerMarker("Player.Handlers");
+    private static readonly Unity.Profiling.ProfilerMarker EffectsMarker = new Unity.Profiling.ProfilerMarker("Player.Effects");
+    private static readonly Unity.Profiling.ProfilerMarker TaskMarker = new Unity.Profiling.ProfilerMarker("Player.Task");
+
     private readonly HashSet<Guid> pickedItems = new HashSet<Guid>();
     internal readonly HashSet<string> AttackerNames = new HashSet<string>();
     internal readonly List<IAttackable> Attackers = new List<IAttackable>();
@@ -678,22 +687,23 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (IsBot && Bot)
         {
-            Bot.Poll();
+            using (BotMarker.Auto()) Bot.Poll();
         }
 
+        using (AnimationMarker.Auto()) Animations.Poll();
+        using (MovementMarker.Auto()) Movement.Poll();
+        using (HandlersMarker.Auto())
+        {
+            onsenHandler.Poll();
+            ferryHandler.Poll();
+            manualPlayerController.Poll();
+            duelHandler.Poll();
+            arenaHandler.Poll();
+            raidHandler.Poll();
+            streamRaidHandler.Poll();
+        }
 
-
-        Animations.Poll();
-        Movement.Poll();
-        onsenHandler.Poll();
-        ferryHandler.Poll();
-        manualPlayerController.Poll();
-        duelHandler.Poll();
-        arenaHandler.Poll();
-        raidHandler.Poll();
-        streamRaidHandler.Poll();
-
-        UpdateActiveEffects();
+        using (EffectsMarker.Auto()) UpdateActiveEffects();
 
         var schedule = activeScheduledAction;
         if (schedule != null)
@@ -811,7 +821,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
         if (Chunk != null)
         {
-            DoTask();
+            using (TaskMarker.Auto()) DoTask();
         }
 
         //if (currentTask != TaskType.None)
