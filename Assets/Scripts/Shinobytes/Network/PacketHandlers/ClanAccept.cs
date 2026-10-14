@@ -36,10 +36,10 @@
                 return;
             }
 
-            client.SendReply(gm, $"You have joined {result.Clan.Name} as a {result.Role.Name}!");
+            client.SendReply(gm, Localization.MSG_CLAN_JOINED, result.Clan.Name, result.Role.Name);
             return;
         }
 
-        client.SendReply(gm, "Unable to accept clan invite. Either you don't have any invites or server is bonkers.");
+        client.SendReply(gm, Localization.MSG_CLAN_ACCEPT_FAILED);
     }
 }

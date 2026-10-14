@@ -25,7 +25,7 @@ public class ClanPromote : ChatBotCommandHandler<Arguments>
         var otherPlayer = PlayerManager.GetPlayer(targetPlayer);
         if (!otherPlayer)
         {
-            client.SendReply(gm, "No player with name " + targetPlayer.Username + " is currently playing.");
+            client.SendReply(gm, Localization.MSG_CLAN_PLAYER_NOT_PLAYING, targetPlayer.Username);
             return;
         }
 
@@ -34,11 +34,11 @@ public class ClanPromote : ChatBotCommandHandler<Arguments>
         if (result.Success)
         {
             otherPlayer.clanHandler.SetRole(result.NewRole);
-            client.SendReply(gm, $"Congratulations {otherPlayer.Name}! You have been promoted to {result.NewRole.Name}!");
+            client.SendReply(gm, Localization.MSG_CLAN_PROMOTED, otherPlayer.Name, result.NewRole.Name);
             return;
         }
 
-        client.SendReply(gm, $"You don't have permission to promote {otherPlayer.Name} or the player is not a member of your clan.");
+        client.SendReply(gm, Localization.MSG_CLAN_PROMOTE_NO_PERMISSION, otherPlayer.Name);
 
     }
 }

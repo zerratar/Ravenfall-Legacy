@@ -110,36 +110,19 @@ public class UseMarketplace : ChatBotCommandHandler<string>
 
                 case ItemTradeState.Success:
                     var instance = player.Inventory.AddToBackpack(item.Item, item.Count);
-                    var msg = "";
-                    var arg0 = "";
-                    var arg1 = "";
-                    var arg2 = "";
+                    var equipped = player.EquipIfBetter(instance);
+                    var totalCost = Utility.FormatAmount(result.TotalCost);
 
                     if (result.TotalAmount > 1)
                     {
-                        arg0 = result.TotalAmount.ToString();
-                        arg1 = item.Item.Name;
-                        arg2 = Utility.FormatAmount(result.TotalCost);
-                        msg = "{totalAmount}x ";
+                        client.SendReply(gm, equipped ? Localization.MSG_MARKET_BOUGHT_MANY_EQUIPPED : Localization.MSG_MARKET_BOUGHT_MANY,
+                            result.TotalAmount.ToString(), item.Item.Name, totalCost);
                     }
                     else
                     {
-                        arg0 = item.Item.Name;
-                        arg1 = Utility.FormatAmount(result.TotalCost);
+                        client.SendReply(gm, equipped ? Localization.MSG_MARKET_BOUGHT_EQUIPPED : Localization.MSG_MARKET_BOUGHT,
+                            item.Item.Name, totalCost);
                     }
-
-                    msg += "{itemName} was bought ";
-
-                    if (player.EquipIfBetter(instance))
-                    {
-                        msg += "and equipped for {price} coins.";
-                    }
-                    else
-                    {
-                        msg += "for {price} coins.";
-                    }
-
-                    client.SendReply(gm, msg, arg0, arg1, arg2);
                     break;
             }
         }

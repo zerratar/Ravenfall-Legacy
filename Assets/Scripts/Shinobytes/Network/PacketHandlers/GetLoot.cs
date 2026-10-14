@@ -22,7 +22,7 @@ public class GetLoot : ChatBotCommandHandler<string>
 
         if (!string.IsNullOrEmpty(queryFilter) && queryFilter == "clear")
         {
-            client.SendReply(gm, "Your loot records has been cleared.");
+            client.SendReply(gm, Localization.MSG_LOOT_CLEARED);
             plr.Loot.Clear();
             return;
         }
@@ -33,42 +33,35 @@ public class GetLoot : ChatBotCommandHandler<string>
         {
             if (string.IsNullOrEmpty(queryFilter))
             {
-                client.SendReply(gm, "You have not looted anything yet.");
+                client.SendReply(gm, Localization.MSG_LOOT_NONE);
                 return;
             }
 
-            client.SendReply(gm, "The filter '" + queryFilter + "' did not yield any result.");
+            client.SendReply(gm, Localization.MSG_LOOT_FILTER_NO_RESULT, queryFilter);
             return;
         }
 
         var replyBuilder = new StringBuilder();
         foreach (var record in loot.OrderByDescending(x => x.Time))
         {
-            var timeAgo = Utility.FormatTime(DateTime.UtcNow - record.Time) + " ago";
+            var time = Utility.FormatTime(DateTime.UtcNow - record.Time);
+            var when = Localization.MSG_LOOT_AGO;
 
             if (includeOrigin)
             {
-                string origin = record.DungeonIndex != -1 ? "from dungeon " :
-                                record.RaidIndex != -1 ? "from raid " : "";
-                if (record.Amount > 1)
-                {
-                    replyBuilder.AppendFormat("{0}x {1} - {2}{3}. ", record.Amount, record.ItemName, origin, timeAgo);
-                }
-                else
-                {
-                    replyBuilder.AppendFormat("{0} - {1}{2}. ", record.ItemName, origin, timeAgo);
-                }
+                if (record.DungeonIndex != -1) when = Localization.MSG_LOOT_FROM_DUNGEON_AGO;
+                else if (record.RaidIndex != -1) when = Localization.MSG_LOOT_FROM_RAID_AGO;
+            }
+
+            when = string.Format(when, time);
+
+            if (record.Amount > 1)
+            {
+                replyBuilder.AppendFormat("{0}x {1} - {2}. ", record.Amount, record.ItemName, when);
             }
             else
             {
-                if (record.Amount > 1)
-                {
-                    replyBuilder.AppendFormat("{0}x {1} - {2}. ", record.Amount, record.ItemName, timeAgo);
-                }
-                else
-                {
-                    replyBuilder.AppendFormat("{0} - {1}. ", record.ItemName, timeAgo);
-                }
+                replyBuilder.AppendFormat("{0} - {1}. ", record.ItemName, when);
             }
         }
 

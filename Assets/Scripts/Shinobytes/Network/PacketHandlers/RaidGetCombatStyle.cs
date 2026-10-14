@@ -14,10 +14,10 @@
 
         if (player.RaidSkill == null)
         {
-            client.SendReply(gm, "Your raid skill is not set. Use !raid skill <skill> to set it.");
+            client.SendReply(gm, Localization.MSG_RAID_SKILL_NOT_SET);
             return;
         }
 
-        client.SendReply(gm, "Your raid skill is set to " + player.RaidSkill);
+        client.SendReply(gm, Localization.MSG_RAID_SKILL_CURRENT, Localization.SkillName(player.RaidSkill.Value));
     }
 }

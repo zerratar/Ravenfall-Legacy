@@ -26,7 +26,7 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
     {
         if (!Game.RavenNest.Tcp.IsReady)
         {
-            client.SendReply(gm, "This action can only be done while connected to the server.");
+            client.SendReply(gm, Localization.MSG_PRODUCE_NOT_CONNECTED);
             return;
         }
 
@@ -67,15 +67,15 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
                 var timeLeft = player.ScheduledAction.ExecuteTime - DateTime.UtcNow;
                 if (timeLeft.TotalSeconds <= 0)
                 {
-                    client.SendReply(gm, "You're currently {actionName} and should be done any second!");
+                    client.SendReply(gm, Localization.MSG_PRODUCE_STATUS_ALMOST_DONE);
                     return;
                 }
 
-                client.SendReply(gm, "You're currently {actionName} and will be done in {timeLeft}", Utility.FormatTime(timeLeft));
+                client.SendReply(gm, Localization.MSG_PRODUCE_STATUS, Utility.FormatTime(timeLeft));
                 return;
             }
 
-            client.SendReply(gm, "You don't seem to have an ongoing action.");
+            client.SendReply(gm, Localization.MSG_PRODUCE_NO_ACTION);
             return;
         }
 
@@ -83,7 +83,7 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         {
             if (player.ScheduledAction == null)
             {
-                client.SendReply(gm, "You don't seem to have an action to cancel.");
+                client.SendReply(gm, Localization.MSG_PRODUCE_NO_ACTION_TO_CANCEL);
                 return;
             }
 
@@ -140,11 +140,11 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
 
             if (recipe == null)
             {
-                client.SendReply(gm, "{itemName} is not an item that can be created.", target.Item.Name);
+                client.SendReply(gm, Localization.MSG_PRODUCE_NOT_CREATABLE, target.Item.Name);
                 return;
             }
 
-            client.SendReply(gm, "{itemName} is not an item that can be created using {skillName}. It requires level {requiredSkillLevel} {requiredSkill}",
+            client.SendReply(gm, Localization.MSG_PRODUCE_WRONG_SKILL,
                 target.Item.Name,
                 itemProductionSkill.ToString(),
                 recipe.RequiredLevel.ToString(),
@@ -159,15 +159,15 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         switch (result)
         {
             case Result.NotEnoughSkill:
-                client.SendReply(gm, "{name} requires level {requiredSkillLevel} {requiredSkill}",
+                client.SendReply(gm, Localization.MSG_PRODUCE_LEVEL_TOO_LOW,
                     name, recipe.RequiredLevel.ToString(), recipe.RequiredSkill.ToString());
                 break;
 
             case Result.NotEnoughResources:
-                client.SendReply(gm, "You do not have enough resources for creating {name}. You need {requirements}", name, GetRecipeIngredientsString(player.Inventory, recipe));
+                client.SendReply(gm, Localization.MSG_PRODUCE_NOT_ENOUGH_RESOURCES, name, GetRecipeIngredientsString(player.Inventory, recipe));
                 break;
             case Result.ServerError:
-                client.SendReply(gm, "Server returned an error, please try again later.");
+                client.SendReply(gm, Localization.MSG_PRODUCE_SERVER_ERROR);
                 break;
         }
     }
@@ -236,49 +236,51 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
                 case 'i':
                 case 'o':
                 case 'u':
-                    return "an";
+                    return Localization.MSG_PRODUCE_QUANTITY_AN;
                 default:
-                    return "a";
+                    return Localization.MSG_PRODUCE_QUANTITY_A;
             }
         }
         return amount.ToString();
     }
 
-    public static readonly Dictionary<string, string[]> CustomTerms = new Dictionary<string, string[]>
+    // The verbs are read when they are used, since Languages replaces the Localization fields
+    // after this dictionary has been created. Each term is { verb, past participle }.
+    public static readonly Dictionary<string, Func<string[]>> CustomTerms = new Dictionary<string, Func<string[]>>
     {
-        { "butter", new string[] { "churn", "churned" } },
-        { "red wine", new string[] { "ferment", "fermented" } },
-        { "cheese", new string[] { "make", "made" } },
-        { "yarrow", new string[] { "pick", "picked" } },
-        { "cacao", new string[] { "harvest", "harvested" } },
-        { "yeast", new string[] { "cultivate", "cultivated" } },
-        { "turmeric", new string[] { "grind", "ground" } },
-        { "lemon balm", new string[] { "pluck", "plucked" } },
-        { "wormwood", new string[] { "gather", "gathered" } },
-        { "garlic", new string[] { "harvest", "harvested" } },
-        { "sand", new string[] { "collect", "collected" } },
-        { "sugar", new string[] { "refine", "refined" } },
-        { "wood pulp", new string[] { "process", "processed" } },
-        { "water", new string[] { "fetch", "fetched" } },
-        { "chocolate", new string[] { "mold", "molded" } },
-        { "cinnamon", new string[] { "grind", "ground" } },
-        { "onion", new string[] { "chop", "chopped" } },
-        { "black pepper", new string[] { "grind", "ground" } },
-        { "flour", new string[] { "mill", "milled" } },
-        { "bread", new string[] { "bake", "baked" } },
-        { "resin", new string[] { "extract", "extracted" } },
-        { "lavender", new string[] { "pick", "picked" } },
-        { "tomato", new string[] { "harvest", "harvested" } },
-        { "coal", new string[] { "mine", "mined" } },
-        { "wood plank", new string[] { "cut", "cut" } },
-        { "tome of teleportation", new string[] { "inscribe", "inscribed" } },
-        { "tome of home", new string[] { "inscribe", "inscribed" } },
-        { "tome of away", new string[] { "inscribe", "inscribed" } },
-        { "tome of ironhill", new string[] { "inscribe", "inscribed" } },
-        { "tome of kyo", new string[] { "inscribe", "inscribed" } },
-        { "tome of heim", new string[] { "inscribe", "inscribed" } },
-        { "tome of atria", new string[] { "inscribe", "inscribed" } },
-        { "tome of eldara", new string[] { "inscribe", "inscribed" } }
+        { "butter", () => Localization.MSG_PRODUCE_TERMS_CHURN },
+        { "red wine", () => Localization.MSG_PRODUCE_TERMS_FERMENT },
+        { "cheese", () => Localization.MSG_PRODUCE_TERMS_MAKE },
+        { "yarrow", () => Localization.MSG_PRODUCE_TERMS_PICK },
+        { "cacao", () => Localization.MSG_PRODUCE_TERMS_HARVEST },
+        { "yeast", () => Localization.MSG_PRODUCE_TERMS_CULTIVATE },
+        { "turmeric", () => Localization.MSG_PRODUCE_TERMS_GRIND },
+        { "lemon balm", () => Localization.MSG_PRODUCE_TERMS_PLUCK },
+        { "wormwood", () => Localization.MSG_PRODUCE_TERMS_GATHER },
+        { "garlic", () => Localization.MSG_PRODUCE_TERMS_HARVEST },
+        { "sand", () => Localization.MSG_PRODUCE_TERMS_COLLECT },
+        { "sugar", () => Localization.MSG_PRODUCE_TERMS_REFINE },
+        { "wood pulp", () => Localization.MSG_PRODUCE_TERMS_PROCESS },
+        { "water", () => Localization.MSG_PRODUCE_TERMS_FETCH },
+        { "chocolate", () => Localization.MSG_PRODUCE_TERMS_MOLD },
+        { "cinnamon", () => Localization.MSG_PRODUCE_TERMS_GRIND },
+        { "onion", () => Localization.MSG_PRODUCE_TERMS_CHOP },
+        { "black pepper", () => Localization.MSG_PRODUCE_TERMS_GRIND },
+        { "flour", () => Localization.MSG_PRODUCE_TERMS_MILL },
+        { "bread", () => Localization.MSG_PRODUCE_TERMS_BAKE },
+        { "resin", () => Localization.MSG_PRODUCE_TERMS_EXTRACT },
+        { "lavender", () => Localization.MSG_PRODUCE_TERMS_PICK },
+        { "tomato", () => Localization.MSG_PRODUCE_TERMS_HARVEST },
+        { "coal", () => Localization.MSG_PRODUCE_TERMS_MINE },
+        { "wood plank", () => Localization.MSG_PRODUCE_TERMS_CUT },
+        { "tome of teleportation", () => Localization.MSG_PRODUCE_TERMS_INSCRIBE },
+        { "tome of home", () => Localization.MSG_PRODUCE_TERMS_INSCRIBE },
+        { "tome of away", () => Localization.MSG_PRODUCE_TERMS_INSCRIBE },
+        { "tome of ironhill", () => Localization.MSG_PRODUCE_TERMS_INSCRIBE },
+        { "tome of kyo", () => Localization.MSG_PRODUCE_TERMS_INSCRIBE },
+        { "tome of heim", () => Localization.MSG_PRODUCE_TERMS_INSCRIBE },
+        { "tome of atria", () => Localization.MSG_PRODUCE_TERMS_INSCRIBE },
+        { "tome of eldara", () => Localization.MSG_PRODUCE_TERMS_INSCRIBE }
     };
 
     public async Task ProduceAsync(ItemProductionState state)
@@ -292,19 +294,19 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         string[] terms;
         if (CustomTerms.ContainsKey(recipe.Name.ToLower()))
         {
-            terms = CustomTerms[recipe.Name.ToLower()];
+            terms = CustomTerms[recipe.Name.ToLower()]();
         }
         else if (state.Recipe.RequiredSkill == Skill.Cooking)
         {
-            terms = new string[] { "cook", "cooked" };
+            terms = Localization.MSG_PRODUCE_TERMS_COOK;
         }
         else if (state.Recipe.RequiredSkill == Skill.Alchemy)
         {
-            terms = new string[] { "brew", "brewed" };
+            terms = Localization.MSG_PRODUCE_TERMS_BREW;
         }
         else
         {
-            terms = new string[] { "craft", "crafted" }; // default
+            terms = Localization.MSG_PRODUCE_TERMS_CRAFT; // default
         }
 
         var result = await Game.RavenNest.Players.ProduceItemAsync(player.Id, recipe.Id, amount);
@@ -312,14 +314,14 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         if (!result.Success)
         {
             state.Continue = false;
-            client.SendReply(message, "Unable to " + terms[0] + " {recipeName}. Server returned an error. Please try again later.", recipe.Name);
+            client.SendReply(message, Localization.MSG_PRODUCE_FAILED_SERVER, terms[0], recipe.Name);
             return;
         }
 
         if (result.Items == null || result.Items.Count == 0)
         {
             state.Continue = false;
-            client.SendReply(message, "Unable to " + terms[0] + " {recipeName}. Could you be missing some ingredients?", recipe.Name);
+            client.SendReply(message, Localization.MSG_PRODUCE_FAILED_INGREDIENTS, terms[0], recipe.Name);
             return;
         }
 
@@ -380,18 +382,18 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             {
                 if (recipe.Name.ToLower() == item.Name.ToLower())
                 {
-                    client.SendReply(message, "You have successfully " + terms[1] + " {quantity} {itemName}", GetQuantityForm(producedItem.Amount, item.Name), item.Name);
+                    client.SendReply(message, Localization.MSG_PRODUCE_SUCCESS, terms[1], GetQuantityForm(producedItem.Amount, item.Name), item.Name);
                 }
                 else
                 {
-                    client.SendReply(message, "You have successfully " + terms[1] + " {recipeName}! You've received {quantity} {itemName}",
-                            recipe.Name, GetQuantityForm(producedItem.Amount, item.Name), item.Name);
+                    client.SendReply(message, Localization.MSG_PRODUCE_SUCCESS_RECEIVED,
+                            terms[1], recipe.Name, GetQuantityForm(producedItem.Amount, item.Name), item.Name);
                 }
             }
             else
             {
-                client.SendReply(message, "Oh no! You have failed to " + terms[0] + " {recipeName}! You've received {quantity} {itemName}",
-                    recipe.Name, GetQuantityForm(producedItem.Amount, item.Name), item.Name);
+                client.SendReply(message, Localization.MSG_PRODUCE_FAILED,
+                    terms[0], recipe.Name, GetQuantityForm(producedItem.Amount, item.Name), item.Name);
             }
 
             player.Inventory.AddToBackpack(producedItem.InventoryItemId, item, producedItem.Amount);
@@ -401,11 +403,7 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         // we have more than 1 items, that means we both succeeded and failed. But it could also be a suprise item, so we will join all messages
         // to simplify things, lets give a generic message.
 
-        var msg = "You have " + terms[1] + " {quantity} {recipeName} and received";
-        var args = new List<object>
-        {
-            GetQuantityForm(producedItemAmount, recipe.Name), recipe.Name
-        };
+        var receivedItems = new List<string>();
 
         var inventory = player.Inventory;
 
@@ -413,10 +411,7 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
         {
             var producedItem = result.Items[i];
             var item = Game.Items.Get(producedItem.ItemId);
-            msg = msg.Trim();
-            msg += " {quantity" + i + "} {itemName" + i + "},";
-            args.Add(GetQuantityForm(producedItem.Amount, item.Name));
-            args.Add(item.Name);
+            receivedItems.Add((GetQuantityForm(producedItem.Amount, item.Name) + " " + item.Name).Trim());
 
             var existing = inventory.GetInventoryItem(producedItem.InventoryItemId);
             if (existing != null)
@@ -433,8 +428,8 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
             });
         }
 
-        msg = msg.Trim(',');
-        client.SendReply(message, msg, args.ToArray());
+        client.SendReply(message, Localization.MSG_PRODUCE_MIXED_RESULT,
+            terms[1], GetQuantityForm(producedItemAmount, recipe.Name), recipe.Name, string.Join(", ", receivedItems));
     }
 
     protected bool HasMissingIngredients(Inventory inventory, List<ItemRecipeIngredient> ingredients)

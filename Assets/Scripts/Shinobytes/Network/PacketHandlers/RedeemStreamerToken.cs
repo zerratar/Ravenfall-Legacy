@@ -75,7 +75,7 @@ public class RedeemStreamerToken : ChatBotCommandHandler<string>
             {
                 case RavenNest.Models.RedeemItemResultCode.Success:
                     //player.Inventory.RemoveByItemId(result.CurrencyItemId, result.CurrencyCost);
-                    client.SendReply(gm, "You have successefully redeemed a {itemName} for {amount} {currencyName} and now have {amountLeft} left.",
+                    client.SendReply(gm, Localization.MSG_REDEEM_TOKEN_SUCCESS,
                         targetItem?.Name,
                         result.CurrencyCost,
                         targetCurrency?.Name,
@@ -83,12 +83,12 @@ public class RedeemStreamerToken : ChatBotCommandHandler<string>
                     break;
 
                 case RavenNest.Models.RedeemItemResultCode.InsufficientCurrency:
-                    client.SendReply(gm, "Unable to redeem {itemName}. " + result.ErrorMessage, targetItem?.Name);
+                    client.SendReply(gm, Localization.MSG_REDEEM_TOKEN_FAILED_REASON, targetItem?.Name, result.ErrorMessage);
                     break;
 
                 case RavenNest.Models.RedeemItemResultCode.NoSuchItem:
                 case RavenNest.Models.RedeemItemResultCode.Error:
-                    client.SendReply(gm, "Unable to redeem {itemName} right now.", item.Item.Name);
+                    client.SendReply(gm, Localization.MSG_REDEEM_TOKEN_FAILED, item.Item.Name);
                     break;
             }
         }

@@ -52,19 +52,19 @@ public class GiftItem : ChatBotCommandHandler<string>
 
                 if (resolved.Player == null)
                 {
-                    client.SendReply(gm, "No player with the name {playerName} found in this stream. Maybe you misspelled it?", resolved.PlayerName);
+                    client.SendReply(gm, Localization.MSG_GIFT_COINS_PLAYER_NOT_FOUND, resolved.PlayerName);
                     return;
                 }
 
                 if (resolved.Player.Id == player.Id)
                 {
-                    client.SendReply(gm, "You cannot gift coins to yourself.");
+                    client.SendReply(gm, Localization.MSG_GIFT_COINS_SELF);
                     return;
                 }
 
                 if (resolved.Count <= 0)
                 {
-                    client.SendReply(gm, "You cannot gift a negative amount of coins.");
+                    client.SendReply(gm, Localization.MSG_GIFT_COINS_NEGATIVE);
                     return;
                 }
 
@@ -74,19 +74,19 @@ public class GiftItem : ChatBotCommandHandler<string>
                     resolved.Player.AddResource(Resource.Currency, result);
                     player.RemoveResource(Resource.Currency, result);
                     if (result > 1)
-                        client.SendReply(gm, "You have gifted {playerName} with {amount} coins!", resolved.PlayerName, result);
+                        client.SendReply(gm, Localization.MSG_GIFT_COINS, resolved.PlayerName, result);
                     else
-                        client.SendReply(gm, "Did you feel extra nice today? You have gifted {playerName} with a single coin!", resolved.PlayerName, result);
+                        client.SendReply(gm, Localization.MSG_GIFT_COINS_SINGLE, resolved.PlayerName, result);
                     return;
                 }
 
                 if (result == -1 || result == -2)
                 {
-                    client.SendReply(gm, "You could not gift any coins to {playerName}, make sure the name is spelled correctly and that you have enough coins to send.", resolved.PlayerName);
+                    client.SendReply(gm, Localization.MSG_GIFT_COINS_FAILED, resolved.PlayerName);
                 }
                 else
                 {
-                    client.SendReply(gm, "Unable to gift any coins right now. Please try again later.");
+                    client.SendReply(gm, Localization.MSG_GIFT_COINS_ERROR);
                 }
                 return;
             }
@@ -105,7 +105,7 @@ public class GiftItem : ChatBotCommandHandler<string>
         var queryParts = inputQuery.Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLower()).ToArray();
         if (queryParts.Length < 3)
         {
-            client.SendReply(gm, "When gifting a whole item set, please include target player name, item type, word set. You can only gift one set at a time and only unequipped items will be gifted. example !gift playerName rune set");
+            client.SendReply(gm, Localization.MSG_GIFT_SET_HELP);
             return;
         }
 
@@ -131,7 +131,7 @@ public class GiftItem : ChatBotCommandHandler<string>
         var itemSet = itemResolver.GetItemSet(setType);
         if (itemSet.Count == 0)
         {
-            client.SendReply(gm, "No item sets could be found matching the name {query}", setType);
+            client.SendReply(gm, Localization.MSG_ITEM_SET_NOT_FOUND, setType);
             return;
         }
 
@@ -174,22 +174,22 @@ public class GiftItem : ChatBotCommandHandler<string>
             {
                 Shinobytes.Debug.LogError("Error when '" + player.Name + "' tried to gift an '" + setType + "' item set to '" + targetPlayer.Id + "'. " + giftedItems.Count + " out of " + itemsToGift.Count + " was gifted. Exception: " + exc);
             }
-            var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", giftedItems.Select(x => x.Name).ToArray()), ", ", " and ");
+            var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", giftedItems.Select(x => x.Name).ToArray()), ", ", Localization.MSG_LIST_AND);
             if (giftedItems.Count != itemSet.Count)
             {
-                client.SendReply(gm, "You have gifted {itemCount} out of {itemSetCount} from the {setType} set to {targetPlayerName}! The items gifted was {itemList}", giftedItems.Count, itemSet.Count, setType, targetPlayer.Name, itemList);
+                client.SendReply(gm, Localization.MSG_GIFT_SET_PARTIAL, giftedItems.Count, itemSet.Count, setType, targetPlayer.Name, itemList);
             }
             else
             {
-                var a = "a";
-                if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') a = "an";
-                client.SendReply(gm, "You have gifted " + a + " {setType} set to {targetPlayerName}! The items gifted was {itemList}",
+                var format = Localization.MSG_GIFT_SET_A;
+                if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') format = Localization.MSG_GIFT_SET_AN;
+                client.SendReply(gm, format,
                     setType, targetPlayer.Name, itemList);
             }
         }
         else
         {
-            client.SendReply(gm, "You do not have any of the items in the set '{query}'", setType);
+            client.SendReply(gm, Localization.MSG_ITEM_SET_NONE_OWNED, setType);
         }
     }
 

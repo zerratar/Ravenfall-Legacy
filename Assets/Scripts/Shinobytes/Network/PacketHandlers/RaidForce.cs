@@ -25,37 +25,37 @@ public class RaidForce : ChatBotCommandHandler
 
             if (PlayerSettings.Instance.DisableRaids.GetValueOrDefault())
             {
-                client.SendReply(gm, "Raids have been disabled in this stream by the broadcaster.");
+                client.SendReply(gm, Localization.MSG_RAID_FORCE_DISABLED);
                 return;
             }
 
             if (Game.Raid.IsBusy)
             {
-                client.SendReply(gm, "Someone just used a raid scroll.");
+                client.SendReply(gm, Localization.MSG_RAID_FORCE_BUSY);
                 return;
             }
 
             if (Game.Raid.IsEventActive)
             {
-                client.SendReply(gm, "There is already an active raid.");
+                client.SendReply(gm, Localization.MSG_RAID_FORCE_ALREADY_ACTIVE);
                 return;
             }
 
             if (Game.Dungeons.IsBusy)
             {
-                client.SendReply(gm, "Someone tried to use a dungeon scroll. Please wait before using a raid scroll.");
+                client.SendReply(gm, Localization.MSG_RAID_FORCE_DUNGEON_BUSY);
                 return;
             }
 
             if (Game.Dungeons.Active)
             {
-                client.SendReply(gm, "Unable to start a raid during a dungeon. Please wait for it to be over.");
+                client.SendReply(gm, Localization.MSG_RAID_START_FAILED_DUNGEON);
                 return;
             }
 
             if (Game.StreamRaid.IsWar)
             {
-                client.SendReply(gm, "Unable to start a raid during a war. Please wait for it to be over.");
+                client.SendReply(gm, Localization.MSG_RAID_START_FAILED_WAR);
                 return;
             }
 
@@ -63,7 +63,7 @@ public class RaidForce : ChatBotCommandHandler
             {
                 if (Game.Events.IsActive)
                 {
-                    client.SendReply(gm, "Raid cannot be started right now. Please try again later");
+                    client.SendReply(gm, Localization.MSG_RAID_FORCE_TRY_LATER);
                     return;
                 }
 
@@ -83,12 +83,12 @@ public class RaidForce : ChatBotCommandHandler
                     {
                         if (Game.Raid.CanJoin(plr, string.Empty) == RaidJoinResult.CanJoin)
                         {
-                            client.SendReply(gm, "You have used a Raid Scroll and joined the raid. Good luck!");
+                            client.SendReply(gm, Localization.MSG_RAID_FORCE_USED_JOINED);
                             Game.Raid.Join(plr);
                         }
                         else
                         {
-                            client.SendReply(gm, "You have used a Raid Scroll.");
+                            client.SendReply(gm, Localization.MSG_RAID_FORCE_USED);
                         }
 
                         Game.Raid.Announce();
@@ -97,7 +97,7 @@ public class RaidForce : ChatBotCommandHandler
                         var raidScroll = Game.Items.Find(x => x.Name.Contains("raid", System.StringComparison.OrdinalIgnoreCase) && x.Type == ItemType.Scroll);
                         if (raidScroll != null)
                         {
-                            client.SendReply(gm, "Raid could not be started. Scroll will be refunded.");
+                            client.SendReply(gm, Localization.MSG_RAID_FORCE_FAILED_REFUND);
                             await Game.RavenNest.Players.AddItemAsync(plr.Id, raidScroll.Id);
                             plr.Inventory.AddToBackpack(raidScroll);
                         }
@@ -108,10 +108,10 @@ public class RaidForce : ChatBotCommandHandler
                     switch (result)
                     {
                         case ScrollUseResult.InsufficientScrolls:
-                            client.SendReply(gm, "You do not have any Raid Scrolls! Redeem them under streamer loyalty on the website.");
+                            client.SendReply(gm, Localization.MSG_RAID_FORCE_NO_SCROLLS);
                             return;
                         case ScrollUseResult.Error:
-                            client.SendReply(gm, "Server was not able to give back a valid response. Uh oh.. BUG!");
+                            client.SendReply(gm, Localization.MSG_EVENT_SCROLL_SERVER_ERROR);
                             return;
                     }
                 }

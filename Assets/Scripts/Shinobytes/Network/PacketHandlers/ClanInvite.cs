@@ -23,16 +23,16 @@
         var otherPlayer = PlayerManager.GetPlayer(data);
         if (!otherPlayer)
         {
-            client.SendReply(gm, "No player with name {playerName} is currently playing.", data.Username);
+            client.SendReply(gm, Localization.MSG_CLAN_PLAYER_NOT_PLAYING, data.Username);
             return;
         }
 
         if (await Game.RavenNest.Clan.InvitePlayerAsync(plr.Id, otherPlayer.Id))
         {
-            client.SendReply(gm, "Invite was successfully sent. {playerName}, you may use the command '!clan accept' if you wish to join the clan {clanName}. Or '!clan decline' to decline.", otherPlayer.Name, plr.clanHandler.ClanInfo.Name);
+            client.SendReply(gm, Localization.MSG_CLAN_INVITE_SENT, otherPlayer.Name, plr.clanHandler.ClanInfo.Name);
             return;
         }
 
-        client.SendReply(gm, "{playerName} could not be invited right now.", otherPlayer.Name);
+        client.SendReply(gm, Localization.MSG_CLAN_INVITE_FAILED, otherPlayer.Name);
     }
 }

@@ -54,7 +54,7 @@
 
         if (!queriedItem.InventoryItem.IsEquippableType)
         {
-            client.SendReply(gm, "{itemName} is not an equippable item.", queriedItem.InventoryItem.Name);
+            client.SendReply(gm, Localization.MSG_EQUIP_NOT_EQUIPPABLE, queriedItem.InventoryItem.Name);
             return;
         }
 

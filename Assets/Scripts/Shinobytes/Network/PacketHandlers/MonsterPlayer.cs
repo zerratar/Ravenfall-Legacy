@@ -19,7 +19,7 @@
 
         if (!player.TurnIntoMonster(5f * 60f))
         {
-            client.SendReply(gm, "Player could not be turned into a monster right now :(");
+            client.SendReply(gm, Localization.MSG_MONSTER_FAILED);
         }
     }
 }

@@ -121,21 +121,11 @@ public class PlayerEquipmentActions
         {
             if (!item.IsEquippableType)
             {
-                owner.GameManager.RavenBot.SendReply(owner, "{itemName} can't be equipped.", item.Name);
+                owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_EQUIP_CANT_BE_EQUIPPED, item.Name);
                 return;
             }
 
-            var reqLevels = new List<string>();
-            var requirement = "You require level ";
-            if (item.RequiredAttackLevel > owner.Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
-            if (item.RequiredDefenseLevel > owner.Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
-            if (item.RequiredMagicLevel > owner.Stats.Magic.Level || item.RequiredMagicLevel > owner.Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
-            if (item.RequiredRangedLevel > owner.Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
-            if (item.RequiredSlayerLevel > owner.Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
-            if (reqLevels.Count > 0)
-            {
-                owner.GameManager.RavenBot.SendReply(owner, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
-            }
+            ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel);
             return;
         }
     }
@@ -145,21 +135,11 @@ public class PlayerEquipmentActions
 
         if (!item.IsEquippableType)
         {
-            owner.GameManager.RavenBot.SendReply(owner, "{itemName} can't be equipped.", item.Name);
+            owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_EQUIP_CANT_BE_EQUIPPED, item.Name);
             return;
         }
 
-        var reqLevels = new List<string>();
-        var requirement = "You require level ";
-        if (item.RequiredAttackLevel > owner.Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
-        if (item.RequiredDefenseLevel > owner.Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
-        if (item.RequiredMagicLevel > owner.Stats.Magic.Level || item.RequiredMagicLevel > owner.Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
-        if (item.RequiredRangedLevel > owner.Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
-        if (item.RequiredSlayerLevel > owner.Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
-        if (reqLevels.Count > 0)
-        {
-            owner.GameManager.RavenBot.SendReply(owner, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
-        }
+        ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel);
     }
 
     internal async Task<bool> EquipAsync(GameInventoryItem item)
@@ -210,17 +190,7 @@ public class PlayerEquipmentActions
         var equipped = owner.Inventory.EquipByItemId(item.Id);
         if (!equipped)
         {
-            var reqLevels = new List<string>();
-            var requirement = "You require level ";
-            if (item.RequiredAttackLevel > owner.Stats.Attack.Level) reqLevels.Add(item.RequiredAttackLevel + " Attack.");
-            if (item.RequiredDefenseLevel > owner.Stats.Defense.Level) reqLevels.Add(item.RequiredDefenseLevel + " Defense.");
-            if (item.RequiredMagicLevel > owner.Stats.Magic.Level || item.RequiredMagicLevel > owner.Stats.Healing.Level) reqLevels.Add(item.RequiredMagicLevel + " Magic or Healing.");
-            if (item.RequiredRangedLevel > owner.Stats.Ranged.Level) reqLevels.Add(item.RequiredRangedLevel + " Ranged.");
-            if (item.RequiredSlayerLevel > owner.Stats.Slayer.Level) reqLevels.Add(item.RequiredSlayerLevel + " Slayer.");
-            if (reqLevels.Count > 0)
-            {
-                owner.GameManager.RavenBot.SendReply(owner, "You do not meet the requirements to equip " + item.Name + ". " + requirement + string.Join(" ", reqLevels.ToArray()));
-            }
+            ReportMissingRequirements(item.Name, item.RequiredAttackLevel, item.RequiredDefenseLevel, item.RequiredMagicLevel, item.RequiredRangedLevel, item.RequiredSlayerLevel);
             return false;
         }
 
@@ -235,5 +205,20 @@ public class PlayerEquipmentActions
         }
 
         return true;
+    }
+
+    private void ReportMissingRequirements(string itemName, int attack, int defense, int magic, int ranged, int slayer)
+    {
+        var reqLevels = new List<string>();
+        if (attack > owner.Stats.Attack.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_ATTACK, attack));
+        if (defense > owner.Stats.Defense.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_DEFENSE, defense));
+        if (magic > owner.Stats.Magic.Level || magic > owner.Stats.Healing.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_MAGIC_OR_HEALING, magic));
+        if (ranged > owner.Stats.Ranged.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_RANGED, ranged));
+        if (slayer > owner.Stats.Slayer.Level) reqLevels.Add(string.Format(Localization.MSG_EQUIP_REQ_SLAYER, slayer));
+        if (reqLevels.Count > 0)
+        {
+            var requirement = string.Format(Localization.MSG_EQUIP_REQ_LEVEL, string.Join(" ", reqLevels.ToArray()));
+            owner.GameManager.RavenBot.SendReply(owner, Localization.MSG_EQUIP_REQUIREMENTS_NOT_MET, itemName, requirement);
+        }
     }
 }

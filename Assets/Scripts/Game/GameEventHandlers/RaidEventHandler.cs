@@ -30,13 +30,13 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
 
         if (raidWar)
         {
-            gameManager.RavenBot.Announce("{raiderName} is declaring war with an army of {raiderPlayerCount}!",
+            gameManager.RavenBot.Announce(Localization.MSG_STREAMRAID_WAR_DECLARED,
                 raidInfo.RaiderUserName,
                 (object)raiderPlayerCount.ToString());
         }
         else
         {
-            gameManager.RavenBot.Announce("{raiderName} is raiding with {raiderPlayerCount} players!",
+            gameManager.RavenBot.Announce(Localization.MSG_STREAMRAID_RAIDING,
                 raidInfo.RaiderUserName,
                 (object)raiderPlayerCount.ToString());
         }
@@ -63,7 +63,7 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
 
         if (raiders.Count == 0)
         {
-            gameManager.RavenBot.Announce("Raid could not be started, as 0 players could be added to the raid.");
+            gameManager.RavenBot.Announce(Localization.MSG_STREAMRAID_NO_RAIDERS_ADDED);
             return;
         }
 
@@ -95,7 +95,7 @@ public abstract class RaidEventHandler : GameEventHandler<StreamRaidInfo>
             }
 
             gameManager.StreamRaid.StartRaidWar();
-            gameManager.RavenBot.Announce("The raid war from {raiderName} is starting. {myPlayerCount} vs {raiderPlayerCount}!",
+            gameManager.RavenBot.Announce(Localization.MSG_STREAMRAID_WAR_STARTING,
                 raidInfo.RaiderUserName,
                 myPlayerCount.ToString(),
                 (object)raiderPlayerCount.ToString());

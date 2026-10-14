@@ -44,11 +44,11 @@ public class ItemUsage : ChatBotCommandHandler<string>
 
         if (matchingRecipes.Count == 0)
         {
-            client.SendReply(gm, "{itemName} is not used in any recipes.", item.Item.Name);
+            client.SendReply(gm, Localization.MSG_ITEM_USAGE_NONE, item.Item.Name);
             return;
         }
 
         var list = string.Join(", ", matchingRecipes.Select(x => x.Name));
-        client.SendReply(gm, "{name} is used for: {list}", item.Item.Name, list);
+        client.SendReply(gm, Localization.MSG_ITEM_USAGE, item.Item.Name, list);
     }
 }

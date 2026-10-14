@@ -62,7 +62,7 @@ public class RaidJoin : ChatBotCommandHandler<string>
                     client.SendReply(gm, Localization.MSG_JOIN_RAID_PAST_HEALTH);
                     return;
                 case RaidJoinResult.WrongCode:
-                    client.SendReply(gm, "You have used incorrect command for joining the raid. Use !raid [word seen on stream] to join.");
+                    client.SendReply(gm, Localization.MSG_RAID_JOIN_WRONG_CODE);
                     break;
             }
 

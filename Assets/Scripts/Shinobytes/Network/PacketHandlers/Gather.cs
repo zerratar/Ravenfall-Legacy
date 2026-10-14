@@ -30,7 +30,7 @@ public class Gather : ChatBotCommandHandler<string>
         var result = itemResolver.Resolve(query, x => x.Type == itemType && Game.Items.CanBeDropped(x));
         if (result.SuggestedItemNames != null && result.SuggestedItemNames.Length > 0)
         {
-            var message = Utility.ReplaceLastOccurrence(string.Join(", ", result.SuggestedItemNames), ", ", " or ");
+            var message = Utility.ReplaceLastOccurrence(string.Join(", ", result.SuggestedItemNames), ", ", Localization.MSG_LIST_OR);
             client.SendReply(gm, Localization.MSG_GATHERING_SUGGEST, query, message);
             return;
         }

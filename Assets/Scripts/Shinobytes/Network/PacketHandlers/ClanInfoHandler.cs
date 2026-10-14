@@ -30,21 +30,16 @@ public class ClanInfoHandler : ChatBotCommandHandler<string>
             return;
         }
 
-        client.SendReply(gm, GenerateStringPresentation(clanInfo));
+        var totalMemberCount = clanInfo.Roles.Sum(x => x.MemberCount);
+        client.SendReply(gm, Localization.MSG_CLAN_INFO, clanInfo.Name, clanInfo.OwnerName, GetRoleList(clanInfo), totalMemberCount);
     }
 
-    private string GenerateStringPresentation(ClanInfo data)
+    private string GetRoleList(ClanInfo data)
     {
-        var msg = $"Your clan is {data.Name} led by {data.OwnerName}. There are currently ";
-        var totalMemberCount = data.Roles.Sum(x => x.MemberCount);
-        msg += string.Join(", ", data.Roles.OrderByDescending(x => x.Level).Select(x =>
+        return string.Join(", ", data.Roles.OrderByDescending(x => x.Level).Select(x =>
         {
-            var str = x.MemberCount + " " + x.Name;
-            if (x.MemberCount > 1) str += "s";
-            return str;
+            var format = x.MemberCount > 1 ? Localization.MSG_CLAN_INFO_ROLE_MANY : Localization.MSG_CLAN_INFO_ROLE;
+            return format.Replace("{count}", x.MemberCount.ToString()).Replace("{roleName}", x.Name);
         }));
-
-        msg += ". A total of " + totalMemberCount + " members.";
-        return msg;
     }
 }

@@ -1121,8 +1121,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (alertInChat && !IsBot)
         {
             GameManager.RavenBot.SendReply(this, wasEquipped
-                ? "You found and equipped a {itemName}!"
-                : "You found a {itemName}!", item.Name);
+                ? Localization.MSG_PLAYER_ITEM_FOUND_EQUIPPED
+                : Localization.MSG_PLAYER_ITEM_FOUND, item.Name);
         }
 
         return itemInstance;
@@ -1742,7 +1742,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                 {
                     if (!silent)
                     {
-                        GameManager.RavenBot.SendReply(this, "{skillName} is not a trainable skill. Did you mean {suggestion}?", targetTaskName, type.ToString());
+                        GameManager.RavenBot.SendReply(this, Localization.MSG_TRAINING_NOT_TRAINABLE_SUGGEST, targetTaskName, type.ToString());
                     }
                 }
                 return;
@@ -1927,10 +1927,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
                         if (PlayerSettings.Instance.AnnounceNoExpGain.GetValueOrDefault())
                         {
                             GameManager.RavenBot.SendReply(this,
-                                // Localization.MSG_TRAINING_RECOMMENDED_ISLAND,
-                                "You have not been gaining any experience for more than {mins} minutes. " +
-                                "You're recommended to sail to {recommendedIslandName1} to continue training. " +
-                                "The broadcaster may now also use !sail {recommendedIslandName2} {playerName} to make your character move.",
+                                Localization.MSG_TRAINING_NO_EXP_RECOMMENDED_ISLAND, 
                                 Math.Round(noExpTime.TotalMinutes, 1),
                                 recommendedIsland.ToString(),
                                 recommendedIsland.ToString(),

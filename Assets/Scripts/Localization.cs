@@ -888,6 +888,40 @@ public static class Localization
         }
     }
 
+    /// <summary>The words of an item drop message, for the Core assembly that builds it.</summary>
+    public static PlayerItemDropWording ItemDropWording()
+    {
+        return new PlayerItemDropWording
+        {
+            YouFoundA = MSG_DROP_YOU_FOUND_A,
+            YouFoundAn = MSG_DROP_YOU_FOUND_AN,
+            FoundBy = MSG_DROP_FOUND_BY,
+            And = MSG_LIST_AND,
+        };
+    }
+
+    /// <summary>
+    /// An item stat or enchantment as shown in a tooltip. The game names them in English and
+    /// looks some of them up by that name, so they are only translated here, for display.
+    /// </summary>
+    public static string StatName(string stat)
+    {
+        switch (stat?.ToUpperInvariant())
+        {
+            case "WEAPON AIM": return UI_TIP_WEAPON_AIM;
+            case "WEAPON POWER": return UI_TIP_WEAPON_POWER;
+            case "RANGED AIM": return UI_TIP_RANGED_AIM;
+            case "RANGED POWER": return UI_TIP_RANGED_POWER;
+            case "MAGIC AIM": return UI_TIP_MAGIC_AIM;
+            case "MAGIC POWER": return UI_TIP_MAGIC_POWER;
+            case "ARMOR":
+            case "ARMOUR": return UI_TIP_ARMOR;
+            case "POWER": return UI_ENCHANT_POWER;
+            case "AIM": return UI_ENCHANT_AIM;
+            default: return SkillName(stat);
+        }
+    }
+
     public static string SlotName(ItemSlot slot)
     {
         switch (slot)
@@ -934,4 +968,531 @@ public static class Localization
     }
 
     public static string HouseName(TownHouse house, TownHouseSlotType fallback) => HouseName(house ? house.Type : fallback);
+    // GameManager
+    public static string MSG_RESTORE_STATE_EXPIRED = Meta("system", "restore") + "Player restore state file has expired. No players have been added back.";
+    public static string MSG_AUTOJOIN_DUNGEON_JOINED_COUNTER = Meta("dungeon", "join", "auto") + "You have automatically joined the dungeon! You will join {counter} more.";
+    public static string MSG_AUTOJOIN_DUNGEON_JOINED = Meta("dungeon", "join", "auto") + "You have automatically joined the dungeon!";
+    public static string MSG_AUTOJOIN_DUNGEON_JOINED_NAMES = Meta("dungeon", "join", "auto") + "{playerNames} have automatically joined the dungeon!";
+    public static string MSG_AUTOJOIN_DUNGEON_JOINED_COUNT = Meta("dungeon", "join", "auto") + "{playerCount} players have automatically joined the dungeon!";
+    public static string MSG_AUTOJOIN_DUNGEON_FAILED = Meta("dungeon", "join", "auto", "fail") + "You have failed to join the dungeon. Make sure you have enough coins to automatically join.";
+    public static string MSG_AUTOJOIN_DUNGEON_FAILED_NAMES = Meta("dungeon", "join", "auto", "fail") + "{playerNames} failed to join the dungeon. You may not have enough coins.";
+    public static string MSG_AUTOJOIN_DUNGEON_FAILED_COUNT = Meta("dungeon", "join", "auto", "fail") + "{playerCount} players failed to join the dungeon.";
+    public static string MSG_AUTOJOIN_RAID_FAILED = Meta("raid", "join", "auto", "fail") + "You have failed to join the raid. Make sure you have enough coins to automatically join.";
+    public static string MSG_AUTOJOIN_RAID_FAILED_NAMES = Meta("raid", "join", "auto", "fail") + "{playerNames} failed to join the raid. You may not have enough coins.";
+    public static string MSG_AUTOJOIN_RAID_FAILED_COUNT = Meta("raid", "join", "auto", "fail") + "{playerCount} players failed to join the raid.";
+    public static string MSG_AUTOJOIN_RAID_JOINED_COUNTER = Meta("raid", "join", "auto") + "You have automatically joined the raid! You will join {counter} more.";
+    public static string MSG_AUTOJOIN_RAID_JOINED = Meta("raid", "join", "auto") + "You have automatically joined the raid!";
+    public static string MSG_AUTOJOIN_RAID_JOINED_NAMES = Meta("raid", "join", "auto") + "{playerNames} have automatically joined the raid!";
+    public static string MSG_AUTOJOIN_RAID_JOINED_COUNT = Meta("raid", "join", "auto") + "{playerCount} players have automatically joined the raid!";
+
+    // DungeonManager
+    public static string MSG_DUNGEON_ENDED_NO_SURVIVORS = Meta("dungeon", "result") + "The dungeon has ended without any surviving players.";
+    public static string MSG_DUNGEON_VICTORY_NO_CONNECTION = Meta("dungeon", "result") + "Victorious!! Dungeon boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.";
+    public static string MSG_DUNGEON_VICTORY_TREASURE = Meta("dungeon", "result", "reward") + "Victorious!! The dungeon boss was slain and yielded {itemCount} item treasures!";
+    public static string MSG_DUNGEON_VICTORY_NO_TREASURE = Meta("dungeon", "result") + "Victorious!! The dungeon boss was slain but did not yield any treasure.";
+    public static string MSG_DUNGEON_STARTS_IN_MINUTES = Meta("dungeon", "info", "timer") + "{minutes}m{seconds}s until dungeon starts.";
+    public static string MSG_DUNGEON_STARTS_IN_SECONDS = Meta("dungeon", "info", "timer") + "{seconds}s until dungeon starts.";
+    public static string MSG_DUNGEON_AVAILABLE_CODE = Meta("event", "dungeon") + "{dungeonName} is available. Type '!dungeon code' to join. Find the code on the stream.";
+    public static string MSG_DUNGEON_AVAILABLE = Meta("event", "dungeon") + "{dungeonName} is available. Type !dungeon to join.";
+
+    // RaidManager
+    public static string MSG_RAID_TIMEOUT = Meta("raid", "result") + "Oh no! The raid boss was not killed in time. No rewards will be given.";
+    public static string MSG_RAID_VICTORY_NO_CONNECTION = Meta("raid", "result") + "Victorious!! Raid boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.";
+    public static string MSG_RAID_VICTORY_TREASURE = Meta("raid", "result", "reward") + "Victorious!! The raid boss was slain and yielded {itemCount} item treasures!";
+    public static string MSG_RAID_VICTORY_NO_TREASURE = Meta("raid", "result") + "Victorious!! The raid boss was slain but did not yield any treasure.";
+
+    // RaidEventHandler
+    public static string MSG_STREAMRAID_WAR_DECLARED = Meta("system", "streamer raid") + "{raiderName} is declaring war with an army of {raiderPlayerCount}!";
+    public static string MSG_STREAMRAID_RAIDING = Meta("system", "streamer raid") + "{raiderName} is raiding with {raiderPlayerCount} players!";
+    public static string MSG_STREAMRAID_NO_RAIDERS_ADDED = Meta("system", "streamer raid", "fail") + "Raid could not be started, as 0 players could be added to the raid.";
+    public static string MSG_STREAMRAID_WAR_STARTING = Meta("system", "streamer raid") + "The raid war from {raiderName} is starting. {myPlayerCount} vs {raiderPlayerCount}!";
+
+    // GameUpdatedEventHandler
+    public static string MSG_UPDATE_REQUIRED = Meta("system", "update") + "Attention! An essential update to Ravenfall, v{version}, is available. This update contains critical changes. To avoid any game disruption, game will attempt to automatically restart to apply the update.";
+    public static string MSG_UPDATE_AVAILABLE = Meta("system", "update") + "Good news! Ravenfall v{version} is out now! For optimal gameplay and new features, restart your game to update. Enjoy!";
+
+    // StreamRaidManager (on screen)
+    public static string UI_STREAMRAID_WAR_DECLARED = "<b>{0}</b> has declared war with an army of <b>{1}</b>!";
+    public static string UI_STREAMRAID_FRIENDLY_RAID = "Friendly raid from <b>{0}</b> with <b>{1}</b> players!";
+
+    // PlayerManager
+    public static string MSG_RESTORE_FAILED = Meta("system", "restore", "fail") + "Failed to restore players. See game log files for more details.";
+    public static string MSG_RESTORE_PARTIAL = Meta("system", "restore") + "{restoredCount} out of {playerCount} were added back to the game.";
+    public static string MSG_RESTORE_FAILED_NAMES = Meta("system", "restore", "fail") + "{failedCount} players failed to be added back: {playerNames}";
+    public static string MSG_RESTORE_SUCCESS = Meta("system", "restore") + "{playerCount} players restored.";
+
+    // PlayerController
+    public static string MSG_PLAYER_ITEM_FOUND_EQUIPPED = Meta("info", "item", "found") + "You found and equipped a {itemName}!";
+    public static string MSG_PLAYER_ITEM_FOUND = Meta("info", "item", "found") + "You found a {itemName}!";
+    public static string MSG_TRAINING_NOT_TRAINABLE_SUGGEST = Meta("training", "fail") + "{skillName} is not a trainable skill. Did you mean {suggestion}?";
+    public static string MSG_TRAINING_NO_EXP_RECOMMENDED_ISLAND = Meta("training", "info") + "You have not been gaining any experience for more than {mins} minutes. You're recommended to sail to {recommendedIslandName1} to continue training. The broadcaster may now also use !sail {recommendedIslandName2} {playerName} to make your character move.";
+
+    // PlayerEquipmentActions (the MSG_EQUIP_REQ_ fields are pieces of the {requirement} in MSG_EQUIP_REQUIREMENTS_NOT_MET, filled with string.Format)
+    public static string MSG_EQUIP_CANT_BE_EQUIPPED = Meta("equipment", "equip", "fail") + "{itemName} can't be equipped.";
+    public static string MSG_EQUIP_REQUIREMENTS_NOT_MET = Meta("equipment", "equip", "fail") + "You do not meet the requirements to equip {itemName}. {requirement}";
+    public static string MSG_EQUIP_REQ_LEVEL = "You require level {0}";
+    public static string MSG_EQUIP_REQ_ATTACK = "{0} Attack.";
+    public static string MSG_EQUIP_REQ_DEFENSE = "{0} Defense.";
+    public static string MSG_EQUIP_REQ_MAGIC_OR_HEALING = "{0} Magic or Healing.";
+    public static string MSG_EQUIP_REQ_RANGED = "{0} Ranged.";
+    public static string MSG_EQUIP_REQ_SLAYER = "{0} Slayer.";
+
+    // RaidForce
+    public static string MSG_RAID_FORCE_DISABLED = Meta("raid", "scroll", "fail") + "Raids have been disabled in this stream by the broadcaster.";
+    public static string MSG_RAID_FORCE_BUSY = Meta("raid", "scroll", "fail") + "Someone just used a raid scroll.";
+    public static string MSG_RAID_FORCE_ALREADY_ACTIVE = Meta("raid", "scroll", "fail") + "There is already an active raid.";
+    public static string MSG_RAID_FORCE_DUNGEON_BUSY = Meta("raid", "scroll", "fail") + "Someone tried to use a dungeon scroll. Please wait before using a raid scroll.";
+    public static string MSG_RAID_START_FAILED_DUNGEON = Meta("raid", "start", "fail", "dungeon") + "Unable to start a raid during a dungeon. Please wait for it to be over.";
+    public static string MSG_RAID_START_FAILED_WAR = Meta("raid", "start", "fail", "war") + "Unable to start a raid during a war. Please wait for it to be over.";
+    public static string MSG_RAID_FORCE_TRY_LATER = Meta("raid", "scroll", "fail") + "Raid cannot be started right now. Please try again later.";
+    public static string MSG_RAID_FORCE_USED_JOINED = Meta("raid", "scroll") + "You have used a Raid Scroll and joined the raid. Good luck!";
+    public static string MSG_RAID_FORCE_USED = Meta("raid", "scroll") + "You have used a Raid Scroll.";
+    public static string MSG_RAID_FORCE_FAILED_REFUND = Meta("raid", "scroll", "fail") + "Raid could not be started. Scroll will be refunded.";
+    public static string MSG_RAID_FORCE_NO_SCROLLS = Meta("raid", "scroll", "fail") + "You do not have any Raid Scrolls! Redeem them under streamer loyalty on the website.";
+    public static string MSG_EVENT_SCROLL_SERVER_ERROR = Meta("system", "scroll", "fail") + "Server was not able to give back a valid response. Uh oh.. BUG!";
+
+    // DungeonForce
+    public static string MSG_DUNGEON_FORCE_DISABLED = Meta("dungeon", "scroll", "fail") + "Dungeons have been disabled in this stream by the broadcaster.";
+    public static string MSG_DUNGEON_FORCE_BUSY = Meta("dungeon", "scroll", "fail") + "Someone just used a dungeon scroll.";
+    public static string MSG_DUNGEON_FORCE_ALREADY_ACTIVE = Meta("dungeon", "scroll", "fail") + "There is already an active dungeon.";
+    public static string MSG_DUNGEON_FORCE_RAID_BUSY = Meta("dungeon", "scroll", "fail") + "Someone tried to use a raid scroll. Please wait before using a dungeon scroll.";
+    public static string MSG_DUNGEON_FORCE_TRY_LATER = Meta("dungeon", "scroll", "fail") + "Dungeon cannot be started right now. Please try again later.";
+    public static string MSG_DUNGEON_FORCE_USED_JOINED = Meta("dungeon", "scroll") + "You have used a Dungeon Scroll and joined the dungeon. Good luck!";
+    public static string MSG_DUNGEON_FORCE_USED = Meta("dungeon", "scroll") + "You have used a Dungeon Scroll.";
+    public static string MSG_DUNGEON_FORCE_FAILED = Meta("dungeon", "scroll", "fail") + "Dungeon could not be started. Try again later.";
+    public static string MSG_DUNGEON_FORCE_NO_SCROLLS = Meta("dungeon", "scroll", "fail") + "You do not have any Dungeon Scrolls! Redeem them under streamer loyalty on the website.";
+
+    // ProduceItemCommand
+    public static string MSG_PRODUCE_NOT_CONNECTED = Meta("system", "fail") + "This action can only be done while connected to the server.";
+    public static string MSG_PRODUCE_STATUS_ALMOST_DONE = Meta("crafting", "info") + "You're busy making something and should be done any second!";
+    public static string MSG_PRODUCE_STATUS = Meta("crafting", "info") + "You're busy making something and will be done in {timeLeft}.";
+    public static string MSG_PRODUCE_NO_ACTION = Meta("crafting", "fail") + "You don't seem to have an ongoing action.";
+    public static string MSG_PRODUCE_NO_ACTION_TO_CANCEL = Meta("crafting", "fail") + "You don't seem to have an action to cancel.";
+    public static string MSG_PRODUCE_NOT_CREATABLE = Meta("crafting", "fail") + "{itemName} is not an item that can be created.";
+    public static string MSG_PRODUCE_WRONG_SKILL = Meta("crafting", "fail") + "{itemName} is not an item that can be created using {skillName}. It requires level {requiredSkillLevel} {requiredSkill}";
+    public static string MSG_PRODUCE_LEVEL_TOO_LOW = Meta("crafting", "fail") + "{name} requires level {requiredSkillLevel} {requiredSkill}";
+    public static string MSG_PRODUCE_NOT_ENOUGH_RESOURCES = Meta("crafting", "fail") + "You do not have enough resources for creating {name}. You need {requirements}";
+    public static string MSG_PRODUCE_SERVER_ERROR = Meta("crafting", "fail") + "Server returned an error, please try again later.";
+
+    // {verb} and {verbPast} are filled from the MSG_PRODUCE_TERMS_ fields below
+    public static string MSG_PRODUCE_FAILED_SERVER = Meta("crafting", "fail") + "Unable to {verb} {recipeName}. Server returned an error. Please try again later.";
+    public static string MSG_PRODUCE_FAILED_INGREDIENTS = Meta("crafting", "fail") + "Unable to {verb} {recipeName}. Could you be missing some ingredients?";
+    public static string MSG_PRODUCE_SUCCESS = Meta("crafting", "info") + "You have successfully {verbPast} {quantity} {itemName}";
+    public static string MSG_PRODUCE_SUCCESS_RECEIVED = Meta("crafting", "info") + "You have successfully {verbPast} {recipeName}! You've received {quantity} {itemName}";
+    public static string MSG_PRODUCE_FAILED = Meta("crafting", "fail") + "Oh no! You have failed to {verb} {recipeName}! You've received {quantity} {itemName}";
+    public static string MSG_PRODUCE_MIXED_RESULT = Meta("crafting", "info") + "You have {verbPast} {quantity} {recipeName} and received {items}";
+
+    // the {quantity} when one item was made: "a" or "an" before the item name
+    public static string MSG_PRODUCE_QUANTITY_A = "a";
+    public static string MSG_PRODUCE_QUANTITY_AN = "an";
+
+    // production verbs, { verb, past participle }: "Unable to {verb}", "You have {verbPast}"
+    public static string[] MSG_PRODUCE_TERMS_CHURN = { "churn", "churned" };
+    public static string[] MSG_PRODUCE_TERMS_FERMENT = { "ferment", "fermented" };
+    public static string[] MSG_PRODUCE_TERMS_MAKE = { "make", "made" };
+    public static string[] MSG_PRODUCE_TERMS_PICK = { "pick", "picked" };
+    public static string[] MSG_PRODUCE_TERMS_HARVEST = { "harvest", "harvested" };
+    public static string[] MSG_PRODUCE_TERMS_CULTIVATE = { "cultivate", "cultivated" };
+    public static string[] MSG_PRODUCE_TERMS_GRIND = { "grind", "ground" };
+    public static string[] MSG_PRODUCE_TERMS_PLUCK = { "pluck", "plucked" };
+    public static string[] MSG_PRODUCE_TERMS_GATHER = { "gather", "gathered" };
+    public static string[] MSG_PRODUCE_TERMS_COLLECT = { "collect", "collected" };
+    public static string[] MSG_PRODUCE_TERMS_REFINE = { "refine", "refined" };
+    public static string[] MSG_PRODUCE_TERMS_PROCESS = { "process", "processed" };
+    public static string[] MSG_PRODUCE_TERMS_FETCH = { "fetch", "fetched" };
+    public static string[] MSG_PRODUCE_TERMS_MOLD = { "mold", "molded" };
+    public static string[] MSG_PRODUCE_TERMS_CHOP = { "chop", "chopped" };
+    public static string[] MSG_PRODUCE_TERMS_MILL = { "mill", "milled" };
+    public static string[] MSG_PRODUCE_TERMS_BAKE = { "bake", "baked" };
+    public static string[] MSG_PRODUCE_TERMS_EXTRACT = { "extract", "extracted" };
+    public static string[] MSG_PRODUCE_TERMS_MINE = { "mine", "mined" };
+    public static string[] MSG_PRODUCE_TERMS_CUT = { "cut", "cut" };
+    public static string[] MSG_PRODUCE_TERMS_INSCRIBE = { "inscribe", "inscribed" };
+    public static string[] MSG_PRODUCE_TERMS_COOK = { "cook", "cooked" };
+    public static string[] MSG_PRODUCE_TERMS_BREW = { "brew", "brewed" };
+    public static string[] MSG_PRODUCE_TERMS_CRAFT = { "craft", "crafted" };
+
+    // DuelPlayer
+    public static string MSG_DUEL_DURING_WAR = Meta("duel", "fail") + "Unable to duel someone during a war. Please wait for it to be over.";
+    public static string MSG_DUEL_PLAYER_NOT_FOUND = Meta("duel", "fail") + "No player with the name {targetPlayerName} is currently playing.";
+    public static string MSG_DUEL_FAILED_FERRY = Meta("duel", "fail") + "You cannot duel another player while on the ferry.";
+    public static string MSG_DUEL_TARGET_FERRY = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as they are on the ferry.";
+    public static string MSG_DUEL_TARGET_OTHER_ISLAND = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as they are not on the same island.";
+    public static string MSG_DUEL_SELF = Meta("duel", "fail") + "You cannot duel yourself.";
+    public static string MSG_DUEL_FAILED_IN_DUEL = Meta("duel", "fail") + "You cannot duel another player as you are already in a duel.";
+    public static string MSG_DUEL_FAILED_IN_ARENA = Meta("duel", "fail") + "You cannot duel another player as you are participating in the Arena.";
+    public static string MSG_DUEL_FAILED_IN_RAID = Meta("duel", "fail") + "You cannot duel another player as you are participating in a Raid.";
+    public static string MSG_DUEL_FAILED_IN_DUNGEON = Meta("duel", "fail") + "You cannot duel another player as you are participating in a Dungeon.";
+    public static string MSG_DUEL_TARGET_IN_DUEL = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she is participating in a duel.";
+    public static string MSG_DUEL_TARGET_IN_ARENA = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she is participating in the Arena.";
+    public static string MSG_DUEL_TARGET_IN_RAID = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she is participating in a Raid.";
+    public static string MSG_DUEL_TARGET_IN_DUNGEON = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she is participating in a Dungeon.";
+    public static string MSG_DUEL_TARGET_HAS_REQUEST = Meta("duel", "fail") + "You cannot duel {targetPlayerName} as he or she already has an active duel request.";
+
+    // GiftItem
+    public static string MSG_GIFT_COINS_PLAYER_NOT_FOUND = Meta("gift", "fail") + "No player with the name {playerName} found in this stream. Maybe you misspelled it?";
+    public static string MSG_GIFT_COINS_SELF = Meta("gift", "fail") + "You cannot gift coins to yourself.";
+    public static string MSG_GIFT_COINS_NEGATIVE = Meta("gift", "fail") + "You cannot gift a negative amount of coins.";
+    public static string MSG_GIFT_COINS = Meta("gift", "info") + "You have gifted {playerName} with {amount} coins!";
+    public static string MSG_GIFT_COINS_SINGLE = Meta("gift", "info") + "Did you feel extra nice today? You have gifted {playerName} with a single coin!";
+    public static string MSG_GIFT_COINS_FAILED = Meta("gift", "fail") + "You could not gift any coins to {playerName}, make sure the name is spelled correctly and that you have enough coins to send.";
+    public static string MSG_GIFT_COINS_ERROR = Meta("gift", "fail") + "Unable to gift any coins right now. Please try again later.";
+    public static string MSG_GIFT_SET_HELP = Meta("gift", "fail") + "When gifting a whole item set, please include target player name, item type, word set. You can only gift one set at a time and only unequipped items will be gifted. example !gift playerName rune set";
+    public static string MSG_GIFT_SET_PARTIAL = Meta("gift", "info") + "You have gifted {itemCount} out of {itemSetCount} from the {setType} set to {targetPlayerName}! The items gifted were {itemList}";
+    public static string MSG_GIFT_SET_A = Meta("gift", "info") + "You have gifted a {setType} set to {targetPlayerName}! The items gifted were {itemList}";
+    public static string MSG_GIFT_SET_AN = Meta("gift", "info") + "You have gifted an {setType} set to {targetPlayerName}! The items gifted were {itemList}";
+
+    // GiftItem and SendItem
+    public static string MSG_ITEM_SET_NOT_FOUND = Meta("info", "item set", "fail") + "No item sets could be found matching the name {query}";
+    public static string MSG_ITEM_SET_NONE_OWNED = Meta("info", "item set", "fail") + "You do not have any of the items in the set '{query}'";
+
+    // SendItem
+    public static string MSG_SEND_SET_HELP = Meta("send", "fail") + "When sending a whole item set, please include target player name, item type, word set. You can only send one set at a time and only unequipped items will be sent. example !send characterNumber rune set";
+    public static string MSG_SEND_SELF = Meta("send", "fail") + "You cannot send items to yourself.";
+    public static string MSG_SEND_SET_PARTIAL = Meta("send", "info") + "You have sent {itemCount} out of {itemSetCount} from the {setType} set to {targetPlayerName}! The items sent were {itemList}";
+    public static string MSG_SEND_SET_A = Meta("send", "info") + "You have sent a {setType} set to {targetPlayerName}! The items sent were {itemList}";
+    public static string MSG_SEND_SET_AN = Meta("send", "info") + "You have sent an {setType} set to {targetPlayerName}! The items sent were {itemList}";
+
+    // TeleportToIsland
+    public static string MSG_TELEPORT_FAILED_DUNGEON = Meta("travel", "teleport", "fail") + "You cannot teleport while in a dungeon.";
+    public static string MSG_TELEPORT_FAILED_WAR = Meta("travel", "teleport", "fail") + "You cannot teleport while in a raid war.";
+    public static string MSG_TELEPORT_FAILED_ARENA = Meta("travel", "teleport", "fail") + "You cannot teleport while in the arena.";
+    public static string MSG_TELEPORT_FAILED_DUEL = Meta("travel", "teleport", "fail") + "You cannot teleport while in a duel.";
+    public static string MSG_TELEPORT_FAILED_RAID = Meta("travel", "teleport", "fail") + "You cannot teleport while in a raid.";
+    public static string MSG_TELEPORT_INVALID_ISLAND = Meta("travel", "teleport", "fail") + "{island} is not a valid destination. Available islands are {islandList}";
+    public static string MSG_TELEPORT_NO_TOME = Meta("travel", "teleport", "fail") + "You do not have any suitable Teleportation Tomes to teleport to {island}.";
+    public static string MSG_TELEPORT_SUCCESS = Meta("travel", "teleport", "info") + "You have used a {itemName} and teleported to {island}!";
+
+    // UseItem (TeleportToIsland also uses MSG_USE_ITEM_NOT_NOW)
+    public static string MSG_USE_ITEM_CANNOT_USE = Meta("info", "use", "fail") + "{itemName} cannot be used.";
+    public static string MSG_USE_ITEM_TOME = Meta("info", "use", "fail") + "{itemName} cannot be used directly, use !teleport <island> instead.";
+    public static string MSG_USE_ITEM_FERRY_BOOST_ACTIVE = Meta("info", "use", "fail") + "There is already a ferry boost active. It will last for {boostTime}";
+    public static string MSG_USE_ITEM_NOT_NOW = Meta("info", "use", "fail") + "{itemName} can not be used right now.";
+    public static string MSG_USE_ITEM_NO_EFFECT = Meta("info", "use", "fail") + "Nothing good will happen if you play with {itemName}.";
+
+    // the first sentence of the use reply; the sentences after it are added below
+    public static string MSG_USE_ITEM_USED = Meta("info", "use") + "You have used {itemName}.";
+    public static string MSG_USE_ITEM_DRANK_A = Meta("info", "use") + "You drank a {itemName}.";
+    public static string MSG_USE_ITEM_DRANK_AN = Meta("info", "use") + "You drank an {itemName}.";
+    public static string MSG_USE_ITEM_ATE_A = Meta("info", "use") + "You ate a {itemName}.";
+    public static string MSG_USE_ITEM_ATE_AN = Meta("info", "use") + "You ate an {itemName}.";
+
+    // added after the first sentence, so no routing prefix. UseItem adds the effect index to each placeholder name
+    public static string MSG_USE_ITEM_TELEPORTED = "You were teleported to {island}!";
+    public static string MSG_USE_ITEM_FERRY_FASTER = "The ferry will now move faster for {boostTime}.";
+    public static string MSG_USE_ITEM_HEALED = "You have recovered {healthAmount} HP!";
+    public static string MSG_USE_ITEM_DAMAGED = "You took {damageAmount} damage!";
+    public static string MSG_USE_ITEM_HEAL_OVER_TIME = "You will be healed {healPercent}% of your total health over {healTotalSeconds} seconds.";
+    public static string MSG_USE_ITEM_GAINED_MINUTES_SECONDS = "You gained {effectPercent}% {effectType} for {effectMinutes} minutes and {effectSeconds} seconds.";
+    public static string MSG_USE_ITEM_GAINED_MINUTES = "You gained {effectPercent}% {effectType} for {effectMinutes} minutes.";
+    public static string MSG_USE_ITEM_GAINED_SECONDS = "You gained {effectPercent}% {effectType} for {effectSeconds} seconds.";
+
+    // ItemUsage
+    public static string MSG_ITEM_USAGE_NONE = Meta("info", "item usage", "fail") + "{itemName} is not used in any recipes.";
+    public static string MSG_ITEM_USAGE = Meta("info", "item usage") + "{name} is used for: {list}";
+
+    // ExamineItem
+    public static string MSG_ITEM_EXAMINE_NO_DESCRIPTION = Meta("info", "examine") + "There is not much to say about {itemName}";
+
+    // EquipItem
+    public static string MSG_EQUIP_NOT_EQUIPPABLE = Meta("info", "equipment", "equip", "fail") + "{itemName} is not an equippable item.";
+
+    // ItemCount
+    public static string MSG_ITEM_COUNT = Meta("info", "item count") + "You have {itemCount}x {itemName}(s).";
+
+    // GetLoot
+    public static string MSG_LOOT_CLEARED = Meta("info", "loot") + "Your loot records have been cleared.";
+    public static string MSG_LOOT_NONE = Meta("info", "loot") + "You have not looted anything yet.";
+    public static string MSG_LOOT_FILTER_NO_RESULT = Meta("info", "loot") + "The filter '{query}' did not yield any result.";
+
+    // built in the game, so {0} style. {0} is how long ago, like 5m 10s
+    public static string MSG_LOOT_AGO = "{0} ago";
+    public static string MSG_LOOT_FROM_DUNGEON_AGO = "from dungeon {0} ago";
+    public static string MSG_LOOT_FROM_RAID_AGO = "from raid {0} ago";
+
+    // DisenchantItem
+    public static string MSG_DISENCHANT_NONE_RECENT = Meta("enchanting", "fail") + "You have not enchanted any items recently.";
+    public static string MSG_DISENCHANT_LAST_EXPIRED = Meta("enchanting", "fail") + "It has been more than 5 minutes since you enchanted '{itemName}', to avoid disenchanting by mistake you have to use '!disenchant last' to continue.";
+
+    // EnchantmentCooldown
+    public static string MSG_ENCHANT_COOLDOWN_UNAVAILABLE = Meta("enchanting", "fail", "cooldown") + "Unable to get cooldown from the server right now. Please try again later.";
+    public static string MSG_ENCHANT_NO_COOLDOWN = Meta("enchanting", "info", "cooldown") + "You do not have any cooldown.";
+    public static string MSG_ENCHANT_COOLDOWN_CLEAR_INFO = Meta("enchanting", "info", "cooldown") + "You have to wait {timeLeft} before you can try to enchant something again. If you want to clear this cooldown, use !enchant clear cooldown, this will cost {pricePerSecond} coins per second. ~Total {totalCost} coins";
+
+    // the {timeLeft} above, built in the game, so {0} style
+    public static string MSG_ENCHANT_TIME_ONE_HOUR = "1 hour";
+    public static string MSG_ENCHANT_TIME_HOURS = "{0} hours";
+    public static string MSG_ENCHANT_TIME_ONE_MINUTE = "1 minute";
+    public static string MSG_ENCHANT_TIME_MINUTES = "{0} minutes";
+    public static string MSG_ENCHANT_TIME_ONE_SECOND = "1 second";
+    public static string MSG_ENCHANT_TIME_SECONDS = "{0} seconds";
+    public static string MSG_ENCHANT_TIME_MOMENT = "a moment";
+
+    // ClearEnchantmentCooldown
+    public static string MSG_ENCHANT_COOLDOWN_CLEARED = Meta("enchanting", "info", "cooldown") + "You have cleared your enchantment cooldown for a total of {totalCost} coins";
+    public static string MSG_ENCHANT_COOLDOWN_CLEAR_FAILED = Meta("enchanting", "fail", "cooldown") + "Unable to clear the cooldown, either you don't have a cooldown active or you don't have enough coins.";
+    public static string MSG_ENCHANT_COOLDOWN_CLEAR_ERROR = Meta("enchanting", "fail", "cooldown") + "An error occurred while trying to clear your enchantment cooldown. Please try again later.";
+
+    // MaxMultiplier
+    // The base text gets MSG_EXPBOOST_GLOBAL_PART and then MSG_EXPBOOST_RESTED_PART appended in code, so the parts carry no Meta prefix.
+    public static string MSG_EXPBOOST = Meta("info", "exp multiplier") + "Your current exp boost: {expMulti}x";
+    public static string MSG_EXPBOOST_TIER = Meta("info", "exp multiplier") + "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon";
+    public static string MSG_EXPBOOST_HUTS = Meta("info", "exp multiplier") + "Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts";
+    public static string MSG_EXPBOOST_TIER_AND_HUTS = Meta("info", "exp multiplier") + "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and {hutMulti}x from huts";
+    public static string MSG_EXPBOOST_TIER_HUTS_LIST = Meta("info", "exp multiplier") + "Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon, {hutMulti}x from huts";
+    public static string MSG_EXPBOOST_RESTED_ONLY = Meta("info", "exp multiplier") + "You're gaining {expMulti}x more exp for being rested";
+    public static string MSG_EXPBOOST_GLOBAL_PART = " and {globalMulti}x from global exp multiplier for {globalTime}";
+    public static string MSG_EXPBOOST_RESTED_PART = " and the total is multiplied by {restedMulti}x from being rested.";
+
+    // AutoRaid
+    public static string MSG_RAID_AUTOJOIN_COUNT = Meta("raid", "auto join") + "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off. It will cost {cost} each time you automatically join a raid.";
+    public static string MSG_RAID_AUTOJOIN_STATUS_ON = Meta("raid", "auto join") + "You will automatically join raids until you use !raid join off.";
+    public static string MSG_RAID_AUTOJOIN_STATUS_OFF = Meta("raid", "auto join") + "You are not set to automatically join any raids.";
+    public static string MSG_RAID_AUTOJOIN_ON = Meta("raid", "auto join") + "You will automatically join raids until you use !raid join off. It will cost {cost} each time you automatically join a raid.";
+    public static string MSG_RAID_AUTOJOIN_OFF = Meta("raid", "auto join") + "You will no longer automatically join raids";
+    public static string MSG_RAID_AUTOJOIN_INVALID = Meta("raid", "auto join", "fail") + "{query} is not a valid value for raid auto join settings.";
+
+    // AutoDungeon
+    public static string MSG_DUNGEON_AUTOJOIN_COUNT = Meta("dungeon", "auto join") + "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off. It will cost {cost} each time you automatically join a dungeon.";
+    public static string MSG_DUNGEON_AUTOJOIN_STATUS_ON = Meta("dungeon", "auto join") + "You will automatically join dungeons until you use !dungeon join off.";
+    public static string MSG_DUNGEON_AUTOJOIN_STATUS_OFF = Meta("dungeon", "auto join") + "You are not set to automatically join any dungeons.";
+    public static string MSG_DUNGEON_AUTOJOIN_ON = Meta("dungeon", "auto join") + "You will automatically join dungeons until you use !dungeon join off. It will cost {cost} each time you automatically join a dungeon.";
+    public static string MSG_DUNGEON_AUTOJOIN_OFF = Meta("dungeon", "auto join") + "You will no longer automatically join dungeons";
+    public static string MSG_DUNGEON_AUTOJOIN_INVALID = Meta("dungeon", "auto join", "fail") + "{query} is not a valid value for dungeon auto join settings";
+
+    // DungeonJoin
+    public static string MSG_DUNGEON_JOIN_WAR = Meta("dungeon", "join", "fail") + "Dungeon is unavailable during wars. Please wait for it to be over.";
+    public static string MSG_DUNGEON_JOIN_NO_DUNGEON = Meta("dungeon", "join", "fail") + "No active dungeons available, sorry.";
+    public static string MSG_DUNGEON_JOIN_STARTED = Meta("dungeon", "join", "fail") + "The dungeon has already started. You will have to wait for the next one!";
+    public static string MSG_DUNGEON_JOIN_SUCCESS = Meta("dungeon", "join") + "You have joined the dungeon. Good luck!";
+    public static string MSG_DUNGEON_JOIN_ALREADY = Meta("dungeon", "join", "fail") + "You have already joined the dungeon.";
+    public static string MSG_DUNGEON_JOIN_WRONG_CODE = Meta("dungeon", "join", "fail") + "You have used an incorrect command for joining the dungeon. Use !dungeon [word seen on stream] to join.";
+
+    // JoinRaid
+    public static string MSG_RAID_JOIN_WRONG_CODE = Meta("raid", "join", "fail") + "You have used an incorrect command for joining the raid. Use !raid [word seen on stream] to join.";
+
+    // UseExpMultiplierScroll
+    public static string MSG_EXP_SCROLL_MAX_REACHED = Meta("system", "exp multiplier", "fail") + "The maximum multiplier has already been reached.";
+    public static string MSG_EXP_SCROLL_USED_MANY = Meta("system", "exp multiplier") + "You have used {scrollCount} Exp Multiplier Scrolls. The multiplier is now at {multiplier}.";
+    public static string MSG_EXP_SCROLL_USED_ONE = Meta("system", "exp multiplier") + "You have used an Exp Multiplier Scroll. The multiplier is now at {multiplier}.";
+    public static string MSG_EXP_SCROLL_NONE = Meta("system", "exp multiplier", "fail") + "You do not have any Exp Multiplier Scrolls! Redeem them under streamer loyalty on the website.";
+    public static string MSG_EXP_SCROLL_OUT_OF_SYNC = Meta("system", "exp multiplier", "fail") + "Unable to use any scrolls at this time, game may be out of sync. Try again later.";
+    public static string MSG_EXP_SCROLL_ERROR = Meta("system", "exp multiplier", "fail") + "Unable to use any scrolls at this time, game may be out of sync. Try again later. Error has been logged.";
+
+    // UseFerryBoostScroll
+    public static string MSG_FERRY_BOOST_NO_SCROLL = Meta("ferry", "boost", "fail") + "You don't have any ferry boost scrolls.";
+    public static string MSG_FERRY_BOOST_CANNOT_USE = Meta("ferry", "boost", "fail") + "{itemName} can not be used right now.";
+    public static string MSG_FERRY_BOOST_ACTIVE = Meta("ferry", "boost") + "The ferry will now move faster for {time}.";
+    public static string MSG_FERRY_BOOST_ERROR = Meta("ferry", "boost", "fail") + "Error using ferry boost scroll";
+
+    // AutoRestStatus
+    public static string MSG_AUTOREST_INACTIVE = Meta("info", "rest", "auto rest") + "Auto rest is currently inactive. Use !auto rest <start minute> <stop minute> to activate.";
+    public static string MSG_AUTOREST_ACTIVE_WHEN_OUT = Meta("info", "rest", "auto rest") + "Auto rest is currently active. You will auto rest until you have {autoRestStopMinutes} minutes of rested as soon as you run out of rested time.";
+    public static string MSG_AUTOREST_ACTIVE = Meta("info", "rest", "auto rest") + "Auto rest is currently active. You will auto rest until you have {autoRestStopMinutes} minutes of rested. You will start resting when you have {autoRestStartMinutesLeft} minutes of rested left.";
+
+    // AutoRest
+    public static string MSG_AUTOREST_SET_FAILED = Meta("rest", "auto rest", "fail") + "Failed to set auto rest values. Make sure the start value is lower than the stop value.";
+    public static string MSG_AUTOREST_ACTIVATED = Meta("rest", "auto rest") + "Auto Rest has been activated, every time you start resting will cost you {coins} coins per second you rest.";
+
+    // AutoRestStop
+    public static string MSG_AUTOREST_STOPPED = Meta("rest", "auto rest") + "Auto rest has been stopped.";
+
+    // RaidCombatStyleSet, DungeonCombatStyleSet
+    public static string MSG_COMBAT_SKILL_NOT_FOUND = Meta("info", "skill", "fail") + "No such combat skill: {skill}";
+    public static string MSG_RAID_SKILL_MISSING = Meta("raid", "skill", "fail") + "You need to specify a combat skill to set. Example: !raid skill magic";
+    public static string MSG_RAID_SKILL_SET = Meta("raid", "skill") + "Your combat skill during raids has been set to {skill}.";
+    public static string MSG_DUNGEON_SKILL_MISSING = Meta("dungeon", "skill", "fail") + "You need to specify a combat skill to set. Example: !dungeon skill magic";
+    public static string MSG_DUNGEON_SKILL_SET = Meta("dungeon", "skill") + "Your combat skill during dungeons has been set to {skill}.";
+
+    // RaidGetCombatStyle, DungeonGetCombatStyle
+    public static string MSG_RAID_SKILL_NOT_SET = Meta("raid", "skill") + "Your raid skill is not set. Use !raid skill <skill> to set it.";
+    public static string MSG_RAID_SKILL_CURRENT = Meta("raid", "skill") + "Your raid skill is set to {skill}";
+    public static string MSG_DUNGEON_SKILL_NOT_SET = Meta("dungeon", "skill") + "Your dungeon skill is not set. Use !dungeon skill <skill> to set it.";
+    public static string MSG_DUNGEON_SKILL_CURRENT = Meta("dungeon", "skill") + "Your dungeon skill is set to {skill}";
+
+    // RaidCombatStyleClear, DungeonCombatStyleClear
+    public static string MSG_RAID_SKILL_RESET = Meta("raid", "skill") + "The skill used for raids has been reset.";
+    public static string MSG_DUNGEON_SKILL_RESET = Meta("dungeon", "skill") + "The skill used for dungeons has been reset.";
+
+    // RaidStop, DungeonStop
+    public static string MSG_RAID_FORCE_STOPPED = Meta("raid", "stop") + "Raid has been forcibly stopped.";
+    public static string MSG_DUNGEON_FORCE_STOPPED = Meta("dungeon", "stop") + "Dungeon has been forcibly stopped.";
+
+    // RedeemStreamerToken
+    public static string MSG_REDEEM_TOKEN_SUCCESS = Meta("redeem", "info") + "You have successfully redeemed a {itemName} for {amount} {currencyName} and now have {amountLeft} left.";
+    public static string MSG_REDEEM_TOKEN_FAILED_REASON = Meta("redeem", "fail") + "Unable to redeem {itemName}. {reason}";
+    public static string MSG_REDEEM_TOKEN_FAILED = Meta("redeem", "fail") + "Unable to redeem {itemName} right now.";
+
+    // GetTokenCount, GetScrollsCount
+    // MSG_SCROLL_COUNT_ITEM is filled in code, one per scroll; the joined list goes into {items}. MSG_LIST_AND sits between the last two.
+    public static string MSG_TOKENS_NONE = Meta("info", "tokens") + "You do not have any seasonal tokens. Join Raids or Dungeons during seasonal events to get some!";
+    public static string MSG_SCROLLS_NONE = Meta("info", "scrolls") + "You do not have any scrolls. You can redeem them under streamer loyalty on the website";
+    public static string MSG_SCROLL_COUNT = Meta("info", "scrolls") + "You have {items}.";
+    public static string MSG_SCROLL_COUNT_ITEM = "{amount} {itemName}(s)";
+    public static string MSG_LIST_AND = " and ";
+
+    // PlayerEq (the MSG_EQ_STAT_ fields are filled in code with Replace and joined into {stats}; the list uses MSG_LIST_AND from another part)
+    public static string MSG_EQ_INVALID_TYPE = Meta("info", "equipment", "fail") + "{target} is not a valid equipment type. These are the available ones: {typeList}";
+    public static string MSG_EQ_NONE_OF_TYPE = Meta("info", "equipment", "fail") + "You don't seem to have any {type} equipped.";
+    public static string MSG_EQ_ITEM_STATS_A = Meta("info", "equipment") + "You have a {itemName} equipped with the following stats: {stats}";
+    public static string MSG_EQ_ITEM_STATS_AN = Meta("info", "equipment") + "You have an {itemName} equipped with the following stats: {stats}";
+    public static string MSG_EQ_ITEMS_STATS = Meta("info", "equipment") + "You have the following items equipped: {itemList}. These items give the total of {stats}";
+    public static string MSG_EQ_STAT_ARMOR = "{armorPower} Armor";
+    public static string MSG_EQ_STAT_WEAPON_POWER = "{weaponPower} Melee Weapon Power";
+    public static string MSG_EQ_STAT_WEAPON_AIM = "{weaponAim} Melee Weapon Aim";
+    public static string MSG_EQ_STAT_MAGIC_POWER = "{magicPower} Magic/Healing Power";
+    public static string MSG_EQ_STAT_MAGIC_AIM = "{magicAim} Magic Aim";
+    public static string MSG_EQ_STAT_RANGED_POWER = "{rangedPower} Ranged Weapon Power";
+    public static string MSG_EQ_STAT_RANGED_AIM = "{rangedAim} Ranged Weapon Aim";
+
+    // Mine, Chop, Fish, Farm, Gather: the word before the last suggestion in a list, "A, B or C" (companion of MSG_LIST_AND)
+    public static string MSG_LIST_OR = " or ";
+
+    // PlayerStats
+    public static string MSG_STATS_SKILL_NOT_FOUND = Meta("info", "stats", "fail") + "No skill found matching: {skillName}";
+    public static string MSG_STATS_ITEM_MISSING = Meta("info", "stats", "fail") + "Oh dear! {itemName} seems to be missing stats!";
+    public static string MSG_STATS_ITEM = Meta("info", "stats") + "{itemName}: {stats}";
+
+    // CraftRequirement (the MSG_CRAFTREQ_LEVEL_ fields are filled in code with Replace and joined into {equipRequirements})
+    public static string MSG_CRAFTREQ_DROP_LEVEL = Meta("crafting", "info") + "{itemName} requires level {level} {skillName}.";
+    public static string MSG_CRAFTREQ_EQUIP_ONLY = Meta("crafting", "info") + "{itemName} requires {equipRequirements} to equip. This item cannot be created.";
+    public static string MSG_CRAFTREQ_NOT_CREATABLE = Meta("crafting", "fail") + "{itemName} is not an item that can be created.";
+    public static string MSG_CRAFTREQ_RECIPE_EQUIP = Meta("crafting", "info") + "{name} requires level {level} {skillName} and {requirements}. To equip this item you require {equipRequirements}";
+    public static string MSG_CRAFTREQ_RECIPE = Meta("crafting", "info") + "{name} requires level {level} {skillName} and {requirements}";
+    public static string MSG_CRAFTREQ_LEVEL_ATTACK = "Level {level} Attack";
+    public static string MSG_CRAFTREQ_LEVEL_DEFENSE = "Level {level} Defense";
+    public static string MSG_CRAFTREQ_LEVEL_RANGED = "Level {level} Ranged";
+    public static string MSG_CRAFTREQ_LEVEL_MAGIC = "Level {level} Magic or Healing";
+    public static string MSG_CRAFTREQ_LEVEL_SLAYER = "Level {level} Slayer";
+
+    // PlayerUnstuck
+    public static string MSG_UNSTUCK_ALL = Meta("system", "unstuck") + "Unstucking all players.";
+    public static string MSG_UNSTUCK_TRAINING_SET = Meta("system", "unstuck") + "{playerCount} players set to train All.";
+    public static string MSG_UNSTUCK_TRAINING_NONE = Meta("system", "unstuck", "fail") + "No players eligible for setting training to All.";
+    public static string MSG_UNSTUCK_COOLDOWN = Meta("system", "unstuck", "fail") + "Unstuck command can only be used once every 30s per character.";
+
+    // KickPlayer
+    public static string MSG_KICK_AFK_COUNT = Meta("system", "kick") + "{kickedPlayerCount} players were kicked from the game.";
+    public static string MSG_KICK_PLAYER = Meta("system", "kick") + "{player} was kicked from the game.";
+    public static string MSG_KICK_NOT_FOUND_SUGGEST = Meta("system", "kick", "fail") + "No player with the name '{player}' is playing. Did you mean {suggestion}?";
+    public static string MSG_KICK_NOT_FOUND = Meta("system", "kick", "fail") + "No player with the name '{player}' is playing.";
+
+    // IslandInfo (also reuses MSG_IN_DUNGEON)
+    public static string MSG_ISLAND_IN_WAR = Meta("info", "location") + "You're currently in a streamer raid war.";
+    public static string MSG_ISLAND_INSIDE_DUNGEON = Meta("info", "location") + "You are currently inside the dungeon.";
+    public static string MSG_ISLAND_STUCK = Meta("info", "location", "stuck") + "Uh oh. Your character may be stuck.";
+    public static string MSG_ISLAND_STUCK_ASK_MODERATOR = Meta("info", "location", "stuck") + "Uh oh. Your character may be stuck. {moderatorName}, could you please use !show @{player} to see if player is stuck?";
+
+    // ClanRemove, ClanPromote, ClanDemote, ClanInvite
+    public static string MSG_CLAN_PLAYER_NOT_PLAYING = Meta("clan", "fail") + "No player with name {playerName} is currently playing.";
+    public static string MSG_CLAN_REMOVED = Meta("clan", "remove") + "{playerName} has been removed from the clan.";
+    public static string MSG_CLAN_REMOVE_NO_PERMISSION = Meta("clan", "remove", "fail") + "You don't have permission to remove {playerName} or the player is not a member of your clan.";
+    public static string MSG_CLAN_PROMOTED = Meta("clan", "promote") + "Congratulations {playerName}! You have been promoted to {roleName}!";
+    public static string MSG_CLAN_PROMOTE_NO_PERMISSION = Meta("clan", "promote", "fail") + "You don't have permission to promote {playerName} or the player is not a member of your clan.";
+    public static string MSG_CLAN_DEMOTED = Meta("clan", "demote") + "{playerName} has been demoted to {roleName}";
+    public static string MSG_CLAN_DEMOTE_NO_PERMISSION = Meta("clan", "demote", "fail") + "You don't have permission to demote {playerName} or the player is not a member of your clan.";
+    public static string MSG_CLAN_INVITE_SENT = Meta("clan", "invite") + "Invite was successfully sent. {playerName}, you may use the command '!clan accept' if you wish to join the clan {clanName}. Or '!clan decline' to decline.";
+    public static string MSG_CLAN_INVITE_FAILED = Meta("clan", "invite", "fail") + "{playerName} could not be invited right now.";
+
+    // ClanJoin, ClanAccept, ClanDecline, ClanLeave
+    public static string MSG_CLAN_JOINED = Meta("clan", "join") + "You have joined {clanName} as a {roleName}!";
+    public static string MSG_CLAN_JOIN_FAILED = Meta("clan", "join", "fail") + "You are not able to join that clan at this moment.";
+    public static string MSG_CLAN_ACCEPT_FAILED = Meta("clan", "invite", "fail") + "Unable to accept clan invite. Either you don't have any invites or server is bonkers.";
+    public static string MSG_CLAN_DECLINED = Meta("clan", "invite") + "You have declined the most recent clan invite.";
+    public static string MSG_CLAN_DECLINE_FAILED = Meta("clan", "invite", "fail") + "Unable to decline clan invite. Either you don't have any invites or server is bonkers.";
+    public static string MSG_CLAN_LEFT = Meta("clan", "leave") + "You have departed your clan and are no longer a member of {clanName}.";
+    public static string MSG_CLAN_LEAVE_FAILED = Meta("clan", "leave", "fail") + "Unable to leave your clan right now, unknown error. Please try again later.";
+
+    // ClanInfoHandler (MSG_CLAN_INFO_ROLE and _ROLE_MANY are filled in code with Replace and joined into {roleList})
+    public static string MSG_CLAN_INFO = Meta("clan", "info") + "Your clan is {clanName} led by {ownerName}. There are currently {roleList}. A total of {memberCount} members.";
+    public static string MSG_CLAN_INFO_ROLE = "{count} {roleName}";
+    public static string MSG_CLAN_INFO_ROLE_MANY = "{count} {roleName}s";
+
+    // ClanRank
+    public static string MSG_CLAN_RANK = Meta("clan", "info") + "Your clan role is Level {roleLevel} - {roleName}. You joined the clan {date}.";
+
+    // ClanStatsHandler (sent through ReplyMessageBuilder: MSG_CLAN_STATS first, then one of the two skill sentences; MSG_CLAN_STATS_SKILL is filled in code with Replace)
+    public static string MSG_CLAN_STATS = Meta("clan", "info") + "Your clan is {clanName} led by {ownerName} and is currently level {clanLevel}.";
+    public static string MSG_CLAN_STATS_ENCHANTING = "Your clan has an enchanting level of {level}.";
+    public static string MSG_CLAN_STATS_SKILLS = "Your clan has the following skills {skills}.";
+    public static string MSG_CLAN_STATS_SKILL = "{skillName} level {level}";
+
+    // UpdateGame
+    public static string MSG_UPDATE_NO_NEW_VERSION = Meta("system", "update") + "There is no new version available. If you want to forcibly update then use the command one more time.";
+
+    // TownStats, TownHouses
+    public static string MSG_VILLAGE_LEVEL = Meta("village", "info") + "Village is level {townHallLevel}, it needs {remainingExp} xp to level up.";
+    public static string MSG_VILLAGE_HOUSES_NONE = Meta("village", "info") + "No players assigned to houses.";
+
+    // SetVillageHuts
+    public static string MSG_VILLAGE_HUTS_INVALID_SKILL = Meta("village", "fail") + "{targetName} is not a valid skill name for the huts. Make sure you use the full and proper names. Ex. Healing and not heal.";
+    public static string MSG_VILLAGE_HUTS_UPDATING = Meta("village", "info") + "Updating village to target {targetName}. Please wait...";
+
+    // PlayerLogUpload, GameStateUpload
+    public static string MSG_UPLOAD_BROADCASTER_MODERATOR_ONLY = Meta("system", "fail") + "Only the Broadcaster and Moderators can use this command.";
+
+    // PlayerLeave
+    public static string MSG_LEAVE_LEFT_GAME = Meta("system", "leave") + "You have left the game.";
+
+    // MonsterPlayer
+    public static string MSG_MONSTER_FAILED = Meta("system", "monster", "fail") + "Player could not be turned into a monster right now :(";
+
+    // GetStatusEffects
+    public static string MSG_STATUS_EFFECTS_NONE = Meta("info", "status effects") + "You do not have any active status effects.";
+
+    // FerryTravel
+    public static string MSG_FERRY_SAIL_NO_PERMISSION = Meta("travel", "sail", "fail") + "You do not have permission to set this player to sail.";
+
+    // FerryInfo (sent through ReplyMessageBuilder: one of the first two, then the captain and boost sentences when they apply)
+    public static string MSG_FERRY_INFO_DESTINATION = Meta("info", "ferry") + "The ferry is currently sailing towards {destination} with {playerCount} players on board.";
+    public static string MSG_FERRY_INFO = Meta("info", "ferry") + "The ferry is currently sailing with {playerCount} players on board.";
+    public static string MSG_FERRY_INFO_CAPTAIN = "{captainName} is the captain with {sailingLevel} sailing.";
+    public static string MSG_FERRY_INFO_BOOST = "There is an active ferry boost giving 5x the speed, boost ends in {timeLeft}.";
+
+    // ClientVersion
+    public static string MSG_CLIENT_VERSION = Meta("system", "version") + "The streamer is currently running Ravenfall v{version}";
+
+    // Dps (the stat pieces are joined with spaces by ReplyMessageBuilder)
+    public static string MSG_DPS_NONE = Meta("info", "dps") + "You have not dealt any damage or healed anyone yet.";
+    public static string MSG_DPS_DPS = "⚔️ {DPS} DPS";
+    public static string MSG_DPS_MAX_DPS = "⚔️ {highestDPS} Max DPS";
+    public static string MSG_DPS_MAX_DAMAGE = "💥 {highestDamage} Max DMG";
+    public static string MSG_DPS_TOTAL_DAMAGE = "💥 {totalDamage} Total";
+    public static string MSG_DPS_HPS = "🧙 {HPS} HPS";
+    public static string MSG_DPS_MAX_HPS = "🧙 {highestHPS} Max HPS";
+    public static string MSG_DPS_MAX_HEAL = "❤️ {highestHeal} Max HEAL";
+    public static string MSG_DPS_TOTAL_HEALING = "❤️ {totalHealing} Total";
+
+    // RaidStreamer: the {raidType} in MSG_REQ_RAID
+    public static string MSG_REQ_RAID_TYPE_WAR = "war raid";
+    public static string MSG_REQ_RAID_TYPE_RAID = "raid";
+
+    // BuyItemFromMarket, UseMarketplace
+    public static string MSG_MARKET_BOUGHT = Meta("marketplace", "buy", "info") + "{itemName} was bought for {price} coins.";
+    public static string MSG_MARKET_BOUGHT_EQUIPPED = Meta("marketplace", "buy", "info") + "{itemName} was bought and equipped for {price} coins.";
+    public static string MSG_MARKET_BOUGHT_MANY = Meta("marketplace", "buy", "info") + "{totalAmount}x {itemName} was bought for {price} coins.";
+    public static string MSG_MARKET_BOUGHT_MANY_EQUIPPED = Meta("marketplace", "buy", "info") + "{totalAmount}x {itemName} was bought and equipped for {price} coins.";
+
+    // PlayerItemDropText: built in the game, so {0} style. {0} is the player, {1} the item.
+    public static string MSG_DROP_YOU_FOUND_A = "{0} you found a {1}";
+    public static string MSG_DROP_YOU_FOUND_AN = "{0} you found an {1}";
+
+    // {0} is the item, {1} the list of players
+    public static string MSG_DROP_FOUND_BY = "{0} was found by {1}.";
+
+    // the word before the last name in a list: "A, B and C"
+    // DropEventManager
+    public static string MSG_DROP_EVENT_STARTED = Meta("system", "item drop event") + "Great news everyone! {amount}x {itemName} was dropped in the world!";
+
+    // Window resize grips
+    public static string UI_WINDOW_RESIZE = "Drag to resize";
+    public static string UI_WINDOW_RESIZE_WIDTH = "Drag to make wider or narrower";
+
+    // Item tooltips: enchantments that raise power or aim of any kind
+    public static string UI_ENCHANT_POWER = "Power";
+    public static string UI_ENCHANT_AIM = "Aim";
+
+    // Player details preview
+    public static string UI_DETAILS_PREVIEW_RESET = "Reset view";
+    public static string UI_DETAILS_PREVIEW_HINT = "Drag to turn, scroll to zoom, drag with the middle button to move.";
 }

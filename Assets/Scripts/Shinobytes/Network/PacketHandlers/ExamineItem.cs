@@ -55,7 +55,7 @@ public class ExamineItem : ChatBotCommandHandler<string>
 
         if (string.IsNullOrEmpty(queriedItem.Item.Description))
         {
-            client.SendReply(gm, "There is not much to say about {itemName}", inputQuery);
+            client.SendReply(gm, Localization.MSG_ITEM_EXAMINE_NO_DESCRIPTION, inputQuery);
             return;
         }
 

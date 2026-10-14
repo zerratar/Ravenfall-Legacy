@@ -51,7 +51,7 @@ public class SendItem : ChatBotCommandHandler<string>
         var queryParts = inputQuery.Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLower()).ToArray();
         if (queryParts.Length < 3)
         {
-            client.SendReply(gm, "When sending a whole item set, please include target player name, item type, word set. You can only send one set at a time and only unequipped items will be sent. example !send characterNumber rune set");
+            client.SendReply(gm, Localization.MSG_SEND_SET_HELP);
             return;
         }
 
@@ -64,7 +64,7 @@ public class SendItem : ChatBotCommandHandler<string>
 
         if (targetPlayer == (player.CharacterIndex + 1).ToString() || targetPlayer.Equals(player.Identifier, System.StringComparison.OrdinalIgnoreCase))
         {
-            client.SendReply(gm, "You cannot send items to yourself.");
+            client.SendReply(gm, Localization.MSG_SEND_SELF);
             return;
         }
 
@@ -82,7 +82,7 @@ public class SendItem : ChatBotCommandHandler<string>
         var itemSet = itemResolver.GetItemSet(setType);
         if (itemSet.Count == 0)
         {
-            client.SendReply(gm, "No item sets could be found matching the name {query}", setType);
+            client.SendReply(gm, Localization.MSG_ITEM_SET_NOT_FOUND, setType);
             return;
         }
 
@@ -124,22 +124,22 @@ public class SendItem : ChatBotCommandHandler<string>
             {
                 Shinobytes.Debug.LogError("Error when '" + player.Name + "' tried to send an '" + setType + "' item set to '" + targetPlayer + "'. " + sentItems.Count + " out of " + itemsToSend.Count + " was sent. Exception: " + exc);
             }
-            var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", sentItems.Select(x => x.Name).ToArray()), ", ", " and ");
+            var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", sentItems.Select(x => x.Name).ToArray()), ", ", Localization.MSG_LIST_AND);
             if (sentItems.Count != itemSet.Count)
             {
-                client.SendReply(gm, "You have sent {itemCount} out of {itemSetCount} from the {setType} set to {targetPlayerName}! The items sent was {itemList}", sentItems.Count, itemSet.Count, setType, targetPlayer, itemList);
+                client.SendReply(gm, Localization.MSG_SEND_SET_PARTIAL, sentItems.Count, itemSet.Count, setType, targetPlayer, itemList);
             }
             else
             {
-                var a = "a";
-                if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') a = "an";
-                client.SendReply(gm, "You have sent " + a + " {setType} set to {targetPlayerName}! The items sent was {itemList}",
+                var format = Localization.MSG_SEND_SET_A;
+                if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') format = Localization.MSG_SEND_SET_AN;
+                client.SendReply(gm, format,
                     setType, targetPlayer, itemList);
             }
         }
         else
         {
-            client.SendReply(gm, "You do not have any of the items in the set '{query}'", setType);
+            client.SendReply(gm, Localization.MSG_ITEM_SET_NONE_OWNED, setType);
         }
     }
 
@@ -153,7 +153,7 @@ public class SendItem : ChatBotCommandHandler<string>
 
         if (item.PlayerName == (player.CharacterIndex + 1).ToString() || item.PlayerName.Equals(player.Identifier, System.StringComparison.OrdinalIgnoreCase))
         {
-            client.SendReply(gm, "You cannot send items to yourself.");
+            client.SendReply(gm, Localization.MSG_SEND_SELF);
             return;
         }
 

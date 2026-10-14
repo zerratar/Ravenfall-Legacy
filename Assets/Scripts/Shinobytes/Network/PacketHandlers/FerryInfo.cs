@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-public class FerryInfo : ChatBotCommandHandler
+﻿public class FerryInfo : ChatBotCommandHandler
 {
     public FerryInfo(
        GameManager game,
@@ -20,27 +18,27 @@ public class FerryInfo : ChatBotCommandHandler
         }
 
         var ferryStats = Game.GetFerryStats();
-        var msg = new StringBuilder();
+        var msg = new ReplyMessageBuilder();
 
         if (!string.IsNullOrEmpty(ferryStats.Destination))
         {
-            msg.Append($"The ferry is currently sailing towards {ferryStats.Destination} with {ferryStats.PlayersCount} players on board.");
+            msg.Add(Localization.MSG_FERRY_INFO_DESTINATION, ferryStats.Destination, ferryStats.PlayersCount);
         }
         else
         {
-            msg.Append($"The ferry is currently sailing with {ferryStats.PlayersCount} players on board.");
+            msg.Add(Localization.MSG_FERRY_INFO, ferryStats.PlayersCount);
         }
 
         var ferryCaptain = Game.Ferry.Captain;
         if (ferryCaptain)
         {
-            msg.Append(" " + ferryCaptain.Name + " is the captain with " + ferryCaptain.Stats.Sailing.MaxLevel + " sailing.");
+            msg.Add(Localization.MSG_FERRY_INFO_CAPTAIN, ferryCaptain.Name, ferryCaptain.Stats.Sailing.MaxLevel);
         }
 
         if (Game.Ferry.IsFerryBoostActive)
         {
-            msg.Append(" There is an active ferry boost giving 5x the speed, boost ends in " + Game.Ferry.GetRemainingBoostTime() + ".");
+            msg.Add(Localization.MSG_FERRY_INFO_BOOST, Game.Ferry.GetRemainingBoostTime());
         }
-        client.SendReply(gm, msg.ToString());
+        client.SendReply(gm, msg.ToString(), msg.Arguments);
     }
 }

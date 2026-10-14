@@ -43,11 +43,11 @@ public class SetVillageHuts : ChatBotCommandHandler<string>
         else if (!System.Enum.TryParse<TownHouseSlotType>(str, true, out result))
         {
             // meh, we will be a little bit harsh here. They have to spell it correctly
-            client.SendReply(gm, "{targetName} is not a valid skill name for the huts. Make sure you use the full and proper names. Ex. Healing and not heal.", str);
+            client.SendReply(gm, Localization.MSG_VILLAGE_HUTS_INVALID_SKILL, str);
             return;
         }
 
-        client.SendReply(gm, "Updating village to target {targetName}. Please wait..", str);
+        client.SendReply(gm, Localization.MSG_VILLAGE_HUTS_UPDATING, str);
 
         await Game.Village.SetVillageBoostTarget(result);
 

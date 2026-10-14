@@ -35,7 +35,7 @@
                     p.Unstuck(true, 5);
                 }
 
-                client.SendReply(gm, "Unstucking all players.");
+                client.SendReply(gm, Localization.MSG_UNSTUCK_ALL);
                 return;
             }
 
@@ -53,11 +53,11 @@
 
                 if (count > 0)
                 {
-                    client.SendReply(gm, "{playerCount} players set to train All.", count);
+                    client.SendReply(gm, Localization.MSG_UNSTUCK_TRAINING_SET, count);
                     return;
                 }
 
-                client.SendReply(gm, "No players eligible for setting training to All.", count);
+                client.SendReply(gm, Localization.MSG_UNSTUCK_TRAINING_NONE, count);
                 return;
             }
 
@@ -71,7 +71,7 @@
         var result = player.Unstuck();
         if (!result)
         {
-            client.SendReply(gm, "Unstuck command can only be used once every 30s per character.");
+            client.SendReply(gm, Localization.MSG_UNSTUCK_COOLDOWN);
         }
     }
 }

@@ -515,7 +515,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
             items.Add(player.PlayerName);
         }
-        return new PlayerItemDropText(droppedItems, ItemDropMessageSettings);
+        return new PlayerItemDropText(droppedItems, ItemDropMessageSettings, Localization.ItemDropWording());
     }
 
     private void SetupStreamLabels()
@@ -1175,7 +1175,7 @@ public class GameManager : MonoBehaviour, IGameManager
             {
                 if (AlertExpiredStateCacheInChat)
                 {
-                    RavenBot.Announce("Player restore state file has expired. No players has been added back.");
+                    RavenBot.Announce(Localization.MSG_RESTORE_STATE_EXPIRED);
                 }
 
                 stateFileStatusReported = true;
@@ -1185,7 +1185,7 @@ public class GameManager : MonoBehaviour, IGameManager
             {
                 if (AlertExpiredStateCacheInChat)
                 {
-                    RavenBot.Announce("Player restore state file has expired. No players has been added back.");
+                    RavenBot.Announce(Localization.MSG_RESTORE_STATE_EXPIRED);
                 }
 
                 RavenNest.Game.ClearPlayersAsync();
@@ -2732,20 +2732,20 @@ public class GameManager : MonoBehaviour, IGameManager
             var plr = players[0];
             if (plr.dungeonHandler.AutoJoinCounter > 0 && plr.dungeonHandler.AutoJoinCounter < int.MaxValue)
             {
-                RavenBot.SendReply(plr, "You have automatically joined the dungeon! You will join {counter} more.", plr.dungeonHandler.AutoJoinCounter.ToString());
+                RavenBot.SendReply(plr, Localization.MSG_AUTOJOIN_DUNGEON_JOINED_COUNTER, plr.dungeonHandler.AutoJoinCounter.ToString());
             }
             else
             {
-                RavenBot.SendReply(plr, "You have automatically joined the dungeon!");
+                RavenBot.SendReply(plr, Localization.MSG_AUTOJOIN_DUNGEON_JOINED);
             }
         }
         else if (players.Count < 10)
         {
-            RavenBot.Announce("{playerNames} have automatically joined the dungeon!", playerNames);
+            RavenBot.Announce(Localization.MSG_AUTOJOIN_DUNGEON_JOINED_NAMES, playerNames);
         }
         else
         {
-            RavenBot.Announce("{playerCount} players have automatically joined the dungeon!", players.Count.ToString());
+            RavenBot.Announce(Localization.MSG_AUTOJOIN_DUNGEON_JOINED_COUNT, players.Count.ToString());
         }
     }
 
@@ -2759,15 +2759,15 @@ public class GameManager : MonoBehaviour, IGameManager
             var playerNames = string.Join(", ", playersToReport.Select(x => "@" + x.Name));
             if (playersToReport.Count == 1)
             {
-                RavenBot.SendReply(playersToReport[0], "You have failed to join the dungeon. Make sure you have enough coins to automatically join.");
+                RavenBot.SendReply(playersToReport[0], Localization.MSG_AUTOJOIN_DUNGEON_FAILED);
             }
             else if (playersToReport.Count < 10)
             {
-                RavenBot.Announce("{playerNames} failed to joined the dungeon. You may not have enough coins.", playerNames);
+                RavenBot.Announce(Localization.MSG_AUTOJOIN_DUNGEON_FAILED_NAMES, playerNames);
             }
             else
             {
-                RavenBot.Announce("{playerCount} players failed to join the dungeon.", playersToReport.Count.ToString());
+                RavenBot.Announce(Localization.MSG_AUTOJOIN_DUNGEON_FAILED_COUNT, playersToReport.Count.ToString());
             }
         }
 
@@ -2784,15 +2784,15 @@ public class GameManager : MonoBehaviour, IGameManager
             var playerNames = string.Join(", ", playersToReport.Select(x => "@" + x.Name));
             if (playersToReport.Count == 1)
             {
-                RavenBot.SendReply(playersToReport[0], "You have failed to join the raid. Make sure you have enough coins to automatically join.");
+                RavenBot.SendReply(playersToReport[0], Localization.MSG_AUTOJOIN_RAID_FAILED);
             }
             else if (playersToReport.Count < 10)
             {
-                RavenBot.Announce("{playerNames} failed to joined the raid. You may not have enough coins.", playerNames);
+                RavenBot.Announce(Localization.MSG_AUTOJOIN_RAID_FAILED_NAMES, playerNames);
             }
             else
             {
-                RavenBot.Announce("{playerCount} players failed to join the raid.", playersToReport.Count.ToString());
+                RavenBot.Announce(Localization.MSG_AUTOJOIN_RAID_FAILED_COUNT, playersToReport.Count.ToString());
             }
         }
 
@@ -2808,20 +2808,20 @@ public class GameManager : MonoBehaviour, IGameManager
             var plr = players[0];
             if (plr.raidHandler.AutoJoinCounter > 0 && plr.raidHandler.AutoJoinCounter < int.MaxValue)
             {
-                RavenBot.SendReply(plr, "You have automatically joined the raid! You will join {counter} more.", plr.raidHandler.AutoJoinCounter);
+                RavenBot.SendReply(plr, Localization.MSG_AUTOJOIN_RAID_JOINED_COUNTER, plr.raidHandler.AutoJoinCounter);
             }
             else
             {
-                RavenBot.SendReply(plr, "You have automatically joined the raid!");
+                RavenBot.SendReply(plr, Localization.MSG_AUTOJOIN_RAID_JOINED);
             }
         }
         else if (players.Count < 10)
         {
-            RavenBot.Announce("{playerNames} have automatically joined the raid!", playerNames);
+            RavenBot.Announce(Localization.MSG_AUTOJOIN_RAID_JOINED_NAMES, playerNames);
         }
         else
         {
-            RavenBot.Announce("{playerCount} players have automatically joined the raid!", players.Count.ToString());
+            RavenBot.Announce(Localization.MSG_AUTOJOIN_RAID_JOINED_COUNT, players.Count.ToString());
         }
     }
 

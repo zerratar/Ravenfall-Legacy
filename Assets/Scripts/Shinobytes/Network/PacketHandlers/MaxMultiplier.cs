@@ -28,9 +28,11 @@ public class MaxMultiplier : ChatBotCommandHandler
 
         // Prepare global boost info if active
         string globalBoostInfo = "";
+        object[] globalArgs = new object[0];
         if (Game.Boost.Active)
         {
-            globalBoostInfo = $" and {Game.Boost.Multiplier}x from global exp multiplier for {Utility.FormatTime(Game.Boost.TimeLeft)}";
+            globalBoostInfo = Localization.MSG_EXPBOOST_GLOBAL_PART;
+            globalArgs = new object[] { Game.Boost.Multiplier, Utility.FormatTime(Game.Boost.TimeLeft) };
             multi += Game.Boost.Multiplier;
         }
 
@@ -59,8 +61,20 @@ public class MaxMultiplier : ChatBotCommandHandler
             rested = true;
         }
 
-        // Helper to append global boost info
-        string AppendGlobal(string msg) => msg + globalBoostInfo;
+        // Sends the reply with the global boost info appended, and the rested part after it when asked for.
+        // The parts are joined after translation, so the args follow the order of the parts.
+        void Reply(string format, bool restedPart, params object[] args)
+        {
+            var allArgs = new System.Collections.Generic.List<object>(args);
+            allArgs.AddRange(globalArgs);
+            format += globalBoostInfo;
+            if (restedPart)
+            {
+                format += Localization.MSG_EXPBOOST_RESTED_PART;
+                allArgs.Add((float)player.Rested.ExpBoost);
+            }
+            client.SendReply(gm, format, allArgs.ToArray());
+        }
 
         if (rested)
         {
@@ -68,22 +82,22 @@ public class MaxMultiplier : ChatBotCommandHandler
             {
                 if (tierSub > 0)
                 {
-                    client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon, {hutMulti}x from huts") + " and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, hutMulti, (float)player.Rested.ExpBoost);
+                    Reply(Localization.MSG_EXPBOOST_TIER_HUTS_LIST, true, multi, tierSub, hutMulti);
                 }
                 else
                 {
-                    client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts") + " and the total is multiplied by {restedMulti}x from being rested.", multi, hutMulti, (float)player.Rested.ExpBoost);
+                    Reply(Localization.MSG_EXPBOOST_HUTS, true, multi, hutMulti);
                 }
                 return;
             }
 
             if (tierSub > 0)
             {
-                client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon") + " and the total is multiplied by {restedMulti}x from being rested.", multi, tierSub, (float)player.Rested.ExpBoost);
+                Reply(Localization.MSG_EXPBOOST_TIER, true, multi, tierSub);
             }
             else
             {
-                client.SendReply(gm, AppendGlobal("You're gaining {expMulti}x more exp for being rested"), multi);
+                Reply(Localization.MSG_EXPBOOST_RESTED_ONLY, false, multi);
             }
             return;
         }
@@ -92,22 +106,22 @@ public class MaxMultiplier : ChatBotCommandHandler
         {
             if (tierSub > 0)
             {
-                client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon and {hutMulti}x from huts"), multi, tierSub, hutMulti);
+                Reply(Localization.MSG_EXPBOOST_TIER_AND_HUTS, false, multi, tierSub, hutMulti);
             }
             else
             {
-                client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {hutMulti}x from huts"), multi, hutMulti);
+                Reply(Localization.MSG_EXPBOOST_HUTS, false, multi, hutMulti);
             }
             return;
         }
 
         if (tierSub > 0)
         {
-            client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x. You gain {tierMulti}x from sub/patreon"), multi, tierSub);
+            Reply(Localization.MSG_EXPBOOST_TIER, false, multi, tierSub);
         }
         else
         {
-            client.SendReply(gm, AppendGlobal("Your current exp boost: {expMulti}x"), multi);
+            Reply(Localization.MSG_EXPBOOST, false, multi);
         }
     }
 }

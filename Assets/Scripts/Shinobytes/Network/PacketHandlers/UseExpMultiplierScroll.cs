@@ -45,7 +45,7 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<int>
             {
                 if (result.Used == 0 || Game.Boost.Multiplier >= expLimit || Game.Boost.Active && Game.Boost.Multiplier >= Game.Twitch.ExpMultiplierLimit)
                 {
-                    client.SendReply(gm, "The maximum multiplier has already been reached.");
+                    client.SendReply(gm, Localization.MSG_EXP_SCROLL_MAX_REACHED);
                     return;
                 }
 
@@ -54,11 +54,11 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<int>
 
                 if (used > 1)
                 {
-                    client.SendReply(gm, "You have used {scrollCount} Exp Multiplier Scrolls. The multiplier is now at {multiplier}.", result.Used, result.Multiplier.Multiplier);
+                    client.SendReply(gm, Localization.MSG_EXP_SCROLL_USED_MANY, result.Used, result.Multiplier.Multiplier);
                 }
                 else
                 {
-                    client.SendReply(gm, "You have used an Exp Multiplier Scroll. The multiplier is now at {multiplier}.", result.Multiplier.Multiplier);
+                    client.SendReply(gm, Localization.MSG_EXP_SCROLL_USED_ONE, result.Multiplier.Multiplier);
                 }
 
                 return;
@@ -66,17 +66,17 @@ public class UseExpMultiplierScroll : ChatBotCommandHandler<int>
 
             if (result.Result == ScrollUseResult.InsufficientScrolls)
             {
-                client.SendReply(gm, "You do not have any Exp Multiplier Scrolls! Redeem them under streamer loyalty on the website.");
+                client.SendReply(gm, Localization.MSG_EXP_SCROLL_NONE);
                 return;
             }
 
-            client.SendReply(gm, "Unable to use any scrolls at this time, game may be out of sync. Try again later.");
+            client.SendReply(gm, Localization.MSG_EXP_SCROLL_OUT_OF_SYNC);
         }
         catch (Exception exc)
         {
             var playerName = player?.Name;
             Shinobytes.Debug.LogError("Exception using multiplier scroll, Player: " + playerName + ", Scrolls: " + scrollCount + ", Error: " + exc);
-            client.SendReply(gm, "Unable to use any scrolls at this time, game may be out of sync. Try again later. Error has been logged.");
+            client.SendReply(gm, Localization.MSG_EXP_SCROLL_ERROR);
         }
         finally
         {

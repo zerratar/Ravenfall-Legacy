@@ -217,11 +217,11 @@ public class StreamRaidManager : MonoBehaviour, IEvent
         if (raidWar)
         {
             IsWar = true;
-            AnnounceWarMessage($"<b>{raidInfo.RaiderUserName}</b> has declared war with an army of <b>{raidInfo.Players.Count}</b>!");
+            AnnounceWarMessage(string.Format(Localization.UI_STREAMRAID_WAR_DECLARED, raidInfo.RaiderUserName, raidInfo.Players.Count));
             return;
         }
 
-        AnnounceRaidMessage($"Friendly raid from <b>{raidInfo.RaiderUserName}</b> with <b>{raidInfo.Players.Count}</b> players!");
+        AnnounceRaidMessage(string.Format(Localization.UI_STREAMRAID_FRIENDLY_RAID, raidInfo.RaiderUserName, raidInfo.Players.Count));
     }
 
     private void AnnounceDefendersWon()

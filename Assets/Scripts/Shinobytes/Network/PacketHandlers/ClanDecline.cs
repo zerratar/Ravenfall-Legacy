@@ -17,13 +17,13 @@
         var result = await Game.RavenNest.Clan.DeclineInviteAsync(plr.Id, data);
         if (result.Success)
         {
-            client.SendReply(gm, "You have declined the most recent clan invite.");
+            client.SendReply(gm, Localization.MSG_CLAN_DECLINED);
             return;
         }
 
         client.SendReply(gm,
             result.ErrorMessage ??
-            "Unable to decline clan invite. Either you don't have any invites or server is bonkers.");
+            Localization.MSG_CLAN_DECLINE_FAILED);
         return;
     }
 }

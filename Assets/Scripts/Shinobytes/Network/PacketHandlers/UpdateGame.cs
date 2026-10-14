@@ -20,7 +20,7 @@ public class UpdateGame : ChatBotCommandHandler
             if (!Game.NewUpdateAvailable && isFirstTime)
             {
                 isFirstTime = false;
-                client.SendReply(gm, "There are no new version available. If you want to forcibly update then use the command one more time.");
+                client.SendReply(gm, Localization.MSG_UPDATE_NO_NEW_VERSION);
                 return;
             }
 
@@ -46,7 +46,7 @@ public class UpdateGame : ChatBotCommandHandler
         if (!Game.NewUpdateAvailable && isFirstTime)
         {
             isFirstTime = false;
-            client.SendReply(gm, "There are no new version available. If you want to forcibly update then use the command one more time.");
+            client.SendReply(gm, Localization.MSG_UPDATE_NO_NEW_VERSION);
             return;
         }
 

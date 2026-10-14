@@ -185,19 +185,19 @@ public class EnchantItem : ChatBotCommandHandler<string>
     {
         if (cooldown.Hours > 0)
         {
-            return (int)cooldown.TotalHours + " hours";
+            return string.Format(Localization.MSG_ENCHANT_TIME_HOURS, (int)cooldown.TotalHours);
         }
 
         if (cooldown.Minutes > 0)
         {
-            return (int)cooldown.TotalMinutes + " minutes";
+            return string.Format(Localization.MSG_ENCHANT_TIME_MINUTES, (int)cooldown.TotalMinutes);
         }
 
         if (cooldown.Seconds > 0)
         {
-            return (int)cooldown.TotalSeconds + " seconds";
+            return string.Format(Localization.MSG_ENCHANT_TIME_SECONDS, (int)cooldown.TotalSeconds);
         }
 
-        return "a moment";
+        return Localization.MSG_ENCHANT_TIME_MOMENT;
     }
 }

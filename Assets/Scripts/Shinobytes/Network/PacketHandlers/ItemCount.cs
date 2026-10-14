@@ -53,6 +53,6 @@ public class ItemCount : ChatBotCommandHandler<string>
             itemAmount = player.Inventory.GetInventoryItemsByItemId(item.Item.Id).AsList(x => x.Enchantments?.Count == 0).Sum(x => x.Amount);
         }
 
-        client.SendReply(gm, "You have {itemCount}x {itemName}(s).", itemAmount, item.Name);
+        client.SendReply(gm, Localization.MSG_ITEM_COUNT, itemAmount, item.Name);
     }
 }

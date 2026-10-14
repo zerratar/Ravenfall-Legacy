@@ -71,7 +71,7 @@ public class KickPlayer : ChatBotCommandHandler<User>
                 Game.RemovePlayer(plr);
             }
 
-            client.SendReply(gm, "{kickedPlayerCount} players was kicked from the game.", kickedPlayerCount.ToString());
+            client.SendReply(gm, Localization.MSG_KICK_AFK_COUNT, kickedPlayerCount.ToString());
             return;
         }
 
@@ -96,18 +96,18 @@ public class KickPlayer : ChatBotCommandHandler<User>
                 Game.RemovePlayer(playerToKick);
             }
 
-            client.SendReply(gm, "{player} was kicked from the game.", playerToKick.PlayerName);
+            client.SendReply(gm, Localization.MSG_KICK_PLAYER, playerToKick.PlayerName);
         }
         else
         {
             var similarPlayerName = PlayerManager.GetAllPlayers().FirstOrDefault(x => x.Name.ToLower().StartsWith(data.Username));
             if (similarPlayerName != null)
             {
-                client.SendReply(gm, "No players with the name '{player}' is playing. Did you mean " + similarPlayerName.Name + "?", data.Username);
+                client.SendReply(gm, Localization.MSG_KICK_NOT_FOUND_SUGGEST, data.Username, similarPlayerName.Name);
             }
             else
             {
-                client.SendReply(gm, "No players with the name '{player}' is playing.", data.Username);
+                client.SendReply(gm, Localization.MSG_KICK_NOT_FOUND, data.Username);
             }
         }
     }

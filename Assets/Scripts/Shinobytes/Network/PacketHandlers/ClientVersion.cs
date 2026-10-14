@@ -6,6 +6,6 @@
     }
     public override void Handle(User data, GameMessage gm, GameClient client)
     {
-        client.SendReply(gm, "The streamer is currently running Ravenfall v{version}", Ravenfall.Version);
+        client.SendReply(gm, Localization.MSG_CLIENT_VERSION, Ravenfall.Version);
     }
 }

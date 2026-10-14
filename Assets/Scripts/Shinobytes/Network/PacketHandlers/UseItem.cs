@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using RavenNest.Models;
 
 public class UseItem : ChatBotCommandHandler<string>
@@ -98,13 +99,13 @@ public class UseItem : ChatBotCommandHandler<string>
 
         if (queriedItem.Item.Type != ItemType.Food && queriedItem.Item.Type != ItemType.Scroll && queriedItem.Item.Type != ItemType.Potion)
         {
-            client.SendReply(gm, "{itemName} cannot be used.", queriedItem.Item.Name);
+            client.SendReply(gm, Localization.MSG_USE_ITEM_CANNOT_USE, queriedItem.Item.Name);
             return;
         }
 
         if (queriedItem.Item.Name.Contains("tome of", StringComparison.OrdinalIgnoreCase))
         {
-            client.SendReply(gm, "{itemName} cannot be used directly, use !teleport <island> instead.", queriedItem.Item.Name);
+            client.SendReply(gm, Localization.MSG_USE_ITEM_TOME, queriedItem.Item.Name);
             return;
         }
 
@@ -113,7 +114,7 @@ public class UseItem : ChatBotCommandHandler<string>
             // check if we have an active ferry boost.
             if (Game.Ferry.IsFerryBoostActive)
             {
-                client.SendReply(gm, "There is already a ferry boost active. It will last for " + Game.Ferry.GetRemainingBoostTime());
+                client.SendReply(gm, Localization.MSG_USE_ITEM_FERRY_BOOST_ACTIVE, Game.Ferry.GetRemainingBoostTime());
                 return;
             }
         }
@@ -121,40 +122,39 @@ public class UseItem : ChatBotCommandHandler<string>
         var result = await Game.RavenNest.Players.UseItemAsync(player.Id, queriedItem.InventoryItem.InstanceId);
         if (result == null || result.InventoryItemId == Guid.Empty)
         {
-            client.SendReply(gm, "{itemName} can not be used right now.", queriedItem.InventoryItem.Name);
+            client.SendReply(gm, Localization.MSG_USE_ITEM_NOT_NOW, queriedItem.InventoryItem.Name);
             return;
         }
 
         if (result.Effects.Count == 0)
         {
-            client.SendReply(gm, "Nothing good will happen if you play with {itemName}.", queriedItem.InventoryItem.Name);
+            client.SendReply(gm, Localization.MSG_USE_ITEM_NO_EFFECT, queriedItem.InventoryItem.Name);
             return;
         }
 
         player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount);
 
         // depending on item type, change the term.
-        var term = "have used";
-
+        var message = Localization.MSG_USE_ITEM_USED;
+        var startsWithVowel = Utility.IsVocal(queriedItem.Item.Name.ToLower()[0]);
 
         // special case until its been corrected into a potion
         if (queriedItem.Item.Name.Equals("red wine", StringComparison.OrdinalIgnoreCase) || queriedItem.Item.Type == ItemType.Potion)
         {
-            term = "drank " + (Utility.IsVocal(queriedItem.Item.Name.ToLower()[0]) ? "an" : "a");
+            message = startsWithVowel ? Localization.MSG_USE_ITEM_DRANK_AN : Localization.MSG_USE_ITEM_DRANK_A;
         }
         else if (queriedItem.Item.Type == ItemType.Food)
         {
-            term = "ate " + (Utility.IsVocal(queriedItem.Item.Name.ToLower()[0]) ? "an" : "a");
+            message = startsWithVowel ? Localization.MSG_USE_ITEM_ATE_AN : Localization.MSG_USE_ITEM_ATE_A;
         }
 
-        var message = "You " + term + " {itemName}. ";
         var args = new List<object> { queriedItem.InventoryItem.Item.Name };
 
         if (result.Teleport)
         {
             var targetIsland = Game.Islands.Get(result.EffectIsland);
             player.teleportHandler.Teleport(targetIsland, true);
-            message += "You were teleported to {island}! ";
+            message += " " + Localization.MSG_USE_ITEM_TELEPORTED;
             args.Add(result.EffectIsland.ToString());
         }
 
@@ -165,7 +165,8 @@ public class UseItem : ChatBotCommandHandler<string>
             if (effect.Type == StatusEffectType.IncreasedFerrySpeed)
             {
                 Game.Ferry.ApplyFerryBoost(effect);
-                message += $"The ferry will now move faster for {Game.Ferry.GetRemainingBoostTime()}. ";
+                message += " " + Indexed(Localization.MSG_USE_ITEM_FERRY_FASTER, i);
+                args.Add(Game.Ferry.GetRemainingBoostTime());
                 continue;
             }
 
@@ -178,7 +179,7 @@ public class UseItem : ChatBotCommandHandler<string>
             if (effect.Type == StatusEffectType.Heal)
             {
                 var amount = player.ApplyInstantHealEffect(effect);
-                message += "You have recovered {healthAmount" + i + "} HP! ";
+                message += " " + Indexed(Localization.MSG_USE_ITEM_HEALED, i);
                 args.Add(amount.ToString());
                 continue;
             }
@@ -186,7 +187,7 @@ public class UseItem : ChatBotCommandHandler<string>
             if (effect.Type == StatusEffectType.Damage)
             {
                 var amount = player.ApplyInstantDamageEffect(effect);
-                message += "You took {damageAmount" + i + "} damage! ";
+                message += " " + Indexed(Localization.MSG_USE_ITEM_DAMAGED, i);
                 args.Add(amount.ToString());
                 continue;
             }
@@ -195,7 +196,7 @@ public class UseItem : ChatBotCommandHandler<string>
             var proc = UnityEngine.Mathf.FloorToInt((float)effect.Amount * 100);
             if (effect.Type == StatusEffectType.HealOverTime)
             {
-                message += "You will be healed {healPercent" + i + "}% of your total health over {healTotalSeconds" + i + "} seconds. ";
+                message += " " + Indexed(Localization.MSG_USE_ITEM_HEAL_OVER_TIME, i);
                 args.Add(proc.ToString().Replace(",", "."));
                 args.Add(((int)timeLeft.TotalSeconds).ToString());
             }
@@ -205,7 +206,7 @@ public class UseItem : ChatBotCommandHandler<string>
                 {
                     if (timeLeft.Seconds > 0)
                     {
-                        message += "You gained {effectPercent" + i + "}% {effectType" + i + "} for {effectMinutes" + i + "} minutes and {effectSecconds" + i + "} seconds. ";
+                        message += " " + Indexed(Localization.MSG_USE_ITEM_GAINED_MINUTES_SECONDS, i);
                         args.Add(proc.ToString().Replace(",", "."));
                         args.Add(Utility.AddSpacesToSentence(effect.Type.ToString()));
                         args.Add(timeLeft.Minutes.ToString());
@@ -213,7 +214,7 @@ public class UseItem : ChatBotCommandHandler<string>
                     }
                     else
                     {
-                        message += "You gained {effectPercent" + i + "}% {effectType" + i + "} for {effectMinutes" + i + "} minutes. ";
+                        message += " " + Indexed(Localization.MSG_USE_ITEM_GAINED_MINUTES, i);
                         args.Add(proc.ToString().Replace(",", "."));
                         args.Add(Utility.AddSpacesToSentence(effect.Type.ToString()));
                         args.Add(((int)timeLeft.TotalMinutes).ToString());
@@ -221,7 +222,7 @@ public class UseItem : ChatBotCommandHandler<string>
                 }
                 else
                 {
-                    message += "You gained {effectPercent" + i + "}% {effectType" + i + "} for {effectSeconds" + i + "} seconds. ";
+                    message += " " + Indexed(Localization.MSG_USE_ITEM_GAINED_SECONDS, i);
                     args.Add(proc.ToString().Replace(",", "."));
                     args.Add(Utility.AddSpacesToSentence(effect.Type.ToString()));
                     args.Add(((int)timeLeft.TotalSeconds).ToString());
@@ -233,5 +234,14 @@ public class UseItem : ChatBotCommandHandler<string>
 
         player.UpdateEquipmentEffect();
         client.SendReply(gm, message.Trim(), args.ToArray());
+    }
+
+    private static readonly Regex PlaceholderName = new Regex(@"\{([A-Za-z0-9]+)\}", RegexOptions.Compiled);
+
+    // The message is built from several sentences, each effect gets its own placeholder names
+    // ({healthAmount0}, {healthAmount1}) so they stay unique within the one message.
+    private static string Indexed(string format, int index)
+    {
+        return PlaceholderName.Replace(format, m => "{" + m.Groups[1].Value + index + "}");
     }
 }

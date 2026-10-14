@@ -42,7 +42,7 @@ public class GetScrollsCount : ChatBotCommandHandler
 
         if (scrolls.Count == 0)
         {
-            client.SendReply(gm, "You do not have any scrolls. You can redeem them under streamer loyalty on the website");
+            client.SendReply(gm, Localization.MSG_SCROLLS_NONE);
             return;
         }
 
@@ -68,24 +68,18 @@ public class GetScrollsCount : ChatBotCommandHandler
         GameClient client,
         ScrollInfoCollection scrolls)
     {
-        var format = "You have ";
-        for (var i = 0; i < scrolls.Count; ++i)
+        // The list is built here, so each entry and the "and" come out in the chosen language.
+        var items = "";
+        var i = 0;
+        foreach (var scroll in scrolls)
         {
-            format += "{tokenAmount" + i + "} {tokenName" + i + "}(s)";
-            if (i + 1 < scrolls.Count)
-            {
-                if (i + 2 == scrolls.Count) format += " and ";
-                else format += ", ";
-            }
-        }
-        format += ".";
-        var parameters = new List<object>();
-        foreach (var token in scrolls)
-        {
-            parameters.Add(token.Amount.ToString());
-            parameters.Add(token.Name);
+            if (i > 0) items += i + 1 == scrolls.Count ? Localization.MSG_LIST_AND : ", ";
+            items += Localization.MSG_SCROLL_COUNT_ITEM
+                .Replace("{amount}", scroll.Amount.ToString())
+                .Replace("{itemName}", scroll.Name);
+            ++i;
         }
 
-        client.SendReply(gm, format, parameters.ToArray());
+        client.SendReply(gm, Localization.MSG_SCROLL_COUNT, items);
     }
 }

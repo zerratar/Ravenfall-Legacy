@@ -14,24 +14,24 @@
 
         if (string.IsNullOrEmpty(data))
         {
-            client.SendReply(gm, "You need to specify a combat skill to set. Example: !raid skill magic");
+            client.SendReply(gm, Localization.MSG_RAID_SKILL_MISSING);
             return;
         }
 
         var targetSkill = SkillUtilities.ParseSkill(data);
         if (!targetSkill.IsCombatSkill())
         {
-            client.SendReply(gm, "No such combat skill: {skill}", data);
+            client.SendReply(gm, Localization.MSG_COMBAT_SKILL_NOT_FOUND, data);
             return;
         }
 
-        var skillName = targetSkill.ToString();
+        var skillName = Localization.SkillName(targetSkill);
         if (targetSkill == RavenNest.Models.Skill.Health || targetSkill == RavenNest.Models.Skill.Melee)
         {
-            skillName = "All";
+            skillName = Localization.UI_SKILL_ALL;
         }
 
         player.raidHandler.SetSkill(targetSkill);
-        client.SendReply(gm, "Your combat skill during raids has been set to {skill}.", skillName);
+        client.SendReply(gm, Localization.MSG_RAID_SKILL_SET, skillName);
     }
 }

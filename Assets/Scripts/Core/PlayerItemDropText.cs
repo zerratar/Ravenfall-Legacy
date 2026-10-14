@@ -2,16 +2,37 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 
+/// <summary>
+/// The words around the names in an item drop message. English by default; the game passes its
+/// translation, which this assembly cannot see.
+/// </summary>
+public sealed class PlayerItemDropWording
+{
+    /// <summary>{0} is the player, {1} an item starting with a consonant.</summary>
+    public string YouFoundA = "{0} you found a {1}";
+    /// <summary>{0} is the player, {1} an item starting with a vowel.</summary>
+    public string YouFoundAn = "{0} you found an {1}";
+    /// <summary>{0} is the item, {1} the list of players.</summary>
+    public string FoundBy = "{0} was found by {1}.";
+    /// <summary>Before the last name in a list.</summary>
+    public string And = " and ";
+
+    public static readonly PlayerItemDropWording English = new PlayerItemDropWording();
+}
+
 public class PlayerItemDropText
 {
     private readonly IReadOnlyList<string> messages;
+    private readonly PlayerItemDropWording wording;
 
     public int Count { get; private set; }
     public IReadOnlyList<string> Messages => messages;
     public PlayerItemDropText(
         Dictionary<string, List<string>> droppedItems,
-        PlayerItemDropMessageSettings settings)
+        PlayerItemDropMessageSettings settings,
+        PlayerItemDropWording wording = null)
     {
+        this.wording = wording ?? PlayerItemDropWording.English;
         this.messages = this.Process(droppedItems, settings);
     }
 
@@ -87,7 +108,7 @@ public class PlayerItemDropText
                 {
                     for (int i = 0; i < playersRef.Count; i++)
                     {
-                        Append(playersRef[i] + " you found " + (IsVocal(itemName[0]) ? "an " : "a ") + itemName);
+                        Append(string.Format(IsVocal(itemName[0]) ? wording.YouFoundAn : wording.YouFoundA, playersRef[i], itemName));
                         Next();
                     }
                     continue;
@@ -99,36 +120,37 @@ public class PlayerItemDropText
                     // the limit, which chat then rejects - so the players were never told. Split
                     // the receiver list into as many messages as it takes instead, repeating the
                     // item prefix on each.
-                    var prefix = itemName + " was found by ";
+                    var format = wording.FoundBy;
+                    var and = wording.And;
                     var group = new List<string>();
-                    // prefix plus the trailing ". "
-                    var groupLength = prefix.Length + 2;
+                    // the sentence around the names, plus the trailing space
+                    var overhead = string.Format(format, itemName, string.Empty).Length + 1;
+                    var groupLength = overhead;
 
                     void FlushGroup()
                     {
                         if (group.Count == 0) return;
 
-                        var text = prefix;
+                        var names = new StringBuilder();
                         for (int i = 0; i < group.Count; i++)
                         {
                             if (i > 0)
                             {
-                                text += (i == group.Count - 1) ? " and " : ", ";
+                                names.Append((i == group.Count - 1) ? and : ", ");
                             }
-                            text += group[i];
+                            names.Append(group[i]);
                         }
-                        text += ". ";
 
-                        Append(text);
+                        Append(string.Format(format, itemName, names) + " ");
                         group.Clear();
-                        groupLength = prefix.Length + 2;
+                        groupLength = overhead;
                     }
 
                     for (int i = 0; i < playersRef.Count; i++)
                     {
                         var player = playersRef[i];
-                        // worst case separator is " and " (5 chars)
-                        var separatorLength = group.Count == 0 ? 0 : 5;
+                        // worst case separator is the "and" before the last name
+                        var separatorLength = group.Count == 0 ? 0 : System.Math.Max(and.Length, 2);
 
                         if (group.Count > 0 && groupLength + separatorLength + player.Length >= maxLength)
                         {

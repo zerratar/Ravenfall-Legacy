@@ -26,7 +26,7 @@
         var now = System.DateTime.UtcNow;
         if (result == null)
         {
-            client.SendReply(gm, "Unable to get cooldown from the server right now. Please try again later.");
+            client.SendReply(gm, Localization.MSG_ENCHANT_COOLDOWN_UNAVAILABLE);
             return;
         }
 
@@ -34,7 +34,7 @@
 
         if (cooldownExpires <= now)
         {
-            client.SendReply(gm, "You do not have any cooldown.");
+            client.SendReply(gm, Localization.MSG_ENCHANT_NO_COOLDOWN);
             return;
         }
 
@@ -42,7 +42,7 @@
         var cooldown = cooldownExpires - now;
         var cooldownString = GetCooldownString(cooldown);
         var totalCost = (long)(clearCost * cooldown.TotalSeconds);
-        client.SendReply(gm, "You have to wait {timeLeft} before you can try to enchant something again. If you want to clear this cooldown, use !enchant clear cooldown, this will cost {pricePerSecond} coins per second. ~Total {totalCost} coins",
+        client.SendReply(gm, Localization.MSG_ENCHANT_COOLDOWN_CLEAR_INFO,
             cooldownString, clearCost, totalCost);
     }
 
@@ -51,24 +51,24 @@
         if (cooldown.Hours > 0)
         {
             if (cooldown.Hours == 1)
-                return "1 hour";
-            return (int)cooldown.TotalHours + " hours";
+                return Localization.MSG_ENCHANT_TIME_ONE_HOUR;
+            return string.Format(Localization.MSG_ENCHANT_TIME_HOURS, (int)cooldown.TotalHours);
         }
 
         if (cooldown.Minutes > 0)
         {
             if (cooldown.Minutes == 1)
-                return "1 minute";
-            return (int)cooldown.TotalMinutes + " minutes";
+                return Localization.MSG_ENCHANT_TIME_ONE_MINUTE;
+            return string.Format(Localization.MSG_ENCHANT_TIME_MINUTES, (int)cooldown.TotalMinutes);
         }
 
         if (cooldown.Seconds > 0)
         {
             if (cooldown.Seconds == 1)
-                return "1 second";
-            return (int)cooldown.TotalSeconds + " seconds";
+                return Localization.MSG_ENCHANT_TIME_ONE_SECOND;
+            return string.Format(Localization.MSG_ENCHANT_TIME_SECONDS, (int)cooldown.TotalSeconds);
         }
 
-        return "a moment";
+        return Localization.MSG_ENCHANT_TIME_MOMENT;
     }
 }

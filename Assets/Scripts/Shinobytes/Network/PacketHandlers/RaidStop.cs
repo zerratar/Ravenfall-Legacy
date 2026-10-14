@@ -25,7 +25,7 @@
             }
 
             Game.Raid.EndRaid(false, true);
-            client.SendReply(gm, "Raid has been forcibly stopped.");
+            client.SendReply(gm, Localization.MSG_RAID_FORCE_STOPPED);
         }
         catch (System.Exception exc)
         {

@@ -12,7 +12,7 @@ public class RaidStreamer : ChatBotCommandHandler<StreamerRaid>
 
     public override async void Handle(StreamerRaid data, GameMessage gm, GameClient client)
     {
-        client.SendReply(gm, Localization.MSG_REQ_RAID, data.War ? "war raid" : "raid", data.Player.Username);
+        client.SendReply(gm, Localization.MSG_REQ_RAID, data.War ? Localization.MSG_REQ_RAID_TYPE_WAR : Localization.MSG_REQ_RAID_TYPE_RAID, data.Player.Username);
         if (await Game.RavenNest.EndSessionAndRaidAsync(data.Player.Username, data.War))
         {
             client.SendReply(gm, Localization.MSG_REQ_RAID_SOON);

@@ -610,7 +610,7 @@ namespace Shinobytes.UI
                 ["Rune Platebody"] = new List<string> { "Zerratar", "SirClucksworth" },
                 ["Golden Egg"] = new List<string> { "SirClucksworth" },
             };
-            var text = new PlayerItemDropText(drops, (PlayerItemDropMessageSettings)setting);
+            var text = new PlayerItemDropText(drops, (PlayerItemDropMessageSettings)setting, Localization.ItemDropWording());
             return text.Messages.Count == 0 ? Localization.UI_SETTINGS_DROPS_NONE : string.Join("\n", text.Messages);
         }
 

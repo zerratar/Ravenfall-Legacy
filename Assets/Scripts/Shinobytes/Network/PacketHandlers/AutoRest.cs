@@ -25,11 +25,11 @@
         var autoRestStop = int.Parse(data.Values[1]?.ToString());
         if (!plr.onsenHandler.SetAutoRest(autoRestStart, autoRestStop))
         {
-            client.SendReply(gm, "Failed to set auto rest values. Make sure the start value is lower than the stop value.");
+            client.SendReply(gm, Localization.MSG_AUTOREST_SET_FAILED);
         }
         else
         {
-            client.SendReply(gm, "Auto Rest has been activated, every time you start resting will cost you {coins} coins per second you rest.", autoJoinCost);
+            client.SendReply(gm, Localization.MSG_AUTOREST_ACTIVATED, autoJoinCost);
         }
     }
 }

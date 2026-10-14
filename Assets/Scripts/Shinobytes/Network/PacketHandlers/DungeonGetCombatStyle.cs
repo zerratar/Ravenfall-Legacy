@@ -14,10 +14,10 @@
 
         if (player.DungeonSkill == null)
         {
-            client.SendReply(gm, "Your dungeon skill is not set. Use !dungeon skill <skill> to set it.");
+            client.SendReply(gm, Localization.MSG_DUNGEON_SKILL_NOT_SET);
             return;
         }
 
-        client.SendReply(gm, "Your dungeon skill is set to " + player.DungeonSkill);
+        client.SendReply(gm, Localization.MSG_DUNGEON_SKILL_CURRENT, Localization.SkillName(player.DungeonSkill.Value));
     }
 }

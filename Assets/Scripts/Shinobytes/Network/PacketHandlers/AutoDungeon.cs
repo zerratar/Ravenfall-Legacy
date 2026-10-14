@@ -27,39 +27,39 @@ public class AutoDungeon : ChatBotCommandHandler<string>
             {
                 player.dungeonHandler.AutoJoinCounter = Math.Max(0, count);
                 if (before != player.dungeonHandler.AutoJoinCounter)
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off. It will cost {cost} each time you automatically join a dungeon.", player.dungeonHandler.AutoJoinCounter, autoJoinCost);
+                    client.SendReply(gm, Localization.MSG_DUNGEON_AUTOJOIN_COUNT, player.dungeonHandler.AutoJoinCounter, autoJoinCost);
             }
             else if (l == "count" || l == "status" || l == "stats" || l == "left" || l == "state")
             {
                 if (player.dungeonHandler.AutoJoinCounter == int.MaxValue)
                 {
-                    client.SendReply(gm, "You will automatically join dungeons until you use !dungeon join off.");
+                    client.SendReply(gm, Localization.MSG_DUNGEON_AUTOJOIN_STATUS_ON);
                 }
                 else if (player.dungeonHandler.AutoJoinCounter > 0)
                 {
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} dungeons, until you use !dungeon join off. It will cost {cost} each time you automatically join a dungeon.", player.dungeonHandler.AutoJoinCounter, autoJoinCost);
+                    client.SendReply(gm, Localization.MSG_DUNGEON_AUTOJOIN_COUNT, player.dungeonHandler.AutoJoinCounter, autoJoinCost);
                 }
                 else
                 {
-                    client.SendReply(gm, "You have are not set to automatically join any dungeons.");
+                    client.SendReply(gm, Localization.MSG_DUNGEON_AUTOJOIN_STATUS_OFF);
                 }
             }
             else if (string.IsNullOrEmpty(l) || l == "on")
             {
                 player.dungeonHandler.AutoJoinCounter = int.MaxValue;
                 //if (before != player.dungeonHandler.AutoJoinCounter)
-                client.SendReply(gm, "You will automatically join dungeons until you use !dungeon join off. It will cost {cost} each time you automatically join a dungeon.", autoJoinCost);
+                client.SendReply(gm, Localization.MSG_DUNGEON_AUTOJOIN_ON, autoJoinCost);
             }
             else if (l == "off" || l == "cancel" || l == "stop")
             {
                 player.dungeonHandler.AutoJoinCounter = 0;
                 //if (before != player.dungeonHandler.AutoJoinCounter)
-                client.SendReply(gm, "You will no longer automatically join dungeons");
+                client.SendReply(gm, Localization.MSG_DUNGEON_AUTOJOIN_OFF);
             }
         }
         catch
         {
-            client.SendReply(gm, "{query} is not a valid value for dungeon auto join settings", data);
+            client.SendReply(gm, Localization.MSG_DUNGEON_AUTOJOIN_INVALID, data);
         }
     }
 }

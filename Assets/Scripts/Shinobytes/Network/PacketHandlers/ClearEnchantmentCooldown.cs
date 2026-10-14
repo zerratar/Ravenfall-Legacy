@@ -37,20 +37,20 @@ public class ClearEnchantmentCooldown : ChatBotCommandHandler
             if (result != null && result.Success)
             {
                 var totalCost = result.TotalCost;
-                client.SendReply(gm, "You have cleared your enchantment cooldown for a total of {totalCost} coins", totalCost);
+                client.SendReply(gm, Localization.MSG_ENCHANT_COOLDOWN_CLEARED, totalCost);
                 return;
             }
             else
             {
                 if (result == null) Shinobytes.Debug.LogWarning("ClearEnchantmentCooldown(" + player.Id + "): server call returned null.");
-                client.SendReply(gm, "Unable to clear the cooldown, either you don't have a cooldown active or you don't have enough coins.");
+                client.SendReply(gm, Localization.MSG_ENCHANT_COOLDOWN_CLEAR_FAILED);
                 return;
             }
         }
         catch (Exception exc)
         {
             Shinobytes.Debug.LogError("ClearEnchantmentCooldown: An error occurred while clearing enchantment cooldown: " + exc);
-            client.SendReply(gm, "An error occurred while trying to clear your enchantment cooldown. Please try again later.");
+            client.SendReply(gm, Localization.MSG_ENCHANT_COOLDOWN_CLEAR_ERROR);
         }
     }
 }

@@ -54,10 +54,10 @@
                 return;
             }
 
-            client.SendReply(gm, "You have joined {clanName} as a {roleName}!", result.Clan.Name, result.Role.Name);
+            client.SendReply(gm, Localization.MSG_CLAN_JOINED, result.Clan.Name, result.Role.Name);
             return;
         }
 
-        client.SendReply(gm, "You are not able to join that clan at this moment.");
+        client.SendReply(gm, Localization.MSG_CLAN_JOIN_FAILED);
     }
 }

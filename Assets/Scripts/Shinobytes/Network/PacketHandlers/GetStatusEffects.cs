@@ -20,7 +20,7 @@ public class GetStatusEffects : ChatBotCommandHandler<string>
         var statusEffects = player.GetStatusEffects();
         if (statusEffects.Count == 0)
         {
-            client.SendReply(gm, "You do not have any active status effects.");
+            client.SendReply(gm, Localization.MSG_STATUS_EFFECTS_NONE);
             return;
         }
 

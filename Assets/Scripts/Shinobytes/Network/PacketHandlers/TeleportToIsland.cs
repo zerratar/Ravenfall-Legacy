@@ -28,31 +28,31 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
 
         if (player.dungeonHandler.InDungeon)
         {
-            client.SendReply(gm, "You cannot teleport to an while in a dungeon.");
+            client.SendReply(gm, Localization.MSG_TELEPORT_FAILED_DUNGEON);
             return;
         }
 
         if (player.streamRaidHandler.InWar)
         {
-            client.SendReply(gm, "You cannot teleport while in a raid war.");
+            client.SendReply(gm, Localization.MSG_TELEPORT_FAILED_WAR);
             return;
         }
 
         if (player.arenaHandler.InArena)
         {
-            client.SendReply(gm, "You cannot teleport while in a the arena.");
+            client.SendReply(gm, Localization.MSG_TELEPORT_FAILED_ARENA);
             return;
         }
 
         if (player.duelHandler.InDuel)
         {
-            client.SendReply(gm, "You cannot teleport while in a duel.");
+            client.SendReply(gm, Localization.MSG_TELEPORT_FAILED_DUEL);
             return;
         }
 
         if (player.raidHandler.InRaid)
         {
-            client.SendReply(gm, "You cannot teleport while in a raid.");
+            client.SendReply(gm, Localization.MSG_TELEPORT_FAILED_RAID);
             return;
         }
 
@@ -79,7 +79,7 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
 
         if (island == Island.Any || island == Island.Ferry || island == Island.None)
         {
-            client.SendReply(gm, "{island} is not a valid destination. Available islands are {islandList}", inputQuery, string.Join(", ", options));
+            client.SendReply(gm, Localization.MSG_TELEPORT_INVALID_ISLAND, inputQuery, string.Join(", ", options));
             return;
         }
 
@@ -95,14 +95,14 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
 
         if (tome == null)
         {
-            client.SendReply(gm, "You do not have any suitable Teleportation Tomes to teleport to {island}.", inputQuery);
+            client.SendReply(gm, Localization.MSG_TELEPORT_NO_TOME, inputQuery);
             return;
         }
 
         var result = await Game.RavenNest.Players.UseItemAsync(player.Id, tome.InstanceId, island.ToString());
         if (result == null || result.InventoryItemId == Guid.Empty || result.EffectIsland == Island.Any || result.EffectIsland == Island.None || result.EffectIsland == Island.Ferry)
         {
-            client.SendReply(gm, "{itemName} can not be used right now.", tome.Name);
+            client.SendReply(gm, Localization.MSG_USE_ITEM_NOT_NOW, tome.Name);
             return;
         }
 
@@ -112,6 +112,6 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
 
         player.teleportHandler.Teleport(targetIsland, true);
 
-        client.SendReply(gm, "You have used a {itemName} and teleported to {island}!", tome.Name, result.EffectIsland.ToString());
+        client.SendReply(gm, Localization.MSG_TELEPORT_SUCCESS, tome.Name, result.EffectIsland.ToString());
     }
 }

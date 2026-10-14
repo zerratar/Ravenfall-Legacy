@@ -25,17 +25,17 @@
 
         if (autoRestStopMinutes <= autoRestStartMinutesLeft)
         {
-            client.SendReply(gm, "Auto rest is currently inactive. Use !auto rest <start minute> <stop minute> to activate.");
+            client.SendReply(gm, Localization.MSG_AUTOREST_INACTIVE);
             return;
         }
 
         if (autoRestStartMinutesLeft == 0)
         {
-            client.SendReply(gm, "Auto rest is currently active. You will auto rest until you have {autoRestStopMinutes} minutes of rested as soon as you run out of rested time.", autoRestStopMinutes);
+            client.SendReply(gm, Localization.MSG_AUTOREST_ACTIVE_WHEN_OUT, autoRestStopMinutes);
         }
         else
         {
-            client.SendReply(gm, "Auto rest is currently active. You will auto rest until you have {autoRestStopMinutes} minutes of rested. You will start resting when you have {autoRestStartMinutesLeft} minutes of rested left.", autoRestStopMinutes, autoRestStartMinutesLeft);
+            client.SendReply(gm, Localization.MSG_AUTOREST_ACTIVE, autoRestStopMinutes, autoRestStartMinutesLeft);
         }
     }
 }

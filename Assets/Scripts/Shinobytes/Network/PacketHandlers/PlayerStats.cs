@@ -55,7 +55,7 @@ public class PlayerStats : ChatBotCommandHandler<string>
             var s = SkillUtilities.ParseSkill(skillName.ToLower());
             if (s == Skill.None)
             {
-                client.SendReply(gm, "No skill found matching: {skillName}", skillName);
+                client.SendReply(gm, Localization.MSG_STATS_SKILL_NOT_FOUND, skillName);
                 return;
             }
 
@@ -79,10 +79,10 @@ public class PlayerStats : ChatBotCommandHandler<string>
         var statsString = string.Join(", ", stats.Select(FormatStat));
         if (string.IsNullOrEmpty(statsString))
         {
-            client.SendReply(gm, "Oh dear! {itemName} seem to be missing stats!", inventoryItem.Name);
+            client.SendReply(gm, Localization.MSG_STATS_ITEM_MISSING, inventoryItem.Name);
             return;
         }
-        client.SendReply(gm, "{itemName}: {stats}", inventoryItem.Name, statsString);
+        client.SendReply(gm, Localization.MSG_STATS_ITEM, inventoryItem.Name, statsString);
     }
 
     private void SendItemStats(Item item, GameMessage gm, GameClient client)
@@ -91,10 +91,10 @@ public class PlayerStats : ChatBotCommandHandler<string>
         var statsString = string.Join(", ", stats.Select(FormatStat));
         if (string.IsNullOrEmpty(statsString))
         {
-            client.SendReply(gm, "Oh dear! {itemName} seem to be missing stats!", item.Name);
+            client.SendReply(gm, Localization.MSG_STATS_ITEM_MISSING, item.Name);
             return;
         }
-        client.SendReply(gm, "{itemName}: {stats}", item.Name, statsString);
+        client.SendReply(gm, Localization.MSG_STATS_ITEM, item.Name, statsString);
     }
 
     private string FormatStat(ItemStat stat)

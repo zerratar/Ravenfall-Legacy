@@ -643,7 +643,7 @@ public class DungeonManager : MonoBehaviour, IEvent
 
         if (notifyChat && !gameManager.HasMessageFilter("DungeonResult"))
         {
-            gameManager.RavenBot.Announce("The dungeon has ended without any surviving players.");
+            gameManager.RavenBot.Announce(Localization.MSG_DUNGEON_ENDED_NO_SURVIVORS);
         }
 
         gameManager.dungeonStatsJson.Update();
@@ -833,7 +833,7 @@ public class DungeonManager : MonoBehaviour, IEvent
             rewardQueue.Enqueue(() => RewardPlayersAsync(tier, playersToBeRewarded, retryCount + 1));
             if (retryCount == 0 && !gameManager.HasMessageFilter("DungeonResult"))
             {
-                gameManager.RavenBot.Announce("Victorious!! Dungeon boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
+                gameManager.RavenBot.Announce(Localization.MSG_DUNGEON_VICTORY_NO_CONNECTION);
             }
             return;
         }
@@ -849,11 +849,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         {
             if (result.Count > 0)
             {
-                gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain and yielded " + result.Count + " item treasures!");
+                gameManager.RavenBot.Announce(Localization.MSG_DUNGEON_VICTORY_TREASURE, result.Count.ToString());
             }
             else
             {
-                gameManager.RavenBot.Announce("Victorious!! The dungeon boss was slain but did not yield any treasure.");
+                gameManager.RavenBot.Announce(Localization.MSG_DUNGEON_VICTORY_NO_TREASURE);
             }
         }
 
@@ -956,11 +956,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         var minutesLeft = timeLeft.Minutes;
         if (minutesLeft > 0)
         {
-            gameManager.RavenBot.Announce("{minutes}m{seconds}s until dungeon starts.", minutesLeft.ToString("00"), secondsLeft.ToString("00"));
+            gameManager.RavenBot.Announce(Localization.MSG_DUNGEON_STARTS_IN_MINUTES, minutesLeft.ToString("00"), secondsLeft.ToString("00"));
         }
         else
         {
-            gameManager.RavenBot.Announce("{seconds}s until dungeon starts.", secondsLeft.ToString("00"));
+            gameManager.RavenBot.Announce(Localization.MSG_DUNGEON_STARTS_IN_SECONDS, secondsLeft.ToString("00"));
         }
         notificationTimer = notificationUpdate;
     }
@@ -1054,11 +1054,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         // 1. announce dungeon event
         if (gameManager.RequireCodeForDungeonOrRaid)
         {
-            gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type '!dungeon code' to join. Find the code on the stream.");
+            gameManager.RavenBot.Announce(Localization.MSG_DUNGEON_AVAILABLE_CODE, currentDungeon.Name);
         }
         else
         {
-            gameManager.RavenBot.Announce(currentDungeon.Name + " is available. Type !dungeon to join.");
+            gameManager.RavenBot.Announce(Localization.MSG_DUNGEON_AVAILABLE, currentDungeon.Name);
         }
 
         HasBeenAnnounced = true;

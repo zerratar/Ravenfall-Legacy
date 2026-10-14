@@ -29,8 +29,6 @@ public class ClanRank : ChatBotCommandHandler<string>
 
     private void GenerateStringPresentation(GameClient client, GameMessage gm, ClanRole data)
     {
-        var msg = "Your clan role is Level {roleLevel} - {roleName}. You joined the clan {date}.";
-
-        client.SendReply(gm, msg, data.Level, data.Name, data.Joined);
+        client.SendReply(gm, Localization.MSG_CLAN_RANK, data.Level, data.Name, data.Joined);
     }
 }

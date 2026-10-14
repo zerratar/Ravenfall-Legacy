@@ -20,13 +20,13 @@ public class IslandInfo : ChatBotCommandHandler
 
         if (player.dungeonHandler.InDungeon)
         {
-            client.SendReply(gm, $"You're currently in the dungeon.");
+            client.SendReply(gm, Localization.MSG_IN_DUNGEON);
             return;
         }
 
         if (player.streamRaidHandler.InWar)
         {
-            client.SendReply(gm, $"You're currently in a streamer raid war.");
+            client.SendReply(gm, Localization.MSG_ISLAND_IN_WAR);
             return;
         }
 
@@ -49,25 +49,22 @@ public class IslandInfo : ChatBotCommandHandler
             {
 
                 var moderators = PlayerManager.GetAllModerators();
-                var moderatorMessage = "";
-                var arg0 = "";
-                var arg1 = "";
                 if (moderators.Count > 0)
                 {
                     var moderator = moderators.Random();
-                    arg0 = moderator.PlayerName;
-                    arg1 = player.PlayerName;
-                    moderatorMessage = " {moderatorName}, could you please use !show @{player} to see if player is stuck?";
+                    client.SendReply(gm, Localization.MSG_ISLAND_STUCK_ASK_MODERATOR, moderator.PlayerName, player.PlayerName);
                 }
-
-                client.SendReply(gm, $"Uh oh. Your character may be stuck." + moderatorMessage, arg0, arg1);
+                else
+                {
+                    client.SendReply(gm, Localization.MSG_ISLAND_STUCK);
+                }
             }
         }
         else
         {
             if (player.dungeonHandler.InDungeon)
             {
-                client.SendReply(gm, $"You are currently inside the dungeon.");
+                client.SendReply(gm, Localization.MSG_ISLAND_INSIDE_DUNGEON);
                 return;
             }
 

@@ -33,22 +33,24 @@ public class ClanStatsHandler : ChatBotCommandHandler<string>
 
     private void GenerateStringPresentation(GameClient client, GameMessage gm, ClanStats data)
     {
-        var msg = "Your clan is {clanName} led by {ownerName} and is currently level {clanLevel}.";
+        var msg = new ReplyMessageBuilder();
+        msg.Add(Localization.MSG_CLAN_STATS, data.Name, data.OwnerName, data.Level);
         if (data.ClanSkills != null)
         {
             if (data.ClanSkills.Count == 1)
             {
                 var ench = data.ClanSkills[0];
-                msg += $" Your clan has an enchanting level of {ench.Level}.";
+                msg.Add(Localization.MSG_CLAN_STATS_ENCHANTING, ench.Level);
             }
             else
             {
-                var skills = string.Join(", ", data.ClanSkills.Select(x => x.Name + " level " + x.Level));
+                var skills = string.Join(", ", data.ClanSkills.Select(x =>
+                    Localization.MSG_CLAN_STATS_SKILL.Replace("{skillName}", x.Name).Replace("{level}", x.Level.ToString())));
 
-                msg += $" Your clan has the following skills {skills}.";
+                msg.Add(Localization.MSG_CLAN_STATS_SKILLS, skills);
             }
         }
 
-        client.SendReply(gm, msg, data.Name, data.OwnerName, data.Level);
+        client.SendReply(gm, msg.ToString(), msg.Arguments);
     }
 }

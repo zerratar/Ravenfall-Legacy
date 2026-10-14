@@ -29,25 +29,25 @@ public class UseFerryBoostScroll : ChatBotCommandHandler
 
             if (ferryScroll == null)
             {
-                client.SendReply(gm, "You don't have any ferry boost scrolls.");
+                client.SendReply(gm, Localization.MSG_FERRY_BOOST_NO_SCROLL);
                 return;
             }
 
             var result = await Game.RavenNest.Players.UseItemAsync(player.Id, ferryScroll.InventoryItem.Id);
             if (result == null || result.InventoryItemId == Guid.Empty || result.Effects == null || result.Effects.Count == 0)
             {
-                client.SendReply(gm, "{itemName} can not be used right now.", ferryScroll.InventoryItem.Name);
+                client.SendReply(gm, Localization.MSG_FERRY_BOOST_CANNOT_USE, ferryScroll.InventoryItem.Name);
                 return;
             }
 
             player.Inventory.UpdateInventoryItem(result.InventoryItemId, result.NewStackAmount);
             Game.Ferry.ApplyFerryBoost(result.Effects.FirstOrDefault());
-            client.SendReply(gm, $"The ferry will now move faster for {Game.Ferry.GetRemainingBoostTime()}. ");
+            client.SendReply(gm, Localization.MSG_FERRY_BOOST_ACTIVE, Game.Ferry.GetRemainingBoostTime());
         }
         catch (Exception exc)
         {
             Shinobytes.Debug.LogError("Error using ferry boost scroll: " + exc);
-            client.SendReply(gm, "Error using ferry boost scroll");
+            client.SendReply(gm, Localization.MSG_FERRY_BOOST_ERROR);
             return;
         }
     }

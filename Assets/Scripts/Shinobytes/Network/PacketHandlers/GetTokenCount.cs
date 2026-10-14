@@ -40,30 +40,23 @@ public class GetTokenCount : ChatBotCommandHandler
 
         if (tokens.Count == 0)
         {
-            client.SendReply(gm, "You do not have any seasonal tokens. Join Raids or Dungeons during seasonal events to get some!");
+            client.SendReply(gm, Localization.MSG_TOKENS_NONE);
             return;
         }
 
-        var format = "You have ";
-        for (var i = 0; i < tokens.Count; ++i)
-        {
-            format += "{tokenAmount" + i + "} {tokenName" + i + "}(s)";
-            if (i + 1 < tokens.Count)
-            {
-                if (i + 2 == tokens.Count) format += " and ";
-                else format += ", ";
-            }
-        }
-        format += ".";
-
-        var parameters = new List<object>();
+        // The list is built here, so each entry and the "and" come out in the chosen language.
+        var items = "";
+        var i = 0;
         foreach (var token in tokens)
         {
-            parameters.Add(token.Amount.ToString());
-            parameters.Add(token.Name);
+            if (i > 0) items += i + 1 == tokens.Count ? Localization.MSG_LIST_AND : ", ";
+            items += Localization.MSG_SCROLL_COUNT_ITEM
+                .Replace("{amount}", token.Amount.ToString())
+                .Replace("{itemName}", token.Name);
+            ++i;
         }
 
-        client.SendReply(gm, format, parameters.ToArray());
+        client.SendReply(gm, Localization.MSG_SCROLL_COUNT, items);
     }
 
     private static ScrollInfoCollection FilterTokens(PlayerController player)

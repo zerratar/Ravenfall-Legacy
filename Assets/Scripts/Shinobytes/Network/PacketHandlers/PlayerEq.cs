@@ -28,8 +28,8 @@ public class PlayerEq : ChatBotCommandHandler<string>
             }
             else
             {
-                var list = Utility.ReplaceLastOccurrence(string.Join(", ", "weapon", "ranged", "magic", "armor", "amulet", "ring", "pet"), ", ", " and ");
-                client.SendReply(gm, "{target} is not a valid equipment type. These are the available ones: {typeList}", target, list);
+                var list = Utility.ReplaceLastOccurrence(string.Join(", ", "weapon", "ranged", "magic", "armor", "amulet", "ring", "pet"), ", ", Localization.MSG_LIST_AND);
+                client.SendReply(gm, Localization.MSG_EQ_INVALID_TYPE, target, list);
             }
         }
 
@@ -72,7 +72,7 @@ public class PlayerEq : ChatBotCommandHandler<string>
 
         if (targetItem == null)
         {
-            client.SendReply(gm, "You don't seem to have any {type} equipped.", target);
+            client.SendReply(gm, Localization.MSG_EQ_NONE_OF_TYPE, target);
             return;
         }
 
@@ -83,7 +83,7 @@ public class PlayerEq : ChatBotCommandHandler<string>
     {
         if (items.Count == 0)
         {
-            client.SendReply(gm, "You don't seem to have any {type} equipped.", target);
+            client.SendReply(gm, Localization.MSG_EQ_NONE_OF_TYPE, target);
             return;
         }
 
@@ -110,57 +110,38 @@ public class PlayerEq : ChatBotCommandHandler<string>
             }
         }
 
+        var statsString = BuildEqStatsString(totalArmor, totalWeaponPower, totalWeaponAim, totalMagicPower, totalMagicAim, totalRangedPower, totalRangedAim);
+
         if (items.Count == 1)
         {
             var itemName = items[0].Name;
-            var a = Utility.IsVocal(itemName[0]) ? "an" : "a";
-
-            var args = new List<object>();
-            args.Add(items[0].Name);
-            args.AddRange(GetNonZero(totalArmor, totalWeaponPower, totalWeaponAim, totalMagicPower, totalMagicAim, totalRangedPower, totalRangedAim));
-
-            client.SendReply(gm, "You have " + a + " {itemName} equipped with the following stats: " +
-                BuildEqFormatString(totalArmor, totalWeaponPower, totalWeaponAim, totalMagicPower, totalMagicAim, totalRangedPower, totalRangedAim),
-                args.ToArray()
-            );
+            var format = Utility.IsVocal(itemName[0]) ? Localization.MSG_EQ_ITEM_STATS_AN : Localization.MSG_EQ_ITEM_STATS_A;
+            client.SendReply(gm, format, itemName, statsString);
             return;
         }
         else
         {
-            var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", items.Select(x => x.Name)), ", ", " and ");
-            var args = new List<object>();
-            args.Add(itemList);
-            args.AddRange(GetNonZero(totalArmor, totalWeaponPower, totalWeaponAim, totalMagicPower, totalMagicAim, totalRangedPower, totalRangedAim));
-
-            client.SendReply(gm, "You have the following items equipped: {itemList}. These items gives the total of " +
-                BuildEqFormatString(totalArmor, totalWeaponPower, totalWeaponAim, totalMagicPower, totalMagicAim, totalRangedPower, totalRangedAim),
-                args.ToArray()
-            );
+            var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", items.Select(x => x.Name)), ", ", Localization.MSG_LIST_AND);
+            client.SendReply(gm, Localization.MSG_EQ_ITEMS_STATS, itemList, statsString);
         }
     }
 
-    private object[] GetNonZero(params int[] values)
-    {
-        var result = new List<object>();
-        for (var i = 0; i < values.Length; ++i)
-        {
-            if (values[i] > 0) result.Add(values[i]);
-        }
-        return result.ToArray();
-    }
-
-    private string BuildEqFormatString(
+    /// <summary>
+    /// Builds the stat list, for example "12 Armor, 3 Magic Aim", from the stat fields in Localization.
+    /// Each field has one named placeholder, filled here so the whole list goes to the bot as one argument.
+    /// </summary>
+    private string BuildEqStatsString(
         int totalArmor, int totalWeaponPower, int totalWeaponAim, int totalMagicPower, int totalMagicAim, int totalRangedPower, int totalRangedAim)
     {
         var values = new List<string>();
 
-        if (totalArmor > 0) values.Add("{armorPower} Armor");
-        if (totalWeaponPower > 0) values.Add("{weaponPower} Melee Weapon Power");
-        if (totalWeaponAim > 0) values.Add("{weaponAim} Melee Weapon Aim");
-        if (totalMagicPower > 0) values.Add("{magicPower} Magic/Healing Power");
-        if (totalMagicAim > 0) values.Add("{magicAim} Magic Aim");
-        if (totalRangedPower > 0) values.Add("{rangedPower} Ranged Weapon Power");
-        if (totalRangedAim > 0) values.Add("{rangedAim} Ranged Weapon Aim");
+        if (totalArmor > 0) values.Add(Localization.MSG_EQ_STAT_ARMOR.Replace("{armorPower}", totalArmor.ToString()));
+        if (totalWeaponPower > 0) values.Add(Localization.MSG_EQ_STAT_WEAPON_POWER.Replace("{weaponPower}", totalWeaponPower.ToString()));
+        if (totalWeaponAim > 0) values.Add(Localization.MSG_EQ_STAT_WEAPON_AIM.Replace("{weaponAim}", totalWeaponAim.ToString()));
+        if (totalMagicPower > 0) values.Add(Localization.MSG_EQ_STAT_MAGIC_POWER.Replace("{magicPower}", totalMagicPower.ToString()));
+        if (totalMagicAim > 0) values.Add(Localization.MSG_EQ_STAT_MAGIC_AIM.Replace("{magicAim}", totalMagicAim.ToString()));
+        if (totalRangedPower > 0) values.Add(Localization.MSG_EQ_STAT_RANGED_POWER.Replace("{rangedPower}", totalRangedPower.ToString()));
+        if (totalRangedAim > 0) values.Add(Localization.MSG_EQ_STAT_RANGED_AIM.Replace("{rangedAim}", totalRangedAim.ToString()));
 
         if (values.Count == 0)
         {
@@ -193,16 +174,9 @@ public class PlayerEq : ChatBotCommandHandler<string>
         }
 
         var itemName = item.Name;
-
-        var args = new List<object>();
-        args.Add(itemName);
-        args.AddRange(GetNonZero(totalArmor, totalWeaponPower, totalWeaponAim, totalMagicPower, totalMagicAim, totalRangedPower, totalRangedAim));
-
-        var a = Utility.IsVocal(itemName[0]) ? "an" : "a";
-        client.SendReply(gm, "You have " + a + " {itemName} equipped with the following stats: " +
-            BuildEqFormatString(totalArmor, totalWeaponPower, totalWeaponAim, totalMagicPower, totalMagicAim, totalRangedPower, totalRangedAim),
-            args.ToArray()
-        );
+        var statsString = BuildEqStatsString(totalArmor, totalWeaponPower, totalWeaponAim, totalMagicPower, totalMagicAim, totalRangedPower, totalRangedAim);
+        var format = Utility.IsVocal(itemName[0]) ? Localization.MSG_EQ_ITEM_STATS_AN : Localization.MSG_EQ_ITEM_STATS_A;
+        client.SendReply(gm, format, itemName, statsString);
     }
 
     private bool IsValidTarget(string target)

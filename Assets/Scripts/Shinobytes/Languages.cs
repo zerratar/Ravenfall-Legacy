@@ -45,6 +45,11 @@ public static class Languages
     private static Dictionary<FieldInfo, object> english;
     private static List<Info> available;
 
+    // Chat messages whose translation puts the {placeholders} in another order than the English.
+    // The bot fills them by position, in the order they appear, so the arguments are rearranged
+    // before sending: for each placeholder of the translation, the index of its English argument.
+    private static readonly Dictionary<string, int[]> argumentOrder = new Dictionary<string, int[]>();
+
     private static readonly Regex Placeholder = new Regex(@"\{[^{}]+\}", RegexOptions.Compiled);
     private static readonly Regex MetaPrefix = new Regex(@"^(%\[(category|tags):[^\]]*\]%)+", RegexOptions.Compiled);
 
@@ -95,6 +100,7 @@ public static class Languages
     {
         CaptureEnglish();
         foreach (var kv in english) kv.Key.SetValue(null, kv.Value);
+        argumentOrder.Clear();
         Current = English;
 
         var info = code == English ? null : Available.FirstOrDefault(a => a.Code == code);
@@ -146,6 +152,7 @@ public static class Languages
                 }
 
                 kv.Key.SetValue(null, prefix + translated);
+                RememberOrder(text, prefix + translated);
             }
             else if (kv.Value is string[] sourceArray && token.Type == JTokenType.Array)
             {
@@ -162,10 +169,43 @@ public static class Languages
                 {
                     if (string.IsNullOrEmpty(t)) return sourceArray[i];
                     var prefix = MetaPrefix.Match(sourceArray[i]).Value;
-                    return SamePlaceholders(sourceArray[i].Substring(prefix.Length), t) ? prefix + t : sourceArray[i];
+                    var text = sourceArray[i].Substring(prefix.Length);
+                    if (!SamePlaceholders(text, t)) return sourceArray[i];
+                    RememberOrder(text, prefix + t);
+                    return prefix + t;
                 }).ToArray());
             }
         }
+    }
+
+    /// <summary>
+    /// The arguments for a chat message in the order the bot needs them. The game passes them in
+    /// the order of the English text; a translation may have moved the placeholders around.
+    /// </summary>
+    public static object[] ArrangeArguments(string format, object[] args)
+    {
+        if (args == null || args.Length == 0 || format == null || argumentOrder.Count == 0) return args;
+        if (!argumentOrder.TryGetValue(format, out var order)) return args;
+
+        var arranged = new object[order.Length];
+        for (var i = 0; i < order.Length; ++i)
+        {
+            arranged[i] = order[i] >= 0 && order[i] < args.Length ? args[order[i]] : null;
+        }
+        return arranged;
+    }
+
+    private static void RememberOrder(string english, string translated)
+    {
+        var source = PlaceholderNames(english);
+        var target = PlaceholderNames(translated);
+        if (source.SequenceEqual(target)) return;
+        argumentOrder[translated] = target.Select(name => Array.IndexOf(source, name)).ToArray();
+    }
+
+    private static string[] PlaceholderNames(string text)
+    {
+        return Placeholder.Matches(text).Cast<Match>().Select(m => m.Value.Trim('{', '}', ' ')).ToArray();
     }
 
     private static bool SamePlaceholders(string a, string b)

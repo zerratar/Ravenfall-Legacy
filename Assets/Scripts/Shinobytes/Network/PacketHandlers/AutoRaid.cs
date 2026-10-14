@@ -34,39 +34,39 @@ public class AutoRaid : ChatBotCommandHandler<string>
             {
                 player.raidHandler.AutoJoinCounter = Math.Max(0, count);
                 if (before != player.raidHandler.AutoJoinCounter)
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off. It will cost {cost} each time you automatically join a raid.", player.raidHandler.AutoJoinCounter, autoJoinCost);
+                    client.SendReply(gm, Localization.MSG_RAID_AUTOJOIN_COUNT, player.raidHandler.AutoJoinCounter, autoJoinCost);
             }
             else if (l == "count" || l == "status" || l == "stats" || l == "left" || l == "state")
             {
                 if (player.raidHandler.AutoJoinCounter == int.MaxValue)
                 {
-                    client.SendReply(gm, "You will automatically join raids until you use !raid join off.");
+                    client.SendReply(gm, Localization.MSG_RAID_AUTOJOIN_STATUS_ON);
                 }
                 else if (player.raidHandler.AutoJoinCounter > 0)
                 {
-                    client.SendReply(gm, "You will automatically join the next {autoJoinCounter} raids, until you use !raid join off. It will cost {cost} each time you automatically join a raid.", player.raidHandler.AutoJoinCounter, autoJoinCost);
+                    client.SendReply(gm, Localization.MSG_RAID_AUTOJOIN_COUNT, player.raidHandler.AutoJoinCounter, autoJoinCost);
                 }
                 else
                 {
-                    client.SendReply(gm, "You have are not set to automatically join any raids.");
+                    client.SendReply(gm, Localization.MSG_RAID_AUTOJOIN_STATUS_OFF);
                 }
             }
             else if (l == "on" || l == "auto")
             {
                 player.raidHandler.AutoJoinCounter = int.MaxValue;
                 //if (before != player.raidHandler.AutoJoinCounter)
-                client.SendReply(gm, "You will automatically join raids until you use !raid join off. It will cost {cost} each time you automatically join a raid.", autoJoinCost);
+                client.SendReply(gm, Localization.MSG_RAID_AUTOJOIN_ON, autoJoinCost);
             }
             else if (l == "off" || l == "cancel" || l == "stop")
             {
                 player.raidHandler.AutoJoinCounter = 0;
                 //if (before != player.raidHandler.AutoJoinCounter)
-                client.SendReply(gm, "You will no longer automatically join raids", data);
+                client.SendReply(gm, Localization.MSG_RAID_AUTOJOIN_OFF, data);
             }
         }
         catch
         {
-            client.SendReply(gm, "{query} is not a valid value for raid auto join settings.", data);
+            client.SendReply(gm, Localization.MSG_RAID_AUTOJOIN_INVALID, data);
         }
     }
 }

@@ -13,6 +13,6 @@
         }
 
         player.raidHandler.SetSkill(null);
-        client.SendReply(gm, "The skill used for raids has been reset.");
+        client.SendReply(gm, Localization.MSG_RAID_SKILL_RESET);
     }
 }

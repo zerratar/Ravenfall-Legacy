@@ -24,7 +24,7 @@ public class DungeonJoin : ChatBotCommandHandler<string>
 
             if (Game.StreamRaid.IsWar)
             {
-                client.SendReply(gm, "Dungeon is unavailable during wars. Please wait for it to be over.");
+                client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_WAR);
                 return;
             }
 
@@ -41,13 +41,13 @@ public class DungeonJoin : ChatBotCommandHandler<string>
 
             if (!Game.Dungeons.Active)
             {
-                client.SendReply(gm, "No active dungeons available, sorry.");
+                client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_NO_DUNGEON);
                 return;
             }
 
             if (Game.Dungeons.Started)
             {
-                client.SendReply(gm, "The dungeon has already started. You will have to wait for the next one!");
+                client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_STARTED);
                 return;
             }
 
@@ -57,13 +57,13 @@ public class DungeonJoin : ChatBotCommandHandler<string>
             {
                 case DungeonJoinResult.CanJoin:
                     Game.Dungeons.Join(player);
-                    client.SendReply(gm, "You have joined the dungeon. Good luck!");
+                    client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_SUCCESS);
                     break;
                 case DungeonJoinResult.AlreadyJoined:
-                    client.SendReply(gm, "You have already joined the dungeon.");
+                    client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_ALREADY);
                     break;
                 case DungeonJoinResult.WrongCode:
-                    client.SendReply(gm, "You have used incorrect command for joining the dungeon. Use !dungeon [word seen on stream] to join.");
+                    client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_WRONG_CODE);
                     break;
             }
         }

@@ -20,6 +20,6 @@
         //}
 
         plr.onsenHandler.ClearAutoRest();
-        client.SendReply(gm, "Auto rest has been stopped.");
+        client.SendReply(gm, Localization.MSG_AUTOREST_STOPPED);
     }
 }

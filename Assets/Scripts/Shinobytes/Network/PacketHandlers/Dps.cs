@@ -23,7 +23,7 @@ public class Dps : ChatBotCommandHandler
 
         if (sessionStats.HighestDamage <= 0 && sessionStats.HighestHeal <= 0)
         {
-            client.SendReply(gm, "You have not dealt any damage or healed anyone yet.");
+            client.SendReply(gm, Localization.MSG_DPS_NONE);
             return;
         }
 
@@ -36,42 +36,42 @@ public class Dps : ChatBotCommandHandler
 
         if (dps > 0)
         {
-            msg.Add("⚔️ {DPS} DPS", Utility.FormatAmount(dps));
+            msg.Add(Localization.MSG_DPS_DPS, Utility.FormatAmount(dps));
         }
 
         if (sessionStats.HighestDPS > 0)
         {
-            msg.Add("⚔️ {highestDPS} Max DPS", Utility.FormatAmount(sessionStats.HighestDPS));
+            msg.Add(Localization.MSG_DPS_MAX_DPS, Utility.FormatAmount(sessionStats.HighestDPS));
         }
 
         if (sessionStats.HighestDamage > 0)
         {
-            msg.Add("💥 {highestDamage} Max DMG", Utility.FormatAmount(sessionStats.HighestDamage));
+            msg.Add(Localization.MSG_DPS_MAX_DAMAGE, Utility.FormatAmount(sessionStats.HighestDamage));
         }
 
         if (sessionStats.TotalDamageDealt > 0)
         {
-            msg.Add("💥 {totalDamage} Total", Utility.FormatAmount(sessionStats.TotalDamageDealt));
+            msg.Add(Localization.MSG_DPS_TOTAL_DAMAGE, Utility.FormatAmount(sessionStats.TotalDamageDealt));
         }
 
         if (hps > 0)
         {
-            msg.Add("🧙 {HPS} HPS", Utility.FormatAmount(hps));
+            msg.Add(Localization.MSG_DPS_HPS, Utility.FormatAmount(hps));
         }
 
         if (sessionStats.HighestHPS > 0)
         {
-            msg.Add("🧙 {highestHPS} Max HPS", Utility.FormatAmount(sessionStats.HighestHPS));
+            msg.Add(Localization.MSG_DPS_MAX_HPS, Utility.FormatAmount(sessionStats.HighestHPS));
         }
 
         if (sessionStats.HighestHeal > 0)
         {
-            msg.Add("❤️ {highestHeal} Max HEAL", Utility.FormatAmount(sessionStats.HighestHeal));
+            msg.Add(Localization.MSG_DPS_MAX_HEAL, Utility.FormatAmount(sessionStats.HighestHeal));
         }
 
         if (sessionStats.TotalHealthHealed > 0)
         {
-            msg.Add("❤️ {totalHealing} Total", Utility.FormatAmount(sessionStats.TotalHealthHealed));
+            msg.Add(Localization.MSG_DPS_TOTAL_HEALING, Utility.FormatAmount(sessionStats.TotalHealthHealed));
         }
 
         client.SendReply(gm, msg.ToString(), msg.Arguments);

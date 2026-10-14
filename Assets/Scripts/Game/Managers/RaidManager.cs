@@ -299,7 +299,7 @@ public class RaidManager : MonoBehaviour, IEvent
             if (!bossKilled && timeout)
             {
                 if (!gameManager.HasMessageFilter("RaidResult"))
-                    gameManager.RavenBot.Announce("Oh no! The raid boss was not killed in time. No rewards will be given.");
+                    gameManager.RavenBot.Announce(Localization.MSG_RAID_TIMEOUT);
 
                 Shinobytes.Debug.Log("Raid boss was not killed in time.");
             }
@@ -418,7 +418,7 @@ public class RaidManager : MonoBehaviour, IEvent
 
             if (retryCount == 0 && !gameManager.HasMessageFilter("RaidResult"))
             {
-                gameManager.RavenBot.Announce("Victorious!! Raid boss was slain but unfortunately the connection to the server has been broken, rewards will be distributed later.");
+                gameManager.RavenBot.Announce(Localization.MSG_RAID_VICTORY_NO_CONNECTION);
             }
             return;
         }
@@ -434,12 +434,12 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             if (result.Count > 0)
             {
-                gameManager.RavenBot.Announce("Victorious!! The raid boss was slain and yielded {itemCount} item treasures!", result.Count.ToString());
+                gameManager.RavenBot.Announce(Localization.MSG_RAID_VICTORY_TREASURE, result.Count.ToString());
 
             }
             else
             {
-                gameManager.RavenBot.Announce("Victorious!! The raid boss was slain but did not yield any treasure.");
+                gameManager.RavenBot.Announce(Localization.MSG_RAID_VICTORY_NO_TREASURE);
 
             }
         }

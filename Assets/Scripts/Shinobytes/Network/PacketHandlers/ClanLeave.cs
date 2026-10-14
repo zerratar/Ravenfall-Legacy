@@ -24,13 +24,13 @@
         var result = await Game.RavenNest.Clan.LeaveAsync(plr.Id);
         if (result.Success)
         {
-            client.SendReply(gm, $"You have departed your clan and are no longer a member of {clan.ClanInfo.Name}.");
+            client.SendReply(gm, Localization.MSG_CLAN_LEFT, clan.ClanInfo.Name);
             clan.Leave();
             return;
         }
 
         client.SendReply(gm,
             result.ErrorMessage ??
-            "Unable to leave your clan right now, unknown error. Please try again later.");
+            Localization.MSG_CLAN_LEAVE_FAILED);
     }
 }

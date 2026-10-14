@@ -39,7 +39,7 @@ public class FerryTravel : ChatBotCommandHandler<string>
                 return;
             }
 
-            client.SendReply(gm, "You do not have permission to set this player to sail.");
+            client.SendReply(gm, Localization.MSG_FERRY_SAIL_NO_PERMISSION);
             return;
         }
 

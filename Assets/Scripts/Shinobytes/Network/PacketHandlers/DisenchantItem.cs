@@ -26,7 +26,7 @@ public class DisenchantItem : ChatBotCommandHandler<string>
         {
             if (player.LastEnchantedItem == null)
             {
-                client.SendReply(gm, "You have not enchanted any items recently.");
+                client.SendReply(gm, Localization.MSG_DISENCHANT_NONE_RECENT);
                 return;
             }
 
@@ -38,7 +38,7 @@ public class DisenchantItem : ChatBotCommandHandler<string>
             {
                 if (System.DateTime.UtcNow >= player.LastEnchantedItemExpire)
                 {
-                    client.SendReply(gm, "It has been more than 5 minutes since you enchanted '{itemName}', to avoid disenchanting by mistake you have to use '!disenchant last' to continue.", player.LastEnchantedItem.Name);
+                    client.SendReply(gm, Localization.MSG_DISENCHANT_LAST_EXPIRED, player.LastEnchantedItem.Name);
                     return;
                 }
 

@@ -24,25 +24,25 @@ public class DungeonForce : ChatBotCommandHandler
 
             if (PlayerSettings.Instance.DisableDungeons.GetValueOrDefault())
             {
-                client.SendReply(gm, "Dungeons have been disabled in this stream by the broadcaster.");
+                client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_DISABLED);
                 return;
             }
 
             if (Game.Dungeons.IsBusy)
             {
-                client.SendReply(gm, "Someone just used a dungeon scroll.");
+                client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_BUSY);
                 return;
             }
 
             if (Game.Dungeons.Active)
             {
-                client.SendReply(gm, "There is already an active dungeon.");
+                client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_ALREADY_ACTIVE);
                 return;
             }
 
             if (Game.Raid.IsBusy)
             {
-                client.SendReply(gm, "Someone tried to use a raid scroll. Please wait before using a dungeon scroll.");
+                client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_RAID_BUSY);
                 return;
             }
 
@@ -62,7 +62,7 @@ public class DungeonForce : ChatBotCommandHandler
             {
                 if (Game.Events.IsActive)
                 {
-                    client.SendReply(gm, "Dungeon cannot be started right now. Please try again later");
+                    client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_TRY_LATER);
                     return;
                 }
 
@@ -84,18 +84,18 @@ public class DungeonForce : ChatBotCommandHandler
 
                         if (Game.Dungeons.CanJoin(plr, string.Empty) == DungeonJoinResult.CanJoin)
                         {
-                            client.SendReply(gm, "You have used a Dungeon Scroll and joined the dungeon. Good luck!");
+                            client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_USED_JOINED);
                             Game.Dungeons.Join(plr);
                         }
                         else
                         {
-                            client.SendReply(gm, "You have used a Dungeon Scroll.");
+                            client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_USED);
                         }
 
                         Game.Dungeons.AnnounceDungeon(req);
                     }))
                     {
-                        client.SendReply(gm, "Dungeon could not be started. Try again later");
+                        client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_FAILED);
                         var dungeonScroll = Game.Items.Find(x => x.Name.ToLower().Contains("dungeon") && x.Category == ItemCategory.Scroll);
                         if (dungeonScroll != null)
                         {
@@ -108,10 +108,10 @@ public class DungeonForce : ChatBotCommandHandler
                     switch (result)
                     {
                         case ScrollUseResult.InsufficientScrolls:
-                            client.SendReply(gm, "You do not have any Dungeon Scrolls! Redeem them under streamer loyalty on the website.");
+                            client.SendReply(gm, Localization.MSG_DUNGEON_FORCE_NO_SCROLLS);
                             return;
                         case ScrollUseResult.Error:
-                            client.SendReply(gm, "Server was not able to give back a valid response. Uh oh.. BUG!");
+                            client.SendReply(gm, Localization.MSG_EVENT_SCROLL_SERVER_ERROR);
                             return;
                     }
                 }

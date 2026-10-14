@@ -15,91 +15,91 @@
 
         if (Game.StreamRaid.IsWar)
         {
-            client.SendReply(gm, "Unable to duel someone during a war. Please wait for it to be over.");
+            client.SendReply(gm, Localization.MSG_DUEL_DURING_WAR);
             return;
         }
 
         if (!player2)
         {
-            client.SendReply(gm, "No player with the name {targetPlayerName} is currently playing.", target.Username);
+            client.SendReply(gm, Localization.MSG_DUEL_PLAYER_NOT_FOUND, target.Username);
             return;
         }
 
         if (player1.ferryHandler.OnFerry)
         {
-            client.SendReply(gm, "You cannot duel another player while on the ferry.");
+            client.SendReply(gm, Localization.MSG_DUEL_FAILED_FERRY);
             return;
         }
 
         if (player2.ferryHandler.OnFerry)
         {
-            client.SendReply(gm, "You cannot duel {targetPlayerName} as they are on the ferry.", player2.PlayerName);
+            client.SendReply(gm, Localization.MSG_DUEL_TARGET_FERRY, player2.PlayerName);
             return;
         }
 
         if (player1.Island != player2.Island)
         {
-            client.SendReply(gm, "You cannot duel {targetPlayerName} as they are not on the same island.", player2.PlayerName);
+            client.SendReply(gm, Localization.MSG_DUEL_TARGET_OTHER_ISLAND, player2.PlayerName);
             return;
         }
 
         if (player1 == player2)
         {
-            client.SendReply(gm, "You cannot duel yourself.");
+            client.SendReply(gm, Localization.MSG_DUEL_SELF);
             return;
         }
 
         if (player1.duelHandler.InDuel)
         {
-            client.SendReply(gm, "You cannot duel another player as you are already in a duel.");
+            client.SendReply(gm, Localization.MSG_DUEL_FAILED_IN_DUEL);
             return;
         }
 
         if (player1.arenaHandler.InArena)
         {
-            client.SendReply(gm, "You cannot duel another player as you are participating in the Arena.");
+            client.SendReply(gm, Localization.MSG_DUEL_FAILED_IN_ARENA);
             return;
         }
 
         if (player1.raidHandler.InRaid)
         {
-            client.SendReply(gm, "You cannot duel another player as you are participating in a Raid.");
+            client.SendReply(gm, Localization.MSG_DUEL_FAILED_IN_RAID);
             return;
         }
 
         if (player1.dungeonHandler.InDungeon)
         {
-            client.SendReply(gm, "You cannot duel another player as you are participating in a Dungeon.");
+            client.SendReply(gm, Localization.MSG_DUEL_FAILED_IN_DUNGEON);
             return;
         }
 
         if (player2.duelHandler.InDuel)
         {
-            client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she is participating in a duel.", player2.PlayerName);
+            client.SendReply(gm, Localization.MSG_DUEL_TARGET_IN_DUEL, player2.PlayerName);
             return;
         }
 
         if (player2.arenaHandler.InArena)
         {
-            client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she is participating in the Arena.", player2.PlayerName);
+            client.SendReply(gm, Localization.MSG_DUEL_TARGET_IN_ARENA, player2.PlayerName);
             return;
         }
 
         if (player2.raidHandler.InRaid)
         {
-            client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she is participating in a Raid.", player2.PlayerName);
+            client.SendReply(gm, Localization.MSG_DUEL_TARGET_IN_RAID, player2.PlayerName);
             return;
         }
 
         if (player2.dungeonHandler.InDungeon)
         {
-            client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she is participating in a Dungeon.", player2.PlayerName);
+            client.SendReply(gm, Localization.MSG_DUEL_TARGET_IN_DUNGEON, player2.PlayerName);
             return;
         }
 
         if (player2.duelHandler.HasActiveRequest)
         {
-            client.SendReply(gm, "You cannot duel {targetPlayerName} as he or she already have an active duel request.", player2.PlayerName);
+            client.SendReply(gm, Localization.MSG_DUEL_TARGET_HAS_REQUEST, player2.PlayerName);
             return;
         }
 

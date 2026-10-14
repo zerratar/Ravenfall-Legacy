@@ -14,7 +14,7 @@ public class PlayerLogUpload : ChatBotCommandHandler
         {
             if (!TryGetPlayer(gm, client, out var player) || (!player.IsGameAdmin && !player.IsModerator && !player.IsBroadcaster && !player.IsGameModerator))
             {
-                client.SendReply(gm, "Only the Broadcaster and Moderators can use this command.");
+                client.SendReply(gm, Localization.MSG_UPLOAD_BROADCASTER_MODERATOR_ONLY);
                 return;
             }
         }

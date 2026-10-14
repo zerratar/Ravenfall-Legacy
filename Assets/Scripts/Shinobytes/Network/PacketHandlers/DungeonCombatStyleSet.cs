@@ -13,7 +13,7 @@
 
         if (string.IsNullOrEmpty(data))
         {
-            client.SendReply(gm, "You need to specify a combat skill to set. Example: !dungeon skill magic");
+            client.SendReply(gm, Localization.MSG_DUNGEON_SKILL_MISSING);
             return;
         }
 
@@ -22,18 +22,18 @@
         var targetSkill = SkillUtilities.ParseSkill(data);
         if (!targetSkill.IsCombatSkill())
         {
-            client.SendReply(gm, "No such combat skill: {skill}", data);
+            client.SendReply(gm, Localization.MSG_COMBAT_SKILL_NOT_FOUND, data);
             return;
         }
 
         player.dungeonHandler.SetSkill(targetSkill);
 
-        var skillName = targetSkill.ToString();
+        var skillName = Localization.SkillName(targetSkill);
         if (targetSkill == RavenNest.Models.Skill.Health || targetSkill == RavenNest.Models.Skill.Melee)
         {
-            skillName = "All";
+            skillName = Localization.UI_SKILL_ALL;
         }
 
-        client.SendReply(gm, "Your combat skill during dungeons has been set to {skill}.", skillName);
+        client.SendReply(gm, Localization.MSG_DUNGEON_SKILL_SET, skillName);
     }
 }

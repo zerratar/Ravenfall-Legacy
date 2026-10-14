@@ -13,6 +13,6 @@
         }
 
         player.dungeonHandler.SetSkill(null);
-        client.SendReply(gm, "The skill used for dungeons has been reset.");
+        client.SendReply(gm, Localization.MSG_DUNGEON_SKILL_RESET);
     }
 }

@@ -21,7 +21,7 @@ public class TownStats : ChatBotCommandHandler
         var nextLevel = level + 1;
         var nextLevelExperience = GameMath.ExperienceForLevel(nextLevel);
         var remainingExp = nextLevelExperience - experience;
-        client.SendReply(gm, "Village is level {townHallLevel}, it needs {remainingExp} xp to level up.", level, remainingExp);
+        client.SendReply(gm, Localization.MSG_VILLAGE_LEVEL, level, remainingExp);
     }
 }
 
@@ -88,7 +88,7 @@ public class TownHouses : ChatBotCommandHandler
             return;
         }
 
-        client.SendReply(gm, "No players assigned to houses.");
+        client.SendReply(gm, Localization.MSG_VILLAGE_HOUSES_NONE);
     }
 
 

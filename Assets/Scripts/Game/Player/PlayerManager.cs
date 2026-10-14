@@ -630,7 +630,7 @@ public class PlayerManager : MonoBehaviour
         catch (Exception exc)
         {
             Shinobytes.Debug.LogError("Unable to restore players: " + exc);
-            gameManager.RavenBot.Announce("Failed to restore players. See game log files for more details.");
+            gameManager.RavenBot.Announce(Localization.MSG_RESTORE_FAILED);
             return;
         }
 
@@ -638,17 +638,17 @@ public class PlayerManager : MonoBehaviour
         {
             if (failed.Count > 10)
             {
-                gameManager.RavenBot.Announce((players.Count - failed.Count) + " out of " + players.Count + " was added back to the game.");
+                gameManager.RavenBot.Announce(Localization.MSG_RESTORE_PARTIAL, (players.Count - failed.Count).ToString(), players.Count.ToString());
             }
             else
             {
-                gameManager.RavenBot.Announce(failed.Count + " players failed to be added back: " + String.Join(", ", failed.Select(x => x.User.Username)));
+                gameManager.RavenBot.Announce(Localization.MSG_RESTORE_FAILED_NAMES, failed.Count.ToString(), String.Join(", ", failed.Select(x => x.User.Username)));
             }
         }
         else
         {
 
-            gameManager.RavenBot.Announce(players.Count + " players restored.");
+            gameManager.RavenBot.Announce(Localization.MSG_RESTORE_SUCCESS, players.Count.ToString());
         }
     }
 

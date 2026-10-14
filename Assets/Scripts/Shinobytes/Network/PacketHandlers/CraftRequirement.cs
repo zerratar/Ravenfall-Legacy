@@ -49,17 +49,17 @@ public class CraftRequirement : ChatBotCommandHandler<string>
             var drop = Game.Items.GetResourceDrop(item.Item);
             if (drop != null)
             {
-                client.SendReply(gm, "{itemName} requires level {level} {skillName}.", item.Item.Name, drop.LevelRequirement.ToString(), drop.RequiredSkill.ToString());
+                client.SendReply(gm, Localization.MSG_CRAFTREQ_DROP_LEVEL, item.Item.Name, drop.LevelRequirement.ToString(), drop.RequiredSkill.ToString());
                 return;
             }
 
             if (EquipmentLevelRequirement(i) > 0)
             {
-                client.SendReply(gm, "{itemName} requires {equipRequirements} to equip. This item cannot be created.", i.Name, GetEquipRequirements(i));
+                client.SendReply(gm, Localization.MSG_CRAFTREQ_EQUIP_ONLY, i.Name, GetEquipRequirements(i));
             }
             else
             {
-                client.SendReply(gm, "{itemName} is not an item that can be created.", item.Item.Name);
+                client.SendReply(gm, Localization.MSG_CRAFTREQ_NOT_CREATABLE, item.Item.Name);
             }
             return;
         }
@@ -73,12 +73,12 @@ public class CraftRequirement : ChatBotCommandHandler<string>
         // check if its an equipable. if so, then we want to include it in the string.
         if (EquipmentLevelRequirement(i) > 0)
         {
-            client.SendReply(gm, "{name} requires level {level} {skillname} and {requirements}. To equip this item you require {equipRequirements}", name, skilllevel, skillname,
+            client.SendReply(gm, Localization.MSG_CRAFTREQ_RECIPE_EQUIP, name, skilllevel, skillname,
                 GetRecipeIngredientsString(player.Inventory, recipe), GetEquipRequirements(i));
         }
         else
         {
-            client.SendReply(gm, "{name} requires level {level} {skillname} and {requirements}", name, skilllevel, skillname, GetRecipeIngredientsString(player.Inventory, recipe));
+            client.SendReply(gm, Localization.MSG_CRAFTREQ_RECIPE, name, skilllevel, skillname, GetRecipeIngredientsString(player.Inventory, recipe));
         }
     }
 
@@ -100,23 +100,23 @@ public class CraftRequirement : ChatBotCommandHandler<string>
         var requirements = new List<string>();
         if (item.RequiredAttackLevel > 0)
         {
-            requirements.Add("Level " + item.RequiredAttackLevel + " Attack");
+            requirements.Add(Localization.MSG_CRAFTREQ_LEVEL_ATTACK.Replace("{level}", item.RequiredAttackLevel.ToString()));
         }
         if (item.RequiredDefenseLevel > 0)
         {
-            requirements.Add("Level " + item.RequiredDefenseLevel + " Defense");
+            requirements.Add(Localization.MSG_CRAFTREQ_LEVEL_DEFENSE.Replace("{level}", item.RequiredDefenseLevel.ToString()));
         }
         if (item.RequiredRangedLevel > 0)
         {
-            requirements.Add("Level " + item.RequiredRangedLevel + " Ranged");
+            requirements.Add(Localization.MSG_CRAFTREQ_LEVEL_RANGED.Replace("{level}", item.RequiredRangedLevel.ToString()));
         }
         if (item.RequiredMagicLevel > 0)
         {
-            requirements.Add("Level " + item.RequiredMagicLevel + " Magic or Healing");
+            requirements.Add(Localization.MSG_CRAFTREQ_LEVEL_MAGIC.Replace("{level}", item.RequiredMagicLevel.ToString()));
         }
         if (item.RequiredSlayerLevel > 0)
         {
-            requirements.Add("Level " + item.RequiredSlayerLevel + " Slayer");
+            requirements.Add(Localization.MSG_CRAFTREQ_LEVEL_SLAYER.Replace("{level}", item.RequiredSlayerLevel.ToString()));
         }
         return string.Join(", ", requirements);
     }
