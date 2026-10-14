@@ -68,8 +68,13 @@ namespace RavenNest.SDK.Endpoints
     /// </summary>
     public class LocalDevServerEndpoint : IAppSettings
     {
-        public string WebApiEndpoint => "http://localhost/api/";
-        public string WebApiAuthEndpoint => "http://localhost/api/";
+        // 127.0.0.1 and https straight away. "localhost" tried IPv6 first, which the server does
+        // not listen on, and Windows spends two seconds on a refused connection before it falls
+        // back; the http address then redirected to https and paid it again. Every call to the
+        // local server took four seconds. Links the browser opens still say localhost, see
+        // RavenNestClient.WebsiteUrl, so the site's cookies and the Twitch return address match.
+        public string WebApiEndpoint => "https://127.0.0.1/api/";
+        public string WebApiAuthEndpoint => "https://127.0.0.1/api/";
         public string WebSocketEndpoint => "ws://localhost/api/stream";
         public string TcpApiEndpoint => "127.0.0.1";
         public string RavenbotEndpoint => "ravenbot.ravenfall.stream";

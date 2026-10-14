@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -76,20 +78,9 @@ namespace RavenNest.SDK.Endpoints
             var target = GetTargetUrl(reqTarget);
             var httpMethod = new HttpMethod(GetMethod(type));
 
-            // Create a handler that accepts any certificates and uses our cookie container.
-            var handler = new HttpClientHandler
+            var client = SharedClient(cookieContainer);
+            using (var timeout = new CancellationTokenSource(TimeoutFor(reqTarget)))
             {
-                CookieContainer = cookieContainer,
-                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
-            };
-
-            using (var client = new HttpClient(handler))
-            {
-                // Set timeout for specific targets.
-                if (reqTarget == ApiRequestTarget.Game || reqTarget == ApiRequestTarget.Players)
-                {
-                    client.Timeout = TimeSpan.FromMilliseconds(25000);
-                }
 
                 // Build the request message.
                 var request = new HttpRequestMessage(httpMethod, target);
@@ -147,7 +138,7 @@ namespace RavenNest.SDK.Endpoints
 
                 try
                 {
-                    using (var response = await client.SendAsync(request))
+                    using (var response = await client.SendAsync(request, timeout.Token))
                     {
                         var responseData = await response.Content.ReadAsStringAsync();
 
@@ -194,18 +185,9 @@ namespace RavenNest.SDK.Endpoints
             var target = GetTargetUrl(reqTarget);
             var httpMethod = new HttpMethod(GetMethod(type));
 
-            var handler = new HttpClientHandler
+            var client = SharedClient(cookieContainer);
+            using (var timeout = new CancellationTokenSource(TimeoutFor(reqTarget)))
             {
-                CookieContainer = cookieContainer,
-                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
-            };
-
-            using (var client = new HttpClient(handler))
-            {
-                if (reqTarget == ApiRequestTarget.Game || reqTarget == ApiRequestTarget.Players)
-                {
-                    client.Timeout = TimeSpan.FromMilliseconds(25000);
-                }
 
                 var request = new HttpRequestMessage(httpMethod, target);
                 request.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36");
@@ -244,7 +226,7 @@ namespace RavenNest.SDK.Endpoints
                 try
                 {
                     // Block on the async call for a synchronous behavior.
-                    var response = client.SendAsync(request).GetAwaiter().GetResult();
+                    var response = client.SendAsync(request, timeout.Token).GetAwaiter().GetResult();
                     var responseData = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
                     if (response.StatusCode == HttpStatusCode.Forbidden)
@@ -288,6 +270,43 @@ namespace RavenNest.SDK.Endpoints
                 case ApiRequestType.Remove: return HttpMethod.Delete.Method;
                 default: return HttpMethod.Get.Method;
             }
+        }
+
+        // One client per cookie container, kept for the life of the game. A new HttpClient and
+        // handler for every request opened a new connection each time, and a new TLS handshake
+        // with it: every call to the server paid for setting up a connection before it sent a
+        // byte. The shared one keeps its connections open between requests.
+        private static readonly Dictionary<CookieContainer, HttpClient> sharedClients = new Dictionary<CookieContainer, HttpClient>();
+
+        private static HttpClient SharedClient(CookieContainer cookies)
+        {
+            lock (sharedClients)
+            {
+                if (sharedClients.TryGetValue(cookies, out var existing))
+                {
+                    return existing;
+                }
+
+                // accepts any certificate, as before, for the local development server
+                var handler = new HttpClientHandler
+                {
+                    CookieContainer = cookies,
+                    ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
+                };
+
+                // timeouts are per request now, see TimeoutFor
+                var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+                sharedClients[cookies] = client;
+                return client;
+            }
+        }
+
+        /// <summary>Game and player calls give up sooner, as they did with their own clients.</summary>
+        private static TimeSpan TimeoutFor(ApiRequestTarget target)
+        {
+            return target == ApiRequestTarget.Game || target == ApiRequestTarget.Players
+                ? TimeSpan.FromMilliseconds(25000)
+                : TimeSpan.FromSeconds(100);
         }
 
         private string GetTargetUrl(ApiRequestTarget reqTarget)

@@ -86,6 +86,12 @@ namespace Assets.Scripts
                     }
                     state = LoadingState.Loaded;
                 }
+                else
+                {
+                    // too soon after the last try: try again later. Left at Loading, a first load
+                    // that failed and came back within five seconds was never tried again.
+                    state = LoadingState.None;
+                }
             }
             catch { state = LoadingState.None; }
             //gameManager.SetLoadingState("village", state);

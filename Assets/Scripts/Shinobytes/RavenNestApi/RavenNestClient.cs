@@ -205,7 +205,8 @@ namespace RavenNest.SDK
             {
                 var url = Settings.WebApiAuthEndpoint ?? string.Empty;
                 var api = url.IndexOf("/api", StringComparison.OrdinalIgnoreCase);
-                return (api > 0 ? url.Substring(0, api) : url).TrimEnd('/');
+                // the local server is called by address for speed, but signed in to by name
+                return (api > 0 ? url.Substring(0, api) : url).TrimEnd('/').Replace("://127.0.0.1", "://localhost");
             }
         }
 
