@@ -61,19 +61,11 @@ for k in range(3):
     rf = pc.sub(math.cos(a) * 1.05, math.sin(a) * 1.05, a)
     b.box(rf.p(0, 0, 0.45 + 0.15 * k), (0.32, 0.18, 0.5), "PAL", STONE, rot_z=rf.rot)
     b.box(rf.p(0, 0.1, 0.48 + 0.15 * k), (0.12, 0.02, 0.26), "GLASS", ARCANE_L, rot_z=rf.rot)
-# lectern with the spellbook open on it
-lf = f.sub(-1.2, 2.2, 0.2)
-b.box(lf.p(0, 0, 0.5), (0.16, 0.16, 1.0), "PAL", TIMBER, rot_z=lf.rot)
-b.box(lf.p(0, 0, 0.04), (0.6, 0.6, 0.08), "PAL", TIMBER, rot_z=lf.rot)
-bk = [Vector(lf.p(-0.36, -0.2, 1.0)), Vector(lf.p(0.36, -0.2, 1.0)), Vector(lf.p(0.36, 0.2, 1.18)), Vector(lf.p(-0.36, 0.2, 1.18))]
-if (bk[1] - bk[0]).cross(bk[2] - bk[1]).z < 0: bk = bk[::-1]
-fs = b.quad_box(bk, [v + Vector((0, 0, 0.06)) for v in bk], "PAL", ARCANE)
-pg = [Vector(lf.p(-0.32, -0.17, 1.065)), Vector(lf.p(0.32, -0.17, 1.065)), Vector(lf.p(0.32, 0.17, 1.245)), Vector(lf.p(-0.32, 0.17, 1.245))]
-b.face([tuple(v) for v in pg], (0, -0.4, 1), "PAL", PAGE)
-# a broom by the tower door and the black cat on its step
+# the lectern with the spellbook
+anchor(f, "lectern", -1.2, 2.2, yaw=0.2 + math.pi)
+# a broom leaning by the tower door, and the black cat on its step
 bw = df.sub(-0.75, 0.25, 0.0)
-bar(b, bw.p(0, 0, 0.35), bw.p(0.15, 0.05, 1.8), 0.05, 0.05, "PAL", TIMBER_L)
-b.lathe(bw.p(-0.02, 0, 0.0), [(0.0, 0.0), (0.2, 0.05), (0.08, 0.42), (0.0, 0.45)], 7, "PAL", HAY)
+anchor(bw, "broom", 0, 0, tilt=math.radians(-10))
 cf = df.sub(0.25, 0.75, 0.3)
 b.sphere(cf.p(0, 0, 0.2), 0.17, "PAL", CAT, seg=6, rings=4, sz=1.1)
 b.sphere(cf.p(0, 0.04, 0.45), 0.12, "PAL", CAT, seg=6, rings=4)

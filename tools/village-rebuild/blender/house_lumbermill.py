@@ -39,7 +39,7 @@ b.box(bf.p(0, 0, 0.85), (3.0, 0.9, 0.12), "PAL", TIMBER_L, rot_z=bf.rot)
 for x in (-1.3, 1.3):
     for y in (-0.35, 0.35):
         b.box(bf.p(x, y, 0.42), (0.14, 0.14, 0.84), "PAL", TIMBER, rot_z=bf.rot)
-log(b, bf.p(-1.4, 0.0, 1.13), bf.p(0.5, 0.0, 1.13), 0.22)
+anchor(bf, "log", -0.45, 0.0, 0.92, yaw=math.pi / 2, s=0.8)          # the log being cut, on the bench
 c = Vector(bf.p(0.75, 0.0, 1.2)); n = bf.R @ Vector((0, 1, 0)); side = bf.R @ Vector((1, 0, 0)); up = Vector((0, 0, 1))
 for s in (1, -1):
     pts = []
@@ -55,16 +55,14 @@ for k in range(5):
 # log stacks, plank stacks, the chopping stump with its axe
 log_stack(b, f, -2.5, 1.6, length=2.8, rows=3, yaw=0.15)
 log_stack(b, f, -2.3, 3.4, length=2.2, rows=2, yaw=-0.1, r=0.18)
-for k in range(6):
-    b.box(f.p(2.6, 1.6, 0.1 + k * 0.12), (2.4, 0.9, 0.1), "PAL", "c6a177" if k % 2 else TIMBER_L, rot_z=f.rot + 0.05 * k)
+# stacked planks, each a Synty plank laid from its end (they run towards -x), on two bearers
+for k in range(7):
+    anchor(f, "plank", 3.8 + 0.03 * math.sin(k * 2.0), 1.35 + 0.18 * (k % 3) + 0.05 * k, 0.1 + 0.05 * k, yaw=math.pi / 2 + 0.02 * math.sin(k))
 for x in (1.6, 3.6):
     b.box(f.p(x, 1.6, 0.05), (0.15, 1.0, 0.1), "PAL", TIMBER, rot_z=f.rot)
-stump(b, f, 0.6, 2.4)
-af = f.sub(0.6, 2.4, 0.5)
-bar(b, af.p(0, 0.0, 0.5), af.p(0.45, 0.25, 1.1), 0.06, 0.06, "PAL", TIMBER_L)
-b.quad_box([af.p(-0.12, -0.04, 0.48), af.p(0.12, -0.04, 0.48), af.p(0.12, 0.04, 0.48), af.p(-0.12, 0.04, 0.48)],
-           [af.p(-0.16, -0.04, 0.72), af.p(0.16, -0.04, 0.72), af.p(0.16, 0.04, 0.72), af.p(-0.16, 0.04, 0.72)], "PAL", STEEL)
-stump(b, f, 3.6, 3.4, r=0.32, h=0.35)
+anchor(f, "stump", 0.6, 2.4, s=1.1)
+anchor(f, "axe", 0.62, 2.4, 0.42, yaw=0.5, tilt=math.radians(-25))     # stuck in the stump
+anchor(f, "stump", 3.6, 3.4, s=0.8)
 for k in range(4):
     b.box(f.p(1.2 + 0.25 * k, 3.0 + 0.1 * k, 0.06), (0.35, 0.12, 0.12), "PAL", "c6a177", rot_z=f.rot + k)     # split firewood
 

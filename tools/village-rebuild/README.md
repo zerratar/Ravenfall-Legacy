@@ -72,18 +72,35 @@ Every building type has its own house, built by `blender/house_<type>.py` on a s
 
 - `house_kit.py`: timber framed cottages (stone plinth, plaster walls, a gabled roof in any of the kit's tile or
   slat colours), windows, doors, signboards with an emblem per trade, yards.
-- `house_props.py`: fences, trees, hay, sacks, logs, dummies, targets, boats, a well, a round hut and more.
+- `house_props.py`: the shared props (fences, trees, hay, sacks, logs, dummies, a well, baskets, rocks, boats) and
+  the round hut.
 
 Each house is a lot of about 9 x 9 m facing -z, towards the village camera and the build mode card camera.
-To rebuild one and put it in the game:
+To rebuild one and put it in the game, with the editor open:
 
 ```
-sh blender/run.sh house_mining
+sh house.sh Mining
 ```
 
-Then run `models_import.cs` and `houses_prefabs.cs` in the editor. `houses_prefabs.cs` makes
-`Assets/Village/Prefabs/House_<Type>.prefab` (TownHouseController and a footprint BoxCollider on the root, the
-model as a child) and points the building definitions in `Assets/Prefabs/Buildings` at them.
+That runs the Blender script, `models_import.cs`, `houses_synty.cs` and `houses_prefabs.cs`, then `house_shot.cs`
+for three review shots in `Temp/village-shots/unity_<Name>_0..2.png` (two corners and a low close-up).
+
+**Synty props, not modelled ones.** Anything a Synty pack has (barrels, crates, dummies, racks, benches, banners,
+weapons, tools, planters, potions, boats, trees and many more) is placed, not built: the shared prop functions
+and a house's own `anchor()` calls leave an empty named after a key, and `houses_synty.cs` puts the prefab for the
+key there and bakes the house and every prop into one mesh with one part per material, written as a binary FBX to
+`Assets/Village/Models/Baked`. The key table at the top of `houses_synty.cs` gives each key its prefab, the size it
+gets (and along which axis it is measured: an upright tool is measured by its height, not its width), a turn so it
+faces -z, and whether it stands on its pivot, sits on the ground or is centred over the anchor. The anchor's name
+carries its turn, tilt, roll and scale, because transforms change axes on the way into Unity. Only what Synty lacks
+is modelled: the cottages, the trade signs and emblems, the easter eggs, and centrepieces such as the forge, the
+oven, the sailboat, the mine and the cauldron. The Polygon Nature trees use a tree shader that draws pink here;
+the pine key uses the Vikings one.
+
+**Yards.** A house no longer carries a flat dirt pad (it sat on the grass like a plate). `yard()` leaves a marker,
+and `houses_prefabs.cs` gives the prefab a `HouseYard` for it: a patch of the terrain's own dirt or gravel, drawn
+with the road shader, laid over the ground wherever the house stands and fading raggedly into the grass.
+
 `house_lineup.cs` lines them all up for review shots, in three runs.
 
 The old prefabs stay in `Assets/Prefabs/Buildings/Objects`. To go back for a type, point its definition's

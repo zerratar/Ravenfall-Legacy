@@ -49,7 +49,7 @@ b.box(tuple(ac + Vector((0, 0, 0.14))), (0.02, 0.02, 0.07), "PAL", TIMBER, rot_z
 b.box(tuple(ac + Vector((0.04, 0, 0.15))), (0.07, 0.02, 0.04), "PAL", LEAF, rot_z=0.4)
 arrow(b, tuple(ac + Vector((0.55, 0.3, 0.02))), tuple(ac + Vector((-0.25, -0.13, -0.01))))
 # the shooting line, a bow rack and two quivers
-for x in (-4.0, -1.7):            # the shooting line: two planks, each laid from its end
+for x in (-1.7, 0.6):             # the shooting line: two planks, each laid from its end towards -x
     anchor(f, "plank", x, 2.75, yaw=math.pi / 2, s=0.95)
 rf = f.sub(1.2, 2.2, 0.0)
 anchor(rf, "weapon_rack", 0, 0)

@@ -8,13 +8,14 @@
 // Temp/village-shots/houses_synty_house.txt (for example "Barracks"). Run models_import.cs first.
 //
 // KEYS: key | prefab under Assets/ (several joined with + are placed together, sized by the first) | size in metres | which size (h height, x length, z depth, w widest) |
-// turn in degrees to make the prefab face Unity -z | how it stands (pivot: as modelled, sit: bottom on the anchor).
+// turn in degrees to make the prefab face Unity -z | how it stands (pivot: as modelled, sit: bottom on the anchor,
+// centre: bottom on the anchor and centred over it, for prefabs whose pivot is at a corner).
 var KEYS = new string[] {
     "barrel|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Barrel_01|0.85|h|0|pivot",
     "crate|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Crate_Wood_01|0.62|h|0|pivot",
     "crate_stack|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Crate_Stack_01|1.5|h|0|pivot",
     "tree|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Tree_Round_01|4.4|h|0|pivot",
-    "pine|PolygonNature/Prefabs/Trees/SM_Tree_Pine_Small_01|4.5|h|0|pivot",
+    "pine|PolygonVikings/Prefabs/Environments/SM_Env_Tree_Pine_01|4.5|h|0|pivot",                 // the Polygon Nature pine uses a tree shader that draws pink here
     "bush|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Bush_Small_01|0.85|h|0|pivot",
     "hay_bale|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Hay_Bale_01|0.6|h|0|sit",
     "hay_pile|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Hay_Pile_01|1.8|h|0|pivot",
@@ -59,6 +60,10 @@ var KEYS = new string[] {
     "cart|PolygonFantasyKingdom/Prefabs/Vehicles/SM_Veh_Cart_01|3.0|z|0|pivot",
     "firepit|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_FirePit_01|1.0|x|0|pivot",
     "rock|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Rock_01|1.0|w|0|sit",
+    "minecart|PolygonDungeon/Prefabs/Props/SM_Prop_Minecart_01|1.6|w|0|sit",
+    "ore_gold|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Ore_Gold_01|0.45|w|0|sit",
+    "ore_iron|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Ore_Iron_01|0.5|w|0|sit",
+    "ore_gem|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Ore_Gem_01|0.4|w|0|sit",
     "cheese|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Cheese_Wheel_01|0.34|w|0|sit",
     "sausages|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Meat_Sausages_01|0.85|h|0|pivot",
     "bellows|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Bellows_01|0.9|w|0|pivot",
@@ -74,8 +79,8 @@ var KEYS = new string[] {
     "books|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Books_01|0.45|w|0|pivot",
     "crystal|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Crystal_01|1|h|0|pivot",
     "broom|PolygonFantasyKingdom/Prefabs/Items/SM_Item_Broom_01|1.4|h|0|pivot",
-    "herbs|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Herb_Bunch_01|0.45|h|0|pivot",
-    "planter|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_PlanterBox_Preset_01|1.4|x|0|pivot",
+    "herbs|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Herb_Bunch_01|0.62|h|0|pivot",
+    "planter|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_PlanterBox_Preset_01|1.3|x|0|centre",
     "cabbage|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Cabbage_01|0.32|w|0|pivot",
     "oar|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Oar_01|2.2|w|0|pivot",
     "log|PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Log_01|2.4|w|0|pivot",
@@ -102,6 +107,16 @@ var KEYS = new string[] {
     "cow_skull|PolygonVikings/Prefabs/Props/SM_Prop_Cow_Skull_01|0.6|w|0|pivot",
     "quiver|PolygonElvenRealm/Prefabs/Characters/Attachments/SM_Prop_Quiver_01+PolygonElvenRealm/Prefabs/Characters/Attachments/SM_Prop_Quiver_01_Arrows_01|1.0|h|0|sit",
     "flowers|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Bush_Flowers_01|0.7|h|0|pivot",
+    "potion1|PolygonDungeon/Prefabs/Items/SM_Item_Potion_01|0.26|h|0|sit",
+    "potion2|PolygonDungeon/Prefabs/Items/SM_Item_Potion_02|0.26|h|0|sit",
+    "potion3|PolygonDungeon/Prefabs/Items/SM_Item_Potion_03|0.26|h|0|sit",
+    "potion4|PolygonDungeon/Prefabs/Items/SM_Item_Potion_04|0.26|h|0|sit",
+    "potion5|PolygonDungeon/Prefabs/Items/SM_Item_Potion_05|0.26|h|0|sit",
+    "potion6|PolygonDungeon/Prefabs/Items/SM_Item_Potion_06|0.26|h|0|sit",
+    "flower1|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Flowers_01|0.4|h|0|pivot",
+    "flower2|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Flowers_02|0.4|h|0|pivot",
+    "flower3|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Flowers_03|0.4|h|0|pivot",
+    "flower4|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Flowers_04|0.4|h|0|pivot",
     "sunflower|PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Sunflower_01|1.6|h|0|pivot",
 };
 
@@ -191,11 +206,13 @@ foreach (var a in anchors)
     var own = UnityEngine.Quaternion.Euler(0f, float.Parse(spec[4], inv), 0f);
     prop.transform.rotation = UnityEngine.Quaternion.Euler(0f, 180f - yaw, 0f) * UnityEngine.Quaternion.Euler(tilt, 0f, 0f) * UnityEngine.Quaternion.Euler(0f, 0f, roll) * own;
     prop.transform.position = a.position;
-    if (spec[5] == "sit")
+    if (spec[5] == "sit" || spec[5] == "centre")
     {
         UnityEngine.Physics.SyncTransforms();
         var placed = boundsOf(prop);
-        prop.transform.position += new UnityEngine.Vector3(0f, a.position.y - placed.min.y, 0f);
+        var shift = new UnityEngine.Vector3(0f, a.position.y - placed.min.y, 0f);
+        if (spec[5] == "centre") { shift.x = a.position.x - placed.center.x; shift.z = a.position.z - placed.center.z; }
+        prop.transform.position += shift;
     }
     props.Add(prop);
     counts[key] = (counts.ContainsKey(key) ? counts[key] : 0) + 1;

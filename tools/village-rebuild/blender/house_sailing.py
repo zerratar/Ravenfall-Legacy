@@ -26,13 +26,7 @@ sign(b, fw, 2.45, 2.6, 0.0, anchor_emblem)
 torus(b, fw.p(-0.2, 0.12, 2.0), fw.R @ Vector((0, 1, 0)), 0.3, 0.08, None, seg=12, tube=6, cols=[RED, RED, RED, WHITE, WHITE, WHITE])
 # a ship's wheel on the east gable
 gw = hf.sub(-2.5, 0, math.pi / 2)
-c = Vector(gw.p(0, 0.12, 3.75)); n = gw.R @ Vector((0, 1, 0))
-torus(b, c, n, 0.42, 0.05, TIMBER_L, seg=12, tube=5)
-side = gw.R @ Vector((1, 0, 0))
-for k in range(8):
-    a = math.pi * k / 4; d = side * math.cos(a) + Vector((0, 0, math.sin(a)))
-    bar(b, tuple(c), tuple(c + d * 0.62), 0.05, 0.05, "PAL", TIMBER_L, normal=n)
-b.sphere(tuple(c + n * 0.04), 0.09, "PAL", GOLD, seg=6, rings=3)
+anchor(gw, "ship_wheel", 0, 0.12, 3.75)
 # a gull sitting on the ridge (it has been there for years)
 gl = hf.sub(-1.2, 0.0, 0.4)
 GZ = ridge + 0.36
@@ -64,19 +58,10 @@ for s in (1, -1):
     b.face([bf.p(0.4, s * 0.01, 5.3), bf.p(1.0, s * 0.01, 5.18), bf.p(0.4, s * 0.01, 5.05)], bf.R @ Vector((0, s, 0)), "PAL", RED)
 
 # the anchor, rope coils, oars, crates and barrels
-af = f.sub(3.6, 1.6, -0.4)
-bar(b, af.p(0, 0.0, 0.1), af.p(0, 0.25, 1.5), 0.1, 0.1, "PAL", DARK)
-bar(b, af.p(-0.35, 0.22, 1.32), af.p(0.35, 0.22, 1.32), 0.08, 0.08, "PAL", DARK)
-for s in (-1, 1):
-    bar(b, af.p(0, 0.0, 0.12), af.p(s * 0.42, -0.02, 0.45), 0.09, 0.09, "PAL", DARK)
-    b.prism(af.p(s * 0.42, -0.02, 0.45), 0.08, 0.16, 4, "PAL", DARK, r_top=0.0)
-torus(b, af.p(0, 0.28, 1.62), af.R @ Vector((1, 0, 0)), 0.12, 0.035, DARK, seg=8, tube=4)
-for k in range(3):
-    torus(b, f.p(1.0, 2.9, 0.08 + k * 0.1), (0, 0, 1), 0.34 - k * 0.04, 0.06, "c6a177", seg=10, tube=4)
-for s in (0.0, 0.35):
-    of = hf.sub(-0.6 + s, 1.85, 0.0)
-    bar(b, of.p(0, 0.25, 0.05), of.p(0.15, 0.05, 2.3), 0.06, 0.06, "PAL", TIMBER_L)
-    b.box(of.p(0.02, 0.25, 0.35), (0.16, 0.04, 0.6), "PAL", TIMBER_L, rot_z=of.rot)
+anchor(f, "ship_anchor", 3.6, 1.6, yaw=-0.4)
+anchor(f, "rope", 1.0, 2.9, yaw=0.6)
+for k, s in enumerate((0.0, 0.35)):           # oars stood on end against the boathouse wall
+    anchor(hf, "oar", -0.6 + s, 2.1, 1.1, yaw=k * 0.2, tilt=math.radians(-80), s=0.8)
 crate(b, f, 3.4, -0.1, s=0.6, yaw=0.2)
 barrel(b, f, 3.8, 3.2)
 barrel(b, f, 3.2, 3.5, r=0.28, h=0.7)

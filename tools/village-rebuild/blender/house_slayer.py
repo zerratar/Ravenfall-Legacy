@@ -45,50 +45,20 @@ for k in range(4):
 
 # a spiked palisade down the left side and along the back
 stakes = [(-4.2, -3.9 + i * 0.36) for i in range(17)] + [(-4.2 + (i + 1) * 0.36, -3.9) for i in range(5)]
-for i, (x, y) in enumerate(stakes):
-    h = 1.9 + 0.25 * math.sin(i * 1.7)
-    b.prism(f.p(x, y, 0), 0.17, h, 6, "PAL", TIMBER if i % 2 else TIMBER_L, rot=i)
-    b.prism(f.p(x, y, h), 0.17, 0.4, 6, "PAL", "c6a177", r_top=0.0, rot=i)
+for i, (x, y) in enumerate(stakes):           # Synty spikes, half sunk, so about 2 m stand above ground
+    anchor(f, "spike", x, y, yaw=i * 1.1, s=2.2 + 0.15 * math.sin(i * 1.7))
 bar(b, f.p(-4.05, -3.9, 1.2), f.p(-4.05, 1.9, 1.2), 0.12, 0.08, "PAL", TIMBER)
 
-# the cage on wheels: bars, a roof, and two glowing eyes in the dark inside
+# the Synty cage cart, and two glowing eyes in the dark inside it
 cf = f.sub(-2.4, 2.2, 0.25)
-b.box(cf.p(0, 0, 0.45), (1.6, 1.1, 0.2), "PAL", TIMBER, rot_z=cf.rot)
-b.box(cf.p(0, 0, 1.15), (1.4, 0.9, 1.2), "PAL", DARK, rot_z=cf.rot)
-b.box(cf.p(0, 0, 1.85), (1.7, 1.2, 0.18), "PAL", TIMBER, rot_z=cf.rot)
-for k in range(8):
-    x = -0.75 + k * (1.5 / 7)
-    for s in (-1, 1):
-        b.box(cf.p(x, s * 0.52, 1.15), (0.05, 0.05, 1.3), "PAL", "8b8b8b", rot_z=cf.rot)
-for k in range(5):
-    y = -0.52 + k * (1.04 / 4)
-    for s in (-1, 1):
-        b.box(cf.p(s * 0.77, y, 1.15), (0.05, 0.05, 1.3), "PAL", "8b8b8b", rot_z=cf.rot)
+anchor(cf, "cage_cart", 0, 0, yaw=math.pi / 2)
+b.box(cf.p(0, -0.15, 1.1), (1.0, 0.9, 1.1), "PAL", DARK, rot_z=cf.rot)
 for s in (-1, 1):
-    b.box(cf.p(s * 0.18, 0.46, 1.32), (0.12, 0.02, 0.07), "GLASS", "e8a33d", rot_z=cf.rot)
-    for sy in (-1, 1):
-        c = Vector(cf.p(s * 0.6, sy * 0.58, 0.3)); ax = cf.R @ Vector((0, sy, 0)); fwd = cf.R @ Vector((1, 0, 0)); up = Vector((0, 0, 1))
-        r0 = [c + (fwd * math.cos(2 * math.pi * i / 8) + up * math.sin(2 * math.pi * i / 8)) * 0.28 for i in range(8)]
-        r1 = [v + ax * 0.1 for v in r0]
-        b.face([tuple(v) for v in r1], ax, "PAL", TIMBER_L); b.face([tuple(v) for v in r0], -ax, "PAL", TIMBER_L)
-        for i in range(8):
-            j = (i + 1) % 8; mid = (r0[i] + r0[j]) / 2 - c
-            b.face([tuple(r0[i]), tuple(r0[j]), tuple(r1[j]), tuple(r1[i])], mid, "PAL", TIMBER)
-b.box(cf.p(0.0, 0.0, 2.05), (0.45, 0.3, 0.2), "PAL", BLOOD, rot_z=cf.rot)          # a warning plank on the roof
+    b.box(cf.p(s * 0.18, 0.31, 1.25), (0.12, 0.02, 0.07), "GLASS", "e8a33d", rot_z=cf.rot)
 
 # weapon rack: a frame with two axes and a spear
 rf = f.sub(3.4, 1.4, -math.pi / 2)
-for s in (-1, 1):
-    b.box(rf.p(s * 0.7, 0, 0.7), (0.12, 0.12, 1.4), "PAL", TIMBER, rot_z=rf.rot)
-for z in (0.35, 1.3):
-    b.box(rf.p(0, 0, z), (1.5, 0.12, 0.1), "PAL", TIMBER, rot_z=rf.rot)
-for k, x in enumerate((-0.4, 0.0, 0.4)):
-    bar(b, rf.p(x, 0.1, 0.2), rf.p(x, 0.1, 1.55 + (0.35 if k == 1 else 0)), 0.06, 0.06, "PAL", TIMBER_L)
-    if k == 1:
-        b.prism(rf.p(x, 0.1, 1.9), 0.07, 0.3, 4, "PAL", "b9b9b9", r_top=0.0)
-    else:
-        b.quad_box([rf.p(x, 0.07, 1.25), rf.p(x + 0.3, 0.07, 1.15), rf.p(x + 0.3, 0.13, 1.15), rf.p(x, 0.13, 1.25)],
-                   [rf.p(x, 0.07, 1.5), rf.p(x + 0.3, 0.07, 1.6), rf.p(x + 0.3, 0.13, 1.6), rf.p(x, 0.13, 1.5)], "PAL", "b9b9b9")
+anchor(rf, "camp_rack", 0, 0, s=0.85)
 
 torch(b, f, -0.9, 1.5)
 torch(b, f, 1.9, 1.5)

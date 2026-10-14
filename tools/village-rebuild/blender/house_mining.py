@@ -78,23 +78,10 @@ for i in range(len(rails) - 1):
 cart_c = (Vector(rails[2]) * 0.55 + Vector(rails[3]) * 0.45); d = (Vector(rails[3]) - Vector(rails[2])).normalized()
 yaw = math.atan2(d.y, d.x) - math.pi / 2
 cf = Frame(cart_c.x, cart_c.y, yaw)
-b.quad_box([cf.p(-0.45, -0.6, 0.35), cf.p(0.45, -0.6, 0.35), cf.p(0.45, 0.6, 0.35), cf.p(-0.45, 0.6, 0.35)],
-           [cf.p(-0.6, -0.78, 1.0), cf.p(0.6, -0.78, 1.0), cf.p(0.6, 0.78, 1.0), cf.p(-0.6, 0.78, 1.0)], "PAL", "6e6557")
-for sx in (-1, 1):
-    for sy in (-1, 1):
-        # wheels: short cylinders on their side
-        c = Vector(cf.p(sx * 0.5, sy * 0.4, 0.22))
-        ax = cf.R @ Vector((sx, 0, 0))
-        n = 8; rr = 0.2
-        up = Vector((0, 0, 1)); fw = cf.R @ Vector((0, 1, 0))
-        ring = lambda off: [c + ax * off + (fw * math.cos(2 * math.pi * i / n) + up * math.sin(2 * math.pi * i / n)) * rr for i in range(n)]
-        r0, r1 = ring(-0.05), ring(0.05)
-        b.face(r1, ax, "PAL", DARK); b.face(r0, -ax, "PAL", DARK)
-        for i in range(n):
-            j = (i + 1) % n; mid = ((r0[i] + r0[j]) / 2 - (c - ax * 0.05)); mid = mid - ax * mid.dot(ax)
-            b.face([r0[i], r0[j], r1[j], r1[i]], mid, "PAL", DARK)
-for i, (dx, dy, col) in enumerate([(-0.2, -0.25, ROCK), (0.2, 0.1, ROCK_D), (-0.1, 0.35, GOLD), (0.25, -0.35, "5f8191"), (0.0, 0.0, ROCK)]):
-    b.sphere(cf.p(dx, dy, 1.0), 0.24 if col in (ROCK, ROCK_D) else 0.16, "PAL", col, seg=6, rings=4, sz=0.8)
+# the Synty mine cart on the rails, heaped with ore
+anchor(cf, "minecart", 0, 0, 0.16, yaw=math.pi / 2)
+for i, (dx, dy, key) in enumerate(((-0.15, -0.2, "ore_iron"), (0.15, 0.15, "ore_gold"), (0.0, 0.3, "ore_gem"), (-0.1, 0.05, "ore_iron"))):
+    anchor(cf, key, dx, dy, 0.75, yaw=i * 1.4)
 
 # tool shed with the sign
 sf = f.sub(2.5, -0.6, 0.0)
@@ -108,9 +95,7 @@ for i, (dx, dy, r) in enumerate([(0, 0, 0.55), (0.45, 0.2, 0.4), (-0.35, 0.25, 0
 b.sphere(f.p(3.3, 2.75, 0.62), 0.14, "PAL", GOLD, seg=6, rings=4)
 crate(b, f, 1.6, 2.9, s=0.65, yaw=0.3)
 crate(b, f, 1.75, 3.5, s=0.5, yaw=-0.2)
-pk = f.sub(1.25, 2.55, 0.3)
-bar(b, pk.p(0, 0, 0.05), pk.p(0, 0.32, 0.95), 0.06, 0.06, "PAL", TIMBER_L)
-bar(b, pk.p(-0.3, 0.37, 0.98), pk.p(0.3, 0.3, 0.92), 0.08, 0.06, "PAL", "b9b9b9")
+anchor(f, "pickaxe", 1.25, 2.55, yaw=0.3, tilt=math.radians(-20))       # leaning on the crate
 barrel(b, f, -3.0, 1.2)
 barrel(b, f, -3.5, 1.8, r=0.28, h=0.7)
 

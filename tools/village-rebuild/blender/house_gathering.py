@@ -32,10 +32,8 @@ rf = f.sub(2.6, -1.9, -0.3)
 for s in (-1, 1):
     b.box(rf.p(s * 1.0, 0, 0.9), (0.12, 0.12, 1.8), "PAL", TIMBER, rot_z=rf.rot)
 bar(b, rf.p(-1.15, 0, 1.75), rf.p(1.15, 0, 1.75), 0.08, 0.08, "PAL", TIMBER_L)
-for k in range(5):
-    x = -0.75 + k * 0.38
-    b.box(rf.p(x, 0, 1.62), (0.02, 0.02, 0.22), "PAL", TIMBER, rot_z=rf.rot)
-    b.prism(rf.p(x, 0, 1.0), 0.13, 0.52, 5, "PAL", LEAF if k % 2 else "666f4a", r_top=0.04, rot=k)
+for k in range(5):                          # Synty herb bunches, hung from the top bar
+    anchor(rf, "herbs", -0.75 + k * 0.38, 0, 1.68, yaw=k * 1.3)
 
 # baskets of the day's finds
 basket(b, f, -2.0, 1.8, fill=[RED, BERRY_B, RED])
@@ -46,11 +44,10 @@ sack(b, f, -2.6, 2.5)
 bush(b, f, -3.9, -1.3, r=0.6, berries=RED)
 bush(b, f, -3.2, 2.9, r=0.5, berries=BERRY_B)
 bush(b, f, 3.7, 2.0, r=0.55, berries=RED)
-for k, (x, y, col) in enumerate(((0.0, 3.3, "e4aa60"), (0.5, 3.6, "564888"), (-0.5, 3.6, RED), (2.6, 3.4, "e4aa60"), (-3.8, -2.0, "564888"))):
-    b.prism(f.p(x, y, 0.0), 0.03, 0.3, 4, "PAL", LEAF)
-    b.sphere(f.p(x, y, 0.33), 0.09, "PAL", col, seg=5, rings=3)
-for (x, y, h, r) in ((2.0, 2.6, 0.35, 0.18), (2.3, 2.85, 0.25, 0.13), (3.4, -3.3, 0.3, 0.15)):
-    mushroom(b, f, x, y, h, r)
+for k, (x, y) in enumerate(((0.0, 3.3), (0.5, 3.6), (-0.5, 3.6), (2.6, 3.4), (-3.8, -2.0))):
+    anchor(f, "flower%d" % (1 + k % 4), x, y, yaw=k * 1.1)
+for (x, y, s) in ((2.0, 2.6, 1.4), (2.3, 2.85, 1.0), (3.4, -3.3, 1.2)):
+    anchor(f, "mushroom", x, y, yaw=x, s=s)
 # the giant mushroom
 mushroom(b, f, -3.1, 0.4, 1.9, 1.05)
 pine(b, f, -3.6, -3.6, h=4.6, r=1.1)

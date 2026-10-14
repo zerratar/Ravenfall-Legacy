@@ -34,10 +34,9 @@ for z in (0.45, 0.95):
     b.box(fw.p(1.4, 0.32, z), (1.5, 0.4, 0.06), "PAL", TIMBER_L, rot_z=fw.rot)
 for s in (-1, 1):
     b.box(fw.p(1.4 + s * 0.72, 0.32, 0.55), (0.06, 0.4, 1.1), "PAL", TIMBER, rot_z=fw.rot)
-cols = [RED, BLUE, GREEN, PURPLE, "e4aa60", GREEN, RED, BLUE]
-for i in range(8):
+for i in range(8):                          # Synty potions, six colours, in two rows on our shelf
     z = 0.48 if i < 4 else 0.98
-    bottle(b, fw, 0.85 + (i % 4) * 0.36, 0.34, z, cols[i], s=0.9 + 0.2 * ((i * 7) % 3 == 0))
+    anchor(fw, "potion%d" % (1 + (i * 5) % 6), 0.85 + (i % 4) * 0.36, 0.34, z, yaw=i * 0.7)
 
 # the turret at the front left: plaster, small lit windows, a purple spire with a gold star
 tc = Vector(f.p(-3.0, 0.2, 0)); TR = 1.15; TH = 4.9
@@ -64,9 +63,7 @@ cc = f.sub(2.1, 2.3, 0.0)
 for k in range(3):
     a = 2 * math.pi * k / 3 + 0.4
     bar(b, cc.p(math.cos(a) * 0.75, math.sin(a) * 0.75, 0.0), cc.p(math.cos(a) * 0.35, math.sin(a) * 0.35, 0.55), 0.07, 0.07, "PAL", DARK)
-for k in range(4):
-    a = math.pi / 4 * k * 2 + 0.3
-    bar(b, cc.p(math.cos(a) * 0.55, math.sin(a) * 0.55, 0.08), cc.p(-math.cos(a) * 0.55, -math.sin(a) * 0.55, 0.08), 0.13, 0.13, "PAL", TIMBER_L)
+anchor(cc, "firepit", 0, 0, s=1.2)          # the fire under it
 b.sphere(cc.p(0, 0, 0.1), 0.3, "GLASS", "e4aa60", seg=6, rings=3, sz=0.5)
 b.lathe(cc.p(0, 0, 0.0), [(0.0, 0.32), (0.35, 0.36), (0.62, 0.62), (0.66, 0.9), (0.6, 1.08), (0.66, 1.14), (0.56, 1.14)], 12, "PAL", DARK)
 b.lathe(cc.p(0, 0, 0.0), [(0.56, 1.14), (0.56, 1.0)], 12, "PAL", DARK)                    # inner lip, faces in
@@ -77,16 +74,13 @@ b.sphere(cc.p(0.05, 0.0, 1.55), 0.08, "GLASS", GREEN, seg=6, rings=3)
 
 # herb planters and a crate of supplies
 for x, y in ((-1.4, 2.6), (0.2, 3.3)):
-    b.box(f.p(x, y, 0.25), (1.2, 0.5, 0.5), "PAL", TIMBER_L, rot_z=f.rot)
-    for k in range(4):
-        b.prism(f.p(x - 0.45 + k * 0.3, y, 0.48), 0.12, 0.35 + 0.1 * (k % 2), 5, "PAL", GREEN if k % 2 else LIME, r_top=0.0, rot=k)
+    anchor(f, "planter", x, y)
 crate(b, f, 3.5, 0.4, s=0.6, yaw=0.2)
-for i, col in enumerate((PURPLE, BLUE)):
-    bottle(b, f, 3.35 + i * 0.3, 0.4, 0.6, col)
+for i in range(2):
+    anchor(f, "potion%d" % (3 + i * 2), 3.35 + i * 0.3, 0.4, 0.62)
 barrel(b, f, 3.6, -0.6)
 # a few purple crystals by the turret
-for i, (dx, dy, h, t) in enumerate(((-1.6, 1.5, 0.7, 0.2), (-1.9, 1.75, 0.5, -0.3), (-1.35, 1.8, 0.4, 0.5))):
-    b.prism(f.p(-3.0 + dx + 1.6, 0.2 + dy, 0.0), 0.12, h, 5, "GLASS", PURPLE, r_top=0.0, rot=t)
+anchor(f, "crystal", -3.0, 1.85, yaw=0.4, s=0.75)
 
 house = b.finish(recalc=False)
 export_fbx([house], "Village_House_Alchemy")
