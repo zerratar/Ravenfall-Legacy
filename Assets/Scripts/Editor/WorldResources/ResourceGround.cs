@@ -2,8 +2,8 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Where trees and gather spots stand: the terrain, or a rock, path or other ground mesh. Old trees, players,
-/// buildings, water and roads are not ground, so painting under or next to them lands on what is beneath.
+/// Where trees and gather spots stand: the terrain, or a rock, path or other ground mesh. Players, buildings,
+/// water and roads are not ground, so painting under or next to them lands on what is beneath.
 /// </summary>
 public static class ResourceGround
 {
@@ -56,6 +56,5 @@ public static class ResourceGround
     /// <summary>A point moved onto the ground, or left as it is when there is none in reach.</summary>
     public static Vector3 Snap(Vector3 point) => Below(point, out var ground) ? ground.point : point;
 
-    private static bool IsNotGround(Collider collider) =>
-        collider.GetComponentInParent<WorldRoad>() || collider.GetComponentInParent<TreeController>() || collider.GetComponentInParent<GatherController>();
+    private static bool IsNotGround(Collider collider) => collider.GetComponentInParent<WorldRoad>();
 }

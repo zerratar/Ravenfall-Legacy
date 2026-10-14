@@ -11,25 +11,20 @@ public class RavenfallObjectTools
     {
         int found = 0;
 
-        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Trees...", 0);
-        found += PlacementUtility.AssertInvalidPlacement<TreeController>();
-
-        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Rocks...", 1f / 6f);
+        // trees and gather spots are resource fields now, painted on the ground
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Rocks...", 0f);
         found += PlacementUtility.AssertInvalidPlacement<RockController>();
 
-        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Enemies...", 2f / 6f);
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Enemies...", 1f / 4f);
         found += PlacementUtility.AssertInvalidPlacement<EnemyController>();
 
-        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Stalls...", 3f / 6f);
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Stalls...", 2f / 4f);
         found += PlacementUtility.AssertInvalidPlacement<CraftingStation>();
 
-        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Farming...", 4f / 6f);
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Farming...", 3f / 4f);
         found += PlacementUtility.AssertInvalidPlacement<FarmController>();
 
-        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Gathering...", 5f / 6f);
-        found += PlacementUtility.AssertInvalidPlacement<GatherController>();
-
-        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Done", 6f / 6f);
+        EditorUtility.DisplayProgressBar("Looking for unreachable objects (Found: " + found + ")", "Done", 4f / 4f);
 
         System.Threading.Thread.Sleep(1000);
         EditorUtility.ClearProgressBar();
@@ -278,7 +273,6 @@ public class RavenfallObjectTools
     [MenuItem("Ravenfall/Objects/Adjust Placements/All", priority = 0)]
     public static void AdjustPlacementsOnAllOobjects()
     {
-        PlacementUtility.PlaceOnGround<TreeController>();
         PlacementUtility.PlaceOnGround<RockController>();
         PlacementUtility.PlaceOnGround<EnemyController>();
         PlacementUtility.PlaceOnGround<Torch>();
@@ -298,8 +292,6 @@ public class RavenfallObjectTools
         }
     }
 
-    [MenuItem("Ravenfall/Objects/Adjust Placements/Trees", priority = 10)]
-    public static void AdjustPlacementsOnTreebjects() => PlacementUtility.PlaceOnGround<TreeController>();
     [MenuItem("Ravenfall/Objects/Adjust Placements/Town House Slot", priority = 10)]
     public static void AdjustPlacementsOnTownHouseSlot() => PlacementUtility.PlaceOnGround<TownHouseSlot>();
     [MenuItem("Ravenfall/Objects/Adjust Placements/Rocks", priority = 10)]

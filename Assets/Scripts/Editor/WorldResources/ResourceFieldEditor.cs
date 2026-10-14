@@ -194,7 +194,7 @@ public class ResourceFieldEditor : Editor
 
         var brush = BrushType;
         var types = AllTypes;
-        if (types.Length == 0) EditorGUILayout.HelpBox("No resource types yet. Make one with Ravenfall > World Resources > Create Type From Selection.", MessageType.Info);
+        if (types.Length == 0) EditorGUILayout.HelpBox("No resource types yet. Make one with Ravenfall > World Resources > Create Tree (or Gather) Type From Selection.", MessageType.Info);
         var names = types.Select(t => t.name).ToArray();
         var at = System.Array.IndexOf(types, brush);
         var pick = GUILayout.SelectionGrid(at, names, 2);

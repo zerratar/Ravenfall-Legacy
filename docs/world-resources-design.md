@@ -90,36 +90,36 @@ instances: List<ResourceInstance>        one entry per tree or spot
 ```
 
 The position is world space, with the height taken from the ground when placed. Nothing generated is saved into the
-scene, the same rule as `WorldRoad`.
+scene, the same rule as `WorldRoad`. A field can also set `Tree health` and `Respawn seconds` for everything in it
+(0 uses each type's own), since some chunks made the same trees tougher or slower: Ironhill's trees have 15 health
+and come back in 20 s, Home's the same trees with 4 and 15 s.
 
 ## Runtime
 
-### WorldResources (one system per scene)
+### Targets and state
 
-Holds the live state of every instance in every field, in arrays:
+The player task API passes targets as `object`, so each instance gets one small `ResourceTarget`, made by its field
+the first time the chunk asks and kept for the field's life. It holds the instance's live state (health, the
+current respawn time, its targeters) and knows its `Position`, `Island`, `ActionDistance` and `Level` (the chunk's
+requirement). No allocation per frame, and identity comparisons keep working. (The plan had the state in arrays in
+one `WorldResources` system; with one object per instance needed anyway, keeping the state on it is simpler and
+costs the same.)
 
-- `health`, `isStanding` (or available), `respawnAt`, the current respawn time;
-- the targeter set per instance, which grows and empties as `woodCutters` and `gatherers` do today;
-- per chunk, the indices of its instances, and a coarse grid for "nearest available";
-- one respawn queue, ordered by time, checked once a frame. This is the only per-frame work, and it costs
-  nothing while nothing is due.
-
-### Targets
-
-The player task API passes targets as `object`, so each instance gets one small `ResourceTarget` object made at load
-and reused for its life. It is a handle (field and index) with `Position`, `Island`, `ActionDistance`, `Level`,
-`IsAvailable`, the targeter list, and the variant's look for the camera. No allocation per frame, and identity
-comparisons keep working.
+Whether an instance is standing lives in the field, where the renderer reads it while culling. Each field keeps the
+used up ones waiting to come back and checks them once a frame only when the next one is due, so a field with
+nothing cut costs one comparison per frame. Picking a target is one pass (nearest standing, give or take 0 to 15 m)
+instead of a sort.
 
 Changes that follow from it:
 
-- `WoodcuttingTask` and `GatheringTask` take `ResourceTarget[]` from the chunk instead of `TreeController[]` /
+- `WoodcuttingTask` and `GatheringTask` take the chunk's `ResourceTarget`s instead of `TreeController[]` /
   `GatherController[]`.
 - `PlayerController.Cut`, `Gather`, `PlayerCombat.DamageTree` and `CalculateDamage` take a `ResourceTarget`.
 - `LookAt` gets a position overload.
-- `PlayerController.Target` returns a Transform, and resources have none. The two users, `BotPlayerController`
-  (stuck detection) and `AnimationEventController` (projectiles), move to a target position, which
-  `GetTaskTargetPosition` already gives for the task.
+- `PlayerController.Target` returns a Transform, and resources have none. The stuck checks in `BotPlayerController`
+  and `PlayerValidator` use the new `HasTarget`, `TargetPosition` and `TargetName` instead. `AnimationEventController`
+  only shoots at combat targets, so it is unchanged.
+- `ChunkTask` caches targets by reference instead of entity id, which plain targets do not have.
 - `Chunk.Start` collects `ResourceTarget`s from its fields instead of `GetComponentsInChildren<TreeController>()`.
 - The `!chop`/`!gather` commands, island statistics (`TreesCutDown`) and `SessionStats` are unchanged.
 
@@ -138,10 +138,12 @@ It runs in the Scene view in edit mode as well as in play mode, so fields show w
 spot material uses the one Shader Graph Lit shader, which takes instanced data; a fallback with
 `Graphics.RenderMeshInstanced` is added only if a type turns up that does not.
 
-### Removed when the conversion is done
+### Removed after the conversion
 
-`TreeController`, `GatherController`, `TaskObject`, `TaskObjectManager` (and its manager object in the scene), plus the
-tree and gather spot helpers in `Editor/RavenfallTools.cs` and `Editor/RavenfallObjectTools.cs` that the new tools replace.
+`TreeController`, `GatherController`, `TaskObject`, `TaskObjectManager` (and its component on GameState), the tree and
+gather spot helpers in `Editor/RavenfallTools.cs` and `Editor/RavenfallObjectTools.cs`, and the converter itself.
+The old tree prefabs in `Assets/Prefabs/Objects` are local only (prefabs are not versioned) and now carry a missing
+script; they are no longer used.
 
 ## Editor tools
 
@@ -157,13 +159,15 @@ tree and gather spot helpers in `Editor/RavenfallTools.cs` and `Editor/Ravenfall
   - [ and ] change the brush size, Escape leaves the mode.
 - **Pick:** click a tree or spot, then drag the arrows to move it (it follows the ground), the ring to turn it and
   the cube to size it, or change its type, look, turn and size in the inspector; Delete removes it.
-- Ground is the terrain or any ground mesh, never old trees, players, buildings, water or roads. One undo per
-  stroke.
-- **Ravenfall > World Resources > Create Type From Selection**, for the existing tree prefabs and gather spots.
-- **Ravenfall > World Resources > Convert Scene**: writes every `TreeController` and `GatherController` in the open
-  scene into the field of its chunk, at the same place, look, level and respawn, and lists anything it could not
-  convert. Then it removes the old GameObjects. The scene is saved to a copy first
-  (`MainWorld_before-resources.unity`, kept out of git like the other scene copies).
+- Ground is the terrain or any ground mesh, never players, buildings, water or roads. One undo per stroke.
+- **Ravenfall > World Resources > Create Tree Type From Selection** and **Create Gather Type From Selection**: each
+  selected object (in the scene or a prefab) is a look, the same meshes and materials counting once; for a tree, one
+  with "stump" in its name is the cut down look.
+- **Convert Scene** (now removed) wrote every `TreeController` and `GatherController` into the field of its chunk,
+  after saving a copy of the scene (`MainWorld_before-resources.unity`, kept out of git like the other scene copies).
+  Looks were told apart by mesh and material, since Eldara uses the same three trees in many colours. A tree kept the
+  looks it could pick from; a gather spot got a random look of its group. It is in the history (commit bd64ef7) if
+  another scene ever needs it.
 
 ## Steps
 
@@ -172,10 +176,11 @@ Each step is a commit, tested in play mode and in the editor before the next.
 1. **Types, fields and drawing.** `ResourceType`, `ResourceField`, `ResourceRenderer` (BRG), Create Type From
    Selection, and test fields in place of the Home and Heim trees to compare looks, LODs and shadows. Done.
 2. **The brush.** Painting, erasing and picking in the Scene view. Done.
-3. **Gameplay.** `WorldResources`, `ResourceTarget`, the two tasks, the player changes, the shared exp and adaptive
-   respawn. Tested on the test field alongside the old trees, which keep working until step 4.
-4. **Conversion.** Convert MainWorld, check every chunk's counts against the old ones, play-test chopping and gathering on
-   each island, then remove the old components and code.
+3. **Gameplay.** `ResourceTarget`, the two tasks, the player changes, the shared exp and adaptive respawn. Done.
+4. **Conversion.** MainWorld converted: 188 trees and 199 gather spots into 14 fields and 13 types, every chunk's
+   count the same as before. Tested in play mode: every chunk has its targets on its island at its level, trees fall
+   after their health in hits and show their stump, spots cannot be gathered twice, and both come back on time. The
+   old components and code are removed. Done; a play-test with players chopping and gathering is still to do.
 5. **Numbers.** Profiler before and after: GameObject count, scene load time, memory, and the frame time with 50 players
    chopping. Plus a stress field of 10,000 trees to show the headroom.
 
@@ -184,15 +189,12 @@ skinned, so they need another technique (GPU-baked animation, for example), desi
 
 ## Bugs found on the way
 
-Fixed in step 3, since that code is rewritten anyway:
-
-- `TreeController` has its own private `Awake`, so `TaskObject.Awake` never runs for trees. It becomes moot when both
-  go.
-- `PlayerController.Fish` (L2017) checks the auto-train target against `Stats.Farming` instead of `Stats.Fishing`. A
-  one-line fix, done separately and first.
+- `TreeController` had its own private `Awake`, so `TaskObject.Awake` never ran for trees. Gone with both.
+- `PlayerController.Fish` checked the auto-train target against `Stats.Farming` instead of `Stats.Fishing`. Fixed
+  separately, first.
 
 ## Answers
 
-1. **Damage roll:** the `Math.Abs` is a bug; it becomes `Max(1, difference)` in step 3 (see above).
+1. **Damage roll:** the `Math.Abs` was a bug; it is `Max(1, difference)` since step 3 (see above).
 2. **Levels:** from the chunk's requirement, not per type or per instance.
 3. **Gather spot looks:** grouped, with a random look per spot.
