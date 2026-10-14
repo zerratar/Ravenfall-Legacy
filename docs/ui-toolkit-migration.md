@@ -762,6 +762,35 @@ fixed on the way, all from the old menu:
   the minimum table for its maximum.
 - The DungeonJoin and RaidJoin bot filters are not checked anywhere and are left out.
 
+**Resets.** Every setting knows its default (`SettingsApplier.Defaults`; the two volumes are read
+from the scene's audio sources before the saved settings apply). A reset button shows beside any
+setting that has been changed, and the footer's Reset page puts the whole page back. On the
+Interface page it also resets window positions. The interface size slider applies when it is let
+go: the window scales with it, so applying while dragging moved the slider under the pointer.
+
+**Settings added** that the game already read but no menu showed: how long the observer camera
+stays on everyone, subscribers, VIPs and moderators, and after a sub or a cheer; time per island
+and whether empty islands get a turn; kicking players who are away after a number of hours; the
+no exp warning and how soon it comes; whether `!loot` says where items came from; and the stream
+label text and json files separately. Item drop messages moved to the Bot messages page.
+
+**Reset window positions did nothing.** `DraggableWindow.ResetAllPositions` cleared each window's
+inline position and then clamped to its resolved position straight away, which still held the old
+one until the next layout. It now clamps on the next geometry change. A scheduled callback did not
+work either: the scheduler runs before layout.
+
+**Shortcut menu.** The bar of shortcuts is now a corner micro menu, bottom right, in the manner of
+an MMO: square icon buttons in groups (camera, players, interface, admin, menu) with each key as a
+badge on its button. Runtime UI Toolkit shows no tooltips, so a caption above the cluster names the
+hovered button. It dims while the mouse is elsewhere. The raid and dungeon buttons only show for
+administrators, whose keys are the only ones that work.
+
+The admins' OnGUI "Show dev tools" button is gone; the Admin page's Developer tools switch does
+the same.
+
+Views made in this pass rebind when a live reload replaces their visual tree, so markup and styles
+can be tuned in Play mode without the window going dead.
+
 Esc closes the settings window and brings the menu back. Both windows report the frame they closed
 in (`SettingsWindow.IsOpen`, `GameMenuHandler.ClosedThisFrame`), so `GameManager` does not take the
 same key press as a reason to open the menu again.

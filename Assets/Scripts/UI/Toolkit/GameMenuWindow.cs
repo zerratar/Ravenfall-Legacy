@@ -76,6 +76,9 @@ namespace Shinobytes.UI
 
         private void Update()
         {
+            // A live reload of the markup or styles replaces the tree; bind again to the new one.
+            if (bound && modal.panel == null) bound = false;
+
             if (!bound)
             {
                 TryBind();
@@ -136,13 +139,13 @@ namespace Shinobytes.UI
 
             var buttons = root.Q<VisualElement>("gamemenu-buttons");
             buttons.Clear();
-            AddButton(buttons, "", Localization.UI_MENU_CONTINUE, "rf-gamemenu__button--primary", () => handler.Hide());
-            AddButton(buttons, "", Localization.UI_MENU_SETTINGS, null, () => handler.ShowSettingsMenu());
+            AddButton(buttons, "\uf04b", Localization.UI_MENU_CONTINUE, "rf-gamemenu__button--primary", () => handler.Hide());
+            AddButton(buttons, "\uf013", Localization.UI_MENU_SETTINGS, null, () => handler.ShowSettingsMenu());
             var divider = new VisualElement { pickingMode = PickingMode.Ignore };
             divider.AddToClassList("rf-gamemenu__divider");
             buttons.Add(divider);
-            logoutButton = AddConfirmButton(buttons, "", Localization.UI_MENU_LOGOUT, Localization.UI_MENU_CONFIRM_LOGOUT, logout, () => handler.Logout());
-            AddConfirmButton(buttons, "", Localization.UI_MENU_EXIT, Localization.UI_MENU_CONFIRM_EXIT, exit, () => handler.Exit());
+            logoutButton = AddConfirmButton(buttons, "\uf2f5", Localization.UI_MENU_LOGOUT, Localization.UI_MENU_CONFIRM_LOGOUT, logout, () => handler.Logout());
+            AddConfirmButton(buttons, "\uf011", Localization.UI_MENU_EXIT, Localization.UI_MENU_CONFIRM_EXIT, exit, () => handler.Exit());
 
             var logs = root.Q<Button>("gamemenu-logs");
             logs.text = "→ " + Localization.UI_MENU_LOG_FOLDER;

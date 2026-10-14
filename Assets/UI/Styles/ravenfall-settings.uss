@@ -451,3 +451,45 @@
 .rf-settings .rf-settings__done {
     min-width: 120px;
 }
+
+.rf-settings .rf-settings__reset-page {
+    margin-right: var(--rf-space-3);
+}
+
+.rf-settings .rf-settings__reset-page:disabled {
+    opacity: 0.35;
+}
+
+/* ---- Per setting reset ----
+   Only visible when the setting differs from its default; it keeps its space while hidden so the
+   controls stay lined up. */
+
+.rf-settings .rf-settings-row__reset {
+    width: 28px;
+    height: 28px;
+    margin-left: 0;
+    margin-right: var(--rf-space-3);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    cursor: link;
+}
+
+.rf-settings .rf-settings-row__reset:hover {
+    color: var(--rf-accent-bright);
+    background-color: var(--rf-accent-wash);
+}

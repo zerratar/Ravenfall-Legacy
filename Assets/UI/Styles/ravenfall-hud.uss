@@ -537,17 +537,49 @@
     align-items: center;
 }
 
-/* ---- Keyboard shortcut bar (bottom centre) ---------------------------------------- */
+/* ---- Keyboard shortcut menu (bottom right) ----------------------------------------
+   Square icon buttons in groups, MMO micro menu style, with each key as a badge on its button. The
+   caption above names the hovered button. The cluster dims while the mouse is elsewhere. */
 
 .rf-top-layer .rf-shortcuts {
     position: absolute;
-    bottom: 12px;
-    flex-direction: row;
-    align-items: center;
-    padding-left: 6px;
-    padding-right: 6px;
+    right: 16px;
+    bottom: 14px;
+    align-items: flex-end;
+}
+
+.rf-top-layer .rf-shortcuts__caption {
+    margin-bottom: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
     padding-top: 4px;
     padding-bottom: 4px;
+    font-size: 14px;
+    color: var(--rf-text);
+    background-color: var(--rf-surface-glass);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.12s;
+}
+
+.rf-top-layer .rf-shortcuts__caption--visible {
+    opacity: 1;
+}
+
+.rf-top-layer .rf-shortcuts__row {
+    flex-direction: row;
+    align-items: center;
+    opacity: 0.85;
+    transition-property: opacity;
+    transition-duration: 0.2s;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
     background-color: var(--rf-surface-glass);
     border-left-width: 1px;
     border-right-width: 1px;
@@ -563,44 +595,36 @@
     border-bottom-right-radius: var(--rf-radius-lg);
 }
 
-.rf-top-layer .rf-shortcut {
+.rf-top-layer .rf-shortcuts__row:hover {
+    opacity: 1;
+}
+
+.rf-top-layer .rf-shortcuts__group {
     flex-direction: row;
-    align-items: center;
-    height: 34px;
+}
+
+.rf-top-layer .rf-shortcuts__divider {
+    width: 1px;
+    height: 30px;
+    margin-left: 6px;
+    margin-right: 6px;
+    background-color: var(--rf-divider);
+}
+
+.rf-top-layer .rf-shortcut {
+    width: 44px;
+    height: 44px;
     margin-left: 2px;
     margin-right: 2px;
-    padding-left: 8px;
-    padding-right: 8px;
-    background-color: rgba(0, 0, 0, 0);
-    border-left-width: 0;
-    border-right-width: 0;
-    border-top-width: 0;
-    border-bottom-width: 0;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    cursor: link;
-}
-
-.rf-top-layer .rf-shortcut:hover {
-    background-color: var(--rf-accent-wash);
-}
-
-.rf-top-layer .rf-shortcut__icon {
-    font-size: 15px;
-    color: var(--rf-text);
-    margin-right: 6px;
-}
-
-.rf-top-layer .rf-shortcut__key {
-    font-size: 12px;
-    color: var(--rf-text-dim);
-    padding-left: 5px;
-    padding-right: 5px;
-    padding-top: 1px;
-    padding-bottom: 1px;
-    background-color: rgba(0, 0, 0, 0.3);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.35);
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
@@ -609,10 +633,51 @@
     border-right-color: var(--rf-border);
     border-top-color: var(--rf-border);
     border-bottom-color: var(--rf-border);
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    cursor: link;
+    transition-property: background-color, border-color, translate;
+    transition-duration: 0.1s;
+}
+
+.rf-top-layer .rf-shortcut:hover {
+    background-color: var(--rf-accent-wash);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    translate: 0 -2px;
+}
+
+.rf-top-layer .rf-shortcut:active {
+    background-color: var(--rf-accent-dim);
+    translate: 0 0;
+}
+
+.rf-top-layer .rf-shortcut--menu {
+    width: 52px;
+}
+
+.rf-top-layer .rf-shortcut__icon {
+    font-size: 17px;
+    color: var(--rf-text);
+    margin-top: -6px;
+}
+
+.rf-top-layer .rf-shortcut:hover .rf-shortcut__icon {
+    color: var(--rf-accent-bright);
+}
+
+/* The key as a little badge along the bottom edge of the button. */
+.rf-top-layer .rf-shortcut__key {
+    position: absolute;
+    bottom: 2px;
+    font-size: 11px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
 }
 
 .rf-top-column {

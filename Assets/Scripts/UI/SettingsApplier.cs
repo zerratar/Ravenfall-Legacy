@@ -43,6 +43,58 @@ public static class SettingsApplier
     public static void Save() => PlayerSettings.Save();
 
     /// <summary>
+    /// What a fresh install has, for the reset buttons. The two volumes come from the scene's audio
+    /// sources, so they are read in <see cref="CaptureDefaults"/> before the saved settings apply.
+    /// </summary>
+    public static class Defaults
+    {
+        public static float MusicVolume = 0.5f;
+        public static float EventVolume = 1f;
+        public const float CameraRotation = -5f;     // OrbitCamera.RotationSpeed 5, shown with the slider's sign
+        public const int BoostRequirement = 0;
+        public static int PlayerStateExpiry => PlayerCacheExpiry.Length - 1;
+        public const bool AlertExpiredState = false;
+        public const int ItemDropMessages = (int)PlayerItemDropMessageSettings.OneItemPerRow;
+        public const int PathfindingQuality = 1;
+        public const bool AutoAssignHouses = true;
+        public const bool StreamLabels = true;
+        public const bool StreamLabelFiles = true;
+        public const bool DisableRaids = false;
+        public const bool DisableDungeons = false;
+        public const int QualityLevel = 1;
+        public const bool PotatoMode = false;
+        public const bool AutoPotatoMode = false;
+        public const bool PostProcessing = false;
+        public const bool DayNightCycle = true;
+        public const bool RealTimeDayNight = false;
+        public const float TimeOfDay = 0.5f;
+        public const float ViewDistance = 0.5f;
+        public const float ResolutionScale = 1f;
+        public const float UiScale = 1f;
+        public const bool PlayerNames = true;
+        public const bool PlayerList = true;
+        public const bool PlayerDetails = true;
+        public const bool ShortcutBar = true;
+        public const bool BotMessage = true;
+        public const bool DevTools = false;
+        public const float ObserveSeconds = 10f;
+        public const float ObserveSecondsSpecial = 30f;
+        public const float IslandObserveSeconds = 10f;
+        public const bool ObserveEmptyIslands = true;
+        public const int AfkKick = 0;
+        public const bool AnnounceNoExp = false;
+        public const int NoExpMinutes = 1;           // index into NoExpMinuteOptions, 5 minutes
+        public const bool LootOrigin = true;
+    }
+
+    /// <summary>Reads the defaults that live in the scene. Call before the saved settings are applied.</summary>
+    public static void CaptureDefaults(GameManager game)
+    {
+        if (game.Music) Defaults.MusicVolume = game.Music.volume;
+        if (game.Raid && game.Raid.Notifications) Defaults.EventVolume = game.Raid.Notifications.volume;
+    }
+
+    /// <summary>
     /// What the old settings menu used to apply on load on top of <c>GameManager.LoadGameSettings</c>:
     /// view distance, the horn volume for every event, player names and the bot message filters.
     /// </summary>
@@ -272,6 +324,106 @@ public static class SettingsApplier
     public static bool DisableDungeons => PlayerSettings.Instance.DisableDungeons.GetValueOrDefault();
 
     public static void SetDisableDungeons(bool value) => PlayerSettings.Instance.DisableDungeons = value;
+
+    public static bool StreamLabelTextFiles => PlayerSettings.Instance.StreamLabels == null || PlayerSettings.Instance.StreamLabels.SaveTextFiles;
+
+    public static void SetStreamLabelTextFiles(bool value)
+    {
+        if (PlayerSettings.Instance.StreamLabels != null) PlayerSettings.Instance.StreamLabels.SaveTextFiles = value;
+    }
+
+    public static bool StreamLabelJsonFiles => PlayerSettings.Instance.StreamLabels == null || PlayerSettings.Instance.StreamLabels.SaveJsonFiles;
+
+    public static void SetStreamLabelJsonFiles(bool value)
+    {
+        if (PlayerSettings.Instance.StreamLabels != null) PlayerSettings.Instance.StreamLabels.SaveJsonFiles = value;
+    }
+
+    // ---- Observer camera ------------------------------------------------------------------------
+    // GameCamera reads these each time it picks someone or somewhere to watch.
+
+    private static PlayerSettings.ObserverTimes ObserveTimes =>
+        PlayerSettings.Instance.PlayerObserveSeconds ?? (PlayerSettings.Instance.PlayerObserveSeconds = PlayerSettings.ObserverTimes.DefaultTimes);
+
+    public static float ObserveSeconds => ObserveTimes.Default;
+    public static void SetObserveSeconds(float value) => ObserveTimes.Default = value;
+    public static float ObserveSubscriberSeconds => ObserveTimes.Subscriber;
+    public static void SetObserveSubscriberSeconds(float value) => ObserveTimes.Subscriber = value;
+    public static float ObserveVipSeconds => ObserveTimes.Vip;
+    public static void SetObserveVipSeconds(float value) => ObserveTimes.Vip = value;
+    public static float ObserveModeratorSeconds => ObserveTimes.Moderator;
+    public static void SetObserveModeratorSeconds(float value) => ObserveTimes.Moderator = value;
+
+    /// <summary>A sub or a cheer: the two events share the one time.</summary>
+    public static float ObserveEventSeconds => Mathf.Max(ObserveTimes.OnSubcription, ObserveTimes.OnCheeredBits);
+
+    public static void SetObserveEventSeconds(float value)
+    {
+        ObserveTimes.OnSubcription = value;
+        ObserveTimes.OnCheeredBits = value;
+    }
+
+    public static float IslandObserveSeconds => PlayerSettings.Instance.IslandObserveSeconds > 0 ? PlayerSettings.Instance.IslandObserveSeconds : Defaults.IslandObserveSeconds;
+    public static void SetIslandObserveSeconds(float value) => PlayerSettings.Instance.IslandObserveSeconds = value;
+    public static bool ObserveEmptyIslands => PlayerSettings.Instance.CanObserveEmptyIslands.GetValueOrDefault(Defaults.ObserveEmptyIslands);
+    public static void SetObserveEmptyIslands(bool value) => PlayerSettings.Instance.CanObserveEmptyIslands = value;
+
+    // ---- Players --------------------------------------------------------------------------------
+
+    /// <summary>Hours without a chat command before a player counts as away; index 0 is never.</summary>
+    public static readonly double[] AfkHourOptions = { -1, 1, 2, 4, 8, 12, 24 };
+
+    /// <summary>
+    /// One choice for two settings: a player only counts as away when the hours are set, and is only
+    /// kicked when kicking is on, so "never" switches both off.
+    /// </summary>
+    public static int AfkKick
+    {
+        get
+        {
+            var s = PlayerSettings.Instance;
+            if (!s.AutoKickAfkPlayers.GetValueOrDefault() || !s.PlayerAfkHours.HasValue || s.PlayerAfkHours.Value <= 0) return 0;
+            var best = 1;
+            for (var i = 1; i < AfkHourOptions.Length; ++i)
+                if (Math.Abs(AfkHourOptions[i] - s.PlayerAfkHours.Value) < Math.Abs(AfkHourOptions[best] - s.PlayerAfkHours.Value)) best = i;
+            return best;
+        }
+    }
+
+    public static void SetAfkKick(int index)
+    {
+        index = Mathf.Clamp(index, 0, AfkHourOptions.Length - 1);
+        PlayerSettings.Instance.AutoKickAfkPlayers = index > 0;
+        PlayerSettings.Instance.PlayerAfkHours = AfkHourOptions[index];
+    }
+
+    public static bool AnnounceNoExp => PlayerSettings.Instance.AnnounceNoExpGain.GetValueOrDefault(Defaults.AnnounceNoExp);
+    public static void SetAnnounceNoExp(bool value) => PlayerSettings.Instance.AnnounceNoExpGain = value;
+
+    /// <summary>Minutes without exp before the first warning; later ones wait five times as long.</summary>
+    public static readonly int[] NoExpMinuteOptions = { 2, 5, 10, 15, 30 };
+
+    public static int NoExpMinutes
+    {
+        get
+        {
+            var minutes = PlayerSettings.Instance.NoExpGainWarningMinutes.GetValueOrDefault(5);
+            var best = 0;
+            for (var i = 1; i < NoExpMinuteOptions.Length; ++i)
+                if (Math.Abs(NoExpMinuteOptions[i] - minutes) < Math.Abs(NoExpMinuteOptions[best] - minutes)) best = i;
+            return best;
+        }
+    }
+
+    public static void SetNoExpMinutes(int index) => PlayerSettings.Instance.NoExpGainWarningMinutes = NoExpMinuteOptions[Mathf.Clamp(index, 0, NoExpMinuteOptions.Length - 1)];
+
+    public static bool LootOrigin => PlayerSettings.Instance.Loot == null || PlayerSettings.Instance.Loot.IncludeOrigin;
+
+    public static void SetLootOrigin(bool value)
+    {
+        if (PlayerSettings.Instance.Loot == null) PlayerSettings.Instance.Loot = PlayerSettings.LootSettings.Default;
+        PlayerSettings.Instance.Loot.IncludeOrigin = value;
+    }
 
     // ---- Bot messages ---------------------------------------------------------------------------
 

@@ -32,6 +32,7 @@
 
                 <engine:VisualElement class="rf-settings__footer">
                     <engine:Label name="settings-footer" class="rf-settings__footer-text" picking-mode="Ignore" />
+                    <engine:Button name="settings-reset-page" class="rf-button rf-settings__reset-page" />
                     <engine:Button name="settings-done" class="rf-button rf-button--primary rf-settings__done" />
                 </engine:VisualElement>
 

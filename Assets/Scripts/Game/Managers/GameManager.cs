@@ -741,6 +741,9 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
+        // the scene's own values, for the settings window's reset buttons, before the saved ones apply
+        SettingsApplier.CaptureDefaults(this);
+
         TwitchEventManager.AnnouncementTimersSeconds = settings.ExpMultiplierAnnouncements ?? TwitchEventManager.AnnouncementTimersSeconds;
 
         UsePostProcessingEffects = settings.PostProcessing.GetValueOrDefault();
@@ -2004,27 +2007,14 @@ public class GameManager : MonoBehaviour, IGameManager
         int buttonMarginY = 5;
         int buttonHeight = 40;
 
-        // Folded down to just the toggle, the stack has no buttons, so it sits at screen centre.
+        // Switched on and off from the Admin tab in settings.
         if (!isDebugMenuVisible)
         {
             lastButtonIndex = 0;
+            return;
         }
 
         int buttonStartY = (Screen.height / 2) - (lastButtonIndex * (buttonHeight / 2));//60;
-
-        // Always drawn for administrators, above the stack, so the debug buttons can be put away
-        // and brought back without going through the settings menu.
-        const int toggleHeight = 24;
-        var toggleRect = new Rect(Screen.width - buttonWidth - 20, buttonStartY - toggleHeight - buttonMarginY, buttonWidth, toggleHeight);
-        if (GUI.Button(toggleRect, isDebugMenuVisible ? "Hide dev tools" : "Show dev tools"))
-        {
-            isDebugMenuVisible = !isDebugMenuVisible;
-        }
-
-        if (!isDebugMenuVisible)
-        {
-            return;
-        }
 
         Rect GetButtonRect(int i) => new Rect(Screen.width - buttonWidth - 20, buttonStartY + ((buttonHeight + buttonMarginY) * i), buttonWidth, buttonHeight);
 

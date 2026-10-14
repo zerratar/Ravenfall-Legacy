@@ -499,6 +499,36 @@ public static class Localization
     public static readonly string UI_SETTINGS_TAB_INTERFACE = "Interface";
     public static readonly string UI_SETTINGS_TAB_BOT = "Bot messages";
     public static readonly string UI_SETTINGS_TAB_ADMIN = "Admin";
+    public static readonly string UI_SETTINGS_RESET_PAGE = "Reset page";
+    public static readonly string UI_SETTINGS_RESET_PAGE_HINT = "Puts every setting on this page back to its default";
+    public static readonly string UI_SETTINGS_RESET_ONE = "Back to the default";
+    public static readonly string UI_SETTINGS_SECTION_OBSERVER = "OBSERVER CAMERA";
+    public static readonly string UI_SETTINGS_OBSERVE = "Time on each player";
+    public static readonly string UI_SETTINGS_OBSERVE_HINT = "How long the camera stays on a player before it moves on.";
+    public static readonly string UI_SETTINGS_OBSERVE_SUB = "Time on subscribers";
+    public static readonly string UI_SETTINGS_OBSERVE_VIP = "Time on VIPs";
+    public static readonly string UI_SETTINGS_OBSERVE_MOD = "Time on moderators";
+    public static readonly string UI_SETTINGS_OBSERVE_EVENT = "Time after a sub or a cheer";
+    public static readonly string UI_SETTINGS_OBSERVE_EVENT_HINT = "The camera turns to whoever subscribed or cheered.";
+    public static readonly string UI_SETTINGS_OBSERVE_ISLAND = "Time on each island";
+    public static readonly string UI_SETTINGS_OBSERVE_EMPTY = "Visit empty islands";
+    public static readonly string UI_SETTINGS_OBSERVE_EMPTY_HINT = "Islands with nobody on them still get a turn in the island camera.";
+    public static readonly string UI_SETTINGS_AFK = "Kick players who are away";
+    public static readonly string UI_SETTINGS_AFK_HINT = "Players who have not typed a command for this long are removed.";
+    public static readonly string[] UI_SETTINGS_AFK_OPTIONS = { "Never", "After 1 hour", "After 2 hours", "After 4 hours", "After 8 hours", "After 12 hours", "After 24 hours" };
+    public static readonly string UI_SETTINGS_NO_EXP = "Warn players who gain no exp";
+    public static readonly string UI_SETTINGS_NO_EXP_HINT = "The bot points anyone training where they gain nothing to a better island.";
+    public static readonly string UI_SETTINGS_NO_EXP_TIME = "First warning after";
+    public static readonly string UI_SETTINGS_NO_EXP_TIME_HINT = "Later warnings wait five times as long.";
+    public static readonly string[] UI_SETTINGS_NO_EXP_OPTIONS = { "2 minutes", "5 minutes", "10 minutes", "15 minutes", "30 minutes" };
+    public static readonly string UI_SETTINGS_SECTION_LABELS = "STREAM LABELS";
+    public static readonly string UI_SETTINGS_LABELS_TEXT = "Text files";
+    public static readonly string UI_SETTINGS_LABELS_JSON = "Json files";
+    public static readonly string UI_SETTINGS_SECTION_MESSAGES = "MESSAGES";
+    public static readonly string UI_SETTINGS_SECTION_LOOT = "LOOT";
+    public static readonly string UI_SETTINGS_LOOT_ORIGIN = "Say where loot came from";
+    public static readonly string UI_SETTINGS_LOOT_ORIGIN_HINT = "!loot replies tell whether each item dropped in a raid or a dungeon.";
+    public static readonly string UI_SETTINGS_SECONDS = "{0} s";
     public static readonly string UI_SETTINGS_ON = "On";
     public static readonly string UI_SETTINGS_OFF = "Off";
 
@@ -586,7 +616,7 @@ public static class Localization
     public static readonly string UI_SETTINGS_BOT_ITEMS_HINT = "Loot from raids and dungeons. How they read is under Game.";
 
     public static readonly string UI_SETTINGS_DEV_TOOLS = "Developer tools";
-    public static readonly string UI_SETTINGS_DEV_TOOLS_HINT = "Shows the dev tools button.";
+    public static readonly string UI_SETTINGS_DEV_TOOLS_HINT = "The column of debug buttons on the right of the screen.";
     public static readonly string UI_SETTINGS_DISCONNECT = "Server connection";
     public static readonly string UI_SETTINGS_DISCONNECT_HINT = "Drops the connection to test that the game reconnects.";
     public static readonly string UI_SETTINGS_DISCONNECT_BUTTON = "Disconnect";

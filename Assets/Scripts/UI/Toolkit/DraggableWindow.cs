@@ -546,7 +546,11 @@ namespace Shinobytes.UI
             PlayerPrefs.Save();
 
             // Open windows move now rather than on next launch. Clearing the inline values lets the
-            // stylesheet position apply again, and it is then clamped.
+            // stylesheet position apply again, and it is then clamped. The clamp waits for the next
+            // layout: the resolved style still holds the old position until then, and clamping
+            // straight away wrote that old position back, so the reset looked like it did nothing.
+            // (A scheduled callback is no good either; the scheduler runs before layout.) A window
+            // already at its stylesheet place does not move, and needs no clamp.
             for (var i = 0; i < live.Count; ++i)
             {
                 var w = live[i];
@@ -555,7 +559,15 @@ namespace Shinobytes.UI
                 w.lastPosition = null;
                 w.window.style.width = StyleKeyword.Null;
                 w.ApplyCollapsed(false);
-                w.ApplyClamped(new Vector2(w.window.resolvedStyle.left, w.window.resolvedStyle.top));
+
+                EventCallback<GeometryChangedEvent> once = null;
+                once = e =>
+                {
+                    w.window.UnregisterCallback(once);
+                    if (w.window.resolvedStyle.display == DisplayStyle.None) return;
+                    w.ApplyClamped(new Vector2(w.window.resolvedStyle.left, w.window.resolvedStyle.top));
+                };
+                w.window.RegisterCallback(once);
             }
         }
 

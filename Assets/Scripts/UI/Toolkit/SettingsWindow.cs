@@ -7,10 +7,12 @@ using UnityEngine.UIElements;
 namespace Shinobytes.UI
 {
     /// <summary>
-    /// The settings window, opened from the game menu.
-    /// Moved by its header and resized from the corner; both are remembered. Tabs down the left; each tab's rows are built when it is shown, from the current values in
-    /// <see cref="SettingsApplier"/>, which applies every change straight away. The settings file is
-    /// written when the window closes.
+    /// The settings window, opened from the game menu. Moved by its header and resized from the
+    /// corner; both are remembered. Tabs down the left; each tab's rows are built when it is shown,
+    /// from the current values in <see cref="SettingsApplier"/>, which applies every change straight
+    /// away. The settings file is written when the window closes.
+    /// Every row knows its default: a reset button shows beside a setting that has been changed, and
+    /// the footer resets the whole page.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class SettingsWindow : MonoBehaviour
@@ -32,16 +34,27 @@ namespace Shinobytes.UI
             public string Glyph;
             public Action<VisualElement> Build;
             public Func<bool> Visible;
+            /// <summary>Anything the page reset does beyond resetting its rows.</summary>
+            public Action ExtraReset;
+        }
+
+        /// <summary>One setting on the current page: whether it is at its default, and how to put it back.</summary>
+        private struct RowState
+        {
+            public Func<bool> IsDefault;
+            public Action Reset;
         }
 
         private readonly List<Tab> tabs = new List<Tab>();
         private readonly List<Button> tabButtons = new List<Button>();
+        private readonly List<RowState> pageRows = new List<RowState>();
 
         private VisualElement modal;
         private VisualElement tabColumn;
         private ScrollView content;
         private Button closeButton;
         private Button doneButton;
+        private Button resetPageButton;
 
         private bool bound;
         private bool open;
@@ -55,12 +68,12 @@ namespace Shinobytes.UI
             Instance = this;
             if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
 
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_GAME, Glyph = "", Build = BuildGame });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_GRAPHICS, Glyph = "", Build = BuildGraphics });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_SOUND, Glyph = "", Build = BuildSound });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_INTERFACE, Glyph = "", Build = BuildInterface });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_BOT, Glyph = "", Build = BuildBotMessages });
-            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_ADMIN, Glyph = "", Build = BuildAdmin, Visible = IsAdministrator });
+            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_GAME, Glyph = "\uf11b", Build = BuildGame });
+            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_GRAPHICS, Glyph = "\uf108", Build = BuildGraphics });
+            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_SOUND, Glyph = "\uf028", Build = BuildSound });
+            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_INTERFACE, Glyph = "\uf2d0", Build = BuildInterface, ExtraReset = ResetWindowPositions });
+            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_BOT, Glyph = "\uf544", Build = BuildBotMessages });
+            tabs.Add(new Tab { Title = Localization.UI_SETTINGS_TAB_ADMIN, Glyph = "\uf505", Build = BuildAdmin, Visible = IsAdministrator });
         }
 
         private void OnDestroy()
@@ -86,6 +99,14 @@ namespace Shinobytes.UI
 
         private void Update()
         {
+            // A live reload of the markup or styles replaces the tree; bind again to the new one.
+            if (bound && modal.panel == null)
+            {
+                bound = false;
+                drag?.Detach();
+                drag = null;
+            }
+
             if (!bound)
             {
                 TryBind();
@@ -134,12 +155,20 @@ namespace Shinobytes.UI
             content = root.Q<ScrollView>("settings-content");
             closeButton = root.Q<Button>("settings-close");
             doneButton = root.Q<Button>("settings-done");
+            resetPageButton = root.Q<Button>("settings-reset-page");
 
             root.Q<Label>("settings-title").text = Localization.UI_SETTINGS_TITLE;
             root.Q<Label>("settings-footer").text = Localization.UI_SETTINGS_FOOTER;
             doneButton.text = Localization.UI_SETTINGS_DONE;
             closeButton.clicked += Close;
             doneButton.clicked += Close;
+            if (resetPageButton != null)
+            {
+                resetPageButton.text = Localization.UI_SETTINGS_RESET_PAGE;
+                resetPageButton.tooltip = Localization.UI_SETTINGS_RESET_PAGE_HINT;
+                resetPageButton.clicked += ResetPage;
+            }
+
             content.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
             var window = root.Q<VisualElement>("settings-window");
@@ -189,9 +218,31 @@ namespace Shinobytes.UI
                 tabButtons[i].EnableInClassList("rf-settings__tab--active", i == index);
             }
 
+            pageRows.Clear();
             content.Clear();
             tabs[index].Build(content.contentContainer);
             content.scrollOffset = Vector2.zero;
+            RefreshResetPage();
+        }
+
+        private void ResetPage()
+        {
+            foreach (var row in pageRows.ToArray())
+            {
+                if (!row.IsDefault()) row.Reset();
+            }
+
+            tabs[activeTab].ExtraReset?.Invoke();
+            RefreshResetPage();
+        }
+
+        /// <summary>The page reset is only offered when something on the page has been changed.</summary>
+        private void RefreshResetPage()
+        {
+            if (resetPageButton == null) return;
+            var changed = tabs[activeTab].ExtraReset != null;
+            for (var i = 0; i < pageRows.Count && !changed; ++i) changed = !pageRows[i].IsDefault();
+            resetPageButton.SetEnabled(changed);
         }
 
         private bool IsAdministrator() => gameManager && gameManager.SessionSettings != null && gameManager.SessionSettings.IsAdministrator;
@@ -201,36 +252,54 @@ namespace Shinobytes.UI
         private void BuildGame(VisualElement c)
         {
             var g = gameManager;
-            Section(c, Localization.UI_SETTINGS_SECTION_CAMERA);
+            Section(c, Localization.UI_SETTINGS_SECTION_OBSERVER);
             SliderRow(c, Localization.UI_SETTINGS_CAMERA_ROTATION, Localization.UI_SETTINGS_CAMERA_ROTATION_HINT,
-                -20f, 20f, SettingsApplier.CameraRotation, RotationText, SettingsApplier.SetCameraRotation, whole: true);
+                -20f, 20f, SettingsApplier.CameraRotation, SettingsApplier.Defaults.CameraRotation, RotationText, SettingsApplier.SetCameraRotation, step: 1f);
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE, Localization.UI_SETTINGS_OBSERVE_HINT, 5f, 120f,
+                SettingsApplier.ObserveSeconds, SettingsApplier.Defaults.ObserveSeconds, Seconds, SettingsApplier.SetObserveSeconds, step: 1f);
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_SUB, null, 5f, 120f,
+                SettingsApplier.ObserveSubscriberSeconds, SettingsApplier.Defaults.ObserveSecondsSpecial, Seconds, SettingsApplier.SetObserveSubscriberSeconds, step: 1f);
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_VIP, null, 5f, 120f,
+                SettingsApplier.ObserveVipSeconds, SettingsApplier.Defaults.ObserveSecondsSpecial, Seconds, SettingsApplier.SetObserveVipSeconds, step: 1f);
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_MOD, null, 5f, 120f,
+                SettingsApplier.ObserveModeratorSeconds, SettingsApplier.Defaults.ObserveSecondsSpecial, Seconds, SettingsApplier.SetObserveModeratorSeconds, step: 1f);
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_EVENT, Localization.UI_SETTINGS_OBSERVE_EVENT_HINT, 5f, 120f,
+                SettingsApplier.ObserveEventSeconds, SettingsApplier.Defaults.ObserveSecondsSpecial, Seconds, SettingsApplier.SetObserveEventSeconds, step: 1f);
+            SliderRow(c, Localization.UI_SETTINGS_OBSERVE_ISLAND, null, 5f, 60f,
+                SettingsApplier.IslandObserveSeconds, SettingsApplier.Defaults.IslandObserveSeconds, Seconds, SettingsApplier.SetIslandObserveSeconds, step: 1f);
+            Switch(c, Localization.UI_SETTINGS_OBSERVE_EMPTY, Localization.UI_SETTINGS_OBSERVE_EMPTY_HINT,
+                SettingsApplier.ObserveEmptyIslands, SettingsApplier.Defaults.ObserveEmptyIslands, SettingsApplier.SetObserveEmptyIslands);
 
             Section(c, Localization.UI_SETTINGS_SECTION_PLAYERS);
             Choice(c, Localization.UI_SETTINGS_BOOST, Localization.UI_SETTINGS_BOOST_HINT, Localization.UI_SETTINGS_BOOST_OPTIONS,
-                Mathf.Clamp(SettingsApplier.BoostRequirement(g), 0, 1), v => SettingsApplier.SetBoostRequirement(g, v));
+                Mathf.Clamp(SettingsApplier.BoostRequirement(g), 0, 1), SettingsApplier.Defaults.BoostRequirement, v => SettingsApplier.SetBoostRequirement(g, v));
+            Choice(c, Localization.UI_SETTINGS_AFK, Localization.UI_SETTINGS_AFK_HINT, Localization.UI_SETTINGS_AFK_OPTIONS,
+                SettingsApplier.AfkKick, SettingsApplier.Defaults.AfkKick, SettingsApplier.SetAfkKick);
             Choice(c, Localization.UI_SETTINGS_EXPIRY, Localization.UI_SETTINGS_EXPIRY_HINT, Localization.UI_SETTINGS_EXPIRY_OPTIONS,
-                SettingsApplier.PlayerStateExpiry, SettingsApplier.SetPlayerStateExpiry);
-            Switch(c, Localization.UI_SETTINGS_EXPIRY_ALERT, null, SettingsApplier.AlertExpiredState(g), v => SettingsApplier.SetAlertExpiredState(g, v));
-
-            Section(c, Localization.UI_SETTINGS_SECTION_CHAT);
-            Label example = null;
-            var drops = Choice(c, Localization.UI_SETTINGS_DROPS, Localization.UI_SETTINGS_DROPS_HINT, Localization.UI_SETTINGS_DROPS_OPTIONS,
-                SettingsApplier.ItemDropMessages(g), v =>
-                {
-                    SettingsApplier.SetItemDropMessages(g, v);
-                    example.text = DropExample(v);
-                });
-            example = new Label(DropExample(SettingsApplier.ItemDropMessages(g))) { pickingMode = PickingMode.Ignore };
-            example.AddToClassList("rf-settings-row__example");
-            drops.Q(className: "rf-settings-row__text").Add(example);
+                SettingsApplier.PlayerStateExpiry, SettingsApplier.Defaults.PlayerStateExpiry, SettingsApplier.SetPlayerStateExpiry);
+            Switch(c, Localization.UI_SETTINGS_EXPIRY_ALERT, null, SettingsApplier.AlertExpiredState(g), SettingsApplier.Defaults.AlertExpiredState,
+                v => SettingsApplier.SetAlertExpiredState(g, v));
 
             Section(c, Localization.UI_SETTINGS_SECTION_WORLD);
             Choice(c, Localization.UI_SETTINGS_PATHFINDING, Localization.UI_SETTINGS_PATHFINDING_HINT, Localization.UI_SETTINGS_PATHFINDING_OPTIONS,
-                SettingsApplier.PathfindingQuality, v => SettingsApplier.SetPathfindingQuality(g, v));
-            Switch(c, Localization.UI_SETTINGS_HOUSES, Localization.UI_SETTINGS_HOUSES_HINT, SettingsApplier.AutoAssignHouses, SettingsApplier.SetAutoAssignHouses);
-            Switch(c, Localization.UI_SETTINGS_LABELS, Localization.UI_SETTINGS_LABELS_HINT, SettingsApplier.StreamLabels, SettingsApplier.SetStreamLabels);
-            Switch(c, Localization.UI_SETTINGS_NO_RAIDS, null, SettingsApplier.DisableRaids, SettingsApplier.SetDisableRaids);
-            Switch(c, Localization.UI_SETTINGS_NO_DUNGEONS, null, SettingsApplier.DisableDungeons, SettingsApplier.SetDisableDungeons);
+                SettingsApplier.PathfindingQuality, SettingsApplier.Defaults.PathfindingQuality, v => SettingsApplier.SetPathfindingQuality(g, v));
+            Switch(c, Localization.UI_SETTINGS_HOUSES, Localization.UI_SETTINGS_HOUSES_HINT, SettingsApplier.AutoAssignHouses,
+                SettingsApplier.Defaults.AutoAssignHouses, SettingsApplier.SetAutoAssignHouses);
+            Switch(c, Localization.UI_SETTINGS_NO_RAIDS, null, SettingsApplier.DisableRaids, SettingsApplier.Defaults.DisableRaids, SettingsApplier.SetDisableRaids);
+            Switch(c, Localization.UI_SETTINGS_NO_DUNGEONS, null, SettingsApplier.DisableDungeons, SettingsApplier.Defaults.DisableDungeons, SettingsApplier.SetDisableDungeons);
+
+            Section(c, Localization.UI_SETTINGS_SECTION_LABELS);
+            VisualElement textRow = null, jsonRow = null;
+            Switch(c, Localization.UI_SETTINGS_LABELS, Localization.UI_SETTINGS_LABELS_HINT, SettingsApplier.StreamLabels, SettingsApplier.Defaults.StreamLabels, v =>
+            {
+                SettingsApplier.SetStreamLabels(v);
+                textRow.SetEnabled(v);
+                jsonRow.SetEnabled(v);
+            });
+            textRow = Switch(c, Localization.UI_SETTINGS_LABELS_TEXT, null, SettingsApplier.StreamLabelTextFiles, SettingsApplier.Defaults.StreamLabelFiles, SettingsApplier.SetStreamLabelTextFiles);
+            jsonRow = Switch(c, Localization.UI_SETTINGS_LABELS_JSON, null, SettingsApplier.StreamLabelJsonFiles, SettingsApplier.Defaults.StreamLabelFiles, SettingsApplier.SetStreamLabelJsonFiles);
+            textRow.SetEnabled(SettingsApplier.StreamLabels);
+            jsonRow.SetEnabled(SettingsApplier.StreamLabels);
         }
 
         private void BuildGraphics(VisualElement c)
@@ -238,28 +307,34 @@ namespace Shinobytes.UI
             var g = gameManager;
             Section(c, Localization.UI_SETTINGS_SECTION_QUALITY);
             Choice(c, Localization.UI_SETTINGS_QUALITY, null, Localization.UI_SETTINGS_QUALITY_OPTIONS,
-                Mathf.Clamp(SettingsApplier.QualityLevel, 0, 2), SettingsApplier.SetQualityLevel);
-            Switch(c, Localization.UI_SETTINGS_POTATO, Localization.UI_SETTINGS_POTATO_HINT, SettingsApplier.PotatoMode(g), v => SettingsApplier.SetPotatoMode(g, v));
-            Switch(c, Localization.UI_SETTINGS_AUTO_POTATO, Localization.UI_SETTINGS_AUTO_POTATO_HINT, SettingsApplier.AutoPotatoMode(g), v => SettingsApplier.SetAutoPotatoMode(g, v));
-            Switch(c, Localization.UI_SETTINGS_POST, Localization.UI_SETTINGS_POST_HINT, SettingsApplier.PostProcessing(g), v => SettingsApplier.SetPostProcessing(g, v));
+                Mathf.Clamp(SettingsApplier.QualityLevel, 0, 2), SettingsApplier.Defaults.QualityLevel, SettingsApplier.SetQualityLevel);
+            Switch(c, Localization.UI_SETTINGS_POTATO, Localization.UI_SETTINGS_POTATO_HINT, SettingsApplier.PotatoMode(g), SettingsApplier.Defaults.PotatoMode,
+                v => SettingsApplier.SetPotatoMode(g, v));
+            Switch(c, Localization.UI_SETTINGS_AUTO_POTATO, Localization.UI_SETTINGS_AUTO_POTATO_HINT, SettingsApplier.AutoPotatoMode(g), SettingsApplier.Defaults.AutoPotatoMode,
+                v => SettingsApplier.SetAutoPotatoMode(g, v));
+            Switch(c, Localization.UI_SETTINGS_POST, Localization.UI_SETTINGS_POST_HINT, SettingsApplier.PostProcessing(g), SettingsApplier.Defaults.PostProcessing,
+                v => SettingsApplier.SetPostProcessing(g, v));
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;
-            Switch(c, Localization.UI_SETTINGS_DAYNIGHT, null, SettingsApplier.DayNightCycle, v =>
+            Switch(c, Localization.UI_SETTINGS_DAYNIGHT, null, SettingsApplier.DayNightCycle, SettingsApplier.Defaults.DayNightCycle, v =>
             {
                 SettingsApplier.SetDayNightCycle(g, v);
                 timeRow.SetEnabled(!v);
             });
-            Switch(c, Localization.UI_SETTINGS_REALTIME, Localization.UI_SETTINGS_REALTIME_HINT, SettingsApplier.RealTimeDayNight(g), v => SettingsApplier.SetRealTimeDayNight(g, v));
-            timeRow = SliderRow(c, Localization.UI_SETTINGS_TIME, Localization.UI_SETTINGS_TIME_HINT, 0f, 1f, SettingsApplier.TimeOfDay,
+            Switch(c, Localization.UI_SETTINGS_REALTIME, Localization.UI_SETTINGS_REALTIME_HINT, SettingsApplier.RealTimeDayNight(g), SettingsApplier.Defaults.RealTimeDayNight,
+                v => SettingsApplier.SetRealTimeDayNight(g, v));
+            timeRow = SliderRow(c, Localization.UI_SETTINGS_TIME, Localization.UI_SETTINGS_TIME_HINT, 0f, 1f, SettingsApplier.TimeOfDay, SettingsApplier.Defaults.TimeOfDay,
                 v => v < 0.5f ? Localization.UI_SETTINGS_DAY : Localization.UI_SETTINGS_NIGHT, v => SettingsApplier.SetTimeOfDay(g, v));
             timeRow.SetEnabled(!SettingsApplier.DayNightCycle);
 
             Section(c, Localization.UI_SETTINGS_SECTION_PERFORMANCE);
-            SliderRow(c, Localization.UI_SETTINGS_VIEW_DISTANCE, null, 0f, 1f, SettingsApplier.ViewDistance, Percent, v => SettingsApplier.SetViewDistance(g, v));
+            SliderRow(c, Localization.UI_SETTINGS_VIEW_DISTANCE, null, 0f, 1f, SettingsApplier.ViewDistance, SettingsApplier.Defaults.ViewDistance,
+                Percent, v => SettingsApplier.SetViewDistance(g, v));
             if (SettingsApplier.ResolutionScaleSupported)
             {
-                SliderRow(c, Localization.UI_SETTINGS_RESOLUTION, Localization.UI_SETTINGS_RESOLUTION_HINT, 0.25f, 1f, SettingsApplier.ResolutionScale, Percent, SettingsApplier.SetResolutionScale);
+                SliderRow(c, Localization.UI_SETTINGS_RESOLUTION, Localization.UI_SETTINGS_RESOLUTION_HINT, 0.25f, 1f, SettingsApplier.ResolutionScale,
+                    SettingsApplier.Defaults.ResolutionScale, Percent, SettingsApplier.SetResolutionScale);
             }
 
             ButtonRow(c, Localization.UI_SETTINGS_CLAN_CACHE, Localization.UI_SETTINGS_CLAN_CACHE_HINT, Localization.UI_SETTINGS_CLAN_CACHE_BUTTON,
@@ -269,26 +344,30 @@ namespace Shinobytes.UI
         private void BuildSound(VisualElement c)
         {
             var g = gameManager;
-            SliderRow(c, Localization.UI_SETTINGS_MUSIC, null, 0f, 1f, SettingsApplier.MusicVolume(g),
+            SliderRow(c, Localization.UI_SETTINGS_MUSIC, null, 0f, 1f, SettingsApplier.MusicVolume(g), SettingsApplier.Defaults.MusicVolume,
                 v => v <= 0.001f ? Localization.UI_SETTINGS_SILENCE : Percent(v), v => SettingsApplier.SetMusicVolume(g, v));
-            SliderRow(c, Localization.UI_SETTINGS_EVENTS, Localization.UI_SETTINGS_EVENTS_HINT, 0f, 1f, SettingsApplier.EventVolume(g),
+            SliderRow(c, Localization.UI_SETTINGS_EVENTS, Localization.UI_SETTINGS_EVENTS_HINT, 0f, 1f, SettingsApplier.EventVolume(g), SettingsApplier.Defaults.EventVolume,
                 v => v >= 0.999f ? Localization.UI_SETTINGS_BWAAAH : v <= 0.001f ? Localization.UI_SETTINGS_OFF : Percent(v), v => SettingsApplier.SetEventVolume(g, v));
         }
 
         private void BuildInterface(VisualElement c)
         {
             var g = gameManager;
-            SliderRow(c, Localization.UI_SETTINGS_UI_SCALE, Localization.UI_SETTINGS_UI_SCALE_HINT, UiScale.Min, UiScale.Max, UiScale.Value, Percent,
-                v =>
+            // Applied when the slider is let go: the window scales with the setting, so applying while
+            // dragging moved the slider under the pointer and made it jump back and forth.
+            SliderRow(c, Localization.UI_SETTINGS_UI_SCALE, Localization.UI_SETTINGS_UI_SCALE_HINT, UiScale.Min, UiScale.Max, UiScale.Value,
+                SettingsApplier.Defaults.UiScale, Percent, v =>
                 {
-                    // the file is written when the window closes, not on every step of the drag
+                    // the file is written when the window closes, not on every change
                     UiScale.Set(v, save: false);
                     PlayerSettings.Instance.UIScale = UiScale.Value;
-                }, step: UiScale.Step);
-            Switch(c, Localization.UI_SETTINGS_NAMES, null, SettingsApplier.PlayerNames(g), v => SettingsApplier.SetPlayerNames(g, v));
-            Switch(c, Localization.UI_SETTINGS_PLAYER_LIST, null, SettingsApplier.PlayerList(g), v => SettingsApplier.SetPlayerList(g, v));
-            Switch(c, Localization.UI_SETTINGS_PLAYER_DETAILS, Localization.UI_SETTINGS_PLAYER_DETAILS_HINT, SettingsApplier.PlayerDetails(g), v => SettingsApplier.SetPlayerDetails(g, v));
-            Switch(c, Localization.UI_SETTINGS_SHORTCUTS, Localization.UI_SETTINGS_SHORTCUTS_HINT, SettingsApplier.ShortcutBar, SettingsApplier.SetShortcutBar);
+                }, step: UiScale.Step, applyOnRelease: true);
+            Switch(c, Localization.UI_SETTINGS_NAMES, null, SettingsApplier.PlayerNames(g), SettingsApplier.Defaults.PlayerNames, v => SettingsApplier.SetPlayerNames(g, v));
+            Switch(c, Localization.UI_SETTINGS_PLAYER_LIST, null, SettingsApplier.PlayerList(g), SettingsApplier.Defaults.PlayerList, v => SettingsApplier.SetPlayerList(g, v));
+            Switch(c, Localization.UI_SETTINGS_PLAYER_DETAILS, Localization.UI_SETTINGS_PLAYER_DETAILS_HINT, SettingsApplier.PlayerDetails(g), SettingsApplier.Defaults.PlayerDetails,
+                v => SettingsApplier.SetPlayerDetails(g, v));
+            Switch(c, Localization.UI_SETTINGS_SHORTCUTS, Localization.UI_SETTINGS_SHORTCUTS_HINT, SettingsApplier.ShortcutBar, SettingsApplier.Defaults.ShortcutBar,
+                SettingsApplier.SetShortcutBar);
             ButtonRow(c, Localization.UI_SETTINGS_RESET_WINDOWS, Localization.UI_SETTINGS_RESET_WINDOWS_HINT, Localization.UI_SETTINGS_RESET_WINDOWS_BUTTON, ResetWindowPositions);
         }
 
@@ -296,24 +375,56 @@ namespace Shinobytes.UI
         {
             var g = gameManager;
             Intro(c, Localization.UI_SETTINGS_BOT_HINT);
+
+            Section(c, Localization.UI_SETTINGS_SECTION_MESSAGES);
             BotSwitch(c, "ExpMultiplierExpire", Localization.UI_SETTINGS_BOT_EXP, null);
             BotSwitch(c, "PlayerWelcome", Localization.UI_SETTINGS_BOT_WELCOME, null);
             BotSwitch(c, "Disembark", Localization.UI_SETTINGS_BOT_DISEMBARK, null);
             BotSwitch(c, "TrainWarning", Localization.UI_SETTINGS_BOT_TRAIN, Localization.UI_SETTINGS_BOT_TRAIN_HINT);
+            VisualElement minutesRow = null;
+            Switch(c, Localization.UI_SETTINGS_NO_EXP, Localization.UI_SETTINGS_NO_EXP_HINT, SettingsApplier.AnnounceNoExp, SettingsApplier.Defaults.AnnounceNoExp, v =>
+            {
+                SettingsApplier.SetAnnounceNoExp(v);
+                minutesRow.SetEnabled(v);
+            });
+            minutesRow = Choice(c, Localization.UI_SETTINGS_NO_EXP_TIME, Localization.UI_SETTINGS_NO_EXP_TIME_HINT, Localization.UI_SETTINGS_NO_EXP_OPTIONS,
+                SettingsApplier.NoExpMinutes, SettingsApplier.Defaults.NoExpMinutes, SettingsApplier.SetNoExpMinutes);
+            minutesRow.SetEnabled(SettingsApplier.AnnounceNoExp);
             BotSwitch(c, "DungeonResult", Localization.UI_SETTINGS_BOT_DUNGEON, null);
             BotSwitch(c, "RaidResult", Localization.UI_SETTINGS_BOT_RAID, null);
-            BotSwitch(c, "ItemDrop", Localization.UI_SETTINGS_BOT_ITEMS, Localization.UI_SETTINGS_BOT_ITEMS_HINT);
 
-            void BotSwitch(VisualElement parent, string key, string title, string hint)
+            Section(c, Localization.UI_SETTINGS_SECTION_LOOT);
+            VisualElement dropsRow = null;
+            BotSwitch(c, "ItemDrop", Localization.UI_SETTINGS_BOT_ITEMS, null, on => dropsRow.SetEnabled(on));
+            Label example = null;
+            dropsRow = Choice(c, Localization.UI_SETTINGS_DROPS, Localization.UI_SETTINGS_DROPS_HINT, Localization.UI_SETTINGS_DROPS_OPTIONS,
+                SettingsApplier.ItemDropMessages(g), SettingsApplier.Defaults.ItemDropMessages, v =>
+                {
+                    SettingsApplier.SetItemDropMessages(g, v);
+                    example.text = DropExample(v);
+                });
+            example = new Label(DropExample(SettingsApplier.ItemDropMessages(g))) { pickingMode = PickingMode.Ignore };
+            example.AddToClassList("rf-settings-row__example");
+            dropsRow.Q(className: "rf-settings-row__text").Add(example);
+            dropsRow.SetEnabled(SettingsApplier.BotMessageEnabled("ItemDrop"));
+            Switch(c, Localization.UI_SETTINGS_LOOT_ORIGIN, Localization.UI_SETTINGS_LOOT_ORIGIN_HINT, SettingsApplier.LootOrigin, SettingsApplier.Defaults.LootOrigin,
+                SettingsApplier.SetLootOrigin);
+
+            void BotSwitch(VisualElement parent, string key, string title, string hint, Action<bool> also = null)
             {
-                Switch(parent, title, hint, SettingsApplier.BotMessageEnabled(key), v => SettingsApplier.SetBotMessageEnabled(g, key, v));
+                Switch(parent, title, hint, SettingsApplier.BotMessageEnabled(key), SettingsApplier.Defaults.BotMessage, v =>
+                {
+                    SettingsApplier.SetBotMessageEnabled(g, key, v);
+                    also?.Invoke(v);
+                });
             }
         }
 
         private void BuildAdmin(VisualElement c)
         {
             var g = gameManager;
-            Switch(c, Localization.UI_SETTINGS_DEV_TOOLS, Localization.UI_SETTINGS_DEV_TOOLS_HINT, SettingsApplier.DevTools(g), v => SettingsApplier.SetDevTools(g, v));
+            Switch(c, Localization.UI_SETTINGS_DEV_TOOLS, Localization.UI_SETTINGS_DEV_TOOLS_HINT, SettingsApplier.DevTools(g), SettingsApplier.Defaults.DevTools,
+                v => SettingsApplier.SetDevTools(g, v));
             ButtonRow(c, Localization.UI_SETTINGS_DISCONNECT, Localization.UI_SETTINGS_DISCONNECT_HINT, Localization.UI_SETTINGS_DISCONNECT_BUTTON,
                 () => { if (g.RavenNest != null) g.RavenNest.Tcp.Disconnect(); });
         }
@@ -328,6 +439,8 @@ namespace Shinobytes.UI
         // ---- Value texts ----------------------------------------------------------------------------
 
         private static string Percent(float v) => Mathf.RoundToInt(v * 100f).ToString(CultureInfo.InvariantCulture) + "%";
+
+        private static string Seconds(float v) => string.Format(CultureInfo.InvariantCulture, Localization.UI_SETTINGS_SECONDS, Mathf.RoundToInt(v));
 
         /// <summary>Arrows show which way the camera turns; full speed either way earns a cheer.</summary>
         private static string RotationText(float v)
@@ -397,12 +510,30 @@ namespace Shinobytes.UI
             return row;
         }
 
+        /// <summary>
+        /// The small reset button at the start of a control. It keeps its space when hidden, so the
+        /// controls stay lined up whether or not a setting has been changed.
+        /// </summary>
+        private Button ResetButton(VisualElement control, Action reset)
+        {
+            var button = new Button(reset) { text = "\uf2ea", tooltip = Localization.UI_SETTINGS_RESET_ONE };
+            button.AddToClassList("rf-icon");
+            button.AddToClassList("rf-settings-row__reset");
+            // a switch row is clickable all over; the reset must not also flip the switch
+            button.RegisterCallback<PointerDownEvent>(e => e.StopPropagation());
+            control.Add(button);
+            return button;
+        }
+
+        private static void ShowReset(Button reset, bool changed) => reset.style.visibility = changed ? Visibility.Visible : Visibility.Hidden;
+
         /// <summary>An on/off switch. The whole row is the click target, not just the little switch.</summary>
-        private static VisualElement Switch(VisualElement parent, string title, string hint, bool value, Action<bool> changed)
+        private VisualElement Switch(VisualElement parent, string title, string hint, bool value, bool defaultValue, Action<bool> changed)
         {
             var row = Row(parent, title, hint, out var control);
             row.AddToClassList("rf-settings-row--clickable");
 
+            Button reset = null;
             var state = new Label { pickingMode = PickingMode.Ignore };
             state.AddToClassList("rf-switch__state");
             var track = new VisualElement { pickingMode = PickingMode.Ignore };
@@ -410,62 +541,133 @@ namespace Shinobytes.UI
             var knob = new VisualElement { pickingMode = PickingMode.Ignore };
             knob.AddToClassList("rf-switch__knob");
             track.Add(knob);
-            control.Add(state);
-            control.Add(track);
-            control.pickingMode = PickingMode.Ignore;
 
-            void Show(bool on)
+            void Show()
             {
-                track.EnableInClassList("rf-switch--on", on);
-                state.EnableInClassList("rf-switch--on-state", on);
-                state.text = on ? Localization.UI_SETTINGS_ON : Localization.UI_SETTINGS_OFF;
+                track.EnableInClassList("rf-switch--on", value);
+                state.EnableInClassList("rf-switch--on-state", value);
+                state.text = value ? Localization.UI_SETTINGS_ON : Localization.UI_SETTINGS_OFF;
+                ShowReset(reset, value != defaultValue);
             }
 
-            Show(value);
+            void Set(bool v)
+            {
+                value = v;
+                Show();
+                changed(v);
+                RefreshResetPage();
+            }
+
+            reset = ResetButton(control, () => Set(defaultValue));
+            control.Add(state);
+            control.Add(track);
+            Show();
+
             row.AddManipulator(new Clickable(() =>
             {
                 if (!row.enabledInHierarchy) return;
-                value = !value;
-                Show(value);
-                changed(value);
+                Set(!value);
             }));
+            pageRows.Add(new RowState { IsDefault = () => value == defaultValue, Reset = () => Set(defaultValue) });
             return row;
         }
 
-        /// <param name="step">Snaps the value to this step; <paramref name="whole"/> is a step of 1.</param>
-        private static VisualElement SliderRow(VisualElement parent, string title, string hint, float low, float high, float value,
-            Func<float, string> format, Action<float> changed, bool whole = false, float step = 0f)
+        /// <param name="step">Snaps the value to this step; 0 for none.</param>
+        /// <param name="applyOnRelease">
+        /// Only call <paramref name="changed"/> once the slider is let go, for settings that move the
+        /// slider itself, such as the interface size. Clicks on the track and keys apply at once.
+        /// </param>
+        private VisualElement SliderRow(VisualElement parent, string title, string hint, float low, float high, float value, float defaultValue,
+            Func<float, string> format, Action<float> changed, float step = 0f, bool applyOnRelease = false)
         {
             var row = Row(parent, title, hint, out var control);
-            if (whole) step = 1f;
 
+            float Snap(float v) => step > 0f ? Mathf.Round(v / step) * step : v;
+            bool IsDefault(float v) => Mathf.Abs(v - Snap(Mathf.Clamp(defaultValue, low, high))) < Mathf.Max(step * 0.5f, 0.001f);
+
+            Button reset = null;
             var slider = new Slider(low, high);
             slider.AddToClassList("rf-slider");
             var readout = new Label { pickingMode = PickingMode.Ignore };
             readout.AddToClassList("rf-settings-row__value");
+
+            var applied = Snap(Mathf.Clamp(value, low, high));
+            var dragging = false;
+
+            void Apply(float v)
+            {
+                applied = v;
+                changed(v);
+                ShowReset(reset, !IsDefault(v));
+                RefreshResetPage();
+            }
+
+            reset = ResetButton(control, () =>
+            {
+                var v = Snap(Mathf.Clamp(defaultValue, low, high));
+                slider.SetValueWithoutNotify(v);
+                readout.text = format(v);
+                Apply(v);
+            });
             control.Add(slider);
             control.Add(readout);
 
-            float Snap(float v) => step > 0f ? Mathf.Round(v / step) * step : v;
+            slider.SetValueWithoutNotify(applied);
+            readout.text = format(applied);
+            ShowReset(reset, !IsDefault(applied));
 
-            value = Snap(Mathf.Clamp(value, low, high));
-            slider.SetValueWithoutNotify(value);
-            readout.text = format(value);
             slider.RegisterValueChangedCallback(e =>
             {
                 var v = Snap(e.newValue);
                 if (!Mathf.Approximately(v, e.newValue)) slider.SetValueWithoutNotify(v);
                 readout.text = format(v);
-                changed(v);
+                if (!applyOnRelease || !dragging) Apply(v);
+            });
+
+            if (applyOnRelease)
+            {
+                // Trickled down so the slider sees them even though its dragger captures the pointer.
+                slider.RegisterCallback<PointerDownEvent>(e => dragging = true, TrickleDown.TrickleDown);
+                slider.RegisterCallback<PointerUpEvent>(e =>
+                {
+                    if (!dragging) return;
+                    dragging = false;
+                    var v = Snap(slider.value);
+                    if (!Mathf.Approximately(v, applied)) Apply(v);
+                }, TrickleDown.TrickleDown);
+            }
+
+            pageRows.Add(new RowState
+            {
+                IsDefault = () => IsDefault(applied),
+                Reset = () =>
+                {
+                    var v = Snap(Mathf.Clamp(defaultValue, low, high));
+                    slider.SetValueWithoutNotify(v);
+                    readout.text = format(v);
+                    Apply(v);
+                }
             });
             return row;
         }
 
         /// <summary>A row of buttons for up to four choices, arrows either side of the value for more.</summary>
-        private static VisualElement Choice(VisualElement parent, string title, string hint, string[] options, int value, Action<int> changed)
+        private VisualElement Choice(VisualElement parent, string title, string hint, string[] options, int value, int defaultValue, Action<int> changed)
         {
             var row = Row(parent, title, hint, out var control);
             value = Mathf.Clamp(value, 0, options.Length - 1);
+            defaultValue = Mathf.Clamp(defaultValue, 0, options.Length - 1);
+
+            Action show = null;
+            void Set(int v)
+            {
+                value = v;
+                show();
+                changed(v);
+                RefreshResetPage();
+            }
+
+            var reset = ResetButton(control, () => Set(defaultValue));
 
             if (options.Length <= 4)
             {
@@ -475,61 +677,47 @@ namespace Shinobytes.UI
                 for (var i = 0; i < options.Length; ++i)
                 {
                     var index = i;
-                    items[i] = new Button(() =>
-                    {
-                        if (index == value) return;
-                        value = index;
-                        Mark();
-                        changed(index);
-                    }) { text = options[i] };
+                    items[i] = new Button(() => { if (index != value) Set(index); }) { text = options[i] };
                     items[i].AddToClassList("rf-segmented__item");
                     group.Add(items[i]);
                 }
 
-                void Mark()
+                show = () =>
                 {
                     for (var i = 0; i < items.Length; ++i) items[i].EnableInClassList("rf-segmented__item--active", i == value);
+                    ShowReset(reset, value != defaultValue);
+                };
+                control.Add(group);
+            }
+            else
+            {
+                var stepper = new VisualElement();
+                stepper.AddToClassList("rf-stepper");
+                var label = new Label { pickingMode = PickingMode.Ignore };
+                label.AddToClassList("rf-stepper__value");
+                var prev = new Button(() => { if (value > 0) Set(value - 1); }) { text = "\uf053" };
+                var next = new Button(() => { if (value < options.Length - 1) Set(value + 1); }) { text = "\uf054" };
+                foreach (var arrow in new[] { prev, next })
+                {
+                    arrow.AddToClassList("rf-icon");
+                    arrow.AddToClassList("rf-stepper__arrow");
                 }
 
-                Mark();
-                control.Add(group);
-                return row;
+                show = () =>
+                {
+                    label.text = options[value];
+                    prev.SetEnabled(value > 0);
+                    next.SetEnabled(value < options.Length - 1);
+                    ShowReset(reset, value != defaultValue);
+                };
+                stepper.Add(prev);
+                stepper.Add(label);
+                stepper.Add(next);
+                control.Add(stepper);
             }
 
-            var stepper = new VisualElement();
-            stepper.AddToClassList("rf-stepper");
-            var label = new Label { pickingMode = PickingMode.Ignore };
-            label.AddToClassList("rf-stepper__value");
-            Button prev = null, next = null;
-            prev = new Button(() => Move(-1)) { text = "" };
-            next = new Button(() => Move(1)) { text = "" };
-            foreach (var arrow in new[] { prev, next })
-            {
-                arrow.AddToClassList("rf-icon");
-                arrow.AddToClassList("rf-stepper__arrow");
-            }
-
-            void ShowValue()
-            {
-                label.text = options[value];
-                prev.SetEnabled(value > 0);
-                next.SetEnabled(value < options.Length - 1);
-            }
-
-            void Move(int by)
-            {
-                var v = Mathf.Clamp(value + by, 0, options.Length - 1);
-                if (v == value) return;
-                value = v;
-                ShowValue();
-                changed(v);
-            }
-
-            ShowValue();
-            stepper.Add(prev);
-            stepper.Add(label);
-            stepper.Add(next);
-            control.Add(stepper);
+            show();
+            pageRows.Add(new RowState { IsDefault = () => value == defaultValue, Reset = () => Set(defaultValue) });
             return row;
         }
 
