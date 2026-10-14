@@ -14,6 +14,41 @@ class Frame:
     def sub(self, x, y, rot=0.0):
         o = self.o + self.R @ Vector((x, y, 0)); f = Frame(o.x, o.y, self.rot + rot); return f
 
+# ---------------------------------------------------------------- Synty props
+# Props the Synty packs already have (barrels, crates, dummies, racks, benches, trees and so on) are not modelled
+# here: a house places an anchor, an empty, and houses_synty.cs (in the editor) puts the Synty prefab for its key
+# there and bakes the house and its props into one mesh per material. Only what Synty lacks (the easter eggs,
+# trade emblems, the cottages and yards) is built here. See the Houses section of the README.
+#
+# The anchor's name carries everything but its position, because transforms change axes on the way into Unity:
+#   SYNTY_<key>__<n>__y<yaw degrees>__t<tilt degrees>__r<roll degrees>__s<scale>[__l<length>][__h<height>]
+# yaw is the world turn about z (0 faces Blender +y, Unity -z, like the houses), tilt tips the prop over about its
+# own x (forward, onto its face, for positive tilt), roll turns it about the way it faces (a sword hung at an
+# angle on a wall), scale multiplies the size houses_synty.cs gives the key, and length and height (metres)
+# stretch props that are fitted to a span, such as fence sections.
+ANCHORS = []
+
+def anchor(f, key, x, y, z=0.0, yaw=0.0, s=1.0, tilt=0.0, roll=0.0, length=None, height=None):
+    """A spot for the Synty prop `key`: local (x, y, z) in frame f, turned by yaw (radians, 0 = facing the frame's
+    +y like the house), tipped over by tilt (radians), scaled by s."""
+    p = f.p(x, y, z)
+    name = "SYNTY_%s__%d__y%.1f__t%.1f__r%.1f__s%.3f" % (key, len(ANCHORS), math.degrees(f.rot + yaw) % 360.0, math.degrees(tilt), math.degrees(roll), s)
+    if length is not None: name += "__l%.2f" % length
+    if height is not None: name += "__h%.2f" % height
+    ob = bpy.data.objects.new(name, None)
+    ob.empty_display_type = 'ARROWS'
+    ob.location = p
+    ob.rotation_euler = (tilt, 0.0, f.rot + yaw)
+    scene.collection.objects.link(ob)
+    ANCHORS.append(ob)
+    return ob
+
+# every house's export carries its anchors along
+_export_fbx_mesh_only = export_fbx
+def export_fbx(objs, name):
+    _export_fbx_mesh_only(list(objs) + ANCHORS + YARDS, name)
+    print("NOTE anchors", len(ANCHORS))
+
 def bar(b, a, c, w, d, key, col=None, normal=None):
     """A square bar from point a to point c, w wide and d deep; normal sets which way its depth faces."""
     a, c = Vector(a), Vector(c)
@@ -23,20 +58,21 @@ def bar(b, a, c, w, d, key, col=None, normal=None):
     R = Matrix((X, Y, Z)).transposed()
     return b.box(tuple((a + c) / 2), ((c - a).length, d, w), key, col, rot=R)
 
-def yard(b, f, rx, ry, col=DIRT, jag=0.12, seed=1.0):
-    """A ragged flat pad for the lot, with a skirt into the ground so slopes never show a gap."""
-    n = 28; top = []; low = []
-    for i in range(n):
-        a = 2 * math.pi * i / n
-        c, s = math.cos(a), math.sin(a)
-        k = 1 + (math.sin(a * 3 + seed) * 0.5 + math.sin(a * 7 + seed * 2) * 0.5) * jag
-        x = math.copysign(abs(c) ** 0.6, c) * rx * k; y = math.copysign(abs(s) ** 0.6, s) * ry * k
-        top.append(f.p(x, y, 0.04)); low.append(f.p(x * 1.02, y * 1.02, -0.35))
-    b.face(top, (0, 0, 1), "PAL", col)
-    for i in range(n):
-        j = (i + 1) % n
-        mid = (Vector(top[i]) + Vector(top[j])) / 2 - Vector(f.p(0, 0, 0)); mid.z = 0
-        b.face([top[i], low[i], low[j], top[j]], mid, "PAL", col)
+YARDS = []
+
+def yard(b, f, rx, ry, col=DIRT, jag=0.12, seed=1.0, x=0.0, y=0.0, kind="dirt"):
+    """The trodden ground of the lot. Not modelled: a flat pad sat on the grass like a plate. This leaves a
+    marker, an empty named YARD__<n>__x<half x>__z<half y>__j<jag>__e<seed>__k<kind>__y<yaw>, and the game lays a
+    patch of the island's own terrain texture over the ground there (HouseYard, added by houses_prefabs.cs),
+    fading raggedly into the grass. kind is dirt or gravel. The patch fades out at its rim, so it is drawn a
+    little larger than the pad was, to look as big."""
+    p = f.p(x, y, 0.0)
+    ob = bpy.data.objects.new("YARD__%d__x%.2f__z%.2f__j%.2f__e%.2f__k%s__y%.1f" % (len(YARDS), rx * 1.18, ry * 1.18, jag, seed, kind, math.degrees(f.rot) % 360.0), None)
+    ob.empty_display_type = 'CIRCLE'
+    ob.location = p
+    scene.collection.objects.link(ob)
+    YARDS.append(ob)
+    return ob
 
 def window(b, f, x, z, side_y, w=0.8, h=1.0, shutters="blue", lit=True):
     """A window on a wall whose outer face is at local y = side_y (facing +y in the frame)."""

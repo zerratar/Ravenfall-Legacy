@@ -206,3 +206,82 @@ def basket(b, f, x, y, r=0.35, h=0.32, fill=None, z=0.0):
         for k in range(7):
             a = k * 2.4; rr = r * 0.55 * (k > 0)
             b.sphere((c[0] + math.cos(a) * rr, c[1] + math.sin(a) * rr, z + h * 0.85), r * 0.28, "PAL", fill[k % len(fill)], seg=5, rings=3)
+
+# ---------------------------------------------------------------- Synty versions
+# The props above, for the ones the Synty packs have: the same call places an anchor instead of building
+# geometry (see anchor() in house_kit.py). The modelled versions stay below their names with a _model suffix,
+# for the few places that need our own (a coloured fill, a hull to build on).
+barrel_model, crate_model, tree_model, pine_model, bush_model = barrel, crate, tree, pine, bush
+hay_bale_model, sack_model, log_stack_model, dummy_model, well_model = hay_bale, sack, log_stack, dummy, well
+lantern_post_model, basket_model, rock_model, fence_model, hull_model = lantern_post, basket, rock, fence, hull
+
+def _turn(x, y, k=1.0):
+    """A steady, different-looking turn for each spot, so rows of the same prop do not look stamped."""
+    return math.sin(x * 12.9898 + y * 78.233) * math.pi * k
+
+def barrel(b, f, x, y, z=0.0, r=0.32, h=0.8):
+    anchor(f, "barrel", x, y, z, yaw=_turn(x, y), s=h / 0.8)
+
+def crate(b, f, x, y, z=0.0, s=0.6, yaw=0.0):
+    anchor(f, "crate", x, y, z, yaw=yaw, s=s / 0.6)
+
+def tree(b, f, x, y, h=4.0, r=1.4, col=None, seed=0.0):
+    anchor(f, "tree", x, y, yaw=seed + _turn(x, y), s=h / 4.0)
+
+def pine(b, f, x, y, h=4.5, r=1.1):
+    anchor(f, "pine", x, y, yaw=_turn(x, y), s=h / 4.5)
+
+def bush(b, f, x, y, r=0.5, col=None, berries=None):
+    anchor(f, "bush", x, y, yaw=_turn(x, y), s=r / 0.5)
+    if berries:
+        for k in range(6):
+            a = k * 2.4 + x
+            b.sphere(f.p(x + math.cos(a) * r * 0.75, y + math.sin(a) * r * 0.75, r * (0.75 + 0.25 * math.sin(k))), 0.07, "PAL", berries, seg=4, rings=3)
+
+def hay_bale(b, f, x, y, z=0.0, yaw=0.0):
+    anchor(f, "hay_bale", x, y, z, yaw=yaw)
+
+def sack(b, f, x, y, z=0.0, col=None):
+    anchor(f, "sack", x, y, z, yaw=_turn(x, y))
+
+def log_stack(b, f, x, y, length=2.4, rows=3, yaw=0.0, r=0.2):
+    anchor(f, "wood_pile", x, y, yaw=yaw, s=length / 2.4)
+
+def dummy(b, f, x, y, yaw=0.0):
+    anchor(f, "dummy", x, y, yaw=yaw)
+
+def well(b, f, x, y, roof="SLAT_BROWN"):
+    anchor(f, "well", x, y)
+
+def lantern_post(b, f, x, y, h=2.2):
+    anchor(f, "lamp", x, y, s=h / 2.2)
+
+def basket(b, f, x, y, r=0.35, h=0.32, fill=None, z=0.0):
+    anchor(f, "basket", x, y, z, yaw=_turn(x, y), s=r / 0.35)
+    if fill:
+        # what is in it: the Synty basket comes empty
+        c = f.p(x, y, z)
+        for k in range(7):
+            a = k * 2.4; rr = r * 0.55 * (k > 0)
+            b.sphere((c[0] + math.cos(a) * rr, c[1] + math.sin(a) * rr, z + h * 0.95), r * 0.28, "PAL", fill[k % len(fill)], seg=5, rings=3)
+
+def rock(b, f, x, y, r, sz=0.7, col=ROCK, seg=7, seed=0.0):
+    anchor(f, "rock", x, y, yaw=seed + _turn(x, y), s=r / 0.5)
+
+def fence(b, f, pts, h=0.9, col=TIMBER_L, post=TIMBER):
+    """Synty fence sections along a polyline of local (x, y) points, each stretched a little to fill its span."""
+    for i in range(len(pts) - 1):
+        ax, ay = pts[i]; cx, cy = pts[i + 1]
+        L = math.hypot(cx - ax, cy - ay)
+        n = max(1, int(L / 2.4 + 0.5))
+        yaw = math.atan2(cy - ay, cx - ax)
+        for k in range(n):
+            t = (k + 0.5) / n
+            anchor(f, "fence", ax + (cx - ax) * t, ay + (cy - ay) * t, yaw=yaw, length=L / n, height=h)
+
+def hull(b, f, x, y, length=4.0, beam=1.4, depth=0.7, z=0.0, yaw=0.0, col=None, upturned=False):
+    """An upturned rowboat is a Synty one; a hull to build on (the boathouse's sailboat) stays ours."""
+    if not upturned:
+        return hull_model(b, f, x, y, length, beam, depth, z, yaw, col, upturned)
+    anchor(f, "rowboat", x, y, z, yaw=yaw, s=length / 4.0, tilt=math.pi)
+    return f.sub(x, y, yaw)

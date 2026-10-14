@@ -17,7 +17,9 @@ foreach (var g in UnityEditor.AssetDatabase.FindAssets("t:TownHouse", new[] { "A
     var def = UnityEditor.AssetDatabase.LoadAssetAtPath<TownHouse>(UnityEditor.AssetDatabase.GUIDToAssetPath(g));
     string name;
     if (!models.TryGetValue((int)def.Type, out name)) { sb.Append("no model for ").Append(def.Name).Append(" || "); continue; }
-    var fbx = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Village/Models/Village_House_" + name + ".fbx");
+    // the baked model (house and Synty props in one mesh, houses_synty.cs) when there is one, else the house alone
+    var fbx = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Village/Models/Baked/Village_House_" + name + "_Baked.fbx")
+        ?? UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Village/Models/Village_House_" + name + ".fbx");
     if (!fbx) { sb.Append("missing model ").Append(name).Append(" || "); continue; }
     var root = new UnityEngine.GameObject("House_" + name);
     root.AddComponent<TownHouseController>();
@@ -32,13 +34,38 @@ foreach (var g in UnityEditor.AssetDatabase.FindAssets("t:TownHouse", new[] { "A
     box.center = new UnityEngine.Vector3(b.center.x, (min + b.max.y) / 2, b.center.z);
     box.size = new UnityEngine.Vector3(size.x, b.max.y - min, size.z);
     var boxText = box.size.x.ToString("F1", ci) + "x" + box.size.y.ToString("F1", ci) + "x" + box.size.z.ToString("F1", ci);
+    // the yards: the house model (not the baked one) carries YARD markers, see yard() in blender/house_kit.py
+    var source = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Village/Models/Village_House_" + name + ".fbx");
+    var yards = 0;
+    if (source)
+    {
+        foreach (var t in source.GetComponentsInChildren<UnityEngine.Transform>(true))
+        {
+            if (!t.name.StartsWith("YARD__")) continue;
+            float hx = 4.6f, hz = 4.4f, jag = 0.12f, seed = 1f, yaw = 0f; var kind = "dirt";
+            foreach (var part in t.name.Split(new[] { "__" }, System.StringSplitOptions.None))
+            {
+                if (part.Length < 2) continue;
+                float v; var num = float.TryParse(part.Substring(1), System.Globalization.NumberStyles.Float, ci, out v);
+                switch (part[0]) { case 'x': if (num) hx = v; break; case 'z': if (num) hz = v; break; case 'j': if (num) jag = v; break; case 'e': if (num) seed = v; break; case 'y': if (num) yaw = v; break; case 'k': kind = part.Substring(1); break; }
+            }
+            var yardGo = new UnityEngine.GameObject("Yard");
+            yardGo.transform.SetParent(root.transform, false);
+            // the marker's position comes through the model's axes; its turn is given in Blender's, as for the props
+            yardGo.transform.localPosition = source.transform.InverseTransformPoint(t.position);
+            yardGo.transform.localRotation = UnityEngine.Quaternion.Euler(0f, 180f - yaw, 0f);
+            yardGo.AddComponent<HouseYard>().Configure(new UnityEngine.Vector2(hx, hz), jag, seed, kind == "gravel" ? WorldRoad.Surface.Gravel : WorldRoad.Surface.Dirt);
+            yards++;
+        }
+    }
+
     var path = DIR + "House_" + name + ".prefab";
     var prefab = UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, path);
     UnityEngine.Object.DestroyImmediate(root);
     var old = def.Prefab ? def.Prefab.name : "none";
     def.Prefab = prefab;
     UnityEditor.EditorUtility.SetDirty(def);
-    sb.Append(def.Name).Append(": ").Append(old).Append(" -> ").Append(prefab.name).Append(" box ").Append(boxText).Append(" || ");
+    sb.Append(def.Name).Append(": ").Append(old).Append(" -> ").Append(prefab.name).Append(" box ").Append(boxText).Append(" yards ").Append(yards).Append(" || ");
 }
 UnityEditor.AssetDatabase.SaveAssets();
 UnityEngine.Debug.Log(sb.ToString());
