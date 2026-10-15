@@ -192,6 +192,12 @@ Assets/Village/Derived.meta
 !Assets/World/PostEffects.meta
 !Assets/World/PostEffects/**
 
+# The sea (its shader is referenced by the scene's Ocean) and the sky's clouds (loaded from Resources).
+!Assets/World/Water.meta
+!Assets/World/Water/**
+!Assets/World/Sky.meta
+!Assets/World/Sky/**
+
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
 
