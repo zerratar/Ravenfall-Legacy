@@ -37,6 +37,9 @@ public class FerryController : MonoBehaviour
     private ParticleSystem.EmissionModule emission;
     private ParticleSystem.MinMaxCurve rateOverTime;
     private float posY;
+    // the hull's length and width, and which of its own axes they lie along, for riding the waves (Ocean.Float)
+    private Vector3 hullAlong = Vector3.forward, hullAcross = Vector3.right;
+    private float hullLength = 30f, hullWidth = 10f;
 
     private bool isVisible = true;
     private StreamLabel ferryStateLabel;
@@ -61,6 +64,16 @@ public class FerryController : MonoBehaviour
         emission = movementParticleSystem.emission;
         rateOverTime = emission.rateOverTime;
         posY = transform.position.y;
+        var hull = GetComponent<MeshFilter>();
+        if (hull && hull.sharedMesh)
+        {
+            var size = Vector3.Scale(hull.sharedMesh.bounds.size, transform.lossyScale);
+            var alongZ = size.z >= size.x;
+            hullAlong = alongZ ? Vector3.forward : Vector3.right;
+            hullAcross = alongZ ? Vector3.right : Vector3.forward;
+            hullLength = alongZ ? size.z : size.x;
+            hullWidth = alongZ ? size.x : size.z;
+        }
 
         RegisterStreamLabels();
     }
@@ -124,6 +137,17 @@ public class FerryController : MonoBehaviour
     {
         var pos = transform.position;
         var euler = transform.rotation.eulerAngles;
+
+        // riding the sea's own waves, a big ship lifting and leaning less than the water under it does
+        var yaw = Quaternion.Euler(0f, euler.y, 0f);
+        if (Ocean.Float(pos, yaw * hullAlong, yaw * hullAcross, hullLength, hullWidth, out var heave, out var up))
+        {
+            transform.rotation = Quaternion.FromToRotation(Vector3.up, Vector3.Slerp(Vector3.up, up, 0.7f)) * yaw;
+            transform.position = new Vector3(pos.x, posY + heave * 0.7f, pos.z);
+            movementEffect.SetActive(state == FerryState.Moving);
+            return;
+        }
+
         var z = Mathf.Sin(Time.time) * (wave * 2f) - wave;
         var y = Mathf.Sin(Time.time) * (boyance * 2f) - boyance;
         var x = Mathf.Sin(Time.time) * (bobEffect * 2f) - bobEffect;

@@ -51,16 +51,75 @@ public sealed class Ocean : MonoBehaviour
     /// <summary>The material drawn, made from <see cref="OceanShader"/>.</summary>
     public Material Material => material;
 
+    private static readonly int[] WaveIds =
+    {
+        Shader.PropertyToID("_WaveA"), Shader.PropertyToID("_WaveB"), Shader.PropertyToID("_WaveC"), Shader.PropertyToID("_WaveD")
+    };
+    private static readonly int WaveHeightId = Shader.PropertyToID("_WaveHeight");
+    private static readonly int WaveSpeedId = Shader.PropertyToID("_WaveSpeed");
+
+    /// <summary>The waves' groups, on average: the shader varies them across the sea with a slow noise, 0.1 to 1.6.</summary>
+    private const float AverageGroup = 0.6f;
+
+    private static Ocean active;
+
     private void OnEnable()
     {
         Build();
         RenderPipelineManager.beginCameraRendering += Recentre;
+        active = this;
     }
 
     private void OnDisable()
     {
         RenderPipelineManager.beginCameraRendering -= Recentre;
         Tear();
+        if (active == this) active = null;
+    }
+
+    /// <summary>
+    /// How the sea lies under a hull just now, from the same four waves the shader draws, so a boat can ride them: how
+    /// far the water is above its rest level there (metres, the mean of the bow, the stern and both sides) and which
+    /// way the water under it faces. Sampled at the hull's ends and sides, so a big ship rides the long waves and the
+    /// short chop under it evens out. Near the drawn sea, not exact: the waves' slow grouping is taken as its average.
+    /// False with no sea.
+    /// </summary>
+    public static bool Float(Vector3 centre, Vector3 forward, Vector3 right, float length, float width, out float heave, out Vector3 up)
+    {
+        heave = 0f;
+        up = Vector3.up;
+        if (!active || !active.material) return false;
+        var m = active.material;
+        var t = Time.timeSinceLevelLoad * m.GetFloat(WaveSpeedId);
+        var height = m.GetFloat(WaveHeightId);
+        var halfLength = forward * (length * 0.5f);
+        var halfWidth = right * (width * 0.5f);
+        var bow = Height(m, centre + halfLength, t, height);
+        var stern = Height(m, centre - halfLength, t, height);
+        var port = Height(m, centre - halfWidth, t, height);
+        var starboard = Height(m, centre + halfWidth, t, height);
+        heave = (bow + stern + port + starboard) * 0.25f;
+        var alongSlope = (bow - stern) / Mathf.Max(length, 0.1f);
+        var acrossSlope = (starboard - port) / Mathf.Max(width, 0.1f);
+        up = (Vector3.up - forward * alongSlope - right * acrossSlope).normalized;
+        return true;
+    }
+
+    // the water's height at a point: the shader's Gerstner sum, its vertical part (Ocean.shader, Gerstner)
+    private static float Height(Material m, Vector3 at, float t, float height)
+    {
+        var sum = 0f;
+        foreach (var id in WaveIds)
+        {
+            var w = m.GetVector(id);
+            var d = new Vector2(w.x, w.y).normalized;
+            var steep = w.z * height * AverageGroup;
+            var k = 2f * Mathf.PI / Mathf.Max(w.w, 0.5f);
+            var c = Mathf.Sqrt(9.8f / k);
+            var f = k * (d.x * at.x + d.y * at.z - c * t);
+            sum += steep / k * Mathf.Sin(f);
+        }
+        return sum;
     }
 
     private void OnValidate()
