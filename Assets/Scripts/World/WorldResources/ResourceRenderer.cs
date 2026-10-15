@@ -26,6 +26,8 @@ public static unsafe class ResourceRenderer
 {
     private const int HeaderBytes = 64;          // a zero matrix in front, as BatchRendererGroup expects
     private const int MatrixBytes = 48;          // a packed 3x4 matrix
+    private const int ShBytes = 128;             // the ambient light as spherical harmonics, and the probe occlusion
+    private const float AmbientInterval = 1f;    // how often the ambient light is sent again while it changes
     private const float ReferenceTanHalfFov = 0.57735f;   // tan(30 degrees): LOD distances are at a 60 degree view
 
     // in the Profiler as their own entries, under Render; the culling itself shows as CullJob on a worker
@@ -34,9 +36,16 @@ public static unsafe class ResourceRenderer
 
     private static readonly int ObjectToWorldId = Shader.PropertyToID("unity_ObjectToWorld");
     private static readonly int WorldToObjectId = Shader.PropertyToID("unity_WorldToObject");
+    private static readonly int ShCoefficientsId = Shader.PropertyToID("unity_SHCoefficients");
 
     private static BatchRendererGroup group;
     private static GraphicsBuffer buffer;
+    // the ambient light, one copy per instance as the shader reads it per instance, where in the buffer, what it was
+    // when sent and when that was
+    private static float[] ambient = Array.Empty<float>();
+    private static int ambientStart;
+    private static SphericalHarmonicsL2 sentAmbient;
+    private static float sentAmbientAt;
     private static BatchID batch;
     private static bool dirty = true;
     private static bool hooked;
@@ -126,9 +135,42 @@ public static unsafe class ResourceRenderer
         // last frame's culling is long done; start the new frame's list
         culling.Complete();
         culling = default;
-        if (!dirty) return;
-        dirty = false;
-        using (RebuildMarker.Auto()) Rebuild();
+        if (dirty)
+        {
+            dirty = false;
+            using (RebuildMarker.Auto()) Rebuild();
+            return;
+        }
+        // the day and night cycle moves the ambient light all the time; it is sent again now and then
+        if (buffer != null && count > 0 && Time.realtimeSinceStartup - sentAmbientAt >= AmbientInterval && RenderSettings.ambientProbe != sentAmbient)
+        {
+            FillAmbient();
+            buffer.SetData(ambient, 0, ambientStart / 4, ambient.Length);
+        }
+    }
+
+    /// <summary>
+    /// The scene's ambient light for every instance, as an ordinary renderer gets it. A BatchRendererGroup draw has no
+    /// fallback for it that works (the shader read whatever was bound, and trees came out neon green, black or in
+    /// rainbow facets), so the GPU Resident Drawer gives its instances their own too.
+    /// </summary>
+    private static void FillAmbient()
+    {
+        sentAmbient = RenderSettings.ambientProbe;
+        sentAmbientAt = Time.realtimeSinceStartup;
+        var sh = new SHCoefficients(sentAmbient);
+        var values = new[] { sh.SHAr, sh.SHAg, sh.SHAb, sh.SHBr, sh.SHBg, sh.SHBb, sh.SHC, sh.ProbesOcclusion };
+        for (var i = 0; i < count; ++i)
+        {
+            var at = i * (ShBytes / 4);
+            for (var v = 0; v < values.Length; ++v)
+            {
+                ambient[at + v * 4] = values[v].x;
+                ambient[at + v * 4 + 1] = values[v].y;
+                ambient[at + v * 4 + 2] = values[v].z;
+                ambient[at + v * 4 + 3] = values[v].w;
+            }
+        }
     }
 
     /// <summary>Everything again: the meshes and materials, the draw keys, the looks and the instance buffer.</summary>
@@ -205,11 +247,16 @@ public static unsafe class ResourceRenderer
         nativeLodKeys = ToNative(lodKeys);
         nativeKeys = ToNative(keys);
 
-        buffer = new GraphicsBuffer(GraphicsBuffer.Target.Raw, matrices.Length, 4);
+        ambientStart = HeaderBytes + count * MatrixBytes * 2;
+        ambient = new float[count * ShBytes / 4];
+        FillAmbient();
+        buffer = new GraphicsBuffer(GraphicsBuffer.Target.Raw, matrices.Length + ambient.Length, 4);
         buffer.SetData(matrices);
-        var metadata = new NativeArray<MetadataValue>(2, Allocator.Temp);
+        buffer.SetData(ambient, 0, ambientStart / 4, ambient.Length);
+        var metadata = new NativeArray<MetadataValue>(3, Allocator.Temp);
         metadata[0] = new MetadataValue { NameID = ObjectToWorldId, Value = 0x80000000u | HeaderBytes };
         metadata[1] = new MetadataValue { NameID = WorldToObjectId, Value = 0x80000000u | (uint)(HeaderBytes + count * MatrixBytes) };
+        metadata[2] = new MetadataValue { NameID = ShCoefficientsId, Value = 0x80000000u | (uint)ambientStart };
         batch = group.AddBatch(metadata, buffer.bufferHandle);
         metadata.Dispose();
     }

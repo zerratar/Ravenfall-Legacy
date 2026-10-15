@@ -59,6 +59,19 @@ Shader "Ravenfall/Grass"
     // set by GrassRenderer: x, y the wind direction, z strength, w speed; the fade from x to y metres
     float4 _GrassWind;
     float4 _GrassFade;
+    // the scene's ambient light as spherical harmonics, set by GrassRenderer: an instanced draw has no working
+    // fallback for it (SampleSH read whatever was bound, and tinted the grass)
+    float4 _GrassSH[7];
+
+    half3 GrassAmbient(half3 normal)
+    {
+        half4 n = half4(normal, 1);
+        half3 x1 = half3(dot(_GrassSH[0], n), dot(_GrassSH[1], n), dot(_GrassSH[2], n));
+        half4 b = n.xyzz * n.yzzx;
+        half3 x2 = half3(dot(_GrassSH[3], b), dot(_GrassSH[4], b), dot(_GrassSH[5], b));
+        half3 x3 = _GrassSH[6].xyz * (n.x * n.x - n.y * n.y);
+        return max(half3(0, 0, 0), x1 + x2 + x3);
+    }
 
     struct Attributes
     {
@@ -167,7 +180,7 @@ Shader "Ravenfall/Grass"
                 half diffuse = saturate(dot(normal, light.direction) * 0.6 + 0.4);
                 half3 view = normalize(GetWorldSpaceViewDir(input.positionWS));
                 half through = pow(saturate(dot(-view, light.direction)), 3) * input.height * _Translucency;
-                half3 lit = albedo * (SampleSH(normal) + light.color * (diffuse + through) * shadow);
+                half3 lit = albedo * (GrassAmbient(normal) + light.color * (diffuse + through) * shadow);
 
                 half fog = ComputeFogFactor(TransformWorldToHClip(input.positionWS).z);
                 return half4(MixFog(lit, fog), 1);

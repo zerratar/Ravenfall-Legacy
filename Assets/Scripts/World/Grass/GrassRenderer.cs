@@ -34,6 +34,8 @@ public static unsafe class GrassRenderer
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int WindId = Shader.PropertyToID("_GrassWind");
     private static readonly int FadeId = Shader.PropertyToID("_GrassFade");
+    private static readonly int AmbientId = Shader.PropertyToID("_GrassSH");
+    private static readonly Vector4[] ambient = new Vector4[7];
 
     private static bool enabled = true;
     private static float distance = 60f;
@@ -284,6 +286,20 @@ public static unsafe class GrassRenderer
 #endif
     }
 
+    /// <summary>The scene's ambient light for the grass shader, which cannot rely on the instanced fallback for it.</summary>
+    private static void SetAmbient()
+    {
+        var sh = new SHCoefficients(RenderSettings.ambientProbe);
+        ambient[0] = sh.SHAr;
+        ambient[1] = sh.SHAg;
+        ambient[2] = sh.SHAb;
+        ambient[3] = sh.SHBr;
+        ambient[4] = sh.SHBg;
+        ambient[5] = sh.SHBb;
+        ambient[6] = sh.SHC;
+        Shader.SetGlobalVectorArray(AmbientId, ambient);
+    }
+
     private static void BeforeRendering(ScriptableRenderContext context, List<Camera> cameras)
     {
         culling.Complete();
@@ -295,6 +311,7 @@ public static unsafe class GrassRenderer
 
             Shader.SetGlobalVector(WindId, new Vector4(0.8f, 0.6f, 0.12f, 1.7f));
             Shader.SetGlobalVector(FadeId, new Vector4(distance * 0.7f, distance, 0f, 0f));
+            SetAmbient();
             if (TryFocus(cameras, out var focus)) Stream(focus);
         }
     }
