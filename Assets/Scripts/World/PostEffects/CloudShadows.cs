@@ -85,8 +85,9 @@ public static class CloudShadows
             return;
         }
 
-        // with the volumetric clouds on, the shadows are theirs, drawn from the clouds overhead
-        if (SkyClouds.DrawShadows(context, sun, sunData, strength)) return;
+        // with the volumetric clouds on, the shadows are theirs, drawn from the clouds overhead; softer under a grey sky,
+        // where the light comes from all round
+        if (SkyClouds.DrawShadows(context, sun, sunData, strength * Weather.Shadows)) return;
 
         if (!cookie) cookie = Make();
         if (sun.cookie != cookie) sun.cookie = cookie;

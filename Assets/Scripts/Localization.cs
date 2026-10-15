@@ -975,6 +975,8 @@ public static class Localization
     public static string UI_SETTINGS_DUNGEON_LIGHTING_HINT = "Dungeons go dark and are lit by flickering torches.";
     public static string UI_SETTINGS_HAZE = "Atmospheric haze";
     public static string UI_SETTINGS_HAZE_HINT = "Far islands fade softly into the air, for a sense of distance.";
+    public static string UI_SETTINGS_WEATHER = "Changing weather";
+    public static string UI_SETTINGS_WEATHER_HINT = "The sky clears and clouds over as the days go by: clear spells, fair weather, cloudy and overcast skies. With the volumetric clouds.";
     public static string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
     public static string UI_SETTINGS_REALTIME = "Follow the clock";
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";

@@ -40,6 +40,7 @@ public class DayNightCycle : MonoBehaviour
     private float freezeTimer;
 
     private Light skyLight;
+    private float shadowStrength = -1f;
     private Material skyboxMaterial;
     //private float daytimeHoursNormalized = 1f / 24f;
 
@@ -50,6 +51,9 @@ public class DayNightCycle : MonoBehaviour
             return CycleProgress >= 0.5f;
         }
     }
+
+    /// <summary>How much it is day, 0 at night to 1 at noon, whatever the weather does to the sun.</summary>
+    public float Daylight { get; private set; }
 
     public bool UseRealTime { get; set; }
     public bool IsEnabled { get; set; }
@@ -75,6 +79,7 @@ public class DayNightCycle : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        Weather.Tick(Time.deltaTime);
         var skylightLerpValue = 0f;
 
         if (IsEnabled)
@@ -120,11 +125,15 @@ public class DayNightCycle : MonoBehaviour
         }
 
         RenderSettings.ambientMode = AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = SkyColor.Evaluate(skylightLerpValue);
-        RenderSettings.ambientEquatorColor = EquatorColor.Evaluate(skylightLerpValue);
+        Daylight = skylightLerpValue;
+        // under a grey sky its light goes grey
+        RenderSettings.ambientSkyColor = Greyed(SkyColor.Evaluate(skylightLerpValue), Weather.Grey);
+        RenderSettings.ambientEquatorColor = Greyed(EquatorColor.Evaluate(skylightLerpValue), Weather.Grey * 0.7f);
         RenderSettings.ambientGroundColor = GroundColor.Evaluate(skylightLerpValue);
 
-        skyLight.intensity = Mathf.Lerp(NightLight.intensity, DayLight.intensity, skylightLerpValue);
+        skyLight.intensity = Mathf.Lerp(NightLight.intensity, DayLight.intensity, skylightLerpValue) * Weather.Sunlight;
+        if (shadowStrength < 0f) shadowStrength = skyLight.shadowStrength;
+        skyLight.shadowStrength = shadowStrength * Weather.Shadows;
         skyLight.colorTemperature = Mathf.Lerp(NightLight.colorTemperature, DayLight.colorTemperature, skylightLerpValue);
         skyLight.color = Color.Lerp(NightLight.color, DayLight.color, skylightLerpValue);
         skyLight.transform.rotation = Quaternion.Lerp(NightLight.transform.rotation, DayLight.transform.rotation, skylightLerpValue);
@@ -135,6 +144,13 @@ public class DayNightCycle : MonoBehaviour
         {
             RenderSettings.fogColor = Color.Lerp(NightFogColor, DayFogColor, skylightLerpValue);
         }
+    }
+
+    private static Color Greyed(Color colour, float amount)
+    {
+        if (amount <= 0f) return colour;
+        var grey = colour.r * 0.3f + colour.g * 0.55f + colour.b * 0.15f;
+        return Color.Lerp(colour, new Color(grey, grey, grey * 1.04f, colour.a), amount);
     }
 
     private AnimationCurve GetSeasonalCurve()

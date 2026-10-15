@@ -99,6 +99,8 @@ Shader "Ravenfall/Ocean"
             // the live sky (SkyReflection), when there is one; otherwise the scene's own reflection
             TEXTURECUBE(_RavenfallSky); SAMPLER(sampler_RavenfallSky);
             float _RavenfallHasSky;
+            // how overcast the sky is, 0 to 1 (Weather): the sea mirrors grey cloud then, and the sun hardly glints
+            float _RavenfallOvercast;
 
             CBUFFER_START(UnityPerMaterial)
             float4 _ScatterColor, _DeepColor, _Absorption, _SkyTint, _FoamColor;
@@ -161,6 +163,9 @@ Shader "Ravenfall/Ocean"
                     sky = SAMPLE_TEXTURECUBE_LOD(_RavenfallSky, sampler_RavenfallSky, dir, PerceptualRoughnessToMipmapLevel(roughness)).rgb;
                 else
                     sky = GlossyEnvironmentReflection(dir, roughness, 1.0);
+                // under a grey sky the reflection is of the cloud, the colour of the sky's light
+                float3 cloud = lerp(unity_AmbientSky.rgb, unity_AmbientEquator.rgb, 0.5) * 0.9;
+                sky = lerp(sky, cloud, _RavenfallOvercast * 0.85);
                 return sky;
             }
 
@@ -294,7 +299,7 @@ Shader "Ravenfall/Ocean"
                 float dd = ndh * ndh * (a2 - 1.0) + 1.0;
                 float D = a2 / (PI * dd * dd);
                 float F = 0.02 + 0.98 * pow(1.0 - ldh, 5.0);
-                float spec = min(D * F / (4.0 * max(ndv, 0.02)), 24.0) * step(0.001, ndl) * _SunGlitter * shadow;
+                float spec = min(D * F / (4.0 * max(ndv, 0.02)), 24.0) * step(0.001, ndl) * _SunGlitter * shadow * (1.0 - 0.85 * _RavenfallOvercast);
                 float3 glitter = sun.color * spec;
 
                 // ---- foam ----

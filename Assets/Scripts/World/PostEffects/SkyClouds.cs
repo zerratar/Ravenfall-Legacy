@@ -192,7 +192,8 @@ public static class SkyClouds
         if (!dayNight) dayNight = Object.FindAnyObjectByType<DayNightCycle>();
         var sun = RenderSettings.sun;
         if (!dayNight || !dayNight.DayLight || !dayNight.NightLight || !sun) return 0f;
-        var day = Mathf.InverseLerp(dayNight.NightLight.intensity, dayNight.DayLight.intensity, sun.intensity);
+        // the cycle's own daylight, not the sun's brightness, which the weather dims too
+        var day = dayNight.Daylight;
         var t = Mathf.Clamp01((day - 0.1f) / 0.35f);
         return 1f - t * t * (3f - 2f * t);
     }

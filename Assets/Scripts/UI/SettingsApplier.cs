@@ -83,6 +83,7 @@ public static class SettingsApplier
         public const bool TreeWind = true;
         public const bool DungeonLighting = true;
         public const bool AtmosphericHaze = true;
+        public const bool ChangingWeather = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -146,6 +147,7 @@ public static class SettingsApplier
         ApplyTreeWind();
         ApplyDungeonLighting();
         ApplyHaze();
+        ApplyWeather();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -698,6 +700,20 @@ public static class SettingsApplier
     }
 
     private static void ApplyHaze() => Haze.Enabled = AtmosphericHaze;
+
+    // ---- Changing weather ------------------------------------------------------------------------
+    // The sky clears and clouds over on its own (Weather), with the volumetric clouds. Potato mode holds it at fair
+    // weather as well, without changing the setting.
+
+    public static bool ChangingWeather => PlayerSettings.Instance.ChangingWeather.GetValueOrDefault(Defaults.ChangingWeather);
+
+    public static void SetChangingWeather(bool value)
+    {
+        PlayerSettings.Instance.ChangingWeather = value;
+        ApplyWeather();
+    }
+
+    private static void ApplyWeather() => Weather.Enabled = ChangingWeather;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

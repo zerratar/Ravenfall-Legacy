@@ -1298,6 +1298,8 @@
     "UI_SETTINGS_DUNGEON_LIGHTING_HINT": "Grottorna blir mörka och lyses upp av fladdrande facklor.",
     "UI_SETTINGS_HAZE": "Dis i luften",
     "UI_SETTINGS_HAZE_HINT": "Öar långt bort tonar mjukt in i luften, för en känsla av avstånd.",
+    "UI_SETTINGS_WEATHER": "Växlande väder",
+    "UI_SETTINGS_WEATHER_HINT": "Himlen klarnar och mulnar med dagarna: klart, vackert väder, molnigt och mulet. Med de volymetriska molnen.",
     "UI_SETTINGS_POTATO": "Potatisläge",
     "UI_SETTINGS_POTATO_HINT": "Den lägsta grafiken som finns, för datorer som har det jobbigt.",
     "UI_SETTINGS_QUALITY": "Grafikkvalitet",

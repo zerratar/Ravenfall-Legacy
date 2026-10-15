@@ -70,7 +70,7 @@ public static class Haze
 
     private static void Set(Material m)
     {
-        m.SetVector(ParamsId, new Vector4(Density, 1f / Mathf.Max(HeightScale, 1f), BaseHeight, StartDistance));
+        m.SetVector(ParamsId, new Vector4(Density * Weather.HazeAmount, 1f / Mathf.Max(HeightScale, 1f), BaseHeight, StartDistance));
         m.SetVector(SunId, new Vector4(0.35f, 6f, 0.45f, 0.12f));
 
         // the sky's own colour, between its top and its horizon

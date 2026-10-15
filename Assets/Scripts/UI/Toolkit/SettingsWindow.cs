@@ -453,6 +453,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetDetailedWater);
             Switch(c, Localization.UI_SETTINGS_VOLUMETRIC_CLOUDS, Localization.UI_SETTINGS_VOLUMETRIC_CLOUDS_HINT, SettingsApplier.VolumetricClouds, SettingsApplier.Defaults.VolumetricClouds,
                 SettingsApplier.SetVolumetricClouds);
+            Switch(c, Localization.UI_SETTINGS_WEATHER, Localization.UI_SETTINGS_WEATHER_HINT, SettingsApplier.ChangingWeather, SettingsApplier.Defaults.ChangingWeather,
+                SettingsApplier.SetChangingWeather);
             Switch(c, Localization.UI_SETTINGS_AMBIENT_OCCLUSION, Localization.UI_SETTINGS_AMBIENT_OCCLUSION_HINT, SettingsApplier.AmbientOcclusionEnabled, SettingsApplier.Defaults.AmbientOcclusion,
                 SettingsApplier.SetAmbientOcclusion);
             Switch(c, Localization.UI_SETTINGS_AMBIENT_EFFECTS, Localization.UI_SETTINGS_AMBIENT_EFFECTS_HINT, SettingsApplier.AmbientEffects, SettingsApplier.Defaults.AmbientEffects,

@@ -87,7 +87,9 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 // the body (about 0.5 on average), cut at a threshold the coverage sets, thinned toward the ceiling so the tops are domes, and
                 // the lowest few percent fading in so the underside is not a flat cut
                 float body = Fbm3(q * 1.7);
-                float thresh = lerp(0.68, 0.4, cov) + hf * hf * 0.22;
+                // a thin cover thins out much faster, so a clear day is clear; at about half cover and over it is as before
+                float bare = 1.0 - cov;
+                float thresh = 0.68 - 0.28 * cov + 0.12 * bare * bare * bare + hf * hf * 0.22;
                 float d = saturate((body - thresh) / 0.06);
                 d *= smoothstep(0.0, 0.1, hf);
                 if (fine && d > 0.0 && d < 0.98)

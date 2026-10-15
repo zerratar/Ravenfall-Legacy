@@ -330,7 +330,8 @@ public sealed class Ambience : MonoBehaviour
     private float Night()
     {
         if (!dayNight || !dayNight.DayLight || !dayNight.NightLight || !RenderSettings.sun) return 0f;
-        var day = Mathf.InverseLerp(dayNight.NightLight.intensity, dayNight.DayLight.intensity, RenderSettings.sun.intensity);
+        // the cycle's own daylight, not the sun's brightness, which the weather dims too
+        var day = dayNight.Daylight;
         // dark below 15 % of the day's light, none above 55 %
         var t = Mathf.Clamp01((day - 0.15f) / 0.4f);
         return 1f - t * t * (3f - 2f * t);
