@@ -95,7 +95,9 @@ public static class PlayerParts
         {
             var go = new GameObject("Player Parts");
             go.SetActive(false);
-            go.hideFlags = HideFlags.HideAndDontSave;
+            // out of the hierarchy; in play it goes with the session (a DontSave object would outlive it in the
+            // editor, one more copy of the prefab each time play starts)
+            go.hideFlags = Application.isPlaying ? HideFlags.HideInHierarchy : HideFlags.HideAndDontSave;
             if (Application.isPlaying) Object.DontDestroyOnLoad(go);
             holder = go.transform;
         }

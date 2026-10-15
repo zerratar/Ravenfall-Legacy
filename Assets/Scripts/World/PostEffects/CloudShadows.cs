@@ -54,6 +54,18 @@ public static class CloudShadows
     {
         RenderPipelineManager.beginContextRendering -= BeforeFrame;
         RenderPipelineManager.beginContextRendering += BeforeFrame;
+        PlaySession.Ending += () =>
+        {
+            RenderPipelineManager.beginContextRendering -= BeforeFrame;
+            Release();
+            if (sunData != null)
+            {
+                sunData.lightCookieSize = Vector2.one;
+                sunData.lightCookieOffset = Vector2.zero;
+            }
+            sun = null;
+            sunData = null;
+        };
     }
 
     private static void BeforeFrame(ScriptableRenderContext context, List<Camera> cameras)

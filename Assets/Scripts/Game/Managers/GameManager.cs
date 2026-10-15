@@ -1065,6 +1065,7 @@ public class GameManager : MonoBehaviour, IGameManager
             Ocean.Suppressed = true;
             SkyClouds.Suppressed = true;
             AmbientOcclusion.Suppressed = true;
+            Ambience.Suppressed = true;
         }
         else
         {
@@ -1074,6 +1075,7 @@ public class GameManager : MonoBehaviour, IGameManager
             Ocean.Suppressed = false;
             SkyClouds.Suppressed = false;
             AmbientOcclusion.Suppressed = false;
+            Ambience.Suppressed = false;
             var targetQualitySettings = PlayerSettings.Instance.QualityLevel.GetValueOrDefault(1);
             if (targetQualitySettings < 0 || targetQualitySettings >= QualitySettings.count)
             {

@@ -45,20 +45,12 @@ public static class AmbientOcclusion
         applied = null;
         RenderPipelineManager.beginContextRendering -= BeforeFrame;
         RenderPipelineManager.beginContextRendering += BeforeFrame;
-        Application.quitting -= Restore;
-        Application.quitting += Restore;
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.playModeStateChanged -= PlayModeChanged;
-        UnityEditor.EditorApplication.playModeStateChanged += PlayModeChanged;
-#endif
+        PlaySession.Ending += () =>
+        {
+            RenderPipelineManager.beginContextRendering -= BeforeFrame;
+            Restore();
+        };
     }
-
-#if UNITY_EDITOR
-    private static void PlayModeChanged(UnityEditor.PlayModeStateChange change)
-    {
-        if (change == UnityEditor.PlayModeStateChange.ExitingPlayMode) Restore();
-    }
-#endif
 
     private static void BeforeFrame(ScriptableRenderContext context, List<Camera> cameras)
     {

@@ -1,0 +1,283 @@
+using UnityEngine;
+using UnityEngine.Rendering;
+
+/// <summary>
+/// The islands' weather and life, round the observed player: snow falling on Iceheim, cherry petals drifting over
+/// Kyojin, and fireflies over the grass at night. On unless the setting turns it off; potato mode turns it off as well
+/// (<see cref="Suppressed"/>).
+/// </summary>
+/// <remarks>
+/// Three particle systems made here, moved with the focus (the observed player, or where the camera looks), each
+/// emitting only on the islands it belongs to; their particles live in the world, so they stay where they fell while
+/// the camera moves on. A few hundred to a couple of thousand small quads, with a shader that needs no textures.
+/// </remarks>
+public sealed class Ambience : MonoBehaviour
+{
+    private static readonly int LightId = Shader.PropertyToID("_AmbienceLight");
+    private static readonly int ShapeId = Shader.PropertyToID("_Shape");
+    private static readonly int SrcBlendId = Shader.PropertyToID("_SrcBlend");
+    private static readonly int DstBlendId = Shader.PropertyToID("_DstBlend");
+    private static readonly int LitId = Shader.PropertyToID("_Lit");
+    private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
+
+    private const float IslandCheckEvery = 0.5f;
+
+    /// <summary>The setting: weather and ambient effects on or off.</summary>
+    public static bool Enabled { get; set; } = true;
+
+    /// <summary>Off for now (potato mode), whatever the setting.</summary>
+    public static bool Suppressed { get; set; }
+
+    /// <summary>Where to be instead of round the observed player, for tools and tests; null for the usual.</summary>
+    public static Transform Focus { get; set; }
+
+    private ParticleSystem snow, petals, fireflies;
+    private GameManager game;
+    private DayNightCycle dayNight;
+    private string island;
+    private float nextIslandCheck;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void Create()
+    {
+        if (!Application.isPlaying || FindAnyObjectByType<Ambience>()) return;
+        var go = new GameObject("Ambience") { hideFlags = HideFlags.HideInHierarchy };
+        DontDestroyOnLoad(go);
+        go.AddComponent<Ambience>();
+    }
+
+    private void Awake()
+    {
+        var shader = Resources.Load<Shader>("AmbienceParticle");
+        if (!shader || !shader.isSupported)
+        {
+            enabled = false;
+            return;
+        }
+        snow = Make("Snow", shader, 0, false, true);
+        petals = Make("Petals", shader, 1, false, true);
+        fireflies = Make("Fireflies", shader, 2, true, false);
+        SetUpSnow(snow);
+        SetUpPetals(petals);
+        SetUpFireflies(fireflies);
+    }
+
+    private ParticleSystem Make(string name, Shader shader, int shape, bool additive, bool lit)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(transform, false);
+        var system = go.AddComponent<ParticleSystem>();
+        system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var renderer = go.GetComponent<ParticleSystemRenderer>();
+        var material = new Material(shader) { name = name };
+        material.SetFloat(ShapeId, shape);
+        material.SetFloat(SrcBlendId, additive ? (float)BlendMode.One : (float)BlendMode.SrcAlpha);
+        material.SetFloat(DstBlendId, additive ? (float)BlendMode.One : (float)BlendMode.OneMinusSrcAlpha);
+        material.SetFloat(LitId, lit ? 1f : 0f);
+        material.SetFloat(IntensityId, additive ? 2.4f : 1f);
+        renderer.sharedMaterial = material;
+        renderer.renderMode = ParticleSystemRenderMode.Billboard;
+        renderer.shadowCastingMode = ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        renderer.lightProbeUsage = LightProbeUsage.Off;
+        renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        renderer.sortingFudge = 10f;
+
+        var main = system.main;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.playOnAwake = false;
+        main.loop = true;
+        main.scalingMode = ParticleSystemScalingMode.Shape;
+        var emission = system.emission;
+        emission.rateOverTime = 0f;
+        var box = system.shape;
+        box.enabled = true;
+        box.shapeType = ParticleSystemShapeType.Box;
+        return system;
+    }
+
+    private static void SetUpSnow(ParticleSystem system)
+    {
+        var main = system.main;
+        main.maxParticles = 4000;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(14f, 18f);
+        main.startSpeed = 0f;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.07f, 0.16f);
+        main.startColor = new Color(1f, 1f, 1f, 0.9f);
+        main.gravityModifier = 0f;
+        var box = system.shape;
+        box.scale = new Vector3(90f, 1f, 90f);
+        box.position = new Vector3(0f, 22f, 0f);
+        var velocity = system.velocityOverLifetime;
+        velocity.enabled = true;
+        velocity.space = ParticleSystemSimulationSpace.World;
+        velocity.x = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
+        velocity.y = new ParticleSystem.MinMaxCurve(-1.8f, -1.2f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0.1f, 0.5f);
+        var noise = system.noise;
+        noise.enabled = true;
+        noise.strength = 0.6f;
+        noise.frequency = 0.25f;
+        noise.scrollSpeed = 0.2f;
+        noise.quality = ParticleSystemNoiseQuality.Low;
+        Fade(system, 0.08f, 0.9f);
+    }
+
+    private static void SetUpPetals(ParticleSystem system)
+    {
+        var main = system.main;
+        main.maxParticles = 900;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(16f, 22f);
+        main.startSpeed = 0f;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.22f);
+        main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+        var pinks = new Gradient();
+        pinks.SetKeys(
+            new[] { new GradientColorKey(new Color(1f, 0.72f, 0.82f), 0f), new GradientColorKey(new Color(0.98f, 0.55f, 0.72f), 0.5f), new GradientColorKey(new Color(1f, 0.86f, 0.9f), 1f) },
+            new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) });
+        main.startColor = new ParticleSystem.MinMaxGradient(pinks) { mode = ParticleSystemGradientMode.RandomColor };
+        var box = system.shape;
+        box.scale = new Vector3(70f, 6f, 70f);
+        box.position = new Vector3(0f, 10f, 0f);
+        var velocity = system.velocityOverLifetime;
+        velocity.enabled = true;
+        velocity.space = ParticleSystemSimulationSpace.World;
+        velocity.x = new ParticleSystem.MinMaxCurve(0.4f, 1.1f);
+        velocity.y = new ParticleSystem.MinMaxCurve(-0.7f, -0.4f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0.1f, 0.6f);
+        var spin = system.rotationOverLifetime;
+        spin.enabled = true;
+        spin.z = new ParticleSystem.MinMaxCurve(-1.5f, 1.5f);
+        var noise = system.noise;
+        noise.enabled = true;
+        noise.strength = 0.9f;
+        noise.frequency = 0.3f;
+        noise.scrollSpeed = 0.3f;
+        noise.quality = ParticleSystemNoiseQuality.Low;
+        Fade(system, 0.1f, 0.85f);
+    }
+
+    private static void SetUpFireflies(ParticleSystem system)
+    {
+        var main = system.main;
+        main.maxParticles = 400;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(5f, 9f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0f, 0.15f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.28f, 0.45f);
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.86f, 0.3f), new Color(0.7f, 1f, 0.28f));
+        var box = system.shape;
+        box.scale = new Vector3(60f, 2.5f, 60f);
+        box.position = new Vector3(0f, 1.5f, 0f);
+        var noise = system.noise;
+        noise.enabled = true;
+        noise.strength = 0.5f;
+        noise.frequency = 0.6f;
+        noise.scrollSpeed = 0.25f;
+        noise.quality = ParticleSystemNoiseQuality.Low;
+        // they glow and fade a few times over their life
+        var colour = system.colorOverLifetime;
+        colour.enabled = true;
+        var blink = new Gradient();
+        blink.SetKeys(
+            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.15f), new GradientAlphaKey(0.2f, 0.35f), new GradientAlphaKey(1f, 0.55f), new GradientAlphaKey(0.3f, 0.75f), new GradientAlphaKey(1f, 0.85f), new GradientAlphaKey(0f, 1f) });
+        colour.color = blink;
+    }
+
+    /// <summary>In and out over the given parts of a particle's life, so none pops.</summary>
+    private static void Fade(ParticleSystem system, float fadeIn, float fadeOut)
+    {
+        var colour = system.colorOverLifetime;
+        colour.enabled = true;
+        var fade = new Gradient();
+        fade.SetKeys(
+            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, fadeIn), new GradientAlphaKey(1f, fadeOut), new GradientAlphaKey(0f, 1f) });
+        colour.color = fade;
+    }
+
+    private void Update()
+    {
+        if (!game) game = FindAnyObjectByType<GameManager>();
+        if (!dayNight) dayNight = FindAnyObjectByType<DayNightCycle>();
+
+        var focus = default(Vector3);
+        var on = Enabled && !Suppressed && TryFocus(out focus);
+        if (!on)
+        {
+            Emit(snow, 0f);
+            Emit(petals, 0f);
+            Emit(fireflies, 0f);
+            return;
+        }
+
+        // on the ground, wherever the focus is (the camera's aim falls on the sea's plane, under a hilltop)
+        var terrain = Terrain.activeTerrain;
+        if (terrain) focus.y = Mathf.Max(focus.y, terrain.SampleHeight(focus) + terrain.transform.position.y);
+        transform.position = focus;
+        if (Time.unscaledTime >= nextIslandCheck)
+        {
+            nextIslandCheck = Time.unscaledTime + IslandCheckEvery;
+            var found = game && game.Islands ? game.Islands.FindIsland(focus) : null;
+            island = found ? found.Identifier : null;
+        }
+
+        var night = Night();
+        var snowy = island == "Heim";
+        Emit(snow, snowy ? 260f : 0f);
+        Emit(petals, island == "Kyo" ? 22f : 0f);
+        Emit(fireflies, island != null && !snowy ? 45f * night : 0f);
+
+        // the flakes and petals are lit as the world is: by the sun and the sky now
+        var sun = RenderSettings.sun;
+        var light = RenderSettings.ambientSkyColor * 0.8f;
+        if (sun && sun.isActiveAndEnabled)
+        {
+            var colour = sun.color;
+            if (sun.useColorTemperature) colour *= Mathf.CorrelatedColorTemperatureToRGB(sun.colorTemperature);
+            light += colour * Mathf.Clamp01(sun.intensity) * 0.45f;
+        }
+        Shader.SetGlobalVector(LightId, new Vector4(Mathf.Min(light.r, 1.1f), Mathf.Min(light.g, 1.1f), Mathf.Min(light.b, 1.1f), 1f));
+    }
+
+    /// <summary>How much it is night, 0 by day to 1 in the dark, from the cycle's light.</summary>
+    private float Night()
+    {
+        if (!dayNight || !dayNight.DayLight || !dayNight.NightLight || !RenderSettings.sun) return 0f;
+        var day = Mathf.InverseLerp(dayNight.NightLight.intensity, dayNight.DayLight.intensity, RenderSettings.sun.intensity);
+        // dark below 15 % of the day's light, none above 55 %
+        var t = Mathf.Clamp01((day - 0.15f) / 0.4f);
+        return 1f - t * t * (3f - 2f * t);
+    }
+
+    /// <summary>The observed player, or the point on the water's plane the camera looks at.</summary>
+    private static bool TryFocus(out Vector3 focus)
+    {
+        if (Focus)
+        {
+            focus = Focus.position;
+            return true;
+        }
+        if (TiltShift.FocusPoint.HasValue)
+        {
+            focus = TiltShift.FocusPoint.Value;
+            return true;
+        }
+        var camera = Camera.main;
+        focus = default;
+        if (!camera) return false;
+        var ray = new Ray(camera.transform.position, camera.transform.forward);
+        if (Mathf.Abs(ray.direction.y) < 0.01f) return false;
+        var t = (0f - ray.origin.y) / ray.direction.y;
+        focus = t > 0f && t < 400f ? ray.GetPoint(t) : camera.transform.position + camera.transform.forward * 30f;
+        return true;
+    }
+
+    private static void Emit(ParticleSystem system, float rate)
+    {
+        if (!system) return;
+        var emission = system.emission;
+        emission.rateOverTime = rate;
+        if (rate > 0f && !system.isPlaying) system.Play();
+    }
+}

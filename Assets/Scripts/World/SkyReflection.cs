@@ -7,7 +7,8 @@ using UnityEngine.Rendering;
 /// is now, the night's sky at night, where the scene's own reflection is whatever the sky was when it was saved.
 /// The sea reads it directly as <c>_RavenfallSky</c>.
 /// </summary>
-/// <remarks>Made in play only, by itself; nothing in the scene. Six skybox draws at 64 x 64 every two seconds.</remarks>
+/// <remarks>Made in play only, by itself; nothing in the scene, and gone when play stops. Six skybox draws at 64 x 64
+/// every two seconds.</remarks>
 public sealed class SkyReflection : MonoBehaviour
 {
     private static readonly int SkyId = Shader.PropertyToID("_RavenfallSky");
@@ -22,7 +23,7 @@ public sealed class SkyReflection : MonoBehaviour
     private static void Create()
     {
         if (FindAnyObjectByType<SkyReflection>()) return;
-        var go = new GameObject("Sky Reflection") { hideFlags = HideFlags.HideAndDontSave };
+        var go = new GameObject("Sky Reflection") { hideFlags = HideFlags.HideInHierarchy };
         DontDestroyOnLoad(go);
         go.AddComponent<SkyReflection>();
     }

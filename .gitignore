@@ -200,6 +200,9 @@ Assets/Village/Derived.meta
 # The islands' ground shader and its material (the terrain references the material by GUID).
 !Assets/World/Terrain.meta
 !Assets/World/Terrain/**
+# The weather and ambient particles' shader, loaded from Resources.
+!Assets/World/Ambience.meta
+!Assets/World/Ambience/**
 
 # Local safety copies made before reshaping terrain or scenes.
 Backups/

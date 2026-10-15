@@ -455,6 +455,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetVolumetricClouds);
             Switch(c, Localization.UI_SETTINGS_AMBIENT_OCCLUSION, Localization.UI_SETTINGS_AMBIENT_OCCLUSION_HINT, SettingsApplier.AmbientOcclusionEnabled, SettingsApplier.Defaults.AmbientOcclusion,
                 SettingsApplier.SetAmbientOcclusion);
+            Switch(c, Localization.UI_SETTINGS_AMBIENT_EFFECTS, Localization.UI_SETTINGS_AMBIENT_EFFECTS_HINT, SettingsApplier.AmbientEffects, SettingsApplier.Defaults.AmbientEffects,
+                SettingsApplier.SetAmbientEffects);
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;

@@ -79,6 +79,7 @@ public static class SettingsApplier
         public const bool DetailedWater = true;
         public const bool VolumetricClouds = true;
         public const bool AmbientOcclusion = true;
+        public const bool AmbientEffects = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -138,6 +139,7 @@ public static class SettingsApplier
         ApplyWater();
         ApplyVolumetricClouds();
         ApplyAmbientOcclusion();
+        ApplyAmbientEffects();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -637,6 +639,20 @@ public static class SettingsApplier
     }
 
     private static void ApplyAmbientOcclusion() => AmbientOcclusion.Enabled = AmbientOcclusionEnabled;
+
+    // ---- Weather and ambient effects -------------------------------------------------------------
+    // Snow on Iceheim, petals over Kyojin, fireflies at night. Potato mode turns them off as well, without changing the
+    // setting.
+
+    public static bool AmbientEffects => PlayerSettings.Instance.AmbientEffects.GetValueOrDefault(Defaults.AmbientEffects);
+
+    public static void SetAmbientEffects(bool value)
+    {
+        PlayerSettings.Instance.AmbientEffects = value;
+        ApplyAmbientEffects();
+    }
+
+    private static void ApplyAmbientEffects() => Ambience.Enabled = AmbientEffects;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

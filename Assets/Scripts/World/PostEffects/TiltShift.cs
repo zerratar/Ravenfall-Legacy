@@ -61,6 +61,7 @@ public static class TiltShift
     {
         RenderPipelineManager.beginCameraRendering -= BeforeCamera;
         RenderPipelineManager.beginCameraRendering += BeforeCamera;
+        PlaySession.Ending += () => RenderPipelineManager.beginCameraRendering -= BeforeCamera;
     }
 
     private static void BeforeCamera(ScriptableRenderContext context, Camera camera)

@@ -1293,6 +1293,8 @@
     "UI_SETTINGS_VOLUMETRIC_CLOUDS_HINT": "Soft, sunlit clouds with real depth. Off shows simple low-poly clouds.",
     "UI_SETTINGS_AMBIENT_OCCLUSION": "Ambient occlusion",
     "UI_SETTINGS_AMBIENT_OCCLUSION_HINT": "Soft shading where things meet the ground and in corners, for more depth.",
+    "UI_SETTINGS_AMBIENT_EFFECTS": "Weather and ambient effects",
+    "UI_SETTINGS_AMBIENT_EFFECTS_HINT": "Snow on Iceheim, cherry petals over Kyojin and fireflies at night.",
     "UI_SETTINGS_POTATO": "Potato mode",
     "UI_SETTINGS_POTATO_HINT": "The lowest graphics there are, for computers that are struggling.",
     "UI_SETTINGS_QUALITY": "Graphics quality",

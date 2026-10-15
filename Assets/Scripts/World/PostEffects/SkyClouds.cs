@@ -139,6 +139,13 @@ public static class SkyClouds
         meshCloudsShown = true;
         RenderPipelineManager.beginCameraRendering -= BeforeCamera;
         RenderPipelineManager.beginCameraRendering += BeforeCamera;
+        PlaySession.Ending += () =>
+        {
+            RenderPipelineManager.beginCameraRendering -= BeforeCamera;
+            ShowMeshClouds(true);
+            meshClouds.Clear();
+            meshCloudsFound = false;
+        };
     }
 
     private static void BeforeCamera(ScriptableRenderContext context, Camera camera)
