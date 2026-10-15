@@ -229,6 +229,36 @@ public class DungeonHandler
         }
     }
 
+    /// <summary>
+    /// Where to put the player back after the dungeon: where they stood before it, if that is still somewhere to
+    /// stand. It may not be: they may have joined from the ferry's deck at a dock (over the sea), or the ground there
+    /// may have changed. The spot must be on an island, on navmesh at about its height, above the sea, and joined to
+    /// the island's spawn point by a path (not a patch of seabed or a hole round a tree); otherwise it is the spawn
+    /// point of the island they came from, or of the island nearest the spot.
+    /// </summary>
+    private Vector3 ReturnPoint()
+    {
+        var islands = player.GameManager ? player.GameManager.Islands : null;
+        var island = islands ? islands.FindIsland(previousPosition) : null;
+        var home = previousIsland ? previousIsland : island;
+        if (!home && islands) home = islands.Find("Home");
+        if (island && NavMeshHelper.SampleNearHeight(previousPosition, 1f, 1.5f, out var ground))
+        {
+            var ocean = UnityEngine.Object.FindAnyObjectByType<Ocean>();
+            var dry = !ocean || ground.y > ocean.transform.position.y + 0.3f;
+            var path = new UnityEngine.AI.NavMeshPath();
+            var joined = UnityEngine.AI.NavMesh.CalculatePath(ground, island.SpawnPosition, UnityEngine.AI.NavMesh.AllAreas, path)
+                && path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete;
+            if (dry && joined) return ground;
+        }
+        if (home)
+        {
+            Shinobytes.Debug.LogWarning(player.Name + " could not go back to where they left for the dungeon (" + previousPosition + "), so they go to " + home.Identifier + " instead.");
+            return home.SpawnPosition;
+        }
+        return previousPosition;
+    }
+
     public void OnExit()
     {
         if (!InDungeon || !player || !player.Movement)
@@ -252,7 +282,7 @@ public class DungeonHandler
         }
         else
         {
-            player.teleportHandler.Teleport(previousPosition);
+            player.teleportHandler.Teleport(ReturnPoint());
         }
 
 
