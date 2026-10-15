@@ -75,6 +75,7 @@ public static class SettingsApplier
         public const float GrassDensity = 1f;
         public const bool TiltShift = false;
         public const float TiltShiftStrength = 0.5f;
+        public const bool CloudShadows = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -130,6 +131,7 @@ public static class SettingsApplier
         ApplyViewDistance(game, settings.ViewDistance.GetValueOrDefault(0.5f));
         ApplyGrass();
         ApplyTiltShift();
+        ApplyCloudShadows();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -573,6 +575,20 @@ public static class SettingsApplier
         TiltShift.Enabled = TiltShiftEnabled;
         TiltShift.Strength = TiltShiftStrength;
     }
+
+    // ---- Cloud shadows ---------------------------------------------------------------------------
+    // Cloud shadows drifting over the islands: on by default, as they cost next to nothing. Potato mode turns them off
+    // as well, without changing the setting.
+
+    public static bool CloudShadowsEnabled => PlayerSettings.Instance.CloudShadowsEnabled.GetValueOrDefault(Defaults.CloudShadows);
+
+    public static void SetCloudShadows(bool value)
+    {
+        PlayerSettings.Instance.CloudShadowsEnabled = value;
+        ApplyCloudShadows();
+    }
+
+    private static void ApplyCloudShadows() => CloudShadows.Enabled = CloudShadowsEnabled;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

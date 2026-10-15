@@ -1061,11 +1061,13 @@ public class GameManager : MonoBehaviour, IGameManager
             DisablePostProcessingEffects();
             GrassRenderer.Suppressed = true;
             TiltShift.Suppressed = true;
+            CloudShadows.Suppressed = true;
         }
         else
         {
             GrassRenderer.Suppressed = false;
             TiltShift.Suppressed = false;
+            CloudShadows.Suppressed = false;
             var targetQualitySettings = PlayerSettings.Instance.QualityLevel.GetValueOrDefault(1);
             if (targetQualitySettings < 0 || targetQualitySettings >= QualitySettings.count)
             {

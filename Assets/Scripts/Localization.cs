@@ -959,6 +959,8 @@ public static class Localization
     public static string UI_SETTINGS_TILT_SHIFT_HINT = "Blurs the top and bottom of the picture, so the islands look like a miniature world.";
     public static string UI_SETTINGS_TILT_SHIFT_STRENGTH = "Tilt shift strength";
     public static string UI_SETTINGS_TILT_SHIFT_STRENGTH_HINT = "Stronger narrows the sharp band and blurs more.";
+    public static string UI_SETTINGS_CLOUD_SHADOWS = "Cloud shadows";
+    public static string UI_SETTINGS_CLOUD_SHADOWS_HINT = "Shadows of clouds drift slowly over the islands.";
     public static string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
     public static string UI_SETTINGS_REALTIME = "Follow the clock";
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";

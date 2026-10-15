@@ -1282,6 +1282,8 @@
     "UI_SETTINGS_TILT_SHIFT_HINT": "Gör bildens över- och underkant suddig, så att öarna ser ut som en miniatyrvärld.",
     "UI_SETTINGS_TILT_SHIFT_STRENGTH": "Tilt-shift-styrka",
     "UI_SETTINGS_TILT_SHIFT_STRENGTH_HINT": "Starkare gör det skarpa bandet smalare och suddar mer.",
+    "UI_SETTINGS_CLOUD_SHADOWS": "Molnskuggor",
+    "UI_SETTINGS_CLOUD_SHADOWS_HINT": "Skuggor av moln driver sakta över öarna.",
     "UI_SETTINGS_POTATO": "Potatisläge",
     "UI_SETTINGS_POTATO_HINT": "Den lägsta grafiken som finns, för datorer som har det jobbigt.",
     "UI_SETTINGS_QUALITY": "Grafikkvalitet",
