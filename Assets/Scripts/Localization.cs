@@ -960,7 +960,11 @@ public static class Localization
     public static string UI_SETTINGS_TILT_SHIFT = "Tilt shift";
     public static string UI_SETTINGS_TILT_SHIFT_HINT = "Blurs the top and bottom of the picture, so the islands look like a miniature world.";
     public static string UI_SETTINGS_TILT_SHIFT_STRENGTH = "Tilt shift strength";
-    public static string UI_SETTINGS_TILT_SHIFT_STRENGTH_HINT = "Stronger narrows the sharp band and blurs more.";
+    public static string UI_SETTINGS_TILT_SHIFT_STRENGTH_HINT = "How blurred the picture gets toward the top and bottom of the screen.";
+    public static string UI_SETTINGS_TILT_SHIFT_BAND = "Tilt shift sharp band";
+    public static string UI_SETTINGS_TILT_SHIFT_BAND_HINT = "How tall the band kept in focus is.";
+    public static string UI_SETTINGS_TILT_SHIFT_SOFTNESS = "Tilt shift softness";
+    public static string UI_SETTINGS_TILT_SHIFT_SOFTNESS_HINT = "How gently the focus fades into the blur; higher is a longer, softer fade.";
     public static string UI_SETTINGS_CLOUD_SHADOWS = "Cloud shadows";
     public static string UI_SETTINGS_CLOUD_SHADOWS_HINT = "Shadows of clouds drift slowly over the islands.";
     public static string UI_SETTINGS_DETAILED_WATER = "Detailed water";
@@ -969,6 +973,8 @@ public static class Localization
     public static string UI_SETTINGS_VOLUMETRIC_CLOUDS_HINT = "Soft, sunlit clouds with real depth. Off shows simple low-poly clouds.";
     public static string UI_SETTINGS_AMBIENT_OCCLUSION = "Ambient occlusion";
     public static string UI_SETTINGS_AMBIENT_OCCLUSION_HINT = "Soft shading where things meet the ground and in corners, for more depth.";
+    public static string UI_SETTINGS_AO_STRENGTH = "Ambient occlusion strength";
+    public static string UI_SETTINGS_AO_STRENGTH_HINT = "How dark the shading in corners and under things is.";
     public static string UI_SETTINGS_AMBIENT_EFFECTS = "Weather and ambient effects";
     public static string UI_SETTINGS_AMBIENT_EFFECTS_HINT = "Snow on Iceheim, cherry petals over Kyojin, butterflies and gulls by day, fireflies at night, smoke from the chimneys, burning braziers and turning windmills.";
     public static string UI_SETTINGS_TREE_WIND = "Wind in the trees";

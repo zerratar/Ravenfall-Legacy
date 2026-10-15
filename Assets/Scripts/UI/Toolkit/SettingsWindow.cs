@@ -440,15 +440,23 @@ namespace Shinobytes.UI
                 SettingsApplier.Defaults.GrassDensity, Percent, SettingsApplier.SetGrassDensity);
             grassDistanceRow.SetEnabled(SettingsApplier.Grass);
             grassDensityRow.SetEnabled(SettingsApplier.Grass);
-            VisualElement tiltStrengthRow = null;
+            VisualElement tiltStrengthRow = null, tiltBandRow = null, tiltSoftnessRow = null;
             Switch(c, Localization.UI_SETTINGS_TILT_SHIFT, Localization.UI_SETTINGS_TILT_SHIFT_HINT, SettingsApplier.TiltShiftEnabled, SettingsApplier.Defaults.TiltShift, v =>
             {
                 SettingsApplier.SetTiltShift(v);
                 tiltStrengthRow.SetEnabled(v);
+                tiltBandRow.SetEnabled(v);
+                tiltSoftnessRow.SetEnabled(v);
             });
             tiltStrengthRow = SliderRow(c, Localization.UI_SETTINGS_TILT_SHIFT_STRENGTH, Localization.UI_SETTINGS_TILT_SHIFT_STRENGTH_HINT, 0f, 1f, SettingsApplier.TiltShiftStrength,
                 SettingsApplier.Defaults.TiltShiftStrength, Percent, SettingsApplier.SetTiltShiftStrength);
+            tiltBandRow = SliderRow(c, Localization.UI_SETTINGS_TILT_SHIFT_BAND, Localization.UI_SETTINGS_TILT_SHIFT_BAND_HINT, 0f, 1f, SettingsApplier.TiltShiftBand,
+                SettingsApplier.Defaults.TiltShiftBand, Percent, SettingsApplier.SetTiltShiftBand);
+            tiltSoftnessRow = SliderRow(c, Localization.UI_SETTINGS_TILT_SHIFT_SOFTNESS, Localization.UI_SETTINGS_TILT_SHIFT_SOFTNESS_HINT, 0f, 1f, SettingsApplier.TiltShiftSoftness,
+                SettingsApplier.Defaults.TiltShiftSoftness, Percent, SettingsApplier.SetTiltShiftSoftness);
             tiltStrengthRow.SetEnabled(SettingsApplier.TiltShiftEnabled);
+            tiltBandRow.SetEnabled(SettingsApplier.TiltShiftEnabled);
+            tiltSoftnessRow.SetEnabled(SettingsApplier.TiltShiftEnabled);
             Switch(c, Localization.UI_SETTINGS_CLOUD_SHADOWS, Localization.UI_SETTINGS_CLOUD_SHADOWS_HINT, SettingsApplier.CloudShadowsEnabled, SettingsApplier.Defaults.CloudShadows,
                 SettingsApplier.SetCloudShadows);
             Switch(c, Localization.UI_SETTINGS_DETAILED_WATER, Localization.UI_SETTINGS_DETAILED_WATER_HINT, SettingsApplier.DetailedWater, SettingsApplier.Defaults.DetailedWater,
@@ -459,8 +467,15 @@ namespace Shinobytes.UI
                 SettingsApplier.SetChangingWeather);
             Switch(c, Localization.UI_SETTINGS_LIGHTNING, Localization.UI_SETTINGS_LIGHTNING_HINT, SettingsApplier.LightningFlashes, SettingsApplier.Defaults.LightningFlashes,
                 SettingsApplier.SetLightningFlashes);
-            Switch(c, Localization.UI_SETTINGS_AMBIENT_OCCLUSION, Localization.UI_SETTINGS_AMBIENT_OCCLUSION_HINT, SettingsApplier.AmbientOcclusionEnabled, SettingsApplier.Defaults.AmbientOcclusion,
-                SettingsApplier.SetAmbientOcclusion);
+            VisualElement aoStrengthRow = null;
+            Switch(c, Localization.UI_SETTINGS_AMBIENT_OCCLUSION, Localization.UI_SETTINGS_AMBIENT_OCCLUSION_HINT, SettingsApplier.AmbientOcclusionEnabled, SettingsApplier.Defaults.AmbientOcclusion, v =>
+            {
+                SettingsApplier.SetAmbientOcclusion(v);
+                aoStrengthRow.SetEnabled(v);
+            });
+            aoStrengthRow = SliderRow(c, Localization.UI_SETTINGS_AO_STRENGTH, Localization.UI_SETTINGS_AO_STRENGTH_HINT, 0f, 1f, SettingsApplier.AmbientOcclusionStrength,
+                SettingsApplier.Defaults.AmbientOcclusionStrength, Percent, SettingsApplier.SetAmbientOcclusionStrength);
+            aoStrengthRow.SetEnabled(SettingsApplier.AmbientOcclusionEnabled);
             Switch(c, Localization.UI_SETTINGS_AMBIENT_EFFECTS, Localization.UI_SETTINGS_AMBIENT_EFFECTS_HINT, SettingsApplier.AmbientEffects, SettingsApplier.Defaults.AmbientEffects,
                 SettingsApplier.SetAmbientEffects);
             Switch(c, Localization.UI_SETTINGS_TREE_WIND, Localization.UI_SETTINGS_TREE_WIND_HINT, SettingsApplier.TreeWind, SettingsApplier.Defaults.TreeWind,

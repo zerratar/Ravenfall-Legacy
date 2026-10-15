@@ -36,10 +36,13 @@ public class PlayerSettings
     public float? GrassDensity;
     public bool? TiltShiftEnabled;
     public float? TiltShiftStrength;
+    public float? TiltShiftBand;
+    public float? TiltShiftSoftness;
     public bool? CloudShadowsEnabled;
     public bool? DetailedWater;
     public bool? VolumetricClouds;
     public bool? AmbientOcclusion;
+    public float? AmbientOcclusionStrength;
     public bool? AmbientEffects;
     public bool? TreeWind;
     public bool? DungeonLighting;
@@ -420,10 +423,13 @@ public class PlayerSettings
             Serialize(sw, "grassDensity", obj.GrassDensity);
             Serialize(sw, "tiltShiftEnabled", obj.TiltShiftEnabled);
             Serialize(sw, "tiltShiftStrength", obj.TiltShiftStrength);
+            Serialize(sw, "tiltShiftBand", obj.TiltShiftBand);
+            Serialize(sw, "tiltShiftSoftness", obj.TiltShiftSoftness);
             Serialize(sw, "cloudShadowsEnabled", obj.CloudShadowsEnabled);
             Serialize(sw, "detailedWater", obj.DetailedWater);
             Serialize(sw, "volumetricClouds", obj.VolumetricClouds);
             Serialize(sw, "ambientOcclusion", obj.AmbientOcclusion);
+            Serialize(sw, "ambientOcclusionStrength", obj.AmbientOcclusionStrength);
             Serialize(sw, "ambientEffects", obj.AmbientEffects);
             Serialize(sw, "treeWind", obj.TreeWind);
             Serialize(sw, "dungeonLighting", obj.DungeonLighting);

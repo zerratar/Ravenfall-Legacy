@@ -19,8 +19,10 @@ using UnityEngine.Rendering.Universal;
 public static class AmbientOcclusion
 {
     private const float Radius = 1.2f;
-    private const float Intensity = 1.1f;
-    private const float DirectLighting = 0.35f;
+    // the strength setting's 0 to 1 is an intensity of 0 to 2; direct sunlight is hardly darkened, so a lit wall or
+    // the ground in the sun never goes black
+    private const float MaxIntensity = 2f;
+    private const float DirectLighting = 0.12f;
     private const float Falloff = 400f;
 
     private static readonly FieldInfo RendererDataList = typeof(UniversalRenderPipelineAsset).GetField("m_RendererDataList", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -39,6 +41,10 @@ public static class AmbientOcclusion
     /// <summary>Off for now (potato mode), whatever the setting.</summary>
     public static bool Suppressed { get; set; }
 
+    /// <summary>The setting: how strong the shading is, 0 to 1.</summary>
+    public static float Strength { get; set; } = 0.4f;
+    private static float appliedStrength = -1f;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Hook()
     {
@@ -56,11 +62,13 @@ public static class AmbientOcclusion
     {
         var asset = QualitySettings.renderPipeline ? QualitySettings.renderPipeline : GraphicsSettings.defaultRenderPipeline;
         var on = Enabled && !Suppressed;
-        if (asset == applied && on == appliedOn && volume) return;
+        if (asset == applied && on == appliedOn && volume && Strength == appliedStrength) return;
         applied = asset;
         appliedOn = on;
+        appliedStrength = Strength;
 
         EnsureVolume();
+        look.intensity = Mathf.Clamp01(Strength) * MaxIntensity;
         // half resolution below the highest level
         look.downsample = QualitySettings.GetQualityLevel() < QualitySettings.count - 1;
         volume.enabled = on;
@@ -101,7 +109,6 @@ public static class AmbientOcclusion
         Override("m_FalloffDistance");
         Override("m_DirectLightingStrength");
         Override("m_Downsample");
-        look.intensity = Intensity;
         look.radius = Radius;
         look.falloffDistance = Falloff;
         look.directLightingStrength = DirectLighting;

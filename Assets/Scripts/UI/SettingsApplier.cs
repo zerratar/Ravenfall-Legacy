@@ -75,10 +75,13 @@ public static class SettingsApplier
         public const float GrassDensity = 1f;
         public const bool TiltShift = false;
         public const float TiltShiftStrength = 0.5f;
+        public const float TiltShiftBand = 0.35f;
+        public const float TiltShiftSoftness = 0.5f;
         public const bool CloudShadows = true;
         public const bool DetailedWater = true;
         public const bool VolumetricClouds = true;
         public const bool AmbientOcclusion = true;
+        public const float AmbientOcclusionStrength = 0.4f;
         public const bool AmbientEffects = true;
         public const bool TreeWind = true;
         public const bool DungeonLighting = true;
@@ -601,10 +604,27 @@ public static class SettingsApplier
         ApplyTiltShift();
     }
 
+    public static float TiltShiftBand => PlayerSettings.Instance.TiltShiftBand.GetValueOrDefault(Defaults.TiltShiftBand);
+    public static float TiltShiftSoftness => PlayerSettings.Instance.TiltShiftSoftness.GetValueOrDefault(Defaults.TiltShiftSoftness);
+
+    public static void SetTiltShiftBand(float value)
+    {
+        PlayerSettings.Instance.TiltShiftBand = Mathf.Clamp01(value);
+        ApplyTiltShift();
+    }
+
+    public static void SetTiltShiftSoftness(float value)
+    {
+        PlayerSettings.Instance.TiltShiftSoftness = Mathf.Clamp01(value);
+        ApplyTiltShift();
+    }
+
     private static void ApplyTiltShift()
     {
         TiltShift.Enabled = TiltShiftEnabled;
         TiltShift.Strength = TiltShiftStrength;
+        TiltShift.Band = TiltShiftBand;
+        TiltShift.Softness = TiltShiftSoftness;
     }
 
     // ---- Cloud shadows ---------------------------------------------------------------------------
@@ -661,7 +681,19 @@ public static class SettingsApplier
         ApplyAmbientOcclusion();
     }
 
-    private static void ApplyAmbientOcclusion() => AmbientOcclusion.Enabled = AmbientOcclusionEnabled;
+    public static float AmbientOcclusionStrength => PlayerSettings.Instance.AmbientOcclusionStrength.GetValueOrDefault(Defaults.AmbientOcclusionStrength);
+
+    public static void SetAmbientOcclusionStrength(float value)
+    {
+        PlayerSettings.Instance.AmbientOcclusionStrength = Mathf.Clamp01(value);
+        ApplyAmbientOcclusion();
+    }
+
+    private static void ApplyAmbientOcclusion()
+    {
+        AmbientOcclusion.Enabled = AmbientOcclusionEnabled;
+        AmbientOcclusion.Strength = AmbientOcclusionStrength;
+    }
 
     // ---- Weather and ambient effects -------------------------------------------------------------
     // Snow on Iceheim, petals over Kyojin, fireflies at night, and the village life (VillageLife): chimney smoke, braziers

@@ -36,13 +36,19 @@ public static class TiltShift
     public static bool Suppressed { get; set; }
 
     /// <summary>
-    /// How strong, 0 to 1: a narrower sharp band, a stronger blur and richer colours as it goes up.
+    /// How strong, 0 to 1: how far the blur goes at the screen's edges, and how much richer the colours are.
     /// </summary>
     public static float Strength
     {
         get => strength;
         set => strength = Mathf.Clamp01(value);
     }
+
+    /// <summary>How tall the sharp band is, 0 (a thin strip) to 1 (much of the screen).</summary>
+    public static float Band { get; set; } = 0.35f;
+
+    /// <summary>How gently the picture blurs away from the band, 0 (a quick, hard change) to 1 (a long, soft one).</summary>
+    public static float Softness { get; set; } = 0.5f;
 
     /// <summary>Where the sharp band rests when there is nothing to follow: 0 the bottom of the screen, 1 the top.</summary>
     public static float Focus { get; set; } = 0.47f;
@@ -83,11 +89,12 @@ public static class TiltShift
         }
         band = band < 0f ? aim : Mathf.Lerp(band, aim, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 8f));
 
-        // a stronger setting narrows the sharp band and blurs further from it
+        // the band's height and how softly it blurs away from it are settings of their own; the strength is how far
+        // the blur goes at the edges
         material.SetFloat(FocusId, band);
-        material.SetFloat(BandId, Mathf.Lerp(0.22f, 0.06f, strength));
-        material.SetFloat(FalloffId, Mathf.Lerp(0.45f, 0.28f, strength));
-        material.SetFloat(StrengthId, Mathf.Lerp(0.55f, 1f, strength));
+        material.SetFloat(BandId, Mathf.Lerp(0.04f, 0.35f, Mathf.Clamp01(Band)));
+        material.SetFloat(FalloffId, Mathf.Lerp(0.15f, 0.9f, Mathf.Clamp01(Softness)));
+        material.SetFloat(StrengthId, Mathf.Lerp(0.25f, 1f, strength));
         material.SetFloat(SaturationId, 1f + 0.25f * strength);
         material.SetFloat(ContrastId, 1f + 0.08f * strength);
 
