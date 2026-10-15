@@ -19,14 +19,18 @@ public sealed class VillageLife : MonoBehaviour
     private static readonly int DstBlendId = Shader.PropertyToID("_DstBlend");
     private static readonly int LitId = Shader.PropertyToID("_Lit");
     private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
+    private static readonly int SoftFadeId = Shader.PropertyToID("_SoftFade");
 
     /// <summary>A fire already burning this close (in metres, across) to a brazier's bowl is its own.</summary>
     private const float OwnFireReach = 1.2f;
 
+    /// <summary>How bright the warm glow round each fire is at night; none by day.</summary>
+    private const float GlowAtNight = 0.3f;
+
     private readonly List<(Transform sails, Vector3 axis, float speed)> sails = new List<(Transform, Vector3, float)>();
     private readonly List<ParticleSystem> systems = new List<ParticleSystem>();
     private readonly List<Light> fireLights = new List<Light>();
-    private Material smokeMaterial, flameMaterial;
+    private Material smokeMaterial, flameMaterial, glowMaterial;
     private bool running = true;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -44,7 +48,11 @@ public sealed class VillageLife : MonoBehaviour
         if (shader && shader.isSupported)
         {
             smokeMaterial = MakeMaterial(shader, 5, false, true, 1f);
+            smokeMaterial.SetFloat(SoftFadeId, 0.4f);
             flameMaterial = MakeMaterial(shader, 6, true, false, 1.6f);
+            // drawn additive, soft where it meets the ground and the brazier
+            glowMaterial = MakeMaterial(shader, 7, true, false, 0f);
+            glowMaterial.SetFloat(SoftFadeId, 0.6f);
         }
 
         var fires = new List<Vector3>();
@@ -183,6 +191,28 @@ public sealed class VillageLife : MonoBehaviour
         size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0.35f));
         Fade(system, new Color(1f, 0.95f, 0.75f), new Color(0.9f, 0.25f, 0.08f), 0.12f, 0.55f);
         Begin(system);
+        AddGlow(at + Vector3.up * (0.35f * scale), scale);
+    }
+
+    /// <summary>
+    /// A warm glow round a fire after dark, breathing a little: two or three wide soft discs overlapping, fading in
+    /// and out. The light a brazier would give, without the cost of a light.
+    /// </summary>
+    private void AddGlow(Vector3 at, float scale)
+    {
+        var system = MakeSystem("Glow", glowMaterial, at);
+        var main = system.main;
+        main.maxParticles = 4;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(1.6f, 2.4f);
+        main.startSpeed = 0f;
+        main.startSize = new ParticleSystem.MinMaxCurve(2.4f * scale, 3f * scale);
+        main.startColor = new Color(1f, 0.5f, 0.18f);
+        var emission = system.emission;
+        emission.rateOverTime = 1.4f;
+        var shape = system.shape;
+        shape.enabled = false;
+        Fade(system, Color.white, Color.white, 0.35f, 0.65f);
+        Begin(system);
     }
 
     private void AddCampfire(Bounds bounds)
@@ -260,8 +290,9 @@ public sealed class VillageLife : MonoBehaviour
             foreach (var (transform, axis, speed) in sails) if (transform) transform.Rotate(axis, speed * dt, Space.Self);
         }
 
-        // the campfire lights the ground round it, more after dark, flickering
+        // the fires glow after dark, and the campfire lights the ground round it, more after dark, flickering
         var night = Ambience.Darkness;
+        if (glowMaterial) glowMaterial.SetFloat(IntensityId, GlowAtNight * night);
         var time = Time.time;
         for (var i = 0; i < fireLights.Count; ++i)
         {

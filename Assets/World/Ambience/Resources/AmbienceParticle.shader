@@ -7,6 +7,9 @@
 //   _Shape 4: a gull
 //   _Shape 5: a puff of smoke, soft all the way to its middle
 //   _Shape 6: a tongue of flame, round at its root and pointed at its tip, hottest low in its middle
+//   _Shape 7: a glow without a core, the light falling off softly from its middle to nothing at its edge
+// _SoftFade, in metres, fades the particle out where it meets the scene behind it (a glow on the ground, smoke on a
+// roof) instead of cutting it off hard; 0 for none.
 // _AmbienceLight is the light the flake or petal is lit by (the sun and the sky now), so snow at night is not white.
 Shader "Hidden/Ravenfall/AmbienceParticle"
 {
@@ -17,6 +20,7 @@ Shader "Hidden/Ravenfall/AmbienceParticle"
         [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Destination blend", Float) = 10
         _Lit("Lit by the scene (1) or glowing (0)", Float) = 1
         _Intensity("Brightness", Float) = 1
+        _SoftFade("Soft against the scene, in metres (0 for none)", Float) = 0
     }
     SubShader
     {
@@ -35,6 +39,7 @@ Shader "Hidden/Ravenfall/AmbienceParticle"
             #pragma fragment Frag
             #pragma multi_compile_fog
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float _Shape;
@@ -42,6 +47,7 @@ Shader "Hidden/Ravenfall/AmbienceParticle"
                 float _DstBlend;
                 float _Lit;
                 float _Intensity;
+                float _SoftFade;
             CBUFFER_END
             float4 _AmbienceLight;
 
@@ -58,6 +64,8 @@ Shader "Hidden/Ravenfall/AmbienceParticle"
                 half4 color : COLOR;
                 float2 uv : TEXCOORD0;
                 float fog : TEXCOORD1;
+                float4 screen : TEXCOORD2;
+                float eye : TEXCOORD3;
             };
 
             Varyings Vert(Attributes input)
@@ -67,6 +75,8 @@ Shader "Hidden/Ravenfall/AmbienceParticle"
                 output.color = input.color;
                 output.uv = input.uv;
                 output.fog = ComputeFogFactor(output.positionCS.z);
+                output.screen = ComputeScreenPos(output.positionCS);
+                output.eye = -TransformWorldToView(TransformObjectToWorld(input.positionOS.xyz)).z;
                 return output;
             }
 
@@ -119,14 +129,24 @@ Shader "Hidden/Ravenfall/AmbienceParticle"
                     // a little darker under its middle, as if lit from above
                     colour *= lerp(0.82, 1.06, saturate(p.y * 0.5 + 0.5));
                 }
-                else
+                else if (_Shape < 6.5)
                 {
                     float t = p.y * 0.5 + 0.5;
                     float width = max(0.62 * pow(saturate(1.0 - t), 0.6) * saturate(t * 4.0 + 0.3), 0.001);
                     alpha = smoothstep(width, width * 0.1, abs(p.x)) * smoothstep(0.0, 0.15, t);
                     colour *= 1.0 + 0.8 * smoothstep(width * 0.6, 0.0, abs(p.x)) * saturate(1.0 - t * 1.6);
                 }
+                else
+                {
+                    // exp(-4 r^2), lowered to reach nothing at the edge
+                    alpha = saturate((exp(-4.0 * dot(p, p)) - 0.0183) / 0.9817);
+                }
                 alpha *= input.color.a;
+                if (_SoftFade > 0.0)
+                {
+                    float scene = LinearEyeDepth(SampleSceneDepth(input.screen.xy / input.screen.w), _ZBufferParams);
+                    alpha *= saturate((scene - input.eye) / _SoftFade);
+                }
                 colour *= _Intensity;
                 if (_Lit > 0.5) colour *= _AmbienceLight.rgb;
                 colour = MixFog(colour, input.fog);
