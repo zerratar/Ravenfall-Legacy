@@ -6,9 +6,12 @@
 //     made for it works here;
 //   - the grass is not one flat colour any more: two slow noise fields tint it lusher or drier over tens of metres,
 //     and a second sample of the grass texture, turned and at another size, breaks up the tiling;
-//   - the sand darkens where the sea wets it.
+//   - the sand darkens where the sea wets it;
+//   - the painted layers the graph ignored are drawn: the second grass where it is painted (the terrain's first splat
+//     map's alpha), mud and rock (the second map's red and blue). The first layer (meadow dirt) stays grass, as it is
+//     the terrain's default and covers whole islands.
 //
-// The variation costs one more texture read and a few noise lookups a pixel. Lit like the rest of the scene: shadows,
+// The variation costs one more texture read and a few noise lookups a pixel, and a painted layer a read where it is. Lit like the rest of the scene: shadows,
 // cookies (the cloud shadows), ambient occlusion, additional lights, fog.
 Shader "Ravenfall/Terrain"
 {
@@ -44,6 +47,13 @@ Shader "Ravenfall/Terrain"
         _WetSand("Wet sand darkening", Range(0, 1)) = 0.35
         _Brightness("Brightness of the ground", Range(0.3, 1.5)) = 0.8
         _SeaLevel("Sea level (world height)", Float) = -3.31
+
+        [Header(Painted layers)]
+        [NoScaleOffset] _Grass2("Second grass", 2D) = "white" {}
+        [NoScaleOffset] _Mud("Mud", 2D) = "white" {}
+        [NoScaleOffset] _Rock("Rock", 2D) = "white" {}
+        _LayerUVScale("Painted layers tiling (over the terrain)", Vector) = (500, 500, 0, 0)
+        _Grass2Tint("Second grass colour", Color) = (0.8, 0.95, 1.0, 1)
     }
 
     HLSLINCLUDE
@@ -55,10 +65,15 @@ Shader "Ravenfall/Terrain"
     TEXTURE2D(_Road);       SAMPLER(sampler_Road);
     TEXTURE2D(_RoadMask);   SAMPLER(sampler_RoadMask);
     TEXTURE2D(_SnowMask);   SAMPLER(sampler_SnowMask);
+    TEXTURE2D(_Grass2);     SAMPLER(sampler_Grass2);
+    TEXTURE2D(_Mud);        SAMPLER(sampler_Mud);
+    TEXTURE2D(_Rock);       SAMPLER(sampler_Rock);
 
     CBUFFER_START(UnityPerMaterial)
         float4 _MainUVScale;
         float4 _SecondaryUVScale;
+        float4 _LayerUVScale;
+        half4 _Grass2Tint;
         half4 _SnowColor;
         half4 _LushTint;
         half4 _DryTint;
@@ -180,6 +195,21 @@ Shader "Ravenfall/Terrain"
                 // the meadow's own colour: lusher here, drier there, over tens of metres
                 float slow = TerrainNoise(positionWS.xz / _VariationScale) * 0.65 + TerrainNoise(positionWS.xz / (_VariationScale * 0.36) + 7.3) * 0.35;
                 half3 tint = lerp(_LushTint.rgb, _DryTint.rgb, smoothstep(0.25, 0.75, slow));
+                // the splat maps: the first holds layers 0 to 3 (meadow dirt, footpath, grass, second grass), the second
+                // 4 to 7 (mud, snow, rock)
+                half4 splat0 = SAMPLE_TEXTURE2D(_RoadMask, sampler_RoadMask, uv);
+                half4 splat1 = SAMPLE_TEXTURE2D(_SnowMask, sampler_SnowMask, uv);
+                float2 uvLayer = uv * _LayerUVScale.xy;
+
+                // the second grass where it is painted, its share of the grassy layers
+                half grassy = splat0.r + splat0.b + splat0.a;
+                half second = grassy > 0.001 ? splat0.a / grassy : 0.0;
+                [branch] if (second > 0.004)
+                {
+                    half3 grass2 = SAMPLE_TEXTURE2D(_Grass2, sampler_Grass2, uvLayer).rgb * _Grass2Tint.rgb / max(_GrassTint.rgb, 0.01);
+                    grass = lerp(grass, grass2, second);
+                }
+
                 grass *= lerp(half3(1, 1, 1), tint, _Variation);
                 grass *= _GrassTint.rgb;
 
@@ -200,12 +230,15 @@ Shader "Ravenfall/Terrain"
                 half wet = 1.0 - smoothstep(_SeaLevel - 0.3, _SeaLevel + 0.9, positionWS.y);
                 sand *= 1.0 - wet * _WetSand;
                 half3 albedo = lerp(sand, grass, onGrass);
+                // mud and rock where they are painted
+                [branch] if (splat1.r > 0.004) albedo = lerp(albedo, SAMPLE_TEXTURE2D(_Mud, sampler_Mud, uvLayer).rgb, splat1.r);
+                [branch] if (splat1.b > 0.004) albedo = lerp(albedo, SAMPLE_TEXTURE2D(_Rock, sampler_Rock, uvLayer * 0.8).rgb, splat1.b);
                 albedo *= _Brightness;
 
                 // snow and the footpaths from the splat maps, blended as the graph did (lighten, darken)
-                half snow = SAMPLE_TEXTURE2D(_SnowMask, sampler_SnowMask, uv).g;
+                half snow = splat1.g;
                 albedo = lerp(albedo, max(albedo, _SnowColor.rgb * snow), snow);
-                half path = SAMPLE_TEXTURE2D(_RoadMask, sampler_RoadMask, uv).g;
+                half path = splat0.g;
                 half3 road = SAMPLE_TEXTURE2D(_Road, sampler_Road, uv).rgb;
                 albedo = lerp(albedo, min(albedo, road * path), smoothstep(_Road_Edge_1, _Road_Edge_2, path));
 

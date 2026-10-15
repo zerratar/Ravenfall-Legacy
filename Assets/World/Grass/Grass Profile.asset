@@ -24,7 +24,7 @@ MonoBehaviour:
     colour: {r: 0.40303406, g: 0.4638485, b: 0.12941177, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: f5816bdc445560c4fac91b4e187feb46, type: 2}
     density: 1
-    colour: {r: 0.40303406, g: 0.4638485, b: 0.12941177, a: 1}
+    colour: {r: 0.3247039, g: 0.37023407, b: 0.16748382, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: 190b0e2637dfce44091cff6d83f98c88, type: 2}
     density: 0
     colour: {r: 0.2608021, g: 0.21884151, b: 0.17098854, a: 1}
