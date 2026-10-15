@@ -398,8 +398,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
             if (cm)
             {
                 cm.transform.localPosition = Vector3.zero;
-                // skinning runs on the GPU, so the copy kept for the CPU is not needed: half the mesh's memory
-                foreach (var mesh in CombinedMeshesOf(cm)) mesh.UploadMeshData(true);
+                foreach (var mesh in CombinedMeshesOf(cm)) Slim(mesh);
             }
         }
 
@@ -412,6 +411,21 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         {
             gameManager.Camera.EnsureObserverCamera();
         }
+    }
+
+    /// <summary>
+    /// Only what the character shader reads: it samples every texture with the first UV set and has no normal map,
+    /// so the tangents and the further UV sets the combiner copies from the parts (filled with zeros where a part had
+    /// none) go. Then the copy kept for the CPU goes too, since skinning runs on the GPU.
+    /// </summary>
+    private static void Slim(Mesh mesh)
+    {
+        if (!mesh || !mesh.isReadable) return;
+        mesh.tangents = null;
+        mesh.uv2 = null;
+        mesh.uv3 = null;
+        mesh.uv4 = null;
+        mesh.UploadMeshData(true);
     }
 
     /// <summary>The meshes the combiner made under its object, to free when they are replaced or the player goes.</summary>
