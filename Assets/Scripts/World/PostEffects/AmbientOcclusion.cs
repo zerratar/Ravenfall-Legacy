@@ -11,15 +11,15 @@ using UnityEngine.Rendering.Universal;
 /// <remarks>
 /// <para>URP draws it with a renderer feature but takes its look from a volume override. The High renderer carried the
 /// feature, but no volume had the override, so it ran at URP's defaults (a 0.3 m reach), too small to see from the
-/// game's camera. Here a global volume made at runtime gives it the look (2.5 m), and the Medium and Low renderers,
+/// game's camera. Here a global volume made at runtime gives it the look (1.2 m; at 2.5 m it shaded whole walls nearly black under the eaves), and the Medium and Low renderers,
 /// which had no feature, get one while the game runs; below High it works at half resolution.</para>
 /// <para>Nothing is written to the renderer assets: in the editor, whatever was added or switched is put back when play
 /// stops.</para>
 /// </remarks>
 public static class AmbientOcclusion
 {
-    private const float Radius = 2.5f;
-    private const float Intensity = 1.7f;
+    private const float Radius = 1.2f;
+    private const float Intensity = 1.1f;
     private const float DirectLighting = 0.35f;
     private const float Falloff = 400f;
 
