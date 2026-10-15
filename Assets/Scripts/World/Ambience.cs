@@ -31,6 +31,9 @@ public sealed class Ambience : MonoBehaviour
     /// <summary>Where to be instead of round the observed player, for tools and tests; null for the usual.</summary>
     public static Transform Focus { get; set; }
 
+    /// <summary>How dark it is, 0 by day to 1 at night, as the effects see it.</summary>
+    public static float Darkness { get; private set; }
+
     private ParticleSystem snow, petals, fireflies, butterflies, gulls;
     private GameManager game;
     private DayNightCycle dayNight;
@@ -301,7 +304,7 @@ public sealed class Ambience : MonoBehaviour
             island = found ? found.Identifier : null;
         }
 
-        var night = Night();
+        var night = Darkness = Night();
         var snowy = island == "Heim";
         Emit(snow, snowy ? 260f : 0f);
         Emit(petals, island == "Kyo" ? 22f : 0f);

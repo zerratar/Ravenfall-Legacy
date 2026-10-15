@@ -647,8 +647,8 @@ public static class SettingsApplier
     private static void ApplyAmbientOcclusion() => AmbientOcclusion.Enabled = AmbientOcclusionEnabled;
 
     // ---- Weather and ambient effects -------------------------------------------------------------
-    // Snow on Iceheim, petals over Kyojin, fireflies at night. Potato mode turns them off as well, without changing the
-    // setting.
+    // Snow on Iceheim, petals over Kyojin, fireflies at night, and the village life (VillageLife): chimney smoke, braziers
+    // burning, windmills turning. Potato mode turns them off as well, without changing the setting.
 
     public static bool AmbientEffects => PlayerSettings.Instance.AmbientEffects.GetValueOrDefault(Defaults.AmbientEffects);
 

@@ -5,6 +5,8 @@
 //   _Shape 2: a glow, a bright core in a soft halo (a firefly); drawn additive by its material
 //   _Shape 3: a butterfly
 //   _Shape 4: a gull
+//   _Shape 5: a puff of smoke, soft all the way to its middle
+//   _Shape 6: a tongue of flame, round at its root and pointed at its tip, hottest low in its middle
 // _AmbienceLight is the light the flake or petal is lit by (the sun and the sky now), so snow at night is not white.
 Shader "Hidden/Ravenfall/AmbienceParticle"
 {
@@ -102,13 +104,27 @@ Shader "Hidden/Ravenfall/AmbienceParticle"
                     alpha = max(smoothstep(1.0, 0.85, wing), body);
                     colour = body > 0.5 ? colour * 0.2 : colour * lerp(1.08, 0.45, smoothstep(0.55, 1.0, wing));
                 }
-                else
+                else if (_Shape < 4.5)
                 {
                     // a gull: a thin bent stroke, the wings raised from the body and swept back at the tips
                     float wingY = 0.32 * abs(p.x) - 0.42 * p.x * p.x - 0.05;
                     float thickness = 0.3 * (1.0 - abs(p.x)) + 0.09;
                     alpha = smoothstep(thickness, thickness * 0.4, abs(p.y - wingY)) * smoothstep(0.98, 0.85, abs(p.x));
                     colour = lerp(colour * 0.55, colour, smoothstep(0.75, 0.3, abs(p.x)));
+                }
+                else if (_Shape < 5.5)
+                {
+                    float r2 = saturate(dot(p, p));
+                    alpha = (1.0 - r2) * (1.0 - r2);
+                    // a little darker under its middle, as if lit from above
+                    colour *= lerp(0.82, 1.06, saturate(p.y * 0.5 + 0.5));
+                }
+                else
+                {
+                    float t = p.y * 0.5 + 0.5;
+                    float width = max(0.62 * pow(saturate(1.0 - t), 0.6) * saturate(t * 4.0 + 0.3), 0.001);
+                    alpha = smoothstep(width, width * 0.1, abs(p.x)) * smoothstep(0.0, 0.15, t);
+                    colour *= 1.0 + 0.8 * smoothstep(width * 0.6, 0.0, abs(p.x)) * saturate(1.0 - t * 1.6);
                 }
                 alpha *= input.color.a;
                 colour *= _Intensity;
