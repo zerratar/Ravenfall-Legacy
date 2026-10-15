@@ -1,5 +1,8 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 /// <summary>
 /// Renders a building prefab once into a small texture, for the build mode cards.
@@ -9,38 +12,57 @@ using UnityEngine;
 /// shared render texture, which costs a camera per card for as long as the dialog exists and runs
 /// out of textures past the fixed set. Here each prefab is placed far below the world, framed from
 /// its bounds, rendered once, copied into a texture and removed. The result is cached per prefab.
+/// The render waits a frame after the building is placed: the GPU resident drawer takes in a new
+/// renderer at the start of a frame, so a building rendered the frame it is made is not drawn at all.
 /// </remarks>
 public static class BuildingPreview
 {
     private static readonly Dictionary<GameObject, Texture2D> cache = new Dictionary<GameObject, Texture2D>();
+    private static readonly Dictionary<GameObject, List<Action<Texture2D>>> waiting = new Dictionary<GameObject, List<Action<Texture2D>>>();
+    private static Runner runner;
 
     /// <summary>Far enough below the world that nothing else is in frame.</summary>
     private static readonly Vector3 Stage = new Vector3(0f, -5000f, 0f);
 
-    public static Texture2D Get(GameObject prefab, int size = 256)
+    /// <summary>
+    /// The building's picture, given to <paramref name="ready"/>: at once when it has been made before, otherwise a
+    /// couple of frames from now (null if it could not be made).
+    /// </summary>
+    public static void Get(GameObject prefab, Action<Texture2D> ready, int size = 256)
     {
         if (!prefab)
         {
-            return null;
+            ready?.Invoke(null);
+            return;
         }
 
         if (cache.TryGetValue(prefab, out var cached) && cached)
         {
-            return cached;
+            ready?.Invoke(cached);
+            return;
         }
 
-        var texture = Render(prefab, size);
-        cache[prefab] = texture;
-        return texture;
+        if (waiting.TryGetValue(prefab, out var callbacks))
+        {
+            if (ready != null) callbacks.Add(ready);
+            return;
+        }
+
+        waiting[prefab] = new List<Action<Texture2D>>();
+        if (ready != null) waiting[prefab].Add(ready);
+        if (!runner)
+        {
+            var go = new GameObject("Building Previews") { hideFlags = HideFlags.HideInHierarchy };
+            Object.DontDestroyOnLoad(go);
+            runner = go.AddComponent<Runner>();
+        }
+        runner.StartCoroutine(Render(prefab, size));
     }
 
-    private static Texture2D Render(GameObject prefab, int size)
+    private static IEnumerator Render(GameObject prefab, int size)
     {
         GameObject instance = null;
-        GameObject cameraObject = null;
-        RenderTexture target = null;
-        var previousActive = RenderTexture.active;
-
+        Texture2D texture = null;
         try
         {
             instance = Object.Instantiate(prefab, Stage, Quaternion.identity);
@@ -50,7 +72,41 @@ public static class BuildingPreview
             {
                 behaviour.enabled = false;
             }
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Building preview failed for " + prefab.name + ": " + exc.Message);
+        }
 
+        // a frame for the renderers to be taken in before they are drawn
+        yield return null;
+
+        if (instance)
+        {
+            texture = Snapshot(instance, prefab, size);
+            Object.Destroy(instance);
+        }
+
+        cache[prefab] = texture;
+        if (waiting.TryGetValue(prefab, out var callbacks))
+        {
+            waiting.Remove(prefab);
+            foreach (var ready in callbacks)
+            {
+                try { ready(texture); }
+                catch (Exception exc) { Shinobytes.Debug.LogWarning("Building preview could not be shown: " + exc.Message); }
+            }
+        }
+    }
+
+    private static Texture2D Snapshot(GameObject instance, GameObject prefab, int size)
+    {
+        GameObject cameraObject = null;
+        RenderTexture target = null;
+        var previousActive = RenderTexture.active;
+
+        try
+        {
             var renderers = instance.GetComponentsInChildren<Renderer>();
             if (renderers.Length == 0)
             {
@@ -90,7 +146,7 @@ public static class BuildingPreview
             texture.Apply();
             return texture;
         }
-        catch (System.Exception exc)
+        catch (Exception exc)
         {
             Shinobytes.Debug.LogWarning("Building preview failed for " + prefab.name + ": " + exc.Message);
             return null;
@@ -100,7 +156,9 @@ public static class BuildingPreview
             RenderTexture.active = previousActive;
             if (target) RenderTexture.ReleaseTemporary(target);
             if (cameraObject) Object.Destroy(cameraObject);
-            if (instance) Object.Destroy(instance);
         }
     }
+
+    /// <summary>Only there to run the renders a frame apart.</summary>
+    private sealed class Runner : MonoBehaviour { }
 }

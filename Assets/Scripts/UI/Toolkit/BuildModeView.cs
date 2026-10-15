@@ -585,8 +585,11 @@ namespace Shinobytes.UI
 
                 var preview = new VisualElement { pickingMode = PickingMode.Ignore };
                 preview.AddToClassList("rf-build-card__preview");
-                var texture = BuildingPreview.Get(house.Prefab);
-                if (texture) preview.style.backgroundImage = new StyleBackground(texture);
+                // the picture comes a frame or two later the first time; cached after
+                BuildingPreview.Get(house.Prefab, texture =>
+                {
+                    if (texture) preview.style.backgroundImage = new StyleBackground(texture);
+                });
 
                 var info = new VisualElement { pickingMode = PickingMode.Ignore };
                 info.AddToClassList("rf-build-card__info");

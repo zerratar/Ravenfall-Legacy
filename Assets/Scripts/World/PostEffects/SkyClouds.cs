@@ -186,7 +186,8 @@ public static class SkyClouds
     {
         var on = Enabled && !Suppressed;
         ShowMeshClouds(!on);
-        if (!on || camera.cameraType != CameraType.Game || camera.orthographic) return;
+        // a camera clearing to a flat colour (a building's or a player's preview) draws no sky, so no clouds either
+        if (!on || camera.cameraType != CameraType.Game || camera.orthographic || camera.clearFlags == CameraClearFlags.SolidColor) return;
         if (!EnsureMaterial()) return;
         Set(material);
 

@@ -50,7 +50,8 @@ public static class Haze
 
     private static void BeforeCamera(ScriptableRenderContext context, Camera camera)
     {
-        if (!Enabled || Suppressed || camera.cameraType != CameraType.Game || camera.orthographic) return;
+        // a camera clearing to a flat colour (a building's or a player's preview) draws no air to haze
+        if (!Enabled || Suppressed || camera.cameraType != CameraType.Game || camera.orthographic || camera.clearFlags == CameraClearFlags.SolidColor) return;
         // down in a dungeon there is no far
         if (camera.transform.position.y < -30f) return;
         if (!material)
