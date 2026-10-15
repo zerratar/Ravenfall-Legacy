@@ -1291,6 +1291,8 @@
     "UI_SETTINGS_DETAILED_WATER_HINT": "Refraction, caustics, whitecaps and sunlight through the waves. Off draws a simpler sea.",
     "UI_SETTINGS_VOLUMETRIC_CLOUDS": "Volumetric clouds",
     "UI_SETTINGS_VOLUMETRIC_CLOUDS_HINT": "Soft, sunlit clouds with real depth. Off shows simple low-poly clouds.",
+    "UI_SETTINGS_AMBIENT_OCCLUSION": "Ambient occlusion",
+    "UI_SETTINGS_AMBIENT_OCCLUSION_HINT": "Soft shading where things meet the ground and in corners, for more depth.",
     "UI_SETTINGS_POTATO": "Potato mode",
     "UI_SETTINGS_POTATO_HINT": "The lowest graphics there are, for computers that are struggling.",
     "UI_SETTINGS_QUALITY": "Graphics quality",

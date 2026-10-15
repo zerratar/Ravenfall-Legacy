@@ -1288,6 +1288,8 @@
     "UI_SETTINGS_DETAILED_WATER_HINT": "Ljusbrytning, kaustik, vita vågkammar och solljus genom vågorna. Av ritar ett enklare hav.",
     "UI_SETTINGS_VOLUMETRIC_CLOUDS": "Volymetriska moln",
     "UI_SETTINGS_VOLUMETRIC_CLOUDS_HINT": "Mjuka, solbelysta moln med riktigt djup. Av visar enkla lågpolymoln.",
+    "UI_SETTINGS_AMBIENT_OCCLUSION": "Ambient occlusion",
+    "UI_SETTINGS_AMBIENT_OCCLUSION_HINT": "Mjuk skuggning där saker möter marken och i hörn, för mer djup.",
     "UI_SETTINGS_POTATO": "Potatisläge",
     "UI_SETTINGS_POTATO_HINT": "Den lägsta grafiken som finns, för datorer som har det jobbigt.",
     "UI_SETTINGS_QUALITY": "Grafikkvalitet",

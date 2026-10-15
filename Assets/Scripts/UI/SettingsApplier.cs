@@ -78,6 +78,7 @@ public static class SettingsApplier
         public const bool CloudShadows = true;
         public const bool DetailedWater = true;
         public const bool VolumetricClouds = true;
+        public const bool AmbientOcclusion = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -136,6 +137,7 @@ public static class SettingsApplier
         ApplyCloudShadows();
         ApplyWater();
         ApplyVolumetricClouds();
+        ApplyAmbientOcclusion();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -621,6 +623,20 @@ public static class SettingsApplier
     }
 
     private static void ApplyVolumetricClouds() => SkyClouds.Enabled = VolumetricClouds;
+
+    // ---- Ambient occlusion -----------------------------------------------------------------------
+    // The soft darkening where things meet, on every quality level (half resolution below High). Potato mode turns it
+    // off as well, without changing the setting.
+
+    public static bool AmbientOcclusionEnabled => PlayerSettings.Instance.AmbientOcclusion.GetValueOrDefault(Defaults.AmbientOcclusion);
+
+    public static void SetAmbientOcclusion(bool value)
+    {
+        PlayerSettings.Instance.AmbientOcclusion = value;
+        ApplyAmbientOcclusion();
+    }
+
+    private static void ApplyAmbientOcclusion() => AmbientOcclusion.Enabled = AmbientOcclusionEnabled;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

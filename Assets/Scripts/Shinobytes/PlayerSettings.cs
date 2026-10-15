@@ -39,6 +39,7 @@ public class PlayerSettings
     public bool? CloudShadowsEnabled;
     public bool? DetailedWater;
     public bool? VolumetricClouds;
+    public bool? AmbientOcclusion;
     public float? CameraRotationSpeed;
 
     /// <summary>A UnityEngine.FullScreenMode value; null leaves the window as Unity last had it.</summary>
@@ -414,6 +415,7 @@ public class PlayerSettings
             Serialize(sw, "cloudShadowsEnabled", obj.CloudShadowsEnabled);
             Serialize(sw, "detailedWater", obj.DetailedWater);
             Serialize(sw, "volumetricClouds", obj.VolumetricClouds);
+            Serialize(sw, "ambientOcclusion", obj.AmbientOcclusion);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
             Serialize(sw, "masterVolume", obj.MasterVolume);
             Serialize(sw, "freeCameraSpeed", obj.FreeCameraSpeed);

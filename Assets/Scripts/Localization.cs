@@ -965,6 +965,8 @@ public static class Localization
     public static string UI_SETTINGS_DETAILED_WATER_HINT = "Refraction, caustics, whitecaps and sunlight through the waves. Off draws a simpler sea.";
     public static string UI_SETTINGS_VOLUMETRIC_CLOUDS = "Volumetric clouds";
     public static string UI_SETTINGS_VOLUMETRIC_CLOUDS_HINT = "Soft, sunlit clouds with real depth. Off shows simple low-poly clouds.";
+    public static string UI_SETTINGS_AMBIENT_OCCLUSION = "Ambient occlusion";
+    public static string UI_SETTINGS_AMBIENT_OCCLUSION_HINT = "Soft shading where things meet the ground and in corners, for more depth.";
     public static string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
     public static string UI_SETTINGS_REALTIME = "Follow the clock";
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";

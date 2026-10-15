@@ -453,6 +453,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetDetailedWater);
             Switch(c, Localization.UI_SETTINGS_VOLUMETRIC_CLOUDS, Localization.UI_SETTINGS_VOLUMETRIC_CLOUDS_HINT, SettingsApplier.VolumetricClouds, SettingsApplier.Defaults.VolumetricClouds,
                 SettingsApplier.SetVolumetricClouds);
+            Switch(c, Localization.UI_SETTINGS_AMBIENT_OCCLUSION, Localization.UI_SETTINGS_AMBIENT_OCCLUSION_HINT, SettingsApplier.AmbientOcclusionEnabled, SettingsApplier.Defaults.AmbientOcclusion,
+                SettingsApplier.SetAmbientOcclusion);
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;
