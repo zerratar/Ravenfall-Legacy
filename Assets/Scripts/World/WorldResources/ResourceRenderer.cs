@@ -283,6 +283,8 @@ public static unsafe class ResourceRenderer
             {
                 var material = lod.materials != null && lod.materials.Length > 0 ? lod.materials[Mathf.Min(s, lod.materials.Length - 1)] : null;
                 if (!material) continue;
+                // standing trees sway in the wind; their stumps stand still
+                if (type.kind == ResourceType.ResourceKind.Tree && variant >= 0) material = Wind.Foliage(material);
                 lodKeys.Add(KeyIndex(lod.mesh, material, s, type.castShadows, layer));
                 lodInfo.keyCount++;
             }

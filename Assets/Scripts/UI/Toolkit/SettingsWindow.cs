@@ -457,6 +457,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetAmbientOcclusion);
             Switch(c, Localization.UI_SETTINGS_AMBIENT_EFFECTS, Localization.UI_SETTINGS_AMBIENT_EFFECTS_HINT, SettingsApplier.AmbientEffects, SettingsApplier.Defaults.AmbientEffects,
                 SettingsApplier.SetAmbientEffects);
+            Switch(c, Localization.UI_SETTINGS_TREE_WIND, Localization.UI_SETTINGS_TREE_WIND_HINT, SettingsApplier.TreeWind, SettingsApplier.Defaults.TreeWind,
+                SettingsApplier.SetTreeWind);
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;

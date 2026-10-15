@@ -80,6 +80,7 @@ public static class SettingsApplier
         public const bool VolumetricClouds = true;
         public const bool AmbientOcclusion = true;
         public const bool AmbientEffects = true;
+        public const bool TreeWind = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -140,6 +141,7 @@ public static class SettingsApplier
         ApplyVolumetricClouds();
         ApplyAmbientOcclusion();
         ApplyAmbientEffects();
+        ApplyTreeWind();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -653,6 +655,19 @@ public static class SettingsApplier
     }
 
     private static void ApplyAmbientEffects() => Ambience.Enabled = AmbientEffects;
+
+    // ---- Wind in the trees -----------------------------------------------------------------------
+    // Trees, bushes and plants sway. Potato mode stills them as well, without changing the setting.
+
+    public static bool TreeWind => PlayerSettings.Instance.TreeWind.GetValueOrDefault(Defaults.TreeWind);
+
+    public static void SetTreeWind(bool value)
+    {
+        PlayerSettings.Instance.TreeWind = value;
+        ApplyTreeWind();
+    }
+
+    private static void ApplyTreeWind() => Wind.Enabled = TreeWind;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

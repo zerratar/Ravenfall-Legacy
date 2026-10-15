@@ -203,6 +203,9 @@ Assets/Village/Derived.meta
 # The weather and ambient particles' shader, loaded from Resources.
 !Assets/World/Ambience.meta
 !Assets/World/Ambience/**
+# The swaying plants' shader, loaded from Resources.
+!Assets/World/Foliage.meta
+!Assets/World/Foliage/**
 
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
