@@ -129,7 +129,6 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    cursor: link;
 }
 
 .rf-meters .rf-meters__tab:hover {

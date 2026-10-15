@@ -246,6 +246,9 @@ public sealed class Ambience : MonoBehaviour
         velocity.enabled = true;
         velocity.space = ParticleSystemSimulationSpace.Local;
         velocity.orbitalY = new ParticleSystem.MinMaxCurve(0.12f, 0.22f);
+        // the three orbital curves must be in the same mode, or Unity says so every frame
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
+        velocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f, 0f);
         velocity.radial = new ParticleSystem.MinMaxCurve(-0.05f, 0.05f);
         velocity.x = new ParticleSystem.MinMaxCurve(0.2f, 0.6f);
         velocity.y = new ParticleSystem.MinMaxCurve(-0.1f, 0.1f);

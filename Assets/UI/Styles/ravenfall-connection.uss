@@ -44,7 +44,6 @@
     border-top-right-radius: 20px;
     border-bottom-left-radius: 20px;
     border-bottom-right-radius: 20px;
-    cursor: link;
 }
 
 .rf-conn__chip:hover {

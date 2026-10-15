@@ -82,7 +82,6 @@
 
 /* Panel headers are drag handles, like every other HUD window. */
 .rf-build-panel__head--drag {
-    cursor: pan;
 }
 
 .rf-build .rf-build-panel__glyph {
@@ -292,7 +291,6 @@
     border-bottom-right-radius: 24px;
     transition-property: scale, border-color, background-color;
     transition-duration: 0.12s;
-    cursor: link;
 }
 
 .rf-plot__pill:hover {
@@ -654,7 +652,6 @@
     border-top-right-radius: var(--rf-radius-lg);
     border-bottom-left-radius: var(--rf-radius-lg);
     border-bottom-right-radius: var(--rf-radius-lg);
-    cursor: link;
 }
 
 .rf-build .rf-build-tile:hover {
@@ -708,7 +705,6 @@
     border-top-right-radius: var(--rf-radius-lg);
     border-bottom-left-radius: var(--rf-radius-lg);
     border-bottom-right-radius: var(--rf-radius-lg);
-    cursor: link;
 }
 
 .rf-build .rf-build-wide:hover {
@@ -951,7 +947,6 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: var(--rf-radius);
     border-bottom-right-radius: var(--rf-radius);
-    cursor: link;
 }
 
 .rf-build .rf-build-card__build:hover {
@@ -990,7 +985,6 @@
     border-top-right-radius: var(--rf-radius-lg);
     border-bottom-left-radius: var(--rf-radius-lg);
     border-bottom-right-radius: var(--rf-radius-lg);
-    cursor: link;
 }
 
 .rf-build .rf-build-tab:hover {
@@ -1280,7 +1274,6 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: var(--rf-radius);
     border-bottom-right-radius: var(--rf-radius);
-    cursor: link;
 }
 
 .rf-build .rf-build-assign__button:hover {
@@ -1711,7 +1704,6 @@
     border-top-right-radius: var(--rf-radius-lg);
     border-bottom-left-radius: var(--rf-radius-lg);
     border-bottom-right-radius: var(--rf-radius-lg);
-    cursor: link;
 }
 
 .rf-build .rf-build-road__button:hover {

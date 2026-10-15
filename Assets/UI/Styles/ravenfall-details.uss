@@ -78,7 +78,6 @@
     padding-top: var(--rf-space-2);
     padding-bottom: var(--rf-space-2);
     background-color: var(--rf-surface-raised);
-    cursor: pan;
 }
 
 .rf-details__identity {

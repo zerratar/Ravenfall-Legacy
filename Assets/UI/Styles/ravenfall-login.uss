@@ -146,7 +146,6 @@
     border-right-width: 0;
     border-top-width: 0;
     border-bottom-width: 0;
-    cursor: link;
 }
 
 .rf-login .rf-login__reveal:hover {
@@ -175,7 +174,6 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: var(--rf-radius);
     border-bottom-right-radius: var(--rf-radius);
-    cursor: link;
 }
 
 .rf-login .rf-login__twitch:hover {
@@ -325,7 +323,6 @@
 .rf-login__check {
     flex-direction: row;
     align-items: center;
-    cursor: link;
 }
 
 .rf-login__check-box {
@@ -392,7 +389,6 @@
     border-right-width: 0;
     border-top-width: 0;
     border-bottom-width: 0;
-    cursor: link;
 }
 
 .rf-login .rf-login__link:hover {
@@ -557,7 +553,6 @@
     border-top-right-radius: 18px;
     border-bottom-left-radius: 18px;
     border-bottom-right-radius: 18px;
-    cursor: link;
 }
 
 .rf-login .rf-login__chip:hover {

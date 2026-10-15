@@ -155,7 +155,10 @@ public sealed class WeatherEffects : MonoBehaviour
         var velocity = system.velocityOverLifetime;
         velocity.enabled = true;
         velocity.space = ParticleSystemSimulationSpace.World;
+        // all three in the same mode (two constants), as Unity wants; the wind sets x and z as it blows
+        velocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
         velocity.y = new ParticleSystem.MinMaxCurve(-FallSpeed * 1.05f, -FallSpeed * 0.95f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
         system.Play();
         return system;
     }

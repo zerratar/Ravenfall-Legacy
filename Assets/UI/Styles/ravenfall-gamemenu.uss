@@ -83,7 +83,6 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: var(--rf-radius);
     border-bottom-right-radius: var(--rf-radius);
-    cursor: link;
     transition-property: background-color, border-color, translate;
     transition-duration: 0.12s;
 }
@@ -210,7 +209,6 @@
     border-right-width: 0;
     border-top-width: 0;
     border-bottom-width: 0;
-    cursor: link;
 }
 
 .rf-gamemenu .rf-gamemenu__link:hover {

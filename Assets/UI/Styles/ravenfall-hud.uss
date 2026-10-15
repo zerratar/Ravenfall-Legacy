@@ -125,7 +125,6 @@
     border-bottom-color: var(--rf-divider);
     border-bottom-width: 1px;
     /* Signals the whole strip is grabbable. */
-    cursor: pan;
 }
 
 .rf-window .rf-window__title {
@@ -180,7 +179,6 @@
     border-bottom-right-radius: var(--rf-radius);
     align-items: center;
     justify-content: center;
-    cursor: link;
 }
 
 .rf-window__button:hover {
@@ -259,7 +257,6 @@
     border-right-color: var(--rf-text-faint);
     border-bottom-color: var(--rf-text-faint);
     border-bottom-right-radius: 2px;
-    cursor: resize-up-left;
 }
 
 .rf-window__grip:hover {
@@ -285,7 +282,6 @@
     border-bottom-right-radius: 4px;
     background-color: var(--rf-text-faint);
     opacity: 0.55;
-    cursor: resize-horizontal;
 }
 
 .rf-window:hover .rf-window__grip--width,
@@ -679,7 +675,6 @@
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    cursor: link;
     transition-property: background-color, border-color, translate;
     transition-duration: 0.1s;
 }
@@ -1242,7 +1237,6 @@
     border-top-right-radius: var(--rf-radius-lg);
     border-bottom-left-radius: var(--rf-radius-lg);
     border-bottom-right-radius: var(--rf-radius-lg);
-    cursor: link;
 }
 
 .rf-top-layer .rf-town__build:hover {

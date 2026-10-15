@@ -69,7 +69,6 @@
     border-top-right-radius: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    cursor: link;
 }
 
 .rf-settings .rf-settings__tab:hover {
@@ -160,7 +159,6 @@
 }
 
 .rf-settings-row--clickable {
-    cursor: link;
 }
 
 .rf-settings-row--clickable:hover {
@@ -363,7 +361,6 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: var(--rf-radius);
     border-bottom-right-radius: var(--rf-radius);
-    cursor: link;
 }
 
 .rf-settings .rf-segmented__item:hover {
@@ -403,7 +400,6 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: var(--rf-radius);
     border-bottom-right-radius: var(--rf-radius);
-    cursor: link;
 }
 
 .rf-settings .rf-stepper__arrow:hover {
@@ -486,7 +482,6 @@
     border-top-right-radius: 14px;
     border-bottom-left-radius: 14px;
     border-bottom-right-radius: 14px;
-    cursor: link;
 }
 
 .rf-settings .rf-settings-row__reset:hover {
@@ -573,7 +568,6 @@
     border-top-right-radius: 15px;
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
-    cursor: link;
 }
 
 .rf-settings .rf-chip:hover {
@@ -620,7 +614,6 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: var(--rf-radius);
     border-bottom-right-radius: var(--rf-radius);
-    cursor: link;
 }
 
 .rf-settings .rf-keycap:hover {
