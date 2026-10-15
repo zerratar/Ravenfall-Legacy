@@ -43,6 +43,7 @@ public class PlayerSettings
     public bool? AmbientEffects;
     public bool? TreeWind;
     public bool? DungeonLighting;
+    public bool? AtmosphericHaze;
     public float? CameraRotationSpeed;
 
     /// <summary>A UnityEngine.FullScreenMode value; null leaves the window as Unity last had it.</summary>
@@ -422,6 +423,7 @@ public class PlayerSettings
             Serialize(sw, "ambientEffects", obj.AmbientEffects);
             Serialize(sw, "treeWind", obj.TreeWind);
             Serialize(sw, "dungeonLighting", obj.DungeonLighting);
+            Serialize(sw, "atmosphericHaze", obj.AtmosphericHaze);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
             Serialize(sw, "masterVolume", obj.MasterVolume);
             Serialize(sw, "freeCameraSpeed", obj.FreeCameraSpeed);

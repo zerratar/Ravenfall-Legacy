@@ -1299,6 +1299,8 @@
     "UI_SETTINGS_TREE_WIND_HINT": "Trees, bushes and plants sway gently in the wind.",
     "UI_SETTINGS_DUNGEON_LIGHTING": "Dungeon torchlight",
     "UI_SETTINGS_DUNGEON_LIGHTING_HINT": "Dungeons go dark and are lit by flickering torches.",
+    "UI_SETTINGS_HAZE": "Atmospheric haze",
+    "UI_SETTINGS_HAZE_HINT": "Far islands fade softly into the air, for a sense of distance.",
     "UI_SETTINGS_POTATO": "Potato mode",
     "UI_SETTINGS_POTATO_HINT": "The lowest graphics there are, for computers that are struggling.",
     "UI_SETTINGS_QUALITY": "Graphics quality",

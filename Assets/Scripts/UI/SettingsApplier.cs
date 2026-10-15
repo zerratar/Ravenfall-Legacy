@@ -82,6 +82,7 @@ public static class SettingsApplier
         public const bool AmbientEffects = true;
         public const bool TreeWind = true;
         public const bool DungeonLighting = true;
+        public const bool AtmosphericHaze = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -144,6 +145,7 @@ public static class SettingsApplier
         ApplyAmbientEffects();
         ApplyTreeWind();
         ApplyDungeonLighting();
+        ApplyHaze();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -683,6 +685,19 @@ public static class SettingsApplier
     }
 
     private static void ApplyDungeonLighting() => DungeonMood.Enabled = DungeonLighting;
+
+    // ---- Atmospheric haze ------------------------------------------------------------------------
+    // The far islands fade into the air. Potato mode turns it off as well, without changing the setting.
+
+    public static bool AtmosphericHaze => PlayerSettings.Instance.AtmosphericHaze.GetValueOrDefault(Defaults.AtmosphericHaze);
+
+    public static void SetAtmosphericHaze(bool value)
+    {
+        PlayerSettings.Instance.AtmosphericHaze = value;
+        ApplyHaze();
+    }
+
+    private static void ApplyHaze() => Haze.Enabled = AtmosphericHaze;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 
