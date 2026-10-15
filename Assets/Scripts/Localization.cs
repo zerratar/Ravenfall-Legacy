@@ -961,6 +961,8 @@ public static class Localization
     public static string UI_SETTINGS_TILT_SHIFT_STRENGTH_HINT = "Stronger narrows the sharp band and blurs more.";
     public static string UI_SETTINGS_CLOUD_SHADOWS = "Cloud shadows";
     public static string UI_SETTINGS_CLOUD_SHADOWS_HINT = "Shadows of clouds drift slowly over the islands.";
+    public static string UI_SETTINGS_DETAILED_WATER = "Detailed water";
+    public static string UI_SETTINGS_DETAILED_WATER_HINT = "Refraction, caustics, whitecaps and sunlight through the waves. Off draws a simpler sea.";
     public static string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
     public static string UI_SETTINGS_REALTIME = "Follow the clock";
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";

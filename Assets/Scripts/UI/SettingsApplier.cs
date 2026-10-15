@@ -76,6 +76,7 @@ public static class SettingsApplier
         public const bool TiltShift = false;
         public const float TiltShiftStrength = 0.5f;
         public const bool CloudShadows = true;
+        public const bool DetailedWater = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -132,6 +133,7 @@ public static class SettingsApplier
         ApplyGrass();
         ApplyTiltShift();
         ApplyCloudShadows();
+        ApplyWater();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -589,6 +591,20 @@ public static class SettingsApplier
     }
 
     private static void ApplyCloudShadows() => CloudShadows.Enabled = CloudShadowsEnabled;
+
+    // ---- Water -----------------------------------------------------------------------------------
+    // Detailed water adds refraction, caustics, whitecaps and the light through the waves; without it the same sea is
+    // drawn with only its cheap parts. Potato mode draws the cheap sea as well, without changing the setting.
+
+    public static bool DetailedWater => PlayerSettings.Instance.DetailedWater.GetValueOrDefault(Defaults.DetailedWater);
+
+    public static void SetDetailedWater(bool value)
+    {
+        PlayerSettings.Instance.DetailedWater = value;
+        ApplyWater();
+    }
+
+    private static void ApplyWater() => Ocean.Detailed = DetailedWater;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

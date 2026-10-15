@@ -1284,6 +1284,8 @@
     "UI_SETTINGS_TILT_SHIFT_STRENGTH_HINT": "Starkare gör det skarpa bandet smalare och suddar mer.",
     "UI_SETTINGS_CLOUD_SHADOWS": "Molnskuggor",
     "UI_SETTINGS_CLOUD_SHADOWS_HINT": "Skuggor av moln driver sakta över öarna.",
+    "UI_SETTINGS_DETAILED_WATER": "Detaljerat vatten",
+    "UI_SETTINGS_DETAILED_WATER_HINT": "Ljusbrytning, kaustik, vita vågkammar och solljus genom vågorna. Av ritar ett enklare hav.",
     "UI_SETTINGS_POTATO": "Potatisläge",
     "UI_SETTINGS_POTATO_HINT": "Den lägsta grafiken som finns, för datorer som har det jobbigt.",
     "UI_SETTINGS_QUALITY": "Grafikkvalitet",

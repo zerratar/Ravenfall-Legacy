@@ -449,6 +449,8 @@ namespace Shinobytes.UI
             tiltStrengthRow.SetEnabled(SettingsApplier.TiltShiftEnabled);
             Switch(c, Localization.UI_SETTINGS_CLOUD_SHADOWS, Localization.UI_SETTINGS_CLOUD_SHADOWS_HINT, SettingsApplier.CloudShadowsEnabled, SettingsApplier.Defaults.CloudShadows,
                 SettingsApplier.SetCloudShadows);
+            Switch(c, Localization.UI_SETTINGS_DETAILED_WATER, Localization.UI_SETTINGS_DETAILED_WATER_HINT, SettingsApplier.DetailedWater, SettingsApplier.Defaults.DetailedWater,
+                SettingsApplier.SetDetailedWater);
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;

@@ -1062,12 +1062,14 @@ public class GameManager : MonoBehaviour, IGameManager
             GrassRenderer.Suppressed = true;
             TiltShift.Suppressed = true;
             CloudShadows.Suppressed = true;
+            Ocean.Suppressed = true;
         }
         else
         {
             GrassRenderer.Suppressed = false;
             TiltShift.Suppressed = false;
             CloudShadows.Suppressed = false;
+            Ocean.Suppressed = false;
             var targetQualitySettings = PlayerSettings.Instance.QualityLevel.GetValueOrDefault(1);
             if (targetQualitySettings < 0 || targetQualitySettings >= QualitySettings.count)
             {

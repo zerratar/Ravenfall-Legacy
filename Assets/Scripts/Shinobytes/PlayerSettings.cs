@@ -37,6 +37,7 @@ public class PlayerSettings
     public bool? TiltShiftEnabled;
     public float? TiltShiftStrength;
     public bool? CloudShadowsEnabled;
+    public bool? DetailedWater;
     public float? CameraRotationSpeed;
 
     /// <summary>A UnityEngine.FullScreenMode value; null leaves the window as Unity last had it.</summary>
@@ -410,6 +411,7 @@ public class PlayerSettings
             Serialize(sw, "tiltShiftEnabled", obj.TiltShiftEnabled);
             Serialize(sw, "tiltShiftStrength", obj.TiltShiftStrength);
             Serialize(sw, "cloudShadowsEnabled", obj.CloudShadowsEnabled);
+            Serialize(sw, "detailedWater", obj.DetailedWater);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
             Serialize(sw, "masterVolume", obj.MasterVolume);
             Serialize(sw, "freeCameraSpeed", obj.FreeCameraSpeed);
