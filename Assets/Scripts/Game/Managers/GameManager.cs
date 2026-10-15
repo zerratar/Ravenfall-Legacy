@@ -1063,6 +1063,7 @@ public class GameManager : MonoBehaviour, IGameManager
             TiltShift.Suppressed = true;
             CloudShadows.Suppressed = true;
             Ocean.Suppressed = true;
+            SkyClouds.Suppressed = true;
         }
         else
         {
@@ -1070,6 +1071,7 @@ public class GameManager : MonoBehaviour, IGameManager
             TiltShift.Suppressed = false;
             CloudShadows.Suppressed = false;
             Ocean.Suppressed = false;
+            SkyClouds.Suppressed = false;
             var targetQualitySettings = PlayerSettings.Instance.QualityLevel.GetValueOrDefault(1);
             if (targetQualitySettings < 0 || targetQualitySettings >= QualitySettings.count)
             {

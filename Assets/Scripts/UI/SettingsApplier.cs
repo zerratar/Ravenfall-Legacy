@@ -77,6 +77,7 @@ public static class SettingsApplier
         public const float TiltShiftStrength = 0.5f;
         public const bool CloudShadows = true;
         public const bool DetailedWater = true;
+        public const bool VolumetricClouds = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -134,6 +135,7 @@ public static class SettingsApplier
         ApplyTiltShift();
         ApplyCloudShadows();
         ApplyWater();
+        ApplyVolumetricClouds();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -605,6 +607,20 @@ public static class SettingsApplier
     }
 
     private static void ApplyWater() => Ocean.Detailed = DetailedWater;
+
+    // ---- Volumetric clouds -----------------------------------------------------------------------
+    // Clouds with a body, lit by the sun, drifting over the islands. Off, or in potato mode, the scene's low-poly
+    // clouds show instead.
+
+    public static bool VolumetricClouds => PlayerSettings.Instance.VolumetricClouds.GetValueOrDefault(Defaults.VolumetricClouds);
+
+    public static void SetVolumetricClouds(bool value)
+    {
+        PlayerSettings.Instance.VolumetricClouds = value;
+        ApplyVolumetricClouds();
+    }
+
+    private static void ApplyVolumetricClouds() => SkyClouds.Enabled = VolumetricClouds;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 
