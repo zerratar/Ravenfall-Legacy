@@ -105,6 +105,7 @@ public static class Weather
 
     private static float holdLeft = -1f;
     private static float change;
+    private static float comeIn = -1f; // seconds for the change under way, when it was asked for (Bring); -1 for its own
     private static System.Random random;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -113,6 +114,7 @@ public static class Weather
         Current = Coming = Kind.Fair;
         holdLeft = -1f;
         change = 0f;
+        comeIn = -1f;
         random = null;
         Sunlight = Shadows = HazeAmount = 1f;
         Grey = Dark = Rain = Storm = Wetness = Flash = 0f;
@@ -130,13 +132,17 @@ public static class Weather
         };
     }
 
-    /// <summary>Turns the weather to the given kind over the usual few minutes, then lets it carry on from there.</summary>
-    public static void Bring(Kind kind)
+    /// <summary>
+    /// Turns the weather to the given kind, coming in as a front over the given seconds (its usual few minutes when not
+    /// given), then lets it carry on from there as it would have. A change already under way is finished at once.
+    /// </summary>
+    public static void Bring(Kind kind, float seconds = -1f)
     {
         if (holdLeft < 0f) Begin();
         if (Coming != Current) Current = Coming;
         Coming = kind;
         change = 0f;
+        comeIn = seconds;
     }
 
     /// <summary>Moves the weather on; called each frame by the day and night cycle.</summary>
@@ -151,11 +157,12 @@ public static class Weather
 
         if (Coming != Current)
         {
-            change += deltaTime / Looks[(int)Coming].ComeInSeconds;
+            change += deltaTime / (comeIn > 0f ? comeIn : Looks[(int)Coming].ComeInSeconds);
             if (change >= 1f)
             {
                 Current = Coming;
                 change = 0f;
+                comeIn = -1f;
                 holdLeft = Lasting(Current);
             }
         }

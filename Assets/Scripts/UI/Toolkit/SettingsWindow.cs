@@ -424,6 +424,8 @@ namespace Shinobytes.UI
                 v => SettingsApplier.SetAutoPotatoMode(g, v));
             Switch(c, Localization.UI_SETTINGS_POST, Localization.UI_SETTINGS_POST_HINT, SettingsApplier.PostProcessing(g), SettingsApplier.Defaults.PostProcessing,
                 v => SettingsApplier.SetPostProcessing(g, v));
+            Switch(c, Localization.UI_SETTINGS_BLOOM, Localization.UI_SETTINGS_BLOOM_HINT, SettingsApplier.Bloom, SettingsApplier.Defaults.Bloom,
+                SettingsApplier.SetBloom);
             VisualElement grassDistanceRow = null, grassDensityRow = null;
             Switch(c, Localization.UI_SETTINGS_GRASS, Localization.UI_SETTINGS_GRASS_HINT, SettingsApplier.Grass, SettingsApplier.Defaults.Grass, v =>
             {

@@ -1070,6 +1070,7 @@ public class GameManager : MonoBehaviour, IGameManager
             DungeonMood.Suppressed = true;
             Haze.Suppressed = true;
             Weather.Suppressed = true;
+            BloomEffect.Suppressed = true;
         }
         else
         {
@@ -1084,6 +1085,7 @@ public class GameManager : MonoBehaviour, IGameManager
             DungeonMood.Suppressed = false;
             Haze.Suppressed = false;
             Weather.Suppressed = false;
+            BloomEffect.Suppressed = false;
             var targetQualitySettings = PlayerSettings.Instance.QualityLevel.GetValueOrDefault(1);
             if (targetQualitySettings < 0 || targetQualitySettings >= QualitySettings.count)
             {

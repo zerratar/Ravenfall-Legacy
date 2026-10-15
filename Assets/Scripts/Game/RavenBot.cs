@@ -91,6 +91,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<SetExpMultiplier>("exp_multiplier");
         Connection.Register<SetExpMultiplierLimit>("exp_multiplier_limit");
         Connection.Register<SetTimeOfDay>("set_time");
+        Connection.Register<SetWeather>("set_weather");
         Connection.Register<DuelCancel>("duel_cancel");
         Connection.Register<DuelAccept>("duel_accept");
         Connection.Register<DuelDecline>("duel_decline");

@@ -47,6 +47,7 @@ public class PlayerSettings
     public bool? ChangingWeather;
     public bool? LightningFlashes;
     public float? WeatherVolume;
+    public bool? Bloom;
     public float? CameraRotationSpeed;
 
     /// <summary>A UnityEngine.FullScreenMode value; null leaves the window as Unity last had it.</summary>
@@ -430,6 +431,7 @@ public class PlayerSettings
             Serialize(sw, "changingWeather", obj.ChangingWeather);
             Serialize(sw, "lightningFlashes", obj.LightningFlashes);
             Serialize(sw, "weatherVolume", obj.WeatherVolume);
+            Serialize(sw, "bloom", obj.Bloom);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
             Serialize(sw, "masterVolume", obj.MasterVolume);
             Serialize(sw, "freeCameraSpeed", obj.FreeCameraSpeed);

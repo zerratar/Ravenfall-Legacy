@@ -85,6 +85,7 @@ public static class SettingsApplier
         public const bool AtmosphericHaze = true;
         public const bool ChangingWeather = true;
         public const bool LightningFlashes = true;
+        public const bool Bloom = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -151,6 +152,7 @@ public static class SettingsApplier
         ApplyHaze();
         ApplyWeather();
         ApplyLightning();
+        ApplyBloom();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -740,6 +742,20 @@ public static class SettingsApplier
     }
 
     private static void ApplyLightning() => WeatherEffects.LightningFlashes = LightningFlashes;
+
+    // ---- Bloom -----------------------------------------------------------------------------------
+    // What is brighter than white glows (BloomEffect): fires, lit windows, lightning. Potato mode turns it off as well,
+    // without changing the setting.
+
+    public static bool Bloom => PlayerSettings.Instance.Bloom.GetValueOrDefault(Defaults.Bloom);
+
+    public static void SetBloom(bool value)
+    {
+        PlayerSettings.Instance.Bloom = value;
+        ApplyBloom();
+    }
+
+    private static void ApplyBloom() => BloomEffect.Enabled = Bloom;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

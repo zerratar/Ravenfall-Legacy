@@ -947,7 +947,9 @@ public static class Localization
     public static string UI_SETTINGS_AUTO_POTATO = "Potato mode while in the background";
     public static string UI_SETTINGS_AUTO_POTATO_HINT = "Saves power when another window has focus.";
     public static string UI_SETTINGS_POST = "Post processing";
-    public static string UI_SETTINGS_POST_HINT = "Bloom and colour grading.";
+    public static string UI_SETTINGS_POST_HINT = "Colour grading and a soft vignette.";
+    public static string UI_SETTINGS_BLOOM = "Bloom";
+    public static string UI_SETTINGS_BLOOM_HINT = "What is brighter than white glows softly: fires and lit windows after dark, lightning, the sun on the sea.";
     public static string UI_SETTINGS_GRASS = "Grass";
     public static string UI_SETTINGS_GRASS_HINT = "Dense grass and flowers on the islands. Turn it off on slower computers; potato mode turns it off as well.";
     public static string UI_SETTINGS_GRASS_DISTANCE = "Grass distance";
@@ -1605,6 +1607,15 @@ public static class Localization
     // SetVillageHuts
     public static string MSG_VILLAGE_HUTS_INVALID_SKILL = Meta("village", "fail") + "{targetName} is not a valid skill name for the huts. Make sure you use the full and proper names. Ex. Healing and not heal.";
     public static string MSG_VILLAGE_HUTS_UPDATING = Meta("village", "info") + "Updating village to target {targetName}. Please wait...";
+
+    // SetWeather
+    public static string MSG_WEATHER_NOW = Meta("weather", "info") + "The weather right now: {weather}.";
+    public static string MSG_WEATHER_TURNING = Meta("weather", "info") + "The weather right now: {weather}, turning to {coming}.";
+    public static string MSG_WEATHER_CHANGING = Meta("weather", "info") + "The weather is changing to {weather}.";
+    public static string MSG_WEATHER_UNKNOWN = Meta("weather", "fail") + "{name} is not a kind of weather. Try clear, fair, cloudy, overcast, rain, heavy rain or storm.";
+    public static string MSG_WEATHER_ONLY_MODERATORS = Meta("weather", "fail") + "Only the broadcaster and moderators can change the weather.";
+    public static string MSG_WEATHER_OFF = Meta("weather", "fail") + "The weather does not change in this game: changing weather or the volumetric clouds are off in its settings.";
+    public static string[] MSG_WEATHER_NAMES = { "clear skies", "fair weather", "cloud", "an overcast sky", "rain", "heavy rain", "a thunderstorm" };
 
     // PlayerLogUpload, GameStateUpload
     public static string MSG_UPLOAD_BROADCASTER_MODERATOR_ONLY = Meta("system", "fail") + "Only the Broadcaster and Moderators can use this command.";
