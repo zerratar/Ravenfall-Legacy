@@ -150,6 +150,8 @@ Shader "Ravenfall/Grass"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile_fragment _ _LIGHT_COOKIES
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _CLUSTER_LIGHT_LOOP
             #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
             #pragma multi_compile _ SHADOWS_SHADOWMASK
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
@@ -181,6 +183,19 @@ Shader "Ravenfall/Grass"
                 half3 view = normalize(GetWorldSpaceViewDir(input.positionWS));
                 half through = pow(saturate(dot(-view, light.direction)), 3) * input.height * _Translucency;
                 half3 lit = albedo * (GrassAmbient(normal) + light.color * (diffuse + through) * shadow);
+
+                #if defined(_ADDITIONAL_LIGHTS)
+                    // the lights near by (a fire, a torch) light the blades as they light the ground, with the same soft wrap
+                    InputData inputData = (InputData)0;
+                    inputData.positionWS = input.positionWS;
+                    inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
+                    uint lightCount = GetAdditionalLightsCount();
+                    LIGHT_LOOP_BEGIN(lightCount)
+                        Light near = GetAdditionalLight(lightIndex, input.positionWS, half4(1, 1, 1, 1));
+                        half wrap = saturate(dot(normal, near.direction) * 0.6 + 0.4);
+                        lit += albedo * near.color * (wrap * near.distanceAttenuation * near.shadowAttenuation);
+                    LIGHT_LOOP_END
+                #endif
 
                 half fog = ComputeFogFactor(TransformWorldToHClip(input.positionWS).z);
                 return half4(MixFog(lit, fog), 1);

@@ -20,3 +20,5 @@ MonoBehaviour:
   CameraOffset: {x: 0.2, y: 0.85, z: 1}
   IconOffset: 0
   Prefab: {fileID: 7610310016666106751, guid: 08d1a7de338b99d438d8ea1516f6f006, type: 3}
+  Chimney: {x: 0, y: 0, z: 0}
+  ChimneySmoke: {r: 0.62, g: 0.62, b: 0.64, a: 1}

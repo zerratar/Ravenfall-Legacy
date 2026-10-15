@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// The little signs of life about the islands: windmill sails turning, smoke rising from chimneys and forge flues,
-/// braziers burning, and the campfire with a flickering light of its own after dark. With the weather and ambient
-/// effects setting, and off in potato mode (<see cref="Ambience"/>).
+/// The little signs of life about the islands: windmill sails turning, smoke rising from chimneys (the village's houses
+/// too) and forge flues, braziers and the campfire burning, each lighting the ground round it, more after dark. With
+/// the weather and ambient effects setting, and off in potato mode (<see cref="Ambience"/>).
 /// </summary>
 /// <remarks>
 /// Found by their kit names when play starts; nothing in the scene is changed. A sail turns about the axis its mesh
@@ -25,12 +25,19 @@ public sealed class VillageLife : MonoBehaviour
     private const float OwnFireReach = 1.2f;
 
     /// <summary>How bright the warm glow round each fire is at night; none by day.</summary>
-    private const float GlowAtNight = 0.3f;
+    private const float GlowAtNight = 0.2f;
+
+    /// <summary>How often the village houses are looked over for their chimneys, seconds.</summary>
+    private const float HouseCheckEvery = 2f;
 
     private readonly List<(Transform sails, Vector3 axis, float speed)> sails = new List<(Transform, Vector3, float)>();
     private readonly List<ParticleSystem> systems = new List<ParticleSystem>();
-    private readonly List<Light> fireLights = new List<Light>();
+    private readonly List<(Light light, float strength)> fireLights = new List<(Light, float)>();
+    private readonly Dictionary<TownHouseController, (TownHouse type, ParticleSystem smoke)> chimneys = new Dictionary<TownHouseController, (TownHouse, ParticleSystem)>();
+    private readonly HashSet<TownHouseController> housesSeen = new HashSet<TownHouseController>();
+    private readonly List<TownHouseController> housesGone = new List<TownHouseController>();
     private Material smokeMaterial, flameMaterial, glowMaterial;
+    private float nextHouseCheck;
     private bool running = true;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -125,8 +132,8 @@ public sealed class VillageLife : MonoBehaviour
         sails.Add((renderer.transform, axis, Random.Range(18f, 26f)));
     }
 
-    /// <summary>A thin grey column, widening and thinning out as it rises and the wind takes it.</summary>
-    private void AddSmoke(Vector3 at, float strength)
+    /// <summary>A thin column, grey unless told otherwise, widening and thinning out as it rises and the wind takes it.</summary>
+    private ParticleSystem AddSmoke(Vector3 at, float strength, Color? colour = null)
     {
         var system = MakeSystem("Smoke", smokeMaterial, at);
         var main = system.main;
@@ -135,7 +142,8 @@ public sealed class VillageLife : MonoBehaviour
         main.startSpeed = new ParticleSystem.MinMaxCurve(0.55f, 0.85f);
         main.startSize = new ParticleSystem.MinMaxCurve(0.45f, 0.7f);
         var grey = 0.58f + 0.08f * strength;
-        main.startColor = new Color(grey, grey, grey + 0.02f, 0.18f + 0.2f * strength);
+        var tint = colour ?? new Color(grey, grey, grey + 0.02f);
+        main.startColor = new Color(tint.r, tint.g, tint.b, 0.18f + 0.2f * strength);
         var emission = system.emission;
         emission.rateOverTime = 9f + 6f * strength;
         var shape = system.shape;
@@ -162,6 +170,7 @@ public sealed class VillageLife : MonoBehaviour
         size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.5f, 1f, 4f));
         Fade(system, Color.white, Color.white, 0.1f, 0.4f);
         Begin(system);
+        return system;
     }
 
     /// <summary>Flames licking up from a bowl of coals: white-yellow at the root, red as they die.</summary>
@@ -192,6 +201,24 @@ public sealed class VillageLife : MonoBehaviour
         Fade(system, new Color(1f, 0.95f, 0.75f), new Color(0.9f, 0.25f, 0.08f), 0.12f, 0.55f);
         Begin(system);
         AddGlow(at + Vector3.up * (0.35f * scale), scale);
+        AddLight(at + Vector3.up * (0.6f * scale), 1.5f + 8f * scale, scale);
+    }
+
+    /// <summary>
+    /// The fire's own light on the ground and the walls round it, flickering, strong after dark and faint by day. No
+    /// shadows, and the renderer clusters its lights (Forward+), so a few dozen of them cost little.
+    /// </summary>
+    private void AddLight(Vector3 at, float range, float strength)
+    {
+        var light = new GameObject("Fire Light").AddComponent<Light>();
+        light.transform.SetParent(transform, false);
+        light.transform.position = at;
+        light.type = LightType.Point;
+        light.range = range;
+        light.useColorTemperature = true;
+        light.colorTemperature = 1900f;
+        light.shadows = LightShadows.None;
+        fireLights.Add((light, strength));
     }
 
     /// <summary>
@@ -220,16 +247,6 @@ public sealed class VillageLife : MonoBehaviour
         var at = new Vector3(bounds.center.x, bounds.min.y + 0.12f, bounds.center.z);
         AddFlame(at, Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.35f, 1.2f);
         AddSmoke(at + Vector3.up * 0.6f, 0.8f);
-
-        var light = new GameObject("Fire Light").AddComponent<Light>();
-        light.transform.SetParent(transform, false);
-        light.transform.position = at + Vector3.up * 0.7f;
-        light.type = LightType.Point;
-        light.range = 8f;
-        light.useColorTemperature = true;
-        light.colorTemperature = 1900f;
-        light.shadows = LightShadows.None;
-        fireLights.Add(light);
     }
 
     private ParticleSystem MakeSystem(string name, Material material, Vector3 at)
@@ -254,6 +271,44 @@ public sealed class VillageLife : MonoBehaviour
         return system;
     }
 
+    /// <summary>
+    /// Smoke from the chimneys of the village's houses (TownHouse.Chimney says where on each kind). The houses come
+    /// and go as the village is built, moved and pulled down, so they are looked over now and then: a new house starts
+    /// smoking, a moved one's smoke goes with it, a gone one's stops.
+    /// </summary>
+    private void Chimneys()
+    {
+        housesSeen.Clear();
+        foreach (var house in FindObjectsByType<TownHouseController>(FindObjectsInactive.Exclude))
+        {
+            var type = house.TownHouse;
+            if (!type || type.Chimney == Vector3.zero) continue;
+            housesSeen.Add(house);
+            var at = house.transform.TransformPoint(type.Chimney);
+            if (chimneys.TryGetValue(house, out var known) && known.type == type && known.smoke)
+            {
+                known.smoke.transform.position = at;
+                continue;
+            }
+            if (known.smoke) Remove(known.smoke);
+            chimneys[house] = (type, AddSmoke(at, 0.35f, type.ChimneySmoke));
+        }
+
+        housesGone.Clear();
+        foreach (var house in chimneys.Keys) if (!house || !housesSeen.Contains(house)) housesGone.Add(house);
+        foreach (var house in housesGone)
+        {
+            if (chimneys[house].smoke) Remove(chimneys[house].smoke);
+            chimneys.Remove(house);
+        }
+    }
+
+    private void Remove(ParticleSystem system)
+    {
+        systems.Remove(system);
+        Destroy(system.gameObject);
+    }
+
     private void Begin(ParticleSystem system)
     {
         systems.Add(system);
@@ -274,6 +329,11 @@ public sealed class VillageLife : MonoBehaviour
     private void Update()
     {
         var on = Ambience.Enabled && !Ambience.Suppressed;
+        if (smokeMaterial && Time.unscaledTime >= nextHouseCheck)
+        {
+            nextHouseCheck = Time.unscaledTime + HouseCheckEvery;
+            Chimneys();
+        }
         if (on != running)
         {
             running = on;
@@ -290,18 +350,19 @@ public sealed class VillageLife : MonoBehaviour
             foreach (var (transform, axis, speed) in sails) if (transform) transform.Rotate(axis, speed * dt, Space.Self);
         }
 
-        // the fires glow after dark (and a little under a storm's dark sky), and the campfire lights the ground round
-        // it, more after dark, flickering
+        // the fires glow and light the ground round them, faintly by day, strongly after dark (and some under a storm's
+        // dark sky), flickering
         var night = Mathf.Max(Ambience.Darkness, (1f - Weather.Sunlight) * 0.6f);
         if (glowMaterial) glowMaterial.SetFloat(IntensityId, GlowAtNight * night);
         var time = Time.time;
         for (var i = 0; i < fireLights.Count; ++i)
         {
-            var light = fireLights[i];
+            var (light, strength) = fireLights[i];
             if (!light) continue;
             light.enabled = on;
-            var flicker = 0.8f + 0.12f * Mathf.Sin(time * 9.1f + i) + 0.08f * Mathf.PerlinNoise(time * 4f, i);
-            light.intensity = (0.6f + 2.6f * night) * flicker;
+            // each fire flickers in its own time
+            var flicker = 0.8f + 0.12f * Mathf.Sin(time * 9.1f + i * 1.7f) + 0.08f * Mathf.PerlinNoise(time * 4f, i * 0.37f);
+            light.intensity = (0.4f + 3.2f * night) * flicker * strength;
         }
     }
 }
