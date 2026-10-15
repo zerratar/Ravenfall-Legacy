@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Ravenfall Terrain
+  m_Shader: {fileID: 4800000, guid: 980c9897c695f2c4e9f91634c670df74, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Main:
+        m_Texture: {fileID: 2800000, guid: fc585afa41689fc4286f1e3ab201e5c1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal:
+        m_Texture: {fileID: 2800000, guid: 5ea4cddca480e544f85d14b868ebb70a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Road:
+        m_Texture: {fileID: 2800000, guid: 2021285e492a4774bb1a0e59b3756ade, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RoadMask:
+        m_Texture: {fileID: 7450461491746058358, guid: a8d281ba4ecba364289c1036b9ee0de2, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Secondary:
+        m_Texture: {fileID: 2800000, guid: 6064e4e3e79a3a1408ee2059beaa066b, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SnowMask:
+        m_Texture: {fileID: -6314191561599706378, guid: a8d281ba4ecba364289c1036b9ee0de2, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AntiTile: 0.5
+    - _MainMetallic: 0
+    - _MainSmoothness: 0
+    - _Normal_Strength: 0.5
+    - _Road_Edge_1: 0
+    - _Road_Edge_2: 1
+    - _SeaLevel: -3.31
+    - _SecondaryHeight: -3.11
+    - _SecondaryMetalic: 0.161
+    - _SecondarySmoothness: 0
+    - _Threshold: 0.04
+    - _Variation: 0.6
+    - _VariationScale: 70
+    - _WetSand: 0.35
+    m_Colors:
+    - _DryTint: {r: 1.12, g: 1.05, b: 0.78, a: 1}
+    - _LushTint: {r: 0.88, g: 1.04, b: 0.86, a: 1}
+    - _MainUVScale: {r: 500, g: 500, b: 0, a: 0}
+    - _SecondaryUVScale: {r: 500, g: 500, b: 0, a: 0}
+    - _SnowColor: {r: 0.86666673, g: 0.98039216, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

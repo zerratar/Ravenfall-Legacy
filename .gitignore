@@ -197,6 +197,9 @@ Assets/Village/Derived.meta
 !Assets/World/Water/**
 !Assets/World/Sky.meta
 !Assets/World/Sky/**
+# The islands' ground shader and its material (the terrain references the material by GUID).
+!Assets/World/Terrain.meta
+!Assets/World/Terrain/**
 
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
