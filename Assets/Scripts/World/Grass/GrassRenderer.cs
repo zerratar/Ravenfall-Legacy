@@ -279,7 +279,8 @@ public static unsafe class GrassRenderer
         if (hooked) return;
         hooked = true;
         RenderPipelineManager.beginContextRendering += BeforeRendering;
-        GrassProfile.Changed += _ => dirty = true;
+        // the ground map holds the profile's colours and densities per layer, so it is read again too
+        GrassProfile.Changed += _ => { dirty = true; groundDirty = true; };
         Application.quitting += Dispose;
 #if UNITY_EDITOR
         UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += Dispose;

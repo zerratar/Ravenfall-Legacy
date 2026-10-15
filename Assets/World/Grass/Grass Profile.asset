@@ -15,16 +15,16 @@ MonoBehaviour:
   layers:
   - terrainLayer: {fileID: 8574412962073106934, guid: 224d63e1442241943b8cafe00b71bdbd, type: 2}
     density: 0.7
-    colour: {r: 0.600685, g: 0.5244617, b: 0.43802175, a: 1}
+    colour: {r: 0.40303406, g: 0.4638485, b: 0.12941177, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: 927c01133fc01cf449019fb21429322d, type: 2}
     density: 0
     colour: {r: 0.50125587, g: 0.46267018, b: 0.35645112, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: e8a19b753c680d24c98f0aee4c3f6f1a, type: 2}
     density: 1
-    colour: {r: 0.40214083, g: 0.46447244, b: 0.13130778, a: 1}
+    colour: {r: 0.40303406, g: 0.4638485, b: 0.12941177, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: f5816bdc445560c4fac91b4e187feb46, type: 2}
     density: 1
-    colour: {r: 0.29394147, g: 0.34289768, b: 0.16075602, a: 1}
+    colour: {r: 0.40303406, g: 0.4638485, b: 0.12941177, a: 1}
   - terrainLayer: {fileID: 8574412962073106934, guid: 190b0e2637dfce44091cff6d83f98c88, type: 2}
     density: 0
     colour: {r: 0.2608021, g: 0.21884151, b: 0.17098854, a: 1}
