@@ -3,9 +3,10 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// The little signs of life about the islands: windmill sails turning, smoke rising from chimneys (the village's houses
-/// too) and forge flues, braziers and the campfire burning, each lighting the ground round it, more after dark. With
-/// the weather and ambient effects setting, and off in potato mode (<see cref="Ambience"/>).
+/// The little signs of life about the islands: windmill sails turning, smoke rising from chimneys and forge flues,
+/// braziers and the campfire burning, each lighting the ground round it, more after dark, and the village's houses
+/// showing who is home (smoke, lit windows, lamplight). With the weather and ambient effects setting, and off in potato
+/// mode (<see cref="Ambience"/>).
 /// </summary>
 /// <remarks>
 /// Found by their kit names when play starts; nothing in the scene is changed. A sail turns about the axis its mesh
@@ -20,6 +21,13 @@ public sealed class VillageLife : MonoBehaviour
     private static readonly int LitId = Shader.PropertyToID("_Lit");
     private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
     private static readonly int SoftFadeId = Shader.PropertyToID("_SoftFade");
+    private static readonly int ColorId = Shader.PropertyToID("_Color");
+    private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
+    private static readonly int ModeId = Shader.PropertyToID("_Mode");
+
+    // the village houses' window glass after dark: lit warm from inside (past white, so it blooms), and dark
+    private static readonly Color WindowsLit = new Color(2.6f, 1.7f, 0.85f);
+    private static readonly Color WindowsDark = new Color(0.1f, 0.1f, 0.12f);
 
     /// <summary>A fire already burning this close (in metres, across) to a brazier's bowl is its own.</summary>
     private const float OwnFireReach = 1.2f;
@@ -27,13 +35,16 @@ public sealed class VillageLife : MonoBehaviour
     /// <summary>How bright the warm glow round each fire is at night; none by day.</summary>
     private const float GlowAtNight = 0.2f;
 
-    /// <summary>How often the village houses are looked over for their chimneys, seconds.</summary>
+    /// <summary>How often the village houses are looked over (who lives where, built, moved, pulled down), seconds.</summary>
     private const float HouseCheckEvery = 2f;
 
     private readonly List<(Transform sails, Vector3 axis, float speed)> sails = new List<(Transform, Vector3, float)>();
     private readonly List<ParticleSystem> systems = new List<ParticleSystem>();
     private readonly List<(Light light, float strength)> fireLights = new List<(Light, float)>();
-    private readonly Dictionary<TownHouseController, (TownHouse type, ParticleSystem smoke)> chimneys = new Dictionary<TownHouseController, (TownHouse, ParticleSystem)>();
+    private readonly Dictionary<TownHouseController, Home> homes = new Dictionary<TownHouseController, Home>();
+    private Material windowGlow, windowDark;
+    private RenderParams glowParams, darkParams;
+    private PlayerManager players;
     private readonly HashSet<TownHouseController> housesSeen = new HashSet<TownHouseController>();
     private readonly List<TownHouseController> housesGone = new List<TownHouseController>();
     private Material smokeMaterial, flameMaterial, glowMaterial;
@@ -271,36 +282,177 @@ public sealed class VillageLife : MonoBehaviour
         return system;
     }
 
-    /// <summary>
-    /// Smoke from the chimneys of the village's houses (TownHouse.Chimney says where on each kind). The houses come
-    /// and go as the village is built, moved and pulled down, so they are looked over now and then: a new house starts
-    /// smoking, a moved one's smoke goes with it, a gone one's stops.
-    /// </summary>
-    private void Chimneys()
+    /// <summary>A village house, and the signs that someone is home: its chimney's smoke, lit windows, lamplight round it.</summary>
+    private sealed class Home
     {
+        public TownHouse Type;
+        public MeshRenderer Renderer;
+        public int Glass = -1;          // the window glass among the renderer's materials
+        public ParticleSystem Smoke;
+        public Light Lamp;
+        public Mesh Mesh;
+        public bool Lived;              // its owner is in the game
+    }
+
+    /// <summary>
+    /// The village's houses show who is home: while a house's owner is in the game its chimney smokes (TownHouse.Chimney
+    /// says where on each kind), and after dark its windows glow warm and its lamplight falls on the ground round it.
+    /// An empty house is dark at night and cold. The houses come and go as the village is built, moved and pulled down,
+    /// and players come and go, so they are looked over now and then.
+    /// </summary>
+    private void Houses()
+    {
+        if (!players)
+        {
+            var game = FindAnyObjectByType<GameManager>();
+            if (game) players = game.Players;
+        }
+
         housesSeen.Clear();
         foreach (var house in FindObjectsByType<TownHouseController>(FindObjectsInactive.Exclude))
         {
             var type = house.TownHouse;
-            if (!type || type.Chimney == Vector3.zero) continue;
+            var slot = house.Slot;
+            // a copy being placed in build mode has its behaviours off and no plot
+            if (!type || !slot || !house.enabled) continue;
             housesSeen.Add(house);
-            var at = house.transform.TransformPoint(type.Chimney);
-            if (chimneys.TryGetValue(house, out var known) && known.type == type && known.smoke)
+
+            if (!homes.TryGetValue(house, out var home) || home.Type != type)
             {
-                known.smoke.transform.position = at;
-                continue;
+                if (home != null) Forget(home);
+                home = Find(house, type);
+                homes[house] = home;
             }
-            if (known.smoke) Remove(known.smoke);
-            chimneys[house] = (type, AddSmoke(at, 0.35f, type.ChimneySmoke));
+
+            var owner = slot.OwnerUserId;
+            home.Lived = owner != null && players && players.GetPlayerByUserId(owner.Value);
+
+            if (home.Lived && type.Chimney != Vector3.zero && smokeMaterial)
+            {
+                var at = house.transform.TransformPoint(type.Chimney);
+                if (home.Smoke) home.Smoke.transform.position = at;
+                else home.Smoke = AddSmoke(at, 0.35f, type.ChimneySmoke);
+            }
+            else if (home.Smoke)
+            {
+                Remove(home.Smoke);
+                home.Smoke = null;
+            }
+
+            if (home.Renderer)
+            {
+                var bounds = home.Renderer.bounds;
+                home.Lamp.transform.position = new Vector3(bounds.center.x, bounds.min.y + 1.4f, bounds.center.z);
+                home.Lamp.range = Mathf.Max(bounds.extents.x, bounds.extents.z) + 5f;
+            }
         }
 
         housesGone.Clear();
-        foreach (var house in chimneys.Keys) if (!house || !housesSeen.Contains(house)) housesGone.Add(house);
+        foreach (var house in homes.Keys) if (!house || !housesSeen.Contains(house)) housesGone.Add(house);
         foreach (var house in housesGone)
         {
-            if (chimneys[house].smoke) Remove(chimneys[house].smoke);
-            chimneys.Remove(house);
+            Forget(homes[house]);
+            homes.Remove(house);
         }
+    }
+
+    /// <summary>The house's own mesh and its window glass, and a lamp for it (lit only while someone is home after dark).</summary>
+    private Home Find(TownHouseController house, TownHouse type)
+    {
+        var home = new Home { Type = type };
+        foreach (var renderer in house.GetComponentsInChildren<MeshRenderer>())
+        {
+            var filter = renderer.GetComponent<MeshFilter>();
+            if (!filter || !filter.sharedMesh || !filter.sharedMesh.name.Contains("Village_House")) continue;
+            var materials = renderer.sharedMaterials;
+            for (var i = 0; i < materials.Length; ++i)
+            {
+                if (!materials[i] || !materials[i].name.StartsWith("Village_StainedGlass")) continue;
+                home.Renderer = renderer;
+                home.Glass = i;
+                MakeWindows(materials[i]);
+                break;
+            }
+            if (home.Renderer) break;
+        }
+
+        // the lamplight comes from inside the house, out through its windows onto the ground; without shadows it
+        // reaches the ground all round, and the walls, facing away from it, stay unlit
+        home.Lamp = new GameObject("Home Lamp").AddComponent<Light>();
+        home.Lamp.transform.SetParent(transform, false);
+        home.Lamp.type = LightType.Point;
+        home.Lamp.useColorTemperature = true;
+        home.Lamp.colorTemperature = 2400f;
+        home.Lamp.shadows = LightShadows.None;
+        home.Lamp.enabled = false;
+        return home;
+    }
+
+    /// <summary>Puts out a house's signs: no smoke, no lamp.</summary>
+    private void Forget(Home home)
+    {
+        if (home.Smoke) Remove(home.Smoke);
+        if (home.Lamp) Destroy(home.Lamp.gameObject);
+    }
+
+    /// <summary>
+    /// The windows and the lamp for how dark it is: lit warm where someone is home, dark where no one is. The glass is
+    /// drawn again over itself (WindowGlow): the houses' own material has no emission wired, so it cannot glow, and a
+    /// copy of it per house would be a material per house where two shared ones do.
+    /// </summary>
+    private void Lamps(bool on, float night, float time)
+    {
+        var drawWindows = on && night > 0.02f && windowGlow;
+        if (drawWindows)
+        {
+            windowGlow.SetColor(ColorId, WindowsLit * night);
+            windowDark.SetColor(ColorId, Color.Lerp(Color.white, WindowsDark, night));
+        }
+
+        var i = 0;
+        foreach (var home in homes.Values)
+        {
+            ++i;
+            if (drawWindows && home.Renderer && home.Glass >= 0)
+            {
+                if (!home.Mesh) home.Mesh = home.Renderer.GetComponent<MeshFilter>().sharedMesh;
+                if (home.Mesh && home.Glass < home.Mesh.subMeshCount)
+                {
+                    var draw = home.Lived ? glowParams : darkParams;
+                    Graphics.RenderMesh(draw, home.Mesh, home.Glass, home.Renderer.localToWorldMatrix);
+                }
+            }
+            if (!home.Lamp) continue;
+            home.Lamp.enabled = on && home.Lived && night > 0.02f && home.Renderer;
+            // a lamp, not a fire: it hardly flickers
+            if (home.Lamp.enabled) home.Lamp.intensity = 2.4f * night * (0.96f + 0.04f * Mathf.Sin(time * 2.3f + i * 1.9f));
+        }
+    }
+
+    /// <summary>The two window materials, on the houses' glass texture: the glow added on, the dark multiplied over.</summary>
+    private void MakeWindows(Material glass)
+    {
+        if (windowGlow || !glass) return;
+        var shader = Resources.Load<Shader>("WindowGlow");
+        if (!shader || !shader.isSupported) return;
+        var texture = glass.HasProperty(BaseMapId) ? glass.GetTexture(BaseMapId) : null;
+        windowGlow = new Material(shader) { name = "Window Glow" };
+        windowGlow.SetTexture(BaseMapId, texture);
+        windowGlow.SetFloat(ModeId, 0f);
+        windowGlow.SetFloat(SrcBlendId, (float)BlendMode.One);
+        windowGlow.SetFloat(DstBlendId, (float)BlendMode.One);
+        windowDark = new Material(shader) { name = "Window Dark" };
+        windowDark.SetFloat(ModeId, 1f);
+        windowDark.SetFloat(SrcBlendId, (float)BlendMode.DstColor);
+        windowDark.SetFloat(DstBlendId, (float)BlendMode.Zero);
+        glowParams = new RenderParams(windowGlow) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
+        darkParams = new RenderParams(windowDark) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
+    }
+
+    private void OnDestroy()
+    {
+        if (windowGlow) Destroy(windowGlow);
+        if (windowDark) Destroy(windowDark);
     }
 
     private void Remove(ParticleSystem system)
@@ -329,10 +481,10 @@ public sealed class VillageLife : MonoBehaviour
     private void Update()
     {
         var on = Ambience.Enabled && !Ambience.Suppressed;
-        if (smokeMaterial && Time.unscaledTime >= nextHouseCheck)
+        if (Time.unscaledTime >= nextHouseCheck)
         {
             nextHouseCheck = Time.unscaledTime + HouseCheckEvery;
-            Chimneys();
+            Houses();
         }
         if (on != running)
         {
@@ -355,6 +507,7 @@ public sealed class VillageLife : MonoBehaviour
         var night = Mathf.Max(Ambience.Darkness, (1f - Weather.Sunlight) * 0.6f);
         if (glowMaterial) glowMaterial.SetFloat(IntensityId, GlowAtNight * night);
         var time = Time.time;
+        Lamps(on, night, time);
         for (var i = 0; i < fireLights.Count; ++i)
         {
             var (light, strength) = fireLights[i];
