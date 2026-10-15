@@ -290,8 +290,9 @@ public sealed class VillageLife : MonoBehaviour
             foreach (var (transform, axis, speed) in sails) if (transform) transform.Rotate(axis, speed * dt, Space.Self);
         }
 
-        // the fires glow after dark, and the campfire lights the ground round it, more after dark, flickering
-        var night = Ambience.Darkness;
+        // the fires glow after dark (and a little under a storm's dark sky), and the campfire lights the ground round
+        // it, more after dark, flickering
+        var night = Mathf.Max(Ambience.Darkness, (1f - Weather.Sunlight) * 0.6f);
         if (glowMaterial) glowMaterial.SetFloat(IntensityId, GlowAtNight * night);
         var time = Time.time;
         for (var i = 0; i < fireLights.Count; ++i)
