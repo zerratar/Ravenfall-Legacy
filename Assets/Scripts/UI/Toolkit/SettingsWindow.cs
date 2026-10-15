@@ -459,6 +459,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetAmbientEffects);
             Switch(c, Localization.UI_SETTINGS_TREE_WIND, Localization.UI_SETTINGS_TREE_WIND_HINT, SettingsApplier.TreeWind, SettingsApplier.Defaults.TreeWind,
                 SettingsApplier.SetTreeWind);
+            Switch(c, Localization.UI_SETTINGS_DUNGEON_LIGHTING, Localization.UI_SETTINGS_DUNGEON_LIGHTING_HINT, SettingsApplier.DungeonLighting, SettingsApplier.Defaults.DungeonLighting,
+                SettingsApplier.SetDungeonLighting);
 
             Section(c, Localization.UI_SETTINGS_SECTION_DAYNIGHT);
             VisualElement timeRow = null;

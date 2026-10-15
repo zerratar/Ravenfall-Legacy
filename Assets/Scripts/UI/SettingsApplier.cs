@@ -81,6 +81,7 @@ public static class SettingsApplier
         public const bool AmbientOcclusion = true;
         public const bool AmbientEffects = true;
         public const bool TreeWind = true;
+        public const bool DungeonLighting = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -142,6 +143,7 @@ public static class SettingsApplier
         ApplyAmbientOcclusion();
         ApplyAmbientEffects();
         ApplyTreeWind();
+        ApplyDungeonLighting();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -668,6 +670,19 @@ public static class SettingsApplier
     }
 
     private static void ApplyTreeWind() => Wind.Enabled = TreeWind;
+
+    // ---- Dungeon lighting ------------------------------------------------------------------------
+    // Dungeons by torchlight. Potato mode leaves them in plain daylight, without changing the setting.
+
+    public static bool DungeonLighting => PlayerSettings.Instance.DungeonLighting.GetValueOrDefault(Defaults.DungeonLighting);
+
+    public static void SetDungeonLighting(bool value)
+    {
+        PlayerSettings.Instance.DungeonLighting = value;
+        ApplyDungeonLighting();
+    }
+
+    private static void ApplyDungeonLighting() => DungeonMood.Enabled = DungeonLighting;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

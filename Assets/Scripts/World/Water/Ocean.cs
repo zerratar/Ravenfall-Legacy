@@ -148,6 +148,8 @@ public sealed class Ocean : MonoBehaviour
         if (camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) return;
         var eye = camera.transform.position;
         surface.transform.position = new Vector3(eye.x, transform.position.y, eye.z);
+        // well under the sea (down in a dungeon) the water's underside would fill the top of the view
+        if (surfaceRenderer) surfaceRenderer.enabled = eye.y > transform.position.y - 20f;
     }
 
     private void Tear()

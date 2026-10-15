@@ -971,6 +971,8 @@ public static class Localization
     public static string UI_SETTINGS_AMBIENT_EFFECTS_HINT = "Snow on Iceheim, cherry petals over Kyojin and fireflies at night.";
     public static string UI_SETTINGS_TREE_WIND = "Wind in the trees";
     public static string UI_SETTINGS_TREE_WIND_HINT = "Trees, bushes and plants sway gently in the wind.";
+    public static string UI_SETTINGS_DUNGEON_LIGHTING = "Dungeon torchlight";
+    public static string UI_SETTINGS_DUNGEON_LIGHTING_HINT = "Dungeons go dark and are lit by flickering torches.";
     public static string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
     public static string UI_SETTINGS_REALTIME = "Follow the clock";
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";

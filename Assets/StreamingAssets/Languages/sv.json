@@ -1294,6 +1294,8 @@
     "UI_SETTINGS_AMBIENT_EFFECTS_HINT": "Snö på Iceheim, körsbärsblad över Kyojin och eldflugor om natten.",
     "UI_SETTINGS_TREE_WIND": "Vind i träden",
     "UI_SETTINGS_TREE_WIND_HINT": "Träd, buskar och växter vajar sakta i vinden.",
+    "UI_SETTINGS_DUNGEON_LIGHTING": "Facklor i grottorna",
+    "UI_SETTINGS_DUNGEON_LIGHTING_HINT": "Grottorna blir mörka och lyses upp av fladdrande facklor.",
     "UI_SETTINGS_POTATO": "Potatisläge",
     "UI_SETTINGS_POTATO_HINT": "Den lägsta grafiken som finns, för datorer som har det jobbigt.",
     "UI_SETTINGS_QUALITY": "Grafikkvalitet",
