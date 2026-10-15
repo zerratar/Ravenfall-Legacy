@@ -968,7 +968,7 @@ public static class Localization
     public static string UI_SETTINGS_AMBIENT_OCCLUSION = "Ambient occlusion";
     public static string UI_SETTINGS_AMBIENT_OCCLUSION_HINT = "Soft shading where things meet the ground and in corners, for more depth.";
     public static string UI_SETTINGS_AMBIENT_EFFECTS = "Weather and ambient effects";
-    public static string UI_SETTINGS_AMBIENT_EFFECTS_HINT = "Snow on Iceheim, cherry petals over Kyojin and fireflies at night.";
+    public static string UI_SETTINGS_AMBIENT_EFFECTS_HINT = "Snow on Iceheim, cherry petals over Kyojin, butterflies and gulls by day, fireflies at night.";
     public static string UI_SETTINGS_TREE_WIND = "Wind in the trees";
     public static string UI_SETTINGS_TREE_WIND_HINT = "Trees, bushes and plants sway gently in the wind.";
     public static string UI_SETTINGS_DUNGEON_LIGHTING = "Dungeon torchlight";

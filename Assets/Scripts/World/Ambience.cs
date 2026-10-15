@@ -3,11 +3,11 @@ using UnityEngine.Rendering;
 
 /// <summary>
 /// The islands' weather and life, round the observed player: snow falling on Iceheim, cherry petals drifting over
-/// Kyojin, and fireflies over the grass at night. On unless the setting turns it off; potato mode turns it off as well
-/// (<see cref="Suppressed"/>).
+/// Kyojin, butterflies over the meadows and gulls over the shore by day, and fireflies over the grass at night. On
+/// unless the setting turns it off; potato mode turns it off as well (<see cref="Suppressed"/>).
 /// </summary>
 /// <remarks>
-/// Three particle systems made here, moved with the focus (the observed player, or where the camera looks), each
+/// Five particle systems made here, moved with the focus (the observed player, or where the camera looks), each
 /// emitting only on the islands it belongs to; their particles live in the world, so they stay where they fell while
 /// the camera moves on. A few hundred to a couple of thousand small quads, with a shader that needs no textures.
 /// </remarks>
@@ -31,7 +31,7 @@ public sealed class Ambience : MonoBehaviour
     /// <summary>Where to be instead of round the observed player, for tools and tests; null for the usual.</summary>
     public static Transform Focus { get; set; }
 
-    private ParticleSystem snow, petals, fireflies;
+    private ParticleSystem snow, petals, fireflies, butterflies, gulls;
     private GameManager game;
     private DayNightCycle dayNight;
     private string island;
@@ -57,9 +57,13 @@ public sealed class Ambience : MonoBehaviour
         snow = Make("Snow", shader, 0, false, true);
         petals = Make("Petals", shader, 1, false, true);
         fireflies = Make("Fireflies", shader, 2, true, false);
+        butterflies = Make("Butterflies", shader, 3, false, true);
+        gulls = Make("Gulls", shader, 4, false, true);
         SetUpSnow(snow);
         SetUpPetals(petals);
         SetUpFireflies(fireflies);
+        SetUpButterflies(butterflies);
+        SetUpGulls(gulls);
     }
 
     private ParticleSystem Make(string name, Shader shader, int shape, bool additive, bool lit)
@@ -184,6 +188,79 @@ public sealed class Ambience : MonoBehaviour
         colour.color = blink;
     }
 
+    private static void SetUpButterflies(ParticleSystem system)
+    {
+        var main = system.main;
+        main.maxParticles = 80;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(9f, 14f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.6f);
+        main.startSize3D = true;
+        main.startSizeX = new ParticleSystem.MinMaxCurve(0.3f, 0.42f);
+        main.startSizeY = new ParticleSystem.MinMaxCurve(0.24f, 0.34f);
+        main.startSizeZ = 1f;
+        var colours = new Gradient();
+        colours.SetKeys(
+            new[] { new GradientColorKey(new Color(1f, 0.62f, 0.18f), 0f), new GradientColorKey(new Color(1f, 0.95f, 0.85f), 0.35f), new GradientColorKey(new Color(1f, 0.88f, 0.3f), 0.65f), new GradientColorKey(new Color(0.45f, 0.65f, 1f), 1f) },
+            new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) });
+        main.startColor = new ParticleSystem.MinMaxGradient(colours) { mode = ParticleSystemGradientMode.RandomColor };
+        var box = system.shape;
+        box.scale = new Vector3(50f, 1.5f, 50f);
+        box.position = new Vector3(0f, 1.2f, 0f);
+        var noise = system.noise;
+        noise.enabled = true;
+        noise.strength = 1.4f;
+        noise.frequency = 0.45f;
+        noise.scrollSpeed = 0.4f;
+        noise.quality = ParticleSystemNoiseQuality.Low;
+        Beat(system, 70);
+        Fade(system, 0.08f, 0.9f);
+    }
+
+    private static void SetUpGulls(ParticleSystem system)
+    {
+        var main = system.main;
+        main.maxParticles = 12;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(25f, 40f);
+        main.startSpeed = 0f;
+        main.startSize3D = true;
+        main.startSizeX = new ParticleSystem.MinMaxCurve(1.6f, 2.1f);
+        main.startSizeY = new ParticleSystem.MinMaxCurve(0.8f, 1.05f);
+        main.startSizeZ = 1f;
+        main.startColor = new Color(0.97f, 0.97f, 0.95f);
+        var box = system.shape;
+        box.scale = new Vector3(70f, 6f, 70f);
+        box.position = new Vector3(0f, 22f, 0f);
+        // round and round over the shore, drifting with the wind
+        var velocity = system.velocityOverLifetime;
+        velocity.enabled = true;
+        velocity.space = ParticleSystemSimulationSpace.Local;
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0.12f, 0.22f);
+        velocity.radial = new ParticleSystem.MinMaxCurve(-0.05f, 0.05f);
+        velocity.x = new ParticleSystem.MinMaxCurve(0.2f, 0.6f);
+        velocity.y = new ParticleSystem.MinMaxCurve(-0.1f, 0.1f);
+        velocity.z = new ParticleSystem.MinMaxCurve(0.1f, 0.3f);
+        Beat(system, 45);
+        Fade(system, 0.06f, 0.92f);
+    }
+
+    /// <summary>
+    /// Wings that beat: the quad is squeezed across and opened again, this many times over a particle's life. The
+    /// particles are born at different times, so they beat out of step.
+    /// </summary>
+    private static void Beat(ParticleSystem system, int beats)
+    {
+        var size = system.sizeOverLifetime;
+        size.enabled = true;
+        size.separateAxes = true;
+        var keys = new Keyframe[beats * 2 + 1];
+        for (var i = 0; i < keys.Length; ++i) keys[i] = new Keyframe(i / (float)(keys.Length - 1), i % 2 == 0 ? 1f : 0.25f);
+        var curve = new AnimationCurve(keys);
+        for (var i = 0; i < curve.length; ++i) curve.SmoothTangents(i, 0f);
+        size.x = new ParticleSystem.MinMaxCurve(1f, curve);
+        size.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Constant(0f, 1f, 1f));
+        size.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Constant(0f, 1f, 1f));
+    }
+
     /// <summary>In and out over the given parts of a particle's life, so none pops.</summary>
     private static void Fade(ParticleSystem system, float fadeIn, float fadeOut)
     {
@@ -208,6 +285,8 @@ public sealed class Ambience : MonoBehaviour
             Emit(snow, 0f);
             Emit(petals, 0f);
             Emit(fireflies, 0f);
+            Emit(butterflies, 0f);
+            Emit(gulls, 0f);
             return;
         }
 
@@ -227,6 +306,10 @@ public sealed class Ambience : MonoBehaviour
         Emit(snow, snowy ? 260f : 0f);
         Emit(petals, island == "Kyo" ? 22f : 0f);
         Emit(fireflies, island != null && !snowy ? 45f * night : 0f);
+        // butterflies over the meadows and gulls over the shore by day
+        var day = 1f - night;
+        Emit(butterflies, island != null && !snowy ? 3.5f * day : 0f);
+        Emit(gulls, island != null ? 0.35f * day : 0f);
 
         // the flakes and petals are lit as the world is: by the sun and the sky now
         var sun = RenderSettings.sun;

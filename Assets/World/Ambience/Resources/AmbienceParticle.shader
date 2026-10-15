@@ -3,6 +3,8 @@
 //   _Shape 0: a soft disc (a snowflake)
 //   _Shape 1: a petal, a pointed oval lighter toward its tip
 //   _Shape 2: a glow, a bright core in a soft halo (a firefly); drawn additive by its material
+//   _Shape 3: a butterfly
+//   _Shape 4: a gull
 // _AmbienceLight is the light the flake or petal is lit by (the sun and the sky now), so snow at night is not white.
 Shader "Hidden/Ravenfall/AmbienceParticle"
 {
@@ -83,10 +85,30 @@ Shader "Hidden/Ravenfall/AmbienceParticle"
                     alpha = smoothstep(width, width * 0.6, abs(p.x)) * smoothstep(1.0, 0.85, abs(along));
                     colour = lerp(colour * 0.82, colour * 1.12, saturate(along * 0.5 + 0.5));
                 }
-                else
+                else if (_Shape < 2.5)
                 {
                     float r = length(p);
                     alpha = saturate(exp(-r * r * 9.0) + 0.35 * exp(-r * r * 2.2)) * smoothstep(1.0, 0.7, r);
+                }
+                else if (_Shape < 3.5)
+                {
+                    // a butterfly: two rounded upper wings, two smaller lower ones, a thin dark body; the wings are
+                    // darker at their edges (the particle system beats them by squeezing the quad across)
+                    float2 q = float2(abs(p.x), p.y);
+                    float upper = length((q - float2(0.45, 0.22)) / float2(0.5, 0.55));
+                    float lower = length((q - float2(0.32, -0.42)) / float2(0.32, 0.38));
+                    float wing = min(upper, lower);
+                    float body = abs(p.x) < 0.07 && abs(p.y) < 0.7 ? 1.0 : 0.0;
+                    alpha = max(smoothstep(1.0, 0.85, wing), body);
+                    colour = body > 0.5 ? colour * 0.2 : colour * lerp(1.08, 0.45, smoothstep(0.55, 1.0, wing));
+                }
+                else
+                {
+                    // a gull: a thin bent stroke, the wings raised from the body and swept back at the tips
+                    float wingY = 0.32 * abs(p.x) - 0.42 * p.x * p.x - 0.05;
+                    float thickness = 0.3 * (1.0 - abs(p.x)) + 0.09;
+                    alpha = smoothstep(thickness, thickness * 0.4, abs(p.y - wingY)) * smoothstep(0.98, 0.85, abs(p.x));
+                    colour = lerp(colour * 0.55, colour, smoothstep(0.75, 0.3, abs(p.x)));
                 }
                 alpha *= input.color.a;
                 colour *= _Intensity;

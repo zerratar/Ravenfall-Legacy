@@ -1291,7 +1291,7 @@
     "UI_SETTINGS_AMBIENT_OCCLUSION": "Ambient occlusion",
     "UI_SETTINGS_AMBIENT_OCCLUSION_HINT": "Mjuk skuggning där saker möter marken och i hörn, för mer djup.",
     "UI_SETTINGS_AMBIENT_EFFECTS": "Väder och stämningseffekter",
-    "UI_SETTINGS_AMBIENT_EFFECTS_HINT": "Snö på Iceheim, körsbärsblad över Kyojin och eldflugor om natten.",
+    "UI_SETTINGS_AMBIENT_EFFECTS_HINT": "Snö på Iceheim, körsbärsblad över Kyojin, fjärilar och måsar om dagen, eldflugor om natten.",
     "UI_SETTINGS_TREE_WIND": "Vind i träden",
     "UI_SETTINGS_TREE_WIND_HINT": "Träd, buskar och växter vajar sakta i vinden.",
     "UI_SETTINGS_DUNGEON_LIGHTING": "Facklor i grottorna",
