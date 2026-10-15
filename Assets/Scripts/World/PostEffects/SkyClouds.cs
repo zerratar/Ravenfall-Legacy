@@ -8,8 +8,9 @@ using UnityEngine.Rendering.Universal;
 
 /// <summary>
 /// Volumetric clouds over the islands: a slab of cumulus, marched per pixel and lit by the sun through its own bulk,
-/// drifting with the same wind as <see cref="CloudShadows"/>. On unless the setting turns it off; potato mode turns it
-/// off as well (<see cref="Suppressed"/>). While it is off, the scene's low-poly cloud meshes show instead.
+/// drifting with the same wind as <see cref="CloudShadows"/>, with stars twinkling between them at night. On unless the
+/// setting turns it off; potato mode turns it off as well (<see cref="Suppressed"/>). While it is off, the scene's
+/// low-poly cloud meshes show instead.
 /// </summary>
 /// <remarks>
 /// The pass is added to the game camera each frame from here, so no renderer asset carries it. It runs before URP's
@@ -30,6 +31,8 @@ public static class SkyClouds
     private static readonly int LookId = Shader.PropertyToID("_CloudLook");
     private static readonly int BufferId = Shader.PropertyToID("_SkyCloudBuffer");
     private static readonly int TexelId = Shader.PropertyToID("_SkyCloudTexel");
+    private static readonly int NightId = Shader.PropertyToID("_CloudNight");
+    private static DayNightCycle dayNight;
 
     /// <summary>The cloud layer's floor and ceiling, metres; where the scene's own cloud meshes float.</summary>
     public const float Floor = 230f, Ceiling = 480f;
@@ -183,9 +186,21 @@ public static class SkyClouds
         foreach (var r in meshClouds) if (r) r.enabled = show;
     }
 
+    /// <summary>How much it is night, 0 by day to 1 in the dark, from the cycle's light: how much the stars show.</summary>
+    private static float Night()
+    {
+        if (!dayNight) dayNight = Object.FindAnyObjectByType<DayNightCycle>();
+        var sun = RenderSettings.sun;
+        if (!dayNight || !dayNight.DayLight || !dayNight.NightLight || !sun) return 0f;
+        var day = Mathf.InverseLerp(dayNight.NightLight.intensity, dayNight.DayLight.intensity, sun.intensity);
+        var t = Mathf.Clamp01((day - 0.1f) / 0.35f);
+        return 1f - t * t * (3f - 2f * t);
+    }
+
     private static void Set(Material m)
     {
         m.SetVector(SlabId, new Vector4(Floor, Ceiling, Coverage, PuffSize));
+        m.SetFloat(NightId, Night());
         m.SetVector(ParamsId, new Vector4(0.85f, 24f, 1f, 0.6f));
         var t = Time.time;
         // a little haze, so the far cloud melts into the horizon

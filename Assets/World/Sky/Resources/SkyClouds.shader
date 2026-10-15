@@ -229,9 +229,35 @@ Shader "Hidden/Ravenfall/SkyClouds"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
             TEXTURE2D_X(_SkyCloudBuffer); // half the screen's size
             float4 _SkyCloudTexel;        // xy one texel of the buffer in uv
+            float _CloudNight;            // 0 by day, 1 in the dark: how much the stars show
+
+            float StarHash(float3 p)
+            {
+                p = frac(p * 0.1031);
+                p += dot(p, p.zyx + 31.32);
+                return frac((p.x + p.y) * p.z);
+            }
+
+            // the stars in a direction: one maybe in each cell of a grid laid through the sky, a small soft dot at a
+            // random place in it, some brighter, twinkling slowly; none low in the horizon's haze
+            half3 Stars(float3 dir)
+            {
+                float3 p = dir * 260.0;
+                float3 cell = floor(p);
+                float h = StarHash(cell);
+                if (h < 0.985) return 0;
+                float3 at = cell + float3(StarHash(cell + 7.1), StarHash(cell + 13.7), StarHash(cell + 29.3));
+                float d = length(p - at);
+                float bright = (h - 0.985) / 0.015;
+                float twinkle = 0.75 + 0.25 * sin(_Time.y * (1.0 + bright * 2.0) + h * 80.0);
+                float spot = smoothstep(0.32, 0.0, d);
+                half3 tint = lerp(half3(0.75, 0.85, 1.0), half3(1.0, 0.92, 0.8), StarHash(cell + 3.3));
+                return tint * spot * (0.4 + bright * bright * 2.0) * twinkle * saturate(dir.y * 5.0 - 0.1);
+            }
 
             // the cloud over the scene; a tent over the 3x3 round each texel takes the march's grain out, weighted by
             // how alike the neighbours' transmittance is, so where cloud meets crag or sky the edge stays put
@@ -259,6 +285,21 @@ Shader "Hidden/Ravenfall/SkyClouds"
                     }
                 }
                 acc /= wsum;
+                // the stars behind the clouds, where the sky shows
+                [branch] if (_CloudNight > 0.01)
+                {
+                    float raw = SampleSceneDepth(uv);
+                #if UNITY_REVERSED_Z
+                    bool sky = raw <= 1e-6;
+                #else
+                    bool sky = raw >= 1.0 - 1e-6;
+                #endif
+                    if (sky)
+                    {
+                        float3 dir = normalize(ComputeWorldSpacePosition(uv, raw, UNITY_MATRIX_I_VP) - GetCameraPositionWS());
+                        scene.rgb += Stars(dir) * _CloudNight;
+                    }
+                }
                 return half4(scene.rgb * acc.a + acc.rgb, scene.a);
             }
             ENDHLSL
