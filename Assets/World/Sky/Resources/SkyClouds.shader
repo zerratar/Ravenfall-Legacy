@@ -17,15 +17,7 @@ Shader "Hidden/Ravenfall/SkyClouds"
         Tags { "RenderPipeline" = "UniversalPipeline" }
         ZWrite Off ZTest Always Cull Off
 
-        Pass
-        {
-            Name "Sky Clouds March"
-
-            HLSLPROGRAM
-            #pragma vertex Vert
-            #pragma fragment Frag
-            #pragma target 4.5
-
+        HLSLINCLUDE
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
@@ -106,6 +98,17 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 }
                 return d * _CloudParams.x;
             }
+
+        ENDHLSL
+
+        Pass
+        {
+            Name "Sky Clouds March"
+
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+            #pragma target 4.5
 
             // light reaching p from the sun through the cloud: a short march sunward
             float SunLight(float3 p, float3 sun, float sigma, float step, float jitter)
@@ -257,6 +260,50 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 }
                 acc /= wsum;
                 return half4(scene.rgb * acc.a + acc.rgb, scene.a);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Sky Clouds Shadow"
+
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+            #pragma target 4.5
+
+            // the light's own space, as URP projects the sun's cookie in it
+            float4x4 _CloudShadowLightToWorld;
+            // xy the window's centre in the light's space (m), z its size (m), w how dark a full cloud's shadow is
+            float4 _CloudShadowWindow;
+
+            // The sun's cookie, drawn from the cloud itself: each texel is a line along the sun's direction in the
+            // light's space, and what comes through is how much cloud that line crosses in the slab. So the shadows
+            // on the ground are the shadows of the clouds overhead.
+            half4 Frag(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float2 ls = (input.texcoord - 0.5) * _CloudShadowWindow.z + _CloudShadowWindow.xy;
+                float3 origin = mul(_CloudShadowLightToWorld, float4(ls, 0.0, 1.0)).xyz;
+                float3 forward = normalize(mul((float3x3)_CloudShadowLightToWorld, float3(0.0, 0.0, 1.0)));
+                // the sun at or under the horizon casts no cloud shadow worth drawing
+                if (forward.y > -0.05) return half4(1, 1, 1, 1);
+                float z0 = (_CloudSlab.y - origin.y) / forward.y;
+                float z1 = (_CloudSlab.x - origin.y) / forward.y;
+                const int samples = 14;
+                float dz = (z1 - z0) / samples;
+                float od = 0.0, hf;
+                [loop]
+                for (int i = 0; i < samples; i++)
+                {
+                    float3 p = origin + forward * (z0 + dz * (i + 0.5));
+                    od += Shape(p, hf, false);
+                }
+                float sigma = 10.0 / _CloudSlab.w;
+                float through = exp(-od * sigma * abs(dz) * _CloudParams.z * 0.6);
+                float light = lerp(1.0, through, _CloudShadowWindow.w);
+                return half4(light, light, light, 1);
             }
             ENDHLSL
         }

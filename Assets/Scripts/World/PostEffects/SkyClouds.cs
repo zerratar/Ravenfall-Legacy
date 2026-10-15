@@ -43,8 +43,21 @@ public static class SkyClouds
     /// <summary>The wind, metres a second over the ground; the cloud shadows drift with it too.</summary>
     public static readonly Vector2 Wind = new Vector2(1.6f, 0.7f);
 
+    private static readonly int ShadowLightToWorldId = Shader.PropertyToID("_CloudShadowLightToWorld");
+    private static readonly int ShadowWindowId = Shader.PropertyToID("_CloudShadowWindow");
+    private static readonly int BlitScaleBiasId = Shader.PropertyToID("_BlitScaleBias");
+
+    // the clouds' shadow on the sun: a window round the game camera, in the light's space
+    private const int ShadowSize = 256;
+    private const float ShadowWindow = 3000f;
+    private const int ShadowEvery = 4;   // frames between redraws; the clouds move a few metres a second
+
     private static Material material;
     private static Pass pass;
+    private static RenderTexture shadowMap;
+    private static CommandBuffer shadowCommands;
+    private static int shadowDrawnAt = -1000;
+    private static Vector2 shadowCentre;
     private static readonly List<Renderer> meshClouds = new List<Renderer>();
     private static bool meshCloudsShown = true;
     private static bool meshCloudsFound;
@@ -54,6 +67,69 @@ public static class SkyClouds
 
     /// <summary>Off for now (potato mode), whatever the setting.</summary>
     public static bool Suppressed { get; set; }
+
+    /// <summary>The clouds are drawn: the setting is on and nothing holds them back.</summary>
+    public static bool Active => Enabled && !Suppressed;
+
+    /// <summary>The cloud shadows' texture while the clouds draw it, for <see cref="CloudShadows"/> to take off the sun.</summary>
+    public static Texture ShadowMap => shadowMap;
+
+    private static bool EnsureMaterial()
+    {
+        if (material) return true;
+        var shader = Resources.Load<Shader>("SkyClouds");
+        if (!shader || !shader.isSupported) return false;
+        material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+        return true;
+    }
+
+    /// <summary>
+    /// Puts the clouds' own shadows on the sun as its cookie: a window round the game camera, drawn every few frames
+    /// from the same cloud as the sky shows, so the shadow on the ground is the shadow of the cloud overhead. False
+    /// (and nothing done) while the clouds are off, when <see cref="CloudShadows"/> draws its own.
+    /// </summary>
+    public static bool DrawShadows(ScriptableRenderContext context, Light sun, UniversalAdditionalLightData sunData, float strength)
+    {
+        if (!Active || !sun || sunData == null || !EnsureMaterial()) return false;
+        if (!shadowMap)
+        {
+            shadowMap = new RenderTexture(ShadowSize, ShadowSize, GraphicsFormat.R8_UNorm, GraphicsFormat.None)
+            {
+                name = "Cloud Shadows (from the clouds)",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            shadowMap.Create();
+            shadowDrawnAt = -1000;
+        }
+        shadowCommands ??= new CommandBuffer { name = "Cloud Shadows" };
+
+        if (Time.frameCount - shadowDrawnAt >= ShadowEvery)
+        {
+            shadowDrawnAt = Time.frameCount;
+            var lightToWorld = sun.transform.localToWorldMatrix;
+            var focus = Camera.main ? Camera.main.transform.position : Vector3.zero;
+            var centre = lightToWorld.inverse.MultiplyPoint3x4(focus);
+            // on whole texels, so the shadows hold still under a moving camera
+            var texel = ShadowWindow / ShadowSize;
+            shadowCentre = new Vector2(Mathf.Round(centre.x / texel) * texel, Mathf.Round(centre.y / texel) * texel);
+
+            Set(material);
+            material.SetMatrix(ShadowLightToWorldId, lightToWorld);
+            material.SetVector(ShadowWindowId, new Vector4(shadowCentre.x, shadowCentre.y, ShadowWindow, strength));
+            shadowCommands.Clear();
+            shadowCommands.SetRenderTarget(shadowMap);
+            shadowCommands.SetGlobalVector(BlitScaleBiasId, new Vector4(1f, 1f, 0f, 0f));
+            shadowCommands.DrawProcedural(Matrix4x4.identity, material, 2, MeshTopology.Triangles, 3);
+            context.ExecuteCommandBuffer(shadowCommands);
+        }
+
+        if (sun.cookie != shadowMap) sun.cookie = shadowMap;
+        sunData.lightCookieSize = new Vector2(ShadowWindow, ShadowWindow);
+        sunData.lightCookieOffset = shadowCentre;
+        return true;
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Hook()
@@ -70,12 +146,7 @@ public static class SkyClouds
         var on = Enabled && !Suppressed;
         ShowMeshClouds(!on);
         if (!on || camera.cameraType != CameraType.Game || camera.orthographic) return;
-        if (!material)
-        {
-            var shader = Resources.Load<Shader>("SkyClouds");
-            if (!shader || !shader.isSupported) return;
-            material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
-        }
+        if (!EnsureMaterial()) return;
         Set(material);
 
         var data = camera.GetUniversalAdditionalCameraData();

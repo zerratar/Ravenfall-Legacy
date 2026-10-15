@@ -5,7 +5,8 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
-/// Shadows of clouds drifting over the islands: a soft, tiling noise texture on the sun as its cookie, moved along
+/// Shadows of clouds drifting over the islands, as the sun's cookie. With the volumetric clouds on, they are the
+/// clouds' own shadows (<see cref="SkyClouds.DrawShadows"/>); without them, a soft, tiling noise texture moved along
 /// with the wind. On unless the setting turns it off; potato mode keeps it off (<see cref="Suppressed"/>).
 /// </summary>
 /// <remarks>
@@ -72,6 +73,9 @@ public static class CloudShadows
             return;
         }
 
+        // with the volumetric clouds on, the shadows are theirs, drawn from the clouds overhead
+        if (SkyClouds.DrawShadows(context, sun, sunData, strength)) return;
+
         if (!cookie) cookie = Make();
         if (sun.cookie != cookie) sun.cookie = cookie;
 
@@ -82,10 +86,11 @@ public static class CloudShadows
         sunData.lightCookieOffset = new Vector2(Mathf.Repeat(Wind.x * t, TileMetres), Mathf.Repeat(Wind.y * t, TileMetres));
     }
 
-    /// <summary>Takes the cookie off the sun, if it is ours.</summary>
+    /// <summary>Takes the cookie off the sun, if it is ours or the clouds'.</summary>
     private static void Release()
     {
-        if (sun && cookie && sun.cookie == cookie) sun.cookie = null;
+        if (!sun || !sun.cookie) return;
+        if ((cookie && sun.cookie == cookie) || (SkyClouds.ShadowMap && sun.cookie == SkyClouds.ShadowMap)) sun.cookie = null;
     }
 
     private static Texture2D Make()
