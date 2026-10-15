@@ -391,7 +391,10 @@ public class PlayerEquipment : MonoBehaviour
                     {
                         if (!smr.material.name.ToLower().Contains("fantasyhero"))
                         {
+                            // the mesh is the combiner's own and not freed with the object
+                            var mesh = smr.sharedMesh;
                             DestroyImmediate(c.gameObject);
+                            if (mesh) Destroy(mesh);
                             return true;
                         }
                     }

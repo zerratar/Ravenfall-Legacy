@@ -328,7 +328,8 @@ public class PlayerManager : MonoBehaviour
             return null;
         }
 
-        var controller = Instantiate(playerControllerPrefab);
+        // from a copy of the prefab without the renderers of the parts nobody wears yet (see PlayerParts)
+        var controller = PlayerParts.Instantiate(playerControllerPrefab);
         if (!controller)
         {
             Shinobytes.Debug.LogError("Player Prefab not found!!!");

@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using RavenNest.Models;
 
+// Parts get their renderers through RendererOf: players carry their unused parts without one (see PlayerParts).
+// Keep it that way if this file is generated again.
 public partial class SyntyPlayerAppearance
 {
     /// <summary>
@@ -217,7 +219,7 @@ public partial class SyntyPlayerAppearance
         if (i_capes >= 0 && i_capes < capes.Length)
         {
             var m_capes = capes[i_capes];
-            var r_capes = m_capes.GetComponent<SkinnedMeshRenderer>();
+            var r_capes = RendererOf(m_capes);
             m_capes.SetActive(true);
             capeLogoMaterials.Add(r_capes.material);
         }
@@ -231,7 +233,7 @@ public partial class SyntyPlayerAppearance
                 m_hairs.SetActive(true);
             }
 
-            var r_hairs = m_hairs.GetComponent<SkinnedMeshRenderer>();
+            var r_hairs = RendererOf(m_hairs);
             if (r_hairs)
             {
                 r_hairs.material.SetColor("_Color_Hair", BeardColor);
@@ -250,7 +252,7 @@ public partial class SyntyPlayerAppearance
         if (i_shoulderPadsRight >= 0 && i_shoulderPadsRight < shoulderPadsRight.Length)
         {
             var m_shoulderPadsRight = shoulderPadsRight[i_shoulderPadsRight];
-            var r_shoulderPadsRight = m_shoulderPadsRight.GetComponent<SkinnedMeshRenderer>();
+            var r_shoulderPadsRight = RendererOf(m_shoulderPadsRight);
             m_shoulderPadsRight.SetActive(true);
             if (i_shoulderPadsRight == 0)
             {
@@ -261,7 +263,7 @@ public partial class SyntyPlayerAppearance
         if (i_shoulderPadsLeft >= 0 && i_shoulderPadsLeft < shoulderPadsLeft.Length)
         {
             var m_shoulderPadsLeft = shoulderPadsLeft[i_shoulderPadsLeft];
-            var r_shoulderPadsLeft = m_shoulderPadsLeft.GetComponent<SkinnedMeshRenderer>();
+            var r_shoulderPadsLeft = RendererOf(m_shoulderPadsLeft);
             m_shoulderPadsLeft.SetActive(true);
             if (i_shoulderPadsLeft == 0)
             {
@@ -272,7 +274,7 @@ public partial class SyntyPlayerAppearance
         if (i_elbowsRight >= 0 && i_elbowsRight < elbowsRight.Length)
         {
             var m_elbowsRight = elbowsRight[i_elbowsRight];
-            var r_elbowsRight = m_elbowsRight.GetComponent<SkinnedMeshRenderer>();
+            var r_elbowsRight = RendererOf(m_elbowsRight);
             m_elbowsRight.SetActive(true);
             if (i_elbowsRight == 0)
             {
@@ -283,7 +285,7 @@ public partial class SyntyPlayerAppearance
         if (i_elbowsLeft >= 0 && i_elbowsLeft < elbowsLeft.Length)
         {
             var m_elbowsLeft = elbowsLeft[i_elbowsLeft];
-            var r_elbowsLeft = m_elbowsLeft.GetComponent<SkinnedMeshRenderer>();
+            var r_elbowsLeft = RendererOf(m_elbowsLeft);
             m_elbowsLeft.SetActive(true);
             if (i_elbowsLeft == 0)
             {
@@ -298,7 +300,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleHeads >= 0 && i_maleHeads < maleHeads.Length)
             {
                 var m_maleHeads = maleHeads[i_maleHeads];
-                var r_maleHeads = m_maleHeads.GetComponent<SkinnedMeshRenderer>();
+                var r_maleHeads = RendererOf(m_maleHeads);
                 m_maleHeads.SetActive(true);
                 r_maleHeads.material.SetColor("_Color_Eyes", EyeColor);
                 r_maleHeads.material.SetColor("_Color_Skin", SkinColor);
@@ -309,7 +311,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleHelmets >= 0 && i_maleHelmets < maleHelmets.Length)
             {
                 var m_maleHelmets = maleHelmets[i_maleHelmets];
-                var r_maleHelmets = m_maleHelmets.GetComponent<SkinnedMeshRenderer>();
+                var r_maleHelmets = RendererOf(m_maleHelmets);
                 m_maleHelmets.SetActive(true);
                 if (i_maleHelmets == 0)
                 {
@@ -320,7 +322,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleEyebrows >= 0 && i_maleEyebrows < maleEyebrows.Length)
             {
                 var m_maleEyebrows = maleEyebrows[i_maleEyebrows];
-                var r_maleEyebrows = m_maleEyebrows.GetComponent<SkinnedMeshRenderer>();
+                var r_maleEyebrows = RendererOf(m_maleEyebrows);
                 m_maleEyebrows.SetActive(true);
                 r_maleEyebrows.material.SetColor("_Color_Hair", BeardColor);
             }
@@ -328,7 +330,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleFacialHairs >= 0 && i_maleFacialHairs < maleFacialHairs.Length)
             {
                 var m_maleFacialHairs = maleFacialHairs[i_maleFacialHairs];
-                var r_maleFacialHairs = m_maleFacialHairs.GetComponent<SkinnedMeshRenderer>();
+                var r_maleFacialHairs = RendererOf(m_maleFacialHairs);
                 m_maleFacialHairs.SetActive(true);
                 r_maleFacialHairs.material.SetColor("_Color_Hair", BeardColor);
             }
@@ -336,7 +338,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleTorso >= 0 && i_maleTorso < maleTorso.Length)
             {
                 var m_maleTorso = maleTorso[i_maleTorso];
-                var r_maleTorso = m_maleTorso.GetComponent<SkinnedMeshRenderer>();
+                var r_maleTorso = RendererOf(m_maleTorso);
                 m_maleTorso.SetActive(true);
                 if (i_maleTorso == 0)
                 {
@@ -347,7 +349,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleArmUpperRight >= 0 && i_maleArmUpperRight < maleArmUpperRight.Length)
             {
                 var m_maleArmUpperRight = maleArmUpperRight[i_maleArmUpperRight];
-                var r_maleArmUpperRight = m_maleArmUpperRight.GetComponent<SkinnedMeshRenderer>();
+                var r_maleArmUpperRight = RendererOf(m_maleArmUpperRight);
                 m_maleArmUpperRight.SetActive(true);
                 if (i_maleArmUpperRight == 0)
                 {
@@ -358,7 +360,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleArmUpperLeft >= 0 && i_maleArmUpperLeft < maleArmUpperLeft.Length)
             {
                 var m_maleArmUpperLeft = maleArmUpperLeft[i_maleArmUpperLeft];
-                var r_maleArmUpperLeft = m_maleArmUpperLeft.GetComponent<SkinnedMeshRenderer>();
+                var r_maleArmUpperLeft = RendererOf(m_maleArmUpperLeft);
                 m_maleArmUpperLeft.SetActive(true);
                 if (i_maleArmUpperLeft == 0)
                 {
@@ -369,7 +371,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleArmLowerRight >= 0 && i_maleArmLowerRight < maleArmLowerRight.Length)
             {
                 var m_maleArmLowerRight = maleArmLowerRight[i_maleArmLowerRight];
-                var r_maleArmLowerRight = m_maleArmLowerRight.GetComponent<SkinnedMeshRenderer>();
+                var r_maleArmLowerRight = RendererOf(m_maleArmLowerRight);
                 m_maleArmLowerRight.SetActive(true);
                 if (i_maleArmLowerRight == 0)
                 {
@@ -380,7 +382,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleArmLowerLeft >= 0 && i_maleArmLowerLeft < maleArmLowerLeft.Length)
             {
                 var m_maleArmLowerLeft = maleArmLowerLeft[i_maleArmLowerLeft];
-                var r_maleArmLowerLeft = m_maleArmLowerLeft.GetComponent<SkinnedMeshRenderer>();
+                var r_maleArmLowerLeft = RendererOf(m_maleArmLowerLeft);
                 m_maleArmLowerLeft.SetActive(true);
                 if (i_maleArmLowerLeft == 0)
                 {
@@ -391,7 +393,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleHandsRight >= 0 && i_maleHandsRight < maleHandsRight.Length)
             {
                 var m_maleHandsRight = maleHandsRight[i_maleHandsRight];
-                var r_maleHandsRight = m_maleHandsRight.GetComponent<SkinnedMeshRenderer>();
+                var r_maleHandsRight = RendererOf(m_maleHandsRight);
                 m_maleHandsRight.SetActive(true);
                 if (i_maleHandsRight == 0)
                 {
@@ -402,7 +404,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleHandsLeft >= 0 && i_maleHandsLeft < maleHandsLeft.Length)
             {
                 var m_maleHandsLeft = maleHandsLeft[i_maleHandsLeft];
-                var r_maleHandsLeft = m_maleHandsLeft.GetComponent<SkinnedMeshRenderer>();
+                var r_maleHandsLeft = RendererOf(m_maleHandsLeft);
                 m_maleHandsLeft.SetActive(true);
                 if (i_maleHandsLeft == 0)
                 {
@@ -413,7 +415,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleHips >= 0 && i_maleHips < maleHips.Length)
             {
                 var m_maleHips = maleHips[i_maleHips];
-                var r_maleHips = m_maleHips.GetComponent<SkinnedMeshRenderer>();
+                var r_maleHips = RendererOf(m_maleHips);
                 m_maleHips.SetActive(true);
                 if (i_maleHips == 0)
                 {
@@ -424,7 +426,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleLegsRight >= 0 && i_maleLegsRight < maleLegsRight.Length)
             {
                 var m_maleLegsRight = maleLegsRight[i_maleLegsRight];
-                var r_maleLegsRight = m_maleLegsRight.GetComponent<SkinnedMeshRenderer>();
+                var r_maleLegsRight = RendererOf(m_maleLegsRight);
                 m_maleLegsRight.SetActive(true);
                 if (i_maleLegsRight == 0)
                 {
@@ -435,7 +437,7 @@ public partial class SyntyPlayerAppearance
             if (i_maleLegsLeft >= 0 && i_maleLegsLeft < maleLegsLeft.Length)
             {
                 var m_maleLegsLeft = maleLegsLeft[i_maleLegsLeft];
-                var r_maleLegsLeft = m_maleLegsLeft.GetComponent<SkinnedMeshRenderer>();
+                var r_maleLegsLeft = RendererOf(m_maleLegsLeft);
                 m_maleLegsLeft.SetActive(true);
                 if (i_maleLegsLeft == 0)
                 {
@@ -449,7 +451,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleHeads >= 0 && i_femaleHeads < femaleHeads.Length)
             {
                 var m_femaleHeads = femaleHeads[i_femaleHeads];
-                var r_femaleHeads = m_femaleHeads.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleHeads = RendererOf(m_femaleHeads);
                 m_femaleHeads.SetActive(true);
                 r_femaleHeads.material.SetColor("_Color_Eyes", EyeColor);
                 r_femaleHeads.material.SetColor("_Color_Skin", SkinColor);
@@ -460,7 +462,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleHelmets >= 0 && i_femaleHelmets < femaleHelmets.Length)
             {
                 var m_femaleHelmets = femaleHelmets[i_femaleHelmets];
-                var r_femaleHelmets = m_femaleHelmets.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleHelmets = RendererOf(m_femaleHelmets);
                 m_femaleHelmets.SetActive(true);
                 if (i_femaleHelmets == 0)
                 {
@@ -471,7 +473,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleEyebrows >= 0 && i_femaleEyebrows < femaleEyebrows.Length)
             {
                 var m_femaleEyebrows = femaleEyebrows[i_femaleEyebrows];
-                var r_femaleEyebrows = m_femaleEyebrows.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleEyebrows = RendererOf(m_femaleEyebrows);
                 m_femaleEyebrows.SetActive(true);
                 r_femaleEyebrows.material.SetColor("_Color_Hair", BeardColor);
             }
@@ -479,7 +481,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleFacialHairs >= 0 && i_femaleFacialHairs < femaleFacialHairs.Length)
             {
                 var m_femaleFacialHairs = femaleFacialHairs[i_femaleFacialHairs];
-                var r_femaleFacialHairs = m_femaleFacialHairs.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleFacialHairs = RendererOf(m_femaleFacialHairs);
                 m_femaleFacialHairs.SetActive(true);
                 if (i_femaleFacialHairs == 0)
                 {
@@ -490,7 +492,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleTorso >= 0 && i_femaleTorso < femaleTorso.Length)
             {
                 var m_femaleTorso = femaleTorso[i_femaleTorso];
-                var r_femaleTorso = m_femaleTorso.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleTorso = RendererOf(m_femaleTorso);
                 m_femaleTorso.SetActive(true);
                 if (i_femaleTorso == 0)
                 {
@@ -501,7 +503,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleArmUpperRight >= 0 && i_femaleArmUpperRight < femaleArmUpperRight.Length)
             {
                 var m_femaleArmUpperRight = femaleArmUpperRight[i_femaleArmUpperRight];
-                var r_femaleArmUpperRight = m_femaleArmUpperRight.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleArmUpperRight = RendererOf(m_femaleArmUpperRight);
                 m_femaleArmUpperRight.SetActive(true);
                 if (i_femaleArmUpperRight == 0)
                 {
@@ -512,7 +514,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleArmUpperLeft >= 0 && i_femaleArmUpperLeft < femaleArmUpperLeft.Length)
             {
                 var m_femaleArmUpperLeft = femaleArmUpperLeft[i_femaleArmUpperLeft];
-                var r_femaleArmUpperLeft = m_femaleArmUpperLeft.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleArmUpperLeft = RendererOf(m_femaleArmUpperLeft);
                 m_femaleArmUpperLeft.SetActive(true);
                 if (i_femaleArmUpperLeft == 0)
                 {
@@ -523,7 +525,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleArmLowerRight >= 0 && i_femaleArmLowerRight < femaleArmLowerRight.Length)
             {
                 var m_femaleArmLowerRight = femaleArmLowerRight[i_femaleArmLowerRight];
-                var r_femaleArmLowerRight = m_femaleArmLowerRight.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleArmLowerRight = RendererOf(m_femaleArmLowerRight);
                 m_femaleArmLowerRight.SetActive(true);
                 if (i_femaleArmLowerRight == 0)
                 {
@@ -534,7 +536,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleArmLowerLeft >= 0 && i_femaleArmLowerLeft < femaleArmLowerLeft.Length)
             {
                 var m_femaleArmLowerLeft = femaleArmLowerLeft[i_femaleArmLowerLeft];
-                var r_femaleArmLowerLeft = m_femaleArmLowerLeft.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleArmLowerLeft = RendererOf(m_femaleArmLowerLeft);
                 m_femaleArmLowerLeft.SetActive(true);
                 if (i_femaleArmLowerLeft == 0)
                 {
@@ -545,7 +547,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleHandsRight >= 0 && i_femaleHandsRight < femaleHandsRight.Length)
             {
                 var m_femaleHandsRight = femaleHandsRight[i_femaleHandsRight];
-                var r_femaleHandsRight = m_femaleHandsRight.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleHandsRight = RendererOf(m_femaleHandsRight);
                 m_femaleHandsRight.SetActive(true);
                 if (i_femaleHandsRight == 0)
                 {
@@ -556,7 +558,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleHandsLeft >= 0 && i_femaleHandsLeft < femaleHandsLeft.Length)
             {
                 var m_femaleHandsLeft = femaleHandsLeft[i_femaleHandsLeft];
-                var r_femaleHandsLeft = m_femaleHandsLeft.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleHandsLeft = RendererOf(m_femaleHandsLeft);
                 m_femaleHandsLeft.SetActive(true);
                 if (i_femaleHandsLeft == 0)
                 {
@@ -567,7 +569,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleHips >= 0 && i_femaleHips < femaleHips.Length)
             {
                 var m_femaleHips = femaleHips[i_femaleHips];
-                var r_femaleHips = m_femaleHips.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleHips = RendererOf(m_femaleHips);
                 m_femaleHips.SetActive(true);
                 if (i_femaleHips == 0)
                 {
@@ -578,7 +580,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleLegsRight >= 0 && i_femaleLegsRight < femaleLegsRight.Length)
             {
                 var m_femaleLegsRight = femaleLegsRight[i_femaleLegsRight];
-                var r_femaleLegsRight = m_femaleLegsRight.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleLegsRight = RendererOf(m_femaleLegsRight);
                 m_femaleLegsRight.SetActive(true);
                 if (i_femaleLegsRight == 0)
                 {
@@ -589,7 +591,7 @@ public partial class SyntyPlayerAppearance
             if (i_femaleLegsLeft >= 0 && i_femaleLegsLeft < femaleLegsLeft.Length)
             {
                 var m_femaleLegsLeft = femaleLegsLeft[i_femaleLegsLeft];
-                var r_femaleLegsLeft = m_femaleLegsLeft.GetComponent<SkinnedMeshRenderer>();
+                var r_femaleLegsLeft = RendererOf(m_femaleLegsLeft);
                 m_femaleLegsLeft.SetActive(true);
                 if (i_femaleLegsLeft == 0)
                 {

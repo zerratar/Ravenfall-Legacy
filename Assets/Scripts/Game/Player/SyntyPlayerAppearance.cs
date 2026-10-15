@@ -130,6 +130,30 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
     public GameObject FullBodySkinMesh { get; set; }
 
+    /// <summary>
+    /// Where this player's parts get their renderers when put on: set when the player was made by
+    /// <see cref="PlayerParts.Instantiate"/>, whose players carry their unused parts without renderers. Null for a
+    /// player made from the full prefab, whose parts all have theirs.
+    /// </summary>
+    public PlayerParts.Source PartsSource { get; set; }
+
+    /// <summary>A part's renderer, given back to it first if it was stripped.</summary>
+    private SkinnedMeshRenderer RendererOf(GameObject part) => PartsSource != null ? PlayerParts.RendererOf(part, this) : (part ? part.GetComponent<SkinnedMeshRenderer>() : null);
+
+    /// <summary>Every part that is on has its renderer, so the mesh combiner finds it, however it was switched on.</summary>
+    private void EnsureActivePartRenderers()
+    {
+        if (PartsSource == null) return;
+        foreach (var field in ModelFields)
+        {
+            if (field.GetValue(this) is not GameObject[] parts) continue;
+            foreach (var part in parts)
+            {
+                if (part && part.activeSelf) RendererOf(part);
+            }
+        }
+    }
+
     private Dictionary<string, GameObject[]> modelObjects;
     private readonly static List<FieldInfo> AppearanceFields;
     private readonly static Dictionary<string, FieldInfo> FieldsLookup;
@@ -332,12 +356,15 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
         int meshLayer = -1;
         Transform cm = null;
+        List<Mesh> replaced = null;
         if (useMeshCombiner)
         {
             cm = GetCombinedMesh();
             if (cm)
             {
                 meshLayer = meshCombiner.gameObject.layer;
+                // the combiner destroys its object but not the mesh it made, about 1.4 MB a player each time
+                replaced = CombinedMeshesOf(cm);
                 meshCombiner.UndoCombineMeshes();
             }
         }
@@ -361,6 +388,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
             yield return new WaitForFixedUpdate();
 
+            EnsureActivePartRenderers();
             meshCombiner.CombineMeshes();
             while (!meshCombiner.isMeshesCombineds)
             {
@@ -370,12 +398,45 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
             if (cm)
             {
                 cm.transform.localPosition = Vector3.zero;
+                // skinning runs on the GPU, so the copy kept for the CPU is not needed: half the mesh's memory
+                foreach (var mesh in CombinedMeshesOf(cm)) mesh.UploadMeshData(true);
             }
+        }
+
+        if (replaced != null)
+        {
+            foreach (var mesh in replaced) if (mesh) Destroy(mesh);
         }
 
         if (ensureObserverCamera && gameManager && gameManager.Camera)
         {
             gameManager.Camera.EnsureObserverCamera();
+        }
+    }
+
+    /// <summary>The meshes the combiner made under its object, to free when they are replaced or the player goes.</summary>
+    public static List<Mesh> CombinedMeshesOf(Transform combined)
+    {
+        var meshes = new List<Mesh>();
+        if (!combined) return meshes;
+        foreach (var renderer in combined.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (renderer.sharedMesh && !meshes.Contains(renderer.sharedMesh)) meshes.Add(renderer.sharedMesh);
+        }
+        return meshes;
+    }
+
+    private void OnDestroy()
+    {
+        // what Unity does not free with the object: the combined mesh, and the material copies the part colours
+        // were set on (Renderer.material makes one per renderer)
+        foreach (var mesh in CombinedMeshesOf(GetCombinedMesh())) if (mesh) Destroy(mesh);
+        foreach (var renderer in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            foreach (var material in renderer.sharedMaterials)
+            {
+                if (material && material.name.EndsWith("(Instance)")) Destroy(material);
+            }
         }
     }
 
@@ -677,6 +738,7 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     private void ActivateAndInstantiate(GameObject obj, Transform parent)
     {
         obj.SetActive(true);
+        RendererOf(obj);
         Instantiate(obj, parent);
     }
 
@@ -868,9 +930,10 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         }
 
         item.SetActive(true);
-        if (material)
+        var renderer = RendererOf(item);
+        if (material && renderer)
         {
-            item.GetComponent<SkinnedMeshRenderer>().sharedMaterial = material;
+            renderer.sharedMaterial = material;
         }
 
         return item;
