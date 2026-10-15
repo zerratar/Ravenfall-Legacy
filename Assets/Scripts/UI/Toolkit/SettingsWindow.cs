@@ -455,6 +455,8 @@ namespace Shinobytes.UI
                 SettingsApplier.SetVolumetricClouds);
             Switch(c, Localization.UI_SETTINGS_WEATHER, Localization.UI_SETTINGS_WEATHER_HINT, SettingsApplier.ChangingWeather, SettingsApplier.Defaults.ChangingWeather,
                 SettingsApplier.SetChangingWeather);
+            Switch(c, Localization.UI_SETTINGS_LIGHTNING, Localization.UI_SETTINGS_LIGHTNING_HINT, SettingsApplier.LightningFlashes, SettingsApplier.Defaults.LightningFlashes,
+                SettingsApplier.SetLightningFlashes);
             Switch(c, Localization.UI_SETTINGS_AMBIENT_OCCLUSION, Localization.UI_SETTINGS_AMBIENT_OCCLUSION_HINT, SettingsApplier.AmbientOcclusionEnabled, SettingsApplier.Defaults.AmbientOcclusion,
                 SettingsApplier.SetAmbientOcclusion);
             Switch(c, Localization.UI_SETTINGS_AMBIENT_EFFECTS, Localization.UI_SETTINGS_AMBIENT_EFFECTS_HINT, SettingsApplier.AmbientEffects, SettingsApplier.Defaults.AmbientEffects,
@@ -501,6 +503,8 @@ namespace Shinobytes.UI
                 v => v <= 0.001f ? Localization.UI_SETTINGS_SILENCE : Percent(v), v => SettingsApplier.SetMusicVolume(g, v));
             SliderRow(c, Localization.UI_SETTINGS_EVENTS, Localization.UI_SETTINGS_EVENTS_HINT, 0f, 1f, SettingsApplier.EventVolume(g), SettingsApplier.Defaults.EventVolume,
                 v => v >= 0.999f ? Localization.UI_SETTINGS_BWAAAH : v <= 0.001f ? Localization.UI_SETTINGS_OFF : Percent(v), v => SettingsApplier.SetEventVolume(g, v));
+            SliderRow(c, Localization.UI_SETTINGS_WEATHER_SOUNDS, Localization.UI_SETTINGS_WEATHER_SOUNDS_HINT, 0f, 1f, SettingsApplier.WeatherVolume, SettingsApplier.Defaults.WeatherVolume,
+                v => v <= 0.001f ? Localization.UI_SETTINGS_OFF : Percent(v), SettingsApplier.SetWeatherVolume);
         }
 
         private void BuildInterface(VisualElement c)

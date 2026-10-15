@@ -95,6 +95,8 @@ Shader "Ravenfall/Terrain"
         half _Specular;
         half _Brightness;
     CBUFFER_END
+    // how wet the rain has made the ground, 0 to 1 (Weather)
+    float _RavenfallWetness;
 
     struct Attributes
     {
@@ -241,12 +243,15 @@ Shader "Ravenfall/Terrain"
                 half path = splat0.g;
                 half3 road = SAMPLE_TEXTURE2D(_Road, sampler_Road, uv).rgb;
                 albedo = lerp(albedo, min(albedo, road * path), smoothstep(_Road_Edge_1, _Road_Edge_2, path));
+                // after rain the ground is darker and has a sheen, the bare paths and sand most, snow not at all
+                half soaked = _RavenfallWetness * (1.0 - snow);
+                albedo *= 1.0 - soaked * lerp(0.32, 0.2, onGrass);
 
                 SurfaceData surfaceData = (SurfaceData)0;
                 surfaceData.albedo = albedo;
                 surfaceData.specular = _Specular.xxx;
                 surfaceData.metallic = 0;
-                surfaceData.smoothness = lerp(_MainSmoothness, _SecondarySmoothness, onGrass) + wet * 0.25 * (1.0 - onGrass);
+                surfaceData.smoothness = lerp(_MainSmoothness, _SecondarySmoothness, onGrass) + wet * 0.25 * (1.0 - onGrass) + soaked * lerp(0.45, 0.2, onGrass);
                 surfaceData.normalTS = normalTS;
                 surfaceData.occlusion = 1;
                 surfaceData.alpha = 1;

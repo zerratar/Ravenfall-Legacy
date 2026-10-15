@@ -84,6 +84,7 @@ public static class SettingsApplier
         public const bool DungeonLighting = true;
         public const bool AtmosphericHaze = true;
         public const bool ChangingWeather = true;
+        public const bool LightningFlashes = true;
         public const float ResolutionScale = 1f;
         public const float UiScale = 1f;
         public const bool PlayerNames = true;
@@ -109,6 +110,7 @@ public static class SettingsApplier
         public const int WindowMode = 0;              // borderless
         public const int Resolution = 0;              // the largest, the monitor's own
         public const float MasterVolume = 1f;
+        public const float WeatherVolume = 0.6f;
         public const float FreeCameraSpeed = 50f;
         public const float Sensitivity = 1f;
         public const bool InvertLook = false;
@@ -148,6 +150,7 @@ public static class SettingsApplier
         ApplyDungeonLighting();
         ApplyHaze();
         ApplyWeather();
+        ApplyLightning();
         ApplyEventVolume(game, settings.RaidHornVolume.GetValueOrDefault(game.Raid.Notifications.volume));
         game.PlayerNamesVisible = settings.PlayerNamesVisible.GetValueOrDefault(game.PlayerNamesVisible);
         ApplyBotMessages(game);
@@ -155,6 +158,7 @@ public static class SettingsApplier
         ApplyScreen();
         ApplyFrameRate();
         AudioListener.volume = MasterVolume;
+        WeatherEffects.Volume = WeatherVolume;
         ApplyCamera();
         ApplyExpAnnouncements();
 
@@ -365,6 +369,15 @@ public static class SettingsApplier
     {
         PlayerSettings.Instance.MasterVolume = value;
         AudioListener.volume = value;
+    }
+
+    // the rain and the thunder (WeatherEffects)
+    public static float WeatherVolume => PlayerSettings.Instance.WeatherVolume.GetValueOrDefault(Defaults.WeatherVolume);
+
+    public static void SetWeatherVolume(float value)
+    {
+        PlayerSettings.Instance.WeatherVolume = value;
+        WeatherEffects.Volume = value;
     }
 
     // ---- Camera ---------------------------------------------------------------------------------
@@ -714,6 +727,19 @@ public static class SettingsApplier
     }
 
     private static void ApplyWeather() => Weather.Enabled = ChangingWeather;
+
+    // ---- Lightning flashes -----------------------------------------------------------------------
+    // A thunderstorm's lightning (WeatherEffects), off for those who would rather not see flashing light.
+
+    public static bool LightningFlashes => PlayerSettings.Instance.LightningFlashes.GetValueOrDefault(Defaults.LightningFlashes);
+
+    public static void SetLightningFlashes(bool value)
+    {
+        PlayerSettings.Instance.LightningFlashes = value;
+        ApplyLightning();
+    }
+
+    private static void ApplyLightning() => WeatherEffects.LightningFlashes = LightningFlashes;
 
     public static float ViewDistance => PlayerSettings.Instance.ViewDistance.GetValueOrDefault(0.5f);
 

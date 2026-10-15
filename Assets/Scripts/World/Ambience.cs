@@ -34,10 +34,18 @@ public sealed class Ambience : MonoBehaviour
     /// <summary>How dark it is, 0 by day to 1 at night, as the effects see it.</summary>
     public static float Darkness { get; private set; }
 
+    /// <summary>Where the effects are: on the ground round the observed player, or where the camera looks.</summary>
+    public static Vector3 FocusPoint { get; private set; }
+
+    /// <summary>There is a focus just now (not in a menu, a loading screen).</summary>
+    public static bool HasFocus { get; private set; }
+
+    /// <summary>The island the focus is on, by its identifier; null over the sea.</summary>
+    public static string Island { get; private set; }
+
     private ParticleSystem snow, petals, fireflies, butterflies, gulls;
     private GameManager game;
     private DayNightCycle dayNight;
-    private string island;
     private float nextIslandCheck;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -281,40 +289,25 @@ public sealed class Ambience : MonoBehaviour
         if (!game) game = FindAnyObjectByType<GameManager>();
         if (!dayNight) dayNight = FindAnyObjectByType<DayNightCycle>();
 
-        var focus = default(Vector3);
-        var on = Enabled && !Suppressed && TryFocus(out focus);
-        if (!on)
+        // the focus is found whether or not these are on, as the weather's rain falls round it too
+        HasFocus = TryFocus(out var focus);
+        if (HasFocus)
         {
-            Emit(snow, 0f);
-            Emit(petals, 0f);
-            Emit(fireflies, 0f);
-            Emit(butterflies, 0f);
-            Emit(gulls, 0f);
-            return;
+            // on the ground, wherever the focus is (the camera's aim falls on the sea's plane, under a hilltop)
+            var terrain = Terrain.activeTerrain;
+            if (terrain) focus.y = Mathf.Max(focus.y, terrain.SampleHeight(focus) + terrain.transform.position.y);
+            FocusPoint = focus;
+            if (Time.unscaledTime >= nextIslandCheck)
+            {
+                nextIslandCheck = Time.unscaledTime + IslandCheckEvery;
+                var found = game && game.Islands ? game.Islands.FindIsland(focus) : null;
+                Island = found ? found.Identifier : null;
+            }
         }
-
-        // on the ground, wherever the focus is (the camera's aim falls on the sea's plane, under a hilltop)
-        var terrain = Terrain.activeTerrain;
-        if (terrain) focus.y = Mathf.Max(focus.y, terrain.SampleHeight(focus) + terrain.transform.position.y);
-        transform.position = focus;
-        if (Time.unscaledTime >= nextIslandCheck)
-        {
-            nextIslandCheck = Time.unscaledTime + IslandCheckEvery;
-            var found = game && game.Islands ? game.Islands.FindIsland(focus) : null;
-            island = found ? found.Identifier : null;
-        }
-
         var night = Darkness = Night();
-        var snowy = island == "Heim";
-        Emit(snow, snowy ? 260f : 0f);
-        Emit(petals, island == "Kyo" ? 22f : 0f);
-        Emit(fireflies, island != null && !snowy ? 45f * night : 0f);
-        // butterflies over the meadows and gulls over the shore by day
-        var day = 1f - night;
-        Emit(butterflies, island != null && !snowy ? 3.5f * day : 0f);
-        Emit(gulls, island != null ? 0.35f * day : 0f);
 
-        // the flakes and petals are lit as the world is: by the sun and the sky now
+        // the flakes, petals and raindrops are lit as the world is: by the sun and the sky now (the rain falls with
+        // these off too)
         var sun = RenderSettings.sun;
         var light = RenderSettings.ambientSkyColor * 0.8f;
         if (sun && sun.isActiveAndEnabled)
@@ -324,6 +317,30 @@ public sealed class Ambience : MonoBehaviour
             light += colour * Mathf.Clamp01(sun.intensity) * 0.45f;
         }
         Shader.SetGlobalVector(LightId, new Vector4(Mathf.Min(light.r, 1.1f), Mathf.Min(light.g, 1.1f), Mathf.Min(light.b, 1.1f), 1f));
+
+        if (!Enabled || Suppressed || !HasFocus)
+        {
+            Emit(snow, 0f);
+            Emit(petals, 0f);
+            Emit(fireflies, 0f);
+            Emit(butterflies, 0f);
+            Emit(gulls, 0f);
+            return;
+        }
+
+        transform.position = focus;
+        var island = Island;
+        var snowy = island == "Heim";
+        // on Iceheim the weather's rain falls as a snowstorm
+        Emit(snow, snowy ? 260f * (1f + 3f * Weather.Rain) : 0f);
+        Emit(petals, island == "Kyo" ? 22f : 0f);
+        // nothing flies in the rain
+        var dry = 1f - Weather.Rain;
+        Emit(fireflies, island != null && !snowy ? 45f * night * dry : 0f);
+        // butterflies over the meadows and gulls over the shore by day
+        var day = 1f - night;
+        Emit(butterflies, island != null && !snowy ? 3.5f * day * dry * dry : 0f);
+        Emit(gulls, island != null ? 0.35f * day * dry : 0f);
     }
 
     /// <summary>How much it is night, 0 by day to 1 in the dark, from the cycle's light.</summary>

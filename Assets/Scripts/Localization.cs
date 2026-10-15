@@ -976,7 +976,11 @@ public static class Localization
     public static string UI_SETTINGS_HAZE = "Atmospheric haze";
     public static string UI_SETTINGS_HAZE_HINT = "Far islands fade softly into the air, for a sense of distance.";
     public static string UI_SETTINGS_WEATHER = "Changing weather";
-    public static string UI_SETTINGS_WEATHER_HINT = "The sky clears and clouds over as the days go by: clear spells, fair weather, cloudy and overcast skies. With the volumetric clouds.";
+    public static string UI_SETTINGS_WEATHER_HINT = "The sky clears and clouds over as the days go by: clear spells, fair weather, cloudy and overcast skies, rain, heavy rain and thunderstorms. With the volumetric clouds.";
+    public static string UI_SETTINGS_LIGHTNING = "Lightning flashes";
+    public static string UI_SETTINGS_LIGHTNING_HINT = "The lightning of a thunderstorm: flashes in the clouds and bolts that light up the land. Turn it off if flashing light bothers you or your viewers.";
+    public static string UI_SETTINGS_WEATHER_SOUNDS = "Weather sounds";
+    public static string UI_SETTINGS_WEATHER_SOUNDS_HINT = "The rain, and the thunder rolling in as a storm comes.";
     public static string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
     public static string UI_SETTINGS_REALTIME = "Follow the clock";
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";

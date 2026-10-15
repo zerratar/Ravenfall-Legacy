@@ -36,6 +36,13 @@ Shader "Hidden/Ravenfall/SkyClouds"
             float4 _CloudHazeColor;  // the horizon's haze (linear)
             // x sun light, y ambient light, z shadow depth (0 white, 1 dark bellies)
             float4 _CloudLook;
+            // lightning in the cloud: xyz where (m), w how bright; 0 for none
+            float4 _CloudFlash;
+            // a weather front coming in from upwind: xy a point on its line (m), zw the way upwind (unit); what is
+            // upwind of it is the coming weather
+            float4 _CloudFront;
+            // x the cover beyond the front, y how wide the front is (m), z how much darker the cloud is beyond it
+            float4 _CloudFrontLook;
 
             // ---- noise ----
 
@@ -73,6 +80,12 @@ Shader "Hidden/Ravenfall/SkyClouds"
 
             // ---- the slab ----
 
+            // 0 on this side of the front, 1 beyond it, upwind, where the coming weather already is
+            float FrontSide(float3 p)
+            {
+                return saturate(dot(p.xz - _CloudFront.xy, _CloudFront.zw) / _CloudFrontLook.y + 0.5);
+            }
+
             // how much cloud there is at p, 0..1; hf out the height in the slab, 0..1
             float Shape(float3 p, out float hf, bool fine)
             {
@@ -83,7 +96,8 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 q.y *= 0.5;
                 // banks and gaps: a slow field over the slab, the coverage swinging round the setting
                 float banks = Noise3(q * 0.23 + 5.7);
-                float cov = saturate(_CloudSlab.z * (0.7 + 0.6 * banks));
+                float cover = lerp(_CloudSlab.z, _CloudFrontLook.x, FrontSide(p));
+                float cov = saturate(cover * (0.7 + 0.6 * banks));
                 // the body (about 0.5 on average), cut at a threshold the coverage sets, thinned toward the ceiling so the tops are domes, and
                 // the lowest few percent fading in so the underside is not a flat cut
                 float body = Fbm3(q * 1.7);
@@ -205,6 +219,13 @@ Shader "Hidden/Ravenfall/SkyClouds"
                         // half the sun's colour: a cloud is whiter than the light that falls on it looks on the ground
                         float3 sunColour = lerp(_CloudSunColor.rgb, dot(_CloudSunColor.rgb, float3(0.3, 0.59, 0.11)).xxx, 0.5);
                         float3 c = sunColour * light * phase * _CloudLook.x + ambient;
+                        c *= lerp(1.0, _CloudFrontLook.z, FrontSide(p));
+                        // lightning lights the cloud round it from inside, falling off over a couple of puffs
+                        [branch] if (_CloudFlash.w > 0.0)
+                        {
+                            float3 fd = p - _CloudFlash.xyz;
+                            c += float3(0.78, 0.84, 1.0) * (_CloudFlash.w / (1.0 + dot(fd, fd) / (_CloudSlab.w * _CloudSlab.w * 2.5)));
+                        }
                         // the far cloud is in the same air as the horizon
                         float haze = 1.0 - exp(-max(t - hazeStart, 0.0) * hazeK);
                         c = lerp(c, _CloudHazeColor.rgb, haze);
@@ -236,6 +257,8 @@ Shader "Hidden/Ravenfall/SkyClouds"
             TEXTURE2D_X(_SkyCloudBuffer); // half the screen's size
             float4 _SkyCloudTexel;        // xy one texel of the buffer in uv
             float _CloudNight;            // 0 by day, 1 in the dark: how much the stars show
+            float _CloudGroundFlash;      // a lightning flash on the land just now, 0 for none
+            float _RavenfallOvercast;     // how overcast the sky is, 0 to 1 (Weather)
 
             float StarHash(float3 p)
             {
@@ -287,8 +310,9 @@ Shader "Hidden/Ravenfall/SkyClouds"
                     }
                 }
                 acc /= wsum;
-                // the stars behind the clouds, where the sky shows
-                [branch] if (_CloudNight > 0.01)
+                // the stars behind the clouds, where the sky shows, and under a grey sky no blue in the gaps: the sky
+                // there is the grey of the cloud's haze
+                [branch] if (_CloudNight > 0.01 || _RavenfallOvercast > 0.01)
                 {
                     float raw = SampleSceneDepth(uv);
                 #if UNITY_REVERSED_Z
@@ -298,10 +322,13 @@ Shader "Hidden/Ravenfall/SkyClouds"
                 #endif
                     if (sky)
                     {
+                        scene.rgb = lerp(scene.rgb, _CloudHazeColor.rgb * 0.9, _RavenfallOvercast * 0.8);
                         float3 dir = normalize(ComputeWorldSpacePosition(uv, raw, UNITY_MATRIX_I_VP) - GetCameraPositionWS());
-                        scene.rgb += Stars(dir) * _CloudNight;
+                        scene.rgb += Stars(dir) * _CloudNight * (1.0 - _RavenfallOvercast * 0.8);
                     }
                 }
+                // lightning lights everything under the cloud for a moment, blue-white
+                scene.rgb = scene.rgb * (1.0 + _CloudGroundFlash * half3(0.85, 0.92, 1.0)) + _CloudGroundFlash * 0.015;
                 return half4(scene.rgb * acc.a + acc.rgb, scene.a);
             }
             ENDHLSL

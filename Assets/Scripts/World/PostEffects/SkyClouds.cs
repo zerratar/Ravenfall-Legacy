@@ -32,6 +32,10 @@ public static class SkyClouds
     private static readonly int BufferId = Shader.PropertyToID("_SkyCloudBuffer");
     private static readonly int TexelId = Shader.PropertyToID("_SkyCloudTexel");
     private static readonly int NightId = Shader.PropertyToID("_CloudNight");
+    private static readonly int FlashId = Shader.PropertyToID("_CloudFlash");
+    private static readonly int GroundFlashId = Shader.PropertyToID("_CloudGroundFlash");
+    private static readonly int FrontId = Shader.PropertyToID("_CloudFront");
+    private static readonly int FrontLookId = Shader.PropertyToID("_CloudFrontLook");
     private static DayNightCycle dayNight;
 
     /// <summary>The cloud layer's floor and ceiling, metres; where the scene's own cloud meshes float.</summary>
@@ -43,8 +47,34 @@ public static class SkyClouds
     /// <summary>How much of the sky is cloud, 0 to 1.</summary>
     public static float Coverage = 0.5f;
 
+    /// <summary>
+    /// A change of weather coming in from upwind (<see cref="Weather"/>): a point on the front's line, over the ground
+    /// (x, z); beyond it the cover is <see cref="FrontCoverage"/> and the cloud <see cref="FrontDarker"/> times as
+    /// bright. With no change coming the two sides are the same.
+    /// </summary>
+    public static Vector2 FrontAt;
+
+    /// <summary>How much of the sky is cloud beyond the front, 0 to 1.</summary>
+    public static float FrontCoverage = 0.5f;
+
+    /// <summary>How bright the cloud is beyond the front against this side, 1 for the same.</summary>
+    public static float FrontDarker = 1f;
+
+    /// <summary>How wide a front is, metres: the cover changes over this much sky.</summary>
+    public const float FrontWidth = 2000f;
+
     /// <summary>The wind, metres a second over the ground; the cloud shadows drift with it too.</summary>
     public static readonly Vector2 Wind = new Vector2(1.6f, 0.7f);
+
+    /// <summary>
+    /// Drawn over the clouds, after them: what must not sink behind them, as a lightning bolt would (it writes no depth
+    /// for the march to stop at). Each mesh draws in world space with its material, which tests itself against the
+    /// scene's depth (as the ambience particles' soft fade does).
+    /// </summary>
+    public static readonly List<(Mesh mesh, Material material)> Overlay = new List<(Mesh, Material)>();
+
+    /// <summary>Lightning in the cloud just now: xyz where (m), w how bright; w 0 for none (set by <see cref="WeatherEffects"/>).</summary>
+    public static Vector4 Flash;
 
     private static readonly int ShadowLightToWorldId = Shader.PropertyToID("_CloudShadowLightToWorld");
     private static readonly int ShadowWindowId = Shader.PropertyToID("_CloudShadowWindow");
@@ -147,6 +177,7 @@ public static class SkyClouds
             RenderPipelineManager.beginCameraRendering -= BeforeCamera;
             ShowMeshClouds(true);
             meshClouds.Clear();
+            Overlay.Clear();
             meshCloudsFound = false;
         };
     }
@@ -202,7 +233,14 @@ public static class SkyClouds
     {
         m.SetVector(SlabId, new Vector4(Floor, Ceiling, Coverage, PuffSize));
         m.SetFloat(NightId, Night());
-        m.SetVector(ParamsId, new Vector4(0.85f, 24f, 1f, 0.6f));
+        // a storm cloud is thicker and darker all through (Weather.Dark)
+        var dark = Weather.Dark;
+        m.SetVector(ParamsId, new Vector4(0.85f * (1f + 0.5f * dark), 24f, 1f, 0.6f));
+        m.SetVector(FlashId, Flash);
+        m.SetFloat(GroundFlashId, Weather.Flash);
+        var upwind = -Wind.normalized;
+        m.SetVector(FrontId, new Vector4(FrontAt.x, FrontAt.y, upwind.x, upwind.y));
+        m.SetVector(FrontLookId, new Vector4(FrontCoverage, FrontWidth, FrontDarker, 0f));
         var t = Time.time;
         // a little haze, so the far cloud melts into the horizon
         m.SetVector(WindId, new Vector4(Wind.x * t, Wind.y * t, 0.00022f, 600f));
@@ -214,7 +252,7 @@ public static class SkyClouds
             var colour = sun.color.linear;
             if (sun.useColorTemperature) colour *= Mathf.CorrelatedColorTemperatureToRGB(sun.colorTemperature).linear;
             m.SetVector(SunDirId, -sun.transform.forward);
-            m.SetVector(SunColorId, colour * Mathf.Clamp(sun.intensity, 0f, 6f) * 0.75f);
+            m.SetVector(SunColorId, colour * Mathf.Clamp(sun.intensity, 0f, 6f) * 0.75f * (1f - 0.6f * dark));
         }
         else
         {
@@ -227,14 +265,19 @@ public static class SkyClouds
         var tri = RenderSettings.ambientMode == AmbientMode.Trilight;
         var sky = tri ? RenderSettings.ambientSkyColor.linear : RenderSettings.ambientLight.linear;
         var equator = tri ? RenderSettings.ambientEquatorColor.linear : RenderSettings.ambientLight.linear;
-        m.SetVector(SkyColorId, Color.Lerp(sky, equator, 0.3f) * 0.85f);
-        m.SetVector(ShadeColorId, Color.Lerp(sky, equator, 0.5f) * 0.4f);
-        m.SetVector(HazeColorId, Color.Lerp(sky, equator, 0.7f) * 0.95f);
+        m.SetVector(SkyColorId, Color.Lerp(sky, equator, 0.3f) * (0.85f * (1f - 0.55f * dark)));
+        m.SetVector(ShadeColorId, Color.Lerp(sky, equator, 0.5f) * (0.4f * (1f - 0.7f * dark)));
+        m.SetVector(HazeColorId, Color.Lerp(sky, equator, 0.7f) * (0.95f * (1f - 0.3f * dark)));
     }
 
     private sealed class Pass : ScriptableRenderPass
     {
         public Material material;
+
+        private sealed class OverlayData
+        {
+            public readonly List<(Mesh mesh, Material material)> items = new List<(Mesh, Material)>();
+        }
 
         private sealed class CompositeData
         {
@@ -288,6 +331,20 @@ public static class SkyClouds
                     d.material.SetTexture(BufferId, clouds);
                     d.material.SetVector(TexelId, d.texel);
                     Blitter.BlitTexture(context.cmd, d.source, new Vector4(1f, 1f, 0f, 0f), d.material, 1);
+                });
+            }
+            if (Overlay.Count > 0)
+            {
+                using var builder = renderGraph.AddRasterRenderPass<OverlayData>("Sky Clouds Overlay", out var data);
+                data.items.Clear();
+                data.items.AddRange(Overlay);
+                if (resources.cameraDepthTexture.IsValid()) builder.UseTexture(resources.cameraDepthTexture);
+                builder.SetRenderAttachment(target, 0);
+                builder.AllowPassCulling(false);
+                builder.SetRenderFunc((OverlayData d, RasterGraphContext context) =>
+                {
+                    foreach (var (mesh, overlayMaterial) in d.items)
+                        if (mesh && overlayMaterial) context.cmd.DrawMesh(mesh, Matrix4x4.identity, overlayMaterial, 0, 0);
                 });
             }
             resources.cameraColor = target;
