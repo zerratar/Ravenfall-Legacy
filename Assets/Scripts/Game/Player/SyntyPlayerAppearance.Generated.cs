@@ -181,7 +181,10 @@ public partial class SyntyPlayerAppearance
             //Destroy the object, and clear memory
             if (objMerged != null)
             {
+                // the meshes the combiner made are not freed with their object
+                var merged = CombinedMeshesOf(objMerged);
                 DestroyImmediate(objMerged.gameObject, true);
+                foreach (var mesh in merged) if (mesh) Destroy(mesh);
             }
 
             meshCombiner?.Clear();

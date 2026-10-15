@@ -1063,9 +1063,8 @@ public class Inventory : MonoBehaviour
         Unequip(ItemCategory.Amulet);
         Unequip(ItemCategory.Armor);
 
+        // rebuilding the appearance drops the old combined mesh, armour and all
         equipment.UpdateAppearance();
-
-        StartCoroutine(DestroyArmorMesh());
 
         UpdateEquipmentEffect();
     }
@@ -1086,21 +1085,7 @@ public class Inventory : MonoBehaviour
             catch { }
         }
         equipment.UpdateAppearance();
-        StartCoroutine(DestroyArmorMesh());
         UpdateEquipmentEffect();
-    }
-
-    private IEnumerator DestroyArmorMesh()
-    {
-        // force destroy the combined mesh,
-        // since it doesnt get uncombined for some reason.
-        for (var i = 0; i < 10; ++i)
-        {
-            if (equipment.DestroyArmorMesh())
-                yield break;
-
-            yield return new WaitForSeconds(0.1f);
-        }
     }
 
     private void Unequip(ItemCategory category)

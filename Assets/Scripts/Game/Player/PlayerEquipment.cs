@@ -367,41 +367,14 @@ public class PlayerEquipment : MonoBehaviour
     {
         appearance.UpdateAppearance();
 
+        // items destroyed elsewhere without being unequipped would throw here
+        equippedObjects.RemoveAll(x => !x);
         foreach (var e in EquippedItems)
         {
             appearance.Equip(e);
         }
 
         appearance.Optimize();
-    }
-
-    public bool DestroyArmorMesh()
-    {
-        var cm = appearance.GetCombinedMesh();
-
-        if (cm)
-        {
-            for (var i = 0; i < cm.childCount; ++i)
-            {
-                var c = cm.GetChild(i);
-                if (c)
-                {
-                    var smr = c.GetComponent<SkinnedMeshRenderer>();
-                    if (smr)
-                    {
-                        if (!smr.material.name.ToLower().Contains("fantasyhero"))
-                        {
-                            // the mesh is the combiner's own and not freed with the object
-                            var mesh = smr.sharedMesh;
-                            DestroyImmediate(c.gameObject);
-                            if (mesh) Destroy(mesh);
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     public void Unequip(GameInventoryItem item, bool rebuildMeshIfNecessary = false)

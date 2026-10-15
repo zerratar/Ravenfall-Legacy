@@ -201,7 +201,8 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         {
             if (equippedItems.TryGetValue(item.Type, out var currentItem))
             {
-                if (currentItem != null && currentItem && currentItem.gameObject)
+                // the item already in the slot is put on again whenever the appearance is rebuilt, and must not go
+                if (currentItem != null && currentItem && currentItem != item && currentItem.gameObject)
                     Destroy(currentItem.gameObject);
             }
             else if (equippedObjects.TryGetValue(item.Type, out var currentObject))
@@ -344,10 +345,35 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     //        meshCombiner?.UndoCombineMeshes();
     //}
 
+    // One recombine at a time. Equipping a set asks for one per item, and recombines that overlapped raced the
+    // combiner: it merged twice, nested one combined mesh in another and left meshes behind. A recombine asked for
+    // while one runs is done once, right after it.
+    private bool optimizing;
+    private float optimizingSince;
+    private bool optimizeAgain;
+    private bool optimizeAgainCamera;
+    private Action optimizeAgainAfterUndo;
+
     public void Optimize(Action afterUndo = null, bool ensureObserverCamera = true)
     {
-        if (useMeshCombiner)
-            StartCoroutine(OptimizeAppearance(afterUndo, ensureObserverCamera));
+        if (!useMeshCombiner) return;
+        // a recombine stuck for long (its coroutine stopped some other way) does not hold the next one up
+        if (optimizing && Time.unscaledTime - optimizingSince < 10f)
+        {
+            optimizeAgain = true;
+            optimizeAgainCamera |= ensureObserverCamera;
+            if (afterUndo != null) optimizeAgainAfterUndo += afterUndo;
+            return;
+        }
+        optimizing = true;
+        optimizingSince = Time.unscaledTime;
+        StartCoroutine(OptimizeAppearance(afterUndo, ensureObserverCamera));
+    }
+
+    private void OnDisable()
+    {
+        // coroutines stop with the object
+        optimizing = false;
     }
 
     private IEnumerator OptimizeAppearance(Action afterUndo, bool ensureObserverCamera)
@@ -356,15 +382,22 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
         int meshLayer = -1;
         Transform cm = null;
-        List<Mesh> replaced = null;
+        var replaced = new List<Mesh>();
         if (useMeshCombiner)
         {
             cm = GetCombinedMesh();
+            // the combiner only undoes a merge it thinks it has; one left behind otherwise goes here
+            if (cm && !meshCombiner.isMeshesCombineds) cm = null;
+            // the combiner destroys its object but not the mesh it made, about 1.4 MB a player each time; and any
+            // stray combined objects from before go with it
+            foreach (var stray in CombinedObjects())
+            {
+                replaced.AddRange(CombinedMeshesOf(stray));
+                if (stray != cm) Destroy(stray.gameObject);
+            }
             if (cm)
             {
                 meshLayer = meshCombiner.gameObject.layer;
-                // the combiner destroys its object but not the mesh it made, about 1.4 MB a player each time
-                replaced = CombinedMeshesOf(cm);
                 meshCombiner.UndoCombineMeshes();
             }
         }
@@ -390,8 +423,10 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
 
             EnsureActivePartRenderers();
             meshCombiner.CombineMeshes();
-            while (!meshCombiner.isMeshesCombineds)
+            var waited = 0f;
+            while (!meshCombiner.isMeshesCombineds && waited < 5f)
             {
+                waited += Time.unscaledDeltaTime;
                 yield return null;
             }
             cm = GetCombinedMesh();
@@ -402,15 +437,35 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
             }
         }
 
-        if (replaced != null)
-        {
-            foreach (var mesh in replaced) if (mesh) Destroy(mesh);
-        }
+        foreach (var mesh in replaced) if (mesh) Destroy(mesh);
 
         if (ensureObserverCamera && gameManager && gameManager.Camera)
         {
             gameManager.Camera.EnsureObserverCamera();
         }
+
+        optimizing = false;
+        if (optimizeAgain)
+        {
+            var camera = optimizeAgainCamera;
+            var after = optimizeAgainAfterUndo;
+            optimizeAgain = false;
+            optimizeAgainCamera = false;
+            optimizeAgainAfterUndo = null;
+            Optimize(after, camera);
+        }
+    }
+
+    /// <summary>The combiner's objects under the player: normally one, more if an old merge was left behind.</summary>
+    private List<Transform> CombinedObjects()
+    {
+        var found = new List<Transform>();
+        for (var i = 0; i < transform.childCount; ++i)
+        {
+            var child = transform.GetChild(i);
+            if (child && child.name.IndexOf("combined mesh", StringComparison.OrdinalIgnoreCase) >= 0) found.Add(child);
+        }
+        return found;
     }
 
     /// <summary>
