@@ -195,21 +195,35 @@ Commands are what players ask for in chat: craft, equip, gift, send, vendor, buy
 
 ## Bot link (RavenBot and ROBot)
 
-The link between the bot and the game client gets the same treatment, in both bots.
+Built 2026-10-17 as fixes that keep the wire format (newline-delimited JSON on 4040/4041), so old games and old
+bots keep working with new ones and nothing has to be negotiated. Mapping the link showed the losses came from how
+lines and connections were handled, not from the framing itself.
 
-- **Framing**: length-prefixed frames instead of newline-delimited JSON, so a malformed line no longer kills the link.
-- **Heartbeats that act**: ping every 5 seconds; no reply for 15 seconds closes the link and reconnects. Today the
-  check exists but is commented out on both sides.
-- **One writer per connection**: a single send queue per link, so the ping and chat replies no longer write to the
-  same stream at once.
-- **Command ids**: every chat command gets an id and the game confirms receipt. Unconfirmed commands are resent after
-  a reconnect, and repeats are ignored by id. The id travels on to the server as the command's request id, so the
-  whole chain from chat to database is idempotent.
-- **Replies to the live connection**: replies are sent by session and request id, not through the connection object
-  that received the command, so they survive a reconnect.
-- **Throughput**: the game handles commands with a frame budget instead of one per frame.
-- **Smaller fixes found on the way**: lock ROBot's connection list, split long replies, and do not drop a queued
-  command when its connection is replaced.
+Game (`GameClient`, `RavenBotConnection`):
+
+- **Throughput**: bot commands are handled for up to 4 ms (at most 50) a frame instead of one a frame.
+- **Repeats ignored**: a command with the same identifier and chat message id (`CorrelationId`, the Twitch or
+  Discord message id) within ten minutes runs once, so a bot can resend after a reconnect.
+- **Replies to the live connection**: a reply written to a connection that was closed or replaced goes to the live
+  one, or waits up to two minutes for the next; unsent replies move over when a connection closes.
+- **A bad line is not fatal**: invalid JSON is logged and skipped; end of stream ends the read loop.
+- **No busy writer**: the writer waits for messages instead of spinning a core; a broken socket closes the link.
+- **Heartbeat**: 30 s without anything from the remote bot (which pings every 3 s) reconnects.
+- The session start time is sent in ISO 8601 so the bot parses it in any culture.
+
+Bots (RavenBot repo, branch `bot-link-reliability`):
+
+- ROBot's connection list is locked; each link has one writer (concurrent writes used to drop the link).
+- An empty line is skipped, not taken as a disconnect.
+- Commands queued while a streamer's link is down belong to the session and go to the next link (kept 2 minutes).
+- A reconnect for the same session takes over the session and channel without leaving and rejoining it; a dropped
+  link's session is held for 90 s.
+- Long replies are split (Twitch 500, Discord 2000 characters) instead of being dropped.
+- The heartbeat closes a link after 45 s of silence, once the game has answered a ping on it.
+- The per-IP connect limit went from 4 to 20 a minute.
+
+Still open: a command id that travels on to the server as the v2 request id (the chat message id would do), so the
+whole chain from chat to database is idempotent, not only the game step.
 
 ## Backward compatibility and rollout
 
