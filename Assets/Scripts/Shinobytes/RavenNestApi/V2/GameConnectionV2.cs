@@ -69,6 +69,14 @@ namespace RavenNest.SDK.V2
         public static Uri ToWebSocketUri(string webApiEndpoint)
         {
             var api = new Uri(webApiEndpoint);
+            if (api.IsLoopback)
+            {
+                // The local server's certificate is self-signed, and the editor's TLS (UnityTLS) refuses it whatever
+                // validation callback is set, so the local server is reached over plain ws on port 80, as
+                // LocalDevServerEndpoint.WebSocketEndpoint already does. Production has a real certificate.
+                return new UriBuilder("ws", api.Host, 80, ProtocolInfo.Path).Uri;
+            }
+
             var scheme = api.Scheme == "https" ? "wss" : "ws";
             return new UriBuilder(scheme, api.Host, api.Port, ProtocolInfo.Path).Uri;
         }
