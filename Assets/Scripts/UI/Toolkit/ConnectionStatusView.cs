@@ -115,7 +115,7 @@ namespace Shinobytes.UI
                 return Server.OutOfDate;
             }
 
-            var connected = nest.Tcp != null && nest.Tcp.IsReady && nest.DeltaClient != null && nest.DeltaClient.IsConnected;
+            var connected = nest.Connected;
             if (!nest.SessionStarted || connected)
             {
                 serverDownSince = -1f;
