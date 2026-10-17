@@ -49,6 +49,9 @@ namespace RavenNest.SDK.V2
         }
 
         public SaveOutbox Outbox { get; } = new SaveOutbox();
+
+        /// <summary>The server's inventory revisions per character, to spot changes the game never got.</summary>
+        public InventoryRevisions Inventory { get; } = new InventoryRevisions();
         public CommandChannel Commands { get; }
         public GameConnectionV2 Connection => connection;
 
@@ -107,6 +110,7 @@ namespace RavenNest.SDK.V2
             }
 
             Commands.Tick(now);
+            Inventory.Tick(now);
         }
 
         private void ReadIncoming(DateTime now)
@@ -140,6 +144,10 @@ namespace RavenNest.SDK.V2
                         }
                         break;
                     case CommandResult result:
+                        if (result.Inventory != null)
+                        {
+                            foreach (var update in result.Inventory) Inventory.Saw(update, now);
+                        }
                         Commands.OnResult(result);
                         break;
                     case ResyncRequired resync:
@@ -204,6 +212,7 @@ namespace RavenNest.SDK.V2
                     }
                 }
 
+                Inventory.Saw(e.Inventory, DateTime.UtcNow);
                 connection.LastAppliedEventSequence = e.Sequence;
                 EventsApplied++;
             }
