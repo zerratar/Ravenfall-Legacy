@@ -34,6 +34,8 @@ namespace RavenNest.SDK.V2
         private DateTime nextJournalWrite;
         private DateTime firstWelcome;
         private long lastAckedEvent;
+        private long batchSequence;
+        private long journalSequence;
         private Shinobytes.DeltaTcpLib.GameStateRequest lastGameState;
         private bool journalRead;
 
@@ -121,7 +123,14 @@ namespace RavenNest.SDK.V2
                         Outbox.OnAcks(acks);
                         if (journalWaiting.Count > 0)
                         {
-                            foreach (var ack in acks.Acks) journalWaiting.Remove(ack.CharacterId);
+                            if (acks.Stage == SaveStage.Accepted && journalSequence > 0 && acks.ThroughSequence >= journalSequence)
+                            {
+                                journalWaiting.Clear(); // the batch with the journal's saves was applied
+                            }
+                            else if (acks.Acks != null)
+                            {
+                                foreach (var ack in acks.Acks) journalWaiting.Remove(ack.CharacterId);
+                            }
                         }
                         break;
                     case EventBatch eventBatch:
@@ -258,9 +267,16 @@ namespace RavenNest.SDK.V2
                 {
                     Players = players2,
                     GameState = i == 0 ? gameState : null,
-                    EventAck = i == 0 ? connection.LastAppliedEventSequence : 0
+                    EventAck = i == 0 ? connection.LastAppliedEventSequence : 0,
+                    Sequence = ++batchSequence
                 });
                 if (count <= 0) break;
+            }
+
+            // the journal's saves went out with this tick's batches (they are players not in the game yet)
+            if (journalWaiting.Count > 0 && journalSequence == 0)
+            {
+                journalSequence = batchSequence;
             }
         }
 
@@ -354,7 +370,7 @@ namespace RavenNest.SDK.V2
                 var all = Outbox.Unconfirmed();
                 for (var i = 0; i < all.Count; i += 500)
                 {
-                    connection.Send(new SaveBatch { Players = all.GetRange(i, Math.Min(500, all.Count - i)).ToArray() });
+                    connection.Send(new SaveBatch { Players = all.GetRange(i, Math.Min(500, all.Count - i)).ToArray(), Sequence = ++batchSequence });
                 }
             }
             WriteJournal();

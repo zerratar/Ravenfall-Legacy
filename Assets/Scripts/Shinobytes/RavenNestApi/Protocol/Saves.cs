@@ -19,6 +19,12 @@ namespace RavenNest.Protocol
 
         /// <summary>The last event the client applied, sent along to save a message; 0 when nothing new.</summary>
         [Key(2)] public long EventAck { get; set; }
+
+        /// <summary>
+        /// Numbered by the client from 1 per connection run, so the server can acknowledge a whole batch at once
+        /// (<see cref="SaveAcks.ThroughSequence"/>) instead of every player in it.
+        /// </summary>
+        [Key(3)] public long Sequence { get; set; }
     }
 
     /// <summary>
@@ -190,12 +196,23 @@ namespace RavenNest.Protocol
         Invalid = 4
     }
 
-    /// <summary>Server to client: which player versions reached a stage.</summary>
+    /// <summary>
+    /// Server to client: which player versions reached a stage.
+    /// <para>
+    /// <see cref="SaveStage.Accepted"/> is one message per <see cref="SaveBatch"/>: every save in batches up to
+    /// <see cref="ThroughSequence"/> was applied, and <see cref="Acks"/> lists only the saves that were not
+    /// (refused, with their status). <see cref="SaveStage.Stored"/> lists every player version the database now
+    /// holds.
+    /// </para>
+    /// </summary>
     [MessagePackObject]
     public sealed class SaveAcks : IMessage
     {
         [Key(0)] public SaveStage Stage { get; set; }
         [Key(1)] public SaveAck[] Acks { get; set; }
+
+        /// <summary>With <see cref="SaveStage.Accepted"/>: the batch this answers.</summary>
+        [Key(2)] public long ThroughSequence { get; set; }
     }
 
     [MessagePackObject]
