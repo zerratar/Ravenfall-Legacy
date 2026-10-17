@@ -817,7 +817,7 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
 
         // make sure we retry later when we have server connection.
-        if (!gameManager.RavenNest.Tcp.IsReady)
+        if (!gameManager.RavenNest.ServerReady)
         {
             rewardQueue.Enqueue(() => RewardPlayersAsync(tier, playersToBeRewarded, retryCount));
             return;

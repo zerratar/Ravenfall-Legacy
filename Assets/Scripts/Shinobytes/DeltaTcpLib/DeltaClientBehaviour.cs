@@ -82,6 +82,14 @@ public class DeltaClientBehaviour : MonoBehaviour
                 client.OnConnectionError += OnConnectionError;
             }
 
+            // the v2 connection saves instead (NetworkV2)
+            if (gameManager.RavenNest.UseV2)
+            {
+                if (connected || connecting)
+                    StopConnecting();
+                return;
+            }
+
             if (client != null && gameManager.RavenNest.SessionStarted)
             {
                 if (!connected && !connecting && ShouldAttemptReconnect())
@@ -185,119 +193,7 @@ public class DeltaClientBehaviour : MonoBehaviour
     }
     private bool ShouldSendGameState(Shinobytes.DeltaTcpLib.GameStateRequest currentState)
     {
-        // Always send if this is the first update
-        if (lastSentGameState == null)
-            return true;
-
-        // Check if player count changed
-        if (currentState.PlayerCount != lastSentGameState.PlayerCount)
-            return true;
-
-        // Check raid state changes
-        if (HasRaidStateChanged(currentState.Raid, lastSentGameState.Raid))
-            return true;
-
-        // Check dungeon state changes
-        if (HasDungeonStateChanged(currentState.Dungeon, lastSentGameState.Dungeon))
-            return true;
-
-        // No significant changes detected
-        return false;
-    }
-
-    private bool HasRaidStateChanged(RaidState current, RaidState previous)
-    {
-        // If either is null, consider it a change
-        if (current == null || previous == null)
-            return true;
-
-        // Active state changed
-        if (current.IsActive != previous.IsActive)
-            return true;
-
-        // Only check details if the raid is active
-        if (current.IsActive)
-        {
-            // Check health changes (significant changes only)
-            if (Math.Abs(current.CurrentBossHealth - previous.CurrentBossHealth) > current.MaxBossHealth * 0.05)
-                return true;
-
-            // Check if max health changed
-            if (current.MaxBossHealth != previous.MaxBossHealth)
-                return true;
-
-            // Check boss combat level
-            if (current.BossCombatLevel != previous.BossCombatLevel)
-                return true;
-
-            // Check player count
-            if (current.PlayersJoined != previous.PlayersJoined)
-                return true;
-
-            // Check timing changes (only if significant)
-            if (Math.Abs((current.EndTime - previous.EndTime).TotalSeconds) > 5)
-                return true;
-        }
-
-        // Check next raid timing (only if significant change)
-        if (Math.Abs((current.NextRaid - previous.NextRaid).TotalSeconds) > 30)
-            return true;
-
-        return false;
-    }
-
-    private bool HasDungeonStateChanged(DungeonState current, DungeonState previous)
-    {
-        // If either is null, consider it a change
-        if (current == null || previous == null)
-            return true;
-
-        // Active state changed
-        if (current.IsActive != previous.IsActive)
-            return true;
-
-        // Only check details if the dungeon is active
-        if (current.IsActive)
-        {
-            // Name changed
-            if (current.Name != previous.Name)
-                return true;
-
-            // Started state changed
-            if (current.HasStarted != previous.HasStarted)
-                return true;
-
-            // Check health changes (significant changes only)
-            if (Math.Abs(current.CurrentBossHealth - previous.CurrentBossHealth) > current.MaxBossHealth * 0.05)
-                return true;
-
-            // Check if max health changed
-            if (current.MaxBossHealth != previous.MaxBossHealth)
-                return true;
-
-            // Check boss combat level
-            if (current.BossCombatLevel != previous.BossCombatLevel)
-                return true;
-
-            // Check player counts
-            if (current.PlayersAlive != previous.PlayersAlive ||
-                current.PlayersJoined != previous.PlayersJoined)
-                return true;
-
-            // Check enemies left
-            if (current.EnemiesLeft != previous.EnemiesLeft)
-                return true;
-
-            // Check timing changes
-            if (Math.Abs((current.StartTime - previous.StartTime).TotalSeconds) > 5)
-                return true;
-        }
-
-        // Check next dungeon timing (only if significant change)
-        if (Math.Abs((current.NextDungeon - previous.NextDungeon).TotalSeconds) > 30)
-            return true;
-
-        return false;
+        return PlayerSaveSource.HasGameStateChanged(currentState, lastSentGameState);
     }
 
     private async UniTask ProcessAllExperienceUpdatesAsync(IReadOnlyList<PlayerController> players)
@@ -446,105 +342,40 @@ public class DeltaClientBehaviour : MonoBehaviour
             try
             {
                 var p = players[i];
-                if (p == null || p.isDestroyed || p.IsBot)
+                if (!PlayerSaveSource.IsSaved(p))
                 {
                     if (isDeltaUpdate)
                         lastProcessedStatePlayer = i + 1;
                     continue;
                 }
 
-                var stats = p.Stats;
-                var ferryHandler = p.ferryHandler;
-                var raidHandler = p.raidHandler;
-                var dungeonHandler = p.dungeonHandler;
-                var onsenHandler = p.onsenHandler;
-
-                var skill = p.GetActiveSkillStat();
-                var isTraining = skill != null;
-
-                var currentIsland = p.Island;
-                if (!ferryHandler.OnFerry && !dungeonHandler.InDungeon && !p.streamRaidHandler.InWar && currentIsland == null)
-                {
-                    // we should be on an island.
-                    p.Island = gameManager.Islands.FindPlayerIsland(p);
-                }
-                var island = p.Island?.Island ?? Island.None;
-
-                if (ferryHandler.OnFerry)
-                {
-                    island = Island.Ferry;
-                    if (ferryHandler.Destination == null || ferryHandler.Destination.Island == Island.Ferry)
-                    {
-                        skill = p.Stats.Sailing;
-                    }
-                }
-
-                var expPerHour = 0L;
-                var skillIndex = -1;
-                var levelUpETA = DateTime.MaxValue;
-
-                if (isTraining)
-                {
-                    var v = skill.GetExperiencePerHour();
-                    levelUpETA = skill.GetEstimatedTimeToLevelUp();
-                    expPerHour = v > long.MaxValue ? long.MaxValue : (long)v;
-                    skillIndex = skill.Index;
-                }
-                else if (ferryHandler.OnFerry)
-                {
-                    // in case we are sailing, we still want to send the sailing exp per hour.
-                    var v = stats.Sailing.GetExperiencePerHour();
-                    levelUpETA = stats.Sailing.GetEstimatedTimeToLevelUp();
-                    expPerHour = v > long.MaxValue ? long.MaxValue : (long)v;
-                }
-
-                var rested = p.Rested;
-                var flags = p.GetFlags();
-                var pos = p.transform.position;
-
-                // in case we are in a dungeon, we should send the position and island of the player prior to entering the dungeon.
-                // this will allow the player to return to the same position if game is restarted during the dungeon.
-
-                if (dungeonHandler.InDungeon && dungeonHandler.PreviousIsland != null && !dungeonHandler.Ferry.OnFerry)
-                {
-                    pos = dungeonHandler.PreviousPosition;
-                    island = dungeonHandler.PreviousIsland.Island;
-                }
-
-                // same with raid, in case we were not on the ferry.
-                if (raidHandler.InRaid && raidHandler.PreviousIsland != null && !raidHandler.ferryState.OnFerry)
-                {
-                    pos = raidHandler.PreviousPosition;
-                    island = raidHandler.PreviousIsland.Island;
-                }
-
-                // Create current state with all fields
+                var snapshot = PlayerSaveSource.ReadState(gameManager, p);
                 var currentState = new CharacterStateDelta
                 {
-                    CharacterId = p.Id,
-                    Health = (short)stats.Health.CurrentValue,
-                    Island = island,
-                    Destination = ferryHandler.OnFerry ? (ferryHandler.Destination?.Island ?? Island.Ferry) : Island.None,
-                    State = flags,
-                    TrainingSkillIndex = skillIndex,
-                    TaskArgument = p.taskArgument,
-                    ExpPerHour = expPerHour,
-                    EstimatedTimeForLevelUp = levelUpETA,
-                    X = (short)pos.x,
-                    Y = (short)pos.y,
-                    Z = (short)pos.z,
-                    AutoJoinRaidCounter = raidHandler.AutoJoinCounter,
-                    AutoJoinDungeonCounter = dungeonHandler.AutoJoinCounter,
-                    AutoJoinRaidCount = raidHandler.AutoJoinCount,
-                    AutoJoinDungeonCount = dungeonHandler.AutoJoinCount,
-                    IsAutoResting = onsenHandler.IsAutoResting,
-                    AutoTrainTargetLevel = p.AutoTrainTargetLevel,
-                    AutoRestTarget = rested.AutoRestTarget,
-                    AutoRestStart = rested.AutoRestStart,
-                    DungeonCombatStyle = AsInt(p.DungeonSkill),
-                    RaidCombatStyle = AsInt(p.RaidSkill),
-                    PlatformUserId = p.PlatformId,
-                    PlatformUserName = p.User?.Username ?? p.Name,
+                    CharacterId = snapshot.CharacterId,
+                    Health = snapshot.Health,
+                    Island = snapshot.Island,
+                    Destination = snapshot.Destination,
+                    State = snapshot.State,
+                    TrainingSkillIndex = snapshot.TrainingSkillIndex,
+                    TaskArgument = snapshot.TaskArgument,
+                    ExpPerHour = snapshot.ExpPerHour,
+                    EstimatedTimeForLevelUp = snapshot.EstimatedTimeForLevelUp,
+                    X = (short)snapshot.Position.x,
+                    Y = (short)snapshot.Position.y,
+                    Z = (short)snapshot.Position.z,
+                    AutoJoinRaidCounter = snapshot.AutoJoinRaidCounter,
+                    AutoJoinDungeonCounter = snapshot.AutoJoinDungeonCounter,
+                    AutoJoinRaidCount = snapshot.AutoJoinRaidCount,
+                    AutoJoinDungeonCount = snapshot.AutoJoinDungeonCount,
+                    IsAutoResting = snapshot.IsAutoResting,
+                    AutoTrainTargetLevel = snapshot.AutoTrainTargetLevel,
+                    AutoRestTarget = snapshot.AutoRestTarget,
+                    AutoRestStart = snapshot.AutoRestStart,
+                    DungeonCombatStyle = snapshot.DungeonCombatStyle,
+                    RaidCombatStyle = snapshot.RaidCombatStyle,
+                    PlatformUserId = snapshot.PlatformUserId,
+                    PlatformUserName = snapshot.PlatformUserName,
                 };
 
                 // Check for changes compared to last state
@@ -679,97 +510,9 @@ public class DeltaClientBehaviour : MonoBehaviour
     }
 
 
-    private int? AsInt(Skill? skill)
-    {
-        if (skill == null) return null;
-        return (int)skill.Value;
-    }
-
     private Shinobytes.DeltaTcpLib.GameStateRequest BuildGameStateRequest()
     {
-        var now = DateTime.UtcNow;
-        var players = gameManager.Players.GetAllRealPlayers();
-        var gameStateRequest = new Shinobytes.DeltaTcpLib.GameStateRequest();
-        //gameStateRequest.SessionToken = this.sessionToken;
-        gameStateRequest.PlayerCount = players.Count;
-
-        var r = gameStateRequest.Raid = new RaidState();
-        if (gameManager.Raid.SecondsUntilNextRaid >= 0)
-        {
-            r.NextRaid = now.AddSeconds(gameManager.Raid.SecondsUntilNextRaid);
-        }
-        else
-        {
-            r.NextRaid = now;
-        }
-
-        if (gameManager.Raid.Started)
-        {
-            r.IsActive = true;
-
-            if (gameManager.Raid.SecondsLeft >= 0)
-            {
-                r.EndTime = now.AddSeconds(gameManager.Raid.SecondsLeft);
-            }
-            else
-            {
-                r.EndTime = now;
-            }
-
-            var boss = gameManager.Raid.Boss;
-            if (boss && !boss.Enemy.Stats.IsDead)
-            {
-                var health = boss.Enemy.Stats.Health;
-                r.CurrentBossHealth = health.CurrentValue;
-                r.MaxBossHealth = health.Level;
-                r.BossCombatLevel = boss.Enemy.Stats.CombatLevel;
-                r.PlayersJoined = gameManager.Raid.Raiders.Count;
-            }
-        }
-
-        var manager = gameManager.Dungeons;
-        var d = gameStateRequest.Dungeon = new DungeonState();
-
-        if (manager.SecondsUntilStart >= 0)
-        {
-            d.NextDungeon = now.AddSeconds(manager.SecondsUntilStart);
-        }
-        else
-        {
-            d.NextDungeon = now;
-        }
-
-        if (manager.Active)
-        {
-            var dungeon = manager.Dungeon;
-            if (dungeon != null)
-            {
-                d.IsActive = true;
-                d.Name = dungeon.Name;
-                d.HasStarted = manager.Started;
-                d.StartTime = now.AddSeconds(manager.SecondsUntilStart);
-
-                d.PlayersAlive = manager.GetAlivePlayerCount();
-                d.PlayersJoined = d.PlayersAlive + manager.GetDeadPlayerCount();
-                d.EnemiesLeft = manager.GetAliveEnemies().Count;
-                var boss = manager.Boss;
-                if (boss)
-                {
-                    var health = boss.Enemy.Stats.Health;
-                    d.CurrentBossHealth = health.CurrentValue;
-                    d.MaxBossHealth = health.Level;
-                    d.BossCombatLevel = boss.Enemy.Stats.CombatLevel;
-                }
-            }
-            else
-            {
-#if UNITY_EDITOR
-                Shinobytes.Debug.LogError("(Only logged in Editor) Potential bug: Dungeon is active but dungeon is null.");
-#endif
-            }
-        }
-
-        return gameStateRequest;
+        return PlayerSaveSource.ReadGameState(gameManager);
     }
 
     private async UniTask StartConnectingAsync()

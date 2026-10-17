@@ -22,6 +22,15 @@ namespace RavenNest.SDK.Endpoints
             return request.Create().Build().SendAsync<GameInfo>(ApiRequestTarget.Game, ApiRequestType.Get);
         }
 
+        /// <summary>The signed token for the v2 connection; fails on a server without v2.</summary>
+        public Task<string> GetConnectionTokenAsync()
+        {
+            return request.Create()
+                .Method("connection-token")
+                .Build()
+                .SendAsync<string>(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
+
         public Task<SessionToken> BeginSessionAsync(
             string clientVersion,
             string accessKey,

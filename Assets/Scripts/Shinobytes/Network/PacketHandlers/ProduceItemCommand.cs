@@ -24,7 +24,7 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
 
     public override void Handle(string query, GameMessage gm, GameClient client)
     {
-        if (!Game.RavenNest.Tcp.IsReady)
+        if (!Game.RavenNest.ServerReady)
         {
             client.SendReply(gm, Localization.MSG_PRODUCE_NOT_CONNECTED);
             return;

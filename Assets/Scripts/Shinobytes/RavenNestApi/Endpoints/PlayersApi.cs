@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using RavenNest.Models;
+using RavenNest.Protocol;
 
 namespace RavenNest.SDK.Endpoints
 {
@@ -23,6 +24,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> PlayerRemoveFailedAsync(Guid characterId, string reason)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.PlayerRemoveFailed, CommandArgs.Pack(characterId, reason));
+            }
+
             var req = request.Create()
                 .AddParameter(characterId)
                 .Method("remove-failed")
@@ -36,6 +42,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task PlayerRemoveAsync(Guid characterId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.PlayerRemove, CommandArgs.Pack(characterId));
+            }
+
             return request.Create()
                .AddParameter(characterId)
                 .Build()
@@ -46,6 +57,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<RavenNest.Models.PlayerJoinResult> PlayerJoinAsync(PlayerJoinData playerData)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<PlayerJoinResult>(Commands.PlayerJoin, CommandArgs.Pack(playerData));
+            }
+
             return request.Create()
                 .Build()
                 .SendAsync<PlayerJoinResult, PlayerJoinData>(
@@ -56,6 +72,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<RavenNest.Models.PlayerRestoreResult> RestoreAsync(PlayerRestoreData playerData)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<PlayerRestoreResult>(Commands.PlayerRestore, CommandArgs.Pack(playerData));
+            }
+
             return request.Create()
                 .Method("restore")
                 .Build()
@@ -67,6 +88,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<AddItemInstanceResult> AddItemAsync(Guid characterId, GameInventoryItem item)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<AddItemInstanceResult>(Commands.AddItemInstance, CommandArgs.Pack(characterId, item.InventoryItem));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("item")
@@ -79,6 +105,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<AddItemResult> AddItemAsync(Guid characterId, Guid item)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<AddItemResult>(Commands.AddItem, CommandArgs.Pack(characterId, item));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("item")
@@ -91,6 +122,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<ItemProductionResult> ProduceItemAsync(Guid characterId, Guid recipeId, long amount)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<ItemProductionResult>(Commands.Produce, CommandArgs.Pack(characterId, recipeId, amount));
+            }
+
             return request.Create()
                 .Identifier(characterId.ToString())
                 .Method("produce")
@@ -104,6 +140,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<CraftItemResult> CraftItemsAsync(Guid characterId, Guid item, int amount = 1)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<CraftItemResult>(Commands.Craft, CommandArgs.Pack(characterId, item, amount));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("craft")
@@ -117,6 +158,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<RedeemItemResult> RedeemItemAsync(Guid characterId, Guid itemId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<RedeemItemResult>(Commands.Redeem, CommandArgs.Pack(characterId, itemId));
+            }
+
             return request.Create()
                 .Identifier(characterId.ToString())
                 .Method("redeem-item")
@@ -129,6 +175,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> AddTokensAsync(Guid characterId, int amount)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.AddTokens, CommandArgs.Pack(characterId, amount));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("add-tokens")
@@ -141,6 +192,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<ItemEnchantmentResult> EnchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<ItemEnchantmentResult>(Commands.Enchant, CommandArgs.Pack(characterId, inventoryItem));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("enchant-instance")
@@ -158,11 +214,21 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<int> GetAutoJoinRaidCostAsync()
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<int>(Commands.AutoJoinRaidCost, CommandArgs.Pack());
+            }
+
             return request.Create().Method("raid-auto-cost").Build().SendAsync<int>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
 
         public Task<ItemUseResult> UseItemAsync(Guid characterId, Guid inventoryItemId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<ItemUseResult>(Commands.UseItem, CommandArgs.Pack(characterId, inventoryItemId, (string)null));
+            }
+
             return request.Create()
                 .Identifier(characterId.ToString())
                 .Method("use")
@@ -176,6 +242,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<ItemUseResult> UseItemAsync(Guid characterId, Guid inventoryItemId, string arg)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<ItemUseResult>(Commands.UseItem, CommandArgs.Pack(characterId, inventoryItemId, arg));
+            }
+
             return request.Create()
                 .Identifier(characterId.ToString())
                 .Method("use")
@@ -189,6 +260,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> AutoJoinDungeon(Guid characterId)
         {
+            if (client.UseV2)
+            {
+                return FirstOf(client.V2.Commands.CallAsync<bool[]>(Commands.AutoJoinDungeon, CommandArgs.Pack(new[] { characterId })));
+            }
+
             return request.Create()
                 .Identifier("" + characterId)
                 .Method("dungeon-auto")
@@ -200,6 +276,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> AutoJoinRaid(Guid characterId)
         {
+            if (client.UseV2)
+            {
+                return FirstOf(client.V2.Commands.CallAsync<bool[]>(Commands.AutoJoinRaid, CommandArgs.Pack(new[] { characterId })));
+            }
+
             return request.Create()
                 .Identifier("" + characterId)
                 .Method("raid-auto")
@@ -211,6 +292,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool[]> AutoJoinRaid(Guid[] characterId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool[]>(Commands.AutoJoinRaid, CommandArgs.Pack(characterId));
+            }
+
             return request.Create()
                 .Method("raid-auto")
                 .AddParameter("values", characterId)
@@ -222,6 +308,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool[]> AutoJoinDungeon(Guid[] characterId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool[]>(Commands.AutoJoinDungeon, CommandArgs.Pack(characterId));
+            }
+
             return request.Create()
                 .Method("dungeon-auto")
                 .AddParameter("values", characterId)
@@ -234,6 +325,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<ItemEnchantmentResult> DisenchantInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<ItemEnchantmentResult>(Commands.Disenchant, CommandArgs.Pack(characterId, inventoryItem));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("disenchant-instance")
@@ -246,6 +342,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<ClearEnchantmentCooldownResult> ClearEnchantmentCooldownAsync(Guid characterId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<ClearEnchantmentCooldownResult>(Commands.ClearEnchantmentCooldown, CommandArgs.Pack(characterId));
+            }
+
             return request.Create()
                 .Identifier("" + characterId)
                 .Method("clear-enchantment-cooldown")
@@ -258,6 +359,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<EnchantmentCooldownResult> GetEnchantmentCooldownAsync(Guid characterId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<EnchantmentCooldownResult>(Commands.EnchantmentCooldown, CommandArgs.Pack(characterId));
+            }
+
             return request.Create()
                 .Identifier("" + characterId)
                 .Method("enchantment-cooldown")
@@ -270,6 +376,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> UnequipInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.Unequip, CommandArgs.Pack(characterId, inventoryItem));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("unequip-instance")
@@ -282,6 +393,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> UnequipAllItemsAsync(Guid characterId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.UnequipAll, CommandArgs.Pack(characterId));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("unequipall")
@@ -293,6 +409,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> EquipInventoryItemAsync(Guid characterId, Guid inventoryItem)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.Equip, CommandArgs.Pack(characterId, inventoryItem));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("equip-instance")
@@ -306,6 +427,11 @@ namespace RavenNest.SDK.Endpoints
         [Obsolete("Use EquipInventoryItemAsync instead")]
         public Task<bool> EquipItemAsync(Guid characterId, Guid item)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.EquipItem, CommandArgs.Pack(characterId, item));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("equip")
@@ -318,6 +444,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> EquipBestItemsAsync(Guid characterId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.EquipBest, CommandArgs.Pack(characterId));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("equipall")
@@ -329,6 +460,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> ToggleHelmetAsync(Guid characterId)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.ToggleHelmet, CommandArgs.Pack(characterId));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("toggle-helmet")
@@ -349,6 +485,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<GiftItemResult> GiftItemAsync(Guid characterId, Guid receiverUserId, Guid inventoryItemId, long amount)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<GiftItemResult>(Commands.Gift, CommandArgs.Pack(characterId, receiverUserId, inventoryItemId, amount));
+            }
+
             return request.Create()
                 .Identifier("v3/" + characterId)
                 .Method("gift")
@@ -368,6 +509,11 @@ namespace RavenNest.SDK.Endpoints
         /// <returns>The amount that was transfered. Returns -1 if amount is <= 0 or characters does not exist. -2 if coins are 0</returns>
         public Task<long> SendCoinsAsync(Guid senderCharacterId, Guid receiverCharacterId, long amount)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<long>(Commands.SendCoins, CommandArgs.Pack(senderCharacterId, receiverCharacterId, amount));
+            }
+
             return request.Create()
                 .Identifier(senderCharacterId.ToString())
                 .Method("send-coins")
@@ -379,6 +525,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<GiftItemResult> SendItemAsync(Guid characterId, string alias, Guid inventoryItemId, long amount)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<GiftItemResult>(Commands.SendItem, CommandArgs.Pack(characterId, alias, inventoryItemId, amount));
+            }
+
             return request.Create()
                 .Identifier(characterId.ToString())
                 .Method("send")
@@ -391,6 +542,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<long> VendorInventoryItemAsync(Guid characterId, Guid inventoryItemId, long amount)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<long>(Commands.Vendor, CommandArgs.Pack(characterId, inventoryItemId, amount));
+            }
+
             return request.Create()
                 .Identifier("v2/" + characterId)
                 .Method("vendor-instance")
@@ -402,6 +558,11 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<int> GetHighscoreAsync(Guid id, string skill)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<int>(Commands.Highscore, CommandArgs.Pack(id, skill));
+            }
+
             return request.Create()
                .Method("highscore")
                .AddParameter(id.ToString())
@@ -412,11 +573,22 @@ namespace RavenNest.SDK.Endpoints
 
         public Task<bool> SendLoyaltyUpdateAsync(LoyaltyUpdate req)
         {
+            if (client.UseV2)
+            {
+                return client.V2.Commands.CallAsync<bool>(Commands.LoyaltyUpdate, CommandArgs.Pack(req));
+            }
+
             return request.Create()
                .Method("loyalty")
                .Build()
                .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post, req);
         }
 
+
+        private static async Task<bool> FirstOf(Task<bool[]> all)
+        {
+            var result = await all;
+            return result != null && result.Length > 0 && result[0];
+        }
     }
 }

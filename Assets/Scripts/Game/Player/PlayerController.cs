@@ -2755,7 +2755,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return;
         }
 
-        if (!GameManager.RavenNest.Tcp.IsReady)
+        if (!GameManager.RavenNest.ServerReady)
         {
             return;
         }

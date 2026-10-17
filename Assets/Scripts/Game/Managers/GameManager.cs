@@ -369,6 +369,7 @@ public class GameManager : MonoBehaviour, IGameManager
     // Start is called before the first frame update   
     void Start()
     {
+        Application.wantsToQuit += OnWantsToQuit;
         GameTime.deltaTime = Time.deltaTime;
 #if DEBUG
         Application.SetStackTraceLogType(LogType.Assert | LogType.Error | LogType.Exception | LogType.Log | LogType.Warning, StackTraceLogType.Full);
@@ -832,8 +833,79 @@ public class GameManager : MonoBehaviour, IGameManager
         return default;
     }
 
+    /// <summary>The players' last saves are with the server (or we waited as long as we will); the game may close.</summary>
+    private bool savedBeforeExit;
+    private bool exitingAfterSave;
+
+    /// <summary>
+    /// Closing the window (Alt+F4 included) on the v2 connection: wait for the server to store every player first,
+    /// a few seconds at most, then close.
+    /// </summary>
+    private bool OnWantsToQuit()
+    {
+        if (savedBeforeExit || exitingAfterSave || RavenNest == null || !RavenNest.UseV2 || RavenNest.V2 == null)
+        {
+            return true;
+        }
+
+        StartCoroutine(SavePlayersBeforeExit(() => Application.Quit()));
+        return false;
+    }
+
+    /// <summary>
+    /// Sends every unsaved player and waits until the server says they are stored, at most about 3 seconds, with a
+    /// notice on screen. Whatever is still unconfirmed stays in the journal and goes to the server on the next start.
+    /// </summary>
+    private IEnumerator SavePlayersBeforeExit(Action then)
+    {
+        exitingAfterSave = true;
+        var v2 = RavenNest.V2;
+        var overlay = ExitSavingOverlay.Show("Saving players to the server before exiting...");
+        var started = Time.realtimeSinceStartup;
+        try
+        {
+            v2.FlushForExit();
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Could not send the last saves: " + exc);
+        }
+
+        while (v2.UnconfirmedPlayers > 0 && v2.Connection.IsReady && Time.realtimeSinceStartup - started < 3f)
+        {
+            v2.UpdateWhileExiting();
+            yield return null;
+        }
+
+        var left = v2.UnconfirmedPlayers;
+        if (left > 0)
+        {
+            Shinobytes.Debug.LogWarning(left + " players were not confirmed as saved before exiting; they are kept on disk and sent on the next start.");
+        }
+        v2.WriteJournal();
+
+        savedBeforeExit = true;
+        exitingAfterSave = false;
+        if (overlay) Destroy(overlay.gameObject);
+        then();
+    }
+
+    private void OnDestroy()
+    {
+        Application.wantsToQuit -= OnWantsToQuit;
+    }
+
     public void SaveStateAndShutdownGame(bool activateTempLogin = true, bool attemptRestart = false)
     {
+        if (!savedBeforeExit && RavenNest != null && RavenNest.UseV2 && RavenNest.V2 != null)
+        {
+            if (!exitingAfterSave)
+            {
+                StartCoroutine(SavePlayersBeforeExit(() => SaveStateAndShutdownGame(activateTempLogin, attemptRestart)));
+            }
+            return;
+        }
+
         if (activateTempLogin)
         {
             if (!loginHandler) return;
@@ -985,14 +1057,14 @@ public class GameManager : MonoBehaviour, IGameManager
 
             var waitTime = 0;
             // if we got disconnected or something
-            while ((!RavenNest.Authenticated || !RavenNest.SessionStarted || !RavenNest.Tcp.IsReady) && waitTime < 100)
+            while ((!RavenNest.Authenticated || !RavenNest.SessionStarted || !RavenNest.ServerReady) && waitTime < 100)
             {
                 yield return new WaitForSeconds(1);
                 waitTime++;
             }
 
             // still not connected? retry later.
-            if (!RavenNest.Authenticated || !RavenNest.SessionStarted || !RavenNest.Tcp.IsReady)
+            if (!RavenNest.Authenticated || !RavenNest.SessionStarted || !RavenNest.ServerReady)
             {
                 Shinobytes.Debug.LogWarning("No conneciton to server when trying to restore players. Retrying");
                 GameCache.SetState(state);
@@ -1177,7 +1249,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (RavenNest.Authenticated &&
             RavenNest.SessionStarted &&
-            RavenNest.Tcp.IsReady)
+            RavenNest.ServerReady)
         {
             if (Items.Loaded && GameCache.IsAwaitingGameRestore)
             {
@@ -2738,6 +2810,11 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (RavenNest != null)
         {
+            if (RavenNest.UseV2 && !exitingAfterSave)
+            {
+                RavenNest.V2?.Update();
+            }
+
             RavenNestUpdate();
         }
     }

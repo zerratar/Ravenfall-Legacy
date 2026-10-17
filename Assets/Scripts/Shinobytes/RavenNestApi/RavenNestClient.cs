@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RavenNest.Models;
 using RavenNest.SDK.Endpoints;
+using RavenNest.SDK.V2;
 using Shinobytes.DeltaTcpLib;
 
 namespace RavenNest.SDK
@@ -87,6 +88,31 @@ namespace RavenNest.SDK
 
         public TcpApi Tcp { get; }
         public DeltaClient DeltaClient { get; }
+
+        /// <summary>
+        /// Whether to try the v2 connection (docs/network-v2.md) when the server offers it. -network-v1 on the
+        /// command line keeps the old sockets.
+        /// </summary>
+        public static bool PreferV2 = !Environment.GetCommandLineArgs().Any(x => x.Equals("-network-v1", StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>True while this session saves, gets events and runs commands over the v2 connection.</summary>
+        public bool UseV2 { get; private set; }
+
+        /// <summary>The v2 connection's main thread side, while <see cref="UseV2"/>.</summary>
+        public NetworkV2 V2 { get; private set; }
+
+        private GameConnectionV2 v2Connection;
+        private string clientVersion;
+        private DateTime lastV2TokenRefresh;
+
+        /// <summary>
+        /// Whether the server link that carries events and saves is up: the v2 connection, or the old event
+        /// socket. What the game checks before starting raids, dungeons and the like.
+        /// </summary>
+        public bool ServerReady => UseV2 ? (V2?.IsReady ?? false) : Tcp.IsReady;
+
+        /// <summary>Whether every server link is up (for the "connection lost" notice): v2, or both old sockets.</summary>
+        public bool Connected => UseV2 ? (v2Connection?.IsReady ?? false) : (Tcp.IsReady && DeltaClient.IsConnected);
 
         public AuthApi Auth { get; }
         public GameApi Game { get; }
@@ -300,14 +326,26 @@ namespace RavenNest.SDK
                     return false;
                 }
 
+                // the old event socket connects as soon as there is a session token; v2 replaces it when offered
+                if (PreferV2)
+                {
+                    Tcp.Enabled = false;
+                }
+
                 tokenProvider.SetSessionToken(result.SessionToken);
                 currentSessionToken = result.SessionToken;
+                this.clientVersion = clientVersion;
                 TwitchUserName = currentSessionToken.TwitchUserName;
                 TwitchDisplayName = currentSessionToken.TwitchDisplayName;
                 TwitchUserId = currentSessionToken.TwitchUserId;
 
 
                 UserSettings = result.UserSettings;
+
+                if (PreferV2)
+                {
+                    await StartV2Async();
+                }
 
                 AwaitingSessionStart = false;
                 gameManager.OnSessionStart();
@@ -490,7 +528,88 @@ namespace RavenNest.SDK
                 Tcp.Dispose();
             }
             catch { }
+            try
+            {
+                V2?.WriteJournal();
+                v2Connection?.Dispose();
+            }
+            catch { }
             disposed = true;
+        }
+
+        /// <summary>
+        /// Switches this session to the v2 connection when the server offers it (it hands out a connection token);
+        /// otherwise the old sockets carry on.
+        /// </summary>
+        private async Task StartV2Async()
+        {
+            string token = null;
+            try
+            {
+                token = await Game.GetConnectionTokenAsync();
+            }
+            catch (Exception exc)
+            {
+                logger.WriteWarning("The server does not offer the v2 connection (" + exc.Message + "); using the old one.");
+            }
+
+            if (string.IsNullOrEmpty(token))
+            {
+                FallBackToV1();
+                return;
+            }
+
+            if (v2Connection == null)
+            {
+                v2Connection = new GameConnectionV2(Settings.WebApiEndpoint, clientVersion);
+                V2 = new NetworkV2(gameManager, this, v2Connection);
+            }
+
+            UseV2 = true;
+            Tcp.Enabled = false;
+            v2Connection.Start(token);
+            Shinobytes.Debug.Log("Using the v2 server connection: " + v2Connection.Uri);
+        }
+
+        /// <summary>The server refused the v2 connection for good. Main thread.</summary>
+        internal async void OnV2Rejected(RavenNest.Protocol.Rejected rejected)
+        {
+            switch (rejected.Reason)
+            {
+                case RavenNest.Protocol.RejectReason.InvalidToken:
+                    // the session was begun again, or the token is from before a server key change: get a new one
+                    if (DateTime.UtcNow - lastV2TokenRefresh > TimeSpan.FromSeconds(30) && SessionStarted)
+                    {
+                        lastV2TokenRefresh = DateTime.UtcNow;
+                        await StartV2Async();
+                    }
+                    break;
+
+                case RavenNest.Protocol.RejectReason.ClientTooOld:
+                    Interlocked.CompareExchange(ref badClientVersion, 1, 0);
+                    break;
+
+                case RavenNest.Protocol.RejectReason.Replaced:
+                    // another copy of the game took over this session; leave it to that one
+                    break;
+
+                default:
+                    FallBackToV1();
+                    break;
+            }
+        }
+
+        private void FallBackToV1()
+        {
+            if (UseV2)
+            {
+                Shinobytes.Debug.LogWarning("Going back to the old server connection.");
+            }
+
+            UseV2 = false;
+            V2?.Commands.FailAll();
+            v2Connection?.Stop();
+            Tcp.Enabled = true;
         }
 
         internal void StartSession(string version, string accessKey)

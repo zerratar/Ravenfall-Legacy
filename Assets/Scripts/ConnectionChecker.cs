@@ -28,7 +28,7 @@ public class ConnectionChecker : MonoBehaviour
                 return;
             }
 
-            if ((gameManager.RavenNest.Tcp.IsReady && gameManager.RavenNest.DeltaClient.IsConnected) && Graphics.activeSelf)
+            if (gameManager.RavenNest.Connected && Graphics.activeSelf)
             {
                 SetVisibility(false);
                 return;
@@ -45,7 +45,7 @@ public class ConnectionChecker : MonoBehaviour
                 SetVisibility(true);
             }
 
-            if (!gameManager.RavenNest.SessionStarted || (gameManager.RavenNest.Tcp.IsReady && gameManager.RavenNest.DeltaClient.IsConnected))
+            if (!gameManager.RavenNest.SessionStarted || gameManager.RavenNest.Connected)
             {
                 return;
             }

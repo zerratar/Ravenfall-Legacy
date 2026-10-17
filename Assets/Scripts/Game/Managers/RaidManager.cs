@@ -403,7 +403,7 @@ public class RaidManager : MonoBehaviour, IEvent
         }
 
         // make sure we retry later when we have server connection.
-        if (!gameManager.RavenNest.Tcp.IsReady)
+        if (!gameManager.RavenNest.ServerReady)
         {
             rewardQueue.Enqueue(() => RewardPlayersAsync(playersToBeRewarded, retryCount));
             return;
