@@ -33,6 +33,17 @@ On the RavenNest branch `sync-fixes`, not deployed:
 4. One bad character or frame no longer drops a whole delta save batch and its connection.
 5. One inventory per character (the provider race), and crafting never takes ingredients for nothing.
 
+Load tested 2026-10-17 against a local server on the dev database (`RavenNest.LoadTest`, Release builds):
+
+| Run | Before (`f5afc9b4`) | `sync-fixes` |
+|---|---|---|
+| 1000 players, 5 min, event socket reconnect every minute | 391 events; none at all for half of each minute after a reconnect | 1448 events, steady through every reconnect |
+| 4 streams x 500, new HTTP connection per request, database check | no saves lost | no saves lost (also with 20 reconnects) |
+
+Pure load on a clean local network loses no saves on either; the losses need dropped connections and the old
+client's own send path, which only v2 fixes. Adding an item is the slowest command (p50 330 ms at 40 commands a
+second), worth a look.
+
 These cannot make the old client reliable (it still forgets what it sent), but they remove the worst server-side
 losses. The rest of this document is the real fix.
 
