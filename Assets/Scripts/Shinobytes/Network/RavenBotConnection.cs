@@ -396,7 +396,16 @@ public class RavenBotConnection : IDisposable
             // ignored.
         }
 
-        packetHandler.Handle(packet);
+        // server commands sent by this handler get request ids made from the chat message id
+        RavenNest.SDK.V2.ChatCommandContext.Begin(packet.Message.Identifier, packet.Message.CorrelationId);
+        try
+        {
+            packetHandler.Handle(packet);
+        }
+        finally
+        {
+            RavenNest.SDK.V2.ChatCommandContext.End();
+        }
     }
 
     internal void ConnectInternal(BotConnectionType type)

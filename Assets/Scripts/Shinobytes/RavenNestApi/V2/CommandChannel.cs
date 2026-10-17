@@ -42,7 +42,8 @@ namespace RavenNest.SDK.V2
         {
             var request = new CommandRequest
             {
-                RequestId = requestId == Guid.Empty ? Guid.NewGuid() : requestId,
+                RequestId = requestId != Guid.Empty ? requestId
+                    : ChatCommandContext.Current?.NextRequestId(command) ?? Guid.NewGuid(),
                 Command = command,
                 Args = args
             };
