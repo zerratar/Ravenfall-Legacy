@@ -1,6 +1,7 @@
 # Network v2: a reliable path between game, server and bot
 
-Status: proposal for review. Nothing here is built yet, except the server fixes listed under "Done so far".
+Status: agreed 2026-10-17 (see "Decisions"). Nothing here is built yet, except the server fixes listed under
+"Done so far".
 
 ## Why
 
@@ -81,8 +82,9 @@ Three kinds of traffic share the connection:
 ## Session and handshake
 
 1. The client signs in over REST as today and begins a session (`BeginSession`), which is unchanged for old clients.
-   For v2 the response also carries a **signed** session token (HMAC by the server), replacing today's unsigned
-   Base64 JSON, which anyone could forge.
+   For v2 the response also carries a **signed** session token: a small binary token (session id, user id, expiry)
+   with an HMAC-SHA256 signature by the server. It is shorter than today's unsigned Base64 JSON, which anyone could
+   forge, and the server checks it without a lookup. Old clients keep the old token; the signed one is v2 only.
 2. The client opens the WebSocket and sends `Hello { token, clientVersion, protocolVersion, lastEventSequence,
    resumeId }`.
 3. The server checks the version (the existing `IsExpectedVersion` and `GameUpdates` gate), attaches the connection
@@ -111,9 +113,14 @@ The client simulates the game and owns progress for now, as today. What changes 
   - `SaveStored { characterId, version }` once the database flush has written it.
   The client keeps a player's changes until `SaveStored` for that version or newer. If the server restarts before
   flushing, the client still has the data and sends it again.
-- **Leaving players and quitting**: a player who leaves is saved with a final version, and the client waits (briefly,
-  with a time limit) for `SaveStored` before forgetting them. Closing the game waits for outstanding saves for a few
-  seconds and shows that it is saving.
+- **Leaving players**: a player who leaves is saved with a final version, and the client waits (briefly, with a time
+  limit) for `SaveStored` before forgetting them.
+- **Quitting**: Menu > Exit and closing the window (including Alt+F4, caught with `Application.wantsToQuit`) send the
+  outstanding saves at once and show "Saving players to the server before exiting..." until every `SaveStored` has
+  arrived, for at most about 3 seconds, then quit. Most of the time this is well under a second.
+- **Outbox journal**: the client also writes unconfirmed saves to a small file on disk (appended as they are sent,
+  trimmed as they are stored). If the game is killed, crashes or the 3 seconds run out, the next start sends what is
+  in the file. Versions make this safe: anything the server already has is ignored.
 - **Full resync**: every 5 minutes, and after a `ResyncRequired`, the client sends full snapshots. The server keeps
   whichever is newer, so this is a safety net that costs little.
 
@@ -139,6 +146,11 @@ Commands are what players ask for in chat: craft, equip, gift, send, vendor, buy
   last one applied (`EventAck { sequence }`, sent with the next save batch or after 1 second).
 - **Kept until confirmed**: the session actor keeps events until they are confirmed, bounded (for example 20,000 or
   30 minutes). After a reconnect it replays from the client's last confirmed sequence.
+- **Survives a server restart**: each live session also appends its unconfirmed events to its own log file on disk
+  (one file per session in its own folder, not the database). Confirmed events are trimmed from it, so a file holds
+  only what the client has not applied yet. A session's file is deleted 30 minutes after the session ends, and a
+  sweep removes any file older than a day. After a restart, a reconnecting session's events are replayed from its
+  file. This avoids the event table that grew without end the last time events were stored in the database.
 - **Safe to apply twice**: each event has an id; the client remembers recent ids and skips repeats.
 - **Player not in the game yet**: an event for a player who is joining is held until they have joined, not dropped.
 - **Inventory revisions**: every inventory change carries the character's inventory revision. A gap (revision 41
@@ -228,12 +240,13 @@ The protocol leaves room for the server to take over decisions later, in small s
 Suggested order when the time comes: validate and log first, then let the server decide rewards (drops, loot,
 coins), then progress (exp). The game itself (movement, combat) stays on the client.
 
-## Open questions
+## Decisions (2026-10-17)
 
-1. Signed tokens: rotate the existing token format for everyone, or only for v2? v2-only is safer for old clients.
-2. Should events be stored in the database as well, so a server restart can replay them? Today they live in memory
-   only. Bounded storage in memory is simpler; a restart would then require a full resync from the client.
-3. How long may closing the game wait for outstanding saves? A few seconds with a visible "saving" notice is the
-   proposal.
-4. Is there a hosting limit on WebSockets (proxy, load balancer) on the production server to check before relying
-   on them?
+1. **Signed tokens**: v2 only, as a small binary token with an HMAC signature. Old clients keep the old token until
+   every active client has updated.
+2. **Events across a restart**: in memory, plus a per-session append-only log on disk outside the database, trimmed
+   by acknowledgements and deleted after the session (see "Events").
+3. **Closing the game**: waits at most about 3 seconds with a "Saving players to the server before exiting..."
+   notice; anything unconfirmed stays in the on-disk outbox and is sent on the next start (see "Saves").
+4. **Hosting**: production runs on a machine on the developer's own network with nothing in front that limits
+   WebSockets; the only limit is the connection's bandwidth.
