@@ -23,12 +23,20 @@ public class GameClient : IDisposable
 
 
     private readonly ConcurrentQueue<GameMessageResponse> toWrite = new ConcurrentQueue<GameMessageResponse>();
+    private readonly System.Threading.SemaphoreSlim writeSignal = new System.Threading.SemaphoreSlim(0);
+    private readonly object threadStart = new object();
 
     private bool disposed;
     private bool canReconnect;
 
     private DateTime lastPongSent;
     private float lastPongSentTime;
+
+    /// <summary>When the bot last sent anything, for noticing a connection that died without closing.</summary>
+    public DateTime LastReceivedUtc { get; private set; } = DateTime.UtcNow;
+
+    /// <summary>When this connection was opened.</summary>
+    public DateTime ConnectedUtc => created;
 
     public GameClient(RavenBotConnection server, TcpClient client, Action<string> onDataSent = null)
     {
@@ -112,12 +120,15 @@ public class GameClient : IDisposable
 
     private void BeginReceive()
     {
-        if (receiveActive)
+        lock (threadStart)
         {
-            return;
-        }
+            if (receiveActive)
+            {
+                return;
+            }
 
-        receiveActive = true;
+            receiveActive = true;
+        }
 
         new System.Threading.Thread(() =>
         {
@@ -136,6 +147,12 @@ public class GameClient : IDisposable
                     try
                     {
                         var msg = reader.ReadLine();
+                        if (msg == null)
+                        {
+                            break; // the bot closed the connection
+                        }
+
+                        LastReceivedUtc = DateTime.UtcNow;
                         HandlePacket(msg);
                     }
                     catch (Exception exc)
@@ -192,12 +209,15 @@ public class GameClient : IDisposable
 
     private void BeginWrite()
     {
-        if (writeActive)
+        lock (threadStart)
         {
-            return;
-        }
+            if (writeActive)
+            {
+                return;
+            }
 
-        writeActive = true;
+            writeActive = true;
+        }
 
         new System.Threading.Thread(() =>
         {
@@ -217,13 +237,22 @@ public class GameClient : IDisposable
                     {
                         if (toWrite.TryDequeue(out var cmd))
                         {
-                            //server.Log(cmd);
                             var json = JsonConvert.SerializeObject(cmd);
                             writer.WriteLine(json);
                             writer.Flush();
                             onDataSent?.Invoke(json);
                             continue;
                         }
+
+                        // wait for the next message instead of spinning a core
+                        writeSignal.Wait(1000);
+                    }
+                    catch (Exception exc) when (exc is IOException || exc is ObjectDisposedException)
+                    {
+                        // the socket is gone: hand what is left to the next connection and close this one
+                        server.LogError("GameClient.BeginWrite: the connection broke: " + exc.Message);
+                        if (!disposed) Disconnect();
+                        return;
                     }
                     catch (Exception exc)
                     {
@@ -301,7 +330,8 @@ public class GameClient : IDisposable
         if (sessionId == Guid.Empty || userId == Guid.Empty)
             return;
 
-        Write(GameMessageResponse.CreateArgs("session", sessionId.ToString(), userId.ToString(), created.ToString(), userSettings));
+        // ISO 8601, so the bot reads it the same whatever the culture on either side
+        Write(GameMessageResponse.CreateArgs("session", sessionId.ToString(), userId.ToString(), created.ToString("o"), userSettings));
     }
 
     public void SendPubSubToken(string userId, string username, string token)
@@ -318,7 +348,16 @@ public class GameClient : IDisposable
 
     public void Write(GameMessageResponse cmd)
     {
+        if (disposed)
+        {
+            // a reply to a command that came in on a connection that has since been replaced: it goes to the live
+            // connection (or waits for the next one) instead of being lost with this one
+            server.SendOnLiveConnection(cmd, this);
+            return;
+        }
+
         toWrite.Enqueue(cmd);
+        try { writeSignal.Release(); } catch (ObjectDisposedException) { }
         Update();
     }
 
@@ -336,7 +375,14 @@ public class GameClient : IDisposable
             client?.Dispose();
             reader?.Dispose();
             writer?.Dispose();
+            try { writeSignal.Release(); } catch { }
         }
         catch { }
+
+        // whatever was not written yet goes to the next connection
+        while (toWrite.TryDequeue(out var pending))
+        {
+            server.SendOnLiveConnection(pending, this);
+        }
     }
 }

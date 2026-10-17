@@ -24,6 +24,21 @@ public class RavenBotConnection : IDisposable
     private readonly List<GameClient> connectedClients = new List<GameClient>();
     private readonly ConcurrentQueue<BotMessage> availablePackets = new ConcurrentQueue<BotMessage>();
     private readonly ConcurrentDictionary<string, Type> packetHandlers = new ConcurrentDictionary<string, Type>();
+
+    /// <summary>Replies written to a connection that was replaced, waiting for the next one (with when they were made).</summary>
+    private readonly ConcurrentQueue<(GameMessageResponse Message, DateTime Created)> orphanedReplies = new ConcurrentQueue<(GameMessageResponse, DateTime)>();
+
+    /// <summary>Chat commands already handled, by identifier and chat message id, so one sent twice runs once.</summary>
+    private readonly Dictionary<string, DateTime> handledCommands = new Dictionary<string, DateTime>();
+    private DateTime nextHandledCommandsCleanup;
+
+    /// <summary>Time per frame for bot commands. It was one command a frame, so a busy chat built a long queue.</summary>
+    private const double CommandBudgetMs = 4;
+    private const int MaxCommandsPerFrame = 50;
+
+    /// <summary>The remote bot pings every few seconds; this long without a word means the connection is dead.</summary>
+    private static readonly TimeSpan RemoteSilenceLimit = TimeSpan.FromSeconds(30);
+    private readonly System.Diagnostics.Stopwatch commandBudget = new System.Diagnostics.Stopwatch();
     private GameClient remoteClient;
     private int reconnectionTimer = 1500;
     private bool allowAutomaticReconnect = true;
@@ -78,9 +93,16 @@ public class RavenBotConnection : IDisposable
         RemoteBotHost = remoteBotServer;
     }
 
-    public GameClient Local => connectedClients.Count > 0
-            ? connectedClients.FirstOrDefault(x => x.Connected)
-            : null;
+    public GameClient Local
+    {
+        get
+        {
+            lock (connectedClients)
+            {
+                return connectedClients.FirstOrDefault(x => x.Connected);
+            }
+        }
+    }
 
     public GameClient Remote => remoteClient;
     public GameClient ActiveClient
@@ -108,22 +130,113 @@ public class RavenBotConnection : IDisposable
         return packet;
     }
 
+    /// <summary>
+    /// Handles the waiting bot commands, as many as fit in a few milliseconds this frame. Also notices a remote
+    /// connection that has gone silent.
+    /// </summary>
     public void HandleNextPacket(params object[] args)
     {
-        var packet = ReadPacket();
-        if (packet == null)
+        CheckRemoteHeartbeat();
+
+        commandBudget.Restart();
+        var handled = 0;
+        while (handled < MaxCommandsPerFrame && commandBudget.Elapsed.TotalMilliseconds < CommandBudgetMs)
         {
-            // no new packet received.
+            var packet = ReadPacket();
+            if (packet == null)
+            {
+                return;
+            }
+
+            handled++;
+            if (packet.Message == null || string.IsNullOrEmpty(packet.Message.Identifier))
+            {
+                logger.WriteError("Received message from bot that was not properly deserialized. Message is null. ");
+                continue;
+            }
+
+            if (IsRepeat(packet.Message))
+            {
+                continue;
+            }
+
+            HandlePacket(packet, args);
+        }
+    }
+
+    /// <summary>
+    /// True for a chat command already handled: the same identifier and chat message id within ten minutes. A bot
+    /// that resends after a reconnect can then not make anything happen twice.
+    /// </summary>
+    private bool IsRepeat(GameMessage message)
+    {
+        var id = message.CorrelationId;
+        if (string.IsNullOrEmpty(id) || message.Identifier.Equals("ping", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var now = DateTime.UtcNow;
+        if (now >= nextHandledCommandsCleanup)
+        {
+            nextHandledCommandsCleanup = now.AddMinutes(1);
+            var old = handledCommands.Where(x => now - x.Value > TimeSpan.FromMinutes(10)).Select(x => x.Key).ToList();
+            foreach (var key in old) handledCommands.Remove(key);
+        }
+
+        var commandKey = message.Identifier.ToLowerInvariant() + "|" + id;
+        if (handledCommands.ContainsKey(commandKey))
+        {
+            logger.WriteDebug("Ignored a repeat of '" + message.Identifier + "' (" + id + ").");
+            return true;
+        }
+
+        handledCommands[commandKey] = now;
+        return false;
+    }
+
+    private void CheckRemoteHeartbeat()
+    {
+        var remote = remoteClient;
+        if (remote == null || !remote.Connected)
+        {
             return;
         }
 
-        if (packet.Message == null || string.IsNullOrEmpty(packet.Message.Identifier))
+        var now = DateTime.UtcNow;
+        if (now - remote.LastReceivedUtc > RemoteSilenceLimit && now - remote.ConnectedUtc > RemoteSilenceLimit)
         {
-            logger.WriteError("Received message from bot that was not properly deserialized. Message is null. ");
+            logger.WriteWarning("Nothing heard from the remote bot for " + (int)RemoteSilenceLimit.TotalSeconds + " seconds; reconnecting.");
+            remote.Disconnect();
+        }
+    }
+
+    /// <summary>
+    /// Sends a reply on whichever connection is live now. Used by a connection that was closed or replaced, so
+    /// replies to commands it brought in are not lost; with no connection they wait (up to two minutes) for the next.
+    /// </summary>
+    internal void SendOnLiveConnection(GameMessageResponse message, GameClient from)
+    {
+        var live = ActiveClient;
+        if (live != null && live != from && live.Connected)
+        {
+            live.Write(message);
             return;
         }
 
-        HandlePacket(packet, args);
+        orphanedReplies.Enqueue((message, DateTime.UtcNow));
+    }
+
+    private void SendOrphanedReplies(GameClient client)
+    {
+        var now = DateTime.UtcNow;
+        while (orphanedReplies.TryDequeue(out var item))
+        {
+            if (now - item.Created < TimeSpan.FromMinutes(2))
+            {
+                client.Write(item.Message);
+            }
+        }
     }
 
     public void Stop(bool allowReconnect)
@@ -152,15 +265,20 @@ public class RavenBotConnection : IDisposable
 
         try
         {
-            foreach (var client in connectedClients)
+            GameClient[] clients;
+            lock (connectedClients)
+            {
+                clients = connectedClients.ToArray();
+                connectedClients.Clear();
+            }
+
+            foreach (var client in clients)
             {
                 client.Disconnect();
                 client.Dispose();
             }
         }
         catch { }
-
-        connectedClients.Clear();
 
         if (localBotServerEnabled)
         {
@@ -188,7 +306,18 @@ public class RavenBotConnection : IDisposable
             return;
         }
 
-        var msg = JsonConvert.DeserializeObject<GameMessage>(rawCommand);
+        GameMessage msg;
+        try
+        {
+            msg = JsonConvert.DeserializeObject<GameMessage>(rawCommand);
+        }
+        catch (Exception exc)
+        {
+            // one bad line no longer closes the connection
+            logger.WriteError("Could not read a message from the bot: " + exc.Message);
+            return;
+        }
+
         var cmd = new BotMessage(gameClient, msg);
 
         //#if DEBUG
@@ -451,6 +580,8 @@ public class RavenBotConnection : IDisposable
         {
             SendSessionOwner();
         }
+
+        SendOrphanedReplies(client);
     }
 
     public void OnClientConnected(TcpClient client)
@@ -461,8 +592,12 @@ public class RavenBotConnection : IDisposable
             DataSent?.Invoke(this, str);
         });
 
-        connectedClients.Add(gameClient);
+        lock (connectedClients)
+        {
+            connectedClients.Add(gameClient);
+        }
         LocalConnected?.Invoke(this, gameClient);
+        SendOrphanedReplies(gameClient);
         if (ravenbot.State == BotState.Disconnected)
         {
             ravenbot.State = BotState.Connected;
@@ -471,10 +606,15 @@ public class RavenBotConnection : IDisposable
 
     public void OnClientDisconnected(GameClient gameClient)
     {
-        if (connectedClients.Remove(gameClient))
+        bool wasLocal;
+        lock (connectedClients)
+        {
+            wasLocal = connectedClients.Remove(gameClient);
+        }
+
+        if (wasLocal)
         {
             logger.WriteMessage("Bot disconnected");
-            connectedClients.Remove(gameClient);
             LocalDisconnected?.Invoke(this, gameClient);
         }
         else if (gameClient.IsRemote)
