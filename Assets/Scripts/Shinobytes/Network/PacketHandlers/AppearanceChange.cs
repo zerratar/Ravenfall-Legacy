@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using System.Runtime.Remoting.Messaging;
 
 public class AppearanceChange : ChatBotCommandHandler<PlayerAppearanceRequest>
 {

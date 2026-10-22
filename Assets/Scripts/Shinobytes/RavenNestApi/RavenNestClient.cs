@@ -54,7 +54,6 @@ namespace RavenNest.SDK
 
             ServicePointManager.DefaultConnectionLimit = 2000;
             ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(ValidateCertificate);
-            //ServicePointManager.CertificatePolicy = new NoCheckCertificatePolicy();
 
             this.logger = logger ?? new UnityLogger();
             this.gameManager = gameManager;
