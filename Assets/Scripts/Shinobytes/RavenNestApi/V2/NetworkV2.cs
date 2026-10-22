@@ -45,6 +45,7 @@ namespace RavenNest.SDK.V2
             this.client = client;
             this.connection = connection;
             Commands = new CommandChannel(connection);
+            Inventory.GapFound += RepairInventory;
             journalPath = Shinobytes.IO.Path.Combine(Shinobytes.IO.Path.GameFolder, "states", "v2-unsaved-players.bin");
         }
 
@@ -56,6 +57,43 @@ namespace RavenNest.SDK.V2
         public GameConnectionV2 Connection => connection;
 
         public long EventsApplied;
+
+        /// <summary>Inventories fetched from the server and repaired after a missed change.</summary>
+        public long InventoryRepairs;
+
+        private readonly Dictionary<Guid, DateTime> lastRepair = new Dictionary<Guid, DateTime>();
+
+        /// <summary>
+        /// The game missed an inventory change for this character: fetch the character from the server and make the
+        /// game's inventory match (at most every 30 seconds per character). Runs on the main thread.
+        /// </summary>
+        private async void RepairInventory(Guid characterId)
+        {
+            var now = DateTime.UtcNow;
+            if (lastRepair.TryGetValue(characterId, out var last) && now - last < TimeSpan.FromSeconds(30))
+            {
+                return;
+            }
+            lastRepair[characterId] = now;
+
+            try
+            {
+                var player = await client.Players.GetPlayerAsync(characterId);
+                var controller = gameManager.Players.GetPlayerById(characterId);
+                if (player?.InventoryItems == null || !controller)
+                {
+                    return;
+                }
+
+                var changed = controller.Inventory.SyncWithServer(player.InventoryItems);
+                InventoryRepairs++;
+                Shinobytes.Debug.Log("Repaired the inventory of " + controller.Name + " from the server: " + changed + " stack(s) changed.");
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogWarning("Could not repair the inventory of " + characterId + ": " + exc.Message);
+            }
+        }
 
         /// <summary>
         /// Connected, and the saves left from the last run (the journal) are with the server, so players loaded now

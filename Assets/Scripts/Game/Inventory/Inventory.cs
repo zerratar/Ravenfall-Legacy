@@ -250,6 +250,114 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Makes this inventory match the server's, for a player already in the game: the repair when the game finds
+    /// it missed an inventory change. Unlike <see cref="Create"/> (for a freshly spawned player, which would leave the
+    /// old equipment in place) it only changes what differs: equipment the server no longer has equipped comes off,
+    /// amounts are set, stacks the server does not have are removed and the ones it has are added. Appearance and
+    /// equipment effects are rebuilt once, at the end, if the equipment changed.
+    /// </summary>
+    /// <returns>How many stacks were changed, added or removed.</returns>
+    public int SyncWithServer(IReadOnlyList<InventoryItem> serverItems)
+    {
+        if (serverItems == null)
+        {
+            return 0;
+        }
+
+        lock (mutex)
+        {
+            var server = new Dictionary<Guid, InventoryItem>();
+            foreach (var s in serverItems)
+            {
+                if (s != null && s.Amount > 0 && itemManager.Get(s.ItemId) != null)
+                {
+                    server[s.Id] = s;
+                }
+            }
+
+            var changes = 0;
+            var equipmentChanged = false;
+
+            // equipment the server no longer has equipped (or at all) comes off; it is not put in the backpack here,
+            // the backpack is matched to the server below
+            foreach (var e in equipped.ToList())
+            {
+                if (!server.TryGetValue(e.InstanceId, out var s) || !s.Equipped)
+                {
+                    e.InventoryItem.Equipped = false;
+                    equipped.Remove(e);
+                    equipment.Unequip(e, false);
+                    if (equippedMeleeWeapon == e) equippedMeleeWeapon = null;
+                    equipmentChanged = true;
+                    changes++;
+                }
+            }
+
+            // backpack stacks: gone or now equipped on the server are removed, the rest take the server's amount
+            foreach (var b in backpack.ToList())
+            {
+                if (!server.TryGetValue(b.InstanceId, out var s) || s.Equipped)
+                {
+                    backpack.Remove(b);
+                    changes++;
+                }
+                else if (b.InventoryItem.Amount != s.Amount)
+                {
+                    b.InventoryItem.Amount = s.Amount;
+                    changes++;
+                }
+            }
+
+            // stacks the server has that this inventory does not
+            var known = new HashSet<Guid>();
+            foreach (var x in backpack) known.Add(x.InstanceId);
+            foreach (var x in equipped) known.Add(x.InstanceId);
+            foreach (var s in server.Values)
+            {
+                if (known.Contains(s.Id))
+                {
+                    continue;
+                }
+
+                var copy = new InventoryItem
+                {
+                    Id = s.Id,
+                    ItemId = s.ItemId,
+                    Amount = s.Amount,
+                    Equipped = s.Equipped,
+                    Tag = s.Tag,
+                    Soulbound = s.Soulbound,
+                    Enchantment = s.Enchantment,
+                    Name = s.Name,
+                    TransmogrificationId = s.TransmogrificationId,
+                    Flags = s.Flags
+                };
+                var gameItem = new GameInventoryItem(player, copy, itemManager.Get(s.ItemId), itemManager.Get(s.TransmogrificationId));
+                if (s.Equipped)
+                {
+                    equipped.Add(gameItem);
+                    if (IsMeleeWeapon(gameItem)) equippedMeleeWeapon = gameItem;
+                    equipmentChanged = true;
+                }
+                else
+                {
+                    backpack.Add(gameItem);
+                }
+                changes++;
+            }
+
+            if (equipmentChanged)
+            {
+                equipment.EquipAll(equipped);
+                player.UpdateEquipmentEffect(equipped);
+                player.GameManager.ObservedPlayerDetails.PlayerEquipmentUpdated(player);
+            }
+
+            return changes;
+        }
+    }
+
     public void UpdateScrolls(ScrollInfoCollection scrolls)
     {
         lock (mutex)

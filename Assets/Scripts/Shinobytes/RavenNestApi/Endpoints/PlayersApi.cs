@@ -556,6 +556,15 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<long>(ApiRequestTarget.Players, ApiRequestType.Get);
         }
 
+        /// <summary>The character as the server has it now, inventory included (used to repair a missed inventory change).</summary>
+        public Task<RavenNest.Models.Player> GetPlayerAsync(Guid characterId)
+        {
+            return request.Create()
+                .Identifier(characterId.ToString())
+                .Build()
+                .SendAsync<RavenNest.Models.Player>(ApiRequestTarget.Players, ApiRequestType.Get);
+        }
+
         public Task<int> GetHighscoreAsync(Guid id, string skill)
         {
             if (client.UseV2)

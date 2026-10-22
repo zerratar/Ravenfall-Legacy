@@ -11,8 +11,8 @@ namespace RavenNest.SDK.V2
     /// <see cref="GapAfter"/>. Main thread only.
     /// </summary>
     /// <remarks>
-    /// For now gaps are counted and logged, not repaired: rebuilding an inventory in the middle of a session needs
-    /// the inventory sync work (Inventory.Create only works for a freshly spawned player).
+    /// A gap raises <see cref="GapFound"/>; <see cref="NetworkV2"/> then fetches the character and makes the game's
+    /// inventory match the server's (Inventory.SyncWithServer).
     /// </remarks>
     public sealed class InventoryRevisions
     {
@@ -27,6 +27,9 @@ namespace RavenNest.SDK.V2
         private readonly Dictionary<Guid, Track> characters = new Dictionary<Guid, Track>();
 
         public long Gaps;
+
+        /// <summary>A character whose inventory missed a change; the game fetches and repairs it.</summary>
+        public event Action<Guid> GapFound;
 
         private sealed class Track
         {
@@ -87,6 +90,7 @@ namespace RavenNest.SDK.V2
                 track.Contiguous = track.Ahead.Min - 1;
                 Advance(track);
                 track.WaitingSince = now;
+                GapFound?.Invoke(id);
             }
         }
 
