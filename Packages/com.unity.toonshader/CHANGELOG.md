@@ -1,0 +1,547 @@
+# Changelog
+
+## [0.15.0-preview] - 2026-06-25
+
+### Added
+* feat: allow configuring stencil operations for 3D as 2D shader (#835)
+
+### Changed
+* sample: change and rebake the lighting for the NormalMap scene (BiRP) (#851)
+* sample: remove unused ShaderBall textures (#842)
+* sample: move DefaultReflection asset to its correct scene (HDRP) (#849)
+* sample: disable compression for callibration textures in BiRP (#844)
+* sample: disable compression for textures in BiRP NormalMap scene (#846)
+
+### Fixed
+* fix: use _CLUSTER_LIGHT_LOOP keyword for Unity 6.3+ (#853)
+* fix: shader compilation error on Unity 6.5+ due to missing IsSurfaceTypeTransparent() (#848)
+* fix: warnings on the 3D as 2D shader (#841)
+* fix: use System.Enum APIs in ToonEnumUtility to ensure ordering (#836)
+* fix: handle the different signature of EncodeMeshRenderingLayer for Unity 6.3+ (#821)
+* sample: fix missing components in the BiRP Camera prefab (Shaderball) (#843)
+
+## [0.14.1-preview] - 2026-04-27
+
+### Fixed
+* fix: URP rendering layer writes (#803)
+* fix: guard against including URP/LitInput.hlsl (#801)
+* fix: warnings by removing redundant shader pragmas and using newer Unity C# APIs. (#800)
+* sample: fix compile errors in Unity 6.6 (#799)
+
+## [0.14.0-preview] - 2026-04-17
+
+### Added
+
+* feat: support shadows for additional lights
+* doc: troubleshooting on shadow acne
+
+### Changed
+
+* change: the default color of 1st/2nd shading to gray/black
+* sample: add additional lights in KageBall scene
+* opt: remove unnecessary max() op when tweaking system shadow
+* opt: remove custom main light determination logic in URP
+
+### Fixed
+
+* fix: blend output color with fog in URP when applicable
+* fix: avoid modifying shader properties inside the SGMap Toon shader in HDRP
+* fix: ToonShader.EditorTests assembly name typo
+* fix: assign correct Toon shaders after converting via Unity Toon Shader Converter
+* fix: warnings in ToonURP_3Das2D.shader
+* fix: invalid UXML attribute values in Converter
+
+## [0.13.4-preview] - 2026-02-18
+
+### Changed
+* deps: update dependency to com.unity.render-pipelines.core@17.0.3
+
+## [0.13.3-preview] - 2026-02-18
+
+### Changed
+* deps: update dependency to com.unity.render-pipelines.core@17.0.4
+
+## [0.13.2-preview] - 2026-02-17
+
+### Changed
+* docs: clarify 2D support via "3D as 2D" in URP (Unity 6.3)
+* sample: rename tessellation scene to UnityChan_CelLook_Tess
+* sample: remove fog in UnityChan_CelLook
+* sample: remove fog volume from UnityChan_CelLook_Tess scene
+* sample: remove fog in UnityChan scene
+
+### Fixed
+* fix: missing shadows when using screen space shadows
+* fix: unused variable warning in UTS3GUI
+* fix: support Decals feature back in URP
+* fix: use baseColor for doing trilinear shading in ShadingGradeMap URP
+* fix: "GameObjectExtension.AddHDLight" warning in HDRP projects
+* opt: reduce texture sampling when there are multiple lights on URP
+* opt: reduce duplicate albedo calculations in URP
+* opt: reduce duplicate texture sampling and light calculation in ShadingGradeMap URP shader
+* opt: eliminate redundant calculation of highlight albedo in URP shaders
+* sample: remove unused textures
+* sample: fix lighting setting object names in URP samples
+* sample: fix missing scripts in scenes and prefabs
+* sample: link the correct volume profile in PointLightTest scene (HDRP)
+* sample: remove unused "SceneLights Hi-Cut_Filter Test" resources for HDRP
+* sample: remove "missing" UTSGraphicsTestSettings component in all sample scenes
+* sample: remove unused PP Volume Profile in UnityChan_Emissive folder (HDRP)
+* sample: fix the face lighting in the MirrorTest scene of the HDRP sample
+
+
+## [0.13.1-preview] - 2025-12-22
+
+### Fixed
+* fix: shader compile error when screen space shadow is enabled in URP
+* fix: check property existence before when converting materials
+
+## [0.13.0-preview] - 2025-12-04
+
+### Added
+* feat: add Toon 3D as 2D shader
+* feat: assign material props when switching a material to Toon3Das2D
+* license: add explicit reference to the Unity-chan license
+* doc: add rendering paths section in the feature model doc
+
+### Changed
+* package: raise minimum Unity version requirement to 6.0
+* deps: use com.unity.film-internal-utilities@0.20.0-preview
+* sample: replace Unity-chan assets package-wide
+* sample: mention Unity-chan license inside sample description
+* sample: rename "Sample" scene to KageBall
+* sample: move UVCheckGrid texture into the common folder
+* sample: rename ToonShader scenes to UnityChan
+* sample: rename sample description and displayName strings
+* sample: update Built-in RP / URP / HDRP scenes
+* sample: disable CameraController while running tests
+* sample: reorganize floor materials grouping
+* sample: stop auto-generating materials for the Unity-chan model
+* doc: clean up Getting Started guide
+* doc: clean up Highlight documentation
+* doc: clean up Outline documentation
+* doc: clean up AngelRing documentation
+* doc: clean up Matcap documentation
+* doc: tidy the Samples documentation
+* doc: clean up Feature Difference documentation
+* doc: move MaterialConverter lower in the TOC
+* doc: put Render Pipeline Compatibility on the index page
+* doc: use "With Additional Control Maps" term in Modes page
+* doc: drop the word "Settings" from TOC entries
+* doc: lower Outline doc heading levels
+* doc: use emoji markers for feature availability
+* doc: improve grammar and clarity
+* doc: relocate HDRP box light entry under HDRP features
+
+### Fixed
+* fix: share the same cbuffer for the Universal2D pass
+* fix: workaround to prevent Built-in RP code from being executed in URP/HDRP
+* fix: correct inspector documentation URLs
+* fix: drop duplicate/unused Toon and Toon(Tessellation) shader properties
+* fix: resolve deprecated UxmlFactory warnings
+* fix: warnings - FindFirstObjectByType(), GetScriptingDefineSymbols(), SetScriptingDefineSymbols() 
+
+## Removed
+* sample: delete unused materials
+* sample: remove unnecessary meta files
+* sample: delete unused Unity-chan materials for URP
+* doc: remove unused images
+* doc: remove the “What’s New” documentation pages
+* remove: strip all Raytraced Hard Shadow references
+
+## [0.12.0-preview] - 2025-07-28
+
+### Added
+* feat: make toon URP work show basic colors/texture and outline in 2D light environment
+
+### Changed
+* doc: improve documentation accessibility
+
+### Fixed
+* fix: errors when unlit mode is selected in the SceneView
+* fix: undefined punctual shadow keywords for HDRP in Unity 6000.0 or later
+* fix: dark areas instead of outlines in WebGL and OpenGL
+
+
+## [0.11.1-preview] - 2025-06-12
+
+### Added
+* sample: add metaverse materials and prefabs of Unity-chan in the HDRP sample
+
+### Fixed
+* fix: calling InitializeBakedGIData() is necessary for Unity newer than 6000.0.12
+* doc: fix incorrect table layout documentation in sections under Inspector Window Settings
+
+## [0.11.0-preview] - 2024-12-11
+
+### Changed:
+* api: change the accessor of internal test classes to internal
+* api: change the accessor of UTS3MaterialHeaderScope to internal
+* api: change the accessor of UTS3MaterialHeaderScopeList to internal
+* api: change the accessor of UTS3MaterialEditorExtension and MaterialEditorExtension to internal
+* docs: update Unity Editor Compatibility
+* deps:  use com.unity.film-internal-utilities@0.19.2-preview
+
+### Removed:
+* api: remove unused empty UniversalToonShaderInfo class
+
+## [0.10.2-preview] - 2024-08-20
+### Fixed:
+* Plane objects can not be chosen from their front face in SceneViews.
+* Wrong include path for Linux systems.
+
+## [0.10.1-preview] - 2024-07-08
+### Fixed:
+* URP Shader Eroors on newer then Unity 6000.0.9.
+* HDRP Shder Erorrs on Unity 6. (Thanks to riina)
+* SceneView Flickers when Light probe on HDRP shaders.
+
+
+## [0.10.0-preview] - 2024-04-14
+### Updated:
+* URP shader is compatible with DOTS instancing. (Thanks to Hum9183)
+### Fixed:
+* Base Map/1st Shade Map/2nd Shade Map missing Tiling & Offset values are applied to Clipping Masks.
+* Undoing/Redoing Tiling & Offset won't be reflected on the screen until slection is changed.(Thanks to Hum9183)
+
+## [0.9.7-preview] - 2024-03-20
+### Updated
+* URP Shader is comaptible with Light Layer.   (Thanks to Hum9183)
+* Fixed:Base Map/1st Shade Map/2nd Shade Map missing Tiling & Offset controls for all the render pipelines. (Thanks to Hum9183)
+
+## [0.9.6-preview] - 2023-09-24
+### Updated
+* URP Shader is comaptible with DECAL.    (Thanks to Hum9183Hum9183)
+* Installation manual is suitable for new than Unity 2021.
+### Fixed:
+* A invalid reqnder queue when when Clipping is "On" or "Clip Transparency". (Thanks to TakeshiMiyakawaCR)
+
+## [0.9.5-preview] - 2023-08-25
+### Fixed
+* A URP Shader error when using newer than 2023.1.3.
+* A Null Reference Exception error with HDRP tesslation shader.
+
+## [0.9.4-preview] - 2023-05-01
+* Added a exlanation for URP line issue  into Kown Issues.
+
+## [0.9.3-preview] - 2023-04-18
+* Deleted warnings when creating materials with URP and Built-in shaders.
+
+## [0.9.2-preview] - 2023-04-12
+### Fixed
+* URP shader doesn't recieve shadows in player builds.
+
+## [0.9.1-preview] - 2023-03-30
+### Fixed
+* Some wrong information for shader path in docs.
+* Errors caused by mishandling for analytics.
+
+## [0.9.0-preview] - 2023-03-16
+### Updated
+* Minimum Unity version is 2020.3.45, 2021.3.19,2022.2.11.
+* Compatiblity with Universal RP Forward+.
+
+## [0.8.5-preview] - 2023-02-13
+### Fixed:
+* Some wrong information in docs.
+
+
+## [0.8.4-preview] - 2023-01-19
+### Updated:
+* Shaders are compatible with some console platforms.
+
+## [0.8.3-preview] - 2023-01-11
+### Fixed:
+* URP Shader doesn't work with Unity 2022.2.2f1.
+* Warrnings in HDRP shaders.
+
+## [0.8.2-preview] - 2022-09-09
+### Updated:
+* Updated some documents.
+
+### Fixed:
+* Deleted some warinings.
+* The converter ignores custom render queue in Unitychan Toon Shader ver 2 materials.
+* The converter sometimes misidentified materials older than 0.7.x in Built-in UTS3 as older materials in Unitychan Toon Shader Ver 2.0.7.
+* URP shader was not working for WebGL/GLES 3.0.
+
+
+## [0.8.1-preview] - 2022-08-24
+### Updated:
+* Updated some docs.
+
+### Fixed:
+* TOC didn't include the link to Material Converter page.
+* A image in index.md wasn't displayed in doc web site.
+
+## [0.8.0-preview] - 2022-08-02
+### Updated:
+* All the render pipeline shaders are integrated.
+* Added material converter to above which is capable of Unity-Chan Toon Shader V2, Universal Toon and UTS3 older than 0.7.x.
+* The package is compatible with 2020.3, 2021.3, 2022.1 and 2022.2. 2019.4 is no longer supported.
+
+
+## [0.7.5-preview] - 2022-06-27
+* Improved the logic for blending outlines into a scene when there are no directional lights in the scene.
+
+## [0.7.4-preview] - 2022-06-25
+### Fixed:
+* HDRP:Metaverse light was not working properly.
+
+### Updated:
+* Added `Getting Started` to the documentation.
+* Added more description to Outline doc.
+* Added more description to RimLight doc.
+* Mended Meteverse doc to use property, insted of indented menus.
+* Mended SceneLightSetting doc to use property instead of indented menus.
+* Re-wrote the doc to install samples.
+* Updated some images in docs.
+* Improved some wording in documentation.
+
+## [0.7.3-preview] - 2022-06-15
+### Updated:
+* HDRP shader is compatible with 2022.2.0 a16.
+* Attribute class for Mono-behaviors for UTS3.
+* Mac Graphics Tests use rsync instead of scp.
+* New retry count to several commands in Mac graphics tests.
+* 3 basic color is now Three basic colors.
+* `NormalMap Settings` is now an independent block.
+* Updated docs.
+
+## [0.7.2-preview] - 2022-05-30
+### Fixed:
+* Dead links for Toon EV adjustment HELP URL Buttons.
+* Some classes are accessible from outside.
+
+## [0.7.1-preview] - 2022-05-26
+### Updated:
+* Polished docs.
+
+## [0.7.0-preview] - 2022-05-23
+### Updated:
+* Shader version properties in all the render pipeline shaders.
+* Updated installation.md.
+* The inspector window is significantly reorganized.
+* Renamed `Double Shade with Feather` to `Standard`.
+* Renamed `Shading Grade map` to `With Additional Control Maps`.
+* Replaced toggle buttons Off/Active UI to Unity standard toggles.
+* Renamed `Basic Shader Settings` to `Shader Setting`.
+* Replaced some toggle buttons, such as `Emissive UV Coord`, `Specular Mode`, to dropdown menus
+* Specular mode name are not just `Off`/`On` but `Soft`/`Hard`.
+* Made everything in the inspector hidden when disabled to be shown but grayed out.
+* Folder headers use Unity standard style in the inspector window when SRP core newer than 12 is not installed.
+* Folder headers use SRP style in the inspector window when SRP core newer than 12 is installed.
+* Renamed `【DX11 Phong Tessellation Settings】` to `Legacy Pipeline: Phong Tessellation Settings` as it works on Mac too.
+* Renamed term, `Technique`, to `Mode`.
+* Renamed term, `Contribution`, to `Effectiveness`.
+* Renamed foldout name `Light Color Contribution` to `Scene Light Effectiveness Settings`
+* Moved `Gi Intensity` and `Scene Light hi cut filter` to bellow it.
+* Renamed `Scene  Hi-cut filter` to  `Limit Light Intensity` .
+* Renamed term, `High Color`, to `Highlight`.
+* Renamed `Settings for PointLights in ForwardAdd Pass` to `Point Light Settings`.
+* Renamed `Point Light High Cut Filter` to `Filter Point Light Hight Light`.
+* Re-organized Stencil and Clipping settings in the inspector window.
+* Renamed `Stencil Out` to `Draw If Not Equal to`.
+* Renamed `Stencil Mask` to `Replace Stencil Buffer with`.
+* Renamed `Stencil No.` to `Stencil Value`.
+* The above used to be a number field. Now it is editable with IntSlider.
+* Renamed `Inverse MatCap Mask` to `Invert MatCap Mask`.
+* Renamed `Trans Clipping Mode` to `Clip Transparency`.
+* Renamed `Unlit Intensity` to `Metaverse Light Intensity` and `Buiilt-in light settings` are moved into `Metaverse Settings` foldout header in the inspector so that users can understand  setting them is not necessary for usual uses.The setting works only when no directional lights are on the scenes like some VRChat ones.
+* _Unlit_Intensity ranges defined in all the shaders are from 0 to 4. originally they were from 0.001 to 4.
+* Changed built-in light default brightness from 1 to 0.
+* Renamed `Basic Look Dev` to `Shading Step and Feather Settings`.
+* `Advanced settings` in Outline foldout header are always shown.
+* Renamed `Outline Sampler` in Ontline foldout header to `Outline Width Map`.
+* Renamed `Outline-tex` in Ontline foldout header to `Outline Color Map`.
+* Renamed Culling mode itemes from `CullingOff`, `FrontCulling` and `BackCulling` to `Off`, `Frontface` and `Backface`.
+* Renamed `Receive System Shadows` to `Receive Shadows`.
+* Renamed `Shadow Mask on High Color` to `Highlight Blending on Shadows`.
+* Renamed `Highlight Power on Shadows` to `Blending Level`.
+* Renamed `Camera Rolling Stabilizer` to `Stabilize Camera Rolling`.
+* Renamed `ViewShift of Color` to `Color Shifting with View Angle`.
+* Renamed `ViewShift` to `Shifting Target Color`.
+* Renamed `Use Outline Texture` to `Outline Color Map`.
+* Renamed `Use Baked Normal for Outline` to `Baked Normalmap`.
+* Renamed `HighColor Power on Shadow` to `Brightness on Shadows`.
+* Renamed `MatCap Power on Shadow` to `MatCap Blending on Shadows`.
+* Renamed `Color Shift Speed` to `Color Shifting Speed`.
+* Renamed `Blur Level of ShadingGradeMap` to `ShadingGradeMap Blur Level`.
+* Renamed `MatCap Sampler` to `MatCap Map`.
+* Renamed `Blur Level of MatCap Sampler` to `MatCap Blur Level`.
+* Renamed `Rim Light Power` to `Rim Light Level`.
+* Renamed `RimLight Inside Mask` to `Adjust Rim Light Area`.
+* Renamed `Light Direction Mask` under Rim Light Settings to `Light Dreiction Mode`.
+* Renamed `Light Direction Mask Level` to `Light Direction Rim Light Level`.
+* Renamed `Antipodean(Ap)_RimLight` to `Inversed Direciton Rim Light`.
+* Renamed `AP_RimLgiht Power` to `Inversed Rim Light Level`.
+* Renamed `Color Blend Mode` to `Color Bleinding Mode`.
+* Renamed `GI Intesity` to `Light Probe Intensity`
+.
+### Added:
+* Legacy: Compatibility with Single Pass Stereo Rendering.
+* Legacy: Graphics Test 2022.2.
+* Universal RP: Graphics Test 2022.2.
+* HDRP: Graphics Test 2022.2.
+* Project Settings, but quite simple yet.
+* Help buttons to foldout headers in the inspector window, which work newer than Unity 2021.1.
+* Unity-Chan Toon Shader 2 Converter window opens when old shaders are in projects on start up or right after the package is installed.
+* Dependency to srp core take advantege of its help system.
+* Added Tips to Culling Mode popup menu in the inspector window.
+* Added Tips to GUI Toggles in the inspector window.
+* Added Tips to Range Properties in the inspector window.
+
+### Removed:
+* Removed   `● Additional Settings` in the Inspector window.
+* Removed Simple UI.
+* Removed Japanese and English manual link buttons.
+* Removed Game Recommendation window and changed the default values of shader variables.
+* Removed 【】in the Inspector window.
+* Removed  ● in the Inspector window.
+* Removed unnecessary labels in the inspector such as `System Shadows:`
+* `RTHS(Realtime Hard Shadow` is deprecated now as it will not be Unity official package.
+* RTHS is not shown unless `Show deprecated features in the inspector` is checked in the `Project Settings Window`.
+
+### Fixed:
+* Undo/Redo was not working on some items in the inspector window.
+* Fixed Indent in NoramMap Settings in the inspector window.
+* `Point Light High Cut Filter` Side Effects. It just shows or hides the point lights' highlight.
+* Unify the notation in the converter with Unity-Chan Toon Shader 2.
+* Fixed some popups in the inspector window not to use connected names without spaces. Each name is separated by a space.
+* `Rimlight Mask` on URP and HDRP version were not working well.
+* Single pass stereo rendering was not working with legacy(built-in) tessellation shaders.
+* URP shader errors when used with Unity 2022.2.
+
+## [0.6.1-preview] - 2022-02-24
+### Fixed:
+* typo in inspector.
+* removed .sample.json under Samples~ folder
+* Some unnecessary classes were public.
+* Unnatural expression `Multiply or Additive` to `Multiply or Add`.
+
+## [0.6.0-preview] - 2022-02-22
+### Updated:
+* Replaced test VM to use gtx1080
+* Updated README.md
+* Added LICENSE.md under the project folder.
+* Shader version properties in all the render pipeline shaders.
+
+### Fixed:
+* Some unnecessary classes were public.
+* URP: a depth output issue later then 10.0.x. (Thanks to riina)
+* Typos in README.md
+* promotion test issues.
+* no .sample.json files under each render-pileline sample folder.
+
+## [0.5.0-preview] - 2022-01-20
+### Updated:
+* Updated documentation and folder structure in order to make the package structure friendly to Unity official package.
+* Tentatively deleted Japanese documentation before making the package ready for Unity standard translation system.
+* HDRP: made UTS compatible with HDRP AOV. Capable of outputting Albedo, Normal and so on using AOV Image Sequence Recorder newer than 3.0.
+* More effective and strict internal tests.
+
+### Fixed:
+* HDRP:reduced shader variants by disabling some debug pragmas.
+* URP:UTS materials don't receive shadows when using newer than Unity 2021.1.
+* Legacy:Unable to disable Outline.
+* AutoRenderQueue is disabled when material inspector is unfocused.
+
+
+### Known Issues:
+* HDRP: When outputting AOV images, UTS Outline is also put into the images. In such cases, please disable OUTLINE in Material Inspectors.
+
+## [0.4.1-preview] - 2021-10-20
+### Added
+* HDRP:Something similar to HDRP exposure compensation.
+
+### Fixed:
+* typo in documents.
+* missing mono behaviors in sample scenes.
+* HDRP:BoxLightAdjustment script. some flags are not updated properly when some checkboxes are clicked.
+* HDRP:Shader compile errors when used with HDRP 12.1
+
+## [0.4.0-preview] - 2021-10-13
+### Added
+* HDRP: Compatibility with Box Light, a spot light variation, as main lights.
+* HDRP: BoxLightAdjustment mono-behavior
+
+### Fixed:
+* URP: Unstable SRP Compatibility. Thanks to tangx246.
+* URP: Outline pass is not compatible with VR when  Single Pass Instanced rendering is chosen. Thanks to tangx246 again.
+* URP: Some warnings.
+
+### Updated:
+* Documentation~/en/FeatureModel_en.md. Thanks to riina.
+* Platforms in documentation.
+
+## [0.3.2-preview] - 2021-09-28
+### Added
+* doc: HDRP: description for ray-trace shadow.
+
+### Fixed
+* HDRP: fix Gaps between self-shadow and ray-trace shadow.
+
+## [0.3.1-preview] - 2021-09-27
+* description is above.
+
+## [0.3.0-preview] - 2021-09-16
+* HDRP: Fixed weird steps when more than 3 point lights are in a scene.
+* HDRP: Added Toon EV Adjustment per Model.
+* HDRP: Compatible with Raytraced Hardshadow when DX12 is chosen as API.
+* Legacy: Applied a fix for outline flicker in VR chat.
+
+## [0.2.2-preview] - 2021-08-24
+* Modified Toon EV Adjustment Curve inspector.
+* Excluded unnecessary files from release zip.
+* Improved folder structure in order not to cause long file name errors when included in other packages.
+* Added documentation for Toon EV Adjustment Curve.
+
+## [0.2.1-preview] - 2021-08-18
+* HDRP: Fixed: Multiple instances of Toon EV adjustment curve can exist in one scene.
+
+## [0.2.0-preview] - 2021-08-17
+* HDRP: Toon EV adjustment curve as a Mono-behavior.
+* Legacy, Universal and HDRP: Some texture samplers,such as  _MainTex,  _NormalMap, _1st_ShadeMap and  _2nd_ShadeMap, are shared by 1 sampler, sampler_MainTex, in order to avoid sampler number exceeding errors.
+* Integrated Textures feature is removed from all the render pipeline versions instead of above.
+* HDRP and URP are compatible with SRP Batcher.
+* Legacy, Universal and HDRP: Added image comparison tests for Windows Vulkan API.
+* HDRP: Added light probe compatibility.
+* Added a material converter from Unity-chan Toon Shader newer than 2.0.7  to Unity Toon Shader. (Experimental)
+
+## [0.1.0-preview] - 2021-07-07
+* HDRP: Emission started to work.
+* HDRP: Improved exposure.
+* HDRP: Implemented tessellation to the outline pass.
+* deleted ValidationConfig.json.
+
+## [0.0.7-preview] - 2021-06-14
+* Made samples installable.
+
+## [0.0.6-preview] - 2021-06-04
+* Modified documents
+
+## [0.0.5-preview] - 2021-05-12
+* Channel Mask rendering feature put the results into alpha channel.
+
+## [0.0.4-preview] - 2021-05-09
+* Universal RP shaders are compatible with SRP 12.
+
+## [0.0.3-preview] - 2021-05-05
+* Universal RP and HDRP shaders are compatible with SRP 10.
+* HDRP shaders' DepthOnly path is replaced to DepthForwardOnly path.
+* Internal tests are compatible with not only 2019.4 but also 2020.x now.
+
+## [0.0.2-preview] - 2021-03-30
+* Legacy shaders are integrated into two shaders.
+* The number of textures is reduced experimental
+* Added Clipping Matte feature for HDRP.
+* Removed almost all the warnings when compiling shaders.
+* Grafted graphics tests from Scriptable Render Pipelines.
+* Reorganized documents.
+* Reorganized repository folder structure.
+* Added feature model list FeatureModel_en.md
+
+## [0.0.1-preview] - 2021-03-11
+
+* Reorganized Unity-chan/Universal Toon Shader as Unity Toon shader.
+

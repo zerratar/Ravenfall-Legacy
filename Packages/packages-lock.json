@@ -280,14 +280,13 @@
       }
     },
     "com.unity.toonshader": {
-      "version": "0.15.0-preview",
+      "version": "file:com.unity.toonshader",
       "depth": 0,
-      "source": "registry",
+      "source": "embedded",
       "dependencies": {
-        "com.unity.render-pipelines.core": "17.0.3",
-        "com.unity.film-internal-utilities": "0.20.0-preview"
-      },
-      "url": "https://packages.unity.com"
+        "com.unity.film-internal-utilities": "0.20.0-preview",
+        "com.unity.render-pipelines.core": "17.0.3"
+      }
     },
     "com.unity.ugui": {
       "version": "2.7.0",

@@ -162,6 +162,10 @@ Assets/_TerrainAutoUpgrade/*.*
 !Assets/Prefabs/Buildings/*.asset
 !Assets/Prefabs/Buildings/*.asset.meta
 
+# The embedded Unity Toon Shader package (patched for URP in Unity 6.7). Materials reference its shaders by the
+# GUIDs the registry package has, which live in these metas.
+!Packages/com.unity.toonshader/**/*.meta
+
 # The home island terrain, versioned through LFS (see .gitattributes) now that build mode reshapes
 # it. The two other terrain tiles are much larger and stay out until LFS quota is decided.
 !Assets/New Terrain.asset

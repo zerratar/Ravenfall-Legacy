@@ -1,0 +1,41 @@
+{
+  "name": "com.unity.toonshader",
+  "displayName": "Unity Toon Shader",
+  "version": "0.15.0-preview",
+  "unity": "6000.0",
+  "description": "Unity Toon Shader (Unity-Chan Toon Shader 3) is a toon shader for images and video that is designed to meet the needs of creators working on cel-shaded 3DCG animations.\nUnlike other pre-render toon shaders, all features can be adjusted in real time on Unity, which is the greatest feature of UTS.\n\nUTS has great power and makes a wide variety of character designs possible, from cel-shaded to light novel illustration styles.\n\nUTS has the 3 basic layers of Base Color, 1st Shade Color, and 2nd Shade Color, colors and textures can also accept a wide variety of customization options, such as High Color, Rim Light, MatCap (sphere mapping), and Emissive (light emission).The level of gradation (feather) between colors can also be adjusted in Unity in real-time.\n\nMore precisely, View documentation above.",
+  "dependencies": {
+    "com.unity.film-internal-utilities": "0.20.0-preview",
+    "com.unity.render-pipelines.core": "17.0.3"
+  },
+  "samples": [
+    {
+      "displayName": "Built-In RP",
+      "description": "Toon Shader sample scenes for Built-In Render Pipeline, including Unity-Chan examples.\nFor Unity-Chan assets, please review the license included in the corresponding folder.",
+      "path": "Samples~/Built-In_RP"
+    },
+    {
+      "displayName": "URP",
+      "description": "Toon Shader sample scenes for Universal Render Pipeline, including Unity-Chan examples.\nFor Unity-Chan assets, please review the license included in the corresponding folder.",
+      "path": "Samples~/URP"
+    },
+    {
+      "displayName": "HDRP",
+      "description": "Toon Shader sample scenes for High Definition Render Pipeline, including Unity-Chan examples.\nFor Unity-Chan assets, please review the license included in the corresponding folder.",
+      "path": "Samples~/HDRP"
+    }
+  ],
+  "_upm": {
+    "changelog": "### Added\n* feat: allow configuring stencil operations for 3D as 2D shader (#835)\n\n### Changed\n* sample: change and rebake the lighting for the NormalMap scene (BiRP) (#851)\n* sample: remove unused ShaderBall textures (#842)\n* sample: move DefaultReflection asset to its correct scene (HDRP) (#849)\n* sample: disable compression for callibration textures in BiRP (#844)\n* sample: disable compression for textures in BiRP NormalMap scene (#846)\n\n### Fixed\n* fix: use _CLUSTER_LIGHT_LOOP keyword for Unity 6.3+ (#853)\n* fix: shader compilation error on Unity 6.5+ due to missing IsSurfaceTypeTransparent() (#848)\n* fix: warnings on the 3D as 2D shader (#841)\n* fix: use System.Enum APIs in ToonEnumUtility to ensure ordering (#836)\n* fix: handle the different signature of EncodeMeshRenderingLayer for Unity 6.3+ (#821)\n* sample: fix missing components in the BiRP Camera prefab (Shaderball) (#843)"
+  },
+  "upmCi": {
+    "footprint": "5088ed0a263d300f6670d1a8b316508a25502bee"
+  },
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.toonshader@0.15/manual/index.html",
+  "repository": {
+    "url": "https://github.com/Unity-Technologies/com.unity.toonshader.git",
+    "type": "git",
+    "revision": "086da6a9428f085334a1b384954dfad34986495b"
+  },
+  "_fingerprint": "3067fb6ae79573f1ff99f38d88e783fbf533174a"
+}
