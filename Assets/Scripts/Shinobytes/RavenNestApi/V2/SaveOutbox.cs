@@ -260,11 +260,41 @@ namespace RavenNest.SDK.V2
             entry.Unconfirmed.Add(change);
         }
 
-        private static PlayerStateSave WithChanged(PlayerStateSave state, PlayerStateFields changed)
+        /// <summary>
+        /// The fields named in <paramref name="changed"/>, and nothing else: the others go out empty, so a save does not
+        /// carry every string (task argument, platform names) each time. The server reads only the named ones.
+        /// </summary>
+        private static PlayerStateSave WithChanged(PlayerStateSave s, PlayerStateFields changed)
         {
-            var copy = state.Clone();
-            copy.Changed = changed;
-            return copy;
+            bool has(PlayerStateFields f) => (changed & f) != 0;
+            return new PlayerStateSave
+            {
+                Changed = changed,
+                Health = has(PlayerStateFields.Health) ? s.Health : 0,
+                Island = has(PlayerStateFields.Island) ? s.Island : (byte)0,
+                Destination = has(PlayerStateFields.Destination) ? s.Destination : (byte)0,
+                State = has(PlayerStateFields.State) ? s.State : 0,
+                TrainingSkillIndex = has(PlayerStateFields.TrainingSkill) ? s.TrainingSkillIndex : 0,
+                TaskArgument = has(PlayerStateFields.TaskArgument) ? s.TaskArgument : null,
+                ExpPerHour = has(PlayerStateFields.ExpPerHour) ? s.ExpPerHour : 0,
+                EstimatedTimeForLevelUp = has(PlayerStateFields.LevelUpEta) ? s.EstimatedTimeForLevelUp : default,
+                X = has(PlayerStateFields.Position) ? s.X : 0,
+                Y = has(PlayerStateFields.Position) ? s.Y : 0,
+                Z = has(PlayerStateFields.Position) ? s.Z : 0,
+                AutoJoinRaidCounter = has(PlayerStateFields.AutoJoinRaid) ? s.AutoJoinRaidCounter : 0,
+                AutoJoinRaidCount = has(PlayerStateFields.AutoJoinRaid) ? s.AutoJoinRaidCount : 0,
+                AutoJoinDungeonCounter = has(PlayerStateFields.AutoJoinDungeon) ? s.AutoJoinDungeonCounter : 0,
+                AutoJoinDungeonCount = has(PlayerStateFields.AutoJoinDungeon) ? s.AutoJoinDungeonCount : 0,
+                IsAutoResting = has(PlayerStateFields.IsAutoResting) && s.IsAutoResting,
+                AutoTrainTargetLevel = has(PlayerStateFields.AutoTrainLevel) ? s.AutoTrainTargetLevel : 0,
+                AutoRestTarget = has(PlayerStateFields.AutoRestTarget) ? s.AutoRestTarget : null,
+                AutoRestStart = has(PlayerStateFields.AutoRestStart) ? s.AutoRestStart : null,
+                DungeonCombatStyle = has(PlayerStateFields.DungeonStyle) ? s.DungeonCombatStyle : null,
+                RaidCombatStyle = has(PlayerStateFields.RaidStyle) ? s.RaidCombatStyle : null,
+                Platform = has(PlayerStateFields.Platform) ? s.Platform : null,
+                PlatformUserId = has(PlayerStateFields.PlatformUserId) ? s.PlatformUserId : null,
+                PlatformUserName = has(PlayerStateFields.PlatformUserName) ? s.PlatformUserName : null
+            };
         }
 
         /// <summary>Which fields differ, grouped as the server stores them. Everything for a first save.</summary>

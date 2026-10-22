@@ -18,6 +18,12 @@ namespace RavenNest.SDK.V2
     {
         public static readonly TimeSpan GapAfter = TimeSpan.FromSeconds(10);
 
+        /// <summary>
+        /// A jump this large is a new server run, not missed changes: the server numbers each run's revisions from
+        /// the clock (milliseconds times 1000), so even a quick restart lands millions above the last run.
+        /// </summary>
+        private const long NewServerRunJump = 1_000_000;
+
         private readonly Dictionary<Guid, Track> characters = new Dictionary<Guid, Track>();
 
         public long Gaps;
@@ -46,12 +52,14 @@ namespace RavenNest.SDK.V2
 
             if (update.Revision <= track.Contiguous)
             {
-                if (update.Revision < track.Contiguous - 1000)
-                {
-                    // the server started numbering again (it restarted)
-                    track.Contiguous = update.Revision;
-                    track.Ahead.Clear();
-                }
+                return; // already seen, or replayed from before a server restart
+            }
+
+            if (update.Revision > track.Contiguous + NewServerRunJump)
+            {
+                // the server restarted: each run numbers from the clock, far above the last run
+                track.Contiguous = update.Revision;
+                track.Ahead.Clear();
                 return;
             }
 
