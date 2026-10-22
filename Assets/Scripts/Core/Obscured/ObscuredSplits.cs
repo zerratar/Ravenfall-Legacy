@@ -51,8 +51,19 @@ namespace Obscured
 #if UNITY_NETCODE
         INetworkSerializable ,
 #endif
-    ISerializationCallbackReceiver, IEquatable<ObscuredIntSplit>, IEquatable<int>, ISerializable
+    ISerializationCallbackReceiver, IEquatable<ObscuredIntSplit>, IEquatable<int>, IComparable<ObscuredIntSplit>, IComparable, ISerializable
     {
+        // Comparable by the real value, so sorts, Min and Max on it work (they threw "At least one object
+        // must implement IComparable" when two different values met).
+        public int CompareTo(ObscuredIntSplit other) => ((int)this).CompareTo((int)other);
+        public int CompareTo(object obj)
+        {
+            if (obj == null) return 1;
+            if (obj is ObscuredIntSplit o) return CompareTo(o);
+            if (obj is int v) return ((int)this).CompareTo(v);
+            throw new ArgumentException("Cannot compare ObscuredIntSplit with " + obj.GetType().Name);
+        }
+
         [SerializeField] private int partA;
         [SerializeField] private int partB;
         [SerializeField] private int checksum;
@@ -190,8 +201,19 @@ namespace Obscured
 #if UNITY_NETCODE
         INetworkSerializable ,
 #endif
-    ISerializationCallbackReceiver, IEquatable<ObscuredLongSplit>, IEquatable<long>, ISerializable
+    ISerializationCallbackReceiver, IEquatable<ObscuredLongSplit>, IEquatable<long>, IComparable<ObscuredLongSplit>, IComparable, ISerializable
     {
+        // Comparable by the real value, so sorts, Min and Max on it work (they threw "At least one object
+        // must implement IComparable" when two different values met).
+        public int CompareTo(ObscuredLongSplit other) => ((long)this).CompareTo((long)other);
+        public int CompareTo(object obj)
+        {
+            if (obj == null) return 1;
+            if (obj is ObscuredLongSplit o) return CompareTo(o);
+            if (obj is long v) return ((long)this).CompareTo(v);
+            throw new ArgumentException("Cannot compare ObscuredLongSplit with " + obj.GetType().Name);
+        }
+
         [SerializeField] private long partA;
     [SerializeField] private long partB;
     [SerializeField] private long checksum;
@@ -327,8 +349,19 @@ public struct ObscuredFloatSplit :
 #if UNITY_NETCODE
         INetworkSerializable ,
 #endif
-    ISerializationCallbackReceiver, IEquatable<ObscuredFloatSplit>, IEquatable<float>, ISerializable
+    ISerializationCallbackReceiver, IEquatable<ObscuredFloatSplit>, IEquatable<float>, IComparable<ObscuredFloatSplit>, IComparable, ISerializable
     {
+    // Comparable by the real value, so sorts, Min and Max on it work (they threw "At least one object
+    // must implement IComparable" when two different values met).
+    public int CompareTo(ObscuredFloatSplit other) => ((float)this).CompareTo((float)other);
+    public int CompareTo(object obj)
+    {
+        if (obj == null) return 1;
+        if (obj is ObscuredFloatSplit o) return CompareTo(o);
+        if (obj is float v) return ((float)this).CompareTo(v);
+        throw new ArgumentException("Cannot compare ObscuredFloatSplit with " + obj.GetType().Name);
+    }
+
         [SerializeField] private int partA;     // XOR-split of raw float bits
 [SerializeField] private int partB;
 [SerializeField] private int xorKey;

@@ -4,8 +4,19 @@ using UnityEngine;
 namespace Obscured
 {
     [Serializable]
-    public struct ObscuredDouble : ISerializationCallbackReceiver, IEquatable<ObscuredDouble>, IEquatable<double>, IObscured
+    public struct ObscuredDouble : ISerializationCallbackReceiver, IEquatable<ObscuredDouble>, IEquatable<double>, IComparable<ObscuredDouble>, IComparable, IObscured
     {
+        // Comparable by the real value, so sorts, Min and Max on it work (they threw "At least one object
+        // must implement IComparable" when two different values met).
+        public int CompareTo(ObscuredDouble other) => ((double)this).CompareTo((double)other);
+        public int CompareTo(object obj)
+        {
+            if (obj == null) return 1;
+            if (obj is ObscuredDouble o) return CompareTo(o);
+            if (obj is double v) return ((double)this).CompareTo(v);
+            throw new ArgumentException("Cannot compare ObscuredDouble with " + obj.GetType().Name);
+        }
+
         [SerializeField] private long encrypted; // raw bits XOR key
         [SerializeField] private long key;
         [SerializeField] private long fakeBits;
