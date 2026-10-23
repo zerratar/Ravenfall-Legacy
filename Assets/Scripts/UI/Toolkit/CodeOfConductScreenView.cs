@@ -74,6 +74,12 @@ namespace Shinobytes.UI
             modifiedLabel = root.Q<Label>("modified-label");
             acceptButton = root.Q<Button>("accept-button");
             declineButton = root.Q<Button>("decline-button");
+            // the root exists before UIDocument has built the tree into it: binding then would find nothing and
+            // never look again (no texts, and buttons that do nothing)
+            if (headerLabel == null || acceptButton == null || declineButton == null)
+            {
+                return;
+            }
             if (acceptButton != null) acceptButton.text = Localization.UI_COC_ACCEPT;
             if (declineButton != null) declineButton.text = Localization.UI_COC_DECLINE;
 

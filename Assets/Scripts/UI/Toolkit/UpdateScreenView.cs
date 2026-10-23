@@ -47,6 +47,8 @@ namespace Shinobytes.UI
 
         private void Update()
         {
+            // a rebuilt tree (a new panel or document) leaves the old labels detached
+            if (bound && versionLabel != null && versionLabel.panel == null) bound = false;
             if (!bound)
             {
                 TryBind();
@@ -77,6 +79,12 @@ namespace Shinobytes.UI
             progressRoot = root.Q<VisualElement>("progress-root");
             progressFill = root.Q<VisualElement>("progress-fill");
             progressLabel = root.Q<Label>("progress-label");
+            // the root exists before UIDocument has built the tree into it: binding to that would find no
+            // labels and never look again, which left the version at its "VERSION" placeholder
+            if (statusLabel == null || versionLabel == null)
+            {
+                return;
+            }
             bound = true;
 
             if (statusLabel != null) statusLabel.text = pendingStatus ?? Localization.UI_UPDATE_CHECKING;
