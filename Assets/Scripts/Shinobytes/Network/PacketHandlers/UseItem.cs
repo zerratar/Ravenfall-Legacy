@@ -42,9 +42,11 @@ public class UseItem : ChatBotCommandHandler<string>
 
                     if (useCount == 0)
                     {
-                        parts
+                        // "use exp scroll 5": the first number is the count, none means one
+                        useCount = parts
                             .Select(x => int.TryParse(x, out var result) ? result : 0)
                             .FirstOrDefault(x => x > 0);
+                        if (useCount == 0) useCount = 1;
                     }
 
                     new UseExpMultiplierScroll(Game, Server, PlayerManager).Handle(useCount, gm, client);
