@@ -10,6 +10,11 @@ public class PlayerLogoManager : MonoBehaviour
     //public const string TwitchLogoUrl = "https://www.ravenfall.stream/api/twitch/clan-logo/";
 
     private readonly ConcurrentDictionary<Guid, Logo> userLogos = new ConcurrentDictionary<Guid, Logo>();
+    // logos that could not be downloaded: not tried again for a while, and reported once (a server that refuses
+    // them, or a local test server whose certificate is not trusted, logged an error with its stack every 30 s)
+    private readonly ConcurrentDictionary<Guid, float> failedUntil = new ConcurrentDictionary<Guid, float>();
+    private readonly System.Collections.Generic.HashSet<Guid> reported = new System.Collections.Generic.HashSet<Guid>();
+    private const float RetryFailedAfter = 300f;
 
     [SerializeField] private Sprite replacementLogo;
 
@@ -108,6 +113,12 @@ public class PlayerLogoManager : MonoBehaviour
 
     private IEnumerator DownloadTexture(Guid userId, string url, Action<Sprite> onLogoDownloaded = null)
     {
+        if (failedUntil.TryGetValue(userId, out var until) && Time.unscaledTime < until)
+        {
+            onLogoDownloaded?.Invoke(replacementLogo);
+            yield break;
+        }
+
         if (userLogos.ContainsKey(userId))
         {
             if (TryGetLogo(userId, out var logo))
@@ -124,9 +135,9 @@ public class PlayerLogoManager : MonoBehaviour
 
         if (IsError(www.result))
         {
-#if DEBUG
-            Shinobytes.Debug.LogError("Failed to download texture from: " + url + ": " + www.error);
-#endif
+            failedUntil[userId] = Time.unscaledTime + RetryFailedAfter;
+            if (reported.Add(userId))
+                Shinobytes.Debug.LogWarning("Could not download the logo " + url + " (" + www.error + "); the default logo is used, tried again in " + RetryFailedAfter + " s.");
             userLogos.TryRemove(userId, out _);
             onLogoDownloaded?.Invoke(replacementLogo);
         }
