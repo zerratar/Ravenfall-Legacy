@@ -487,6 +487,17 @@ public static unsafe class GrassRenderer
         return max.x > ground.origin.x && max.y > ground.origin.y && min.x < ground.origin.x + ground.size.x && min.y < ground.origin.y + ground.size.y;
     }
 
+    /// <summary>
+    /// A mesh's triangles without reading its data: the flower meshes are not readable in a build, where
+    /// mesh.triangles logs an error and returns nothing.
+    /// </summary>
+    private static int TriangleCount(Mesh mesh)
+    {
+        var indices = 0L;
+        for (var s = 0; s < mesh.subMeshCount; ++s) indices += mesh.GetIndexCount(s);
+        return (int)(indices / 3);
+    }
+
     /// <summary>Everything again: the field, the kinds, the slots and the buffer, and the ground when it changed.</summary>
     private static void Rebuild()
     {
@@ -552,8 +563,8 @@ public static unsafe class GrassRenderer
             });
             cellCapacity += candidates;
             tallest = Mathf.Max(tallest, mesh.bounds.max.y * Mathf.Max(kind.size.x, kind.size.y));
-            triangles.Add(mesh.triangles.Length / 3);
-            triangles.Add(farMesh.triangles.Length / 3);
+            triangles.Add(TriangleCount(mesh));
+            triangles.Add(TriangleCount(farMesh));
             var nearId = group.RegisterMesh(mesh);
             meshIds.Add(nearId);
             meshIds.Add(farMesh == mesh ? nearId : group.RegisterMesh(farMesh));

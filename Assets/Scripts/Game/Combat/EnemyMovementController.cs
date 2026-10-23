@@ -44,6 +44,20 @@ public class EnemyMovementController : MonoBehaviour
 
     private NavMeshPath currentPath;
 
+    /// <summary>
+    /// Set on enemies placed in the scene, whose agent is saved disabled by EnemyAgentsWaitForNavMesh: the
+    /// world's navmesh is added by its NavMeshSurface once the scene has loaded, after Unity creates the agents,
+    /// so enabled ones logged "Failed to create agent because there is no valid NavMesh" on every start.
+    /// </summary>
+    [HideInInspector] public bool EnableAgentOnStart;
+
+    private void Start()
+    {
+        // by Start every OnEnable has run, the NavMeshSurface's included
+        if (EnableAgentOnStart && navMeshAgent) navMeshAgent.enabled = true;
+        EnableAgentOnStart = false;
+    }
+
     private void OnDestroy()
     {
         parameters.Clear();
@@ -134,6 +148,7 @@ public class EnemyMovementController : MonoBehaviour
 
     public void Lock()
     {
+        EnableAgentOnStart = false; // locked before Start: stays locked
         //if (aiPathAgent)
         //{
         //    aiPathAgent.destination = transform.position;
