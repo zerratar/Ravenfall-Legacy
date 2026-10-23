@@ -28,8 +28,10 @@ server connection (`docs/network-v2.md`). Steps are in order; the server goes fi
    same tests as Mono on 2026-10-23 (login, saves, a server kill, exit). The Linux build has not been run yet;
    start it on a Linux machine (or WSL with a display) before publishing it.
    Build both as release builds (not Development): File > Build Profiles, Windows and Linux.
-7. **Version**: the game is 0.9.5.0a. Set the server's expected client version to it when the build is published,
-   so streamers are told to update.
+   The builds go to `Build-release-windows` and `Build-release-linux` (gitignored).
+7. **Version**: the game is 0.9.5.0a. The server takes the latest version and the update links from the newest
+   GitHub release (`Github.cs`, asset names `update.`, `update-linux`, `Ravenfall.v`), so publishing the release is
+   what tells streamers to update.
 8. **Test a development build against production** (or staging), before publishing:
    - it says "Using the v2 server connection: wss://www.ravenfall.stream/api/v2/game" and the server logs
      "v2 session started" (this is the first time v2 runs over wss with the real certificate: locally it uses ws);
@@ -37,13 +39,25 @@ server connection (`docs/network-v2.md`). Steps are in order; the server goes fi
    - pull the network for a minute: it reconnects and nothing is lost;
    - Menu > Exit and Alt+F4 show "Saving players to the server before exiting..." and close within ~3 s;
    - commands from chat: join, craft, equip, gift, vendor.
-9. **Publish the build.**
+9. **Package and publish.** RavenNest `src/tools/RavenNest.Tools`: Tools > Build Release Packages (F2), or
+   `RavenNest.Tools package` from its bin folder. It refuses Development builds, non-CoreCLR builds and a Windows
+   and Linux build of different versions, and writes into `Build-release-packages/v0.9.5.0a-alpha/`:
+   - `Ravenfall.v0.9.5.0a-alpha.7z` and `update.7z` (Windows; the full one adds the RavenWeave updater from
+     `Build-release-extras/windows`, which is not in git, and the update leaves it out because it is running);
+   - `Ravenfall.v0.9.5.0a-alpha-linux.7z` and `update-linux.7z` (the same files);
+   - `RavenBot.7z` and `RavenBot-linux.7z` (the local bot, self contained);
+   - `release-notes.md` (from `docs/releases/v0.9.5.0a-alpha.md`), `SHA256SUMS.txt`, `package-log.txt`.
+   Unity names the files "Ravenfall Legacy"; the packages ship them as `Ravenfall.exe`, `Ravenfall.x86_64` and
+   `Ravenfall_Data` like every earlier release. The scripts that go in (`batch-mode.bat`, `update.sh`,
+   `install.sh`) are in `tools/release`.
+   Create the GitHub release with the tag `v0.9.5.0a-alpha`, the notes and the `.7z` files.
 
 ## 3. Bots
 
 10. **Redeploy ROBot** from RavenBot `master` (heartbeat, one writer per link, commands survive reconnects,
     split long replies). It works with old and new games, so it can go before or after the game.
-11. **Release the local bot** (same fixes for streamers who run it themselves).
+11. **The local bot** ships with the release (`RavenBot.7z`, `RavenBot-linux.7z`, version 0.9.5.0, shown when it
+    starts). It has the same commands as ROBot, `!market` and `!help` included.
 
 ## 4. After the release
 

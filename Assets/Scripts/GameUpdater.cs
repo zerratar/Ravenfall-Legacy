@@ -200,7 +200,9 @@ public class GameUpdater : MonoBehaviour
 
         // We don't do that check for now, so players will have to close down both instances if they f' things up.        
 
-        var isGame = args.Length == 0 || args.All(x => !x.Contains("overlay"));
+        // the first argument is the game's own path, which may well contain "overlay" (a folder name),
+        // so only a separate overlay argument (overlay, -overlay or --overlay) counts
+        var isGame = args.Skip(1).All(x => !x.TrimStart('-', '/').Equals("overlay", StringComparison.OrdinalIgnoreCase));
         try
         {
             if (isGame)
