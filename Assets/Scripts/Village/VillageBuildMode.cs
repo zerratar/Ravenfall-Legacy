@@ -530,6 +530,7 @@ public class VillageBuildMode : MonoBehaviour
         }
 
         Moving.transform.SetPositionAndRotation(moveStartPosition, moveStartRotation);
+        TownHouseSlot.SyncColliders();
         Moving = null;
         MoveProblem = null;
         if (overlay) overlay.Hide();
@@ -855,6 +856,13 @@ public class VillageBuildMode : MonoBehaviour
 
         // Anything smaller than a few hundred metres across is a lake or a fountain, not the sea.
         return best && best.bounds.size.x > 500f ? best.bounds.center.y : float.NegativeInfinity;
+    }
+
+    /// <summary>Turns the building or town hall being moved, or the one being placed, as the R key does.</summary>
+    public void RotateMove(float degrees)
+    {
+        if (Busy || (!IsMoving && !Armed.HasValue)) return;
+        moveRotation = Mathf.Repeat(moveRotation + degrees, 360f);
     }
 
     private void ReadRotationKeys()

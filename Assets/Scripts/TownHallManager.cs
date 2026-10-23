@@ -244,6 +244,9 @@ public class TownHallManager : MonoBehaviour
         {
             if (hall) hall.transform.SetPositionAndRotation(position, turn);
         }
+
+        // physics is usually off, and the hall's click box would stay behind: it could not be clicked where it stands
+        TownHouseSlot.SyncColliders();
     }
 
     /// <summary>Moves the town hall to where the streamer placed it.</summary>
@@ -262,6 +265,7 @@ public class TownHallManager : MonoBehaviour
             if (hall) hall.transform.SetPositionAndRotation(plazaPosition, plazaRotation);
         }
 
+        TownHouseSlot.SyncColliders();
         IsMoved = false;
     }
 

@@ -320,6 +320,14 @@ namespace Shinobytes.UI
             rotateButton.clicked += async () =>
             {
                 if (mode == null) return;
+                // Moving: turn what follows the mouse. Before, the tile was greyed out during a move, so lining a
+                // building up with a turned neighbour meant placing it, turning it and picking it up again.
+                if (mode.IsMoving)
+                {
+                    mode.RotateMove(rotateStep);
+                    return;
+                }
+
                 if (mode.HallSelected) await mode.RotateHallInPlaceAsync(rotateStep);
                 else if (mode.Selected) await mode.RotateInPlaceAsync(mode.Selected, rotateStep);
                 // still pointing at it: show the next turn
@@ -883,7 +891,8 @@ namespace Shinobytes.UI
 
             var idle = !mode.Busy && !mode.IsMoving;
             moveButton.SetEnabled(idle);
-            rotateButton.SetEnabled(idle);
+            // also while moving: it turns the building that follows the mouse, as R does
+            rotateButton.SetEnabled(!mode.Busy);
             assignButton.SetEnabled(idle && !empty);
             resetButton.SetEnabled(idle);
             resetButton.style.display = slot.IsMoved ? DisplayStyle.Flex : DisplayStyle.None;
@@ -937,7 +946,8 @@ namespace Shinobytes.UI
 
             var idle = !mode.Busy && !mode.IsMoving;
             moveButton.SetEnabled(idle);
-            rotateButton.SetEnabled(idle);
+            // also while moving: it turns the building that follows the mouse, as R does
+            rotateButton.SetEnabled(!mode.Busy);
             assignButton.style.display = DisplayStyle.None;
             resetButton.SetEnabled(idle);
             resetButton.style.display = townHall.IsMoved ? DisplayStyle.Flex : DisplayStyle.None;

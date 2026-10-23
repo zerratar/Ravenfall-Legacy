@@ -34,6 +34,9 @@ public class TavernHandler : MonoBehaviour
     public PetRacingGame PetRacing => petRacingGame;
     public ITavernGame ActiveGame => activeGame;
     public bool IsActivated => insideTavern;
+
+    /// <summary>The Halloween theme is up: the time is frozen at night and the lighting (TavernMood) is dimmer and purple.</summary>
+    public bool IsSpookyTheme => activeTheme && activeTheme == halloweenTheme;
     public bool MaintenanceMode => maintenanceMode;
     public bool CanRedeemItems;
 

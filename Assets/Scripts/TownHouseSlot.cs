@@ -71,6 +71,7 @@ public class TownHouseSlot : MonoBehaviour
         IsMoved = true;
         IsNudged = false;
         KeepGrassOff();
+        SyncColliders();
     }
 
     /// <summary>
@@ -84,6 +85,7 @@ public class TownHouseSlot : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, rotation, 0f);
         IsNudged = true;
         KeepGrassOff();
+        SyncColliders();
     }
 
     /// <summary>Puts the plot back where the scene had it.</summary>
@@ -95,6 +97,17 @@ public class TownHouseSlot : MonoBehaviour
         IsMoved = false;
         IsNudged = false;
         KeepGrassOff();
+        SyncColliders();
+    }
+
+    /// <summary>
+    /// Physics starts off (GraphicsToggler), so colliders moved from code stay where they were until something
+    /// syncs them, and a click on the plot where it now stands missed it. Placements are rare, so syncing here costs
+    /// nothing worth counting.
+    /// </summary>
+    public static void SyncColliders()
+    {
+        Physics.SyncTransforms();
     }
 
     /// <summary>
