@@ -152,7 +152,8 @@ namespace Shinobytes.UI
             switch (step)
             {
                 case Step.Session: return nest.SessionStarted;
-                case Step.Server: return nest.SessionStarted && nest.Tcp != null && nest.Tcp.IsReady;
+                // ServerReady is the v2 connection, or the old event socket; on v2 the old socket never connects
+                case Step.Server: return nest.SessionStarted && nest.ServerReady;
                 case Step.Items: return gm.IsLoaded;
                 case Step.Village: return gm.Village != null && gm.Village.IsLoaded;
                 default: return true;

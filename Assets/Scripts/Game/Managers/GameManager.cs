@@ -1642,7 +1642,10 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (!player.ferryHandler.OnFerry)
         {
-            player.Movement.AdjustPlayerPositionToNavmesh(0.5f);
+            // Players appear 1-3 m above the spawn point and drop onto the navmesh from there. Within 0.5 m
+            // that only worked while the ground was high enough: on the new terrain the navmesh at the spawn
+            // is up to 2 m below them, so most new players stayed off it, idle, until the stuck check moved them.
+            player.Movement.AdjustPlayerPositionToNavmesh(4f);
         }
 
         playerList.AddPlayer(player);
