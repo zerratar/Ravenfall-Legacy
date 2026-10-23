@@ -152,15 +152,17 @@ public class LoginHandler : MonoBehaviour
         {
             if (await gameManager.RavenNestLoginAsync(username, password))
             {
-                // the password itself is never kept: a device token stands in for it
-                PlayerPrefs.DeleteKey(LegacyPasswordKey);
+                // the password itself is never kept: a device token stands in for it. One saved by an
+                // older version stays until the token is stored, so a registration that fails does not
+                // quietly end remember me (it signs in with the password once more next time)
                 if (rememberMe)
                 {
                     PlayerPrefs.SetString(LegacyUsernameKey, username);
-                    await RememberThisDevice();
+                    if (await RememberThisDevice()) PlayerPrefs.DeleteKey(LegacyPasswordKey);
                 }
                 else
                 {
+                    PlayerPrefs.DeleteKey(LegacyPasswordKey);
                     PlayerPrefs.DeleteKey(LegacyUsernameKey);
                     DeviceTokenStore.Clear();
                 }
@@ -182,7 +184,8 @@ public class LoginHandler : MonoBehaviour
         }
     }
 
-    private async Task RememberThisDevice()
+    /// <summary>Registers this computer for remember me; true once its device token is stored.</summary>
+    private async Task<bool> RememberThisDevice()
     {
         try
         {
@@ -191,6 +194,7 @@ public class LoginHandler : MonoBehaviour
             {
                 deviceToken = token;
                 DeviceTokenStore.Save(token);
+                return true;
             }
         }
         catch (Exception exc)
@@ -198,6 +202,7 @@ public class LoginHandler : MonoBehaviour
             // signed in all the same; it only will not sign in on its own next time
             Shinobytes.Debug.LogWarning("Could not remember this computer: " + exc.Message);
         }
+        return false;
     }
 
     // ---- A saved sign in -----------------------------------------------------------------------
