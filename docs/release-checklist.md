@@ -16,7 +16,9 @@ server connection (`docs/network-v2.md`). Steps are in order; the server goes fi
 4. **Check that today's game still works**: a streamer on the released game (0.9.4.3a) can start a session,
    players join and gain experience (saved), and events arrive. The old path is unchanged for them.
 5. **Token signing key** (closes forged auth and session tokens): add `AppSettings:TokenSigningKey` and restart.
-   Every player and streamer then logs in once more, so this is best done together with the release.
+   Every player and streamer then logs in once more, and running games lose their session (their tokens carry no
+   signature), so do it at a quiet hour with a heads-up on Discord. Decided 2026-10-23: not with the 0.9.5
+   release, later. Without the key nothing changes for players: tokens are signed as before.
    Generate the value with:
    `[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(64)) | Set-Clipboard`
 
