@@ -27,12 +27,15 @@ public class MusicManager : MonoBehaviour
     public float fadeDuration = 1.0f;
 
     // a change of situation crossfades over this; a new track in the same situation fades in over the shorter one
-    private const float SwitchFade = 2.5f;
+    private const float SwitchFade = 2f;
     private const float TrackFade = 1f;
     private const float PauseBetweenTracks = 2f;
     // how long a new situation must last before the music follows it
     private const float SuddenDelay = 1f;
-    private const float GentleDelay = 8f;
+    private const float GentleDelay = 2.5f;
+    // the camera moves to another player every 10 s by itself: a gentle change (another island, night) follows
+    // quickly, but not more often than this, so the music does not change with every player the camera shows
+    private const float GentleGap = 30f;
     private const float CheckEvery = 0.5f;
     // night and rain need to be clearly there, not just starting
     private const float NightFrom = 0.6f;
@@ -46,6 +49,7 @@ public class MusicManager : MonoBehaviour
     private MusicContext? playing;
     private MusicContext? pending;
     private float pendingSince;
+    private float lastSwitch = -1000f;
     private float nextCheck;
     private float nextTrackAt = -1f;
     private bool forceSwitch;
@@ -134,11 +138,14 @@ public class MusicManager : MonoBehaviour
                     pending = wanted;
                     pendingSince = now;
                 }
-                var delay = forceSwitch ? 0f : IsSudden(wanted) || (playing.HasValue && IsSudden(playing.Value)) ? SuddenDelay : GentleDelay;
-                if (!playing.HasValue || now - pendingSince >= delay)
+                var sudden = forceSwitch || IsSudden(wanted) || (playing.HasValue && IsSudden(playing.Value));
+                var delay = forceSwitch ? 0f : sudden ? SuddenDelay : GentleDelay;
+                var ready = now - pendingSince >= delay && (sudden || now - lastSwitch >= GentleGap);
+                if (!playing.HasValue || ready)
                 {
                     playing = wanted;
                     pending = null;
+                    lastSwitch = now;
                     PlayNext(SwitchFade);
                 }
             }

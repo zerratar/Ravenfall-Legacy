@@ -989,6 +989,8 @@ public static class Localization
     public static string UI_SETTINGS_LIGHTNING_HINT = "The lightning of a thunderstorm: flashes in the clouds and bolts that light up the land. Turn it off if flashing light bothers you or your viewers.";
     public static string UI_SETTINGS_WEATHER_SOUNDS = "Weather sounds";
     public static string UI_SETTINGS_WEATHER_SOUNDS_HINT = "The rain, and the thunder rolling in as a storm comes.";
+    public static string UI_SETTINGS_SOUND_EFFECTS = "Sound effects";
+    public static string UI_SETTINGS_SOUND_EFFECTS_HINT = "Axes, picks and splashes near the camera, birds, crickets, waves, wind, fires and animals.";
     public static string UI_SETTINGS_DAYNIGHT = "Day and night cycle";
     public static string UI_SETTINGS_REALTIME = "Follow the clock";
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";

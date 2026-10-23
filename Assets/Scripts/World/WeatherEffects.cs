@@ -52,6 +52,9 @@ public sealed class WeatherEffects : MonoBehaviour
     private Material rainMaterial, rippleMaterial, boltMaterial;
     private Ocean ocean;
     private AudioSource rainSound;
+    // recorded rain crossfades between two sources when it changes from light to moderate to strong
+    private AudioSource rainSoundOut;
+    private SoundKind? rainTier;
     private readonly AudioSource[] thunderSounds = new AudioSource[3];
     private AudioClip[] nearThunder, farThunder;
     private readonly List<(float at, bool near, float volume, float pan)> thunderToCome = new List<(float, bool, float, float)>();
@@ -93,7 +96,14 @@ public sealed class WeatherEffects : MonoBehaviour
         ripples = MakeRipples();
         rainSound = MakeSound("Rain Sound");
         rainSound.loop = true;
-        for (var i = 0; i < thunderSounds.Length; ++i) thunderSounds[i] = MakeSound("Thunder Sound");
+        rainSoundOut = MakeSound("Rain Sound");
+        rainSoundOut.loop = true;
+        for (var i = 0; i < thunderSounds.Length; ++i)
+        {
+            thunderSounds[i] = MakeSound("Thunder Sound");
+            // far thunder is recorded thunder with its crack taken off
+            thunderSounds[i].gameObject.AddComponent<AudioLowPassFilter>().cutoffFrequency = 22000f;
+        }
         strikeLight = new GameObject("Lightning Light").AddComponent<Light>();
         strikeLight.transform.SetParent(transform, false);
         strikeLight.type = LightType.Point;
@@ -251,12 +261,17 @@ public sealed class WeatherEffects : MonoBehaviour
 
     private void Sounds(bool outside, float wet)
     {
-        // the rain's hiss, made the first time it rains, rising and falling with it
-        var rainVolume = Volume * wet * 0.45f;
-        if (rainVolume > 0.001f && !rainSound.clip) rainSound.clip = WeatherSounds.Rain(7);
-        rainSound.volume = Mathf.MoveTowards(rainSound.volume, rainVolume, Time.deltaTime * 0.25f);
-        if (rainSound.volume > 0.001f && !rainSound.isPlaying && rainSound.clip) rainSound.Play();
-        else if (rainSound.volume <= 0.001f && rainSound.isPlaying) rainSound.Stop();
+        // the rain, rising and falling with it: recorded (light, moderate or strong) when the sounds are there,
+        // otherwise the hiss made the first time it rains
+        if (SoundLibrary.Instance && SoundLibrary.Instance.Get(SoundKind.RainLight).Count > 0) RecordedRain(wet);
+        else
+        {
+            var rainVolume = Volume * wet * 0.45f;
+            if (rainVolume > 0.001f && !rainSound.clip) rainSound.clip = WeatherSounds.Rain(7);
+            rainSound.volume = Mathf.MoveTowards(rainSound.volume, rainVolume, Time.deltaTime * 0.25f);
+            if (rainSound.volume > 0.001f && !rainSound.isPlaying && rainSound.clip) rainSound.Play();
+            else if (rainSound.volume <= 0.001f && rainSound.isPlaying) rainSound.Stop();
+        }
 
         // thunder, once its sound has come; in a dungeon none is heard
         if (!outside) thunderToCome.Clear();
@@ -266,7 +281,17 @@ public sealed class WeatherEffects : MonoBehaviour
             if (Time.time < at) continue;
             thunderToCome.RemoveAt(i);
             if (Volume <= 0.001f) continue;
-            if (nearThunder == null)
+            var recorded = SoundLibrary.Instance ? SoundLibrary.Instance.Get(SoundKind.Thunder) : null;
+            if (recorded != null && recorded.Count > 0)
+            {
+                if (nearThunder == null || nearThunder.Length != recorded.Count)
+                {
+                    nearThunder = new AudioClip[recorded.Count];
+                    for (var c = 0; c < recorded.Count; ++c) nearThunder[c] = recorded[c];
+                    farThunder = nearThunder;
+                }
+            }
+            else if (nearThunder == null)
             {
                 nearThunder = new[] { WeatherSounds.Thunder(true, 11), WeatherSounds.Thunder(true, 12), WeatherSounds.Thunder(true, 13) };
                 farThunder = new[] { WeatherSounds.Thunder(false, 21), WeatherSounds.Thunder(false, 22), WeatherSounds.Thunder(false, 23) };
@@ -282,8 +307,44 @@ public sealed class WeatherEffects : MonoBehaviour
             source.clip = clips[Random.Range(0, clips.Length)];
             source.volume = Volume * volume;
             source.panStereo = pan;
-            source.pitch = Random.Range(0.9f, 1.08f);
+            source.pitch = near ? Random.Range(0.9f, 1.08f) : Random.Range(0.78f, 0.92f);
+            var muffle = source.GetComponent<AudioLowPassFilter>();
+            if (muffle) muffle.cutoffFrequency = near ? 22000f : 900f;
             source.Play();
+        }
+    }
+
+    /// <summary>
+    /// Recorded rain: the light, moderate or strong loop for how hard it rains, a new loop crossfading in when it
+    /// changes, each started somewhere in so two showers never sound alike.
+    /// </summary>
+    private void RecordedRain(float wet)
+    {
+        var rainVolume = Volume * wet * 0.6f;
+        var tier = wet < 0.4f ? SoundKind.RainLight : wet < 0.75f ? SoundKind.RainModerate : SoundKind.RainStrong;
+        if (SoundLibrary.Instance.Get(tier).Count == 0) tier = SoundKind.RainLight;
+        if (rainVolume > 0.001f && tier != rainTier)
+        {
+            var clip = SoundLibrary.Pick(tier);
+            if (clip)
+            {
+                (rainSound, rainSoundOut) = (rainSoundOut, rainSound);
+                rainSound.clip = clip;
+                rainSound.volume = 0f;
+                rainSound.time = Random.Range(0f, clip.length * 0.8f);
+                rainSound.Play();
+                rainTier = tier;
+            }
+        }
+
+        var fade = Time.deltaTime * 0.25f;
+        rainSound.volume = Mathf.MoveTowards(rainSound.volume, rainVolume, fade);
+        rainSoundOut.volume = Mathf.MoveTowards(rainSoundOut.volume, 0f, fade);
+        if (rainSoundOut.isPlaying && rainSoundOut.volume <= 0.001f) rainSoundOut.Stop();
+        if (rainSound.isPlaying && rainSound.volume <= 0.001f && rainVolume <= 0.001f)
+        {
+            rainSound.Stop();
+            rainTier = null;
         }
     }
 

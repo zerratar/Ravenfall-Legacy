@@ -1327,6 +1327,8 @@
     "UI_SETTINGS_LIGHTNING_HINT": "Blixtarna i ett åskväder: sken i molnen och nedslag som lyser upp landet. Stäng av om blinkande ljus stör dig eller dina tittare.",
     "UI_SETTINGS_WEATHER_SOUNDS": "Vädrets ljud",
     "UI_SETTINGS_WEATHER_SOUNDS_HINT": "Regnet, och åskan som mullrar allt närmare när ett oväder kommer.",
+    "UI_SETTINGS_SOUND_EFFECTS": "Ljudeffekter",
+    "UI_SETTINGS_SOUND_EFFECTS_HINT": "Yxor, hackor och plask nära kameran, fåglar, syrsor, vågor, vind, eldar och djur.",
     "UI_SETTINGS_POTATO": "Potatisläge",
     "UI_SETTINGS_POTATO_HINT": "Den lägsta grafiken som finns, för datorer som har det jobbigt.",
     "UI_SETTINGS_QUALITY": "Grafikkvalitet",

@@ -2027,6 +2027,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         playerAnimations.Fish();
+        GameSounds.Play(SoundKind.WaterSplash, fishingSpot.transform.position, 0.6f, 0.7f, this);
 
         LookAt(fishingSpot.LookTransform);
 
@@ -2064,6 +2065,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         LookAt(craftingStation.transform);
+        GameSounds.Play(SoundKind.Sizzle, craftingStation.transform.position, 0.5f, 0.2f, this);
 
         if (craftingStation.Craft(this) && Chunk != null)
         {
@@ -2096,6 +2098,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         playerAnimations.Brew();
+        GameSounds.Play(SoundKind.Bubbles, craftingStation.transform.position, 0.5f, 0.2f, this);
         //playerAnimations.StartBrewing();
 
         LookAt(craftingStation.transform);
@@ -2131,6 +2134,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         playerAnimations.Craft();
+        GameSounds.Play(UnityEngine.Random.value < 0.6f ? SoundKind.Hammer : SoundKind.Saw, craftingStation.transform.position, 0.6f, 0.3f, this);
 
         LookAt(craftingStation.transform);
         if (craftingStation.Craft(this) && Chunk != null)
@@ -2164,6 +2168,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         playerAnimations.Mine();
+        GameSounds.Play(SoundKind.RockImpact, rock.transform.position, 0.8f, 0.35f, this);
 
         LookAt(rock.transform);
 
@@ -2199,6 +2204,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         LookAt(farm.transform);
+        GameSounds.Play(SoundKind.Soil, farm.transform.position, 0.6f, 0.3f, this);
 
         if (farm.Farm(this) && Chunk != null)
         {
@@ -2260,6 +2266,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             var actionTime = chompTreeAnimationTime / 2f;
             if (delta < actionTime)
                 return false;
+
+            // the hands are in the plants now
+            GameSounds.Play(SoundKind.Foliage, gather.Position, 0.55f, 0f, this);
 
             if (!gather.Gather(this))
                 return false;

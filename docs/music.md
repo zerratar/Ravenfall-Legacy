@@ -45,7 +45,8 @@ arena, tavern, village build mode, onsen, sailing, rain, night, the island, day.
 mixes them with the day's (its own twice as often), so two island tracks do not repeat for hours.
 
 Sudden changes (war, raid boss, dungeon, arena, the menu) switch within a second. Gentle ones (night falling, rain,
-another island) once they have lasted 8 seconds, so the music does not flick while the camera moves between players.
+another island, off the ferry) once they have lasted 2.5 seconds, but at most once every 30 seconds: the camera moves
+to another player every 10 seconds by itself, and the music should not change with every one.
 With no library, the three clips on the MusicManager play as before (background, raid boss, war).
 
 The tavern lute and Bewitched from the music packs are added to Tavern and Dungeon.

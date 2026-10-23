@@ -51,6 +51,7 @@ public class PlayerSettings
     public bool? ChangingWeather;
     public bool? LightningFlashes;
     public float? WeatherVolume;
+    public float? SoundEffectsVolume;
     public bool? Bloom;
     public float? CameraRotationSpeed;
 
@@ -439,6 +440,7 @@ public class PlayerSettings
             Serialize(sw, "changingWeather", obj.ChangingWeather);
             Serialize(sw, "lightningFlashes", obj.LightningFlashes);
             Serialize(sw, "weatherVolume", obj.WeatherVolume);
+            Serialize(sw, "soundEffectsVolume", obj.SoundEffectsVolume);
             Serialize(sw, "bloom", obj.Bloom);
             Serialize(sw, "cameraRotationSpeed", obj.CameraRotationSpeed);
             Serialize(sw, "masterVolume", obj.MasterVolume);

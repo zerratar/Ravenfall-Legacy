@@ -524,6 +524,8 @@ namespace Shinobytes.UI
                 v => v >= 0.999f ? Localization.UI_SETTINGS_BWAAAH : v <= 0.001f ? Localization.UI_SETTINGS_OFF : Percent(v), v => SettingsApplier.SetEventVolume(g, v));
             SliderRow(c, Localization.UI_SETTINGS_WEATHER_SOUNDS, Localization.UI_SETTINGS_WEATHER_SOUNDS_HINT, 0f, 1f, SettingsApplier.WeatherVolume, SettingsApplier.Defaults.WeatherVolume,
                 v => v <= 0.001f ? Localization.UI_SETTINGS_OFF : Percent(v), SettingsApplier.SetWeatherVolume);
+            SliderRow(c, Localization.UI_SETTINGS_SOUND_EFFECTS, Localization.UI_SETTINGS_SOUND_EFFECTS_HINT, 0f, 1f, SettingsApplier.SoundEffectsVolume, SettingsApplier.Defaults.SoundEffectsVolume,
+                v => v <= 0.001f ? Localization.UI_SETTINGS_OFF : Percent(v), SettingsApplier.SetSoundEffectsVolume);
         }
 
         private void BuildInterface(VisualElement c)

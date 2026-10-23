@@ -124,6 +124,7 @@ public sealed class ResourceTarget
         health -= amount;
         if (health > 0) return false;
         Deplete();
+        GameSounds.Play(SoundKind.TreeFall, Position, 1f, 0.15f, player);
         return true;
     }
 

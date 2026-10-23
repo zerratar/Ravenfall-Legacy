@@ -116,6 +116,7 @@ public static class SettingsApplier
         public const int Resolution = 0;              // the largest, the monitor's own
         public const float MasterVolume = 1f;
         public const float WeatherVolume = 0.6f;
+        public const float SoundEffectsVolume = 0.6f;
         public const float FreeCameraSpeed = 50f;
         public const float Sensitivity = 1f;
         public const bool InvertLook = false;
@@ -166,6 +167,7 @@ public static class SettingsApplier
         ApplyFrameRate();
         AudioListener.volume = MasterVolume;
         WeatherEffects.Volume = WeatherVolume;
+        GameSounds.Volume = SoundEffectsVolume;
         ApplyCamera();
         ApplyExpAnnouncements();
 
@@ -385,6 +387,15 @@ public static class SettingsApplier
     {
         PlayerSettings.Instance.WeatherVolume = value;
         WeatherEffects.Volume = value;
+    }
+
+    // what players do, the place round the camera and the animals (GameSounds)
+    public static float SoundEffectsVolume => PlayerSettings.Instance.SoundEffectsVolume.GetValueOrDefault(Defaults.SoundEffectsVolume);
+
+    public static void SetSoundEffectsVolume(float value)
+    {
+        PlayerSettings.Instance.SoundEffectsVolume = value;
+        GameSounds.Volume = value;
     }
 
     // ---- Camera ---------------------------------------------------------------------------------

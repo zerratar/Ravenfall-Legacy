@@ -277,6 +277,9 @@ public class PlayerCombat
             if (delta < actionTime)
                 return false;
 
+            // the axe is in the tree now
+            GameSounds.Play(SoundKind.WoodChop, tree.Position, 0.8f, 0f, owner);
+
             var damage = CalculateDamage(tree);
             if (!tree.DoDamage(owner, damage))
                 return true;
