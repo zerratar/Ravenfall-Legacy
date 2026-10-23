@@ -22,13 +22,14 @@ server connection (`docs/network-v2.md`). Steps are in order; the server goes fi
 
 ## 2. Game
 
-6. **Unity version**: the project is on 6000.7.0b4 (beta). 6000.7.0b6 is the newest 6.7 beta; 6.7 is what makes
-   CoreCLR player builds possible. Decide whether to move to b6 first.
-7. **Version**: bump `bundleVersion` (ProjectSettings, now 0.9.4.4a) and set the server's expected client version
-   when the build is published, so streamers are told to update.
+6. **Unity version and scripting backend**: the project is on 6000.7.0b4 (beta). 6000.7.0b6 is the newest 6.7
+   beta. Players build on Mono; CoreCLR players are experimental in 6.7 (a CoreCLR test build boots and passed
+   the same tests as Mono on 2026-10-23). Ship on Mono unless decided otherwise.
+7. **Version**: the game is 0.9.5.0a. Set the server's expected client version to it when the build is published,
+   so streamers are told to update.
 8. **Test a development build against production** (or staging), before publishing:
    - it says "Using the v2 server connection: wss://www.ravenfall.stream/api/v2/game" and the server logs
-     "v2 session started" (this is the first time v2 runs over wss with the real certificate, and on CoreCLR);
+     "v2 session started" (this is the first time v2 runs over wss with the real certificate: locally it uses ws);
    - players join, gain experience; restart the game and the progress is there;
    - pull the network for a minute: it reconnects and nothing is lost;
    - Menu > Exit and Alt+F4 show "Saving players to the server before exiting..." and close within ~3 s;
