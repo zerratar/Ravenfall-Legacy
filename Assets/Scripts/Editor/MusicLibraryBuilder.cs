@@ -21,6 +21,8 @@ public sealed class MusicLibraryBuilder : AssetPostprocessor, IPreprocessBuildWi
     private const string MusicFolder = "Assets/Sounds/Music";
     private const string LibraryFolder = "Assets/Sounds/Resources";
     private const string LibraryPath = LibraryFolder + "/" + MusicLibrary.ResourceName + ".asset";
+    // LUFS every track is brought to (the quietest Suno tracks are about this)
+    private const float MusicLoudness = -17f;
 
     // tracks from the music packs that fit a situation, where they are
     private static readonly (string path, MusicContext context)[] Extras =
@@ -124,7 +126,10 @@ public sealed class MusicLibraryBuilder : AssetPostprocessor, IPreprocessBuildWi
         foreach (var pair in byContext)
         {
             pair.Value.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
-            entries.Add(new MusicLibrary.Entry { Context = pair.Key, Clips = pair.Value.ToArray() });
+            // every track to the loudness of the quietest Suno tracks; only ever down, so nothing clips
+            var gains = new float[pair.Value.Count];
+            for (var i = 0; i < gains.Length; ++i) gains[i] = Loudness.Gain(AssetDatabase.GetAssetPath(pair.Value[i]), MusicLoudness, 0.25f, 1f);
+            entries.Add(new MusicLibrary.Entry { Context = pair.Key, Clips = pair.Value.ToArray(), Gains = gains });
         }
 
         if (!AssetDatabase.IsValidFolder(LibraryFolder)) AssetDatabase.CreateFolder("Assets/Sounds", "Resources");

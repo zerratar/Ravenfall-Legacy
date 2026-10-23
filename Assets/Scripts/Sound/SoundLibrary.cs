@@ -53,6 +53,8 @@ public sealed class SoundLibrary : ScriptableObject
     {
         public SoundKind Kind;
         public AudioClip[] Clips = Array.Empty<AudioClip>();
+        // per clip, to bring the loops to the same loudness (the pack's lie between -31 and -41 LUFS)
+        public float[] Gains = Array.Empty<float>();
     }
 
     public Entry[] Entries = Array.Empty<Entry>();
@@ -99,5 +101,33 @@ public sealed class SoundLibrary : ScriptableObject
         return clips.Count == 0 ? null : clips[UnityEngine.Random.Range(0, clips.Count)];
     }
 
-    private void OnValidate() => lookup = null;
+    private Dictionary<AudioClip, float> gains;
+
+    /// <summary>How much a clip is turned down or up to the common loudness (Loudness, in the editor); 1 if unknown.</summary>
+    public float GainOf(AudioClip clip)
+    {
+        if (!clip) return 1f;
+        if (gains == null)
+        {
+            gains = new Dictionary<AudioClip, float>();
+            foreach (var entry in Entries)
+            {
+                if (entry?.Clips == null) continue;
+                for (var i = 0; i < entry.Clips.Length; ++i)
+                {
+                    if (entry.Clips[i] && entry.Gains != null && i < entry.Gains.Length) gains[entry.Clips[i]] = entry.Gains[i];
+                }
+            }
+        }
+        return gains.TryGetValue(clip, out var gain) ? gain : 1f;
+    }
+
+    /// <summary>A clip's gain in the library, 1 without one.</summary>
+    public static float Gain(AudioClip clip) => Instance ? Instance.GainOf(clip) : 1f;
+
+    private void OnValidate()
+    {
+        lookup = null;
+        gains = null;
+    }
 }

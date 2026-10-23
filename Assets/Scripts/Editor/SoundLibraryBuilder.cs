@@ -25,6 +25,8 @@ public sealed class SoundLibraryBuilder : AssetPostprocessor, IPreprocessBuildWi
     private const string LibraryFolder = "Assets/Sounds/Resources";
     private const string LibraryPath = LibraryFolder + "/" + SoundLibrary.ResourceName + ".asset";
     private const int MaxPerKind = 8;
+    // LUFS the loops are brought to (the birds are about this; the rain was 10 dB quieter)
+    private const float LoopLoudness = -31f;
 
     // pack names, most specific first
     private static readonly (string prefix, SoundKind kind)[] Loops =
@@ -134,13 +136,17 @@ public sealed class SoundLibraryBuilder : AssetPostprocessor, IPreprocessBuildWi
                 return own != 0 ? -own : string.CompareOrdinal(a.path, b.path);
             });
             var clips = new List<AudioClip>();
+            var gains = new List<float>();
             foreach (var (path, _) in pair.Value)
             {
                 if (clips.Count >= MaxPerKind) break;
                 var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
-                if (clip) clips.Add(clip);
+                if (!clip) continue;
+                clips.Add(clip);
+                // the loops to one loudness, so the mix in GameSounds and WeatherEffects is what it says
+                gains.Add(IsLoop(pair.Key) ? Loudness.Gain(path, LoopLoudness, 0.25f, 4f) : 1f);
             }
-            entries.Add(new SoundLibrary.Entry { Kind = pair.Key, Clips = clips.ToArray() });
+            entries.Add(new SoundLibrary.Entry { Kind = pair.Key, Clips = clips.ToArray(), Gains = gains.ToArray() });
         }
 
         if (!AssetDatabase.IsValidFolder(LibraryFolder)) AssetDatabase.CreateFolder("Assets/Sounds", "Resources");

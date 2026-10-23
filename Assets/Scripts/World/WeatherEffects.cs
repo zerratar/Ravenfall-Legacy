@@ -55,6 +55,7 @@ public sealed class WeatherEffects : MonoBehaviour
     // recorded rain crossfades between two sources when it changes from light to moderate to strong
     private AudioSource rainSoundOut;
     private SoundKind? rainTier;
+    private float rainGain = 1f;
     private readonly AudioSource[] thunderSounds = new AudioSource[3];
     private AudioClip[] nearThunder, farThunder;
     private readonly List<(float at, bool near, float volume, float pan)> thunderToCome = new List<(float, bool, float, float)>();
@@ -330,6 +331,7 @@ public sealed class WeatherEffects : MonoBehaviour
             {
                 (rainSound, rainSoundOut) = (rainSoundOut, rainSound);
                 rainSound.clip = clip;
+                rainGain = SoundLibrary.Gain(clip);
                 rainSound.volume = 0f;
                 rainSound.time = Random.Range(0f, clip.length * 0.8f);
                 rainSound.Play();
@@ -338,7 +340,7 @@ public sealed class WeatherEffects : MonoBehaviour
         }
 
         var fade = Time.deltaTime * 0.25f;
-        rainSound.volume = Mathf.MoveTowards(rainSound.volume, rainVolume, fade);
+        rainSound.volume = Mathf.MoveTowards(rainSound.volume, rainVolume * rainGain, fade);
         rainSoundOut.volume = Mathf.MoveTowards(rainSoundOut.volume, 0f, fade);
         if (rainSoundOut.isPlaying && rainSoundOut.volume <= 0.001f) rainSoundOut.Stop();
         if (rainSound.isPlaying && rainSound.volume <= 0.001f && rainVolume <= 0.001f)

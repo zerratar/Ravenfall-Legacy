@@ -40,6 +40,8 @@ public sealed class MusicLibrary : ScriptableObject
     {
         public MusicContext Context;
         public AudioClip[] Clips = Array.Empty<AudioClip>();
+        // per clip, to bring the tracks to the same loudness
+        public float[] Gains = Array.Empty<float>();
     }
 
     public Entry[] Entries = Array.Empty<Entry>();
@@ -60,5 +62,30 @@ public sealed class MusicLibrary : ScriptableObject
         return lookup.TryGetValue(context, out var clips) ? clips : Array.Empty<AudioClip>();
     }
 
-    private void OnValidate() => lookup = null;
+    private Dictionary<AudioClip, float> gains;
+
+    /// <summary>How much a clip is turned down or up to the common loudness (Loudness, in the editor); 1 if unknown.</summary>
+    public float Gain(AudioClip clip)
+    {
+        if (!clip) return 1f;
+        if (gains == null)
+        {
+            gains = new Dictionary<AudioClip, float>();
+            foreach (var entry in Entries)
+            {
+                if (entry?.Clips == null) continue;
+                for (var i = 0; i < entry.Clips.Length; ++i)
+                {
+                    if (entry.Clips[i] && entry.Gains != null && i < entry.Gains.Length) gains[entry.Clips[i]] = entry.Gains[i];
+                }
+            }
+        }
+        return gains.TryGetValue(clip, out var gain) ? gain : 1f;
+    }
+
+    private void OnValidate()
+    {
+        lookup = null;
+        gains = null;
+    }
 }

@@ -21,6 +21,8 @@ public class MusicManager : MonoBehaviour
     public AudioClip BackgroundMusic;
 
     private AudioSource[] _player;
+    // each source's track turned to the common loudness (MusicLibrary.Gain)
+    private readonly float[] gain = { 1f, 1f };
     private IEnumerator[] fader = new IEnumerator[2];
     private int ActivePlayer = 0;
 
@@ -75,7 +77,7 @@ public class MusicManager : MonoBehaviour
             // A fade in progress picks the new value up by itself.
             if (_player != null && _player.Length > 0 && fader[1] == null)
             {
-                _player[ActivePlayer].volume = value;
+                _player[ActivePlayer].volume = value * gain[ActivePlayer];
             }
         }
     }
@@ -360,7 +362,7 @@ public class MusicManager : MonoBehaviour
         //Fade-out the active play, if it is not silent (eg: first start)
         if (_player[ActivePlayer].isPlaying && _player[ActivePlayer].volume > 0)
         {
-            fader[0] = FadeAudioSource(_player[ActivePlayer], fade, false, () => { fader[0] = null; });
+            fader[0] = FadeAudioSource(_player[ActivePlayer], 1f, fade, false, () => { fader[0] = null; });
             StartCoroutine(fader[0]);
         }
         else
@@ -372,8 +374,9 @@ public class MusicManager : MonoBehaviour
         int NextPlayer = (ActivePlayer + 1) % _player.Length;
         _player[NextPlayer].clip = clip;
         _player[NextPlayer].volume = 0f;
+        gain[NextPlayer] = library ? library.Gain(clip) : 1f;
         _player[NextPlayer].Play();
-        fader[1] = FadeAudioSource(_player[NextPlayer], fade, true, () => { fader[1] = null; });
+        fader[1] = FadeAudioSource(_player[NextPlayer], gain[NextPlayer], fade, true, () => { fader[1] = null; });
         StartCoroutine(fader[1]);
 
         //Register new active player
@@ -385,18 +388,18 @@ public class MusicManager : MonoBehaviour
     /// target is read every frame, so a volume change during a fade is kept. A player faded out is
     /// stopped, rather than left looping at zero.
     /// </summary>
-    IEnumerator FadeAudioSource(AudioSource player, float duration, bool fadeIn, System.Action finishedCallback)
+    IEnumerator FadeAudioSource(AudioSource player, float trackGain, float duration, bool fadeIn, System.Action finishedCallback)
     {
         var start = player.volume;
         var elapsed = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
-            player.volume = Mathf.Lerp(start, fadeIn ? _volume : 0f, elapsed / duration);
+            player.volume = Mathf.Lerp(start, fadeIn ? _volume * trackGain : 0f, elapsed / duration);
             yield return null;
         }
 
-        player.volume = fadeIn ? _volume : 0f;
+        player.volume = fadeIn ? _volume * trackGain : 0f;
         if (!fadeIn) player.Stop();
 
         finishedCallback?.Invoke();

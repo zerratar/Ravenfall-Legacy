@@ -51,6 +51,14 @@ With no library, the three clips on the MusicManager play as before (background,
 
 The tavern lute and Bewitched from the music packs are added to Tavern and Dungeon.
 
+## Loudness
+
+Every track plays at the same loudness: the library builder measures each file once with ffmpeg (EBU R128, cached
+in `Library/RavenfallLoudness.txt`) and the playlist turns louder tracks down to -17 LUFS, the level of the quietest
+Suno tracks (they measured -17 to -14.6; the old raid and war music -13.3). Only ever down, so nothing clips.
+ffmpeg is looked for in `RAVENFALL_FFMPEG`, on the PATH and in `C:\Tools\ffmpeg\bin`; without it tracks play as
+they are.
+
 ## Versioning
 
 The music files are not in git (WAV is ignored, the Suno MP3s are not added), and neither is the library, which is

@@ -50,6 +50,8 @@ public sealed class GameSounds : MonoBehaviour
         public SoundKind Kind;
         public AudioSource Source;
         public float Target;
+        // the playing loop turned to the common loudness
+        public float Gain = 1f;
     }
     private readonly List<Bed> beds = new List<Bed>();
     private Bed wind, birds, crickets, insects, waves, village;
@@ -222,10 +224,12 @@ public sealed class GameSounds : MonoBehaviour
         foreach (var bed in beds)
         {
             var source = bed.Source;
-            source.volume = Mathf.MoveTowards(source.volume, bed.Target * Volume, fade);
-            if (source.volume > 0.001f && !source.isPlaying)
+            var wanted = bed.Target * Volume;
+            source.volume = Mathf.MoveTowards(source.volume, wanted * bed.Gain, fade);
+            if (wanted > 0.001f && !source.isPlaying)
             {
                 source.clip = SoundLibrary.Pick(bed.Kind);
+                bed.Gain = SoundLibrary.Gain(source.clip);
                 if (source.clip)
                 {
                     // each loop starts somewhere in, so two of the same never line up
@@ -389,7 +393,6 @@ public sealed class GameSounds : MonoBehaviour
                 continue;
             }
             source.transform.position = firePlaces[bestIndex];
-            source.volume = 0.5f * Volume;
             if (!source.isPlaying)
             {
                 source.clip = SoundLibrary.Pick(SoundKind.Fire);
@@ -397,6 +400,7 @@ public sealed class GameSounds : MonoBehaviour
                 source.time = Random.Range(0f, source.clip.length * 0.8f);
                 source.Play();
             }
+            source.volume = 0.5f * Volume * SoundLibrary.Gain(source.clip);
         }
     }
 

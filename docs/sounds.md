@@ -51,4 +51,6 @@ kinds only from the pack's Ambient Loops folder. Our own sounds go in `Assets/So
 are used, so a build carries only what plays.
 
 Loops stream from disk in stereo; one-shots are kept in memory, compressed, in mono (they are placed in the world).
+The loops are levelled to -31 LUFS (measured with ffmpeg, as the music; see [music.md](music.md)): in the pack they
+lie between -31 (birds) and -41 (rain), so without it the rain was buried and the mix volumes meant little.
 Neither the pack nor the library is in git; builds come from the machine that has them.
