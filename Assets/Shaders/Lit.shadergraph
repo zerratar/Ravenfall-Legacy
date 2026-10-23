@@ -58,9 +58,6 @@
             "m_Id": "4663c20af4ec45868dbfeea9dee05f80"
         },
         {
-            "m_Id": "4ba963a921674b30bb27bea60a353967"
-        },
-        {
             "m_Id": "e68b40ea62a94306b5ffd8c56a8b9059"
         },
         {
@@ -574,9 +571,6 @@
         },
         {
             "m_Id": "4663c20af4ec45868dbfeea9dee05f80"
-        },
-        {
-            "m_Id": "4ba963a921674b30bb27bea60a353967"
         },
         {
             "m_Id": "e68b40ea62a94306b5ffd8c56a8b9059"
@@ -1128,29 +1122,6 @@
         "x": 0.0,
         "y": 1.0
     }
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Internal.BooleanShaderProperty",
-    "m_ObjectId": "4ba963a921674b30bb27bea60a353967",
-    "m_Guid": {
-        "m_GuidSerialized": "3721ed86-089a-4154-8262-d77e24230a21"
-    },
-    "m_Name": "ReceiveShadows",
-    "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "ReceiveShadows",
-    "m_DefaultReferenceName": "_ReceiveShadows",
-    "m_OverrideReferenceName": "",
-    "m_GeneratePropertyBlock": true,
-    "m_UseCustomSlotLabel": false,
-    "m_CustomSlotLabel": "",
-    "m_DismissedVersion": 0,
-    "m_Precision": 0,
-    "overrideHLSLDeclaration": false,
-    "hlslDeclarationOverride": 0,
-    "m_Hidden": false,
-    "m_Value": false
 }
 
 {
