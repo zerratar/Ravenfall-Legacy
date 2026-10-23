@@ -47,6 +47,8 @@ public sealed class Ambience : MonoBehaviour
     private GameManager game;
     private DayNightCycle dayNight;
     private float nextIslandCheck;
+    private Ocean ocean;
+    private ParticleSystem.Particle[] particles;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Create()
@@ -340,6 +342,7 @@ public sealed class Ambience : MonoBehaviour
         // nothing flies in the rain
         var dry = 1f - Weather.Rain;
         Emit(fireflies, island != null && !snowy ? 45f * night * dry : 0f);
+        KeepOverLand(fireflies);
         // butterflies over the meadows and gulls over the shore by day
         var day = 1f - night;
         Emit(butterflies, island != null && !snowy ? 3.5f * day * dry * dry : 0f);
@@ -378,6 +381,32 @@ public sealed class Ambience : MonoBehaviour
         var t = (0f - ray.origin.y) / ray.direction.y;
         focus = t > 0f && t < 400f ? ray.GetPoint(t) : camera.transform.position + camera.transform.forward * 30f;
         return true;
+    }
+
+    /// <summary>
+    /// Puts out the particles just emitted over open water: the box they come from is centred on the focus, so near
+    /// a shore half the fireflies were over the sea. Only the newest are looked at, a raycast each, about ten a check.
+    /// </summary>
+    private void KeepOverLand(ParticleSystem system)
+    {
+        if (!system || system.particleCount == 0) return;
+        if (!ocean) ocean = FindAnyObjectByType<Ocean>();
+        if (!ocean) return;
+        var sea = ocean.transform.position.y + 0.2f;
+        if (particles == null || particles.Length < system.main.maxParticles) particles = new ParticleSystem.Particle[system.main.maxParticles];
+        var count = system.GetParticles(particles);
+        var changed = false;
+        for (var i = 0; i < count; ++i)
+        {
+            // checked once, in their first quarter second
+            if (particles[i].startLifetime - particles[i].remainingLifetime > 0.25f) continue;
+            var at = particles[i].position;
+            var land = Physics.Raycast(at + Vector3.up * 20f, Vector3.down, out var hit, 60f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) && hit.point.y > sea;
+            if (land) continue;
+            particles[i].remainingLifetime = 0f;
+            changed = true;
+        }
+        if (changed) system.SetParticles(particles, count);
     }
 
     private static void Emit(ParticleSystem system, float rate)

@@ -85,6 +85,7 @@ public static class SettingsApplier
         public const bool AmbientEffects = true;
         public const bool TreeWind = true;
         public const bool DungeonLighting = true;
+        public const float NightBrightness = 0.75f;
         public const bool AtmosphericHaze = true;
         public const bool ChangingWeather = true;
         public const bool LightningFlashes = true;
@@ -152,6 +153,7 @@ public static class SettingsApplier
         ApplyAmbientEffects();
         ApplyTreeWind();
         ApplyDungeonLighting();
+        ApplyNightBrightness();
         ApplyHaze();
         ApplyWeather();
         ApplyLightning();
@@ -734,6 +736,19 @@ public static class SettingsApplier
     }
 
     private static void ApplyDungeonLighting() => DungeonMood.Enabled = DungeonLighting;
+
+    // ---- Night brightness ------------------------------------------------------------------------
+    // How much moonlight the nights have, from the old pitch dark (0) to a full moon (1); see DayNightCycle.
+
+    public static float NightBrightness => PlayerSettings.Instance.NightBrightness.GetValueOrDefault(Defaults.NightBrightness);
+
+    public static void SetNightBrightness(float value)
+    {
+        PlayerSettings.Instance.NightBrightness = Mathf.Clamp01(value);
+        ApplyNightBrightness();
+    }
+
+    private static void ApplyNightBrightness() => global::DayNightCycle.NightBrightness = NightBrightness;
 
     // ---- Atmospheric haze ------------------------------------------------------------------------
     // The far islands fade into the air. Potato mode turns it off as well, without changing the setting.

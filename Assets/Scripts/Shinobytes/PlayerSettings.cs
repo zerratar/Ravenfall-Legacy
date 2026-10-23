@@ -46,6 +46,7 @@ public class PlayerSettings
     public bool? AmbientEffects;
     public bool? TreeWind;
     public bool? DungeonLighting;
+    public float? NightBrightness;
     public bool? AtmosphericHaze;
     public bool? ChangingWeather;
     public bool? LightningFlashes;
@@ -433,6 +434,7 @@ public class PlayerSettings
             Serialize(sw, "ambientEffects", obj.AmbientEffects);
             Serialize(sw, "treeWind", obj.TreeWind);
             Serialize(sw, "dungeonLighting", obj.DungeonLighting);
+            Serialize(sw, "nightBrightness", obj.NightBrightness);
             Serialize(sw, "atmosphericHaze", obj.AtmosphericHaze);
             Serialize(sw, "changingWeather", obj.ChangingWeather);
             Serialize(sw, "lightningFlashes", obj.LightningFlashes);

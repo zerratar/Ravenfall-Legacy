@@ -497,6 +497,8 @@ namespace Shinobytes.UI
             timeRow = SliderRow(c, Localization.UI_SETTINGS_TIME, Localization.UI_SETTINGS_TIME_HINT, 0f, 1f, SettingsApplier.TimeOfDay, SettingsApplier.Defaults.TimeOfDay,
                 v => v < 0.5f ? Localization.UI_SETTINGS_DAY : Localization.UI_SETTINGS_NIGHT, v => SettingsApplier.SetTimeOfDay(g, v));
             timeRow.SetEnabled(!SettingsApplier.DayNightCycle);
+            SliderRow(c, Localization.UI_SETTINGS_NIGHT_BRIGHTNESS, Localization.UI_SETTINGS_NIGHT_BRIGHTNESS_HINT, 0f, 1f, SettingsApplier.NightBrightness,
+                SettingsApplier.Defaults.NightBrightness, Percent, SettingsApplier.SetNightBrightness);
 
             Section(c, Localization.UI_SETTINGS_SECTION_PERFORMANCE);
             SliderRow(c, Localization.UI_SETTINGS_VIEW_DISTANCE, Localization.UI_SETTINGS_VIEW_DISTANCE_HINT, 0f, 1f, SettingsApplier.ViewDistance, SettingsApplier.Defaults.ViewDistance,

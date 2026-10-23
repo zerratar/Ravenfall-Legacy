@@ -6,6 +6,24 @@ using UnityEngine.Rendering;
 public class DayNightCycle : MonoBehaviour
 {
     private static readonly int atmosphereThicknessID = Shader.PropertyToID("_AtmosphereThickness");
+    // how much it is night, 0 by day to 1 in the middle of the night, for shaders (the ocean darkens with it)
+    private static readonly int nightID = Shader.PropertyToID("_RavenfallNight");
+
+    /// <summary>
+    /// The setting: how bright the nights are, 0 for the old pitch dark (the scene's night light and ambient) to 1
+    /// for a full moon. The night light in the scene sits below the horizon and is very dim, so by itself nothing
+    /// but the torches could be seen at night, players included. The moon rides high and cool, and the night's
+    /// ambient gets a floor that only ever lifts it: the day is unchanged.
+    /// </summary>
+    public static float NightBrightness { get; set; } = 0.75f;
+
+    private static readonly Quaternion MoonRotation = Quaternion.Euler(55f, 200f, 0f);
+    private const float MoonIntensity = 0.35f;
+    private const float MoonTemperature = 9000f;
+    private static readonly Color MoonColor = new Color(0.62f, 0.72f, 0.95f);
+    private static readonly Color MoonSky = new Color(0.10f, 0.15f, 0.30f);
+    private static readonly Color MoonEquator = new Color(0.15f, 0.20f, 0.30f);
+    private static readonly Color MoonGround = new Color(0.12f, 0.12f, 0.13f);
 
 
     [SerializeField] public GameManager gameManager;
@@ -126,17 +144,30 @@ public class DayNightCycle : MonoBehaviour
 
         RenderSettings.ambientMode = AmbientMode.Trilight;
         Daylight = skylightLerpValue;
-        // under a grey sky its light goes grey
-        RenderSettings.ambientSkyColor = Greyed(SkyColor.Evaluate(skylightLerpValue), Weather.Grey);
-        RenderSettings.ambientEquatorColor = Greyed(EquatorColor.Evaluate(skylightLerpValue), Weather.Grey * 0.7f);
-        RenderSettings.ambientGroundColor = GroundColor.Evaluate(skylightLerpValue);
+        Shader.SetGlobalFloat(nightID, 1f - skylightLerpValue);
 
-        skyLight.intensity = Mathf.Lerp(NightLight.intensity, DayLight.intensity, skylightLerpValue) * Weather.Sunlight;
+        // the night end, as bright as the setting has it
+        var moon = Mathf.Clamp01(NightBrightness);
+        var skyFloor = Color.Lerp(SkyColor.Evaluate(0f), MoonSky, moon);
+        var equatorFloor = Color.Lerp(EquatorColor.Evaluate(0f), MoonEquator, moon);
+        var groundFloor = Color.Lerp(GroundColor.Evaluate(0f), MoonGround, moon);
+
+        // under a grey sky its light goes grey
+        RenderSettings.ambientSkyColor = Greyed(Max(SkyColor.Evaluate(skylightLerpValue), skyFloor), Weather.Grey);
+        RenderSettings.ambientEquatorColor = Greyed(Max(EquatorColor.Evaluate(skylightLerpValue), equatorFloor), Weather.Grey * 0.7f);
+        RenderSettings.ambientGroundColor = Max(GroundColor.Evaluate(skylightLerpValue), groundFloor);
+
+        var nightIntensity = Mathf.Lerp(NightLight.intensity, MoonIntensity, moon);
+        var nightTemperature = Mathf.Lerp(NightLight.colorTemperature, MoonTemperature, moon);
+        var nightColor = Color.Lerp(NightLight.color, MoonColor, moon);
+        var nightRotation = Quaternion.Slerp(NightLight.transform.rotation, MoonRotation, moon);
+
+        skyLight.intensity = Mathf.Lerp(nightIntensity, DayLight.intensity, skylightLerpValue) * Weather.Sunlight;
         if (shadowStrength < 0f) shadowStrength = skyLight.shadowStrength;
         skyLight.shadowStrength = shadowStrength * Weather.Shadows;
-        skyLight.colorTemperature = Mathf.Lerp(NightLight.colorTemperature, DayLight.colorTemperature, skylightLerpValue);
-        skyLight.color = Color.Lerp(NightLight.color, DayLight.color, skylightLerpValue);
-        skyLight.transform.rotation = Quaternion.Lerp(NightLight.transform.rotation, DayLight.transform.rotation, skylightLerpValue);
+        skyLight.colorTemperature = Mathf.Lerp(nightTemperature, DayLight.colorTemperature, skylightLerpValue);
+        skyLight.color = Color.Lerp(nightColor, DayLight.color, skylightLerpValue);
+        skyLight.transform.rotation = Quaternion.Lerp(nightRotation, DayLight.transform.rotation, skylightLerpValue);
 
         skyboxMaterial.SetFloat(atmosphereThicknessID, Mathf.Lerp(NightAtmosphere, DayAtmosphere, skylightLerpValue));
 
@@ -145,6 +176,8 @@ public class DayNightCycle : MonoBehaviour
             RenderSettings.fogColor = Color.Lerp(NightFogColor, DayFogColor, skylightLerpValue);
         }
     }
+
+    private static Color Max(Color a, Color b) => new Color(Mathf.Max(a.r, b.r), Mathf.Max(a.g, b.g), Mathf.Max(a.b, b.b), a.a);
 
     private static Color Greyed(Color colour, float amount)
     {

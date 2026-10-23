@@ -101,6 +101,8 @@ Shader "Ravenfall/Ocean"
             float _RavenfallHasSky;
             // how overcast the sky is, 0 to 1 (Weather): the sea mirrors grey cloud then, and the sun hardly glints
             float _RavenfallOvercast;
+            // how much it is night, 0 to 1 (DayNightCycle): by moonlight the sea is dark and its shallows hardly glow
+            float _RavenfallNight;
 
             CBUFFER_START(UnityPerMaterial)
             float4 _ScatterColor, _DeepColor, _Absorption, _SkyTint, _FoamColor;
@@ -270,7 +272,10 @@ Shader "Ravenfall/Ocean"
                 // ---- the water's colour: the bed through it, the scatter that replaces what was absorbed ----
                 float3 T = exp(-_Absorption.rgb * _Murk * path);
                 float deepK = 1.0 - exp(-vd / max(_DeepDepth, 0.1));
-                float3 scatter = lerp(_ScatterColor.rgb, _DeepColor.rgb, deepK) * daylight;
+                // moonlight is not sunlight: at night the bright turquoise of the shallows gives way to the deep colour
+                float night = saturate(_RavenfallNight);
+                daylight *= lerp(1.0, 0.55, night);
+                float3 scatter = lerp(_ScatterColor.rgb, _DeepColor.rgb, saturate(deepK + night * 0.6)) * daylight;
                 float3 water = bed * T + scatter * (1.0 - T);
 
                 #if !defined(_OCEAN_SIMPLE)

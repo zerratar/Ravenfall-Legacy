@@ -1389,6 +1389,8 @@
     "UI_SETTINGS_TIME": "Time of day",
     "UI_SETTINGS_TIMES": "x{0}",
     "UI_SETTINGS_TIME_HINT": "Used while the day and night cycle is off.",
+    "UI_SETTINGS_NIGHT_BRIGHTNESS": "Night brightness",
+    "UI_SETTINGS_NIGHT_BRIGHTNESS_HINT": "How much moonlight the nights have, from pitch dark to a full moon.",
     "UI_SETTINGS_TITLE": "SETTINGS",
     "UI_SETTINGS_UI_SCALE": "Interface size",
     "UI_SETTINGS_UI_SCALE_HINT": "Shortcuts: {0} and {1}.",

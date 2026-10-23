@@ -28,7 +28,10 @@ public sealed class DungeonMood : MonoBehaviour
     private static readonly Color SkyAmbient = new Color(0.17f, 0.17f, 0.22f);
     private static readonly Color EquatorAmbient = new Color(0.19f, 0.16f, 0.15f);
     private static readonly Color GroundAmbient = new Color(0.09f, 0.08f, 0.07f);
-    private const float SunLeft = 0.22f;
+    // what is left of the sky's light down there, the same by day and by night (it used to be a share of the sky's
+    // light, so at night, with a dim moon, the dungeons went near black), in a plain colour, not the moon's blue
+    private const float DungeonSun = 0.38f;
+    private const float DungeonSunTemperature = 5500f;
     // the rooms' lights were set for daylight; by torchlight they burn brighter and reach further
     private const float TorchBoost = 2.6f;
     private const float TorchReach = 1.7f;
@@ -68,7 +71,12 @@ public sealed class DungeonMood : MonoBehaviour
         RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, EquatorAmbient, t);
         RenderSettings.ambientGroundColor = Color.Lerp(RenderSettings.ambientGroundColor, GroundAmbient, t);
         var sun = RenderSettings.sun;
-        if (sun) sun.intensity *= Mathf.Lerp(1f, SunLeft, t);
+        if (sun)
+        {
+            sun.intensity = Mathf.Lerp(sun.intensity, DungeonSun, t);
+            sun.colorTemperature = Mathf.Lerp(sun.colorTemperature, DungeonSunTemperature, t);
+            sun.color = Color.Lerp(sun.color, Color.white, t);
+        }
 
         // the flames flicker, each in its own time, and grow in with the dark
         var time = Time.time;

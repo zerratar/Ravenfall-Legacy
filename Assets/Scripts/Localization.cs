@@ -994,6 +994,8 @@ public static class Localization
     public static string UI_SETTINGS_REALTIME_HINT = "Day and night follow the time on this computer.";
     public static string UI_SETTINGS_TIME = "Time of day";
     public static string UI_SETTINGS_TIME_HINT = "Used while the day and night cycle is off.";
+    public static string UI_SETTINGS_NIGHT_BRIGHTNESS = "Night brightness";
+    public static string UI_SETTINGS_NIGHT_BRIGHTNESS_HINT = "How much moonlight the nights have, from pitch dark to a full moon.";
     public static string UI_SETTINGS_DAY = "Day";
     public static string UI_SETTINGS_NIGHT = "Night";
     public static string UI_SETTINGS_VIEW_DISTANCE = "View distance";

@@ -1386,6 +1386,8 @@
     "UI_SETTINGS_TIME": "Tid på dygnet",
     "UI_SETTINGS_TIMES": "x{0}",
     "UI_SETTINGS_TIME_HINT": "Används när dag och natt är avstängt.",
+    "UI_SETTINGS_NIGHT_BRIGHTNESS": "Ljus på natten",
+    "UI_SETTINGS_NIGHT_BRIGHTNESS_HINT": "Hur mycket månsken nätterna har, från helt mörkt till fullmåne.",
     "UI_SETTINGS_TITLE": "INSTÄLLNINGAR",
     "UI_SETTINGS_UI_SCALE": "Gränssnittets storlek",
     "UI_SETTINGS_UI_SCALE_HINT": "Kortkommandon: {0} och {1}.",
