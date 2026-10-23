@@ -58,6 +58,8 @@ combat at sea.
 
 ## Playing it
 
+"With a boat" means a boat equipped (see below); a player who wants the ferry unequips it.
+
 | Command | With a boat | Without a boat |
 |---|---|---|
 | `!sail <island>` | your boat goes straight there | the ferry, as today |
@@ -86,7 +88,18 @@ to work, and the shipwright's fee is the first proper coin sink in the game.
    Sailing level requirement turn into a boat.
 3. Events, the token shop, loyalty and Patreon rewards can hand out a boat directly, as they hand out items today.
 
-Numbers to tune later; a first guess for the starter boat: Sailing 15, Crafting 20, a fee of around 25,000 coins.
+**A first suggestion, to be revised.** The shipwright works at the Home island's harbour, where everyone starts.
+Three boats, each a step up:
+
+| Boat | Model | Needs | Parts | Fee | What it gives |
+|---|---|---|---|---|---|
+| Rowboat | Synty rowboat | Sailing 10 | small hull, oars | 10,000 | own trips, fishing at sea |
+| Fishing boat | Synty fishing boat | Sailing 30, Fishing 30 | hull, mast, sail, rigging | 50,000 | faster; room for a net later |
+| Sloop | Synty small ship | Sailing 60, Crafting 50 | large hull, two masts, sails, rigging | 250,000 | fastest; the base for bigger boats and skills aboard |
+
+The parts each need a Crafting level (about the boat's Sailing level) and materials players already gather: logs
+and planks for hulls, masts and oars, cloth for sails, rope for rigging. The exact items and amounts are worked out
+against the current item list when this is built; the fees are first guesses to tune against coin income.
 
 ## The boat as an item
 
@@ -97,9 +110,9 @@ the transmog and enchantment fields for customization.
 - **Per character**, like the Sailing and Fishing skills it goes with.
 - **Tradeable until first launched**, then soulbound (the stack's `Soulbound`, set by the server on first use):
   boats from rewards or the marketplace can change hands, a boat in use cannot.
-- **One boat in use** at a time: the one marked in use (the stack's `Flags` or `Tag`), or the only one owned.
-  `!boat use <name>` switches when there are several.
-- Not equipped in a gear slot, so it never changes stats or appearance.
+- **Equipped in its own boat slot** (decided 2026-10-23): the equipped boat is the one used, `!equip` and
+  `!unequip` work as for gear, and a player who wants the ferry (for its captain bonus or a boost) unequips it. The
+  slot changes no stats and nothing on the character; the equipment code needs to know that.
 
 ## Sailing your own boat
 
@@ -182,11 +195,21 @@ each frame, which the current instanced renderers do not support yet.
 
 ## Open questions
 
-1. With a boat, should `!sail <island>` always take it, or should there be a way to take the ferry with everyone
-   (for the captain bonus or a ferry boost)? For example `!sail <island> ferry`.
-2. The shipwright: which island, and the numbers (levels, fee, parts).
-3. Per character and tradeable until first launch, soulbound after: agreed?
-4. Should other players be able to ride along on your boat in the first version, or later with bigger boats?
-5. Fishing at sea: the same fish as on land, or some only at sea?
-6. How much faster than the ferry should an own boat be?
-7. Can a boat be lost or damaged (storms from the weather system), or is it always safe?
+Answered 2026-10-23:
+
+- **Boat or ferry**: the boat is equipped; unequip it to take the ferry.
+- **The shipwright and its numbers**: the suggestion above, to be revised.
+
+Still open:
+
+1. Per character and tradeable until first launch, soulbound after: agreed?
+2. **Riding along on someone's boat**: the user likes it ("lots of fun") but not for the first version. It probably
+   needs something more basic first, such as viewers forming parties (who sails with whom, who decides where to go,
+   what happens when the owner leaves the stream). To be looked into separately.
+3. Fishing at sea: the same fish as on land, or some only at sea?
+4. How much faster than the ferry should an own boat be?
+5. **Storms damaging or sinking boats**: liked, but not for the first version. The catch: weather is per stream and
+   a streamer can turn changing weather off (and potato mode holds it fair), so damage tied to the weather that
+   viewers see would hit players on some streams and never on others. If it comes, it should come from a server
+   side sea state that is the same for everyone (the stream shows it if its weather is on), or be something a
+   player opts into, like sailing into a storm for better fish.

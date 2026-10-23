@@ -23,8 +23,11 @@ server connection (`docs/network-v2.md`). Steps are in order; the server goes fi
 ## 2. Game
 
 6. **Unity version and scripting backend**: the project is on 6000.7.0b4 (beta). 6000.7.0b6 is the newest 6.7
-   beta. Players build on Mono; CoreCLR players are experimental in 6.7 (a CoreCLR test build boots and passed
-   the same tests as Mono on 2026-10-23). Ship on Mono unless decided otherwise.
+   beta. The release is **CoreCLR, for Windows and Linux** (decided 2026-10-23); the project's Standalone backend
+   is set to CoreCLR. CoreCLR players are still marked experimental by Unity: a Windows CoreCLR build passed the
+   same tests as Mono on 2026-10-23 (login, saves, a server kill, exit). The Linux build has not been run yet;
+   start it on a Linux machine (or WSL with a display) before publishing it.
+   Build both as release builds (not Development): File > Build Profiles, Windows and Linux.
 7. **Version**: the game is 0.9.5.0a. Set the server's expected client version to it when the build is published,
    so streamers are told to update.
 8. **Test a development build against production** (or staging), before publishing:
