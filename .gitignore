@@ -132,6 +132,8 @@ ExportedObj/
 *.ogg
 # development test builds (Build-dev-v2, Build-dev-coreclr, Build-dev-linux-coreclr)
 /Build-dev*/
+# release builds (Build-release-windows, Build-release-linux)
+/Build-release*/
 # the background music (Suno tracks, see docs/music.md): large, kept on the build machine like the WAVs
 Assets/Sounds/Music/**/*.mp3
 *.png
