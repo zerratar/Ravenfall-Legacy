@@ -859,6 +859,8 @@ public class GameManager : MonoBehaviour, IGameManager
     private IEnumerator SavePlayersBeforeExit(Action then)
     {
         exitingAfterSave = true;
+        // the sound fades away while the players are saved (see AudioQuiet)
+        StartCoroutine(AudioQuiet.FadeOut(0.5f));
         var v2 = RavenNest.V2;
         var overlay = ExitSavingOverlay.Show("Saving players to the server before exiting...");
         var started = Time.realtimeSinceStartup;
@@ -1763,6 +1765,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void OnApplicationQuit()
     {
+        // before Unity tears the game down and puts the volume back to full for a moment (see AudioQuiet)
+        AudioQuiet.Silence();
         if (!userTriggeredExit)
         {
             OnExit();
