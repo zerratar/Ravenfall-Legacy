@@ -40,7 +40,10 @@ server connection (`docs/network-v2.md`). Steps are in order; the server goes fi
    - Menu > Exit and Alt+F4 show "Saving players to the server before exiting..." and close within ~3 s;
    - commands from chat: join, craft, equip, gift, vendor.
 9. **Package and publish.** RavenNest `src/tools/RavenNest.Tools`: Tools > Build Release Packages (F2), or
-   `RavenNest.Tools package` from its bin folder. It refuses Development builds, non-CoreCLR builds and a Windows
+   `RavenNest.Tools package` from its bin folder. To make the builds as well: in the open editor,
+   Ravenfall > Release > Build and Package (builds both, then starts the tool in its own window); with the editor
+   closed, F3 in the tool or `RavenNest.Tools package --build` (a batch mode Unity runs `ReleaseBuild`). Ravenfall >
+   Release > Build Windows and Linux only builds. It refuses Development builds, non-CoreCLR builds and a Windows
    and Linux build of different versions, and writes into `Build-release-packages/v0.9.5.0a-alpha/`:
    - `Ravenfall.v0.9.5.0a-alpha.7z` and `update.7z` (Windows; the full one adds the RavenWeave updater from
      `Build-release-extras/windows`, which is not in git, and the update leaves it out because it is running);
