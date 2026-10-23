@@ -11,12 +11,19 @@ namespace Shinobytes.UI
     /// progress, wood, ore, fish, wheat and coins with their hourly rates, and houses built.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// The bar folds into a small "VILLAGE" tab. Down in a dungeon it is folded on its own, since the
+    /// village is not on screen there; the tab opens it for that visit, and leaving the dungeon brings
+    /// back whatever the streamer had above ground. Folding it above ground is remembered.
+    /// </para>
+    /// <para>
     /// The server only ever sends totals, so the hourly rates are measured here: the totals are
     /// sampled every <see cref="sampleInterval"/> seconds, and a rate is the change over the
     /// samples kept for the last <see cref="rateWindow"/> seconds. Sampling runs whether or not the
     /// bar is on screen, so the rates are ready the moment it opens. A rate only shows once there
     /// is at least a minute of history behind it; a guess from two samples seconds apart would
     /// swing wildly with every server update.
+    /// </para>
     /// </remarks>
     [RequireComponent(typeof(UIDocument))]
     public class TownBarView : MonoBehaviour
@@ -80,6 +87,18 @@ namespace Shinobytes.UI
         private bool bound;
         private bool shown;
 
+        // Folding: the tab that stands in for the bar, the streamer's choice above ground (saved), and
+        // whether the bar was opened during the current dungeon visit (forgotten on leaving).
+        private const string FoldedKey = "rf_townbar_folded";
+        // the camera is down in a dungeon below this height (as MusicManager and DungeonMood)
+        private const float DungeonDepth = -30f;
+        private Button tab;
+        private Button fold;
+        private bool tabShown;
+        private bool foldedAboveGround;
+        private bool openedInDungeon;
+        private bool inDungeon;
+
         private float nextRefresh;
         private float nextSample;
         private int shownLevel = int.MinValue;
@@ -109,6 +128,7 @@ namespace Shinobytes.UI
             shownUpgrade = false;
             shownBuildActive = false;
             shown = false;
+            tabShown = false;
             shownLevel = int.MinValue;
             shownExp = -1f;
             shownHouses = null;
@@ -156,6 +176,25 @@ namespace Shinobytes.UI
                 AddResource(container, 3, Localization.UI_TOWN_WHEAT, wheatIcon);
                 AddResource(container, 4, Localization.UI_TOWN_COINS, coinIcon);
             }
+
+            tab = root.Q<Button>("town-tab");
+            if (tab != null)
+            {
+                tab.clicked += () => SetFolded(false);
+                tab.tooltip = Localization.UI_TOWN_SHOW;
+                var tabLabel = root.Q<Label>("town-tab-label");
+                if (tabLabel != null) tabLabel.text = Localization.UI_TOWN_VILLAGE;
+                tab.style.display = DisplayStyle.None;
+            }
+
+            fold = root.Q<Button>("town-fold");
+            if (fold != null)
+            {
+                fold.clicked += () => SetFolded(true);
+                fold.tooltip = Localization.UI_TOWN_HIDE;
+            }
+
+            foldedAboveGround = PlayerPrefs.GetInt(FoldedKey, 0) == 1;
 
             bar.style.display = DisplayStyle.None;
             shown = false;
@@ -239,9 +278,22 @@ namespace Shinobytes.UI
                 && camera.IsFreeCameraActive
                 && !(gm.Tavern && gm.Tavern.IsActivated);
 
-            var appearing = visible && !shown;
-            SetShown(visible);
-            if (!visible || (now < nextRefresh && !appearing))
+            // Entering or leaving a dungeon starts over with that place's default: folded below,
+            // the streamer's own choice above.
+            var dungeonNow = visible && gm.Dungeons && gm.Dungeons.Started && camera.transform.position.y < DungeonDepth;
+            if (dungeonNow != inDungeon)
+            {
+                inDungeon = dungeonNow;
+                openedInDungeon = false;
+            }
+
+            var folded = inDungeon ? !openedInDungeon : foldedAboveGround;
+            SetTabShown(visible && folded);
+
+            var open = visible && !folded;
+            var appearing = open && !shown;
+            SetShown(open);
+            if (!open || (now < nextRefresh && !appearing))
             {
                 return;
             }
@@ -259,6 +311,30 @@ namespace Shinobytes.UI
 
             shown = value;
             bar.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void SetTabShown(bool value)
+        {
+            if (tab == null || value == tabShown)
+            {
+                return;
+            }
+
+            tabShown = value;
+            tab.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        /// <summary>Folds the bar into the tab, or opens it. In a dungeon this lasts the visit, above ground it is saved.</summary>
+        private void SetFolded(bool value)
+        {
+            if (inDungeon)
+            {
+                openedInDungeon = !value;
+                return;
+            }
+
+            foldedAboveGround = value;
+            PlayerPrefs.SetInt(FoldedKey, value ? 1 : 0);
         }
 
         private void Read(TownHallManager townHall)

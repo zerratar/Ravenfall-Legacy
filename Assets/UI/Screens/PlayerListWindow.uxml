@@ -29,11 +29,19 @@
                 <engine:Label name="playerlist-title" text="PLAYERS" class="rf-window__title" />
                 <engine:VisualElement class="rf-window__header-actions">
                     <engine:Label name="playerlist-count" text="0" class="rf-window__badge" />
+                    <engine:Button name="playerlist-search-toggle" text="&#xf002;" class="rf-window__button rf-icon rf-playerlist__search-toggle" />
                     <engine:Button name="playerlist-collapse" text="" class="rf-window__button" tooltip="Collapse or expand">
                         <engine:VisualElement class="rf-chevron" picking-mode="Ignore" />
                     </engine:Button>
                     <engine:Button name="playerlist-close" text="&#xf00d;" class="rf-window__button rf-icon rf-playerlist__close" tooltip="Hide the player list. F1 or the UI settings bring it back." />
                 </engine:VisualElement>
+            </engine:VisualElement>
+
+            <!-- Search (the search key or the magnifier): filters the rows by name while typing. Enter follows
+                 the first match, Esc closes the search and shows everyone again. -->
+            <engine:VisualElement name="playerlist-search-row" class="rf-playerlist__search" style="display: none;">
+                <engine:TextField name="playerlist-search" class="rf-playerlist__search-field" max-length="64" />
+                <engine:Label name="playerlist-search-empty" class="rf-playerlist__search-empty" style="display: none;" />
             </engine:VisualElement>
 
             <engine:ListView name="playerlist-view"

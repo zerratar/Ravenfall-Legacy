@@ -28,6 +28,13 @@
             <!-- Town resources, laid out after docs/mockups/town-resource-bar.webp. First in the column
                  so the boost and any event stack under it. Shown in free camera mode, when the
                  village is what is on screen. -->
+            <!-- The town bar folded away: a small tab in its place. Folded on its own while the free camera
+                 is down in a dungeon, where the village is not on screen; clicking it brings the bar back. -->
+            <engine:Button name="town-tab" class="rf-town-tab" text="" style="display: none;">
+                <engine:Label class="rf-icon rf-town-tab__icon" text="&#xf015;" picking-mode="Ignore" />
+                <engine:Label name="town-tab-label" class="rf-town-tab__label" picking-mode="Ignore" />
+                <engine:Label class="rf-icon rf-town-tab__chevron" text="&#xf078;" picking-mode="Ignore" />
+            </engine:Button>
             <engine:VisualElement name="town-bar" class="rf-town" picking-mode="Ignore" style="display: none;">
                 <engine:VisualElement class="rf-town__section rf-town__section--village" picking-mode="Ignore">
                     <engine:Label class="rf-icon rf-town__home" text="&#xf015;" picking-mode="Ignore" />
@@ -47,12 +54,15 @@
                         <engine:Label name="town-houses" class="rf-town__value" picking-mode="Ignore" />
                     </engine:VisualElement>
                 </engine:VisualElement>
-                <!-- The only thing in the top column that takes clicks. -->
+                <!-- The build button and the fold button are the only things in the bar that take clicks. -->
                 <engine:Button name="town-build" class="rf-town__build" text="">
                     <engine:Label class="rf-icon rf-town__build-icon" text="&#xf6e3;" picking-mode="Ignore" />
                     <engine:Label name="town-build-label" class="rf-town__build-label" picking-mode="Ignore" />
                     <!-- Shown when the next town hall tier can be bought. -->
                     <engine:Label name="town-build-badge" class="rf-icon rf-town__build-badge" text="&#xf062;" picking-mode="Ignore" style="display: none;" />
+                </engine:Button>
+                <engine:Button name="town-fold" class="rf-town__fold" text="">
+                    <engine:Label class="rf-icon rf-town__fold-icon" text="&#xf077;" picking-mode="Ignore" />
                 </engine:Button>
             </engine:VisualElement>
 

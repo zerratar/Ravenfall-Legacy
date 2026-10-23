@@ -86,8 +86,15 @@ namespace Shinobytes.UI
             metric = (Metric)Mathf.Clamp(PlayerPrefs.GetInt(TabKey, 0), 0, 2);
         }
 
+        // Above the player, island and enemy details (12) and below the top status bar (15). The meters only
+        // show during a run and a minute after; dragged under the player details they could not be reached
+        // again until they closed.
+        private const float SortingOrder = 13f;
+
         private void OnEnable()
         {
+            var doc = GetComponent<UIDocument>();
+            if (doc != null && doc.sortingOrder < SortingOrder) doc.sortingOrder = SortingOrder;
             TryBind();
         }
 

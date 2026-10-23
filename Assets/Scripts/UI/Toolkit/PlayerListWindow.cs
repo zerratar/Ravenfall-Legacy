@@ -27,6 +27,13 @@ namespace Shinobytes.UI
     /// keeps the last value it displayed, so a string is only built when the number behind it
     /// actually changed rather than every time it is looked at.
     /// </para>
+    ///
+    /// <para>
+    /// The player search lives here too (the search key, or the magnifier in the header): a field under
+    /// the header that narrows the rows to the names containing what is typed. Enter follows the first
+    /// match, Esc closes the search. The old search was a uGUI overlay that filtered the old list, which
+    /// is no longer on screen, so typing seemed to do nothing.
+    /// </para>
     /// </remarks>
     [RequireComponent(typeof(UIDocument))]
     public class PlayerListWindow : MonoBehaviour
@@ -58,7 +65,26 @@ namespace Shinobytes.UI
         /// <summary>Health below this fraction switches the bar to its brighter warning colour.</summary>
         private const float LowHealth = 0.34f;
 
+        /// <summary>Every player in the session.</summary>
+        private readonly List<PlayerController> allPlayers = new List<PlayerController>();
+
+        /// <summary>The rows the list shows: everyone, or the names matching the search.</summary>
         private readonly List<PlayerController> players = new List<PlayerController>();
+
+        /// <summary>The list in the scene, for the search key.</summary>
+        public static PlayerListWindow Instance { get; private set; }
+
+        /// <summary>True while the search is open; Esc then closes the search rather than opening the menu.</summary>
+        public static bool IsSearching => Instance != null && Instance.searching;
+
+        private VisualElement searchRow;
+        private TextField searchField;
+        private Label searchEmpty;
+        private Button searchToggle;
+        private string filter = string.Empty;
+        private bool searching;
+        // the list was hidden when the search opened it, so closing the search hides it again
+        private bool shownForSearch;
 
         /// <summary>
         /// Every row element the list has created. Virtualisation keeps this to roughly the number
@@ -148,12 +174,15 @@ namespace Shinobytes.UI
 
         private void OnEnable()
         {
+            Instance = this;
             TryBind();
         }
 
         private void OnDisable()
         {
+            if (Instance == this) Instance = null;
             bound = false;
+            searching = false;
 
             if (collapseButton != null)
             {
@@ -227,6 +256,8 @@ namespace Shinobytes.UI
             {
                 collapseButton.clicked += OnCollapseClicked;
             }
+
+            BindSearch(root);
 
             var closeButton = root.Q<Button>("playerlist-close");
             if (closeButton != null)
@@ -509,7 +540,7 @@ namespace Shinobytes.UI
 
         private void AutoScroll()
         {
-            if (!autoScroll || pointerInside || scrollView == null || players.Count == 0)
+            if (!autoScroll || searching || pointerInside || scrollView == null || players.Count == 0)
             {
                 return;
             }
@@ -771,36 +802,198 @@ namespace Shinobytes.UI
 
         public void AddPlayer(PlayerController player)
         {
-            if (!player || players.Contains(player))
+            if (!player || allPlayers.Contains(player))
             {
                 return;
             }
 
-            players.Add(player);
+            allPlayers.Add(player);
+            if (Matches(player))
+            {
+                players.Add(player);
+            }
+
             OnPlayersChanged();
         }
 
         public void RemovePlayer(PlayerController player)
         {
-            if (!player || !players.Remove(player))
+            if (!player || !allPlayers.Remove(player))
             {
                 return;
             }
 
+            players.Remove(player);
             OnPlayersChanged();
         }
 
         public void SetPlayers(IReadOnlyList<PlayerController> source)
         {
-            players.Clear();
+            allPlayers.Clear();
             for (var i = 0; i < source.Count; ++i)
             {
                 if (source[i])
                 {
-                    players.Add(source[i]);
+                    allPlayers.Add(source[i]);
                 }
             }
 
+            ApplyFilter();
+        }
+
+        // ---- Search --------------------------------------------------------------
+
+        private void BindSearch(VisualElement root)
+        {
+            searchRow = root.Q<VisualElement>("playerlist-search-row");
+            searchField = root.Q<TextField>("playerlist-search");
+            searchEmpty = root.Q<Label>("playerlist-search-empty");
+            searchToggle = root.Q<Button>("playerlist-search-toggle");
+            searching = false;
+
+            if (searchToggle != null)
+            {
+                searchToggle.tooltip = Localization.UI_PLAYERLIST_SEARCH_HINT;
+                searchToggle.clicked += () =>
+                {
+                    if (searching) CloseSearch();
+                    else OpenSearch();
+                };
+            }
+
+            if (searchField == null)
+            {
+                return;
+            }
+
+            searchField.textEdition.placeholder = Localization.UI_PLAYERLIST_SEARCH;
+            searchField.RegisterValueChangedCallback(evt =>
+            {
+                filter = evt.newValue != null ? evt.newValue.Trim() : string.Empty;
+                ApplyFilter();
+            });
+
+            // Trickle down, so Enter and Esc are handled before the field does anything with them.
+            searchField.RegisterCallback<KeyDownEvent>(OnSearchKey, TrickleDown.TrickleDown);
+        }
+
+        /// <summary>Opens the search under the header and puts the cursor in it, showing the list if it was hidden.</summary>
+        public void OpenSearch()
+        {
+            if (!bound || searchRow == null || searchField == null || hiddenBeforeLogin || hiddenForBuildMode)
+            {
+                return;
+            }
+
+            if (!requestedVisible)
+            {
+                shownForSearch = true;
+                requestedVisible = true;
+                ApplyVisible();
+            }
+
+            if (drag != null && drag.IsCollapsed)
+            {
+                drag.SetCollapsed(false);
+                nextRefresh = 0f;
+            }
+
+            searching = true;
+            searchRow.style.display = DisplayStyle.Flex;
+            searchToggle?.AddToClassList("rf-playerlist__search-toggle--active");
+            if (scrollView != null) scrollView.scrollOffset = Vector2.zero;
+
+            // Focus once the row is laid out; a field that is still display none does not take it.
+            searchField.schedule.Execute(() => searchField.Focus());
+        }
+
+        /// <summary>Closes the search and shows everyone again.</summary>
+        public void CloseSearch()
+        {
+            if (!searching)
+            {
+                return;
+            }
+
+            searching = false;
+            searchField?.Blur();
+            searchField?.SetValueWithoutNotify(string.Empty);
+            if (searchRow != null) searchRow.style.display = DisplayStyle.None;
+            searchToggle?.RemoveFromClassList("rf-playerlist__search-toggle--active");
+            filter = string.Empty;
+            ApplyFilter();
+
+            if (shownForSearch)
+            {
+                shownForSearch = false;
+                requestedVisible = false;
+                ApplyVisible();
+            }
+        }
+
+        private void OnSearchKey(KeyDownEvent evt)
+        {
+            if (evt.keyCode == KeyCode.Escape)
+            {
+                // the game menu opens on an Esc nobody used
+                EscapeKey.Claim();
+                CloseSearch();
+                evt.StopPropagation();
+                return;
+            }
+
+            if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+            {
+                return;
+            }
+
+            evt.StopPropagation();
+            if (string.IsNullOrEmpty(filter))
+            {
+                CloseSearch();
+                return;
+            }
+
+            if (players.Count == 0)
+            {
+                return;
+            }
+
+            var gm = GameManager.Instance;
+            if (gm != null && gm.Camera != null)
+            {
+                gm.Camera.ObservePlayer(players[0]);
+            }
+
+            CloseSearch();
+        }
+
+        private bool Matches(PlayerController player)
+        {
+            return string.IsNullOrEmpty(filter)
+                || (player.PlayerName != null && player.PlayerName.IndexOf(filter, System.StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        /// <summary>Rebuilds the rows from every player, keeping the names that match the search.</summary>
+        private void ApplyFilter()
+        {
+            players.Clear();
+            for (var i = 0; i < allPlayers.Count; ++i)
+            {
+                if (allPlayers[i] && Matches(allPlayers[i]))
+                {
+                    players.Add(allPlayers[i]);
+                }
+            }
+
+            if (searchEmpty != null)
+            {
+                var none = searching && players.Count == 0 && !string.IsNullOrEmpty(filter);
+                searchEmpty.style.display = none ? DisplayStyle.Flex : DisplayStyle.None;
+                if (none) searchEmpty.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_PLAYERLIST_NO_MATCH, filter);
+            }
+
+            if (scrollView != null && searching) scrollView.scrollOffset = Vector2.zero;
             OnPlayersChanged();
         }
 
@@ -811,7 +1004,7 @@ namespace Shinobytes.UI
 
             if (countLabel != null)
             {
-                countLabel.text = players.Count.ToString(CultureInfo.InvariantCulture);
+                countLabel.text = allPlayers.Count.ToString(CultureInfo.InvariantCulture);
             }
 
             // RefreshItems rebinds what is on screen and re-measures the scroll range without
@@ -821,6 +1014,9 @@ namespace Shinobytes.UI
 
         public void SetVisible(bool visible)
         {
+            // the streamer chose: a search that opened the list no longer decides whether it hides
+            shownForSearch = false;
+            if (!visible) CloseSearch();
             requestedVisible = visible;
             ApplyVisible();
         }

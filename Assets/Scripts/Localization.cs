@@ -509,6 +509,8 @@ public static class Localization
     public static string UI_BUILD_HALL_GET_ROAD = "{0} to build";
     public static string[] UI_BUILD_HALL_NAMES = { "Longhouse", "Town hall", "Guild hall", "Keep", "Castle" };
     public static string UI_TOWN_VILLAGE = "VILLAGE";
+    public static string UI_TOWN_SHOW = "Show the village bar";
+    public static string UI_TOWN_HIDE = "Fold the village bar away. The VILLAGE tab brings it back.";
     public static string UI_TOWN_LEVEL = "LV {0}";
     public static string UI_TOWN_HOUSES = "HOUSES";
     public static string UI_TOWN_WOOD = "WOOD";
@@ -704,6 +706,9 @@ public static class Localization
     public static string UI_RATE_LEFT = "{0} xp left";
     public static string UI_TOWN_RATE = "{0}/h";
     public static string UI_PLAYERLIST_TITLE = "PLAYERS";
+    public static string UI_PLAYERLIST_SEARCH = "Search for a player";
+    public static string UI_PLAYERLIST_SEARCH_HINT = "Search the player list. Enter follows the first match, Esc closes the search.";
+    public static string UI_PLAYERLIST_NO_MATCH = "No player matches \"{0}\"";
     public static string UI_PLAYERLIST_LEVEL = "LV";
     public static string UI_PLAYERLIST_IDLE = "Idle";
     public static string UI_DETAILS_LEVEL_CAPTION = "LV";

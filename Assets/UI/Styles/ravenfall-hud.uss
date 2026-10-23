@@ -313,6 +313,65 @@
     color: var(--rf-text);
 }
 
+/* Player search: a field under the header, Unity's TextField restyled to the dark panels. */
+.rf-playerlist__search {
+    flex-shrink: 0;
+    padding-left: var(--rf-space-2);
+    padding-right: var(--rf-space-2);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-border);
+}
+
+.rf-playerlist__search-field {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.rf-playerlist__search-field > .unity-text-field__input,
+.rf-playerlist__search-field .unity-base-text-field__input {
+    height: 36px;
+    padding-left: 12px;
+    font-size: 16px;
+    color: var(--rf-text);
+    background-color: rgba(0, 0, 0, 0.45);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-playerlist__search-field:focus > .unity-text-field__input,
+.rf-playerlist__search-field:focus .unity-base-text-field__input {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-playerlist__search-empty {
+    margin-top: var(--rf-space-2);
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+/* The magnifier lights up while a search is open. */
+.rf-playerlist__search-toggle--active {
+    color: var(--rf-accent);
+}
+
 .rf-playerlist {
     background-color: rgba(0, 0, 0, 0);
 }
@@ -1293,4 +1352,102 @@
 .rf-top-layer .rf-town__build--active .rf-town__build-icon,
 .rf-top-layer .rf-town__build--active .rf-town__build-label {
     color: var(--rf-accent);
+}
+
+/* Folds the bar away into the tab below: a small square at the right end of the bar. */
+.rf-top-layer .rf-town__fold {
+    width: 32px;
+    height: 32px;
+    margin-left: 0;
+    margin-right: var(--rf-space-1);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-top-layer .rf-town__fold:hover {
+    background-color: var(--rf-surface-raised);
+}
+
+.rf-top-layer .rf-town__fold-icon {
+    flex-grow: 1;
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    color: var(--rf-text-dim);
+}
+
+.rf-top-layer .rf-town__fold:hover .rf-town__fold-icon {
+    color: var(--rf-text);
+}
+
+/* ---- Town bar, folded ------------------------------------------------------------
+   What is left of the bar when it is folded: a small "VILLAGE" tab with a chevron, in the bar's
+   colours, that brings the bar back when clicked. */
+
+.rf-top-layer .rf-town-tab {
+    flex-direction: row;
+    align-items: center;
+    height: 34px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: var(--rf-surface-glass);
+    border-top-color: var(--rf-accent);
+    border-top-width: 3px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-top-layer .rf-town-tab:hover {
+    background-color: var(--rf-surface-raised);
+}
+
+.rf-top-layer .rf-town-tab__icon {
+    font-size: 14px;
+    color: var(--rf-accent);
+    margin-right: var(--rf-space-2);
+}
+
+.rf-top-layer .rf-town-tab__label {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    letter-spacing: 1px;
+}
+
+.rf-top-layer .rf-town-tab__chevron {
+    font-size: 11px;
+    color: var(--rf-text-dim);
+    margin-left: var(--rf-space-2);
+}
+
+.rf-top-layer .rf-town-tab:hover .rf-town-tab__label,
+.rf-top-layer .rf-town-tab:hover .rf-town-tab__chevron {
+    color: var(--rf-text);
 }

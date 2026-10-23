@@ -176,13 +176,15 @@ public class GameManager : MonoBehaviour, IGameManager
     /// <summary>Opens the game menu, as Esc does.</summary>
     public void ShowMenu()
     {
-        if (!menuHandler.Visible && !playerSearchHandler.Visible) menuHandler.Show();
+        if (!menuHandler.Visible && !playerSearchHandler.Visible && !Shinobytes.UI.PlayerListWindow.IsSearching) menuHandler.Show();
     }
 
-    /// <summary>Opens the player search, as Ctrl+F does.</summary>
+    /// <summary>Opens the player search, as Ctrl+F does: the search in the player list, which filters it while typing.</summary>
     public void ShowPlayerSearch()
     {
-        playerSearchHandler.Show();
+        var list = Shinobytes.UI.PlayerListWindow.Instance;
+        if (list) list.OpenSearch();
+        else playerSearchHandler.Show();
     }
     public ServerNotificationManager ServerNotifications => serverNotificationManager;
 
@@ -1214,7 +1216,7 @@ public class GameManager : MonoBehaviour, IGameManager
             return;
         }
 
-        if (EscapeKey.ReleasedUnclaimed() && !menuHandler.Visible && !menuHandler.ClosedThisFrame && !playerSearchHandler.Visible && !Shinobytes.UI.SettingsWindow.IsOpen)
+        if (EscapeKey.ReleasedUnclaimed() && !menuHandler.Visible && !menuHandler.ClosedThisFrame && !playerSearchHandler.Visible && !Shinobytes.UI.PlayerListWindow.IsSearching && !Shinobytes.UI.SettingsWindow.IsOpen)
         {
             menuHandler.Show();
         }
@@ -2046,7 +2048,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
         if (Keybinds.Pressed(Keybinds.Action.Search))
         {
-            playerSearchHandler.Show();
+            ShowPlayerSearch();
         }
 
         // Interface scale, as in a browser. Main keyboard by default: the keypad plus and minus
