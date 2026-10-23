@@ -820,7 +820,12 @@ namespace Shinobytes.Linq
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T> ToList<T>(this IEnumerable<T> src)
         {
-            if (src is List<T> list) return list;
+            // Always a new list, as System.Linq's: callers take it as a copy to loop over while they change the
+            // original (foreach (var x in list.ToList()) list.Remove(x)) or to hand out a snapshot from under a
+            // lock. Returning the list itself broke those ("Collection was modified"). AsList is the no-copy one.
+            // (ToArray of an array still returns the array: arrays cannot change size, and a copy could add garbage
+            // in per-frame code.)
+            if (src is List<T> list) return new List<T>(list);
             if (src is IReadOnlyList<T> readOnlyList) return new List<T>(readOnlyList);
             if (src is ICollection<T> collection) return new List<T>(collection);
             if (src is T[] array) return new List<T>(array);
