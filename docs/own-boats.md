@@ -133,8 +133,9 @@ with `Ocean.Float`. Sailing exp every 2.5 s while the boat moves; none while anc
 New character state, saved with the rest:
 
 - `BoatMode` (none, sailing, wandering, anchored), `BoatDestination` (an island or none), and the boat's position.
-- v2: a new `PlayerStateFields` bit and `PlayerStateSave` key; the old delta socket gets the same field; the server
-  maps them in `SetCharacterState`. The columns are added by `DatabaseSchema` at startup.
+- The game reads it in `PlayerSaveSource.ReadState`, which both the v2 saves and the old TCP path use. v2: a new
+  `PlayerStateFields` bit and `PlayerStateSave` key; the old delta socket gets the same field; the server maps them
+  in `SetCharacterState`. The columns are added by `DatabaseSchema` at startup.
 - Restoring after a restart puts the player back on their boat at the saved position, still going where they were
   going. (Today's ferry restore loses the destination; it should keep it as well, see below.)
 
