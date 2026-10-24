@@ -44,6 +44,11 @@ public class ItemManager : MonoBehaviour
 
     private DateTime itemsLastUpdate;
     private TimeSpan itemsUpdateInterval = TimeSpan.FromMinutes(20);
+    // a failed first load is tried again after this long, doubling up to half a minute
+    private const float FirstRetrySeconds = 2f;
+    private const float LongestRetrySeconds = 30f;
+    private float retrySeconds = FirstRetrySeconds;
+    private DateTime nextLoadAttempt = DateTime.MinValue;
     private List<ItemRecipe> recipes;
     private List<ResourceItemDrop> resourceDrops;
 
@@ -86,7 +91,7 @@ public class ItemManager : MonoBehaviour
             return;
         }
 
-        if (state == LoadingState.None && game && game.RavenNest.SessionStarted)
+        if (state == LoadingState.None && game && game.RavenNest.SessionStarted && DateTime.UtcNow >= nextLoadAttempt)
         {
             LoadItemsAsync();
         }
@@ -234,6 +239,14 @@ public class ItemManager : MonoBehaviour
             await DownloadRedeemableItemsAsync();
             await DownloadItemResourceDropsAsync();
 
+            if (items == null || items.Count == 0)
+            {
+                LoadFailed("the server sent no items");
+                return;
+            }
+
+            retrySeconds = FirstRetrySeconds;
+
             // no need to set this status multiple times, after first time we load this data, should be ok.
             if (state != LoadingState.Loaded)
             {
@@ -247,8 +260,23 @@ public class ItemManager : MonoBehaviour
         }
         catch (Exception exc)
         {
-            // ignore, this only happens when connectio nto server fails.
+            // the server is away (restarting, a dropped connection): tried again shortly
+            LoadFailed(exc.Message);
         }
+    }
+
+    /// <summary>
+    /// A load that failed before the items ever arrived goes back to not loaded, so it is tried again. It used to stay
+    /// "loading" for good, which nothing retried: a streamer whose game started while the server restarted sat on
+    /// "Loading items" until they restarted the game.
+    /// </summary>
+    private void LoadFailed(string reason)
+    {
+        if (state == LoadingState.Loaded) return;
+        state = LoadingState.None;
+        nextLoadAttempt = DateTime.UtcNow.AddSeconds(retrySeconds);
+        Shinobytes.Debug.LogWarning("Could not load the items (" + reason + "); trying again in " + retrySeconds + " s.");
+        retrySeconds = Mathf.Min(retrySeconds * 2f, LongestRetrySeconds);
     }
     private async Task DownloadItemResourceDropsAsync()
     {
@@ -326,6 +354,7 @@ public class ItemManager : MonoBehaviour
         else
         {
             var loadedItems = await game.RavenNest.Items.GetAsync();
+            if (loadedItems == null) throw new Exception("no answer from the server");
             items = loadedItems.ToList();
         }
 
