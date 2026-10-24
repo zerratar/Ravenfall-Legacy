@@ -1,7 +1,8 @@
 # Village decor
 
 Status: design, 2026-10-24, for v0.9.6. Nothing built yet. Decided: no limit on decor, only costs; removing one of the
-island's own pieces gives back half its worth, like anything placed.
+island's own pieces gives back half its worth, like anything placed; flowers and grass under a road or building are
+hidden, never in the way; viewers can give the village decor with their loyalty points.
 
 Streamers decorate their village in build mode: trees, bushes, flowers, rocks, fences, lamps, benches, statues,
 banners, wells, carts, gardens and seasonal pieces. The trees and flowers already on the island become decor too, so
@@ -28,8 +29,8 @@ piece what unlocks it ("Town hall tier 3", "Village level 80", "Christmas event"
 - **Select:** click placed decor (or a tree on the island) to move, rotate or remove it. A small panel shows what it
   is and what removing it gives back.
 - **In the way:** a house, the town hall or a road placed over decor is refused, naming the decor in the way, as for
-  buildings today. Small pieces are the exception: a road or building simply hides flowers and grass under it (they
-  come back if it moves away).
+  buildings today. Small pieces are the exception (decided 2026-10-24): a road or building simply hides flowers,
+  grass and small stones under it, and they come back if it moves away. Streamers place those wherever they like.
 
 ## The island's own trees: default decor
 
@@ -40,8 +41,11 @@ reach every village without moving anything anyone placed.
 
 ## Costs and limits
 
-- Placing costs village resources, like roads: wood for wooden pieces, ore for stone and metal, coins for the fancier
-  ones. Prices are shown before placing.
+- Placing costs village resources, like roads, by what the piece is made of: wood for trees, bushes and wooden
+  pieces, wheat for flowers and gardens, ore for stone and metal, and coins on top for the finest (statues,
+  fountains, monuments). Prices are shown before placing.
+- So removing an island tree gives back wood, and a flower patch a little wheat: half of what that piece costs to
+  place.
 - Removing any piece gives back half its worth, the island's own trees and flowers included (decided 2026-10-24).
   A new streamer can clear some of the island for a start in resources; a big village will not notice. Removing and
   placing again always loses half, so it cannot be farmed, and each island piece can only be removed once.
@@ -58,7 +62,7 @@ reach every village without moving anything anyone placed.
 | Seasonal events | Christmas trees and lights, Halloween pumpkins and gravestones, spring blossoms | Phase 3; once unlocked, kept for good |
 | Quests (v0.9.6) | A quest chain's reward, a unique statue | With quests |
 | Village treasury | Special pieces bought with the treasury's coins, which the tavern shelves now fill | Phase 3 |
-| Viewer loyalty | Viewers spend loyalty points with the streamer to give the village a piece | Phase 3 |
+| Viewer loyalty | Viewers spend loyalty points with the streamer to give the village a piece (decided 2026-10-24) | Phase 3 |
 | Website | Pieces for patrons, or bought on the site | Later |
 
 Unlocks belong to the village. Tier and level unlocks are worked out from the village; the others are stored per
@@ -95,7 +99,7 @@ village when earned.
 ## Open questions
 
 - **Prices:** the price of each piece (and so what removing an island tree gives back).
-- **Viewer loyalty:** should viewers be able to give decor to the village with their loyalty points (a nice way for
-  chat to shape the village), or should the streamer spend them?
+- **Viewer gifts:** how viewers give decor with loyalty points: a chat command (`!decor give <piece>`) that unlocks the
+  piece for the village (the streamer places it), or a gift that waits in build mode for the streamer to place. And
+  what a piece costs in loyalty points.
 - **Website:** paid decor (real money) or patron perks only?
-- **Small pieces under roads and buildings:** hidden automatically (proposed), or always in the way?
