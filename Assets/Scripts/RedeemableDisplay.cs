@@ -47,7 +47,10 @@ public class RedeemableDisplay : MonoBehaviour
             obj.transform.localScale = newScale;
         }
 
-        cost.text = string.Format("<size=12>{0}\n<color=#FF00FF><size=10>Costs {1} Tokens", item.Name, details.Cost);
+        // a real font size and a gold price: a large base size shrunk with size tags left wide gaps between the lines
+        cost.fontSize = 12f;
+        cost.lineSpacing = -8f;
+        cost.text = string.Format("{0}\n<size=82%><color=#FFD27A>{1} tokens", item.Name, details.Cost);
         cost.gameObject.SetActive(true);
 
         // make sure the position of this object is center of the cost
