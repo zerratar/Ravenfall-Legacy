@@ -33,7 +33,7 @@ public sealed class VillageLife : MonoBehaviour
     private const float OwnFireReach = 1.2f;
 
     /// <summary>How bright the warm glow round each fire is at night; none by day.</summary>
-    private const float GlowAtNight = 0.2f;
+    private const float GlowAtNight = 0.12f;
 
     /// <summary>How often the village houses are looked over (who lives where, built, moved, pulled down), seconds.</summary>
     private const float HouseCheckEvery = 2f;
@@ -212,12 +212,14 @@ public sealed class VillageLife : MonoBehaviour
         Fade(system, new Color(1f, 0.95f, 0.75f), new Color(0.9f, 0.25f, 0.08f), 0.12f, 0.55f);
         Begin(system);
         AddGlow(at + Vector3.up * (0.35f * scale), scale);
-        AddLight(at + Vector3.up * (0.6f * scale), 1.5f + 8f * scale, scale);
+        AddLight(at + Vector3.up * (1.1f * scale), 3f + 13f * scale, scale);
     }
 
     /// <summary>
     /// The fire's own light on the ground and the walls round it, flickering, strong after dark and faint by day. No
-    /// shadows, and the renderer clusters its lights (Forward+), so a few dozen of them cost little.
+    /// shadows, and the renderer clusters its lights (Forward+), so a few dozen of them cost little. A warm firelight,
+    /// set a little above the flame and reaching wide: low and very orange it left a hot red pool on the ground round
+    /// each fire after dark (found on stream, October 2026).
     /// </summary>
     private void AddLight(Vector3 at, float range, float strength)
     {
@@ -227,7 +229,7 @@ public sealed class VillageLife : MonoBehaviour
         light.type = LightType.Point;
         light.range = range;
         light.useColorTemperature = true;
-        light.colorTemperature = 1900f;
+        light.colorTemperature = 2700f;
         light.shadows = LightShadows.None;
         fireLights.Add((light, strength));
     }
@@ -244,7 +246,7 @@ public sealed class VillageLife : MonoBehaviour
         main.startLifetime = new ParticleSystem.MinMaxCurve(1.6f, 2.4f);
         main.startSpeed = 0f;
         main.startSize = new ParticleSystem.MinMaxCurve(2.4f * scale, 3f * scale);
-        main.startColor = new Color(1f, 0.5f, 0.18f);
+        main.startColor = new Color(1f, 0.7f, 0.42f);
         var emission = system.emission;
         emission.rateOverTime = 1.4f;
         var shape = system.shape;
@@ -382,7 +384,7 @@ public sealed class VillageLife : MonoBehaviour
         home.Lamp.transform.SetParent(transform, false);
         home.Lamp.type = LightType.Point;
         home.Lamp.useColorTemperature = true;
-        home.Lamp.colorTemperature = 2400f;
+        home.Lamp.colorTemperature = 2900f;
         home.Lamp.shadows = LightShadows.None;
         home.Lamp.enabled = false;
         return home;
@@ -515,7 +517,7 @@ public sealed class VillageLife : MonoBehaviour
             light.enabled = on;
             // each fire flickers in its own time
             var flicker = 0.8f + 0.12f * Mathf.Sin(time * 9.1f + i * 1.7f) + 0.08f * Mathf.PerlinNoise(time * 4f, i * 0.37f);
-            light.intensity = (0.4f + 3.2f * night) * flicker * strength;
+            light.intensity = (0.3f + 2.1f * night) * flicker * strength;
         }
     }
 }

@@ -18,12 +18,15 @@ public class DayNightCycle : MonoBehaviour
     public static float NightBrightness { get; set; } = 0.75f;
 
     private static readonly Quaternion MoonRotation = Quaternion.Euler(55f, 200f, 0f);
-    private const float MoonIntensity = 0.35f;
+    private const float MoonIntensity = 0.5f;
     private const float MoonTemperature = 9000f;
     private static readonly Color MoonColor = new Color(0.62f, 0.72f, 0.95f);
-    private static readonly Color MoonSky = new Color(0.10f, 0.15f, 0.30f);
-    private static readonly Color MoonEquator = new Color(0.15f, 0.20f, 0.30f);
-    private static readonly Color MoonGround = new Color(0.12f, 0.12f, 0.13f);
+    private static readonly Color MoonSky = new Color(0.15f, 0.20f, 0.36f);
+    private static readonly Color MoonEquator = new Color(0.20f, 0.24f, 0.34f);
+    private static readonly Color MoonGround = new Color(0.15f, 0.15f, 0.16f);
+    // how much of the moonlight a cloudy sky can take: under a storm the sun's 0.26 left the nights black even at full
+    // brightness, so by night the weather only takes part of it
+    private const float WeatherAtNight = 0.45f;
 
 
     [SerializeField] public GameManager gameManager;
@@ -146,8 +149,9 @@ public class DayNightCycle : MonoBehaviour
         Daylight = skylightLerpValue;
         Shader.SetGlobalFloat(nightID, 1f - skylightLerpValue);
 
-        // the night end, as bright as the setting has it
-        var moon = Mathf.Clamp01(NightBrightness);
+        // the night end, as bright as the setting has it; eased, so most of the slider is a usable night and only the
+        // far left end is the old pitch dark
+        var moon = Mathf.Sqrt(Mathf.Clamp01(NightBrightness));
         var skyFloor = Color.Lerp(SkyColor.Evaluate(0f), MoonSky, moon);
         var equatorFloor = Color.Lerp(EquatorColor.Evaluate(0f), MoonEquator, moon);
         var groundFloor = Color.Lerp(GroundColor.Evaluate(0f), MoonGround, moon);
@@ -162,7 +166,8 @@ public class DayNightCycle : MonoBehaviour
         var nightColor = Color.Lerp(NightLight.color, MoonColor, moon);
         var nightRotation = Quaternion.Slerp(NightLight.transform.rotation, MoonRotation, moon);
 
-        skyLight.intensity = Mathf.Lerp(nightIntensity, DayLight.intensity, skylightLerpValue) * Weather.Sunlight;
+        var weatherLight = Mathf.Lerp(Mathf.Lerp(1f, Weather.Sunlight, WeatherAtNight), Weather.Sunlight, skylightLerpValue);
+        skyLight.intensity = Mathf.Lerp(nightIntensity, DayLight.intensity, skylightLerpValue) * weatherLight;
         if (shadowStrength < 0f) shadowStrength = skyLight.shadowStrength;
         skyLight.shadowStrength = shadowStrength * Weather.Shadows;
         skyLight.colorTemperature = Mathf.Lerp(nightTemperature, DayLight.colorTemperature, skylightLerpValue);

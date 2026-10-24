@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 
 /// <summary>
 /// Tilt shift, to make the islands look like a miniature world: a band across the screen stays sharp and the picture
-/// blurs above and below it, with the colours a little richer. Off unless the setting turns it on.
+/// blurs above and below it. Off unless the setting turns it on.
 /// </summary>
 /// <remarks>
 /// The pass is added to the game camera each frame from here, so no renderer asset has to carry it. It runs before
@@ -20,8 +20,6 @@ public static class TiltShift
     private static readonly int BandId = Shader.PropertyToID("_TiltBand");
     private static readonly int FalloffId = Shader.PropertyToID("_TiltFalloff");
     private static readonly int StrengthId = Shader.PropertyToID("_TiltStrength");
-    private static readonly int SaturationId = Shader.PropertyToID("_TiltSaturation");
-    private static readonly int ContrastId = Shader.PropertyToID("_TiltContrast");
     private static readonly int HalfId = Shader.PropertyToID("_TiltHalf");
     private static readonly int QuarterId = Shader.PropertyToID("_TiltQuarter");
 
@@ -36,7 +34,7 @@ public static class TiltShift
     public static bool Suppressed { get; set; }
 
     /// <summary>
-    /// How strong, 0 to 1: how far the blur goes at the screen's edges, and how much richer the colours are.
+    /// How strong, 0 to 1: how far the blur goes at the screen's edges.
     /// </summary>
     public static float Strength
     {
@@ -95,8 +93,6 @@ public static class TiltShift
         material.SetFloat(BandId, Mathf.Lerp(0.04f, 0.35f, Mathf.Clamp01(Band)));
         material.SetFloat(FalloffId, Mathf.Lerp(0.15f, 0.9f, Mathf.Clamp01(Softness)));
         material.SetFloat(StrengthId, Mathf.Lerp(0.25f, 1f, strength));
-        material.SetFloat(SaturationId, 1f + 0.25f * strength);
-        material.SetFloat(ContrastId, 1f + 0.08f * strength);
 
         var data = camera.GetUniversalAdditionalCameraData();
         if (data == null || data.scriptableRenderer == null) return;

@@ -1,5 +1,5 @@
 // Tilt shift: the world as a miniature. A band across the screen stays sharp and above and below it the picture
-// blurs more and more, as a close up photo of a model would, with the colours a little richer, like painted toys.
+// blurs more and more, as a close up photo of a model would.
 //
 // TiltShift.cs runs it: the picture is copied to half and to quarter size and each is blurred (passes 0 and 1, a
 // separable Gaussian); the composite (pass 2) blends from the sharp picture to the half size blur and then to the
@@ -16,8 +16,6 @@ Shader "Hidden/Ravenfall/Tilt Shift"
     float _TiltBand;        // half the band's height, sharp
     float _TiltFalloff;     // how far beyond it the blur reaches its strongest
     float _TiltStrength;    // 0 to 1
-    float _TiltSaturation;
-    float _TiltContrast;
 
     // nine taps, Gaussian weights, two texels apart with bilinear filtering in between
     half4 Blur(float2 uv, float2 step)
@@ -84,11 +82,6 @@ Shader "Hidden/Ravenfall/Tilt Shift"
                 half4 colour = lerp(sharp, half_, saturate(blur * 2));
                 colour = lerp(colour, quarter, saturate(blur * 2 - 1));
 
-                // a little richer, like painted toys
-                half grey = dot(colour.rgb, half3(0.2126, 0.7152, 0.0722));
-                colour.rgb = lerp(grey.xxx, colour.rgb, _TiltSaturation);
-                colour.rgb = (colour.rgb - 0.5) * _TiltContrast + 0.5;
-                colour.rgb = max(colour.rgb, 0);
                 return colour;
             }
             ENDHLSL

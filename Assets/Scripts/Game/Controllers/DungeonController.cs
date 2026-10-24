@@ -61,6 +61,9 @@ public class DungeonController : MonoBehaviour
     private int currentRoomIndex = 0;
     private int bossCombatLevel;
 
+    /// <summary>The boss was killed in this run; only then does reaching the end count as a win.</summary>
+    public bool BossSlain { get; set; }
+
     public Vector3 BossSpawnPoint => bossSpawnPoint.position;
     public Vector3 StartingPoint => startingPoint.position;
 
@@ -138,11 +141,23 @@ public class DungeonController : MonoBehaviour
 
     public void ResetRooms()
     {
-        currentRoomIndex = 0;
         foreach (var room in Rooms)
         {
             room.ResetRoom();
         }
+        FromTheStart();
+    }
+
+    /// <summary>Back to the starting room, with every room not yet entered.</summary>
+    private void FromTheStart()
+    {
+        foreach (var room in Rooms)
+        {
+            room.ResetState();
+        }
+        currentRoom = Rooms.FirstOrDefault(x => x.RoomType == DungeonRoomType.Start);
+        currentRoomIndex = Math.Max(0, Array.IndexOf(Rooms, currentRoom));
+        BossSlain = false;
     }
 
     public int CurrentRoomIndex => currentRoomIndex;
@@ -163,7 +178,7 @@ public class DungeonController : MonoBehaviour
 
     public void Enter()
     {
-
+        FromTheStart();
         if (!currentRoom)
         {
             Shinobytes.Debug.LogError("No starting room was found!");
@@ -202,7 +217,16 @@ public class DungeonController : MonoBehaviour
 
     private void Exit()
     {
-        dungeonManager.EndDungeonSuccess();
+        if (BossSlain)
+        {
+            dungeonManager.EndDungeonSuccess();
+        }
+        else
+        {
+            // past the last room without killing the boss: nothing was won
+            Shinobytes.Debug.LogError("[" + Name + "] The dungeon reached its end without the boss being killed. Ending it without rewards.");
+            dungeonManager.EndDungeonFailed(false);
+        }
         HideDungeon(2);
     }
 

@@ -2,24 +2,27 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The world's torches and braziers by night: after dark they reach further, burn a little brighter and flicker,
-/// growing in with the night. By day they are as the scene set them.
+/// The world's torches and braziers by night: after dark they reach further and flicker, growing in with the night,
+/// in a warm but natural firelight. By day they are as the scene set them.
 /// </summary>
 /// <remarks>
 /// They are the scene's own point lights on torches and braziers outside the dungeons (which DungeonMood lights),
 /// set with a 10 m reach: from the game camera that was a small pool round each torch with the dark in between.
-/// No new lights; each gets back what it had when this stops.
+/// Many are set very orange (about 1700 K), which by night made a hot red pool round each fire (found on stream,
+/// October 2026), so after dark they go no warmer than <see cref="TorchTemperature"/> and reach wider instead of
+/// burning brighter. No new lights; each gets back what it had when this stops.
 /// </remarks>
 public sealed class NightLights : MonoBehaviour
 {
-    // the torches by night: further, a little brighter, flickering
-    private const float TorchReach = 1.6f;
-    private const float TorchBoost = 1.3f;
+    // the torches by night: further, flickering, no redder than this
+    private const float TorchReach = 2.2f;
+    private const float TorchBoost = 1f;
+    private const float TorchTemperature = 2600f;
     // new torches (a town hall tier, build mode) are picked up this often
     private const float TorchScanEvery = 10f;
 
     private DayNightCycle dayNight;
-    private readonly List<(Light light, float intensity, float range, float seed)> torches = new List<(Light, float, float, float)>();
+    private readonly List<(Light light, float intensity, float range, float temperature, float seed)> torches = new List<(Light, float, float, float, float)>();
     private readonly HashSet<Light> known = new HashSet<Light>();
     private float nextTorchScan;
 
@@ -43,10 +46,11 @@ public sealed class NightLights : MonoBehaviour
 
         var night = Night();
         var time = Time.time;
-        foreach (var (light, intensity, range, seed) in torches)
+        foreach (var (light, intensity, range, temperature, seed) in torches)
         {
             if (!light) continue;
             light.range = range * Mathf.Lerp(1f, TorchReach, night);
+            light.colorTemperature = Mathf.Lerp(temperature, Mathf.Max(temperature, TorchTemperature), night);
             var flicker = 1f - night * (0.1f - 0.06f * Mathf.Sin(time * 8.3f + seed) - 0.04f * Mathf.PerlinNoise(time * 3.7f, seed));
             light.intensity = intensity * Mathf.Lerp(1f, TorchBoost, night) * flicker;
         }
@@ -70,7 +74,7 @@ public sealed class NightLights : MonoBehaviour
             if (light.type != LightType.Point || known.Contains(light)) continue;
             if (!OnTorch(light.transform) || light.GetComponentInParent<DungeonController>(true)) continue;
             known.Add(light);
-            torches.Add((light, light.intensity, light.range, Random.value * 100f));
+            torches.Add((light, light.intensity, light.range, light.colorTemperature, Random.value * 100f));
         }
     }
 
@@ -87,11 +91,12 @@ public sealed class NightLights : MonoBehaviour
 
     private void OnDestroy()
     {
-        foreach (var (light, intensity, range, _) in torches)
+        foreach (var (light, intensity, range, temperature, _) in torches)
         {
             if (!light) continue;
             light.intensity = intensity;
             light.range = range;
+            light.colorTemperature = temperature;
         }
         torches.Clear();
         known.Clear();

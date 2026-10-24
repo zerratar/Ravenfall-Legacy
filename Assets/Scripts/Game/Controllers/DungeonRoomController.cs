@@ -90,7 +90,7 @@ public class DungeonRoomController : MonoBehaviour
 
     internal void ResetRoom()
     {
-        stuckCheckTime = 0;
+        ResetState();
         if (gate)
         {
             gate.Close();
@@ -105,9 +105,29 @@ public class DungeonRoomController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Forgets how far the last dungeon got in this room. A room left in progress by a dungeon that failed or was
+    /// stopped walked the next dungeon on to its boss during the countdown, and it was won the moment it started
+    /// (found on stream, October 2026).
+    /// </summary>
+    internal void ResetState()
+    {
+        state = DungeonRoomState.None;
+        stuckCheckTime = 0;
+        stuckCheckAliveCount = 0;
+        stuckCheckAlivePlayerCount = 0;
+        stuckCheckEnemyHealth = 0;
+        stuckCheckPlayerHealth = 0;
+    }
+
     private void Update()
     {
         if (!InProgress)
+            return;
+
+        // nothing happens in a room before the dungeon has started, or in one that is not the running dungeon's
+        var manager = dungeon.DungeonManager;
+        if (!manager.Started || manager.Dungeon != dungeon)
             return;
 
         if (RoomType == DungeonRoomType.Room)
@@ -155,7 +175,7 @@ public class DungeonRoomController : MonoBehaviour
                     stuckCheckEnemyHealth = totalEnemyHealth;
                     stuckCheckPlayerHealth = totalPlayerHealth;
                 }
-                else if (stuckCheckTime > 0 && GameTime.time - stuckCheckTime > 10f)
+                else if (alivePlayerCount > 0 && stuckCheckTime > 0 && GameTime.time - stuckCheckTime > 10f)
                 {
                     // forcibly kill all enemies.
                     Shinobytes.Debug.LogWarning("[" + dungeon.Name + "] Dungeon room " + name + " is stuck. Forcibly killing all enemies to proceed to the next room.");
@@ -183,6 +203,7 @@ public class DungeonRoomController : MonoBehaviour
             if (Boss && Boss.Enemy.Stats.IsDead)
             {
                 Boss = null;
+                dungeon.BossSlain = true;
                 dungeon.NextRoom();
             }
         }

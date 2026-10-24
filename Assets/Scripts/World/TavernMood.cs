@@ -3,8 +3,8 @@ using UnityEngine;
 /// <summary>
 /// The tavern by lamplight: while the camera is inside, the light is a warm indoor one, the same whatever the time
 /// of day and the weather outside. The Halloween theme freezes the time at night for its spooky windows, and the
-/// moonlit night that suits the islands left the room near black (found on stream, October 2026); it keeps a dimmer,
-/// purple tint instead.
+/// moonlit night that suits the islands left the room near black (found on stream, October 2026); it gets a purple
+/// tint, just as bright: the tavern is always properly lit.
 /// </summary>
 /// <remarks>
 /// Works like <see cref="DungeonMood"/>: after the day and night cycle has set the light each frame, easing over
@@ -18,11 +18,11 @@ public sealed class TavernMood : MonoBehaviour
     private const float Sun = 0.85f;
     private const float SunTemperature = 4300f;
 
-    // Halloween: darker and a little purple, still light enough to read the redeemables and the game boards
-    private static readonly Color SpookySkyAmbient = new Color(0.36f, 0.30f, 0.40f);
-    private static readonly Color SpookyEquatorAmbient = new Color(0.34f, 0.27f, 0.30f);
-    private static readonly Color SpookyGroundAmbient = new Color(0.18f, 0.14f, 0.16f);
-    private const float SpookySun = 0.55f;
+    // Halloween: a little purple, as bright as any other night in the tavern
+    private static readonly Color SpookySkyAmbient = new Color(0.50f, 0.42f, 0.52f);
+    private static readonly Color SpookyEquatorAmbient = new Color(0.47f, 0.37f, 0.42f);
+    private static readonly Color SpookyGroundAmbient = new Color(0.26f, 0.19f, 0.22f);
+    private const float SpookySun = 0.85f;
 
     private GameManager game;
     private float blend;
