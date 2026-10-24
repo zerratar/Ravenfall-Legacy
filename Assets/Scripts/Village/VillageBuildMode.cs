@@ -31,8 +31,10 @@ public class VillageBuildMode : MonoBehaviour
     [Tooltip("How far from the plaza buildings may stand, in metres, for each town hall tier (1 to 5). The village grows with its hall; the last covers the whole island.")]
     [SerializeField] private float[] areaByTier = { 45f, 60f, 75f, 95f, 150f };
 
+    // 3 m since the houses have foundations reaching 3.2 m down (tools/village-rebuild/house-foundations.cs): at 2 m,
+    // much of the island was refused, around the bridge for one
     [Tooltip("Largest height difference across a footprint before the ground counts as too steep.")]
-    [SerializeField] private float maxSlope = 2f;
+    [SerializeField] private float maxSlope = 3f;
 
     [Tooltip("Gap kept between buildings, in metres.")]
     [SerializeField] private float spacing = 0.5f;

@@ -89,9 +89,11 @@ public class FreeCamera : MonoBehaviour
             OnMouseUpAction();
         }
 
+        // Ctrl turns the camera too, except in build mode: there Ctrl click adds a point to a road, and the camera
+        // swung round while it did. The right mouse button still turns it there.
+        var buildMode = VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive;
         if (Input.GetMouseButton(1)
-            || Input.GetKey(KeyCode.LeftControl)
-            || Input.GetKey(KeyCode.RightControl))
+            || (!buildMode && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))))
         /*
             || Input.GetKey(KeyCode.LeftAlt)
             || Input.GetKey(KeyCode.RightAlt)             
