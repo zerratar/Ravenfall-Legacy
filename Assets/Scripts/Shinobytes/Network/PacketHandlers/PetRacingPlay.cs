@@ -15,6 +15,12 @@
             return;
         }
 
+        // the race's table is switched off in the scene until someone races
+        if (!Game.Tavern.PetRacing.gameObject.activeSelf)
+        {
+            Game.Tavern.PetRacing.gameObject.SetActive(true);
+        }
+
         if (!Game.Tavern.PetRacing.Started)
         {
             Game.Tavern.PetRacing.Activate();

@@ -9,6 +9,11 @@ public static class Localization
     public static string MSG_PATREON_ONLY = Meta("system", "fail") + "This command is for Patreon supporters only. Consider supporting the game on Patreon to gain access to this command.";
     public static string PETRACE_NO_PET = Meta("minigame", "pet race", "fail") + "You need to equip a pet to play.";
     public static string PETRACE_ALREADY_PLAYING = Meta("minigame", "pet race", "fail") + "You're already playing.";
+    public static string PETRACE_JOINED = Meta("minigame", "pet race", "info") + "Your {petName} is at the starting line!";
+    public static string PETRACE_FULL = Meta("minigame", "pet race", "fail") + "The pet race is full.";
+    public static string PETRACE_RUNNING = Meta("minigame", "pet race", "fail") + "A pet race is already running. Join the next one when it is over.";
+    public static string PETRACE_STARTED = Meta("minigame", "pet race", "info") + "The pet race is on! {count} pets are racing for the finish line.";
+    public static string PETRACE_WIN = Meta("minigame", "pet race", "info", "result") + "{playerName}'s {petName} won the pet race!";
     public static string PETRACE_START_COMMAND = "race"; // Meta("minigame", "pet race") + 
     public static string EQUIP_SHIELD_AND_TWOHANDED = Meta("equipment", "equip", "fail") + "You cannot equip a shield while having a 2-handed weapon equipped.";
     public static string CANT_TRAIN_HERE = Meta("training", "fail") + "You cannot train {type} here.";
