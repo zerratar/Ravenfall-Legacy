@@ -51,9 +51,9 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<StreamerShopResult>(ApiRequestTarget.Shop, ApiRequestType.Post);
         }
 
-        public Task<StreamerShopBuyResult> BuyAsync(Guid listingId, Guid characterId)
+        public Task<StreamerShopBuyResult> BuyAsync(Guid listingId, Guid characterId, long amount = 1)
         {
-            return request.Create().Identifier(listingId.ToString()).Method("buy").AddParameter(characterId.ToString()).Build()
+            return request.Create().Identifier(listingId.ToString()).Method("buy").AddParameter(characterId.ToString()).AddParameter(Math.Max(1, amount).ToString()).Build()
                 .SendAsync<StreamerShopBuyResult>(ApiRequestTarget.Shop, ApiRequestType.Get);
         }
     }
@@ -172,7 +172,8 @@ namespace RavenNest.SDK.Endpoints
         InsufficientCoins = 5,
         OwnListing = 6,
         NotInSession = 7,
-        Error = 8
+        Error = 8,
+        NotEnoughLeft = 9
     }
 
     public class StreamerShopBuyResult
@@ -184,7 +185,9 @@ namespace RavenNest.SDK.Endpoints
         public Guid ItemId { get; set; }
         public string ItemName { get; set; }
         public Guid InventoryItemId { get; set; }
+        public long Amount { get; set; }
         public long Price { get; set; }
+        public long MaxAmount { get; set; }
         public long CoinsLeft { get; set; }
         public long LoyaltyPoints { get; set; }
         public long AmountLeft { get; set; }

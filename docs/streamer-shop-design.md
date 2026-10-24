@@ -7,7 +7,8 @@ The tables are created at startup by `DatabaseSchema`.
 Phase 2 (the game) built the same day: the shelves (`World/TavernShop.cs`, `World/ShopShelf.cs`, eight
 slots on the redeemables room's north wall under `Layout/Shelves`), the window (`UI/Toolkit/ShopWindow.cs`,
 `ShopWindow.uxml`, `ravenfall-shop.uss`), item icons from the website (`UI/ItemIcons.cs`) and the
-`StreamerShopUpdated` event. Phases 3 and 4 are not started.
+`StreamerShopUpdated` event. Phase 3 (`!redeem` for the shelves, with an amount) built the same day:
+`World/TavernShopRedeem.cs`, called first by `RedeemStreamerToken`. Phase 4 is not started.
 
 The streamer puts items of their own on shelves in the tavern for a coin price. Viewers buy them with
 the same `!redeem` they use for the seasonal redeemables. The coins do not go to the streamer: they
@@ -52,7 +53,10 @@ what it cost, that the coins went to the village, and the loyalty points they ea
   Streamer tokens and other currencies cannot be listed.
 - **Price.** Whole coins per item, from 1 up to a cap (proposed 100,000,000), so a mistyped zero
   cannot empty a viewer's account.
-- **Quantity.** 1 up to what the source holds. Each redeem buys one.
+- **Quantity.** 1 up to what the source holds. A redeem buys one, or as many as asked for with a number at
+  the end (decided 2026-10-24, for shelves of resources): all of them or none, within what is left, the
+  limit per viewer and the buyer's coins. Loyalty points are capped per item, so splitting a purchase
+  earns nothing extra.
 - **Duration.** From 1 hour up to 30 days (decided 2026-10-24); the window offers 1 hour, 6 hours,
   1 day, 3 days, 7 days, 14 days and 30 days.
 - **Shelf spots.** Limited: proposed 3 shelves, plus 1 per town hall tier, up to 8. A reason to
@@ -71,7 +75,8 @@ what it cost, that the coins went to the village, and the loyalty points they ea
 
 `!redeem` already buys the seasonal token redeemables. The shop must not take their names away:
 
-- `!redeem 3` buys whatever is on shelf 3.
+- `!redeem 3` buys whatever is on shelf 3; `!redeem 3 50` buys 50 of it, and `!redeem rune ore 50` 50
+  rune ore (a number at the end is the amount, 1 when there is none).
 - `!redeem <name>` buys a shop item when the name matches a listing and is not a token redeemable.
 - When a name matches both, the token redeemable keeps the name and the reply points to the shelf:
   "Rune 2h sword is also on shelf 3 for 25,000 coins: !redeem 3".

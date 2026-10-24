@@ -16,7 +16,7 @@ public class RedeemStreamerToken : ChatBotCommandHandler<string>
     public override async void Handle(string query, GameMessage gm, GameClient client)
     {
 
-        if (Game.Tavern.MaintenanceMode || !Game.Tavern.CanRedeemItems)
+        if (Game.Tavern.MaintenanceMode)
             return;
 
         var sender = gm.Sender;
@@ -27,7 +27,18 @@ public class RedeemStreamerToken : ChatBotCommandHandler<string>
             return;
         }
 
-        await HandleRedeemItemAsync(gm, player, client, query);
+        // the streamer's tavern shelves first: a shelf number, or a name only the shelves have
+        var shop = await TavernShopRedeem.TryHandleAsync(Game, client, gm, player, query);
+        if (shop.Handled)
+            return;
+
+        if (!Game.Tavern.CanRedeemItems)
+            return;
+
+        // without the amount, which only the shelves use: token redeemables are one at a time
+        await HandleRedeemItemAsync(gm, player, client, string.IsNullOrWhiteSpace(shop.Text) ? query : shop.Text);
+        if (!string.IsNullOrEmpty(shop.AlsoOnShelf))
+            client.SendReply(gm, shop.AlsoOnShelf);
     }
     private async Task HandleRedeemItemAsync(GameMessage gm, PlayerController player, GameClient client, string itemQuery)
     {
