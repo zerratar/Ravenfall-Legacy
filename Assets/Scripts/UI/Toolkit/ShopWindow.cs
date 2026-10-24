@@ -397,23 +397,28 @@ namespace Shinobytes.UI
             var item = gameManager.Items.Get(editing.ItemId);
             var name = !string.IsNullOrEmpty(editing.Name) ? editing.Name : item?.Name;
             form.Add(ItemHeader(item?.Name, string.Format(Localization.UI_SHOP_EDITING, editing.Shelf + 1, name),
-                string.Format(Localization.UI_SHOP_LISTING_STATS, editing.Amount.ToString("N0"), editing.Sold.ToString("N0"), editing.CoinsEarned.ToString("N0"))
-                + "\n" + string.Format(Localization.UI_SHOP_TIME_LEFT, TimeLeft(editing.Expires))));
+                string.Format(Localization.UI_SHOP_LISTING_STATS, editing.Amount.ToString("N0"), editing.Sold.ToString("N0"), editing.CoinsEarned.ToString("N0")),
+                string.Format(Localization.UI_SHOP_TIME_LEFT, TimeLeft(editing.Expires))));
 
             AddTermsFields(false);
 
-            var buttons = Row();
+            // side by side and the same width: a chip row wrapped them onto two lines
+            var buttons = new VisualElement();
+            buttons.AddToClassList("rf-shop__actions");
             var save = new Button(() => SaveEdit()) { text = Localization.UI_SHOP_SAVE };
             save.AddToClassList("rf-button");
             save.AddToClassList("rf-button--primary");
+            save.AddToClassList("rf-shop__action");
             save.SetEnabled(!busy);
             var down = new Button(() => TakeDown(editing)) { text = Localization.UI_SHOP_TAKE_DOWN };
             down.AddToClassList("rf-button");
+            down.AddToClassList("rf-shop__action");
             down.SetEnabled(!busy);
             buttons.Add(save);
             buttons.Add(down);
             form.Add(buttons);
-            form.Add(Note(Localization.UI_SHOP_TO_VILLAGE, "rf-shop__village-note"));
+            // no village note under the buttons here: the banner at the top already says it, and the
+            // wrapped note sat cramped under the buttons
         }
 
         /// <summary>Price, how many (new listings only), how long, who may buy and the limit per viewer.</summary>
@@ -515,11 +520,13 @@ namespace Shinobytes.UI
             // kept now: the shop that comes back moves the shelf choice on to the next free one
             var listedOn = shelf + 1;
             var listedName = DisplayName(selected);
+            // closed once it is up: left open, the panel made people wonder whether a second item would
+            // go on another shelf or replace the one just put up. The item on the shelf says it worked.
             await Run(async () => await gameManager.RavenNest.Shop.ListAsync(request), result =>
             {
                 Status(string.Format(Localization.UI_SHOP_DONE_LISTED, listedName, listedOn));
                 selected = null;
-                LoadSources();
+                Close();
             });
         }
 
@@ -726,7 +733,7 @@ namespace Shinobytes.UI
             });
         }
 
-        private VisualElement ItemHeader(string itemName, string title, string subtitle)
+        private VisualElement ItemHeader(string itemName, string title, params string[] lines)
         {
             var header = new VisualElement();
             header.AddToClassList("rf-shop__item-header");
@@ -738,10 +745,14 @@ namespace Shinobytes.UI
             text.AddToClassList("rf-shop__item-text");
             var titleLabel = new Label(title) { pickingMode = PickingMode.Ignore };
             titleLabel.AddToClassList("rf-shop__item-title");
-            var sub = new Label(subtitle) { pickingMode = PickingMode.Ignore };
-            sub.AddToClassList("rf-shop__item-sub");
             text.Add(titleLabel);
-            text.Add(sub);
+            // a label per line: this font sets broken lines almost on top of each other
+            foreach (var line in lines)
+            {
+                var sub = new Label(line) { pickingMode = PickingMode.Ignore };
+                sub.AddToClassList("rf-shop__item-sub");
+                text.Add(sub);
+            }
             header.Add(text);
             return header;
         }

@@ -3,6 +3,8 @@
    Tabs along the top, the treasury line under them on every tab, and on the first tab the item grid
    on the left with the listing on the right. Chips and fields are drawn here, as in the settings
    window, so nothing depends on Unity's runtime dropdowns.
+   Every rule starts with .rf-shop: the window chrome's label reset (.rf-window .unity-label) has two
+   classes and zeroed the margins of one-class label rules, which left the panel cramped.
    ========================================================================== */
 
 #shop-window {
@@ -30,7 +32,7 @@
 
 /* ---- Tabs ---- */
 
-.rf-shop__tabs {
+.rf-shop .rf-shop__tabs {
     flex-direction: row;
     flex-shrink: 0;
     padding-left: var(--rf-space-4);
@@ -74,7 +76,7 @@
 
 /* ---- The treasury line, on every tab ---- */
 
-.rf-shop__treasury {
+.rf-shop .rf-shop__treasury {
     flex-direction: row;
     align-items: center;
     flex-shrink: 0;
@@ -92,13 +94,13 @@
     border-bottom-right-radius: var(--rf-radius);
 }
 
-.rf-shop__treasury-icon {
+.rf-shop .rf-shop__treasury-icon {
     font-size: 16px;
     color: var(--rf-accent-bright);
     margin-right: var(--rf-space-3);
 }
 
-.rf-shop__treasury-text {
+.rf-shop .rf-shop__treasury-text {
     flex-shrink: 1;
     font-size: 14px;
     color: var(--rf-text);
@@ -107,7 +109,7 @@
 
 /* ---- Pages ---- */
 
-.rf-shop__page {
+.rf-shop .rf-shop__page {
     flex-grow: 1;
     min-height: 0;
     flex-direction: column;
@@ -116,11 +118,11 @@
     padding-top: var(--rf-space-3);
 }
 
-.rf-shop__page--sell {
+.rf-shop .rf-shop__page--sell {
     flex-direction: row;
 }
 
-.rf-shop__left {
+.rf-shop .rf-shop__left {
     flex-grow: 1;
     flex-basis: 0;
     min-width: 0;
@@ -128,7 +130,7 @@
     margin-right: var(--rf-space-4);
 }
 
-.rf-shop__form {
+.rf-shop .rf-shop__form {
     width: 380px;
     flex-shrink: 0;
     padding-left: var(--rf-space-4);
@@ -136,18 +138,18 @@
     border-left-color: var(--rf-divider);
 }
 
-.rf-shop__grid {
+.rf-shop .rf-shop__grid {
     flex-grow: 1;
     margin-top: var(--rf-space-2);
 }
 
-.rf-shop__list {
+.rf-shop .rf-shop__list {
     flex-grow: 1;
 }
 
 /* ---- Chips: choices in a row ---- */
 
-.rf-shop__chips {
+.rf-shop .rf-shop__chips {
     flex-direction: row;
     flex-wrap: wrap;
     flex-shrink: 0;
@@ -206,7 +208,7 @@
 
 /* ---- Fields ---- */
 
-.rf-shop__field {
+.rf-shop .rf-shop__field {
     margin-left: 0;
     margin-right: var(--rf-space-2);
     margin-top: 0;
@@ -214,12 +216,12 @@
     min-width: 160px;
 }
 
-.rf-shop__search {
+.rf-shop .rf-shop__search {
     flex-shrink: 0;
 }
 
-.rf-shop__field > .unity-text-field__input,
-.rf-shop__field .unity-base-text-field__input {
+.rf-shop .rf-shop__field > .unity-text-field__input,
+.rf-shop .rf-shop__field .unity-base-text-field__input {
     height: 34px;
     padding-left: 10px;
     padding-right: 10px;
@@ -243,8 +245,8 @@
     border-bottom-right-radius: var(--rf-radius);
 }
 
-.rf-shop__field:focus > .unity-text-field__input,
-.rf-shop__field:focus .unity-base-text-field__input {
+.rf-shop .rf-shop__field:focus > .unity-text-field__input,
+.rf-shop .rf-shop__field:focus .unity-base-text-field__input {
     border-left-color: var(--rf-accent);
     border-right-color: var(--rf-accent);
     border-top-color: var(--rf-accent);
@@ -253,7 +255,7 @@
 
 /* ---- The item grid ---- */
 
-.rf-shop__tiles {
+.rf-shop .rf-shop__tiles {
     flex-direction: row;
     flex-wrap: wrap;
 }
@@ -306,13 +308,13 @@
     opacity: 0.38;
 }
 
-.rf-shop__tile-icon {
+.rf-shop .rf-shop__tile-icon {
     width: 56px;
     height: 56px;
     -unity-background-scale-mode: scale-to-fit;
 }
 
-.rf-shop__tile-count {
+.rf-shop .rf-shop__tile-count {
     position: absolute;
     right: 6px;
     top: 4px;
@@ -323,7 +325,7 @@
     -unity-text-outline-color: var(--rf-text-outline);
 }
 
-.rf-shop__tile-name {
+.rf-shop .rf-shop__tile-name {
     font-size: 11px;
     color: var(--rf-text-dim);
     -unity-text-align: upper-center;
@@ -335,13 +337,16 @@
 
 /* ---- The listing panel ---- */
 
-.rf-shop__item-header {
+.rf-shop .rf-shop__item-header {
     flex-direction: row;
     align-items: center;
-    margin-bottom: var(--rf-space-3);
+    margin-bottom: var(--rf-space-2);
+    padding-bottom: var(--rf-space-3);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
 }
 
-.rf-shop__item-icon {
+.rf-shop .rf-shop__item-icon {
     width: 72px;
     height: 72px;
     flex-shrink: 0;
@@ -354,33 +359,59 @@
     border-bottom-right-radius: var(--rf-radius);
 }
 
-.rf-shop__item-text {
+.rf-shop .rf-shop__item-text {
     flex-shrink: 1;
     flex-grow: 1;
 }
 
-.rf-shop__item-title {
+.rf-shop .rf-shop__item-title {
     font-size: 17px;
     -unity-font-style: bold;
     color: var(--rf-text);
     white-space: normal;
+    margin-bottom: var(--rf-space-1);
+    padding-bottom: 2px;
 }
 
-.rf-shop__item-sub {
+.rf-shop .rf-shop__item-sub {
     font-size: 13px;
     color: var(--rf-text-dim);
     white-space: normal;
+    margin-top: 5px;
 }
 
-.rf-shop__heading {
-    font-size: 13px;
+.rf-shop .rf-shop__heading {
+    font-size: 14px;
     -unity-font-style: bold;
     color: var(--rf-text-dim);
-    margin-top: var(--rf-space-3);
+    margin-top: var(--rf-space-4);
     margin-bottom: var(--rf-space-2);
+    padding-bottom: 2px;
 }
 
-.rf-shop__note {
+/* Save and Take down: one row, equal widths, the same text size as the rest of the panel. */
+.rf-shop .rf-shop__actions {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-top: var(--rf-space-5);
+}
+
+.rf-shop .rf-shop__action {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-height: 36px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 15px;
+}
+
+.rf-shop .rf-shop__action:last-child {
+    margin-right: 0;
+}
+
+.rf-shop .rf-shop__note {
     font-size: 14px;
     color: var(--rf-text-dim);
     white-space: normal;
@@ -388,14 +419,15 @@
     margin-bottom: var(--rf-space-2);
 }
 
-.rf-shop__hint {
+.rf-shop .rf-shop__hint {
     font-size: 12px;
     margin-top: 0;
 }
 
-.rf-shop__village-note {
+.rf-shop .rf-shop__village-note {
     color: var(--rf-accent-bright);
     font-size: 13px;
+    margin-top: var(--rf-space-3);
 }
 
 .rf-shop .rf-shop__submit {
@@ -406,7 +438,7 @@
 
 /* ---- Rows: listings and sales ---- */
 
-.rf-shop__row {
+.rf-shop .rf-shop__row {
     flex-direction: row;
     align-items: center;
     min-height: 56px;
@@ -418,11 +450,11 @@
     border-bottom-color: var(--rf-divider);
 }
 
-.rf-shop__row:hover {
+.rf-shop .rf-shop__row:hover {
     background-color: var(--rf-row-hover);
 }
 
-.rf-shop__row-icon {
+.rf-shop .rf-shop__row-icon {
     width: 44px;
     height: 44px;
     flex-shrink: 0;
@@ -430,7 +462,7 @@
     -unity-background-scale-mode: scale-to-fit;
 }
 
-.rf-shop__row-text {
+.rf-shop .rf-shop__row-text {
     flex-grow: 1;
     flex-shrink: 1;
     font-size: 14px;
@@ -438,30 +470,31 @@
     white-space: normal;
 }
 
-.rf-shop__row-title {
+.rf-shop .rf-shop__row-title {
     font-size: 15px;
     -unity-font-style: bold;
     color: var(--rf-text);
 }
 
-.rf-shop__row-line {
+.rf-shop .rf-shop__row-line {
     font-size: 13px;
     color: var(--rf-text-dim);
     white-space: normal;
+    margin-top: 5px;
 }
 
-.rf-shop__row-time {
+.rf-shop .rf-shop__row-time {
     font-size: 12px;
     color: var(--rf-text-faint);
     margin-left: var(--rf-space-3);
 }
 
-.rf-shop__row .rf-button {
+.rf-shop .rf-shop__row .rf-button {
     margin-left: var(--rf-space-2);
     min-height: 34px;
 }
 
-.rf-shop__totals {
+.rf-shop .rf-shop__totals {
     font-size: 15px;
     color: var(--rf-text);
     margin-bottom: var(--rf-space-3);
@@ -470,7 +503,7 @@
 
 /* ---- Footer ---- */
 
-.rf-shop__footer {
+.rf-shop .rf-shop__footer {
     flex-shrink: 0;
     min-height: 36px;
     flex-direction: row;
@@ -481,12 +514,12 @@
     border-top-color: var(--rf-divider);
 }
 
-.rf-shop__status {
+.rf-shop .rf-shop__status {
     font-size: 13px;
     color: var(--rf-success);
     white-space: normal;
 }
 
-.rf-shop__status--error {
+.rf-shop .rf-shop__status--error {
     color: var(--rf-danger);
 }
