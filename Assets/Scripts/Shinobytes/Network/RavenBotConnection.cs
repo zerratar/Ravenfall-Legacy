@@ -149,6 +149,14 @@ public class RavenBotConnection : IDisposable
             }
 
             handled++;
+
+            // anything from the bot shows it works. Only the remote bot pings, so a streamer on the local bot was
+            // told "Connecting to the bot" for as long as it ran, while their chat commands worked
+            if (ravenbot != null && ravenbot.State != BotState.Ready)
+            {
+                ravenbot.State = BotState.Ready;
+            }
+
             if (packet.Message == null || string.IsNullOrEmpty(packet.Message.Identifier))
             {
                 logger.WriteError("Received message from bot that was not properly deserialized. Message is null. ");
@@ -607,10 +615,8 @@ public class RavenBotConnection : IDisposable
         }
         LocalConnected?.Invoke(this, gameClient);
         SendOrphanedReplies(gameClient);
-        if (ravenbot.State == BotState.Disconnected)
-        {
-            ravenbot.State = BotState.Connected;
-        }
+        // the local bot is up once it has connected (it never pings); whether it is in the channel it says itself
+        ravenbot.State = BotState.Ready;
     }
 
     public void OnClientDisconnected(GameClient gameClient)

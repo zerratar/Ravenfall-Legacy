@@ -226,7 +226,9 @@ public class RavenBot : System.IDisposable
 
     private void BotDisconnected(object sender, GameClient e)
     {
-        State = BotState.Disconnected;
+        // only when no link is left: an old remote link closing after a reconnect put a working bot back to
+        // "connecting" until its next ping got through
+        if (!Connection.IsConnected) State = BotState.Disconnected;
         if ((!Connection.IsConnectedToLocal || e.IsLocal) && !Connection.IsConnectedToRemote)
         {
             Connection.Connect(BotConnectionType.Remote);
