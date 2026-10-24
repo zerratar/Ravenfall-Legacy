@@ -101,6 +101,14 @@ public class VillageBuildMode : MonoBehaviour
 
     /// <summary>Drawing and editing roads, which shares this mode's input.</summary>
     public VillageRoadTool Roads => roadTool ? roadTool : (roadTool = GetComponent<VillageRoadTool>() ?? gameObject.AddComponent<VillageRoadTool>());
+
+    private VillageDecorTool decorTool;
+
+    /// <summary>Placing, moving and removing decor (docs/village-decor-design.md).</summary>
+    public VillageDecorTool Decor => decorTool ? decorTool : (decorTool = GetComponent<VillageDecorTool>() ?? gameObject.AddComponent<VillageDecorTool>());
+
+    // decor a building being placed would stand on, named and outlined like the buildings in the way
+    private readonly List<VillageDecorItem> decorBlockers = new List<VillageDecorItem>();
     private GameObject ghost;
     private Footprint ghostFootprint = Footprint.Default;
     private float oceanLevel = float.NaN;
@@ -201,6 +209,7 @@ public class VillageBuildMode : MonoBehaviour
         if (villageGrid) villageGrid.Hide();
         Roads.CancelDrawing();
         Roads.Deselect();
+        Decor.Stop();
         IsActive = false;
         Selected = null;
         HallSelected = false;
@@ -281,6 +290,7 @@ public class VillageBuildMode : MonoBehaviour
     {
         Roads.Deselect();
         Roads.CancelDrawing();
+        Decor.Stop();
         if (!IsActive)
         {
             return;
@@ -306,6 +316,7 @@ public class VillageBuildMode : MonoBehaviour
     {
         Roads.Deselect();
         Roads.CancelDrawing();
+        Decor.Stop();
         if (!IsActive)
         {
             return;
@@ -321,6 +332,7 @@ public class VillageBuildMode : MonoBehaviour
     {
         EndPreview();
         Roads.Deselect();
+        Decor.Stop();
         Selected = null;
         HallSelected = false;
         SetArmed(null);
@@ -335,6 +347,7 @@ public class VillageBuildMode : MonoBehaviour
     {
         Roads.Deselect();
         Roads.CancelDrawing();
+        Decor.Stop();
         if (!IsActive || Busy)
         {
             return;
@@ -416,6 +429,11 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
+        if (Decor.HandleInput())
+        {
+            return;
+        }
+
         if (Moving)
         {
             UpdateMove();
@@ -446,11 +464,13 @@ public class VillageBuildMode : MonoBehaviour
         {
             var slot = PlotUnderMouse(out var hall);
             var road = Roads.RoadUnderMouse();
+            var decor = !slot && !hall ? DecorUnderMouse() : null;
             var again = (slot && slot == Selected) || (hall && HallSelected);
-            if (road != null && (again || (!slot && !hall))) SelectRoad(road);
+            if (decor) SelectDecor(decor);
+            else if (road != null && (again || (!slot && !hall))) SelectRoad(road);
             else if (slot) Select(slot);
             else if (hall) SelectHall();
-            else if (Selected || HallSelected || Armed.HasValue || Roads.Selected != null) ClearSelection();
+            else if (Selected || HallSelected || Armed.HasValue || Roads.Selected != null || Decor.Selected) ClearSelection();
         }
     }
 
@@ -617,9 +637,15 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>Null when the plot can stand here, otherwise the reason it cannot.</summary>
-    private string Validate(TownHouseSlot slot, Footprint footprint, Vector3 position, float rotation, bool checkArea = true)
+    /// <param name="checkDecor">
+    /// Whether trees, bushes and rocks are in the way: for the streamer placing or moving a building, never for
+    /// settling plots on their own (SettlePlots). Settling with them moved and saved houses that had always stood
+    /// next to the island's trees, and searched for spots on every village update until the game stalled.
+    /// </param>
+    private string Validate(TownHouseSlot slot, Footprint footprint, Vector3 position, float rotation, bool checkArea = true, bool checkDecor = true)
     {
         blockers.Clear();
+        decorBlockers.Clear();
         hallBlocks = false;
         var townHall = gameManager.Village.TownHall;
         // Measured from the plaza, the middle of the village, so moving the town hall does not move
@@ -657,6 +683,22 @@ public class VillageBuildMode : MonoBehaviour
         if (blockers.Count > 0)
         {
             return WithBlockers(Localization.UI_BUILD_PLACE_OVERLAP);
+        }
+
+        // Not on a tree, bush or rock. Small pieces (flowers, grass) are hidden under buildings instead, and a
+        // piece already hidden under one (it stood there before decor could be moved) does not count.
+        var decor = checkDecor && gameManager.Village ? gameManager.Village.Decor : null;
+        if (decor != null && decor.Loaded)
+        {
+            foreach (var item in decor.InTheWay(footprint, position, rotation))
+            {
+                if (!item.Covered) decorBlockers.Add(item);
+            }
+
+            if (decorBlockers.Count > 0)
+            {
+                return string.Format(Localization.UI_BUILD_PLACE_DECOR, decor.NameOf(decorBlockers[0].Piece), decorBlockers.Count);
+            }
         }
 
         // On ground, not water, and not too steep.
@@ -839,6 +881,92 @@ public class VillageBuildMode : MonoBehaviour
         var footprint = Footprint.Measure(slot.gameObject);
         footprintCache[slot] = footprint;
         return footprint;
+    }
+
+    // ---- Decor -----------------------------------------------------------------------------
+
+    /// <summary>The decor piece under the mouse, if any.</summary>
+    private VillageDecorItem DecorUnderMouse()
+    {
+        var decor = gameManager.Village ? gameManager.Village.Decor : null;
+        if (decor == null || !decor.Loaded || !TryGetMousePoint(out var point)) return null;
+        var ground = PlacementUtility.FindGroundPoint(point);
+        return decor.ItemAt(ground);
+    }
+
+    public void SelectDecor(VillageDecorItem item)
+    {
+        EndPreview();
+        Roads.Deselect();
+        Roads.CancelDrawing();
+        Selected = null;
+        HallSelected = false;
+        SetArmed(null);
+        Decor.Select(item);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Starts placing a decor piece from the tray; any other selection goes.</summary>
+    public void ChooseDecor(string piece)
+    {
+        EndPreview();
+        Roads.Deselect();
+        Roads.CancelDrawing();
+        Selected = null;
+        HallSelected = false;
+        SetArmed(null);
+        Decor.Arm(piece);
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Null when a decor piece can stand here, otherwise why not: on the village's land and not in water, and for
+    /// anything but a small piece, off the buildings and the town hall.
+    /// </summary>
+    public string ValidateDecor(Vector3 position, float radius, bool small)
+    {
+        if (villageGrid && !villageGrid.IsOnVillageLand(position)) return Localization.UI_BUILD_PLACE_OUTSIDE;
+        if (IsWater(position)) return Localization.UI_BUILD_PLACE_WATER;
+        if (small) return null;
+
+        var footprint = new Footprint(new Vector2(radius, radius), Vector2.zero);
+        foreach (var plot in Plots)
+        {
+            if (!plot || IsEmpty(plot)) continue;
+            if (Footprint.Overlaps(FootprintOf(plot), plot.transform.position, plot.transform.eulerAngles.y, footprint, position, 0f))
+            {
+                return Localization.UI_DECOR_ON_BUILDING;
+            }
+        }
+
+        if (OverlapsTownHall(footprint, position, 0f)) return Localization.UI_DECOR_ON_BUILDING;
+        return null;
+    }
+
+    /// <summary>Whether a building or the town hall stands on this point: small decor there is hidden.</summary>
+    public bool CoversGround(Vector3 point)
+    {
+        var flat = new Vector2(point.x, point.z);
+        foreach (var plot in Plots)
+        {
+            if (!plot || IsEmpty(plot)) continue;
+            if (FootprintOf(plot).Contains(plot.transform.position, plot.transform.eulerAngles.y, flat)) return true;
+        }
+
+        var townHall = gameManager.Village ? gameManager.Village.TownHall : null;
+        return townHall && HallFootprint(townHall).Contains(townHall.HallPosition, townHall.HallRotation, flat);
+    }
+
+    /// <summary>The ring under a decor piece being placed or moved, in the colour that says whether it can stand there.</summary>
+    public void ShowDecorRing(Vector3 position, float radius, bool valid)
+    {
+        if (!overlay) overlay = PlacementOverlay.Create(cellSize);
+        overlay.Show(position, 0f, radius, radius, valid);
+    }
+
+    public void HideDecorRing()
+    {
+        if (overlay) overlay.Hide();
     }
 
     private void ShowFootprint(Footprint footprint, Vector3 position, float rotation, bool valid)
@@ -1125,6 +1253,13 @@ public class VillageBuildMode : MonoBehaviour
         {
             var hall = HallFootprint(townHall).Grown(0.3f);
             blockerRings.Add((hall.Centre(townHall.HallPosition, townHall.HallRotation), townHall.HallRotation, hall.Half));
+        }
+
+        foreach (var item in decorBlockers)
+        {
+            if (!item) continue;
+            var r = item.Radius + 0.3f;
+            blockerRings.Add((item.transform.position, 0f, new Vector2(r, r)));
         }
         overlay.ShowBlockers(blockerRings);
     }
@@ -1499,14 +1634,14 @@ public class VillageBuildMode : MonoBehaviour
             if (slot.IsNudged)
             {
                 var original = slot.DefaultPosition;
-                if (Validate(slot, room, original, rotation, false) == null)
+                if (Validate(slot, room, original, rotation, false, checkDecor: false) == null)
                 {
                     slot.ResetPlacement();
                     continue;
                 }
             }
 
-            if (Validate(slot, room, position, rotation, false) == null) continue;
+            if (Validate(slot, room, position, rotation, false, checkDecor: false) == null) continue;
             if (!TryFindFreeSpot(slot, room, position, out var spot, out var yaw)) continue;
 
             slot.Nudge(spot.x, spot.z, yaw);
@@ -1531,7 +1666,7 @@ public class VillageBuildMode : MonoBehaviour
                 var candidate = PlacementUtility.FindGroundPoint(new Vector3(flat.x, from.y + 20f, flat.z));
                 // the front (local -Z) to the plaza, as the default layout has them
                 var facing = Mathf.Round(Mathf.Atan2(candidate.x - plaza.x, candidate.z - plaza.z) * Mathf.Rad2Deg / rotationStep) * rotationStep;
-                if (Validate(slot, room, candidate, facing, false) != null) continue;
+                if (Validate(slot, room, candidate, facing, false, checkDecor: false) != null) continue;
                 spot = candidate;
                 yaw = facing;
                 return true;

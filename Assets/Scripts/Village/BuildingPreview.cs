@@ -24,6 +24,13 @@ public static class BuildingPreview
     /// <summary>Far enough below the world that nothing else is in frame.</summary>
     private static readonly Vector3 Stage = new Vector3(0f, -5000f, 0f);
 
+    // Each render gets its own spot on the stage. The GPU resident drawer draws a removed object for one more
+    // frame, so on one shared spot every picture also showed the building rendered before it: a small tree's
+    // picture had a large tree's ghost behind it, which looked like a crown cut off at the edge.
+    private const float StageSpacing = 400f;
+    private const int StageSpots = 16;
+    private static int nextSpot;
+
     /// <summary>
     /// The building's picture, given to <paramref name="ready"/>: at once when it has been made before, otherwise a
     /// couple of frames from now (null if it could not be made).
@@ -65,7 +72,8 @@ public static class BuildingPreview
         Texture2D texture = null;
         try
         {
-            instance = Object.Instantiate(prefab, Stage, Quaternion.identity);
+            var spot = Stage + new Vector3(StageSpacing * (nextSpot++ % StageSpots), 0f, 0f);
+            instance = Object.Instantiate(prefab, spot, Quaternion.identity);
 
             // Logic on the building has no business running for a snapshot.
             foreach (var behaviour in instance.GetComponentsInChildren<MonoBehaviour>(true))
@@ -138,7 +146,36 @@ public static class BuildingPreview
             target = RenderTexture.GetTemporary(size, size, 24, RenderTextureFormat.ARGB32);
             target.antiAliasing = 4;
             cam.targetTexture = target;
-            cam.Render();
+
+            // Daylight for the picture, whatever the time in the world: at night the trees and bushes came out as
+            // black shapes (the houses only showed for their lit windows). Only for this one render.
+            var lightObject = new GameObject("Building Preview Light");
+            var keyLight = lightObject.AddComponent<Light>();
+            keyLight.type = LightType.Directional;
+            keyLight.color = new Color(1f, 0.96f, 0.88f);
+            keyLight.intensity = 1.3f;
+            keyLight.shadows = LightShadows.None;
+            lightObject.transform.rotation = Quaternion.Euler(45f, -40f, 0f);
+            var sun = RenderSettings.sun;
+            var ambientMode = RenderSettings.ambientMode;
+            var ambientLight = RenderSettings.ambientLight;
+            var fog = RenderSettings.fog;
+            try
+            {
+                RenderSettings.sun = keyLight;
+                RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+                RenderSettings.ambientLight = new Color(0.55f, 0.56f, 0.6f);
+                RenderSettings.fog = false;
+                cam.Render();
+            }
+            finally
+            {
+                RenderSettings.sun = sun;
+                RenderSettings.ambientMode = ambientMode;
+                RenderSettings.ambientLight = ambientLight;
+                RenderSettings.fog = fog;
+                Object.Destroy(lightObject);
+            }
 
             RenderTexture.active = target;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = prefab.name + " Preview" };

@@ -109,6 +109,38 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<RoadResult>(ApiRequestTarget.Village, ApiRequestType.Post);
         }
 
+        // ---- Decor: api/village/decor (docs/village-decor-design.md) ----
+
+        public Task<DecorPiece[]> GetDecorPiecesAsync()
+        {
+            return request.Create().Identifier("decor").Method("pieces").Build()
+                .SendAsync<DecorPiece[]>(ApiRequestTarget.Village, ApiRequestType.Get);
+        }
+
+        public Task<DecorInfo[]> GetDecorAsync()
+        {
+            return request.Create().Identifier("decor").Build()
+                .SendAsync<DecorInfo[]>(ApiRequestTarget.Village, ApiRequestType.Get);
+        }
+
+        public Task<DecorResult> PlaceDecorAsync(DecorRequest decor)
+        {
+            return request.Create().Identifier("decor").Method("place").Build()
+                .SendAsync<DecorResult, DecorRequest>(ApiRequestTarget.Village, ApiRequestType.Post, decor);
+        }
+
+        public Task<DecorResult> MoveDecorAsync(DecorRequest decor)
+        {
+            return request.Create().Identifier("decor").Method("move").Build()
+                .SendAsync<DecorResult, DecorRequest>(ApiRequestTarget.Village, ApiRequestType.Post, decor);
+        }
+
+        public Task<DecorResult> RemoveDecorAsync(DecorRequest decor)
+        {
+            return request.Create().Identifier("decor").Method("remove").Build()
+                .SendAsync<DecorResult, DecorRequest>(ApiRequestTarget.Village, ApiRequestType.Post, decor);
+        }
+
         public Task<bool> PlaceHouseAsync(int slot, double x, double z, double rotation)
         {
             return request.Create()
@@ -244,6 +276,67 @@ namespace RavenNest.SDK.Endpoints
         /// <summary>locked, resources, invalid or unknown.</summary>
         public string Error { get; set; }
         public RoadInfo Road { get; set; }
+        public double Wood { get; set; }
+        public double Ore { get; set; }
+        public double Fish { get; set; }
+        public double Wheat { get; set; }
+        public double Coins { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageDecorPiece: a kind of decor, what it costs and whether the village has it.</summary>
+    public class DecorPiece
+    {
+        public string Key { get; set; }
+        public string Name { get; set; }
+        public string Group { get; set; }
+        public bool Small { get; set; }
+        public int Tier { get; set; }
+        public bool Unlocked { get; set; }
+        public double Wood { get; set; }
+        public double Ore { get; set; }
+        public double Fish { get; set; }
+        public double Wheat { get; set; }
+        public double Coins { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageDecorInfo: a placed piece, or a change to one of the island's own.</summary>
+    public class DecorInfo
+    {
+        public Guid Id { get; set; }
+        public string Piece { get; set; }
+        public string DefaultKey { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Z { get; set; }
+        public double Rotation { get; set; }
+        public double Scale { get; set; } = 1;
+        public bool Removed { get; set; }
+    }
+
+    public class DecorRequest
+    {
+        public string Piece { get; set; }
+        public Guid? Id { get; set; }
+        public string DefaultKey { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Z { get; set; }
+        public double Rotation { get; set; }
+        public double Scale { get; set; } = 1;
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageDecorResult, with what removing gave back and the resources after it.</summary>
+    public class DecorResult
+    {
+        public bool Ok { get; set; }
+        /// <summary>locked, resources, invalid, unknown or removed.</summary>
+        public string Error { get; set; }
+        public DecorInfo Decor { get; set; }
+        public double RefundWood { get; set; }
+        public double RefundOre { get; set; }
+        public double RefundFish { get; set; }
+        public double RefundWheat { get; set; }
+        public double RefundCoins { get; set; }
         public double Wood { get; set; }
         public double Ore { get; set; }
         public double Fish { get; set; }

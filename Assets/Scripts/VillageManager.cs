@@ -29,6 +29,11 @@ namespace Assets.Scripts
 
         /// <summary>The roads the streamer drew, loaded with the village.</summary>
         public VillageRoads Roads => roads ? roads : (roads = GetComponent<VillageRoads>() ?? gameObject.AddComponent<VillageRoads>());
+
+        private VillageDecor decor;
+
+        /// <summary>The village's decor: the island's trees and flowers with its changes, and what it placed.</summary>
+        public VillageDecor Decor => decor ? decor : (decor = GetComponent<VillageDecor>() ?? gameObject.AddComponent<VillageDecor>());
         private DateTime lastVillageLoad = DateTime.UnixEpoch;
         public TownHallManager TownHall => townHallManager;
         public TownHouseManager TownHouses => townHouseManager;
@@ -90,6 +95,7 @@ namespace Assets.Scripts
                         await LoadTownHallPlacementAsync();
                         if (VillageBuildMode.Instance) VillageBuildMode.Instance.SettlePlots();
                         if (!Roads.Loaded) await Roads.LoadAsync();
+                        if (!Decor.Loaded) await Decor.LoadAsync();
                     }
                     state = LoadingState.Loaded;
                 }
@@ -223,6 +229,8 @@ namespace Assets.Scripts
                 usedSlots = this.TownHouses?.TownHouses.Count(x => x.Type != (int)TownHouseSlotType.Empty) ?? 0;
             }
             townHallManager.SetSlotCount(usedSlots, count);
+            // flowers under a building that came or went
+            if (decor && decor.Loaded) decor.RefreshCovered();
         }
 
         public void SetTierByLevel(int level)

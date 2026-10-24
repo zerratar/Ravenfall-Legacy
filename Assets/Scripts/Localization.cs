@@ -519,6 +519,59 @@ public static class Localization
     public static string UI_ROAD_ERROR_UNKNOWN = "The road could not be saved. Try again.";
     public static string UI_BUILD_PLACE_WATER = "You can't build on water";
     public static string UI_BUILD_PLACE_STEEP = "The ground is too steep here";
+    public static string UI_DECOR_HINT_SELECTED = "Move, turn or remove it in the panel. Click something else to let go.";
+    public static string UI_BUILD_PLACE_DECOR = "{0} is in the way: select it to move or remove it";
+    public static string UI_DECOR_ON_BUILDING = "Not on a building";
+    public static string UI_DECOR_TAB = "Decor";
+    public static string UI_DECOR_PLACE = "Place";
+    public static string UI_DECOR_LOCKED = "Needs town hall tier {0}";
+    public static string UI_DECOR_NONE = "Decor needs a newer server.";
+    public static string UI_DECOR_PLACING_SUBTITLE = "Click to place, R to turn, Esc to stop";
+    public static string UI_DECOR_MOVING_SUBTITLE = "Click to put it down, R to turn, Esc to put it back";
+    public static string UI_DECOR_ISLAND = "Part of the island";
+    public static string UI_DECOR_PLACED = "Placed by the village";
+    public static string UI_DECOR_COST = "COST";
+    public static string UI_DECOR_REFUND = "REMOVING GIVES BACK";
+    public static string UI_DECOR_MOVE = "Move";
+    public static string UI_DECOR_ROTATE = "Rotate";
+    public static string UI_DECOR_REMOVE = "Remove";
+    public static string UI_DECOR_STOP = "Stop placing";
+    public static string UI_DECOR_FREE = "Free";
+    public static string UI_DECOR_REMOVED = "{0} removed.";
+    public static string UI_DECOR_REMOVED_REFUND = "{0} removed. The village got back {1}.";
+    public static string UI_DECOR_ERROR_RESOURCES = "The village cannot afford that yet.";
+    public static string UI_DECOR_ERROR_LOCKED = "That needs a bigger town hall.";
+    public static string UI_DECOR_ERROR_REMOVED = "That was already removed.";
+    public static string UI_DECOR_ERROR = "That did not work. Try again.";
+    public static string UI_DECOR_GROUP_TREES = "Trees";
+    public static string UI_DECOR_GROUP_BUSHES = "Bushes";
+    public static string UI_DECOR_GROUP_FLOWERS = "Flowers";
+    public static string UI_DECOR_GROUP_ROCKS = "Rocks";
+    public static string UI_DECOR_PIECE_TREE_02 = "Round tree";
+    public static string UI_DECOR_PIECE_TREE_03 = "Leafy tree";
+    public static string UI_DECOR_PIECE_TREE_04 = "Tall tree";
+    public static string UI_DECOR_PIECE_TREE_LARGE_01 = "Great tree";
+    public static string UI_DECOR_PIECE_TREE_LARGE_02 = "Broad tree";
+    public static string UI_DECOR_PIECE_TREE_LARGE_03 = "Old tree";
+    public static string UI_DECOR_PIECE_TREE_THIN_01 = "Slender tree";
+    public static string UI_DECOR_PIECE_TREE_THIN_02 = "Young tree";
+    public static string UI_DECOR_PIECE_TREE_BUSH_01 = "Bushy tree";
+    public static string UI_DECOR_PIECE_TREE_BUSH_02 = "Shrub tree";
+    public static string UI_DECOR_PIECE_BUSH_CLUSTER_01 = "Bushes";
+    public static string UI_DECOR_PIECE_BUSH_CLUSTER_02 = "Hedge";
+    public static string UI_DECOR_PIECE_BUSH_CLUSTER_03 = "Low bushes";
+    public static string UI_DECOR_PIECE_BUSH_CLUSTER_04 = "Thick bushes";
+    public static string UI_DECOR_PIECE_BUSH_CLUSTER_05 = "Wild bushes";
+    public static string UI_DECOR_PIECE_FLOWERS_01 = "Wild flowers";
+    public static string UI_DECOR_PIECE_FLOWERS_02 = "Meadow flowers";
+    public static string UI_DECOR_PIECE_FLOWERS_04 = "Flower bed";
+    public static string UI_DECOR_PIECE_FLOWERS_07 = "Blossoms";
+    public static string UI_DECOR_PIECE_GRASS_01 = "Grass";
+    public static string UI_DECOR_PIECE_GRASS_02 = "Tall grass";
+    public static string UI_DECOR_PIECE_GRASS_03 = "Fern grass";
+    public static string UI_DECOR_PIECE_ROCK_01 = "Boulder";
+    public static string UI_DECOR_PIECE_ROCK_02 = "Rock";
+    public static string UI_DECOR_PIECE_ROCK_03 = "Stones";
     public static string UI_BUILD_PLACE_REJECTED = "The server did not accept the move. Try again in a moment.";
     public static string UI_BUILD_PLACE_UNSUPPORTED = "Moving buildings needs a server update.";
     public static string UI_BUILD_HALL_TITLE = "Town hall";
@@ -1259,6 +1312,25 @@ public static class Localization
     }
 
     public static string HouseName(TownHouse house, TownHouseSlotType fallback) => HouseName(house ? house.Type : fallback);
+
+    /// <summary>
+    /// A decor piece's name in the current language: UI_DECOR_PIECE_ and its key in capitals, or the server's name
+    /// for a piece this version does not know yet.
+    /// </summary>
+    public static string DecorName(string key, string fallback)
+    {
+        if (string.IsNullOrEmpty(key)) return fallback ?? string.Empty;
+        var field = typeof(Localization).GetField("UI_DECOR_PIECE_" + key.ToUpperInvariant(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        return field?.GetValue(null) as string ?? fallback ?? key;
+    }
+
+    /// <summary>A decor group's name: Trees, Bushes, Flowers, Rocks.</summary>
+    public static string DecorGroup(string group)
+    {
+        if (string.IsNullOrEmpty(group)) return string.Empty;
+        var field = typeof(Localization).GetField("UI_DECOR_GROUP_" + group.ToUpperInvariant(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        return field?.GetValue(null) as string ?? group;
+    }
     // GameManager
     public static string MSG_RESTORE_STATE_EXPIRED = Meta("system", "restore") + "Player restore state file has expired. No players have been added back.";
     public static string MSG_AUTOJOIN_DUNGEON_JOINED_COUNTER = Meta("dungeon", "join", "auto") + "You have automatically joined the dungeon! You will join {counter} more.";

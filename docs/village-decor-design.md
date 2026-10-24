@@ -1,6 +1,12 @@
 # Village decor
 
-Status: design, 2026-10-24, for v0.9.6. Nothing built yet. Decided: no limit on decor, only costs; removing one of the
+Status: phase 1 built 2026-10-24 for v0.9.6. Server: `VillageDecor` table (created at startup),
+`Game/Managers/VillageDecorManager.cs` (price list, place, move, remove, half back), the generated
+`VillageDecorDefaults.cs` (the island's 367 pieces) and `api/village/decor`. Game: `Village/VillageDecor.cs`,
+`VillageDecorItem.cs`, `VillageDecorTool.cs`, the Decor tab in `BuildModeView`, and
+`tools/village-rebuild/decor-defaults.cs` (keys the island's pieces, sets the prefabs, writes the server list).
+Tested against the local server: removing, placing, moving, turning, reloading, refusing a second removal, a house
+refused over a tree. Not yet tried by hand in build mode with the mouse. Decided: no limit on decor, only costs; removing one of the
 island's own pieces gives back half its worth, like anything placed; flowers and grass under a road or building are
 hidden, never in the way; viewers can give the village decor with their loyalty points.
 

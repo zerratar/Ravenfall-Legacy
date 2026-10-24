@@ -44,6 +44,8 @@ namespace Shinobytes.UI
             public TownHouseSlotType[] Types;
             /// <summary>The roads tab: road types to draw instead of buildings.</summary>
             public bool Roads;
+            /// <summary>The decor tab: trees, bushes, flowers and rocks to place (docs/village-decor-design.md).</summary>
+            public bool Decor;
         }
 
         /// <summary>
@@ -56,6 +58,7 @@ namespace Shinobytes.UI
             new Category { Name = "Gathering", Glyph = "\uf6e3", Types = new[] { TownHouseSlotType.Woodcutting, TownHouseSlotType.Mining, TownHouseSlotType.Fishing, TownHouseSlotType.Farming, TownHouseSlotType.Gathering } },
             new Category { Name = "Crafting", Glyph = "\uf6e3", Types = new[] { TownHouseSlotType.Cooking, TownHouseSlotType.Crafting, TownHouseSlotType.Alchemy, TownHouseSlotType.Sailing } },
             new Category { Name = "Roads", Glyph = "\uf018", Types = new TownHouseSlotType[0], Roads = true },
+            new Category { Name = "Decor", Glyph = "\uf1bb", Types = new TownHouseSlotType[0], Decor = true },
         };
 
         private sealed class Marker
@@ -110,6 +113,19 @@ namespace Shinobytes.UI
         private Button roadSecondary;
         private Button roadRemove;
         private float roadRemoveConfirmUntil;
+
+        // decor: the tray's group and the panel for the piece in hand or selected, made here rather than in the UXML
+        private string decorGroup = "Trees";
+        private VisualElement decorPanel;
+        private VisualElement decorRing;
+        private Label decorTitle;
+        private Label decorSubtitle;
+        private Label decorCaption;
+        private Label decorCost;
+        private Button decorMove;
+        private Button decorRotate;
+        private Button decorRemove;
+        private float decorRemoveConfirmUntil;
         private VisualElement plotIcon;
         private Label plotGlyph;
         private Label plotTitle;
@@ -233,6 +249,7 @@ namespace Shinobytes.UI
             roadActions = root.Q<VisualElement>("road-actions");
             roadPrimary = root.Q<Button>("road-primary");
             roadSecondary = root.Q<Button>("road-secondary");
+            BuildDecorPanel();
             var roadClose = root.Q<Button>("road-close");
             if (roadClose != null) roadClose.clicked += OnRoadCloseClicked;
             if (roadRemove != null) roadRemove.clicked += OnRoadRemoveClicked;
@@ -380,6 +397,8 @@ namespace Shinobytes.UI
             mode.Failed += ShowToast;
             mode.Roads.Changed += OnChanged;
             mode.Roads.Failed += ShowToast;
+            mode.Decor.Changed += OnChanged;
+            mode.Decor.Failed += ShowToast;
             OnActiveChanged(mode.IsActive);
         }
 
@@ -395,6 +414,8 @@ namespace Shinobytes.UI
             mode.Failed -= ShowToast;
             mode.Roads.Changed -= OnChanged;
             mode.Roads.Failed -= ShowToast;
+            mode.Decor.Changed -= OnChanged;
+            mode.Decor.Failed -= ShowToast;
             mode = null;
         }
 
@@ -523,6 +544,7 @@ namespace Shinobytes.UI
             RefreshPlacing();
             RefreshCards();
             RefreshRoad();
+            RefreshDecor();
             RefreshHint();
         }
 
@@ -575,11 +597,20 @@ namespace Shinobytes.UI
 
             var category = Categories[openCategory];
             trayGlyph.text = category.Glyph;
-            trayTitle.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_TRAY_TITLE, CategoryName(category).ToUpperInvariant());
+            // "COMBAT BUILDINGS", but not "DECOR BUILDINGS" or "ROADS BUILDINGS"
+            trayTitle.text = category.Decor || category.Roads
+                ? CategoryName(category).ToUpperInvariant()
+                : string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_TRAY_TITLE, CategoryName(category).ToUpperInvariant());
 
             if (category.Roads)
             {
                 BuildRoadTray();
+                return;
+            }
+
+            if (category.Decor)
+            {
+                BuildDecorTray();
                 return;
             }
 
@@ -1630,13 +1661,239 @@ namespace Shinobytes.UI
             return parts.Count == 0 ? Localization.UI_ROAD_FREE : string.Join(", ", parts);
         }
 
+        // ---- Decor ---------------------------------------------------------------------------
+
+        private VillageDecor DecorLayer => GameManager.Instance && GameManager.Instance.Village ? GameManager.Instance.Village.Decor : null;
+
+        /// <summary>The decor tray: a chip per group, and that group's pieces as tiles to click and place.</summary>
+        private void BuildDecorTray()
+        {
+            var decor = DecorLayer;
+            if (decor == null || !decor.Loaded || decor.Pieces.Count == 0)
+            {
+                var none = new Label(Localization.UI_DECOR_NONE) { pickingMode = PickingMode.Ignore };
+                none.AddToClassList("rf-build-note");
+                trayCards.Add(none);
+                return;
+            }
+
+            var column = new VisualElement();
+            column.AddToClassList("rf-build-decor");
+            var chips = new VisualElement();
+            chips.AddToClassList("rf-build-decor__groups");
+            var groups = new List<string>();
+            foreach (var piece in decor.Pieces) if (!groups.Contains(piece.Group)) groups.Add(piece.Group);
+            if (!groups.Contains(decorGroup)) decorGroup = groups.Count > 0 ? groups[0] : null;
+            foreach (var group in groups)
+            {
+                var g = group;
+                var chip = new Button(() => { decorGroup = g; BuildTray(); }) { text = Localization.DecorGroup(g) };
+                chip.AddToClassList("rf-build-decor__group");
+                chip.EnableInClassList("rf-build-decor__group--active", g == decorGroup);
+                chips.Add(chip);
+            }
+            column.Add(chips);
+
+            var tiles = new VisualElement();
+            tiles.AddToClassList("rf-build-decor__tiles");
+            foreach (var piece in decor.Pieces)
+            {
+                if (piece.Group != decorGroup) continue;
+                var key = piece.Key;
+                var tile = new Button(() =>
+                {
+                    mode?.ChooseDecor(key);
+                    // the decor panel takes over while placing; the tray would only be in the way
+                    OpenCategory(-1);
+                });
+                tile.AddToClassList("rf-build-decor__tile");
+                tile.EnableInClassList("rf-build-decor__tile--locked", !piece.Unlocked);
+                tile.EnableInClassList("rf-build-decor__tile--armed", mode.Decor.Armed == key);
+                tile.SetEnabled(piece.Unlocked);
+
+                var preview = new VisualElement { pickingMode = PickingMode.Ignore };
+                preview.AddToClassList("rf-build-decor__preview");
+                var prefab = decor.PrefabFor(key);
+                if (prefab)
+                {
+                    BuildingPreview.Get(prefab, texture =>
+                    {
+                        if (texture) preview.style.backgroundImage = new StyleBackground(texture);
+                    });
+                }
+
+                var name = new Label(decor.NameOf(key)) { pickingMode = PickingMode.Ignore };
+                name.AddToClassList("rf-build-decor__name");
+                var cost = new Label(piece.Unlocked
+                    ? DecorCost(piece)
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED, piece.Tier + 1)) { pickingMode = PickingMode.Ignore };
+                cost.AddToClassList("rf-build-decor__cost");
+
+                tile.Add(preview);
+                tile.Add(name);
+                tile.Add(cost);
+                tiles.Add(tile);
+            }
+            column.Add(tiles);
+            trayCards.Add(column);
+        }
+
+        private static string DecorCost(RavenNest.SDK.Endpoints.DecorPiece piece)
+        {
+            var text = VillageDecorTool.CostText(piece);
+            return string.IsNullOrEmpty(text) ? Localization.UI_DECOR_FREE : text;
+        }
+
+        /// <summary>The panel for the decor in hand or selected, built once, in the road panel's look.</summary>
+        private void BuildDecorPanel()
+        {
+            if (decorPanel != null || roadPanel == null || roadPanel.parent == null) return;
+
+            decorPanel = new VisualElement();
+            decorPanel.AddToClassList("rf-build-panel");
+            decorPanel.AddToClassList("rf-build-plot");
+            decorPanel.AddToClassList("rf-build-road");
+            decorPanel.AddToClassList("rf-build-decor-panel");
+            decorPanel.style.display = DisplayStyle.None;
+
+            var head = new VisualElement();
+            head.AddToClassList("rf-build-panel__head");
+            decorRing = new VisualElement { pickingMode = PickingMode.Ignore };
+            decorRing.AddToClassList("rf-build-ring");
+            decorRing.AddToClassList("rf-build-road__ring");
+            var titles = new VisualElement { pickingMode = PickingMode.Ignore };
+            titles.AddToClassList("rf-build-plot__titles");
+            decorTitle = new Label { pickingMode = PickingMode.Ignore };
+            decorTitle.AddToClassList("rf-build-plot__title");
+            decorSubtitle = new Label { pickingMode = PickingMode.Ignore };
+            decorSubtitle.AddToClassList("rf-build-plot__subtitle");
+            titles.Add(decorTitle);
+            titles.Add(decorSubtitle);
+            var close = new Button(() => mode?.ClearSelection()) { text = "\uf00d" };
+            close.AddToClassList("rf-window__button");
+            close.AddToClassList("rf-icon");
+            close.AddToClassList("rf-build__close");
+            head.Add(decorRing);
+            head.Add(titles);
+            head.Add(close);
+
+            var body = new VisualElement();
+            body.AddToClassList("rf-build-road__body");
+            decorCaption = new Label();
+            decorCaption.AddToClassList("rf-build-caption");
+            decorCaption.AddToClassList("rf-build-road__caption");
+            decorCost = new Label();
+            decorCost.AddToClassList("rf-build-decor-panel__cost");
+            body.Add(decorCaption);
+            body.Add(decorCost);
+
+            var actions = new VisualElement();
+            actions.AddToClassList("rf-build-road__actions");
+            decorMove = new Button(() =>
+            {
+                if (mode == null) return;
+                if (mode.Decor.Armed != null) mode.Decor.Stop();
+                else mode.Decor.StartMove();
+            });
+            decorMove.AddToClassList("rf-build-road__button");
+            decorMove.AddToClassList("rf-build-road__button--primary");
+            decorRotate = new Button(() =>
+            {
+                if (mode == null) return;
+                if (mode.Decor.Armed != null || mode.Decor.Moving) mode.Decor.Turn(45f);
+                else _ = mode.Decor.RotateSelectedAsync(45f);
+            }) { text = Localization.UI_DECOR_ROTATE };
+            decorRotate.AddToClassList("rf-build-road__button");
+            actions.Add(decorMove);
+            actions.Add(decorRotate);
+
+            decorRemove = new Button(OnDecorRemove);
+            decorRemove.AddToClassList("rf-build-wide");
+            decorRemove.AddToClassList("rf-build-wide--danger");
+
+            decorPanel.Add(head);
+            decorPanel.Add(body);
+            decorPanel.Add(actions);
+            decorPanel.Add(decorRemove);
+
+            var parent = roadPanel.parent;
+            parent.Insert(parent.IndexOf(roadPanel) + 1, decorPanel);
+        }
+
+        private void RefreshDecor()
+        {
+            if (decorPanel == null || mode == null) return;
+            var tool = mode.Decor;
+            var decor = DecorLayer;
+            var key = tool.Armed ?? (tool.Selected ? tool.Selected.Piece : null);
+            var show = key != null && decor != null && !modalOpen;
+            decorPanel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!show) return;
+
+            var piece = decor.PieceOf(key);
+            decorTitle.text = decor.NameOf(key);
+            var prefab = decor.PrefabFor(key);
+            if (prefab) BuildingPreview.Get(prefab, texture => { if (texture) decorRing.style.backgroundImage = new StyleBackground(texture); });
+
+            if (tool.Armed != null)
+            {
+                decorSubtitle.text = Localization.UI_DECOR_PLACING_SUBTITLE;
+                decorCaption.text = Localization.UI_DECOR_COST;
+                decorCost.text = piece != null ? DecorCost(piece) : string.Empty;
+                decorMove.text = Localization.UI_DECOR_STOP;
+                decorRemove.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                var item = tool.Selected;
+                decorSubtitle.text = tool.Moving ? Localization.UI_DECOR_MOVING_SUBTITLE : item.IsDefault ? Localization.UI_DECOR_ISLAND : Localization.UI_DECOR_PLACED;
+                decorCaption.text = Localization.UI_DECOR_REFUND;
+                decorCost.text = piece != null
+                    ? NonEmpty(VillageDecorTool.RefundText(Math.Floor(piece.Wood / 2), Math.Floor(piece.Ore / 2), Math.Floor(piece.Fish / 2), Math.Floor(piece.Wheat / 2), Math.Floor(piece.Coins / 2)))
+                    : string.Empty;
+                decorMove.text = Localization.UI_DECOR_MOVE;
+                decorRemove.style.display = DisplayStyle.Flex;
+                var confirming = Time.unscaledTime < decorRemoveConfirmUntil;
+                decorRemove.text = confirming ? Localization.UI_BUILD_DEMOLISH_CONFIRM : Localization.UI_DECOR_REMOVE;
+            }
+
+            decorMove.SetEnabled(!tool.Busy && !tool.Moving);
+            decorRotate.SetEnabled(!tool.Busy);
+            decorRemove.SetEnabled(!tool.Busy && !tool.Moving);
+        }
+
+        private static string NonEmpty(string text) => string.IsNullOrEmpty(text) ? Localization.UI_DECOR_FREE : text;
+
+        private void OnDecorRemove()
+        {
+            if (mode == null || !mode.Decor.Selected) return;
+            if (Time.unscaledTime < decorRemoveConfirmUntil)
+            {
+                decorRemoveConfirmUntil = 0f;
+                _ = mode.Decor.RemoveSelectedAsync();
+                return;
+            }
+
+            decorRemoveConfirmUntil = Time.unscaledTime + 3f;
+            RefreshDecor();
+            decorRemove.schedule.Execute(RefreshDecor).StartingIn(3100);
+        }
+
         // ---- Hint and toast ------------------------------------------------------------------
 
         private void RefreshHint()
         {
             string text;
             var tool = mode.Roads;
-            if (mode.Busy || tool.Busy) text = Localization.UI_BUILD_HINT_BUSY;
+            var decorTool = mode.Decor;
+            if (mode.Busy || tool.Busy || decorTool.Busy) text = Localization.UI_BUILD_HINT_BUSY;
+            else if (decorTool.Armed != null || decorTool.Moving)
+            {
+                text = decorTool.Problem != null
+                    ? string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_HINT_MOVING_BLOCKED, decorTool.Problem)
+                    : decorTool.Moving ? Localization.UI_DECOR_MOVING_SUBTITLE : Localization.UI_DECOR_PLACING_SUBTITLE;
+            }
+            else if (decorTool.Selected) text = Localization.UI_DECOR_HINT_SELECTED;
             else if (tool.Drawing)
             {
                 var length = Mathf.RoundToInt(tool.DrawLength);
@@ -1710,6 +1967,7 @@ namespace Shinobytes.UI
                 case "Gathering": return Localization.UI_BUILD_CATEGORY_GATHERING;
                 case "Crafting": return Localization.UI_BUILD_CATEGORY_CRAFTING;
                 case "Roads": return Localization.UI_BUILD_CATEGORY_ROADS;
+                case "Decor": return Localization.UI_DECOR_TAB;
                 default: return category.Name;
             }
         }
