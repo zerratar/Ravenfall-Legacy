@@ -30,6 +30,8 @@ can block one, and has a global switch that makes every upload wait for review.
 | 3 | Long, the same shape as 0 | Synty atlas, same patch |
 | 4 | Tattered, torn hem | Synty atlas, same patch |
 
+![The five cape meshes from behind and from the side](mockups/cape-shapes.png)
+
 So there are four different shapes (0 and 3 are the same). **Capes 1-4 cannot show an image yet:**
 their UVs cover a patch about 13 % by 5 % of the texture, so a logo on them would be a stretched sliver
 of its middle. Cape 0 was given its own UVs for exactly this reason.
