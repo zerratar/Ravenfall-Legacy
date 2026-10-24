@@ -3,7 +3,11 @@
 Status: phase 1 (server) built and tested against the local dev server, 2026-10-24: RavenNest
 `Game/StreamerShop` (manager, trade world, expiry watcher), `Controllers/ShopController.cs`, the
 `shop.buy` socket command, and the game's `ShopApi` (`Shinobytes/RavenNestApi/Endpoints/ShopApi.cs`).
-The tables are created at startup by `DatabaseSchema`. Phases 2 to 4 are not started.
+The tables are created at startup by `DatabaseSchema`.
+Phase 2 (the game) built the same day: the shelves (`World/TavernShop.cs`, `World/ShopShelf.cs`, eight
+slots on the redeemables room's north wall under `Layout/Shelves`), the window (`UI/Toolkit/ShopWindow.cs`,
+`ShopWindow.uxml`, `ravenfall-shop.uss`), item icons from the website (`UI/ItemIcons.cs`) and the
+`StreamerShopUpdated` event. Phases 3 and 4 are not started.
 
 The streamer puts items of their own on shelves in the tavern for a coin price. Viewers buy them with
 the same `!redeem` they use for the seasonal redeemables. The coins do not go to the streamer: they

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+      The streamer's tavern shelves, opened by clicking a shelf in the tavern. Three tabs: putting an
+      item up (where it comes from, a search, the grid of icons, and the listing on the right), what is
+      up now, and what has sold. The line under the tabs says on every tab that the coins go to the
+      village treasury. The grid, the listing panel and the lists are built by ShopWindow.cs.
+    -->
+
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-tokens.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-core.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-hud.uss" />
+    <engine:Style src="project://database/Assets/UI/Styles/ravenfall-shop.uss" />
+
+    <engine:VisualElement name="shop-root" class="rf-window-layer" picking-mode="Ignore">
+        <engine:VisualElement name="shop-modal" class="rf-window-layer" picking-mode="Ignore" style="display: none;">
+            <engine:VisualElement name="shop-window" class="rf-window rf-shop">
+
+                <engine:VisualElement class="rf-window__header rf-shop__header">
+                    <engine:Label name="shop-title" class="rf-window__title" picking-mode="Ignore" />
+                    <engine:Button name="shop-close" text="&#xf00d;" class="rf-window__button rf-icon" tooltip="Close" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-shop__tabs">
+                    <engine:Button name="shop-tab-sell" class="rf-shop__tab" />
+                    <engine:Button name="shop-tab-listings" class="rf-shop__tab" />
+                    <engine:Button name="shop-tab-sales" class="rf-shop__tab" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-shop__treasury">
+                    <engine:Label text="&#xf51e;" class="rf-icon rf-shop__treasury-icon" picking-mode="Ignore" />
+                    <engine:Label name="shop-treasury" class="rf-shop__treasury-text" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="shop-page-sell" class="rf-shop__page rf-shop__page--sell">
+                    <engine:VisualElement class="rf-shop__left">
+                        <engine:VisualElement name="shop-sources" class="rf-shop__chips rf-shop__sources" />
+                        <engine:TextField name="shop-search" class="rf-shop__field rf-shop__search" />
+                        <engine:ScrollView name="shop-grid" class="rf-scroll rf-shop__grid" />
+                    </engine:VisualElement>
+                    <engine:ScrollView name="shop-form" class="rf-scroll rf-shop__form" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="shop-page-listings" class="rf-shop__page">
+                    <engine:ScrollView name="shop-listings" class="rf-scroll rf-shop__list" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="shop-page-sales" class="rf-shop__page">
+                    <engine:Label name="shop-sales-totals" class="rf-shop__totals" picking-mode="Ignore" />
+                    <engine:ScrollView name="shop-sales" class="rf-scroll rf-shop__list" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="rf-shop__footer">
+                    <engine:Label name="shop-status" class="rf-shop__status" picking-mode="Ignore" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="shop-grip" class="rf-window__grip" tooltip="Drag to resize" />
+
+            </engine:VisualElement>
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

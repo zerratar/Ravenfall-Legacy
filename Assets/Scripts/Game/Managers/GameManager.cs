@@ -486,6 +486,8 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ItemSellEventHandler>(GameEventType.ItemSell);
 
         RegisterGameEventHandler<ItemRemoveEventHandler>(GameEventType.ItemRemove);
+        // the tavern shelves (47 on the server; the old models assembly does not know the number)
+        RegisterGameEventHandler<StreamerShopUpdatedEventHandler>((GameEventType)47);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);

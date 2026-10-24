@@ -1,0 +1,492 @@
+/* ==========================================================================
+   Shop window: the streamer's tavern shelves
+   Tabs along the top, the treasury line under them on every tab, and on the first tab the item grid
+   on the left with the listing on the right. Chips and fields are drawn here, as in the settings
+   window, so nothing depends on Unity's runtime dropdowns.
+   ========================================================================== */
+
+#shop-window {
+    left: 14%;
+    top: 8%;
+    width: 72%;
+    height: 82%;
+}
+
+.rf-window.rf-shop {
+    min-width: 900px;
+    min-height: 560px;
+    background-color: var(--rf-bg);
+    flex-direction: column;
+}
+
+.rf-shop .rf-window__button {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+}
+
+.rf-shop .rf-window__button:hover {
+    color: var(--rf-text);
+}
+
+/* ---- Tabs ---- */
+
+.rf-shop__tabs {
+    flex-direction: row;
+    flex-shrink: 0;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-shop .rf-shop__tab {
+    height: 44px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    font-size: 15px;
+    -unity-font-style: bold;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.rf-shop .rf-shop__tab:hover {
+    color: var(--rf-text);
+    background-color: var(--rf-row-hover);
+}
+
+.rf-shop .rf-shop__tab--active {
+    color: var(--rf-text);
+    border-bottom-color: var(--rf-accent);
+}
+
+/* ---- The treasury line, on every tab ---- */
+
+.rf-shop__treasury {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: var(--rf-space-4);
+    margin-right: var(--rf-space-4);
+    margin-top: var(--rf-space-3);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: var(--rf-accent-wash);
+    border-left-width: 3px;
+    border-left-color: var(--rf-accent);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-shop__treasury-icon {
+    font-size: 16px;
+    color: var(--rf-accent-bright);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-shop__treasury-text {
+    flex-shrink: 1;
+    font-size: 14px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+/* ---- Pages ---- */
+
+.rf-shop__page {
+    flex-grow: 1;
+    min-height: 0;
+    flex-direction: column;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+}
+
+.rf-shop__page--sell {
+    flex-direction: row;
+}
+
+.rf-shop__left {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    flex-direction: column;
+    margin-right: var(--rf-space-4);
+}
+
+.rf-shop__form {
+    width: 380px;
+    flex-shrink: 0;
+    padding-left: var(--rf-space-4);
+    border-left-width: 1px;
+    border-left-color: var(--rf-divider);
+}
+
+.rf-shop__grid {
+    flex-grow: 1;
+    margin-top: var(--rf-space-2);
+}
+
+.rf-shop__list {
+    flex-grow: 1;
+}
+
+/* ---- Chips: choices in a row ---- */
+
+.rf-shop__chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.rf-shop .rf-shop__chip {
+    height: 32px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: var(--rf-space-2);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    background-color: var(--rf-surface-raised);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.rf-shop .rf-shop__chip:hover {
+    color: var(--rf-text);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-shop .rf-shop__chip--active {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-shop .rf-shop__chip--active:hover {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-shop .rf-shop__chip:disabled {
+    opacity: 0.4;
+}
+
+/* ---- Fields ---- */
+
+.rf-shop__field {
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: var(--rf-space-2);
+    min-width: 160px;
+}
+
+.rf-shop__search {
+    flex-shrink: 0;
+}
+
+.rf-shop__field > .unity-text-field__input,
+.rf-shop__field .unity-base-text-field__input {
+    height: 34px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 0;
+    padding-bottom: 0;
+    -unity-text-align: middle-left;
+    font-size: 15px;
+    color: var(--rf-text);
+    background-color: var(--rf-bar-track);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-shop__field:focus > .unity-text-field__input,
+.rf-shop__field:focus .unity-base-text-field__input {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+/* ---- The item grid ---- */
+
+.rf-shop__tiles {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.rf-shop .rf-shop__tile {
+    width: 92px;
+    height: 104px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: var(--rf-space-2);
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 6px;
+    padding-bottom: 4px;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--rf-surface-raised);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-shop .rf-shop__tile:hover {
+    background-color: var(--rf-row-hover);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-shop .rf-shop__tile--selected {
+    background-color: var(--rf-accent-wash);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-shop .rf-shop__tile--disabled {
+    opacity: 0.38;
+}
+
+.rf-shop__tile-icon {
+    width: 56px;
+    height: 56px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-shop__tile-count {
+    position: absolute;
+    right: 6px;
+    top: 4px;
+    font-size: 12px;
+    -unity-font-style: bold;
+    color: var(--rf-text);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: var(--rf-text-outline);
+}
+
+.rf-shop__tile-name {
+    font-size: 11px;
+    color: var(--rf-text-dim);
+    -unity-text-align: upper-center;
+    white-space: normal;
+    overflow: hidden;
+    max-height: 30px;
+    margin-top: 2px;
+}
+
+/* ---- The listing panel ---- */
+
+.rf-shop__item-header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-shop__item-icon {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-3);
+    -unity-background-scale-mode: scale-to-fit;
+    background-color: var(--rf-surface-raised);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-shop__item-text {
+    flex-shrink: 1;
+    flex-grow: 1;
+}
+
+.rf-shop__item-title {
+    font-size: 17px;
+    -unity-font-style: bold;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-shop__item-sub {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-shop__heading {
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: var(--rf-text-dim);
+    margin-top: var(--rf-space-3);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-shop__note {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+    margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-shop__hint {
+    font-size: 12px;
+    margin-top: 0;
+}
+
+.rf-shop__village-note {
+    color: var(--rf-accent-bright);
+    font-size: 13px;
+}
+
+.rf-shop .rf-shop__submit {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: var(--rf-space-4);
+}
+
+/* ---- Rows: listings and sales ---- */
+
+.rf-shop__row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 56px;
+    padding-left: var(--rf-space-2);
+    padding-right: var(--rf-space-2);
+    padding-top: var(--rf-space-1);
+    padding-bottom: var(--rf-space-1);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-shop__row:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-shop__row-icon {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-3);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-shop__row-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 14px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-shop__row-title {
+    font-size: 15px;
+    -unity-font-style: bold;
+    color: var(--rf-text);
+}
+
+.rf-shop__row-line {
+    font-size: 13px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-shop__row-time {
+    font-size: 12px;
+    color: var(--rf-text-faint);
+    margin-left: var(--rf-space-3);
+}
+
+.rf-shop__row .rf-button {
+    margin-left: var(--rf-space-2);
+    min-height: 34px;
+}
+
+.rf-shop__totals {
+    font-size: 15px;
+    color: var(--rf-text);
+    margin-bottom: var(--rf-space-3);
+    white-space: normal;
+}
+
+/* ---- Footer ---- */
+
+.rf-shop__footer {
+    flex-shrink: 0;
+    min-height: 36px;
+    flex-direction: row;
+    align-items: center;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-6);
+    border-top-width: 1px;
+    border-top-color: var(--rf-divider);
+}
+
+.rf-shop__status {
+    font-size: 13px;
+    color: var(--rf-success);
+    white-space: normal;
+}
+
+.rf-shop__status--error {
+    color: var(--rf-danger);
+}
