@@ -164,6 +164,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<TicTacToeReset>("ttt_reset");
         Connection.Register<PetRacingPlay>("pet_race_play");
         Connection.Register<PetRacingReset>("pet_race_reset");
+        Connection.Register<QuestInfo>("quest_info");
         Connection.Register<ConnectionPing>("ping");
 
         Connection.Register<ExamineItem>("examine_item");

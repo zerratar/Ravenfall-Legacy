@@ -19,6 +19,8 @@ using UnityEngine;
 public class PetRacingGame : MonoBehaviour, ITavernGame
 {
     [SerializeField] private TextMeshPro helpText;
+    [SerializeField] private TextMeshPro leaderboardTitle;
+    [SerializeField] private TextMeshPro leaderboardText;
     [SerializeField] private GameManager gameManager;
     [SerializeField] private GameCamera gameCamera;
     [SerializeField] private GameObject playersContainer;
@@ -75,6 +77,7 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
             DestroyContenderObjects();
             ShowIdle();
         }
+        UpdateLeaderboard();
     }
 
     /// <summary>
@@ -390,6 +393,7 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
             var item = highscore.Get(winner.UserId, winner.Name);
             ++item.Score;
             highscore.Save();
+            UpdateLeaderboard();
         }
 
         helpText.text = (finished.Count > 0 ? finished[0].Name + " WINS!" : "RACE OVER") + "\r\n" + infoTextColor + infoTextSize
@@ -404,6 +408,23 @@ public class PetRacingGame : MonoBehaviour, ITavernGame
             var child = playersContainer.transform.GetChild(i).gameObject;
             if (!players.Any(x => x.Pet == child)) Destroy(child);
         }
+    }
+
+    /// <summary>The race leaderboard on the wall: the ten pets' owners with the most wins.</summary>
+    private void UpdateLeaderboard()
+    {
+        if (!leaderboardText) return;
+        highscore ??= new TavernGameHighscore("petracing");
+        highscore.Load();
+        if (leaderboardTitle) leaderboardTitle.text = "Race wins";
+        var text = "";
+        var placement = 1;
+        foreach (var item in highscore.GetTop(10))
+        {
+            text += placement + ". " + item.UserName + " " + item.Score + (item.Score == 1 ? " win" : " wins") + "\r\n";
+            ++placement;
+        }
+        leaderboardText.text = placement == 1 ? "No races won yet" : text;
     }
 
     private void ShowIdle()

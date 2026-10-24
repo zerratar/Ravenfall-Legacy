@@ -14,6 +14,13 @@ public static class Localization
     public static string PETRACE_RUNNING = Meta("minigame", "pet race", "fail") + "A pet race is already running. Join the next one when it is over.";
     public static string PETRACE_STARTED = Meta("minigame", "pet race", "info") + "The pet race is on! {count} pets are racing for the finish line.";
     public static string PETRACE_WIN = Meta("minigame", "pet race", "info", "result") + "{playerName}'s {petName} won the pet race!";
+    public static string MSG_QUEST_NONE = Meta("tavern", "quest", "info") + "I have no tasks to give to you at this time. Quests are coming in a future update!";
+    public static string UI_TAVERN_QUEST_REPLY = "{0}, I have no tasks to give to you at this time.";
+    public static string UI_TAVERN_QUEST_GIVER_LINES = "I have no tasks to give to you at this time.|The quest board fills up soon. Keep an eye on it.|Adventure? Not yet, friend. Not yet.|Ask me with !quest, I dare you.|Somewhere a dragon is waiting. Just not yet.";
+    public static string UI_TAVERN_BARKEEP_LINES = "What'll it be?|Fresh ale, straight from the cellar.|Mind the race table, those pets bite.|Someone keeps ordering one raven, extra crispy. Not on the menu.|The fire's warm and the ale's cold. Just how it should be.";
+    public static string UI_TAVERN_GHOST_BARKEEP_LINES = "Boo! I mean... what'll it be?|Our ale is to die for. Trust me.|Mind the pumpkins, they bite back.|I've been tending this bar for three hundred years. Tips welcome.";
+    public static string UI_TAVERN_SHOPKEEPER_LINES = "The shop opens for the festivals.|Festival wares only, I'm afraid.|Come back when the season turns.|Everything on these shelves is for display. For now.";
+    public static string UI_TAVERN_GUEST_LINES = "Another round!|Has anyone seen my pet? It ran off with the race.|They say the old mine is haunted.|Best stew on the islands, this.";
     public static string PETRACE_START_COMMAND = "race"; // Meta("minigame", "pet race") + 
     public static string EQUIP_SHIELD_AND_TWOHANDED = Meta("equipment", "equip", "fail") + "You cannot equip a shield while having a 2-handed weapon equipped.";
     public static string CANT_TRAIN_HERE = Meta("training", "fail") + "You cannot train {type} here.";
