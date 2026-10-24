@@ -76,6 +76,57 @@ public class PlayerLogoManager : MonoBehaviour
         return string.IsNullOrWhiteSpace(owner) ? null : ClanLogoUrl + owner;
     }
 
+    /// <summary>A clan's own cape image; the image id makes a new upload a new address, past the hour's cache.</summary>
+    public string ClanCapeUrl(Guid clanId, Guid imageId) => ServerAddress + "clan/cape/" + clanId + "?v=" + imageId.ToString("N");
+
+    // the default capes made so far, by the logo they were made from
+    private readonly Dictionary<Texture, RenderTexture> defaultCapes = new Dictionary<Texture, RenderTexture>();
+    private const int MaxDefaultCapes = 256;
+    public const int CapeWidth = 512;
+    public const int CapeHeight = 1024;
+    // the server's cloth colour behind uploaded cape images, so both kinds of cape look alike
+    private static readonly Color32 CapeCloth = new Color32(0x2B, 0x2A, 0x33, 0xFF);
+
+    /// <summary>
+    /// The cape for a clan without its own cape image: the logo on a cloth colour, in the 1:2 layout the clan capes
+    /// show (docs/clan-images-design.md). The logo sits on the upper back, inside what even the short cape shows.
+    /// </summary>
+    public Texture DefaultCape(Sprite logo)
+    {
+        var source = logo ? logo.texture : (replacementLogo ? replacementLogo.texture : null);
+        if (!source) return null;
+        if (defaultCapes.TryGetValue(source, out var made) && made && made.IsCreated()) return made;
+
+        if (defaultCapes.Count >= MaxDefaultCapes)
+        {
+            foreach (var old in defaultCapes.Values) if (old) old.Release();
+            defaultCapes.Clear();
+        }
+
+        var cape = new RenderTexture(CapeWidth, CapeHeight, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+        {
+            name = "Default clan cape",
+            useMipMap = true,
+            autoGenerateMips = true,
+            wrapMode = TextureWrapMode.Clamp,
+        };
+        cape.Create();
+
+        var previous = RenderTexture.active;
+        RenderTexture.active = cape;
+        GL.Clear(true, true, QualitySettings.activeColorSpace == ColorSpace.Linear ? ((Color)CapeCloth).linear : (Color)CapeCloth);
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, CapeWidth, CapeHeight, 0);
+        // 384 px wide, centred, its middle 300 px down: v 0.52 to 0.89 of the cape
+        const float size = 384f;
+        Graphics.DrawTexture(new Rect((CapeWidth - size) / 2f, 300f - size / 2f, size, size), source);
+        GL.PopMatrix();
+        RenderTexture.active = previous;
+
+        defaultCapes[source] = cape;
+        return cape;
+    }
+
     public void GetLogo(Guid userId, string url, Action<Sprite> onLogoDownloaded)
     {
         if (onLogoDownloaded == null)

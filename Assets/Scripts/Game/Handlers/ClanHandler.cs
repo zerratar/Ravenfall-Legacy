@@ -43,6 +43,8 @@ public class ClanHandler : MonoBehaviour
     public void SetRole(ClanRole role)
     {
         this.Role = role;
+        // a role can wear its own cape shape
+        if (player && player.Appearance) player.Appearance.UpdateClanCape();
     }
 
     internal void Leave()

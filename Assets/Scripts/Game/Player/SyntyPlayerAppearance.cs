@@ -268,6 +268,9 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         }
 
         LoadAppearance(appearance);
+        // the server always says cape 0 for clan members (older clients only have that one ready for a logo);
+        // the shape is the clan's or the role's
+        Cape = ClanCape(Cape);
 
         if (updateAppearance)
         {
@@ -281,20 +284,71 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
         UpdateClanCape();
     }
 
+    // dressing the player again for another cape shape, so that call does not start another
+    private bool redressing;
+    // the cape texture last asked for: a late download for an older one is dropped
+    private string capeRequest;
+
+    /// <summary>
+    /// Puts the clan's cape on: its shape for this member's role, and its own cape image, or the logo on a cloth
+    /// when it has none. See docs/clan-images-design.md.
+    /// </summary>
     public void UpdateClanCape()
     {
-        if (this.player.clanHandler.InClan)
+        if (!player || !player.clanHandler || !player.clanHandler.InClan || player.clanHandler.ClanInfo == null || gameManager == null)
+            return;
+
+        // another shape is another mesh, and capes are part of the combined mesh: dressing again, which comes
+        // back here with the right one
+        if (Cape >= 0 && !redressing)
         {
-            var requested = this.player.clanHandler.Logo;
-            gameManager.PlayerLogo.GetLogo(
-                this.player.clanHandler.ClanInfo.OwnerUserId,
-                requested, logo =>
-                {
-                    // a logo can arrive late (a retry): not for a player who left, or whose clan changed since
-                    if (!this || !player || !player.clanHandler.InClan || player.clanHandler.Logo != requested) return;
-                    SetCapeLogo(logo);
-                });
+            var cape = ClanCape(Cape);
+            if (cape != Cape)
+            {
+                redressing = true;
+                try { SetAppearance(ToSyntyAppearanceData(), () => player.Inventory.EquipAll(), true); }
+                finally { redressing = false; }
+                return;
+            }
         }
+
+        var clan = player.clanHandler.ClanInfo;
+        var look = gameManager.ClanLooks.Get(clan.Id);
+        var logos = gameManager.PlayerLogo;
+
+        if (look?.CapeImageId != null && !gameManager.LogoCensor)
+        {
+            var url = logos.ClanCapeUrl(clan.Id, look.CapeImageId.Value);
+            var request = capeRequest = url;
+            logos.GetLogo(clan.OwnerUserId, url, image =>
+            {
+                // a late download (a retry): not for a player who left, or whose cape changed since
+                if (!this || !player || !player.clanHandler.InClan || capeRequest != request) return;
+                SetCapeLogo(image);
+            });
+            return;
+        }
+
+        // the logo address stays the same when the owner uploads a new one: its id makes it a new address
+        var logoUrl = player.clanHandler.Logo;
+        if (look?.LogoImageId != null && !string.IsNullOrEmpty(logoUrl))
+            logoUrl += (logoUrl.Contains("?") ? "&v=" : "?v=") + look.LogoImageId.Value.ToString("N");
+
+        var logoRequest = capeRequest = "default:" + logoUrl;
+        logos.GetLogo(clan.OwnerUserId, logoUrl, logo =>
+        {
+            if (!this || !player || !player.clanHandler.InClan || capeRequest != logoRequest) return;
+            SetCapeTexture(logos.DefaultCape(logo));
+        });
+    }
+
+    /// <summary>The cape mesh for a clan member: the clan's or the role's shape. Anyone else keeps what they have.</summary>
+    private int ClanCape(int cape)
+    {
+        if (cape < 0 || !player || !player.clanHandler || !player.clanHandler.InClan || player.clanHandler.ClanInfo == null || gameManager == null)
+            return cape;
+        var wanted = gameManager.ClanLooks.CapeFor(player.clanHandler.ClanInfo.Id, player.clanHandler.Role?.Id);
+        return wanted >= 0 && wanted < capes.Length ? wanted : cape;
     }
 
     private Color GetColorFromHex(string value)
@@ -545,6 +599,15 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
             }
 
             capeLogoMaterial.SetTexture("_Texture", capeLogo?.texture);
+        }
+    }
+
+    /// <summary>A whole cape image (1:2, the back of the cape), such as the default one made from the logo.</summary>
+    public void SetCapeTexture(Texture texture)
+    {
+        foreach (var capeLogoMaterial in capeLogoMaterials)
+        {
+            if (capeLogoMaterial) capeLogoMaterial.SetTexture("_Texture", texture);
         }
     }
 

@@ -67,6 +67,7 @@ public class GameManager : MonoBehaviour, IGameManager
     private bool potatoMode;
     private bool forcedPotatoMode;
     private ClanManager clanManager;
+    private ClanLooks clanLooks;
     private NameTagManager nametagManager;
     private SessionStats sessionStats;
     private bool userTriggeredExit;
@@ -146,6 +147,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public GraphicsToggler Graphics;
     public RavenNestClient RavenNest;
     public ClanManager Clans => clanManager ?? (clanManager = new ClanManager(this));
+    public ClanLooks ClanLooks => clanLooks ?? (clanLooks = new ClanLooks(this));
     public VillageManager Village => villageManager;
     public PlayerLogoManager PlayerLogo => playerLogoManager;
     public ExpBoostEvent Boost => subEventManager.CurrentBoost;
@@ -488,6 +490,8 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<ItemRemoveEventHandler>(GameEventType.ItemRemove);
         // the tavern shelves (47 on the server; the old models assembly does not know the number)
         RegisterGameEventHandler<StreamerShopUpdatedEventHandler>((GameEventType)47);
+        // a clan's logo, cape image or cape shapes (48)
+        RegisterGameEventHandler<ClanLookChangedEventHandler>((GameEventType)48);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);
