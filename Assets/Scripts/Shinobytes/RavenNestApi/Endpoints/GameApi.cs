@@ -67,6 +67,33 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<BeginSessionResult>(ApiRequestTarget.Game, ApiRequestType.Post);
         }
 
+        /// <summary>Who the server remembers in this stream, in the state file's format (see ServerPlayerRestore).</summary>
+        public Task<Assets.Scripts.RestorableGameState> GetSessionPlayersAsync()
+        {
+            return request.Create()
+                .Method("session-players")
+                .Build()
+                .SendAsync<Assets.Scripts.RestorableGameState>(ApiRequestTarget.Game, ApiRequestType.Get);
+        }
+
+        /// <summary>The players in the game now, replacing the server's list.</summary>
+        public Task<bool> SetSessionPlayersAsync(Guid[] characterIds)
+        {
+            return request.Create()
+                .Method("session-players")
+                .Build()
+                .SendAsync<bool, Guid[]>(ApiRequestTarget.Game, ApiRequestType.Post, characterIds);
+        }
+
+        /// <summary>Players the streamer chose not to restore: the server no longer counts them as in this stream.</summary>
+        public Task<int> ReleasePlayersAsync(Guid[] characterIds)
+        {
+            return request.Create()
+                .Method("release-players")
+                .Build()
+                .SendAsync<int, Guid[]>(ApiRequestTarget.Game, ApiRequestType.Post, characterIds);
+        }
+
         public Task AttachPlayersAsync(Guid[] ids)
         {
             return request.Create()

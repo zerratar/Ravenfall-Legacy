@@ -54,6 +54,7 @@ public static class SettingsApplier
         public const int BoostRequirement = 0;
         public static int PlayerStateExpiry => PlayerCacheExpiry.Length - 1;
         public const bool AlertExpiredState = false;
+        public const bool AlwaysRestoreFromServer = false;
         public const int ItemDropMessages = (int)PlayerItemDropMessageSettings.OneItemPerRow;
         public const int PathfindingQuality = 1;
         public const bool AutoAssignHouses = true;
@@ -172,6 +173,17 @@ public static class SettingsApplier
         ApplyExpAnnouncements();
 
         var s = PlayerSettings.Instance;
+
+        // The logo key was Q, which also lowers the free camera: flying down hid every logo (capes showed the
+        // Ravenfall logo, reported on stream), and since 0.9.5 that stayed saved. Show them again once, for
+        // streamers who still have the key as it came; it is Ctrl+L now.
+        if (s.LogoKeyMoved != true)
+        {
+            s.LogoKeyMoved = true;
+            if (s.HideLogos == true && Keybinds.IsDefault(Keybinds.Action.Logos)) s.HideLogos = false;
+            Save();
+        }
+
         game.LogoCensor = HideLogos;
         Shinobytes.UI.PlayerListWindow.ExpDisplay = ExpDisplay;
         if (s.PlayerDetailsVisible.HasValue) ApplyPlayerDetails(game, s.PlayerDetailsVisible.Value);
@@ -906,6 +918,10 @@ public static class SettingsApplier
     public static int PlayerStateExpiry => PlayerSettings.Instance.PlayerCacheExpiryTime.GetValueOrDefault(PlayerCacheExpiry.Length - 1);
 
     public static void SetPlayerStateExpiry(int value) => PlayerSettings.Instance.PlayerCacheExpiryTime = value;
+
+    public static bool AlwaysRestoreFromServer => PlayerSettings.Instance.AlwaysRestoreFromServer.GetValueOrDefault(Defaults.AlwaysRestoreFromServer);
+
+    public static void SetAlwaysRestoreFromServer(bool value) => PlayerSettings.Instance.AlwaysRestoreFromServer = value;
 
     public static int ItemDropMessages(GameManager game) => PlayerSettings.Instance.ItemDropMessageType.GetValueOrDefault((int)game.ItemDropMessageSettings);
 

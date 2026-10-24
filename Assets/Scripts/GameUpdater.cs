@@ -403,12 +403,15 @@ public class GameUpdater : MonoBehaviour
             Shinobytes.Debug.LogWarning("update.sh could not be found. Unable to start the patcher.");
         }
 #else
-        if (File.Exists("RavenWeave.exe"))
+        if (File.Exists(Path.Combine(Path.GameFolder, "RavenWeave.exe")))
         {
+            // The full path and the shell, as Mono did by default: CoreCLR looks a bare file name up elsewhere and
+            // never uses the shell unless asked, and 0.9.5 is the first CoreCLR game to start the patcher.
             var updater = new ProcessStartInfo
             {
-                FileName = Path.Combine("RavenWeave.exe"),
-                WorkingDirectory = Path.GameFolder
+                FileName = Path.Combine(Path.GameFolder, "RavenWeave.exe"),
+                WorkingDirectory = Path.GameFolder,
+                UseShellExecute = true,
             };
 
             Process.Start(updater);

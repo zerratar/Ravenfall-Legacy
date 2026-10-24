@@ -19,6 +19,11 @@
 
     <engine:VisualElement name="conn-layer" class="rf-conn-layer" picking-mode="Ignore">
         <engine:VisualElement class="rf-conn-stack" picking-mode="Ignore">
+            <!-- Players the server remembers that are waiting to be restored (PlayerRestoreView): opens the window. -->
+            <engine:VisualElement name="restore-pill" class="rf-restore-pill" style="display: none;">
+                <engine:Label class="rf-icon rf-restore-pill__icon" text="&#xf0c0;" picking-mode="Ignore" />
+                <engine:Label name="restore-pill-text" class="rf-restore-pill__text" picking-mode="Ignore" />
+            </engine:VisualElement>
 
             <engine:VisualElement name="conn-server" class="rf-conn-server" picking-mode="Ignore" style="display: none;">
                 <engine:Label name="conn-server-icon" class="rf-icon rf-conn-server__icon" picking-mode="Ignore" />
@@ -38,6 +43,23 @@
                 </engine:VisualElement>
             </engine:VisualElement>
 
+        </engine:VisualElement>
+        <!-- Restore players from the server? Not modal: the game goes on behind it, and it folds into the pill after
+             30 seconds so a streamer who is away is not left with it on stream. -->
+        <engine:VisualElement name="restore-window" class="rf-restore" style="display: none;">
+            <engine:Label name="restore-title" class="rf-restore__title" />
+            <engine:Label name="restore-body" class="rf-restore__body" />
+            <engine:Label name="restore-names" class="rf-restore__names" />
+            <engine:Toggle name="restore-always" class="rf-restore__always" />
+            <engine:VisualElement class="rf-restore__buttons">
+                <engine:Button name="restore-decline" class="rf-button rf-restore__button" />
+                <engine:VisualElement class="rf-restore__spacer" />
+                <engine:Button name="restore-later" class="rf-button rf-restore__button" />
+                <engine:Button name="restore-yes" class="rf-button rf-button--primary rf-restore__button" />
+            </engine:VisualElement>
+            <engine:VisualElement class="rf-restore__timer" picking-mode="Ignore">
+                <engine:VisualElement name="restore-timer-fill" class="rf-restore__timer-fill" picking-mode="Ignore" />
+            </engine:VisualElement>
         </engine:VisualElement>
     </engine:VisualElement>
 </engine:UXML>

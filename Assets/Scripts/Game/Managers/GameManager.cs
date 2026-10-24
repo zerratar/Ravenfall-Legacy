@@ -261,7 +261,26 @@ public class GameManager : MonoBehaviour, IGameManager
             }
         }
     }
-    public bool LogoCensor { get; set; }
+    /// <summary>
+    /// Logos hidden: a plain image instead, everywhere. Capes take their logo only when a player joins or changes
+    /// gear, so a change here refreshes them; before, switching logos back on left every cape on the plain image
+    /// (reported on stream: pressing the key again did not bring the clan logos back). Name tags check by themselves.
+    /// </summary>
+    public bool LogoCensor
+    {
+        get => logoCensor;
+        set
+        {
+            if (logoCensor == value) return;
+            logoCensor = value;
+            if (playerManager == null) return;
+            foreach (var player in playerManager.GetAllPlayers())
+            {
+                if (player) player.Appearance.UpdateClanCape();
+            }
+        }
+    }
+    private bool logoCensor;
     public bool AlertExpiredStateCacheInChat { get; set; } = true;
     public bool PlayerNamesVisible { get; set; } = true;
     public PlayerItemDropMessageSettings ItemDropMessageSettings { get; set; }
@@ -317,6 +336,10 @@ public class GameManager : MonoBehaviour, IGameManager
     public static bool BatchPlayerAddInProgress;
     private int experienceSaveIndex;
     private bool sessionPlayersCleared;
+    // the startup restore (state file, then what the server remembers) has started; see RestorePlayers
+    private bool playerRestoreStarted;
+    private readonly ServerPlayerRestore serverPlayerRestore = new ServerPlayerRestore();
+    public ServerPlayerRestore ServerRestore => serverPlayerRestore;
     private float gameStateTime;
 
     public RaidStats raidStats;
@@ -982,7 +1005,12 @@ public class GameManager : MonoBehaviour, IGameManager
                     $"taskkill /F /IM Ravenfall.exe\n" +
                     $"start Ravenfall.exe {args}";
                 System.IO.File.WriteAllText(batFile, batFileContent);
-                System.Diagnostics.Process.Start(batFile);
+                // a batch file only starts through the shell (CoreCLR does not use it unless asked)
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(batFile)
+                {
+                    UseShellExecute = true,
+                    WorkingDirectory = Shinobytes.IO.Path.GameFolder,
+                });
             }
             catch (Exception exc)
             {
@@ -1042,6 +1070,33 @@ public class GameManager : MonoBehaviour, IGameManager
         RavenNest.Dispose();
         RavenBotController.Dispose();
         SceneManager.LoadScene(sceneIndex, LoadSceneMode.Single);
+    }
+
+    /// <summary>
+    /// The startup restore: asks the server who it remembers in the stream (before anything changes that), restores
+    /// the state file's players as always, then offers those only the server remembers (ServerPlayerRestore).
+    /// </summary>
+    private IEnumerator RestorePlayers(RestorableGameState? local)
+    {
+        yield return serverPlayerRestore.Fetch(this);
+
+        if (local?.Players != null && local.Value.Players.Count > 0)
+        {
+            yield return RestoreGameState(local.Value);
+        }
+
+        serverPlayerRestore.Compare(this, local);
+        if (serverPlayerRestore.Pending.Count == 0)
+        {
+            yield break;
+        }
+
+        // Without anyone to ask (batch mode) or when the streamer said so, they come back at once; otherwise
+        // PlayerRestoreView asks, and the game goes on meanwhile.
+        if (Ravenfall.isBatchMode || SettingsApplier.AlwaysRestoreFromServer)
+        {
+            serverPlayerRestore.RestorePending(this);
+        }
     }
 
     private IEnumerator RestoreGameState(RestorableGameState state)
@@ -1255,6 +1310,22 @@ public class GameManager : MonoBehaviour, IGameManager
             RavenNest.SessionStarted &&
             RavenNest.ServerReady)
         {
+            if (Items.Loaded && !playerRestoreStarted)
+            {
+                // Once per session: the state file's players first, then the ones only the server remembers.
+                playerRestoreStarted = true;
+                RestorableGameState? local = null;
+                if (GameCache.IsAwaitingGameRestore)
+                {
+                    GameCache.IsAwaitingGameRestore = false;
+                    local = GameCache.GetReloadState();
+                }
+
+                StartCoroutine(RestorePlayers(local));
+                return;
+            }
+
+            // a restore that found no server connection asked to be run again
             if (Items.Loaded && GameCache.IsAwaitingGameRestore)
             {
                 GameCache.IsAwaitingGameRestore = false;
@@ -1272,6 +1343,8 @@ public class GameManager : MonoBehaviour, IGameManager
                 }
             }
 
+            serverPlayerRestore.UpdateUploads(this);
+
             if (!stateFileStatusReported && RavenBot.IsConnected && gameCacheStateFileLoadResult == GameCache.LoadStateResult.Expired)
             {
                 if (AlertExpiredStateCacheInChat)
@@ -1282,7 +1355,11 @@ public class GameManager : MonoBehaviour, IGameManager
                 stateFileStatusReported = true;
             }
 
-            if (!sessionPlayersCleared & gameCacheStateFileLoadResult == GameCache.LoadStateResult.NoPlayersRestored)
+            // No state file: the server forgets who was in the stream, once it is known that it remembers nobody the
+            // game should bring back (otherwise those players would be gone before the streamer could restore them).
+            if (!sessionPlayersCleared && gameCacheStateFileLoadResult == GameCache.LoadStateResult.NoPlayersRestored
+                && serverPlayerRestore.Settled && serverPlayerRestore.Pending.Count == 0 && serverPlayerRestore.RestoredFromServer == 0
+                && !serverPlayerRestore.Restoring)
             {
                 if (AlertExpiredStateCacheInChat)
                 {

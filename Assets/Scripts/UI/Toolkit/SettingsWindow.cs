@@ -353,6 +353,8 @@ namespace Shinobytes.UI
                 SettingsApplier.PlayerStateExpiry, SettingsApplier.Defaults.PlayerStateExpiry, SettingsApplier.SetPlayerStateExpiry);
             Switch(c, Localization.UI_SETTINGS_EXPIRY_ALERT, Localization.UI_SETTINGS_EXPIRY_ALERT_HINT, SettingsApplier.AlertExpiredState(g), SettingsApplier.Defaults.AlertExpiredState,
                 v => SettingsApplier.SetAlertExpiredState(g, v));
+            Switch(c, Localization.UI_SETTINGS_RESTORE_SERVER, Localization.UI_SETTINGS_RESTORE_SERVER_HINT, SettingsApplier.AlwaysRestoreFromServer, SettingsApplier.Defaults.AlwaysRestoreFromServer,
+                SettingsApplier.SetAlwaysRestoreFromServer);
 
             Section(c, Localization.UI_SETTINGS_SECTION_WORLD);
             Choice(c, Localization.UI_SETTINGS_PATHFINDING, Localization.UI_SETTINGS_PATHFINDING_HINT, Localization.UI_SETTINGS_PATHFINDING_OPTIONS,

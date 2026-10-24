@@ -163,6 +163,7 @@ namespace RavenNest.SDK.V2
                         break;
                     case SaveAcks acks:
                         Outbox.OnAcks(acks);
+                        RemovePlayersOfOtherSessions(acks);
                         if (journalWaiting.Count > 0)
                         {
                             if (acks.Stage == SaveStage.Accepted && journalSequence > 0 && acks.ThroughSequence >= journalSequence)
@@ -225,6 +226,37 @@ namespace RavenNest.SDK.V2
             lastGameState = null;
             Commands.ResendAll();
             nextSave = now; // save right away
+        }
+
+        /// <summary>
+        /// A player whose saves the server refused three times in a row as not in this session plays on another
+        /// stream: the server keeps their progress there and sends this game a removal. When that removal does not
+        /// arrive (seen in a 0.9.5 player log: one player refused every 10 seconds for an evening) the player stayed,
+        /// earning progress that was never saved. The game takes them out itself, as the removal would.
+        /// </summary>
+        private void RemovePlayersOfOtherSessions(SaveAcks acks)
+        {
+            if (acks?.Acks == null || acks.Stage == SaveStage.Stored)
+            {
+                return;
+            }
+
+            foreach (var ack in acks.Acks)
+            {
+                if (ack.Status != SaveStatus.NotInSession || Outbox.RefusedInARow(ack.CharacterId) < 3)
+                {
+                    continue;
+                }
+
+                var player = gameManager.Players.GetPlayerById(ack.CharacterId);
+                if (!player)
+                {
+                    continue;
+                }
+
+                Shinobytes.Debug.LogWarning(player.PlayerName + " removed from the game: the server keeps refusing their saves, they are in another stream's session.");
+                gameManager.RemovePlayer(player, notifyServer: false);
+            }
         }
 
         private void ApplyEvents()

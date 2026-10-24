@@ -86,6 +86,18 @@ namespace RavenNest.SDK.Endpoints
                     playerData);
         }
 
+        /// <summary>Adds players back without taking anyone else out of the session (players the state file did not have).</summary>
+        public Task<RavenNest.Models.PlayerRestoreResult> RestoreMoreAsync(PlayerRestoreData playerData)
+        {
+            return request.Create()
+                .Method("restore-more")
+                .Build()
+                .SendAsync<PlayerRestoreResult, PlayerRestoreData>(
+                    ApiRequestTarget.Players,
+                    ApiRequestType.Post,
+                    playerData);
+        }
+
         public Task<AddItemInstanceResult> AddItemAsync(Guid characterId, GameInventoryItem item)
         {
             if (client.UseV2)

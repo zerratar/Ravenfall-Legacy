@@ -77,6 +77,8 @@ public class PlayerSettings
     /// <summary>What the player list rows show on the right: 0 exp per hour, 1 exp left, 2 time to level, 3 nothing.</summary>
     public int? PlayerListExpDisplay;
     public bool? HideLogos;
+    /// <summary>The logo key moved off Q (0.9.5.1) and logos hidden by flying the camera down were shown again, once.</summary>
+    public bool? LogoKeyMoved;
     public bool? PlayerDetailsVisible;
     /// <summary>The world drawn or a black screen (F9).</summary>
     public bool? GraphicsOff;
@@ -92,6 +94,8 @@ public class PlayerSettings
     public int? LocalBotPort;
     public int? PlayerBoostRequirement;
     public int? PlayerCacheExpiryTime;
+    /// <summary>Players the server remembers but the state file did not have come back without asking (ServerPlayerRestore).</summary>
+    public bool? AlwaysRestoreFromServer;
     public int? ItemDropMessageType;
     public int? PathfindingQualitySettings;
     public int? QualityLevel;
@@ -458,6 +462,7 @@ public class PlayerSettings
             // Serialize all nullable int properties
             Serialize(sw, "playerBoostRequirement", obj.PlayerBoostRequirement);
             Serialize(sw, "playerCacheExpiryTime", obj.PlayerCacheExpiryTime);
+            Serialize(sw, "alwaysRestoreFromServer", obj.AlwaysRestoreFromServer);
             Serialize(sw, "itemDropMessageType", obj.ItemDropMessageType);
             Serialize(sw, "pathfindingQualitySettings", obj.PathfindingQualitySettings);
 
@@ -479,6 +484,7 @@ public class PlayerSettings
             Serialize(sw, "keyBindings", obj.KeyBindings);
             Serialize(sw, "playerListExpDisplay", obj.PlayerListExpDisplay);
             Serialize(sw, "hideLogos", obj.HideLogos);
+            Serialize(sw, "logoKeyMoved", obj.LogoKeyMoved);
             Serialize(sw, "playerDetailsVisible", obj.PlayerDetailsVisible);
             Serialize(sw, "graphicsOff", obj.GraphicsOff);
             Serialize(sw, "simulatePhysics", obj.SimulatePhysics);

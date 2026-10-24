@@ -35,6 +35,16 @@ namespace RavenNest.SDK.V2
 
         public long Resends, Dropped;
 
+        /// <summary>
+        /// Refusals in a row per player, reset by a stored save. A player in the game whose saves the server keeps
+        /// refusing as not in this session (they play on another stream) is taken out by the game (NetworkV2).
+        /// </summary>
+        private readonly Dictionary<Guid, int> refusedInARow = new Dictionary<Guid, int>();
+        private readonly HashSet<Guid> refusalLogged = new HashSet<Guid>();
+
+        /// <summary>How many saves in a row the server refused for this player as not in this session.</summary>
+        public int RefusedInARow(Guid characterId) => refusedInARow.TryGetValue(characterId, out var count) ? count : 0;
+
         private sealed class PlayerEntry
         {
             public readonly List<Change> Unconfirmed = new List<Change>();
@@ -212,13 +222,23 @@ namespace RavenNest.SDK.V2
                 {
                     entry.Stored = Math.Max(entry.Stored, ack.Version);
                     entry.Unconfirmed.RemoveAll(c => c.Version <= ack.Version);
+                    refusedInARow.Remove(ack.CharacterId);
                 }
                 else if (ack.Status == SaveStatus.UnknownCharacter || ack.Status == SaveStatus.NotInSession || ack.Status == SaveStatus.Invalid)
                 {
                     // the server will never take it: stop sending
                     Dropped++;
                     entry.Unconfirmed.RemoveAll(c => c.Version <= ack.Version);
-                    Shinobytes.Debug.LogWarning("The server refused a save for " + ack.CharacterId + ": " + ack.Status);
+                    if (ack.Status == SaveStatus.NotInSession)
+                    {
+                        refusedInARow[ack.CharacterId] = RefusedInARow(ack.CharacterId) + 1;
+                    }
+
+                    // once per player: a player in the game sends a save every few seconds, and each was logged
+                    if (refusalLogged.Add(ack.CharacterId))
+                    {
+                        Shinobytes.Debug.LogWarning("The server refused a save for " + ack.CharacterId + ": " + ack.Status);
+                    }
                 }
             }
         }

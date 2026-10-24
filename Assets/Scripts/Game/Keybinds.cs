@@ -107,7 +107,8 @@ public static class Keybinds
         new Def { Action = Action.ControlPlayer, Default = new Binding(KeyCode.F3), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_CONTROL_PLAYER },
         new Def { Action = Action.Search, Default = new Binding(KeyCode.F, Mods.Ctrl), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_SEARCH },
         new Def { Action = Action.ExpRate, Default = new Binding(KeyCode.I), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_EXP },
-        new Def { Action = Action.Logos, Default = new Binding(KeyCode.Q), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_LOGOS },
+        // Ctrl+L, not Q: Q also lowers the free camera, so flying down hid every logo, and since 0.9.5 that stays saved
+        new Def { Action = Action.Logos, Default = new Binding(KeyCode.L, Mods.Ctrl), Trigger = Trigger.Up, Name = () => Localization.UI_KEY_LOGOS },
         new Def { Action = Action.UiBigger, Default = new Binding(KeyCode.Equals, Mods.Ctrl), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_UI_BIGGER },
         new Def { Action = Action.UiSmaller, Default = new Binding(KeyCode.Minus, Mods.Ctrl), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_UI_SMALLER },
         new Def { Action = Action.Graphics, Default = new Binding(KeyCode.F9), Trigger = Trigger.Down, Name = () => Localization.UI_KEY_GRAPHICS },

@@ -214,3 +214,141 @@
     color: var(--rf-text-on-accent);
     background-color: var(--rf-accent);
 }
+
+
+/* ---- Players to restore ----------------------------------------------------------
+   PlayerRestoreView: the pill at the top of the stack (players the server remembers, waiting), and the window it
+   opens. Gold, not red: nothing is wrong, the streamer has a choice to make. */
+
+.rf-restore-pill {
+    flex-direction: row;
+    align-items: center;
+    height: 40px;
+    margin-bottom: var(--rf-space-2);
+    padding-left: 6px;
+    padding-right: var(--rf-space-4);
+    background-color: rgba(20, 18, 15, 0.94);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.rf-restore-pill:hover {
+    background-color: var(--rf-surface-raised);
+}
+
+.rf-restore-pill .rf-restore-pill__icon {
+    width: 28px;
+    height: 28px;
+    margin-right: var(--rf-space-2);
+    font-size: 13px;
+    -unity-text-align: middle-center;
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.rf-restore-pill .rf-restore-pill__text {
+    font-size: 15px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+}
+
+.rf-restore {
+    position: absolute;
+    left: 50%;
+    top: 22%;
+    width: 560px;
+    margin-left: -280px;
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-4);
+    padding-bottom: 0;
+    background-color: var(--rf-surface-glass);
+    border-top-color: var(--rf-accent);
+    border-top-width: 3px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+    overflow: hidden;
+}
+
+.rf-restore .rf-restore__title {
+    margin-bottom: var(--rf-space-2);
+    font-size: 21px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.rf-restore .rf-restore__body {
+    margin-bottom: var(--rf-space-2);
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-restore .rf-restore__names {
+    margin-bottom: var(--rf-space-3);
+    font-size: 15px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-restore .rf-restore__always {
+    margin-left: 0;
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-restore .rf-restore__always .unity-toggle__text {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+.rf-restore__buttons {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-restore__spacer {
+    flex-grow: 1;
+}
+
+.rf-restore .rf-restore__button {
+    margin-left: var(--rf-space-2);
+    margin-right: 0;
+}
+
+/* How long until the window folds into the pill. */
+.rf-restore__timer {
+    height: 3px;
+    margin-left: -24px;
+    margin-right: -24px;
+    background-color: var(--rf-border);
+}
+
+.rf-restore__timer-fill {
+    height: 100%;
+    width: 100%;
+    background-color: var(--rf-accent);
+}

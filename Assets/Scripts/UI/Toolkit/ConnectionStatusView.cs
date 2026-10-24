@@ -44,6 +44,8 @@ namespace Shinobytes.UI
 
         private void OnEnable()
         {
+            // the players-to-restore pill and window share this document, next to these warnings
+            if (!GetComponent<PlayerRestoreView>()) gameObject.AddComponent<PlayerRestoreView>();
             Languages.Changed += Redraw;
             TryBind();
         }

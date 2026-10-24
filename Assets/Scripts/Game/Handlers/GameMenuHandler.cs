@@ -49,7 +49,16 @@ public class GameMenuHandler : MonoBehaviour
         var appDataFolder = UnityEngine.Application.persistentDataPath;
         if (Environment.OSVersion.Platform == PlatformID.Unix)
             appDataFolder = appDataFolder.Replace("\\", "/");
-        System.Diagnostics.Process.Start(appDataFolder);
+        // Through the shell: Mono did that by default, CoreCLR does not, and tried to run the folder as a program
+        // ("Access is denied", seen in a 0.9.5 player log).
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(appDataFolder) { UseShellExecute = true });
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Could not open the log folder " + appDataFolder + ": " + exc.Message);
+        }
     }
 
     public void ClearClanFlagCache()

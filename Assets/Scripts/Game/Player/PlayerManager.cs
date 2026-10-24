@@ -552,7 +552,11 @@ public class PlayerManager : MonoBehaviour
         player.SetRestedState(data);
     }
 
-    internal async Task RestoreAsync(List<RestorablePlayer> players)
+    /// <param name="additive">
+    /// Only adds: for players the server remembers that the state file did not have, restored after the state file's
+    /// players. A full restore also takes everyone else out of the server's session.
+    /// </param>
+    internal async Task RestoreAsync(List<RestorablePlayer> players, bool additive = false)
     {
         // even if players count is 0, do the request.
         // it will ensure the server later removes players not being recovered.
@@ -561,21 +565,25 @@ public class PlayerManager : MonoBehaviour
         var failed = new List<RestorablePlayer>();
         try
         {
-            Shinobytes.Debug.Log("Send Restore to server with " + players.Count + " players.");
+            Shinobytes.Debug.Log("Send Restore to server with " + players.Count + " players" + (additive ? " (added to those in the game)." : "."));
             if (players.Count == 0)
             {
+                if (additive) return;
                 await gameManager.RavenNest.Players.RestoreAsync(new PlayerRestoreData { Characters = new Guid[0] });
                 return;
             }
 
             var id = players.Where(x => x != null).Select(x => x.CharacterId).ToArray();
-            var result = await gameManager.RavenNest.Players.RestoreAsync(new PlayerRestoreData
+            var restoreData = new PlayerRestoreData
             {
                 Characters = id,
                 //#if UNITY_EDITOR || DEBUG
                 ForceAdd = gameManager.SessionSettings.IsAdministrator
                 //#endif
-            });
+            };
+            var result = additive
+                ? await gameManager.RavenNest.Players.RestoreMoreAsync(restoreData)
+                : await gameManager.RavenNest.Players.RestoreAsync(restoreData);
 
             var i = 0;
 
