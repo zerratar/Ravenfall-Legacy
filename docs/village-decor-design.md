@@ -1,6 +1,7 @@
 # Village decor
 
-Status: design, 2026-10-24, for v0.9.6. Nothing built yet.
+Status: design, 2026-10-24, for v0.9.6. Nothing built yet. Decided: no limit on decor, only costs; removing one of the
+island's own pieces gives back half its worth, like anything placed.
 
 Streamers decorate their village in build mode: trees, bushes, flowers, rocks, fences, lamps, benches, statues,
 banners, wells, carts, gardens and seasonal pieces. The trees and flowers already on the island become decor too, so
@@ -40,11 +41,13 @@ reach every village without moving anything anyone placed.
 ## Costs and limits
 
 - Placing costs village resources, like roads: wood for wooden pieces, ore for stone and metal, coins for the fancier
-  ones. Prices are shown before placing. Removing what the village placed gives back half, as roads do.
-- Removing one of the island's trees gives a little wood. Removing a default piece costs nothing.
-- A limit on placed decor that grows with the town hall tier (numbers to decide; the island's own pieces do not
-  count), for the frame rate and so a village stays readable. Decor is drawn instanced (as the trees and gather spots
-  are, with the BatchRendererGroup), so hundreds of pieces cost little.
+  ones. Prices are shown before placing.
+- Removing any piece gives back half its worth, the island's own trees and flowers included (decided 2026-10-24).
+  A new streamer can clear some of the island for a start in resources; a big village will not notice. Removing and
+  placing again always loses half, so it cannot be farmed, and each island piece can only be removed once.
+- **No limit** on how much decor a village has (decided 2026-10-24): the cost is the only brake. Decor is drawn
+  instanced (as the trees and gather spots are, with the BatchRendererGroup), so hundreds of pieces cost little; if
+  a huge village ever costs frame rate, potato mode can thin the small pieces.
 
 ## Unlocks
 
@@ -91,8 +94,7 @@ village when earned.
 
 ## Open questions
 
-- **Costs:** resources only, or coins for some? How much wood does removing an island tree give?
-- **Limits:** how many placed pieces per town hall tier?
+- **Prices:** the price of each piece (and so what removing an island tree gives back).
 - **Viewer loyalty:** should viewers be able to give decor to the village with their loyalty points (a nice way for
   chat to shape the village), or should the streamer spend them?
 - **Website:** paid decor (real money) or patron perks only?
