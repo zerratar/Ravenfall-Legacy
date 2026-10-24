@@ -156,6 +156,18 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
 
         var result = TryProduceItem(player, target.Item, amount, recipe, gm, client);
         var name = GetSuitableName(recipe, target.Item);
+        if (result == Result.NotEnoughResources)
+        {
+            // the game's copy of the inventory may be missing something the server has: check before saying no
+            _ = RetryWithServerInventoryAsync(player, target.Item, amount, recipe, name, gm, client);
+            return;
+        }
+
+        Reply(result, player, recipe, name, gm, client);
+    }
+
+    private void Reply(Result result, PlayerController player, ItemRecipe recipe, string name, GameMessage gm, GameClient client)
+    {
         switch (result)
         {
             case Result.NotEnoughSkill:
@@ -170,6 +182,51 @@ public abstract class ProduceItemCommand : ChatBotCommandHandler<string>
                 client.SendReply(gm, Localization.MSG_PRODUCE_SERVER_ERROR);
                 break;
         }
+    }
+
+    // when each character's inventory was last fetched for a failed craft: asking again and again does not ask the
+    // server each time
+    private static readonly Dictionary<Guid, DateTime> lastInventoryCheck = new Dictionary<Guid, DateTime>();
+    private static readonly TimeSpan InventoryCheckInterval = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// The game said there was not enough of an ingredient. Its copy of the inventory can miss an item the server
+    /// added (seen on stream: Phantom Ore 0/1 while the player had one, and !leave and !join fixed it), so the
+    /// inventory is fetched from the server, the game's copy made to match, and the craft tried once more before
+    /// the player is told no.
+    /// </summary>
+    private async Task RetryWithServerInventoryAsync(PlayerController player, Item item, int amount, ItemRecipe recipe, string name, GameMessage gm, GameClient client)
+    {
+        var now = DateTime.UtcNow;
+        var checkedRecently = lastInventoryCheck.TryGetValue(player.Id, out var last) && now - last < InventoryCheckInterval;
+        if (!checkedRecently)
+        {
+            lastInventoryCheck[player.Id] = now;
+            try
+            {
+                var fresh = await Game.RavenNest.Players.GetPlayerAsync(player.Id);
+                if (player && fresh?.InventoryItems != null)
+                {
+                    var changed = player.Inventory.SyncWithServer(fresh.InventoryItems);
+                    if (changed > 0)
+                    {
+                        Shinobytes.Debug.LogWarning("Crafting found " + player.Name + "'s inventory out of step with the server: " + changed + " stack(s) repaired.");
+                        var again = TryProduceItem(player, item, amount, recipe, gm, client);
+                        if (again != Result.NotEnoughResources)
+                        {
+                            Reply(again, player, recipe, name, gm, client);
+                            return;
+                        }
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogWarning("Could not check " + player.Name + "'s inventory with the server: " + exc.Message);
+            }
+        }
+
+        if (player) Reply(Result.NotEnoughResources, player, recipe, name, gm, client);
     }
 
     private string GetSuitableName(ItemRecipe recipe, Item item)
