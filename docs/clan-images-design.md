@@ -6,8 +6,15 @@ startup), `Game/ClanImages/ClanImageManager.cs` (SkiaSharp re-encode), the endpo
 `/admin/clan-images`. The re-encode and its checks are tested; the upload and admin page still need a
 run with a signed-in browser. Decided: shape per clan with an optional per-role override, SkiaSharp,
 three.js copied into the site, images kept but locked while the owner is not a patron.
-Phase 2 started: re-UV'd cape meshes in `Assets/PolygonFantasyHeroCharacters/Models (Keep)/ClanCapes`
-(gitignored with the rest of the Synty folder), not yet on `Player.prefab`.
+Phase 2 (game) built the same day, game 87a4ebd: `Game/Managers/ClanLooks.cs` (asks api/clan/look,
+takes event 48), shapes in `SyntyPlayerAppearance` (redressing for another mesh), the default cape
+drawn by `PlayerLogoManager.DefaultCape`. The re-UV'd meshes are in
+`Assets/PolygonFantasyHeroCharacters/Models (Keep)/ClanCapes` and on `Player.prefab`, both gitignored.
+Tested in play mode with all four shapes. Phase 3 (website) built the same day, RavenNest eb362bd0:
+the clan page's Look tab (`Components/ClanLookEditor.razor`, `ClanImageService`), the editor
+(`wwwroot/js/rf-clan-image-editor.js`, tested in a browser with a stand-in upload) and
+`wwwroot/models/clan-capes.json`. Still to do: a signed-in run of the upload, the Look tab and the
+admin page.
 
 Clan owners (clans are a patron feature) upload their own clan logo and, separately, their own cape
 image on the website. A proper editor lets them crop, zoom, rotate and place the image, and the cape
