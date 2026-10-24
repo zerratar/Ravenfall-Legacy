@@ -8,7 +8,10 @@ Phase 2 (the game) built the same day: the shelves (`World/TavernShop.cs`, `Worl
 slots on the redeemables room's north wall under `Layout/Shelves`), the window (`UI/Toolkit/ShopWindow.cs`,
 `ShopWindow.uxml`, `ravenfall-shop.uss`), item icons from the website (`UI/ItemIcons.cs`) and the
 `StreamerShopUpdated` event. Phase 3 (`!redeem` for the shelves, with an amount) built the same day:
-`World/TavernShopRedeem.cs`, called first by `RedeemStreamerToken`. Phase 4 is not started.
+`World/TavernShopRedeem.cs`, called first by `RedeemStreamerToken`. Phase 4's `!shop` built the same day
+(`PacketHandlers/ShopCommand.cs`, both bots): `!shop` lists the shelves for anyone; `!shop remove <shelf>`,
+`!shop price <shelf> <coins>` and `!shop report` are for the streamer only. Not built: a website page for the
+stream's shop and sale notifications for the streamer.
 
 The streamer puts items of their own on shelves in the tavern for a coin price. Viewers buy them with
 the same `!redeem` they use for the seasonal redeemables. The coins do not go to the streamer: they

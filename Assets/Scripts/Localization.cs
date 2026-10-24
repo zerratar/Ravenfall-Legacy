@@ -29,6 +29,14 @@ public static class Localization
     public static string MSG_SHOP_ON_SHELVES = Meta("shop", "info") + "{itemName} is on several shelves: {shelves}. Use !redeem and the shelf number.";
     public static string MSG_SHOP_SHELF_ENTRY = "{0} ({1} coins)";
     public static string MSG_SHOP_ALSO_ON_SHELF_TEXT = "{0} is also on shelf {1} for {2} coins: !redeem {1}";
+    public static string MSG_SHOP_LIST = Meta("shop", "info") + "On the tavern shelves: {shelves}. Buy with !redeem and the shelf number.";
+    public static string MSG_SHOP_LIST_ENTRY = "{0}. {1} for {2} coins ({3} left)";
+    public static string MSG_SHOP_LIST_EMPTY = Meta("shop", "info") + "There is nothing on the tavern shelves right now.";
+    public static string MSG_SHOP_STREAMER_ONLY = Meta("shop", "fail") + "Only the streamer can change the tavern shelves.";
+    public static string MSG_SHOP_USAGE = Meta("shop", "info") + "Use !shop to see the shelves. The streamer can also use !shop remove <shelf>, !shop price <shelf> <coins> and !shop report.";
+    public static string MSG_SHOP_REMOVED = Meta("shop", "info") + "{itemName} on shelf {shelf} was taken down, and what was left went back.";
+    public static string MSG_SHOP_PRICE_SET = Meta("shop", "info") + "Shelf {shelf} ({itemName}) now costs {price} coins each.";
+    public static string MSG_SHOP_REPORT = Meta("shop", "info") + "The tavern shelves have made {coins} coins for the village from {items} items, {today} coins in the last day.";
     public static string UI_TAVERN_QUEST_REPLY = "{0}, I have no tasks to give to you at this time.";
     public static string UI_TAVERN_QUEST_GIVER_LINES = "I have no tasks to give to you at this time.|The quest board fills up soon. Keep an eye on it.|Adventure? Not yet, friend. Not yet.|Ask me with !quest, I dare you.|Somewhere a dragon is waiting. Just not yet.";
     public static string UI_TAVERN_BARKEEP_LINES = "What'll it be?|Fresh ale, straight from the cellar.|Mind the race table, those pets bite.|Someone keeps ordering one raven, extra crispy. Not on the menu.|The fire's warm and the ale's cold. Just how it should be.";
