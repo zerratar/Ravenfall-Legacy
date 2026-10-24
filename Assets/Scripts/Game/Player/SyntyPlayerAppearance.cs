@@ -285,10 +285,13 @@ public partial class SyntyPlayerAppearance : MonoBehaviour
     {
         if (this.player.clanHandler.InClan)
         {
+            var requested = this.player.clanHandler.Logo;
             gameManager.PlayerLogo.GetLogo(
                 this.player.clanHandler.ClanInfo.OwnerUserId,
-                this.player.clanHandler.Logo, logo =>
+                requested, logo =>
                 {
+                    // a logo can arrive late (a retry): not for a player who left, or whose clan changed since
+                    if (!this || !player || !player.clanHandler.InClan || player.clanHandler.Logo != requested) return;
                     SetCapeLogo(logo);
                 });
         }

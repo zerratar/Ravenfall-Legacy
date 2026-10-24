@@ -47,11 +47,16 @@ server connection (`docs/network-v2.md`). Steps are in order; the server goes fi
    closed, F3 in the tool or `RavenNest.Tools package --build` (a batch mode Unity runs `ReleaseBuild`). Ravenfall >
    Release > Build Windows and Linux only builds. It refuses Development builds, non-CoreCLR builds and a Windows
    and Linux build of different versions, and writes into `Build-release-packages/v0.9.5.0a-alpha/`:
-   - `Ravenfall.v0.9.5.0a-alpha.7z` and `update.7z` (Windows; the full one adds the RavenWeave updater from
-     `Build-release-extras/windows`, which is not in git, and the update leaves it out because it is running);
-   - `Ravenfall.v0.9.5.0a-alpha-linux.7z` and `update-linux.7z` (the same files);
+   - `Ravenfall.v0.9.5.0a-alpha.7z` and `update.7z` (Windows; RavenWeave, built from its repo, at the root of
+     the full one and in `updater/` in the update);
+   - `Ravenfall.v0.9.5.0a-alpha-linux.7z` and `update-linux.7z` (`update.sh` at the root of the full one and in
+     `updater/` in the update);
    - `RavenBot.7z` and `RavenBot-linux.7z` (the local bot, self contained);
    - `release-notes.md` (from `docs/releases/v0.9.5.0a-alpha.md`), `SHA256SUMS.txt`, `package-log.txt`.
+   The updater is in use while an update installs, so an update brings the new one in `updater/` and the game
+   moves it into place when it next starts (`UpdaterSwap`). An update therefore installs with the updater the
+   streamer already has, and the one after it with the new one. Both write a log to `update/` (`ravenweave.log`,
+   `update.log`).
    Unity names the files "Ravenfall Legacy"; the packages ship them as `Ravenfall.exe`, `Ravenfall.x86_64` and
    `Ravenfall_Data` like every earlier release. The scripts that go in (`batch-mode.bat`, `update.sh`,
    `install.sh`) are in `tools/release`.

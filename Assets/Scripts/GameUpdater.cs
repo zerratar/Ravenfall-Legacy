@@ -132,6 +132,9 @@ public class GameUpdater : MonoBehaviour
         //        return;
         //#endif
 
+        // a new updater that came with the last update, waiting in updater\
+        if (!Application.isEditor) UpdaterSwap.Apply();
+
         var args = System.Environment.GetCommandLineArgs();
         var startupArgs = args.Select(x => x.ToLower().Replace("-", "").Trim()).ToArray();
 

@@ -1,86 +1,147 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Concurrent;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
+/// <summary>
+/// Downloads player and clan logos (profile pictures, clan logos on capes) and keeps them for an hour.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Hardened after capes kept showing the Ravenfall logo (reported on stream, October 2026):
+/// </para>
+/// <list type="bullet">
+/// <item>Logos are kept by their address. They were kept by user id, so a clan owner's profile picture and their clan
+/// logo took each other's place, whichever came first.</item>
+/// <item>A logo that could not be downloaded, or that the server only had a placeholder for (X-Logo-Fallback), is
+/// tried again later, every cape waiting on it gets it when it arrives, and the plain image is only shown meanwhile.
+/// A failed download used to leave the cape on the plain image until the player joined again.</item>
+/// <item>One download per address at a time: everyone asking for it while it downloads waits for that one.</item>
+/// </list>
+/// </remarks>
 public class PlayerLogoManager : MonoBehaviour
 {
     //public const string TwitchLogoUrl = "https://www.ravenfall.stream/api/twitch/clan-logo/";
 
-    private readonly ConcurrentDictionary<Guid, Logo> userLogos = new ConcurrentDictionary<Guid, Logo>();
-    // logos that could not be downloaded: not tried again for a while, and reported once (a server that refuses
-    // them, or a local test server whose certificate is not trusted, logged an error with its stack every 30 s)
-    private readonly ConcurrentDictionary<Guid, float> failedUntil = new ConcurrentDictionary<Guid, float>();
-    private readonly System.Collections.Generic.HashSet<Guid> reported = new System.Collections.Generic.HashSet<Guid>();
-    private const float RetryFailedAfter = 300f;
+    private static readonly TimeSpan LifeSpan = TimeSpan.FromHours(1);
+    private const float FirstRetry = 30f;
+    private const float LongestRetry = 600f;
+    // callbacks kept per address while it is retried; a cape asks again on every change of gear
+    private const int MaxWaiting = 1000;
+
+    private readonly Dictionary<string, Logo> logos = new Dictionary<string, Logo>();
+    // callbacks waiting for an address that is downloading or will be tried again
+    private readonly Dictionary<string, List<Action<Sprite>>> waiting = new Dictionary<string, List<Action<Sprite>>>();
+    private readonly HashSet<string> downloading = new HashSet<string>();
+    private readonly Dictionary<string, float> retryDelay = new Dictionary<string, float>();
+    private readonly HashSet<string> reported = new HashSet<string>();
 
     [SerializeField] private Sprite replacementLogo;
 
     private GameManager gameManager;
     private const string logoPath = "players/logo/";
     private const string clanLogoPath = "clan/logo/";
-    public string LogoUrl => (gameManager?.ServerAddress ?? "https://www.ravenfall.stream/api/") + logoPath;
-    public string ClanLogoUrl => (gameManager?.ServerAddress ?? "https://www.ravenfall.stream/api/") + clanLogoPath;
+    public string LogoUrl => ServerAddress + logoPath;
+    public string ClanLogoUrl => ServerAddress + clanLogoPath;
+
+    private string ServerAddress => gameManager?.ServerAddress ?? "https://www.ravenfall.stream/api/";
 
     private void Awake()
     {
         gameManager = FindAnyObjectByType<GameManager>();
     }
 
+    /// <summary>
+    /// A clan's logo address as the game can download it: the clan's own when it has one (made absolute when the
+    /// server gave a path), otherwise the owner's from the clan logo endpoint.
+    /// </summary>
+    public string ResolveClanLogoUrl(string clanLogo, string owner)
+    {
+        if (!string.IsNullOrWhiteSpace(clanLogo))
+        {
+            var logo = clanLogo.Trim();
+            if (logo.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || logo.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return logo;
+            }
+
+            // a path on the server ("/api/twitch/logo/..."): the server's host in front
+            if (Uri.TryCreate(ServerAddress, UriKind.Absolute, out var server) && Uri.TryCreate(server, logo, out var absolute))
+            {
+                return absolute.ToString();
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(owner) ? null : ClanLogoUrl + owner;
+    }
+
     public void GetLogo(Guid userId, string url, Action<Sprite> onLogoDownloaded)
     {
-        if (userId == null || onLogoDownloaded == null)
+        if (onLogoDownloaded == null)
             return;
 
-        if (gameManager && gameManager.LogoCensor)
-        {
-            onLogoDownloaded(replacementLogo);
-            return;
-        }
-
-        if (TryGetLogo(userId, out var sprite))
-        {
-            onLogoDownloaded(sprite.Sprite);
-            return;
-        }
-
-
-        StartCoroutine(DownloadTexture(userId, url, onLogoDownloaded));
+        Get(string.IsNullOrWhiteSpace(url) ? LogoUrl + userId : url, onLogoDownloaded);
     }
 
     public void GetLogo(Guid userId, Action<Sprite> onLogoDownloaded)
     {
-        if (userId == null || onLogoDownloaded == null)
+        if (onLogoDownloaded == null)
             return;
 
-        if (gameManager && gameManager.LogoCensor)
-        {
-            onLogoDownloaded(replacementLogo);
-            return;
-        }
-
-        if (TryGetLogo(userId, out var sprite))
-        {
-            onLogoDownloaded(sprite.Sprite);
-            return;
-        }
-
-        StartCoroutine(DownloadTexture(userId, LogoUrl + userId, onLogoDownloaded));
+        Get(LogoUrl + userId, onLogoDownloaded);
     }
 
     public Sprite GetLogo(Guid raiderUserId)
     {
-        //ClearCache();
         if (gameManager && gameManager.LogoCensor)
             return replacementLogo;
 
-        if (TryGetLogo(raiderUserId, out var sprite))
-            return sprite.Sprite;
+        var url = LogoUrl + raiderUserId;
+        if (TryGetLogo(url, out var logo))
+            return logo.Sprite;
 
-        StartCoroutine(DownloadTexture(raiderUserId, LogoUrl + raiderUserId));
+        Get(url, null);
         return null;
+    }
+
+    private void Get(string url, Action<Sprite> onLogoDownloaded)
+    {
+        if (gameManager && gameManager.LogoCensor)
+        {
+            onLogoDownloaded?.Invoke(replacementLogo);
+            return;
+        }
+
+        if (TryGetLogo(url, out var logo))
+        {
+            onLogoDownloaded?.Invoke(logo.Sprite);
+            // a placeholder for now: the real logo follows when the retry gets it
+            if (logo.Placeholder) Wait(url, onLogoDownloaded);
+            return;
+        }
+
+        Wait(url, onLogoDownloaded);
+
+        // waiting for a retry: the plain image until then
+        if (retryDelay.ContainsKey(url))
+        {
+            onLogoDownloaded?.Invoke(replacementLogo);
+            return;
+        }
+
+        if (downloading.Add(url))
+        {
+            StartCoroutine(Download(url));
+        }
+    }
+
+    private void Wait(string url, Action<Sprite> callback)
+    {
+        if (callback == null) return;
+        if (!waiting.TryGetValue(url, out var list)) waiting[url] = list = new List<Action<Sprite>>();
+        if (list.Count >= MaxWaiting) list.RemoveAt(0);
+        list.Add(callback);
     }
 
     internal async void ClearCache()
@@ -92,7 +153,8 @@ public class PlayerLogoManager : MonoBehaviour
             await gameManager.RavenNest.ClearLogoAsync(gameManager.RavenNest.TwitchUserId);
         }
 
-        userLogos.Clear();
+        logos.Clear();
+        retryDelay.Clear();
 
         foreach (var player in this.gameManager.Players.GetAllPlayers())
         {
@@ -100,59 +162,123 @@ public class PlayerLogoManager : MonoBehaviour
         }
     }
 
-    private bool TryGetLogo(Guid userId, out Logo logo)
+    private bool TryGetLogo(string url, out Logo logo)
     {
-        if (userLogos.TryGetValue(userId, out var sprite) && sprite != null && !sprite.Expired && sprite.Sprite != null)
+        if (url != null && logos.TryGetValue(url, out var found) && found != null && !found.Expired && found.Sprite != null)
         {
-            logo = sprite;
+            logo = found;
             return true;
         }
+
         logo = null;
         return false;
     }
 
-    private IEnumerator DownloadTexture(Guid userId, string url, Action<Sprite> onLogoDownloaded = null)
+    private IEnumerator Download(string url)
     {
-        if (failedUntil.TryGetValue(userId, out var until) && Time.unscaledTime < until)
+        Sprite sprite = null;
+        var placeholder = false;
+        string error = null;
+
+        using (var www = UnityWebRequestTexture.GetTexture(url))
         {
-            onLogoDownloaded?.Invoke(replacementLogo);
+            yield return www.SendWebRequest();
+
+            if (IsError(www.result))
+            {
+                error = www.error;
+            }
+            else
+            {
+                try
+                {
+                    var texture = ((DownloadHandlerTexture)www.downloadHandler).texture;
+                    sprite = SpriteFromTexture2D(texture);
+                    placeholder = string.Equals(www.GetResponseHeader("X-Logo-Fallback"), "true", StringComparison.OrdinalIgnoreCase);
+                }
+                catch (Exception exc)
+                {
+                    error = exc.Message;
+                }
+            }
+        }
+
+        downloading.Remove(url);
+
+        if (sprite != null)
+        {
+            // a placeholder is shown, but asked for again later: the real logo may be there by then
+            logos[url] = new Logo(sprite, placeholder ? TimeSpan.FromSeconds(NextDelay(url)) : LifeSpan, placeholder);
+            if (placeholder)
+            {
+                ScheduleRetry(url, "the server has no logo yet");
+            }
+            else
+            {
+                retryDelay.Remove(url);
+            }
+
+            Deliver(url, sprite, keepWaiting: placeholder);
             yield break;
         }
 
-        if (userLogos.ContainsKey(userId))
+        ScheduleRetry(url, error);
+        Deliver(url, replacementLogo, keepWaiting: true);
+    }
+
+    private float NextDelay(string url)
+    {
+        return retryDelay.TryGetValue(url, out var delay) ? delay : FirstRetry;
+    }
+
+    private void ScheduleRetry(string url, string reason)
+    {
+        var delay = NextDelay(url);
+        retryDelay[url] = Mathf.Min(delay * 2f, LongestRetry);
+        if (reported.Add(url))
         {
-            if (TryGetLogo(userId, out var logo))
-            {
-                onLogoDownloaded?.Invoke(logo.Sprite);
-                yield break;
-            }
+            Shinobytes.Debug.LogWarning("Could not get the logo " + url + " (" + reason + "); the plain image is shown and it is tried again in " + delay + " s.");
         }
 
-        userLogos[userId] = null;
-        UnityWebRequest www = UnityWebRequestTexture.GetTexture(url);
+        StartCoroutine(RetryAfter(url, delay));
+    }
 
-        yield return www.SendWebRequest();
-
-        if (IsError(www.result))
+    private IEnumerator RetryAfter(string url, float delay)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        if (!waiting.ContainsKey(url) || downloading.Contains(url))
         {
-            failedUntil[userId] = Time.unscaledTime + RetryFailedAfter;
-            if (reported.Add(userId))
-                Shinobytes.Debug.LogWarning("Could not download the logo " + url + " (" + www.error + "); the default logo is used, tried again in " + RetryFailedAfter + " s.");
-            userLogos.TryRemove(userId, out _);
-            onLogoDownloaded?.Invoke(replacementLogo);
+            retryDelay.Remove(url);
+            yield break; // nobody needs it any more, or it is already coming
         }
-        else
+
+        downloading.Add(url);
+        yield return Download(url);
+    }
+
+    /// <summary>Gives the sprite to everyone waiting for the address; they keep waiting when a better one may follow.</summary>
+    private void Deliver(string url, Sprite sprite, bool keepWaiting)
+    {
+        if (!waiting.TryGetValue(url, out var list))
+        {
+            return;
+        }
+
+        if (!keepWaiting)
+        {
+            waiting.Remove(url);
+        }
+
+        foreach (var callback in list.ToArray())
         {
             try
             {
-                Texture2D webTexture = ((DownloadHandlerTexture)www.downloadHandler).texture as Texture2D;
-                Sprite webSprite = SpriteFromTexture2D(webTexture);
-                userLogos[userId] = new Logo(webSprite);
-                onLogoDownloaded?.Invoke(webSprite);
+                callback(sprite);
             }
-            catch
+            catch (Exception)
             {
-                onLogoDownloaded?.Invoke(replacementLogo);
+                // its window or player is gone: it does not get the next one either
+                list.Remove(callback);
             }
         }
     }
@@ -171,15 +297,15 @@ public class PlayerLogoManager : MonoBehaviour
 
     private class Logo
     {
-        private static readonly TimeSpan LifeSpan = TimeSpan.FromHours(1);
-        public Logo(Sprite sprite)
+        public Logo(Sprite sprite, TimeSpan lifeSpan, bool placeholder = false)
         {
             Sprite = sprite;
-            Created = DateTime.UtcNow;
-            Expires = Created.Add(LifeSpan);
+            Placeholder = placeholder;
+            Expires = DateTime.UtcNow.Add(lifeSpan);
         }
         public Sprite Sprite { get; }
-        public DateTime Created { get; }
+        /// <summary>The server's stand-in: shown, but asked for again.</summary>
+        public bool Placeholder { get; }
         public DateTime Expires { get; }
         public bool Expired => DateTime.UtcNow > Expires;
     }

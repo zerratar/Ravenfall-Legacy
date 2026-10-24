@@ -27,8 +27,12 @@ public class ClanHandler : MonoBehaviour
         ClanInfo = clan;
         Role = role;
 
-        if (InClan && !string.IsNullOrEmpty(clan.Owner))
-            Logo = clan.Logo ?? (plm?.ClanLogoUrl + clan.Owner);
+        // the clan's own logo when it has a usable one (an empty or relative one broke the download and left the
+        // plain image on every cape), otherwise the owner's from the clan logo endpoint
+        if (InClan && plm != null)
+            Logo = plm.ResolveClanLogoUrl(clan.Logo, clan.Owner);
+        else if (InClan && !string.IsNullOrEmpty(clan.Owner))
+            Logo = string.IsNullOrWhiteSpace(clan.Logo) ? null : clan.Logo;
         else
             Logo = null;
 
