@@ -1,6 +1,13 @@
 # Clan logo and cape images
 
-Status: design, 2026-10-24. Nothing built yet.
+Status: phase 1 (server) built 2026-10-24, RavenNest 008cf384: the `ClanImage` table (created at
+startup), `Game/ClanImages/ClanImageManager.cs` (SkiaSharp re-encode), the endpoints in
+`ClanController`, the `ClanImages:RequireReview` setting, event 48 `ClanLookChanged` and
+`/admin/clan-images`. The re-encode and its checks are tested; the upload and admin page still need a
+run with a signed-in browser. Decided: shape per clan with an optional per-role override, SkiaSharp,
+three.js copied into the site, images kept but locked while the owner is not a patron.
+Phase 2 started: re-UV'd cape meshes in `Assets/PolygonFantasyHeroCharacters/Models (Keep)/ClanCapes`
+(gitignored with the rest of the Synty folder), not yet on `Player.prefab`.
 
 Clan owners (clans are a patron feature) upload their own clan logo and, separately, their own cape
 image on the website. A proper editor lets them crop, zoom, rotate and place the image, and the cape
