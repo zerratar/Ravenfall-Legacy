@@ -311,6 +311,9 @@ namespace RavenNest.SDK.V2
                             return null;
                         }
                         message.Write(receiveBuffer, 0, result.Count);
+                        // every part counts: a big message (a restore of hundreds of players) can take longer to
+                        // arrive than DeadAfterMs, and was taken for a dead connection halfway through
+                        lastReceived = DateTime.UtcNow;
                         if (message.Length > ProtocolInfo.MaxMessageBytes)
                         {
                             throw new IOException("message too large");

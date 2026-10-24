@@ -22,8 +22,13 @@ namespace RavenNest.Protocol
         /// <summary>The client sends its saves this often.</summary>
         public const int SaveIntervalMs = 2_000;
 
-        /// <summary>The largest message either side accepts.</summary>
-        public const int MaxMessageBytes = 4 * 1024 * 1024;
+        /// <summary>
+        /// The largest message either side accepts. Big enough for a stream with a thousand players restored at once;
+        /// the limit is only there so a broken message cannot take all the memory. It was 4 MB until 0.9.5.2a, and a
+        /// restore of 600 players went over it: the game dropped the connection on the answer and got it again after
+        /// every reconnect. The server keeps to 4 MB for older games.
+        /// </summary>
+        public const int MaxMessageBytes = 256 * 1024 * 1024;
 
         /// <summary>A command's result is kept this long, so repeating its request id returns it instead of running it again.</summary>
         public const int CommandResultKeepSeconds = 15 * 60;
