@@ -20,5 +20,6 @@ namespace RavenNest.SDK.Endpoints
         Village,
         Twitch,
         Clan,
+        Shop,
     }
 }

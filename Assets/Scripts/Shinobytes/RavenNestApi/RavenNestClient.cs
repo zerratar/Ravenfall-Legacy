@@ -79,6 +79,7 @@ namespace RavenNest.SDK
             Marketplace = new MarketplaceApi(this, logger, request);
             Village = new VillageApi(this, logger, request);
             Clan = new ClanApi(this, logger, request);
+            Shop = new ShopApi(request);
             botPlayerGenerator = new BotPlayerGenerator(gameManager);
 
             thread = new System.Threading.Thread(UpdateProcess);
@@ -120,6 +121,7 @@ namespace RavenNest.SDK
         public MarketplaceApi Marketplace { get; }
 
         public ClanApi Clan { get; }
+        public ShopApi Shop { get; }
         public VillageApi Village { get; }
 
 

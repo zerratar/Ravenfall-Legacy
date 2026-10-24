@@ -1,7 +1,9 @@
 # Streamer shop (the tavern shelves)
 
-Status: design, not started. Idea from the streamer side, 2026-10-24. Server work in RavenNest,
-client work in the game, no new chat commands required.
+Status: phase 1 (server) built and tested against the local dev server, 2026-10-24: RavenNest
+`Game/StreamerShop` (manager, trade world, expiry watcher), `Controllers/ShopController.cs`, the
+`shop.buy` socket command, and the game's `ShopApi` (`Shinobytes/RavenNestApi/Endpoints/ShopApi.cs`).
+The tables are created at startup by `DatabaseSchema`. Phases 2 to 4 are not started.
 
 The streamer puts items of their own on shelves in the tavern for a coin price. Viewers buy them with
 the same `!redeem` they use for the seasonal redeemables. The coins do not go to the streamer: they
@@ -47,8 +49,8 @@ what it cost, that the coins went to the village, and the loyalty points they ea
 - **Price.** Whole coins per item, from 1 up to a cap (proposed 100,000,000), so a mistyped zero
   cannot empty a viewer's account.
 - **Quantity.** 1 up to what the source holds. Each redeem buys one.
-- **Duration.** Choices of 1 hour, 6 hours, 1 day, 3 days, 7 days and 14 days (the marketplace allows
-  21; shorter here keeps the shelves fresh).
+- **Duration.** From 1 hour up to 30 days (decided 2026-10-24); the window offers 1 hour, 6 hours,
+  1 day, 3 days, 7 days, 14 days and 30 days.
 - **Shelf spots.** Limited: proposed 3 shelves, plus 1 per town hall tier, up to 8. A reason to
   upgrade the town hall, and the shelves fill the room without crowding it.
 - **Who may buy.** Per listing: everyone, the streamer's clan (the clan the streamer owns), or chosen
@@ -126,6 +128,10 @@ and the village info push picks up the new coins.
   loyalty lines), not enough coins, clan or role only, sold out, limit reached, own listing.
 - **Settings.** None needed. The shelves only respond to the streamer's mouse in the game, so only the
   streamer can manage them.
+- **Sales report.** A tab in the shop window, not in the village panel (decided 2026-10-24): every
+  sale with buyer, item, price and loyalty points, and totals (`GET api/shop/report`).
+- **Chat commands.** Allowed, but only for the streamer (the broadcaster), never moderators (decided
+  2026-10-24): for example `!shop` to list the shelves and `!shop remove <shelf>`.
 
 ## Phases
 
@@ -136,14 +142,13 @@ and the village info push picks up the new coins.
 4. Polish: a `!shop` chat command listing the shelves (optional), a website page showing the stream's
    shop, sale notifications for the streamer.
 
-## Open questions
+## Decided (2026-10-24)
 
-- The numbers: shelf spots, price cap, durations, loyalty points per coin and their cap.
-- Should enchanted items be allowed (proposed yes) and transmogrified ones (proposed no, as gifts)?
-- Should a moderator be able to manage the shelves from chat, or only the streamer in the game
-  (proposed only the streamer)?
-- Should the treasury coins from the shop be shown separately in the village panel ("from the tavern
-  shelves today")?
+- The numbers as proposed above, with listings up to 30 days. Still open to balancing once players use
+  it.
+- Enchanted items are allowed, transmogrified ones are not.
+- Shelf management in chat is for the streamer only.
+- The sales report is a tab in the shop window; the village panel stays as it is.
 
 ## Risks
 
