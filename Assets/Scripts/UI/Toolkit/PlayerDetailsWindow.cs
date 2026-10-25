@@ -1279,6 +1279,12 @@ namespace Shinobytes.UI
                 return;
             }
 
+            FillItem(t, item);
+        }
+
+        /// <summary>An item's tooltip: its name, stats and enchantments (also hero mode's inventory).</summary>
+        internal static void FillItem(HudTooltip t, GameInventoryItem item)
+        {
             t.SetTitle(item.InventoryItem?.Name ?? item.Item.Name);
 
             if (item.Item.Type == ItemType.Pet)

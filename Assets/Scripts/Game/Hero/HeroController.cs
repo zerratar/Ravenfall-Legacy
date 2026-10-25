@@ -233,8 +233,8 @@ public class HeroController : MonoBehaviour
         if (!Keybinds.IsTyping)
         {
             if (Input.GetKeyDown(KeyCode.V) && heroCamera) heroCamera.Toggle();
-            if (Input.GetKeyDown(KeyCode.C)) ToggleDetails(false);
-            if (Input.GetKeyDown(KeyCode.I)) ToggleDetails(true);
+            if (Input.GetKeyDown(KeyCode.C)) ToggleDetails();
+            if (Input.GetKeyDown(KeyCode.I)) InventoryPressed?.Invoke();
             if (Input.GetKeyDown(KeyCode.Tab)) NextStyle(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ? -1 : 1);
             if (Input.GetKeyDown(KeyCode.Space)) { Dodge(); return; }
             if (Input.GetKeyDown(KeyCode.Q)) Potion();
@@ -302,21 +302,26 @@ public class HeroController : MonoBehaviour
         Shoot(HeroEffects.Get?.Arrow, target, target.Position, 32f, 0.4f, e => Strike(e, 0.6f));
     }
 
-    /// <summary>C: the hero's details; I: with the gear open. Pressed again, closed.</summary>
-    private void ToggleDetails(bool gear)
+    /// <summary>I: the inventory window (HeroHudView opens it).</summary>
+    public static event Action InventoryPressed;
+
+    /// <summary>C: the hero's details, opened with the equipment showing (its own button still folds it away).
+    /// Pressed again, closed.</summary>
+    private void ToggleDetails()
     {
         var game = GameManager.Instance;
         var details = game ? game.Camera.Observer : null;
         if (!details) return;
         details.Observe(Player, float.MaxValue);
-        if (!details.IsVisible)
-        {
-            details.SetVisibility(true);
-            if (gear != PlayerDetails.IsExpanded) details.ToggleInventory();
-            return;
-        }
-        if (gear && !PlayerDetails.IsExpanded) { details.ToggleInventory(); return; }
-        details.SetVisibility(false);
+        if (details.IsVisible) { details.SetVisibility(false); return; }
+        details.SetVisibility(true);
+        if (!details.IsGearOpen) details.ToggleInventory();
+    }
+
+    /// <summary>The style's weapon in hand again (after the gear changed).</summary>
+    public void RefreshWeapon()
+    {
+        if (Player) Player.Equipment.ShowWeapon(AttackTypeOf(Style));
     }
 
     private bool steering;

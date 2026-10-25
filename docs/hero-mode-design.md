@@ -294,7 +294,11 @@ After the user's first try ("not playable yet"):
 - **The weapon:** the style's own weapon shows (the woodcutting axe stayed in hand before).
 - **The screen:**
   - the players list and the details window step aside, and come back after;
-  - C and I open the hero's details (I with the gear). The real inventory window is still to build (see Decided);
+  - C opens the hero's details with the equipment part showing (its own button still folds it);
+  - I opens the inventory window (`HeroInventoryWindow`, on the right, draggable): worn gear slot by slot, then the
+    backpack as a grid of icons. A right click equips an item or takes a worn one off: through the server for the
+    streamer's characters, on this computer for the Ravebridge character. Hovering shows the item's tooltip (shared
+    with the details window), with what a too-high item needs. Esc closes it;
   - the party panel on the left lists who is on Ravebridge, with their health.
 - **The orbs:** the Hero Orb shader draws a glass sphere into a render texture each frame (every third in potato
   mode). It has a waving surface that sloshes when the level moves, swirling clouds and rising bubbles, and a paler

@@ -421,7 +421,7 @@ public static class Localization
     public static string UI_RAVEBRIDGE_Q_DONE = "Quest done: {0}! Quest points: {1}/{2}";
     public static string UI_HERO_ENTER = "Hero mode";
     public static string UI_HERO_EXIT = "Leave hero mode";
-    public static string UI_HERO_CONTROLS = "WASD walk, left mouse attacks or walks to the cursor, 1-4 skills, Tab style, Space dodge, Q potion, V camera, C details, I gear, Esc leaves hero mode";
+    public static string UI_HERO_CONTROLS = "WASD walk, left mouse attacks or walks to the cursor, 1-4 skills, Tab style, Space dodge, Q potion, V camera, C character, I inventory, Esc leaves hero mode";
     public static string UI_HERO_CLEAVE = "Cleave";
     public static string UI_HERO_CLEAVE_HINT = "A wide swing in front of you.";
     public static string UI_HERO_LEAP = "Leap slam";
@@ -434,6 +434,15 @@ public static class Localization
     public static string UI_HERO_DODGE = "Dodge";
     public static string UI_HERO_POTION = "Potion";
     public static string UI_HERO_STYLE_MELEE = "Melee";
+    public static string UI_HERO_INVENTORY = "Inventory: {0}";
+    public static string UI_HERO_INVENTORY_WORN = "Worn";
+    public static string UI_HERO_INVENTORY_BAG = "Backpack ({0})";
+    public static string UI_HERO_INVENTORY_EMPTY = "Nothing in the backpack.";
+    public static string UI_HERO_INVENTORY_HINT = "Right click an item to equip it, or a worn one to take it off. Drag the title to move the window.";
+    public static string UI_HERO_INVENTORY_EQUIP = "Right click: equip";
+    public static string UI_HERO_INVENTORY_UNEQUIP = "Right click: take off";
+    public static string UI_HERO_INVENTORY_NEEDS = "Needs {0}";
+    public static string UI_HERO_INVENTORY_FAILED = "The server did not take the change. Try again in a moment.";
     public static string UI_HERO_STYLE_RANGED = "Ranged";
     public static string UI_HERO_STYLE_MAGIC = "Magic";
     public static string UI_HERO_STYLE_HEALING = "Healing";

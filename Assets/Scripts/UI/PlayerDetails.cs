@@ -133,6 +133,10 @@ public class PlayerDetails : MonoBehaviour
 
     public bool IsVisible => visible;
 
+    /// <summary>Whether the equipment part shows (the window remembers it between sessions, IsExpanded only
+    /// once toggled).</summary>
+    public bool IsGearOpen => uiToolkitWindow ? uiToolkitWindow.IsGearOpen : IsExpanded;
+
     public void ToggleInventory()
     {
         if (uiToolkitWindow)

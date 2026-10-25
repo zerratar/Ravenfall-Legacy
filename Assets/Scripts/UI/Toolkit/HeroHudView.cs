@@ -30,6 +30,7 @@ namespace Shinobytes.UI
         private Label partyTitle;
         private readonly List<PartyRow> partyRows = new List<PartyRow>();
         private float nextParty;
+        private HeroInventoryWindow inventory;
         private bool bound;
 
         private static Texture2D rim;
@@ -69,12 +70,14 @@ namespace Shinobytes.UI
             bound = false;
             HeroController.Changed += Changed;
             HeroController.Refused += Flash;
+            HeroController.InventoryPressed += ToggleInventory;
         }
 
         private void OnDisable()
         {
             HeroController.Changed -= Changed;
             HeroController.Refused -= Flash;
+            HeroController.InventoryPressed -= ToggleInventory;
             SetHeroMode(false);
             bound = false;
         }
@@ -151,6 +154,8 @@ namespace Shinobytes.UI
 
             root.style.display = DisplayStyle.None;
             layer.Add(root);
+            inventory?.Remove();
+            inventory = new HeroInventoryWindow(layer);
             bound = true;
             Changed();
         }
@@ -301,7 +306,7 @@ namespace Shinobytes.UI
             SetHeroMode(hero);
             if (!bound) return;
             root.style.display = hero ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!hero) return;
+            if (!hero) { inventory?.Close(); return; }
             styleIcon.text = HeroSkill.StyleIcon(hero.Style);
             styleName.text = hero.StyleName + "  " + hero.StyleLevel.ToString(CultureInfo.InvariantCulture);
             styleBox.tooltip = Localization.UI_HERO_STYLE_SWITCH;
@@ -329,6 +334,12 @@ namespace Shinobytes.UI
             }
         }
 
+        private void ToggleInventory()
+        {
+            var hero = HeroController.Active;
+            if (bound && hero && inventory != null) inventory.Toggle(hero.Player);
+        }
+
         private void Flash(int slot, string why)
         {
             if (slot == -3) { styleFlashUntil = Time.time + 0.3f; return; }
@@ -342,6 +353,12 @@ namespace Shinobytes.UI
             if (!bound) TryBind();
             var hero = HeroController.Active;
             if (!bound || !hero || !hero.Player) return;
+            inventory?.Update(hero.Player);
+            if (inventory != null && inventory.IsOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping)
+            {
+                EscapeKey.Claim();
+                inventory.Close();
+            }
 
             var life = hero.Player.Stats.Health;
             var share = life.MaxLevel > 0 ? Mathf.Clamp01(life.CurrentValue / (float)life.MaxLevel) : 0f;
