@@ -20,7 +20,7 @@
                 player.ferryHandler.Cancel();
             }
 
-            if (player.duelHandler.InDuel || player.arenaHandler.InArena || player.streamRaidHandler.InWar
+            if (player.duelHandler.InDuel || player.arenaHandler.InArena || player.streamRaidHandler.InWar || player.InRavebridge
                 || player.dungeonHandler.InDungeon || player.raidHandler.InRaid || player.onsenHandler.InOnsen)
             {
                 return;

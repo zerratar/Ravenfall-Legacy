@@ -32,6 +32,12 @@ public class TeleportToIsland : ChatBotCommandHandler<string>
             return;
         }
 
+        if (player.InRavebridge)
+        {
+            client.SendReply(gm, Localization.MSG_RAVEBRIDGE_BLOCKED);
+            return;
+        }
+
         if (player.streamRaidHandler.InWar)
         {
             client.SendReply(gm, Localization.MSG_TELEPORT_FAILED_WAR);

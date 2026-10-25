@@ -48,6 +48,8 @@ namespace Shinobytes.UI
             if (!GetComponent<PlayerRestoreView>()) gameObject.AddComponent<PlayerRestoreView>();
             // and the stream quest's bar and window at the top center
             if (!GetComponent<StreamQuestView>()) gameObject.AddComponent<StreamQuestView>();
+            // the Ravebridge bar under it while the event runs
+            if (!GetComponent<RavebridgeView>()) gameObject.AddComponent<RavebridgeView>();
             Languages.Changed += Redraw;
             TryBind();
         }

@@ -6,6 +6,7 @@ public class PlayerJoinDungeonEventHandler : GameEventHandler<PlayerId>
     {
         var player = gameManager.Players.GetPlayerById(data.Id);
         if (!player) return;
+        if (player.InRavebridge) return;
 
         if (gameManager.StreamRaid.IsWar)
             return;

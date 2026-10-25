@@ -22,6 +22,12 @@ public class DungeonJoin : ChatBotCommandHandler<string>
                 return;
             }
 
+            if (player.InRavebridge)
+            {
+                client.SendReply(gm, Localization.MSG_RAVEBRIDGE_BLOCKED);
+                return;
+            }
+
             if (Game.StreamRaid.IsWar)
             {
                 client.SendReply(gm, Localization.MSG_DUNGEON_JOIN_WAR);

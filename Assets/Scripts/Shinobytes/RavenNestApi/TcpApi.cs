@@ -850,6 +850,13 @@ namespace RavenNest.SDK
                         island = player.dungeonHandler.PreviousIsland?.Island ?? Island.Ferry;
                     }
                 }
+
+                // Ravebridge too: a crash brings them home
+                if (player.InRavebridge && RavebridgeManager.Instance && RavebridgeManager.Instance.TryGetReturn(player, out var from, out var back))
+                {
+                    pos = back;
+                    island = from.Island;
+                }
             }
             catch (Exception exc)
             {

@@ -55,6 +55,12 @@
             return;
         }
 
+        if (player1.InRavebridge || player2.InRavebridge)
+        {
+            client.SendReply(gm, Localization.MSG_RAVEBRIDGE_BLOCKED);
+            return;
+        }
+
         if (player1.arenaHandler.InArena)
         {
             client.SendReply(gm, Localization.MSG_DUEL_FAILED_IN_ARENA);

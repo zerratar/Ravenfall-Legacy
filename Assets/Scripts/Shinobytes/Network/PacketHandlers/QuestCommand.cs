@@ -37,6 +37,13 @@ public static class QuestChat
         var argument = parts.Length > 1 ? parts[1].ToLowerInvariant() : "";
 
         // the stream quest is everyone's, playing or not
+        // the Ravebridge event (the bots send !ravebridge and !rb as !quest ravebridge)
+        if (sub == "ravebridge" || sub == "rb")
+        {
+            Ravebridge(game, players, argument, gm, client);
+            return;
+        }
+
         if (sub == "stream" || sub == "s")
         {
             await StreamAsync(game, argument, parts.Length > 2 ? parts[2] : "", gm, client);
@@ -166,6 +173,87 @@ public static class QuestChat
         {
             Shinobytes.Debug.LogError("!quest failed: " + exc);
             client.SendReply(gm, Localization.MSG_QUEST_FAILED);
+        }
+    }
+
+    /// <summary>
+    /// !ravebridge (phase 6b of docs/ravebridge-design.md): with nothing after it, joins the event if it is open, or
+    /// says how it opens; leave goes back; start and end for the streamer and the moderators; follow and heal help
+    /// the streamer's hero, stop goes back to the own training; status says who is there.
+    /// </summary>
+    private static void Ravebridge(GameManager game, PlayerManager players, string action, GameMessage gm, GameClient client)
+    {
+        var rb = game.Ravebridge;
+        if (!rb) return;
+        var user = gm.Sender;
+        var allowed = user.IsBroadcaster || user.IsModerator || user.IsGameModerator || user.IsGameAdministrator;
+        switch (action)
+        {
+            case "start":
+            case "open":
+                if (!allowed) { client.SendReply(gm, Localization.MSG_RAVEBRIDGE_NO_PERMISSION); return; }
+                switch (rb.Begin(false))
+                {
+                    case RavebridgeManager.StartResult.Locked: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_LOCKED); break;
+                    case RavebridgeManager.StartResult.Busy: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_EVENT_BUSY); break;
+                    case RavebridgeManager.StartResult.AlreadyActive: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_STATUS, rb.PlayerCount); break;
+                }
+                return;
+
+            case "end":
+            case "close":
+                if (!allowed) { client.SendReply(gm, Localization.MSG_RAVEBRIDGE_NO_PERMISSION); return; }
+                if (!rb.Active) { client.SendReply(gm, Localization.MSG_RAVEBRIDGE_NOT_ACTIVE); return; }
+                rb.End();
+                return;
+
+            case "status":
+            case "info":
+                if (rb.Active) client.SendReply(gm, Localization.MSG_RAVEBRIDGE_STATUS, rb.PlayerCount);
+                else client.SendReply(gm, Localization.MSG_RAVEBRIDGE_CLOSED, RavebridgeManager.Unlocked ? Localization.MSG_RAVEBRIDGE_HOW_UNLOCKED : Localization.MSG_RAVEBRIDGE_LOCKED);
+                return;
+        }
+
+        var player = players.GetPlayer(user);
+        if (!player)
+        {
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+            return;
+        }
+
+        switch (action)
+        {
+            case "leave":
+            case "back":
+                if (!rb.Contains(player)) { client.SendReply(gm, Localization.MSG_RAVEBRIDGE_NOT_THERE); return; }
+                rb.Leave(player);
+                client.SendReply(gm, Localization.MSG_RAVEBRIDGE_LEFT);
+                return;
+
+            case "follow":
+            case "fight":
+            case "heal":
+            case "stop":
+                if (!rb.Contains(player)) { client.SendReply(gm, Localization.MSG_RAVEBRIDGE_NOT_THERE); return; }
+                var help = action == "heal" ? RavebridgeManager.Help.Heal : action == "stop" ? RavebridgeManager.Help.None : RavebridgeManager.Help.Follow;
+                rb.SetHelp(player, help);
+                client.SendReply(gm, help == RavebridgeManager.Help.Heal ? Localization.MSG_RAVEBRIDGE_HEAL : help == RavebridgeManager.Help.Follow ? Localization.MSG_RAVEBRIDGE_FOLLOW : Localization.MSG_RAVEBRIDGE_STOP);
+                return;
+        }
+
+        // !ravebridge alone (or join): go along
+        if (!rb.Active)
+        {
+            client.SendReply(gm, Localization.MSG_RAVEBRIDGE_CLOSED, RavebridgeManager.Unlocked ? Localization.MSG_RAVEBRIDGE_HOW_UNLOCKED : Localization.MSG_RAVEBRIDGE_LOCKED);
+            return;
+        }
+        switch (rb.Join(player))
+        {
+            case RavebridgeManager.JoinResult.Joined: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_JOINED); break;
+            case RavebridgeManager.JoinResult.AlreadyThere: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_ALREADY); break;
+            case RavebridgeManager.JoinResult.Busy: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_BUSY); break;
+            case RavebridgeManager.JoinResult.Dead: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_DEAD); break;
+            default: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_NOT_ACTIVE); break;
         }
     }
 

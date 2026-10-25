@@ -15,6 +15,12 @@ public class RaidJoin : ChatBotCommandHandler<string>
         var player = PlayerManager.GetPlayer(gm.Sender);
         if (player)
         {
+            if (player.InRavebridge)
+            {
+                client.SendReply(gm, Localization.MSG_RAVEBRIDGE_BLOCKED);
+                return;
+            }
+
             if (player.streamRaidHandler.InWar)
             {
                 client.SendReply(gm, Localization.MSG_JOIN_RAID_WAR);

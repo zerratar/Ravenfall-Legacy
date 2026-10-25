@@ -111,6 +111,13 @@ public static class PlayerSaveSource
             island = raidHandler.PreviousIsland.Island;
         }
 
+        // and Ravebridge: a crash brings them home
+        if (p.InRavebridge && RavebridgeManager.Instance && RavebridgeManager.Instance.TryGetReturn(p, out var from, out var back))
+        {
+            pos = back;
+            island = from.Island;
+        }
+
         return new PlayerStateSnapshot
         {
             CharacterId = p.Id,

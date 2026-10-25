@@ -21,6 +21,12 @@ public class FerryEnter : ChatBotCommandHandler
             return;
         }
 
+        if (player.InRavebridge)
+        {
+            client.SendReply(gm, Localization.MSG_RAVEBRIDGE_BLOCKED);
+            return;
+        }
+
         if (!player.ferryHandler)
         {
             return;

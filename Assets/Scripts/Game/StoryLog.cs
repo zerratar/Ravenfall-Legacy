@@ -274,6 +274,14 @@ public static class StoryLog
     // ---- Words ---------------------------------------------------------------------------------------
 
     public static string Name(string key) => Lookup("UI_STORY_" + key, key);
+
+    /// <summary>Whether the streamer has told a story to its end (the road west begins after the runestone).</summary>
+    public static bool IsDone(string key)
+    {
+        if (Latest?.Stories == null) return false;
+        foreach (var s in Latest.Stories) if (s.Key == key && s.State == Done) return true;
+        return false;
+    }
     public static string Npc(string key) => Lookup("UI_STORY_" + key + "_NPC", key);
     public static string Hook(string key) => Lookup("UI_STORY_" + key + "_HOOK", string.Empty);
     public static string Line(string key, int step) => Lookup("UI_STORY_" + key + "_" + (step + 1), string.Empty);

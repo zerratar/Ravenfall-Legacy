@@ -39,6 +39,7 @@ namespace Shinobytes.UI
             }
 
             if (Focus == null) content.Add(Text(Localization.UI_STORY_INTRO, "rf-squest__section"));
+            if (Focus == null && (RavebridgeManager.Unlocked || (RavebridgeManager.Instance && RavebridgeManager.Instance.Active))) content.Add(RavebridgeCard());
             var anyActive = log.Stories.Any(s => s.State == StoryLog.Active);
             foreach (var story in log.Stories)
             {
@@ -91,6 +92,12 @@ namespace Shinobytes.UI
                 default:
                     {
                         body.Add(Text(StoryLog.Hook(s.Key), "rf-squest-card__meta"));
+                        // the road west begins where the runestone's story ends
+                        if (s.Key == "roadwest" && !StoryLog.IsDone("runestone"))
+                        {
+                            body.Add(Text(Localization.UI_STORY_REQUIRES, "rf-squest-card__reward"));
+                            break;
+                        }
                         var begin = Button(Localization.UI_STORY_BEGIN, true, () => Run(game => StoryLog.BeginAsync(game, s.Key)));
                         begin.SetEnabled(!Busy && !anyActive);
                         if (anyActive) begin.tooltip = Localization.UI_STORY_ONE_AT_A_TIME;
@@ -175,8 +182,45 @@ namespace Shinobytes.UI
             {
                 case "busy": return Localization.UI_STORY_ONE_AT_A_TIME;
                 case "done": return Localization.UI_STORY_DONE;
+                case "requires": return Localization.UI_STORY_REQUIRES;
                 default: return Localization.UI_STREAM_QUEST_FAILED;
             }
+        }
+
+        /// <summary>The Ravebridge event (docs/ravebridge-design.md): open it, or how it goes and end it.</summary>
+        private VisualElement RavebridgeCard()
+        {
+            var rb = RavebridgeManager.Instance;
+            var card = new VisualElement();
+            card.AddToClassList("rf-squest-card");
+            card.AddToClassList("rf-story");
+            card.EnableInClassList("rf-squest-card--active", rb && rb.Active);
+            var body = new VisualElement();
+            body.AddToClassList("rf-squest-card__body");
+            body.Add(Text(Localization.UI_RAVEBRIDGE_TITLE, "rf-squest-card__title"));
+            var row = new VisualElement();
+            row.AddToClassList("rf-squest-chips");
+            if (rb && rb.Active)
+            {
+                body.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_CARD_OPEN, rb.PlayerCount), "rf-squest-card__meta"));
+                row.Add(Button(Localization.UI_RAVEBRIDGE_END, false, () => { rb.End(); redraw(); }));
+            }
+            else
+            {
+                body.Add(Text(Localization.UI_RAVEBRIDGE_START_HINT, "rf-squest-card__meta"));
+                var busy = rb && GameManager.Instance && GameManager.Instance.Events.IsActive;
+                var open = Button(Localization.UI_RAVEBRIDGE_START, true, () =>
+                {
+                    if (rb && rb.Begin(false) == RavebridgeManager.StartResult.Busy) showError(Localization.UI_RAVEBRIDGE_BUSY);
+                    redraw();
+                });
+                open.SetEnabled(rb && !busy);
+                if (busy) open.tooltip = Localization.UI_RAVEBRIDGE_BUSY;
+                row.Add(open);
+            }
+            body.Add(row);
+            card.Add(body);
+            return card;
         }
 
         // ---- Pieces ----------------------------------------------------------------------------------------

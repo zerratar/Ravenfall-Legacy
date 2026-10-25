@@ -9,6 +9,8 @@ public class PlayerJoinRaidEventHandler : GameEventHandler<PlayerId>
         if (!player)
             return;
 
+        if (player.InRavebridge) return;
+
         if (player.streamRaidHandler.InWar)
             return;
 

@@ -195,7 +195,7 @@ namespace Shinobytes.UI
                 switch (UnderMouse())
                 {
                     case Clicked.Board: storyPanel.Focus = null; Open(); break;
-                    case Clicked.Runestone: OpenStory("runestone"); break;
+                    case Clicked.Runestone: OpenStory(StoryLog.IsDone("runestone") ? "roadwest" : "runestone"); break;
                     case Clicked.Mangrove: OpenStory("bananas"); break;
                 }
             }

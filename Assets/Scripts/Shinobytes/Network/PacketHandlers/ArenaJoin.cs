@@ -44,6 +44,12 @@ public class ArenaJoin : ChatBotCommandHandler<Empty>
                 player.ferryHandler.BeginDisembark();
             }
 
+            if (player.InRavebridge)
+            {
+                client.SendReply(gm, Localization.MSG_RAVEBRIDGE_BLOCKED);
+                return;
+            }
+
             if (!Game.Arena.CanJoin(player, out var alreadyJoined, out var alreadyStarted)
                 || Game.Raid.Started
                 || Game.Dungeons.Active

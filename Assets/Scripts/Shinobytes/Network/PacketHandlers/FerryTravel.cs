@@ -101,6 +101,12 @@ public class FerryTravel : ChatBotCommandHandler<string>
             return;
         }
 
+        if (player.InRavebridge)
+        {
+            client.SendReply(gm, Localization.MSG_RAVEBRIDGE_BLOCKED);
+            return;
+        }
+
         if (player.streamRaidHandler.InWar)
         {
             if (!otherPlayer)

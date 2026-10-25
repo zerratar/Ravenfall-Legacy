@@ -173,6 +173,9 @@ public class GameManager : MonoBehaviour, IGameManager
     public DropEventManager DropEvent => dropEventManager;
     public GameCamera Camera => gameCamera;
     public GameEventManager Events => events;
+
+    /// <summary>The Ravebridge event island (docs/ravebridge-design.md).</summary>
+    public RavebridgeManager Ravebridge { get; private set; }
     public PlayerList PlayerList => playerList;
 
     /// <summary>Opens the game menu, as Esc does.</summary>
@@ -434,6 +437,8 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!craftingManager) craftingManager = GetComponent<CraftingManager>();
         if (!raidManager) raidManager = GetComponent<RaidManager>();
         if (!streamRaidManager) streamRaidManager = GetComponent<StreamRaidManager>();
+        Ravebridge = GetComponent<RavebridgeManager>();
+        if (!Ravebridge) Ravebridge = gameObject.AddComponent<RavebridgeManager>();
         if (!arenaController) arenaController = FindAnyObjectByType<ArenaController>();
 
         if (!ferryController) ferryController = FindAnyObjectByType<FerryController>();
@@ -499,6 +504,7 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<StreamerQuestEndedEventHandler>((GameEventType)53);
         RegisterGameEventHandler<VillageStoryProgressEventHandler>((GameEventType)54);
         RegisterGameEventHandler<VillageStoryCompletedEventHandler>((GameEventType)55);
+        RegisterGameEventHandler<RavebridgeForcedEventHandler>((GameEventType)56);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);
@@ -1573,6 +1579,11 @@ public class GameManager : MonoBehaviour, IGameManager
             if (player.raidHandler.InRaid)
             {
                 raidManager.Leave(player);
+            }
+
+            if (player.InRavebridge && Ravebridge)
+            {
+                Ravebridge.Forget(player);
             }
 
             if (player.ferryHandler.OnFerry)

@@ -155,6 +155,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     [NonSerialized] public bool IsModerator;
     [NonSerialized] public bool IsBroadcaster;
+
+    /// <summary>On the Ravebridge event island (RavebridgeManager): brought back where they came from when it ends.</summary>
+    [NonSerialized] public bool InRavebridge;
     [NonSerialized] public bool IsSubscriber;
     [NonSerialized] public bool IsVip;
 
@@ -792,6 +795,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return;
 
         if (streamRaidHandler.InWar) return;
+
+        // helping the streamer's character on Ravebridge (!ravebridge follow, heal) instead of the own task
+        if (InRavebridge && RavebridgeManager.Instance && RavebridgeManager.Instance.UpdateHelper(this)) return;
         if (ferryHandler.OnFerry || ferryHandler.Active) return;
 
         if (dungeonHandler.InDungeon)
@@ -2969,6 +2975,14 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             {
                 this.duelHandler.Interrupt();
                 this.SetPosition(this.Island.SpawnPosition);
+                return true;
+            }
+
+            if (InRavebridge && RavebridgeManager.Instance && RavebridgeManager.Instance.Island)
+            {
+                var ravebridge = RavebridgeManager.Instance.Island;
+                SetPosition(ravebridge.SpawnPosition);
+                Island = ravebridge;
                 return true;
             }
 
