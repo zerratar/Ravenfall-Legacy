@@ -386,6 +386,15 @@ public class RavenBotConnection : IDisposable
                 $"Nooo! Packet handler for {packetHandlerType.FullName} could not be instantiated. Plz fix!");
         }
 
+        // A chat command from Twitch reached the game, so the bot is in the streamer's channel. The central bot only
+        // says so (channel_state) when it joins while this game is connected, and keeps that per connection: a game
+        // connecting after the bot had joined showed "Not in your chat" with the bot answering in chat (October 2026).
+        if (packet?.Message?.Sender != null && game != null && game.RavenBotController != null
+            && string.Equals(packet.Message.Sender.Platform, "twitch", StringComparison.OrdinalIgnoreCase))
+        {
+            game.RavenBotController.HasJoinedChannel = true;
+        }
+
         // if this packet was from a ingame player, then set last activity to now
         try
         {
