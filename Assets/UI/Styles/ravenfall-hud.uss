@@ -2006,7 +2006,7 @@
 
 .rf-hero-orb {
     position: absolute;
-    bottom: 24px;
+    bottom: 56px;
     width: 132px;
     height: 132px;
     overflow: hidden;
@@ -2174,11 +2174,18 @@
 
 .rf-rb {
     position: absolute;
-    /* a share of the screen, as the HUD scales: below the event banners at any size */
-    top: 34%;
+    /* at the bottom, clear of the banners at the top and of the character the camera keeps in the middle; the panels
+       to pick who to play open upward from it */
+    bottom: 28px;
     left: 0;
     right: 0;
     align-items: center;
+    flex-direction: column-reverse;
+}
+
+/* in hero mode the skill bar has the bottom: above it */
+.rf-hero-mode .rf-rb {
+    bottom: 150px;
 }
 
 .rf-rb-bar {
@@ -2298,7 +2305,7 @@
     align-items: center;
     justify-content: center;
     max-width: 900px;
-    margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-2);
     padding-left: var(--rf-space-3);
     padding-right: var(--rf-space-3);
     padding-top: var(--rf-space-2);

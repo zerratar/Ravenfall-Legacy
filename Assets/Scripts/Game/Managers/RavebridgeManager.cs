@@ -139,10 +139,17 @@ public class RavebridgeManager : MonoBehaviour, IEvent
             // the chat line without the bot's routing tags (%[category:...]%%[tags:...]%)
             var readable = MessageUtilities.TryExtractTags(MessageUtilities.TryExtractCategory(line, out _), out _);
             banner.Show(Localization.UI_RAVEBRIDGE_TITLE, readable, Shinobytes.UI.NotificationScreenView.WithCommand(Localization.UI_RAVEBRIDGE_JOIN, "!ravebridge"));
+            StartCoroutine(HideLater(banner, 8f));
         }
 
         Changed?.Invoke();
         return StartResult.Started;
+    }
+
+    private static System.Collections.IEnumerator HideLater(Shinobytes.UI.NotificationScreenView banner, float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        if (banner) banner.Hide();
     }
 
     /// <summary>Everyone goes back where they came from.</summary>
