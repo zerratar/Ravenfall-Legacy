@@ -87,6 +87,8 @@ public class FerryController : MonoBehaviour
         if (PathIndex == 4) return "Atria";
         if (PathIndex == 5) return "Eldara";
         if (PathIndex == 6) return "Home";
+        if (PathIndex == PathSelector.ToMangrovePath) return "Mangrove";
+        if (PathIndex == PathSelector.FromMangrovePath) return "Home";
         return null;
     }
 

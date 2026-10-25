@@ -702,6 +702,7 @@ public static class Localization
     public static string MSG_APPEARANCE_INVALID = "Invalid appearance data";
     public static string MSG_TRAVEL_ALREADY_ON_ISLAND = "You cannot travel to the island you're already on.";
     public static string MSG_TRAVEL_NO_SUCH_ISLAND = "No islands named '{islandName}'. You may travel to: '{islandList}'";
+    public static string MSG_TRAVEL_MANGROVE_LOCKED = Meta("travel", "fail") + "The monkeys will not let anyone ashore on the mangrove island yet. The streamer's story Insufficient bananas opens it.";
     public static string MSG_TRAVEL_NO_SUCH_PLAYER = "No player named '{islandName}'.";
     public static string MSG_TRAVEL_WAR = "You cannot travel when participating in a war. Please wait for it to be over.";
     public static string MSG_TRAVEL_DUEL = "You cannot travel when duelling another player.";

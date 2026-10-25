@@ -296,8 +296,21 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
    village perk (+5% experience; the runestone's depends on the choice: Strength for combat, Craft for crafting,
    cooking, brewing and clan enchanting, Nature for gathering) and coins for the helpers. The first two stories: the
    sleeping runestone (Ironhill; its text and glow follow the story) and insufficient bananas (the mangrove island;
-   the sign turns to "sufficient bananas"). Still to come (5b): the mangrove island as a playable island that the
-   unlock opens (a new Island value, ferry, training spots, navmesh), then more stories, and hero mode steps.
+   the sign turns to "sufficient bananas"). Built 2026-10-25 (5b), decided with the user: the mangrove island is
+   playable where it is unlocked. Players walk the beaches and boardwalks and wade the shallow lagoon (an invisible
+   floor, knee deep, just above the world's "Sea Floor Not Walkable" volume, so the navmesh joins everything); the
+   ferry gets a stop there between Eldara and Home only in streams that unlocked it (PathSelector's extra paths);
+   it is open to every level, with the full island experience factor for everyone and +10% on top; pirates (weaker
+   copies of Away's) camp on the south beach. `Island.Mangrove = 8` on the server (the game's older
+   RavenNest.Models calls it `(Island)8`), level 1 requirements, and no gathering there where it is not unlocked.
+   The island has a navmesh of its own: a NavMeshSurface on its root bakes into the "Mangrove" area (3) and agents
+   on the island keep to that area (`NavMeshHelper.AreaMaskAt`, `IslandController.NavMeshArea`). The world's navmesh
+   could not be touched: a whole-world bake from today's scene breaks paths on other islands, and rebuilding it from
+   its own triangles broke about one short path in ten; it still has old scraps on the island, joined to nothing,
+   which the area mask keeps everyone off. Built by `tools/mangrove/mangrove-island.cs` (rerun to rebuild) and
+   `tools/mangrove/navmesh-bake.cs` (or the surface's Bake button); navmesh assets and the area name in
+   ProjectSettings are not in git, so they live where they were made.
+   Next: more stories, and hero mode steps.
 6. **Ravebridge.** Finishing the island (buildings, NPCs, monsters), its chain and event, rebirth.
 7. **Hero mode**, with its own design doc first.
 

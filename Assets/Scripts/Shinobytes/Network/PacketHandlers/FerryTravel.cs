@@ -79,6 +79,12 @@ public class FerryTravel : ChatBotCommandHandler<string>
         if (!island || !island.Sailable)
         {
             island = Game.Islands.Find(islandName);
+            if (!island && System.Array.Exists(Game.Islands.All, x => x.Locked && x.Identifier.StartsWith(islandName, System.StringComparison.OrdinalIgnoreCase)))
+            {
+                // the monkeys do not let anyone ashore yet
+                client.SendReply(gm, Localization.MSG_TRAVEL_MANGROVE_LOCKED);
+                return;
+            }
             if (!island || !island.Sailable)
             {
                 client.SendReply(gm, Localization.MSG_TRAVEL_NO_SUCH_ISLAND, islandName, string.Join(", ", Game.Islands.All.Where(x => x.Sailable).Select(x => x.Identifier)));

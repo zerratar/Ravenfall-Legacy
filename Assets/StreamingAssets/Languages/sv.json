@@ -638,6 +638,7 @@
     "MSG_TRAVEL_DUEL": "Du kan inte resa medan du duellerar mot en annan spelare.",
     "MSG_TRAVEL_DUNGEON": "Du kan inte resa medan du är i grottan.",
     "MSG_TRAVEL_NO_SUCH_ISLAND": "Det finns ingen ö som heter '{islandName}'. Du kan resa till: '{islandList}'",
+    "MSG_TRAVEL_MANGROVE_LOCKED": "Aporna släpper inte i land någon på mangroveön än. Streamerns historia Otillräckligt med bananer öppnar den.",
     "MSG_TRAVEL_NO_SUCH_PLAYER": "Det finns ingen spelare som heter '{islandName}'.",
     "MSG_TRAVEL_WAR": "Du kan inte resa medan du är med i ett krig. Vänta tills det är över.",
     "MSG_UNEQUIPPED": "Du har tagit av dig {itemName}.",

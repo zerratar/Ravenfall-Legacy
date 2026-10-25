@@ -113,8 +113,10 @@ public class IslandManager : MonoBehaviour
 
         for (var i = 0; i < All.Length; i++)
         {
+            // a locked island is not there to go to, nor to be put back on (a player saved on the mangrove island,
+            // joining a stream that has not unlocked it, starts on the main island)
             if (All[i].Identifier.StartsWith(islandName, StringComparison.OrdinalIgnoreCase))
-                return All[i];
+                return All[i].Locked ? null : All[i];
         }
 
         return null;

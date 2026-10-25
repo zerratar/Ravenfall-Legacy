@@ -247,7 +247,7 @@ public class DungeonHandler
             var ocean = UnityEngine.Object.FindAnyObjectByType<Ocean>();
             var dry = !ocean || ground.y > ocean.transform.position.y + 0.3f;
             var path = new UnityEngine.AI.NavMeshPath();
-            var joined = UnityEngine.AI.NavMesh.CalculatePath(ground, island.SpawnPosition, UnityEngine.AI.NavMesh.AllAreas, path)
+            var joined = UnityEngine.AI.NavMesh.CalculatePath(ground, island.SpawnPosition, NavMeshHelper.AreaMaskAt(ground), path)
                 && path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete;
             if (dry && joined) return ground;
         }

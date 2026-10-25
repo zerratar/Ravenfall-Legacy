@@ -640,6 +640,7 @@
     "MSG_TRAVEL_DUEL": "You cannot travel when duelling another player.",
     "MSG_TRAVEL_DUNGEON": "You cannot travel when in the dungeon.",
     "MSG_TRAVEL_NO_SUCH_ISLAND": "No islands named '{islandName}'. You may travel to: '{islandList}'",
+    "MSG_TRAVEL_MANGROVE_LOCKED": "The monkeys will not let anyone ashore on the mangrove island yet. The streamer's story Insufficient bananas opens it.",
     "MSG_TRAVEL_NO_SUCH_PLAYER": "No player named '{islandName}'.",
     "MSG_TRAVEL_WAR": "You cannot travel when participating in a war. Please wait for it to be over.",
     "MSG_UNEQUIPPED": "You have unequipped {itemName}.",

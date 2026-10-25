@@ -212,6 +212,7 @@ public class PlayerMovementController : MonoBehaviour
 
     public void Unlock()
     {
+        NavMeshHelper.UseAreasAt(navMeshAgent, transform.position);
         if (!navMeshAgent.isOnNavMesh)
         {
             AdjustPlayerPositionToNavmesh(0.5f);
@@ -238,6 +239,7 @@ public class PlayerMovementController : MonoBehaviour
     {
         var success = true;
         var agent = navMeshAgent;
+        agent.areaMask = NavMeshHelper.AreaMaskAt(position);
         if (agent.enabled)
         {
             success = agent.Warp(position);

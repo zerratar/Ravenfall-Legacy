@@ -54,6 +54,7 @@ public class EnemyMovementController : MonoBehaviour
     private void Start()
     {
         // by Start every OnEnable has run, the NavMeshSurface's included
+        if (navMeshAgent) navMeshAgent.areaMask = NavMeshHelper.AreaMaskAt(transform.position);
         if (EnableAgentOnStart && navMeshAgent) navMeshAgent.enabled = true;
         EnableAgentOnStart = false;
     }
@@ -186,6 +187,7 @@ public class EnemyMovementController : MonoBehaviour
         var agent = navMeshAgent;
         if (agent)
         {
+            NavMeshHelper.UseAreasAt(agent, transform.position);
             if (adjustToNavMesh && !agent.isOnNavMesh)
             {
                 AdjustPlayerPositionToNavmesh();
@@ -200,7 +202,7 @@ public class EnemyMovementController : MonoBehaviour
     {
         if (navMeshAgent.isOnNavMesh) return;
         NavMeshHit closestHit;
-        if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMeshHelper.AreaMaskAt(gameObject.transform.position)))
         {
             var pos = closestHit.position;
 
@@ -217,6 +219,7 @@ public class EnemyMovementController : MonoBehaviour
     {
         if (!navMeshAgent) navMeshAgent = GetComponent<NavMeshAgent>();
         var agent = navMeshAgent;
+        if (agent) agent.areaMask = NavMeshHelper.AreaMaskAt(position);
         if (agent && agent.enabled)
         {
             agent.Warp(position);

@@ -7,6 +7,41 @@ public class NavMeshHelper
 {
     private static readonly Dictionary<string, Vector3> samplePositions = new Dictionary<string, Vector3>();
 
+    // islands with a navmesh of their own (the mangrove island): its own area, which agents there keep to and every
+    // other agent stays off. The world's navmesh still has old scraps on such an island, walkable but joined to
+    // nothing; an agent placed on one would be stuck.
+    private static readonly List<(Vector2 centre, float radius, int area)> ownAreas = new List<(Vector2, float, int)>();
+    private static int ownAreasMask;
+
+    public static void AddOwnArea(Vector3 centre, float radius, int area)
+    {
+        ownAreas.RemoveAll(x => x.area == area); // statics outlive play sessions without a domain reload
+        ownAreas.Add((new Vector2(centre.x, centre.z), radius, area));
+        ownAreasMask |= 1 << area;
+        samplePositions.Clear();
+    }
+
+    /// <summary>The navmesh areas an agent at a position walks on.</summary>
+    public static int AreaMaskAt(Vector3 position)
+    {
+        for (var i = 0; i < ownAreas.Count; i++)
+        {
+            var a = ownAreas[i];
+            if ((new Vector2(position.x, position.z) - a.centre).sqrMagnitude <= a.radius * a.radius)
+                return 1 << a.area;
+        }
+        return NavMesh.AllAreas & ~ownAreasMask;
+    }
+
+    /// <summary>Gives an agent the areas of where it is, placing it again when they change.</summary>
+    public static void UseAreasAt(NavMeshAgent agent, Vector3 position)
+    {
+        var mask = AreaMaskAt(position);
+        if (agent.areaMask == mask) return;
+        agent.areaMask = mask;
+        if (agent.enabled && agent.isOnNavMesh) agent.Warp(position);
+    }
+
     public static bool SamplePosition(Vector3 position, float maxDistance, out Vector3 sample)
     {
         var x = Math.Round(position.x, 4);
@@ -18,7 +53,7 @@ public class NavMeshHelper
             return true;
         }
 
-        if (NavMesh.SamplePosition(position, out var hit, maxDistance, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(position, out var hit, maxDistance, AreaMaskAt(position)))
         {
             sample = hit.position;
 
@@ -38,7 +73,8 @@ public class NavMeshHelper
     /// </summary>
     public static bool SampleNearHeight(Vector3 position, float maxDistance, float maxHeightDifference, out Vector3 sample)
     {
-        if (NavMesh.SamplePosition(position, out var hit, maxDistance, NavMesh.AllAreas)
+        var areas = AreaMaskAt(position);
+        if (NavMesh.SamplePosition(position, out var hit, maxDistance, areas)
             && Mathf.Abs(hit.position.y - position.y) <= maxHeightDifference)
         {
             sample = hit.position;
@@ -54,7 +90,7 @@ public class NavMeshHelper
             {
                 var angle = i * Mathf.PI / 4f;
                 var probe = position + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                if (!NavMesh.SamplePosition(probe, out hit, 1f, NavMesh.AllAreas)) continue;
+                if (!NavMesh.SamplePosition(probe, out hit, 1f, areas)) continue;
                 if (Mathf.Abs(hit.position.y - position.y) > maxHeightDifference) continue;
                 var distance = (hit.position - position).sqrMagnitude;
                 if (distance < bestDistance)

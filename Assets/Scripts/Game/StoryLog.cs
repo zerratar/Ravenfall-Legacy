@@ -19,6 +19,7 @@ public static class StoryLog
     public const int NotBegun = 0, Active = 1, Done = 2, GivenUp = 4;
     public const float VoteSeconds = 60f;
     private const float PerkBonus = 0.05f;
+    private const float MangroveBonus = 0.10f;
 
     private const float ActiveRefreshSeconds = 10f;
     private const float IdleRefreshSeconds = 60f;
@@ -193,11 +194,14 @@ public static class StoryLog
 
     // ---- Perks ---------------------------------------------------------------------------------------
 
-    /// <summary>The village perks' share of experience in a skill: 1, or a little more.</summary>
-    public static float ExpFactor(Skill skill)
+    /// <summary>
+    /// The village perks' share of experience in a skill: 1, or a little more; and on the mangrove island, open to
+    /// every level, its own bonus (decided 2026-10-25).
+    /// </summary>
+    public static float ExpFactor(Skill skill, IslandController island = null)
     {
-        if (Latest?.Unlocks == null || Latest.Unlocks.Length == 0) return 1f;
-        var factor = 1f;
+        var factor = island && island.Island == IslandController.MangroveIsland ? 1f + MangroveBonus : 1f;
+        if (Latest?.Unlocks == null || Latest.Unlocks.Length == 0) return factor;
         if (HasUnlock("perk_runestone_1") && IsCombat(skill)) factor += PerkBonus;
         if (HasUnlock("perk_runestone_2") && (skill == Skill.Crafting || skill == Skill.Cooking || skill == Skill.Alchemy)) factor += PerkBonus;
         if (HasUnlock("perk_runestone_3") && IsGathering(skill)) factor += PerkBonus;

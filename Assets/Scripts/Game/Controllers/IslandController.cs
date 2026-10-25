@@ -31,14 +31,30 @@ public class IslandController : MonoBehaviour
     private PlayerManager playerManager;
     private Transform _transform;
 
-    public bool Sailable => this.DockingArea != null;
+    public bool Sailable => this.DockingArea != null && !Locked;
+
+    /// <summary>
+    /// The mangrove island ((Island)8, which the game's older RavenNest.Models has no name for) opens per stream with
+    /// the streamer's story "Insufficient bananas" (StoryLog, island_mangrove). Until the log is loaded it counts as
+    /// open: the server refuses gathering there anyway where it is not unlocked.
+    /// </summary>
+    public bool Locked => Island == MangroveIsland && StoryLog.Latest != null && !StoryLog.HasUnlock("island_mangrove");
+
+    public const RavenNest.Models.Island MangroveIsland = (RavenNest.Models.Island)8;
 
     public IslandStatistics Statistics = new IslandStatistics();
+
+    /// <summary>
+    /// The navmesh area of an island with a navmesh of its own (the mangrove island's "Mangrove"), or 0 for the world's.
+    /// </summary>
+    public int NavMeshArea;
 
     public bool InsideIsland(Vector3 position)
     {
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
-        var pos = sphereCollider.center + _transform.position;
+        if (!_transform) _transform = transform;
+        // the sphere's centre turns with the island (the mangrove island's root is turned)
+        var pos = _transform.TransformPoint(sphereCollider.center);
         return Vector3.Distance(position, pos) <= radius;
     }
 
@@ -48,6 +64,7 @@ public class IslandController : MonoBehaviour
         if (!sphereCollider) sphereCollider = GetComponent<SphereCollider>();
         radius = sphereCollider.radius;
         this.chunks = GetComponentsInChildren<Chunk>();
+        if (NavMeshArea != 0) NavMeshHelper.AddOwnArea(_transform.TransformPoint(sphereCollider.center), radius, NavMeshArea);
     }
 
     public IReadOnlyList<Chunk> TrainingAreas => chunks;

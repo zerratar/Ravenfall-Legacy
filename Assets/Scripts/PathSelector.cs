@@ -8,6 +8,12 @@ public class PathSelector : MonoBehaviour
 {
     [SerializeField] private FerryController ferryController;
     [SerializeField] private SplineContainer[] splines;
+
+    // the mangrove island's stop, between Eldara and Home, made only where the island is unlocked (StoryLog);
+    // the paths are numbered after the loop's: 7 there, 8 back home
+    [SerializeField] private SplineContainer toMangrove;
+    [SerializeField] private SplineContainer fromMangrove;
+    public const int EldaraPath = 5, HomePath = 6, ToMangrovePath = 7, FromMangrovePath = 8;
     [SerializeField] private float stopBetweenPaths = 8f;
     [SerializeField] private float movementSpeed = 9f;
     private int pathIndex = 0;
@@ -41,6 +47,8 @@ public class PathSelector : MonoBehaviour
             var container = splines[i];
             container.Spline.Warmup();
         }
+        if (toMangrove) toMangrove.Spline.Warmup();
+        if (fromMangrove) fromMangrove.Spline.Warmup();
         StartNewPath();
     }
 
@@ -123,14 +131,30 @@ public class PathSelector : MonoBehaviour
 
     private void StartNewPath()
     {
-        pathIndex = (pathIndex + 1) % splines.Length;
-        currentSpline = splines[pathIndex].Spline;
+        pathIndex = NextPath(pathIndex);
+        currentSpline = pathIndex == ToMangrovePath ? toMangrove.Spline : pathIndex == FromMangrovePath ? fromMangrove.Spline : splines[pathIndex].Spline;
         pathLength = currentSpline.GetLength();
         UpdateFerrySpeed();
         elapsed = 0f;
         isMoving = true;
         ferryController.SetState(FerryState.Moving);
     }
+    /// <summary>The loop, with the detour to the mangrove island after Eldara where it is open.</summary>
+    private int NextPath(int current)
+    {
+        if (current == EldaraPath && toMangrove && fromMangrove && MangroveOpen()) return ToMangrovePath;
+        if (current == ToMangrovePath) return FromMangrovePath;
+        if (current == FromMangrovePath) return 0;
+        return (current + 1) % splines.Length;
+    }
+
+    private static bool MangroveOpen()
+    {
+        var game = GameManager.Instance;
+        var island = game && game.Islands != null ? game.Islands.Get(IslandController.MangroveIsland) : null;
+        return island && !island.Locked;
+    }
+
     private float EaseInOut(float t)
     {
         return Mathf.Clamp01(t < 0.5f ? 2 * t * t : 1 - Mathf.Pow(-2 * t + 2, 2) / 2);
