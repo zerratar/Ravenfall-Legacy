@@ -22,7 +22,7 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<QuestListData>(ApiRequestTarget.Quests, ApiRequestType.Get);
         }
 
-        /// <summary>Takes one of today's offers (slot 0 to 2), or this week's quest (slot -1).</summary>
+        /// <summary>Takes one of today's offers (slot 0 to 2), this week's quest (slot -1) or today's seasonal quest (-2).</summary>
         public Task<QuestActionData> AcceptAsync(Guid characterId, int slot)
         {
             return request.Create().Identifier(characterId.ToString()).Method("accept").AddParameter(slot.ToString()).Build()
@@ -33,6 +33,48 @@ namespace RavenNest.SDK.Endpoints
         {
             return request.Create().Identifier(characterId.ToString()).Method("abandon").AddParameter(questId).Build()
                 .SendAsync<QuestActionData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>Begins a quest chain ("cat", "fish", "founder", "shipwright", "pumpkin").</summary>
+        public Task<QuestActionData> BeginChainAsync(Guid characterId, string key)
+        {
+            return request.Create().Identifier(characterId.ToString()).Method("chain").AddParameter(key).Build()
+                .SendAsync<QuestActionData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>Hands in what the chain's delivery step asks for, from the character's inventory.</summary>
+        public Task<QuestActionData> DeliverAsync(Guid characterId)
+        {
+            return request.Create().Identifier(characterId.ToString()).Method("deliver").Build()
+                .SendAsync<QuestActionData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>Answers the chain's riddle or choice (from 1).</summary>
+        public Task<QuestActionData> AnswerAsync(Guid characterId, int answer)
+        {
+            return request.Create().Identifier(characterId.ToString()).Method("answer").AddParameter(answer.ToString()).Build()
+                .SendAsync<QuestActionData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>The character's achievements, the titles earned and the one worn.</summary>
+        public Task<AchievementListData> GetAchievementsAsync(Guid characterId)
+        {
+            return request.Create().Identifier(characterId.ToString()).Method("achievements").Build()
+                .SendAsync<AchievementListData>(ApiRequestTarget.Quests, ApiRequestType.Get);
+        }
+
+        /// <summary>Wears an earned title, or none with "none".</summary>
+        public Task<TitleResultData> SetTitleAsync(Guid characterId, string title)
+        {
+            return request.Create().Identifier(characterId.ToString()).Method("title").AddParameter(title).Build()
+                .SendAsync<TitleResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>The titles worn by the characters in this stream, for the name tags.</summary>
+        public Task<SessionTitlesData> GetTitlesAsync()
+        {
+            return request.Create().Identifier("titles").Build()
+                .SendAsync<SessionTitlesData>(ApiRequestTarget.Quests, ApiRequestType.Get);
         }
 
         /// <summary>The stream's quest: the running one and today's three offers (api/quests/stream).</summary>
@@ -61,10 +103,10 @@ namespace RavenNest.SDK.Endpoints
     {
         public Guid Id { get; set; }
         public string Key { get; set; }
-        /// <summary>0 daily, 1 weekly.</summary>
+        /// <summary>0 daily, 1 weekly, 2 seasonal daily, 3 chain.</summary>
         public int Kind { get; set; }
         public int Slot { get; set; }
-        /// <summary>gather, exp, craft, cook, brew, kill, raid or dungeon.</summary>
+        /// <summary>gather, exp, craft, cook, brew, kill, raid, dungeon, or for chain steps deliver, visit or answer.</summary>
         public string Objective { get; set; }
         /// <summary>The skill's index, or -1.</summary>
         public int Skill { get; set; }
@@ -76,6 +118,28 @@ namespace RavenNest.SDK.Endpoints
         public double RewardExp { get; set; }
         public int RewardSkill { get; set; }
         public DateTime Expires { get; set; }
+        /// <summary>A chain's current step (from 0) and how many it has.</summary>
+        public int Step { get; set; }
+        public int Steps { get; set; }
+        /// <summary>A chain step's item to deliver ("Raw Sprat") or island to visit ("Kyo").</summary>
+        public string Target { get; set; }
+        /// <summary>An answer step's number of choices.</summary>
+        public int Options { get; set; }
+        public string RewardTitle { get; set; }
+        public string RewardDecor { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.QuestChainInfo.</summary>
+    public class QuestChainData
+    {
+        public string Key { get; set; }
+        /// <summary>0 can be begun, 1 under way, 2 finished, 5 not now (a seasonal chain outside its event).</summary>
+        public int State { get; set; }
+        public int Step { get; set; }
+        public int Steps { get; set; }
+        public string Event { get; set; }
+        public string RewardTitle { get; set; }
+        public string RewardDecor { get; set; }
     }
 
     /// <summary>Mirrors RavenNest.Models.QuestList.</summary>
@@ -86,23 +150,73 @@ namespace RavenNest.SDK.Endpoints
         public QuestData Weekly { get; set; }
         public int Streak { get; set; }
         public long DailiesCompleted { get; set; }
+        public QuestData Seasonal { get; set; }
+        public QuestData Chain { get; set; }
+        public QuestChainData[] Chains { get; set; }
     }
 
     /// <summary>Mirrors RavenNest.Models.QuestActionResult.</summary>
     public class QuestActionData
     {
         public bool Ok { get; set; }
-        /// <summary>unknown, full, taken, done, expired or notinsession.</summary>
+        /// <summary>unknown, full, taken, done, expired, notinsession, busy, notnow, nothing, wrong or notstep.</summary>
         public string Error { get; set; }
         public QuestData Quest { get; set; }
+        public long Delivered { get; set; }
     }
 
     /// <summary>Mirrors RavenNest.Models.QuestCompleted, the QuestCompleted event's data.</summary>
     public class QuestCompletedData
     {
         public Guid CharacterId { get; set; }
+        /// <summary>The quest; for a chain step that was not the last, the chain at its next step (State 1).</summary>
         public QuestData Quest { get; set; }
         public int Streak { get; set; }
+        public int StepDone { get; set; }
+        public string DecorUnlocked { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.AchievementInfo.</summary>
+    public class AchievementData
+    {
+        public string Key { get; set; }
+        public long Progress { get; set; }
+        /// <summary>0 none, 1 bronze, 2 silver, 3 gold.</summary>
+        public int Tier { get; set; }
+        public long[] Targets { get; set; }
+        public bool Hidden { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.AchievementList.</summary>
+    public class AchievementListData
+    {
+        public AchievementData[] Achievements { get; set; }
+        public string[] Titles { get; set; }
+        public string Title { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.TitleResult.</summary>
+    public class TitleResultData
+    {
+        public bool Ok { get; set; }
+        public string Error { get; set; }
+        public string Title { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.SessionTitles.</summary>
+    public class SessionTitlesData
+    {
+        public Guid[] CharacterIds { get; set; }
+        public string[] Titles { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.AchievementReached, the AchievementReached event's data.</summary>
+    public class AchievementReachedData
+    {
+        public Guid CharacterId { get; set; }
+        public string Key { get; set; }
+        public int Tier { get; set; }
+        public string Title { get; set; }
     }
 
     /// <summary>Mirrors RavenNest.Models.StreamQuestInfo: a goal the whole stream works on together.</summary>

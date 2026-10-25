@@ -143,6 +143,7 @@ namespace Shinobytes.UI
 
             var game = GameManager.Instance;
             StreamQuests.Tick(game, Time.unscaledTime);
+            QuestTitles.Tick(game, Time.unscaledTime);
 
             // the clock and the bar's numbers once a second
             if (Time.unscaledTime >= nextSecond)

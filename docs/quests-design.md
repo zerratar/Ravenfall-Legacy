@@ -253,9 +253,23 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
    helpers by share (at least 100 each) with 10 loyalty points each with the streamer. In the game: the HUD bar at
    the top center (a pill when none runs), the quest window (offers with Start, the running quest with top helpers
    and Stop), quest boards open it, `!quest stream`, chat announcements on start and end.
-3. **Chains, seasons and achievements.** The step system, deliver, visit and answer steps, quest items, seasonal
-   quests, the first chains with quest-only rewards (titles, decor unlocks, the shipwright chain toward own boats),
-   and achievements on the same tracker, with titles and badges.
+3. **Chains, seasons and achievements.** Built 2026-10-25, decided with the user: titles on a line of their own
+   above the name tag, all four chains, Halloween quests at once. On the server: `QuestChains` (the chains as data:
+   steps of the normal objectives plus deliver, visit and answer), `QuestManager` with seasonal dailies (one a day
+   while Halloween or Christmas runs, outside the three slots, `!quest accept seasonal`) and chains (one under way at
+   a time; `CharacterQuest` gained `step` and `target`; finished chains never expire), `AchievementManager` (18
+   achievements in code, `CharacterAchievement` reshaped to key, progress and tier, three tiers each with a title,
+   two hidden ones), the chosen title in `CharacterQuestStats.title`, endpoints for chains, deliver, answer,
+   achievements, title and the session's titles, the AchievementReached event (51), and quest decor pieces
+   (`VillageDecorPiece.Quest`) unlocked for the village where the chain is finished. The chains: the barkeep's lost
+   cat (Sir Whiskers, an orange cat), the one that got away (a giant fish on a plinth), the village founder (the
+   founder's statue), the shipwright (a boat in the making; the finished chain is the first boat piece for own
+   boats) and the Pumpkin King (Halloween only, a jack-o'-lantern). In the game: `!quest chains`, `!quest begin`,
+   `!quest deliver`, `!quest answer`, `!quest abandon chain`, `!title` and `!achievements` (both bots send them as
+   `quest_command`), the story lines, endings and riddles in EN and SV (the Swedish riddles are other riddles with
+   the same answer number), the quest giver telling the story in the tavern, and the title on the name tag.
+   Quest items (items only quests give) and badges as pictures are left for later; deliveries ask for items
+   gathering drops.
 4. **Streamer quests.** Posting a quest with its reward set aside, from the game and later the website; loyalty point
    rewards from the streamer's budget.
 5. **Places and islands.** The runestone chain, the banana island chain and its island unlock, island unlocks per

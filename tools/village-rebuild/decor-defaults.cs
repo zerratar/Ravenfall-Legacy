@@ -101,6 +101,13 @@ var props = new (string key, string path, string[] extra, float[] fires, float f
     ("obelisk_01", "Assets/PolygonDungeonRealms/Prefabs/Environments/SM_Env_Dwarf_Obelisk_01.prefab", null, null, 0, false),
     ("obelisk_02", "Assets/PolygonDungeonRealms/Prefabs/Environments/SM_Env_Obelisk_01.prefab", null, null, 0, false),
     ("pillar_monument_01", "Assets/PolygonAncientEmpire/Prefabs/Buildings/SM_Bld_Pillar_Monument_01.prefab", null, null, 0, false),
+
+    // quests, phase 3: the chains' pieces (the cat is the animal pack's, which has its own material below)
+    ("cat_01", "Assets/Low Poly Animated Animals/- Prefabs/Animals/Cat.prefab", new[] { "Assets/Low Poly Animated Animals/- Prefabs/Nature/cat-ball.prefab@0.12,0,0.2,1" }, null, 0, false),
+    ("fish_trophy_01", kingdom + "SM_Prop_Statue_Plinth_01.prefab", new[] { "Assets/PolygonVikings/Prefabs/Props/SM_Prop_Fish_01.prefab@0,1.9,0,3" }, null, 0, false),
+    ("statue_founder_01", kingdom + "SM_Prop_Statue_Plinth_01.prefab", new[] { "Assets/PolygonFantasyKingdom/Prefabs/Bonus/SM_Prop_Statue_King_01.prefab@0.1,1.69,-0.2,1.2" }, null, 0, false),
+    ("boat_build_01", "Assets/PolygonVikings/Prefabs/Props/SM_Prop_Boat_Build_01.prefab", new[] { "Assets/PolygonPirates/Prefabs/Props/SM_Prop_Anchor_01.prefab@2.6,0,1.5,1" }, null, 0, false),
+    ("jack_o_lantern_01", "Assets/PolygonAdventure/Prefabs/Props/SM_Prop_Pumpkin_01.prefab", null, new[] { 0f, 0.72f, 0f }, 0.12f, false),
 };
 // models bigger or smaller than their pack made them: the Christmas pack's are table sized, the pillar is 12 m
 var scales = new System.Collections.Generic.Dictionary<string, float>
@@ -108,6 +115,12 @@ var scales = new System.Collections.Generic.Dictionary<string, float>
     ["xmas_tree_01"] = 1.6f, ["snowman_01"] = 1.3f, ["snowman_02"] = 1.3f, ["gift_pile_01"] = 1.6f, ["nutcracker_01"] = 3.2f,
     ["candy_cane_01"] = 8f, ["gingerbread_hut_01"] = 6f, ["snow_globe_01"] = 6f, ["pillar_monument_01"] = 0.6f,
     ["pumpkin_01"] = 2f, ["pumpkin_02"] = 1.6f,
+    ["cat_01"] = 2.5f, ["jack_o_lantern_01"] = 2.2f,
+};
+// a material in place of the model's own (the animal pack's are built-in pipeline ones, pink under URP)
+var materials = new System.Collections.Generic.Dictionary<string, string>
+{
+    ["cat_01"] = "Assets/Village/Decor/Materials/Decor_Cat.mat",
 };
 var decorFolder = "Assets/Village/Decor";
 if (!UnityEditor.AssetDatabase.IsValidFolder(decorFolder)) UnityEditor.AssetDatabase.CreateFolder("Assets/Village", "Decor");
@@ -137,6 +150,12 @@ foreach (var prop in props)
                 }
             }
 
+        // after the extras, so they match (the cat's ball)
+        if (materials.TryGetValue(prop.key, out var materialPath))
+        {
+            var material = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(materialPath);
+            if (material) foreach (var r in model.GetComponentsInChildren<UnityEngine.Renderer>(true)) r.sharedMaterial = material;
+        }
         // the foot's middle at the root
         var bounds = new UnityEngine.Bounds(); var first = true;
         foreach (var r in model.GetComponentsInChildren<UnityEngine.Renderer>())
@@ -146,7 +165,8 @@ foreach (var prop in props)
         var shift = new UnityEngine.Vector3(-bounds.center.x, prop.lift ? -bounds.min.y : 0f, -bounds.center.z);
         if (UnityEngine.Mathf.Abs(shift.x) < 0.25f) shift.x = 0f;
         if (UnityEngine.Mathf.Abs(shift.z) < 0.25f) shift.z = 0f;
-        model.transform.localPosition = shift;
+        // added to where the model already sits: the animal pack's cat has its root at (10, 0, 2)
+        model.transform.localPosition += shift;
 
         UnityEngine.ParticleSystem firstFire = null;
         if (lit)

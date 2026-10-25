@@ -9,6 +9,12 @@ public class NameTag : MonoBehaviour
     [SerializeField] private TextMeshProUGUI clanName;
     [SerializeField] private Image logo;
 
+    // the title the player wears (!title), on a line of its own above the name, made from the clan line
+    private TextMeshProUGUI titleLabel;
+    private int titleVersion = -1;
+    private PlayerController titleOwner;
+    private static readonly Color TitleColor = new Color(1f, 0.78f, 0.36f);
+
     private bool hasInitialized;
     private bool nameTagSet;
     private GameManager gameManager;
@@ -89,6 +95,36 @@ public class NameTag : MonoBehaviour
         //this.transform.rotation = GameCamera.Rotation;
         _transform.SetPositionAndRotation(TargetPlayer.Position + this.offset, GameCamera.Rotation); //targetCamera.rotation);
         oldCensor = gameManager.LogoCensor;
+        if (titleVersion != QuestTitles.Version || titleOwner != TargetPlayer) UpdateTitle();
+    }
+
+    /// <summary>Shows or hides the worn title. The line is a copy of the clan line, as far above the name as that is below it.</summary>
+    private void UpdateTitle()
+    {
+        titleVersion = QuestTitles.Version;
+        titleOwner = TargetPlayer;
+        if (!TargetPlayer || !clanName || !label) return;
+        var text = QuestTitles.TextFor(TargetPlayer.Id);
+        if (string.IsNullOrEmpty(text))
+        {
+            if (titleLabel) titleLabel.gameObject.SetActive(false);
+            return;
+        }
+
+        if (!titleLabel)
+        {
+            var go = Instantiate(clanName.gameObject, clanName.transform.parent);
+            go.name = "Title";
+            titleLabel = go.GetComponent<TextMeshProUGUI>();
+            var nameRect = label.rectTransform;
+            var clanRect = clanName.rectTransform;
+            titleLabel.rectTransform.anchoredPosition = nameRect.anchoredPosition + (nameRect.anchoredPosition - clanRect.anchoredPosition);
+            titleLabel.color = TitleColor;
+            titleLabel.fontStyle = FontStyles.Italic;
+        }
+
+        titleLabel.text = text;
+        titleLabel.gameObject.SetActive(true);
     }
 
     private bool Init()

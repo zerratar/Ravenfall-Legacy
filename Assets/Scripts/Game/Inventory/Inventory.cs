@@ -1467,7 +1467,8 @@ public class Inventory : MonoBehaviour
         for (var i = 0; i < s; ++i)
         {
             var tmp = backpack[i];
-            if (tmp.Enchantments?.Count == 0 && tmp.ItemId == itemId)
+            // no enchantments is a null list as often as an empty one (an item whose enchantment string is null)
+            if ((tmp.Enchantments == null || tmp.Enchantments.Count == 0) && tmp.ItemId == itemId)
             {
                 return tmp;
             }
@@ -1482,7 +1483,8 @@ public class Inventory : MonoBehaviour
         for (var i = 0; i < s; ++i)
         {
             var tmp = equipped[i];
-            if (tmp.Enchantments?.Count == 0 && tmp.ItemId == itemId)
+            // no enchantments is a null list as often as an empty one (an item whose enchantment string is null)
+            if ((tmp.Enchantments == null || tmp.Enchantments.Count == 0) && tmp.ItemId == itemId)
             {
                 return tmp;
             }
