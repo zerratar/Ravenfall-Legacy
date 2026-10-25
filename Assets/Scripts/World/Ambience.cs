@@ -299,7 +299,9 @@ public sealed class Ambience : MonoBehaviour
         if (HasFocus)
         {
             // on the ground, wherever the focus is (the camera's aim falls on the sea's plane, under a hilltop)
-            var terrain = Terrain.activeTerrain;
+            // the terrain under the focus: the world's own clamps a point past its edge to the edge's mountains, which
+            // put Ravebridge's fireflies (on terrains of its own) up in the camera's face
+            var terrain = TerrainUnder(focus);
             if (terrain) focus.y = Mathf.Max(focus.y, terrain.SampleHeight(focus) + terrain.transform.position.y);
             FocusPoint = focus;
             if (Time.unscaledTime >= nextIslandCheck)
@@ -347,6 +349,18 @@ public sealed class Ambience : MonoBehaviour
         var day = 1f - night;
         Emit(butterflies, island != null && !snowy ? 3.5f * day * dry * dry : 0f);
         Emit(gulls, island != null ? 0.35f * day * dry : 0f);
+    }
+
+    private static Terrain TerrainUnder(Vector3 point)
+    {
+        foreach (var t in Terrain.activeTerrains)
+        {
+            if (!t || !t.terrainData) continue;
+            var origin = t.transform.position;
+            var size = t.terrainData.size;
+            if (point.x >= origin.x && point.x <= origin.x + size.x && point.z >= origin.z && point.z <= origin.z + size.z) return t;
+        }
+        return null;
     }
 
     /// <summary>How much it is night, 0 by day to 1 in the dark, from the cycle's light.</summary>

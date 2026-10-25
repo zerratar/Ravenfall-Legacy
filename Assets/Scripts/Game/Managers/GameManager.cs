@@ -2276,6 +2276,19 @@ public class GameManager : MonoBehaviour, IGameManager
             dungeonManager.ToggleDungeon();
         }
 
+        // the Ravebridge event, forced (unlocked or not), and the streamer's own characters taken along
+        if (Ravebridge && GUI.Button(GetButtonRect(buttonIndex++), Ravebridge.Active ? "End Ravebridge" : "Start Ravebridge"))
+        {
+            if (Ravebridge.Active) Ravebridge.End();
+            else if (Ravebridge.Begin(true, null, true) == RavebridgeManager.StartResult.Started)
+            {
+                foreach (var p in Players.GetAllPlayers())
+                {
+                    if (p.IsBroadcaster) Ravebridge.Join(p);
+                }
+            }
+        }
+
         if (Arena.Activated)
         {
             if (GUI.Button(GetButtonRect(buttonIndex++), "Bots Join Arena"))

@@ -94,14 +94,17 @@ public class RavebridgeManager : MonoBehaviour, IEvent
 
     public enum StartResult { Started, AlreadyActive, Locked, Busy, NoIsland }
 
-    /// <summary>The streamer (or a moderator) starts it; a forced start comes from a world event.</summary>
-    public StartResult Begin(bool forced, string reason = null)
+    /// <summary>
+    /// The streamer (or a moderator) starts it; a forced start comes from a world event and waits out the events'
+    /// cooldown, unless now (the debug panel's button).
+    /// </summary>
+    public StartResult Begin(bool forced, string reason = null, bool now = false)
     {
         if (Active) return StartResult.AlreadyActive;
         if (!Island) return StartResult.NoIsland;
         if (!forced && !Unlocked) return StartResult.Locked;
         if (game.StreamRaid && game.StreamRaid.Started) return StartResult.Busy;
-        if (!game.Events.TryStart(this, !forced))
+        if (!game.Events.TryStart(this, !forced || now))
         {
             // a forced event waits for the running one to end
             if (forced) pendingForcedReason = reason ?? string.Empty;

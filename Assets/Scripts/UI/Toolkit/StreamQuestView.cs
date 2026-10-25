@@ -455,6 +455,8 @@ namespace Shinobytes.UI
         /// A click in the world, not on the HUD and not while building: a quest board, the Ironhill runestone, or the
         /// mangrove island (the monkey chief's).
         /// </summary>
+        private static Transform runestone;
+
         private static Clicked UnderMouse()
         {
             if (HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement() || DraggableWindow.IsPointerOverWindow) return Clicked.Nothing;
@@ -470,6 +472,11 @@ namespace Shinobytes.UI
             }
 
             if (nearest < 0) return Clicked.Nothing;
+
+            // the runestone has only a trigger round it: a click on the stone (the cave's rock) near it counts
+            if (!runestone) runestone = GameObject.Find("Ironhill Island/" + RunestoneName)?.transform;
+            if (runestone && Vector3.Distance(hits[nearest].point, runestone.position) < 5f) return Clicked.Runestone;
+
             for (var t = hits[nearest].collider.transform; t; t = t.parent)
             {
                 if (t.name.StartsWith(BoardPrefix, System.StringComparison.Ordinal)) return hits[nearest].distance <= 250f ? Clicked.Board : Clicked.Nothing;
