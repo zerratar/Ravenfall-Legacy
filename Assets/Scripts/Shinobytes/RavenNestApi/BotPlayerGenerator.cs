@@ -30,7 +30,7 @@ namespace RavenNest.SDK
             };
         }
 
-        private static SyntyAppearance GenerateRandomSyntyAppearance()
+        public static SyntyAppearance GenerateRandomSyntyAppearance()
         {
             var gender = Utility.Random<Gender>();
             var skinColor = GetHexColor(Utility.Random<SkinColor>());

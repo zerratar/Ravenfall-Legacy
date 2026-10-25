@@ -393,6 +393,17 @@ public static class Localization
     public static string UI_RAVEBRIDGE_STOP = "Stop";
     public static string UI_RAVEBRIDGE_CONTROLS = "WASD or a click to walk, click a tree, rock, fish or goblin to get to it, right mouse turns the camera, Esc stops";
     public static string UI_RAVEBRIDGE_NO_CHARACTER = "Join the stream with your own character, or make a Ravebridge character.";
+    public static string UI_RAVEBRIDGE_LOCAL_CHARACTER = "{0} (Ravebridge)";
+    public static string UI_RAVEBRIDGE_NEW_CHARACTER = "Make a Ravebridge character";
+    public static string UI_RAVEBRIDGE_NEW_CHARACTER_AGAIN = "Make a new one";
+    public static string UI_RAVEBRIDGE_EXPORT = "Export";
+    public static string UI_RAVEBRIDGE_IMPORT = "Import";
+    public static string UI_RAVEBRIDGE_EXPORTED = "Saved as {0} next to the game, and copied to the clipboard.";
+    public static string UI_RAVEBRIDGE_IMPORTED = "Ravebridge character imported.";
+    public static string UI_RAVEBRIDGE_IMPORT_NONE = "Nothing to import: copy an exported character, or put its file in states/ravebridge/import.";
+    public static string UI_RAVEBRIDGE_NAME = "Name";
+    public static string UI_RAVEBRIDGE_CREATE = "Create and play";
+    public static string UI_RAVEBRIDGE_NEW_LOOK = "New look";
     public static string UI_RAVEBRIDGE_TITLE = "Ravebridge";
     public static string UI_RAVEBRIDGE_JOIN = "Type {command} to come along";
     public static string UI_RAVEBRIDGE_BAR = "Ravebridge: {0} there, open {1}";

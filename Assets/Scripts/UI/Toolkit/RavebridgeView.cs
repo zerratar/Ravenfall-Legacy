@@ -18,6 +18,7 @@ namespace Shinobytes.UI
         private Button stay;
         private Button play;
         private Button end;
+        private Button look;
         private VisualElement choose;
         private bool bound;
         private float nextSecond;
@@ -28,6 +29,8 @@ namespace Shinobytes.UI
         private void OnEnable()
         {
             bound = false;
+            // the Ravebridge character: play it, make one, export or import it (6d)
+            MoreChoices = CharacterChoices;
             RavebridgeManager.Changed += Redraw;
             Languages.Changed += Rebuild;
         }
@@ -71,7 +74,13 @@ namespace Shinobytes.UI
             stay = Chip(Localization.UI_RAVEBRIDGE_STAY, true, () => { var rb = RavebridgeManager.Instance; if (rb) rb.Attended = true; Redraw(); });
             play = Chip(Localization.UI_RAVEBRIDGE_PLAY, true, PlayPressed);
             end = Chip(Localization.UI_RAVEBRIDGE_END, false, () => { var rb = RavebridgeManager.Instance; if (rb) rb.End(); });
+            look = Chip(Localization.UI_RAVEBRIDGE_NEW_LOOK, false, () =>
+            {
+                var p = RavebridgePlay.Playing;
+                if (p && p.IsLocal) p.Appearance.SetAppearance(RavenNest.SDK.BotPlayerGenerator.GenerateRandomSyntyAppearance(), () => RavebridgeCharacter.Save(), false);
+            });
             buttons.Add(stay);
+            buttons.Add(look);
             buttons.Add(play);
             buttons.Add(end);
             bar.Add(icon);
@@ -87,6 +96,45 @@ namespace Shinobytes.UI
             column.Add(choose);
             bound = true;
             Redraw();
+        }
+
+        private System.Collections.Generic.IEnumerable<(string Label, System.Action Pick)> CharacterChoices()
+        {
+            var c = RavebridgeCharacter.Current;
+            if (c != null)
+            {
+                yield return (string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_LOCAL_CHARACTER, c.Name), () => { var p = RavebridgeCharacter.Spawn(); if (p) RavebridgePlay.Begin(p); });
+                yield return (Localization.UI_RAVEBRIDGE_EXPORT, () => { var path = RavebridgeCharacter.Export(); notice = path != null ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_EXPORTED, System.IO.Path.GetFileName(path)) : null; });
+            }
+            yield return (c != null ? Localization.UI_RAVEBRIDGE_NEW_CHARACTER_AGAIN : Localization.UI_RAVEBRIDGE_NEW_CHARACTER, OpenCreator);
+            yield return (Localization.UI_RAVEBRIDGE_IMPORT, () => { notice = RavebridgeCharacter.Import() ? Localization.UI_RAVEBRIDGE_IMPORTED : Localization.UI_RAVEBRIDGE_IMPORT_NONE; });
+        }
+
+        private string notice;
+        private VisualElement creator;
+        private TextField creatorName;
+
+        /// <summary>A name for the new character; the look is random and can be rolled again while playing it.</summary>
+        private void OpenCreator()
+        {
+            creator?.RemoveFromHierarchy();
+            creator = new VisualElement();
+            creator.AddToClassList("rf-squest-chips");
+            creator.AddToClassList("rf-ravebridge-choose");
+            creatorName = new TextField(Localization.UI_RAVEBRIDGE_NAME) { maxLength = 20 };
+            creatorName.AddToClassList("rf-ravebridge-name");
+            creator.Add(creatorName);
+            creator.Add(Chip(Localization.UI_RAVEBRIDGE_CREATE, true, () =>
+            {
+                var name = creatorName.value;
+                creator.RemoveFromHierarchy();
+                creator = null;
+                RavebridgeCharacter.Create(name, RavenNest.SDK.BotPlayerGenerator.GenerateRandomSyntyAppearance());
+                var p = RavebridgeCharacter.Spawn();
+                if (p) RavebridgePlay.Begin(p);
+                Redraw();
+            }));
+            choose.parent?.Add(creator);
         }
 
         /// <summary>Play: who to play (the streamer's own characters here, the Ravebridge character), or Stop.</summary>
@@ -162,6 +210,8 @@ namespace Shinobytes.UI
             meta.style.display = string.IsNullOrEmpty(meta.text) ? DisplayStyle.None : DisplayStyle.Flex;
             stay.style.display = left >= 0f ? DisplayStyle.Flex : DisplayStyle.None;
             play.text = RavebridgePlay.Playing ? Localization.UI_RAVEBRIDGE_STOP : Localization.UI_RAVEBRIDGE_PLAY;
+            look.style.display = RavebridgePlay.Playing && RavebridgePlay.Playing.IsLocal ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!string.IsNullOrEmpty(notice)) { meta.text = notice; meta.style.display = DisplayStyle.Flex; }
         }
 
         private static string Clock(float seconds)

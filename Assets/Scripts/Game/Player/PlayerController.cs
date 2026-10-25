@@ -158,6 +158,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     /// <summary>On the Ravebridge event island (RavebridgeManager): brought back where they came from when it ends.</summary>
     [NonSerialized] public bool InRavebridge;
+
+    /// <summary>The streamer's Ravebridge character (RavebridgeCharacter): never sent to the server, no bot of its own.</summary>
+    [NonSerialized] public bool IsLocal;
     [NonSerialized] public bool IsSubscriber;
     [NonSerialized] public bool IsVip;
 
@@ -688,7 +691,7 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return;
         }
 
-        if (IsBot && Bot)
+        if (IsBot && Bot && !IsLocal)
         {
             using (BotMarker.Auto()) Bot.Poll();
         }

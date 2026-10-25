@@ -184,6 +184,17 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         if (!player || !visits.TryGetValue(player.Id, out var visit)) return;
         visits.Remove(player.Id);
         player.InRavebridge = false;
+
+        // the Ravebridge character never leaves the island: it is saved and put away
+        if (player.IsLocal)
+        {
+            if (Hero == player) Hero = null;
+            if (RavebridgePlay.Playing == player) RavebridgePlay.Stop();
+            RavebridgeCharacter.Despawn();
+            Changed?.Invoke();
+            return;
+        }
+
         if (Hero == player) Hero = null;
         if (RavebridgePlay.Playing == player) RavebridgePlay.Stop();
 
@@ -244,6 +255,8 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     private void Update()
     {
         if (!game || game.Players == null) return;
+
+        RavebridgeCharacter.Tick();
 
         if (!Active)
         {
