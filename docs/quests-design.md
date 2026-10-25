@@ -109,6 +109,32 @@ The world has places that were built and never used. Quests give them their mean
   chain: finished with its missing buildings and NPCs the streamer can talk to, opened by a chain (perhaps through
   the runestone), and the place where maxed characters are "reborn" (see the open questions for what that gives).
 
+### Ravebridge as the streamer's own RuneScape (2026-10-25)
+
+The user's direction for Ravebridge, beyond a quest place:
+
+- **An event island.** Ravebridge opens as an event: the streamer starts it (or an event forces it), and viewers who
+  want to help join the way they join a dungeon. Their characters are taken to Ravebridge and brought back when the
+  event ends. On the island they do what they always do (cut trees, mine, fish, fight), plus a few chat commands made
+  to help the streamer (heal them, fight beside them, bring them things).
+- **The streamer plays, by hand.** The streamer walks a character around with WASD and the mouse, in the old
+  RuneScape way: cutting trees, mining, fighting goblins, talking to NPCs, doing Ravebridge's own RuneScape-like
+  quests. This is hero mode's other half: not only waves, an island to live on.
+- **Which character.** If the streamer has one of their own characters in the stream, they choose (a character
+  select): that character, whose skills, items and progress save to the server as usual, or their **Ravebridge
+  character**: a character made for this island only, who levels up there and can never leave it. The Ravebridge
+  character is not synced to the server; it is saved on disk, somewhere safe and easy to back up and move (so a
+  reinstall or a new machine does not lose it), for example in the game's states folder with an export and import.
+- **References.** RuneScape Classic's Lumbridge and its surroundings, the screenshot and the two maps in
+  `docs/references/ravebridge/` (the castle with its round towers, the courtyard fountain and well, the general store,
+  the church and graveyard, the river with its bridges, the cow and crop fields, the windmill to the north west, the
+  swamp to the south, the goblins across the river, and roads toward Draynor, Varrock and Al Kharid).
+
+### Endgame (to talk about later)
+
+"Reborn in Ravebridge" began as a joke, but it points at a real gap: a character with every skill at 999 has nothing
+fun left to do. Whether the answer is a rebirth, a prestige or something else is to be worked out together later.
+
 ## Islands unlocked by quests
 
 Today's islands are the same for every stream (Home, Away, Ironhill, Kyo, Heim, Atria, Eldara, plus War Island for
@@ -224,10 +250,10 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
 
 ## Open questions
 
-- **Rebirth:** what does being "reborn in Ravebridge" give a character that has every skill at 999? A title, a look and
-  a place in a hall of fame only, or a true prestige (skills back to 1 with a lasting bonus)? A prestige changes the
-  game's economy and needs its own design.
-- **Hero mode arena:** War Island, Ravebridge, or a place of its own?
+- **Endgame:** what a character with every skill at 999 does next (see above), to be talked through later.
+- **Hero mode:** decided 2026-10-25 that it is event driven and can also be started by the streamer outside an event;
+  some events force it; it uses Ravebridge (waves and the RuneScape-like island play above). Its own design doc
+  comes first.
 - **Stream quest timing:** a stream quest runs for a set time (one or two hours), until the stream ends, or until it
   is done?
 - **Streamer quests:** may they reward loyalty points freely (the streamer's own currency) or only within a cap?
