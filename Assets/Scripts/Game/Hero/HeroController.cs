@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -82,6 +83,7 @@ public class HeroController : MonoBehaviour
         hero.meleeArgument = training && (player.TrainingAttack || player.TrainingStrength || player.TrainingDefense) ? player.GetTaskArgument() : "all";
         var style = !training ? HeroStyle.Melee : player.TrainingHealing ? HeroStyle.Healing : player.TrainingMagic ? HeroStyle.Magic : player.TrainingRanged ? HeroStyle.Ranged : HeroStyle.Melee;
         hero.SetStyle(style);
+        HeroHelpers.Clear();
         game.Camera.FollowHero(player);
         hero.heroCamera = game.Camera.HeroView;
 
@@ -497,7 +499,7 @@ public class HeroController : MonoBehaviour
         if (!enemy || enemy.Stats.IsDead || !Player) return;
         var chunk = enemy.GetComponentInParent<Chunk>();
         if (chunk != null) Player.Chunk = chunk;
-        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy) * multiplier));
+        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy) * multiplier * CheerBonus));
         Player.SessionStats.AddDamageDealt(damage);
         if (enemy.TakeDamage(Player, damage)) Player.Combat.Defeated(enemy);
     }
@@ -732,6 +734,130 @@ public class HeroController : MonoBehaviour
         if (spinUntil <= 0f) return;
         spinUntil = 0f;
         Play("Hero-SpinEnd", 0.05f);
+    }
+
+    // ---- Chat's help (7c): !hero cheer, heal and taunt -----------------------------------------------------
+
+    private const float CheerSeconds = 20f;
+    private const int MaxCheers = 10;
+    private const float CheerShare = 0.05f;
+    private const float TauntSeconds = 6f;
+
+    public enum ChatResult { Done, Cooldown, TooFar, Nothing }
+
+    private readonly List<float> cheers = new List<float>();
+    private readonly Dictionary<string, float> chatReadyAt = new Dictionary<string, float>();
+    private readonly Dictionary<EnemyController, (PlayerController Viewer, float Until)> taunts = new Dictionary<EnemyController, (PlayerController, float)>();
+
+    /// <summary>Cheers still going: each adds 5% to the hero's skill damage, ten at most.</summary>
+    public int CheerStacks
+    {
+        get
+        {
+            cheers.RemoveAll(t => t <= Time.time);
+            return cheers.Count;
+        }
+    }
+
+    public float CheerBonus => 1f + CheerStacks * CheerShare;
+
+    private bool Ready(PlayerController viewer, string action, float cooldown, out float wait)
+    {
+        var key = viewer.Id + action;
+        wait = chatReadyAt.TryGetValue(key, out var at) ? Mathf.Max(0f, at - Time.time) : 0f;
+        if (wait > 0f) return false;
+        chatReadyAt[key] = Time.time + cooldown;
+        return true;
+    }
+
+    /// <summary>!hero cheer: a little more damage for a while and a bit of mana, once every 30 s per viewer.</summary>
+    public ChatResult Cheer(PlayerController viewer, out float wait)
+    {
+        if (!Ready(viewer, "cheer", 30f, out wait)) return ChatResult.Cooldown;
+        if (CheerStacks >= MaxCheers) cheers.RemoveAt(0);
+        cheers.Add(Time.time + CheerSeconds);
+        Mana = Mathf.Min(MaxMana, Mana + 5f);
+        HeroEffects.Burst(HeroEffects.Get?.Cheer, Player.Position + Vector3.up * 2.2f, 0.8f, 1.5f);
+        HeroHelpers.Cheer(viewer);
+        HeroHelpers.Say(string.Format(Localization.UI_HERO_FEED_CHEER, viewer.Name, Mathf.RoundToInt((CheerBonus - 1f) * 100f)));
+        return ChatResult.Done;
+    }
+
+    /// <summary>
+    /// !hero heal: a healer (healing level 20, or training healing) heals the hero properly every 10 s; anyone else
+    /// with a bandage, a little, every 30 s. The heal flies from the viewer when they are close.
+    /// </summary>
+    public ChatResult ChatHeal(PlayerController viewer, out float wait, out int amount)
+    {
+        amount = 0;
+        wait = 0f;
+        var health = Player.Stats.Health;
+        if (health.CurrentValue >= health.MaxLevel || IsDowned) return ChatResult.Nothing;
+        var healer = viewer.TrainingHealing || viewer.Stats.Healing.Level >= 20;
+        if (!Ready(viewer, "heal", healer ? 10f : 30f, out wait)) return ChatResult.Cooldown;
+        var max = (float)health.MaxLevel;
+        var heal = healer ? Mathf.Max(GameMath.CalculateHealing(viewer, Player) * 1.5f, max * 0.05f) : max * 0.03f;
+        amount = Mathf.Max(1, Mathf.Min(Mathf.RoundToInt(heal), (int)(health.MaxLevel - health.CurrentValue)));
+        var given = amount;
+        if (viewer.Island == Player.Island && Vector3.Distance(viewer.Position, Player.Position) < 40f)
+        {
+            var hero = this;
+            StartCoroutine(HeroEffects.Fly(HeroEffects.Get?.HolyBolt, viewer.Position + Vector3.up * 1.4f, () => hero && hero.Player ? hero.Player.Position + Vector3.up : viewer.Position, 18f, 1.5f, at =>
+            {
+                if (hero && hero.Player) hero.Player.Heal(given);
+            }));
+        }
+        else Player.Heal(given);
+        HeroEffects.Burst(HeroEffects.Get?.Mend, Player.Position + Vector3.up * 0.2f, 1f, 2f);
+        HeroHelpers.Healing(viewer, Player, amount);
+        HeroHelpers.Say(string.Format(healer ? Localization.UI_HERO_FEED_HEAL : Localization.UI_HERO_FEED_BANDAGE, viewer.Name, amount));
+        return ChatResult.Done;
+    }
+
+    /// <summary>
+    /// !hero taunt: up to three enemies on the hero (within 15 m) turn on the viewer for 6 seconds, who takes half the
+    /// damage meanwhile. Once every 30 s per viewer, from anywhere on Ravebridge: the enemies go after the viewer.
+    /// </summary>
+    public ChatResult Taunt(PlayerController viewer, out float wait, out int count)
+    {
+        count = 0;
+        wait = 0f;
+        if (viewer.Island != Player.Island || viewer.Stats.IsDead) return ChatResult.TooFar;
+        var run = WaveRun.Current;
+        var pulled = EnemiesNear(Player.Position, 15f)
+            .Where(e => e.TargetPlayer == Player || (run && run.Owns(e)))
+            .OrderBy(e => Vector3.Distance(e.Position, Player.Position))
+            .Take(3)
+            .ToList();
+        if (pulled.Count == 0) return ChatResult.Nothing;
+        if (!Ready(viewer, "taunt", 30f, out wait)) return ChatResult.Cooldown;
+        foreach (var e in pulled)
+        {
+            taunts[e] = (viewer, Time.time + TauntSeconds);
+            e.SetTarget(viewer);
+            e.InCombat = true;
+        }
+        count = pulled.Count;
+        HeroHelpers.Taunt(viewer);
+        HeroHelpers.Say(string.Format(Localization.UI_HERO_FEED_TAUNT, viewer.Name, count));
+        return ChatResult.Done;
+    }
+
+    /// <summary>The viewer an enemy is taunted onto, if the taunt still holds.</summary>
+    public PlayerController TauntedBy(EnemyController enemy)
+    {
+        if (!enemy || !taunts.TryGetValue(enemy, out var t)) return null;
+        if (Time.time < t.Until && t.Viewer && !t.Viewer.Stats.IsDead) return t.Viewer;
+        taunts.Remove(enemy);
+        return null;
+    }
+
+    /// <summary>A taunting viewer takes half the damage (PlayerController.TakeDamage).</summary>
+    public bool IsTaunting(PlayerController viewer)
+    {
+        foreach (var t in taunts.Values)
+            if (t.Viewer == viewer && Time.time < t.Until) return true;
+        return false;
     }
 
     private void OnDestroy()

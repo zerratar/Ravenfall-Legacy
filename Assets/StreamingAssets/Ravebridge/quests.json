@@ -91,7 +91,7 @@
       "name": { "en": "Hold the line", "sv": "Håll linjen" },
       "steps": [
         { "type": "talk", "npc": "captain", "say": { "en": "Goblins at the bridges, skeletons out of the swamp, and something big behind them. I need someone who can hold a gate while my lads sharpen their spoons. Five waves. Can you do it?", "sv": "Vättar vid broarna, skelett ur träsket och något stort bakom dem. Jag behöver någon som kan hålla en port medan mina pojkar slipar sina skedar. Fem vågor. Klarar du det?" } },
-        { "type": "defend", "npc": "captain", "amount": 5, "say": { "en": "Ready when you are. They come from whichever gate is nearest you, so pick your ground. Chat can drag you back up if you fall: !rb revive.", "sv": "Redo när du är. De kommer från den port som är närmast dig, så välj din plats. Chatten kan dra upp dig igen om du faller: !rb revive." }, "hint": { "en": "Hold Ravebridge for five waves", "sv": "Håll Ravebridge i fem vågor" } }
+        { "type": "defend", "npc": "captain", "amount": 5, "say": { "en": "Ready when you are. They come from whichever gate is nearest you, so pick your ground. Chat can drag you back up if you fall: !hero revive.", "sv": "Redo när du är. De kommer från den port som är närmast dig, så välj din plats. Chatten kan dra upp dig igen om du faller: !hero revive." }, "hint": { "en": "Hold Ravebridge for five waves", "sv": "Håll Ravebridge i fem vågor" } }
       ],
       "reward": { "exp": { "Attack": 3000, "Defense": 3000, "Strength": 3000, "Health": 2000 }, "coins": 500 }
     },

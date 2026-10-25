@@ -26,6 +26,7 @@ public class HeroEffects : ScriptableObject
     public GameObject Mend;
     public GameObject Sanctuary;
     public GameObject Angel;
+    public GameObject Cheer;
 
     private static HeroEffects instance;
     private static GameObject container;

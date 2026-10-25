@@ -29,6 +29,7 @@ fx.MeteorBlast = hit(3);       // orange red
 fx.Mend = hit(24);             // bright green
 fx.Sanctuary = hit(6);         // green
 fx.Angel = hit(14);            // white
+fx.Cheer = hit(4);             // yellow sparkle
 UnityEditor.EditorUtility.SetDirty(fx);
 UnityEditor.AssetDatabase.SaveAssets();
 

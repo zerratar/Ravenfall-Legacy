@@ -735,6 +735,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
             //dc.Color = player.PlayerNameHexColor;
 
             Stats.Health.Add(-damage);
+            HeroHelpers.Damage(player, damage);
 
             var aggroMultiplier = 1f;
             var sword = player.Inventory.GetMeleeWeapon();

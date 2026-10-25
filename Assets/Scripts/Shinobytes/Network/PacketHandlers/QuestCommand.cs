@@ -44,6 +44,13 @@ public static class QuestChat
             return;
         }
 
+        // hero mode's chat (the bots send !hero as !quest hero)
+        if (sub == "hero")
+        {
+            Hero(game, players, argument, gm, client);
+            return;
+        }
+
         if (sub == "stream" || sub == "s")
         {
             await StreamAsync(game, argument, parts.Length > 2 ? parts[2] : "", gm, client);
@@ -174,6 +181,83 @@ public static class QuestChat
             Shinobytes.Debug.LogError("!quest failed: " + exc);
             client.SendReply(gm, Localization.MSG_QUEST_FAILED);
         }
+    }
+
+    /// <summary>
+    /// !hero (7c of docs/hero-mode-design.md): with nothing after it, joins Ravebridge to fight beside the streamer's
+    /// hero; heal heals the hero (properly for healers, a bandage for anyone else), taunt pulls enemies off the hero,
+    /// cheer gives the hero a little more damage for a while, revive helps a downed hero back up in a wave run.
+    /// </summary>
+    private static void Hero(GameManager game, PlayerManager players, string action, GameMessage gm, GameClient client)
+    {
+        var rb = game.Ravebridge;
+        if (!rb) return;
+        var player = players.GetPlayer(gm.Sender);
+        if (!player)
+        {
+            client.SendReply(gm, Localization.MSG_NOT_PLAYING);
+            return;
+        }
+
+        if (action == "" || action == "join" || action == "fight")
+        {
+            if (!rb.Active) { client.SendReply(gm, Localization.MSG_RAVEBRIDGE_CLOSED, RavebridgeManager.Unlocked ? Localization.MSG_RAVEBRIDGE_HOW_UNLOCKED : Localization.MSG_RAVEBRIDGE_LOCKED); return; }
+            var joined = rb.Contains(player) ? RavebridgeManager.JoinResult.AlreadyThere : rb.Join(player);
+            if (joined == RavebridgeManager.JoinResult.Joined || joined == RavebridgeManager.JoinResult.AlreadyThere)
+            {
+                if (HeroController.Active) rb.SetHelp(player, player.TrainingHealing ? RavebridgeManager.Help.Heal : RavebridgeManager.Help.Follow);
+                client.SendReply(gm, HeroController.Active ? Localization.MSG_HERO_JOINED : Localization.MSG_RAVEBRIDGE_JOINED);
+            }
+            else client.SendReply(gm, joined == RavebridgeManager.JoinResult.Busy ? Localization.MSG_RAVEBRIDGE_BUSY : joined == RavebridgeManager.JoinResult.Dead ? Localization.MSG_RAVEBRIDGE_DEAD : Localization.MSG_RAVEBRIDGE_NOT_ACTIVE);
+            return;
+        }
+
+        var hero = HeroController.Active;
+        if (!hero || !hero.Player) { client.SendReply(gm, Localization.MSG_HERO_NONE); return; }
+        if (hero.Player == player) { client.SendReply(gm, Localization.MSG_HERO_SELF); return; }
+        if (!rb.Contains(player)) { client.SendReply(gm, Localization.MSG_HERO_JOIN_FIRST); return; }
+
+        float wait;
+        switch (action)
+        {
+            case "heal":
+                switch (hero.ChatHeal(player, out wait, out var amount))
+                {
+                    case HeroController.ChatResult.Done: client.SendReply(gm, Localization.MSG_HERO_HEALED, hero.Player.Name, amount); break;
+                    case HeroController.ChatResult.Cooldown: client.SendReply(gm, Localization.MSG_HERO_WAIT, UnityEngine.Mathf.CeilToInt(wait)); break;
+                    default: client.SendReply(gm, Localization.MSG_HERO_HEALTHY, hero.Player.Name); break;
+                }
+                return;
+
+            case "taunt":
+                switch (hero.Taunt(player, out wait, out var count))
+                {
+                    case HeroController.ChatResult.Done: client.SendReply(gm, Localization.MSG_HERO_TAUNTED, count); break;
+                    case HeroController.ChatResult.Cooldown: client.SendReply(gm, Localization.MSG_HERO_WAIT, UnityEngine.Mathf.CeilToInt(wait)); break;
+                    case HeroController.ChatResult.TooFar: client.SendReply(gm, Localization.MSG_HERO_TOO_FAR, hero.Player.Name); break;
+                    default: client.SendReply(gm, Localization.MSG_HERO_NOTHING_TO_TAUNT, hero.Player.Name); break;
+                }
+                return;
+
+            case "cheer":
+                if (hero.Cheer(player, out wait) == HeroController.ChatResult.Done) client.SendReply(gm, Localization.MSG_HERO_CHEERED, hero.Player.Name, UnityEngine.Mathf.RoundToInt((hero.CheerBonus - 1f) * 100f));
+                else client.SendReply(gm, Localization.MSG_HERO_WAIT, UnityEngine.Mathf.CeilToInt(wait));
+                return;
+
+            case "revive":
+            case "res":
+            case "up":
+                var run = WaveRun.Current;
+                switch (run ? run.Vote(player) : WaveRun.VoteResult.NotDown)
+                {
+                    case WaveRun.VoteResult.Counted: client.SendReply(gm, Localization.MSG_WAVE_VOTED, run.Hero.Name, run.Votes, run.VotesNeeded); break;
+                    case WaveRun.VoteResult.Already: client.SendReply(gm, Localization.MSG_WAVE_VOTED_ALREADY, run.Votes, run.VotesNeeded); break;
+                    case WaveRun.VoteResult.Revived: break;
+                    default: client.SendReply(gm, Localization.MSG_WAVE_NOBODY_DOWN); break;
+                }
+                return;
+        }
+        client.SendReply(gm, Localization.MSG_HERO_USAGE);
     }
 
     /// <summary>

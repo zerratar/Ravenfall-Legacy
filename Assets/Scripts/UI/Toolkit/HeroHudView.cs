@@ -32,6 +32,7 @@ namespace Shinobytes.UI
         private float nextParty;
         private HeroInventoryWindow inventory;
         private HeroWaveHud waves;
+        private HeroHelpersHud helpers;
         private bool bound;
 
         private static Texture2D rim;
@@ -154,6 +155,7 @@ namespace Shinobytes.UI
             root.Add(party);
 
             waves = new HeroWaveHud(root);
+            helpers = new HeroHelpersHud(root, styleBox);
             root.style.display = DisplayStyle.None;
             layer.Add(root);
             inventory?.Remove();
@@ -357,6 +359,7 @@ namespace Shinobytes.UI
             if (!bound || !hero || !hero.Player) return;
             inventory?.Update(hero.Player);
             waves?.Update();
+            helpers?.Update(hero);
             if (inventory != null && inventory.IsOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping)
             {
                 EscapeKey.Claim();

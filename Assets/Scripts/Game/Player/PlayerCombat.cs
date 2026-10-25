@@ -175,6 +175,7 @@ public class PlayerCombat
                 return true;
 
             owner.SessionStats.AddHealingDealt(heal);
+            if (target is PlayerController healed) HeroHelpers.Healing(owner, healed, heal);
             if (owner.dungeonHandler != null && owner.dungeonHandler.InDungeon) CombatMeter.Dungeon.AddHealing(owner, heal);
 
             // allow for some variation in gains based on how high you heal.

@@ -112,6 +112,8 @@ public class WaveRun : MonoBehaviour
     private int nextGate;
     private float nextOrders;
     private float healerTime;
+    private PlayerController lastHealer;
+    private int revives;
 
     /// <summary>Starts a run for the hero (in hero mode on Ravebridge). Goal 0 is endless; finished hears the end.</summary>
     public static WaveRun Begin(PlayerController hero, int goal, Action<WaveRun> finished)
@@ -367,7 +369,9 @@ public class WaveRun : MonoBehaviour
         {
             if (!e || e.Stats.IsDead) continue;
             var target = Hero;
-            if (Downed)
+            var taunter = HeroController.Active ? HeroController.Active.TauntedBy(e) : null;
+            if (taunter) target = taunter;
+            else if (Downed)
             {
                 var close = others.Where(p => Vector3.Distance(p.Position, e.Position) < 30f).OrderBy(p => Vector3.Distance(p.Position, e.Position)).FirstOrDefault();
                 if (close) target = close;
@@ -419,11 +423,13 @@ public class WaveRun : MonoBehaviour
         Downed = true;
         votes.Clear();
         healerTime = 0f;
+        // each revive makes the next one harder: more votes, less time
         var viewers = Others().Count();
-        VotesNeeded = Mathf.Clamp(Mathf.CeilToInt(viewers * 0.3f), 1, 5);
-        DownedUntil = Time.time + (viewers > 0 ? DownedSeconds : 4f);
+        VotesNeeded = Mathf.Clamp(Mathf.CeilToInt(viewers * 0.3f) + revives, 1, Mathf.Max(1, Mathf.Min(viewers, 5 + revives)));
+        var seconds = Mathf.Max(8f, DownedSeconds - revives * 4f);
+        DownedUntil = Time.time + (viewers > 0 ? seconds : 4f);
         if (Hero.Animations) Hero.Animations.Death();
-        GameManager.Instance?.RavenBot?.Announce(Localization.MSG_WAVE_DOWN, Hero.Name, VotesNeeded);
+        GameManager.Instance?.RavenBot?.Announce(Localization.MSG_WAVE_DOWN, Hero.Name, VotesNeeded, Mathf.RoundToInt(seconds));
         Changed?.Invoke();
     }
 
@@ -444,8 +450,9 @@ public class WaveRun : MonoBehaviour
     private void UpdateDowned()
     {
         // a healer standing close brings the hero back by themselves
-        var healerNear = Others().Any(p => p.TrainingHealing && !p.Stats.IsDead && Vector3.Distance(p.Position, Hero.Position) < 12f);
-        healerTime = healerNear ? healerTime + Time.deltaTime : Mathf.Max(0f, healerTime - Time.deltaTime);
+        var healer = Others().FirstOrDefault(p => p.TrainingHealing && !p.Stats.IsDead && Vector3.Distance(p.Position, Hero.Position) < 12f);
+        if (healer) lastHealer = healer;
+        healerTime = healer ? healerTime + Time.deltaTime : Mathf.Max(0f, healerTime - Time.deltaTime);
         if (healerTime >= HealerReviveSeconds) { Revive(); return; }
         if (Time.time >= DownedUntil) Finish(false, true);
     }
@@ -454,6 +461,16 @@ public class WaveRun : MonoBehaviour
     {
         if (!Downed) return;
         Downed = false;
+        revives++;
+        // the ones who brought the hero back
+        var game = GameManager.Instance;
+        if (game && game.Players != null)
+        {
+            foreach (var p in game.Players.GetAllPlayers())
+                if (p && votes.Contains(p.Id.ToString())) HeroHelpers.Revive(p);
+        }
+        if (votes.Count == 0 && lastHealer) HeroHelpers.Revive(lastHealer);
+        HeroHelpers.Say(string.Format(Localization.UI_HERO_FEED_REVIVED, Hero.Name));
         Hero.Heal(Hero.Stats.Health.MaxLevel / 2);
         if (Hero.Animations) Hero.Animations.Revive();
         HeroController.Active?.Invulnerable(2.5f);

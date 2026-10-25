@@ -373,3 +373,35 @@ After the user's first try ("not playable yet"):
 
   The quest progress and the best were reset afterwards.
 
+### 7c, chat's part (2026-10-25)
+
+The ranged, magic and healing kits and switching style came with the fix round. 7c adds chat:
+
+- **`!hero`** (both bots send it as `!quest hero`):
+  - alone, it joins Ravebridge and fights beside the hero (follow, or heal for healers);
+  - `heal` heals the hero. Healers (healing level 20, or training healing) heal properly every 10 s; anyone else
+    throws a bandage (3% of the hero's health) every 30 s. The heal flies from the viewer when they are close;
+  - `taunt` turns up to three enemies on the hero (within 15 m) onto the viewer for 6 seconds, from anywhere on
+    Ravebridge. The viewer takes half the damage meanwhile. Once every 30 s;
+  - `cheer` adds 5% to the hero's skill damage for 20 seconds, stacking up to ten, plus 5 mana. Once every 30 s
+    per viewer. The normal attack is not boosted yet;
+  - `revive` is the same as `!rb revive`.
+- **Revives get harder:** each one makes the next need one more vote (never more than the viewers there) and
+  gives 4 seconds less (20, 16, 12, at least 8). Chat's messages now say `!hero revive` and the real count.
+- **`HeroHelpers`:** per viewer, the damage dealt on Ravebridge while hero mode runs, the healing the hero got
+  (their attacks, heals and `!hero heal`), revives (the voters, or the healer who did it), cheers and taunts.
+  Cleared when hero mode starts.
+- **`HeroHelpersHud`:**
+  - the top helpers on the right (five, best first);
+  - a feed under the wave line of what chat just did, fading after 6 seconds;
+  - the cheer bonus by the style.
+- **Not built:** the "defense bonus" of a taunt is the half damage; viewers who fall stand up the usual way
+  (their own respawn), not at the castle.
+- **Tested in play mode** with four bots:
+  - cheers stacking (+10%) and the cooldown;
+  - a heal;
+  - a taunt pulling 3 enemies 52 m to a bot;
+  - the feed, the cheer bonus and the helpers panel.
+
+  The commands' chat replies go through the bots and are untested live.
+
