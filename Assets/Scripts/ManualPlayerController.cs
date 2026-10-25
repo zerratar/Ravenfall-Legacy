@@ -35,6 +35,11 @@ public class ManualPlayerController : MonoBehaviour
         if (!Active || !player || player.Stats.IsDead)
             return;
 
+        // the hero plays itself (HeroController)
+        var hero = HeroController.Active;
+        if (hero && hero.Player == player)
+            return;
+
         var cam = Camera.main;
         if (!cam) return;
 

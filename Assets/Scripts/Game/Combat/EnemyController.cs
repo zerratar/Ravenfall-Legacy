@@ -60,6 +60,9 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     public IReadOnlyDictionary<string, float> Aggro => attackerAggro;
     [HideInInspector] public bool InCombat { get; set; }
 
+    /// <summary>Stunned by a hero's skill (HeroSkill): it does nothing until then.</summary>
+    [NonSerialized] public float StunnedUntil;
+
     private string _name;
 
     public string Name => _name ?? (_name = name);
@@ -390,6 +393,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         }
 
         movement.Poll();
+
+        if (StunnedUntil > Time.time) return;
 
         if ((!InCombat || !Target) && !IsDungeonEnemy)
         {

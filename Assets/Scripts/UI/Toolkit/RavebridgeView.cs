@@ -19,6 +19,7 @@ namespace Shinobytes.UI
         private Button play;
         private Button end;
         private Button look;
+        private Button hero;
         private VisualElement choose;
         private bool bound;
         private float nextSecond;
@@ -81,7 +82,14 @@ namespace Shinobytes.UI
                 var p = RavebridgePlay.Playing;
                 if (p && p.IsLocal) p.Appearance.SetAppearance(RavenNest.SDK.BotPlayerGenerator.GenerateRandomSyntyAppearance(), () => RavebridgeCharacter.Save(), false);
             });
+            hero = Chip(Localization.UI_HERO_ENTER, true, () =>
+            {
+                if (HeroController.Active) HeroController.End();
+                else if (RavebridgePlay.Playing) HeroController.Begin(RavebridgePlay.Playing);
+                Redraw();
+            });
             buttons.Add(stay);
+            buttons.Add(hero);
             buttons.Add(look);
             buttons.Add(play);
             buttons.Add(end);
@@ -191,11 +199,12 @@ namespace Shinobytes.UI
                 TryBind();
                 if (!bound) return;
             }
-            // Esc stops playing by hand
+            // Esc leaves hero mode, and again stops playing by hand
             if (RavebridgePlay.Playing && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping)
             {
                 EscapeKey.Claim();
-                RavebridgePlay.Stop();
+                if (HeroController.Active) HeroController.End();
+                else RavebridgePlay.Stop();
                 Redraw();
             }
             if (Time.unscaledTime >= nextSecond)
@@ -221,7 +230,10 @@ namespace Shinobytes.UI
             meta.style.display = string.IsNullOrEmpty(meta.text) ? DisplayStyle.None : DisplayStyle.Flex;
             stay.style.display = left >= 0f ? DisplayStyle.Flex : DisplayStyle.None;
             play.text = RavebridgePlay.Playing ? Localization.UI_RAVEBRIDGE_STOP : Localization.UI_RAVEBRIDGE_PLAY;
-            look.style.display = RavebridgePlay.Playing && RavebridgePlay.Playing.IsLocal ? DisplayStyle.Flex : DisplayStyle.None;
+            look.style.display = RavebridgePlay.Playing && RavebridgePlay.Playing.IsLocal && !HeroController.Active ? DisplayStyle.Flex : DisplayStyle.None;
+            hero.style.display = RavebridgePlay.Playing ? DisplayStyle.Flex : DisplayStyle.None;
+            hero.text = HeroController.Active ? Localization.UI_HERO_EXIT : Localization.UI_HERO_ENTER;
+            if (HeroController.Active && string.IsNullOrEmpty(notice)) meta.text = Localization.UI_HERO_CONTROLS;
             if (!string.IsNullOrEmpty(notice) && noticeUntil > 0f && Time.unscaledTime > noticeUntil) notice = null;
             if (!string.IsNullOrEmpty(notice)) { meta.text = notice; meta.style.display = DisplayStyle.Flex; }
         }

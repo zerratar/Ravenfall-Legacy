@@ -218,6 +218,16 @@ public class PlayerCombat
         if (enemy == null || !enemy.TakeDamage(owner, damage))
             return true;
 
+        Defeated(enemy);
+        return true;
+    }
+
+    /// <summary>
+    /// An enemy fell to the owner: the statistics, and every attacker's experience for it. Also for hits that are
+    /// not a swing (hero mode's skills, HeroController.Hit).
+    /// </summary>
+    public void Defeated(IAttackable enemy)
+    {
         owner.SessionStats.IncrementEnemiesKilled();
         //Statistics.TotalDamageDone += damage;
 
@@ -240,7 +250,7 @@ public class PlayerCombat
             }
 
             if (!enemy.GivesExperienceWhenKilled)
-                return true;
+                return;
 
             // give all attackers exp for the kill, not just the one who gives the killing blow.
             foreach (PlayerController player in enemy.GetAttackers())
@@ -272,7 +282,6 @@ public class PlayerCombat
         {
             owner.InCombat = false;
         }
-        return true;
     }
 
 

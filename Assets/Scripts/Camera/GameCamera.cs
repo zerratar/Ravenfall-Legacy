@@ -41,6 +41,10 @@ public class GameCamera : MonoBehaviour
 
     // the character the streamer plays by hand (Ravebridge): followed until control ends
     private PlayerController controlled;
+    private HeroCamera heroCamera;
+
+    /// <summary>Hero mode's camera while it follows the hero (HeroController), else null.</summary>
+    public HeroCamera HeroView => heroCamera && heroCamera.enabled ? heroCamera : null;
     private bool canObserveNextPlayer = true;
     private bool allowJoinObserve = true;
     private bool forcedFreeCamera;
@@ -133,7 +137,7 @@ public class GameCamera : MonoBehaviour
 
             if (controlled)
             {
-                SetOrbitCameraTarget(controlled.transform);
+                if (!HeroView) SetOrbitCameraTarget(controlled.transform);
                 return;
             }
 
@@ -286,8 +290,37 @@ public class GameCamera : MonoBehaviour
         orbitCamera.enabled = true;
     }
 
+    /// <summary>Hero mode: the top-down or over-the-shoulder camera on the hero (HeroCamera).</summary>
+    public void FollowHero(PlayerController player)
+    {
+        if (!player) return;
+        controlled = player;
+        state = GameCameraType.Controlled;
+        if (!heroCamera) heroCamera = GetComponent<HeroCamera>();
+        if (!heroCamera) heroCamera = gameObject.AddComponent<HeroCamera>();
+        orbitCamera.enabled = false;
+        freeCamera.enabled = false;
+        islandObserveCamera.enabled = false;
+        focusTargetCamera.enabled = false;
+        heroCamera.enabled = true;
+        heroCamera.Follow(player);
+    }
+
+    /// <summary>Hero mode ends: back to following the character played by hand.</summary>
+    public void StopHeroView()
+    {
+        if (heroCamera) heroCamera.enabled = false;
+        if (controlled)
+        {
+            orbitCamera.Manual = true;
+            orbitCamera.TargetTransform = controlled.transform;
+            orbitCamera.enabled = true;
+        }
+    }
+
     public void StopFollowingControlled()
     {
+        if (heroCamera) heroCamera.enabled = false;
         var player = controlled;
         controlled = null;
         orbitCamera.Manual = false;

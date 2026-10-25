@@ -2718,6 +2718,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return false;
         }
 
+        // the hero's aura, a dodge's moment and the war cry's guard (HeroController)
+        var hero = HeroController.Active;
+        if (hero && hero.Player == this) damage = hero.AdjustTaken(damage);
+
         InCombat = true;
 
         if (attacker != null)

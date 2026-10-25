@@ -51,6 +51,8 @@ namespace Shinobytes.UI
             // the Ravebridge bar under it while the event runs
             if (!GetComponent<RavebridgeView>()) gameObject.AddComponent<RavebridgeView>();
             if (!GetComponent<RavebridgeDialogueView>()) gameObject.AddComponent<RavebridgeDialogueView>();
+            // hero mode's orbs and skill bar
+            if (!GetComponent<HeroHudView>()) gameObject.AddComponent<HeroHudView>();
             Languages.Changed += Redraw;
             TryBind();
         }

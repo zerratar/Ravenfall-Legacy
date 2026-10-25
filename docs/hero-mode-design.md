@@ -229,3 +229,41 @@ New pieces, next to the Ravebridge ones:
 - **The Ravebridge character:** can it be the hero (proposed yes), and does it get its own rewards (its own items
   and experience, never the server's)?
 - **Later:** hero mode on other islands, or co-op (a second hero, for a guest streamer).
+
+## Built
+
+### 7a, the hero (2026-10-25)
+
+- **Starting:** while playing by hand on Ravebridge, Hero mode on the Ravebridge bar makes the character the hero.
+  Leave hero mode (or Esc) goes back to playing by hand.
+- **`HeroController`:**
+  - WASD relative to the camera; the left mouse attacks the enemy at the cursor, or the nearest one toward it;
+  - 1 to 4 for the melee kit; Space dodges (5 m, invulnerable, 3 s cooldown); Q drinks a potion (35% of health,
+    3 charges);
+  - mana: 100, 4 a second.
+- **The hero aura:** a fixed half of the damage taken for now; 7b sets it from the waves. The kills of skill hits
+  count as any other (`PlayerCombat.Defeated`).
+- **`HeroSkill`, the melee kit:**
+  - Cleave (an arc, x1.6);
+  - Leap slam (to the cursor, 9 m at most, x2 and a 1.5 s stun where the hero lands);
+  - Whirlwind (3 s spin, x0.7 every 0.4 s, walking allowed);
+  - War cry (enemies within 10 m turn on the hero, half damage for 6 s; the buff for viewers waits for 7c).
+
+  They unlock at melee level 1, 30, 100 and 250 (the average of attack, strength and defense).
+- **`HeroCamera`:** top-down (55 degrees, scroll to zoom 8 to 28 m) and over the shoulder, with V gliding between
+  them and the right mouse turning either. The hero's own name tag and health bar hide while hero mode runs. Fading
+  roofs and walls is still to come.
+- **`HeroHudView`:**
+  - the health and mana orbs;
+  - the skill bar (icons, keys, cooldown sweeps, mana costs, unlock levels, dodge and potion), where a refused
+    skill flashes red;
+  - the town bar, the shortcuts and the stream quest bar step aside.
+- **The animator:** `tools/hero/hero-animations.cs` adds the hero's moves to the player animator from the RPG
+  Character Animation Pack: roll, cleave, leap and land, a looping spin and its end, war cry and drink.
+- **Tested in play mode** with a level 999 bot:
+  - the skills hit, kill and give experience;
+  - the leap moves the hero and the dodge makes it untouchable;
+  - the potion heals;
+  - both cameras render.
+
+  Real keyboard and mouse input, and the HUD's look, still need a run by hand.

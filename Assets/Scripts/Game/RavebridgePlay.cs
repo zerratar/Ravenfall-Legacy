@@ -35,6 +35,7 @@ public static class RavebridgePlay
 
     public static void Stop()
     {
+        if (HeroController.Active) HeroController.End();
         var player = Playing;
         Playing = null;
         if (player)
