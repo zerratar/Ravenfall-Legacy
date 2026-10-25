@@ -2004,31 +2004,24 @@
     bottom: 0;
 }
 
-/* the orbs: a 150 px gold rim around a 132 px sphere (the Hero Orb shader's render texture) */
+/* the orbs (after the user's reference): a 150 px glass sphere (the Hero Orb shader's render texture, see-through
+   where it is empty), the number in the middle, the label under it */
 .rf-hero-orb {
     position: absolute;
-    bottom: 18px;
+    bottom: 58px;
     width: 150px;
     height: 150px;
 }
 
 .rf-hero-orb--health {
-    left: 24px;
+    left: 22px;
 }
 
 .rf-hero-orb--mana {
-    right: 24px;
+    right: 22px;
 }
 
 .rf-hero-orb__sphere {
-    position: absolute;
-    left: 9px;
-    top: 9px;
-    width: 132px;
-    height: 132px;
-}
-
-.rf-hero-orb__rim {
     position: absolute;
     left: 0;
     top: 0;
@@ -2044,12 +2037,29 @@
     bottom: 0;
     -unity-text-align: middle-center;
     font-size: 20px;
-    color: rgb(255, 246, 228);
+    color: rgb(255, 246, 236);
     -unity-font-style: bold;
     -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
-    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.8);
+    -unity-text-outline-color: rgba(0, 0, 0, 0.75);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
+
+.rf-hero-orb__label {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 154px;
+    -unity-text-align: middle-center;
+    font-size: 15px;
+    color: rgb(250, 240, 222);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.85);
+}
+
+
 
 .rf-hero-bar {
     position: absolute;
@@ -2413,6 +2423,7 @@
 }
 
 .rf-wave__sub {
+    -unity-text-align: upper-center;
     font-size: 19px;
     color: rgb(255, 236, 200);
     -unity-font-style: bold;

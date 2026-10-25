@@ -9,7 +9,7 @@ using UnityEngine.AI;
 /// (Captain Hargrove's "Hold the line", RavebridgeQuests' defend step) and, once that is done, again for the score.
 ///
 /// After a short count, each wave comes in from the two gates nearest the hero (tools/hero/hero-places.cs; a ring
-/// around the hero when every gate is far): goblins first, then warriors, ghosts, skeletons and skeleton knights,
+/// around the hero when every gate is over 130 m away), charging in until close: goblins first, then warriors, ghosts, skeletons and skeleton knights,
 /// more of them each wave, and every fifth wave a boss. They go for the hero. Between waves a breather refills some
 /// health and mana. The run is a fair fight at any level: an enemy's health is a number of the hero's own average
 /// hits, and its blow a share of the hero's health (HeroController.AdjustTaken), both growing with the waves.
@@ -34,6 +34,9 @@ public class WaveRun : MonoBehaviour
     private const int MaxAlive = 12;
     private const float SpawnInterval = 0.7f;
     private const float BlowCooldown = 1f;
+    private const float GateRange = 130f;
+    private const float ChargeSpeed = 6.5f;
+    private const float ChargeUntil = 20f;
 
     /// <summary>A kind of wave enemy: the rig's variants it shows as, the wave it starts coming at, how many of the
     /// hero's hits it takes and how much of the hero's health its blow takes (both at wave 1).</summary>
@@ -109,6 +112,7 @@ public class WaveRun : MonoBehaviour
 
     private readonly Dictionary<EnemyController, Kind> alive = new Dictionary<EnemyController, Kind>();
     private readonly Dictionary<EnemyController, float> lastBlow = new Dictionary<EnemyController, float>();
+    private readonly Dictionary<EnemyController, float> walkSpeed = new Dictionary<EnemyController, float>();
     private readonly Queue<Kind> toSpawn = new Queue<Kind>();
     private readonly List<EnemyController> pool = new List<EnemyController>();
     private readonly List<(EnemyController Enemy, float At)> fallen = new List<(EnemyController, float)>();
@@ -280,6 +284,7 @@ public class WaveRun : MonoBehaviour
         var at = SpawnPoint();
         var enemy = Make(kind, at);
         if (!enemy) return;
+        HeroEffects.Burst(HeroEffects.Get?.Arrival, at + Vector3.up * 0.8f, kind.Boss ? 3f : 1.3f, 2f);
         alive[enemy] = kind;
         if (kind.Boss)
         {
@@ -289,12 +294,46 @@ public class WaveRun : MonoBehaviour
         }
     }
 
+    /// <summary>The two gates nearest the hero (at least 12 m off), or none when every gate is over 130 m away.</summary>
+    private Transform[] NearGates()
+    {
+        if (!Hero) return Array.Empty<Transform>();
+        var from = Hero.Position;
+        var near = gates.Where(g => g).OrderBy(g => Vector3.Distance(g.position, from)).Where(g => Vector3.Distance(g.position, from) >= 12f).Take(2).ToArray();
+        return near.Length > 0 && Vector3.Distance(near[0].position, from) <= GateRange ? near : Array.Empty<Transform>();
+    }
+
+    /// <summary>Where the waves come in from, for the HUD: "the stone bridge and the swamp", or all around.</summary>
+    public string ComingFrom
+    {
+        get
+        {
+            var near = NearGates();
+            if (near.Length == 0) return Localization.UI_WAVE_FROM_AROUND;
+            var names = near.Select(g => GateName(g.name)).ToArray();
+            return string.Format(Localization.UI_WAVE_FROM, names.Length > 1 ? string.Format(Localization.UI_WAVE_AND, names[0], names[1]) : names[0]);
+        }
+    }
+
+    private static string GateName(string gate)
+    {
+        switch (gate)
+        {
+            case "Stone bridge": return Localization.UI_WAVE_GATE_STONE;
+            case "Wooden bridge": return Localization.UI_WAVE_GATE_WOOD;
+            case "Desert gate": return Localization.UI_WAVE_GATE_DESERT;
+            case "Swamp": return Localization.UI_WAVE_GATE_SWAMP;
+            case "Mill road": return Localization.UI_WAVE_GATE_MILL;
+            default: return gate;
+        }
+    }
+
     /// <summary>The next of the two gates nearest the hero, or a place around the hero when every gate is far.</summary>
     private Vector3 SpawnPoint()
     {
         var from = Hero.Position;
-        var near = gates.Where(g => g).OrderBy(g => Vector3.Distance(g.position, from)).Where(g => Vector3.Distance(g.position, from) >= 12f).Take(2).ToArray();
-        if (near.Length > 0 && Vector3.Distance(near[0].position, from) <= 70f)
+        var near = NearGates();
+        if (near.Length > 0)
         {
             var gate = near[nextGate++ % near.Length];
             return Around(gate.position, 3f);
@@ -336,6 +375,8 @@ public class WaveRun : MonoBehaviour
         var variant = kind.Variants[UnityEngine.Random.Range(0, kind.Variants.Length)];
         foreach (Transform part in enemy.transform)
             if (part.name.StartsWith("Character_")) part.gameObject.SetActive(part.name == variant);
+        var movement = enemy.GetComponent<EnemyMovementController>();
+        if (movement) movement.RefreshRenderers();
         enemy.name = kind.Name();
         enemy.transform.localScale = Vector3.one * kind.Scale;
         enemy.AutomaticRespawn = false;
@@ -348,6 +389,13 @@ public class WaveRun : MonoBehaviour
         var hits = kind.Hits * (1f + Wave * 0.06f) * (kind.Boss ? 1f + Others().Count() * 0.1f : 1f);
         enemy.Stats.Health = new SkillStat((float)Mathf.Max(5, Mathf.RoundToInt(hit * hits)));
         enemy.SpawnAt(at);
+        // from a far gate they charge in, then fight at their own pace (GiveOrders)
+        var agent = enemy.GetComponent<NavMeshAgent>();
+        if (agent)
+        {
+            if (!walkSpeed.ContainsKey(enemy)) walkSpeed[enemy] = agent.speed;
+            agent.speed = ChargeSpeed;
+        }
         enemy.InCombat = true;
         enemy.SetTarget(Hero);
         lastBlow.Remove(enemy);
@@ -407,6 +455,11 @@ public class WaveRun : MonoBehaviour
             }
             if (e.TargetPlayer != target) e.SetTarget(target);
             e.InCombat = true;
+            if (target && walkSpeed.TryGetValue(e, out var walk) && Vector3.Distance(e.Position, target.Position) < ChargeUntil)
+            {
+                var agent = e.GetComponent<NavMeshAgent>();
+                if (agent && agent.speed != walk) agent.speed = walk;
+            }
         }
 
         if (alive.Count == 0) return;

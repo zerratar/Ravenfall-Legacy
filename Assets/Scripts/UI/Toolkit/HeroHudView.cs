@@ -8,7 +8,8 @@ namespace Shinobytes.UI
     /// <summary>
     /// Hero mode's HUD (docs/hero-mode-design.md): a health orb bottom left and a mana orb bottom right (a glass sphere
     /// of liquid that waves, sloshes when hit and shows what a hit took, drawn by the Hero Orb shader into a small
-    /// render texture each frame, inside a gold rim drawn in code), the skill
+    /// render texture each frame, the glass see-through and its light added over what is behind, with the label under
+    /// it, after the user's reference), the skill
     /// bar between them (the style with Tab to switch, four skills with their keys, cooldown sweeps, mana costs and unlock levels, the
     /// dodge and the potion), and on the left the party: who is on Ravebridge, with their health. While the hero plays
     /// the usual HUD steps aside (a class on the documents, as their views set their own display).
@@ -16,8 +17,6 @@ namespace Shinobytes.UI
     public class HeroHudView : MonoBehaviour
     {
         private const string HeroModeClass = "rf-hero-mode";
-        private const int OrbSize = 150;
-        private const int OrbInner = 128;
         private const int PartyShown = 12;
 
         private VisualElement root;
@@ -35,7 +34,6 @@ namespace Shinobytes.UI
         private HeroHelpersHud helpers;
         private bool bound;
 
-        private static Texture2D rim;
 
         /// <summary>One orb: its texture, its material, and the level shown (eased), where it was, and its slosh.</summary>
         private sealed class Orb
@@ -91,16 +89,15 @@ namespace Shinobytes.UI
             var doc = GetComponent<UIDocument>();
             var layer = doc != null ? doc.rootVisualElement?.Q<VisualElement>("conn-layer") : null;
             if (layer == null) return;
-            MakeArt();
 
             root?.RemoveFromHierarchy();
             root = new VisualElement { name = "hero-hud", pickingMode = PickingMode.Ignore };
             root.AddToClassList("rf-hero");
             ReleaseOrbs();
-            health = MakeOrb(new Color(0.86f, 0.12f, 0.12f), new Color(0.22f, 0.0f, 0.03f), new Color(1f, 0.45f, 0.3f));
-            mana = MakeOrb(new Color(0.22f, 0.45f, 1f), new Color(0.02f, 0.05f, 0.3f), new Color(0.5f, 0.8f, 1f));
-            root.Add(OrbElement("rf-hero-orb--health", health, out healthText));
-            root.Add(OrbElement("rf-hero-orb--mana", mana, out manaText));
+            health = MakeOrb(new Color(0.9f, 0.02f, 0.02f), new Color(0.18f, 0.0f, 0.005f), new Color(1f, 0.22f, 0.1f));
+            mana = MakeOrb(new Color(0.06f, 0.25f, 1f), new Color(0.0f, 0.02f, 0.2f), new Color(0.3f, 0.65f, 1f));
+            root.Add(OrbElement("rf-hero-orb--health", health, Localization.UI_HERO_HEALTH, out healthText));
+            root.Add(OrbElement("rf-hero-orb--mana", mana, Localization.UI_HERO_MANA, out manaText));
 
             var bar = new VisualElement { pickingMode = PickingMode.Ignore };
             bar.AddToClassList("rf-hero-bar");
@@ -175,12 +172,13 @@ namespace Shinobytes.UI
             orb.Material.SetColor("_Color", liquid);
             orb.Material.SetColor("_Deep", deep);
             orb.Material.SetColor("_Glow", glow);
-            orb.Texture = new RenderTexture(OrbTexture, OrbTexture, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { name = "Hero orb", hideFlags = HideFlags.DontSave };
+            orb.Texture = new RenderTexture(OrbTexture, OrbTexture, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear) { name = "Hero orb", hideFlags = HideFlags.DontSave };
             orb.Texture.Create();
             return orb;
         }
 
-        private static VisualElement OrbElement(string kind, Orb orb, out Label text)
+        /// <summary>An orb: the sphere, the number over it, the label under it.</summary>
+        private static VisualElement OrbElement(string kind, Orb orb, string label, out Label text)
         {
             var box = new VisualElement { pickingMode = PickingMode.Ignore };
             box.AddToClassList("rf-hero-orb");
@@ -188,14 +186,17 @@ namespace Shinobytes.UI
             orb.Sphere = new VisualElement { pickingMode = PickingMode.Ignore };
             orb.Sphere.AddToClassList("rf-hero-orb__sphere");
             if (orb.Texture) orb.Sphere.style.backgroundImage = new StyleBackground(Background.FromRenderTexture(orb.Texture));
-            var frame = new VisualElement { pickingMode = PickingMode.Ignore };
-            frame.AddToClassList("rf-hero-orb__rim");
-            frame.style.backgroundImage = new StyleBackground(rim);
+            // premultiplied blending (a UI Shader Graph, Assets/UI/Shaders/HeroOrbLight): the orb's light adds over what is
+            // behind it, and the empty glass lets it through
+            var blend = Resources.Load<Material>("HeroOrbLight");
+            if (blend) orb.Sphere.style.unityMaterial = new StyleMaterialDefinition(blend);
             text = new Label { pickingMode = PickingMode.Ignore };
             text.AddToClassList("rf-hero-orb__text");
+            var name = new Label(label) { pickingMode = PickingMode.Ignore };
+            name.AddToClassList("rf-hero-orb__label");
             box.Add(orb.Sphere);
-            box.Add(frame);
             box.Add(text);
+            box.Add(name);
             return box;
         }
 
@@ -265,42 +266,6 @@ namespace Shinobytes.UI
         }
 
         // ---- The orbs' art, drawn once ---------------------------------------------------------------------
-
-        private static void MakeArt()
-        {
-            if (rim) return;
-            // the gold rim, lit from above, with a dark line inside
-            rim = Draw(OrbSize, (x, y, r) =>
-            {
-                var inner = (float)OrbInner / OrbSize;
-                if (r < inner - 0.02f || r > 1f) return Color.clear;
-                var band = Mathf.InverseLerp(inner - 0.02f, 1f, r);
-                var bevel = Mathf.Sin(band * Mathf.PI);
-                var light = 0.55f + 0.45f * y;
-                var gold = Color.Lerp(new Color(0.36f, 0.22f, 0.07f), new Color(0.98f, 0.80f, 0.42f), Mathf.Clamp01(light * 0.6f + bevel * 0.5f));
-                if (band < 0.12f) gold = Color.Lerp(new Color(0.08f, 0.05f, 0.02f), gold, band / 0.12f);
-                var alpha = Mathf.Clamp01((1f - r) * OrbSize * 0.5f) * Mathf.Clamp01((r - inner + 0.02f) * OrbSize * 0.5f);
-                return new Color(gold.r, gold.g, gold.b, alpha);
-            });
-        }
-
-        /// <summary>A texture from a function of (x, y) from -1 to 1 (y up) and the distance from the middle.</summary>
-        private static Texture2D Draw(int size, System.Func<float, float, float, Color> pixel)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave };
-            var pixels = new Color[size * size];
-            for (var j = 0; j < size; j++)
-                for (var i = 0; i < size; i++)
-                {
-                    var x = (i + 0.5f) / size * 2f - 1f;
-                    var y = (j + 0.5f) / size * 2f - 1f;
-                    var r = Mathf.Sqrt(x * x + y * y);
-                    pixels[j * size + i] = r > 1f ? Color.clear : pixel(x, y, r);
-                }
-            texture.SetPixels(pixels);
-            texture.Apply();
-            return texture;
-        }
 
         // ---- Showing ----------------------------------------------------------------------------------------
 
@@ -372,8 +337,8 @@ namespace Shinobytes.UI
             var draw = !(game && game.PotatoMode) || ++orbFrame % 3 == 0;
             DrawOrb(health, share, draw);
             DrawOrb(mana, hero.Mana / hero.MaxMana, draw);
-            healthText.text = ((int)life.CurrentValue).ToString(CultureInfo.InvariantCulture);
-            manaText.text = Mathf.FloorToInt(hero.Mana).ToString(CultureInfo.InvariantCulture);
+            healthText.text = ((int)life.CurrentValue).ToString(CultureInfo.InvariantCulture) + " / " + ((int)life.MaxLevel).ToString(CultureInfo.InvariantCulture);
+            manaText.text = Mathf.FloorToInt(hero.Mana).ToString(CultureInfo.InvariantCulture) + " / " + Mathf.RoundToInt(hero.MaxMana).ToString(CultureInfo.InvariantCulture);
 
             styleBox.EnableInClassList("rf-hero-style--flash", Time.time < styleFlashUntil);
             var level = hero.StyleLevel;

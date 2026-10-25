@@ -1,22 +1,40 @@
 // Hero mode's health and mana orbs (HeroHudView): a glass sphere of liquid, drawn into a small render texture each
-// frame (Graphics.Blit) that the HUD shows inside its gold rim.
+// frame (Graphics.Blit) that the HUD shows. Built after docs/Unity-Glass-Orb-Kit and the user's reference: clear glass
+// that shows the world behind it, a luminous liquid lit from within, light added rather than painted on.
 //
-// The square is the sphere seen head on: from uv the shader finds the sphere's normal, lights it from up and to the
-// left, and fills it to _Fill with liquid. The liquid's surface waves, and tilts with _Slosh (the HUD sets it from how
-// fast the level just moved, so a hit makes it rock); clouds swirl inside it and bubbles rise. Between _Fill and
-// _Trail (where the level was a moment ago) the liquid is paler, so a hit shows how much it took. Over everything the
-// glass: a rim of light at the edge, a soft highlight and a sharp glint.
+// - An orthographic view looking a little down (Tilt) at a unit sphere: each pixel's ray enters and leaves it.
+// - The liquid is the half space under its surface (the fill's height, small waves and a slosh). The ray's part in it
+//   is integrated in steps, emission and absorption (Beer-Lambert): it scatters its colour where light reaches, glows
+//   in its currents (the flow noise at two scales) and toward its core, and burns brightest in the caustics low down;
+//   thick paths are deep, thin edges dark. The liquid body artwork adds stationary depth.
+// - Where the ray meets the surface first, the surface disk shows (an ellipse from this angle) with a glowing band
+//   where it meets the front glass, and the liquid's light spilling onto the glass just above it.
+// - The glass: mostly see-through above the liquid (a faint dark tint), its reflections (the glass artwork and a thin
+//   fresnel rim) added as light. Everything is summed as premultiplied light and coverage; the HUD's element blends it
+//   One, OneMinusSrcAlpha (the HeroOrbLight UI Shader Graph), so added light adds over what is behind.
+// - Between _Fill and _Trail (where the level was a moment ago) a pale band shows what a hit took.
 Shader "Ravenfall/Hero Orb"
 {
     Properties
     {
-        _Color("Liquid", Color) = (0.85, 0.12, 0.12, 1)
-        _Deep("Liquid deep", Color) = (0.25, 0.01, 0.03, 1)
-        _Glow("Inner glow", Color) = (1, 0.45, 0.3, 1)
+        _Color("Liquid (scattering)", Color) = (0.95, 0.06, 0.05, 1)
+        _Deep("Liquid deep (absorption tint)", Color) = (0.22, 0.0, 0.02, 1)
+        _Glow("Glow (currents, core, caustics)", Color) = (1, 0.3, 0.2, 1)
         _Fill("Fill", Range(0, 1)) = 0.7
         _Trail("Trail", Range(0, 1)) = 0.7
         _Slosh("Slosh", Range(-1, 1)) = 0
         _Clock("Time", Float) = 0
+        _Tilt("View from above (radians)", Range(0, 0.6)) = 0.23
+        _Absorption("Absorption", Range(0.5, 8)) = 2.4
+        _GlassStrength("Glass strength", Range(0, 1)) = 0.55
+        _GlassTint("Empty glass coverage", Range(0, 1)) = 0.3
+        [Toggle] _Premultiplied("Premultiplied output (the HUD blends One, OneMinusSrcAlpha)", Float) = 1
+        [NoScaleOffset] _Glass("Glass overlay", 2D) = "black" {}
+        [NoScaleOffset] _Body("Liquid body", 2D) = "gray" {}
+        [NoScaleOffset] _Flow("Flow noise", 2D) = "gray" {}
+        // where the sphere sits in each texture (centre u, v and radius), measured from the artwork
+        _GlassFit("Glass fit", Vector) = (0.4976, 0.5028, 0.4348, 0)
+        _BodyFit("Body fit", Vector) = (0.4996, 0.5032, 0.4559, 0)
     }
 
     SubShader
@@ -29,112 +47,172 @@ Shader "Ravenfall/Hero Orb"
             CGPROGRAM
             #pragma vertex vert_img
             #pragma fragment frag
+            #pragma target 3.0
             #include "UnityCG.cginc"
 
             float4 _Color, _Deep, _Glow;
-            float _Fill, _Trail, _Slosh, _Clock;
+            float _Fill, _Trail, _Slosh, _Clock, _Tilt, _Absorption, _GlassStrength, _GlassTint, _Premultiplied;
+            sampler2D _Glass, _Body, _Flow;
+            float4 _GlassFit, _BodyFit;
 
-            float hash(float2 p)
+            #define STEPS 12
+
+            // the surface's height (y up, the sphere's radius 1) under a world point
+            float SurfaceAt(float3 w, float fill)
             {
-                return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
+                if (fill >= 0.999) return 2;
+                if (fill <= 0.001) return -2;
+                float h = lerp(-1, 1, fill);
+                float calm = saturate(1 - abs(h)); // the waves fade toward empty and full
+                float t = _Clock;
+                float wave = sin(w.x * 3.0 + t * 1.9) * 0.022 + sin(w.z * 3.7 - t * 2.4) * 0.016 + sin((w.x - w.z) * 6.5 + t * 3.9) * 0.006;
+                return h + (wave * (0.6 + abs(_Slosh) * 2.5) + _Slosh * w.x * 0.3) * calm;
             }
 
-            float noise(float2 p)
-            {
-                float2 i = floor(p);
-                float2 f = frac(p);
-                f = f * f * (3 - 2 * f);
-                return lerp(lerp(hash(i), hash(i + float2(1, 0)), f.x), lerp(hash(i + float2(0, 1)), hash(i + float2(1, 1)), f.x), f.y);
-            }
-
-            float clouds(float2 p)
-            {
-                float v = 0, a = 0.5;
-                for (int o = 0; o < 4; o++)
-                {
-                    v += noise(p) * a;
-                    p = p * 2.03 + float2(1.7, 9.2);
-                    a *= 0.5;
-                }
-                return v;
-            }
-
-            // the surface's height at x, for a level from -1 (empty) to 1 (full)
-            float surface(float x, float level)
+            // the flow noise's brightness, at two scales drifting apart
+            float Flow(float3 w)
             {
                 float t = _Clock;
-                float calm = 1 - abs(level); // flat when nearly empty or full
-                float wave = sin(x * 3.1 + t * 2.2) * 0.035 + sin(x * 5.3 - t * 3.4) * 0.018 + sin(x * 9.0 + t * 5.1) * 0.006;
-                return level + (wave * (0.4 + abs(_Slosh) * 2.5) + _Slosh * x * 0.35) * calm;
+                float a = tex2Dlod(_Flow, float4(w.xz * 0.45 + float2(t * 0.03, t * 0.017) + w.y * 0.15, 0, 0)).r;
+                float b = tex2Dlod(_Flow, float4(w.xy * 0.8 + float2(-t * 0.021, t * 0.035) + 0.37, 0, 0)).r;
+                return a * 0.6 + b * 0.4;
             }
+
+            float Luma(float3 c) { return dot(c, float3(0.299, 0.587, 0.114)); }
 
             fixed4 frag(v2f_img i) : SV_Target
             {
                 float2 p = i.uv * 2 - 1;
                 float r = length(p);
-                float edge = fwidth(r) * 1.5;
-                float alpha = 1 - smoothstep(1 - edge, 1, r);
-                if (alpha <= 0) return 0;
+                float aa = fwidth(r) * 1.5;
+                float edgeAlpha = 1 - smoothstep(1 - aa, 1, r);
+                if (edgeAlpha <= 0) return 0;
 
-                float3 n = float3(p, sqrt(saturate(1 - r * r)));
-                float3 light = normalize(float3(-0.45, 0.6, 0.65));
+                float zf = sqrt(saturate(1 - r * r));
+                float c = cos(_Tilt), s = sin(_Tilt);
+                // a point on the ray (view z) in the world: tilted so the viewer looks down
+                #define WORLD(z) float3(p.x, p.y * c + (z) * s, -p.y * s + (z) * c)
 
-                float level = _Fill * 2 - 1;
-                float trail = max(_Trail, _Fill) * 2 - 1;
-                float top = surface(p.x, level);
-                float trailTop = surface(p.x, trail);
+                float fill = _Fill;
+                float3 front = WORLD(zf);
+                float3 back = WORLD(-zf);
+                float frontH = SurfaceAt(front, fill);
 
-                // the empty glass: dark, a little lighter low in the middle
-                float3 colour = lerp(float3(0.02, 0.02, 0.035), float3(0.09, 0.085, 0.12), saturate(1 - length(p - float2(0, -0.35)) / 1.4));
-
-                // the liquid: deeper toward the bottom and the edge, lit through, clouds swirling in it
-                if (p.y < trailTop)
+                // the ray's part under the surface: from where it goes under (the front, or the surface) to the back
+                float zEnter = zf;
+                bool surface = false;
+                bool any = back.y < SurfaceAt(back, fill);
+                if (any && front.y > frontH)
                 {
-                    float depth = saturate((top - p.y) * 0.55);
-                    float2 swirl = n.xy / (1.2 + n.z);
-                    float angle = _Clock * 0.25;
-                    float2 rotated = float2(swirl.x * cos(angle) - swirl.y * sin(angle), swirl.x * sin(angle) + swirl.y * cos(angle));
-                    float c = clouds(rotated * 3 + float2(_Clock * 0.15, -_Clock * 0.35));
-                    float3 liquid = lerp(_Color.rgb, _Deep.rgb, saturate(depth * 0.9 + (1 - n.z) * 0.6));
-                    liquid *= 0.7 + c * 0.6;
-                    liquid += _Glow.rgb * pow(saturate(1 - length(p - float2(0.05, -0.2)) * 0.9), 3) * 0.55;
-                    liquid *= 0.65 + 0.45 * saturate(dot(n, light));
-
-                    // bubbles rising
-                    for (int b = 0; b < 6; b++)
+                    float lo = zf, hi = -zf;
+                    for (int k = 0; k < 7; k++)
                     {
-                        float fb = b;
-                        float x = frac(sin(fb * 12.9898) * 437.585) * 1.4 - 0.7;
-                        float speed = 0.18 + frac(fb * 0.37) * 0.2;
-                        float y = frac(_Clock * speed + fb * 0.31) * 2.2 - 1.1;
-                        float2 at = float2(x + sin(_Clock * 2 + fb) * 0.04, y);
-                        float size = 0.025 + frac(fb * 0.71) * 0.025;
-                        float d = length(p - at);
-                        float bubble = (1 - smoothstep(size * 0.6, size, d)) * step(at.y, top - 0.02);
-                        liquid += bubble * 0.35 * lerp(_Glow.rgb, 1, 0.5);
+                        float mid = (lo + hi) * 0.5;
+                        float3 wm = WORLD(mid);
+                        if (wm.y < SurfaceAt(wm, fill)) hi = mid; else lo = mid;
                     }
-
-                    // between the level and where it was a moment ago: paler, fading
-                    if (p.y > top) liquid = lerp(liquid, lerp(_Color.rgb, 1, 0.55), 0.55) * 0.9;
-
-                    // a bright line at the surface
-                    float foam = 1 - smoothstep(0, 0.035, abs(p.y - top));
-                    liquid += foam * lerp(_Glow.rgb, 1, 0.4) * 0.6 * step(-0.98, level) * step(level, 0.98);
-                    colour = liquid;
+                    zEnter = (lo + hi) * 0.5;
+                    surface = true;
                 }
 
-                // the glass: light along the rim, a soft highlight up left, a sharp glint, darker toward the edge
-                float rim = pow(1 - n.z, 3);
-                colour = colour * (1 - rim * 0.55) + rim * 0.35 * float3(1, 0.95, 0.85);
-                float3 view = float3(0, 0, 1);
-                float3 h = normalize(light + view);
-                colour += pow(saturate(dot(n, h)), 60) * 0.9;
-                float soft = saturate(1 - length((p - float2(-0.36, 0.42)) / float2(0.42, 0.26)));
-                colour += soft * soft * 0.22;
-                float glint = saturate(1 - length((p - float2(0.42, -0.6)) / float2(0.16, 0.05)));
-                colour += glint * 0.35;
+                // premultiplied: light (rgb) and coverage (a)
+                float3 light = 0;
+                float cover = 0;
 
-                return fixed4(colour, alpha);
+                if (any)
+                {
+                    float body = tex2D(_Body, _BodyFit.xy + p * _BodyFit.z).r;
+                    float len = zEnter + zf;
+                    float ds = len / STEPS;
+                    float3 acc = 0;
+                    float trans = 1;
+                    for (int j = 0; j < STEPS; j++)
+                    {
+                        float z = zEnter - (j + 0.5) * ds;
+                        float3 w = WORLD(z);
+                        float under = SurfaceAt(w, fill) - w.y;
+                        float f = Flow(w);
+                        float density = 0.5 + f * 0.8;
+                        float lit = exp(-under * 1.2);
+                        // emission: scattered colour where light reaches, the currents, the core, the caustics low down
+                        float currents = smoothstep(0.55, 0.9, f);
+                        float core = pow(saturate(1 - length(float2(w.x, w.y + 0.3)) * 0.95), 2);
+                        float caustic = smoothstep(-0.5, -0.95, w.y) * (0.4 + body);
+                        float3 emit = _Color.rgb * (0.04 + 0.4 * lit) + _Glow.rgb * (currents * 0.42 + core * 0.7 + caustic * 0.75);
+                        float a = 1 - exp(-_Absorption * density * ds);
+                        acc += trans * a * emit;
+                        trans *= 1 - a;
+                    }
+                    float3 liquid = acc + trans * _Deep.rgb * 0.4;
+                    // depth: the body art, darker toward its edge; the sphere's edge darker still
+                    liquid *= (0.35 + body * 0.9) * lerp(0.3, 1, pow(zf, 0.6));
+
+                    // a few motes drifting up, catching the light
+                    for (int m = 0; m < 6; m++)
+                    {
+                        float fm = m;
+                        float2 at = float2(frac(sin(fm * 12.9898) * 437.585) * 1.2 - 0.6, frac(_Clock * (0.05 + frac(fm * 0.37) * 0.05) + fm * 0.29) * 1.8 - 0.95);
+                        float mote = smoothstep(0.02, 0.0, length(p - at)) * (0.5 + 0.5 * sin(_Clock * 3 + fm * 2));
+                        float3 wm = WORLD(sqrt(saturate(1 - dot(at, at))));
+                        liquid += mote * step(wm.y, SurfaceAt(wm, fill) - 0.04) * lerp(_Glow.rgb, 1, 0.5) * 0.6;
+                    }
+
+                    if (surface)
+                    {
+                        // the surface disk: the liquid's colour, brighter toward the back, a glowing ring at the glass
+                        float3 w = WORLD(zEnter);
+                        float disk = sqrt(saturate(1 - w.y * w.y));
+                        float edge = saturate(length(w.xz) / max(disk, 0.001));
+                        float rear = saturate(-w.z / max(disk, 0.001) * 0.5 + 0.5);
+                        float ripple = Flow(w * 1.2) - 0.5;
+                        float3 top = (_Color.rgb * (0.12 + 0.3 * rear * rear) + _Glow.rgb * 0.08) * (1 + ripple * 0.35);
+                        liquid = lerp(liquid, top, 0.4);
+                        liquid += smoothstep(0.85, 1.0, edge) * _Glow.rgb * 0.35;
+                    }
+                    light = liquid;
+                    cover = 1;
+                }
+                else
+                {
+                    // the empty glass: a faint dark tint over what is behind
+                    cover = _GlassTint * (0.6 + 0.4 * (1 - zf));
+                    light = _Deep.rgb * 0.05 * cover;
+                    // where the level was a moment ago: a pale band
+                    float trail = max(_Trail, _Fill);
+                    if (trail > fill + 0.002 && front.y < SurfaceAt(front, trail))
+                    {
+                        light += _Color.rgb * 0.25;
+                        cover = max(cover, 0.5);
+                    }
+                    // the liquid's light spilling onto the glass just above it
+                    if (fill > 0.001 && fill < 0.999)
+                    {
+                        float above = front.y - frontH;
+                        light += _Glow.rgb * exp(-max(above, 0) * 9) * 0.22 * smoothstep(-0.02, 0.0, above);
+                    }
+                }
+
+                // the glowing band where the surface meets the front glass
+                if (fill > 0.001 && fill < 0.999)
+                {
+                    float lip = front.y - frontH;
+                    light += smoothstep(0.035, 0.0, abs(lip)) * lerp(_Glow.rgb, 1, 0.35) * 0.55;
+                }
+
+                // the glass's reflections, added as light: the artwork (masked to the sphere, weaker at its bright edge) and
+                // a thin fresnel rim
+                float4 glass = tex2D(_Glass, _GlassFit.xy + p * _GlassFit.z);
+                float mask = smoothstep(1.0, 0.96, r);
+                float3 reflection = glass.rgb * glass.a * _GlassStrength * mask * lerp(0.35, 1.0, smoothstep(0.97, 0.78, r));
+                reflection += smoothstep(0.93, 0.99, r) * smoothstep(1.0, 0.985, r) * 0.25;
+                light += reflection;
+
+                // premultiplied for the HUD's One, OneMinusSrcAlpha blend: added light simply adds over what is behind
+                if (_Premultiplied > 0.5) return float4(light * edgeAlpha, saturate(cover) * edgeAlpha);
+                // straight alpha (a plain blend): added light raises the coverage it needs to show
+                cover = saturate(max(cover, max(light.r, max(light.g, light.b))));
+                float3 colour = cover > 0.0001 ? saturate(light / cover) : 0;
+                return fixed4(colour, cover * edgeAlpha);
             }
             ENDCG
         }

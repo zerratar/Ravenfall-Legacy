@@ -12,7 +12,8 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _PREMULTIPLIED_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -22,16 +23,35 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _Body:
+        m_Texture: {fileID: 2800000, guid: 4f1cb5f5ad72d2a48b553ac33057b157, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Flow:
+        m_Texture: {fileID: 2800000, guid: c27702299069afe45a00c5e65594002c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Glass:
+        m_Texture: {fileID: 2800000, guid: 9491e92a74b7e5a47ad43bee96d0f2ab, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Absorption: 3.2
     - _Clock: 0
     - _Fill: 0.7
+    - _GlassStrength: 0.55
+    - _GlassTint: 0.3
+    - _Premultiplied: 1
     - _Slosh: 0
+    - _Tilt: 0.23
     - _Trail: 0.7
     m_Colors:
+    - _BodyFit: {r: 0.4996, g: 0.5032, b: 0.4559, a: 0}
     - _Color: {r: 0.85, g: 0.11999995, b: 0.11999995, a: 1}
     - _Deep: {r: 0.24999997, g: 0.01, b: 0.03, a: 1}
+    - _GlassFit: {r: 0.4976, g: 0.5028, b: 0.4348, a: 0}
     - _Glow: {r: 1, g: 0.45, b: 0.29999998, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

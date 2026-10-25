@@ -297,7 +297,9 @@ public class EnemyMovementController : MonoBehaviour
         {
             var index = UnityEngine.Random.Range(0, deathAnimations.Length);
             deathAnimation = deathAnimations[index];
-            animator.SetBool(deathAnimation, true);
+            // the Humanoid Enemy controller's Die is a trigger: SetBool on it does nothing and the enemy just vanished
+            if (IsTrigger(deathAnimation)) animator.SetTrigger(deathAnimation);
+            else animator.SetBool(deathAnimation, true);
         }
         else
         {
@@ -310,10 +312,50 @@ public class EnemyMovementController : MonoBehaviour
         }
     }
 
+    private bool IsTrigger(string parameter)
+    {
+        foreach (var p in animator.parameters)
+            if (p.name == parameter) return p.type == AnimatorControllerParameterType.Trigger;
+        return false;
+    }
+
+    /// <summary>Takes the death back: a trigger is reset, a bool cleared.</summary>
+    private void ClearDeath()
+    {
+        if (string.IsNullOrEmpty(deathAnimation)) return;
+        if (IsTrigger(deathAnimation)) animator.ResetTrigger(deathAnimation);
+        else animator.SetBool(deathAnimation, false);
+    }
+
+    /// <summary>
+    /// Hidden once the death has played: the death clip may start late (an attack finishes first) and the animator
+    /// leaves it by itself, so this follows the animator rather than a fixed time (deathAnimationLength plus two
+    /// seconds at most). Without a death animation, after deathAnimationLength.
+    /// </summary>
     private IEnumerator Hide()
     {
-        yield return new WaitForSeconds(deathAnimationLength);
+        var waited = 0f;
+        var sawDeath = false;
+        var limit = deathAnimationLength + 2f;
+        while (waited < limit && deathAnimations != null && deathAnimations.Length > 0 && animator && animator.enabled)
+        {
+            var dying = Playing(animator.GetCurrentAnimatorClipInfo(0));
+            if (dying) sawDeath = true;
+            else if (sawDeath) break;
+            // done when the death is near its end or the animator starts to move on from it
+            if (dying && (animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.95f || (animator.IsInTransition(0) && !Playing(animator.GetNextAnimatorClipInfo(0))))) break;
+            waited += Time.deltaTime;
+            yield return null;
+        }
+        if (!sawDeath && waited < deathAnimationLength) yield return new WaitForSeconds(deathAnimationLength - waited);
         SetVisibility(false);
+    }
+
+    private static bool Playing(AnimatorClipInfo[] clips)
+    {
+        foreach (var c in clips)
+            if (c.clip && c.clip.name.IndexOf("death", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+        return false;
     }
 
 
@@ -341,10 +383,7 @@ public class EnemyMovementController : MonoBehaviour
         SetVisibility(true);
         if (animator.enabled)
         {
-            if (!string.IsNullOrEmpty(deathAnimation))
-            {
-                animator.SetBool(deathAnimation, false);
-            }
+            ClearDeath();
         }
     }
 
@@ -353,10 +392,7 @@ public class EnemyMovementController : MonoBehaviour
         SetVisibility(true);
         if (animator.enabled)
         {
-            if (!string.IsNullOrEmpty(deathAnimation))
-            {
-                animator.SetBool(deathAnimation, false);
-            }
+            ClearDeath();
 
             if (HasParameter("revive"))
             {
@@ -366,6 +402,10 @@ public class EnemyMovementController : MonoBehaviour
 
         Unlock();
     }
+
+    /// <summary>The renderers to show and hide again, after the rig's shown variant changed (hero mode's waves turn
+    /// a goblin rig into a skeleton or a warchief after it was made).</summary>
+    public void RefreshRenderers() => renderers = GetComponentsInChildren<Renderer>(false);
 
     private void SetVisibility(bool value)
     {

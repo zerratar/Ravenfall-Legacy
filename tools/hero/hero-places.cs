@@ -5,7 +5,9 @@
 // - Captain Hargrove (IslandNpc "captain") by the castle's east gate, who offers the wave quest "Hold the line";
 // - the wave gates (WaveRun): where the waves come in, each snapped onto the island's navmesh. The stone bridge and
 //   the wooden bridge to the east, the metal gate on the desert road, the swamp to the south and the mill road to
-//   the north west. A run uses the two gates nearest the hero.
+//   the north west. A run uses the two gates nearest the hero;
+// - the look (7e): the courtyard dressed as the stand (banners at the gate, braziers, the captain's arrows), and
+//   each gate with goblin spikes on both sides of the way in and a fire.
 var sb = new System.Text.StringBuilder();
 var islands = UnityEngine.GameObject.Find("============ WORLD/Islands");
 var playable = islands ? islands.transform.Find("Ravebridge/Playable") : null;
@@ -66,6 +68,79 @@ foreach (var (name, x, z) in new[]
     g.position = p.Value;
     sb.Append(name + " " + p.Value.ToString("0") + "; ");
 }
+
+// ---- the look (7e): the courtyard as the stand, and the gates the waves come through ----------------------
+System.Func<string, UnityEngine.Transform, float, float, float, float, UnityEngine.GameObject> prop = (path, parent, x, z, yaw, scale) =>
+{
+    var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(path);
+    if (!asset) { sb.Append("no " + path + "; "); return null; }
+    var go = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(asset, parent);
+    var probe = new UnityEngine.Vector3(x, 60f, z);
+    var y = UnityEngine.Physics.Raycast(probe, UnityEngine.Vector3.down, out var ground, 120f, ~0, UnityEngine.QueryTriggerInteraction.Ignore) ? ground.point.y : 8f;
+    go.transform.position = new UnityEngine.Vector3(x, y, z);
+    go.transform.rotation = UnityEngine.Quaternion.Euler(0f, yaw, 0f);
+    go.transform.localScale = UnityEngine.Vector3.one * scale;
+    return go;
+};
+const string Dungeon = "Assets/PolygonDungeon/Prefabs/";
+const string Kingdom = "Assets/PolygonFantasyKingdom/Prefabs/";
+const string Empire = "Assets/PolygonAncientEmpire/Prefabs/";
+System.Action<UnityEngine.GameObject, float> fire = (brazier, height) =>
+{
+    if (!brazier) return;
+    // Synty's meadow campfire (URP particles; PolygonDungeon's FX_Fire has no material and renders magenta)
+    var fx = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonNatureBiomes/PNB_Meadow_Forest/FX/FX_Prefabs/FX_Fire_01.prefab");
+    if (!fx) return;
+    var f = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(fx, brazier.transform);
+    f.transform.localPosition = new UnityEngine.Vector3(0f, height, 0f);
+};
+
+// the courtyard: banners at the gate, braziers, the captain's arrows and crates
+var stand = new UnityEngine.GameObject("Courtyard").transform;
+stand.SetParent(group, false);
+prop(Kingdom + "Props/Banners/SM_Prop_Battle_Banner_01.prefab", stand, -1623.2f, 1558.6f, 90f, 1.4f);
+prop(Kingdom + "Props/Banners/SM_Prop_Battle_Banner_01.prefab", stand, -1623.2f, 1551.4f, 90f, 1.4f);
+fire(prop(Empire + "Props/SM_Prop_Brazier_02.prefab", stand, -1627.5f, 1560.5f, 0f, 0.8f), 0.8f);
+fire(prop(Empire + "Props/SM_Prop_Brazier_02.prefab", stand, -1627.5f, 1549.5f, 0f, 0.8f), 0.8f);
+prop(Kingdom + "Props/SM_Prop_Barrel_Arrows_01.prefab", stand, -1623.4f, 1546.6f, 20f, 1f);
+prop(Kingdom + "Props/SM_Prop_Barrel_Arrows_01.prefab", stand, -1624.4f, 1545.9f, 75f, 1f);
+prop(Kingdom + "Props/SM_Prop_Crate_Stack_01.prefab", stand, -1625.6f, 1545.2f, 0f, 1f);
+
+// each gate: goblin spikes on both sides of the way in, facing out, and a fire
+var courtyard = new UnityEngine.Vector3(-1630f, 0f, 1555f);
+foreach (UnityEngine.Transform gate in gates)
+{
+    // the way in is the path the waves walk: from the gate toward the courtyard, its first few metres
+    var outward = gate.position - courtyard; outward.y = 0f; outward.Normalize();
+    var path = new UnityEngine.AI.NavMeshPath();
+    var inside = UnityEngine.AI.NavMesh.SamplePosition(courtyard + UnityEngine.Vector3.up * 8f, out var court, 6f, UnityEngine.AI.NavMesh.AllAreas) ? court.position : courtyard;
+    if (UnityEngine.AI.NavMesh.CalculatePath(gate.position, inside, NavMeshHelper.AreaMaskAt(gate.position), path) && path.corners.Length > 1)
+    {
+        foreach (var corner in path.corners)
+        {
+            var d = corner - gate.position; d.y = 0f;
+            if (d.magnitude < 4f) continue;
+            outward = -d.normalized;
+            break;
+        }
+    }
+    var side = UnityEngine.Vector3.Cross(UnityEngine.Vector3.up, outward);
+    var yaw = UnityEngine.Quaternion.LookRotation(outward).eulerAngles.y;
+    foreach (var s2 in new[] { -1f, 1f })
+    {
+        var spot = gate.position + outward * 2f + side * (s2 * 5f);
+        prop(Dungeon + "Props/SM_Prop_Goblin_Spikes_01.prefab", gate, spot.x, spot.z, yaw, 0.9f);
+    }
+    // the fire beside a barricade, on whichever side there is ground to stand on (not the water by a bridge)
+    foreach (var s3 in new[] { 1f, -1f })
+    {
+        var b = gate.position + outward * 2f + side * (s3 * 8f);
+        if (!UnityEngine.AI.NavMesh.SamplePosition(b, out var onGround, 1.5f, UnityEngine.AI.NavMesh.AllAreas)) continue;
+        fire(prop(Empire + "Props/SM_Prop_Brazier_02.prefab", gate, onGround.position.x, onGround.position.z, 0f, 0.7f), 0.8f);
+        break;
+    }
+}
+sb.Append("dressed " + stand.childCount + " courtyard props and " + gates.childCount + " gates; ");
 
 UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(playable.gameObject.scene);
 return sb.ToString();

@@ -26,6 +26,8 @@ namespace Shinobytes.UI
         private readonly Label resultTitle;
         private readonly Label resultLine;
         private readonly Label resultBest;
+        private int fromWave = -1;
+        private float fromShownAt;
 
         public HeroWaveHud(VisualElement root)
         {
@@ -98,17 +100,18 @@ namespace Shinobytes.UI
             {
                 case WaveRun.Phase.Gathering:
                     wave.text = Localization.UI_WAVE_GET_READY;
-                    sub.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_FIRST_IN, left);
+                    sub.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_FIRST_IN, left) + "\n" + run.ComingFrom;
                     break;
                 case WaveRun.Phase.Breather:
                     wave.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_HELD, run.Cleared);
-                    sub.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_NEXT_IN, run.Wave + 1, left);
+                    sub.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_NEXT_IN, run.Wave + 1, left) + "\n" + run.ComingFrom;
                     break;
                 default:
                     wave.text = run.Goal > 0
                         ? string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_OF, run.Wave, run.Goal)
                         : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_N, run.Wave);
                     sub.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_LEFT, run.Left, run.Kills);
+                    if (Time.time - fromShownAt < 6f || run.Wave != fromWave) { if (run.Wave != fromWave) { fromWave = run.Wave; fromShownAt = Time.time; } sub.text += "\n" + run.ComingFrom; }
                     break;
             }
 

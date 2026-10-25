@@ -440,3 +440,42 @@ The ranged, magic and healing kits and switching style came with the fix round. 
 
   Not tried live: a title (wave 10), the stream quest, and the chat replies.
 
+### 7e, Ravebridge for hero mode, and the orbs again (2026-10-25)
+
+- **Sight lines (`HeroCamera`):** ten times a second, anything tall between the camera and the hero is drawn as its
+  shadow only while it is in the way (a capsule of 2.5 m: whole roofs, wall walks and towers, not just one plank).
+  People, enemies and the ground stay. It is a cut, not a fade: the buildings' shaders have no dithering.
+- **The gates and the courtyard (`tools/hero/hero-places.cs`):**
+  - each wave gate has goblin spike barricades on both sides of the path the waves walk (found from a navmesh path
+    to the courtyard) and a brazier with fire on whichever side has ground;
+  - the courtyard, the stand, has battle banners at the east gate, two braziers and the captain's arrow barrels and
+    crates;
+  - the fires are Synty's meadow campfire. PolygonDungeon's FX_Fire has no material and rendered magenta.
+- **The waves (`WaveRun`):** the gates count up to 130 m away (the courtyard's nearest are 87 and 117 m). Enemies
+  charge in at 6.5 m/s until 20 m from their target, then fight at their own pace. A purple puff marks where each
+  one comes in. The HUD says where the next wave comes from ("From the stone bridge and the swamp").
+- **Deaths (`EnemyMovementController`, every enemy on the Humanoid Enemy controller):** its `Die` is a trigger, and
+  `SetBool` on it did nothing, so enemies just vanished. Now a trigger is fired as a trigger. The hide follows the
+  death clip until it ends, not a fixed timer. Wave enemies refresh their renderer list after their rig variant
+  changes, so the right meshes hide.
+- **The orbs, after the user's references and `docs/Unity-Glass-Orb-Kit`:**
+  - no frame, medallion or label box any more: the glass sphere, the number, and "HEALTH" / "MANA" under it;
+  - `HeroOrb.shader` follows the kit. A view looking a little down at a unit sphere, with the ray's part under the
+    liquid's surface integrated in 12 steps (emission and absorption, Beer-Lambert). The liquid scatters its colour,
+    glows in its currents (the kit's flow noise at two scales) and core, and burns in the caustics low down. The kit's
+    liquid body art adds depth, and a few motes drift up. The surface disk, its glowing band at the front glass, and
+    the light spilling onto the glass above it are part of the liquid;
+  - the glass is see-through: a faint tint, with the kit's glass art (weaker at its bright edge) and a thin rim added
+    as light;
+  - the blending is a UI Shader Graph (`Assets/UI/Shaders/HeroOrbLight.shadergraph`). It is URP's UI template with
+    its demo tints white and the blending set to Premultiply (One, OneMinusSrcAlpha), on the orb element through
+    `style.unityMaterial`. The orb's render texture holds premultiplied light and coverage, so its light adds over
+    the world and the empty glass lets it through;
+  - the render texture is half float and linear: 8-bit linear banded the dark tones.
+- **Tested in play mode:**
+  - a storm run from the courtyard (the waves came from the stone bridge and the swamp);
+  - a goblin's death playing out before it hid;
+  - the fires;
+  - the sight line cutting a wall walk;
+  - the orbs at several fills over the game.
+

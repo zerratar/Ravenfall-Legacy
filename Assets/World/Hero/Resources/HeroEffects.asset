@@ -26,3 +26,4 @@ MonoBehaviour:
   Sanctuary: {fileID: 1998750652454270, guid: 8a1ac1dbe39224143972fa1a908b0abf, type: 3}
   Angel: {fileID: 1231636063597364, guid: 3aa0fab185f378240b831342bde74b26, type: 3}
   Cheer: {fileID: 1153730961705006, guid: f1aeeba2f9003904da5c0a24ba150198, type: 3}
+  Arrival: {fileID: 1029544359644514, guid: aab2daf1fd2b23f4a9bdbbb38fc95704, type: 3}

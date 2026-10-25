@@ -30,11 +30,12 @@ fx.Mend = hit(24);             // bright green
 fx.Sanctuary = hit(6);         // green
 fx.Angel = hit(14);            // white
 fx.Cheer = hit(4);             // yellow sparkle
+fx.Arrival = hit(7);           // purple puff where a wave enemy comes in
 UnityEditor.EditorUtility.SetDirty(fx);
 UnityEditor.AssetDatabase.SaveAssets();
 
 // the materials the HUD orbs and the click marker are drawn with: kept in Resources so builds include their shaders
-foreach (var (file, shaderName) in new[] { ("HeroOrb", "Ravenfall/Hero Orb"), ("HeroMarker", "Ravenfall/Hero Marker") })
+foreach (var (file, shaderName) in new[] { ("HeroOrb", "Ravenfall/Hero Orb"), ("HeroMarker", "Ravenfall/Hero Marker"), ("HeroOrbLight", "Shader Graphs/HeroOrbLight") })
 {
     var shader = UnityEngine.Shader.Find(shaderName);
     if (!shader) return "no shader " + shaderName;
@@ -43,6 +44,28 @@ foreach (var (file, shaderName) in new[] { ("HeroOrb", "Ravenfall/Hero Orb"), ("
     if (!material) UnityEditor.AssetDatabase.CreateAsset(new UnityEngine.Material(shader), materialPath);
     else if (material.shader != shader) material.shader = shader;
 }
+UnityEditor.AssetDatabase.SaveAssets();
+
+// the orbs' artwork (docs/Unity-Glass-Orb-Kit, at 512 px): the glass as colour, the liquid body and the flow noise as
+// data (linear), the flow mirrored at its edges so its seams never show; on the HeroOrb material
+var textures = "Assets/World/Hero/Textures/";
+foreach (var (file, srgb, wrap) in new[] { ("HeroOrbGlass", true, UnityEngine.TextureWrapMode.Clamp), ("HeroOrbBody", false, UnityEngine.TextureWrapMode.Clamp), ("HeroOrbFlow", false, UnityEngine.TextureWrapMode.Mirror) })
+{
+    var importer = UnityEditor.AssetImporter.GetAtPath(textures + file + ".png") as UnityEditor.TextureImporter;
+    if (!importer) return "no " + file;
+    importer.textureType = UnityEditor.TextureImporterType.Default;
+    importer.sRGBTexture = srgb;
+    importer.wrapMode = wrap;
+    importer.mipmapEnabled = true;
+    importer.alphaIsTransparency = srgb;
+    importer.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
+    importer.SaveAndReimport();
+}
+var orbMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/World/Hero/Resources/HeroOrb.mat");
+orbMaterial.SetTexture("_Glass", UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(textures + "HeroOrbGlass.png"));
+orbMaterial.SetTexture("_Body", UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(textures + "HeroOrbBody.png"));
+orbMaterial.SetTexture("_Flow", UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(textures + "HeroOrbFlow.png"));
+UnityEditor.EditorUtility.SetDirty(orbMaterial);
 UnityEditor.AssetDatabase.SaveAssets();
 
 var missing = new System.Collections.Generic.List<string>();

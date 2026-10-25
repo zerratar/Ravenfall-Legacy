@@ -462,6 +462,16 @@ public static class Localization
     public static string UI_HERO_DODGE = "Dodge";
     public static string UI_HERO_POTION = "Potion";
     public static string UI_HERO_STYLE_MELEE = "Melee";
+    public static string UI_HERO_HEALTH = "HEALTH";
+    public static string UI_HERO_MANA = "MANA";
+    public static string UI_WAVE_FROM = "From {0}";
+    public static string UI_WAVE_AND = "{0} and {1}";
+    public static string UI_WAVE_FROM_AROUND = "From all around!";
+    public static string UI_WAVE_GATE_STONE = "the stone bridge";
+    public static string UI_WAVE_GATE_WOOD = "the wooden bridge";
+    public static string UI_WAVE_GATE_DESERT = "the desert gate";
+    public static string UI_WAVE_GATE_SWAMP = "the swamp";
+    public static string UI_WAVE_GATE_MILL = "the mill road";
     public static string UI_HERO_HELPERS = "Top helpers";
     public static string UI_HERO_HELPER_DAMAGE = "{0} dmg";
     public static string UI_HERO_HELPER_HEALING = "{0} healed";
