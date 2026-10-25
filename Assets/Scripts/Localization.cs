@@ -468,6 +468,9 @@ public static class Localization
     public static string UI_BUILD_MOVE = "Move";
     public static string UI_BUILD_ROTATE = "Rotate";
     public static string UI_BUILD_SEARCH = "Search players...";
+    public static string UI_BUILD_FILTER = "Find buildings, roads, decor...";
+    public static string UI_BUILD_FILTER_TITLE = "FOUND";
+    public static string UI_BUILD_FILTER_NONE = "Nothing called \"{0}\"";
     public static string UI_BUILD_TRAY_TITLE = "{0} BUILDINGS";
     public static string UI_BUILD_BUILD = "BUILD";
     public static string UI_BUILD_SUMMARY_CONTRIBUTING = "{0} buildings contributing";
@@ -494,6 +497,7 @@ public static class Localization
     public static string UI_ROAD_DIRT = "Dirt road";
     public static string UI_ROAD_GRAVEL = "Gravel road";
     public static string UI_ROAD_COBBLES = "Cobbles";
+    public static string UI_ROAD_PAVING = "Paved road";
     public static string UI_ROAD_DRAW = "Draw";
     public static string UI_ROAD_PER_METRE = "{0} a metre";
     public static string UI_ROAD_LOCKED = "Needs town hall tier {0}";

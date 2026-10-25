@@ -48,7 +48,9 @@ Everything the old icon bar and dialogs did, in a real mode with UI Toolkit pane
   Combat (melee, ranged, magic, healing, slayer), Gathering (woodcutting, mining, fishing,
   farming, gathering) and Crafting (cooking, crafting, alchemy, sailing). Production, Decor and
   Paths appear when those exist.
-- **Catalogue tray.** Cards for the buildings in the selected category: rendered preview, name,
+- **Catalogue tray.** (Since 2026-10-25 one width for every tab, scrolling sideways, with a filter in its head
+  that finds buildings, roads and decor across all tabs; decor uses the same cards.) Cards for the buildings in the
+  selected category: rendered preview, name,
   the skill it boosts, and the bonus its best available resident would give. Click a card with
   an empty plot selected to build there. Click a card with nothing selected to arm it, and every
   empty plot lights up as a target.
@@ -312,6 +314,9 @@ after costs exist.
   editable. They are never deleted or rerouted automatically.
 - **Road types and costs.** Each type has a width, a look and a cost per metre in village resources: a dirt
   road is free or cheap, cobbles and paving cost ore and more. Removing a road refunds part of its cost.
+  Since 2026-10-25 a road unlocks with the town hall whose ground is made of it: dirt from the first (the first
+  halls' yards), gravel the second, paving the third (the third hall's forecourt and the fourth's plaza), cobbles
+  the fifth (its plaza).
   Better types unlock with town hall tiers. The numbers come from the user, like the other phase 3 costs.
 - **Mesh.** The spline is sampled into a strip of the type's width that follows the terrain, with UVs
   running along its length. Junctions start simple (overlapping ends sit flush), with proper intersection

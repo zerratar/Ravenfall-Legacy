@@ -355,14 +355,14 @@ public class VillageRoadTool : MonoBehaviour
 
     private bool UpdateDrawing()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (BuildInput.KeyDown(KeyCode.Escape))
         {
             EscapeKey.Claim();
             CancelDrawing();
             return true;
         }
 
-        if (Input.GetKeyDown(KeyCode.Backspace)) UndoPoint();
+        if (BuildInput.KeyDown(KeyCode.Backspace)) UndoPoint();
 
         hasCursor = mode.TryGetMousePoint(out var point);
         if (hasCursor)
@@ -376,7 +376,8 @@ public class VillageRoadTool : MonoBehaviour
         }
 
         var overUi = Shinobytes.UI.HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement();
-        var finish = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || (Input.GetMouseButtonDown(1) && !overUi);
+        var rightClick = BuildInput.RightClicked(); // every frame, so it sees the press
+        var finish = BuildInput.KeyDown(KeyCode.Return) || BuildInput.KeyDown(KeyCode.KeypadEnter) || (rightClick && !overUi);
 
         if (Input.GetMouseButtonDown(0) && !overUi && hasCursor)
         {
@@ -439,7 +440,7 @@ public class VillageRoadTool : MonoBehaviour
         var roads = Roads;
         if (roads == null) return false;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (BuildInput.KeyDown(KeyCode.Escape))
         {
             EscapeKey.Claim();
             // the first Esc undoes the changes, the next lets go of the road
@@ -448,15 +449,15 @@ public class VillageRoadTool : MonoBehaviour
             return true;
         }
 
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+        if (BuildInput.KeyDown(KeyCode.Return) || BuildInput.KeyDown(KeyCode.KeypadEnter))
         {
             Apply();
             return true;
         }
 
         // [ and ] narrow or widen the road at the picked point
-        if (SelectedPoint >= 0 && Input.GetKeyDown(KeyCode.LeftBracket)) { ChangePointWidth(-WidthStep); return true; }
-        if (SelectedPoint >= 0 && Input.GetKeyDown(KeyCode.RightBracket)) { ChangePointWidth(WidthStep); return true; }
+        if (SelectedPoint >= 0 && BuildInput.KeyDown(KeyCode.LeftBracket)) { ChangePointWidth(-WidthStep); return true; }
+        if (SelectedPoint >= 0 && BuildInput.KeyDown(KeyCode.RightBracket)) { ChangePointWidth(WidthStep); return true; }
 
         // dragging a point
         if (dragIndex >= 0)

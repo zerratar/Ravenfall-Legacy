@@ -452,7 +452,7 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (BuildInput.KeyDown(KeyCode.Escape))
         {
             EscapeKey.Claim();
             if (Armed.HasValue || Selected || HallSelected) ClearSelection();
@@ -569,7 +569,7 @@ public class VillageBuildMode : MonoBehaviour
 
         // Esc only: the right mouse button turns the camera, which is exactly what someone does
         // while lining a building up.
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (BuildInput.KeyDown(KeyCode.Escape))
         {
             EscapeKey.Claim();
             CancelMove();
@@ -996,7 +996,7 @@ public class VillageBuildMode : MonoBehaviour
 
     private void ReadRotationKeys()
     {
-        if (!Input.GetKeyDown(KeyCode.R)) return;
+        if (!BuildInput.KeyDown(KeyCode.R)) return;
         var alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
         var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         var step = alt ? 90f : rotationStep;
@@ -1056,7 +1056,7 @@ public class VillageBuildMode : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (BuildInput.KeyDown(KeyCode.Escape))
         {
             EscapeKey.Claim();
             CancelHallMove();
@@ -1380,7 +1380,7 @@ public class VillageBuildMode : MonoBehaviour
     {
         if (Busy) return;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (BuildInput.KeyDown(KeyCode.Escape))
         {
             EscapeKey.Claim();
             ClearSelection();

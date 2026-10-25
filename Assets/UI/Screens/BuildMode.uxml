@@ -152,9 +152,13 @@
                 <engine:VisualElement class="rf-build-panel__head">
                     <engine:Label name="tray-glyph" class="rf-icon rf-build-panel__glyph" picking-mode="Ignore" />
                     <engine:Label name="tray-title" class="rf-build-panel__title" picking-mode="Ignore" />
+                    <engine:TextField name="tray-filter" class="rf-build-search rf-build-tray__filter" />
                     <engine:Button name="tray-close" text="&#xf00d;" class="rf-window__button rf-icon rf-build__close" tooltip="Close" />
                 </engine:VisualElement>
-                <engine:VisualElement name="tray-cards" class="rf-build-tray__cards" />
+                <engine:VisualElement name="tray-tools" class="rf-build-tray__tools" style="display: none;" />
+                <engine:ScrollView name="tray-scroll" mode="Horizontal" horizontal-scroller-visibility="Auto" vertical-scroller-visibility="Hidden" class="rf-build-tray__scroll">
+                    <engine:VisualElement name="tray-cards" class="rf-build-tray__cards" />
+                </engine:ScrollView>
             </engine:VisualElement>
 
             <engine:VisualElement name="build-toolbar" class="rf-build-panel rf-build-toolbar" />

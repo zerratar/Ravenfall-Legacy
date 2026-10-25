@@ -86,16 +86,28 @@ public static class BuildingPreview
             Shinobytes.Debug.LogWarning("Building preview failed for " + prefab.name + ": " + exc.Message);
         }
 
-        // a frame for the renderers to be taken in before they are drawn
+        // a frame for the renderers to be taken in before they are drawn; on a busy frame one was not always enough
+        // and the picture came out empty, which was then kept (the Decor tray's blank tiles, October 2026), so an
+        // empty picture is taken again a frame later, a few times
         yield return null;
 
-        if (instance)
+        for (var attempt = 0; instance && attempt < MaxAttempts; ++attempt)
         {
+            if (texture) Object.Destroy(texture);
             texture = Snapshot(instance, prefab, size);
-            Object.Destroy(instance);
+            if (!IsEmpty(texture)) break;
+            yield return null;
         }
 
-        cache[prefab] = texture;
+        if (instance) Object.Destroy(instance);
+        if (IsEmpty(texture))
+        {
+            // not kept, so the next time the tray asks it is made again
+            if (texture) Object.Destroy(texture);
+            texture = null;
+        }
+
+        if (texture) cache[prefab] = texture;
         if (waiting.TryGetValue(prefab, out var callbacks))
         {
             waiting.Remove(prefab);
@@ -105,6 +117,24 @@ public static class BuildingPreview
                 catch (Exception exc) { Shinobytes.Debug.LogWarning("Building preview could not be shown: " + exc.Message); }
             }
         }
+    }
+
+    private const int MaxAttempts = 4;
+
+    /// <summary>Nothing drawn: every pixel left clear. Looked at on a coarse grid; a building fills far more than that.</summary>
+    private static bool IsEmpty(Texture2D texture)
+    {
+        if (!texture) return true;
+        var pixels = texture.GetPixels32();
+        var size = texture.width;
+        for (var y = 0; y < texture.height; y += 4)
+        {
+            for (var x = 0; x < size; x += 4)
+            {
+                if (pixels[y * size + x].a > 8) return false;
+            }
+        }
+        return true;
     }
 
     private static Texture2D Snapshot(GameObject instance, GameObject prefab, int size)

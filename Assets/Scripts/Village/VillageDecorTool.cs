@@ -120,7 +120,7 @@ public class VillageDecorTool : MonoBehaviour
     {
         if (Armed == null && !Moving)
         {
-            if (Selected && Input.GetKeyDown(KeyCode.Escape))
+            if (Selected && BuildInput.KeyDown(KeyCode.Escape))
             {
                 EscapeKey.Claim();
                 Stop();
@@ -129,7 +129,7 @@ public class VillageDecorTool : MonoBehaviour
             return false;
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1))
+        if (BuildInput.KeyDown(KeyCode.Escape) | BuildInput.RightClicked())
         {
             EscapeKey.Claim();
             if (Moving)
@@ -145,7 +145,7 @@ public class VillageDecorTool : MonoBehaviour
             return true;
         }
 
-        if (Input.GetKeyDown(KeyCode.R)) Turn(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ? FineTurnStep : TurnStep);
+        if (BuildInput.KeyDown(KeyCode.R)) Turn(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ? FineTurnStep : TurnStep);
 
         Follow();
 

@@ -161,6 +161,9 @@ namespace Shinobytes.UI
         private Label trayGlyph;
         private Label trayTitle;
         private VisualElement trayCards;
+        private ScrollView trayScroll;
+        private VisualElement trayTools;
+        private TextField trayFilter;
         private VisualElement toolbar;
         private Label hint;
         private Label toast;
@@ -289,6 +292,9 @@ namespace Shinobytes.UI
             trayGlyph = root.Q<Label>("tray-glyph");
             trayTitle = root.Q<Label>("tray-title");
             trayCards = root.Q<VisualElement>("tray-cards");
+            trayScroll = root.Q<ScrollView>("tray-scroll");
+            trayTools = root.Q<VisualElement>("tray-tools");
+            trayFilter = root.Q<TextField>("tray-filter");
             toolbar = root.Q<VisualElement>("build-toolbar");
             hint = root.Q<Label>("build-hint");
             toast = root.Q<Label>("build-toast");
@@ -361,6 +367,29 @@ namespace Shinobytes.UI
             hallUpgradeButton.text = Localization.UI_BUILD_HALL_UPGRADE;
             hallUpgradeButton.clicked += () => { if (mode != null) _ = mode.UpgradeHallAsync(); };
             assignSearch.RegisterValueChangedCallback(evt => FilterCandidates());
+
+            // the tray keeps its width and scrolls sideways (it grew and shrank with each tab, moving the buttons
+            // under the mouse); the wheel scrolls it too
+            trayScroll.RegisterCallback<WheelEvent>(evt =>
+            {
+                trayScroll.scrollOffset += new Vector2(evt.delta.y * 60f, 0f);
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
+
+            // the filter finds what to build in every tab; Esc clears it, then lets go of the keyboard
+            trayFilter.textEdition.placeholder = Localization.UI_BUILD_FILTER;
+            trayFilter.RegisterValueChangedCallback(evt =>
+            {
+                trayScroll.scrollOffset = Vector2.zero;
+                BuildTray();
+            });
+            trayFilter.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Escape) return;
+                if (string.IsNullOrEmpty(trayFilter.value)) trayFilter.Blur();
+                else trayFilter.value = string.Empty;
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
 
             // A click on the dimmed backdrop closes the picker; a click on the panel does not.
             modal.RegisterCallback<PointerDownEvent>(evt =>
@@ -440,6 +469,13 @@ namespace Shinobytes.UI
                 nextRefresh = Time.unscaledTime + refreshInterval;
                 RefreshAll();
                 RefreshCardBonuses();
+            }
+
+            // a click in the world takes the keyboard back from the tray's filter
+            if (Input.GetMouseButtonDown(0) && trayFilter.panel?.focusController?.focusedElement is VisualElement focused
+                && (focused == trayFilter || trayFilter.Contains(focused)) && !Shinobytes.UI.HudPointer.IsOverHud())
+            {
+                trayFilter.Blur();
             }
 
             if (demolishConfirmUntil > 0f && Time.unscaledTime > demolishConfirmUntil)
@@ -583,17 +619,33 @@ namespace Shinobytes.UI
             }
 
             tray.style.display = openCategory >= 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            // a tab picked shows that tab, not what was being looked for
+            trayFilter.SetValueWithoutNotify(string.Empty);
+            trayScroll.scrollOffset = Vector2.zero;
             if (openCategory >= 0)
             {
                 BuildTray();
             }
+            else trayFilter.Blur();
         }
 
         private void BuildTray()
         {
             trayCards.Clear();
+            trayTools.Clear();
+            trayTools.style.display = DisplayStyle.None;
             cards.Clear();
             if (mode == null || openCategory < 0) return;
+
+            // something typed in the filter: what matches it, from every tab
+            var query = trayFilter.value?.Trim() ?? string.Empty;
+            if (query.Length > 0)
+            {
+                trayGlyph.text = "";
+                trayTitle.text = Localization.UI_BUILD_FILTER_TITLE;
+                BuildFilteredTray(query);
+                return;
+            }
 
             var category = Categories[openCategory];
             trayGlyph.text = category.Glyph;
@@ -616,52 +668,111 @@ namespace Shinobytes.UI
 
             foreach (var type in category.Types)
             {
-                var house = HouseFor(type);
-                if (!house) continue;
-
-                var card = new Card { Type = type, Root = new VisualElement() };
-                card.Root.AddToClassList("rf-build-card");
-
-                var preview = new VisualElement { pickingMode = PickingMode.Ignore };
-                preview.AddToClassList("rf-build-card__preview");
-                // the picture comes a frame or two later the first time; cached after
-                BuildingPreview.Get(house.Prefab, texture =>
-                {
-                    if (texture) preview.style.backgroundImage = new StyleBackground(texture);
-                });
-
-                var info = new VisualElement { pickingMode = PickingMode.Ignore };
-                info.AddToClassList("rf-build-card__info");
-                var ring = new VisualElement { pickingMode = PickingMode.Ignore };
-                ring.AddToClassList("rf-build-card__ring");
-                var icon = new VisualElement { pickingMode = PickingMode.Ignore };
-                icon.AddToClassList("rf-build-card__icon");
-                var sprite = IconFor(type);
-                if (sprite) icon.style.backgroundImage = new StyleBackground(sprite);
-                ring.Add(icon);
-
-                var text = new VisualElement { pickingMode = PickingMode.Ignore };
-                var name = new Label(Localization.HouseName(house.Type)) { pickingMode = PickingMode.Ignore };
-                name.AddToClassList("rf-build-card__name");
-                card.Bonus = new Label { pickingMode = PickingMode.Ignore };
-                card.Bonus.AddToClassList("rf-build-card__bonus");
-                text.Add(name);
-                text.Add(card.Bonus);
-                info.Add(ring);
-                info.Add(text);
-
-                var build = new Button(() => mode?.Choose(type)) { text = Localization.UI_BUILD_BUILD };
-                build.AddToClassList("rf-build-card__build");
-
-                card.Root.Add(preview);
-                card.Root.Add(info);
-                card.Root.Add(build);
-                trayCards.Add(card.Root);
-                cards.Add(card);
+                AddHouseCard(type);
             }
 
             RefreshCards();
             RefreshCardBonuses();
+        }
+
+        /// <summary>
+        /// Every building, road and decor piece whose name (or its tab's or group's name) holds the text typed in the
+        /// tray's filter, as the cards of their own tabs.
+        /// </summary>
+        private void BuildFilteredTray(string query)
+        {
+            bool Matches(params string[] texts)
+            {
+                foreach (var text in texts)
+                {
+                    if (!string.IsNullOrEmpty(text) && text.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                }
+                return false;
+            }
+
+            foreach (var category in Categories)
+            {
+                if (category.Roads || category.Decor) continue;
+                foreach (var type in category.Types)
+                {
+                    var house = HouseFor(type);
+                    if (house && Matches(Localization.HouseName(house.Type), SkillName(type), CategoryName(category))) AddHouseCard(type);
+                }
+            }
+
+            var roads = GameManager.Instance && GameManager.Instance.Village ? GameManager.Instance.Village.Roads : null;
+            if (roads != null)
+            {
+                foreach (var type in roads.Types)
+                {
+                    if (Matches(RoadName(type.Id), Localization.UI_BUILD_CATEGORY_ROADS)) AddRoadCard(roads, type);
+                }
+            }
+
+            var decor = DecorLayer;
+            if (decor != null && decor.Loaded)
+            {
+                foreach (var piece in decor.Pieces)
+                {
+                    if (Matches(decor.NameOf(piece.Key), Localization.DecorGroup(piece.Group), Localization.UI_DECOR_TAB)) AddDecorCard(decor, piece);
+                }
+            }
+
+            if (trayCards.childCount == 0)
+            {
+                var none = new Label(string.Format(CultureInfo.InvariantCulture, Localization.UI_BUILD_FILTER_NONE, query)) { pickingMode = PickingMode.Ignore };
+                none.AddToClassList("rf-build-note");
+                trayCards.Add(none);
+            }
+
+            RefreshCards();
+            RefreshCardBonuses();
+        }
+
+        private void AddHouseCard(TownHouseSlotType type)
+        {
+            var house = HouseFor(type);
+            if (!house) return;
+
+            var card = new Card { Type = type, Root = new VisualElement() };
+            card.Root.AddToClassList("rf-build-card");
+
+            var preview = new VisualElement { pickingMode = PickingMode.Ignore };
+            preview.AddToClassList("rf-build-card__preview");
+            // the picture comes a frame or two later the first time; cached after
+            BuildingPreview.Get(house.Prefab, texture =>
+            {
+                if (texture) preview.style.backgroundImage = new StyleBackground(texture);
+            });
+
+            var info = new VisualElement { pickingMode = PickingMode.Ignore };
+            info.AddToClassList("rf-build-card__info");
+            var ring = new VisualElement { pickingMode = PickingMode.Ignore };
+            ring.AddToClassList("rf-build-card__ring");
+            var icon = new VisualElement { pickingMode = PickingMode.Ignore };
+            icon.AddToClassList("rf-build-card__icon");
+            var sprite = IconFor(type);
+            if (sprite) icon.style.backgroundImage = new StyleBackground(sprite);
+            ring.Add(icon);
+
+            var text = new VisualElement { pickingMode = PickingMode.Ignore };
+            var name = new Label(Localization.HouseName(house.Type)) { pickingMode = PickingMode.Ignore };
+            name.AddToClassList("rf-build-card__name");
+            card.Bonus = new Label { pickingMode = PickingMode.Ignore };
+            card.Bonus.AddToClassList("rf-build-card__bonus");
+            text.Add(name);
+            text.Add(card.Bonus);
+            info.Add(ring);
+            info.Add(text);
+
+            var build = new Button(() => mode?.Choose(type)) { text = Localization.UI_BUILD_BUILD };
+            build.AddToClassList("rf-build-card__build");
+
+            card.Root.Add(preview);
+            card.Root.Add(info);
+            card.Root.Add(build);
+            trayCards.Add(card.Root);
+            cards.Add(card);
         }
 
         private void RefreshCards()
@@ -1294,47 +1405,52 @@ namespace Shinobytes.UI
 
             foreach (var type in roads.Types)
             {
-                var id = type.Id;
-                var card = new VisualElement();
-                card.AddToClassList("rf-build-card");
-                card.AddToClassList("rf-build-card--road");
-                card.EnableInClassList("rf-build-card--locked", !type.Unlocked);
-                card.EnableInClassList("rf-build-card--armed", mode.Roads.DrawType == id);
-
-                // a patch of the road itself, as the house cards show the house
-                var swatch = new VisualElement { pickingMode = PickingMode.Ignore };
-                swatch.AddToClassList("rf-build-card__preview");
-                swatch.AddToClassList("rf-build-road-swatch");
-                var material = roads.MaterialFor(id);
-                if (material && material.mainTexture is Texture2D surface) swatch.style.backgroundImage = new StyleBackground(surface);
-
-                var text = new VisualElement { pickingMode = PickingMode.Ignore };
-                text.AddToClassList("rf-build-card__info");
-                var column = new VisualElement { pickingMode = PickingMode.Ignore };
-                var name = new Label(RoadName(id)) { pickingMode = PickingMode.Ignore };
-                name.AddToClassList("rf-build-card__name");
-                var cost = new Label(type.Unlocked
-                    ? string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_PER_METRE, CostText(id, 1f))
-                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_LOCKED, type.Tier + 1)) { pickingMode = PickingMode.Ignore };
-                cost.AddToClassList("rf-build-card__bonus");
-                column.Add(name);
-                column.Add(cost);
-                text.Add(column);
-
-                var draw = new Button(() =>
-                {
-                    mode?.ChooseRoad(id);
-                    // the road panel takes over while drawing; the tray would only be in the way
-                    OpenCategory(-1);
-                }) { text = Localization.UI_ROAD_DRAW };
-                draw.AddToClassList("rf-build-card__build");
-                draw.SetEnabled(type.Unlocked);
-
-                card.Add(swatch);
-                card.Add(text);
-                card.Add(draw);
-                trayCards.Add(card);
+                AddRoadCard(roads, type);
             }
+        }
+
+        private void AddRoadCard(VillageRoads roads, RavenNest.SDK.Endpoints.RoadType type)
+        {
+            var id = type.Id;
+            var card = new VisualElement();
+            card.AddToClassList("rf-build-card");
+            card.AddToClassList("rf-build-card--road");
+            card.EnableInClassList("rf-build-card--locked", !type.Unlocked);
+            card.EnableInClassList("rf-build-card--armed", mode.Roads.DrawType == id);
+
+            // a patch of the road itself, as the house cards show the house
+            var swatch = new VisualElement { pickingMode = PickingMode.Ignore };
+            swatch.AddToClassList("rf-build-card__preview");
+            swatch.AddToClassList("rf-build-road-swatch");
+            var material = roads.MaterialFor(id);
+            if (material && material.mainTexture is Texture2D surface) swatch.style.backgroundImage = new StyleBackground(surface);
+
+            var text = new VisualElement { pickingMode = PickingMode.Ignore };
+            text.AddToClassList("rf-build-card__info");
+            var column = new VisualElement { pickingMode = PickingMode.Ignore };
+            var name = new Label(RoadName(id)) { pickingMode = PickingMode.Ignore };
+            name.AddToClassList("rf-build-card__name");
+            var cost = new Label(type.Unlocked
+                ? string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_PER_METRE, CostText(id, 1f))
+                : string.Format(CultureInfo.InvariantCulture, Localization.UI_ROAD_LOCKED, type.Tier + 1)) { pickingMode = PickingMode.Ignore };
+            cost.AddToClassList("rf-build-card__bonus");
+            column.Add(name);
+            column.Add(cost);
+            text.Add(column);
+
+            var draw = new Button(() =>
+            {
+                mode?.ChooseRoad(id);
+                // the road panel takes over while drawing; the tray would only be in the way
+                OpenCategory(-1);
+            }) { text = Localization.UI_ROAD_DRAW.ToUpperInvariant() }; // as the buildings' BUILD
+            draw.AddToClassList("rf-build-card__build");
+            draw.SetEnabled(type.Unlocked);
+
+            card.Add(swatch);
+            card.Add(text);
+            card.Add(draw);
+            trayCards.Add(card);
         }
 
         private void RefreshRoad()
@@ -1642,6 +1758,7 @@ namespace Shinobytes.UI
                 case 0: return Localization.UI_ROAD_DIRT;
                 case 1: return Localization.UI_ROAD_GRAVEL;
                 case 2: return Localization.UI_ROAD_COBBLES;
+                case 3: return Localization.UI_ROAD_PAVING;
                 default: return Localization.UI_BUILD_CATEGORY_ROADS;
             }
         }
@@ -1665,7 +1782,7 @@ namespace Shinobytes.UI
 
         private VillageDecor DecorLayer => GameManager.Instance && GameManager.Instance.Village ? GameManager.Instance.Village.Decor : null;
 
-        /// <summary>The decor tray: a chip per group, and that group's pieces as tiles to click and place.</summary>
+        /// <summary>The decor tray: a chip per group above, and that group's pieces as cards, like the buildings.</summary>
         private void BuildDecorTray()
         {
             var decor = DecorLayer;
@@ -1677,63 +1794,110 @@ namespace Shinobytes.UI
                 return;
             }
 
-            var column = new VisualElement();
-            column.AddToClassList("rf-build-decor");
-            var chips = new VisualElement();
-            chips.AddToClassList("rf-build-decor__groups");
             var groups = new List<string>();
             foreach (var piece in decor.Pieces) if (!groups.Contains(piece.Group)) groups.Add(piece.Group);
             if (!groups.Contains(decorGroup)) decorGroup = groups.Count > 0 ? groups[0] : null;
             foreach (var group in groups)
             {
                 var g = group;
-                var chip = new Button(() => { decorGroup = g; BuildTray(); }) { text = Localization.DecorGroup(g) };
+                var chip = new Button(() =>
+                {
+                    decorGroup = g;
+                    trayScroll.scrollOffset = Vector2.zero;
+                    BuildTray();
+                });
                 chip.AddToClassList("rf-build-decor__group");
                 chip.EnableInClassList("rf-build-decor__group--active", g == decorGroup);
-                chips.Add(chip);
+                var glyph = new Label(DecorGroupGlyph(g)) { pickingMode = PickingMode.Ignore };
+                glyph.AddToClassList("rf-icon");
+                glyph.AddToClassList("rf-build-decor__group-icon");
+                var label = new Label(Localization.DecorGroup(g)) { pickingMode = PickingMode.Ignore };
+                label.AddToClassList("rf-build-decor__group-label");
+                chip.Add(glyph);
+                chip.Add(label);
+                trayTools.Add(chip);
             }
-            column.Add(chips);
+            trayTools.style.display = DisplayStyle.Flex;
 
-            var tiles = new VisualElement();
-            tiles.AddToClassList("rf-build-decor__tiles");
             foreach (var piece in decor.Pieces)
             {
-                if (piece.Group != decorGroup) continue;
-                var key = piece.Key;
-                var tile = new Button(() =>
-                {
-                    mode?.ChooseDecor(key);
-                    // the decor panel takes over while placing; the tray would only be in the way
-                    OpenCategory(-1);
-                });
-                tile.AddToClassList("rf-build-decor__tile");
-                tile.EnableInClassList("rf-build-decor__tile--locked", !piece.Unlocked);
-                tile.EnableInClassList("rf-build-decor__tile--armed", mode.Decor.Armed == key);
-                tile.SetEnabled(piece.Unlocked);
-
-                var preview = new VisualElement { pickingMode = PickingMode.Ignore };
-                preview.AddToClassList("rf-build-decor__preview");
-                var prefab = decor.PrefabFor(key);
-                if (prefab)
-                {
-                    BuildingPreview.Get(prefab, texture =>
-                    {
-                        if (texture) preview.style.backgroundImage = new StyleBackground(texture);
-                    });
-                }
-
-                var name = new Label(decor.NameOf(key)) { pickingMode = PickingMode.Ignore };
-                name.AddToClassList("rf-build-decor__name");
-                var cost = new Label(piece.Unlocked ? DecorCost(piece) : DecorLocked(piece)) { pickingMode = PickingMode.Ignore };
-                cost.AddToClassList("rf-build-decor__cost");
-
-                tile.Add(preview);
-                tile.Add(name);
-                tile.Add(cost);
-                tiles.Add(tile);
+                if (piece.Group == decorGroup) AddDecorCard(decor, piece);
             }
-            column.Add(tiles);
-            trayCards.Add(column);
+        }
+
+        private void AddDecorCard(VillageDecor decor, RavenNest.SDK.Endpoints.DecorPiece piece)
+        {
+            var key = piece.Key;
+            var card = new VisualElement();
+            card.AddToClassList("rf-build-card");
+            card.AddToClassList("rf-build-card--decor");
+            card.EnableInClassList("rf-build-card--locked", !piece.Unlocked);
+            card.EnableInClassList("rf-build-card--armed", mode.Decor.Armed == key);
+
+            var preview = new VisualElement { pickingMode = PickingMode.Ignore };
+            preview.AddToClassList("rf-build-card__preview");
+            var prefab = decor.PrefabFor(key);
+            if (prefab)
+            {
+                BuildingPreview.Get(prefab, texture =>
+                {
+                    if (texture) preview.style.backgroundImage = new StyleBackground(texture);
+                });
+            }
+
+            var info = new VisualElement { pickingMode = PickingMode.Ignore };
+            info.AddToClassList("rf-build-card__info");
+            var ring = new VisualElement { pickingMode = PickingMode.Ignore };
+            ring.AddToClassList("rf-build-card__ring");
+            var glyph = new Label(DecorGroupGlyph(piece.Group)) { pickingMode = PickingMode.Ignore };
+            glyph.AddToClassList("rf-icon");
+            glyph.AddToClassList("rf-build-card__glyph");
+            ring.Add(glyph);
+
+            var text = new VisualElement { pickingMode = PickingMode.Ignore };
+            text.style.flexShrink = 1;
+            var name = new Label(decor.NameOf(key)) { pickingMode = PickingMode.Ignore };
+            name.AddToClassList("rf-build-card__name");
+            var cost = new Label(piece.Unlocked ? DecorCost(piece) : DecorLocked(piece)) { pickingMode = PickingMode.Ignore };
+            cost.AddToClassList("rf-build-card__bonus");
+            text.Add(name);
+            text.Add(cost);
+            info.Add(ring);
+            info.Add(text);
+
+            var place = new Button(() =>
+            {
+                mode?.ChooseDecor(key);
+                // the decor panel takes over while placing; the tray would only be in the way
+                OpenCategory(-1);
+            }) { text = Localization.UI_DECOR_PLACE.ToUpperInvariant() }; // as the buildings' BUILD
+            place.AddToClassList("rf-build-card__build");
+            place.SetEnabled(piece.Unlocked);
+
+            card.Add(preview);
+            card.Add(info);
+            card.Add(place);
+            trayCards.Add(card);
+        }
+
+        /// <summary>The icon of a decor group, on its chip and on its pieces' cards.</summary>
+        private static string DecorGroupGlyph(string group)
+        {
+            switch (group)
+            {
+                case "Trees": return "";
+                case "Bushes": return "";
+                case "Flowers": return "";
+                case "Rocks": return "";
+                case "Fences": return "";
+                case "Lights": return "";
+                case "Market": return "";
+                case "Farm": return "";
+                case "Village": return "";
+                case "Banners": return "";
+                case "Statues": return "";
+                default: return "";
+            }
         }
 
         private static string DecorCost(RavenNest.SDK.Endpoints.DecorPiece piece)
