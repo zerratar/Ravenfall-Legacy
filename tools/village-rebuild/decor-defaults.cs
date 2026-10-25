@@ -3,6 +3,8 @@
 // Makes the village island's own trees, bushes, flowers and grass into decor (docs/village-decor-design.md):
 // - every piece under Town Landscape/Tree Belt and Town Landscape/Flowers And Stones gets a VillageDecorItem with a
 //   stable key (its piece and where it stands, "tree_02@-31.2,-150.4") and its piece of the price list;
+// - the props of phase 2 (fences, lights, market, farm, village, banners, statues) are made into decor prefabs in
+//   Assets/Village/Decor;
 // - the village manager gets the VillageDecor layer, with the prefab for every piece of the price list;
 // - the server's list of the island's pieces is written to RavenNest
 //   (BusinessLogic/Game/Managers/VillageDecorDefaults.cs), so only those can be moved or removed for a refund.
@@ -21,6 +23,161 @@ foreach (var k in new[] { "Flowers_01", "Flowers_02", "Flowers_04", "Flowers_07"
 prefabPaths["rock_01"] = "Assets/PolygonSamurai/Prefabs/Environments/SM_Env_Rock_01.prefab"; // the meadow boulder uses a triplanar shader that renders blank in the tray
 prefabPaths["rock_02"] = "Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Prefabs/SM_Env_Rock_02.prefab";
 prefabPaths["rock_03"] = "Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Prefabs/SM_Env_Rock_Small_Pile_01.prefab";
+
+// phase 2: props, each made into its own decor prefab in Assets/Village/Decor. The model sits under a root at the
+// middle of its foot (some Synty props have their pivot at a hinge, a corner or half way up), the root carries a
+// VillageDecorItem measured as a rectangle, and the lit ones get the island torches' fire and light, lit by night.
+var kingdom = "Assets/PolygonFantasyKingdom/Prefabs/Props/";
+var props = new (string key, string path, string[] extra, float[] fires, float fireScale, bool lift)[]
+{
+    ("fence_01", kingdom + "SM_Prop_Fence_01.prefab", null, null, 0, false),
+    ("fence_02", kingdom + "SM_Prop_Fence_02.prefab", null, null, 0, false),
+    ("fence_03", kingdom + "SM_Prop_Fence_03.prefab", null, null, 0, false),
+    ("fence_04", kingdom + "SM_Prop_Fence_04.prefab", null, null, 0, false),
+    ("fence_gate_01", kingdom + "SM_Prop_Fence_Gate_01.prefab", null, null, 0, false),
+    ("archway_01", kingdom + "SM_Prop_Archway_01.prefab", null, null, 0, false),
+    ("archway_02", kingdom + "SM_Prop_Archway_02.prefab", null, null, 0, false),
+    // fires as (x, y, z) triples, from the model's own pivot
+    ("torch_01", "Assets/PolygonNature/Prefabs/Props/SM_Prop_TorchStick_01.prefab", null, new[] { 0f, 1.72f, 0f }, 1f, false),
+    ("brazier_01", "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Brazier_03.prefab", new[] { "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Brazier_03_Insert_01.prefab" }, new[] { 0f, 0.89f, 0f }, 0.49f, false),
+    ("brazier_02", "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Brazier_01.prefab", new[] { "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Brazier_01_Insert_01.prefab" }, new[] { 0f, 1.75f, 0f }, 1f, false),
+    // a small flame in each lantern, mostly for its light
+    ("street_lamp_01", kingdom + "SM_Prop_Street_Lamp_01.prefab", null, new[] { 0f, 2.05f, -0.53f }, 0.12f, false),
+    ("street_lamp_02", kingdom + "SM_Prop_Street_Lamp_02.prefab", null, new[] { 0f, 2.05f, -0.53f, 0f, 2.05f, 0.53f }, 0.12f, false),
+    ("market_stall_01", kingdom + "SM_Prop_Market_Stall_01.prefab", null, null, 0, false),
+    ("market_stall_07", kingdom + "SM_Prop_Market_Stall_07.prefab", null, null, 0, false),
+    ("market_stall_03", kingdom + "SM_Prop_Market_Stall_03.prefab", null, null, 0, false),
+    ("market_stall_05", kingdom + "SM_Prop_Market_Stall_05.prefab", null, null, 0, false),
+    ("barrel_01", kingdom + "SM_Prop_Barrel_01.prefab", null, null, 0, false),
+    ("barrel_stack_01", kingdom + "SM_Prop_Barrel_Stack_01.prefab", null, null, 0, false),
+    ("crate_wood_01", kingdom + "SM_Prop_Crate_Wood_01.prefab", null, null, 0, false),
+    ("crate_stack_01", kingdom + "SM_Prop_Crate_Stack_01.prefab", null, null, 0, false),
+    ("sack_stack_01", kingdom + "SM_Prop_Sack_Stack_01.prefab", null, null, 0, false),
+    ("table_barrel_01", kingdom + "SM_Prop_Table_Barrel_01.prefab", null, null, 0, false),
+    // these four have their pivot half way up: lifted to stand on the ground
+    ("hay_bale_01", kingdom + "SM_Prop_Hay_Bale_01.prefab", null, null, 0, true),
+    ("hay_pile_01", kingdom + "SM_Prop_Hay_Pile_01.prefab", null, null, 0, false),
+    ("hay_cart_01", kingdom + "SM_Prop_Hay_Cart_01.prefab", null, null, 0, false),
+    ("log_01", kingdom + "SM_Prop_Log_01.prefab", null, null, 0, true),
+    ("ground_logs_01", kingdom + "SM_Prop_Ground_Logs_01.prefab", null, null, 0, true),
+    ("planterbox_preset_01", kingdom + "SM_Prop_PlanterBox_Preset_01.prefab", null, null, 0, false),
+    ("planterbox_small_preset_01", kingdom + "SM_Prop_PlanterBox_Small_Preset_01.prefab", null, null, 0, false),
+    ("well_01", kingdom + "SM_Prop_Well_01.prefab", null, null, 0, false),
+    ("direction_sign_01", kingdom + "SM_Prop_Direction_Sign_01.prefab", null, null, 0, false),
+    ("grinding_wheel_01", kingdom + "SM_Prop_Grinding_Wheel_01.prefab", null, null, 0, false),
+    ("anvil_01", kingdom + "SM_Prop_Anvil_01.prefab", null, null, 0, false),
+    ("bench_seat_01", kingdom + "Furniture/SM_Prop_Bench_Seat_01.prefab", null, null, 0, false),
+    ("bench_seat_02", kingdom + "Furniture/SM_Prop_Bench_Seat_02.prefab", null, null, 0, false),
+    // the pack's poles come bare; a flag flies from the top ("@x,y,z,scale" places an extra piece)
+    ("flag_pole_01", kingdom + "Banners/SM_Prop_Flag_Pole_02.prefab", new[] { kingdom + "Banners/SM_Prop_Flag_Horizontal_01.prefab@0,3.3,0,0.7" }, null, 0, false),
+    ("battle_banner_01", kingdom + "Banners/SM_Prop_Battle_Banner_01.prefab", null, null, 0, false),
+    ("statue_knight_01", kingdom + "SM_Prop_Statue_Knight_01.prefab", null, null, 0, false),
+    ("statue_hero_01", kingdom + "SM_Prop_Statue_Hero_01.prefab", null, null, 0, false),
+    ("statue_angel_01", kingdom + "SM_Prop_Statue_Angel_01.prefab", null, null, 0, false),
+};
+var decorFolder = "Assets/Village/Decor";
+if (!UnityEditor.AssetDatabase.IsValidFolder(decorFolder)) UnityEditor.AssetDatabase.CreateFolder("Assets/Village", "Decor");
+var firePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonFantasyRivals/Prefabs/FX/Fire_01_FX.prefab");
+foreach (var prop in props)
+{
+    var source = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(prop.path);
+    if (!source) { sb.AppendLine("missing prop " + prop.path); continue; }
+    var lit = prop.fires != null;
+    var root = new UnityEngine.GameObject(lit ? (prop.key.StartsWith("brazier") ? "Brazier" : "Torch") : prop.key);
+    try
+    {
+        var model = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(source);
+        model.transform.SetParent(root.transform, false);
+        if (prop.extra != null)
+            foreach (var extraEntry in prop.extra)
+            {
+                var parts = extraEntry.Split('@');
+                var extra = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(parts[0]));
+                extra.transform.SetParent(model.transform, false);
+                if (parts.Length > 1)
+                {
+                    var v = System.Array.ConvertAll(parts[1].Split(','), x => float.Parse(x, ci));
+                    extra.transform.localPosition = new UnityEngine.Vector3(v[0], v[1], v[2]);
+                    extra.transform.localScale = UnityEngine.Vector3.one * v[3];
+                }
+            }
+
+        // the foot's middle at the root
+        var bounds = new UnityEngine.Bounds(); var first = true;
+        foreach (var r in model.GetComponentsInChildren<UnityEngine.Renderer>())
+        {
+            if (first) { bounds = r.bounds; first = false; } else bounds.Encapsulate(r.bounds);
+        }
+        var shift = new UnityEngine.Vector3(-bounds.center.x, prop.lift ? -bounds.min.y : 0f, -bounds.center.z);
+        if (UnityEngine.Mathf.Abs(shift.x) < 0.25f) shift.x = 0f;
+        if (UnityEngine.Mathf.Abs(shift.z) < 0.25f) shift.z = 0f;
+        model.transform.localPosition = shift;
+
+        UnityEngine.ParticleSystem firstFire = null;
+        if (lit)
+        {
+            for (var f = 0; f + 2 < prop.fires.Length; f += 3)
+            {
+                var fire = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(firePrefab);
+                // "Torch" in the name: NightLights finds the light by it, whatever the root is called once placed
+                fire.name = "Torch Fire";
+                var at = shift + new UnityEngine.Vector3(prop.fires[f], prop.fires[f + 1], prop.fires[f + 2]);
+                if (!firstFire)
+                {
+                    fire.transform.SetParent(root.transform, false);
+                    fire.transform.localPosition = at;
+                    fire.transform.localScale = UnityEngine.Vector3.one * prop.fireScale;
+                }
+                else
+                {
+                    // under the first, so the Torch lights and puts out both together
+                    fire.transform.SetParent(firstFire.transform, false);
+                    fire.transform.localPosition = (at - firstFire.transform.localPosition) / prop.fireScale;
+                }
+                var lightObject = new UnityEngine.GameObject("Point Light");
+                lightObject.transform.SetParent(fire.transform, false);
+                lightObject.transform.localPosition = new UnityEngine.Vector3(0f, 0.11f, 0f);
+                // the island torches' own light
+                var light = lightObject.AddComponent<UnityEngine.Light>();
+                light.type = UnityEngine.LightType.Point;
+                light.range = 10f;
+                light.intensity = prop.fireScale < 0.3f ? 3f : 4.19f;
+                light.color = new UnityEngine.Color(1f, 0.907f, 0.693f);
+                light.shadows = UnityEngine.LightShadows.None;
+                // lit by the Torch at night, so the tray's daylight picture shows the piece unlit
+                if (!firstFire)
+                {
+                    fire.SetActive(false);
+                    firstFire = fire.GetComponent<UnityEngine.ParticleSystem>();
+                }
+            }
+        }
+
+        var item = root.AddComponent<VillageDecorItem>();
+        var itemSo = new UnityEditor.SerializedObject(item);
+        itemSo.FindProperty("piece").stringValue = prop.key;
+        itemSo.FindProperty("rectangle").boolValue = true;
+        itemSo.ApplyModifiedPropertiesWithoutUndo();
+
+        if (lit)
+        {
+            var torch = root.AddComponent<Torch>();
+            var torchSo = new UnityEditor.SerializedObject(torch);
+            // set here: the fire starts hidden, and Torch only looks for a shown one
+            torchSo.FindProperty("fire").objectReferenceValue = firstFire;
+            torchSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        var prefabPath = decorFolder + "/Decor_" + prop.key + ".prefab";
+        UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+        prefabPaths[prop.key] = prefabPath;
+    }
+    finally
+    {
+        UnityEngine.Object.DestroyImmediate(root);
+    }
+}
+sb.AppendLine(props.Length + " prop prefabs in " + decorFolder);
 
 // 1. the island's pieces
 var land = UnityEngine.GameObject.Find("Town Landscape");

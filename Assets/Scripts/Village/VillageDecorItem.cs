@@ -14,14 +14,19 @@ public class VillageDecorItem : MonoBehaviour
     [Tooltip("What it is: a key of the decor price list (VillageDecorManager.Pieces on the server).")]
     [SerializeField] private string piece;
 
+    [Tooltip("Measured as its own turned rectangle (fences, stalls, benches), not as the circle round a trunk (trees, bushes, rocks). Set on the decor prefabs by tools/village-rebuild/decor-defaults.cs.")]
+    [SerializeField] private bool rectangle;
+
     private bool homeKnown;
     private Vector3 homePosition;
     private Quaternion homeRotation;
     private float radius = -1f;
+    private Footprint? shape;
 
     public string DefaultKey => defaultKey;
     public string Piece => piece;
     public bool IsDefault => !string.IsNullOrEmpty(defaultKey);
+    public bool Rectangle => rectangle;
 
     /// <summary>The server's id for a placed piece, or for an island piece's change once it has one.</summary>
     public Guid Id { get; set; }
@@ -49,7 +54,7 @@ public class VillageDecorItem : MonoBehaviour
         homePosition = transform.position;
         homeRotation = transform.rotation;
         // measured now, while it is shown: a hidden renderer has no bounds
-        _ = Radius;
+        _ = Shape;
     }
 
     public void GoHome()
@@ -72,6 +77,23 @@ public class VillageDecorItem : MonoBehaviour
             return radius = Mathf.Clamp(Mathf.Max(bounds.extents.x, bounds.extents.z) * 0.5f, 0.3f, 4f);
         }
     }
+
+    /// <summary>
+    /// The ground it stands on, from where it stands: its own rectangle, or for trees and the like the circle of
+    /// <see cref="Radius"/> (as a square). A fence measured as a circle kept everything a fence's length away.
+    /// </summary>
+    public Footprint Shape
+    {
+        get
+        {
+            if (shape.HasValue) return shape.Value;
+            if (!rectangle) return (shape = new Footprint(new Vector2(Radius, Radius), Vector2.zero)).Value;
+            return (shape = Footprint.Measure(gameObject, useRenderers: true, minHalf: 0.2f)).Value;
+        }
+    }
+
+    /// <summary>How <see cref="Shape"/> is turned: with the piece for a rectangle, never for a circle.</summary>
+    public float ShapeRotation => rectangle ? transform.eulerAngles.y : 0f;
 
     public void UpdateVisible()
     {

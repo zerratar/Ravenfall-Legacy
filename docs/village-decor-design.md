@@ -98,7 +98,11 @@ village when earned.
 1. The island's trees, bushes and flowers become movable and removable; the Decor tab with nature pieces unlocked
    by tier; the server tables and checks.
 2. A wider catalog (Synty props: fences, lamps, benches, wells, carts, statues, banners, gardens), unlocks by tier and
-   village level, limits.
+   village level. Built 2026-10-25: 40 props in seven groups (Fences, Lights, Market, Farm, Village, Banners,
+   Statues), each made into a decor prefab in `Assets/Village/Decor` by `decor-defaults.cs` (the model centred on its
+   foot, the torches, braziers and lamps with the island torches' fire and light, lit at night by `Torch` and
+   `NightLights`). Props are measured as their own turned rectangle, trees still as the circle round the trunk. The
+   statues also need village level 50, 100 and 200. No limits (decided in phase 1: only costs).
 3. The other unlock sources: seasonal events (starting with Christmas), the village treasury, viewer loyalty.
 4. Quests and the website, when they exist.
 

@@ -170,7 +170,8 @@ public class VillageDecor : MonoBehaviour
         var go = Instantiate(prefab, new Vector3((float)row.X, (float)row.Y, (float)row.Z), Quaternion.Euler(0f, (float)row.Rotation, 0f), placedRoot);
         var scale = row.Scale > 0 ? (float)row.Scale : 1f;
         go.transform.localScale = Vector3.one * scale;
-        var item = go.GetComponent<VillageDecorItem>() ?? go.AddComponent<VillageDecorItem>();
+        // the decor prefabs carry their own (it says how they are measured); the island's trees do not
+        if (!go.TryGetComponent<VillageDecorItem>(out var item)) item = go.AddComponent<VillageDecorItem>();
         item.Setup(null, row.Piece);
         item.Id = row.Id;
         item.Small = PieceOf(row.Piece)?.Small ?? false;
@@ -255,17 +256,32 @@ public class VillageDecor : MonoBehaviour
     public VillageDecorItem ItemAt(Vector3 point, VillageDecorItem except = null)
     {
         VillageDecorItem best = null;
-        var bestDistance = float.MaxValue;
+        var bestScore = float.MaxValue;
+        var flat = new Vector2(point.x, point.z);
         foreach (var item in Items)
         {
             if (!item || item == except || item.Covered || !item.gameObject.activeInHierarchy) continue;
             var p = item.transform.position;
             var distance = new Vector2(p.x - point.x, p.z - point.z).magnitude;
-            var reach = Mathf.Max(item.Radius, 0.7f);
-            if (distance <= reach && distance - reach < bestDistance)
+            float reach;
+            if (item.Rectangle)
+            {
+                var shape = item.Shape;
+                if (!shape.Grown(0.3f).Contains(p, item.ShapeRotation, flat)) continue;
+                reach = Mathf.Max(shape.Half.x, shape.Half.y);
+            }
+            else
+            {
+                reach = Mathf.Max(item.Radius, 0.7f);
+                if (distance > reach) continue;
+            }
+
+            // how far out on it, so a barrel by a long fence is still picked when clicked
+            var score = distance / reach;
+            if (score < bestScore)
             {
                 best = item;
-                bestDistance = distance - reach;
+                bestScore = score;
             }
         }
         return best;
@@ -278,9 +294,7 @@ public class VillageDecor : MonoBehaviour
         foreach (var item in Items)
         {
             if (!item || item == except || item.Small) continue;
-            var p = item.transform.position;
-            var r = item.Radius;
-            if (Footprint.Overlaps(footprint, position, rotation, new Footprint(new Vector2(r, r), Vector2.zero), p, 0f)) found.Add(item);
+            if (Footprint.Overlaps(footprint, position, rotation, item.Shape, item.transform.position, item.ShapeRotation)) found.Add(item);
         }
         return found;
     }

@@ -1724,9 +1724,7 @@ namespace Shinobytes.UI
 
                 var name = new Label(decor.NameOf(key)) { pickingMode = PickingMode.Ignore };
                 name.AddToClassList("rf-build-decor__name");
-                var cost = new Label(piece.Unlocked
-                    ? DecorCost(piece)
-                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED, piece.Tier + 1)) { pickingMode = PickingMode.Ignore };
+                var cost = new Label(piece.Unlocked ? DecorCost(piece) : DecorLocked(piece)) { pickingMode = PickingMode.Ignore };
                 cost.AddToClassList("rf-build-decor__cost");
 
                 tile.Add(preview);
@@ -1742,6 +1740,16 @@ namespace Shinobytes.UI
         {
             var text = VillageDecorTool.CostText(piece);
             return string.IsNullOrEmpty(text) ? Localization.UI_DECOR_FREE : text;
+        }
+
+        /// <summary>What a locked piece waits for: the town hall's tier first, then the village's level.</summary>
+        private static string DecorLocked(RavenNest.SDK.Endpoints.DecorPiece piece)
+        {
+            var townHall = GameManager.Instance && GameManager.Instance.Village != null ? GameManager.Instance.Village.TownHall : null;
+            var tier = townHall ? townHall.Tier : 0;
+            return piece.Level > 0 && tier >= piece.Tier
+                ? string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED_LEVEL, piece.Level)
+                : string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED, piece.Tier + 1);
         }
 
         /// <summary>The panel for the decor in hand or selected, built once, in the road panel's look.</summary>

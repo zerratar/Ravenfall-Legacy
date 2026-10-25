@@ -923,23 +923,22 @@ public class VillageBuildMode : MonoBehaviour
     /// Null when a decor piece can stand here, otherwise why not: on the village's land and not in water, and for
     /// anything but a small piece, off the buildings and the town hall.
     /// </summary>
-    public string ValidateDecor(Vector3 position, float radius, bool small)
+    public string ValidateDecor(Vector3 position, Footprint shape, float rotation, bool small)
     {
         if (villageGrid && !villageGrid.IsOnVillageLand(position)) return Localization.UI_BUILD_PLACE_OUTSIDE;
         if (IsWater(position)) return Localization.UI_BUILD_PLACE_WATER;
         if (small) return null;
 
-        var footprint = new Footprint(new Vector2(radius, radius), Vector2.zero);
         foreach (var plot in Plots)
         {
             if (!plot || IsEmpty(plot)) continue;
-            if (Footprint.Overlaps(FootprintOf(plot), plot.transform.position, plot.transform.eulerAngles.y, footprint, position, 0f))
+            if (Footprint.Overlaps(FootprintOf(plot), plot.transform.position, plot.transform.eulerAngles.y, shape, position, rotation))
             {
                 return Localization.UI_DECOR_ON_BUILDING;
             }
         }
 
-        if (OverlapsTownHall(footprint, position, 0f)) return Localization.UI_DECOR_ON_BUILDING;
+        if (OverlapsTownHall(shape, position, rotation)) return Localization.UI_DECOR_ON_BUILDING;
         return null;
     }
 
@@ -958,10 +957,10 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>The ring under a decor piece being placed or moved, in the colour that says whether it can stand there.</summary>
-    public void ShowDecorRing(Vector3 position, float radius, bool valid)
+    public void ShowDecorRing(Vector3 position, Footprint shape, float rotation, bool valid)
     {
         if (!overlay) overlay = PlacementOverlay.Create(cellSize);
-        overlay.Show(position, 0f, radius, radius, valid);
+        overlay.Show(shape.Centre(position, rotation), rotation, Mathf.Max(shape.Half.x, 0.4f), Mathf.Max(shape.Half.y, 0.4f), valid);
     }
 
     public void HideDecorRing()
@@ -1258,8 +1257,8 @@ public class VillageBuildMode : MonoBehaviour
         foreach (var item in decorBlockers)
         {
             if (!item) continue;
-            var r = item.Radius + 0.3f;
-            blockerRings.Add((item.transform.position, 0f, new Vector2(r, r)));
+            var shape = item.Shape.Grown(0.3f);
+            blockerRings.Add((shape.Centre(item.transform.position, item.ShapeRotation), item.ShapeRotation, shape.Half));
         }
         overlay.ShowBlockers(blockerRings);
     }

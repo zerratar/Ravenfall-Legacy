@@ -31,7 +31,7 @@ public class VillageDecorTool : MonoBehaviour
     private GameManager gameManager;
 
     private GameObject ghost;
-    private float ghostRadius = 0.5f;
+    private VillageDecorItem ghostItem;
     private float rotation;
     private Vector3 cursor;
     private bool hasCursor;
@@ -72,7 +72,9 @@ public class VillageDecorTool : MonoBehaviour
         Stop();
         Armed = piece;
         ghost = MakeGhost(prefab);
-        ghostRadius = RadiusOf(ghost);
+        // measured as the placed piece will be
+        if (!ghost.TryGetComponent(out ghostItem)) ghostItem = ghost.AddComponent<VillageDecorItem>();
+        ghostItem.enabled = false;
         rotation = UnityEngine.Random.Range(0, 8) * TurnStep; // a little variety by default
         hasCursor = false;
         Changed?.Invoke();
@@ -185,9 +187,9 @@ public class VillageDecorTool : MonoBehaviour
         target.transform.SetPositionAndRotation(ground, Quaternion.Euler(0f, rotation, 0f));
 
         var small = Moving ? Selected.Small : (Decor?.PieceOf(Armed)?.Small ?? false);
-        var radius = Moving ? Selected.Radius : ghostRadius;
-        Problem = mode.ValidateDecor(ground, radius, small);
-        mode.ShowDecorRing(ground, Mathf.Max(radius, 0.4f), Problem == null);
+        var item = Moving ? Selected : ghostItem;
+        Problem = mode.ValidateDecor(ground, item.Shape, item.ShapeRotation, small);
+        mode.ShowDecorRing(ground, item.Shape, item.ShapeRotation, Problem == null);
     }
 
     // ---- Server --------------------------------------------------------------------------------
@@ -293,15 +295,6 @@ public class VillageDecorTool : MonoBehaviour
         foreach (var behaviour in copy.GetComponentsInChildren<MonoBehaviour>(true)) behaviour.enabled = false;
         foreach (var collider in copy.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
         return copy;
-    }
-
-    private static float RadiusOf(GameObject go)
-    {
-        var renderers = go.GetComponentsInChildren<Renderer>();
-        if (renderers.Length == 0) return 0.5f;
-        var bounds = renderers[0].bounds;
-        foreach (var r in renderers) bounds.Encapsulate(r.bounds);
-        return Mathf.Clamp(Mathf.Max(bounds.extents.x, bounds.extents.z) * 0.5f, 0.3f, 4f);
     }
 
     public static string ErrorText(string error)

@@ -291,6 +291,7 @@ namespace RavenNest.SDK.Endpoints
         public string Group { get; set; }
         public bool Small { get; set; }
         public int Tier { get; set; }
+        public int Level { get; set; }
         public bool Unlocked { get; set; }
         public double Wood { get; set; }
         public double Ore { get; set; }

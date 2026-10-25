@@ -46,9 +46,10 @@ public struct Footprint
 
     /// <summary>
     /// Measured from the colliders, or the renderers when there are none to go by, with the object
-    /// turned straight while measuring so a turned building does not grow its rectangle.
+    /// turned straight while measuring so a turned building does not grow its rectangle. No side is
+    /// shorter than <paramref name="minHalf"/> from the middle (a metre for buildings; decor is smaller).
     /// </summary>
-    public static Footprint Measure(GameObject building, bool useRenderers = false)
+    public static Footprint Measure(GameObject building, bool useRenderers = false, float minHalf = 1f)
     {
         if (!building) return Default;
 
@@ -66,7 +67,7 @@ public struct Footprint
             }
 
             var offset = bounds.center - transform.position;
-            var half = new Vector2(Mathf.Max(1f, bounds.extents.x), Mathf.Max(1f, bounds.extents.z));
+            var half = new Vector2(Mathf.Max(minHalf, bounds.extents.x), Mathf.Max(minHalf, bounds.extents.z));
             return new Footprint(half, new Vector2(offset.x, offset.z));
         }
         finally
