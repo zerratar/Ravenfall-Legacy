@@ -70,6 +70,12 @@ namespace RavenNest.Protocol
         /// sequence (for example after a restart): the client resets its cursor to 0.
         /// </summary>
         [Key(4)] public long EventSequence { get; set; }
+
+        /// <summary>
+        /// The server sends every inventory change as an <see cref="InventoryUpdate"/> event, with checksums (0.9.6).
+        /// The game can then keep its own copy of each inventory as the server has it and put its own right from it.
+        /// </summary>
+        [Key(5)] public bool InventoryFeed { get; set; }
     }
 
     public enum RejectReason

@@ -213,6 +213,21 @@ namespace RavenNest.Protocol
 
         /// <summary>With <see cref="SaveStage.Accepted"/>: the batch this answers.</summary>
         [Key(2)] public long ThroughSequence { get; set; }
+
+        /// <summary>
+        /// Now and then (about every 30 seconds per character), what the server's inventories add up to, so a game
+        /// that missed a change finds out even when nothing has changed since. Null most of the time.
+        /// </summary>
+        [Key(3)] public InventoryCheck[] Inventory { get; set; }
+    }
+
+    /// <summary>A character's inventory as the server has it at <see cref="Revision"/>, as an <see cref="InventoryChecksum"/>.</summary>
+    [MessagePackObject]
+    public struct InventoryCheck
+    {
+        [Key(0)] public Guid CharacterId { get; set; }
+        [Key(1)] public long Revision { get; set; }
+        [Key(2)] public ulong Checksum { get; set; }
     }
 
     [MessagePackObject]

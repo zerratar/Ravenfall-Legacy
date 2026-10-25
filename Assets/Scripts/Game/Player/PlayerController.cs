@@ -1671,6 +1671,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         Appearance.SetAppearance(player.Appearance, () =>
         {
             Inventory.Create(player.InventoryItems);
+            // the server's copy of this inventory starts from the same items (RavenNest.SDK.V2.InventorySync)
+            if (!IsBot) GameManager.RavenNest?.V2?.InventoryFeed.Seed(Id, player.InventoryItems);
             hasBeenInitialized = true;
             //if (joinOnsenAfterInitialize)
             //{

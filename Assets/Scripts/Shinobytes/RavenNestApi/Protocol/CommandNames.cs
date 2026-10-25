@@ -39,6 +39,9 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId, Guid itemId) -> RedeemItemResult</summary>
         public const string Redeem = "items.redeem";
 
+        /// <summary>(Guid characterId, Guid listingId, long amount) -> StreamerShopBuyResult: buys from a tavern shelf.</summary>
+        public const string ShopBuy = "shop.buy";
+
         /// <summary>(Guid characterId, Guid inventoryItemId, string argument or null) -> ItemUseResult</summary>
         public const string UseItem = "items.use";
 
@@ -109,5 +112,13 @@ namespace RavenNest.Protocol
 
         /// <summary>(LoyaltyUpdate) -> bool</summary>
         public const string LoyaltyUpdate = "loyalty.update";
+
+        // Inventory
+
+        /// <summary>
+        /// (Guid characterId) -> nothing; the result's Inventory holds the character's whole inventory (Full), at the
+        /// revision the server has reached. For a game whose copy no longer adds up to the server's checksum.
+        /// </summary>
+        public const string InventoryGet = "inventory.get";
     }
 }

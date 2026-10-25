@@ -167,6 +167,32 @@ Commands are what players ask for in chat: craft, equip, gift, send, vendor, buy
 - **Inventory revisions**: every inventory change carries the character's inventory revision. A gap (revision 41
   after 39) makes the client ask for that character's inventory, so a lost change heals itself.
 
+## Inventory feed (0.9.6)
+
+Revisions alone did not keep inventories right: only command results and dropped items carried one, so a change made
+anywhere else (the website, the marketplace, raid rewards, the old paths) never reached the game and never showed as
+a gap. The game's own sums drifted ("Phantom Ore 0/1" until the player left and joined again, October 2026).
+
+- **Every change, whichever code made it**: the server follows the inventory table itself (`EntitySet.EntityChanged`,
+  `GameData.InventoryItemChanged`). `InventoryFeed` notes each stack that changes and, twice a second, sends each
+  character with changes one `InventoryUpdate` event (type -1) with only those stacks as they are now, the next
+  revision and an `InventoryChecksum` of the whole inventory. Many changes to a stack in that time cost one stack in
+  one message, however many items the player has. Events are ordered and replayed, so revisions arrive without gaps;
+  a jump means a server restart.
+- **Command results** still list what they changed, without a revision; the feed carries the change.
+- **Checks without changes**: about every 30 seconds per character the save acks carry `InventoryCheck { revision,
+  checksum }`, so a game that missed something finds out even when nothing changes.
+- **The game keeps the server's copy** (`InventorySync`): a mirror of each inventory, seeded with the inventory the
+  player joined with and changed only by the feed. Each update also goes into the game's inventory. A few seconds after
+  a change the game's inventory is compared with the mirror by checksum; the same difference a few seconds later is
+  put right from the mirror (`Inventory.SyncWithServer`, keeping what the game equipped on its own). No traffic.
+- **Fetch only when the mirror is wrong**: a mirror whose checksum differs from the server's asks for the whole
+  inventory (`inventory.get`), at most every 30 seconds per character.
+- Servers before the feed say so in `Welcome.InventoryFeed`; the game then keeps to the old revision tracking.
+- Tested 2026-10-25 against the local server: an item added on the server through a path the game does not follow
+  reached the game in 0.4 s; the game's inventory spoiled on purpose was put right in 6 s without a fetch; the mirror
+  spoiled on purpose was found by the checksum and fetched in 5 s.
+
 ## Server
 
 - **One actor per game session**: a single worker owns a session's players, events and command results, fed by a

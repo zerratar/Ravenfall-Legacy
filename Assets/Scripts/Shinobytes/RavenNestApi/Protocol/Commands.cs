@@ -71,6 +71,11 @@ namespace RavenNest.Protocol
     /// A character's inventory changes. <see cref="Revision"/> goes up by one per change on the server, so a gap
     /// (41 after 39) tells the client it missed one and should fetch the full inventory.
     /// </summary>
+    /// <remarks>
+    /// Since 0.9.6 the server sends one of these as an event (type -1) for every change to a character's inventory,
+    /// whichever code made it, a few times a second at most (see <see cref="Welcome.InventoryFeed"/>). Command
+    /// results still list what the command changed, without a revision (0): the event carries the change.
+    /// </remarks>
     [MessagePackObject]
     public sealed class InventoryUpdate
     {
@@ -82,6 +87,12 @@ namespace RavenNest.Protocol
 
         /// <summary>Changed stacks; an amount of 0 means the stack is gone.</summary>
         [Key(3)] public InventoryStack[] Stacks { get; set; }
+
+        /// <summary>
+        /// The whole inventory's <see cref="InventoryChecksum"/> after these changes, or 0 from an older server. A
+        /// client whose copy of the inventory adds up to something else missed a change.
+        /// </summary>
+        [Key(4)] public ulong Checksum { get; set; }
     }
 
     [MessagePackObject]

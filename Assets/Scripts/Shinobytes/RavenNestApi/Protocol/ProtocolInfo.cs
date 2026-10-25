@@ -24,11 +24,19 @@ namespace RavenNest.Protocol
 
         /// <summary>
         /// The largest message either side accepts. Big enough for a stream with a thousand players restored at once;
-        /// the limit is only there so a broken message cannot take all the memory. It was 4 MB until 0.9.5.2a, and a
-        /// restore of 600 players went over it: the game dropped the connection on the answer and got it again after
-        /// every reconnect. The server keeps to 4 MB for older games.
+        /// the limit is only there so a broken message cannot take all the memory.
         /// </summary>
         public const int MaxMessageBytes = 256 * 1024 * 1024;
+
+        /// <summary>
+        /// What games before <see cref="LargeMessagesFrom"/> read: they close the connection on anything bigger, so
+        /// the server keeps to this for them. A restore of 600 players went over it and dropped those games' connection
+        /// again on every reconnect (0.9.5.1a).
+        /// </summary>
+        public const int LegacyMaxMessageBytes = 4 * 1024 * 1024;
+
+        /// <summary>The first game version that reads messages up to <see cref="MaxMessageBytes"/>.</summary>
+        public static readonly System.Version LargeMessagesFrom = new System.Version(0, 9, 5, 2);
 
         /// <summary>A command's result is kept this long, so repeating its request id returns it instead of running it again.</summary>
         public const int CommandResultKeepSeconds = 15 * 60;

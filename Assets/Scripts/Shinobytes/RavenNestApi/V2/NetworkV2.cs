@@ -46,13 +46,20 @@ namespace RavenNest.SDK.V2
             this.connection = connection;
             Commands = new CommandChannel(connection);
             Inventory.GapFound += RepairInventory;
+            InventoryFeed = new InventorySync(gameManager, Commands);
             journalPath = Shinobytes.IO.Path.Combine(Shinobytes.IO.Path.GameFolder, "states", "v2-unsaved-players.bin");
         }
 
         public SaveOutbox Outbox { get; } = new SaveOutbox();
 
-        /// <summary>The server's inventory revisions per character, to spot changes the game never got.</summary>
+        /// <summary>
+        /// The server's inventory revisions per character, to spot changes the game never got. For servers before
+        /// the inventory feed; with it, <see cref="InventoryFeed"/> keeps the inventories right.
+        /// </summary>
         public InventoryRevisions Inventory { get; } = new InventoryRevisions();
+
+        /// <summary>Every inventory change from the server, and the game's inventories kept to it (servers from 0.9.6).</summary>
+        public InventorySync InventoryFeed { get; }
         public CommandChannel Commands { get; }
         public GameConnectionV2 Connection => connection;
 
@@ -149,6 +156,7 @@ namespace RavenNest.SDK.V2
 
             Commands.Tick(now);
             Inventory.Tick(now);
+            InventoryFeed.Tick(now);
         }
 
         private void ReadIncoming(DateTime now)
@@ -163,6 +171,7 @@ namespace RavenNest.SDK.V2
                         break;
                     case SaveAcks acks:
                         Outbox.OnAcks(acks);
+                        InventoryFeed.OnChecks(acks.Inventory, now);
                         RemovePlayersOfOtherSessions(acks);
                         if (journalWaiting.Count > 0)
                         {
@@ -183,7 +192,8 @@ namespace RavenNest.SDK.V2
                         }
                         break;
                     case CommandResult result:
-                        if (result.Inventory != null)
+                        // with the feed, a command's changes come as events, in order with every other change
+                        if (result.Inventory != null && !InventoryFeed.Enabled)
                         {
                             foreach (var update in result.Inventory) Inventory.Saw(update, now);
                         }
@@ -205,6 +215,8 @@ namespace RavenNest.SDK.V2
             {
                 firstWelcome = now;
             }
+
+            InventoryFeed.Enabled = welcome.InventoryFeed;
 
             // the server's numbering started over (a new session, or it lost its log): our cursor means nothing there
             if (welcome.EventSequence < connection.LastAppliedEventSequence)
@@ -282,7 +294,8 @@ namespace RavenNest.SDK.V2
                     }
                 }
 
-                Inventory.Saw(e.Inventory, DateTime.UtcNow);
+                if (InventoryFeed.Enabled) InventoryFeed.OnUpdate(e.Inventory, DateTime.UtcNow);
+                else Inventory.Saw(e.Inventory, DateTime.UtcNow);
                 connection.LastAppliedEventSequence = e.Sequence;
                 EventsApplied++;
             }

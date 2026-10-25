@@ -92,6 +92,20 @@ namespace RavenNest.SDK.V2
             return done.Task;
         }
 
+        /// <summary>
+        /// Runs a command and returns its whole result, for a command whose answer is not in its value (the inventory
+        /// a <see cref="Commands.InventoryGet"/> returns). Null when it never got an answer.
+        /// </summary>
+        public Task<CommandResult> CallForResultAsync(string command, byte[] args)
+        {
+            var request = new CommandRequest { RequestId = Guid.NewGuid(), Command = command, Args = args };
+            var done = new TaskCompletionSource<CommandResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            pending[request.RequestId] = new Pending { Request = request, Created = DateTime.UtcNow, Complete = result => done.TrySetResult(result) };
+            Sent++;
+            connection.Send(request);
+            return done.Task;
+        }
+
         public void OnResult(CommandResult result)
         {
             if (!pending.TryRemove(result.RequestId, out var entry))

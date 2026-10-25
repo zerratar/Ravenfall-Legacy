@@ -253,12 +253,14 @@ public class Inventory : MonoBehaviour
     /// <summary>
     /// Makes this inventory match the server's, for a player already in the game: the repair when the game finds
     /// it missed an inventory change. Unlike <see cref="Create"/> (for a freshly spawned player, which would leave the
-    /// old equipment in place) it only changes what differs: equipment the server no longer has equipped comes off,
-    /// amounts are set, stacks the server does not have are removed and the ones it has are added. Appearance and
-    /// equipment effects are rebuilt once, at the end, if the equipment changed.
+    /// old equipment in place) it only changes what differs: amounts are set, stacks the server does not have are
+    /// removed (a stack listed twice here keeps one) and the ones it has are added. With
+    /// <paramref name="matchEquipment"/> equipment the server does not have equipped comes off; without it, what the
+    /// game equipped on its own stays on (the inventory feed's quiet repair, see RavenNest.SDK.V2.InventorySync).
+    /// Appearance and equipment effects are rebuilt once, at the end, if the equipment changed.
     /// </summary>
     /// <returns>How many stacks were changed, added or removed.</returns>
-    public int SyncWithServer(IReadOnlyList<InventoryItem> serverItems)
+    public int SyncWithServer(IReadOnlyList<InventoryItem> serverItems, bool matchEquipment = true)
     {
         if (serverItems == null)
         {
@@ -278,12 +280,13 @@ public class Inventory : MonoBehaviour
 
             var changes = 0;
             var equipmentChanged = false;
+            var seen = new HashSet<Guid>();
 
-            // equipment the server no longer has equipped (or at all) comes off; it is not put in the backpack here,
-            // the backpack is matched to the server below
+            // equipment the server does not have (or, matching equipment, does not have equipped) comes off; it is
+            // not put in the backpack here, the backpack is matched to the server below
             foreach (var e in equipped.ToList())
             {
-                if (!server.TryGetValue(e.InstanceId, out var s) || !s.Equipped)
+                if (!server.TryGetValue(e.InstanceId, out var s) || (matchEquipment && !s.Equipped) || !seen.Add(e.InstanceId))
                 {
                     e.InventoryItem.Equipped = false;
                     equipped.Remove(e);
@@ -292,12 +295,18 @@ public class Inventory : MonoBehaviour
                     equipmentChanged = true;
                     changes++;
                 }
+                else if (e.InventoryItem.Amount != s.Amount)
+                {
+                    e.InventoryItem.Amount = s.Amount;
+                    changes++;
+                }
             }
 
-            // backpack stacks: gone or now equipped on the server are removed, the rest take the server's amount
+            // backpack stacks: gone (or equipped here, or matching equipment equipped on the server) are removed, the
+            // rest take the server's amount
             foreach (var b in backpack.ToList())
             {
-                if (!server.TryGetValue(b.InstanceId, out var s) || s.Equipped)
+                if (!server.TryGetValue(b.InstanceId, out var s) || (matchEquipment && s.Equipped) || !seen.Add(b.InstanceId))
                 {
                     backpack.Remove(b);
                     changes++;
@@ -310,30 +319,14 @@ public class Inventory : MonoBehaviour
             }
 
             // stacks the server has that this inventory does not
-            var known = new HashSet<Guid>();
-            foreach (var x in backpack) known.Add(x.InstanceId);
-            foreach (var x in equipped) known.Add(x.InstanceId);
             foreach (var s in server.Values)
             {
-                if (known.Contains(s.Id))
+                if (seen.Contains(s.Id))
                 {
                     continue;
                 }
 
-                var copy = new InventoryItem
-                {
-                    Id = s.Id,
-                    ItemId = s.ItemId,
-                    Amount = s.Amount,
-                    Equipped = s.Equipped,
-                    Tag = s.Tag,
-                    Soulbound = s.Soulbound,
-                    Enchantment = s.Enchantment,
-                    Name = s.Name,
-                    TransmogrificationId = s.TransmogrificationId,
-                    Flags = s.Flags
-                };
-                var gameItem = new GameInventoryItem(player, copy, itemManager.Get(s.ItemId), itemManager.Get(s.TransmogrificationId));
+                var gameItem = NewServerStack(s);
                 if (s.Equipped)
                 {
                     equipped.Add(gameItem);
@@ -349,13 +342,183 @@ public class Inventory : MonoBehaviour
 
             if (equipmentChanged)
             {
-                equipment.EquipAll(equipped);
-                player.UpdateEquipmentEffect(equipped);
-                player.GameManager.ObservedPlayerDetails.PlayerEquipmentUpdated(player);
+                EquipmentChanged();
             }
 
             return changes;
         }
+    }
+
+    /// <summary>
+    /// Stacks as the server has them now, from its inventory feed: amounts set, empty stacks removed, new ones added.
+    /// A stack's equipped state is taken from the server only where <paramref name="followEquipped"/> says the server
+    /// changed it, so what the game equipped on its own is left alone until the server says otherwise.
+    /// </summary>
+    /// <returns>How many stacks changed here.</returns>
+    public int ApplyServerStacks(IReadOnlyList<InventoryItem> stacks, IReadOnlyList<bool> followEquipped)
+    {
+        if (stacks == null || stacks.Count == 0)
+        {
+            return 0;
+        }
+
+        lock (mutex)
+        {
+            var changes = 0;
+            var equipmentChanged = false;
+            for (var i = 0; i < stacks.Count; ++i)
+            {
+                var s = stacks[i];
+                var follow = followEquipped != null && i < followEquipped.Count && followEquipped[i];
+
+                // every copy of the stack here (there should be one; a stack the game added twice keeps one)
+                GameInventoryItem keep = null;
+                var keepEquipped = false;
+                foreach (var e in equipped.ToList())
+                {
+                    if (e.InstanceId != s.Id) continue;
+                    if (keep == null) { keep = e; keepEquipped = true; continue; }
+                    e.InventoryItem.Equipped = false;
+                    equipped.Remove(e);
+                    equipment.Unequip(e, false);
+                    if (equippedMeleeWeapon == e) equippedMeleeWeapon = null;
+                    equipmentChanged = true;
+                    changes++;
+                }
+                foreach (var b in backpack.ToList())
+                {
+                    if (b.InstanceId != s.Id) continue;
+                    if (keep == null) { keep = b; continue; }
+                    backpack.Remove(b);
+                    changes++;
+                }
+
+                // gone, or an item this game does not know
+                if (s.Amount <= 0 || itemManager.Get(s.ItemId) == null)
+                {
+                    if (keep != null)
+                    {
+                        if (keepEquipped)
+                        {
+                            equipped.Remove(keep);
+                            equipment.Unequip(keep, false);
+                            if (equippedMeleeWeapon == keep) equippedMeleeWeapon = null;
+                            equipmentChanged = true;
+                        }
+                        else backpack.Remove(keep);
+                        changes++;
+                    }
+                    continue;
+                }
+
+                if (keep == null)
+                {
+                    keep = NewServerStack(s);
+                    if (s.Equipped)
+                    {
+                        equipped.Add(keep);
+                        if (IsMeleeWeapon(keep)) equippedMeleeWeapon = keep;
+                        equipmentChanged = true;
+                    }
+                    else backpack.Add(keep);
+                    changes++;
+                    continue;
+                }
+
+                // another item, an enchantment, a skin or a name: a new instance, so everything read from them is right
+                var ii = keep.InventoryItem;
+                if (ii.ItemId != s.ItemId || ii.Enchantment != s.Enchantment || ii.TransmogrificationId != s.TransmogrificationId || ii.Name != s.Name)
+                {
+                    var replacement = NewServerStack(s);
+                    replacement.InventoryItem.Equipped = keepEquipped;
+                    if (keepEquipped)
+                    {
+                        equipped[equipped.IndexOf(keep)] = replacement;
+                        if (equippedMeleeWeapon == keep) equippedMeleeWeapon = replacement;
+                        equipmentChanged = true;
+                    }
+                    else backpack[backpack.IndexOf(keep)] = replacement;
+                    keep = replacement;
+                    ii = keep.InventoryItem;
+                    changes++;
+                }
+                else if (ii.Amount != s.Amount || ii.Soulbound != s.Soulbound || ii.Tag != s.Tag || ii.Flags != s.Flags)
+                {
+                    ii.Amount = s.Amount;
+                    ii.Soulbound = s.Soulbound;
+                    ii.Tag = s.Tag;
+                    ii.Flags = s.Flags;
+                    changes++;
+                }
+
+                if (follow && s.Equipped != keepEquipped)
+                {
+                    ii.Equipped = s.Equipped;
+                    if (s.Equipped)
+                    {
+                        backpack.Remove(keep);
+                        equipped.Add(keep);
+                        if (IsMeleeWeapon(keep)) equippedMeleeWeapon = keep;
+                    }
+                    else
+                    {
+                        equipped.Remove(keep);
+                        equipment.Unequip(keep, false);
+                        if (equippedMeleeWeapon == keep) equippedMeleeWeapon = null;
+                        backpack.Add(keep);
+                    }
+                    equipmentChanged = true;
+                    changes++;
+                }
+            }
+
+            if (equipmentChanged)
+            {
+                EquipmentChanged();
+            }
+
+            return changes;
+        }
+    }
+
+    /// <summary>
+    /// This inventory as a RavenNest.Protocol.InventoryChecksum, to compare with the server's copy (see
+    /// RavenNest.SDK.V2.InventorySync).
+    /// </summary>
+    public ulong Checksum()
+    {
+        lock (mutex)
+        {
+            ulong checksum = 0;
+            foreach (var x in backpack) checksum += RavenNest.Protocol.InventoryChecksum.Of(x.InstanceId, x.InventoryItem.ItemId, x.InventoryItem.Amount);
+            foreach (var x in equipped) checksum += RavenNest.Protocol.InventoryChecksum.Of(x.InstanceId, x.InventoryItem.ItemId, x.InventoryItem.Amount);
+            return checksum;
+        }
+    }
+
+    private GameInventoryItem NewServerStack(InventoryItem s)
+    {
+        var copy = new InventoryItem
+        {
+            Id = s.Id,
+            ItemId = s.ItemId,
+            Amount = s.Amount,
+            Equipped = s.Equipped,
+            Tag = s.Tag,
+            Soulbound = s.Soulbound,
+            Enchantment = s.Enchantment,
+            Name = s.Name,
+            TransmogrificationId = s.TransmogrificationId,
+            Flags = s.Flags
+        };
+        return new GameInventoryItem(player, copy, itemManager.Get(s.ItemId), itemManager.Get(s.TransmogrificationId));
+    }
+
+    private void EquipmentChanged()
+    {
+        equipment.EquipAll(equipped);
+        player.UpdateEquipmentEffect(equipped);
+        player.GameManager.ObservedPlayerDetails.PlayerEquipmentUpdated(player);
     }
 
     public void UpdateScrolls(ScrollInfoCollection scrolls)
