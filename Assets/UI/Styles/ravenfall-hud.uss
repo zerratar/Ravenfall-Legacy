@@ -2174,7 +2174,8 @@
 
 .rf-rb {
     position: absolute;
-    top: 270px;
+    /* a share of the screen, as the HUD scales: below the event banners at any size */
+    top: 34%;
     left: 0;
     right: 0;
     align-items: center;
