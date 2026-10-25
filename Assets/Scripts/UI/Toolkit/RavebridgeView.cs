@@ -31,6 +31,7 @@ namespace Shinobytes.UI
             bound = false;
             // the Ravebridge character: play it, make one, export or import it (6d)
             MoreChoices = CharacterChoices;
+            RavebridgeQuests.Notice += ShowNotice;
             RavebridgeManager.Changed += Redraw;
             Languages.Changed += Rebuild;
         }
@@ -38,6 +39,7 @@ namespace Shinobytes.UI
         private void OnDisable()
         {
             RavebridgeManager.Changed -= Redraw;
+            RavebridgeQuests.Notice -= ShowNotice;
             Languages.Changed -= Rebuild;
             bound = false;
         }
@@ -111,6 +113,15 @@ namespace Shinobytes.UI
         }
 
         private string notice;
+        private float noticeUntil;
+
+        /// <summary>Something found or a quest done, on the bar for a few seconds.</summary>
+        private void ShowNotice(string text)
+        {
+            notice = text;
+            noticeUntil = Time.unscaledTime + 6f;
+            Redraw();
+        }
         private VisualElement creator;
         private TextField creatorName;
 
@@ -211,6 +222,7 @@ namespace Shinobytes.UI
             stay.style.display = left >= 0f ? DisplayStyle.Flex : DisplayStyle.None;
             play.text = RavebridgePlay.Playing ? Localization.UI_RAVEBRIDGE_STOP : Localization.UI_RAVEBRIDGE_PLAY;
             look.style.display = RavebridgePlay.Playing && RavebridgePlay.Playing.IsLocal ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!string.IsNullOrEmpty(notice) && noticeUntil > 0f && Time.unscaledTime > noticeUntil) notice = null;
             if (!string.IsNullOrEmpty(notice)) { meta.text = notice; meta.style.display = DisplayStyle.Flex; }
         }
 

@@ -257,6 +257,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         if (!game || game.Players == null) return;
 
         RavebridgeCharacter.Tick();
+        RavebridgeQuests.Tick();
 
         if (!Active)
         {

@@ -1,0 +1,145 @@
+{
+  "comment": "Ravebridge's NPCs and island quests (docs/ravebridge-design.md, 6e). Steps run in order: talk (to npc), collect (item from an action: kill an enemy whose name has the word, or a skill's action on the island), bring (items back to npc, used up). 'requires' on a step: another quest that must be done first. Text in every language the game has; English is the fallback.",
+  "npcs": {
+    "duke": {
+      "name": { "en": "Duke Ravacio", "sv": "Hertig Ravacio" },
+      "lines": {
+        "en": [ "Welcome to Ravebridge, traveller. Mind the goblins.", "My cook is planning something. I am sure it is not a birthday cake.", "Ravebridge was once the greatest town in all the west. Well. It was a town." ],
+        "sv": [ "Välkommen till Ravebridge, främling. Akta dig för vättarna.", "Min kock planerar något. Jag är säker på att det inte är en födelsedagstårta.", "Ravebridge var en gång den största staden i hela väst. Nåja. Det var en stad." ]
+      }
+    },
+    "cook": {
+      "name": { "en": "The Duke's cook", "sv": "Hertigens kock" },
+      "lines": {
+        "en": [ "Where am I going to find an egg at this hour?", "The Duke must not find out. It is a surprise!" ],
+        "sv": [ "Var ska jag hitta ett ägg vid den här tiden?", "Hertigen får inte veta något. Det är en överraskning!" ]
+      }
+    },
+    "miller": {
+      "name": { "en": "Millie the miller", "sv": "Mjölnar-Millie" },
+      "lines": {
+        "en": [ "Turn, you stupid sails. TURN.", "Wheat in, flour out. When the mill works, that is." ],
+        "sv": [ "Snurra, era dumma vingar. SNURRA.", "Vete in, mjöl ut. När kvarnen fungerar, alltså." ]
+      }
+    },
+    "priest": {
+      "name": { "en": "Father Aereck", "sv": "Fader Aereck" },
+      "lines": {
+        "en": [ "Something moans in the graveyard at night. I pretend it is the wind.", "Have you come to pray? We have very comfortable pews." ],
+        "sv": [ "Något stönar på kyrkogården om nätterna. Jag låtsas att det är vinden.", "Har du kommit för att be? Vi har väldigt bekväma bänkar." ]
+      }
+    },
+    "ghost": {
+      "name": { "en": "The restless ghost", "sv": "Det rastlösa spöket" },
+      "lines": {
+        "en": [ "WoooOOOooo.", "Wooo... ooh, hello." ],
+        "sv": [ "UuuuUUUuuu.", "Uuuu... åh, hej." ]
+      }
+    },
+    "bentnose": {
+      "name": { "en": "General Bentnose", "sv": "General Krokinäsa" },
+      "lines": {
+        "en": [ "GREEN armour! Like proper goblins!", "Wartfist is wrong. Wartfist is always wrong." ],
+        "sv": [ "GRÖN rustning! Som riktiga vättar!", "Vårtnäve har fel. Vårtnäve har alltid fel." ]
+      }
+    },
+    "wartfist": {
+      "name": { "en": "General Wartfist", "sv": "General Vårtnäve" },
+      "lines": {
+        "en": [ "RED armour! Red is the colour of victory!", "Bentnose smells of mud." ],
+        "sv": [ "RÖD rustning! Rött är segerns färg!", "Krokinäsa luktar lera." ]
+      }
+    },
+    "keeper": {
+      "name": { "en": "Old Bridgewell", "sv": "Gamle Brovall" },
+      "lines": {
+        "en": [ "This bridge is older than me. Barely.", "Do not jump on the planks. Please." ],
+        "sv": [ "Den här bron är äldre än jag. Nästan.", "Hoppa inte på plankorna. Snälla." ]
+      }
+    },
+    "shopkeeper": {
+      "name": { "en": "The shopkeeper", "sv": "Butiksägaren" },
+      "lines": {
+        "en": [ "Welcome to the general store! We sell... a little bit of everything. Mostly nothing.", "Pots? Buckets? Come back when the cart arrives." ],
+        "sv": [ "Välkommen till lanthandeln! Vi säljer... lite av varje. Mest ingenting.", "Krukor? Hinkar? Kom tillbaka när vagnen kommer." ]
+      }
+    }
+  },
+  "items": {
+    "egg": { "en": "an egg", "sv": "ett ägg" },
+    "milk": { "en": "a bucket of milk", "sv": "en hink mjölk" },
+    "wheat": { "en": "a sheaf of wheat", "sv": "en kärve vete" },
+    "flour": { "en": "a pot of flour", "sv": "en kruka mjöl" },
+    "cog": { "en": "a mill cog", "sv": "ett kvarnkugghjul" },
+    "amulet": { "en": "the ghostspeak amulet", "sv": "spökspråksamuletten" },
+    "skull": { "en": "the ghost's skull", "sv": "spökets skalle" },
+    "goblin_mail": { "en": "goblin armour", "sv": "vätterustning" },
+    "woad": { "en": "woad leaves", "sv": "vejdeblad" },
+    "plank": { "en": "an old plank", "sv": "en gammal planka" },
+    "nails": { "en": "tin nails", "sv": "tennspik" }
+  },
+  "quests": [
+    {
+      "key": "windmill",
+      "name": { "en": "The windmill that won't", "sv": "Kvarnen som inte vill" },
+      "steps": [
+        { "type": "talk", "npc": "miller", "say": { "en": "The sails will not turn! Someone has stolen the cogs... and I saw little green footprints. Goblins! Bring me three cogs back.", "sv": "Vingarna snurrar inte! Någon har stulit kugghjulen... och jag såg små gröna fotspår. Vättar! Ta tillbaka tre kugghjul åt mig." } },
+        { "type": "collect", "item": "cog", "amount": 3, "kill": "goblin", "chance": 0.35, "hint": { "en": "Take three cogs back from the goblins across the river", "sv": "Ta tillbaka tre kugghjul från vättarna på andra sidan floden" } },
+        { "type": "bring", "npc": "miller", "items": { "cog": 3 }, "say": { "en": "My cogs! A little chewed, but they will do. Listen... she TURNS! Bring me wheat any time and I will make you flour.", "sv": "Mina kugghjul! Lite tuggade, men de duger. Lyssna... hon SNURRAR! Kom med vete när du vill så mal jag mjöl åt dig." } }
+      ],
+      "reward": { "exp": { "Crafting": 1500, "Attack": 600 }, "coins": 200 }
+    },
+    {
+      "key": "cook",
+      "name": { "en": "The cook's big day", "sv": "Kockens stora dag" },
+      "steps": [
+        { "type": "talk", "npc": "cook", "say": { "en": "It is the Duke's birthday and I have NOTHING for the cake! I need an egg, a bucket of milk and a pot of flour. Please hurry!", "sv": "Det är hertigens födelsedag och jag har INGENTING till tårtan! Jag behöver ett ägg, en hink mjölk och en kruka mjöl. Skynda dig!" } },
+        { "type": "collect", "item": "egg", "amount": 1, "skill": "Gathering", "chance": 0.4, "hint": { "en": "Find an egg by the farm's chicken coop (gathering)", "sv": "Hitta ett ägg vid gårdens hönshus (samla)" } },
+        { "type": "collect", "item": "milk", "amount": 1, "kill": "cow", "chance": 0.5, "hint": { "en": "Get a bucket of milk from the cows in the field", "sv": "Skaffa en hink mjölk från korna i hagen" } },
+        { "type": "collect", "item": "wheat", "amount": 1, "skill": "Farming", "chance": 0.5, "hint": { "en": "Grow some wheat in the crop field (farming)", "sv": "Odla lite vete på åkern (jordbruk)" } },
+        { "type": "talk", "npc": "miller", "requires": "windmill", "uses": { "wheat": 1 }, "gives": { "flour": 1 }, "say": { "en": "Wheat for flour? Of course. There you go, one pot of the finest Ravebridge flour.", "sv": "Vete till mjöl? Självklart. Varsågod, en kruka av Ravebridges finaste mjöl." }, "blocked": { "en": "Flour? With a stuck mill? Not until the sails turn again.", "sv": "Mjöl? Med en kvarn som står still? Inte förrän vingarna snurrar igen." } },
+        { "type": "bring", "npc": "cook", "items": { "egg": 1, "milk": 1, "flour": 1 }, "say": { "en": "You did it! Now quick, before the Duke comes down... the cake will be magnificent. Here, take something from the larder.", "sv": "Du klarade det! Nu snabbt, innan hertigen kommer ner... tårtan blir magnifik. Här, ta något från skafferiet." } }
+      ],
+      "reward": { "exp": { "Cooking": 2000 }, "coins": 300, "items": { "Cabbage": 3 } }
+    },
+    {
+      "key": "ghost",
+      "name": { "en": "The restless ghost", "sv": "Det rastlösa spöket" },
+      "steps": [
+        { "type": "talk", "npc": "priest", "gives": { "amulet": 1 }, "say": { "en": "A ghost haunts our graveyard. Wear this amulet and you will understand what it says. Then make it stop. Please.", "sv": "Ett spöke hemsöker vår kyrkogård. Bär den här amuletten så förstår du vad det säger. Och få det att sluta. Snälla." } },
+        { "type": "talk", "npc": "ghost", "say": { "en": "You can understand me?! Finally! Someone took my skull and dropped it in the swamp mine. I cannot rest without my head!", "sv": "Du förstår mig?! Äntligen! Någon tog min skalle och tappade den i träskgruvan. Jag kan inte vila utan mitt huvud!" } },
+        { "type": "collect", "item": "skull", "amount": 1, "skill": "Mining", "chance": 0.25, "hint": { "en": "Dig for the skull in the swamp mine (mining)", "sv": "Gräv efter skallen i träskgruvan (gruvdrift)" } },
+        { "type": "bring", "npc": "ghost", "items": { "skull": 1 }, "say": { "en": "My skull! Oh, it is exactly as I remember it. I can rest now. Thank you... wooo... ooo...", "sv": "Min skalle! Åh, den är precis som jag minns den. Nu kan jag vila. Tack... uuu... uuu..." } }
+      ],
+      "reward": { "exp": { "Healing": 1500, "Magic": 1000 }, "coins": 250 }
+    },
+    {
+      "key": "goblins",
+      "name": { "en": "Goblin diplomacy", "sv": "Vättediplomati" },
+      "steps": [
+        { "type": "talk", "npc": "bentnose", "say": { "en": "The tribe needs new armour, and Wartfist wants it RED. Ridiculous. Get us armour and we will settle this.", "sv": "Stammen behöver nya rustningar, och Vårtnäve vill ha dem RÖDA. Löjligt. Skaffa oss rustningar så avgör vi saken." } },
+        { "type": "collect", "item": "goblin_mail", "amount": 3, "kill": "goblin", "chance": 0.3, "hint": { "en": "Take three goblin armours from the goblins (yes, from those goblins)", "sv": "Ta tre vätterustningar från vättarna (ja, från de vättarna)" } },
+        { "type": "talk", "npc": "wartfist", "say": { "en": "Armour! Now dye it red. No? Then blue, at least. Bring woad leaves for the dye.", "sv": "Rustningar! Färga dem röda nu. Nej? Blå då, åtminstone. Kom med vejdeblad till färgen." } },
+        { "type": "collect", "item": "woad", "amount": 2, "skill": "Gathering", "chance": 0.4, "hint": { "en": "Gather two handfuls of woad leaves", "sv": "Samla två handfullar vejdeblad" } },
+        { "type": "talk", "npc": "bentnose", "say": { "en": "BLUE?! Blue is worse than red! Go and ask Wartfist what is wrong with him.", "sv": "BLÅ?! Blått är värre än rött! Gå och fråga Vårtnäve vad det är för fel på honom." } },
+        { "type": "bring", "npc": "wartfist", "items": { "goblin_mail": 3, "woad": 2 }, "say": { "en": "Hmm. You know, the plain brown ones are nice. The colour of mud. Bentnose? ...Bentnose likes it too. PEACE! For now.", "sv": "Hmm. Vet du, de vanliga bruna är fina. Lerans färg. Krokinäsa? ...Krokinäsa gillar dem också. FRED! Tills vidare." } }
+      ],
+      "reward": { "exp": { "Crafting": 1200, "Strength": 1200 }, "coins": 300 }
+    },
+    {
+      "key": "bridge",
+      "name": { "en": "Mending the old bridge", "sv": "Lagningen av den gamla bron" },
+      "steps": [
+        { "type": "talk", "npc": "keeper", "say": { "en": "The wooden bridge is rotting away. Ten good planks and five tin nails would see it through another hundred years. Or ten.", "sv": "Träbron håller på att ruttna bort. Tio bra plankor och fem tennspikar skulle få den att hålla hundra år till. Eller tio." } },
+        { "type": "collect", "item": "plank", "amount": 10, "skill": "Woodcutting", "chance": 0.5, "hint": { "en": "Cut ten old planks from the trees round the castle", "sv": "Hugg tio gamla plankor från träden runt slottet" } },
+        { "type": "collect", "item": "nails", "amount": 5, "skill": "Mining", "chance": 0.4, "hint": { "en": "Mine tin for five nails in the swamp mine", "sv": "Bryt tenn till fem spikar i träskgruvan" } },
+        { "type": "bring", "npc": "keeper", "items": { "plank": 10, "nails": 5 }, "say": { "en": "Lovely. Hammer, hammer, hammer... done. Try jumping on it. No, wait, do not.", "sv": "Underbart. Hamra, hamra, hamra... klart. Prova att hoppa på den. Nej, vänta, gör inte det." } }
+      ],
+      "reward": { "exp": { "Woodcutting": 1500, "Mining": 800 }, "coins": 250 }
+    }
+  ],
+  "duke": {
+    "progress": { "en": "You have done {0} of Ravebridge's {1} quests. The town is grateful. Mostly.", "sv": "Du har klarat {0} av Ravebridges {1} uppdrag. Staden är tacksam. För det mesta." },
+    "done": { "en": "Every quest in Ravebridge, done! From this day you shall be known as one of Ravebridge's own.", "sv": "Varje uppdrag i Ravebridge, klart! Från och med i dag ska du vara känd som en av Ravebridges egna." }
+  }
+}

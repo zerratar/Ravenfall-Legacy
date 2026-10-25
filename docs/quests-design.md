@@ -311,7 +311,9 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
    `tools/mangrove/navmesh-bake.cs` (or the surface's Bake button); navmesh assets and the area name in
    ProjectSettings are not in git, so they live where they were made.
    Next: more stories, and hero mode steps.
-6. **Ravebridge.** Finishing the island (buildings, NPCs, monsters), its chain and event, rebirth.
+6. **Ravebridge.** The event island, built 2026-10-25 (docs/ravebridge-design.md): the island, the event with
+   `!ravebridge`, the streamer playing by hand, the Ravebridge character and five island quests, opened by the story
+   "the road west" after the runestone, or forced by world events. Rebirth waits for the endgame talk.
 7. **Hero mode**, with its own design doc first.
 
 ## Open questions

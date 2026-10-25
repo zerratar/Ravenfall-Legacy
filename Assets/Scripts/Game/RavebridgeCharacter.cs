@@ -40,10 +40,8 @@ public static class RavebridgeCharacter
         public List<ItemData> Items = new List<ItemData>();
         public long Coins;
 
-        /// <summary>The island quests: their step, or -1 when done (RavebridgeQuests).</summary>
-        public Dictionary<string, int> Quests = new Dictionary<string, int>();
-        public HashSet<string> QuestItems = new HashSet<string>();
-        public int QuestPoints;
+        /// <summary>The island quests: their steps, quest items and points (RavebridgeQuests).</summary>
+        public RavebridgeQuests.State Quest = new RavebridgeQuests.State();
         public DateTime Created;
         public DateTime Saved;
     }
@@ -83,8 +81,9 @@ public static class RavebridgeCharacter
         if (d == null || string.IsNullOrWhiteSpace(d.Name) || d.Id == Guid.Empty) return null;
         d.Skills ??= NewSkills();
         d.Items ??= new List<ItemData>();
-        d.Quests ??= new Dictionary<string, int>();
-        d.QuestItems ??= new HashSet<string>();
+        d.Quest ??= new RavebridgeQuests.State();
+        d.Quest.Steps ??= new Dictionary<string, int>();
+        d.Quest.Items ??= new Dictionary<string, int>();
         return d;
     }
 

@@ -125,6 +125,13 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<VillageStoryResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
         }
 
+        /// <summary>The streamer's character finished the Ravebridge island quests: the title "of Ravebridge".</summary>
+        public Task<VillageStoryResultData> RavebridgeDoneAsync()
+        {
+            return request.Create().Identifier("village").Method("ravebridge-done").Build()
+                .SendAsync<VillageStoryResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
         private Task<VillageStoryResultData> StoryAction(string action, string key)
         {
             return request.Create().Identifier("village").Method(action).AddParameter(key).Build()

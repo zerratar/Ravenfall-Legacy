@@ -12,6 +12,8 @@
 // - the places Lumbridge has and Ravebridge did not: the church and its graveyard, the general store, the castle
 //   kitchen, the windmill to the north west, houses, the farm's chicken coop, the swamp to the south and its mine,
 //   signposts;
+// - the people the streamer talks to (IslandNpc): Duke Ravacio, the cook, the miller, the priest, the restless ghost,
+//   the goblin generals, the bridge keeper and the shopkeeper;
 // - training spots, copied from the main island's level 1 ones: trees north west of the castle, the swamp mine,
 //   fishing in the river by the swamp, farm patches in the crop field, gathering by the coop, cooking in the kitchen,
 //   crafting and alchemy in the store's yard;
@@ -363,20 +365,67 @@ foreach (var cow in cowGroup.GetComponentsInChildren<EnemyController>(true))
     so.ApplyModifiedPropertiesWithoutUndo();
 }
 
-// the restless ghost: one rig shown as its ghost, in the graveyard
+// a tormented soul haunting the graveyard to fight (the restless ghost itself is an NPC, below)
 var ghosts = chunk(TaskType.Fighting, home, 1, new UnityEngine.Vector3(-1672f, terrain(-1672f, 1700f), 1700f));
-ghosts.name = "Fighting Lv. 15 (ghost)";
+ghosts.name = "Fighting Lv. 15 (soul)";
 ghosts.RequiredSkilllevel = 15;
 ghosts.RequiredCombatLevel = 15;
 var ghostGroup = ghosts.transform.GetChild(0);
 foreach (UnityEngine.Transform e in System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Cast<UnityEngine.Transform>(ghostGroup))) UnityEngine.Object.DestroyImmediate(e.gameObject);
 var ghost = UnityEngine.Object.Instantiate(ghostSource, ghostGroup);
-ghost.name = "The Restless Ghost";
-ghost.transform.position = new UnityEngine.Vector3(-1672f, ground(-1672f, 1700f), 1700f);
-foreach (UnityEngine.Transform part in ghost.transform) part.gameObject.SetActive(part.name == "Root" || part.name == "Character_Ghost_01");
+ghost.name = "Tormented Soul";
+ghost.transform.position = new UnityEngine.Vector3(-1676f, ground(-1676f, 1690f), 1690f);
+foreach (UnityEngine.Transform part in ghost.transform) part.gameObject.SetActive(part.name == "Root" || part.name == "Character_Tormented_Soul");
 ghost.SetActive(true);
 makeEnemy(ghost, 16f, 14f, 16f, 60f);
 monsters.gameObject.SetActive(false);
+
+stage = "npcs";
+// 6. the people the streamer talks to while playing by hand (IslandNpc, StreamingAssets/Ravebridge/quests.json)
+var npcs = group("NPCs");
+var idle = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.RuntimeAnimatorController>("Assets/Animations/Barkeep.controller");
+System.Action<UnityEngine.GameObject, string> makeNpc = (go, key) =>
+{
+    go.SetActive(true);
+    var animator = go.GetComponentInChildren<UnityEngine.Animator>(true);
+    if (!animator) animator = go.AddComponent<UnityEngine.Animator>();
+    animator.runtimeAnimatorController = idle;
+    var capsule = go.AddComponent<UnityEngine.CapsuleCollider>();
+    capsule.isTrigger = true;
+    capsule.center = new UnityEngine.Vector3(0f, 1f, 0f);
+    capsule.height = 2f;
+    capsule.radius = 0.5f;
+    var npc = go.AddComponent<IslandNpc>();
+    npc.Key = key;
+};
+System.Action<string, string, float, float, float> person = (prefab, key, x, z, yaw) =>
+{
+    var go = place("Assets/PolygonFantasyKingdom/Prefabs/Characters/" + prefab + ".prefab", npcs, x, z, yaw);
+    if (!go) return;
+    go.name = key;
+    go.transform.position = new UnityEngine.Vector3(x, ground(x, z), z);
+    makeNpc(go, key);
+};
+person("SM_Chr_King_01", "duke", -1637f, 1562f, 200f);
+person("SM_Chr_Bartender_01", "cook", -1709f, 1621f, 200f);
+person("SM_Chr_Peasant_Male_01", "miller", -1776f, 1736f, 135f);
+person("SM_Chr_Priest_01", "priest", -1688f, 1703f, 90f);
+person("SM_Chr_Hermit_01", "keeper", -1645f, 1677f, 80f);
+person("SM_Chr_Merchant_01", "shopkeeper", -1660f, 1637f, 180f);
+// the goblin generals and the restless ghost: goblin camp rigs shown as them
+System.Action<string, string, float, float, float> rigPerson = (variant, key, x, z, yaw) =>
+{
+    var go = UnityEngine.Object.Instantiate(ghostSource, npcs);
+    go.name = key;
+    go.transform.position = new UnityEngine.Vector3(x, ground(x, z), z);
+    go.transform.rotation = UnityEngine.Quaternion.Euler(0f, yaw, 0f);
+    foreach (UnityEngine.Transform part in go.transform) part.gameObject.SetActive(part.name == "Root" || part.name == variant);
+    makeNpc(go, key);
+};
+rigPerson("Character_Goblin_WarChief", "bentnose", -1556f, 1650f, 60f);
+rigPerson("Character_Goblin_Shaman", "wartfist", -1552f, 1653f, 240f);
+rigPerson("Character_Ghost_02", "ghost", -1669f, 1711f, 270f);
+sb.AppendLine("npcs " + npcs.childCount);
 
 var counts = new System.Text.StringBuilder();
 foreach (var c in playable.GetComponentsInChildren<Chunk>(true)) counts.Append(c.name + " ");

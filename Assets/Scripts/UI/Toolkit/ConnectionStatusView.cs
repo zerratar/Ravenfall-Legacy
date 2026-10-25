@@ -50,6 +50,7 @@ namespace Shinobytes.UI
             if (!GetComponent<StreamQuestView>()) gameObject.AddComponent<StreamQuestView>();
             // the Ravebridge bar under it while the event runs
             if (!GetComponent<RavebridgeView>()) gameObject.AddComponent<RavebridgeView>();
+            if (!GetComponent<RavebridgeDialogueView>()) gameObject.AddComponent<RavebridgeDialogueView>();
             Languages.Changed += Redraw;
             TryBind();
         }

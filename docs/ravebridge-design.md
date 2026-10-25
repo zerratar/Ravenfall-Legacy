@@ -156,3 +156,39 @@ It unlocks `island_ravebridge` and a decor piece: a signpost that reads "Ravebri
 
 Rebirth and the endgame for characters with every skill at 999, to work out together. Hero mode (phase 7) builds on
 the playing by hand from 6c.
+
+## Built (2026-10-25)
+
+All of 6a to 6e, with these changes from the plan:
+
+- **Terrain:** it keeps its own material for now. The Ravenfall terrain material reads the painted layers in the
+  other islands' order, and on Ravebridge's terrain it lost the roads, the desert and the dirt.
+- **Fishing:** the river runs between steep banks, 10 to 13 m from the walkable ground, so its fishing spots reach
+  14 m.
+- **The swamp:** mud painted into the terrain, with mangrove roots and trees and dead trees. PolygonNature's swamp
+  growth has no URP materials.
+- **Helping:** `!ravebridge heal` sets the helper's task to healing.
+- **Forced events:** they wait out the event cooldown (60 s after the last event), like every automatic event.
+- **The graveyard:** its enemy is a tormented soul; the restless ghost is an NPC.
+- **Quest items** (egg, milk, flour, cogs, the skull and so on) live in each character's quest state, not in the
+  server inventory.
+- **Rewards:** the streamer's own characters get experience only (their coins and items are the server's). The
+  Ravebridge character gets experience, coins and items.
+- **The creator:** it asks for a name and rolls a look, and "New look" rolls again while playing. There is no part
+  by part editor yet.
+- **The Duke** counts quest points; at five of five he gives the title (`api/quests/village/ravebridge-done`).
+- **The tools:** `tools/ravebridge/ravebridge-island.cs` builds the island, the places, the training spots, the
+  enemies and the NPCs. `tools/ravebridge/navmesh-bake.cs` bakes its navmesh. The navmesh asset is not in git.
+
+Tested in play mode with bots and a Ravebridge character:
+- starting, joining, training, ending and saves;
+- playing by hand: a clicked rock, the follow camera, Stop;
+- the Ravebridge character: created, played, saved, put away, restored, exported and imported;
+- the windmill and cook quests in code;
+- the dialogue window.
+
+Not tested yet:
+- keyboard and mouse input (eval cannot press keys);
+- the streamer's own character;
+- follow and heal with a real hero;
+- the chat commands through a real bot.
