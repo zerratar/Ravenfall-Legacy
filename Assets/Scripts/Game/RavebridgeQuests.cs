@@ -11,7 +11,8 @@ using UnityEngine;
 /// restless ghost, goblin diplomacy) and quests of its own (the windmill that won't, mending the old bridge), for the
 /// character the streamer plays by hand. They run in the game from StreamingAssets/Ravebridge/quests.json: steps in
 /// order, each one talking to an NPC, collecting quest items from what the character does on the island (a skill's
-/// action, or a kill), or bringing them back. Quest items and progress belong to the character: in the Ravebridge
+/// action, or a kill), bringing them back, or defending Ravebridge: holding it for a number of waves in hero mode
+/// (WaveRun, started by talking to the NPC; once the quest is done the NPC offers runs for the best score). Quest items and progress belong to the character: in the Ravebridge
 /// character's file, or for the streamer's own characters in states/ravebridge/quests-(character id).json. Finishing
 /// a quest gives experience (and coins and items to the Ravebridge character); finishing all of them makes Duke
 /// Ravacio give the streamer the title "of Ravebridge" (api/quests/village/ravebridge-done).
@@ -211,6 +212,31 @@ public static class RavebridgeQuests
                 return reply;
             }
 
+            if (step.type == "defend")
+            {
+                if (WaveRun.Current)
+                {
+                    reply.Line = Localization.UI_WAVE_RUNNING;
+                    reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
+                    return reply;
+                }
+                reply.Line = step.say?.Get();
+                var q = quest;
+                var goal = step.amount;
+                reply.Options.Add(new Option
+                {
+                    Label = string.Format(Localization.UI_WAVE_START, goal),
+                    Pick = () => Defend(player, goal, run =>
+                    {
+                        var now = StateOf(player);
+                        if (!run.Abandoned && run.Cleared >= goal && StepOf(now, q.key) < q.steps.Count && StepOf(now, q.key) >= 0 && q.steps[StepOf(now, q.key)].type == "defend") Advance(player, q);
+                        else if (!run.Abandoned) Notice?.Invoke(string.Format(Localization.UI_WAVE_SHORT, run.Cleared, goal));
+                    }),
+                });
+                reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
+                return reply;
+            }
+
             if (step.type == "bring")
             {
                 if (Has(state, step.items))
@@ -238,6 +264,15 @@ public static class RavebridgeQuests
             return reply;
         }
 
+        // the captain, once the line has held: runs for the best score
+        if (npc == "captain" && IsDone(state, "defend") && !WaveRun.Current)
+        {
+            reply.Line = string.Format(Localization.UI_WAVE_AGAIN, WaveRun.BestOf(player));
+            reply.Options.Add(new Option { Label = Localization.UI_WAVE_ENDLESS, Pick = () => Defend(player, 0, null) });
+            reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
+            return reply;
+        }
+
         // the miller grinds wheat once the mill turns, for anyone
         if (npc == "miller" && IsDone(state, "windmill") && Count(state, "wheat") > 0)
         {
@@ -251,6 +286,17 @@ public static class RavebridgeQuests
         reply.Line = lines != null && lines.Count > 0 ? lines[UnityEngine.Random.Range(0, lines.Count)] : "...";
         reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
         return reply;
+    }
+
+    /// <summary>A wave run for the character played by hand, in hero mode (started if it is not on yet).</summary>
+    private static void Defend(PlayerController player, int goal, Action<WaveRun> finished)
+    {
+        if (!player || !player.Controlled) return;
+        if (!HeroController.Active || HeroController.Active.Player != player)
+        {
+            if (!HeroController.Begin(player)) return;
+        }
+        if (!WaveRun.Begin(player, goal, finished)) Notice?.Invoke(Localization.UI_WAVE_CANT);
     }
 
     private static Reply Duke(PlayerController player, State state, Reply reply)

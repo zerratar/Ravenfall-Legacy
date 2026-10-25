@@ -179,7 +179,8 @@ public static class QuestChat
     /// <summary>
     /// !ravebridge (phase 6b of docs/ravebridge-design.md): with nothing after it, joins the event if it is open, or
     /// says how it opens; leave goes back; start and end for the streamer and the moderators; follow and heal help
-    /// the streamer's hero, stop goes back to the own training; status says who is there.
+    /// the streamer's hero, stop goes back to the own training; revive gets a downed hero back up in a wave run;
+    /// status says who is there.
     /// </summary>
     private static void Ravebridge(GameManager game, PlayerManager players, string action, GameMessage gm, GameClient client)
     {
@@ -228,6 +229,20 @@ public static class QuestChat
                 if (!rb.Contains(player)) { client.SendReply(gm, Localization.MSG_RAVEBRIDGE_NOT_THERE); return; }
                 rb.Leave(player);
                 client.SendReply(gm, Localization.MSG_RAVEBRIDGE_LEFT);
+                return;
+
+            case "revive":
+            case "res":
+            case "up":
+                if (!rb.Contains(player)) { client.SendReply(gm, Localization.MSG_RAVEBRIDGE_NOT_THERE); return; }
+                var run = WaveRun.Current;
+                switch (run ? run.Vote(player) : WaveRun.VoteResult.NotDown)
+                {
+                    case WaveRun.VoteResult.Counted: client.SendReply(gm, Localization.MSG_WAVE_VOTED, run.Hero.Name, run.Votes, run.VotesNeeded); break;
+                    case WaveRun.VoteResult.Already: client.SendReply(gm, Localization.MSG_WAVE_VOTED_ALREADY, run.Votes, run.VotesNeeded); break;
+                    case WaveRun.VoteResult.Revived: break; // the game announces it
+                    default: client.SendReply(gm, Localization.MSG_WAVE_NOBODY_DOWN); break;
+                }
                 return;
 
             case "follow":

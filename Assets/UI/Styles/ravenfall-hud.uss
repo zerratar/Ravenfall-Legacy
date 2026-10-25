@@ -2393,6 +2393,143 @@
     color: var(--rf-text-faint);
 }
 
+/* a wave run (HeroWaveHud): the wave at the top (under the Ravebridge tab), the downed count in the middle, the
+   result after */
+.rf-wave {
+    position: absolute;
+    top: 44px;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+.rf-wave__title {
+    font-size: 30px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.85);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.rf-wave__sub {
+    font-size: 19px;
+    color: rgb(255, 236, 200);
+    -unity-font-style: bold;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.85);
+}
+
+.rf-wave-boss {
+    margin-top: 8px;
+    width: 460px;
+    align-items: center;
+}
+
+.rf-wave-boss__name {
+    font-size: 19px;
+    color: rgb(255, 200, 150);
+    -unity-font-style: bold;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.85);
+}
+
+.rf-wave-boss__bar {
+    width: 100%;
+    height: 14px;
+    margin-top: 3px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+    overflow: hidden;
+}
+
+.rf-wave-boss__fill {
+    height: 100%;
+    background-color: rgb(196, 40, 36);
+}
+
+.rf-wave-down {
+    position: absolute;
+    /* above the hero, who lies in the middle of the screen with the damage numbers */
+    top: 13%;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+.rf-wave-down__title {
+    font-size: 54px;
+    color: rgb(235, 60, 50);
+    -unity-font-style: bold;
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+}
+
+.rf-wave-down__count {
+    font-size: 64px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+}
+
+.rf-wave-down__help {
+    font-size: 22px;
+    -unity-font-style: bold;
+    color: var(--rf-accent-bright);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+}
+
+.rf-wave-result {
+    position: absolute;
+    top: 26%;
+    left: 50%;
+    width: 520px;
+    margin-left: -260px;
+    align-items: center;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    background-color: rgba(20, 18, 15, 0.88);
+    border-top-width: 3px;
+    border-top-color: var(--rf-accent);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-wave-result__title {
+    font-size: 30px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+}
+
+.rf-wave-result__line {
+    font-size: 17px;
+    color: var(--rf-text-dim);
+    margin-top: 4px;
+}
+
+.rf-wave-result__best {
+    font-size: 18px;
+    color: var(--rf-accent-bright);
+    -unity-font-style: bold;
+    margin-top: 6px;
+}
+
 /* ---- Ravebridge -----------------------------------------------------------------------------------------
    RavebridgeView: while the event runs, a bar of its own a little down the screen (clear of the top column and the
    event banners): who is there, how long it has been open, and the streamer's buttons (Stay, Hero mode, New look,

@@ -1,5 +1,5 @@
 {
-  "comment": "Ravebridge's NPCs and island quests (docs/ravebridge-design.md, 6e). Steps run in order: talk (to npc), collect (item from an action: kill an enemy whose name has the word, or a skill's action on the island), bring (items back to npc, used up). 'requires' on a step: another quest that must be done first. Text in every language the game has; English is the fallback.",
+  "comment": "Ravebridge's NPCs and island quests (docs/ravebridge-design.md, 6e). Steps run in order: talk (to npc), defend (hold Ravebridge for an amount of waves in hero mode, started by talking to npc), collect (item from an action: kill an enemy whose name has the word, or a skill's action on the island), bring (items back to npc, used up). 'requires' on a step: another quest that must be done first. Text in every language the game has; English is the fallback.",
   "npcs": {
     "duke": {
       "name": { "en": "Duke Ravacio", "sv": "Hertig Ravacio" },
@@ -57,6 +57,13 @@
         "sv": [ "Den här bron är äldre än jag. Nästan.", "Hoppa inte på plankorna. Snälla." ]
       }
     },
+    "captain": {
+      "name": { "en": "Captain Hargrove", "sv": "Kapten Hargrove" },
+      "lines": {
+        "en": [ "Keep your blade sharp and your boots dry. The swamp side is the worst.", "Every night they come a little bolder. Every night we send them home a little lighter.", "The Duke pays me in compliments. I am very well complimented." ],
+        "sv": [ "Håll klingan vass och stövlarna torra. Träsksidan är värst.", "Varje natt kommer de lite djärvare. Varje natt skickar vi hem dem lite lättare.", "Hertigen betalar mig i komplimanger. Jag är mycket väl komplimenterad." ]
+      }
+    },
     "shopkeeper": {
       "name": { "en": "The shopkeeper", "sv": "Butiksägaren" },
       "lines": {
@@ -79,6 +86,15 @@
     "nails": { "en": "tin nails", "sv": "tennspik" }
   },
   "quests": [
+    {
+      "key": "defend",
+      "name": { "en": "Hold the line", "sv": "Håll linjen" },
+      "steps": [
+        { "type": "talk", "npc": "captain", "say": { "en": "Goblins at the bridges, skeletons out of the swamp, and something big behind them. I need someone who can hold a gate while my lads sharpen their spoons. Five waves. Can you do it?", "sv": "Vättar vid broarna, skelett ur träsket och något stort bakom dem. Jag behöver någon som kan hålla en port medan mina pojkar slipar sina skedar. Fem vågor. Klarar du det?" } },
+        { "type": "defend", "npc": "captain", "amount": 5, "say": { "en": "Ready when you are. They come from whichever gate is nearest you, so pick your ground. Chat can drag you back up if you fall: !rb revive.", "sv": "Redo när du är. De kommer från den port som är närmast dig, så välj din plats. Chatten kan dra upp dig igen om du faller: !rb revive." }, "hint": { "en": "Hold Ravebridge for five waves", "sv": "Håll Ravebridge i fem vågor" } }
+      ],
+      "reward": { "exp": { "Attack": 3000, "Defense": 3000, "Strength": 3000, "Health": 2000 }, "coins": 500 }
+    },
     {
       "key": "windmill",
       "name": { "en": "The windmill that won't", "sv": "Kvarnen som inte vill" },

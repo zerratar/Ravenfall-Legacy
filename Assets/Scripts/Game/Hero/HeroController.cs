@@ -187,14 +187,22 @@ public class HeroController : MonoBehaviour
         Changed?.Invoke();
     }
 
-    /// <summary>Damage the hero takes, after the aura, a dodge's moment and the war cry's guard; the guardian angel
-    /// keeps a blow from felling the hero once.</summary>
-    public int AdjustTaken(int damage)
+    /// <summary>
+    /// Damage the hero takes: a wave enemy's blow is a share of the hero's health (WaveRun, so a run is a fair fight at
+    /// any level); anything else after the aura. Then a dodge's moment and the war cry's guard. The guardian angel
+    /// keeps a blow from felling the hero once; in a wave run the hero is downed instead of dying.
+    /// </summary>
+    public int AdjustTaken(IAttackable attacker, int damage)
     {
         if (Time.time < invulnerableUntil) return 0;
-        var factor = Aura * (Time.time < guardUntil ? 0.5f : 1f);
-        var taken = Mathf.Max(damage > 0 ? 1 : 0, Mathf.RoundToInt(damage * factor));
-        if (angel && taken >= Player.Stats.Health.CurrentValue)
+        var run = WaveRun.Current;
+        var inRun = run && run.Hero == Player;
+        if (inRun && run.Downed) return 0;
+        var taken = inRun && attacker is EnemyController enemy && run.Owns(enemy) ? run.BlowFor(enemy) : Mathf.Max(damage > 0 ? 1 : 0, Mathf.RoundToInt(damage * Aura));
+        if (taken > 0 && Time.time < guardUntil) taken = Mathf.Max(1, taken / 2);
+        var health = (int)Player.Stats.Health.CurrentValue;
+        if (taken < health) return taken;
+        if (angel)
         {
             angel = false;
             Player.Heal(Player.Stats.Health.MaxLevel / 2);
@@ -202,10 +210,52 @@ public class HeroController : MonoBehaviour
             invulnerableUntil = Time.time + 1f;
             return 0;
         }
+        if (inRun)
+        {
+            run.Down();
+            return Mathf.Max(0, health - 1);
+        }
         return taken;
     }
 
+    /// <summary>Untouchable for a moment (getting back up).</summary>
+    public void Invulnerable(float seconds) => invulnerableUntil = Mathf.Max(invulnerableUntil, Time.time + seconds);
+
+    /// <summary>How hard the hero's style hits this enemy on average, misses counted (WaveRun sizes enemies by it).</summary>
+    public float ExpectedHit(EnemyController enemy)
+    {
+        var total = 0f;
+        const int Samples = 32;
+        for (var i = 0; i < Samples; i++) total += RawDamage(enemy);
+        return Mathf.Max(1f, total / Samples);
+    }
+
+    private float RawDamage(EnemyController enemy)
+    {
+        switch (Style)
+        {
+            case HeroStyle.Ranged: return GameMath.CalculateRangedDamage(Player, enemy);
+            case HeroStyle.Magic: return GameMath.CalculateMagicDamage(Player, enemy);
+            case HeroStyle.Healing: return GameMath.CalculateHealing(Player, enemy);
+            default: return GameMath.CalculateMeleeDamage(Player, enemy);
+        }
+    }
+
+    /// <summary>Downed in a wave run: no moving, no skills, until chat gets the hero back up.</summary>
+    public bool IsDowned => WaveRun.Current && WaveRun.Current.Hero == Player && WaveRun.Current.Downed;
+
     public void GuardianAngel() => angel = true;
+
+    /// <summary>Between waves: a share of the health back, and some mana.</summary>
+    public void Refill(float healthShare, float mana)
+    {
+        if (!Player || Player.Stats.IsDead) return;
+        Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxLevel * healthShare));
+        Mana = Mathf.Min(MaxMana, Mana + mana);
+    }
+
+    /// <summary>Every boss wave: the flask is full again.</summary>
+    public void RefillPotions() => Potions = MaxPotions;
     public bool HasGuardianAngel => angel;
 
     public void StartRapidFire(float seconds)
@@ -223,6 +273,15 @@ public class HeroController : MonoBehaviour
         ShowOwnTags(false);
         if (Player.Stats.IsDead) return;
         if (!heroCamera) heroCamera = GameManager.Instance ? GameManager.Instance.Camera.HeroView : null;
+        if (IsDowned)
+        {
+            if (steering) StopSteering();
+            holyTarget = null;
+            Player.taskTarget = null;
+            if (heroCamera && heroCamera.Aim(out var at)) aim = at;
+            if (!Keybinds.IsTyping && Input.GetKeyDown(KeyCode.V) && heroCamera) heroCamera.Toggle();
+            return;
+        }
 
         Mana = Mathf.Min(MaxMana, Mana + ManaPerSecond * Time.deltaTime);
         if (heroCamera && heroCamera.Aim(out var point)) aim = point;
@@ -438,15 +497,7 @@ public class HeroController : MonoBehaviour
         if (!enemy || enemy.Stats.IsDead || !Player) return;
         var chunk = enemy.GetComponentInParent<Chunk>();
         if (chunk != null) Player.Chunk = chunk;
-        float raw;
-        switch (Style)
-        {
-            case HeroStyle.Ranged: raw = GameMath.CalculateRangedDamage(Player, enemy); break;
-            case HeroStyle.Magic: raw = GameMath.CalculateMagicDamage(Player, enemy); break;
-            case HeroStyle.Healing: raw = GameMath.CalculateHealing(Player, enemy); break;
-            default: raw = GameMath.CalculateMeleeDamage(Player, enemy); break;
-        }
-        var damage = Mathf.Max(1, Mathf.RoundToInt(raw * multiplier));
+        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy) * multiplier));
         Player.SessionStats.AddDamageDealt(damage);
         if (enemy.TakeDamage(Player, damage)) Player.Combat.Defeated(enemy);
     }

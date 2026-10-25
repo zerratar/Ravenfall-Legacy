@@ -325,3 +325,51 @@ After the user's first try ("not playable yet"):
   - the shader orbs, the drawer and its tab, the markers and the projectiles on screen.
 
   Real keyboard and mouse input still need a run by hand.
+
+### 7b, waves as a quest (2026-10-25)
+
+- **The quest:** Captain Hargrove stands by the castle's east gate (`tools/hero/hero-places.cs`, which also places
+  the wave gates). His quest "Hold the line" asks for five waves, through a new `defend` step in quests.json and
+  `RavebridgeQuests`. Talking to him at that step starts the run, and turns on hero mode first if needed. Falling
+  short leaves the step open. Once the quest is done, he offers endless runs and says the character's best.
+- **`WaveRun`:**
+  - **Waves:** an 8 second count, then each wave comes in from the two gates nearest the hero (stone bridge, wooden
+    bridge, desert gate, swamp, mill road). When every gate is over 70 m away, they come from a ring around the
+    hero. A wave has 3 + 2 per wave enemies, plus some for the viewers there, with at most 12 alive at once. Between
+    waves there is a 12 second breather, with a quarter of the health and 40 mana back. Every boss wave refills the
+    potions.
+  - **The enemies:** copies of Ravebridge's goblin rig (one rig, many variants), reused when they fall. Raiding
+    goblins come from wave 1, goblin warriors from 3, skeletons from 6, swamp ghosts from 7, skeleton knights from
+    11. They hunt the hero (`EnemyController.Hunting`: they never lose interest) and give experience as any enemy.
+  - **Bosses:** every fifth wave, in turn: Warchief Grubnash, the Swamp Golem, the Tormented One, Sir Rattlebones.
+    Each shows a big health bar.
+- **Fair at any level:**
+  - an enemy's health is a number of the hero's own average hits (`HeroController.ExpectedHit`): 2.5 for a goblin,
+    30 to 50 for a boss, growing with the wave;
+  - its blow is a share of the hero's health (`WaveRun.BlowFor`, through `HeroController.AdjustTaken`, now told who
+    hit): about 1% for a goblin and 5 to 6% for a boss, growing with the wave, once a second at most per enemy.
+- **Downed and revive:**
+  - at zero health in a run the hero is downed, not dead: lying down, with no moving or skills;
+  - enemies turn on viewers close by;
+  - chat has 20 seconds: `!rb revive` from a share of the viewers on the island (30%, at least 1 and at most 5),
+    or a healer standing within 12 m for 5 seconds. With nobody else on the island the run ends after 4 seconds;
+  - back up with half health, untouchable for a moment;
+  - the guardian angel still saves the hero once before that.
+- **Viewers:** those training melee, ranged or magic on the island are sent at the nearest wave enemy. Healers heal
+  as they do. `!rb follow` and `!rb heal` work as before.
+- **The end:** reaching the goal, falling, or leaving hero mode or Ravebridge ends the run. The hero gets full
+  health back. The score is the waves held. The best is kept per character in PlayerPrefs for now (the server's
+  leaderboard is 7d). Chat hears the start, being downed, the revive and the result.
+- **The HUD (`HeroWaveHud`):**
+  - at the top: the wave (of the goal), what is left and fallen, the count to the next wave, the boss's bar;
+  - while downed: "DOWN!", the count, and the votes;
+  - after a run: the result for 10 seconds.
+- **Tested in play mode** with the streamer's character and four bots:
+  - the captain's quest and the start;
+  - waves 1 to 5 with the goblins coming and hitting, the breathers, and the boss;
+  - downed, then revived by two votes;
+  - the goal reached, the quest done and the endless offer;
+  - the result panel.
+
+  The quest progress and the best were reset afterwards.
+

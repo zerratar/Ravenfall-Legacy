@@ -19,7 +19,8 @@
 //   crafting and alchemy in the store's yard;
 // - the enemies: the goblin camp's goblins (the old rigs, given the pirates' enemy parts), cows in the cow field
 //   (copies of the main island's) and the restless ghost in the graveyard. The old decorative ones are switched off.
-// The island's navmesh is baked afterwards (tools/ravebridge/navmesh-bake.cs).
+// The island's navmesh is baked afterwards (tools/ravebridge/navmesh-bake.cs), then hero mode's places are added
+// (tools/hero/hero-places.cs: the captain and the wave gates).
 var sb = new System.Text.StringBuilder();
 var stage = "start";
 try

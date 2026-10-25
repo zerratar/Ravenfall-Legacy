@@ -63,6 +63,9 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     /// <summary>Stunned by a hero's skill (HeroSkill): it does nothing until then.</summary>
     [NonSerialized] public float StunnedUntil;
 
+    /// <summary>A hero mode wave enemy (WaveRun): it never loses interest in its target.</summary>
+    [NonSerialized] public bool Hunting;
+
     private string _name;
 
     public string Name => _name ?? (_name = name);
@@ -408,7 +411,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
                 noDamageDropTargetTimer += GameTime.deltaTime;
             }
 
-            if (noDamageDropTargetTimer >= 5.0f)
+            if (noDamageDropTargetTimer >= 5.0f && !Hunting)
             {
                 noDamageDropTargetTimer = -1f;
                 ClearTarget();
@@ -877,6 +880,20 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         Stats.Health.Reset();
         if (movement) movement.Revive();
         Unlock();
+    }
+
+    /// <summary>To life at a place, full health and no attackers (hero mode's waves reuse their fallen).</summary>
+    public void SpawnAt(Vector3 position)
+    {
+        spawnPoint = position;
+        spawnPositionSet = true;
+        gameObject.SetActive(true);
+        if (!movement) movement = GetComponent<EnemyMovementController>();
+        ResetState();
+        Lock();
+        transform.position = position;
+        if (movement) movement.Revive();
+        Unlock(true);
     }
 
     internal void ResetState()
