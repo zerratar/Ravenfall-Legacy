@@ -314,7 +314,8 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
 6. **Ravebridge.** The event island, built 2026-10-25 (docs/ravebridge-design.md): the island, the event with
    `!ravebridge`, the streamer playing by hand, the Ravebridge character and five island quests, opened by the story
    "the road west" after the runestone, or forced by world events. Rebirth waits for the endgame talk.
-7. **Hero mode**, with its own design doc first.
+7. **Hero mode**: designed in docs/hero-mode-design.md (2026-10-25), on Ravebridge, with both cameras, skill kits by
+   combat style and chat reviving the hero.
 
 ## Open questions
 
