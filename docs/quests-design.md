@@ -3,7 +3,11 @@
 Status: design draft, 2026-10-25, for v0.9.6. Nothing is built yet. Decided with the user on 2026-10-25: personal
 quests and stream quests both; the unused achievement tables may be reshaped for achievements on the same tracker; mostly passive objectives with some active steps; quests built into the game plus
 quests streamers post themselves; rewards of every kind (coins, items, exp, quest-only rewards, loyalty points,
-village rewards). The open questions at the end need answers before phase 1 starts.
+village rewards). Then: three active personal quests and three daily offers, a weekly quest as well, and kill
+objectives in phase 1. Also on 2026-10-25 the user asked to give the unused places in the world a story through
+quests (the Ironhill runestone, the "insufficient bananas" island, Ravebridge), islands that streamers unlock with
+quests, NPCs the streamer talks to, and a hero mode where the streamer fights waves with their viewers. The open
+questions at the end need answers before phase 1 starts.
 
 ## Why
 
@@ -39,6 +43,8 @@ follows them from stream to stream; it only moves while they play in some stream
 - **Daily quests.** Every day each player is offered three, from a pool scaled to their levels (a level 20 miner is
   not asked for 500 adamantite). They take one or more with `!quest accept`. Unfinished dailies expire at the day's
   end. A small reward, and a daily streak that grows it.
+- **Weekly quest.** One bigger quest a week per player (a raid streak, a crafting order, a long gathering goal), with
+  a bigger reward, outside the three active slots.
 - **Seasonal quests.** Offered only while an event runs (Christmas, Halloween, later others): themed objectives and
   the event's own rewards (tokens, seasonal cosmetics, the event's decor for the village).
 - **Chain quests.** Short stories of three to eight steps, written into the game, each step unlocking the next. The
@@ -72,7 +78,7 @@ steps, mostly in chains, ask for one command, which makes those moments feel lik
 | Craft, cook or brew N (of an item, or of a kind) | the craft and produce commands |
 | Gain N experience in a skill, or reach level L | the experience saves |
 | Join, win or clear raids or dungeons (of a tier) | the server's raid and dungeon rewards |
-| Defeat N enemies (on an island, or of a kind) | to be added: the game reports kills in its saves |
+| Defeat N enemies (on an island, or of a kind) | new in phase 1: the game reports kills per enemy kind with its saves |
 | Sail to an island, or spend time on one | the player state saves (island) |
 | Earn N coins, sell N items | the vendor and coin changes |
 
@@ -82,6 +88,57 @@ steps, mostly in chains, ask for one command, which makes those moments feel lik
   something the player gathered for it).
 - **Visit**: be on an island or in the tavern and say `!quest`, for example to talk to an NPC who continues a chain.
 - **Answer**: a riddle or a choice in a chain (`!quest answer 2`), for the silly ones and the stories.
+
+## Places waiting for a story
+
+The world has places that were built and never used. Quests give them their meaning:
+
+- **The Ironhill runestone.** In the Ironhill cave a glowing runestone says "Power is emerging from this area... But
+  nothing seem to be happening." A stream chain wakes it: the stream gathers and brings what it asks for over several
+  steps, each step brightening it, until it opens. What it opens is the hook for the islands below (a portal, or the
+  way to Ravebridge).
+- **The "insufficient bananas" island.** North east of the main island, a mangrove island with stilt huts, docks, a
+  tower and lobster pots, with "insufficient bananas" floating over it. The monkeys (or pirates) who live there want
+  bananas: a stream quest gathers them (a new resource, perhaps only found during the quest), and when there are
+  enough the island opens, with its own training spots and a reward for the village. The sign stays, of course,
+  changing to "sufficient bananas" once paid.
+- **Ravebridge.** A tribute to RuneScape Classic's Lumbridge, far to the west: the river, both bridges, the castle,
+  the cow field, the crop field and a few houses are there; much of Lumbridge is not yet (the general store, the
+  church, the kitchen, the goblins across the river, the swamp, the mill, chickens, more houses). The old joke is that
+  a player who reaches level 999 in every skill is reborn in Lumbridge. Ravebridge becomes a place for an event and a
+  chain: finished with its missing buildings and NPCs the streamer can talk to, opened by a chain (perhaps through
+  the runestone), and the place where maxed characters are "reborn" (see the open questions for what that gives).
+
+## Islands unlocked by quests
+
+Today's islands are the same for every stream (Home, Away, Ironhill, Kyo, Heim, Atria, Eldara, plus War Island for
+raid wars). New islands become something a streamer earns: a stream quest chain opens an island for that stream for
+good, and then players can sail there, train there and find what is only there. The first ones are the banana island
+and Ravebridge; later ones can follow without changing the existing islands. On the server it is one more unlock per
+streamer (like the decor unlocks); in the game a locked island is shown but cannot be sailed to, with what opens it.
+
+## NPCs the streamer talks to
+
+Chat commands work for everyone, but the streamer is at the keyboard and should get some of an RPG's feel too. NPCs
+in the world (the quest giver, the runestone, the monkey chief, Ravebridge's people) can be clicked by the streamer:
+a dialogue window opens with the NPC's lines and talk options. That is where the streamer starts stream quests,
+continues chains (a choice in the story), hands in the stream's deliveries, and gets a few silly answers. Viewers see
+the conversation on stream; chat can vote on a choice with `!quest vote 2` when the streamer asks.
+
+## Hero mode
+
+An event where the streamer takes control: their own character, moved with WASD and acting with the mouse (attack
+where clicked, skills on 1 to 4, a dodge), not automated, fighting waves of enemies in an arena (War Island, or a
+place of its own). Viewers join with chat and fight automatically as they do now, running at enemies and healing;
+some commands let them help on purpose (a heal, a taunt, a cheer that buffs). Each wave is harder, ending with a
+boss; how far the stream gets is its score. The idea is that the streamer goes "WTF! Let's go!" and the whole chat
+pulls together.
+
+It needs its own screen: an action RPG HUD for the streamer (health and mana orbs, the skill bar with cooldowns, the
+wave counter, the boss bar, who in chat is helping most), the camera following the streamer's character, and the
+normal HUD put away. It is a feature in its own right, with its own design doc before it is built, and it fits
+quests well: a chain can end in a hero mode fight (the runestone's guardian, Ravebridge's goblin raid), and stream
+quests can ask for a wave reached.
 
 ## Achievements
 
@@ -160,15 +217,20 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
    and achievements on the same tracker, with titles and badges.
 4. **Streamer quests.** Posting a quest with its reward set aside, from the game and later the website; loyalty point
    rewards from the streamer's budget.
+5. **Places and islands.** The runestone chain, the banana island chain and its island unlock, island unlocks per
+   streamer, NPC dialogue for the streamer.
+6. **Ravebridge.** Finishing the island (buildings, NPCs, monsters), its chain and event, rebirth.
+7. **Hero mode**, with its own design doc first.
 
 ## Open questions
 
-- **How many and how often:** three active personal quests and three daily offers, or other numbers? A weekly quest
-  as well?
+- **Rebirth:** what does being "reborn in Ravebridge" give a character that has every skill at 999? A title, a look and
+  a place in a hall of fame only, or a true prestige (skills back to 1 with a lasting bonus)? A prestige changes the
+  game's economy and needs its own design.
+- **Hero mode arena:** War Island, Ravebridge, or a place of its own?
 - **Stream quest timing:** a stream quest runs for a set time (one or two hours), until the stream ends, or until it
   is done?
 - **Streamer quests:** may they reward loyalty points freely (the streamer's own currency) or only within a cap?
-- **Enemies:** kill objectives need the game to report kills; worth adding in phase 1, or later?
 - **Offline:** progress only while the character plays in a stream (proposed), never from outside the game.
 - **Quest-only rewards:** which titles, cosmetics and pets first? The art for them (Synty packs have pets and
   cosmetics already).
