@@ -46,6 +46,25 @@ foreach (var (file, shaderName) in new[] { ("HeroOrb", "Ravenfall/Hero Orb"), ("
 }
 UnityEditor.AssetDatabase.SaveAssets();
 
+// the sword trail's material: URP's unlit particles, transparent and additive
+var trailPath = "Assets/World/Hero/Resources/HeroTrail.mat";
+var trailMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(trailPath);
+if (!trailMaterial)
+{
+    trailMaterial = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+    UnityEditor.AssetDatabase.CreateAsset(trailMaterial, trailPath);
+}
+trailMaterial.SetFloat("_Surface", 1f);
+trailMaterial.SetFloat("_Blend", 2f);
+trailMaterial.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+trailMaterial.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+trailMaterial.SetFloat("_ZWrite", 0f);
+trailMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+trailMaterial.renderQueue = 3000;
+trailMaterial.SetColor("_BaseColor", UnityEngine.Color.white);
+UnityEditor.EditorUtility.SetDirty(trailMaterial);
+UnityEditor.AssetDatabase.SaveAssets();
+
 // the orbs' artwork (docs/Unity-Glass-Orb-Kit, at 512 px): the glass as colour, the liquid body and the flow noise as
 // data (linear), the flow mirrored at its edges so its seams never show; on the HeroOrb material
 var textures = "Assets/World/Hero/Textures/";

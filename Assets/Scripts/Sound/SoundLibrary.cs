@@ -38,6 +38,20 @@ public enum SoundKind
     Horse,
     Dog,
     BirdChirp,
+    // hero mode's fights (from Gatebound's packs, in Assets/Sounds/Effects)
+    Swing,
+    Slash,
+    HeavySlash,
+    BowShot,
+    ArrowHit,
+    Dodge,
+    Heal,
+    Zap,
+    HolyCast,
+    GoblinAttack,
+    GoblinHurt,
+    GoblinDeath,
+    HeroStruck,
 }
 
 /// <summary>

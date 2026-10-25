@@ -58,6 +58,9 @@ public class PlayerEquipment : MonoBehaviour
     public IReadOnlyList<ItemController> EquippedItems => equippedObjects;
     public bool HasShield => !!shield;
 
+    /// <summary>The melee weapon's object, when one is worn (hero mode's sword trail).</summary>
+    public Transform MeleeWeapon => weapon ? weapon.transform : null;
+
     private void Awake()
     {
         gameManager = FindAnyObjectByType<GameManager>();

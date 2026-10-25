@@ -237,13 +237,16 @@ public class PlayerAnimationController : MonoBehaviour
     #endregion
 
     #region Combat
-    public void StartCombat(int weapon, bool hasShield)
+    /// <param name="action">The Action parameter as well, when not negative (hero mode holds it at 1 so the staff's
+    /// idle does not start the training cast loop).</param>
+    public void StartCombat(int weapon, bool hasShield, int action = -1)
     {
         if (!EnsureAnimator()) return;
         animationState = PlayerAnimationState.Attacking;
         ResetAnimationStates();
         SetTrigger("Start");
         SetInteger("Weapon", weapon);
+        if (action >= 0) SetInteger("Action", action);
         SetBool("Attacking", true);
         SetBool("Shield", hasShield);
     }

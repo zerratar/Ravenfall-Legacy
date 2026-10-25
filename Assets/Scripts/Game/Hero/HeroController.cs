@@ -13,7 +13,7 @@ using UnityEngine.AI;
 /// Skills cost mana, which refills by itself, and have cooldowns. The hero's aura (how much less damage it takes) is
 /// a placeholder until the waves of 7b set it.
 /// </summary>
-public class HeroController : MonoBehaviour
+public partial class HeroController : MonoBehaviour
 {
     public const float DodgeCooldown = 3f;
     private const float DodgeDistance = 5f;
@@ -22,8 +22,6 @@ public class HeroController : MonoBehaviour
     private const float ManaPerSecond = 4f;
     private const float Aura = 0.5f; // 7a: the hero takes half damage; 7b scales it to the waves
     private const float StyleSwitchCooldown = 1f;
-    private const float HolyBoltRange = 10f;
-    private const float HolyBoltInterval = 1.1f;
 
     public static HeroController Active { get; private set; }
     public static event Action Changed;
@@ -59,8 +57,6 @@ public class HeroController : MonoBehaviour
     private float nextSpinHit;
     private EnemyController[] enemies = Array.Empty<EnemyController>();
     private float enemiesAt;
-    private EnemyController holyTarget; // the healer's basic attack
-    private float nextHolyBolt;
     private float rapidFireUntil;
     private float nextRapidArrow;
     private bool angel;
@@ -111,6 +107,8 @@ public class HeroController : MonoBehaviour
         if (hero)
         {
             hero.StopSpin();
+            hero.CancelAttack();
+            if (hero.trail) Destroy(hero.trail.gameObject);
             hero.ShowOwnTags(true);
             var list = Shinobytes.UI.PlayerListWindow.Instance;
             if (list != null && hero.listWasVisible) list.SetVisible(true);
@@ -166,6 +164,24 @@ public class HeroController : MonoBehaviour
 
     private string meleeArgument = "all";
 
+    /// <summary>The animator's weapon for the style: the melee weapon's own, or the bow or the staff. Healing uses the
+    /// magic staff's stance too: the healing one casts on its own, over and over, as a healer training does.</summary>
+    public int WeaponAnimation
+    {
+        get
+        {
+            switch (Style)
+            {
+                case HeroStyle.Healing:
+                case HeroStyle.Magic: return 4;
+                case HeroStyle.Ranged: return 3;
+                default:
+                    var weapon = Player.Inventory.GetEquipmentOfCategory(RavenNest.Models.ItemCategory.Weapon);
+                    return weapon?.GetAnimation() ?? 0;
+            }
+        }
+    }
+
     /// <summary>Tab: the next style (Shift+Tab the one before), after a short wait between switches.</summary>
     public void NextStyle(int step)
     {
@@ -180,13 +196,15 @@ public class HeroController : MonoBehaviour
         StyleReadyAt = Time.time + StyleSwitchCooldown;
         kit.Clear();
         kit.AddRange(HeroSkill.For(style));
-        holyTarget = null;
+        CancelAttack();
         rapidFireUntil = 0f;
         Player.taskTarget = null;
         Player.InterruptAction();
         var argument = style == HeroStyle.Ranged ? "ranged" : style == HeroStyle.Magic ? "magic" : style == HeroStyle.Healing ? "healing" : meleeArgument;
         Player.SetManualTask(TaskType.Fighting, argument, null, null);
         Player.Equipment.ShowWeapon(AttackTypeOf(style));
+        // the style's own stance for standing and walking (not the last task's: woodcutting held a two-hand axe)
+        if (Player.Animations) Player.Animations.StartCombat(WeaponAnimation, style == HeroStyle.Melee && Player.Equipment.HasShield, 1);
         Changed?.Invoke();
     }
 
@@ -279,7 +297,7 @@ public class HeroController : MonoBehaviour
         if (IsDowned)
         {
             if (steering) StopSteering();
-            holyTarget = null;
+            CancelAttack();
             Player.taskTarget = null;
             if (heroCamera && heroCamera.Aim(out var at)) aim = at;
             if (!Keybinds.IsTyping && Input.GetKeyDown(KeyCode.V) && heroCamera) heroCamera.Toggle();
@@ -298,65 +316,48 @@ public class HeroController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.C)) ToggleDetails();
             if (Input.GetKeyDown(KeyCode.I)) InventoryPressed?.Invoke();
             if (Input.GetKeyDown(KeyCode.Tab)) NextStyle(Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ? -1 : 1);
-            if (Input.GetKeyDown(KeyCode.Space)) { Dodge(); return; }
+            if (Input.GetKeyDown(KeyCode.Space)) dodgeQueuedUntil = Time.time + DodgeBuffer;
+            // a roll pressed early in a swing waits for the moment the swing may be cut
+            if (Time.time < dodgeQueuedUntil && CanCancelAttack) { dodgeQueuedUntil = 0f; Dodge(); return; }
             if (Input.GetKeyDown(KeyCode.Q)) Potion();
             for (var i = 0; i < 4; i++) if (Input.GetKeyDown(KeyCode.Alpha1 + i)) Cast(i);
             if (busy) return;
 
-            // WASD steers the hero straight away: the agent's velocity, not a path, so it starts, turns and stops at once
+            // WASD steers the hero straight away: the agent's velocity, not a path, so it starts, turns and stops at once;
+            // never during a swing (the hero is rooted for it)
             var h = (Input.GetKey(KeyCode.D) ? 1f : 0f) - (Input.GetKey(KeyCode.A) ? 1f : 0f);
             var v = (Input.GetKey(KeyCode.W) ? 1f : 0f) - (Input.GetKey(KeyCode.S) ? 1f : 0f);
-            if (h != 0f || v != 0f)
+            wasd = h != 0f || v != 0f;
+            if (wasd && !Attacking)
             {
                 var direction = ((heroCamera ? heroCamera.Forward : Flat(transform.forward)) * v + (heroCamera ? heroCamera.Right : Flat(transform.right)) * h).normalized;
+                pursuing = null;
                 Steer(direction);
-                return;
             }
-            if (steering) StopSteering();
+            else if (steering) StopSteering();
         }
 
-        // the left mouse: an enemy under the cursor is attacked; the ground is walked to, and holding the button keeps
-        // walking toward the cursor
-        if (Input.GetMouseButtonDown(0) && !OverHud()) Click();
-        else if (Input.GetMouseButton(0) && holdingToMove && Time.time >= nextHoldMove)
+        // the left mouse: an enemy under the cursor is attacked at once; with Shift or while WASD moves the hero, a swing
+        // toward the cursor; else the ground is walked to (holding the button keeps walking or swinging)
+        var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        if (Input.GetMouseButtonDown(0) && !OverHud()) Click(shift || wasd);
+        else if (Input.GetMouseButton(0) && holdingToMove && !wasd && Time.time >= nextHoldMove)
         {
             nextHoldMove = Time.time + 0.12f;
             WalkTo(aim);
         }
         if (!Input.GetMouseButton(0)) holdingToMove = false;
-        if (holyTarget) HolyBolts();
-        else if (Player.taskTarget != null) Player.DoManualTask();
+        UpdateAttack(Input.GetMouseButton(0));
         if (RapidFire) RapidArrows();
     }
 
-    /// <summary>The healer's basic attack: bolts of holy light at the clicked enemy, from up to 10 m away.</summary>
-    private void HolyBolts()
-    {
-        if (holyTarget.Stats.IsDead || !holyTarget.gameObject.activeInHierarchy) { holyTarget = null; return; }
-        var distance = Flat(holyTarget.Position - Player.Position).magnitude;
-        if (distance > HolyBoltRange)
-        {
-            if (Time.time >= nextHoldMove)
-            {
-                nextHoldMove = Time.time + 0.25f;
-                Player.SetDestination(holyTarget.Position);
-            }
-            return;
-        }
-        if (Player.Movement.IsMoving) Player.SetDestination(Player.Position);
-        Face(holyTarget.Position);
-        if (Time.time < nextHolyBolt) return;
-        nextHolyBolt = Time.time + HolyBoltInterval / Mathf.Max(0.1f, Player.GetModifiers().CastSpeedMultiplier);
-        Player.Equipment.ShowWeapon(AttackType.Healing);
-        Play("Hero-Cast", 0.05f);
-        var target = holyTarget;
-        Shoot(HeroEffects.Get?.HolyBolt, target, target.Position, 22f, 0f, e => Strike(e, 1f));
-    }
+    private bool wasd;
 
     /// <summary>Rapid fire: extra arrows at the enemy the hero fights, three a second.</summary>
     private void RapidArrows()
     {
-        if (Time.time < nextRapidArrow || !(Player.taskTarget is EnemyController target) || !target || target.Stats.IsDead) return;
+        var target = attackTarget;
+        if (Time.time < nextRapidArrow || !target || target.Stats.IsDead) return;
         if (Flat(target.Position - Player.Position).magnitude > 16f) return;
         nextRapidArrow = Time.time + 0.33f;
         Face(target.Position);
@@ -395,7 +396,6 @@ public class HeroController : MonoBehaviour
     {
         if (!agent) agent = Player.GetComponent<NavMeshAgent>();
         Player.taskTarget = null;
-        holyTarget = null;
         holdingToMove = false;
         if (!steering) Player.InterruptAction();
         Player.Movement.Unlock();
@@ -419,41 +419,11 @@ public class HeroController : MonoBehaviour
         }
     }
 
-    private void Click()
-    {
-        var enemy = EnemyUnderCursor();
-        if (!enemy && heroCamera && heroCamera.Mode == HeroCamera.View.Shoulder)
-        {
-            // over the shoulder: what is in front
-            enemy = Closest(Player.Position, 8f, heroCamera.Forward, 45f);
-        }
-        if (enemy)
-        {
-            holdingToMove = false;
-            HeroMarker.Show(enemy.Position, HeroMarker.Attack, 1.8f);
-            Player.Equipment.ShowWeapon(AttackTypeOf(Style));
-            if (Style == HeroStyle.Healing)
-            {
-                // healing has no attack of its own in the game: the hero's is a bolt of holy light
-                Player.taskTarget = null;
-                holyTarget = enemy;
-                return;
-            }
-            if (!ReferenceEquals(Player.taskTarget, enemy)) Player.SetManualTask(TaskType.Fighting, Player.GetTaskArgument(), enemy.GetComponentInParent<Chunk>(), enemy);
-            return;
-        }
-        if (heroCamera && heroCamera.Mode == HeroCamera.View.Shoulder) return;
-        holdingToMove = true;
-        nextHoldMove = Time.time + 0.12f;
-        if (TryGround(aim, out var spot)) HeroMarker.Show(spot, HeroMarker.Walk);
-        WalkTo(aim);
-    }
-
     private void WalkTo(Vector3 point)
     {
         if (!TryGround(point, out var ground)) return;
         Player.taskTarget = null;
-        holyTarget = null;
+        pursuing = null;
         Player.InterruptAction();
         Player.SetDestination(ground);
     }
@@ -524,7 +494,11 @@ public class HeroController : MonoBehaviour
         var heal = Mathf.Min(Mathf.RoundToInt(amount), p.Stats.Health.MaxLevel);
         if (!p.Heal(heal)) return;
         Player.SessionStats.AddHealingDealt(heal);
-        if (effect) HeroEffects.Burst(HeroEffects.Get?.Mend, p.Position + Vector3.up * 0.2f, 1f, 2f);
+        if (effect)
+        {
+            HeroEffects.Burst(HeroEffects.Get?.Mend, p.Position + Vector3.up * 0.2f, 1f, 2f);
+            GameSounds.Play(SoundKind.Heal, p.Position, 0.6f, 0f, Player);
+        }
     }
 
     /// <summary>Smite hits the undead twice as hard: ghosts, souls, skeletons and the like, by name.</summary>
@@ -655,24 +629,36 @@ public class HeroController : MonoBehaviour
         var skill = kit[slot];
         var ready = readyAt[(int)Style];
         if (StyleLevel < skill.UnlockLevel) { Refused?.Invoke(slot, "locked"); return; }
+        if (!CanCancelAttack) { Refused?.Invoke(slot, "busy"); return; }
         if (Time.time < ready[slot]) { Refused?.Invoke(slot, "cooldown"); return; }
         if (Mana < skill.Mana) { Refused?.Invoke(slot, "mana"); return; }
+        CancelAttack();
         if (!skill.Run(this)) { Refused?.Invoke(slot, "target"); return; }
         Mana -= skill.Mana;
         ready[slot] = Time.time + skill.Cooldown;
     }
 
+    private const float DodgeBuffer = 0.4f;
+    private float dodgeQueuedUntil;
+
     private void Dodge()
     {
         if (Time.time < DodgeReadyAt) { Refused?.Invoke(-1, "cooldown"); return; }
+        if (!CanCancelAttack) return;
+        CancelAttack();
         var h = (Input.GetKey(KeyCode.D) ? 1f : 0f) - (Input.GetKey(KeyCode.A) ? 1f : 0f);
         var v = (Input.GetKey(KeyCode.W) ? 1f : 0f) - (Input.GetKey(KeyCode.S) ? 1f : 0f);
         var direction = (h != 0f || v != 0f) && heroCamera ? (heroCamera.Forward * v + heroCamera.Right * h).normalized : Flat(transform.forward).normalized;
-        if (!TryGround(Player.Position + direction * DodgeDistance, out var to)) return;
+        // as far as the navmesh goes that way: a wall or the edge shortens the roll rather than stopping it
+        var target = Player.Position + direction * DodgeDistance;
+        var areas = NavMeshHelper.AreaMaskAt(Player.Position);
+        if (NavMesh.Raycast(Player.Position, target, out var blocked, areas)) target = blocked.position - direction * 0.2f;
+        if (Flat(target - Player.Position).magnitude < 0.8f || !TryGround(target, out var to)) { Refused?.Invoke(-1, "blocked"); return; }
         DodgeReadyAt = Time.time + DodgeCooldown;
         invulnerableUntil = Time.time + DodgeSeconds + 0.1f;
         Face(to);
         Play("Hero-Roll", 0.05f);
+        GameSounds.Play(SoundKind.Dodge, Player.Position, 0.8f, 0f, Player);
         StartCoroutine(Move(to, DodgeSeconds, 0f, null));
     }
 
@@ -683,6 +669,7 @@ public class HeroController : MonoBehaviour
         potionReadyAt = Time.time + 1f;
         Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxLevel * PotionShare));
         Play("Hero-Drink");
+        GameSounds.Play(SoundKind.Heal, Player.Position, 0.7f, 0.4f, Player);
     }
 
     /// <summary>A place on the island's navmesh near a point.</summary>
@@ -810,6 +797,7 @@ public class HeroController : MonoBehaviour
         }
         else Player.Heal(given);
         HeroEffects.Burst(HeroEffects.Get?.Mend, Player.Position + Vector3.up * 0.2f, 1f, 2f);
+        GameSounds.Play(SoundKind.Heal, Player.Position, 0.6f, 0f, Player);
         HeroHelpers.Healing(viewer, Player, amount);
         HeroHelpers.Say(string.Format(healer ? Localization.UI_HERO_FEED_HEAL : Localization.UI_HERO_FEED_BANDAGE, viewer.Name, amount));
         return ChatResult.Done;

@@ -479,3 +479,46 @@ The ranged, magic and healing kits and switching style came with the fix round. 
   - the sight line cutting a wall walk;
   - the orbs at several fills over the game.
 
+
+### The fight's feel, after the user's second try (2026-10-25)
+
+The user's list: Ravebridge took the streamer's character along unasked, a card's text ran out of the window, the
+drawer covered the stream quest, clicks attacked too slowly, Space did nothing, enemies hurt while chasing, and the
+camera hid stairs and bushes. Gatebound (the user's other game) was the model for the fight.
+
+- **Ravebridge:** the debug start no longer joins the streamer's characters; "Who plays?" opens as Ravebridge
+  opens. The top column (the village bar, the stream quest) steps down under the drawer (`rf-rb-open`,
+  `rf-rb-open-full` on the documents). Card lines wrap.
+- **The click attack (`HeroController.Attack.cs`):**
+  - a swing starts the moment the button goes down, at the enemy under the cursor or, with Shift, while WASD
+    moves the hero, or over the shoulder, toward the cursor even into empty air (aim assist turns it to an enemy
+    within 40 degrees close by). An enemy out of reach is run to first;
+  - holding the button keeps swinging; a click mid swing is buffered. Three swings make a combo per weapon kind
+    (2H sword, 2H axe, spear, sword, axe: the RPG pack's attack clips), the third hitting 35% harder; it resets
+    after 1.2 s;
+  - the hero is rooted while swinging. The hit lands halfway, on up to five enemies in a 120 degree arc within
+    the weapon's reach (spear 3.4 m, two-handed 2.9 m, else 2.4 m);
+  - a hit stops the hero's and the struck enemies' animation for 0.05 to 0.12 s (not the game: the world is
+    shared), shakes the camera a little and leaves a short white trail from the blade's tip (`HeroTrail.mat`);
+  - bow, magic and healing shoot on the click instead: an arrow, a lightning bolt or holy light.
+- **The roll:** Space pressed early in a swing waits until the swing may be cut (35% in) instead of being lost. A
+  wall or the navmesh's edge shortens the roll; a roll with no room flashes its slot. Invulnerable for 0.5 s.
+- **Enemies:** a blow lands only if the target is still within 1.25 times the reach (plus 0.6 m) when it comes
+  down, and a hero-mode enemy stands still until its swing is over. Stepping or rolling away during the wind-up
+  makes it miss. A wave enemy caught on a wall corner (the towers have a few) is moved 2 m along its path after
+  2 s of getting nowhere.
+- **Stances:** every hero move (swings, roll, casts) goes back to the held weapon's fighting idle, not the plain
+  idle, which drew the weapon again after each swing. Healing uses the magic staff's stance and the Action
+  parameter is held at 1, since the game's staff idles start their training cast loop on their own.
+- **Sight lines (`HeroCamera`):** three thin rays to the hero's head, chest and feet. Only what crosses them, and
+  only pieces tall enough to hide the hero, goes shadow-only, together with its small group (up to three parents
+  under 16 m). Stairs and bushes beside the line stay.
+- **Sounds (from Gatebound's packs, in `Assets/Sounds/Effects/<Kind>`, unversioned like the other sounds):**
+  swing whooshes just before the hit, flesh slashes (a heavy one for a finisher or a kill), the bow, arrow hits,
+  electric and fairytale casts for magic and healing, the roll's whoosh, potion and heals, goblin grunts, yelps
+  and deaths, and the thud of a blow on the hero. The hero counts as the watched player, so they are always heard.
+- **Tested in play mode:** "Who plays?" opening with the character left where it was; the top column at 108 px
+  under the open drawer; the card wrapping; a three-swing combo and each style's stance and attack; a 40 s wave
+  fight (no enemy moved while swinging, all the sounds played); rolling away from a wind-up 6 of 6 missed,
+  standing 6 of 6 hit; the gateway arch hidden over the hero with the walls and statues beside it kept.
+- **Not checked by hand:** the feel with a real mouse, the trail's look, and the hit stop at full frame rate.

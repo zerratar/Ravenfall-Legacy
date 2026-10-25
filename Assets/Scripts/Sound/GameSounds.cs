@@ -143,6 +143,8 @@ public sealed class GameSounds : MonoBehaviour
 
     private bool IsObserved(PlayerController player)
     {
+        // the hero is who the stream watches while hero mode runs
+        if (HeroController.Active && HeroController.Active.Player == player) return true;
         if (!game) game = GameManager.Instance;
         var watched = game && game.Camera && game.Camera.Observer ? game.Camera.Observer.ObservedPlayer : null;
         return watched == player;

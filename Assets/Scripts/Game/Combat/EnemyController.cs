@@ -467,6 +467,11 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
                 AttackTarget(TargetPlayer);
             }
         }
+        else if (Hunting && movement && movement.Swinging)
+        {
+            // a hunter (hero mode) stands to finish its swing: a hero who steps or rolls away makes it miss
+            Lock();
+        }
         else
         {
             SetDestination(Target.position);
@@ -488,6 +493,8 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         attackTimer -= GameTime.deltaTime;
         if (attackTimer <= 0f)
         {
+            var atHero = HeroController.Active && HeroController.Active.Player == targetPlayer;
+            if (atHero && UnityEngine.Random.value < 0.4f) GameSounds.Play(SoundKind.GoblinAttack, Position + Vector3.up, 0.55f, 0f, targetPlayer);
             movement.Attack(() =>
             {
                 if (this == null)
@@ -506,7 +513,15 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
                     return;
                 }
 
+                // the blow lands only if the target is still within reach when it comes down: stepping or rolling away
+                // while the enemy winds up dodges it
+                if (Vector3.Distance(Position, targetPlayer.Position) > attackRange * 1.25f + 0.6f)
+                {
+                    return;
+                }
+
                 var damage = GameMath.CalculateMeleeDamage(this, targetPlayer);
+                if (atHero) GameSounds.Play(SoundKind.HeroStruck, targetPlayer.Position + Vector3.up, 0.6f, 0f, targetPlayer);
                 if (targetPlayer.TakeDamage(this, (int)damage))
                 {
                     PlayerKillCount++;

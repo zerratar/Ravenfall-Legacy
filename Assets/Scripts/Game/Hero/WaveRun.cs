@@ -37,6 +37,8 @@ public class WaveRun : MonoBehaviour
     private const float GateRange = 130f;
     private const float ChargeSpeed = 6.5f;
     private const float ChargeUntil = 20f;
+    private const float StuckAfter = 2f;     // an enemy walking its path without getting anywhere this long is caught on a corner
+    private const float StuckSkip = 2f;      // and is moved this far along its way
 
     /// <summary>A kind of wave enemy: the rig's variants it shows as, the wave it starts coming at, how many of the
     /// hero's hits it takes and how much of the hero's health its blow takes (both at wave 1).</summary>
@@ -112,6 +114,7 @@ public class WaveRun : MonoBehaviour
 
     private readonly Dictionary<EnemyController, Kind> alive = new Dictionary<EnemyController, Kind>();
     private readonly Dictionary<EnemyController, float> lastBlow = new Dictionary<EnemyController, float>();
+    private readonly Dictionary<EnemyController, (Vector3 At, float Since)> progress = new Dictionary<EnemyController, (Vector3, float)>();
     private readonly Dictionary<EnemyController, float> walkSpeed = new Dictionary<EnemyController, float>();
     private readonly Queue<Kind> toSpawn = new Queue<Kind>();
     private readonly List<EnemyController> pool = new List<EnemyController>();
@@ -414,11 +417,46 @@ public class WaveRun : MonoBehaviour
         foreach (var e in dead)
         {
             alive.Remove(e);
+            progress.Remove(e);
             if (!e) continue;
             Kills++;
+            GameSounds.Play(SoundKind.GoblinDeath, e.Position + Vector3.up, 0.7f, 0f, Hero);
             if (e == Boss) { Boss = null; Changed?.Invoke(); }
             fallen.Add((e, Time.time + 3.5f));
         }
+    }
+
+    /// <summary>
+    /// An enemy pressing into a wall corner (the navmesh around the towers has a few): walking its path, but no nearer
+    /// for a while, it is moved a little along its way, past what it was caught on.
+    /// </summary>
+    private void Unstick(EnemyController e, PlayerController target)
+    {
+        var now = Time.time;
+        var agent = e.GetComponent<NavMeshAgent>();
+        var walking = target && agent && agent.isActiveAndEnabled && agent.isOnNavMesh && agent.hasPath && !agent.isStopped
+            && Vector3.Distance(e.Position, target.Position) > 3f;
+        if (!walking || !progress.TryGetValue(e, out var was) || (e.Position - was.At).sqrMagnitude > 0.36f)
+        {
+            progress[e] = (e.Position, now);
+            return;
+        }
+        if (now - was.Since < StuckAfter) return;
+
+        var path = new NavMeshPath();
+        if (!agent.CalculatePath(target.Position, path) || path.corners.Length < 2) return;
+        var at = path.corners[0];
+        var left = StuckSkip;
+        for (var i = 1; i < path.corners.Length && left > 0f; i++)
+        {
+            var step = Vector3.Distance(at, path.corners[i]);
+            at = Vector3.MoveTowards(at, path.corners[i], left);
+            left -= step;
+        }
+        agent.Warp(at);
+        // the warp drops the path; the enemy's own SetDestination would skip the same destination again
+        agent.SetDestination(target.Position);
+        progress[e] = (at, now);
     }
 
     /// <summary>The fallen go back to the pool once their death has played.</summary>
@@ -460,6 +498,7 @@ public class WaveRun : MonoBehaviour
                 var agent = e.GetComponent<NavMeshAgent>();
                 if (agent && agent.speed != walk) agent.speed = walk;
             }
+            Unstick(e, target);
         }
 
         if (alive.Count == 0) return;

@@ -29,9 +29,54 @@ var moves = new (string State, string File, string Clip, float ExitTime, bool Lo
     ("Hero-CastAreaEnd", "Staff/RPG-Character@Staff-Cast-L-AOE1.fbx", "Staff-Cast-L-AOE1_end", 0.9f, false, null),
     ("Hero-Buff", "Staff/RPG-Character@Staff-Cast-L-Buff1.fbx", "Staff-Cast-L-Buff1_start", 1f, false, "Hero-BuffEnd"),
     ("Hero-BuffEnd", "Staff/RPG-Character@Staff-Cast-L-Buff1.fbx", "Staff-Cast-L-Buff1_end", 0.9f, false, null),
+    // the click attacks: three swings in a row per kind of weapon (HeroController's combo)
+    ("Hero-2HSword-1", "2Hand-Sword/RPG-Character@2Hand-Sword-Attack1.FBX", "2Hand-Sword-Attack1", 0.85f, false, null),
+    ("Hero-2HSword-2", "2Hand-Sword/RPG-Character@2Hand-Sword-Attack2.FBX", "2Hand-Sword-Attack2", 0.85f, false, null),
+    ("Hero-2HSword-3", "2Hand-Sword/RPG-Character@2Hand-Sword-Attack3.FBX", "2Hand-Sword-Attack3", 0.85f, false, null),
+    ("Hero-2HAxe-1", "2Hand-Axe/RPG-Character@2Hand-Axe-Attack1.FBX", "2Hand-Axe-Attack1", 0.85f, false, null),
+    ("Hero-2HAxe-2", "2Hand-Axe/RPG-Character@2Hand-Axe-Attack2.FBX", "2Hand-Axe-Attack2", 0.85f, false, null),
+    ("Hero-2HAxe-3", "2Hand-Axe/RPG-Character@2Hand-Axe-Attack3.FBX", "2Hand-Axe-Attack3", 0.85f, false, null),
+    ("Hero-Spear-1", "2Hand-Spear/RPG-Character@2Hand-Spear-Attack1.FBX", "2Hand-Spear-Attack1", 0.85f, false, null),
+    ("Hero-Spear-2", "2Hand-Spear/RPG-Character@2Hand-Spear-Attack2.FBX", "2Hand-Spear-Attack2", 0.85f, false, null),
+    ("Hero-Spear-3", "2Hand-Spear/RPG-Character@2Hand-Spear-Attack3.FBX", "2Hand-Spear-Attack3", 0.85f, false, null),
+    ("Hero-Sword-1", "Sword/RPG-Character@Sword-Attack-R1.FBX", "Sword-Attack-R1", 0.85f, false, null),
+    ("Hero-Sword-2", "Sword/RPG-Character@Sword-Attack-L1.FBX", "Sword-Attack-L1", 0.85f, false, null),
+    ("Hero-Sword-3", "Sword/RPG-Character@Sword-Attack-R2.FBX", "Sword-Attack-R2", 0.85f, false, null),
+    ("Hero-Axe-1", "Mace/RPG-Character@Mace-Attack-R1.FBX", "Mace-Attack-R1", 0.85f, false, null),
+    ("Hero-Axe-2", "Mace/RPG-Character@Mace-Attack-L1.FBX", "Mace-Attack-L1", 0.85f, false, null),
+    ("Hero-Axe-3", "Mace/RPG-Character@Mace-Attack-R2.FBX", "Mace-Attack-R2", 0.85f, false, null),
 };
 var machine = controller.layers[0].stateMachine;
 var sb = new System.Text.StringBuilder();
+
+// where a move goes back to: the fighting idle of the weapon the hero holds (the Weapon parameter, Shield for a sword
+// and board), so a swing never drops to the plain idle and draws the weapon again
+UnityEditor.Animations.AnimatorState Find(UnityEditor.Animations.AnimatorStateMachine m, string path)
+{
+    var parts = path.Split('/');
+    for (var i = 0; i < parts.Length - 1; i++)
+    {
+        UnityEditor.Animations.AnimatorStateMachine sub = null;
+        foreach (var child in m.stateMachines) if (child.stateMachine.name == parts[i]) sub = child.stateMachine;
+        if (sub == null) return null;
+        m = sub;
+    }
+    foreach (var child in m.states) if (child.state.name == parts[parts.Length - 1]) return child.state;
+    return null;
+}
+var stances = new (int Weapon, int Shield, string Path)[]
+{
+    (0, -1, "Combat/Unarmed/Unarmed-Idle"),
+    (1, 0, "Combat/One Handed Sword/Armed-Idle"),
+    (1, 1, "Combat/One Handed Sword Shield/Armed-Idle"),
+    (2, -1, "Combat/Two Handed Sword/2Hand-Sword-Idle"),
+    (3, -1, "Combat/Ranged/2Hand-Bow-Idle"),
+    (4, -1, "Combat/Magic/Staff-Idle"),
+    (5, -1, "Combat/Katana/Idle"),
+    (6, -1, "Combat/Healing/Staff-Idle"),
+    (7, -1, "Combat/Spear/Idle"),
+    (8, -1, "Combat/Two Handed Axe/Idle"),
+};
 foreach (var move in moves)
 {
     UnityEngine.AnimationClip clip = null;
@@ -60,7 +105,19 @@ foreach (var move in moves)
     }
     else
     {
-        // back to the animator's usual flow (idle, running, fighting) when the move is over
+        // back to the weapon's fighting idle while fighting; else to the animator's usual flow
+        foreach (var stance in stances)
+        {
+            var to = Find(machine, stance.Path);
+            if (to == null) { sb.Append("no " + stance.Path + "; "); continue; }
+            var t = state.AddTransition(to);
+            t.hasExitTime = true;
+            t.exitTime = move.ExitTime;
+            t.duration = 0.15f;
+            t.AddCondition(UnityEditor.Animations.AnimatorConditionMode.If, 0f, "Attacking");
+            t.AddCondition(UnityEditor.Animations.AnimatorConditionMode.Equals, stance.Weapon, "Weapon");
+            if (stance.Shield >= 0) t.AddCondition(stance.Shield == 1 ? UnityEditor.Animations.AnimatorConditionMode.If : UnityEditor.Animations.AnimatorConditionMode.IfNot, 0f, "Shield");
+        }
         var back = state.AddExitTransition();
         back.hasExitTime = true;
         back.exitTime = move.ExitTime;

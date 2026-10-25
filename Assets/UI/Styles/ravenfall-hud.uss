@@ -780,6 +780,17 @@
     position: absolute;
     top: 14px;
     align-items: center;
+    transition-property: top;
+    transition-duration: 0.25s;
+}
+
+/* under Ravebridge's drawer (RavebridgeView): below its tab, or below the whole drawer while it is down */
+.rf-rb-open .rf-top-column {
+    top: 44px;
+}
+
+.rf-rb-open-full .rf-top-column {
+    top: 108px;
 }
 
 /* ---- XP boost pill -------------------------------------------------------------- */
@@ -1685,6 +1696,7 @@
 .rf-squest-card .rf-squest-card__meta {
     font-size: 16px;
     color: var(--rf-text-dim);
+    white-space: normal;
 }
 
 .rf-squest-card .rf-squest-card__reward {

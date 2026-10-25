@@ -2277,17 +2277,11 @@ public class GameManager : MonoBehaviour, IGameManager
             dungeonManager.ToggleDungeon();
         }
 
-        // the Ravebridge event, forced (unlocked or not), and the streamer's own characters taken along
+        // the Ravebridge event, forced (unlocked or not); "Who plays?" opens to pick who goes (RavebridgeView)
         if (Ravebridge && GUI.Button(GetButtonRect(buttonIndex++), Ravebridge.Active ? "End Ravebridge" : "Start Ravebridge"))
         {
             if (Ravebridge.Active) Ravebridge.End();
-            else if (Ravebridge.Begin(true, null, true) == RavebridgeManager.StartResult.Started)
-            {
-                foreach (var p in Players.GetAllPlayers())
-                {
-                    if (RavebridgeManager.IsStreamers(p)) Ravebridge.Join(p);
-                }
-            }
+            else Ravebridge.Begin(true, null, true);
         }
 
         if (Arena.Activated)

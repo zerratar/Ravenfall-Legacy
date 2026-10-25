@@ -34,6 +34,9 @@ public class EnemyMovementController : MonoBehaviour
     private Action attackAnimationTrigger;
     private float attackAnimationTimer;
 
+    /// <summary>A blow is wound up and has not come down yet.</summary>
+    public bool Swinging => attackAnimationTimer > 0f;
+
     private ConcurrentDictionary<string, AnimatorControllerParameter> parameters
         = new ConcurrentDictionary<string, AnimatorControllerParameter>();
 

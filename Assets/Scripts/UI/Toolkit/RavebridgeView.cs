@@ -60,8 +60,19 @@ namespace Shinobytes.UI
 
         private void Rebuild() => bound = false;
 
+        private bool wasActive;
+
         private void Changed()
         {
+            // Ravebridge just opened: who plays is asked first, nobody is sent along unasked
+            var rb = RavebridgeManager.Instance;
+            var active = rb && rb.Active;
+            if (active && !wasActive && bound && !RavebridgePlay.Playing && !WindowOpen)
+            {
+                creating = false;
+                window.style.display = DisplayStyle.Flex;
+            }
+            wasActive = active;
             Redraw();
             if (WindowOpen && !creating) DrawWindow();
         }
@@ -187,7 +198,24 @@ namespace Shinobytes.UI
             var height = bar.resolvedStyle.height;
             if (float.IsNaN(height)) height = 0f;
             drawer.style.translate = new Translate(0, collapsed ? -(height + 8f) : 0f);
+            MakeRoom();
             if (tabChevron != null) tabChevron.text = collapsed ? "\uf078" : "\uf077";
+        }
+
+        /// <summary>
+        /// The top column (the village bar, the stream quest) steps down under the drawer: a little under its tab, more
+        /// under the whole drawer (a class on the documents, as hero mode's).
+        /// </summary>
+        private void MakeRoom()
+        {
+            var shown = wrap != null && wrap.style.display == DisplayStyle.Flex;
+            foreach (var doc in FindObjectsByType<UIDocument>())
+            {
+                var r = doc.rootVisualElement;
+                if (r == null) continue;
+                r.EnableInClassList("rf-rb-open", shown && collapsed);
+                r.EnableInClassList("rf-rb-open-full", shown && !collapsed);
+            }
         }
 
         private static Button BarButton(string label, bool primary, System.Action clicked)
@@ -379,7 +407,9 @@ namespace Shinobytes.UI
             if (!bound) return;
             var rb = RavebridgeManager.Instance;
             var shown = rb && rb.Active && !(VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive);
+            var was = wrap.style.display == DisplayStyle.Flex;
             wrap.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
+            if (was != shown) MakeRoom();
             if (!shown) { CloseWindow(); return; }
 
             var playing = RavebridgePlay.Playing;
