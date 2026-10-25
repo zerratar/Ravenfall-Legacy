@@ -124,7 +124,9 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         var banner = FindAnyObjectByType<Shinobytes.UI.NotificationScreenView>(FindObjectsInactive.Include);
         if (banner)
         {
-            banner.Show(Localization.UI_RAVEBRIDGE_TITLE, line, Shinobytes.UI.NotificationScreenView.WithCommand(Localization.UI_RAVEBRIDGE_JOIN, "!ravebridge"));
+            // the chat line without the bot's routing tags (%[category:...]%%[tags:...]%)
+            var readable = MessageUtilities.TryExtractTags(MessageUtilities.TryExtractCategory(line, out _), out _);
+            banner.Show(Localization.UI_RAVEBRIDGE_TITLE, readable, Shinobytes.UI.NotificationScreenView.WithCommand(Localization.UI_RAVEBRIDGE_JOIN, "!ravebridge"));
         }
 
         Changed?.Invoke();
