@@ -107,6 +107,9 @@ namespace Shinobytes.UI
 
         private float nextRefresh;
         private bool requestedVisible = true;
+
+        /// <summary>Whether the streamer wants the list (hero mode puts it away and brings it back).</summary>
+        public bool RequestedVisible => requestedVisible;
         private bool hiddenForBuildMode;
         // Until the game has loaded and logged in, so the list does not sit over the login screen.
         private bool hiddenBeforeLogin;

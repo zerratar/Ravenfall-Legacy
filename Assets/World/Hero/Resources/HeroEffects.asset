@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb5fa0cb19bf46547954e62a50586298, type: 3}
+  m_Name: HeroEffects
+  m_EditorClassIdentifier: Assembly-CSharp::HeroEffects
+  Arrow: {fileID: 6793639527248036138, guid: ace7f4a8d7671bd48a29b6adb30e75e5, type: 3}
+  HolyBolt: {fileID: 1261555563981962, guid: 24c86df1468884d499ca1d5cb865a6f7, type: 3}
+  Fireball: {fileID: 1079946990457772, guid: 2e10c38d7d83154429c2fb51c652e1fb, type: 3}
+  Lightning: {fileID: 1094010528761658, guid: 84deea7f5a617b14d9c8dd288d1ceb94, type: 3}
+  Meteor: {fileID: 1347034509603832, guid: c11f2c78c638c684390d0241fd08c339, type: 3}
+  Smite: {fileID: 1878987882032996, guid: 7fa473b70378b654a84307886f90d064, type: 3}
+  ArrowRain: {fileID: 1148406988041044, guid: 1ae2b1c728484264bbdc53ecaee73c6a, type: 3}
+  Snare: {fileID: 1612276239566916, guid: ab764946428361d499eb0f88769e33b7, type: 3}
+  FrostNova: {fileID: 1105495686751570, guid: 4328596502e67c1468c5794bdd5067b4, type: 3}
+  MeteorBlast: {fileID: 1220213892471706, guid: 800cddb992d3f5e4eb2348b90447f4a7, type: 3}
+  Mend: {fileID: 1327231448029640, guid: b0035d79b41032446a5de0e41abe9823, type: 3}
+  Sanctuary: {fileID: 1998750652454270, guid: 8a1ac1dbe39224143972fa1a908b0abf, type: 3}
+  Angel: {fileID: 1231636063597364, guid: 3aa0fab185f378240b831342bde74b26, type: 3}

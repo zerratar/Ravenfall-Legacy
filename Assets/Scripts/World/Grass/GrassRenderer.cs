@@ -307,6 +307,8 @@ public static unsafe class GrassRenderer
         culling = default;
         using (UpdateMarker.Auto())
         {
+            // more than one terrain (Ravebridge's): grow on the one the camera is over
+            if (fields.Count > 1 && TryFocus(cameras, out var at)) FollowFocus(at);
             if (dirty) Rebuild();
             if (buffer == null || !field || Suppressed) return;
 
@@ -315,6 +317,30 @@ public static unsafe class GrassRenderer
             SetAmbient();
             if (TryFocus(cameras, out var focus)) Stream(focus);
         }
+    }
+
+    // the field grass grows on, picked by the camera when there are several (one at a time: the ground is read whole)
+    private static GrassField preferred;
+
+    private static void FollowFocus(Vector3 focus)
+    {
+        if (field && Contains(field, focus)) return;
+        foreach (var f in fields)
+        {
+            if (f == field || !f || !f.isActiveAndEnabled || !f.Profile || !Contains(f, focus)) continue;
+            preferred = f;
+            dirty = groundDirty = true;
+            return;
+        }
+    }
+
+    private static bool Contains(GrassField f, Vector3 point)
+    {
+        var terrain = f.Terrain;
+        if (!terrain || !terrain.terrainData) return false;
+        var origin = terrain.transform.position;
+        var size = terrain.terrainData.size;
+        return point.x >= origin.x && point.z >= origin.z && point.x <= origin.x + size.x && point.z <= origin.z + size.z;
     }
 
     /// <summary>Where grass grows around: the game camera while playing, the Scene view's in the editor.</summary>
@@ -507,7 +533,8 @@ public static unsafe class GrassRenderer
 
         fields.RemoveAll(f => !f);
         field = null;
-        foreach (var f in fields) if (f.isActiveAndEnabled && f.Terrain && f.Terrain.terrainData && f.Profile) { field = f; break; }
+        if (preferred && fields.Contains(preferred) && preferred.isActiveAndEnabled && preferred.Terrain && preferred.Terrain.terrainData && preferred.Profile) field = preferred;
+        else foreach (var f in fields) if (f.isActiveAndEnabled && f.Terrain && f.Terrain.terrainData && f.Profile) { field = f; break; }
         if (!enabled || !field) return;
 
         if (groundDirty || !heights.IsCreated) ReadGround();

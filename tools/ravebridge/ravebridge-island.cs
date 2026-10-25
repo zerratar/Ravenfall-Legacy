@@ -194,6 +194,16 @@ foreach (var t in root.GetComponentsInChildren<UnityEngine.Terrain>())
     data.SetAlphamaps(x0, z0, maps);
     UnityEditor.EditorUtility.SetDirty(data);
 }
+// grass, as on the main island: the same profile (GrassRenderer grows it on the terrain the camera is over)
+UnityEngine.Object mainGrass = null;
+foreach (var g in UnityEngine.Object.FindObjectsByType<GrassField>(UnityEngine.FindObjectsInactive.Include)) if (!g.transform.IsChildOf(root.transform)) mainGrass = g;
+foreach (var t in root.GetComponentsInChildren<UnityEngine.Terrain>())
+{
+    var field = t.GetComponent<GrassField>();
+    if (!field) field = t.gameObject.AddComponent<GrassField>();
+    if (mainGrass) field.Profile = ((GrassField)mainGrass).Profile;
+    UnityEditor.EditorUtility.SetDirty(field);
+}
 
 stage = "training";
 // 4. training spots, copied from the main island's level 1 ones (chunks by their task: they rename themselves)

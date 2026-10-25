@@ -22,6 +22,17 @@ With the user on 2026-10-25, for this design:
 - **Defeat:** chat can revive. A fallen hero is downed, not dead, and chat has a few seconds to bring them back.
   Otherwise the run ends and the wave reached is the score.
 
+Later with the user (2026-10-25, after trying 7a):
+
+- **Hero mode is a way to play, not the waves.** The streamer plays Ravebridge as an action RPG hero with no waves
+  running: walking around, fighting what is there, talking to the NPCs and doing their quests. The waves ("A run"
+  below) are one quest among many on offer during hero mode, started like any other.
+- **The screen of an action RPG:** C opens the character's details (stats, with the equipment part showing, which
+  the panel's own button can still fold away); I opens an inventory window of its own, where a right click equips
+  or swaps an item and a tooltip shows the item's details. The players list gives way to a list of who is on
+  Ravebridge.
+- **The orbs are 3D:** a shaded glass sphere of liquid that moves, not flat circles.
+
 ## What it builds on
 
 - **6c, playing by hand:** `ManualPlayerController` (WASD relative to the camera, clicking things),
@@ -38,6 +49,8 @@ With the user on 2026-10-25, for this design:
   - Ravebridge's goblin rigs (goblins, a shaman, a war chief, skeletons, ghosts, a rock golem, knights).
 
 ## A run
+
+The wave quest ("Defend Ravebridge" or similar), one of the quests on offer in hero mode:
 
 1. **Starting.** While Ravebridge is open, the streamer presses Hero mode on the Ravebridge bar (or types
    `!hero start`) and picks the hero, using 6c's character choice. A world event can force it: "the goblins storm
@@ -200,8 +213,8 @@ New pieces, next to the Ravebridge ones:
    - the basic attack and the dodge;
    - the melee kit;
    - the health and mana orbs and the skill bar, against Ravebridge's goblins.
-2. **7b, waves:**
-   - the WaveDirector and waves data;
+2. **7b, waves, as a quest:**
+   - the WaveDirector and waves data, started as a quest from an NPC (or a forced event);
    - enemies seeking the hero;
    - a boss;
    - downed and revive;
@@ -267,3 +280,44 @@ New pieces, next to the Ravebridge ones:
   - both cameras render.
 
   Real keyboard and mouse input, and the HUD's look, still need a run by hand.
+
+### After 7a: fixes, and the rest of the kits (7c's first part, 2026-10-25)
+
+After the user's first try ("not playable yet"):
+
+- **Moving:**
+  - WASD steers at once: a short path ahead plus the agent's velocity. Velocity alone did nothing (an agent with
+    no path drops it), which was the "stuck" the user saw;
+  - the left mouse walks to the ground under the cursor, and holding it keeps walking toward the cursor;
+  - an enemy under the cursor is attacked;
+  - a ring marks the place (`HeroMarker`, the Hero Marker shader): gold for walking, red under an enemy.
+- **The weapon:** the style's own weapon shows (the woodcutting axe stayed in hand before).
+- **The screen:**
+  - the players list and the details window step aside, and come back after;
+  - C and I open the hero's details (I with the gear). The real inventory window is still to build (see Decided);
+  - the party panel on the left lists who is on Ravebridge, with their health.
+- **The orbs:** the Hero Orb shader draws a glass sphere into a render texture each frame (every third in potato
+  mode). It has a waving surface that sloshes when the level moves, swirling clouds and rising bubbles, and a paler
+  trail that shows what a hit took. The glass has a rim light, a highlight and a glint, all inside the gold rim.
+- **The camera:** zoom the same way round as the other cameras, the right mouse tilts as well as turns, over the
+  shoulder zooms (2.5 to 10 m), and no zooming while the mouse is over the HUD.
+- **The Ravebridge bar:** a drawer at the top that slides up a few seconds after the mouse leaves it. A small tab
+  stays at the top edge with who is there, the time and any quest notice, and it brings the drawer back.
+- **Grass on Ravebridge:** its two terrains have grass fields with the main island's profile. `GrassRenderer` grows
+  on the field whose terrain the camera is over; before, it only ever used the first.
+- **Styles:** Tab switches (Shift+Tab goes back; 1 s between switches). Each style has its kit, weapon, task (so
+  experience goes to that style) and its own cooldowns:
+  - ranged: Multishot, Arrow rain, Snare trap, Rapid fire;
+  - magic: Fireball, Frost nova, Chain lightning, Meteor;
+  - healing: Mend, Smite (double on the undead, by name), Sanctuary, Guardian angel (heals everyone near in full,
+    and the next fatal blow leaves the hero at half health).
+
+  Healing has no attack of its own in the game, so the healer's basic attack is a bolt of holy light (10 m). Damage
+  uses the style's formula (`GameMath`). The look comes from `HeroEffects` (AAA Projectiles, made by
+  `tools/hero/hero-effects.cs`), and new animator moves: shoot, volley, cast, area cast, buff.
+- **Tested in play mode** with the streamer's character:
+  - steering 6 m/s, at once, stopping dead;
+  - style switching, and the skills firing and killing;
+  - the shader orbs, the drawer and its tab, the markers and the projectiles on screen.
+
+  Real keyboard and mouse input still need a run by hand.

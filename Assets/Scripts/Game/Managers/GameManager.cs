@@ -2142,7 +2142,8 @@ public class GameManager : MonoBehaviour, IGameManager
             SettingsApplier.ToggleHideLogos(this);
         }
 
-        if (Keybinds.Pressed(Keybinds.Action.ExpRate))
+        // in hero mode I is the hero's gear (HeroController)
+        if (Keybinds.Pressed(Keybinds.Action.ExpRate) && !HeroController.Active)
         {
             SettingsApplier.CycleExpDisplay(this);
         }

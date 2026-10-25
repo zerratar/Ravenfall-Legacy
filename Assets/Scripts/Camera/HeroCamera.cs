@@ -10,9 +10,8 @@ public class HeroCamera : MonoBehaviour
 {
     public enum View { TopDown, Shoulder }
 
-    private const float TopDownPitch = 55f;
-    private const float ShoulderPitch = 12f;
     private const float MinZoom = 8f, MaxZoom = 28f;
+    private const float MinShoulder = 2.5f, MaxShoulder = 10f;
 
     public View Mode = View.TopDown;
 
@@ -20,6 +19,9 @@ public class HeroCamera : MonoBehaviour
     private Camera cam;
     private float yaw;
     private float zoom = 16f;
+    private float topPitch = 55f;
+    private float shoulderPitch = 12f;
+    private float shoulderDistance = 5.5f;
     private Vector3 focus;
     private float blend = 1f; // 0 shoulder, 1 top-down: switching glides
 
@@ -42,18 +44,29 @@ public class HeroCamera : MonoBehaviour
     private void LateUpdate()
     {
         if (!target) return;
-        var typing = Keybinds.IsTyping;
-        if (!typing && Input.GetMouseButton(1)) yaw += Input.GetAxis("Mouse X") * 4f;
-        if (!Shinobytes.UI.DraggableWindow.IsPointerOverWindow) zoom = Mathf.Clamp(zoom + CameraSettings.ZoomStep(20f), MinZoom, MaxZoom);
+        // the right mouse turns the camera and tilts it; the wheel zooms (the other cameras' way round)
+        if (!Keybinds.IsTyping && Input.GetMouseButton(1))
+        {
+            yaw += Input.GetAxis("Mouse X") * 4f;
+            var tilt = Input.GetAxis("Mouse Y") * 3f;
+            if (Mode == View.TopDown) topPitch = Mathf.Clamp(topPitch - tilt, 35f, 75f);
+            else shoulderPitch = Mathf.Clamp(shoulderPitch - tilt, -10f, 50f);
+        }
+        if (!Shinobytes.UI.DraggableWindow.IsPointerOverWindow && !Shinobytes.UI.HudPointer.IsOverHud())
+        {
+            var step = CameraSettings.ZoomStep(20f);
+            if (Mode == View.TopDown) zoom = Mathf.Clamp(zoom - step, MinZoom, MaxZoom);
+            else shoulderDistance = Mathf.Clamp(shoulderDistance - step * 0.4f, MinShoulder, MaxShoulder);
+        }
 
         var dt = Time.unscaledDeltaTime;
         blend = Mathf.MoveTowards(blend, Mode == View.TopDown ? 1f : 0f, dt * 3f);
         focus = Vector3.Lerp(focus, target.position, 1f - Mathf.Exp(-10f * dt));
 
-        var topRotation = Quaternion.Euler(TopDownPitch, yaw, 0f);
+        var topRotation = Quaternion.Euler(topPitch, yaw, 0f);
         var topPosition = focus + Vector3.up - topRotation * Vector3.forward * zoom;
-        var shoulderRotation = Quaternion.Euler(ShoulderPitch, yaw, 0f);
-        var shoulderPosition = focus + Vector3.up * 2.2f + shoulderRotation * Vector3.right * 0.6f - shoulderRotation * Vector3.forward * 5.5f;
+        var shoulderRotation = Quaternion.Euler(shoulderPitch, yaw, 0f);
+        var shoulderPosition = focus + Vector3.up * 2.2f + shoulderRotation * Vector3.right * 0.6f - shoulderRotation * Vector3.forward * shoulderDistance;
         var t = Mathf.SmoothStep(0f, 1f, blend);
         transform.SetPositionAndRotation(Vector3.Lerp(shoulderPosition, topPosition, t), Quaternion.Slerp(shoulderRotation, topRotation, t));
     }

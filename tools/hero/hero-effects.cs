@@ -1,0 +1,52 @@
+// Run with: unity command eval_file --file tools/hero/hero-effects.cs
+//
+// Makes Assets/World/Hero/Resources/HeroEffects.asset (HeroEffects): the looks of hero mode's skills, from the AAA
+// Projectiles pack (the transform moved projectiles, which carry their own hit and flash) and the game's arrow. The
+// pack names its prefabs by number only; the comments say what each looks like. Also the HeroOrb and HeroMarker
+// materials (the HUD's orbs, the click marker). Run it again after changing a pick.
+var pack = "Assets/ErbGameArt/AAA Projectiles Vol 1/Prefabs/";
+System.Func<string, UnityEngine.GameObject> load = p => UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(p);
+System.Func<int, UnityEngine.GameObject> projectile = n => load(pack + "Projectiles(transform)/Projectile " + n + ".prefab");
+System.Func<int, UnityEngine.GameObject> hit = n => load(pack + "Hit " + n + ".prefab");
+
+var path = "Assets/World/Hero/Resources/HeroEffects.asset";
+var fx = UnityEditor.AssetDatabase.LoadAssetAtPath<HeroEffects>(path);
+if (!fx)
+{
+    fx = UnityEngine.ScriptableObject.CreateInstance<HeroEffects>();
+    UnityEditor.AssetDatabase.CreateAsset(fx, path);
+}
+fx.Arrow = load("Assets/Prefabs/Arrow.prefab"); // the arrow the game's archers shoot
+fx.HolyBolt = projectile(1);   // pale green
+fx.Fireball = projectile(25);  // orange fire
+fx.Lightning = projectile(22); // light blue
+fx.Meteor = projectile(16);    // deep orange
+fx.Smite = projectile(4);      // gold
+fx.ArrowRain = hit(23);        // small orange sparks
+fx.Snare = hit(12);            // dark green
+fx.FrostNova = hit(8);         // ice blue
+fx.MeteorBlast = hit(3);       // orange red
+fx.Mend = hit(24);             // bright green
+fx.Sanctuary = hit(6);         // green
+fx.Angel = hit(14);            // white
+UnityEditor.EditorUtility.SetDirty(fx);
+UnityEditor.AssetDatabase.SaveAssets();
+
+// the materials the HUD orbs and the click marker are drawn with: kept in Resources so builds include their shaders
+foreach (var (file, shaderName) in new[] { ("HeroOrb", "Ravenfall/Hero Orb"), ("HeroMarker", "Ravenfall/Hero Marker") })
+{
+    var shader = UnityEngine.Shader.Find(shaderName);
+    if (!shader) return "no shader " + shaderName;
+    var materialPath = "Assets/World/Hero/Resources/" + file + ".mat";
+    var material = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(materialPath);
+    if (!material) UnityEditor.AssetDatabase.CreateAsset(new UnityEngine.Material(shader), materialPath);
+    else if (material.shader != shader) material.shader = shader;
+}
+UnityEditor.AssetDatabase.SaveAssets();
+
+var missing = new System.Collections.Generic.List<string>();
+foreach (var f in typeof(HeroEffects).GetFields())
+{
+    if (f.FieldType == typeof(UnityEngine.GameObject) && !(UnityEngine.GameObject)f.GetValue(fx)) missing.Add(f.Name);
+}
+return path + (missing.Count > 0 ? ", missing: " + string.Join(", ", missing) : ", all set");

@@ -2004,59 +2004,51 @@
     bottom: 0;
 }
 
+/* the orbs: a 150 px gold rim around a 132 px sphere (the Hero Orb shader's render texture) */
 .rf-hero-orb {
     position: absolute;
-    bottom: 56px;
-    width: 132px;
-    height: 132px;
-    overflow: hidden;
-    background-color: rgba(12, 10, 8, 0.85);
-    border-left-width: 3px;
-    border-right-width: 3px;
-    border-top-width: 3px;
-    border-bottom-width: 3px;
-    border-left-color: var(--rf-accent);
-    border-right-color: var(--rf-accent);
-    border-top-color: var(--rf-accent);
-    border-bottom-color: var(--rf-accent);
-    border-top-left-radius: 66px;
-    border-top-right-radius: 66px;
-    border-bottom-left-radius: 66px;
-    border-bottom-right-radius: 66px;
-    justify-content: center;
-    align-items: center;
+    bottom: 18px;
+    width: 150px;
+    height: 150px;
 }
 
 .rf-hero-orb--health {
-    left: 28px;
+    left: 24px;
 }
 
 .rf-hero-orb--mana {
-    right: 28px;
+    right: 24px;
 }
 
-.rf-hero-orb__fill {
+.rf-hero-orb__sphere {
+    position: absolute;
+    left: 9px;
+    top: 9px;
+    width: 132px;
+    height: 132px;
+}
+
+.rf-hero-orb__rim {
     position: absolute;
     left: 0;
-    right: 0;
-    bottom: 0;
-    height: 100%;
-}
-
-.rf-hero-orb--health .rf-hero-orb__fill {
-    background-color: rgb(176, 32, 36);
-}
-
-.rf-hero-orb--mana .rf-hero-orb__fill {
-    background-color: rgb(40, 84, 196);
+    top: 0;
+    width: 150px;
+    height: 150px;
 }
 
 .rf-hero-orb__text {
-    font-size: 17px;
-    color: var(--rf-text);
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    -unity-text-align: middle-center;
+    font-size: 20px;
+    color: rgb(255, 246, 228);
     -unity-font-style: bold;
     -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.8);
 }
 
 .rf-hero-bar {
@@ -2067,10 +2059,74 @@
     align-items: center;
 }
 
-.rf-hero-bar__style {
+/* the style over the skill bar: icon, name and level, and Tab to switch */
+.rf-hero-style {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+    padding-left: 10px;
+    padding-right: 6px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    background-color: rgba(20, 18, 15, 0.9);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.rf-hero-style__icon {
+    font-size: 15px;
+    color: var(--rf-accent-bright);
+    margin-right: 6px;
+}
+
+.rf-hero-style--ranged .rf-hero-style__icon {
+    color: rgb(150, 210, 110);
+}
+
+.rf-hero-style--magic .rf-hero-style__icon {
+    color: rgb(120, 170, 255);
+}
+
+.rf-hero-style--healing .rf-hero-style__icon {
+    color: rgb(255, 226, 120);
+}
+
+.rf-hero-style__name {
     font-size: 14px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    margin-right: 8px;
+}
+
+.rf-hero-style__key {
+    font-size: 11px;
     color: var(--rf-text-dim);
-    margin-bottom: var(--rf-space-2);
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-hero-style--flash {
+    border-left-color: var(--rf-danger);
+    border-right-color: var(--rf-danger);
+    border-top-color: var(--rf-danger);
+    border-bottom-color: var(--rf-danger);
 }
 
 .rf-hero-bar__row {
@@ -2167,6 +2223,67 @@
     border-bottom-color: var(--rf-danger);
 }
 
+/* the party on the left: who is on Ravebridge besides the hero, with their health */
+.rf-hero-party {
+    position: absolute;
+    left: 16px;
+    top: 30%;
+    width: 210px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    background-color: rgba(20, 18, 15, 0.78);
+    border-left-width: 2px;
+    border-left-color: var(--rf-accent);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-hero-party__title {
+    font-size: 12px;
+    color: var(--rf-accent-bright);
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+.rf-hero-party__row {
+    margin-bottom: 4px;
+}
+
+.rf-hero-party__name {
+    font-size: 12px;
+    color: var(--rf-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rf-hero-party__bar {
+    height: 5px;
+    margin-top: 1px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+    overflow: hidden;
+}
+
+.rf-hero-party__fill {
+    height: 100%;
+    width: 100%;
+    background-color: rgb(196, 48, 48);
+}
+
+.rf-hero-party__row--down {
+    opacity: 0.45;
+}
+
+.rf-hero-party__row--down .rf-hero-party__fill {
+    background-color: rgb(90, 90, 90);
+}
+
 /* ---- Ravebridge -----------------------------------------------------------------------------------------
    RavebridgeView: while the event runs, a bar of its own a little down the screen (clear of the top column and the
    event banners): who is there, how long it has been open, and the streamer's buttons (Stay, Hero mode, New look,
@@ -2174,18 +2291,70 @@
 
 .rf-rb {
     position: absolute;
-    /* at the bottom, clear of the banners at the top and of the character the camera keeps in the middle; the panels
-       to pick who to play open upward from it */
-    bottom: 28px;
+    /* a drawer at the top (Ravebridge is the event, so no other event's banner is there): it slides up behind the
+       edge and leaves its tab showing */
+    top: 0;
     left: 0;
     right: 0;
     align-items: center;
-    flex-direction: column-reverse;
 }
 
-/* in hero mode the skill bar has the bottom: above it */
-.rf-hero-mode .rf-rb {
-    bottom: 150px;
+.rf-rb-drawer {
+    align-items: center;
+    padding-top: 8px;
+    transition-property: translate;
+    transition-duration: 0.25s;
+    transition-timing-function: ease-out-cubic;
+}
+
+.rf-rb-drawer > .rf-rb-bar {
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+}
+
+.rf-rb-tab {
+    flex-direction: row;
+    align-items: center;
+    max-width: 640px;
+    margin-top: -1px;
+    padding-left: 12px;
+    padding-right: 10px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+    background-color: rgba(20, 18, 15, 0.92);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.rf-rb-tab:hover {
+    background-color: rgba(44, 38, 28, 0.95);
+}
+
+.rf-rb-tab__icon {
+    font-size: 12px;
+    color: var(--rf-accent-bright);
+    margin-right: 6px;
+}
+
+.rf-rb-tab__text {
+    font-size: 13px;
+    color: var(--rf-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+
+.rf-rb-tab__chevron {
+    font-size: 11px;
+    color: var(--rf-text-dim);
+    margin-left: 8px;
 }
 
 .rf-rb-bar {
@@ -2362,4 +2531,16 @@
     border-top-right-radius: var(--rf-radius);
     border-bottom-left-radius: var(--rf-radius);
     border-bottom-right-radius: var(--rf-radius);
+}
+
+/* the "Who plays?" window: the quest window's look, narrower, a little lower */
+.rf-rb-window {
+    top: 16%;
+    width: 600px;
+    margin-left: -300px;
+}
+
+.rf-rb-window__content {
+    margin-top: var(--rf-space-1);
+    margin-bottom: var(--rf-space-2);
 }
