@@ -38,6 +38,9 @@ public class GameCamera : MonoBehaviour
     private int observedIslandIndex;
 
     private GameCameraType state = GameCameraType.Free;
+
+    // the character the streamer plays by hand (Ravebridge): followed until control ends
+    private PlayerController controlled;
     private bool canObserveNextPlayer = true;
     private bool allowJoinObserve = true;
     private bool forcedFreeCamera;
@@ -125,6 +128,12 @@ public class GameCamera : MonoBehaviour
         {
             if (forcedFreeCamera)
             {
+                return;
+            }
+
+            if (controlled)
+            {
+                SetOrbitCameraTarget(controlled.transform);
                 return;
             }
 
@@ -260,8 +269,35 @@ public class GameCamera : MonoBehaviour
         forcedFreeCamera = false;
     }
 
+    /// <summary>The camera stays on a character played by hand (ManualPlayerController) until StopFollowingControlled.</summary>
+    public void FollowControlled(PlayerController player)
+    {
+        if (!player) return;
+        controlled = player;
+        state = GameCameraType.Controlled;
+        observeCamera.ObservePlayer(player);
+        islandObserver.Observe(null, 0);
+        playerObserver.Observe(player, float.MaxValue);
+        freeCamera.enabled = false;
+        islandObserveCamera.enabled = false;
+        focusTargetCamera.enabled = false;
+        orbitCamera.Manual = true;
+        orbitCamera.TargetTransform = player.transform;
+        orbitCamera.enabled = true;
+    }
+
+    public void StopFollowingControlled()
+    {
+        var player = controlled;
+        controlled = null;
+        orbitCamera.Manual = false;
+        if (player) ObservePlayer(player, ObserveEvent.Automatic);
+        else ObserveNextPlayer();
+    }
+
     public bool ObserveNextIsland()
     {
+        if (controlled) return true;
         if (forcedFreeCamera || gameManager.StreamRaid.IsWar)
             return true;
 
@@ -296,6 +332,7 @@ public class GameCamera : MonoBehaviour
 
     public bool ObserveNextPlayer()
     {
+        if (controlled) return true;
         var playerCount = playerManager.GetPlayerCount(true);
         if (playerCount == 0)
         {
@@ -453,6 +490,7 @@ public class GameCamera : MonoBehaviour
     private void ObservePlayer(PlayerController player, float time)
     {
         if (forcedFreeCamera) return;
+        if (controlled) return;
         if (!CanObservePlayer(player)) return;
 
         observeNextPlayerTimer = time;
@@ -517,5 +555,6 @@ public enum GameCameraType
     Arena,
     Raid,
     Dungeon,
-    Island
+    Island,
+    Controlled
 }

@@ -2534,6 +2534,63 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         LastExecutedTaskTime = GameTime.time;
     }
 
+    /// <summary>
+    /// Played by hand (ManualPlayerController): the task of a clicked target, without walking off to the closest
+    /// training spot. The target's own training spot does the work, as it does in automatic play.
+    /// </summary>
+    public void SetManualTask(TaskType type, string args, Chunk chunk, object target)
+    {
+        args ??= type.ToString().ToLower();
+        if (currentTask != type || taskArgument != args)
+        {
+            var skill = type == TaskType.Fighting ? SkillUtilities.ParseSkill(args) : SkillUtilities.ParseSkill(type.ToString());
+            if (ActiveSkill.IsCombatSkill() && !skill.IsCombatSkill()) Equipment.HideEquipments();
+            ActiveSkill = Skills.SkillTypeListIds.Contains((int)skill) ? skill : Skill.None;
+            currentTask = type;
+            CurrentTaskName = currentTask.ToString();
+            SetTaskArgument(args);
+            TimeSinceLastTaskChange = 0f;
+        }
+        Chunk = chunk;
+        taskTarget = target;
+        if (chunk != null && target != null) chunk.TargetAcquired(this, target);
+    }
+
+    /// <summary>One step of the clicked target's task: into range, then the action. False once it is done or gone.</summary>
+    public bool DoManualTask()
+    {
+        if (Chunk == null || taskTarget == null) return false;
+        if (Chunk.IsTaskCompleted(this, taskTarget))
+        {
+            taskTarget = null;
+            Movement.Unlock();
+            return false;
+        }
+
+        if (!Chunk.CanExecuteTask(this, taskTarget, out var reason))
+        {
+            if (reason == TaskExecutionStatus.OutOfRange)
+            {
+                if (!SetDestination(GetTaskTargetPosition(taskTarget)) && Movement.PathStatus == NavMeshPathStatus.PathInvalid)
+                {
+                    taskTarget = null;
+                    return false;
+                }
+                return true;
+            }
+            if (reason == TaskExecutionStatus.InvalidTarget)
+            {
+                taskTarget = null;
+                return false;
+            }
+            return true;
+        }
+
+        Chunk.ExecuteTask(this, taskTarget);
+        LastExecutedTaskTime = GameTime.time;
+        return true;
+    }
+
     private Vector3 GetTaskTargetPosition(object obj)
     {
         if (obj is IAttackable attackable)

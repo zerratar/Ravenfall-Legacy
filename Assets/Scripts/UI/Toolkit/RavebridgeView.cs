@@ -18,10 +18,12 @@ namespace Shinobytes.UI
         private Button stay;
         private Button play;
         private Button end;
+        private VisualElement choose;
         private bool bound;
         private float nextSecond;
 
-        public static System.Action PlayClicked;
+        /// <summary>More characters to play than the streamer's own in the stream (the Ravebridge character, 6d).</summary>
+        public static System.Func<System.Collections.Generic.IEnumerable<(string Label, System.Action Pick)>> MoreChoices;
 
         private void OnEnable()
         {
@@ -67,7 +69,7 @@ namespace Shinobytes.UI
             var buttons = new VisualElement();
             buttons.AddToClassList("rf-squest-chips");
             stay = Chip(Localization.UI_RAVEBRIDGE_STAY, true, () => { var rb = RavebridgeManager.Instance; if (rb) rb.Attended = true; Redraw(); });
-            play = Chip(Localization.UI_RAVEBRIDGE_PLAY, true, () => PlayClicked?.Invoke());
+            play = Chip(Localization.UI_RAVEBRIDGE_PLAY, true, PlayPressed);
             end = Chip(Localization.UI_RAVEBRIDGE_END, false, () => { var rb = RavebridgeManager.Instance; if (rb) rb.End(); });
             buttons.Add(stay);
             buttons.Add(play);
@@ -76,8 +78,42 @@ namespace Shinobytes.UI
             bar.Add(body);
             bar.Add(buttons);
             column.Add(bar);
+
+            choose?.RemoveFromHierarchy();
+            choose = new VisualElement { name = "ravebridge-choose" };
+            choose.AddToClassList("rf-squest-chips");
+            choose.AddToClassList("rf-ravebridge-choose");
+            choose.style.display = DisplayStyle.None;
+            column.Add(choose);
             bound = true;
             Redraw();
+        }
+
+        /// <summary>Play: who to play (the streamer's own characters here, the Ravebridge character), or Stop.</summary>
+        private void PlayPressed()
+        {
+            if (RavebridgePlay.Playing) { RavebridgePlay.Stop(); Redraw(); return; }
+            var choices = new System.Collections.Generic.List<(string Label, System.Action Pick)>();
+            var game = GameManager.Instance;
+            if (game && game.Players != null)
+            {
+                foreach (var player in game.Players.GetAllPlayers())
+                {
+                    var p = player;
+                    if (p && p.IsBroadcaster && !p.IsBot) choices.Add((p.Name, () => RavebridgePlay.Begin(p)));
+                }
+            }
+            if (MoreChoices != null) choices.AddRange(MoreChoices());
+            if (choices.Count == 1) { choices[0].Pick(); Redraw(); return; }
+
+            choose.Clear();
+            if (choices.Count == 0) choose.Add(new Label(Localization.UI_RAVEBRIDGE_NO_CHARACTER));
+            foreach (var choice in choices)
+            {
+                var c = choice;
+                choose.Add(Chip(c.Label, false, () => { choose.style.display = DisplayStyle.None; c.Pick(); Redraw(); }));
+            }
+            choose.style.display = choose.style.display == DisplayStyle.Flex ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         private static Button Chip(string label, bool primary, System.Action clicked)
@@ -96,6 +132,13 @@ namespace Shinobytes.UI
                 TryBind();
                 if (!bound) return;
             }
+            // Esc stops playing by hand
+            if (RavebridgePlay.Playing && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping)
+            {
+                EscapeKey.Claim();
+                RavebridgePlay.Stop();
+                Redraw();
+            }
             if (Time.unscaledTime >= nextSecond)
             {
                 nextSecond = Time.unscaledTime + 1f;
@@ -109,14 +152,16 @@ namespace Shinobytes.UI
             var rb = RavebridgeManager.Instance;
             var shown = rb && rb.Active && !(VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive);
             bar.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!shown) return;
+            if (!shown) { choose.style.display = DisplayStyle.None; return; }
 
             text.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_BAR, rb.PlayerCount, Clock(Time.time - rb.StartedAt));
             var left = rb.SecondsLeft;
-            meta.text = left >= 0f ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_BAR_FORCED, Clock(left)) : (rb.Forced && !string.IsNullOrEmpty(rb.ForcedReason) ? rb.ForcedReason : string.Empty);
+            meta.text = RavebridgePlay.Playing ? Localization.UI_RAVEBRIDGE_CONTROLS
+                : left >= 0f ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_BAR_FORCED, Clock(left))
+                : (rb.Forced && !string.IsNullOrEmpty(rb.ForcedReason) ? rb.ForcedReason : string.Empty);
             meta.style.display = string.IsNullOrEmpty(meta.text) ? DisplayStyle.None : DisplayStyle.Flex;
             stay.style.display = left >= 0f ? DisplayStyle.Flex : DisplayStyle.None;
-            play.style.display = PlayClicked != null ? DisplayStyle.Flex : DisplayStyle.None;
+            play.text = RavebridgePlay.Playing ? Localization.UI_RAVEBRIDGE_STOP : Localization.UI_RAVEBRIDGE_PLAY;
         }
 
         private static string Clock(float seconds)

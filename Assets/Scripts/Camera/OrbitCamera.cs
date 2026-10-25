@@ -36,6 +36,9 @@ public class OrbitCamera : MonoBehaviour
 
     private Vector3 focusPoint;
 
+    /// <summary>Following a character played by hand: no slow turning by itself, the right mouse turns it.</summary>
+    public bool Manual;
+
     public Transform TargetTransform
     {
         get => targetTransform;
@@ -70,6 +73,13 @@ public class OrbitCamera : MonoBehaviour
             orbitAngles = new Vector2(orbitAngles.x, orbitAngles.y + (GameTime.deltaTime * rotateChangeSpeed));
         }
 
+        if (Manual && Input.GetMouseButton(1) && !Keybinds.IsTyping)
+        {
+            orbitAngles = new Vector2(
+                Mathf.Clamp(orbitAngles.x - Input.GetAxis("Mouse Y") * 3f, MinAngle, MaxAngle),
+                orbitAngles.y + Input.GetAxis("Mouse X") * 4f);
+        }
+
         // Scrolling over a HUD window scrolls the window, not the camera.
         var scrollValue = Shinobytes.UI.DraggableWindow.IsPointerOverWindow ? 0f : CameraSettings.ZoomStep(zoomChangeSpeed);
         
@@ -93,6 +103,7 @@ public class OrbitCamera : MonoBehaviour
 
     private void UpdateRotation()
     {
+        if (Manual) return;
         orbitAngles += RotationSpeed * Time.unscaledDeltaTime * orbitAxis;
     }
 

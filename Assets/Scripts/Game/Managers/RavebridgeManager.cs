@@ -185,7 +185,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         visits.Remove(player.Id);
         player.InRavebridge = false;
         if (Hero == player) Hero = null;
-        if (player.Controlled) player.RevokeControl();
+        if (RavebridgePlay.Playing == player) RavebridgePlay.Stop();
 
         var before = visit.Before;
         player.taskTarget = null;
@@ -219,6 +219,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     public void Forget(PlayerController player)
     {
         if (!player) return;
+        if (RavebridgePlay.Playing == player) RavebridgePlay.Stop();
         visits.Remove(player.Id);
         player.InRavebridge = false;
         if (Hero == player) Hero = null;

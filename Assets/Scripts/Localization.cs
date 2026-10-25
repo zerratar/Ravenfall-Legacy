@@ -390,6 +390,9 @@ public static class Localization
     public static string UI_STREAMER_QUEST_GOAL_ENTRY = "{0}: {1} together ({2}/{3})";
     public static string UI_STREAMER_QUEST_BOUNTY_ENTRY = "{0}: {1} ({2}/{3}, {4} of {5} rewards left: {6} each)";
     public static string UI_STREAMER_QUEST_BOUNTY_DONE_ENTRY = "{0}: you won it!";
+    public static string UI_RAVEBRIDGE_STOP = "Stop";
+    public static string UI_RAVEBRIDGE_CONTROLS = "WASD or a click to walk, click a tree, rock, fish or goblin to get to it, right mouse turns the camera, Esc stops";
+    public static string UI_RAVEBRIDGE_NO_CHARACTER = "Join the stream with your own character, or make a Ravebridge character.";
     public static string UI_RAVEBRIDGE_TITLE = "Ravebridge";
     public static string UI_RAVEBRIDGE_JOIN = "Type {command} to come along";
     public static string UI_RAVEBRIDGE_BAR = "Ravebridge: {0} there, open {1}";
