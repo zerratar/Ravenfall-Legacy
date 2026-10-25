@@ -233,7 +233,12 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
 
 ## Phases
 
-1. **Personal daily quests.** Server catalog, `CharacterQuest`, the tracker for gather, craft, experience and raid or
+1. **Personal daily quests.** Built 2026-10-25: `QuestManager` on the server (the catalog, `CharacterQuest`,
+   `CharacterQuestStats`, `QuestTracker` fed by gathering rounds, experience saves, crafting and producing, raid and
+   dungeon rewards and the game's new `EnemiesDefeated` count), `api/quests`, the QuestCompleted event (49), `!quest`
+   (list, accept, abandon) on both bots and the game, the tavern quest giver's lines, a weekly quest. Tested against
+   the local server: offers, taking, a kill quest finished through the saves, coins paid, the streak counted.
+   First version:  Server catalog, `CharacterQuest`, the tracker for gather, craft, experience and raid or
    dungeon objectives, `!quest`, `!quest accept`, `!quest log`, `!quest abandon`, the tavern quest giver offering
    them, coin, item and experience rewards.
 2. **Stream quests.** Built-in stream quests, `StreamQuest` and contributions, the quest board window and the HUD

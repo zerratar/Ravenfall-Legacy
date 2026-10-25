@@ -413,7 +413,8 @@ namespace RavenNest.SDK.V2
                 RaidCombatStyle = s.RaidCombatStyle,
                 Platform = s.Platform,
                 PlatformUserId = s.PlatformUserId,
-                PlatformUserName = s.PlatformUserName
+                PlatformUserName = s.PlatformUserName,
+                EnemiesDefeated = s.EnemiesDefeated
             };
         }
 

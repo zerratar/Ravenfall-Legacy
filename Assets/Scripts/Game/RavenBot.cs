@@ -165,6 +165,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<PetRacingPlay>("pet_race_play");
         Connection.Register<PetRacingReset>("pet_race_reset");
         Connection.Register<QuestInfo>("quest_info");
+        Connection.Register<QuestCommand>("quest_command");
         Connection.Register<ShopCommand>("shop_command");
         Connection.Register<DecorCommand>("decor_command");
         Connection.Register<ConnectionPing>("ping");

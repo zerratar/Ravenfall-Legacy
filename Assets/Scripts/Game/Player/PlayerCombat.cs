@@ -230,6 +230,15 @@ public class PlayerCombat
             if (isMonster && owner.Island)
                 owner.Island.Statistics.MonstersDefeated++;
 
+            // every player who fought it helped defeat it, as every one of them gets its experience (quests count it)
+            if (isMonster)
+            {
+                foreach (var attacker in enemy.GetAttackers())
+                {
+                    if (attacker is PlayerController helper && helper && !helper.isDestroyed) helper.EnemiesDefeated++;
+                }
+            }
+
             if (!enemy.GivesExperienceWhenKilled)
                 return true;
 

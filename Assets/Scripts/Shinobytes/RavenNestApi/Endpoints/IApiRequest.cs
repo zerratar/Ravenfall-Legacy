@@ -21,5 +21,6 @@ namespace RavenNest.SDK.Endpoints
         Twitch,
         Clan,
         Shop,
+        Quests,
     }
 }

@@ -2364,6 +2364,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
 
     public void AddExp(Skill skill, double factor = 1) => Progression.AddExp(skill, factor);
 
+    /// <summary>Enemies this player helped defeat since the game started; the saves carry it to the server for quests.</summary>
+    public long EnemiesDefeated;
+
     /// <summary>
     ///     Adds experience based on the given factor to the currently trained skill.
     /// </summary>

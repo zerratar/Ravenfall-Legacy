@@ -89,7 +89,10 @@ namespace RavenNest.Protocol
         Platform = 1 << 17,
         PlatformUserId = 1 << 18,
         PlatformUserName = 1 << 19,
-        All = (1u << 20) - 1
+
+        /// <summary>Enemies the character helped defeat (0.9.6, for quests).</summary>
+        EnemiesDefeated = 1 << 20,
+        All = (1u << 21) - 1
     }
 
     /// <summary>
@@ -128,6 +131,13 @@ namespace RavenNest.Protocol
         [Key(22)] public string Platform { get; set; }
         [Key(23)] public string PlatformUserId { get; set; }
         [Key(24)] public string PlatformUserName { get; set; }
+
+        /// <summary>
+        /// How many enemies the character has helped defeat since the game started: a running total, so the server
+        /// counts what it grew by and a repeated or lost save never counts twice; a smaller number than before means
+        /// the game restarted. For quests (0.9.6).
+        /// </summary>
+        [Key(25)] public long EnemiesDefeated { get; set; }
 
         public bool Has(PlayerStateFields field) => (Changed & field) == field;
 

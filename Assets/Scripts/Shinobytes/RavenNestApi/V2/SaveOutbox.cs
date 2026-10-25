@@ -313,7 +313,8 @@ namespace RavenNest.SDK.V2
                 RaidCombatStyle = has(PlayerStateFields.RaidStyle) ? s.RaidCombatStyle : null,
                 Platform = has(PlayerStateFields.Platform) ? s.Platform : null,
                 PlatformUserId = has(PlayerStateFields.PlatformUserId) ? s.PlatformUserId : null,
-                PlatformUserName = has(PlayerStateFields.PlatformUserName) ? s.PlatformUserName : null
+                PlatformUserName = has(PlayerStateFields.PlatformUserName) ? s.PlatformUserName : null,
+                EnemiesDefeated = has(PlayerStateFields.EnemiesDefeated) ? s.EnemiesDefeated : 0
             };
         }
 
@@ -350,6 +351,7 @@ namespace RavenNest.SDK.V2
             if ((now.Platform != last.Platform || now.PlatformUserId != last.PlatformUserId || now.PlatformUserName != last.PlatformUserName)
                 && !string.IsNullOrEmpty(now.PlatformUserId) && !string.IsNullOrEmpty(now.PlatformUserName))
                 d |= PlayerStateFields.Platform | PlayerStateFields.PlatformUserId | PlayerStateFields.PlatformUserName;
+            if (now.EnemiesDefeated != last.EnemiesDefeated) d |= PlayerStateFields.EnemiesDefeated;
             return d;
         }
 

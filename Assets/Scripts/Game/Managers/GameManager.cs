@@ -492,6 +492,7 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<StreamerShopUpdatedEventHandler>((GameEventType)47);
         // a clan's logo, cape image or cape shapes (48)
         RegisterGameEventHandler<ClanLookChangedEventHandler>((GameEventType)48);
+        RegisterGameEventHandler<QuestCompletedEventHandler>((GameEventType)49);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);

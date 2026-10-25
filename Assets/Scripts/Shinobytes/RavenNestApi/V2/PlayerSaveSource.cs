@@ -32,6 +32,9 @@ public struct PlayerStateSnapshot
     public string Platform;
     public string PlatformUserId;
     public string PlatformUserName;
+
+    /// <summary>Enemies the player helped defeat since the game started, for quests (a running count).</summary>
+    public long EnemiesDefeated;
 }
 
 public static class PlayerSaveSource
@@ -133,6 +136,7 @@ public static class PlayerSaveSource
             Platform = string.IsNullOrEmpty(p.User?.Platform) ? "twitch" : p.User.Platform,
             PlatformUserId = p.PlatformId,
             PlatformUserName = p.User?.Username ?? p.Name,
+            EnemiesDefeated = p.EnemiesDefeated,
         };
     }
 
