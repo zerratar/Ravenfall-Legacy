@@ -42,6 +42,9 @@ public class VillageDecorTool : MonoBehaviour
 
     /// <summary>The piece in hand from the tray, or null.</summary>
     public string Armed { get; private set; }
+
+    /// <summary>The piece in hand is one of the viewers' gifts: placed for free.</summary>
+    public bool ArmedGift { get; private set; }
     public VillageDecorItem Selected { get; private set; }
     public bool Moving { get; private set; }
     public bool Busy { get; private set; }
@@ -62,15 +65,17 @@ public class VillageDecorTool : MonoBehaviour
 
     // ---- Starting and stopping -----------------------------------------------------------------
 
-    public void Arm(string piece)
+    public void Arm(string piece, bool gift = false)
     {
         var decor = Decor;
         var info = decor != null ? decor.PieceOf(piece) : null;
         var prefab = decor != null ? decor.PrefabFor(piece) : null;
-        if (info == null || !info.Unlocked || !prefab || Busy) return;
+        // a gift is the viewer's: placeable whatever the village has unlocked
+        if (info == null || !prefab || Busy || (gift ? info.Gifts <= 0 : !info.Unlocked)) return;
 
         Stop();
         Armed = piece;
+        ArmedGift = gift;
         ghost = MakeGhost(prefab);
         // measured as the placed piece will be
         if (!ghost.TryGetComponent(out ghostItem)) ghostItem = ghost.AddComponent<VillageDecorItem>();
@@ -94,6 +99,7 @@ public class VillageDecorTool : MonoBehaviour
         if (Moving && Selected) Selected.transform.SetPositionAndRotation(moveFrom, moveFromRotation);
         Moving = false;
         Armed = null;
+        ArmedGift = false;
         Selected = null;
         Problem = null;
         if (ghost) Destroy(ghost);
@@ -202,8 +208,11 @@ public class VillageDecorTool : MonoBehaviour
         Changed?.Invoke();
         try
         {
-            var (item, error) = await decor.PlaceAsync(Armed, cursor, rotation);
+            var gift = ArmedGift;
+            var (item, error) = await decor.PlaceAsync(Armed, cursor, rotation, gift);
             if (item == null) Failed?.Invoke(ErrorText(error));
+            // the last of a gift placed: nothing left in hand
+            else if (gift && (decor.PieceOf(item.Piece)?.Gifts ?? 0) <= 0) Stop();
             // the next one turned differently, as hands place them
             else Turn(UnityEngine.Random.Range(1, 8) * TurnStep);
         }
@@ -266,6 +275,7 @@ public class VillageDecorTool : MonoBehaviour
         var item = Selected;
         if (decor == null || !item || Busy) return;
         var name = decor.NameOf(item.Piece);
+        var gift = item.Gift;
         Busy = true;
         Changed?.Invoke();
         try
@@ -274,7 +284,7 @@ public class VillageDecorTool : MonoBehaviour
             if (result == null) { Failed?.Invoke(ErrorText(error)); return; }
             Selected = null;
             var refund = RefundText(result.RefundWood, result.RefundOre, result.RefundFish, result.RefundWheat, result.RefundCoins);
-            Failed?.Invoke(string.IsNullOrEmpty(refund)
+            Failed?.Invoke(gift ? string.Format(Localization.UI_DECOR_GIFT_RETURNED, name) : string.IsNullOrEmpty(refund)
                 ? string.Format(Localization.UI_DECOR_REMOVED, name)
                 : string.Format(Localization.UI_DECOR_REMOVED_REFUND, name, refund));
         }
@@ -304,6 +314,7 @@ public class VillageDecorTool : MonoBehaviour
             case "resources": return Localization.UI_DECOR_ERROR_RESOURCES;
             case "locked": return Localization.UI_DECOR_ERROR_LOCKED;
             case "removed": return Localization.UI_DECOR_ERROR_REMOVED;
+            case "nogift": return Localization.UI_DECOR_ERROR_NOGIFT;
             default: return Localization.UI_DECOR_ERROR;
         }
     }

@@ -116,6 +116,10 @@ namespace Shinobytes.UI
 
         // decor: the tray's group and the panel for the piece in hand or selected, made here rather than in the UXML
         private string decorGroup = "Trees";
+        private const string GiftsGroup = "Gifts";
+        private VillageDecor hookedDecor;
+        private string decorUnlockConfirm;
+        private float decorUnlockConfirmUntil;
         private VisualElement decorPanel;
         private VisualElement decorRing;
         private Label decorTitle;
@@ -431,6 +435,22 @@ namespace Shinobytes.UI
             OnActiveChanged(mode.IsActive);
         }
 
+        /// <summary>The village's decor layer, once there is one: gifts from chat and unlocks show in an open tray.</summary>
+        private void HookDecor()
+        {
+            var decor = DecorLayer;
+            if (decor == hookedDecor) return;
+            if (hookedDecor != null) hookedDecor.Changed -= OnDecorLayerChanged;
+            hookedDecor = decor;
+            if (hookedDecor != null) hookedDecor.Changed += OnDecorLayerChanged;
+        }
+
+        private void OnDecorLayerChanged()
+        {
+            if (!bound || mode == null || !mode.IsActive || openCategory < 0) return;
+            if (Categories[openCategory].Decor || !string.IsNullOrEmpty(trayFilter.value)) BuildTray();
+        }
+
         private void Unhook()
         {
             if (mode == null)
@@ -459,6 +479,7 @@ namespace Shinobytes.UI
             }
 
             Hook();
+            HookDecor();
             if (mode == null || !mode.IsActive)
             {
                 return;
@@ -641,7 +662,7 @@ namespace Shinobytes.UI
             var query = trayFilter.value?.Trim() ?? string.Empty;
             if (query.Length > 0)
             {
-                trayGlyph.text = "";
+                trayGlyph.text = "\uf002";
                 trayTitle.text = Localization.UI_BUILD_FILTER_TITLE;
                 BuildFilteredTray(query);
                 return;
@@ -1795,6 +1816,8 @@ namespace Shinobytes.UI
             }
 
             var groups = new List<string>();
+            // the viewers' gifts first, while there are any
+            foreach (var piece in decor.Pieces) if (piece.Gifts > 0) { groups.Add(GiftsGroup); break; }
             foreach (var piece in decor.Pieces) if (!groups.Contains(piece.Group)) groups.Add(piece.Group);
             if (!groups.Contains(decorGroup)) decorGroup = groups.Count > 0 ? groups[0] : null;
             foreach (var group in groups)
@@ -1821,18 +1844,24 @@ namespace Shinobytes.UI
 
             foreach (var piece in decor.Pieces)
             {
-                if (piece.Group == decorGroup) AddDecorCard(decor, piece);
+                if (decorGroup == GiftsGroup ? piece.Gifts > 0 : piece.Group == decorGroup) AddDecorCard(decor, piece, decorGroup == GiftsGroup);
             }
         }
 
-        private void AddDecorCard(VillageDecor decor, RavenNest.SDK.Endpoints.DecorPiece piece)
+        /// <summary>
+        /// A decor piece's card: placed with resources, or (<paramref name="gift"/>) one of the viewers' gifts, placed
+        /// for free. A locked Special piece the town hall allows offers to unlock it with the treasury's coins.
+        /// </summary>
+        private void AddDecorCard(VillageDecor decor, RavenNest.SDK.Endpoints.DecorPiece piece, bool gift = false)
         {
             var key = piece.Key;
+            var buyable = !gift && !piece.Unlocked && CanUnlockWithTreasury(piece);
             var card = new VisualElement();
             card.AddToClassList("rf-build-card");
             card.AddToClassList("rf-build-card--decor");
-            card.EnableInClassList("rf-build-card--locked", !piece.Unlocked);
-            card.EnableInClassList("rf-build-card--armed", mode.Decor.Armed == key);
+            card.EnableInClassList("rf-build-card--locked", !gift && !piece.Unlocked && !buyable);
+            card.EnableInClassList("rf-build-card--gift", gift);
+            card.EnableInClassList("rf-build-card--armed", mode.Decor.Armed == key && mode.Decor.ArmedGift == gift);
 
             var preview = new VisualElement { pickingMode = PickingMode.Ignore };
             preview.AddToClassList("rf-build-card__preview");
@@ -1849,7 +1878,7 @@ namespace Shinobytes.UI
             info.AddToClassList("rf-build-card__info");
             var ring = new VisualElement { pickingMode = PickingMode.Ignore };
             ring.AddToClassList("rf-build-card__ring");
-            var glyph = new Label(DecorGroupGlyph(piece.Group)) { pickingMode = PickingMode.Ignore };
+            var glyph = new Label(gift ? DecorGroupGlyph(GiftsGroup) : DecorGroupGlyph(piece.Group)) { pickingMode = PickingMode.Ignore };
             glyph.AddToClassList("rf-icon");
             glyph.AddToClassList("rf-build-card__glyph");
             ring.Add(glyph);
@@ -1858,21 +1887,34 @@ namespace Shinobytes.UI
             text.style.flexShrink = 1;
             var name = new Label(decor.NameOf(key)) { pickingMode = PickingMode.Ignore };
             name.AddToClassList("rf-build-card__name");
-            var cost = new Label(piece.Unlocked ? DecorCost(piece) : DecorLocked(piece)) { pickingMode = PickingMode.Ignore };
+            var cost = new Label(gift ? GiftText(piece) : piece.Unlocked ? DecorCost(piece) : DecorLocked(piece)) { pickingMode = PickingMode.Ignore };
             cost.AddToClassList("rf-build-card__bonus");
             text.Add(name);
             text.Add(cost);
             info.Add(ring);
             info.Add(text);
 
-            var place = new Button(() =>
+            Button place;
+            if (buyable)
             {
-                mode?.ChooseDecor(key);
-                // the decor panel takes over while placing; the tray would only be in the way
-                OpenCategory(-1);
-            }) { text = Localization.UI_DECOR_PLACE.ToUpperInvariant() }; // as the buildings' BUILD
+                // two clicks, as demolishing: the treasury's coins are the village's
+                var confirming = decorUnlockConfirm == key && Time.unscaledTime < decorUnlockConfirmUntil;
+                place = new Button(() => OnDecorUnlock(key))
+                {
+                    text = (confirming ? Localization.UI_BUILD_DEMOLISH_CONFIRM : Localization.UI_DECOR_UNLOCK).ToUpperInvariant()
+                };
+            }
+            else
+            {
+                place = new Button(() =>
+                {
+                    mode?.ChooseDecor(key, gift);
+                    // the decor panel takes over while placing; the tray would only be in the way
+                    OpenCategory(-1);
+                }) { text = Localization.UI_DECOR_PLACE.ToUpperInvariant() }; // as the buildings' BUILD
+                place.SetEnabled(gift || piece.Unlocked);
+            }
             place.AddToClassList("rf-build-card__build");
-            place.SetEnabled(piece.Unlocked);
 
             card.Add(preview);
             card.Add(info);
@@ -1885,18 +1927,22 @@ namespace Shinobytes.UI
         {
             switch (group)
             {
-                case "Trees": return "";
-                case "Bushes": return "";
-                case "Flowers": return "";
-                case "Rocks": return "";
-                case "Fences": return "";
-                case "Lights": return "";
-                case "Market": return "";
-                case "Farm": return "";
-                case "Village": return "";
-                case "Banners": return "";
-                case "Statues": return "";
-                default: return "";
+                case "Trees": return "\uf1bb";
+                case "Bushes": return "\uf06c";
+                case "Flowers": return "\uf5bb";
+                case "Rocks": return "\uf6fc";
+                case "Fences": return "\uf7a4";
+                case "Lights": return "\uf06d";
+                case "Market": return "\uf54e";
+                case "Farm": return "\uf722";
+                case "Village": return "\uf015";
+                case "Banners": return "\uf024";
+                case "Statues": return "\uf441";
+                case "Christmas": return "\uf7aa";
+                case "Halloween": return "\uf6c9";
+                case "Special": return "\uf005";
+                case GiftsGroup: return "\uf06b";
+                default: return "\uf1bb";
             }
         }
 
@@ -1906,14 +1952,57 @@ namespace Shinobytes.UI
             return string.IsNullOrEmpty(text) ? Localization.UI_DECOR_FREE : text;
         }
 
-        /// <summary>What a locked piece waits for: the town hall's tier first, then the village's level.</summary>
+        /// <summary>
+        /// What a locked piece waits for: the town hall's tier first, then the village's level, then its event (a
+        /// stream during it) or the treasury's coins.
+        /// </summary>
         private static string DecorLocked(RavenNest.SDK.Endpoints.DecorPiece piece)
         {
             var townHall = GameManager.Instance && GameManager.Instance.Village != null ? GameManager.Instance.Village.TownHall : null;
             var tier = townHall ? townHall.Tier : 0;
-            return piece.Level > 0 && tier >= piece.Tier
-                ? string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED_LEVEL, piece.Level)
-                : string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED, piece.Tier + 1);
+            var level = townHall ? townHall.Level : 0;
+            if (tier < piece.Tier) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED, piece.Tier + 1);
+            if (level < piece.Level) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED_LEVEL, piece.Level);
+            if (!string.IsNullOrEmpty(piece.Event)) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED_EVENT, Localization.DecorEvent(piece.Event));
+            if (piece.UnlockCoins > 0) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_UNLOCK_COST, piece.UnlockCoins.ToString("N0", CultureInfo.InvariantCulture));
+            return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED, piece.Tier + 1);
+        }
+
+        /// <summary>A Special piece the town hall and level allow, waiting only for the treasury's coins.</summary>
+        private static bool CanUnlockWithTreasury(RavenNest.SDK.Endpoints.DecorPiece piece)
+        {
+            if (piece.UnlockCoins <= 0 || !string.IsNullOrEmpty(piece.Event)) return false;
+            var townHall = GameManager.Instance && GameManager.Instance.Village != null ? GameManager.Instance.Village.TownHall : null;
+            return townHall && townHall.Tier >= piece.Tier && townHall.Level >= piece.Level;
+        }
+
+        /// <summary>"2 waiting, from Anna, Bo": the viewers' gifts of a piece.</summary>
+        private static string GiftText(RavenNest.SDK.Endpoints.DecorPiece piece)
+        {
+            var names = string.IsNullOrEmpty(piece.GiftedBy) ? new[] { "?" } : piece.GiftedBy.Split(',');
+            var givers = names.Length > 1 ? names[0] + ", " + names[1] : names[0];
+            return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_GIFT_COUNT, piece.Gifts, givers);
+        }
+
+        private async void OnDecorUnlock(string key)
+        {
+            var decor = DecorLayer;
+            if (decor == null) return;
+            if (decorUnlockConfirm != key || Time.unscaledTime >= decorUnlockConfirmUntil)
+            {
+                decorUnlockConfirm = key;
+                decorUnlockConfirmUntil = Time.unscaledTime + 3f;
+                BuildTray();
+                trayCards.schedule.Execute(() => { if (decorUnlockConfirm == key) { decorUnlockConfirm = null; BuildTray(); } }).StartingIn(3100);
+                return;
+            }
+
+            decorUnlockConfirm = null;
+            var error = await decor.UnlockAsync(key);
+            ShowToast(error == null
+                ? string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_UNLOCKED, decor.NameOf(key))
+                : VillageDecorTool.ErrorText(error));
+            BuildTray();
         }
 
         /// <summary>The panel for the decor in hand or selected, built once, in the road panel's look.</summary>
@@ -2010,8 +2099,8 @@ namespace Shinobytes.UI
             if (tool.Armed != null)
             {
                 decorSubtitle.text = Localization.UI_DECOR_PLACING_SUBTITLE;
-                decorCaption.text = Localization.UI_DECOR_COST;
-                decorCost.text = piece != null ? DecorCost(piece) : string.Empty;
+                decorCaption.text = tool.ArmedGift ? Localization.UI_DECOR_GIFT_CAPTION : Localization.UI_DECOR_COST;
+                decorCost.text = piece == null ? string.Empty : tool.ArmedGift ? GiftText(piece) : DecorCost(piece);
                 decorMove.text = Localization.UI_DECOR_STOP;
                 decorRemove.style.display = DisplayStyle.None;
             }
@@ -2020,7 +2109,7 @@ namespace Shinobytes.UI
                 var item = tool.Selected;
                 decorSubtitle.text = tool.Moving ? Localization.UI_DECOR_MOVING_SUBTITLE : item.IsDefault ? Localization.UI_DECOR_ISLAND : Localization.UI_DECOR_PLACED;
                 decorCaption.text = Localization.UI_DECOR_REFUND;
-                decorCost.text = piece != null
+                decorCost.text = item.Gift ? Localization.UI_DECOR_GIFT_BACK : piece != null
                     ? NonEmpty(VillageDecorTool.RefundText(Math.Floor(piece.Wood / 2), Math.Floor(piece.Ore / 2), Math.Floor(piece.Fish / 2), Math.Floor(piece.Wheat / 2), Math.Floor(piece.Coins / 2)))
                     : string.Empty;
                 decorMove.text = Localization.UI_DECOR_MOVE;

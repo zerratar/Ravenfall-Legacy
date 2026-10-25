@@ -28,6 +28,7 @@ prefabPaths["rock_03"] = "Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Prefabs/S
 // middle of its foot (some Synty props have their pivot at a hinge, a corner or half way up), the root carries a
 // VillageDecorItem measured as a rectangle, and the lit ones get the island torches' fire and light, lit by night.
 var kingdom = "Assets/PolygonFantasyKingdom/Prefabs/Props/";
+var xmas = "Assets/polyperfect/Poly Christmas/Prefabs/Christmas/";
 var props = new (string key, string path, string[] extra, float[] fires, float fireScale, bool lift)[]
 {
     ("fence_01", kingdom + "SM_Prop_Fence_01.prefab", null, null, 0, false),
@@ -74,6 +75,39 @@ var props = new (string key, string path, string[] extra, float[] fires, float f
     ("statue_knight_01", kingdom + "SM_Prop_Statue_Knight_01.prefab", null, null, 0, false),
     ("statue_hero_01", kingdom + "SM_Prop_Statue_Hero_01.prefab", null, null, 0, false),
     ("statue_angel_01", kingdom + "SM_Prop_Statue_Angel_01.prefab", null, null, 0, false),
+
+    // phase 3: seasonal pieces (the Christmas pack is table sized: scaled up below) and the treasury's Special pieces
+    ("xmas_tree_01", xmas + "Tree_Christmass.prefab", null, null, 0, false),
+    ("snowman_01", xmas + "Snowman_A.prefab", null, null, 0, false),
+    ("snowman_02", xmas + "Snowman_B.prefab", null, null, 0, false),
+    ("sleigh_01", xmas + "Sleigh_Christmas.prefab", null, null, 0, false),
+    ("gift_pile_01", xmas + "Gift_Christmas_Cube_A.prefab", new[] { xmas + "Gift_Christmas_Long_A.prefab@0.42,0,0.12,1", xmas + "Gift_Christmas_Cylinder_A.prefab@-0.3,0,0.26,1", xmas + "Gift_Christmas_Cube_C.prefab@0.08,0,-0.38,0.8", xmas + "Gift_Christmas_Long_C.prefab@0.05,0.4,0.05,0.7" }, null, 0, false),
+    ("nutcracker_01", xmas + "Nutcracker.prefab", null, null, 0, false),
+    ("candy_cane_01", xmas + "Candy_Cane.prefab", null, null, 0, true),
+    ("gingerbread_hut_01", xmas + "Ginger_House.prefab", null, null, 0, false),
+    ("snow_globe_01", xmas + "Snow_Globe.prefab", null, null, 0, false),
+    ("pumpkin_01", "Assets/PolygonAdventure/Prefabs/Props/SM_Prop_Pumpkin_01.prefab", null, null, 0, false),
+    ("pumpkin_02", "Assets/PolygonAdventure/Prefabs/Props/SM_Prop_Pumpkin_02.prefab", null, null, 0, false),
+    ("gravestone_01", "Assets/PolygonFantasyKingdom/Prefabs/Bonus/SM_Prop_Gravestone_01.prefab", null, null, 0, false),
+    ("gravestone_03", "Assets/PolygonFantasyKingdom/Prefabs/Bonus/SM_Prop_Gravestone_03.prefab", null, null, 0, false),
+    ("grave_01", "Assets/PolygonFantasyKingdom/Prefabs/Bonus/SM_Prop_Gravestone_Dirt_01.prefab", null, null, 0, false),
+    ("scarecrow_01", "Assets/PolygonFantasyKingdom/Prefabs/Bonus/SM_Prop_Scarecrow_01.prefab", null, null, 0, false),
+    ("cauldron_01", kingdom + "SM_Prop_Cauldron_01.prefab", null, null, 0, false),
+    ("coffin_01", "Assets/PolygonDungeon/Prefabs/Props/SM_Prop_Coffin_01.prefab", null, null, 0, false),
+    ("bones_01", "Assets/PolygonFantasyRivals/Prefabs/Props/SM_Prop_Bones_01.prefab", null, null, 0, false),
+    ("fountain_01", "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Fountain_04.prefab", new[] { "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Fountain_04_Insert_01.prefab" }, null, 0, false),
+    ("fountain_02", "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Fountain_02.prefab", new[] { "Assets/PolygonAncientEmpire/Prefabs/Props/SM_Prop_Fountain_02_Insert_01.prefab" }, null, 0, false),
+    ("garden_fountain_01", "Assets/PolygonFantasyKingdom/Prefabs/Environments/SM_Env_Fountain_01.prefab", null, null, 0, false),
+    ("obelisk_01", "Assets/PolygonDungeonRealms/Prefabs/Environments/SM_Env_Dwarf_Obelisk_01.prefab", null, null, 0, false),
+    ("obelisk_02", "Assets/PolygonDungeonRealms/Prefabs/Environments/SM_Env_Obelisk_01.prefab", null, null, 0, false),
+    ("pillar_monument_01", "Assets/PolygonAncientEmpire/Prefabs/Buildings/SM_Bld_Pillar_Monument_01.prefab", null, null, 0, false),
+};
+// models bigger or smaller than their pack made them: the Christmas pack's are table sized, the pillar is 12 m
+var scales = new System.Collections.Generic.Dictionary<string, float>
+{
+    ["xmas_tree_01"] = 1.6f, ["snowman_01"] = 1.3f, ["snowman_02"] = 1.3f, ["gift_pile_01"] = 1.6f, ["nutcracker_01"] = 3.2f,
+    ["candy_cane_01"] = 8f, ["gingerbread_hut_01"] = 6f, ["snow_globe_01"] = 6f, ["pillar_monument_01"] = 0.6f,
+    ["pumpkin_01"] = 2f, ["pumpkin_02"] = 1.6f,
 };
 var decorFolder = "Assets/Village/Decor";
 if (!UnityEditor.AssetDatabase.IsValidFolder(decorFolder)) UnityEditor.AssetDatabase.CreateFolder("Assets/Village", "Decor");
@@ -88,6 +122,7 @@ foreach (var prop in props)
     {
         var model = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(source);
         model.transform.SetParent(root.transform, false);
+        if (scales.TryGetValue(prop.key, out var scale)) model.transform.localScale = UnityEngine.Vector3.one * scale;
         if (prop.extra != null)
             foreach (var extraEntry in prop.extra)
             {

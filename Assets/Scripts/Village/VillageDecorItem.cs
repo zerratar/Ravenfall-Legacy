@@ -40,6 +40,9 @@ public class VillageDecorItem : MonoBehaviour
     /// <summary>Flowers, grass, small stones: never in the way of anything.</summary>
     public bool Small { get; set; }
 
+    /// <summary>A viewer's gift: removing it puts it back with the gifts instead of paying out.</summary>
+    public bool Gift { get; set; }
+
     public void Setup(string defaultKey, string piece)
     {
         this.defaultKey = defaultKey;

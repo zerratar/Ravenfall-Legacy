@@ -104,12 +104,21 @@ village when earned.
    `NightLights`). Props are measured as their own turned rectangle, trees still as the circle round the trunk. The
    statues also need village level 50, 100 and 200. No limits (decided in phase 1: only costs).
 3. The other unlock sources: seasonal events (starting with Christmas), the village treasury, viewer loyalty.
+   Built 2026-10-25, decided with the user the same day:
+   - **Seasonal:** Christmas (9 pieces, December 1 to January 6) and Halloween (9 pieces, October 15 to November 5).
+     A village whose decor loads while an event runs (the game loads it at every start) unlocks that event's pieces
+     for good (`VillageDecorUnlock`, key the event). Placed pieces stay all year.
+   - **Treasury:** a Special group (two fountains, a garden fountain, two obelisks, a great pillar). Each is unlocked
+     once with the village's coins, which the tavern shelves fill (`VillageDecorUnlock`, key the piece), then placed
+     at its normal cost. The card's button reads UNLOCK, with a second click to confirm.
+   - **Viewer gifts:** `!decor gift <name>` (both bots) spends the viewer's loyalty points with the streamer, about one
+     point per two resources the piece costs (coins count double), in steps of 5, at least 50. Any piece the village
+     has unlocked can be given. The gift waits in a Gifts group in the Decor tab (`VillageDecorGift`: how many, the
+     last givers' names) and is placed for free; removing a placed gift puts it back with the gifts, nothing is paid
+     out. `!decor price <name>` tells the price. Every gift is logged (`VillageDecorGiftLog`).
 4. Quests and the website, when they exist.
 
 ## Open questions
 
 - **Prices:** the price of each piece (and so what removing an island tree gives back).
-- **Viewer gifts:** how viewers give decor with loyalty points: a chat command (`!decor give <piece>`) that unlocks the
-  piece for the village (the streamer places it), or a gift that waits in build mode for the streamer to place. And
-  what a piece costs in loyalty points.
 - **Website:** paid decor (real money) or patron perks only?

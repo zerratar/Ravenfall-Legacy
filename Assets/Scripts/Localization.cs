@@ -34,6 +34,15 @@ public static class Localization
     public static string MSG_SHOP_LIST_EMPTY = Meta("shop", "info") + "There is nothing on the tavern shelves right now.";
     public static string MSG_SHOP_STREAMER_ONLY = Meta("shop", "fail") + "Only the streamer can change the tavern shelves.";
     public static string MSG_SHOP_USAGE = Meta("shop", "info") + "Use !shop to see the shelves. The streamer can also use !shop remove <shelf>, !shop price <shelf> <coins> and !shop report.";
+    public static string MSG_DECOR_USAGE = Meta("decor", "info") + "Give the village decor with your loyalty points: !decor gift <name>, for example !decor gift snowman. !decor price <name> shows what it costs.";
+    public static string MSG_DECOR_PRICE = Meta("decor", "info") + "{piece} costs {points} loyalty points to give.";
+    public static string MSG_DECOR_GIFTED = Meta("decor", "gift") + "Thank you! {piece} waits for the streamer to place it. {points} loyalty points spent, {left} left.";
+    public static string MSG_DECOR_NOT_FOUND = Meta("decor", "fail") + "There is no decor called \"{query}\".";
+    public static string MSG_DECOR_AMBIGUOUS = Meta("decor", "fail") + "Which one? {names}";
+    public static string MSG_DECOR_LOCKED = Meta("decor", "fail") + "The village has not unlocked {piece} yet.";
+    public static string MSG_DECOR_POINTS = Meta("decor", "fail") + "{piece} costs {points} loyalty points, you have {left} with this streamer.";
+    public static string MSG_DECOR_NO_USER = Meta("decor", "fail") + "Join the game once with !join to give decor.";
+    public static string MSG_DECOR_FAILED = Meta("decor", "fail") + "Could not give the decor right now, try again in a moment.";
     public static string MSG_SHOP_REMOVED = Meta("shop", "info") + "{itemName} on shelf {shelf} was taken down, and what was left went back.";
     public static string MSG_SHOP_PRICE_SET = Meta("shop", "info") + "Shelf {shelf} ({itemName}) now costs {price} coins each.";
     public static string MSG_SHOP_REPORT = Meta("shop", "info") + "The tavern shelves have made {coins} coins for the village from {items} items, {today} coins in the last day.";
@@ -530,6 +539,18 @@ public static class Localization
     public static string UI_DECOR_PLACE = "Place";
     public static string UI_DECOR_LOCKED = "Needs town hall tier {0}";
     public static string UI_DECOR_LOCKED_LEVEL = "Needs village level {0}";
+    public static string UI_DECOR_EVENT_CHRISTMAS = "Christmas";
+    public static string UI_DECOR_EVENT_HALLOWEEN = "Halloween";
+    public static string UI_DECOR_LOCKED_EVENT = "Stream during {0} to unlock";
+    public static string UI_DECOR_UNLOCK = "Unlock";
+    public static string UI_DECOR_UNLOCK_COST = "Unlock: {0} treasury coins";
+    public static string UI_DECOR_UNLOCKED = "{0} is unlocked for the village";
+    public static string UI_DECOR_GIFT_COUNT = "{0} waiting, from {1}";
+    public static string UI_DECOR_GIFT_CAPTION = "GIFT";
+    public static string UI_DECOR_GIFT_BACK = "Goes back to the gifts";
+    public static string UI_DECOR_GIFT_RETURNED = "{0} went back to the gifts";
+    public static string UI_DECOR_GIFT_TOAST = "{0} gave the village: {1}!";
+    public static string UI_DECOR_ERROR_NOGIFT = "That gift has already been placed.";
     public static string UI_DECOR_NONE = "Decor needs a newer server.";
     public static string UI_DECOR_PLACING_SUBTITLE = "Click to place, R to turn, Esc to stop";
     public static string UI_DECOR_MOVING_SUBTITLE = "Click to put it down, R to turn, Esc to put it back";
@@ -559,6 +580,10 @@ public static class Localization
     public static string UI_DECOR_GROUP_VILLAGE = "Village";
     public static string UI_DECOR_GROUP_BANNERS = "Banners";
     public static string UI_DECOR_GROUP_STATUES = "Statues";
+    public static string UI_DECOR_GROUP_CHRISTMAS = "Christmas";
+    public static string UI_DECOR_GROUP_HALLOWEEN = "Halloween";
+    public static string UI_DECOR_GROUP_SPECIAL = "Special";
+    public static string UI_DECOR_GROUP_GIFTS = "Gifts";
     public static string UI_DECOR_PIECE_TREE_02 = "Round tree";
     public static string UI_DECOR_PIECE_TREE_03 = "Leafy tree";
     public static string UI_DECOR_PIECE_TREE_04 = "Tall tree";
@@ -624,6 +649,30 @@ public static class Localization
     public static string UI_DECOR_PIECE_STATUE_KNIGHT_01 = "Knight statue";
     public static string UI_DECOR_PIECE_STATUE_HERO_01 = "Hero statue";
     public static string UI_DECOR_PIECE_STATUE_ANGEL_01 = "Angel statue";
+    public static string UI_DECOR_PIECE_XMAS_TREE_01 = "Christmas tree";
+    public static string UI_DECOR_PIECE_SNOWMAN_01 = "Snowman";
+    public static string UI_DECOR_PIECE_SNOWMAN_02 = "Tall snowman";
+    public static string UI_DECOR_PIECE_SLEIGH_01 = "Santa's sleigh";
+    public static string UI_DECOR_PIECE_GIFT_PILE_01 = "Gift pile";
+    public static string UI_DECOR_PIECE_NUTCRACKER_01 = "Nutcracker";
+    public static string UI_DECOR_PIECE_CANDY_CANE_01 = "Giant candy cane";
+    public static string UI_DECOR_PIECE_GINGERBREAD_HUT_01 = "Gingerbread hut";
+    public static string UI_DECOR_PIECE_SNOW_GLOBE_01 = "Giant snow globe";
+    public static string UI_DECOR_PIECE_PUMPKIN_01 = "Pumpkin";
+    public static string UI_DECOR_PIECE_PUMPKIN_02 = "Big pumpkin";
+    public static string UI_DECOR_PIECE_GRAVESTONE_01 = "Gravestone";
+    public static string UI_DECOR_PIECE_GRAVESTONE_03 = "Tall gravestone";
+    public static string UI_DECOR_PIECE_GRAVE_01 = "Grave";
+    public static string UI_DECOR_PIECE_SCARECROW_01 = "Scarecrow";
+    public static string UI_DECOR_PIECE_CAULDRON_01 = "Cauldron";
+    public static string UI_DECOR_PIECE_COFFIN_01 = "Coffin";
+    public static string UI_DECOR_PIECE_BONES_01 = "Bones";
+    public static string UI_DECOR_PIECE_FOUNTAIN_01 = "Grand fountain";
+    public static string UI_DECOR_PIECE_FOUNTAIN_02 = "Wall fountain";
+    public static string UI_DECOR_PIECE_GARDEN_FOUNTAIN_01 = "Garden fountain";
+    public static string UI_DECOR_PIECE_OBELISK_01 = "Obelisk";
+    public static string UI_DECOR_PIECE_OBELISK_02 = "Floating obelisk";
+    public static string UI_DECOR_PIECE_PILLAR_MONUMENT_01 = "Great pillar";
     public static string UI_BUILD_PLACE_REJECTED = "The server did not accept the move. Try again in a moment.";
     public static string UI_BUILD_PLACE_UNSUPPORTED = "Moving buildings needs a server update.";
     public static string UI_BUILD_HALL_TITLE = "Town hall";
@@ -1377,6 +1426,14 @@ public static class Localization
     }
 
     /// <summary>A decor group's name: Trees, Bushes, Flowers, Rocks.</summary>
+    /// <summary>A seasonal event's name, as decor that waits for it says it: "Stream during Christmas to unlock".</summary>
+    public static string DecorEvent(string ev)
+    {
+        if (string.IsNullOrEmpty(ev)) return string.Empty;
+        var field = typeof(Localization).GetField("UI_DECOR_EVENT_" + ev.ToUpperInvariant(), System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        return field?.GetValue(null) as string ?? ev;
+    }
+
     public static string DecorGroup(string group)
     {
         if (string.IsNullOrEmpty(group)) return string.Empty;

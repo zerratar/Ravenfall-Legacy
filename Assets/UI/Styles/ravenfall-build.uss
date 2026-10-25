@@ -1899,8 +1899,26 @@
     color: var(--rf-accent);
 }
 
-.rf-build-card--decor .rf-build-card__name {
+.rf-build-card--decor .rf-build-card__name,
+.rf-build-card--decor .rf-build-card__bonus {
     white-space: normal;
+}
+
+/* room for a name and a cost of two lines each, so the buttons line up */
+.rf-build-tray .rf-build-card--decor .rf-build-card__info {
+    min-height: 62px;
+}
+
+/* a viewer's gift: the success colour, as something already paid for */
+.rf-build-card--gift {
+    border-left-color: var(--rf-success);
+    border-right-color: var(--rf-success);
+    border-top-color: var(--rf-success);
+    border-bottom-color: var(--rf-success);
+}
+
+.rf-build-card--gift .rf-build-card__glyph {
+    color: var(--rf-success);
 }
 
 /* the decor panel uses the road panel's look; its cost or refund is one line */

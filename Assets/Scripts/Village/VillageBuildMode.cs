@@ -91,6 +91,12 @@ public class VillageBuildMode : MonoBehaviour
     /// <summary>Raised with a short message when an action fails, for the interface to show.</summary>
     public event Action<string> Failed;
 
+    /// <summary>A short message in build mode's toast, for news from outside it (a viewer's decor gift).</summary>
+    public void Announce(string message)
+    {
+        if (IsActive) Failed?.Invoke(message);
+    }
+
     private GameManager gameManager;
     private Camera worldCamera;
     private readonly RaycastHit[] hits = new RaycastHit[32];
@@ -907,7 +913,7 @@ public class VillageBuildMode : MonoBehaviour
     }
 
     /// <summary>Starts placing a decor piece from the tray; any other selection goes.</summary>
-    public void ChooseDecor(string piece)
+    public void ChooseDecor(string piece, bool gift = false)
     {
         EndPreview();
         Roads.Deselect();
@@ -915,7 +921,7 @@ public class VillageBuildMode : MonoBehaviour
         Selected = null;
         HallSelected = false;
         SetArmed(null);
-        Decor.Arm(piece);
+        Decor.Arm(piece, gift);
         Changed?.Invoke();
     }
 

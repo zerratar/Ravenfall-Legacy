@@ -141,6 +141,20 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<DecorResult, DecorRequest>(ApiRequestTarget.Village, ApiRequestType.Post, decor);
         }
 
+        /// <summary>Unlocks a Special piece for good with the village treasury's coins.</summary>
+        public Task<DecorResult> UnlockDecorAsync(DecorRequest decor)
+        {
+            return request.Create().Identifier("decor").Method("unlock").Build()
+                .SendAsync<DecorResult, DecorRequest>(ApiRequestTarget.Village, ApiRequestType.Post, decor);
+        }
+
+        /// <summary>A viewer's !decor gift, paid with their loyalty points with this streamer.</summary>
+        public Task<DecorGiftResult> GiftDecorAsync(DecorGiftRequest gift)
+        {
+            return request.Create().Identifier("decor").Method("gift").Build()
+                .SendAsync<DecorGiftResult, DecorGiftRequest>(ApiRequestTarget.Village, ApiRequestType.Post, gift);
+        }
+
         public Task<bool> PlaceHouseAsync(int slot, double x, double z, double rotation)
         {
             return request.Create()
@@ -292,6 +306,15 @@ namespace RavenNest.SDK.Endpoints
         public bool Small { get; set; }
         public int Tier { get; set; }
         public int Level { get; set; }
+        /// <summary>The seasonal event that unlocks it (christmas, halloween), or null.</summary>
+        public string Event { get; set; }
+        /// <summary>Treasury coins to unlock it once (the Special pieces), or 0.</summary>
+        public double UnlockCoins { get; set; }
+        /// <summary>A viewer's price in loyalty points (!decor gift).</summary>
+        public long Points { get; set; }
+        /// <summary>Viewers' gifts of it waiting to be placed, and the last givers' names, comma separated.</summary>
+        public long Gifts { get; set; }
+        public string GiftedBy { get; set; }
         public bool Unlocked { get; set; }
         public double Wood { get; set; }
         public double Ore { get; set; }
@@ -312,6 +335,7 @@ namespace RavenNest.SDK.Endpoints
         public double Rotation { get; set; }
         public double Scale { get; set; } = 1;
         public bool Removed { get; set; }
+        public bool Gift { get; set; }
     }
 
     public class DecorRequest
@@ -324,13 +348,37 @@ namespace RavenNest.SDK.Endpoints
         public double Z { get; set; }
         public double Rotation { get; set; }
         public double Scale { get; set; } = 1;
+        /// <summary>Placing one of the viewers' gifts of the piece, free.</summary>
+        public bool Gift { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageDecorGiftRequest.</summary>
+    public class DecorGiftRequest
+    {
+        public string Piece { get; set; }
+        public string Platform { get; set; }
+        public string PlatformId { get; set; }
+        public string UserName { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageDecorGiftResult.</summary>
+    public class DecorGiftResult
+    {
+        public bool Ok { get; set; }
+        /// <summary>unknown, locked, nouser, points or invalid.</summary>
+        public string Error { get; set; }
+        public string Piece { get; set; }
+        public string PieceName { get; set; }
+        public long Points { get; set; }
+        public long PointsLeft { get; set; }
+        public long Gifts { get; set; }
     }
 
     /// <summary>Mirrors RavenNest.Models.VillageDecorResult, with what removing gave back and the resources after it.</summary>
     public class DecorResult
     {
         public bool Ok { get; set; }
-        /// <summary>locked, resources, invalid, unknown or removed.</summary>
+        /// <summary>locked, resources, invalid, unknown, removed, nogift or unlocked.</summary>
         public string Error { get; set; }
         public DecorInfo Decor { get; set; }
         public double RefundWood { get; set; }

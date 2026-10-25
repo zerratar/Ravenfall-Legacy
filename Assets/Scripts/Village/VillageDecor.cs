@@ -175,21 +175,24 @@ public class VillageDecor : MonoBehaviour
         item.Setup(null, row.Piece);
         item.Id = row.Id;
         item.Small = PieceOf(row.Piece)?.Small ?? false;
+        item.Gift = row.Gift;
         placed.Add(item);
         return item;
     }
 
     // ---- Changes, through the server ---------------------------------------------------------
 
-    /// <summary>Places a piece. Null with the reason when the server refused.</summary>
-    public async Task<(VillageDecorItem item, string error)> PlaceAsync(string piece, Vector3 position, float rotation)
+    /// <summary>Places a piece, or one of the viewers' gifts of it (free). Null with the reason when the server refused.</summary>
+    public async Task<(VillageDecorItem item, string error)> PlaceAsync(string piece, Vector3 position, float rotation, bool gift = false)
     {
         var result = await gameManager.RavenNest.Village.PlaceDecorAsync(new DecorRequest
         {
-            Piece = piece, X = position.x, Y = position.y, Z = position.z, Rotation = rotation, Scale = 1,
+            Piece = piece, X = position.x, Y = position.y, Z = position.z, Rotation = rotation, Scale = 1, Gift = gift,
         });
         ApplyResources(result);
         if (result == null || !result.Ok || result.Decor == null) return (null, result?.Error ?? "unknown");
+        var info = PieceOf(piece);
+        if (gift && info != null) info.Gifts = Math.Max(0, info.Gifts - 1);
         var item = Spawn(result.Decor);
         RefreshCovered();
         Changed?.Invoke();
@@ -235,12 +238,67 @@ public class VillageDecor : MonoBehaviour
         }
         else
         {
+            // a gift goes back with the gifts, to be placed again
+            var info = item.Gift ? PieceOf(item.Piece) : null;
+            if (info != null) info.Gifts++;
             placed.Remove(item);
             Destroy(item.gameObject);
         }
 
         Changed?.Invoke();
         return (result, null);
+    }
+
+    /// <summary>Unlocks a Special piece for good with the treasury's coins. The reason when the server refused.</summary>
+    public async Task<string> UnlockAsync(string piece)
+    {
+        var result = await gameManager.RavenNest.Village.UnlockDecorAsync(new DecorRequest { Piece = piece });
+        ApplyResources(result);
+        if (result == null || !result.Ok) return result?.Error ?? "unknown";
+        var info = PieceOf(piece);
+        if (info != null) info.Unlocked = true;
+        Changed?.Invoke();
+        return null;
+    }
+
+    /// <summary>A viewer's gift from chat (!decor gift), paid on the server with their loyalty points with this streamer.</summary>
+    public async Task<DecorGiftResult> GiftAsync(string piece, string platform, string platformId, string userName)
+    {
+        var result = await gameManager.RavenNest.Village.GiftDecorAsync(new DecorGiftRequest
+        {
+            Piece = piece, Platform = platform, PlatformId = platformId, UserName = userName,
+        });
+        var info = PieceOf(piece);
+        if (result != null && result.Ok && info != null)
+        {
+            info.Gifts = result.Gifts;
+            var names = new List<string> { userName };
+            if (!string.IsNullOrEmpty(info.GiftedBy)) names.AddRange(info.GiftedBy.Split(',').Where(n => n.Length > 0 && !n.Equals(userName, StringComparison.OrdinalIgnoreCase)));
+            info.GiftedBy = string.Join(",", names.Take(5));
+            Changed?.Invoke();
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// The piece a viewer means by what they typed: its name in the game's language or in English, or its key,
+    /// whole or in part. Null when nothing (or more than one piece, listed in <paramref name="candidates"/>) fits.
+    /// </summary>
+    public DecorPiece FindPiece(string text, out List<DecorPiece> candidates)
+    {
+        candidates = new List<DecorPiece>();
+        string Normal(string s) => new string((s ?? string.Empty).ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+        var wanted = Normal(text);
+        if (wanted.Length == 0) return null;
+        foreach (var p in pieces)
+        {
+            if (Normal(NameOf(p.Key)) == wanted || Normal(p.Name) == wanted || Normal(p.Key) == wanted) return p;
+        }
+        foreach (var p in pieces)
+        {
+            if (Normal(NameOf(p.Key)).Contains(wanted) || Normal(p.Name).Contains(wanted)) candidates.Add(p);
+        }
+        return candidates.Count == 1 ? candidates[0] : null;
     }
 
     private void ApplyResources(DecorResult result)
