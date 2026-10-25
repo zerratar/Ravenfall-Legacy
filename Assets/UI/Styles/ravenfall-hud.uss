@@ -1941,3 +1941,45 @@
     color: var(--rf-text-on-accent);
     background-color: var(--rf-accent);
 }
+
+/* ---- The Village tab: the streamer's story lines (StoryPanel) ---------------------------------------
+   Each story is told as a talk with its NPC: a speech box with the NPC's name and words, then what the stream must
+   do, and the streamer's buttons (talk, the choice, let chat vote). */
+
+.rf-squest .rf-story__speech {
+    margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-2);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: rgba(0, 0, 0, 0.35);
+    border-left-width: 3px;
+    border-left-color: var(--rf-accent-dim);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-squest .rf-story__npc {
+    font-size: 15px;
+    color: var(--rf-accent-bright);
+    -unity-font-style: bold;
+}
+
+.rf-squest .rf-story__line {
+    margin-top: var(--rf-space-1);
+    font-size: 17px;
+    color: var(--rf-text);
+    -unity-font-style: italic;
+    white-space: normal;
+}
+
+.rf-squest .rf-story__actions {
+    margin-top: var(--rf-space-2);
+    align-items: center;
+}
+
+.rf-squest .rf-story__abandon {
+    margin-left: var(--rf-space-4);
+    opacity: 0.7;
+}

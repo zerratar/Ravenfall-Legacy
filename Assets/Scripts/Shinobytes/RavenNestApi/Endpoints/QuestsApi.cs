@@ -97,6 +97,40 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<StreamerQuestResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
         }
 
+        /// <summary>The streamer's story lines and what they have unlocked (api/quests/village).</summary>
+        public Task<VillageLogData> GetVillageAsync()
+        {
+            return request.Create().Identifier("village").Build()
+                .SendAsync<VillageLogData>(ApiRequestTarget.Quests, ApiRequestType.Get);
+        }
+
+        public Task<VillageStoryResultData> BeginStoryAsync(string key) => StoryAction("begin", key);
+
+        /// <summary>The streamer talks to the story's NPC: a talk step is done.</summary>
+        public Task<VillageStoryResultData> TalkStoryAsync(string key) => StoryAction("talk", key);
+
+        public Task<VillageStoryResultData> AbandonStoryAsync(string key) => StoryAction("abandon", key);
+
+        /// <summary>The streamer makes the story's choice (from 1).</summary>
+        public Task<VillageStoryResultData> ChooseStoryAsync(string key, int option)
+        {
+            return request.Create().Identifier("village").Method("choose").AddParameter(key).AddParameter(option.ToString()).Build()
+                .SendAsync<VillageStoryResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>A viewer brings the story's delivery item from their inventory (!quest give).</summary>
+        public Task<VillageStoryResultData> GiveStoryAsync(Guid characterId)
+        {
+            return request.Create().Identifier("village").Method("give").AddParameter(characterId.ToString()).Build()
+                .SendAsync<VillageStoryResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        private Task<VillageStoryResultData> StoryAction(string action, string key)
+        {
+            return request.Create().Identifier("village").Method(action).AddParameter(key).Build()
+                .SendAsync<VillageStoryResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
         /// <summary>The titles worn by the characters in this stream, for the name tags.</summary>
         public Task<SessionTitlesData> GetTitlesAsync()
         {
@@ -410,5 +444,60 @@ namespace RavenNest.SDK.Endpoints
         public long Coins { get; set; }
         public long Items { get; set; }
         public long Loyalty { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageStoryInfo: one of the streamer's story lines at its current step.</summary>
+    public class VillageStoryData
+    {
+        public string Key { get; set; }
+        /// <summary>0 not begun, 1 under way, 2 finished, 4 given up.</summary>
+        public int State { get; set; }
+        public int Step { get; set; }
+        public int Steps { get; set; }
+        /// <summary>talk, deliver, gather, kill, raid, dungeon, find, viewers or choice.</summary>
+        public string Kind { get; set; }
+        public string Target { get; set; }
+        public int Skill { get; set; }
+        public long Amount { get; set; }
+        public long Progress { get; set; }
+        public int Options { get; set; }
+        /// <summary>"6=2": the choice at step 6 was option 2.</summary>
+        public string Choices { get; set; }
+        public StreamQuestHelperData[] Helpers { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageLog.</summary>
+    public class VillageLogData
+    {
+        public VillageStoryData[] Stories { get; set; }
+        public string[] Unlocks { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageStoryResult.</summary>
+    public class VillageStoryResultData
+    {
+        public bool Ok { get; set; }
+        /// <summary>busy, taken, done, unknown, notstep, nothing, none, notinsession.</summary>
+        public string Error { get; set; }
+        public VillageStoryData Story { get; set; }
+        public long Given { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageStoryProgress, the VillageStoryProgress event's data.</summary>
+    public class VillageStoryProgressData
+    {
+        public VillageStoryData Story { get; set; }
+        public int StepDone { get; set; }
+        public Guid FinderId { get; set; }
+        public string FinderName { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.VillageStoryCompleted, the VillageStoryCompleted event's data.</summary>
+    public class VillageStoryCompletedData
+    {
+        public VillageStoryData Story { get; set; }
+        public string[] Unlocks { get; set; }
+        public string DecorUnlocked { get; set; }
+        public StreamQuestHelperData[] Helpers { get; set; }
     }
 }

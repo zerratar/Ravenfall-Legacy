@@ -10,13 +10,19 @@ namespace Shinobytes.UI
     /// helpers), a small pill there when none does, and the quest window that either opens: today's three offers to
     /// start, or the running quest with its top helpers and a stop button. Clicking a quest board in the world (by the
     /// town hall, or in the tavern) opens the window too, so it is found without build mode or chat. A second tab holds
-    /// the streamer's own quests (StreamerQuestPanel); a stream goal the streamer wrote shows on the bar as well.
+    /// the streamer's own quests (StreamerQuestPanel); a stream goal the streamer wrote shows on the bar as well. A third,
+    /// Village, holds the streamer's story lines (StoryPanel); clicking a story's NPC in the world (the Ironhill
+    /// runestone, the mangrove island) opens it on that story.
     /// </summary>
     /// <remarks>Shares the connection warnings' document; ConnectionStatusView adds it. Built in code.</remarks>
     [RequireComponent(typeof(UIDocument))]
     public class StreamQuestView : MonoBehaviour
     {
         private const string BoardPrefix = "SM_Prop_Quest_Board";
+        private const string RunestoneName = "Runestone Event";
+        private const string MangroveName = "Mangrove";
+
+        private enum Clicked { Nothing, Board, Runestone, Mangrove }
         private const int TopHelpersShown = 5;
 
         private static readonly RaycastHit[] hits = new RaycastHit[32];
@@ -34,6 +40,7 @@ namespace Shinobytes.UI
         private ScrollView scroll;
         private VisualElement content;
         private StreamerQuestPanel streamerPanel;
+        private StoryPanel storyPanel;
         private int tab;
         private Label hint;
         private Label error;
@@ -51,14 +58,17 @@ namespace Shinobytes.UI
             bound = false;
             StreamQuests.Changed += DataChanged;
             StreamerQuests.Changed += DataChanged;
+            StoryLog.Changed += DataChanged;
             Languages.Changed += Redraw;
             streamerPanel ??= new StreamerQuestPanel(Redraw, ShowError);
+            storyPanel ??= new StoryPanel(Redraw, ShowError);
         }
 
         private void OnDisable()
         {
             StreamQuests.Changed -= DataChanged;
             StreamerQuests.Changed -= DataChanged;
+            StoryLog.Changed -= DataChanged;
             Languages.Changed -= Redraw;
             bound = false;
         }
@@ -70,7 +80,17 @@ namespace Shinobytes.UI
             error.text = string.Empty;
             StreamQuests.RefreshSoon();
             StreamerQuests.RefreshSoon();
+            StoryLog.RefreshSoon();
             Redraw();
+        }
+
+        /// <summary>Opens the window on one of the streamer's story lines, as its NPC would.</summary>
+        public void OpenStory(string key)
+        {
+            if (!bound) return;
+            tab = 2;
+            storyPanel.Focus = key;
+            Open();
         }
 
         public void Close()
@@ -158,6 +178,7 @@ namespace Shinobytes.UI
             var game = GameManager.Instance;
             StreamQuests.Tick(game, Time.unscaledTime);
             StreamerQuests.Tick(game, Time.unscaledTime);
+            StoryLog.Tick(game, Time.unscaledTime);
             QuestTitles.Tick(game, Time.unscaledTime);
 
             // the clock and the bar's numbers once a second
@@ -166,9 +187,18 @@ namespace Shinobytes.UI
                 nextSecond = Time.unscaledTime + 1f;
                 UpdateBar();
                 if (windowOpen && StreamQuests.Active != null) UpdateActiveTimes();
+                if (windowOpen && tab == 2 && StoryLog.Voting) Redraw(); // the vote's countdown
             }
 
-            if (Input.GetMouseButtonDown(0) && BoardUnderMouse()) Open();
+            if (Input.GetMouseButtonDown(0))
+            {
+                switch (UnderMouse())
+                {
+                    case Clicked.Board: storyPanel.Focus = null; Open(); break;
+                    case Clicked.Runestone: OpenStory("runestone"); break;
+                    case Clicked.Mangrove: OpenStory("bananas"); break;
+                }
+            }
             if (windowOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping) Close();
         }
 
@@ -235,17 +265,23 @@ namespace Shinobytes.UI
             SetDisplay(window, windowOpen);
             if (!windowOpen) return;
 
-            windowTitle.text = Localization.UI_STREAM_QUEST_TITLE;
-            hint.text = tab == 1 ? Localization.UI_STREAMER_QUEST_HINT : Localization.UI_STREAM_QUEST_HINT;
+            windowTitle.text = tab == 2 && storyPanel.Focus != null ? StoryLog.Npc(storyPanel.Focus) : Localization.UI_STREAM_QUEST_TITLE;
+            hint.text = tab == 2 ? Localization.UI_STORY_HINT : tab == 1 ? Localization.UI_STREAMER_QUEST_HINT : Localization.UI_STREAM_QUEST_HINT;
             content.Clear();
             activeTime = null;
 
             tabs.Clear();
             tabs.Add(Tab(Localization.UI_STREAM_QUEST_TAB, 0));
             tabs.Add(Tab(Localization.UI_STREAMER_QUEST_TAB, 1));
+            tabs.Add(Tab(Localization.UI_STORY_TAB, 2));
             if (tab == 1)
             {
                 streamerPanel.Build(content);
+                return;
+            }
+            if (tab == 2)
+            {
+                storyPanel.Build(content);
                 return;
             }
 
@@ -415,27 +451,32 @@ namespace Shinobytes.UI
             return null;
         }
 
-        /// <summary>A click on a quest board in the world, not on the HUD and not while building.</summary>
-        private static bool BoardUnderMouse()
+        /// <summary>
+        /// A click in the world, not on the HUD and not while building: a quest board, the Ironhill runestone, or the
+        /// mangrove island (the monkey chief's).
+        /// </summary>
+        private static Clicked UnderMouse()
         {
-            if (HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement() || DraggableWindow.IsPointerOverWindow) return false;
-            if (VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive) return false;
+            if (HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement() || DraggableWindow.IsPointerOverWindow) return Clicked.Nothing;
+            if (VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive) return Clicked.Nothing;
             var cam = Camera.main;
-            if (!cam) return false;
+            if (!cam) return Clicked.Nothing;
 
-            var count = Physics.RaycastNonAlloc(cam.ScreenPointToRay(Input.mousePosition), hits, 250f, ~0, QueryTriggerInteraction.Ignore);
+            var count = Physics.RaycastNonAlloc(cam.ScreenPointToRay(Input.mousePosition), hits, 1000f, ~0, QueryTriggerInteraction.Ignore);
             var nearest = -1;
             for (var i = 0; i < count; ++i)
             {
                 if (nearest < 0 || hits[i].distance < hits[nearest].distance) nearest = i;
             }
 
-            if (nearest < 0) return false;
+            if (nearest < 0) return Clicked.Nothing;
             for (var t = hits[nearest].collider.transform; t; t = t.parent)
             {
-                if (t.name.StartsWith(BoardPrefix, System.StringComparison.Ordinal)) return true;
+                if (t.name.StartsWith(BoardPrefix, System.StringComparison.Ordinal)) return hits[nearest].distance <= 250f ? Clicked.Board : Clicked.Nothing;
+                if (t.name == RunestoneName) return Clicked.Runestone;
+                if (t.name == MangroveName && t.parent && t.parent.name == "Islands") return Clicked.Mangrove;
             }
-            return false;
+            return Clicked.Nothing;
         }
 
         private static float Progress(StreamQuestData q) => q.Amount > 0 ? Mathf.Clamp01((float)q.Progress / q.Amount) : 0f;

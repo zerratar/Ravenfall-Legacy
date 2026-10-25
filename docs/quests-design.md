@@ -283,8 +283,21 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
    (the running quests and the form), the streamer's goal on the HUD bar, `!quest` shows the bounties with each
    viewer's own progress, `!quest stream` the goal, chat announcements on posting, claiming and ending.
    Later: per-streamer redeemables that only that streamer's loyalty points buy (the user's idea, 2026-10-25).
-5. **Places and islands.** The runestone chain, the banana island chain and its island unlock, island unlocks per
-   streamer, NPC dialogue for the streamer.
+5. **The streamer's quest log, places and islands.** Decided with the user 2026-10-25: streamers get quests of their
+   own, given to them as the village's leader, that need the viewers' help; the places' chains are the first of
+   them. Built 2026-10-25 (5a): `VillageStories` (story lines as data; steps: talk, deliver, gather, kill, raid,
+   dungeon, find, viewers, choice), `VillageStoryManager` (one story at a time; `VillageStory`, `VillageStoryHelper`,
+   `StreamerUnlock`), `api/quests/village` (log, begin, talk, choose, give, abandon), events VillageStoryProgress (54)
+   and VillageStoryCompleted (55). Viewers help by playing (kills, raids, dungeons), by finding the story's thing
+   while gathering (named in chat), by bringing items with `!quest give`, and items gathering drops during a delivery
+   step go to the village by themselves. The streamer talks and chooses in the quest window's Village tab, or by
+   clicking the NPC in the world (the runestone, the mangrove island), and can let chat vote (`!quest vote 2`, a
+   minute). Rewards: the story's decor piece, unlocks (an island, the streamer's title for their own characters), a
+   village perk (+5% experience; the runestone's depends on the choice: Strength for combat, Craft for crafting,
+   cooking, brewing and clan enchanting, Nature for gathering) and coins for the helpers. The first two stories: the
+   sleeping runestone (Ironhill; its text and glow follow the story) and insufficient bananas (the mangrove island;
+   the sign turns to "sufficient bananas"). Still to come (5b): the mangrove island as a playable island that the
+   unlock opens (a new Island value, ferry, training spots, navmesh), then more stories, and hero mode steps.
 6. **Ravebridge.** Finishing the island (buildings, NPCs, monsters), its chain and event, rebirth.
 7. **Hero mode**, with its own design doc first.
 

@@ -104,7 +104,8 @@ public class PlayerProgression
 
         var xp = GameMath.Exp.CalculateExperience(nextLevel, skill, factor, GetExpMultiplier(skill), GetMultiplierFactor());
 
-        return xp * Mathf.Max(1, player.GetModifiers().ExpMultiplier);
+        // and the village's perks from the streamer's story lines (StoryLog)
+        return xp * Mathf.Max(1, player.GetModifiers().ExpMultiplier) * StoryLog.ExpFactor(skill);
     }
 
     /// <summary>

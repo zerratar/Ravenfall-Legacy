@@ -11,7 +11,8 @@ using RavenNest.SDK.Endpoints;
 /// !quest chains, !quest begin cat, !quest deliver, !quest answer 2, !quest abandon chain. Titles and achievements:
 /// !quest title (also !title) and !quest achievements (also !achievements). Progress is counted on the server; in the
 /// tavern the quest giver speaks too. !quest stream is the stream quest (phase 2): what it is, and start and stop for
-/// the streamer and the moderators.
+/// the streamer and the moderators. The streamer's story lines (phase 5): !quest village shows the step, !quest give
+/// brings its items to the village, !quest vote 2 votes on its choice when the streamer lets chat decide.
 /// </summary>
 public class QuestCommand : ChatBotCommandHandler<string>
 {
@@ -39,6 +40,24 @@ public static class QuestChat
         if (sub == "stream" || sub == "s")
         {
             await StreamAsync(game, argument, parts.Length > 2 ? parts[2] : "", gm, client);
+            return;
+        }
+
+        // the streamer's story is the village's: anyone may look and vote
+        if (sub == "vote")
+        {
+            if (!StoryLog.Voting) client.SendReply(gm, Localization.MSG_STORY_NO_VOTE);
+            else if (!int.TryParse(argument, out var option) || !StoryLog.Vote(gm.Sender.Id != System.Guid.Empty ? gm.Sender.Id.ToString() : gm.Sender.PlatformId, option))
+                client.SendReply(gm, Localization.MSG_STORY_VOTE_USAGE);
+            return;
+        }
+
+        if (sub == "village" || sub == "story" || sub == "v")
+        {
+            await StoryLog.RefreshAsync(game);
+            var story = StoryLog.ActiveStory;
+            if (story == null) client.SendReply(gm, Localization.MSG_STORY_NONE);
+            else client.SendReply(gm, Localization.MSG_STORY_INFO, StoryLog.Name(story.Key), story.Step + 1, story.Steps, StoryLog.Npc(story.Key), StoryLog.Line(story.Key, story.Step), StoryLog.Task(story));
             return;
         }
 
@@ -87,9 +106,13 @@ public static class QuestChat
                     return;
 
                 case "deliver":
-                case "give":
                 case "handin":
                     await DeliverAsync(game, player, gm, client);
+                    return;
+
+                case "give":
+                case "donate":
+                    await GiveAsync(game, player, gm, client);
                     return;
 
                 case "answer":
@@ -394,6 +417,28 @@ public static class QuestChat
             case "notstep": client.SendReply(gm, Localization.MSG_QUEST_NOT_ANSWER, Task(q)); break;
             case "unknown" when q == null: client.SendReply(gm, Localization.MSG_QUEST_NO_CHAIN); break;
             default: client.SendReply(gm, Localization.MSG_QUEST_ANSWER_USAGE); break;
+        }
+    }
+
+    /// <summary>!quest give: the items the streamer's story asks for, from this player's inventory to the village.</summary>
+    private static async System.Threading.Tasks.Task GiveAsync(GameManager game, PlayerController player, GameMessage gm, GameClient client)
+    {
+        var result = await game.RavenNest.Quests.GiveStoryAsync(player.Id);
+        if (result == null) { client.SendReply(gm, Localization.MSG_QUEST_FAILED); return; }
+        var s = result.Story;
+        if (result.Ok)
+        {
+            client.SendReply(gm, Localization.MSG_STORY_GIVEN, Number(result.Given), s.Target, Number(s.Progress), Number(s.Amount));
+            StoryLog.RefreshSoon();
+            return;
+        }
+
+        switch (result.Error)
+        {
+            case "nothing": client.SendReply(gm, Localization.MSG_STORY_GIVE_NOTHING, s.Target, StoryLog.Task(s)); break;
+            case "notstep": client.SendReply(gm, Localization.MSG_STORY_GIVE_NOTSTEP, StoryLog.Task(s)); break;
+            case "none": client.SendReply(gm, Localization.MSG_STORY_NONE); break;
+            default: client.SendReply(gm, Localization.MSG_QUEST_FAILED); break;
         }
     }
 
