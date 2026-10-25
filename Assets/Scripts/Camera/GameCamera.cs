@@ -485,6 +485,7 @@ public class GameCamera : MonoBehaviour
     private bool CanObserveIsland(int totalPlayerCount, IslandController island)
     {
         if (island.AllowRaidWar) return false;
+        if (island.EventOnly && island.GetPlayers().Count == 0) return false;
 
         if (PlayerSettings.Instance.CanObserveEmptyIslands.GetValueOrDefault())
         {

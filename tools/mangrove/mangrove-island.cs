@@ -77,6 +77,7 @@ sphere.radius = 115f;
 island.Island = (RavenNest.Models.Island)8;
 island.Identifier = "Mangrove";
 island.LevelRequirement = 1;
+island.OpenToAllLevels = true;
 island.AllowRaidWar = false;
 
 // its own navmesh, in its own area ("Mangrove", 3), which agents on the island keep to (NavMeshHelper): the world's

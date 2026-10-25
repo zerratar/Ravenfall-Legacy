@@ -133,9 +133,9 @@ public class Chunk : MonoBehaviour
 
             var s = player.Stats;
 
-            // the mangrove island is open to every level and gives everyone the full island factor (its own bonus
-            // comes on top, StoryLog.ExpFactor); it has no level range in the IslandManager tables
-            if (this.Island && this.Island.Island == IslandController.MangroveIsland)
+            // islands open to every level (the mangrove island, Ravebridge) give everyone the full island factor (the
+            // mangrove island's bonus comes on top, StoryLog.ExpFactor); they have no level range in the IslandManager tables
+            if (this.Island && this.Island.OpenToAllLevels)
             {
                 var trained = taskType == TaskType.Fighting ? player.GetActiveSkillStat() : player.GetSkill(taskType);
                 if (trained != null && player.AutoTrainTargetLevel > 0 && player.AutoTrainTargetLevel <= trained.Level)

@@ -14,6 +14,13 @@ public class IslandController : MonoBehaviour
     public Transform CameraPanTarget;
 
     public bool AllowRaidWar;
+
+    /// <summary>Open to every level, with the full island experience factor for everyone (the mangrove island, Ravebridge).</summary>
+    public bool OpenToAllLevels;
+
+    /// <summary>Only an event takes players here (Ravebridge): left out of the island tour while nobody is on it.</summary>
+    public bool EventOnly;
+
     public Transform RaiderSpawningPoint;
     public Transform StreamerSpawningPoint;
 
@@ -41,6 +48,7 @@ public class IslandController : MonoBehaviour
     public bool Locked => Island == MangroveIsland && StoryLog.Latest != null && !StoryLog.HasUnlock("island_mangrove");
 
     public const RavenNest.Models.Island MangroveIsland = (RavenNest.Models.Island)8;
+    public const RavenNest.Models.Island RavebridgeIsland = (RavenNest.Models.Island)9;
 
     public IslandStatistics Statistics = new IslandStatistics();
 
