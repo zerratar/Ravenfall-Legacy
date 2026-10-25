@@ -8,6 +8,7 @@ using RavenNest.SDK.Endpoints;
 /// !quest: a player's personal quests (phase 1 of docs/quests-design.md). With nothing after it, the quests taken
 /// with their progress, today's three offers and this week's quest; !quest accept 2 (or weekly) takes one, and
 /// !quest abandon 1 gives up a taken one. Progress is counted on the server; in the tavern the quest giver speaks too.
+/// !quest stream is the stream quest (phase 2): what it is, and start and stop for the streamer and the moderators.
 /// </summary>
 public class QuestCommand : ChatBotCommandHandler<string>
 {
@@ -27,16 +28,23 @@ public static class QuestChat
 {
     public static async System.Threading.Tasks.Task HandleAsync(GameManager game, PlayerManager players, string arguments, GameMessage gm, GameClient client)
     {
+        var parts = (arguments ?? "").Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+        var sub = parts.Length > 0 ? parts[0].ToLowerInvariant() : "";
+        var argument = parts.Length > 1 ? parts[1].ToLowerInvariant() : "";
+
+        // the stream quest is everyone's, playing or not
+        if (sub == "stream" || sub == "s")
+        {
+            await StreamAsync(game, argument, parts.Length > 2 ? parts[2] : "", gm, client);
+            return;
+        }
+
         var player = players.GetPlayer(gm.Sender);
         if (!player)
         {
             client.SendReply(gm, Localization.MSG_NOT_PLAYING);
             return;
         }
-
-        var parts = (arguments ?? "").Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
-        var sub = parts.Length > 0 ? parts[0].ToLowerInvariant() : "";
-        var argument = parts.Length > 1 ? parts[1].ToLowerInvariant() : "";
 
         try
         {
@@ -89,6 +97,77 @@ public static class QuestChat
         catch (Exception exc)
         {
             Shinobytes.Debug.LogError("!quest failed: " + exc);
+            client.SendReply(gm, Localization.MSG_QUEST_FAILED);
+        }
+    }
+
+    /// <summary>
+    /// !quest stream: how the stream quest goes, or today's offers; !quest stream start 2 and !quest stream stop for
+    /// the streamer and the moderators (the quest window does the same, see StreamQuestView).
+    /// </summary>
+    private static async System.Threading.Tasks.Task StreamAsync(GameManager game, string action, string argument, GameMessage gm, GameClient client)
+    {
+        try
+        {
+            var user = gm.Sender;
+            var allowed = user.IsBroadcaster || user.IsModerator || user.IsGameModerator || user.IsGameAdministrator;
+            switch (action)
+            {
+                case "start":
+                case "begin":
+                    {
+                        if (!allowed) { client.SendReply(gm, Localization.MSG_STREAM_QUEST_NOT_ALLOWED); return; }
+                        if (!int.TryParse(argument, out var number) || number < 1 || number > 3) { client.SendReply(gm, Localization.MSG_STREAM_QUEST_USAGE); return; }
+                        var result = await StreamQuests.StartAsync(game, number - 1);
+                        if (result == null) client.SendReply(gm, Localization.MSG_QUEST_FAILED);
+                        else if (!result.Ok && result.Error == "running") client.SendReply(gm, Localization.MSG_STREAM_QUEST_RUNNING, StreamQuests.Text(result.Quest));
+                        else if (!result.Ok) client.SendReply(gm, Localization.MSG_QUEST_FAILED);
+                        // started: StreamQuests tells the whole chat
+                        return;
+                    }
+
+                case "stop":
+                case "end":
+                    {
+                        if (!allowed) { client.SendReply(gm, Localization.MSG_STREAM_QUEST_NOT_ALLOWED); return; }
+                        var result = await StreamQuests.StopAsync(game);
+                        if (result == null || (!result.Ok && result.Error != "none")) client.SendReply(gm, Localization.MSG_QUEST_FAILED);
+                        else if (!result.Ok) client.SendReply(gm, Localization.MSG_STREAM_QUEST_NONE);
+                        // stopped: the server's StreamQuestEnded tells the whole chat
+                        return;
+                    }
+
+                case "":
+                case "info":
+                    break;
+
+                default:
+                    client.SendReply(gm, Localization.MSG_STREAM_QUEST_USAGE);
+                    return;
+            }
+
+            await StreamQuests.RefreshAsync(game);
+            var state = StreamQuests.Latest;
+            if (state == null) { client.SendReply(gm, Localization.MSG_QUEST_FAILED); return; }
+
+            var q = StreamQuests.Active;
+            if (q != null)
+            {
+                client.SendReply(gm, Localization.MSG_STREAM_QUEST_INFO, StreamQuests.Text(q), Number(q.Progress), Number(q.Amount),
+                    StreamQuests.MinutesLeft(q), q.Helpers, StreamQuests.Reward(q));
+                return;
+            }
+
+            var offers = new List<string>();
+            foreach (var o in state.Offers ?? Array.Empty<StreamQuestData>())
+            {
+                offers.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_OFFER_ENTRY, o.Slot + 1, StreamQuests.Text(o), o.Minutes));
+            }
+            client.SendReply(gm, Localization.MSG_STREAM_QUEST_OFFERS, offers.Count > 0 ? string.Join(", ", offers) : Localization.UI_QUEST_NO_OFFERS);
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("!quest stream failed: " + exc);
             client.SendReply(gm, Localization.MSG_QUEST_FAILED);
         }
     }

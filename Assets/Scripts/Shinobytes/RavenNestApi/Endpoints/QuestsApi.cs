@@ -34,6 +34,26 @@ namespace RavenNest.SDK.Endpoints
             return request.Create().Identifier(characterId.ToString()).Method("abandon").AddParameter(questId).Build()
                 .SendAsync<QuestActionData>(ApiRequestTarget.Quests, ApiRequestType.Post);
         }
+
+        /// <summary>The stream's quest: the running one and today's three offers (api/quests/stream).</summary>
+        public Task<StreamQuestStateData> GetStreamAsync()
+        {
+            return request.Create().Identifier("stream").Build()
+                .SendAsync<StreamQuestStateData>(ApiRequestTarget.Quests, ApiRequestType.Get);
+        }
+
+        /// <summary>Starts one of today's stream quest offers (slot 0 to 2).</summary>
+        public Task<StreamQuestResultData> StartStreamAsync(int slot)
+        {
+            return request.Create().Identifier("stream").Method("start").AddParameter(slot.ToString()).Build()
+                .SendAsync<StreamQuestResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        public Task<StreamQuestResultData> StopStreamAsync()
+        {
+            return request.Create().Identifier("stream").Method("stop").Build()
+                .SendAsync<StreamQuestResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
     }
 
     /// <summary>Mirrors RavenNest.Models.QuestInfo: a quest, worded by the game from its key and numbers.</summary>
@@ -83,5 +103,61 @@ namespace RavenNest.SDK.Endpoints
         public Guid CharacterId { get; set; }
         public QuestData Quest { get; set; }
         public int Streak { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamQuestInfo: a goal the whole stream works on together.</summary>
+    public class StreamQuestData
+    {
+        public Guid Id { get; set; }
+        public string Key { get; set; }
+        public int Slot { get; set; }
+        /// <summary>gather, kill, make, levels, raid or dungeon.</summary>
+        public string Objective { get; set; }
+        public int Skill { get; set; }
+        public long Amount { get; set; }
+        public long Progress { get; set; }
+        /// <summary>0 offered, 1 running, 2 done, 3 out of time, 4 stopped.</summary>
+        public int State { get; set; }
+        public int Minutes { get; set; }
+        public DateTime Ends { get; set; }
+        public long RewardVillageCoins { get; set; }
+        /// <summary>1 wood, 2 ore, 3 fish, 4 wheat, or 0.</summary>
+        public int RewardResource { get; set; }
+        public long RewardResourceAmount { get; set; }
+        public long RewardHelperCoins { get; set; }
+        public int Helpers { get; set; }
+        public StreamQuestHelperData[] TopHelpers { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamQuestHelper.</summary>
+    public class StreamQuestHelperData
+    {
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+        public long Amount { get; set; }
+        public long Coins { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamQuestState.</summary>
+    public class StreamQuestStateData
+    {
+        public StreamQuestData Active { get; set; }
+        public StreamQuestData[] Offers { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamQuestResult.</summary>
+    public class StreamQuestResultData
+    {
+        public bool Ok { get; set; }
+        /// <summary>running, unknown or none.</summary>
+        public string Error { get; set; }
+        public StreamQuestData Quest { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamQuestEnded, the StreamQuestEnded event's data.</summary>
+    public class StreamQuestEndedData
+    {
+        public StreamQuestData Quest { get; set; }
+        public StreamQuestHelperData[] Helpers { get; set; }
     }
 }

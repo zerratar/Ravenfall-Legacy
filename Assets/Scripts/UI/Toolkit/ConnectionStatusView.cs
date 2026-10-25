@@ -46,6 +46,8 @@ namespace Shinobytes.UI
         {
             // the players-to-restore pill and window share this document, next to these warnings
             if (!GetComponent<PlayerRestoreView>()) gameObject.AddComponent<PlayerRestoreView>();
+            // and the stream quest's bar and window at the top center
+            if (!GetComponent<StreamQuestView>()) gameObject.AddComponent<StreamQuestView>();
             Languages.Changed += Redraw;
             TryBind();
         }

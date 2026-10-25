@@ -58,7 +58,9 @@ The whole stream works on one goal together, shown to everyone. Anyone in the st
 
 - **Built-in stream quests.** The game offers the streamer a rotating set: "Gather 50,000 wood together in two
   hours", "Win three raids tonight", "Reach a combined 200 levels this stream". The streamer starts one from the
-  quest board (build mode or the tavern) or with `!quest start`.
+  quest window (the HUD's stream quest pill, or a click on any quest board) or with `!quest stream start <n>`.
+  Not in build mode: starting a quest is something done while the stream runs, and a streamer who never builds
+  would never find it there (decided 2026-10-25).
 - **Streamer quests.** The streamer writes their own from the same objective types, with a target, a time limit and
   a reward they pay for: items from their stash, coins from the village treasury, loyalty points. The reward is set
   aside when the quest is posted, so it is always there to give.
@@ -188,7 +190,8 @@ once quests exist:
 - **The quest board** by the town hall shows the stream quest (goal, progress bar, time left, top helpers) and the
   streamer's posted quests. Every town hall tier gets one; tier 3 has it already.
 - **Chat** for everything: `!quest` (what you have and what is offered), `!quest accept <n>`, `!quest log`,
-  `!quest deliver`, `!quest abandon <n>`, and for the streamer `!quest start <n>` and `!quest stop`.
+  `!quest deliver`, `!quest abandon <n>`, `!quest stream` for everyone, and for the streamer and the moderators
+  `!quest stream start <n>` and `!quest stream stop` (`!quest start` stays an alias of accept).
 - **The game's HUD** shows a slim bar with the running stream quest, and the player details window gets a Quests tab.
 - **The website** later: a player's quest log and finished chains, and posting streamer quests from the browser.
 
@@ -227,7 +230,8 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
 ## The game
 
 - `!quest` and its sub commands, replies in chat and the quest giver's bubble.
-- The quest board in the world (a window when clicked in build mode or the tavern) and the HUD bar.
+- The quest window, opened from the HUD bar (or its pill when no quest runs) and by clicking any quest board in the
+  world (each town hall tier's and the tavern's); never only in build mode.
 - A Quests tab in the player details window.
 - Quest givers for chains outside the tavern (a shipwright at the docks, later).
 
@@ -241,8 +245,14 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
    First version:  Server catalog, `CharacterQuest`, the tracker for gather, craft, experience and raid or
    dungeon objectives, `!quest`, `!quest accept`, `!quest log`, `!quest abandon`, the tavern quest giver offering
    them, coin, item and experience rewards.
-2. **Stream quests.** Built-in stream quests, `StreamQuest` and contributions, the quest board window and the HUD
-   bar, village rewards (treasury, resources), `!quest start` for the streamer.
+2. **Stream quests.** Built 2026-10-25: `StreamQuestManager` on the server (nine templates: wood, ore, fish and
+   wheat rounds, kills, items made, levels gained, raids, dungeons; targets and rewards scaled to the players in the
+   stream, at least 3; three offers a day per streamer; one at a time; ends when done, out of time or stopped),
+   `StreamQuest` and `StreamQuestContribution`, `api/quests/stream` (state, start, stop), the StreamQuestEnded event
+   (50). Done pays the village coins (and as much again of a gathered resource) and splits a coin pot among the
+   helpers by share (at least 100 each) with 10 loyalty points each with the streamer. In the game: the HUD bar at
+   the top center (a pill when none runs), the quest window (offers with Start, the running quest with top helpers
+   and Stop), quest boards open it, `!quest stream`, chat announcements on start and end.
 3. **Chains, seasons and achievements.** The step system, deliver, visit and answer steps, quest items, seasonal
    quests, the first chains with quest-only rewards (titles, decor unlocks, the shipwright chain toward own boats),
    and achievements on the same tracker, with titles and badges.
