@@ -77,6 +77,18 @@ public class RavebridgeManager : MonoBehaviour, IEvent
 
     public bool Contains(PlayerController player) => player && visits.ContainsKey(player.Id);
 
+    /// <summary>
+    /// One of the streamer's own characters: the broadcaster's, or the session owner's (a character restored after a
+    /// restart comes back without the broadcaster flag).
+    /// </summary>
+    public static bool IsStreamers(PlayerController player)
+    {
+        if (!player || player.IsLocal) return false;
+        if (player.IsBroadcaster) return true;
+        var game = GameManager.Instance;
+        return game && game.RavenNest != null && player.UserId != System.Guid.Empty && player.UserId == game.RavenNest.UserId;
+    }
+
     public Help HelpOf(PlayerController player) => player && visits.TryGetValue(player.Id, out var v) ? v.Help : Help.None;
 
     /// <summary>Where a player on Ravebridge came from: what saves send, so a crash brings them home.</summary>
@@ -169,7 +181,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
 
         visits[player.Id] = new Visit { Before = new PrevPlayerState(player) };
         player.InRavebridge = true;
-        if (player.IsBroadcaster) Attended = true;
+        if (IsStreamers(player)) Attended = true;
 
         // in through the castle gate, a little apart from each other
         var spawn = Island.SpawnPosition + new Vector3(UnityEngine.Random.Range(-3f, 3f), 0f, UnityEngine.Random.Range(-3f, 3f));
@@ -283,7 +295,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
             Hero = null;
             foreach (var player in game.Players.GetAllPlayers())
             {
-                if (player.IsBroadcaster && Contains(player)) { Hero = player; break; }
+                if (IsStreamers(player) && Contains(player)) { Hero = player; break; }
             }
         }
     }

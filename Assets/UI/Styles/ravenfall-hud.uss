@@ -2166,3 +2166,192 @@
     border-top-color: var(--rf-danger);
     border-bottom-color: var(--rf-danger);
 }
+
+/* ---- Ravebridge -----------------------------------------------------------------------------------------
+   RavebridgeView: while the event runs, a bar of its own a little down the screen (clear of the top column and the
+   event banners): who is there, how long it has been open, and the streamer's buttons (Stay, Hero mode, New look,
+   Play, End). Under it the panels to pick who to play and to make a Ravebridge character. */
+
+.rf-rb {
+    position: absolute;
+    top: 270px;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+.rf-rb-bar {
+    flex-direction: row;
+    align-items: center;
+    min-width: 520px;
+    max-width: 900px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: rgba(20, 18, 15, 0.92);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-rb-bar .rf-rb-bar__icon {
+    width: 32px;
+    height: 32px;
+    margin-right: var(--rf-space-3);
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.rf-rb-bar__body {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: var(--rf-space-3);
+}
+
+.rf-rb-bar .rf-rb-bar__text {
+    font-size: 18px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+}
+
+.rf-rb-bar .rf-rb-bar__meta {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-rb-buttons {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.rf-rb-button {
+    height: 32px;
+    margin-left: var(--rf-space-2);
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    color: var(--rf-text);
+    background-color: var(--rf-surface-raised);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.rf-rb-button:hover {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-rb-button--primary {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+    -unity-font-style: bold;
+}
+
+.rf-rb-button--primary:hover {
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-rb-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    max-width: 900px;
+    margin-top: var(--rf-space-2);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: rgba(20, 18, 15, 0.92);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-rb-panel .rf-rb-button {
+    margin-top: var(--rf-space-1);
+    margin-bottom: var(--rf-space-1);
+}
+
+.rf-rb-panel__text {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+.rf-rb-name {
+    width: 260px;
+    margin-right: var(--rf-space-2);
+}
+
+.rf-rb-name > .unity-label {
+    min-width: 0;
+    margin-right: var(--rf-space-2);
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+.rf-rb-name .unity-base-text-field__input {
+    height: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 14px;
+    color: var(--rf-text);
+    background-color: var(--rf-surface);
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}

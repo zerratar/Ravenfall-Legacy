@@ -2284,7 +2284,7 @@ public class GameManager : MonoBehaviour, IGameManager
             {
                 foreach (var p in Players.GetAllPlayers())
                 {
-                    if (p.IsBroadcaster) Ravebridge.Join(p);
+                    if (RavebridgeManager.IsStreamers(p)) Ravebridge.Join(p);
                 }
             }
         }

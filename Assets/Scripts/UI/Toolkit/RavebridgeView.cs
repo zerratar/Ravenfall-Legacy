@@ -5,13 +5,15 @@ using UnityEngine.UIElements;
 namespace Shinobytes.UI
 {
     /// <summary>
-    /// The Ravebridge bar (phase 6b of docs/ravebridge-design.md): while the event runs, under the stream quest bar in
-    /// the top column, who is there and how long it has been open, with the streamer's buttons: Play (by hand, 6c),
+    /// The Ravebridge bar (phase 6b of docs/ravebridge-design.md): while the event runs, a bar of its own a little down
+    /// the screen (clear of the top column and the event banners), who is there and how long it has been open, with
+    /// the streamer's buttons: Play (by hand, 6c), Hero mode,
     /// Stay (a forced event otherwise closes by itself) and End. Opening it is in the quest window's Village tab and
     /// !ravebridge start.
     /// </summary>
     public class RavebridgeView : MonoBehaviour
     {
+        private VisualElement wrap;
         private VisualElement bar;
         private Label text;
         private Label meta;
@@ -49,31 +51,28 @@ namespace Shinobytes.UI
 
         private void TryBind()
         {
-            VisualElement column = null;
-            foreach (var d in FindObjectsByType<UIDocument>())
-            {
-                column = d.rootVisualElement?.Q<VisualElement>("top-column");
-                if (column != null) break;
-            }
-            if (column == null) return;
+            var doc = GetComponent<UIDocument>();
+            var layer = doc != null ? doc.rootVisualElement?.Q<VisualElement>("conn-layer") : null;
+            if (layer == null) return;
 
-            bar?.RemoveFromHierarchy();
+            wrap?.RemoveFromHierarchy();
+            wrap = new VisualElement { name = "ravebridge", pickingMode = PickingMode.Ignore };
+            wrap.AddToClassList("rf-rb");
             bar = new VisualElement { name = "ravebridge-bar" };
-            bar.AddToClassList("rf-squest-bar");
-            bar.AddToClassList("rf-ravebridge-bar");
+            bar.AddToClassList("rf-rb-bar");
             var icon = new Label("") { pickingMode = PickingMode.Ignore };
             icon.AddToClassList("rf-icon");
-            icon.AddToClassList("rf-squest-bar__icon");
+            icon.AddToClassList("rf-rb-bar__icon");
             var body = new VisualElement { pickingMode = PickingMode.Ignore };
-            body.AddToClassList("rf-squest-bar__body");
+            body.AddToClassList("rf-rb-bar__body");
             text = new Label { pickingMode = PickingMode.Ignore };
-            text.AddToClassList("rf-squest-bar__text");
+            text.AddToClassList("rf-rb-bar__text");
             meta = new Label { pickingMode = PickingMode.Ignore };
-            meta.AddToClassList("rf-squest-bar__meta");
+            meta.AddToClassList("rf-rb-bar__meta");
             body.Add(text);
             body.Add(meta);
             var buttons = new VisualElement();
-            buttons.AddToClassList("rf-squest-chips");
+            buttons.AddToClassList("rf-rb-buttons");
             stay = Chip(Localization.UI_RAVEBRIDGE_STAY, true, () => { var rb = RavebridgeManager.Instance; if (rb) rb.Attended = true; Redraw(); });
             play = Chip(Localization.UI_RAVEBRIDGE_PLAY, true, PlayPressed);
             end = Chip(Localization.UI_RAVEBRIDGE_END, false, () => { var rb = RavebridgeManager.Instance; if (rb) rb.End(); });
@@ -96,14 +95,13 @@ namespace Shinobytes.UI
             bar.Add(icon);
             bar.Add(body);
             bar.Add(buttons);
-            column.Add(bar);
+            wrap.Add(bar);
 
-            choose?.RemoveFromHierarchy();
             choose = new VisualElement { name = "ravebridge-choose" };
-            choose.AddToClassList("rf-squest-chips");
-            choose.AddToClassList("rf-ravebridge-choose");
+            choose.AddToClassList("rf-rb-panel");
             choose.style.display = DisplayStyle.None;
-            column.Add(choose);
+            wrap.Add(choose);
+            layer.Add(wrap);
             bound = true;
             Redraw();
         }
@@ -138,10 +136,9 @@ namespace Shinobytes.UI
         {
             creator?.RemoveFromHierarchy();
             creator = new VisualElement();
-            creator.AddToClassList("rf-squest-chips");
-            creator.AddToClassList("rf-ravebridge-choose");
+            creator.AddToClassList("rf-rb-panel");
             creatorName = new TextField(Localization.UI_RAVEBRIDGE_NAME) { maxLength = 20 };
-            creatorName.AddToClassList("rf-ravebridge-name");
+            creatorName.AddToClassList("rf-rb-name");
             creator.Add(creatorName);
             creator.Add(Chip(Localization.UI_RAVEBRIDGE_CREATE, true, () =>
             {
@@ -153,7 +150,7 @@ namespace Shinobytes.UI
                 if (p) RavebridgePlay.Begin(p);
                 Redraw();
             }));
-            choose.parent?.Add(creator);
+            wrap.Add(creator);
         }
 
         /// <summary>Play: who to play (the streamer's own characters here, the Ravebridge character), or Stop.</summary>
@@ -167,14 +164,19 @@ namespace Shinobytes.UI
                 foreach (var player in game.Players.GetAllPlayers())
                 {
                     var p = player;
-                    if (p && p.IsBroadcaster && !p.IsBot) choices.Add((p.Name, () => RavebridgePlay.Begin(p)));
+                    if (p && !p.IsBot && RavebridgeManager.IsStreamers(p)) choices.Add((p.Name, () => RavebridgePlay.Begin(p)));
                 }
             }
             if (MoreChoices != null) choices.AddRange(MoreChoices());
             if (choices.Count == 1) { choices[0].Pick(); Redraw(); return; }
 
             choose.Clear();
-            if (choices.Count == 0) choose.Add(new Label(Localization.UI_RAVEBRIDGE_NO_CHARACTER));
+            if (choices.Count == 0)
+            {
+                var none = new Label(Localization.UI_RAVEBRIDGE_NO_CHARACTER);
+                none.AddToClassList("rf-rb-panel__text");
+                choose.Add(none);
+            }
             foreach (var choice in choices)
             {
                 var c = choice;
@@ -186,14 +188,14 @@ namespace Shinobytes.UI
         private static Button Chip(string label, bool primary, System.Action clicked)
         {
             var button = new Button(clicked) { text = label };
-            button.AddToClassList("rf-squest-chip");
-            button.EnableInClassList("rf-squest-chip--active", primary);
+            button.AddToClassList("rf-rb-button");
+            button.EnableInClassList("rf-rb-button--primary", primary);
             return button;
         }
 
         private void Update()
         {
-            if (bound && bar.panel == null) bound = false;
+            if (bound && wrap.panel == null) bound = false;
             if (!bound)
             {
                 TryBind();
@@ -219,7 +221,7 @@ namespace Shinobytes.UI
             if (!bound) return;
             var rb = RavebridgeManager.Instance;
             var shown = rb && rb.Active && !(VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive);
-            bar.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
+            wrap.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
             if (!shown) { choose.style.display = DisplayStyle.None; return; }
 
             text.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_BAR, rb.PlayerCount, Clock(Time.time - rb.StartedAt));
