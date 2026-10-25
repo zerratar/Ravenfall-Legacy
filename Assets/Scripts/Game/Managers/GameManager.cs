@@ -495,6 +495,8 @@ public class GameManager : MonoBehaviour, IGameManager
         RegisterGameEventHandler<QuestCompletedEventHandler>((GameEventType)49);
         RegisterGameEventHandler<StreamQuestEndedEventHandler>((GameEventType)50);
         RegisterGameEventHandler<AchievementReachedEventHandler>((GameEventType)51);
+        RegisterGameEventHandler<StreamerQuestClaimedEventHandler>((GameEventType)52);
+        RegisterGameEventHandler<StreamerQuestEndedEventHandler>((GameEventType)53);
         RegisterGameEventHandler<ItemRemoveByCategoryHandler>(GameEventType.ItemRemoveByCategory);
 
         RegisterGameEventHandler<ItemUnequipEventHandler>(GameEventType.ItemUnEquip);

@@ -1705,3 +1705,239 @@
     margin-left: 0;
     margin-right: 0;
 }
+
+/* ---- The quest window's tabs and the streamer's quest form -------------------------------------------
+   StreamQuestView's tabs (the stream quest, the streamer's own quests) and StreamerQuestPanel's form, drawn here as
+   the shop window draws its chips and fields, so nothing depends on Unity's runtime dropdowns. */
+
+.rf-squest .rf-squest__scroll {
+    max-height: 880px;
+    flex-shrink: 1;
+}
+
+.rf-squest-tabs {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-bottom: var(--rf-space-3);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-squest .rf-squest-tab {
+    height: 44px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    font-size: 17px;
+    -unity-font-style: bold;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.rf-squest .rf-squest-tab:hover {
+    color: var(--rf-text);
+    background-color: var(--rf-row-hover);
+}
+
+.rf-squest .rf-squest-tab--active {
+    color: var(--rf-text);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-squest .rf-squest-form__label {
+    margin-top: var(--rf-space-3);
+    margin-bottom: var(--rf-space-1);
+    font-size: 16px;
+    color: var(--rf-text);
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.rf-squest .rf-squest-form__note {
+    margin-top: var(--rf-space-1);
+    margin-bottom: var(--rf-space-1);
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-squest .rf-squest-form__summary {
+    margin-top: var(--rf-space-4);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    font-size: 16px;
+    color: var(--rf-accent-bright);
+    background-color: var(--rf-accent-wash);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+    white-space: normal;
+}
+
+.rf-squest-form__buttons {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--rf-space-3);
+}
+
+.rf-squest .rf-squest-form__post {
+    align-self: flex-start;
+    margin-left: 0;
+    margin-top: var(--rf-space-2);
+}
+
+.rf-squest .rf-squest-chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.rf-squest .rf-squest-chip {
+    height: 32px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: var(--rf-space-2);
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    background-color: var(--rf-surface-raised);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.rf-squest .rf-squest-chip:hover {
+    color: var(--rf-text);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-squest .rf-squest-chip--active {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+}
+
+.rf-squest .rf-squest-chip--active:hover {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-squest .rf-squest-field {
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-squest .rf-squest-field > .unity-text-field__input,
+.rf-squest .rf-squest-field .unity-base-text-field__input {
+    height: 34px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 0;
+    padding-bottom: 0;
+    -unity-text-align: middle-left;
+    font-size: 15px;
+    color: var(--rf-text);
+    background-color: var(--rf-bar-track);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-squest .rf-squest-field--tall > .unity-text-field__input,
+.rf-squest .rf-squest-field--tall .unity-base-text-field__input {
+    height: 64px;
+    padding-top: 6px;
+    -unity-text-align: upper-left;
+    white-space: normal;
+}
+
+.rf-squest .rf-squest-field:focus > .unity-text-field__input,
+.rf-squest .rf-squest-field:focus .unity-base-text-field__input {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-squest .rf-squest-items {
+    max-height: 190px;
+    margin-bottom: var(--rf-space-2);
+    background-color: var(--rf-bar-track);
+    border-top-left-radius: var(--rf-radius);
+    border-top-right-radius: var(--rf-radius);
+    border-bottom-left-radius: var(--rf-radius);
+    border-bottom-right-radius: var(--rf-radius);
+}
+
+.rf-squest .rf-squest-item {
+    height: 30px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-3);
+    -unity-text-align: middle-left;
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.rf-squest .rf-squest-item:hover {
+    color: var(--rf-text);
+    background-color: var(--rf-row-hover);
+}
+
+.rf-squest .rf-squest-item--selected {
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+}

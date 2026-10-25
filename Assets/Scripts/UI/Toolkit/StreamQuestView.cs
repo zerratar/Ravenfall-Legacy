@@ -9,7 +9,8 @@ namespace Shinobytes.UI
     /// The stream quest on screen (StreamQuests): a bar at the top center while one runs (what, how far, time left,
     /// helpers), a small pill there when none does, and the quest window that either opens: today's three offers to
     /// start, or the running quest with its top helpers and a stop button. Clicking a quest board in the world (by the
-    /// town hall, or in the tavern) opens the window too, so it is found without build mode or chat.
+    /// town hall, or in the tavern) opens the window too, so it is found without build mode or chat. A second tab holds
+    /// the streamer's own quests (StreamerQuestPanel); a stream goal the streamer wrote shows on the bar as well.
     /// </summary>
     /// <remarks>Shares the connection warnings' document; ConnectionStatusView adds it. Built in code.</remarks>
     [RequireComponent(typeof(UIDocument))]
@@ -29,7 +30,11 @@ namespace Shinobytes.UI
 
         private VisualElement window;
         private Label windowTitle;
+        private VisualElement tabs;
+        private ScrollView scroll;
         private VisualElement content;
+        private StreamerQuestPanel streamerPanel;
+        private int tab;
         private Label hint;
         private Label error;
 
@@ -44,13 +49,16 @@ namespace Shinobytes.UI
         {
             Instance = this;
             bound = false;
-            StreamQuests.Changed += Redraw;
+            StreamQuests.Changed += DataChanged;
+            StreamerQuests.Changed += DataChanged;
             Languages.Changed += Redraw;
+            streamerPanel ??= new StreamerQuestPanel(Redraw, ShowError);
         }
 
         private void OnDisable()
         {
-            StreamQuests.Changed -= Redraw;
+            StreamQuests.Changed -= DataChanged;
+            StreamerQuests.Changed -= DataChanged;
             Languages.Changed -= Redraw;
             bound = false;
         }
@@ -61,6 +69,7 @@ namespace Shinobytes.UI
             windowOpen = true;
             error.text = string.Empty;
             StreamQuests.RefreshSoon();
+            StreamerQuests.RefreshSoon();
             Redraw();
         }
 
@@ -116,14 +125,19 @@ namespace Shinobytes.UI
             close.AddToClassList("rf-squest__close");
             header.Add(windowTitle);
             header.Add(close);
-            content = new VisualElement();
+            tabs = new VisualElement();
+            tabs.AddToClassList("rf-squest-tabs");
+            scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.AddToClassList("rf-squest__scroll");
+            content = scroll.contentContainer;
             content.AddToClassList("rf-squest__content");
             error = new Label();
             error.AddToClassList("rf-squest__error");
             hint = new Label();
             hint.AddToClassList("rf-squest__hint");
             window.Add(header);
-            window.Add(content);
+            window.Add(tabs);
+            window.Add(scroll);
             window.Add(error);
             window.Add(hint);
             layer.Add(window);
@@ -143,6 +157,7 @@ namespace Shinobytes.UI
 
             var game = GameManager.Instance;
             StreamQuests.Tick(game, Time.unscaledTime);
+            StreamerQuests.Tick(game, Time.unscaledTime);
             QuestTitles.Tick(game, Time.unscaledTime);
 
             // the clock and the bar's numbers once a second
@@ -168,9 +183,21 @@ namespace Shinobytes.UI
             if (hidden) return;
 
             var q = StreamQuests.Active;
-            bar.EnableInClassList("rf-squest-bar--idle", q == null);
-            SetDisplay(barTrack, q != null);
-            SetDisplay(barMeta, q != null);
+            var goal = q == null ? StreamerQuests.RunningGoal : null;
+            bar.EnableInClassList("rf-squest-bar--idle", q == null && goal == null);
+            SetDisplay(barTrack, q != null || goal != null);
+            SetDisplay(barMeta, q != null || goal != null);
+            if (goal != null)
+            {
+                // the streamer's own goal: their name for it, what it asks underneath
+                bar.tooltip = Localization.UI_STREAM_QUEST_BAR_HINT;
+                barText.text = StreamerQuests.Title(goal);
+                barFill.style.width = new Length((goal.Amount > 0 ? Mathf.Clamp01((float)goal.Progress / goal.Amount) : 0f) * 100f, LengthUnit.Percent);
+                barMeta.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_BAR_META,
+                    StreamerQuests.Number(goal.Progress), StreamerQuests.Number(goal.Amount), StreamerQuests.TimeLeft(goal), goal.Helpers);
+                return;
+            }
+
             if (q == null)
             {
                 barText.text = Localization.UI_STREAM_QUEST_TITLE;
@@ -189,6 +216,18 @@ namespace Shinobytes.UI
 
         private Label activeTime;
 
+        /// <summary>New numbers from the server: the window again, unless the streamer is filling in the form.</summary>
+        private void DataChanged()
+        {
+            if (windowOpen && tab == 1 && streamerPanel != null && streamerPanel.Editing) UpdateBar();
+            else Redraw();
+        }
+
+        private void ShowError(string text)
+        {
+            if (error != null) error.text = text ?? string.Empty;
+        }
+
         private void Redraw()
         {
             if (!bound) return;
@@ -197,9 +236,18 @@ namespace Shinobytes.UI
             if (!windowOpen) return;
 
             windowTitle.text = Localization.UI_STREAM_QUEST_TITLE;
-            hint.text = Localization.UI_STREAM_QUEST_HINT;
+            hint.text = tab == 1 ? Localization.UI_STREAMER_QUEST_HINT : Localization.UI_STREAM_QUEST_HINT;
             content.Clear();
             activeTime = null;
+
+            tabs.Clear();
+            tabs.Add(Tab(Localization.UI_STREAM_QUEST_TAB, 0));
+            tabs.Add(Tab(Localization.UI_STREAMER_QUEST_TAB, 1));
+            if (tab == 1)
+            {
+                streamerPanel.Build(content);
+                return;
+            }
 
             var state = StreamQuests.Latest;
             if (state == null)
@@ -298,7 +346,10 @@ namespace Shinobytes.UI
             try
             {
                 var result = await StreamQuests.StartAsync(game, slot);
-                if (result == null || !result.Ok) error.text = result?.Error == "running" ? Localization.UI_STREAM_QUEST_ALREADY : Localization.UI_STREAM_QUEST_FAILED;
+                if (result == null || !result.Ok)
+                    error.text = result?.Error == "running" ? Localization.UI_STREAM_QUEST_ALREADY
+                        : result?.Error == "goal" ? Localization.UI_STREAM_QUEST_GOAL_RUNNING
+                        : Localization.UI_STREAM_QUEST_FAILED;
             }
             catch (System.Exception exc)
             {
@@ -337,6 +388,21 @@ namespace Shinobytes.UI
         }
 
         // ---- Helpers ---------------------------------------------------------------------------------------
+
+        private Button Tab(string text, int index)
+        {
+            var button = new Button(() =>
+            {
+                if (tab == index) return;
+                tab = index;
+                error.text = string.Empty;
+                scroll.scrollOffset = Vector2.zero;
+                Redraw();
+            }) { text = text };
+            button.AddToClassList("rf-squest-tab");
+            button.EnableInClassList("rf-squest-tab--active", tab == index);
+            return button;
+        }
 
         /// <summary>The top status column (the village bar, then the raid and dungeon bars): the bar goes last in it.</summary>
         private static VisualElement TopColumn()

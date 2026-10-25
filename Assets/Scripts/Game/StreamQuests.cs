@@ -151,11 +151,12 @@ public static class StreamQuests
         }
     }
 
-    /// <summary>"12:34" until the quest ends, or "1:02:03" past an hour.</summary>
+    /// <summary>"12:34" until the quest ends, "1:02:03" past an hour, "3d 4h" past a day.</summary>
     public static string TimeLeft(StreamQuestData q)
     {
         var left = EndsUtc(q) - DateTime.UtcNow;
         if (left < TimeSpan.Zero) left = TimeSpan.Zero;
+        if (left.TotalDays >= 1) return string.Format(CultureInfo.InvariantCulture, "{0}d {1}h", (int)left.TotalDays, left.Hours);
         return left.TotalHours >= 1
             ? string.Format(CultureInfo.InvariantCulture, "{0}:{1:00}:{2:00}", (int)left.TotalHours, left.Minutes, left.Seconds)
             : string.Format(CultureInfo.InvariantCulture, "{0}:{1:00}", left.Minutes, left.Seconds);

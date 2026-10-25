@@ -166,6 +166,7 @@ public static class QuestChat
                         var result = await StreamQuests.StartAsync(game, number - 1);
                         if (result == null) client.SendReply(gm, Localization.MSG_QUEST_FAILED);
                         else if (!result.Ok && result.Error == "running") client.SendReply(gm, Localization.MSG_STREAM_QUEST_RUNNING, StreamQuests.Text(result.Quest));
+                        else if (!result.Ok && result.Error == "goal") client.SendReply(gm, Localization.UI_STREAM_QUEST_GOAL_RUNNING);
                         else if (!result.Ok) client.SendReply(gm, Localization.MSG_QUEST_FAILED);
                         // started: StreamQuests tells the whole chat
                         return;
@@ -196,6 +197,19 @@ public static class QuestChat
             if (state == null) { client.SendReply(gm, Localization.MSG_QUEST_FAILED); return; }
 
             var q = StreamQuests.Active;
+            if (q == null)
+            {
+                // the streamer's own goal takes the stream quest's place
+                await StreamerQuests.RefreshAsync(game);
+                var goal = StreamerQuests.RunningGoal;
+                if (goal != null)
+                {
+                    client.SendReply(gm, Localization.MSG_STREAMER_GOAL_INFO, StreamerQuests.Title(goal), StreamerQuests.Text(goal), Number(goal.Progress), Number(goal.Amount),
+                        StreamQuests.MinutesLeft(new StreamQuestData { Ends = goal.Ends }), StreamerQuests.Reward(goal));
+                    return;
+                }
+            }
+
             if (q != null)
             {
                 client.SendReply(gm, Localization.MSG_STREAM_QUEST_INFO, StreamQuests.Text(q), Number(q.Progress), Number(q.Amount),
@@ -258,6 +272,8 @@ public static class QuestChat
         else if (seasonal != null && seasonal.State == 1)
             client.SendReply(gm, Localization.MSG_QUEST_SEASONAL_ACTIVE, SeasonOf(seasonal), Text(seasonal), Number(seasonal.Progress), Number(seasonal.Amount));
 
+        await StreamerQuestsAsync(game, player, gm, client);
+
         if (list.Chain != null)
         {
             client.SendReply(gm, Localization.MSG_QUEST_CHAIN_STEP, ChainName(list.Chain.Key), list.Chain.Step + 1, list.Chain.Steps, Story(list.Chain.Key, list.Chain.Step), Task(list.Chain));
@@ -266,6 +282,28 @@ public static class QuestChat
         }
 
         Say(game, player, offers.Count > 0 ? Localization.UI_TAVERN_QUEST_OFFERS : Localization.UI_TAVERN_QUEST_REPLY);
+    }
+
+    /// <summary>The streamer's running quests, with this player's own progress on the bounties.</summary>
+    private static async System.Threading.Tasks.Task StreamerQuestsAsync(GameManager game, PlayerController player, GameMessage gm, GameClient client)
+    {
+        StreamerQuestData[] quests;
+        try { quests = await game.RavenNest.Quests.GetStreamerForAsync(player.Id); }
+        catch { return; } // an older server
+        if (quests == null || quests.Length == 0) return;
+
+        var entries = new List<string>();
+        foreach (var q in quests)
+        {
+            if (q.Kind == StreamerQuests.Goal)
+                entries.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_GOAL_ENTRY, StreamerQuests.Title(q), StreamerQuests.Text(q), Number(q.Progress), Number(q.Amount)));
+            else if (q.YouClaimed)
+                entries.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_BOUNTY_DONE_ENTRY, StreamerQuests.Title(q)));
+            else
+                entries.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_BOUNTY_ENTRY, StreamerQuests.Title(q), StreamerQuests.Text(q),
+                    Number(q.YourProgress), Number(q.Amount), q.Winners - q.Claimed, q.Winners, StreamerQuests.Reward(q)));
+        }
+        client.SendReply(gm, Localization.MSG_QUEST_STREAMER, string.Join(" | ", entries));
     }
 
     // ---- Chains ----------------------------------------------------------------------------------------------

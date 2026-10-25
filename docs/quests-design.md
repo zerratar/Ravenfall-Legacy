@@ -270,8 +270,19 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
    the same answer number), the quest giver telling the story in the tavern, and the title on the name tag.
    Quest items (items only quests give) and badges as pictures are left for later; deliveries ask for items
    gathering drops.
-4. **Streamer quests.** Posting a quest with its reward set aside, from the game and later the website; loyalty point
-   rewards from the streamer's budget.
+4. **Streamer quests.** Built 2026-10-25, decided with the user: both kinds, a bounty (each viewer works alone; the
+   first Winners to reach the target each get the reward) and a stream goal (everyone together; it takes the stream
+   quest's one place, coins and points are shared by share, the item goes to the top helpers); rewards from the
+   village treasury, the streamer's character's coins and the streamer's items (stash or character), set aside
+   through the tavern shelves' `TradeExecutor` escrow and returned when the quest ends; loyalty points from a weekly
+   budget per streamer (2,500 a week, not carried over), because loyalty points from every stream are one pot and
+   streamers may not print them freely; posted from the quest window's second tab with a name and a description of
+   the streamer's own (a chat command and the website later). On the server: `StreamerQuestManager`,
+   `StreamerQuest`, `StreamerQuestEntry`, `StreamerQuestBudget`, `api/quests/streamer` (list, a character's view,
+   post, stop), events StreamerQuestClaimed (52) and StreamerQuestEnded (53). In the game: `StreamerQuestPanel`
+   (the running quests and the form), the streamer's goal on the HUD bar, `!quest` shows the bounties with each
+   viewer's own progress, `!quest stream` the goal, chat announcements on posting, claiming and ending.
+   Later: per-streamer redeemables that only that streamer's loyalty points buy (the user's idea, 2026-10-25).
 5. **Places and islands.** The runestone chain, the banana island chain and its island unlock, island unlocks per
    streamer, NPC dialogue for the streamer.
 6. **Ravebridge.** Finishing the island (buildings, NPCs, monsters), its chain and event, rebirth.
@@ -285,7 +296,7 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
   comes first.
 - **Stream quest timing:** a stream quest runs for a set time (one or two hours), until the stream ends, or until it
   is done?
-- **Streamer quests:** may they reward loyalty points freely (the streamer's own currency) or only within a cap?
+- **Streamer quests:** decided 2026-10-25: loyalty points only from a weekly budget the streamer hands out.
 - **Offline:** progress only while the character plays in a stream (proposed), never from outside the game.
 - **Quest-only rewards:** which titles, cosmetics and pets first? The art for them (Synty packs have pets and
   cosmetics already).

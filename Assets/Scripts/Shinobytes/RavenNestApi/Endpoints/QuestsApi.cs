@@ -70,6 +70,33 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<TitleResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
         }
 
+        /// <summary>The stream's streamer quests and what the streamer can set aside (api/quests/streamer).</summary>
+        public Task<StreamerQuestListData> GetStreamerAsync()
+        {
+            return request.Create().Identifier("streamer").Build()
+                .SendAsync<StreamerQuestListData>(ApiRequestTarget.Quests, ApiRequestType.Get);
+        }
+
+        /// <summary>The running streamer quests with one character's progress on them (!quest).</summary>
+        public Task<StreamerQuestData[]> GetStreamerForAsync(Guid characterId)
+        {
+            return request.Create().Identifier("streamer").Method(characterId.ToString()).Build()
+                .SendAsync<StreamerQuestData[]>(ApiRequestTarget.Quests, ApiRequestType.Get);
+        }
+
+        /// <summary>Posts a streamer quest; the server sets its reward aside.</summary>
+        public Task<StreamerQuestResultData> PostStreamerAsync(StreamerQuestRequestData quest)
+        {
+            return request.Create().Identifier("streamer").Method("post").Build()
+                .SendAsync<StreamerQuestResultData, StreamerQuestRequestData>(ApiRequestTarget.Quests, ApiRequestType.Post, quest);
+        }
+
+        public Task<StreamerQuestResultData> StopStreamerAsync(Guid questId)
+        {
+            return request.Create().Identifier("streamer").Method("stop").AddParameter(questId.ToString()).Build()
+                .SendAsync<StreamerQuestResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
         /// <summary>The titles worn by the characters in this stream, for the name tags.</summary>
         public Task<SessionTitlesData> GetTitlesAsync()
         {
@@ -273,5 +300,115 @@ namespace RavenNest.SDK.Endpoints
     {
         public StreamQuestData Quest { get; set; }
         public StreamQuestHelperData[] Helpers { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamerQuestInfo: a quest the streamer wrote, a bounty or a stream goal.</summary>
+    public class StreamerQuestData
+    {
+        public Guid Id { get; set; }
+        /// <summary>1 bounty, 2 stream goal.</summary>
+        public int Kind { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        /// <summary>gather, kill, craft, cook, brew, levels, raid or dungeon.</summary>
+        public string Objective { get; set; }
+        public int Skill { get; set; }
+        public long Amount { get; set; }
+        public long Progress { get; set; }
+        public int Winners { get; set; }
+        public int Claimed { get; set; }
+        /// <summary>1 running, 2 done, 3 out of time, 4 stopped, 5 every reward claimed.</summary>
+        public int State { get; set; }
+        public DateTime Ends { get; set; }
+        public int Minutes { get; set; }
+        public long RewardCoins { get; set; }
+        public Guid? RewardItemId { get; set; }
+        public string RewardItemName { get; set; }
+        public long RewardItemAmount { get; set; }
+        public long RewardLoyalty { get; set; }
+        public int Helpers { get; set; }
+        public StreamQuestHelperData[] TopHelpers { get; set; }
+        public long YourProgress { get; set; }
+        public bool YouClaimed { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamerQuestRequest: what the streamer posts.</summary>
+    public class StreamerQuestRequestData
+    {
+        public int Kind { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string Objective { get; set; }
+        public int Skill { get; set; }
+        public long Amount { get; set; }
+        public int Minutes { get; set; }
+        public int Winners { get; set; }
+        public long RewardCoins { get; set; }
+        /// <summary>1 the village treasury, 2 the streamer's character.</summary>
+        public int CoinSource { get; set; }
+        public Guid? CoinCharacterId { get; set; }
+        public Guid? ItemId { get; set; }
+        public string ItemTag { get; set; }
+        public string ItemEnchantment { get; set; }
+        public Guid? ItemTransmogrificationId { get; set; }
+        public string ItemName { get; set; }
+        public int ItemFlags { get; set; }
+        public long ItemAmount { get; set; }
+        public StreamerShopSourceKind ItemSourceKind { get; set; }
+        public Guid? ItemSourceCharacterId { get; set; }
+        public long RewardLoyalty { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamerQuestList.</summary>
+    public class StreamerQuestListData
+    {
+        public StreamerQuestData[] Quests { get; set; }
+        public int MaxBounties { get; set; }
+        public long LoyaltyBudgetLeft { get; set; }
+        public long LoyaltyBudgetWeekly { get; set; }
+        public long TreasuryCoins { get; set; }
+        public StreamerQuestCoinSourceData[] Characters { get; set; }
+    }
+
+    public class StreamerQuestCoinSourceData
+    {
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+        public long Coins { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamerQuestResult.</summary>
+    public class StreamerQuestResultData
+    {
+        public bool Ok { get; set; }
+        public string Error { get; set; }
+        public StreamerQuestData Quest { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamerQuestClaimed, the StreamerQuestClaimed event's data.</summary>
+    public class StreamerQuestClaimedData
+    {
+        public StreamerQuestData Quest { get; set; }
+        public Guid CharacterId { get; set; }
+        public long Coins { get; set; }
+        public long Items { get; set; }
+        public long Loyalty { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.StreamerQuestEnded, the StreamerQuestEnded event's data.</summary>
+    public class StreamerQuestEndedData
+    {
+        public StreamerQuestData Quest { get; set; }
+        public StreamerQuestRewardData[] Rewards { get; set; }
+    }
+
+    public class StreamerQuestRewardData
+    {
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+        public long Amount { get; set; }
+        public long Coins { get; set; }
+        public long Items { get; set; }
+        public long Loyalty { get; set; }
     }
 }
