@@ -17,6 +17,11 @@ using UnityEngine.AI;
 /// At zero health the hero is downed: chat has 20 seconds to get the hero back up with !rb revive (a share of the
 /// viewers on the island), or a healer standing close does it. Otherwise the run is over: the score is the waves
 /// held, the best is kept per character, and chat hears it. Viewers fighting on the island are sent at the waves.
+///
+/// Rewards (7d): every wave held gives the viewers fighting on the island experience in their combat style; a run of
+/// five waves or more opens a reward chest on the server (items by the waves reached) for the hero and the top three
+/// helpers, or coins for the Ravebridge character; the run is recorded on the server: the streamer's best, the titles
+/// of waves 10, 25 and 50, and the best's place among every streamer's.
 /// </summary>
 public class WaveRun : MonoBehaviour
 {
@@ -70,6 +75,11 @@ public class WaveRun : MonoBehaviour
         public int Goal, Cleared, Kills, Best;
         public bool NewBest, Abandoned;
         public float StartedAt, EndedAt;
+        /// <summary>From the server, once it answers: the streamer's best's place, and titles the run unlocked.</summary>
+        public int Rank;
+        public string[] NewTitles;
+        public int ChestItems;
+        public long Coins;
     }
 
     /// <summary>The last run's end, for the HUD to show for a while.</summary>
@@ -138,6 +148,24 @@ public class WaveRun : MonoBehaviour
     }
 
     public static int BestOf(PlayerController hero) => hero ? PlayerPrefs.GetInt(BestKey(hero), 0) : 0;
+
+    /// <summary>Every streamer's best runs (the server's), refreshed when hero mode starts and after a run.</summary>
+    public static RavenNest.SDK.Endpoints.HeroLeaderboardData Board { get; private set; }
+
+    public static async void RefreshBoard()
+    {
+        var game = GameManager.Instance;
+        if (!game || game.RavenNest == null || !game.RavenNest.SessionStarted) return;
+        try
+        {
+            var board = await game.RavenNest.Quests.HeroLeaderboardAsync();
+            if (board != null) Board = board;
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Hero mode's leaderboard: " + exc.Message);
+        }
+    }
 
     private static string BestKey(PlayerController hero) => "rf_hero_best_" + hero.Id;
 
@@ -229,6 +257,7 @@ public class WaveRun : MonoBehaviour
     private void WaveCleared()
     {
         Cleared = Wave;
+        RewardViewers();
         var hero = HeroController.Active;
         if (hero)
         {
@@ -479,6 +508,19 @@ public class WaveRun : MonoBehaviour
         Changed?.Invoke();
     }
 
+    /// <summary>A wave held: the viewers fighting on the island get experience in their combat style, more each wave.</summary>
+    private void RewardViewers()
+    {
+        var factor = 2d + Wave * 0.5d;
+        foreach (var p in Others().ToList())
+        {
+            if (p.Stats.IsDead) continue;
+            var skill = p.ActiveSkill;
+            if (!skill.IsCombatSkill()) continue;
+            if (p.AutoTrainTargetLevel <= 0 || p.AutoTrainTargetLevel > p.GetSkill(skill).Level) p.AddExp(skill, factor);
+        }
+    }
+
     // ---- The end --------------------------------------------------------------------------------------------
 
     /// <summary>Ends the run: the hero left (abandoned), fell, or reached the goal.</summary>
@@ -518,8 +560,62 @@ public class WaveRun : MonoBehaviour
         };
         try { finished?.Invoke(this); }
         catch (Exception exc) { Shinobytes.Debug.LogError("Wave run end: " + exc); }
+        if (!abandoned && Hero) _ = RewardAsync(Hero, Last, HeroHelpers.Top(3).Select(h => h.Id).ToArray());
         Changed?.Invoke();
         Destroy(gameObject);
+    }
+
+    /// <summary>The chest and the server's record of the run, after it ended.</summary>
+    private static async System.Threading.Tasks.Task RewardAsync(PlayerController hero, Result result, Guid[] helpers)
+    {
+        var game = GameManager.Instance;
+        if (!game || game.RavenNest == null) return;
+        try
+        {
+            // the reward chest: the server's for the streamer's own characters and the helpers, coins for the
+            // Ravebridge character (its items are its own)
+            if (result.Cleared >= 5)
+            {
+                if (hero && hero.IsLocal)
+                {
+                    result.Coins = result.Cleared * 100L;
+                    hero.Resources.Coins += result.Coins;
+                    RavebridgeCharacter.Save();
+                }
+                var ids = (hero && !hero.IsLocal && !hero.IsBot ? new[] { hero.Id } : Array.Empty<Guid>())
+                    .Concat(helpers.Where(id => game.Players.GetPlayerById(id) is PlayerController p && p && !p.IsBot)).ToArray();
+                if (ids.Length > 0 && game.RavenNest.SessionStarted)
+                {
+                    var rewards = await game.RavenNest.Game.GetHeroChestAsync(result.Cleared, ids);
+                    if (rewards != null && rewards.Length > 0)
+                    {
+                        var drops = game.AddItems(rewards);
+                        result.ChestItems = drops.Count;
+                        game.RavenBot?.Announce(Localization.MSG_HERO_CHEST, result.Hero, drops.Count);
+                        foreach (var msg in drops.Messages) game.RavenBot?.Announce(msg);
+                    }
+                }
+            }
+
+            // the record: the streamer's best, titles, the place among every streamer's
+            if (result.Cleared > 0 && game.RavenNest.SessionStarted)
+            {
+                var record = await game.RavenNest.Quests.HeroRunAsync(result.Cleared, result.Kills, Mathf.RoundToInt(result.EndedAt - result.StartedAt));
+                if (record != null && record.Ok)
+                {
+                    result.Rank = record.Rank;
+                    result.NewTitles = record.NewTitles;
+                    if (record.NewTitles != null)
+                        foreach (var t in record.NewTitles) game.RavenBot?.Announce(Localization.MSG_HERO_TITLE, result.Hero, QuestChat.TitleText(t));
+                    RefreshBoard();
+                    Changed?.Invoke();
+                }
+            }
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Hero mode's run rewards: " + exc.Message);
+        }
     }
 
     private void OnDestroy()

@@ -12,6 +12,7 @@ public static class HeroHelpers
 {
     public sealed class Helper
     {
+        public Guid Id;
         public string Name;
         public long Damage;
         public long Healing;
@@ -50,7 +51,7 @@ public static class HeroHelpers
     {
         if (!helpers.TryGetValue(player.Id, out var h))
         {
-            h = new Helper { Name = player.Name };
+            h = new Helper { Id = player.Id, Name = player.Name };
             helpers[player.Id] = h;
         }
         return h;

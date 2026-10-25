@@ -268,6 +268,12 @@ public static class RavebridgeQuests
         if (npc == "captain" && IsDone(state, "defend") && !WaveRun.Current)
         {
             reply.Line = string.Format(Localization.UI_WAVE_AGAIN, WaveRun.BestOf(player));
+            var board = WaveRun.Board?.Entries;
+            if (board != null && board.Length > 0)
+            {
+                reply.Line += "\n\n" + Localization.UI_WAVE_LEADERBOARD;
+                for (var i = 0; i < board.Length && i < 3; i++) reply.Line += "\n" + string.Format(Localization.UI_WAVE_LEADERBOARD_ROW, i + 1, board[i].Streamer, board[i].Waves);
+            }
             reply.Options.Add(new Option { Label = Localization.UI_WAVE_ENDLESS, Pick = () => Defend(player, 0, null) });
             reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
             return reply;

@@ -405,3 +405,38 @@ The ranged, magic and healing kits and switching style came with the fix round. 
 
   The commands' chat replies go through the bots and are untested live.
 
+### 7d, starting, rewards and the leaderboard (2026-10-25)
+
+- **Starting (`HeroStart`):**
+  - the Hero mode button on the Ravebridge drawer, as before;
+  - `!hero start` from the streamer (and `!hero end`): opens Ravebridge if it is closed and unlocked, brings the
+    streamer's character, and makes it the hero once it is on the island;
+  - forced: the RavebridgeForced event with `Storm` (server `api/admin/ravebridge-force?storm=true`) opens
+    Ravebridge, locked or not, and goes straight into hero mode and an endless wave run. "The goblins storm
+    Ravebridge!".
+- **Viewers:** every wave held gives the viewers fighting on the island experience in their combat style (factor
+  2 + half the wave), as a kill does.
+- **The reward chest:** a run of five waves or more. The server's `api/game/{waves}/hero-chest` gives items from
+  the dungeon drop table, its tier from the waves (5 common, 10 uncommon, 15 rare, 25 epic, 40 legendary). The hero
+  gets one plus one per ten waves (five at most) and the top three helpers one each. It is not a dungeon, so there
+  is no dungeon quest progress, and it can be opened once a minute per session. The Ravebridge character gets coins
+  instead (100 a wave), as its items are its own.
+- **The record (server `api/quests/hero/run/{waves}/{kills}/{seconds}`, `HeroModeManager`):**
+  - each streamer's best, kept as the user property `hero_best`;
+  - the titles at waves 10, 25 and 50 (streamer unlocks `title_hero_10/25/50`: "the Gatekeeper", "the Shield of
+    Ravebridge", "the Unbreakable"), announced in chat;
+  - the best's rank among every streamer's.
+- **The leaderboard:** `api/quests/hero/leaderboard` gives every streamer's best (ten), cached in the game
+  (`WaveRun.Board`) when hero mode starts and after a run. Captain Hargrove names the top three. The result panel
+  shows the rank, new titles and the chest.
+- **Quest hooks:** the waves held count as the stream quest objective `hero_wave` (`QuestTracker.HeroWaves`). A new
+  stream quest "Hold 10 waves on Ravebridge in hero mode" is offered only to streamers who have Ravebridge
+  unlocked. Story chains ending in a hero mode fight are still to write.
+- **Tested in play mode:**
+  - `!hero start` with Ravebridge locked says so;
+  - the storm opened Ravebridge, brought the character, made it the hero and started a run;
+  - five waves held: the server ranked it #1, the chest gave an item, and the leaderboard and result panel showed
+    it.
+
+  Not tried live: a title (wave 10), the stream quest, and the chat replies.
+

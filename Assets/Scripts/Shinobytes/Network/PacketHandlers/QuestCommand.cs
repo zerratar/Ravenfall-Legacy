@@ -186,12 +186,32 @@ public static class QuestChat
     /// <summary>
     /// !hero (7c of docs/hero-mode-design.md): with nothing after it, joins Ravebridge to fight beside the streamer's
     /// hero; heal heals the hero (properly for healers, a bandage for anyone else), taunt pulls enemies off the hero,
-    /// cheer gives the hero a little more damage for a while, revive helps a downed hero back up in a wave run.
+    /// cheer gives the hero a little more damage for a while, revive helps a downed hero back up in a wave run; start
+    /// and end are the streamer's (start opens Ravebridge if needed and makes the streamer's character the hero).
     /// </summary>
     private static void Hero(GameManager game, PlayerManager players, string action, GameMessage gm, GameClient client)
     {
         var rb = game.Ravebridge;
         if (!rb) return;
+        // the streamer starts and ends hero mode from chat
+        if (action == "start" || action == "end" || action == "stop")
+        {
+            if (!gm.Sender.IsBroadcaster) { client.SendReply(gm, Localization.MSG_HERO_STREAMER_ONLY); return; }
+            if (action != "start")
+            {
+                if (HeroController.Active) HeroController.End();
+                return;
+            }
+            switch (HeroStart.Begin(game, false))
+            {
+                case HeroStart.Result.Started: client.SendReply(gm, Localization.MSG_HERO_STARTING); break;
+                case HeroStart.Result.AlreadyHero: client.SendReply(gm, Localization.MSG_HERO_ALREADY); break;
+                case HeroStart.Result.NoCharacter: client.SendReply(gm, Localization.MSG_HERO_NO_CHARACTER); break;
+                default: client.SendReply(gm, Localization.MSG_RAVEBRIDGE_CLOSED, RavebridgeManager.Unlocked ? Localization.MSG_RAVEBRIDGE_HOW_UNLOCKED : Localization.MSG_RAVEBRIDGE_LOCKED); break;
+            }
+            return;
+        }
+
         var player = players.GetPlayer(gm.Sender);
         if (!player)
         {

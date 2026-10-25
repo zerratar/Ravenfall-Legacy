@@ -132,6 +132,20 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<VillageStoryResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
         }
 
+        /// <summary>A hero mode wave run ended: the streamer's best, the titles of waves 10, 25 and 50, the best's rank.</summary>
+        public Task<HeroRunResultData> HeroRunAsync(int waves, int kills, int seconds)
+        {
+            return request.Create().Identifier("hero").Method("run").AddParameter(waves.ToString()).AddParameter(kills.ToString()).AddParameter(seconds.ToString()).Build()
+                .SendAsync<HeroRunResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>Every streamer's best hero mode run, the best first.</summary>
+        public Task<HeroLeaderboardData> HeroLeaderboardAsync()
+        {
+            return request.Create().Identifier("hero").Method("leaderboard").Build()
+                .SendAsync<HeroLeaderboardData>(ApiRequestTarget.Quests, ApiRequestType.Get);
+        }
+
         private Task<VillageStoryResultData> StoryAction(string action, string key)
         {
             return request.Create().Identifier("village").Method(action).AddParameter(key).Build()
@@ -478,6 +492,33 @@ namespace RavenNest.SDK.Endpoints
     {
         public VillageStoryData[] Stories { get; set; }
         public string[] Unlocks { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.HeroRunRecord.</summary>
+    public class HeroRunRecordData
+    {
+        public string Streamer { get; set; }
+        public int Waves { get; set; }
+        public int Kills { get; set; }
+        public int Seconds { get; set; }
+        public DateTime Reached { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.HeroRunResult.</summary>
+    public class HeroRunResultData
+    {
+        public bool Ok { get; set; }
+        public string Error { get; set; }
+        public HeroRunRecordData Best { get; set; }
+        public bool NewBest { get; set; }
+        public string[] NewTitles { get; set; }
+        public int Rank { get; set; }
+    }
+
+    /// <summary>Mirrors RavenNest.Models.HeroLeaderboard.</summary>
+    public class HeroLeaderboardData
+    {
+        public HeroRunRecordData[] Entries { get; set; }
     }
 
     /// <summary>Mirrors RavenNest.Models.VillageStoryResult.</summary>

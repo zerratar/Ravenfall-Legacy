@@ -112,6 +112,17 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<EventItemReward[]>(ApiRequestTarget.Game, ApiRequestType.Post);
         }
 
+        /// <summary>Hero mode's reward chest after a wave run (the hero first, then the top helpers).</summary>
+        internal Task<EventItemReward[]> GetHeroChestAsync(int waves, Guid[] ids)
+        {
+            return request.Create()
+                .Identifier(waves + "")
+                .Method("hero-chest")
+                .AddParameter("values", ids)
+                .Build()
+                .SendAsync<EventItemReward[]>(ApiRequestTarget.Game, ApiRequestType.Post);
+        }
+
         internal Task<EventItemReward[]> GetDungeonRewardsAsync(DungeonTier tier, Guid[] ids)
         {
             return request.Create()

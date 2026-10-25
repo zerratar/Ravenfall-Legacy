@@ -84,6 +84,7 @@ public class HeroController : MonoBehaviour
         var style = !training ? HeroStyle.Melee : player.TrainingHealing ? HeroStyle.Healing : player.TrainingMagic ? HeroStyle.Magic : player.TrainingRanged ? HeroStyle.Ranged : HeroStyle.Melee;
         hero.SetStyle(style);
         HeroHelpers.Clear();
+        WaveRun.RefreshBoard();
         game.Camera.FollowHero(player);
         hero.heroCamera = game.Camera.HeroView;
 

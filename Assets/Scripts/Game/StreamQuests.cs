@@ -122,6 +122,7 @@ public static class StreamQuests
             case "levels": return string.Format(Localization.UI_STREAM_QUEST_LEVELS, amount);
             case "raid": return string.Format(q.Amount == 1 ? Localization.UI_QUEST_RAID_ONE : Localization.UI_QUEST_RAID, amount);
             case "dungeon": return string.Format(q.Amount == 1 ? Localization.UI_QUEST_DUNGEON_ONE : Localization.UI_QUEST_DUNGEON, amount);
+            case "hero_wave": return string.Format(Localization.UI_QUEST_HERO_WAVES, amount);
             default: return q.Key;
         }
     }

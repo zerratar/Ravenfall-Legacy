@@ -2524,6 +2524,7 @@
 }
 
 .rf-wave-result__best {
+    -unity-text-align: middle-center;
     font-size: 18px;
     color: var(--rf-accent-bright);
     -unity-font-style: bold;

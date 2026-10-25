@@ -138,7 +138,12 @@ namespace Shinobytes.UI
             resultTitle.text = reached ? Localization.UI_WAVE_RESULT_HELD : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT, run.Cleared);
             var seconds = Mathf.FloorToInt(run.EndedAt - run.StartedAt);
             resultLine.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_LINE, run.Cleared, run.Kills, seconds / 60, seconds % 60);
-            resultBest.text = run.NewBest ? Localization.UI_WAVE_RESULT_NEW_BEST : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_BEST, run.Best);
+            var best = run.NewBest ? Localization.UI_WAVE_RESULT_NEW_BEST : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_BEST, run.Best);
+            if (run.Rank > 0) best += "  " + string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_RANK, run.Rank);
+            if (run.NewTitles != null && run.NewTitles.Length > 0) best += "\n" + string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_TITLE, string.Join(", ", System.Array.ConvertAll(run.NewTitles, QuestChat.TitleText)));
+            if (run.ChestItems > 0) best += "\n" + string.Format(CultureInfo.InvariantCulture, run.ChestItems == 1 ? Localization.UI_WAVE_RESULT_CHEST_ONE : Localization.UI_WAVE_RESULT_CHEST, run.ChestItems);
+            else if (run.Coins > 0) best += "\n" + string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_COINS, run.Coins);
+            resultBest.text = best;
         }
     }
 }
