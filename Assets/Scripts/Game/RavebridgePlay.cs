@@ -10,6 +10,11 @@ public static class RavebridgePlay
 {
     public static PlayerController Playing { get; private set; }
 
+    // what the character trained before it was played: clicking things (and hero mode) change its task, and Stop
+    // gives it back the one it had
+    private static TaskType taskBefore;
+    private static string argumentBefore;
+
     public static event System.Action Changed;
 
     public static bool Begin(PlayerController player)
@@ -20,6 +25,11 @@ public static class RavebridgePlay
         if (!rb.Contains(player) && rb.Join(player) != RavebridgeManager.JoinResult.Joined) return false;
         if (Playing && Playing != player) Stop();
 
+        if (Playing != player)
+        {
+            taskBefore = player.GetTask();
+            argumentBefore = player.GetTaskArgument();
+        }
         rb.Hero = player;
         rb.Attended = true;
         player.taskTarget = null;
@@ -42,8 +52,10 @@ public static class RavebridgePlay
         {
             player.RevokeControl();
             player.taskTarget = null;
-            var task = player.GetTask();
-            if (task != TaskType.None) player.SetTask(task, player.GetTaskArgument(), true);
+            var task = taskBefore != TaskType.None ? taskBefore : player.GetTask();
+            var argument = taskBefore != TaskType.None ? argumentBefore : player.GetTaskArgument();
+            if (task != TaskType.None) player.SetTask(task, argument, true);
+            taskBefore = TaskType.None;
         }
         var game = GameManager.Instance;
         if (game && game.Camera) game.Camera.StopFollowingControlled();
