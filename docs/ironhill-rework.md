@@ -42,6 +42,9 @@ Concept: docs/mockups/ironhill-concept.png (the target, not a blueprint: the isl
 - The woodcutting tree that stood in the yard moved into the tree field; every other spot was already on the ground.
   The fight field, trees, farm, dock and gathering spots did not move, so the navmesh there still holds.
 
+The dragon is scenery only (no colliders, no enemy, Default layer): nobody can reach the summit, so it must never be a
+target there. A future quest could wake it for a raid battle on the island itself, where it comes down to fight.
+
 Still open: lava cracks that read well (the kit's lava line is a standing column), and a talkable dwarf for a quest.
 
 ## Phases

@@ -21,6 +21,8 @@ UnityEditor.PrefabUtility.UnpackPrefabInstance(go, UnityEditor.PrefabUnpackMode.
 go.name = "Sleeping Dragon";
 foreach (var c in go.GetComponentsInChildren<UnityEngine.Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
 foreach (var mb in go.GetComponentsInChildren<UnityEngine.MonoBehaviour>(true)) UnityEngine.Object.DestroyImmediate(mb);
+// scenery only: no colliders, no enemy, Default layer, so nothing can target it (a raid with it is a future quest idea)
+foreach (var tr in go.GetComponentsInChildren<UnityEngine.Transform>(true)) tr.gameObject.layer = 0;
 foreach (var a in go.GetComponentsInChildren<UnityEngine.Animator>(true)) { a.runtimeAnimatorController = ctrl; a.applyRootMotion = false; a.cullingMode = UnityEngine.AnimatorCullingMode.CullCompletely; }
 // red, so it stands out against the grey iron stone from the island below
 var red = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/Malbers Animations/Dragons/4 - Unka the Dragon/Materials/Poly Art/Unka Poly Art Red.mat");
