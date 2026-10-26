@@ -155,6 +155,9 @@ namespace Shinobytes.UI
             }
             root.Add(party);
 
+            bounties = new VisualElement { pickingMode = PickingMode.Ignore };
+            bounties.AddToClassList("rf-hero-bounties");
+            root.Add(bounties);
             waves = new HeroWaveHud(root);
             helpers = new HeroHelpersHud(root, styleBox);
             loot?.Remove();
@@ -169,7 +172,34 @@ namespace Shinobytes.UI
 
         private LootLabels loot;
         private VisualElement buffs;
+        private VisualElement bounties;
         private float nextBuffs;
+
+        /// <summary>The bounties under way (RavebridgeQuests' loot steps): each with what it wants and how much of it is in the bag.</summary>
+        private void DrawBounties(PlayerController player)
+        {
+            if (bounties == null) return;
+            bounties.Clear();
+            var steps = RavebridgeQuests.LootSteps(player);
+            bounties.style.display = steps.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            if (steps.Count == 0) return;
+            var title = new Label(Localization.UI_HERO_BOUNTIES) { pickingMode = PickingMode.Ignore };
+            title.AddToClassList("rf-hero-bounties__title");
+            bounties.Add(title);
+            foreach (var (quest, npc, loot) in steps)
+            {
+                var name = new Label(quest + " (" + npc + ")") { pickingMode = PickingMode.Ignore };
+                name.AddToClassList("rf-hero-bounties__quest");
+                bounties.Add(name);
+                foreach (var (item, have, need) in loot)
+                {
+                    var row = new Label(item.Name + " " + System.Math.Min(have, need) + "/" + need) { pickingMode = PickingMode.Ignore };
+                    row.AddToClassList("rf-hero-bounties__row");
+                    row.EnableInClassList("rf-hero-bounties__row--done", have >= need);
+                    bounties.Add(row);
+                }
+            }
+        }
 
         private void DrawBuffs(PlayerController player)
         {
@@ -357,6 +387,7 @@ namespace Shinobytes.UI
             {
                 nextBuffs = Time.unscaledTime + 0.5f;
                 DrawBuffs(hero.Player);
+                DrawBounties(hero.Player);
             }
             waves?.Update();
             helpers?.Update(hero);

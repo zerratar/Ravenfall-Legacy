@@ -447,6 +447,12 @@ public static class Localization
     public static string UI_RAVEBRIDGE_Q_STARTED = "Quest started: {0}";
     public static string UI_RAVEBRIDGE_Q_FOUND = "Found {0} ({1}/{2})";
     public static string UI_RAVEBRIDGE_Q_DONE = "Quest done: {0}! Quest points: {1}/{2}";
+    public static string UI_RAVEBRIDGE_Q_BOUNTY_ACCEPT = "Take the bounty: {0}";
+    public static string UI_RAVEBRIDGE_Q_BOUNTY_STARTED = "Bounty taken: {0}";
+    public static string UI_RAVEBRIDGE_Q_BOUNTY_WAIT = "Nothing more for you just now. Come back in {0} min.";
+    public static string UI_RAVEBRIDGE_Q_BOUNTY_DONE = "Bounty done: {0}. +{1} Ravebridge coins";
+    public static string UI_RAVEBRIDGE_Q_LOOT_READY = "{0}: you have it all. Back to {1}.";
+    public static string UI_HERO_BOUNTIES = "Bounties";
     public static string UI_HERO_ENTER = "Hero mode";
     public static string UI_HERO_EXIT = "Leave hero mode";
     public static string UI_HERO_CONTROLS = "WASD walk, left mouse attacks or walks to the cursor, 1-4 skills, Tab style, Space dodge, Q potion, V camera, C character, I inventory, Esc leaves hero mode";

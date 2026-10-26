@@ -16,6 +16,9 @@ using UnityEngine;
 /// character's file, or for the streamer's own characters in states/ravebridge/quests-(character id).json. Finishing
 /// a quest gives experience (and coins and items to the Ravebridge character); finishing all of them makes Duke
 /// Ravacio give the streamer the title "of Ravebridge" (api/quests/village/ravebridge-done).
+/// Bounties are quests that ask for loot from the Ravebridge bag (a "loot" step: ten goblin ears, a soul shard) and
+/// pay in Ravebridge coins, loot and experience; they come round again after a cooldown, and do not count toward the
+/// Duke's title.
 /// </summary>
 public static class RavebridgeQuests
 {
@@ -39,11 +42,26 @@ public static class RavebridgeQuests
         public int amount = 1;
         public float chance = 1f;
         public Dictionary<string, int> items, gives, uses;
+        /// <summary>A loot step's: what it wants from the Ravebridge bag (RavebridgeLoot keys) and how many.</summary>
+        public Dictionary<string, int> loot;
         public Text say, hint, blocked;
     }
 
-    public class Reward { public Dictionary<string, double> exp; public long coins; public Dictionary<string, int> items; }
-    public class Quest { public string key; public Text name; public List<Step> steps; public Reward reward; }
+    /// <summary>
+    /// What finishing gives: experience; coins and items (the Ravebridge character's own); and into the Ravebridge bag,
+    /// for any character, Ravebridge coins and loot.
+    /// </summary>
+    public class Reward
+    {
+        public Dictionary<string, double> exp;
+        public long coins;
+        public Dictionary<string, int> items;
+        public long ravebridgeCoins;
+        public Dictionary<string, int> loot;
+    }
+
+    /// <summary>A quest; a bounty comes round again <see cref="cooldown"/> minutes after it is done.</summary>
+    public class Quest { public string key; public Text name; public List<Step> steps; public Reward reward; public bool bounty; public float cooldown; }
     public class DukeText { public Text progress, done; }
     public class Book { public Dictionary<string, Npc> npcs; public Dictionary<string, Text> items; public List<Quest> quests; public DukeText duke; }
 
@@ -63,6 +81,10 @@ public static class RavebridgeQuests
 
         /// <summary>Hero mode upgrades bought from the shopkeeper, by shop entry, and their levels (RavebridgeShop).</summary>
         public Dictionary<string, int> Upgrades = new Dictionary<string, int>();
+
+        /// <summary>Bounties: how often each was done, and when it comes round again (UTC).</summary>
+        public Dictionary<string, int> Bounties = new Dictionary<string, int>();
+        public Dictionary<string, DateTime> BountyReadyAt = new Dictionary<string, DateTime>();
     }
 
     private static Book book;
@@ -96,7 +118,8 @@ public static class RavebridgeQuests
 
     public static string NpcName(string key) => Data.npcs != null && Data.npcs.TryGetValue(key, out var n) && n.name != null ? n.name.Get() : key;
     public static string ItemName(string key) => Data.items != null && Data.items.TryGetValue(key, out var t) ? t.Get() : key;
-    public static int QuestCount => Data.quests?.Count ?? 0;
+    /// <summary>The story quests (the Duke's title is for all of them); bounties are not counted.</summary>
+    public static int QuestCount => Data.quests?.Count(q => !q.bounty) ?? 0;
 
     // ---- A character's progress -------------------------------------------------------------------------
 
@@ -126,6 +149,8 @@ public static class RavebridgeQuests
         state.Items ??= new Dictionary<string, int>();
         state.Loot ??= new Dictionary<string, long>();
         state.Upgrades ??= new Dictionary<string, int>();
+        state.Bounties ??= new Dictionary<string, int>();
+        state.BountyReadyAt ??= new Dictionary<string, DateTime>();
         ownStates[player.Id] = state;
         return state;
     }
@@ -195,12 +220,33 @@ public static class RavebridgeQuests
             if (Count(state, quest.steps[at].item) >= quest.steps[at].amount) Advance(player, quest);
         }
 
+        Quest waiting = null;
         foreach (var quest in Data.quests)
         {
             var at = StepOf(state, quest.key);
             if (at < 0 || at >= quest.steps.Count) continue;
             var step = quest.steps[at];
             if (step.npc != npc) continue;
+
+            // a bounty not offered yet: not before the quest it follows, and not again before its cooldown is over
+            if (quest.bounty && at == 0)
+            {
+                if (step.requires != null && !IsDone(state, step.requires)) continue;
+                if (BountyWait(state, quest) > 0f) { waiting ??= quest; continue; }
+            }
+
+            if (step.type == "loot")
+            {
+                var q = quest;
+                if (HasLoot(player, step.loot))
+                {
+                    reply.Line = string.Format(Localization.UI_RAVEBRIDGE_Q_HAVE, LootList(step.loot));
+                    reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_GIVE, Pick = () => { TakeLoot(player, step.loot); Say(npc, step.say?.Get()); Advance(player, q); } });
+                }
+                else reply.Line = string.Format(Localization.UI_RAVEBRIDGE_Q_STILL_NEED, LootList(step.loot, player));
+                reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
+                return reply;
+            }
 
             if (step.type == "talk")
             {
@@ -218,7 +264,7 @@ public static class RavebridgeQuests
                 var q = quest;
                 reply.Options.Add(new Option
                 {
-                    Label = at == 0 ? string.Format(Localization.UI_RAVEBRIDGE_Q_ACCEPT, quest.name.Get()) : Localization.UI_RAVEBRIDGE_Q_CONTINUE,
+                    Label = at == 0 ? string.Format(quest.bounty ? Localization.UI_RAVEBRIDGE_Q_BOUNTY_ACCEPT : Localization.UI_RAVEBRIDGE_Q_ACCEPT, quest.name.Get()) : Localization.UI_RAVEBRIDGE_Q_CONTINUE,
                     Pick = () => { Use(state, step.uses); Add(state, step.gives); Advance(player, q); },
                 });
                 reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
@@ -277,6 +323,14 @@ public static class RavebridgeQuests
             return reply;
         }
 
+        // a bounty done not long ago: when there will be more
+        if (waiting != null && !(npc == "captain" && IsDone(state, "defend")))
+        {
+            reply.Line = string.Format(Localization.UI_RAVEBRIDGE_Q_BOUNTY_WAIT, Mathf.CeilToInt(BountyWait(state, waiting)));
+            reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
+            return reply;
+        }
+
         // the captain, once the line has held: runs for the best score
         if (npc == "captain" && IsDone(state, "defend") && !WaveRun.Current)
         {
@@ -330,7 +384,7 @@ public static class RavebridgeQuests
 
     private static Reply Duke(PlayerController player, State state, Reply reply)
     {
-        var done = Data.quests.Count(q => IsDone(state, q.key));
+        var done = Data.quests.Count(q => !q.bounty && IsDone(state, q.key));
         if (done >= QuestCount && QuestCount > 0)
         {
             reply.Line = Data.duke?.done?.Get();
@@ -369,6 +423,74 @@ public static class RavebridgeQuests
             : ItemName(i.Key) + " (" + Math.Min(Count(have, i.Key), i.Value) + "/" + i.Value + ")"));
     }
 
+    // ---- Loot steps (bounties) --------------------------------------------------------------------------------
+
+    /// <summary>Minutes before a bounty comes round again, 0 when it is ready.</summary>
+    private static float BountyWait(State state, Quest quest)
+    {
+        if (state.BountyReadyAt == null || !state.BountyReadyAt.TryGetValue(quest.key, out var ready)) return 0f;
+        return Mathf.Max(0f, (float)(ready - DateTime.UtcNow).TotalMinutes);
+    }
+
+    private static bool HasLoot(PlayerController player, Dictionary<string, int> loot)
+        => loot == null || loot.All(l => RavebridgeLoot.Count(player, l.Key) >= l.Value);
+
+    private static void TakeLoot(PlayerController player, Dictionary<string, int> loot)
+    {
+        if (loot == null) return;
+        foreach (var l in loot) RavebridgeLoot.Remove(player, RavebridgeLoot.Find(l.Key), l.Value);
+    }
+
+    private static string LootName(string key) => RavebridgeLoot.Find(key)?.Name ?? key;
+
+    private static string LootList(Dictionary<string, int> loot, PlayerController have = null)
+    {
+        if (loot == null) return string.Empty;
+        return string.Join(", ", loot.Select(l => have == null
+            ? (l.Value > 1 ? l.Value + " x " : string.Empty) + LootName(l.Key)
+            : LootName(l.Key) + " (" + Math.Min(RavebridgeLoot.Count(have, l.Key), l.Value) + "/" + l.Value + ")"));
+    }
+
+    /// <summary>The loot steps under way, for the hero HUD's tracker: the quest, who to bring it to, and each thing's count.</summary>
+    public static List<(string Quest, string Npc, List<(RavebridgeLoot.Item Item, long Have, int Need)> Loot)> LootSteps(PlayerController player)
+    {
+        var list = new List<(string, string, List<(RavebridgeLoot.Item, long, int)>)>();
+        if (!player) return list;
+        var state = StateOf(player);
+        foreach (var quest in Data.quests)
+        {
+            var at = StepOf(state, quest.key);
+            if (at <= 0 || at >= quest.steps.Count || quest.steps[at].type != "loot" || quest.steps[at].loot == null) continue;
+            var step = quest.steps[at];
+            var rows = new List<(RavebridgeLoot.Item, long, int)>();
+            foreach (var l in step.loot)
+            {
+                var item = RavebridgeLoot.Find(l.Key);
+                if (item != null) rows.Add((item, RavebridgeLoot.Count(player, l.Key), l.Value));
+            }
+            list.Add((quest.name.Get(), NpcName(step.npc), rows));
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Loot came into the bag: a loot step that now has all it wants says so, once (the bar's notice), pointing back
+    /// to the one who asked.
+    /// </summary>
+    public static void LootAdded(PlayerController player, string key, long before)
+    {
+        if (!player || key == null) return;
+        var state = StateOf(player);
+        foreach (var quest in Data.quests)
+        {
+            var at = StepOf(state, quest.key);
+            if (at <= 0 || at >= quest.steps.Count || quest.steps[at].type != "loot") continue;
+            var step = quest.steps[at];
+            if (step.loot == null || !step.loot.TryGetValue(key, out var need) || before >= need) continue;
+            if (HasLoot(player, step.loot)) Notice?.Invoke(string.Format(Localization.UI_RAVEBRIDGE_Q_LOOT_READY, quest.name.Get(), NpcName(step.npc)));
+        }
+    }
+
     private static void Say(string npc, string line)
     {
         var who = IslandNpc.Find(npc);
@@ -383,16 +505,25 @@ public static class RavebridgeQuests
         while (at < quest.steps.Count && quest.steps[at].type == "collect" && Count(state, quest.steps[at].item) >= quest.steps[at].amount) at++;
         if (at >= quest.steps.Count) { Complete(player, quest); return; }
         state.Steps[quest.key] = at;
-        if (at == 1) Notice?.Invoke(string.Format(Localization.UI_RAVEBRIDGE_Q_STARTED, quest.name.Get()));
+        if (at == 1) Notice?.Invoke(string.Format(quest.bounty ? Localization.UI_RAVEBRIDGE_Q_BOUNTY_STARTED : Localization.UI_RAVEBRIDGE_Q_STARTED, quest.name.Get()));
         Save(player);
     }
 
     private static void Complete(PlayerController player, Quest quest)
     {
         var state = StateOf(player);
-        state.Steps[quest.key] = -1;
-        state.Points++;
         var reward = quest.reward;
+        if (quest.bounty)
+        {
+            state.Steps[quest.key] = 0;
+            state.Bounties[quest.key] = (state.Bounties.TryGetValue(quest.key, out var done) ? done : 0) + 1;
+            state.BountyReadyAt[quest.key] = DateTime.UtcNow.AddMinutes(quest.cooldown);
+        }
+        else
+        {
+            state.Steps[quest.key] = -1;
+            state.Points++;
+        }
         if (reward?.exp != null)
         {
             foreach (var e in reward.exp)
@@ -408,7 +539,18 @@ public static class RavebridgeQuests
             player.Resources.Coins += reward.coins;
             if (reward.items != null) foreach (var i in reward.items) RavebridgeCharacter.Give(player, i.Key, i.Value);
         }
+        // the Ravebridge bag's, for anyone
+        if (reward != null)
+        {
+            if (reward.ravebridgeCoins > 0) RavebridgeLoot.Pick(player, null, reward.ravebridgeCoins);
+            if (reward.loot != null) foreach (var l in reward.loot) RavebridgeLoot.Pick(player, RavebridgeLoot.Find(l.Key), l.Value);
+        }
         Save(player);
+        if (quest.bounty)
+        {
+            Notice?.Invoke(string.Format(Localization.UI_RAVEBRIDGE_Q_BOUNTY_DONE, quest.name.Get(), reward?.ravebridgeCoins ?? 0));
+            return;
+        }
         var line = string.Format(Localization.UI_RAVEBRIDGE_Q_DONE, quest.name.Get(), state.Points, QuestCount);
         Notice?.Invoke(line);
         GameManager.Instance?.RavenBot?.Announce(Localization.MSG_RAVEBRIDGE_QUEST_DONE, player.Name, quest.name.Get(), state.Points, QuestCount);

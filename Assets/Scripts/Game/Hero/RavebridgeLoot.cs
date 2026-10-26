@@ -174,8 +174,11 @@ public static class RavebridgeLoot
         {
             while (left > 0 && hero.Potions < hero.MaxPotions) { hero.AddPotion(); left--; }
         }
-        if (left > 0) state.Loot[item.Key] = (state.Loot.TryGetValue(item.Key, out var had) ? had : 0) + left;
+        var before = state.Loot.TryGetValue(item.Key, out var had) ? had : 0;
+        if (left > 0) state.Loot[item.Key] = before + left;
         MarkChanged(player);
+        // a bounty that now has all it asked for says so
+        if (left > 0) RavebridgeQuests.LootAdded(player, item.Key, before);
     }
 
     /// <summary>Items out of the bag (sold); never below none.</summary>

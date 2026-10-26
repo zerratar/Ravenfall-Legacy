@@ -599,3 +599,30 @@ wares", which opens his shop (`RavebridgeShop`, `RavebridgeShopWindow`).
   (damage, potions 4/4, roll 2.5 s), refusals when too poor, selling, upgrades still there after a restart, the save.
 - Village smoke, flames and glows fade out near the camera now (`_NearFade` 4 m): rising to hero mode's low camera, a
   puff right at the lens filled the screen.
+
+### Bounties: quests that ask for loot (2026-10-26)
+
+Repeatable quests for the Ravebridge bag's loot, so it has a use beyond the shopkeeper.
+
+- **Data (`quests.json`):** a quest with `"bounty": true` and a `cooldown` in minutes; a new step type `loot` with
+  what it wants from the bag (`"loot": { "goblin_ear": 10 }`); rewards can now pay `ravebridgeCoins` and `loot` into
+  the bag, for any character, besides experience. Bounties are not story quests: no quest points, not counted for the
+  Duke's title (`QuestCount` counts story quests only).
+- **Flow:** the NPC offers it ("Take the bounty: ..."), reminds what is still needed with counts, takes the loot when
+  it is all in the bag ("Hand them over"), pays, and comes round again after its cooldown ("Come back in N min").
+  A bounty is only offered once the story quest it follows is done (its first step's `requires`), so it never gets in
+  the way of a story step. The moment the bag holds everything a bounty wants, the bar says so and names who to
+  bring it to.
+- **The seven:**
+  - General Wartfist sews his lads' ears back on: 10 goblin ears;
+  - General Bentnose's soldiers want their teeth back: 5 goblin teeth;
+  - Father Aereck buries the swamp's skeletons: 6 old bones and a grinning skull;
+  - the restless ghost keeps fading at the edges: 4 ectoplasm and a soul shard;
+  - the cook's stew for the garrison: 5 raw beef (pays 2 healing draughts);
+  - Millie patches the sails: 4 cowhides;
+  - Old Bridgewell wants a trophy over the gate: the warchief's tusk (30 minute cooldown).
+- **The hero HUD** lists the bounties under way on the left (where the players list stood), each thing's count, green
+  once there is enough.
+- **Tested in play mode:** the whole loop with Wartfist (offer, reminder, tracker at 4/10, the "you have it all"
+  notice, hand-over, +120 coins, the cooldown), Bentnose's offer, the priest keeping his story quest first, two
+  bounties in the tracker.
