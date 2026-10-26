@@ -21,6 +21,7 @@ public sealed class VillageLife : MonoBehaviour
     private static readonly int LitId = Shader.PropertyToID("_Lit");
     private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
     private static readonly int SoftFadeId = Shader.PropertyToID("_SoftFade");
+    private static readonly int NearFadeId = Shader.PropertyToID("_NearFade");
     private static readonly int ColorId = Shader.PropertyToID("_Color");
     private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
     private static readonly int ModeId = Shader.PropertyToID("_Mode");
@@ -71,6 +72,9 @@ public sealed class VillageLife : MonoBehaviour
             // drawn additive, soft where it meets the ground and the brazier
             glowMaterial = MakeMaterial(shader, 7, true, false, 0f);
             glowMaterial.SetFloat(SoftFadeId, 0.6f);
+            // what passes a low camera (hero mode's, over the roofs and lamps) fades before the lens: right in front
+            // of it one puff of smoke filled the screen in magenta and white, one glow in red
+            foreach (var material in new[] { smokeMaterial, flameMaterial, glowMaterial }) material.SetFloat(NearFadeId, 4f);
         }
 
         var fires = new List<Vector3>();

@@ -60,6 +60,9 @@ public static class RavebridgeQuests
         public bool Titled;
         public long Coins;
         public Dictionary<string, long> Loot = new Dictionary<string, long>();
+
+        /// <summary>Hero mode upgrades bought from the shopkeeper, by shop entry, and their levels (RavebridgeShop).</summary>
+        public Dictionary<string, int> Upgrades = new Dictionary<string, int>();
     }
 
     private static Book book;
@@ -122,6 +125,7 @@ public static class RavebridgeQuests
         state.Steps ??= new Dictionary<string, int>();
         state.Items ??= new Dictionary<string, int>();
         state.Loot ??= new Dictionary<string, long>();
+        state.Upgrades ??= new Dictionary<string, int>();
         ownStates[player.Id] = state;
         return state;
     }
@@ -164,6 +168,9 @@ public static class RavebridgeQuests
     {
         public string Label;
         public Action Pick;
+
+        /// <summary>The talk ends once it is picked (it opened something else: the shop).</summary>
+        public bool Closes;
     }
 
     public class Reply
@@ -281,6 +288,16 @@ public static class RavebridgeQuests
                 for (var i = 0; i < board.Length && i < 3; i++) reply.Line += "\n" + string.Format(Localization.UI_WAVE_LEADERBOARD_ROW, i + 1, board[i].Streamer, board[i].Waves);
             }
             reply.Options.Add(new Option { Label = Localization.UI_WAVE_ENDLESS, Pick = () => Defend(player, 0, null) });
+            reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
+            return reply;
+        }
+
+        // the shopkeeper: the cart finally came
+        if (npc == "shopkeeper")
+        {
+            var said = Data.npcs.TryGetValue(npc, out var keeper) && keeper.lines != null ? keeper.lines.Get() : null;
+            reply.Line = said != null && said.Count > 0 ? said[UnityEngine.Random.Range(0, said.Count)] : "...";
+            reply.Options.Add(new Option { Label = Localization.UI_RBSHOP_OPEN, Pick = () => RavebridgeShop.Open(player), Closes = true });
             reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
             return reply;
         }

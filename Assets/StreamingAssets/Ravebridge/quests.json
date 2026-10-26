@@ -67,8 +67,8 @@
     "shopkeeper": {
       "name": { "en": "The shopkeeper", "sv": "Butiksägaren" },
       "lines": {
-        "en": [ "Welcome to the general store! We sell... a little bit of everything. Mostly nothing.", "Pots? Buckets? Come back when the cart arrives." ],
-        "sv": [ "Välkommen till lanthandeln! Vi säljer... lite av varje. Mest ingenting.", "Krukor? Hinkar? Kom tillbaka när vagnen kommer." ]
+        "en": [ "Welcome to the general store! We sell... a little bit of everything. Mostly nothing.", "The cart came! Pots, buckets, and even a few things that are useful.", "Goblin ears? I will take them. Do not ask what for.", "Whetstones, stew, potions. And a bucket, if you were wondering." ],
+        "sv": [ "Välkommen till lanthandeln! Vi säljer... lite av varje. Mest ingenting.", "Vagnen kom! Krukor, hinkar och till och med några saker som är användbara.", "Vätteöron? Jag tar dem. Fråga inte varför.", "Brynen, gryta, drycker. Och en hink, om du undrade." ]
       }
     }
   },

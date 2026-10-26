@@ -1,5 +1,5 @@
 {
-  "comment": "Ravebridge's loot (RavebridgeLoot): what hero mode's enemies drop, kept in the character's Ravebridge bag on this computer and used only on the island. items: a key, its name and description in each language, an icon (a Font Awesome 7 Solid code point), a rarity (common, uncommon, rare, epic, legendary), a kind (material, potion) and a value in Ravebridge coins. tables: the first whose match is part of the enemy's loot key wins (a wave enemy's model name, 'boss ' in front for a boss; the island's own enemies their names), coins as [least, most], each drop by its chance (and an amount [least, most]). 'any' adds to every table.",
+  "comment": "Ravebridge's loot (RavebridgeLoot): what hero mode's enemies drop, kept in the character's Ravebridge bag on this computer and used only on the island. items: a key, its name and description in each language, an icon (a Font Awesome 7 Solid code point), a rarity (common, uncommon, rare, epic, legendary), a kind (material, potion) and a value in Ravebridge coins. tables: the first whose match is part of the enemy's loot key wins (a wave enemy's model name, 'boss ' in front for a boss; the island's own enemies their names), coins as [least, most], each drop by its chance (and an amount [least, most]). 'any' adds to every table. shop: what the shopkeeper's cart sells for Ravebridge coins (RavebridgeShop): an item into the bag, a buff for some minutes (damage: more damage dealt, guard: less taken), or an upgrade with a price per level (potions: one more potion carried, roll: half a second off the roll, luck: a tenth more coins from drops); he buys loot at its worth.",
   "items": {
     "goblin_ear": { "name": { "en": "Goblin ear", "sv": "Vätteöra" }, "description": { "en": "Cut from a goblin who will not miss it. Mostly.", "sv": "Skuret från en vätte som inte kommer att sakna det. Nästan." }, "icon": "f5f0", "rarity": "common", "kind": "material", "value": 2 },
     "goblin_tooth": { "name": { "en": "Goblin tooth", "sv": "Vättetand" }, "description": { "en": "Yellow, crooked and still a little sharp.", "sv": "Gul, sned och fortfarande lite vass." }, "icon": "f5c9", "rarity": "uncommon", "kind": "material", "value": 6 },
@@ -15,6 +15,8 @@
     "raw_beef": { "name": { "en": "Raw beef", "sv": "Rått oxkött" }, "description": { "en": "The cook would know what to do with this.", "sv": "Kocken skulle veta vad man gör med det här." }, "icon": "f814", "rarity": "common", "kind": "material", "value": 3 },
     "cowhide": { "name": { "en": "Cowhide", "sv": "Kohud" }, "description": { "en": "Soft, spotted and a little embarrassing to carry.", "sv": "Mjuk, fläckig och lite pinsam att bära på." }, "icon": "f81c", "rarity": "common", "kind": "material", "value": 4 },
     "ancient_coin": { "name": { "en": "Ancient Ravebridge coin", "sv": "Uråldrigt Ravebridge-mynt" }, "description": { "en": "Struck before the bridge had a name. Collectors pay well.", "sv": "Präglat innan bron hade ett namn. Samlare betalar bra." }, "icon": "f51e", "rarity": "rare", "kind": "material", "value": 40 },
+    "bucket": { "name": { "en": "A bucket", "sv": "En hink" }, "description": { "en": "The cart finally came. It is a bucket. It holds things.", "sv": "Vagnen kom äntligen. Det är en hink. Den rymmer saker." }, "icon": "e4cf", "rarity": "common", "kind": "material", "value": 1 },
+    "cooking_pot": { "name": { "en": "A cooking pot", "sv": "En kastrull" }, "description": { "en": "For when you want soup. Or a hat.", "sv": "För när du vill ha soppa. Eller en hatt." }, "icon": "e43f", "rarity": "common", "kind": "material", "value": 1 },
     "healing_draught": { "name": { "en": "Healing draught", "sv": "Läkedryck" }, "description": { "en": "Q drinks one when the hero's own potions have run out.", "sv": "Q dricker en när hjältens egna drycker har tagit slut." }, "icon": "f6e1", "rarity": "uncommon", "kind": "potion", "value": 10 }
   },
   "tables": [
@@ -30,6 +32,16 @@
     { "match": "goblin", "coins": [2, 8], "drops": [ { "item": "goblin_ear", "chance": 0.45 }, { "item": "goblin_tooth", "chance": 0.1 }, { "item": "goblin_trinket", "chance": 0.015 }, { "item": "healing_draught", "chance": 0.05 }, { "item": "lucky_sock", "chance": 0.002 } ] },
     { "match": "cow", "coins": [0, 0], "drops": [ { "item": "raw_beef", "chance": 0.8 }, { "item": "cowhide", "chance": 0.5 } ] },
     { "match": "", "coins": [1, 6], "drops": [ { "item": "healing_draught", "chance": 0.05 } ] }
+  ],
+  "shop": [
+    { "key": "draught", "kind": "item", "item": "healing_draught", "price": 25 },
+    { "key": "whetstone", "kind": "buff", "stat": "damage", "amount": 0.15, "minutes": 5, "price": 60, "icon": "f71c", "name": { "en": "Whetstone", "sv": "Bryne" }, "description": { "en": "A keener edge on every weapon, bow and staff: 15% more damage for 5 minutes.", "sv": "En skarpare egg på varje vapen, båge och stav: 15 % mer skada i 5 minuter." } },
+    { "key": "stew", "kind": "buff", "stat": "guard", "amount": 0.15, "minutes": 5, "price": 60, "icon": "f823", "name": { "en": "Hearty stew", "sv": "Mustig gryta" }, "description": { "en": "Warm, thick and mostly carrots: 15% less damage taken for 5 minutes.", "sv": "Varm, tjock och mest morötter: 15 % mindre skada i 5 minuter." } },
+    { "key": "belt", "kind": "upgrade", "stat": "potions", "prices": [300, 750, 1500], "icon": "f6e1", "name": { "en": "Bigger potion belt", "sv": "Större dryckesbälte" }, "description": { "en": "Room for one more potion in hero mode.", "sv": "Plats för en dryck till i hjälteläget." } },
+    { "key": "boots", "kind": "upgrade", "stat": "roll", "prices": [500, 1200], "icon": "f782", "name": { "en": "Light boots", "sv": "Lätta stövlar" }, "description": { "en": "The roll is ready half a second sooner.", "sv": "Rullningen är redo en halv sekund tidigare." } },
+    { "key": "charm", "kind": "upgrade", "stat": "luck", "prices": [400, 1000], "icon": "e139", "name": { "en": "Lucky charm", "sv": "Lyckobringare" }, "description": { "en": "A tenth more coins from everything that falls.", "sv": "En tiondel mer mynt från allt som faller." } },
+    { "key": "bucket", "kind": "item", "item": "bucket", "price": 1 },
+    { "key": "pot", "kind": "item", "item": "cooking_pot", "price": 1 }
   ],
   "any": [ { "item": "ancient_coin", "chance": 0.01 } ]
 }

@@ -538,6 +538,22 @@ public static class Localization
     public static string UI_LOOT_RARE = "Rare";
     public static string UI_LOOT_EPIC = "Epic";
     public static string UI_LOOT_LEGENDARY = "Legendary";
+    public static string UI_RBSHOP_OPEN = "Show me your wares";
+    public static string UI_RBSHOP_TITLE = "The shopkeeper's cart";
+    public static string UI_RBSHOP_BUY = "Buy";
+    public static string UI_RBSHOP_SELL = "Sell";
+    public static string UI_RBSHOP_PRICE = "{0} coins";
+    public static string UI_RBSHOP_MAXED = "All bought";
+    public static string UI_RBSHOP_LEVEL = "Level {0} of {1}";
+    public static string UI_RBSHOP_BUFF_LEFT = "On now: {0} min left";
+    public static string UI_RBSHOP_WORTH = "Worth {0} coins each";
+    public static string UI_RBSHOP_SELL_ONE = "Sell one";
+    public static string UI_RBSHOP_SELL_ALL = "Sell all ({0})";
+    public static string UI_RBSHOP_NOTHING_TO_SELL = "Nothing in the bag he would buy. Go and find some loot.";
+    public static string UI_RBSHOP_BOUGHT = "Bought: {0}.";
+    public static string UI_RBSHOP_TOO_POOR = "Not enough Ravebridge coins.";
+    public static string UI_RBSHOP_SOLD = "Sold {0} for {1} coins.";
+    public static string UI_RBSHOP_HINT = "Ravebridge coins come from hero mode's enemies and from selling loot. Everything here stays on Ravebridge.";
 
     /// <summary>A Ravebridge loot rarity's name (RavebridgeLoot).</summary>
     public static string LootRarity(RavebridgeLoot.Rarity rarity)

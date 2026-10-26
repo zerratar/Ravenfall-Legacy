@@ -30,7 +30,10 @@ public partial class HeroController : MonoBehaviour
     public float Mana { get; private set; }
     public float MaxMana => 100f;
     public int Potions { get; private set; }
-    public int MaxPotions => 3;
+    public int MaxPotions => 3 + RavebridgeShop.ExtraPotions(Player);
+
+    /// <summary>The roll's wait: three seconds, less with the shopkeeper's boots.</summary>
+    public float RollCooldown => Mathf.Max(1f, DodgeCooldown - RavebridgeShop.RollSooner(Player));
     public float DodgeReadyAt { get; private set; }
     public IReadOnlyList<HeroSkill> Kit => kit;
     public float ReadyAt(int slot) => readyAt[(int)Style][slot];
@@ -229,6 +232,7 @@ public partial class HeroController : MonoBehaviour
         if (inRun && run.Downed) return 0;
         var taken = inRun && attacker is EnemyController enemy && run.Owns(enemy) ? run.BlowFor(enemy) : Mathf.Max(damage > 0 ? 1 : 0, Mathf.RoundToInt(damage * Aura));
         if (taken > 0 && Time.time < guardUntil) taken = Mathf.Max(1, taken / 2);
+        if (taken > 0) taken = Mathf.Max(1, Mathf.RoundToInt(taken * RavebridgeShop.TakenFactor(Player)));
         var health = (int)Player.Stats.Health.CurrentValue;
         if (taken < health) return taken;
         if (angel)
@@ -502,7 +506,7 @@ public partial class HeroController : MonoBehaviour
         if (!enemy || enemy.Stats.IsDead || !Player) return;
         var chunk = enemy.GetComponentInParent<Chunk>();
         if (chunk != null) Player.Chunk = chunk;
-        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy) * multiplier * CheerBonus));
+        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy) * multiplier * CheerBonus * RavebridgeShop.DamageFactor(Player)));
         Player.SessionStats.AddDamageDealt(damage);
         if (enemy.TakeDamage(Player, damage))
         {
@@ -691,7 +695,7 @@ public partial class HeroController : MonoBehaviour
         var areas = NavMeshHelper.AreaMaskAt(Player.Position);
         if (NavMesh.Raycast(Player.Position, target, out var blocked, areas)) target = blocked.position - direction * 0.2f;
         if (Flat(target - Player.Position).magnitude < 0.8f || !TryGround(target, out var to)) { Refused?.Invoke(-1, "blocked"); return; }
-        DodgeReadyAt = Time.time + DodgeCooldown;
+        DodgeReadyAt = Time.time + RollCooldown;
         invulnerableUntil = Time.time + DodgeSeconds + 0.1f;
         Face(to);
         Play("Hero-Roll", 0.05f);

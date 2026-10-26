@@ -578,3 +578,24 @@ The user's call: loot kept on this computer for now (a server-side "Ravebridge o
   their model key; rare and legendary beams; the window.
 - **Next, not built:** a Ravebridge merchant for the coins and materials, quests that ask for loot, and gear that
   works only in hero mode.
+
+### The shopkeeper's cart (2026-10-26)
+
+Ravebridge's shopkeeper ("Come back when the cart arrives") finally has his cart: talking to him offers "Show me your
+wares", which opens his shop (`RavebridgeShop`, `RavebridgeShopWindow`).
+
+- **Buy** with Ravebridge coins: healing draughts (25), a whetstone (15% more damage for 5 minutes, 60) and a hearty
+  stew (15% less damage taken for 5 minutes, 60), which stack in time; hero mode upgrades that stay: a bigger potion
+  belt (one more potion, three levels: 300, 750, 1500), light boots (half a second off the roll, 500, 1200) and a lucky
+  charm (a tenth more coins from drops, 400, 1000). And a bucket and a cooking pot for 1 coin each.
+- **Sell** the loot in the Ravebridge bag at its worth, one or all of a kind. Quest items are not for sale.
+- Everything is in `StreamingAssets/Ravebridge/loot.json` ("shop"). Upgrade levels are kept with the bag
+  (`RavebridgeQuests.State.Upgrades`); buffs last while the game runs. Buffs on now show over the skill bar.
+- The window closes when the character walks away from the shopkeeper or stops playing. Purchase and sale sounds
+  from Gatebound.
+- A bag change now starts the save tick by itself (before, a purchase with nothing dropped was only saved when hero
+  mode ended).
+- **Tested in play mode:** talking to him, the button opening the shop, every kind of purchase and its effect
+  (damage, potions 4/4, roll 2.5 s), refusals when too poor, selling, upgrades still there after a restart, the save.
+- Village smoke, flames and glows fade out near the camera now (`_NearFade` 4 m): rising to hero mode's low camera, a
+  puff right at the lens filled the screen.

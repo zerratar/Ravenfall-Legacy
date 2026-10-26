@@ -58,6 +58,9 @@ public enum SoundKind
     ItemPickup,
     PotionPickup,
     RareDrop,
+    // the Ravebridge shop
+    Purchase,
+    Sell,
 }
 
 /// <summary>

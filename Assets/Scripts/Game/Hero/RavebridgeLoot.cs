@@ -114,7 +114,7 @@ public static class RavebridgeLoot
         if (table == null) return;
 
         var at = enemy.Position;
-        var coins = Between(table.coins);
+        var coins = Mathf.RoundToInt(Between(table.coins) * RavebridgeShop.CoinFactor(hero));
         if (coins > 0) LootDrop.Create(hero, null, coins, at);
         var best = Rarity.Common;
         foreach (var list in new[] { table.drops, Data.any })
@@ -144,31 +144,53 @@ public static class RavebridgeLoot
 
     // ---- The bag -------------------------------------------------------------------------------------------
 
-    /// <summary>A drop picked up: into the bag (a healing draught into the hero's potions while there is room).</summary>
+    /// <summary>A drop picked up: into the bag, with its sound and its popup.</summary>
     public static void Pick(PlayerController player, Item item, long amount)
     {
         if (!player || amount <= 0) return;
-        var state = RavebridgeQuests.StateOf(player);
-        state.Loot ??= new Dictionary<string, long>();
         if (item == null)
         {
-            state.Coins += amount;
+            RavebridgeQuests.StateOf(player).Coins += amount;
             GameSounds.Play(SoundKind.CoinPickup, player.Position, 0.7f, 0f, player);
+            MarkChanged(player);
         }
         else
         {
-            var hero = HeroController.Active;
-            var left = amount;
-            if (item.IsPotion && hero && hero.Player == player)
-            {
-                while (left > 0 && hero.Potions < hero.MaxPotions) { hero.AddPotion(); left--; }
-            }
-            if (left > 0) state.Loot[item.Key] = (state.Loot.TryGetValue(item.Key, out var had) ? had : 0) + left;
+            Add(player, item, amount);
             GameSounds.Play(item.IsPotion ? SoundKind.PotionPickup : SoundKind.ItemPickup, player.Position, 0.7f, 0f, player);
         }
         Picked?.Invoke(player, item, amount);
+    }
+
+    /// <summary>Items into the bag (a healing draught into the hero's potions while there is room).</summary>
+    public static void Add(PlayerController player, Item item, long amount)
+    {
+        if (!player || item == null || amount <= 0) return;
+        var state = RavebridgeQuests.StateOf(player);
+        state.Loot ??= new Dictionary<string, long>();
+        var hero = HeroController.Active;
+        var left = amount;
+        if (item.IsPotion && hero && hero.Player == player)
+        {
+            while (left > 0 && hero.Potions < hero.MaxPotions) { hero.AddPotion(); left--; }
+        }
+        if (left > 0) state.Loot[item.Key] = (state.Loot.TryGetValue(item.Key, out var had) ? had : 0) + left;
         MarkChanged(player);
     }
+
+    /// <summary>Items out of the bag (sold); never below none.</summary>
+    public static void Remove(PlayerController player, Item item, long amount)
+    {
+        if (!player || item == null || amount <= 0) return;
+        var loot = RavebridgeQuests.StateOf(player).Loot;
+        if (loot == null || !loot.TryGetValue(item.Key, out var had)) return;
+        if (had - amount <= 0) loot.Remove(item.Key);
+        else loot[item.Key] = had - amount;
+        MarkChanged(player);
+    }
+
+    /// <summary>The bag changed some other way (coins spent): saved a few seconds later.</summary>
+    public static void Saved(PlayerController player) => MarkChanged(player);
 
     public static long Coins(PlayerController player) => player ? RavebridgeQuests.StateOf(player).Coins : 0;
 
@@ -226,6 +248,8 @@ public static class RavebridgeLoot
     {
         if (unsaved.Count == 0) saveAt = Time.unscaledTime + SaveAfter;
         unsaved.Add(player);
+        // its tick saves it (a purchase may come before anything has dropped)
+        LootManager.Ensure();
         Changed?.Invoke(player);
     }
 

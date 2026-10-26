@@ -17,6 +17,7 @@ namespace Shinobytes.UI
         private bool bound;
         private PlayerController talker;
         private IslandNpc npc;
+        private RavebridgeShopWindow shop;
 
         private void OnEnable()
         {
@@ -61,6 +62,8 @@ namespace Shinobytes.UI
             window.Add(options);
             window.style.display = DisplayStyle.None;
             layer.Add(window);
+            shop?.Remove();
+            shop = new RavebridgeShopWindow(layer);
             bound = true;
         }
 
@@ -68,6 +71,7 @@ namespace Shinobytes.UI
         {
             if (bound && window.panel == null) bound = false;
             if (!bound) TryBind();
+            shop?.Update();
             if (!bound || window.style.display == DisplayStyle.None) return;
 
             // walking away, or no longer playing, ends the talk
@@ -96,6 +100,7 @@ namespace Shinobytes.UI
                 var button = new Button(() =>
                 {
                     if (o.Pick == null) { Close(); return; }
+                    if (o.Closes) { Close(); o.Pick(); return; }
                     o.Pick();
                     if (talker && npc) Show(RavebridgeQuests.Talk(talker, npc.Key));
                 }) { text = o.Label };

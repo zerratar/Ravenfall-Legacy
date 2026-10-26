@@ -125,6 +125,10 @@ namespace Shinobytes.UI
                 row.Add(slots[i].Box);
             }
             bar.Add(row);
+            // the shopkeeper's buffs on now, over the bar
+            buffs = new VisualElement { pickingMode = PickingMode.Ignore };
+            buffs.AddToClassList("rf-hero-buffs");
+            bar.Insert(0, buffs);
             root.Add(bar);
 
             party = new VisualElement { pickingMode = PickingMode.Ignore };
@@ -164,6 +168,27 @@ namespace Shinobytes.UI
         }
 
         private LootLabels loot;
+        private VisualElement buffs;
+        private float nextBuffs;
+
+        private void DrawBuffs(PlayerController player)
+        {
+            if (buffs == null) return;
+            buffs.Clear();
+            foreach (var (entry, left) in RavebridgeShop.ActiveBuffs(player))
+            {
+                var chip = new VisualElement { pickingMode = PickingMode.Ignore };
+                chip.AddToClassList("rf-hero-buff");
+                var icon = new Label(entry.Glyph) { pickingMode = PickingMode.Ignore };
+                icon.AddToClassList("rf-icon");
+                icon.AddToClassList("rf-hero-buff__icon");
+                var time = new Label(Mathf.FloorToInt(left / 60f) + ":" + Mathf.FloorToInt(left % 60f).ToString("00", CultureInfo.InvariantCulture)) { pickingMode = PickingMode.Ignore };
+                time.AddToClassList("rf-hero-buff__time");
+                chip.Add(icon);
+                chip.Add(time);
+                buffs.Add(chip);
+            }
+        }
 
         private const int OrbTexture = 256;
 
@@ -328,6 +353,11 @@ namespace Shinobytes.UI
             if (!bound || !hero || !hero.Player) return;
             inventory?.Update(hero.Player);
             loot?.Update();
+            if (Time.unscaledTime >= nextBuffs)
+            {
+                nextBuffs = Time.unscaledTime + 0.5f;
+                DrawBuffs(hero.Player);
+            }
             waves?.Update();
             helpers?.Update(hero);
             if (inventory != null && inventory.IsOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping)
@@ -356,7 +386,7 @@ namespace Shinobytes.UI
                 Show(slots[i], locked, left / skill.Cooldown, locked ? string.Format(CultureInfo.InvariantCulture, Localization.UI_HERO_LOCKED, skill.UnlockLevel) : left > 0f ? left.ToString("0", CultureInfo.InvariantCulture) : Mathf.RoundToInt(skill.Mana).ToString(CultureInfo.InvariantCulture), !locked && hero.Mana < skill.Mana);
             }
             var dodge = Mathf.Max(0f, hero.DodgeReadyAt - Time.time);
-            Show(slots[4], false, dodge / HeroController.DodgeCooldown, dodge > 0f ? dodge.ToString("0.0", CultureInfo.InvariantCulture) : string.Empty, false);
+            Show(slots[4], false, dodge / hero.RollCooldown, dodge > 0f ? dodge.ToString("0.0", CultureInfo.InvariantCulture) : string.Empty, false);
             // the hero's own potions, and the healing draughts in the Ravebridge bag behind them
             var spare = RavebridgeLoot.PotionsInBag(hero.Player);
             Show(slots[5], hero.Potions <= 0 && spare <= 0, 0f, hero.Potions + "/" + hero.MaxPotions + (spare > 0 ? " +" + spare : string.Empty), false);
