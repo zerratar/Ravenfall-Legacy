@@ -79,7 +79,9 @@ public class SendItem : ChatBotCommandHandler<string>
             setType = queryParts[1];
         }
 
-        var itemSet = itemResolver.GetItemSet(setType);
+        // "ether armor set" is the armour alone, "ether weapons set" the weapons; just "ether set" is all of it
+        var only = ItemSetFilter.From(queryParts.Skip(1).ToList());
+        var itemSet = ItemSetFilter.Apply(itemResolver.GetItemSet(setType), only);
         if (itemSet.Count == 0)
         {
             client.SendReply(gm, Localization.MSG_ITEM_SET_NOT_FOUND, setType);

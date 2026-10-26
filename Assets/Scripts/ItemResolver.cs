@@ -40,6 +40,13 @@ public class ItemResolver : IItemResolver
             {
                 return setItems;
             }
+            // the managers, as the other lookups find them: without this the set was always empty unless another
+            // item command had run first ("No item sets could be found", reported on 0.9.5.2 for !gift x ether set)
+            EnsureManagers();
+            if (!itemManager || !itemManager.Loaded)
+            {
+                return setItems;
+            }
             var items = itemManager.GetItems();
             if (items == null || items.Count == 0)
             {

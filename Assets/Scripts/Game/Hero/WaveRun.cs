@@ -694,7 +694,8 @@ public class WaveRun : MonoBehaviour
                         var drops = game.AddItems(rewards);
                         result.ChestItems = drops.Count;
                         game.RavenBot?.Announce(Localization.MSG_HERO_CHEST, result.Hero, drops.Count);
-                        foreach (var msg in drops.Messages) game.RavenBot?.Announce(msg);
+                        // the per-item lines follow the streamer's loot announcement settings, as raids' and dungeons' do
+                        if (!game.HasMessageFilter("ItemDrop")) foreach (var msg in drops.Messages) game.RavenBot?.Announce(msg);
                     }
                 }
             }

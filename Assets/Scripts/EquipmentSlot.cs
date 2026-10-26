@@ -77,6 +77,17 @@ public class EquipmentSlot : MonoBehaviour
             }
 
             loadedItemImages[itemId] = sprite;
+
+            // an item newer than this build (no icon shipped): the website's picture, once fetched, from then on
+            if (!sprite)
+            {
+                var id = itemId;
+                ItemIcons.Get(itemName, texture =>
+                {
+                    if (!texture) return;
+                    loadedItemImages[id] = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                });
+            }
         }
 
         return sprite;
