@@ -252,3 +252,32 @@ The constants live in one place in the game (`SailingSpeeds`) so they can be tun
    restoring a player at sea.
 3. **Fishing at sea**, and the sea-only fish (items, drops, cooking).
 4. **The shipwright**: crafting the parts, `!boat build` for the fishing boat and the sloop, `!boat` on both bots.
+
+## Built
+
+**Phase 1 (2026-10-26).** RavenNest 62a84b65 and 4fe80baf, game c8193b2. Tested on the dev server: finishing the
+shipwright chain gives the Rowboat, soulbound and unequipped; it reaches the game through the inventory feed.
+
+**Phase 2 (2026-10-26).** Sailing your own boat, all in the game; the server only sees a player at sea as one on no
+island, as on the ferry.
+
+- `tools/sailing/bake-sea-chart.cs` bakes `StreamingAssets/Sailing/sea-chart.json`: a 10 m water grid over the
+  sailable islands (deep enough, nothing standing in it, the sea's "Do Not Walk" box ignored) and each island's dock
+  point, the end of the ferry's spline into it. `SeaChart` plans routes over it (A*, kept off the coasts, then pulled
+  straight over open water): Home to Heim is 703 m, against the ferry's 1900 m loop. Rerun the tool when islands,
+  docks or the ferry's splines move.
+- `tools/sailing/make-boat-prefabs.cs` makes `Assets/World/Sailing/Boats` (Rowboat, FishingBoat, Sloop) from the
+  PolygonPirates boats; `tools/sailing/add-boat-prefabs.cs` hangs them on the scene's GameState (`OwnBoatPrefabs`),
+  since Resources is not versioned. The hulls ride high enough that the sea never shows inside them.
+- `OwnBoat` sails a route at its tier's speed, turning like a boat, slowing through turns and coming alongside, and
+  rides the waves near the camera. The rowboat's owner sits on the bench; the bigger boats are steered standing.
+- `FerryHandler` takes the own boat whenever one is equipped: `!sail <island>` walks to the dock, the boat comes
+  alongside and sails straight there; `!sail` wanders; `!sail <island>` at sea changes course; `!disembark` lands at
+  the nearest dock. Sailing exp every 2.5 s while the boat moves. Raids, dungeons and Ravebridge take the player off
+  and put them back aboard where they were.
+- `OwnBoatLog` keeps each boat's place and course in `states/own-boats.json` (every 5 s, on landing, on quit), so a
+  restart puts the player back aboard; older than a day, or unknown, they come back by the ferry.
+- Chat: "You push off in your Rowboat, bound for Heim." and the ferry's arrival line, both in the Disembark group.
+
+Tested in play mode: Kyo to Heim and landing, wandering, a restart at sea (back aboard, still wandering), and
+`!disembark` to the nearest dock. Not yet: many players at sea at once, and the chat commands through a real bot.

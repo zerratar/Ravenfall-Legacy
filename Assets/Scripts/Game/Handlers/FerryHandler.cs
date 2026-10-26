@@ -16,8 +16,20 @@ public class FerryHandler : MonoBehaviour
     public bool Active => State > PlayerFerryState.None;
     public bool Embarking => State == PlayerFerryState.Embarking;
     public bool Disembarking => State == PlayerFerryState.Disembarking;
-    public bool IsCaptain => OnFerry && ferry.IsCaptainPosition(_transform.parent);
+    public bool IsCaptain => OnFerry && !ownBoat && ferry.IsCaptainPosition(_transform.parent);
     public IslandController Destination => destination;
+
+    /// <summary>
+    /// Aboard their own boat (docs/own-boats.md, phase 2) rather than the ferry. Everything that asks <see cref="OnFerry"/>
+    /// or <see cref="Active"/> sees them at sea the same way.
+    /// </summary>
+    public bool OnOwnBoat => ownBoat;
+    public OwnBoat OwnBoat => ownBoat;
+
+    /// <summary>With a boat equipped (and the sea chart to sail by), !sail takes it instead of the ferry.</summary>
+    public bool HasOwnBoat => player && player.Inventory != null && player.Inventory.GetEquipmentBySlot(ItemSlot.Boat) != null && SeaChart.Ready;
+
+    private OwnBoat ownBoat;
 
     private float expTime = 2.5f;
     private float expTimer = 2.5f;
@@ -61,6 +73,12 @@ public class FerryHandler : MonoBehaviour
             return;
         }
 
+        if (ownBoat)
+        {
+            PollOwnBoat();
+            return;
+        }
+
         if (OnFerry)
         {
             player.Movement.Lock();
@@ -96,6 +114,11 @@ public class FerryHandler : MonoBehaviour
             else
             {
                 player.Movement.Lock();
+
+                if (HasOwnBoat && LaunchOwnBoat(player.Island))
+                {
+                    return;
+                }
 
                 if (ferry.Docked && ferry.Island == player.Island)
                 {
@@ -166,6 +189,15 @@ public class FerryHandler : MonoBehaviour
     {
         EnsureReferences();
 
+        // already out on their own boat: a new course, no need to go ashore first
+        if (ownBoat)
+        {
+            this.destination = destination;
+            State = PlayerFerryState.Embarked;
+            SetOwnBoatCourse();
+            return;
+        }
+
         player.Animations.ResetAnimationStates();
         player.taskTarget = null;
         State = PlayerFerryState.Embarking;
@@ -182,10 +214,29 @@ public class FerryHandler : MonoBehaviour
         EnsureReferences();
         State = PlayerFerryState.Disembarking;
         this.destination = destination;
+
+        // on their own boat: it makes for that island, or the nearest one, and lands them there
+        if (ownBoat)
+        {
+            if (!destination && SeaChart.TryGetNearestDock(ownBoat.SeaPosition, IsSailable, out var dock))
+                this.destination = gameManager.Islands.Find(dock.Island);
+            SetOwnBoatCourse();
+        }
     }
 
     public bool RemoveFromFerry()
     {
+        // taken off their own boat (a raid, a dungeon, a teleport): the boat is put away, its place kept so that being
+        // put back at sea afterwards (AddPlayerToFerry) finds them where they were
+        if (ownBoat)
+        {
+            OwnBoatLog.Set(player.Id, ownBoat);
+            PutAwayOwnBoat(false);
+            State = PlayerFerryState.None;
+            ClearDestination();
+            return true;
+        }
+
         var wasOnFerry = OnFerry;
         var parent = player.transform.parent;
         var inShipPlayerPoint = parent && parent.CompareTag("ShipPlayerPoint");
@@ -292,6 +343,12 @@ public class FerryHandler : MonoBehaviour
     public void AddPlayerToFerry(IslandController destination)
     {
         ClearDestination();
+        if (HasOwnBoat)
+        {
+            this.destination = destination;
+            LaunchOwnBoatAtSea();
+            return;
+        }
         AddPlayerToFerry();
         this.destination = destination;
     }
@@ -299,6 +356,8 @@ public class FerryHandler : MonoBehaviour
     public void AddPlayerToFerry()
     {
         EnsureReferences();
+        // put back at sea (a restart, the end of a raid): on their own boat if they have one
+        if (HasOwnBoat && LaunchOwnBoatAtSea()) return;
         if (!ferry) return;
         player.InterruptAction();
         player.playerAnimations.ResetAnimationStates();
@@ -331,6 +390,169 @@ public class FerryHandler : MonoBehaviour
         }
 
         ferry.AssignBestCaptain();
+    }
+
+    // ---- Own boats (docs/own-boats.md, phase 2) --------------------------------------------------------------
+
+    private float ownBoatSaveTimer;
+
+    private void PollOwnBoat()
+    {
+        player.Movement.Lock();
+        // Sailing exp while the boat moves; none lying at anchor
+        if (ownBoat.Moving)
+        {
+            expTimer -= GameTime.deltaTime;
+            if (expTimer <= 0f)
+            {
+                expTimer = expTime;
+                player.AddExp(RavenNest.Models.Skill.Sailing);
+            }
+        }
+
+        ownBoatSaveTimer -= GameTime.deltaTime;
+        if (ownBoatSaveTimer <= 0f)
+        {
+            ownBoatSaveTimer = 5f;
+            OwnBoatLog.Set(player.Id, ownBoat);
+        }
+    }
+
+    private bool IsSailable(string island)
+    {
+        var i = gameManager ? gameManager.Islands.Find(island) : null;
+        return i && i.Sailable;
+    }
+
+    /// <summary>From the dock of the island they stand on: the boat comes alongside and they step aboard.</summary>
+    private bool LaunchOwnBoat(IslandController from)
+    {
+        var item = player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
+        if (item == null || !from || !SeaChart.TryGetDock(from.Identifier, out var dock)) return false;
+        Board(OwnBoat.Launch(player, BoatItems.TierOf(item.Item), dock.Position, dock.Heading + 180f));
+        SetOwnBoatCourse();
+        if (!AdminControlData.ControlPlayers && !gameManager.HasMessageFilter("Disembark"))
+        {
+            gameManager.RavenBot?.SendReply(player, destination ? Localization.MSG_OWN_BOAT_SAILING : Localization.MSG_OWN_BOAT_WANDERING, item.Item.Name, destination ? destination.Identifier : "");
+        }
+        return true;
+    }
+
+    /// <summary>Back aboard out at sea: where the boat was before a restart, or by the ferry if it is not known.</summary>
+    private bool LaunchOwnBoatAtSea()
+    {
+        EnsureReferences();
+        var item = player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
+        if (item == null) return false;
+        Vector3 at; float heading;
+        if (OwnBoatLog.TryGet(player.Id, out var saved))
+        {
+            at = new Vector3(saved.X, SeaChart.Sea, saved.Z);
+            heading = saved.Heading;
+            if (!destination && !string.IsNullOrEmpty(saved.Destination)) destination = gameManager.Islands.Find(saved.Destination);
+        }
+        else
+        {
+            at = ferry ? ferry.transform.position : player.Position;
+            heading = ferry ? ferry.transform.eulerAngles.y : 0f;
+        }
+        if (ownBoat) PutAwayOwnBoat(false);
+        Board(OwnBoat.Launch(player, BoatItems.TierOf(item.Item), at, heading));
+        SetOwnBoatCourse();
+        return true;
+    }
+
+    private void Board(OwnBoat boat)
+    {
+        ownBoat = boat;
+        boat.Arrived += OnOwnBoatArrived;
+        player.InterruptAction();
+        player.taskTarget = null;
+        player.Animations.ResetAnimationStates();
+        player.Movement.Lock();
+        player.transform.SetParent(boat.Seat);
+        player.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        player.Island = null;
+        isOnFerry = true;
+        State = PlayerFerryState.Embarked;
+        // rowing sits; the bigger boats are steered standing
+        if (boat.Tier == BoatItems.Tier.Rowboat) player.Animations.Sit();
+        else player.Animations.SetCaptainState(true);
+        ownBoatSaveTimer = 0f;
+    }
+
+    private void SetOwnBoatCourse()
+    {
+        if (!ownBoat) return;
+        if (destination && ownBoat.SailTo(destination.Identifier)) return;
+        if (destination)
+        {
+            // no way there over the chart (an island with no dock point): wander rather than sit still
+            Shinobytes.Debug.LogWarning(player.Name + "'s boat has no way to " + destination.Identifier + ", wandering instead.");
+            destination = null;
+        }
+        if (State == PlayerFerryState.Disembarking)
+        {
+            // nowhere to land: stay aboard
+            State = PlayerFerryState.Embarked;
+        }
+        ownBoat.Wander();
+    }
+
+    private void OnOwnBoatArrived(OwnBoat boat)
+    {
+        var island = gameManager.Islands.Find(boat.Destination);
+        if (!island || !island.DockingArea)
+        {
+            boat.Wander();
+            return;
+        }
+        LandOwnBoat(island);
+    }
+
+    /// <summary>Steps ashore on the island's dock; the boat is put away until they sail again.</summary>
+    private void LandOwnBoat(IslandController island)
+    {
+        PutAwayOwnBoat(true);
+        player.Movement.SetPosition(island.DockingArea.DockPosition);
+        player.Movement.Unlock();
+        State = PlayerFerryState.None;
+        player.Island = island;
+        player.taskTarget = null;
+        player.playerAnimations.ResetAnimationStates();
+        ClearDestination();
+
+        var task = player.GetTask();
+        if (task != TaskType.None) player.GotoClosest(task);
+
+        if (!AdminControlData.ControlPlayers && !gameManager.HasMessageFilter("Disembark"))
+        {
+            gameManager.RavenBot?.SendReply(player, Localization.MSG_FERRY_ARRIVED, island.Identifier);
+        }
+    }
+
+    private void PutAwayOwnBoat(bool forget)
+    {
+        if (!ownBoat) return;
+        ownBoat.Arrived -= OnOwnBoatArrived;
+        if (player && player.transform.parent == ownBoat.Seat) player.transform.SetParent(null);
+        player.Animations.SetCaptainState(false);
+        player.Animations.ClearOnsenAnimations();
+        Destroy(ownBoat.gameObject);
+        ownBoat = null;
+        isOnFerry = false;
+        if (forget) OwnBoatLog.Remove(player.Id);
+    }
+
+    private void OnDestroy()
+    {
+        // the player left the game at sea: the boat goes with them, its place kept for when they come back
+        if (ownBoat)
+        {
+            OwnBoatLog.Set(player.Id, ownBoat);
+            OwnBoatLog.Flush(true);
+            Destroy(ownBoat.gameObject);
+        }
     }
 
     public void MoveToSailorPosition()

@@ -216,6 +216,10 @@ Assets/Village/Derived.meta
 # The swaying plants' shader, loaded from Resources.
 !Assets/World/Foliage.meta
 !Assets/World/Foliage/**
+# The own boats' prefabs (docs/own-boats.md), made from the kits by tools/sailing/make-boat-prefabs.cs and
+# referenced by the scene's OwnBoatPrefabs.
+!Assets/World/Sailing.meta
+!Assets/World/Sailing/**
 
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
