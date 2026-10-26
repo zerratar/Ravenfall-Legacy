@@ -1,7 +1,6 @@
 # Own boats: a player's own ship
 
-Status: proposal, 2026-10-23. For the version after 0.9.5; nothing is built. The open questions at the end need
-answers before work starts.
+Status: decided 2026-10-26, for v0.9.6, built in phases (see "Build phases" at the end). Proposed 2026-10-23.
 
 ## The idea
 
@@ -108,8 +107,8 @@ existing path works for it without new code: loot, rewards, the token shop, savi
 the transmog and enchantment fields for customization.
 
 - **Per character**, like the Sailing and Fishing skills it goes with.
-- **Tradeable until first launched**, then soulbound (the stack's `Soulbound`, set by the server on first use):
-  boats from rewards or the marketplace can change hands, a boat in use cannot.
+- **Soulbound from the start** (decided 2026-10-26) for the quest's Rowboat. Crafted boats (phase 4) may be
+  tradeable; that is decided when the shipwright is built.
 - **Equipped in its own boat slot** (decided 2026-10-23): the equipped boat is the one used, `!equip` and
   `!unequip` work as for gear, and a player who wants the ferry (for its captain bonus or a boost) unequips it. The
   slot changes no stats and nothing on the character; the equipment code needs to know that.
@@ -200,16 +199,56 @@ Answered 2026-10-23:
 - **Boat or ferry**: the boat is equipped; unequip it to take the ferry.
 - **The shipwright and its numbers**: the suggestion above, to be revised.
 
-Still open:
+Answered 2026-10-26:
 
-1. Per character and tradeable until first launch, soulbound after: agreed?
-2. **Riding along on someone's boat**: the user likes it ("lots of fun") but not for the first version. It probably
-   needs something more basic first, such as viewers forming parties (who sails with whom, who decides where to go,
-   what happens when the owner leaves the stream). To be looked into separately.
-3. Fishing at sea: the same fish as on land, or some only at sea?
-4. How much faster than the ferry should an own boat be?
-5. **Storms damaging or sinking boats**: liked, but not for the first version. The catch: weather is per stream and
-   a streamer can turn changing weather off (and potato mode holds it fair), so damage tied to the weather that
-   viewers see would hit players on some streams and never on others. If it comes, it should come from a server
-   side sea state that is the same for everyone (the stream shows it if its weather is on), or be something a
-   player opts into, like sailing into a storm for better fish.
+1. **Binding**: soulbound from the start, at least the boat the quest gives. Later boats that are crafted need not
+   be soulbound.
+2. **Fishing at sea**: both. The fish from land can be caught at sea too, and some fish only at sea.
+3. **Speed**: by the player's Sailing level and the boat's tier, with a cap. The ferry is capped as well, since today
+   it scales far too fast. See "Speeds" below.
+4. **Riding along** and **storms damaging boats**: liked, not in the first version (notes below).
+
+Notes from 2026-10-23:
+
+- **Riding along on someone's boat**: the user likes it ("lots of fun") but not for the first version. It probably
+  needs something more basic first, such as viewers forming parties (who sails with whom, who decides where to go,
+  what happens when the owner leaves the stream). To be looked into separately.
+- **Storms damaging or sinking boats**: liked, but not for the first version. The catch: weather is per stream and
+  a streamer can turn changing weather off (and potato mode holds it fair), so damage tied to the weather that
+  viewers see would hit players on some streams and never on others. If it comes, it should come from a server
+  side sea state that is the same for everyone (the stream shows it if its weather is on), or be something a
+  player opts into, like sailing into a storm for better fish.
+
+## Speeds (decided 2026-10-26)
+
+Today the ferry's speed is 20 plus the captain's Sailing level, with no cap. A 500 m leg takes 50 s with a level 0
+captain, 8 s at level 100, 3 s at level 300 and 1 s at 999. On a high level stream the ferry barely moves before it
+docks again, and its passengers barely get Sailing exp.
+
+From now on, levels fill a curve towards a cap instead of adding speed without end:
+
+    reach(level) = 1 - e^(-level / 150)      (0 at level 0, 0.49 at 100, 0.86 at 300, 1 at 999)
+    speed = slowest + (fastest - slowest) x reach(Sailing level)
+
+| | Slowest (level 0) | Level 100 | Level 300 | Fastest | Notes |
+|---|---|---|---|---|---|
+| Ferry | 20 | 49 | 72 | 80 | the captain's level; boost scrolls multiply on top, as today |
+| Rowboat (quest boat, soulbound) | 12 | 18 | 22 | 24 | own boats hold a steady speed; the ferry's figures are its peak, it eases in and out and averages half |
+| Fishing boat | 16 | 26 | 33 | 36 | crafted, phase 4 |
+| Sloop | 20 | 35 | 46 | 50 | crafted, phase 4 |
+
+Why these numbers: an own boat goes straight to the island and never waits at a dock, which is what owning one is
+for. From Home to Heim the ferry sails round four legs (about 1900 m) and stops three times; the rowboat sails about
+900 m. At level 100 the ferry takes about 80 s plus the stops, the rowboat about 50 s, the fishing boat 35 s and the
+sloop 26 s. The ferry stays worth taking for its captain bonus and its boost scrolls, which are for the ferry only.
+The constants live in one place in the game (`SailingSpeeds`) so they can be tuned.
+
+## Build phases
+
+1. **The boats and the ferry's cap.** Server: item type `Boat`, a `Boat` equipment slot, the three boat items, and
+   the shipwright chain's end gives the Rowboat, soulbound (once per character). Game: the ferry's speed curve, the
+   boat slot and the boat item (shown in the inventory, never drawn on the character).
+2. **Sailing your own boat.** The sea graph, `!sail <island>`, wandering, `!disembark`, boats in the world, saving and
+   restoring a player at sea.
+3. **Fishing at sea**, and the sea-only fish (items, drops, cooking).
+4. **The shipwright**: crafting the parts, `!boat build` for the fishing boat and the sloop, `!boat` on both bots.

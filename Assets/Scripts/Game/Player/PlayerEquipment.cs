@@ -416,6 +416,9 @@ public class PlayerEquipment : MonoBehaviour
 
     public void Equip(GameInventoryItem item, bool updateAppearance = true)
     {
+        // a boat is equipped to be the one !sail takes; it is never drawn on the character
+        if (BoatItems.Is(item?.Item)) return;
+
         if (!baseItemPrefab)
         {
             Shinobytes.Debug.LogError("BaseItemPrefab not set on player!! Unable to create item");

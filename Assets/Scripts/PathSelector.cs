@@ -31,7 +31,8 @@ public class PathSelector : MonoBehaviour
     {
         var oldDuration = duration;
         var effectBoost = Mathf.Max(1, ferryController.GetFerryBoostEffect());
-        var adjustedSpeed = (movementSpeed + ferryController.CaptainSpeedAdjustment) * effectBoost + devSpeedBoost;
+        // the captain's level fills a curve towards four times the slowest speed (SailingSpeeds), no longer 20 + level
+        var adjustedSpeed = SailingSpeeds.Ferry(movementSpeed, (int)ferryController.CaptainSpeedAdjustment) * effectBoost + devSpeedBoost;
         duration = Mathf.Max(1f, (2f * pathLength) / adjustedSpeed);
         if (oldDuration != duration && oldDuration > 0f)
         {
@@ -78,7 +79,7 @@ public class PathSelector : MonoBehaviour
             transform.position = position;
             transform.rotation = Quaternion.LookRotation(tangent, upVector);
             var effectBoost = Mathf.Max(1, ferryController.GetFerryBoostEffect());
-            ferryController.SetMovementEffect(Mathf.Clamp01(((movementSpeed + ferryController.CaptainSpeedAdjustment) * effectBoost) / movementSpeed));
+            ferryController.SetMovementEffect(Mathf.Clamp01((SailingSpeeds.Ferry(movementSpeed, (int)ferryController.CaptainSpeedAdjustment) * effectBoost) / movementSpeed));
 
             if (elapsed >= duration)
             {

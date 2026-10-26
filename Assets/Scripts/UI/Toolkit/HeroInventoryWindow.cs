@@ -22,7 +22,7 @@ namespace Shinobytes.UI
         private static readonly ItemSlot[] Slots =
         {
             ItemSlot.Head, ItemSlot.Amulet, ItemSlot.Cape, ItemSlot.Chest, ItemSlot.Gloves, ItemSlot.Belt, ItemSlot.Leggings,
-            ItemSlot.Boots, ItemSlot.Ring, ItemSlot.MeleeWeapon, ItemSlot.Shield, ItemSlot.RangedWeapon, ItemSlot.MagicWeapon, ItemSlot.Pet,
+            ItemSlot.Boots, ItemSlot.Ring, ItemSlot.MeleeWeapon, ItemSlot.Shield, ItemSlot.RangedWeapon, ItemSlot.MagicWeapon, ItemSlot.Pet, ItemSlot.Boat,
         };
 
         private readonly VisualElement window;
@@ -168,7 +168,7 @@ namespace Shinobytes.UI
             foreach (var slot in Slots)
             {
                 var item = worn.FirstOrDefault(i => i.Item != null && Inventory.GetEquipmentSlot(i.Item.Type) == slot);
-                if (item == null && (slot == ItemSlot.Belt || slot == ItemSlot.Cape)) continue; // rarely worn: shown only when worn
+                if (item == null && (slot == ItemSlot.Belt || slot == ItemSlot.Cape || slot == ItemSlot.Boat)) continue; // rarely worn: shown only when worn
                 gear.Add(Tile(item, slot, true));
             }
 

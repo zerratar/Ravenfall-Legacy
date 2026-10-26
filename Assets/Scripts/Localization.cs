@@ -274,7 +274,7 @@ public static class Localization
     public static string UI_CHAIN_SHIPWRIGHT_5 = "Bring her resin to seal the hull.";
     public static string UI_CHAIN_SHIPWRIGHT_6 = "Pirates have been eyeing the shipyard. Win a raid to scare them off.";
     public static string UI_CHAIN_SHIPWRIGHT_7 = "Bring her coal for the forge, for the last fittings.";
-    public static string UI_CHAIN_SHIPWRIGHT_END = "The keel is laid! The first piece of your own boat is ready, waiting for the day you sail it.";
+    public static string UI_CHAIN_SHIPWRIGHT_END = "She is done! Your own rowboat is waiting in your inventory. !equip rowboat, and !sail takes it straight to the island you name.";
     public static string UI_CHAIN_PUMPKIN = "The Pumpkin King";
     public static string UI_CHAIN_PUMPKIN_1 = "Something stirs in the pumpkin patch. Harvest it before it harvests you.";
     public static string UI_CHAIN_PUMPKIN_2 = "The pumpkins have faces now, and friends. Defeat the spirits that came with them.";
@@ -1607,6 +1607,7 @@ public static class Localization
     public static string UI_SLOT_SHIELD = "Shield";
     public static string UI_SLOT_PET = "Pet";
     public static string UI_SLOT_CAPE = "Cape";
+    public static string UI_SLOT_BOAT = "Boat";
     public static string UI_HOUSE_WOODCUTTING = "Lumbermill";
     public static string UI_HOUSE_MAGIC = "Magic house";
     public static string UI_HOUSE_RANGED = "Archer range";
@@ -2075,6 +2076,7 @@ public static class Localization
             case ItemSlot.Shield: return UI_SLOT_SHIELD;
             case ItemSlot.Pet: return UI_SLOT_PET;
             case ItemSlot.Cape: return UI_SLOT_CAPE;
+            case ItemSlot.Boat: return UI_SLOT_BOAT;
             default: return slot.ToString();
         }
     }

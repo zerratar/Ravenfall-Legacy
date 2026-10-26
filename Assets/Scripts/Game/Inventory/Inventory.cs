@@ -42,7 +42,8 @@ public class GameInventoryItem
         Category == ItemCategory.Pet ||
         Category == ItemCategory.Skin ||
         Category == ItemCategory.Ring ||
-        Category == ItemCategory.Amulet;
+        Category == ItemCategory.Amulet ||
+        Category == BoatItems.Category;
 
     public bool CanBeEquipped()
     {
@@ -1275,6 +1276,7 @@ public class Inventory : MonoBehaviour
             case ItemType.TwoHandedSword: return ItemSlot.MeleeWeapon;
             case ItemType.TwoHandedStaff: return ItemSlot.MagicWeapon;
             case ItemType.TwoHandedBow: return ItemSlot.RangedWeapon;
+            case BoatItems.Type: return ItemSlot.Boat;
         }
 
         return ItemSlot.None;
@@ -1679,5 +1681,6 @@ public enum ItemSlot
     RangedWeapon,
     Shield,
     Pet,
-    Cape
+    Cape,
+    Boat
 }
