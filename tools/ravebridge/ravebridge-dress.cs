@@ -1,7 +1,7 @@
 // Ravebridge, dressed after Lumbridge (docs/references/ravebridge/web/README.md): roads drawn with the road tool
 // (WorldRoad, grey cobbles as Lumbridge's stone roads), red tiled roofs, more of the town, fenced fields and farms, woods
 // and trees, and parapets on the stone bridge. Rerunnable: it clears its own group ("Dressing") and the path paint.
-// Run ravebridge-layout.cs first (the church, graveyard and Bob's axes in Lumbridge's places). Edit mode, Unity CLI:
+// Run ravebridge-layout.cs and ravebridge-swamp.cs first (Lumbridge's places; the swamp's pools). Edit mode, Unity CLI:
 // unity command eval_file --file tools/ravebridge/ravebridge-dress.cs --timeout 180
 var island = UnityEngine.GameObject.Find("============ WORLD/Islands").transform.Find("Ravebridge");
 var old = island.Find("Dressing");
@@ -110,6 +110,8 @@ foreach (UnityEngine.Transform c in island.Find("Playable"))
             if (e != c && (e.GetComponent<EnemyController>() || e.name.Contains("Patch") || e.name.Contains("Rock") || e.name.Contains("Fishing")))
                 keepOut.Add((V(e.position.x, e.position.z), e.GetComponent<EnemyController>() ? 8f : 5f));
 foreach (var f in island.GetComponentsInChildren<ResourceField>(true)) for (var i = 0; i < f.Count; i++) keepOut.Add((V(f.Instances[i].position.x, f.Instances[i].position.z), 5f));
+// the swamp's pools (ravebridge-swamp.cs, run before this)
+foreach (var pool in island.GetComponentsInChildren<SwampPool>(true)) keepOut.Add((V(pool.transform.position.x, pool.transform.position.z), UnityEngine.Mathf.Max(pool.RadiusX, pool.RadiusZ) + 2f));
 // the cow field, the farm's fences and the castle's own fences stay open inside
 foreach (UnityEngine.Transform c in island.Find("Environment"))
     if (c.name.StartsWith("Fence") && c.gameObject.activeSelf)

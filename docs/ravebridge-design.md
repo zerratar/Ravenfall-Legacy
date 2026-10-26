@@ -190,8 +190,14 @@ stay local, the README lists the sources). The top view was laid beside RuneHQ's
 - Two backdrop mountains that rose behind the town moved out of the view.
 - The terrains are in LFS (`Assets/TerrainData_*.asset`). Navmesh rebaked; every training spot is reachable.
 
-Still to do: pools in the swamp (the terrain's 5 m heights make dug pools into pits; needs water planes), sheep for
-the pen, and the desert's border fence reads as a heavy black line from far away.
+- **The swamp** (`tools/ravebridge/ravebridge-swamp.cs`, run before the dressing): five still pools of murky water
+  (`SwampPool`: a disc of the sea's own shader tuned dark and calm) in shallow bowls dug into the mud, with reeds round
+  their shores and lily pads (the pack's atlas on a URP material, `Assets/World/Water/Swamp Lilypads.mat`). The tool
+  first puts back the swamp's ground as committed before any pool (`swamp-heights-before.bin`), so reruns match. The
+  pools are not walkable for the navmesh.
+
+Still to do: sheep for the pen (no sheep model yet), and the desert's border fence reads as a heavy black line from
+far away.
 
 ## Built (2026-10-25)
 
