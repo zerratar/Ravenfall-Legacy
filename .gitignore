@@ -226,6 +226,9 @@ Assets/Village/Derived.meta
 # Hero mode's skill icons and HUD art (HeroHudView, HeroMinimap), drawn with the Image Generator, loaded from Resources.
 !Assets/World/Hero.meta
 !Assets/World/Hero/**
+# Ironhill's own pieces (the sleeping dragon's animator), docs/ironhill-rework.md
+!Assets/World/Ironhill.meta
+!Assets/World/Ironhill/**
 
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
