@@ -289,6 +289,8 @@ namespace Shinobytes
 
                 sb.AppendLine("Unity Version: " + Application.unityVersion);
                 sb.AppendLine("Game Version: " + Application.version);
+                sb.AppendLine("Game Folder: " + System.IO.Path.GetDirectoryName(Application.dataPath));
+                sb.AppendLine("Started: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
                 sb.AppendLine();
                 sb.AppendLine("[System]");
