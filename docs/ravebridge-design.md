@@ -161,8 +161,10 @@ the playing by hand from 6c.
 
 All of 6a to 6e, with these changes from the plan:
 
-- **Terrain:** it keeps its own material for now. The Ravenfall terrain material reads the painted layers in the
-  other islands' order, and on Ravebridge's terrain it lost the roads, the desert and the dirt.
+- **Terrain:** the Ravenfall terrain material, one per terrain (Ravebridge Terrain North and South, as the splat
+  maps are the material's), since 2026-10-26. Ravebridge is painted with grass as its default, so these draw the
+  first layer as dirt (the desert and the dirt, above the beach line) and the eighth as cobblestones (the roads),
+  switched by "Draw the first layer as dirt". The other islands' material is unchanged.
 - **Fishing:** the river runs between steep banks, 10 to 13 m from the walkable ground, so its fishing spots reach
   14 m.
 - **The swamp:** mud painted into the terrain, with mangrove roots and trees and dead trees. PolygonNature's swamp

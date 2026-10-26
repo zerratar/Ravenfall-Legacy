@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Ravebridge Terrain North
+  m_Shader: {fileID: 4800000, guid: 980c9897c695f2c4e9f91634c670df74, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Cobble:
+        m_Texture: {fileID: 2800000, guid: f9cc52b83b2d7c646a0cae7e71450896, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Dirt:
+        m_Texture: {fileID: 2800000, guid: 90e1d4ee0eac50d47bb8979169cf1302, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Grass2:
+        m_Texture: {fileID: 2800000, guid: 4ab04421b5858c9448571c40e080bbf8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Main:
+        m_Texture: {fileID: 2800000, guid: fc585afa41689fc4286f1e3ab201e5c1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Mud:
+        m_Texture: {fileID: 2800000, guid: a4d303d853c9f8b4f97aeb18ca62b367, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal:
+        m_Texture: {fileID: 2800000, guid: 5ea4cddca480e544f85d14b868ebb70a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Road:
+        m_Texture: {fileID: 2800000, guid: 2021285e492a4774bb1a0e59b3756ade, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RoadMask:
+        m_Texture: {fileID: 2800002, guid: 47be3aee89ef44a42a4e3fa6439ad5ce, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Rock:
+        m_Texture: {fileID: 2800000, guid: 4491a1dc35487984cbaa9a2ab8bc7fb3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Secondary:
+        m_Texture: {fileID: 2800000, guid: 6064e4e3e79a3a1408ee2059beaa066b, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SnowMask:
+        m_Texture: {fileID: -3812277546450721240, guid: 47be3aee89ef44a42a4e3fa6439ad5ce, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AntiTile: 0.5
+    - _Brightness: 0.8
+    - _FirstLayerDirt: 1
+    - _MainMetallic: 0
+    - _MainSmoothness: 0
+    - _Normal_Strength: 0.5
+    - _Road_Edge_1: 0
+    - _Road_Edge_2: 1
+    - _SeaLevel: -3.31
+    - _SecondaryHeight: -3.11
+    - _SecondaryMetalic: 0.161
+    - _SecondarySmoothness: 0
+    - _Specular: 0.4
+    - _Threshold: 0.04
+    - _Variation: 0.6
+    - _VariationScale: 70
+    - _WetSand: 0.35
+    m_Colors:
+    - _DryTint: {r: 1.12, g: 1.05, b: 0.78, a: 1}
+    - _Grass2Tint: {r: 0.8, g: 0.95, b: 1, a: 1}
+    - _GrassTint: {r: 0.72, g: 0.88, b: 0.96, a: 1}
+    - _LayerUVScale: {r: 500, g: 500, b: 0, a: 0}
+    - _LushTint: {r: 0.88, g: 1.04, b: 0.86, a: 1}
+    - _MainUVScale: {r: 500, g: 500, b: 0, a: 0}
+    - _SecondaryUVScale: {r: 500, g: 500, b: 0, a: 0}
+    - _SnowColor: {r: 0.86666673, g: 0.98039216, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

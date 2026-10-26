@@ -9,7 +9,9 @@
 //   - the sand darkens where the sea wets it;
 //   - the painted layers the graph ignored are drawn: the second grass where it is painted (the terrain's first splat
 //     map's alpha), mud and rock (the second map's red and blue). The first layer (meadow dirt) stays grass, as it is
-//     the terrain's default and covers whole islands.
+//     the terrain's default and covers whole islands; on a terrain painted with grass as its default (Ravebridge) the
+//     first layer is drawn as dirt instead, above the beach line, and an eighth layer (the second map's alpha) as
+//     cobblestones. Each terrain has a material of its own, as the splat maps are the material's.
 //
 // The variation costs one more texture read and a few noise lookups a pixel, and a painted layer a read where it is. Lit like the rest of the scene: shadows,
 // cookies (the cloud shadows), ambient occlusion, additional lights, fog.
@@ -54,6 +56,9 @@ Shader "Ravenfall/Terrain"
         [NoScaleOffset] _Rock("Rock", 2D) = "white" {}
         _LayerUVScale("Painted layers tiling (over the terrain)", Vector) = (500, 500, 0, 0)
         _Grass2Tint("Second grass colour", Color) = (0.8, 0.95, 1.0, 1)
+        [Toggle] _FirstLayerDirt("Draw the first layer as dirt, not grass (Ravebridge)", Float) = 0
+        [NoScaleOffset] _Dirt("Dirt (the first layer, when drawn)", 2D) = "white" {}
+        [NoScaleOffset] _Cobble("Cobblestones (the eighth layer)", 2D) = "white" {}
     }
 
     HLSLINCLUDE
@@ -68,6 +73,8 @@ Shader "Ravenfall/Terrain"
     TEXTURE2D(_Grass2);     SAMPLER(sampler_Grass2);
     TEXTURE2D(_Mud);        SAMPLER(sampler_Mud);
     TEXTURE2D(_Rock);       SAMPLER(sampler_Rock);
+    TEXTURE2D(_Dirt);       SAMPLER(sampler_Dirt);
+    TEXTURE2D(_Cobble);     SAMPLER(sampler_Cobble);
 
     CBUFFER_START(UnityPerMaterial)
         float4 _MainUVScale;
@@ -94,6 +101,7 @@ Shader "Ravenfall/Terrain"
         half _WetSand;
         half _Specular;
         half _Brightness;
+        half _FirstLayerDirt;
     CBUFFER_END
     // how wet the rain has made the ground, 0 to 1 (Weather)
     float _RavenfallWetness;
@@ -198,13 +206,13 @@ Shader "Ravenfall/Terrain"
                 float slow = TerrainNoise(positionWS.xz / _VariationScale) * 0.65 + TerrainNoise(positionWS.xz / (_VariationScale * 0.36) + 7.3) * 0.35;
                 half3 tint = lerp(_LushTint.rgb, _DryTint.rgb, smoothstep(0.25, 0.75, slow));
                 // the splat maps: the first holds layers 0 to 3 (meadow dirt, footpath, grass, second grass), the second
-                // 4 to 7 (mud, snow, rock)
+                // 4 to 7 (mud, snow, rock, cobblestones)
                 half4 splat0 = SAMPLE_TEXTURE2D(_RoadMask, sampler_RoadMask, uv);
                 half4 splat1 = SAMPLE_TEXTURE2D(_SnowMask, sampler_SnowMask, uv);
                 float2 uvLayer = uv * _LayerUVScale.xy;
 
                 // the second grass where it is painted, its share of the grassy layers
-                half grassy = splat0.r + splat0.b + splat0.a;
+                half grassy = splat0.r * (1.0 - _FirstLayerDirt) + splat0.b + splat0.a;
                 half second = grassy > 0.001 ? splat0.a / grassy : 0.0;
                 [branch] if (second > 0.004)
                 {
@@ -235,6 +243,11 @@ Shader "Ravenfall/Terrain"
                 // mud and rock where they are painted
                 [branch] if (splat1.r > 0.004) albedo = lerp(albedo, SAMPLE_TEXTURE2D(_Mud, sampler_Mud, uvLayer).rgb, splat1.r);
                 [branch] if (splat1.b > 0.004) albedo = lerp(albedo, SAMPLE_TEXTURE2D(_Rock, sampler_Rock, uvLayer * 0.8).rgb, splat1.b);
+                // the dirt and the desert where the first layer is painted (above the beach line: the sand stays below
+                // it), and the cobbled roads; at the layers' own tile sizes (4 m and 3 m on a 2560 m terrain)
+                half dirt = splat0.r * height * _FirstLayerDirt;
+                [branch] if (dirt > 0.004) albedo = lerp(albedo, SAMPLE_TEXTURE2D(_Dirt, sampler_Dirt, uvLayer * 1.28).rgb, dirt);
+                [branch] if (splat1.a > 0.004) albedo = lerp(albedo, SAMPLE_TEXTURE2D(_Cobble, sampler_Cobble, uvLayer * 1.7).rgb, splat1.a);
                 albedo *= _Brightness;
 
                 // snow and the footpaths from the splat maps, blended as the graph did (lighten, darken)
