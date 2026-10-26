@@ -247,3 +247,7 @@ tools/fontawesome7-metadata/
 tools/ImageGenService/bin/
 tools/ImageGenService/obj/
 !tools/ImageGenService/ImageGenService.csproj
+
+# third-party reference pictures for Ravebridge: kept locally, only the README with the sources is versioned
+docs/references/ravebridge/web/*
+!docs/references/ravebridge/web/README.md

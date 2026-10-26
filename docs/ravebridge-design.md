@@ -167,6 +167,22 @@ It unlocks `island_ravebridge` and a decor piece: a signpost that reads "Ravebri
 Rebirth and the endgame for characters with every skill at 999, to work out together. Hero mode (phase 7) builds on
 the playing by hand from 6c.
 
+## Dressed after Lumbridge (2026-10-26)
+
+References in `docs/references/ravebridge/web` (maps from RuneHQ and the wikis, aerial and ground shots; the pictures
+stay local, the README lists the sources). `tools/ravebridge/ravebridge-dress.cs` (rerunnable, group "Dressing"):
+
+- **Roads:** cobbled roads painted into the terrain joining the town: west past Bob's axes and the kitchen to the
+  windmill, up to the church, across to the wooden bridge, and south along the castle to the swamp's mine; a cobbled
+  path from each new house's door. The Ravebridge terrains are not in git (180 + 45 MB); rerun the script to repaint.
+- **Red tiled roofs** on the town's houses (the Fantasy Kingdom palette 02), as in Lumbridge.
+- **More town:** the Sheared Ram (pub), a smithy, two more houses and Father Urhney's hut by the swamp.
+- **Woods:** a forest west of the castle with glades and dead trees, a belt toward the swamp, clumps round the town.
+- **The windmill's crop field,** fenced with a gate on the road; the road now reaches the windmill's door.
+- **The stone bridge** got stone parapets on both sides.
+- Two backdrop mountains that rose behind the town moved out of the view.
+- Navmesh rebaked; every training spot is reachable from the spawn.
+
 ## Built (2026-10-25)
 
 All of 6a to 6e, with these changes from the plan:
