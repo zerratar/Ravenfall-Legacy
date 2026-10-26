@@ -80,6 +80,9 @@ namespace Shinobytes.UI
 
             var server = CurrentServer();
             if (server != shownServer) ApplyServer(server);
+
+            // hero mode's health orb takes the corner: the warnings step aside to its right
+            strip.parent?.EnableInClassList("rf-conn-stack--hero", HeroController.Active);
         }
 
         private Status Current()

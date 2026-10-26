@@ -63,6 +63,7 @@ namespace Shinobytes.UI
         private sealed class PartyRow
         {
             public VisualElement Box;
+            public Label Style;
             public Label Name;
             public VisualElement Fill;
         }
@@ -144,6 +145,9 @@ namespace Shinobytes.UI
             {
                 var r = new PartyRow { Box = new VisualElement { pickingMode = PickingMode.Ignore } };
                 r.Box.AddToClassList("rf-hero-party__row");
+                r.Style = new Label { pickingMode = PickingMode.Ignore };
+                r.Style.AddToClassList("rf-icon");
+                r.Style.AddToClassList("rf-hero-party__style");
                 r.Name = new Label { pickingMode = PickingMode.Ignore };
                 r.Name.AddToClassList("rf-hero-party__name");
                 var track = new VisualElement { pickingMode = PickingMode.Ignore };
@@ -151,7 +155,11 @@ namespace Shinobytes.UI
                 r.Fill = new VisualElement { pickingMode = PickingMode.Ignore };
                 r.Fill.AddToClassList("rf-hero-party__fill");
                 track.Add(r.Fill);
-                r.Box.Add(r.Name);
+                var head = new VisualElement { pickingMode = PickingMode.Ignore };
+                head.AddToClassList("rf-hero-party__head");
+                head.Add(r.Style);
+                head.Add(r.Name);
+                r.Box.Add(head);
                 r.Box.Add(track);
                 party.Add(r.Box);
                 partyRows.Add(r);
@@ -479,7 +487,14 @@ namespace Shinobytes.UI
                     var h = p.Stats.Health;
                     var share = h.MaxLevel > 0 ? Mathf.Clamp01(h.CurrentValue / (float)h.MaxLevel) : 0f;
                     row.Fill.style.width = new Length(share * 100f, LengthUnit.Percent);
+                    // green, then yellow under half, red under a quarter: who needs healing reads at a glance
+                    row.Box.EnableInClassList("rf-hero-party__row--hurt", share < 0.5f && share >= 0.25f);
+                    row.Box.EnableInClassList("rf-hero-party__row--low", share < 0.25f);
                     row.Box.EnableInClassList("rf-hero-party__row--down", p.Stats.IsDead);
+                    // how they fight, with the hero's style glyphs
+                    var style = p.TrainingHealing ? HeroStyle.Healing : p.TrainingMagic ? HeroStyle.Magic : p.TrainingRanged ? HeroStyle.Ranged : HeroStyle.Melee;
+                    row.Style.text = HeroSkill.StyleIcon(style);
+                    foreach (HeroStyle st in System.Enum.GetValues(typeof(HeroStyle))) row.Style.EnableInClassList("rf-hero-party__style--" + st.ToString().ToLowerInvariant(), st == style);
                 }
             }
             for (var i = shown; i < partyRows.Count; i++) partyRows[i].Box.style.display = DisplayStyle.None;

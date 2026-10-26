@@ -2391,9 +2391,43 @@
     overflow: hidden;
 }
 
+.rf-hero-party__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-hero-party__style {
+    font-size: 11px;
+    width: 16px;
+    margin-right: 4px;
+    -unity-text-align: middle-center;
+    color: var(--rf-accent-bright);
+}
+
+.rf-hero-party__style--ranged {
+    color: rgb(130, 210, 110);
+}
+
+.rf-hero-party__style--magic {
+    color: rgb(150, 160, 255);
+}
+
+.rf-hero-party__style--healing {
+    color: rgb(255, 225, 120);
+}
+
+/* health: green, yellow under half, red under a quarter, grey when down */
 .rf-hero-party__fill {
     height: 100%;
     width: 100%;
+    background-color: rgb(74, 186, 84);
+}
+
+.rf-hero-party__row--hurt .rf-hero-party__fill {
+    background-color: rgb(214, 170, 40);
+}
+
+.rf-hero-party__row--low .rf-hero-party__fill {
     background-color: rgb(196, 48, 48);
 }
 
@@ -2722,11 +2756,11 @@
     color: var(--rf-text-faint);
 }
 
-/* a wave run (HeroWaveHud): the wave at the top (under the Ravebridge tab), the downed count in the middle, the
-   result after */
+/* a wave run (HeroWaveHud): the wave at the top (below the Ravebridge bar and its tab, which it used to cover), the
+   downed count in the middle, the result after */
 .rf-wave {
     position: absolute;
-    top: 44px;
+    top: 108px;
     left: 0;
     right: 0;
     align-items: center;

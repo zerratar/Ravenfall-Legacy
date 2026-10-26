@@ -412,6 +412,8 @@ namespace Shinobytes.UI
             if (Time.unscaledTime >= nextSecond)
             {
                 nextSecond = Time.unscaledTime + 1f;
+                // someone is being played already (picked here, by chat or by hero mode): "Who plays?" has been answered
+                if (WindowOpen && !creating && RavebridgePlay.Playing) CloseWindow();
                 Redraw();
             }
             // the drawer goes up by itself once the mouse has left it a while (never with the window open)

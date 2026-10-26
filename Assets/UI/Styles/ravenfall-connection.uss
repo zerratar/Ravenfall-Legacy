@@ -21,6 +21,11 @@
     align-items: flex-start;
 }
 
+/* in hero mode the health orb fills the corner, so the stack sits beside it */
+.rf-conn-stack--hero {
+    left: 190px;
+}
+
 .rf-conn {
     flex-direction: row;
 }
