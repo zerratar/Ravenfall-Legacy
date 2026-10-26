@@ -113,9 +113,20 @@ public partial class HeroController
             return;
         }
 
+        // loot on the ground: walk to it (walking over it picks it up)
+        var cam = Camera.main;
+        var drop = cam ? LootDrop.UnderCursor(cam, PickPixels * Screen.height / 1080f) : null;
+        if (drop && drop.Owner == Player)
+        {
+            holdingAttack = false;
+            pursuing = null;
+            HeroMarker.Show(drop.Rest, HeroMarker.Walk);
+            WalkTo(drop.Rest);
+            return;
+        }
+
         // a tree, rock, fish, farm patch or NPC: the character's own way of doing it
         var manual = Player.GetComponent<ManualPlayerController>();
-        var cam = Camera.main;
         if (manual && cam && !Attacking && manual.Interact(cam, false, out _))
         {
             holdingAttack = false;

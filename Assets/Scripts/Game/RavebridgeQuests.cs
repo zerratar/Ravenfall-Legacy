@@ -47,7 +47,10 @@ public static class RavebridgeQuests
     public class DukeText { public Text progress, done; }
     public class Book { public Dictionary<string, Npc> npcs; public Dictionary<string, Text> items; public List<Quest> quests; public DukeText duke; }
 
-    /// <summary>One character's quests: the step each is on (-1 when done), its quest items, its quest points.</summary>
+    /// <summary>
+    /// One character's Ravebridge: the step each quest is on (-1 when done), its quest items, its quest points, and its
+    /// Ravebridge bag (the island's coins and the loot hero mode's enemies dropped, RavebridgeLoot).
+    /// </summary>
     [Serializable]
     public class State
     {
@@ -55,6 +58,8 @@ public static class RavebridgeQuests
         public Dictionary<string, int> Items = new Dictionary<string, int>();
         public int Points;
         public bool Titled;
+        public long Coins;
+        public Dictionary<string, long> Loot = new Dictionary<string, long>();
     }
 
     private static Book book;
@@ -116,6 +121,7 @@ public static class RavebridgeQuests
         state ??= new State();
         state.Steps ??= new Dictionary<string, int>();
         state.Items ??= new Dictionary<string, int>();
+        state.Loot ??= new Dictionary<string, long>();
         ownStates[player.Id] = state;
         return state;
     }

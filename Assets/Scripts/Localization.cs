@@ -523,6 +523,34 @@ public static class Localization
     public static string UI_HERO_INVENTORY_UNEQUIP = "Right click: take off";
     public static string UI_HERO_INVENTORY_NEEDS = "Needs {0}";
     public static string UI_HERO_INVENTORY_FAILED = "The server did not take the change. Try again in a moment.";
+    public static string UI_LOOT_COINS_ON_GROUND = "{0} coins";
+    public static string UI_LOOT_PICKED_COINS = "+{0} coins";
+    public static string UI_LOOT_BAG = "Ravebridge bag";
+    public static string UI_LOOT_BAG_COINS = "{0} Ravebridge coins";
+    public static string UI_LOOT_BAG_EMPTY = "Nothing yet. What hero mode's enemies drop goes here.";
+    public static string UI_LOOT_BOUND = "Only on Ravebridge: kept on this computer.";
+    public static string UI_LOOT_QUEST_ITEM = "A quest item for Ravebridge's island quests.";
+    public static string UI_LOOT_RARITY = "Rarity";
+    public static string UI_LOOT_AMOUNT = "Amount";
+    public static string UI_LOOT_VALUE = "Worth";
+    public static string UI_LOOT_COMMON = "Common";
+    public static string UI_LOOT_UNCOMMON = "Uncommon";
+    public static string UI_LOOT_RARE = "Rare";
+    public static string UI_LOOT_EPIC = "Epic";
+    public static string UI_LOOT_LEGENDARY = "Legendary";
+
+    /// <summary>A Ravebridge loot rarity's name (RavebridgeLoot).</summary>
+    public static string LootRarity(RavebridgeLoot.Rarity rarity)
+    {
+        switch (rarity)
+        {
+            case RavebridgeLoot.Rarity.Uncommon: return UI_LOOT_UNCOMMON;
+            case RavebridgeLoot.Rarity.Rare: return UI_LOOT_RARE;
+            case RavebridgeLoot.Rarity.Epic: return UI_LOOT_EPIC;
+            case RavebridgeLoot.Rarity.Legendary: return UI_LOOT_LEGENDARY;
+            default: return UI_LOOT_COMMON;
+        }
+    }
     public static string UI_HERO_STYLE_RANGED = "Ranged";
     public static string UI_HERO_STYLE_MAGIC = "Magic";
     public static string UI_HERO_STYLE_HEALING = "Healing";

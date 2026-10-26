@@ -10,7 +10,9 @@ namespace Shinobytes.UI
     /// Hero mode's inventory (I, docs/hero-mode-design.md): what the hero wears, slot by slot, and the backpack as a grid
     /// of icons. A right click equips an item from the backpack (or takes a worn one off); hovering shows the item, as
     /// the details window's gear does. The streamer's characters change through the server, as !equip does; the
-    /// Ravebridge character only on this computer. HeroHudView owns it; the window can be dragged by its title.
+    /// Ravebridge character only on this computer. Between the two, the Ravebridge bag: the island's coins, the loot
+    /// hero mode's enemies dropped and the island quests' items, kept on this computer and used only on Ravebridge
+    /// (RavebridgeLoot). HeroHudView owns it; the window can be dragged by its title.
     /// </summary>
     public sealed class HeroInventoryWindow
     {
@@ -28,6 +30,9 @@ namespace Shinobytes.UI
         private readonly VisualElement gear;
         private readonly Label bagTitle;
         private readonly VisualElement bag;
+        private readonly Label islandTitle;
+        private readonly Label islandCoins;
+        private readonly VisualElement island;
         private readonly Label hint;
         private readonly HudTooltip tooltip;
         private PlayerController shown;
@@ -65,12 +70,28 @@ namespace Shinobytes.UI
             bag = new VisualElement();
             bag.AddToClassList("rf-hero-inv__grid");
             scroll.Add(bag);
+
+            // the Ravebridge bag: its title with the island's coins, and its grid
+            var islandHeader = new VisualElement();
+            islandHeader.AddToClassList("rf-hero-inv__island-header");
+            islandTitle = new Label();
+            islandTitle.AddToClassList("rf-hero-inv__section");
+            islandCoins = new Label();
+            islandCoins.AddToClassList("rf-hero-inv__coins");
+            islandHeader.Add(islandTitle);
+            islandHeader.Add(islandCoins);
+            island = new VisualElement();
+            island.AddToClassList("rf-hero-inv__grid");
+            RavebridgeLoot.Changed += p => { if (p == shown) shownState = 0; };
             hint = new Label();
             hint.AddToClassList("rf-squest__hint");
 
             window.Add(header);
             window.Add(gearTitle);
             window.Add(gear);
+            // the Ravebridge bag over the backpack: what hero mode is about, and never more than a few rows
+            window.Add(islandHeader);
+            window.Add(island);
             window.Add(bagTitle);
             window.Add(scroll);
             window.Add(hint);
@@ -113,6 +134,9 @@ namespace Shinobytes.UI
                 foreach (var i in player.Inventory.GetEquippedItems().ToList()) h = (h ^ (ulong)i.InstanceId.GetHashCode()) * 1099511628211UL;
                 h = (h ^ 0xff) * 1099511628211UL;
                 foreach (var i in player.Inventory.GetBackpackItems().ToList()) h = (h ^ (ulong)i.InstanceId.GetHashCode() ^ (ulong)i.Amount) * 1099511628211UL;
+                // the Ravebridge bag's quest items (its loot redraws through RavebridgeLoot.Changed)
+                var quest = RavebridgeQuests.StateOf(player).Items;
+                if (quest != null) foreach (var q in quest) h = (h ^ (ulong)q.Key.GetHashCode() ^ (ulong)q.Value) * 1099511628211UL;
                 return h;
             }
         }
@@ -149,7 +173,72 @@ namespace Shinobytes.UI
                 empty.AddToClassList("rf-hero-inv__empty");
                 bag.Add(empty);
             }
+            DrawIsland(player);
             ShowHint();
+        }
+
+        /// <summary>The Ravebridge bag: loot best first, then the quest items.</summary>
+        private void DrawIsland(PlayerController player)
+        {
+            island.Clear();
+            var loot = RavebridgeLoot.Contents(player);
+            var quest = RavebridgeQuests.StateOf(player).Items;
+            var count = loot.Count;
+            islandTitle.text = Localization.UI_LOOT_BAG;
+            islandCoins.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_LOOT_BAG_COINS, HudFormat.Compact(RavebridgeLoot.Coins(player)));
+            foreach (var (item, amount) in loot)
+            {
+                var tile = IslandTile(item.Glyph, RavebridgeLoot.ColorOf(item.Grade), amount);
+                tile.AddToClassList("rf-hero-inv__tile--" + item.Grade.ToString().ToLowerInvariant());
+                tooltip.Attach(tile, t =>
+                {
+                    t.SetTitle(item.Name);
+                    t.AddRow(Localization.UI_LOOT_RARITY, Localization.LootRarity(item.Grade));
+                    if (amount > 1) t.AddRow(Localization.UI_LOOT_AMOUNT, amount.ToString(CultureInfo.InvariantCulture));
+                    if (item.value > 0) t.AddRow(Localization.UI_LOOT_VALUE, string.Format(CultureInfo.InvariantCulture, Localization.UI_LOOT_BAG_COINS, item.value));
+                    t.SetNote(item.Description + "\n" + Localization.UI_LOOT_BOUND);
+                });
+                island.Add(tile);
+            }
+            if (quest != null)
+            {
+                foreach (var pair in quest)
+                {
+                    if (pair.Value <= 0) continue;
+                    count++;
+                    var name = RavebridgeQuests.ItemName(pair.Key);
+                    var tile = IslandTile("\uf70e", new Color(0.95f, 0.8f, 0.45f), pair.Value);
+                    tile.AddToClassList("rf-hero-inv__tile--quest");
+                    tooltip.Attach(tile, t => { t.SetTitle(char.ToUpperInvariant(name[0]) + name.Substring(1)); t.SetNote(Localization.UI_LOOT_QUEST_ITEM); });
+                    island.Add(tile);
+                }
+            }
+            if (count == 0)
+            {
+                var empty = new Label(Localization.UI_LOOT_BAG_EMPTY);
+                empty.AddToClassList("rf-hero-inv__empty");
+                island.Add(empty);
+            }
+        }
+
+        private static VisualElement IslandTile(string glyph, Color color, long amount)
+        {
+            var tile = new VisualElement();
+            tile.AddToClassList("rf-hero-inv__tile");
+            tile.AddToClassList("rf-hero-inv__tile--island");
+            tile.style.borderTopColor = tile.style.borderBottomColor = tile.style.borderLeftColor = tile.style.borderRightColor = new Color(color.r, color.g, color.b, 0.75f);
+            var icon = new Label(glyph) { pickingMode = PickingMode.Ignore };
+            icon.AddToClassList("rf-icon");
+            icon.AddToClassList("rf-hero-inv__glyph");
+            icon.style.color = color;
+            tile.Add(icon);
+            if (amount > 1)
+            {
+                var n = new Label(HudFormat.Compact(amount)) { pickingMode = PickingMode.Ignore };
+                n.AddToClassList("rf-hero-inv__amount");
+                tile.Add(n);
+            }
+            return tile;
         }
 
         private void ShowHint() => hint.text = !string.IsNullOrEmpty(notice) ? notice : Localization.UI_HERO_INVENTORY_HINT;

@@ -549,3 +549,32 @@ camera hid stairs and bushes. Gatebound (the user's other game) was the model fo
   running in and the first swing landing; 25 s of auto attack on one goblin (about 45 hits, then nothing after it
   fell); the bow's arrow line; chopping a tree in melee and bow style and the stance coming back.
 - **Not checked by hand:** the click marker in Ravebridge play and the screen picking with a real mouse.
+
+### Loot, bound to Ravebridge (2026-10-26)
+
+The user's call: loot kept on this computer for now (a server-side "Ravebridge only" flag can come later).
+
+- **Data:** `StreamingAssets/Ravebridge/loot.json`, like the quests: items (name and description in each language, a
+  Font Awesome 7 icon, a rarity from common to legendary, a kind, a worth in Ravebridge coins) and drop tables per
+  enemy. A wave enemy drops by its kind's model (`WaveRun.LootKey`, "boss " in front for a boss; its name is in the
+  streamer's language), the island's own enemies by their names. `any` adds to every table.
+- **The bag** is part of the character's Ravebridge state (`RavebridgeQuests.State.Coins` and `.Loot`): in the
+  Ravebridge character's file, or `states/ravebridge/quests-(character id).json` for the streamer's own characters.
+  Never sent to the server, never in the character's inventory. Saved a few seconds after a change, when hero mode
+  ends and when the game closes.
+- **Drops (`LootDrop`):** a hero's kill (`HeroController.Strike`) tosses coins (a coin prop), items (a pouch) and
+  potions (a bottle) out of the enemy onto the navmesh. They hover and turn; from uncommon up a beam in the rarity's
+  colour rises from them, taller and wider for the rarer. Their names show over them (`LootLabels`). Walking over
+  one picks it up; coins come to the hero from 3.5 m. A click on a drop walks to it. Unclaimed drops go after two
+  minutes; past 80 on the ground the oldest go straight into the bag.
+- **Feel:** coins clink when they land, pickups have their own sounds (coins, leather, a bottle), and a rare or
+  better drop plays a loot jingle with a sparkle. "+12 coins" and item names rise from the hero in their colours.
+- **Healing draughts** fill the hero's potions while there is room, the rest go into the bag; Q drinks from the bag
+  once the hero's own are gone, and the Q slot shows them ("3/3 +2").
+- **The inventory window (I)** shows the Ravebridge bag above the backpack: the coins, the loot framed in its
+  rarity's colour with tooltips (rarity, amount, worth, "Only on Ravebridge"), and the island quests' items.
+- **Tested in play mode:** goblins killed in hero mode dropping coins, ears and teeth; walking over every drop
+  picking it up; the file written; draughts filling potions and Q drinking from the bag; wave goblins dropping by
+  their model key; rare and legendary beams; the window.
+- **Next, not built:** a Ravebridge merchant for the coins and materials, quests that ask for loot, and gear that
+  works only in hero mode.

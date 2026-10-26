@@ -527,6 +527,16 @@ public class WaveRun : MonoBehaviour
 
     public bool Owns(EnemyController enemy) => enemy && alive.ContainsKey(enemy);
 
+    /// <summary>
+    /// What a wave enemy drops by (RavebridgeLoot's tables): its kind's model, "boss " in front for a boss; not its
+    /// name, which is in the streamer's language. Null for an enemy not in the run.
+    /// </summary>
+    public string LootKey(EnemyController enemy)
+    {
+        if (!enemy || !alive.TryGetValue(enemy, out var kind) || kind.Variants == null || kind.Variants.Length == 0) return null;
+        return (kind.Boss ? "boss " : string.Empty) + kind.Variants[0].ToLowerInvariant();
+    }
+
     /// <summary>A wave enemy's blow on the hero: a share of the hero's health, once a second at most per enemy.</summary>
     public int BlowFor(EnemyController enemy)
     {

@@ -104,6 +104,7 @@ public partial class HeroController : MonoBehaviour
     {
         var hero = Active;
         Active = null;
+        RavebridgeLoot.SaveNow();
         if (hero)
         {
             hero.StopSpin();
@@ -284,6 +285,9 @@ public partial class HeroController : MonoBehaviour
 
     /// <summary>Every boss wave: the flask is full again.</summary>
     public void RefillPotions() => Potions = MaxPotions;
+
+    /// <summary>A healing draught picked up while the hero has room for it.</summary>
+    public void AddPotion() => Potions = Mathf.Min(MaxPotions, Potions + 1);
     public bool HasGuardianAngel => angel;
 
     public void StartRapidFire(float seconds)
@@ -500,7 +504,11 @@ public partial class HeroController : MonoBehaviour
         if (chunk != null) Player.Chunk = chunk;
         var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy) * multiplier * CheerBonus));
         Player.SessionStats.AddDamageDealt(damage);
-        if (enemy.TakeDamage(Player, damage)) Player.Combat.Defeated(enemy);
+        if (enemy.TakeDamage(Player, damage))
+        {
+            Player.Combat.Defeated(enemy);
+            RavebridgeLoot.Killed(Player, enemy);
+        }
     }
 
     /// <summary>Ravebridge's players near a place, the hero among them, still standing.</summary>
@@ -693,8 +701,10 @@ public partial class HeroController : MonoBehaviour
 
     private void Potion()
     {
-        if (Potions <= 0 || Time.time < potionReadyAt) { Refused?.Invoke(-2, Potions <= 0 ? "empty" : "cooldown"); return; }
-        Potions--;
+        if (Time.time < potionReadyAt) { Refused?.Invoke(-2, "cooldown"); return; }
+        // the hero's own first, then a healing draught from the Ravebridge bag
+        if (Potions > 0) Potions--;
+        else if (!RavebridgeLoot.TakePotion(Player)) { Refused?.Invoke(-2, "empty"); return; }
         potionReadyAt = Time.time + 1f;
         Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxLevel * PotionShare));
         Play("Hero-Drink");

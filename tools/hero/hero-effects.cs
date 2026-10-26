@@ -31,6 +31,10 @@ fx.Sanctuary = hit(6);         // green
 fx.Angel = hit(14);            // white
 fx.Cheer = hit(4);             // yellow sparkle
 fx.Arrival = hit(7);           // purple puff where a wave enemy comes in
+// loot on the ground (LootDrop): a coin, a pouch for items, a potion bottle
+fx.LootCoin = load("Assets/EpiXR_PolygonHats/Prefabs/Lp_Coin01.prefab");
+fx.LootPouch = load("Assets/PolygonAdventure/Prefabs/Items/SM_Item_Pouch_01.prefab");
+fx.LootPotion = load("Assets/PolygonAdventure/Prefabs/Items/SM_Item_Potion_02.prefab");
 UnityEditor.EditorUtility.SetDirty(fx);
 UnityEditor.AssetDatabase.SaveAssets();
 

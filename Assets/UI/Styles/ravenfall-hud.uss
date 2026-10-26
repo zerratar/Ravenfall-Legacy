@@ -2399,6 +2399,68 @@
     -unity-font-style: bold;
 }
 
+/* the Ravebridge bag (RavebridgeLoot): its coins beside the title, loot tiles framed in their rarity's colour */
+.rf-hero-inv__island-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.rf-hero-inv__coins {
+    margin-bottom: var(--rf-space-1);
+    font-size: 13px;
+    color: rgb(255, 209, 77);
+    -unity-font-style: bold;
+}
+
+.rf-hero-inv__tile--island {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+}
+
+.rf-hero-inv__glyph {
+    font-size: 26px;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.6);
+}
+
+/* loot on the ground and what was picked up (LootLabels) */
+.rf-loot-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.rf-loot-label {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 2px 7px 3px 7px;
+    font-size: 17px;
+    background-color: rgba(10, 8, 6, 0.78);
+    border-radius: 3px;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+
+.rf-loot-label--rare {
+    font-size: 18px;
+    -unity-font-style: bold;
+}
+
+.rf-loot-popup {
+    background-color: rgba(0, 0, 0, 0);
+    font-size: 20px;
+    -unity-font-style: bold;
+    -unity-text-outline-width: 1.5px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.95);
+}
+
 .rf-hero-inv__amount {
     position: absolute;
     right: 3px;

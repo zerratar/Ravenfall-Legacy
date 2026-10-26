@@ -52,6 +52,12 @@ public enum SoundKind
     GoblinHurt,
     GoblinDeath,
     HeroStruck,
+    // hero mode's loot
+    CoinPickup,
+    CoinDrop,
+    ItemPickup,
+    PotionPickup,
+    RareDrop,
 }
 
 /// <summary>

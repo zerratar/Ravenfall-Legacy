@@ -29,6 +29,11 @@ public class HeroEffects : ScriptableObject
     public GameObject Cheer;
     public GameObject Arrival;
 
+    // loot on the ground (LootDrop)
+    public GameObject LootCoin;
+    public GameObject LootPouch;
+    public GameObject LootPotion;
+
     private static HeroEffects instance;
     private static GameObject container;
 

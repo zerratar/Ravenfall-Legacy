@@ -153,6 +153,8 @@ namespace Shinobytes.UI
 
             waves = new HeroWaveHud(root);
             helpers = new HeroHelpersHud(root, styleBox);
+            loot?.Remove();
+            loot = new LootLabels(root);
             root.style.display = DisplayStyle.None;
             layer.Add(root);
             inventory?.Remove();
@@ -160,6 +162,8 @@ namespace Shinobytes.UI
             bound = true;
             Changed();
         }
+
+        private LootLabels loot;
 
         private const int OrbTexture = 256;
 
@@ -323,6 +327,7 @@ namespace Shinobytes.UI
             var hero = HeroController.Active;
             if (!bound || !hero || !hero.Player) return;
             inventory?.Update(hero.Player);
+            loot?.Update();
             waves?.Update();
             helpers?.Update(hero);
             if (inventory != null && inventory.IsOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping)
@@ -352,7 +357,9 @@ namespace Shinobytes.UI
             }
             var dodge = Mathf.Max(0f, hero.DodgeReadyAt - Time.time);
             Show(slots[4], false, dodge / HeroController.DodgeCooldown, dodge > 0f ? dodge.ToString("0.0", CultureInfo.InvariantCulture) : string.Empty, false);
-            Show(slots[5], hero.Potions <= 0, 0f, hero.Potions + "/" + hero.MaxPotions, false);
+            // the hero's own potions, and the healing draughts in the Ravebridge bag behind them
+            var spare = RavebridgeLoot.PotionsInBag(hero.Player);
+            Show(slots[5], hero.Potions <= 0 && spare <= 0, 0f, hero.Potions + "/" + hero.MaxPotions + (spare > 0 ? " +" + spare : string.Empty), false);
 
             if (Time.time >= nextParty)
             {
