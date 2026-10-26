@@ -53,6 +53,6 @@
 }
 
 .rf-float--miss {
-    color: rgb(200, 192, 176);
-    -unity-text-outline-width: 1.5px;
+    color: rgb(228, 222, 208);
+    -unity-text-outline-width: 2px;
 }

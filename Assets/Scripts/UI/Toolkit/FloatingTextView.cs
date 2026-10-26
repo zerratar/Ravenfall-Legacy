@@ -75,6 +75,7 @@ namespace Shinobytes.UI
             public float Peak;
             public float PeakTime;
             public Number Merged;
+            public Number Miss;
         }
 
         private readonly List<Number> active = new List<Number>();
@@ -132,6 +133,14 @@ namespace Shinobytes.UI
                 return;
             }
 
+            // many players missing the same target read as one Miss, not a pile of them on top of each other
+            var miss = info.Miss;
+            if (kind == Kind.Miss && miss != null && miss.Kind == Kind.Miss && miss.Target == target && miss.Age < miss.Life * 0.6f)
+            {
+                miss.Age = 0f;
+                return;
+            }
+
             if (active.Count >= MaxActive)
             {
                 Release(0);
@@ -158,6 +167,11 @@ namespace Shinobytes.UI
             if (number.Merged)
             {
                 info.Merged = number;
+            }
+
+            if (kind == Kind.Miss)
+            {
+                info.Miss = number;
             }
         }
 

@@ -14,6 +14,7 @@ namespace Shinobytes.UI
     {
         private const int TextureSize = 256;
         private const float Radius = 48f;        // metres from the centre to the edge
+        private const float Above = 80f;         // metres the camera hangs over the hero
         private const float RenderEvery = 0.25f;
         private const float FindEvery = 0.5f;
 
@@ -58,8 +59,12 @@ namespace Shinobytes.UI
             if (Time.unscaledTime >= nextRender)
             {
                 nextRender = Time.unscaledTime + RenderEvery;
-                cam.transform.SetPositionAndRotation(new Vector3(centre.x, centre.y + 150f, centre.z), Quaternion.Euler(90f, 0f, 0f));
+                cam.transform.SetPositionAndRotation(new Vector3(centre.x, centre.y + Above, centre.z), Quaternion.Euler(90f, 0f, 0f));
+                // the world's haze is for the view across the island; from straight above it only washes the map out
+                var fog = RenderSettings.fog;
+                RenderSettings.fog = false;
                 cam.Render();
+                RenderSettings.fog = fog;
             }
 
             if (Time.unscaledTime >= nextFind)
@@ -83,6 +88,15 @@ namespace Shinobytes.UI
                 if (!e || e.Stats.IsDead) continue;
                 Place(used++, e.transform.position - centre, "rf-hero-minimap__dot--enemy");
             }
+            // the people with something to say or a quest to give, gold like the marks over their heads
+            if (IslandNpc.MarkFor != null)
+            {
+                foreach (var n in IslandNpc.All)
+                {
+                    if (!n || IslandNpc.MarkFor(n.Key) == IslandNpc.Mark.None) continue;
+                    Place(used++, n.transform.position - centre, "rf-hero-minimap__dot--quest");
+                }
+            }
             for (var i = used; i < pool.Count; i++) pool[i].style.display = DisplayStyle.None;
 
             // the hero in the middle, turned the way they face (the glyph points up and to the right)
@@ -103,6 +117,7 @@ namespace Shinobytes.UI
             dot.style.display = DisplayStyle.Flex;
             dot.EnableInClassList("rf-hero-minimap__dot--friend", kind == "rf-hero-minimap__dot--friend");
             dot.EnableInClassList("rf-hero-minimap__dot--enemy", kind == "rf-hero-minimap__dot--enemy");
+            dot.EnableInClassList("rf-hero-minimap__dot--quest", kind == "rf-hero-minimap__dot--quest");
             var v = new Vector2(offset.x, offset.z) / Radius;
             if (v.sqrMagnitude > 0.92f * 0.92f) v = v.normalized * 0.92f;
             dot.style.left = Length.Percent(50f + v.x * 50f);
@@ -119,7 +134,7 @@ namespace Shinobytes.UI
             cam.orthographic = true;
             cam.orthographicSize = Radius;
             cam.nearClipPlane = 1f;
-            cam.farClipPlane = 400f;
+            cam.farClipPlane = Above + 120f;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.12f, 0.36f, 0.48f); // the sea, where nothing is drawn
             cam.cullingMask = ~LayerMask.GetMask("UI");

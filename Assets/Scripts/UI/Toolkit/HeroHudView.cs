@@ -164,7 +164,6 @@ namespace Shinobytes.UI
                 party.Add(r.Box);
                 partyRows.Add(r);
             }
-            root.Add(party);
 
             // the round minimap, top right
             minimap?.Dispose();
@@ -173,7 +172,13 @@ namespace Shinobytes.UI
 
             bounties = new VisualElement { pickingMode = PickingMode.Ignore };
             bounties.AddToClassList("rf-hero-bounties");
-            root.Add(bounties);
+
+            // the bounties and the party share the left side, one under the other, so they never overlap
+            var left = new VisualElement { pickingMode = PickingMode.Ignore };
+            left.AddToClassList("rf-hero-left");
+            left.Add(bounties);
+            left.Add(party);
+            root.Add(left);
             waves = new HeroWaveHud(root);
             helpers = new HeroHelpersHud(root, styleBox);
             loot?.Remove();

@@ -12,6 +12,8 @@ public sealed class WorldMark : MonoBehaviour
 {
     private const float Size = 1.2f;
     private const float Every = 0.5f;
+    private const float ScreenShare = 0.04f;
+    private const float MinHeight = 0.35f;
     private static readonly Dictionary<IslandNpc.Mark, Sprite> sprites = new Dictionary<IslandNpc.Mark, Sprite>();
 
     private Func<IslandNpc.Mark> source;
@@ -30,7 +32,6 @@ public sealed class WorldMark : MonoBehaviour
         mark.height = height;
         mark.size = size;
         mark.next = 0f;
-        if (mark.marker) mark.marker.transform.localScale = mark.LocalScale();
         return mark;
     }
 
@@ -65,21 +66,38 @@ public sealed class WorldMark : MonoBehaviour
         }
 
         if (!marker || !marker.gameObject.activeSelf) return;
-        var bob = Mathf.Sin(Time.time * 2.2f + transform.position.x) * 0.08f * size;
+        var tall = Fit(marker, cam, size);
+        var bob = Mathf.Sin(Time.time * 2.2f + transform.position.x) * 0.08f * tall;
         marker.transform.position = transform.position + Vector3.up * (height + bob);
         if (cam) marker.transform.rotation = cam.transform.rotation;
+    }
+
+    /// <summary>
+    /// Sizes a mark to a modest share of the screen whatever the distance: never taller than maxHeight metres (seen from
+    /// afar), never smaller than MinHeight (close up, where a fixed size would loom over the head). Returns its height.
+    /// </summary>
+    public static float Fit(SpriteRenderer mark, Camera cam, float maxHeight)
+    {
+        var sprite = mark.sprite;
+        if (!sprite) return maxHeight;
+        var tall = maxHeight;
+        if (cam)
+        {
+            var distance = Vector3.Distance(cam.transform.position, mark.transform.position);
+            var view = cam.orthographic ? cam.orthographicSize * 2f : 2f * distance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            tall = Mathf.Clamp(view * ScreenShare, Mathf.Min(MinHeight, maxHeight), maxHeight);
+        }
+        var parent = mark.transform.parent ? mark.transform.parent.lossyScale.y : 1f;
+        mark.transform.localScale = Vector3.one * tall / Mathf.Max(0.0001f, sprite.bounds.size.y * parent);
+        return tall;
     }
 
     private SpriteRenderer MakeMarker()
     {
         var go = new GameObject("Quest Mark");
         go.transform.SetParent(transform, false);
-        go.transform.localScale = LocalScale();
         var renderer = go.AddComponent<SpriteRenderer>();
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         renderer.receiveShadows = false;
         return renderer;
-    }
-
-    private Vector3 LocalScale() => Vector3.one * size / Mathf.Max(0.0001f, transform.lossyScale.x);
-}
+    }}

@@ -26,7 +26,8 @@ public sealed class IslandNpc : MonoBehaviour
     /// <summary>Which mark an NPC shows now, from the island quests (RavebridgeQuests.MarkFor).</summary>
     public static Func<string, Mark> MarkFor;
 
-    private const float MarkSize = 0.85f;
+    /// <summary>The tallest a mark gets (metres), seen from afar; closer it shrinks, see WorldMark.Fit.</summary>
+    private const float MarkSize = 1.1f;
     private const float MarkEvery = 0.5f;
     private static readonly Dictionary<Mark, Sprite> markSprites = new Dictionary<Mark, Sprite>();
     private SpriteRenderer marker;
@@ -125,7 +126,7 @@ public sealed class IslandNpc : MonoBehaviour
         if (!marker || !marker.gameObject.activeSelf) return;
         var cam = Camera.main;
         var talking = bubble && bubble.gameObject.activeSelf;
-        var bob = Mathf.Sin(Time.time * 2.2f + transform.position.x) * 0.07f;
+        var bob = Mathf.Sin(Time.time * 2.2f + transform.position.x) * 0.08f * WorldMark.Fit(marker, cam, MarkSize);
         marker.transform.position = transform.position + Vector3.up * (HeadHeight + (talking ? 1.9f : 0.55f) + bob);
         if (cam) marker.transform.rotation = cam.transform.rotation;
     }
@@ -144,7 +145,6 @@ public sealed class IslandNpc : MonoBehaviour
     {
         var go = new GameObject("Quest Mark");
         go.transform.SetParent(transform, false);
-        go.transform.localScale = Vector3.one * MarkSize;
         var renderer = go.AddComponent<SpriteRenderer>();
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         renderer.receiveShadows = false;
