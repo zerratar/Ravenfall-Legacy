@@ -239,3 +239,7 @@ sysinfo.txt
 
 # Font Awesome 7 metadata (icons.json and friends), local reference only: over 150 MB
 tools/fontawesome7-metadata/
+
+# The Image Generator's worker: built on first use by the editor (ImageGen.cs).
+tools/ImageGenService/bin/
+tools/ImageGenService/obj/

@@ -1,35 +1,35 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 /// <summary>
 /// Image generation and editing in the editor through OpenAI's image models (GPT-Image-2.5 Flare and Sunburst), for
-/// item icons, their cooked and burned variants, and UI pictures. Each request runs off the main thread as a
-/// <see cref="Job"/>: it writes the picture to its output path and then runs its follow-up on the main thread (to
-/// import it, say), so a caller (the Image Generator window, or an eval) starts it and checks back later.
+/// item icons, their cooked and burned variants, UI pictures and mockups. The requests are made by a small local
+/// service (tools/ImageGenService), which the editor builds on first use and starts when needed: it keeps the jobs on
+/// disk, so pictures in flight survive script reloads, editor restarts and crashes. A caller (the Image Generator
+/// window, IconForge, an eval) starts a <see cref="Job"/> and checks back; when the editor sees a job finished it runs
+/// the follow-up: the callback given (in the same session), or the handler for the job's tag (<see cref="FollowUps"/>,
+/// after a reload or a restart).
 /// </summary>
 /// <remarks>
-/// Following what the Buildathon studio (D:\Git\Buildathon, OpenAiImageProvider and docs/research/ai-providers.md) found:
-/// multipart field names are quoted (name="image[]"), or the edits endpoint does not read them; input_fidelity is
-/// never sent (older models only); a 429 for quota or spend is not retried, a rate limit or a 5xx is (honouring
-/// Retry-After), and a request that timed out or lost its connection is never sent again, as it may already be billed;
-/// and both models often answer "transparent background" with a painted glow or backdrop, so a picture whose border
-/// is not transparent gets one more pass with Flare asking for the background to be removed.
+/// Both models often answer "transparent background" with a painted glow or backdrop, so a finished picture whose
+/// border is not transparent gets one more pass with Flare asking for the background to be removed, before its
+/// follow-up (as the Buildathon studio does). The rest of what the studio learned about the API is in the service.
 ///
 /// The API key is the user's own: the OPENAI_API_KEY environment variable, or the one saved in the Image Generator
-/// window (EditorPrefs, on this computer only). It is never written to the project, logged or shown again. Every
-/// request costs money on that key's account. What was asked for and what came back is kept in
-/// Library/ImageGen/history.jsonl (not versioned), without the key.
+/// window (EditorPrefs, on this computer only). It goes to the service in its environment and with each job, over
+/// 127.0.0.1 only, and is never written to the project, logged or shown again. Every picture costs money on that key's
+/// account.
 /// </remarks>
 [InitializeOnLoad]
 public static class ImageGen
@@ -52,6 +52,7 @@ public static class ImageGen
 
     public sealed class Job
     {
+        /// <summary>The service's id ("img12"), or "new-3" until the service has taken it.</summary>
         public string Id;
         public string Kind;
         public string Prompt;
@@ -60,41 +61,71 @@ public static class ImageGen
         public Model Model;
         public JobState State;
         public string Error;
+        public string Tag;
         public DateTime Started;
         public DateTime Finished;
         internal Action<Job> Then;
-        internal bool Cutout;
+        internal bool Transparent, AutoCutout;
 
         public override string ToString() =>
             Id + " " + Kind + " " + State + (State == JobState.Failed ? ": " + Error : "") + " -> " + OutPath +
             " (" + (int)((State == JobState.Running ? DateTime.UtcNow : Finished) - Started).TotalSeconds + " s)";
     }
 
-    private const string KeyPref = "Ravenfall.ImageGen.OpenAIKey";
-    private const string Endpoint = "https://api.openai.com/v1/images/";
-    private static readonly HttpClient http = new HttpClient { Timeout = TimeSpan.FromMinutes(6) };
-    private const int MaxRetries = 3;
-    /// <summary>Requests in flight at once; the rest wait their turn, so a batch of icons does not hit the rate limit.</summary>
-    private static readonly System.Threading.SemaphoreSlim inFlight = new System.Threading.SemaphoreSlim(4);
-
     /// <summary>The cutout pass's prompt, as the Buildathon studio's.</summary>
     public const string CutoutPrompt =
         "Remove the background completely and make it fully transparent. Keep only the main subject exactly as it is, with clean " +
         "edges: no glow, no sparkles, no shadow, no backdrop.";
+
+    /// <summary>
+    /// What to do with a finished job by its tag's kind ("icon:raw-tuna" runs FollowUps["icon"] with "raw-tuna"): how a
+    /// follow-up survives a reload, when the callback is gone. Registered by the tools that make pictures (IconForge).
+    /// </summary>
+    public static readonly Dictionary<string, Action<Job, string>> FollowUps = new Dictionary<string, Action<Job, string>>();
+
+    private const string KeyPref = "Ravenfall.ImageGen.OpenAIKey";
+    private const int Port = 57421;
+    private static readonly string Service = "http://127.0.0.1:" + Port + "/";
+    private static readonly HttpClient http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
     private static readonly ConcurrentQueue<Action> mainThread = new ConcurrentQueue<Action>();
-    private static readonly List<Job> jobs = new List<Job>();
-    private static int next;
+    private static readonly Dictionary<string, Job> jobs = new Dictionary<string, Job>();
+    private static readonly Dictionary<string, Action<Job>> thens = new Dictionary<string, Action<Job>>();
+    private static readonly HashSet<string> handling = new HashSet<string>();
+    private static readonly object sync = new object();
+    private static Task<bool> starting;
+    private static int pending;
+    private static double nextPoll;
+    private static bool polling, lookAfterLoad = true;
 
     static ImageGen()
     {
-        EditorApplication.update += () =>
+        EditorApplication.update += Tick;
+    }
+
+    private static void Tick()
+    {
+        while (mainThread.TryDequeue(out var action))
         {
-            while (mainThread.TryDequeue(out var action))
-            {
-                try { action(); }
-                catch (Exception exc) { Debug.LogError("Image generator: " + exc.Message); }
-            }
-        };
+            try { action(); }
+            catch (Exception exc) { Debug.LogError("Image generator: " + exc.Message); }
+        }
+
+        // asks the service how the jobs are doing: every second while any of ours run, and once after a reload for the
+        // ones finished while the editor was away (only if the service is up; it is not started just to look)
+        if (polling || EditorApplication.timeSinceStartup < nextPoll) return;
+        bool busy;
+        lock (sync) busy = jobs.Values.Any(j => j.State == JobState.Running);
+        if (!busy && !lookAfterLoad) return;
+        nextPoll = EditorApplication.timeSinceStartup + 1.0;
+        var look = lookAfterLoad;
+        lookAfterLoad = false;
+        polling = true;
+        Task.Run(async () =>
+        {
+            try { await PollAsync(); }
+            catch (Exception exc) { if (!look) mainThread.Enqueue(() => Debug.LogWarning("Image generator: the service did not answer: " + exc.Message)); }
+            finally { polling = false; }
+        });
     }
 
     // ---- The key -------------------------------------------------------------------------------------------
@@ -111,242 +142,275 @@ public static class ImageGen
     public static bool HasKey => !string.IsNullOrEmpty(Key);
     public static bool KeyFromEnvironment => !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 
-    /// <summary>Saves the key on this computer (EditorPrefs); empty forgets it.</summary>
+    /// <summary>Saves the key on this computer (EditorPrefs); empty forgets it. The service gets it with the next job.</summary>
     public static void SaveKey(string key)
     {
         if (string.IsNullOrWhiteSpace(key)) EditorPrefs.DeleteKey(KeyPref);
         else EditorPrefs.SetString(KeyPref, key.Trim());
     }
 
-    // ---- Requests ------------------------------------------------------------------------------------------
-
     public static string ModelId(Model model) => model == Model.Sunburst ? "gpt-image-2.5-sunburst" : "gpt-image-2.5-flare";
 
+    // ---- Requests ------------------------------------------------------------------------------------------
+
     /// <summary>A new picture from a prompt, written to outPath (png); then runs on the main thread when it is there.</summary>
-    public static Job Generate(string prompt, string outPath, Options options = null, Action<Job> then = null)
+    public static Job Generate(string prompt, string outPath, Options options = null, Action<Job> then = null, string tag = null)
     {
-        options ??= new Options();
-        var body = new JObject
-        {
-            ["model"] = ModelId(options.Model),
-            ["prompt"] = prompt,
-            ["size"] = options.Size,
-            ["quality"] = options.Quality,
-            ["output_format"] = "png",
-            ["n"] = 1,
-        };
-        if (options.Transparent) body["background"] = "transparent";
-        var job = NewJob("generate", prompt, outPath, Array.Empty<string>(), options.Model, then);
-        job.Cutout = options.Transparent && options.AutoCutout;
-        Run(job, () => new HttpRequestMessage(HttpMethod.Post, Endpoint + "generations")
-        {
-            Content = new StringContent(body.ToString(Formatting.None), Encoding.UTF8, "application/json"),
-        });
-        return job;
+        return Submit("generate", prompt, Array.Empty<string>(), null, outPath, options ?? new Options(), then, tag);
     }
 
     /// <summary>
     /// A picture made from others: the inputs (png files) are what to change or the style to follow, the prompt says
     /// how; a mask (png with alpha, the first input's size) marks where. Written to outPath.
     /// </summary>
-    public static Job Edit(string prompt, IReadOnlyList<string> inputs, string outPath, Options options = null, string mask = null, Action<Job> then = null)
+    public static Job Edit(string prompt, IReadOnlyList<string> inputs, string outPath, Options options = null, string mask = null, Action<Job> then = null, string tag = null)
     {
-        options ??= new Options();
-        var files = inputs.Select(Path.GetFullPath).ToArray();
-        var job = NewJob("edit", prompt, outPath, files, options.Model, then);
-        job.Cutout = options.Transparent && options.AutoCutout;
-        if (files.Length == 0 || files.Length > 16)
-        {
-            Fail(job, "an edit takes 1 to 16 input images");
-            return job;
-        }
-        foreach (var f in files)
-        {
-            if (File.Exists(f)) continue;
-            Fail(job, "no such input: " + f);
-            return job;
-        }
-        Run(job, () =>
-        {
-            var form = new MultipartFormDataContent();
-            Text(form, "model", ModelId(options.Model));
-            Text(form, "prompt", prompt);
-            Text(form, "size", options.Size);
-            Text(form, "quality", options.Quality);
-            Text(form, "output_format", "png");
-            Text(form, "n", "1");
-            if (options.Transparent) Text(form, "background", "transparent");
-            for (var i = 0; i < files.Length; i++) Png(form, "image[]", "image" + i + ".png", files[i]);
-            if (!string.IsNullOrEmpty(mask)) Png(form, "mask", "mask.png", Path.GetFullPath(mask));
-            return new HttpRequestMessage(HttpMethod.Post, Endpoint + "edits") { Content = form };
-        });
-        return job;
+        return Submit("edit", prompt, inputs.ToArray(), mask, outPath, options ?? new Options(), then, tag);
     }
 
-    // quoted explicitly, so the wire shows name="image[]"; filename="image0.png" (unquoted, the brackets are not read)
-    private static void Text(MultipartFormDataContent form, string name, string value) => form.Add(new StringContent(value), "\"" + name + "\"");
-
-    private static void Png(MultipartFormDataContent form, string name, string fileName, string path)
-    {
-        var part = new ByteArrayContent(File.ReadAllBytes(path));
-        part.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-        part.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") { Name = "\"" + name + "\"", FileName = "\"" + fileName + "\"" };
-        form.Add(part);
-    }
-
-    // ---- Jobs ----------------------------------------------------------------------------------------------
-
-    public static IReadOnlyList<Job> Jobs { get { lock (jobs) return jobs.ToList(); } }
-
-    public static Job Find(string id) { lock (jobs) return jobs.FirstOrDefault(j => j.Id == id); }
-
-    /// <summary>The latest jobs, one a line, for an eval to read.</summary>
-    public static string Status(int last = 10)
-    {
-        lock (jobs) return string.Join("\n", jobs.Skip(Math.Max(0, jobs.Count - last)).Select(j => j.ToString()));
-    }
-
-    // a script reload would cut off every request in flight (and they may already be paid for): reloads wait while
-    // any job runs, and go ahead when the last one is done
-    private static int locked;
-
-    private static void HoldReloads()
-    {
-        mainThread.Enqueue(() =>
-        {
-            if (locked++ == 0) EditorApplication.LockReloadAssemblies();
-        });
-    }
-
-    private static void ReleaseReloads()
-    {
-        mainThread.Enqueue(() =>
-        {
-            if (locked > 0 && --locked == 0) EditorApplication.UnlockReloadAssemblies();
-        });
-    }
-
-    private static Job NewJob(string kind, string prompt, string outPath, string[] inputs, Model model, Action<Job> then)
+    private static Job Submit(string kind, string prompt, string[] inputs, string mask, string outPath, Options options, Action<Job> then, string tag)
     {
         var job = new Job
         {
-            Id = "img" + (++next),
+            Id = "new-" + (++pending),
             Kind = kind,
             Prompt = prompt,
-            OutPath = outPath,
-            Inputs = inputs,
-            Model = model,
+            OutPath = Path.GetFullPath(outPath),
+            Inputs = inputs.Select(Path.GetFullPath).ToArray(),
+            Model = options.Model,
             State = JobState.Running,
+            Tag = tag,
             Started = DateTime.UtcNow,
             Then = then,
+            Transparent = options.Transparent,
+            AutoCutout = options.AutoCutout,
         };
-        lock (jobs) jobs.Add(job);
-        return job;
-    }
+        lock (sync) jobs[job.Id] = job;
 
-    private static void Run(Job job, Func<HttpRequestMessage> request)
-    {
         var key = Key;
         if (string.IsNullOrEmpty(key))
         {
             Fail(job, "no OpenAI key: set OPENAI_API_KEY or save one in Ravenfall > Image Generator");
-            return;
+            return job;
         }
-
-        HoldReloads();
+        var body = new JObject
+        {
+            ["kind"] = kind,
+            ["model"] = options.Model == Model.Sunburst ? "sunburst" : "flare",
+            ["prompt"] = prompt,
+            ["inputs"] = new JArray(job.Inputs),
+            ["mask"] = string.IsNullOrEmpty(mask) ? null : Path.GetFullPath(mask),
+            ["outPath"] = job.OutPath,
+            ["size"] = options.Size,
+            ["quality"] = options.Quality,
+            ["transparent"] = options.Transparent,
+            ["autoCutout"] = options.AutoCutout,
+            ["tag"] = tag,
+        };
+        var serviceDir = Path.GetFullPath("tools/ImageGenService");
+        var dataDir = Path.GetFullPath("Library/ImageGen/service");
         Task.Run(async () =>
         {
-            await inFlight.WaitAsync().ConfigureAwait(false);
             try
             {
-                string text = null;
-                for (var attempt = 0; ; attempt++)
+                if (!await EnsureServiceAsync(key, serviceDir, dataDir))
                 {
-                    using var message = request();
-                    message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
-                    HttpResponseMessage response;
-                    try
-                    {
-                        response = await http.SendAsync(message).ConfigureAwait(false);
-                    }
-                    catch (Exception exc) when (exc is TaskCanceledException || exc is HttpRequestException)
-                    {
-                        // timed out or the connection went: never sent again, the picture may already be paid for
-                        Fail(job, "no answer (" + exc.Message + "); not sent again, as it may already be billed");
-                        return;
-                    }
-                    using (response)
-                    {
-                        text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        if (response.IsSuccessStatusCode) break;
-                        var status = (int)response.StatusCode;
-                        var (code, error) = ErrorOf(text);
-                        var quota = code == "insufficient_quota" || code == "credit_balance_exhausted" || code == "organization_spend_limit_exceeded"
-                                    || code == "project_spend_limit_exceeded" || code == "organization_usage_limit_exceeded";
-                        var retry = (status == 429 && !quota) || status >= 500;
-                        if (!retry || attempt >= MaxRetries)
-                        {
-                            Fail(job, status + (quota ? " quota or spend limit: " : " ") + error);
-                            return;
-                        }
-                        var wait = TimeSpan.FromSeconds(2 << attempt);
-                        if (response.Headers.RetryAfter?.Delta is TimeSpan after && after > wait) wait = after;
-                        await Task.Delay(wait).ConfigureAwait(false);
-                    }
-                }
-                var b64 = (string)JObject.Parse(text)["data"]?[0]?["b64_json"];
-                if (string.IsNullOrEmpty(b64))
-                {
-                    Fail(job, "no picture in the answer");
+                    Fail(job, "the image service could not be started (tools/ImageGenService)");
                     return;
                 }
-                var dir = Path.GetDirectoryName(Path.GetFullPath(job.OutPath));
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-                File.WriteAllBytes(job.OutPath, Convert.FromBase64String(b64));
-                // a "transparent" picture whose border came back painted: one cutout pass first (on the main thread to look)
-                if (job.Cutout)
+                using var request = new HttpRequestMessage(HttpMethod.Post, Service + "jobs") { Content = new StringContent(body.ToString(), Encoding.UTF8, "application/json") };
+                request.Headers.Add("X-OpenAI-Key", key);
+                using var response = await http.SendAsync(request);
+                var text = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
                 {
-                    mainThread.Enqueue(() => CutoutIfNeeded(job));
+                    Fail(job, (string)JObject.Parse(text)["error"] ?? text);
                     return;
                 }
-                Finish(job);
+                var id = (string)JObject.Parse(text)["id"];
+                lock (sync)
+                {
+                    jobs.Remove(job.Id);
+                    job.Id = id;
+                    jobs[id] = job;
+                    if (then != null) thens[id] = then;
+                }
             }
             catch (Exception exc)
             {
                 Fail(job, exc.Message);
             }
-            finally
-            {
-                inFlight.Release();
-                ReleaseReloads();
-            }
         });
+        return job;
     }
 
-    private static void Finish(Job job)
-    {
-        job.State = JobState.Done;
-        job.Finished = DateTime.UtcNow;
-        Remember(job);
-        if (job.Then != null) mainThread.Enqueue(() => job.Then(job));
-    }
+    // ---- The service ---------------------------------------------------------------------------------------
 
-    private static void CutoutIfNeeded(Job job)
+    private static async Task<bool> HealthyAsync()
     {
-        if (HasTransparentBorder(File.ReadAllBytes(job.OutPath)))
+        try
         {
-            Finish(job);
-            return;
+            using var cts = new System.Threading.CancellationTokenSource(1500);
+            using var response = await http.GetAsync(Service + "health", cts.Token);
+            return response.IsSuccessStatusCode;
         }
-        // the cutout writes over the same file, then the job is done as asked
-        var options = new Options { Model = Model.Flare, Size = "auto", Quality = "high", Transparent = true, AutoCutout = false };
-        var raw = Path.ChangeExtension(job.OutPath, ".uncut.png");
-        File.Copy(job.OutPath, raw, true);
-        Edit(CutoutPrompt, new[] { raw }, job.OutPath, options, null, cut =>
+        catch { return false; }
+    }
+
+    /// <summary>Starts the service if it is not up, building it first if it was never built.</summary>
+    private static Task<bool> EnsureServiceAsync(string key, string serviceDir, string dataDir)
+    {
+        lock (sync)
         {
-            if (cut.State != JobState.Done) File.Copy(raw, job.OutPath, true); // best effort: keep the original
-            Finish(job);
+            if (starting == null || starting.IsCompleted) starting = StartAsync(key, serviceDir, dataDir);
+            return starting;
+        }
+    }
+
+    private static async Task<bool> StartAsync(string key, string serviceDir, string dataDir)
+    {
+        if (await HealthyAsync()) return true;
+        var exe = Path.Combine(serviceDir, "bin", "Release", "net10.0", "ImageGenService.exe");
+        if (!File.Exists(exe))
+        {
+            mainThread.Enqueue(() => Debug.Log("Image generator: building the image service (once)..."));
+            var build = Process.Start(new ProcessStartInfo("dotnet", "build -c Release -v q")
+            {
+                WorkingDirectory = serviceDir,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            });
+            if (build == null) return false;
+            await build.StandardOutput.ReadToEndAsync();
+            build.WaitForExit(180000);
+            if (!File.Exists(exe)) return false;
+        }
+        Directory.CreateDirectory(dataDir);
+        var start = new ProcessStartInfo(exe)
+        {
+            WorkingDirectory = Path.GetDirectoryName(exe),
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        start.Environment["OPENAI_API_KEY"] = key;
+        start.Environment["IMAGEGEN_PORT"] = Port.ToString();
+        start.Environment["IMAGEGEN_DATA"] = dataDir;
+        Process.Start(start);
+        for (var i = 0; i < 40; i++)
+        {
+            await Task.Delay(250);
+            if (await HealthyAsync()) return true;
+        }
+        return false;
+    }
+
+    private static async Task PollAsync()
+    {
+        using var response = await http.GetAsync(Service + "jobs?last=300");
+        if (!response.IsSuccessStatusCode) return;
+        var list = JArray.Parse(await response.Content.ReadAsStringAsync());
+        foreach (var j in list)
+        {
+            var id = (string)j["id"];
+            var r = j["request"];
+            var state = (string)j["state"];
+            var mapped = state == "Done" ? JobState.Done : state == "Failed" || state == "Interrupted" ? JobState.Failed : JobState.Running;
+            Job job;
+            lock (sync)
+            {
+                if (!jobs.TryGetValue(id, out job))
+                {
+                    job = new Job { Id = id };
+                    jobs[id] = job;
+                }
+                job.Kind = (string)r["kind"];
+                job.Prompt = (string)r["prompt"];
+                job.OutPath = (string)r["outPath"];
+                job.Inputs = r["inputs"]?.ToObject<string[]>() ?? Array.Empty<string>();
+                job.Model = (string)r["model"] == "sunburst" ? Model.Sunburst : Model.Flare;
+                job.Tag = (string)r["tag"];
+                job.Transparent = (bool?)r["transparent"] ?? false;
+                job.AutoCutout = (bool?)r["autoCutout"] ?? false;
+                job.Started = (DateTime?)j["started"] ?? (DateTime?)j["created"] ?? DateTime.UtcNow;
+                job.Finished = (DateTime?)j["finished"] ?? DateTime.MinValue;
+                job.State = mapped;
+                job.Error = (string)j["error"];
+                if (mapped == JobState.Running || ((bool?)j["handled"] ?? false) || !handling.Add(id)) continue;
+            }
+            mainThread.Enqueue(() => Finished(job));
+        }
+    }
+
+    // ---- Finishing -----------------------------------------------------------------------------------------
+
+    /// <summary>A job the service has finished and no one has handled: the cutout pass if needed, then its follow-up.</summary>
+    private static void Finished(Job job)
+    {
+        Action<Job> then;
+        lock (sync) thens.TryGetValue(job.Id, out then);
+        try
+        {
+            if (job.State == JobState.Done && job.Transparent && job.AutoCutout && File.Exists(job.OutPath) && !HasTransparentBorder(File.ReadAllBytes(job.OutPath)))
+            {
+                // the cutout writes over the same file and carries the follow-up; if it fails, the picture stays as it came
+                var raw = Path.ChangeExtension(job.OutPath, ".uncut.png");
+                File.Copy(job.OutPath, raw, true);
+                var cut = new Options { Model = Model.Flare, Size = "auto", Quality = "high", Transparent = true, AutoCutout = false };
+                Edit(CutoutPrompt, new[] { raw }, job.OutPath, cut, null, then, job.Tag);
+                return;
+            }
+            if (job.State == JobState.Failed && job.Prompt != CutoutPrompt)
+            {
+                Debug.LogWarning("Image generator " + job.Id + " failed: " + job.Error);
+                return;
+            }
+            // done; or a cutout that failed, which leaves the picture as it came: its follow-up runs all the same
+            if (job.State == JobState.Failed) job.State = JobState.Done;
+            if (then != null) then(job);
+            else if (!string.IsNullOrEmpty(job.Tag))
+            {
+                var colon = job.Tag.IndexOf(':');
+                var kind = colon < 0 ? job.Tag : job.Tag.Substring(0, colon);
+                if (FollowUps.TryGetValue(kind, out var followUp)) followUp(job, colon < 0 ? "" : job.Tag.Substring(colon + 1));
+            }
+        }
+        finally
+        {
+            lock (sync) thens.Remove(job.Id);
+            MarkHandled(job.Id);
+        }
+    }
+
+    private static void MarkHandled(string id)
+    {
+        Task.Run(async () =>
+        {
+            try { using var _ = await http.PostAsync(Service + "jobs/" + id + "/handled", new StringContent("")); }
+            catch { /* asked again next time */ }
         });
+    }
+
+    private static void Fail(Job job, string error)
+    {
+        job.State = JobState.Failed;
+        job.Error = System.Text.RegularExpressions.Regex.Replace(error ?? "", @"sk-[A-Za-z0-9_\-\*]+", "(the key)");
+        job.Finished = DateTime.UtcNow;
+        mainThread.Enqueue(() => Debug.LogWarning("Image generator " + job.Id + " failed: " + job.Error));
+    }
+
+    // ---- Looking at the jobs -------------------------------------------------------------------------------
+
+    public static IReadOnlyList<Job> Jobs { get { lock (sync) return jobs.Values.OrderBy(j => j.Started).ToList(); } }
+
+    public static Job Find(string id) { lock (sync) return jobs.TryGetValue(id, out var job) ? job : null; }
+
+    /// <summary>The latest jobs, one a line, for an eval to read (this session's, and the service's since the last look).</summary>
+    public static string Status(int last = 10)
+    {
+        var list = Jobs;
+        return string.Join("\n", list.Skip(Math.Max(0, list.Count - last)).Select(j => j.ToString()));
     }
 
     /// <summary>
@@ -370,58 +434,5 @@ public static class ImageGen
         {
             UnityEngine.Object.DestroyImmediate(tex);
         }
-    }
-
-    /// <summary>The error's code and message (with the moderation stage and categories when a request was blocked).</summary>
-    private static (string code, string message) ErrorOf(string text)
-    {
-        try
-        {
-            var e = JObject.Parse(text)["error"];
-            var code = (string)e?["code"] ?? (string)e?["type"];
-            var message = (string)e?["message"] ?? text;
-            if (code == "moderation_blocked" && e?["moderation_details"] is JObject md)
-            {
-                var cats = md["categories"] is JArray c ? string.Join(", ", c.Values<string>()) : "";
-                message += " (moderation stage: " + ((string)md["moderation_stage"] ?? "unknown") + (cats.Length > 0 ? "; categories: " + cats : "") + ")";
-            }
-            return (code, message);
-        }
-        catch
-        {
-            return (null, text.Length > 300 ? text.Substring(0, 300) : text);
-        }
-    }
-
-    private static void Fail(Job job, string error)
-    {
-        job.State = JobState.Failed;
-        // OpenAI repeats a masked piece of a rejected key in its message: never kept or shown
-        job.Error = System.Text.RegularExpressions.Regex.Replace(error ?? "", @"sk-[A-Za-z0-9_\-\*]+", "(the key)");
-        job.Finished = DateTime.UtcNow;
-        Remember(job);
-        mainThread.Enqueue(() => Debug.LogWarning("Image generator " + job.Id + " failed: " + error));
-    }
-
-    private static void Remember(Job job)
-    {
-        try
-        {
-            var path = Path.Combine("Library", "ImageGen", "history.jsonl");
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            var line = new JObject
-            {
-                ["time"] = job.Finished.ToString("o"),
-                ["kind"] = job.Kind,
-                ["model"] = ModelId(job.Model),
-                ["prompt"] = job.Prompt,
-                ["inputs"] = new JArray(job.Inputs),
-                ["out"] = job.OutPath,
-                ["state"] = job.State.ToString(),
-                ["error"] = job.Error,
-            };
-            lock (jobs) File.AppendAllText(path, line.ToString(Formatting.None) + "\n");
-        }
-        catch { /* the history is a convenience */ }
     }
 }

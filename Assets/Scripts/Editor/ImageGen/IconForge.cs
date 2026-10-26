@@ -11,8 +11,15 @@ using UnityEngine;
 /// icons' 256 x 256, put in Assets/Resources/Items (not versioned) as a sprite, and copied to the website's item
 /// pictures in the RavenNest repo when it is next to this one. The full size picture stays in Temp/ImageGen to look at.
 /// </summary>
+[InitializeOnLoad]
 public static class IconForge
 {
+    // an icon whose job finished after a reload (its callback gone) is still installed, by its tag "icon:<slug>"
+    static IconForge()
+    {
+        ImageGen.FollowUps["icon"] = (job, slug) => Install(job, slug);
+    }
+
     public const string ItemsFolder = "Assets/Resources/Items";
     public const int Size = 256;
 
@@ -45,8 +52,8 @@ public static class IconForge
         var options = new ImageGen.Options { Model = model };
         var temp = "Temp/ImageGen/" + slug + ".png";
         return refs.Length > 0
-            ? ImageGen.Edit(prompt, refs, temp, options, null, job => { Install(job, slug); then?.Invoke(job); })
-            : ImageGen.Generate(prompt, temp, options, job => { Install(job, slug); then?.Invoke(job); });
+            ? ImageGen.Edit(prompt, refs, temp, options, null, job => { Install(job, slug); then?.Invoke(job); }, "icon:" + slug)
+            : ImageGen.Generate(prompt, temp, options, job => { Install(job, slug); then?.Invoke(job); }, "icon:" + slug);
     }
 
     /// <summary>
@@ -67,7 +74,7 @@ public static class IconForge
                      "fully transparent background. No text." +
                      (inputs.Count > 1 ? " The other images are other icons from the same game that show how this change looks in its style; do not draw their items." : "");
         return ImageGen.Edit(prompt, inputs, "Temp/ImageGen/" + slug + ".png", new ImageGen.Options { Model = model }, null,
-            job => { Install(job, slug); then?.Invoke(job); });
+            job => { Install(job, slug); then?.Invoke(job); }, "icon:" + slug);
     }
 
     /// <summary>Shrinks a finished picture to an icon, saves it as the item's sprite and copies it to the website.</summary>
