@@ -251,3 +251,7 @@ tools/ImageGenService/obj/
 # third-party reference pictures for Ravebridge: kept locally, only the README with the sources is versioned
 docs/references/ravebridge/web/*
 !docs/references/ravebridge/web/README.md
+
+# Ravebridge's terrains, versioned through LFS like the home island's (see .gitattributes)
+!Assets/TerrainData_18ccb975-f768-4575-8821-9e33d4322770.asset
+!Assets/TerrainData_36a039b1-4738-4f83-99e3-862da344ceea.asset
