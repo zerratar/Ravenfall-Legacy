@@ -430,6 +430,53 @@ public static class RavebridgeQuests
     // ---- Loot steps (bounties) --------------------------------------------------------------------------------
 
     /// <summary>Minutes before a bounty comes round again, 0 when it is ready.</summary>
+    // the marks over the NPCs' heads ask from the start, not only once someone has opened the quest book
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void HookMarks() => IslandNpc.MarkFor = key => MarkFor(RavebridgePlay.Playing, key);
+
+    /// <summary>
+    /// What hangs over an NPC's head for the character playing (IslandNpc, docs/mockups/quest-markers.jpg): a "?" when
+    /// something can be handed in or the story goes on there, a "!" for a quest to take (blue for a bounty that comes
+    /// round again), a grey "?" while one is under way, a speech bubble for the duke and the shopkeeper. The most
+    /// useful one wins.
+    /// </summary>
+    public static IslandNpc.Mark MarkFor(PlayerController player, string npc)
+    {
+        if (!player || Data?.quests == null || string.IsNullOrEmpty(npc)) return IslandNpc.Mark.None;
+        var state = StateOf(player);
+        var best = npc == "duke" || npc == "shopkeeper" ? IslandNpc.Mark.Talk : IslandNpc.Mark.None;
+        void Up(IslandNpc.Mark m) { if (m > best) best = m; }
+        foreach (var quest in Data.quests)
+        {
+            var at = StepOf(state, quest.key);
+            if (at < 0 || at >= quest.steps.Count) continue;
+            var step = quest.steps[at];
+            if (step.type == "collect")
+            {
+                // still gathering for this NPC: they wait; with everything in hand it is time to go back
+                var giver = quest.steps.Take(at).LastOrDefault(s => s.npc != null)?.npc;
+                if (giver == npc) Up(Count(state, step.item) >= step.amount ? IslandNpc.Mark.Ready : IslandNpc.Mark.Waiting);
+                continue;
+            }
+            if (step.npc != npc) continue;
+            if (at == 0)
+            {
+                if (step.requires != null && !IsDone(state, step.requires)) continue;
+                if (quest.bounty && BountyWait(state, quest) > 0f) continue;
+                Up(quest.bounty ? IslandNpc.Mark.Repeatable : IslandNpc.Mark.Available);
+                continue;
+            }
+            switch (step.type)
+            {
+                case "talk": Up((step.requires != null && !IsDone(state, step.requires)) || !Has(state, step.uses) ? IslandNpc.Mark.Waiting : IslandNpc.Mark.Ready); break;
+                case "bring": Up(Has(state, step.items) ? IslandNpc.Mark.Ready : IslandNpc.Mark.Waiting); break;
+                case "loot": Up(HasLoot(player, step.loot) ? IslandNpc.Mark.Ready : IslandNpc.Mark.Waiting); break;
+                case "defend": Up(IslandNpc.Mark.Ready); break;
+            }
+        }
+        return best;
+    }
+
     private static float BountyWait(State state, Quest quest)
     {
         if (state.BountyReadyAt == null || !state.BountyReadyAt.TryGetValue(quest.key, out var ready)) return 0f;

@@ -2195,6 +2195,89 @@
     border-bottom-right-radius: var(--rf-radius);
 }
 
+/* the round minimap, top right (HeroMinimap) */
+.rf-hero-minimap {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 196px;
+    height: 196px;
+}
+
+.rf-hero-minimap__map {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    right: 14px;
+    bottom: 14px;
+    overflow: hidden;
+    border-top-left-radius: 84px;
+    border-top-right-radius: 84px;
+    border-bottom-left-radius: 84px;
+    border-bottom-right-radius: 84px;
+    background-color: rgb(30, 92, 122);
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.rf-hero-minimap__dots {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.rf-hero-minimap__dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    margin-top: -4px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(0, 0, 0, 0.8);
+    border-right-color: rgba(0, 0, 0, 0.8);
+    border-top-color: rgba(0, 0, 0, 0.8);
+    border-bottom-color: rgba(0, 0, 0, 0.8);
+}
+
+.rf-hero-minimap__dot--friend {
+    background-color: rgb(90, 220, 90);
+}
+
+.rf-hero-minimap__dot--enemy {
+    background-color: rgb(235, 60, 50);
+}
+
+.rf-hero-minimap__hero {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    margin-top: -10px;
+    font-size: 16px;
+    -unity-text-align: middle-center;
+    color: rgb(255, 236, 170);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.95);
+}
+
+.rf-hero-minimap__frame {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
 .rf-hero-slot--gap {
     margin-left: 18px;
 }
@@ -2202,6 +2285,20 @@
 .rf-hero-slot__icon {
     font-size: 26px;
     color: var(--rf-accent-bright);
+}
+
+/* the painted icon, filling the slot under the sweep and the labels */
+.rf-hero-slot__picture {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.rf-hero-slot--low .rf-hero-slot__picture {
+    -unity-background-image-tint-color: rgb(120, 140, 230);
 }
 
 .rf-hero-slot__sweep {
@@ -2220,6 +2317,7 @@
     font-size: 12px;
     color: var(--rf-text);
     -unity-font-style: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.95);
 }
 
 .rf-hero-slot__note {
@@ -2228,6 +2326,7 @@
     bottom: 2px;
     font-size: 12px;
     color: var(--rf-text);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.95);
 }
 
 .rf-hero-slot--locked {

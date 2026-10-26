@@ -27,6 +27,7 @@ namespace Shinobytes.UI
         private readonly Slot[] slots = new Slot[6];
         private VisualElement party;
         private Label partyTitle;
+        private HeroMinimap minimap;
         private readonly List<PartyRow> partyRows = new List<PartyRow>();
         private float nextParty;
         private HeroInventoryWindow inventory;
@@ -52,6 +53,7 @@ namespace Shinobytes.UI
         private sealed class Slot
         {
             public VisualElement Box;
+            public VisualElement Picture;
             public VisualElement Sweep;
             public Label Name;
             public Label Note;
@@ -79,6 +81,7 @@ namespace Shinobytes.UI
             HeroController.Refused -= Flash;
             HeroController.InventoryPressed -= ToggleInventory;
             SetHeroMode(false);
+            minimap?.Dispose();
             bound = false;
         }
 
@@ -154,6 +157,11 @@ namespace Shinobytes.UI
                 partyRows.Add(r);
             }
             root.Add(party);
+
+            // the round minimap, top right
+            minimap?.Dispose();
+            minimap = new HeroMinimap();
+            root.Add(minimap.Root);
 
             bounties = new VisualElement { pickingMode = PickingMode.Ignore };
             bounties.AddToClassList("rf-hero-bounties");
@@ -308,6 +316,8 @@ namespace Shinobytes.UI
         {
             var s = new Slot { Box = new VisualElement { pickingMode = PickingMode.Position } };
             s.Box.AddToClassList("rf-hero-slot");
+            s.Picture = new VisualElement { pickingMode = PickingMode.Ignore };
+            s.Picture.AddToClassList("rf-hero-slot__picture");
             s.Name = new Label { pickingMode = PickingMode.Ignore };
             s.Name.AddToClassList("rf-icon");
             s.Name.AddToClassList("rf-hero-slot__icon");
@@ -317,6 +327,7 @@ namespace Shinobytes.UI
             k.AddToClassList("rf-hero-slot__key");
             s.Note = new Label { pickingMode = PickingMode.Ignore };
             s.Note.AddToClassList("rf-hero-slot__note");
+            s.Box.Add(s.Picture);
             s.Box.Add(s.Name);
             s.Box.Add(s.Sweep);
             s.Box.Add(k);
@@ -342,14 +353,33 @@ namespace Shinobytes.UI
             for (var i = 0; i < 4; i++)
             {
                 var skill = i < hero.Kit.Count ? hero.Kit[i] : null;
-                slots[i].Name.text = skill?.Icon ?? string.Empty;
+                ShowPicture(slots[i], skill?.Key, skill?.Icon ?? string.Empty);
                 slots[i].Box.tooltip = skill != null ? skill.Name() + "\n" + skill.Description() : string.Empty;
             }
-            slots[4].Name.text = "";
+            ShowPicture(slots[4], "dodge", "");
             slots[4].Box.tooltip = Localization.UI_HERO_DODGE;
-            slots[5].Name.text = "";
+            ShowPicture(slots[5], "potion", "");
             slots[5].Box.tooltip = Localization.UI_HERO_POTION;
             nextParty = 0f;
+        }
+
+        private static readonly Dictionary<string, Texture2D> pictures = new Dictionary<string, Texture2D>();
+
+        /// <summary>
+        /// A slot's painted icon (Resources/HeroSkills, drawn with the Image Generator after docs/mockups/hero-mode-hud.jpg),
+        /// or its glyph where there is no picture.
+        /// </summary>
+        private static void ShowPicture(Slot slot, string key, string glyph)
+        {
+            Texture2D picture = null;
+            if (!string.IsNullOrEmpty(key) && !pictures.TryGetValue(key, out picture))
+            {
+                picture = Resources.Load<Texture2D>("HeroSkills/" + key);
+                pictures[key] = picture;
+            }
+            slot.Picture.style.backgroundImage = picture ? new StyleBackground(picture) : new StyleBackground(StyleKeyword.None);
+            slot.Picture.style.display = picture ? DisplayStyle.Flex : DisplayStyle.None;
+            slot.Name.text = picture ? string.Empty : glyph;
         }
 
         /// <summary>The usual HUD steps aside while the hero plays.</summary>
@@ -383,6 +413,7 @@ namespace Shinobytes.UI
             if (!bound || !hero || !hero.Player) return;
             inventory?.Update(hero.Player);
             loot?.Update();
+            minimap?.Update(hero.Player);
             if (Time.unscaledTime >= nextBuffs)
             {
                 nextBuffs = Time.unscaledTime + 0.5f;

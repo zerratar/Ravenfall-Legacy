@@ -206,6 +206,26 @@ public static class ImageGen
         lock (jobs) return string.Join("\n", jobs.Skip(Math.Max(0, jobs.Count - last)).Select(j => j.ToString()));
     }
 
+    // a script reload would cut off every request in flight (and they may already be paid for): reloads wait while
+    // any job runs, and go ahead when the last one is done
+    private static int locked;
+
+    private static void HoldReloads()
+    {
+        mainThread.Enqueue(() =>
+        {
+            if (locked++ == 0) EditorApplication.LockReloadAssemblies();
+        });
+    }
+
+    private static void ReleaseReloads()
+    {
+        mainThread.Enqueue(() =>
+        {
+            if (locked > 0 && --locked == 0) EditorApplication.UnlockReloadAssemblies();
+        });
+    }
+
     private static Job NewJob(string kind, string prompt, string outPath, string[] inputs, Model model, Action<Job> then)
     {
         var job = new Job
@@ -233,6 +253,7 @@ public static class ImageGen
             return;
         }
 
+        HoldReloads();
         Task.Run(async () =>
         {
             await inFlight.WaitAsync().ConfigureAwait(false);
@@ -297,6 +318,7 @@ public static class ImageGen
             finally
             {
                 inFlight.Release();
+                ReleaseReloads();
             }
         });
     }

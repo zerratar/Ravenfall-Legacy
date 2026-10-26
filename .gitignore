@@ -220,6 +220,12 @@ Assets/Village/Derived.meta
 # referenced by the scene's OwnBoatPrefabs.
 !Assets/World/Sailing.meta
 !Assets/World/Sailing/**
+# The quest marks over NPCs' heads (IslandNpc), drawn with the Image Generator, loaded from Resources.
+!Assets/World/Markers.meta
+!Assets/World/Markers/**
+# Hero mode's skill icons and HUD art (HeroHudView, HeroMinimap), drawn with the Image Generator, loaded from Resources.
+!Assets/World/Hero.meta
+!Assets/World/Hero/**
 
 # Local safety copies made before reshaping terrain or scenes.
 Backups/

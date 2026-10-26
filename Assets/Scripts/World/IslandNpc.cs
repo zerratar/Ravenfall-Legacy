@@ -7,7 +7,8 @@ using UnityEngine;
 /// Someone on an island the streamer can talk to while playing by hand (phase 6e of docs/ravebridge-design.md): the
 /// cook, the priest, the miller, the goblins' generals. A click from the controlled character walks up to them and
 /// opens their dialogue (ManualPlayerController.TalkTo, RavebridgeDialogue). Now and then they say one of their idle
-/// lines in a speech bubble, like the tavern's regulars (TavernNpc).
+/// lines in a speech bubble, like the tavern's regulars (TavernNpc). Over their head floats a mark for the character
+/// playing (<see cref="MarkFor"/>): what they have to give or take, as in docs/mockups/quest-markers.jpg.
 /// </summary>
 public sealed class IslandNpc : MonoBehaviour
 {
@@ -18,6 +19,19 @@ public sealed class IslandNpc : MonoBehaviour
 
     /// <summary>Their idle lines, from the quests' data.</summary>
     public static Func<string, IReadOnlyList<string>> LinesFor;
+
+    /// <summary>The marks, least to most useful: the most useful one is shown.</summary>
+    public enum Mark { None, Talk, Waiting, Repeatable, Available, Ready }
+
+    /// <summary>Which mark an NPC shows now, from the island quests (RavebridgeQuests.MarkFor).</summary>
+    public static Func<string, Mark> MarkFor;
+
+    private const float MarkSize = 0.85f;
+    private const float MarkEvery = 0.5f;
+    private static readonly Dictionary<Mark, Sprite> markSprites = new Dictionary<Mark, Sprite>();
+    private SpriteRenderer marker;
+    private Mark shownMark;
+    private float nextMark;
 
     private const float LineSeconds = 6f;
     private const float FadeSeconds = 0.35f;
@@ -63,6 +77,8 @@ public sealed class IslandNpc : MonoBehaviour
 
     private void Update()
     {
+        UpdateMark();
+
         if (Time.time >= nextLine)
         {
             nextLine = Time.time + UnityEngine.Random.Range(30f, 60f);
@@ -84,6 +100,55 @@ public sealed class IslandNpc : MonoBehaviour
         bubble.transform.position = transform.position + Vector3.up * HeadHeight;
         if (cam) bubble.transform.rotation = cam.transform.rotation;
         bubble.alpha = Mathf.Min(Mathf.Clamp01(shownFor / FadeSeconds), Mathf.Clamp01(showLeft / FadeSeconds));
+    }
+
+    /// <summary>The mark over their head: looked up twice a second, bobbing gently, turned to the camera, out of the way of a speech bubble.</summary>
+    private void UpdateMark()
+    {
+        if (Time.time >= nextMark)
+        {
+            nextMark = Time.time + MarkEvery;
+            var mark = MarkFor != null && SomeoneNear() ? MarkFor(Key) : Mark.None;
+            if (mark != shownMark)
+            {
+                shownMark = mark;
+                var sprite = SpriteFor(mark);
+                if (sprite && !marker) marker = MakeMarker();
+                if (marker)
+                {
+                    marker.sprite = sprite;
+                    marker.gameObject.SetActive(sprite);
+                }
+            }
+        }
+
+        if (!marker || !marker.gameObject.activeSelf) return;
+        var cam = Camera.main;
+        var talking = bubble && bubble.gameObject.activeSelf;
+        var bob = Mathf.Sin(Time.time * 2.2f + transform.position.x) * 0.07f;
+        marker.transform.position = transform.position + Vector3.up * (HeadHeight + (talking ? 1.9f : 0.55f) + bob);
+        if (cam) marker.transform.rotation = cam.transform.rotation;
+    }
+
+    private static Sprite SpriteFor(Mark mark)
+    {
+        if (mark == Mark.None) return null;
+        if (markSprites.TryGetValue(mark, out var sprite)) return sprite;
+        // drawn with the Image Generator; Assets/World/Markers/Resources/QuestMarkers
+        sprite = Resources.Load<Sprite>("QuestMarkers/" + mark.ToString().ToLowerInvariant());
+        markSprites[mark] = sprite;
+        return sprite;
+    }
+
+    private SpriteRenderer MakeMarker()
+    {
+        var go = new GameObject("Quest Mark");
+        go.transform.SetParent(transform, false);
+        go.transform.localScale = Vector3.one * MarkSize;
+        var renderer = go.AddComponent<SpriteRenderer>();
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        return renderer;
     }
 
     private bool SomeoneNear()
