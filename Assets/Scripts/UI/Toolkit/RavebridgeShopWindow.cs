@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -72,6 +73,7 @@ namespace Shinobytes.UI
             RavebridgeShop.Opened += Open;
             RavebridgeShop.Changed += p => { if (p == shopper) dirty = true; };
             RavebridgeLoot.Changed += p => { if (p == shopper) dirty = true; };
+            RavebridgeGear.Changed += p => { if (p == shopper) dirty = true; };
         }
 
         public void Remove()
@@ -175,6 +177,20 @@ namespace Shinobytes.UI
                 }
                 list.Add(row);
             }
+            // hero gear not worn: sold whole, at its rarity's worth
+            foreach (var piece in RavebridgeGear.Of(player).Where(p => !p.Worn).OrderByDescending(p => p.Grade).ToList())
+            {
+                any = true;
+                var pc = piece;
+                var detail = string.Join(", ", piece.Affixes.Select(a => RavebridgeGear.Describe(a.Key, a.Value)));
+                var row = Row(piece.Glyph, piece.Color, piece.Name, detail);
+                var sell = new Button(() => SellGear(player, pc)) { text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_PRICE, piece.Value) };
+                sell.AddToClassList("rf-squest-chip");
+                sell.AddToClassList("rf-squest-chip--active");
+                sell.AddToClassList("rf-shop__price");
+                row.Add(sell);
+                list.Add(row);
+            }
             if (!any)
             {
                 var empty = new Label(Localization.UI_RBSHOP_NOTHING_TO_SELL);
@@ -213,10 +229,21 @@ namespace Shinobytes.UI
         {
             switch (RavebridgeShop.Buy(player, entry))
             {
-                case RavebridgeShop.BuyResult.Bought: Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_BOUGHT, entry.Name)); break;
+                case RavebridgeShop.BuyResult.Bought:
+                    Say(entry.kind == "gear" && RavebridgeShop.LastGear != null
+                        ? string.Format(CultureInfo.InvariantCulture, Localization.UI_GEAR_SATCHEL, RavebridgeShop.LastGear.Name)
+                        : string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_BOUGHT, entry.Name));
+                    break;
                 case RavebridgeShop.BuyResult.TooPoor: Say(Localization.UI_RBSHOP_TOO_POOR); break;
                 case RavebridgeShop.BuyResult.Maxed: Say(Localization.UI_RBSHOP_MAXED); break;
             }
+            Redraw();
+        }
+
+        private void SellGear(PlayerController player, RavebridgeGear.Piece piece)
+        {
+            var got = RavebridgeGear.Sell(player, piece);
+            if (got > 0) Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_SOLD, piece.Name, got));
             Redraw();
         }
 

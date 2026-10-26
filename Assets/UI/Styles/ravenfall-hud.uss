@@ -2420,6 +2420,13 @@
     border-bottom-width: 2px;
 }
 
+.rf-hero-inv__totals {
+    margin-bottom: var(--rf-space-1);
+    font-size: 12px;
+    color: rgb(140, 200, 255);
+    white-space: normal;
+}
+
 .rf-hero-inv__glyph {
     font-size: 26px;
     -unity-text-outline-width: 1px;

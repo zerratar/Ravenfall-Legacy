@@ -321,7 +321,8 @@ public partial class HeroController : MonoBehaviour
             return;
         }
 
-        Mana = Mathf.Min(MaxMana, Mana + ManaPerSecond * Time.deltaTime);
+        Mana = Mathf.Min(MaxMana, Mana + ManaPerSecond * (1f + RavebridgeGear.Stat(Player, "mana") / 100f) * Time.deltaTime);
+        Regenerate();
         if (heroCamera && heroCamera.Aim(out var point)) aim = point;
         if (Time.time < spinUntil) Spin();
         else if (spinUntil > 0f) StopSpin();
@@ -372,6 +373,20 @@ public partial class HeroController : MonoBehaviour
     }
 
     private bool wasd;
+    private float regenCarry;
+
+    /// <summary>Hero gear's mending: a share of the hero's health back each second.</summary>
+    private void Regenerate()
+    {
+        var regen = RavebridgeGear.Stat(Player, "regen");
+        var health = Player.Stats.Health;
+        if (regen <= 0f || health.CurrentValue >= health.MaxLevel) { regenCarry = 0f; return; }
+        regenCarry += health.MaxLevel * regen / 100f * Time.deltaTime;
+        if (regenCarry < 1f) return;
+        var whole = Mathf.FloorToInt(regenCarry);
+        regenCarry -= whole;
+        Player.Heal(whole);
+    }
 
     /// <summary>Rapid fire: extra arrows at the enemy the hero fights, three a second.</summary>
     private void RapidArrows()
@@ -507,6 +522,14 @@ public partial class HeroController : MonoBehaviour
         var chunk = enemy.GetComponentInParent<Chunk>();
         if (chunk != null) Player.Chunk = chunk;
         var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy) * multiplier * CheerBonus * RavebridgeShop.DamageFactor(Player)));
+        // hero gear: a double hit now and then, and some of the blow back as health
+        if (UnityEngine.Random.value * 100f < RavebridgeGear.Stat(Player, "crit")) damage *= 2;
+        var leech = RavebridgeGear.Stat(Player, "leech");
+        if (leech > 0f)
+        {
+            var back = Mathf.Min(damage * leech / 100f, Player.Stats.Health.MaxLevel * 0.05f);
+            if (back >= 1f) Player.Heal(Mathf.RoundToInt(back));
+        }
         Player.SessionStats.AddDamageDealt(damage);
         if (enemy.TakeDamage(Player, damage))
         {
@@ -710,7 +733,7 @@ public partial class HeroController : MonoBehaviour
         if (Potions > 0) Potions--;
         else if (!RavebridgeLoot.TakePotion(Player)) { Refused?.Invoke(-2, "empty"); return; }
         potionReadyAt = Time.time + 1f;
-        Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxLevel * PotionShare));
+        Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxLevel * PotionShare * (1f + RavebridgeGear.Stat(Player, "potion") / 100f)));
         Play("Hero-Drink");
         GameSounds.Play(SoundKind.Heal, Player.Position, 0.7f, 0.4f, Player);
     }

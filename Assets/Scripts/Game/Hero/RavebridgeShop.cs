@@ -38,6 +38,9 @@ public static class RavebridgeShop
 
     public enum BuyResult { Bought, TooPoor, Maxed, Unknown }
 
+    /// <summary>The piece the last satchel held (the window names it).</summary>
+    public static RavebridgeGear.Piece LastGear { get; private set; }
+
     // buffs bought: per character, per stat, until when (unscaled time) and how strong
     private static readonly Dictionary<Guid, Dictionary<string, (float Until, float Amount)>> buffs = new Dictionary<Guid, Dictionary<string, (float, float)>>();
 
@@ -120,6 +123,14 @@ public static class RavebridgeShop
                 var from = mine.TryGetValue(entry.stat, out var had) && had.Until > Time.unscaledTime ? had.Until : Time.unscaledTime;
                 mine[entry.stat] = (from + entry.minutes * 60f, entry.amount);
                 break;
+            case "gear":
+                // the satchel rolls as a boss's drop does: worth its price more often than not
+                var piece = RavebridgeGear.Roll(true);
+                if (piece == null) return BuyResult.Unknown;
+                state.Coins -= price;
+                RavebridgeLoot.PickGear(player, piece);
+                LastGear = piece;
+                break;
             case "upgrade":
                 state.Coins -= price;
                 state.Upgrades ??= new Dictionary<string, int>();
@@ -185,10 +196,10 @@ public static class RavebridgeShop
     }
 
     /// <summary>The hero's damage, times this (the whetstone).</summary>
-    public static float DamageFactor(PlayerController player) => 1f + Buff(player, "damage");
+    public static float DamageFactor(PlayerController player) => 1f + Buff(player, "damage") + RavebridgeGear.Stat(player, "damage") / 100f;
 
-    /// <summary>The damage the hero takes, times this (the stew).</summary>
-    public static float TakenFactor(PlayerController player) => Mathf.Max(0.1f, 1f - Buff(player, "guard"));
+    /// <summary>The damage the hero takes, times this (the stew and the gear's guard; never under 40%).</summary>
+    public static float TakenFactor(PlayerController player) => Mathf.Max(0.4f, 1f - Buff(player, "guard") - RavebridgeGear.Stat(player, "guard") / 100f);
 
     /// <summary>Potions the hero carries over the three (the belt).</summary>
     public static int ExtraPotions(PlayerController player) => Mathf.RoundToInt(Upgrade(player, "potions"));
@@ -197,5 +208,5 @@ public static class RavebridgeShop
     public static float RollSooner(PlayerController player) => Upgrade(player, "roll") * 0.5f;
 
     /// <summary>Coins from drops, times this (the charm).</summary>
-    public static float CoinFactor(PlayerController player) => 1f + Upgrade(player, "luck") * 0.1f;
+    public static float CoinFactor(PlayerController player) => 1f + Upgrade(player, "luck") * 0.1f + RavebridgeGear.Stat(player, "luck") / 100f;
 }

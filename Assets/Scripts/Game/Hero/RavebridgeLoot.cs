@@ -36,7 +36,7 @@ public static class RavebridgeLoot
     }
 
     public class Drop { public string item; public float chance; public int[] amount; }
-    public class Table { public string match; public int[] coins; public List<Drop> drops; }
+    public class Table { public string match; public int[] coins; public List<Drop> drops; public float gear; public bool gearBoss; }
     public class Book { public Dictionary<string, Item> items; public List<Table> tables; public List<Drop> any; }
 
     private const float SaveAfter = 5f;
@@ -46,6 +46,18 @@ public static class RavebridgeLoot
 
     /// <summary>Something went into a bag: its owner, what (null for coins), how many. For the HUD's popups.</summary>
     public static event Action<PlayerController, Item, long> Picked;
+
+    /// <summary>A piece of hero gear picked up (the HUD's popup).</summary>
+    public static event Action<PlayerController, RavebridgeGear.Piece> PickedGear;
+
+    /// <summary>A piece of hero gear picked up: into the character's gear, worn at once if its slot is empty.</summary>
+    public static void PickGear(PlayerController player, RavebridgeGear.Piece piece)
+    {
+        if (!player || piece == null) return;
+        RavebridgeGear.Add(player, piece);
+        GameSounds.Play(SoundKind.ItemPickup, player.Position, 0.8f, 0f, player);
+        PickedGear?.Invoke(player, piece);
+    }
 
     /// <summary>A bag changed (the inventory window redraws).</summary>
     public static event Action<PlayerController> Changed;
@@ -126,6 +138,16 @@ public static class RavebridgeLoot
                 if (item == null || UnityEngine.Random.value > drop.chance) continue;
                 LootDrop.Create(hero, item, Math.Max(1, Between(drop.amount)), at);
                 if (item.Grade > best) best = item.Grade;
+            }
+        }
+        // now and then a piece of hero gear; a boss always drops one, and better
+        if (table.gear > 0f && UnityEngine.Random.value <= table.gear)
+        {
+            var piece = RavebridgeGear.Roll(table.gearBoss);
+            if (piece != null)
+            {
+                LootDrop.Create(hero, null, 1, at, piece);
+                if (piece.Grade > best) best = piece.Grade;
             }
         }
         if (best >= Rarity.Rare)

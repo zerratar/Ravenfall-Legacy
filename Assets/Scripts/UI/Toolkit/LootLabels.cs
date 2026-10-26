@@ -32,12 +32,27 @@ namespace Shinobytes.UI
             layer.AddToClassList("rf-loot-layer");
             parent.Add(layer);
             RavebridgeLoot.Picked += OnPicked;
+            RavebridgeLoot.PickedGear += OnPickedGear;
         }
 
         public void Remove()
         {
             RavebridgeLoot.Picked -= OnPicked;
+            RavebridgeLoot.PickedGear -= OnPickedGear;
             layer.RemoveFromHierarchy();
+        }
+
+        private void OnPickedGear(PlayerController player, RavebridgeGear.Piece piece)
+        {
+            var hero = HeroController.Active;
+            if (!hero || hero.Player != player) return;
+            var label = Take();
+            label.AddToClassList("rf-loot-popup");
+            label.text = piece.Name;
+            label.style.color = piece.Color;
+            popupsInARow = Time.unscaledTime - lastPopup < 0.35f ? popupsInARow + 1 : 0;
+            lastPopup = Time.unscaledTime;
+            popups.Add(new Popup { Label = label, Player = player, Offset = popupsInARow * 22f });
         }
 
         private void OnPicked(PlayerController player, RavebridgeLoot.Item item, long amount)
@@ -87,7 +102,9 @@ namespace Shinobytes.UI
             if (!cam || panel == null) return;
             var camPos = cam.transform.position;
 
-            // the drops on the ground
+            // the drops on the ground; a label that would cover one already placed goes up above it, as the action
+            // RPGs stack them
+            placed.Clear();
             foreach (var drop in LootDrop.All)
             {
                 if (!drop) continue;
@@ -106,10 +123,10 @@ namespace Shinobytes.UI
                     label = Take();
                     label.text = drop.Label;
                     label.style.color = drop.Color;
-                    label.EnableInClassList("rf-loot-label--rare", drop.Item != null && drop.Item.Grade >= RavebridgeLoot.Rarity.Rare);
+                    label.EnableInClassList("rf-loot-label--rare", (drop.Item != null || drop.Gear != null) && drop.Grade >= RavebridgeLoot.Rarity.Rare);
                     shown[drop] = label;
                 }
-                Place(label, panel, world, cam, 0f);
+                PlaceStacked(label, panel, world, cam);
             }
             gone.Clear();
             foreach (var pair in shown) if (!pair.Key) gone.Add(pair.Key);
@@ -131,6 +148,32 @@ namespace Shinobytes.UI
                 Place(p.Label, panel, p.Player.Position + Vector3.up * 2.3f, cam, -PopupRise * ease - p.Offset);
                 p.Label.style.opacity = t < 0.65f ? 1f : 1f - (t - 0.65f) / 0.35f;
             }
+        }
+
+        private readonly List<Rect> placed = new List<Rect>();
+
+        /// <summary>A drop's label over it, moved up past any label it would cover.</summary>
+        private void PlaceStacked(Label label, IPanel panel, Vector3 world, Camera cam)
+        {
+            var point = RuntimePanelUtils.CameraTransformWorldToPanel(panel, world, cam);
+            var width = label.resolvedStyle.width;
+            var height = label.resolvedStyle.height;
+            if (float.IsNaN(width)) width = 0f;
+            if (float.IsNaN(height)) height = 0f;
+            var rect = new Rect(point.x - width * 0.5f, point.y - height, width, height);
+            for (var tries = 0; tries < 8; tries++)
+            {
+                var clash = false;
+                foreach (var other in placed)
+                {
+                    if (!other.Overlaps(rect)) continue;
+                    rect.y = other.y - height - 2f;
+                    clash = true;
+                }
+                if (!clash) break;
+            }
+            placed.Add(rect);
+            label.style.translate = new Translate(rect.x, rect.y);
         }
 
         /// <summary>A label centred over a point in the world, its bottom on it, raised by some pixels.</summary>

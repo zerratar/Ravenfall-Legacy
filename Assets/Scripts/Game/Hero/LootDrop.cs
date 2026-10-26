@@ -22,15 +22,21 @@ public sealed class LootDrop : MonoBehaviour
 
     public PlayerController Owner { get; private set; }
     public RavebridgeLoot.Item Item { get; private set; }
+
+    /// <summary>A piece of hero gear, when that is what it is (Item is then null).</summary>
+    public RavebridgeGear.Piece Gear { get; private set; }
+
+    /// <summary>Its rarity: the item's or the gear's; coins are common.</summary>
+    public RavebridgeLoot.Rarity Grade => Gear != null ? Gear.Grade : Item != null ? Item.Grade : RavebridgeLoot.Rarity.Common;
     public long Amount { get; private set; }
     public float Born { get; private set; }
 
     /// <summary>The colour its label and beam are drawn in.</summary>
-    public Color Color => Item != null ? RavebridgeLoot.ColorOf(Item.Grade) : RavebridgeLoot.CoinColor;
+    public Color Color => Item != null || Gear != null ? RavebridgeLoot.ColorOf(Grade) : RavebridgeLoot.CoinColor;
 
     /// <summary>What its label says.</summary>
-    public string Label => Item != null
-        ? (Amount > 1 ? Item.Name + " x" + Amount : Item.Name)
+    public string Label => Gear != null ? Gear.Name
+        : Item != null ? (Amount > 1 ? Item.Name + " x" + Amount : Item.Name)
         : string.Format(Localization.UI_LOOT_COINS_ON_GROUND, Amount);
 
     /// <summary>Where its label goes.</summary>
@@ -44,16 +50,17 @@ public sealed class LootDrop : MonoBehaviour
     private bool taken;
 
     /// <summary>Tosses a drop out from a place: coins when <paramref name="item"/> is null.</summary>
-    public static LootDrop Create(PlayerController owner, RavebridgeLoot.Item item, long amount, Vector3 at)
+    public static LootDrop Create(PlayerController owner, RavebridgeLoot.Item item, long amount, Vector3 at, RavebridgeGear.Piece gear = null)
     {
         LootManager.Ensure();
         while (all.Count >= MaxOnGround) all[0].Take();
 
-        var go = new GameObject(item != null ? "Loot " + item.Key : "Loot coins");
+        var go = new GameObject(gear != null ? "Loot gear " + gear.Base : item != null ? "Loot " + item.Key : "Loot coins");
         go.transform.SetParent(LootManager.Root, true);
         var drop = go.AddComponent<LootDrop>();
         drop.Owner = owner;
         drop.Item = item;
+        drop.Gear = gear;
         drop.Amount = amount;
         drop.Born = Time.time;
         drop.from = at + Vector3.up * 1f;
@@ -63,18 +70,19 @@ public sealed class LootDrop : MonoBehaviour
         go.transform.position = drop.from;
         drop.Build();
         all.Add(drop);
-        if (item == null) GameSounds.Play(SoundKind.CoinDrop, at, 0.45f, 0.2f, owner);
+        if (item == null && gear == null) GameSounds.Play(SoundKind.CoinDrop, at, 0.45f, 0.2f, owner);
         return drop;
     }
 
     private void Build()
     {
         var fx = HeroEffects.Get;
-        var prefab = fx ? (Item == null ? fx.LootCoin : Item.IsPotion ? fx.LootPotion : fx.LootPouch) : null;
-        var size = Item == null ? 0.42f : Item.Grade >= RavebridgeLoot.Rarity.Epic ? 0.8f : 0.65f;
+        var coins = Item == null && Gear == null;
+        var prefab = fx ? (coins ? fx.LootCoin : Item != null && Item.IsPotion ? fx.LootPotion : fx.LootPouch) : null;
+        var size = coins ? 0.42f : Grade >= RavebridgeLoot.Rarity.Epic ? 0.8f : 0.65f;
         if (prefab)
         {
-            var count = Item == null ? Mathf.Clamp((int)(Amount / 8) + 1, 1, 4) : 1;
+            var count = coins ? Mathf.Clamp((int)(Amount / 8) + 1, 1, 4) : 1;
             var holder = new GameObject("Model").transform;
             holder.SetParent(transform, false);
             for (var i = 0; i < count; i++)
@@ -82,7 +90,7 @@ public sealed class LootDrop : MonoBehaviour
                 var piece = Instantiate(prefab, holder);
                 foreach (var c in piece.GetComponentsInChildren<Collider>()) Destroy(c);
                 piece.transform.localPosition = count > 1 ? new Vector3(Mathf.Cos(i * 2.1f), 0f, Mathf.Sin(i * 2.1f)) * 0.12f + Vector3.up * i * 0.03f : Vector3.zero;
-                piece.transform.localRotation = Quaternion.Euler(Item == null ? 70f : 0f, i * 47f, 0f);
+                piece.transform.localRotation = Quaternion.Euler(coins ? 70f : 0f, i * 47f, 0f);
             }
             // every prop to about the same size, whatever its pack made it
             var bounds = new Bounds(transform.position, Vector3.zero);
@@ -97,8 +105,8 @@ public sealed class LootDrop : MonoBehaviour
             model = holder;
         }
 
-        // the beam: from uncommon up, taller for the rarer
-        if (Item != null && Item.Grade >= RavebridgeLoot.Rarity.Uncommon)
+        // the beam: from uncommon up, taller for the rarer; gear always has one
+        if ((Item != null && Grade >= RavebridgeLoot.Rarity.Uncommon) || Gear != null)
         {
             var material = Resources.Load<Material>("HeroTrail");
             if (material)
@@ -108,10 +116,10 @@ public sealed class LootDrop : MonoBehaviour
                 beam.useWorldSpace = false;
                 beam.sharedMaterial = material;
                 beam.positionCount = 2;
-                var height = 1.2f + (int)Item.Grade * 0.6f;
+                var height = 1.2f + (int)Grade * 0.6f;
                 beam.SetPosition(0, Vector3.down * 0.3f);
                 beam.SetPosition(1, Vector3.up * height);
-                beam.widthMultiplier = 0.1f + (int)Item.Grade * 0.025f;
+                beam.widthMultiplier = 0.1f + (int)Grade * 0.025f;
                 var c = Color;
                 var gradient = new Gradient();
                 gradient.SetKeys(new[] { new GradientColorKey(c, 0f), new GradientColorKey(c, 1f) },
@@ -156,7 +164,7 @@ public sealed class LootDrop : MonoBehaviour
         {
             var flat = Owner.Position - transform.position;
             flat.y = 0f;
-            var reach = Item == null ? CoinPull : PickRadius;
+            var reach = Item == null && Gear == null ? CoinPull : PickRadius;
             if (flat.sqrMagnitude < reach * reach)
             {
                 flyStarted = now;
@@ -171,7 +179,11 @@ public sealed class LootDrop : MonoBehaviour
         if (taken) return;
         taken = true;
         all.Remove(this);
-        if (Owner) RavebridgeLoot.Pick(Owner, Item, Amount);
+        if (Owner)
+        {
+            if (Gear != null) RavebridgeLoot.PickGear(Owner, Gear);
+            else RavebridgeLoot.Pick(Owner, Item, Amount);
+        }
         Destroy(gameObject);
     }
 

@@ -626,3 +626,28 @@ Repeatable quests for the Ravebridge bag's loot, so it has a use beyond the shop
 - **Tested in play mode:** the whole loop with Wartfist (offer, reminder, tracker at 4/10, the "you have it all"
   notice, hand-over, +120 coins, the cooldown), Bentnose's offer, the priest keeping his story quest first, two
   bounties in the tracker.
+
+### Hero gear, with stats inside Ravebridge (2026-10-26)
+
+The user's call: hero-only gear that gives stats in hero mode on Ravebridge, kept on this computer.
+
+- **Four slots** (amulet, ring, charm, relic), worn on top of the character's own equipment, never instead of it,
+  and only counted in hero mode. Kept in the character's Ravebridge state (`RavebridgeQuests.State.Gear`).
+- **Rolled when it drops** (`RavebridgeGear`, `loot.json` "gear"): a random base (nine, by slot) and a rarity by
+  weight; the rarity sets how many affixes (1 to 4) and how strong (power 1 to 3.2), and its worth (10 to 600 coins).
+  Named after its strongest affix: "Bent wire ring of Swiftness" ("Böjd trådring av snabbhet").
+- **Affixes:** damage, guard (less damage taken; with the stew never below 40% taken), attack speed, double hits,
+  leech (a share of the blow back as health, at most 5% of max health a hit), health back each second, mana back,
+  coins from drops, potion healing. Damage counts for real: the waves size enemies by the hero's raw hit
+  (`ExpectedHit`), the gear multiplies only the strike.
+- **Where from:** every table has a gear chance (2.5% for most enemies, 6% for knights and souls, 1% for cows),
+  bosses always drop a piece with better odds (`gearBoss`), and the shopkeeper sells a mystery satchel (350 coins,
+  boss odds). Gear on the ground always has a beam; labels of drops lying close stack upward instead of covering
+  each other.
+- **The inventory window** shows Hero gear above the Ravebridge bag: the four slots (worn or empty), the spare
+  pieces, the worn totals; right click wears a piece (taking off the one in its slot) or takes it off; the tooltip
+  lists slot, rarity, every affix and its worth. A piece picked up goes on at once if its slot is empty.
+- **The shopkeeper** buys spare pieces at their worth.
+- **Tested in play mode:** rarity odds over 400 rolls (normal and boss), names and affixes, pickup and auto-wear,
+  every effect (damage x1.20, taken x0.90, 1%/s regen healing 20 in 2 s, a potion at +50% healing 524, half the hits
+  doubled at 50%), the window, the satchel, selling, gear still there after a restart.

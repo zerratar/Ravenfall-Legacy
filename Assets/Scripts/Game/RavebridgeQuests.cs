@@ -85,6 +85,9 @@ public static class RavebridgeQuests
         /// <summary>Bounties: how often each was done, and when it comes round again (UTC).</summary>
         public Dictionary<string, int> Bounties = new Dictionary<string, int>();
         public Dictionary<string, DateTime> BountyReadyAt = new Dictionary<string, DateTime>();
+
+        /// <summary>Hero gear: every piece the character has, the worn ones marked (RavebridgeGear).</summary>
+        public List<RavebridgeGear.Piece> Gear = new List<RavebridgeGear.Piece>();
     }
 
     private static Book book;
@@ -151,6 +154,7 @@ public static class RavebridgeQuests
         state.Upgrades ??= new Dictionary<string, int>();
         state.Bounties ??= new Dictionary<string, int>();
         state.BountyReadyAt ??= new Dictionary<string, DateTime>();
+        state.Gear ??= new List<RavebridgeGear.Piece>();
         ownStates[player.Id] = state;
         return state;
     }

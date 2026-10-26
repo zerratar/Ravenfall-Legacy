@@ -544,6 +544,14 @@ public static class Localization
     public static string UI_LOOT_RARE = "Rare";
     public static string UI_LOOT_EPIC = "Epic";
     public static string UI_LOOT_LEGENDARY = "Legendary";
+    public static string UI_GEAR_TITLE = "Hero gear";
+    public static string UI_GEAR_EMPTY = "No hero gear yet. Enemies drop it now and then, bosses always.";
+    public static string UI_GEAR_SLOT = "Slot";
+    public static string UI_GEAR_EMPTY_SLOT = "Nothing worn here.";
+    public static string UI_GEAR_ONLY = "Works only in hero mode on Ravebridge, on top of the character's own gear. Kept on this computer.";
+    public static string UI_GEAR_WEAR = "Right click: wear";
+    public static string UI_GEAR_TAKE_OFF = "Right click: take off";
+    public static string UI_GEAR_SATCHEL = "The satchel held: {0}";
     public static string UI_RBSHOP_OPEN = "Show me your wares";
     public static string UI_RBSHOP_TITLE = "The shopkeeper's cart";
     public static string UI_RBSHOP_BUY = "Buy";

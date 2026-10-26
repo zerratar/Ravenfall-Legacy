@@ -30,6 +30,9 @@ namespace Shinobytes.UI
         private readonly VisualElement gear;
         private readonly Label bagTitle;
         private readonly VisualElement bag;
+        private readonly Label gearTitle;
+        private readonly Label gearTotals;
+        private readonly VisualElement gearGrid;
         private readonly Label islandTitle;
         private readonly Label islandCoins;
         private readonly VisualElement island;
@@ -59,8 +62,8 @@ namespace Shinobytes.UI
             header.Add(title);
             header.Add(close);
 
-            var gearTitle = new Label(Localization.UI_HERO_INVENTORY_WORN);
-            gearTitle.AddToClassList("rf-hero-inv__section");
+            var wornTitle = new Label(Localization.UI_HERO_INVENTORY_WORN);
+            wornTitle.AddToClassList("rf-hero-inv__section");
             gear = new VisualElement();
             gear.AddToClassList("rf-hero-inv__grid");
             bagTitle = new Label();
@@ -83,13 +86,25 @@ namespace Shinobytes.UI
             island = new VisualElement();
             island.AddToClassList("rf-hero-inv__grid");
             RavebridgeLoot.Changed += p => { if (p == shown) shownState = 0; };
+            RavebridgeGear.Changed += p => { if (p == shown) shownState = 0; };
+
+            // hero gear: the four slots worn, then the spare pieces, and what the worn ones add up to
+            gearTitle = new Label();
+            gearTitle.AddToClassList("rf-hero-inv__section");
+            gearGrid = new VisualElement();
+            gearGrid.AddToClassList("rf-hero-inv__grid");
+            gearTotals = new Label();
+            gearTotals.AddToClassList("rf-hero-inv__totals");
             hint = new Label();
             hint.AddToClassList("rf-squest__hint");
 
             window.Add(header);
-            window.Add(gearTitle);
+            window.Add(wornTitle);
             window.Add(gear);
-            // the Ravebridge bag over the backpack: what hero mode is about, and never more than a few rows
+            // hero gear and the Ravebridge bag over the backpack: what hero mode is about, and never more than a few rows
+            window.Add(gearTitle);
+            window.Add(gearGrid);
+            window.Add(gearTotals);
             window.Add(islandHeader);
             window.Add(island);
             window.Add(bagTitle);
@@ -177,9 +192,55 @@ namespace Shinobytes.UI
             ShowHint();
         }
 
+        /// <summary>Hero gear: a tile per slot (worn or empty), then the spare pieces, best first.</summary>
+        private void DrawGear(PlayerController player)
+        {
+            gearGrid.Clear();
+            gearTitle.text = Localization.UI_GEAR_TITLE;
+            var pieces = RavebridgeGear.Of(player);
+            foreach (var slot in RavebridgeGear.Slots)
+            {
+                var worn = RavebridgeGear.Worn(player, slot);
+                if (worn != null) { gearGrid.Add(GearTile(player, worn)); continue; }
+                var empty = new VisualElement();
+                empty.AddToClassList("rf-hero-inv__tile");
+                empty.AddToClassList("rf-hero-inv__tile--empty");
+                var s = slot;
+                tooltip.Attach(empty, t => { t.SetTitle(RavebridgeGear.SlotName(s)); t.SetNote(Localization.UI_GEAR_EMPTY_SLOT); });
+                gearGrid.Add(empty);
+            }
+            foreach (var piece in pieces.Where(p => !p.Worn).OrderByDescending(p => p.Grade).ThenBy(p => p.Slot)) gearGrid.Add(GearTile(player, piece));
+            var totals = RavebridgeGear.Totals(player);
+            gearTotals.text = pieces.Count == 0 ? Localization.UI_GEAR_EMPTY : string.Join(", ", totals);
+            gearTotals.style.display = pieces.Count == 0 || totals.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private VisualElement GearTile(PlayerController player, RavebridgeGear.Piece piece)
+        {
+            var tile = IslandTile(piece.Glyph, piece.Color, 1);
+            tile.EnableInClassList("rf-hero-inv__tile--worn", piece.Worn);
+            tooltip.Attach(tile, t =>
+            {
+                t.SetTitle(piece.Name);
+                t.AddRow(Localization.UI_GEAR_SLOT, RavebridgeGear.SlotName(piece.Slot));
+                t.AddRow(Localization.UI_LOOT_RARITY, Localization.LootRarity(piece.Grade));
+                foreach (var affix in piece.Affixes) t.AddRow(RavebridgeGear.Describe(affix.Key, affix.Value), string.Empty);
+                t.AddRow(Localization.UI_LOOT_VALUE, string.Format(CultureInfo.InvariantCulture, Localization.UI_LOOT_BAG_COINS, piece.Value));
+                t.SetNote(Localization.UI_GEAR_ONLY + "\n" + (piece.Worn ? Localization.UI_GEAR_TAKE_OFF : Localization.UI_GEAR_WEAR));
+            });
+            tile.RegisterCallback<PointerUpEvent>(e =>
+            {
+                if (e.button != 1) return;
+                e.StopPropagation();
+                RavebridgeGear.Toggle(player, piece);
+            });
+            return tile;
+        }
+
         /// <summary>The Ravebridge bag: loot best first, then the quest items.</summary>
         private void DrawIsland(PlayerController player)
         {
+            DrawGear(player);
             island.Clear();
             var loot = RavebridgeLoot.Contents(player);
             var quest = RavebridgeQuests.StateOf(player).Items;

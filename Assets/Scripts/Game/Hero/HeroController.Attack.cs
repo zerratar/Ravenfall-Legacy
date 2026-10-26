@@ -273,6 +273,7 @@ public partial class HeroController
         Player.Equipment.ShowWeapon(AttackTypeOf(Style));
 
         var speedUp = Mathf.Max(0.3f, Style == HeroStyle.Melee ? Player.GetModifiers().AttackSpeedMultiplier : Player.GetModifiers().CastSpeedMultiplier);
+        speedUp *= 1f + RavebridgeGear.Stat(Player, "haste") / 100f;
         combo = Time.time - lastAttackEnd < ComboReset && combo < 2 ? combo + 1 : 0;
         string state;
         float speed;
