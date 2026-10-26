@@ -83,7 +83,18 @@
     "goblin_mail": { "en": "goblin armour", "sv": "vätterustning" },
     "woad": { "en": "woad leaves", "sv": "vejdeblad" },
     "plank": { "en": "an old plank", "sv": "en gammal planka" },
-    "nails": { "en": "tin nails", "sv": "tennspik" }
+    "nails": { "en": "tin nails", "sv": "tennspik" },
+    "talisman": { "en": "the humming talisman", "sv": "den surrande talismanen" },
+    "essence": { "en": "a piece of pale essence", "sv": "en bit blek essens" },
+    "love_letter": { "en": "the captain's letter", "sv": "kaptenens brev" },
+    "flowers": { "en": "a wildflower", "sv": "en vildblomma" },
+    "bell_commaster": { "en": "Commaster's cowbell", "sv": "Commasters koskälla" },
+    "bell_ravenmmo": { "en": "RavenMMO's cowbell", "sv": "RavenMMO:s koskälla" },
+    "trout": { "en": "a river trout", "sv": "en flodöring" },
+    "onion": { "en": "an onion", "sv": "en lök" },
+    "spice": { "en": "a goblin's spice pouch", "sv": "en vättes kryddpung" },
+    "garlic": { "en": "a bulb of garlic", "sv": "en vitlök" },
+    "stake": { "en": "a sharp stake", "sv": "en vass påle" }
   },
   "quests": [
     {
@@ -152,6 +163,65 @@
         { "type": "bring", "npc": "keeper", "items": { "plank": 10, "nails": 5 }, "say": { "en": "Lovely. Hammer, hammer, hammer... done. Try jumping on it. No, wait, do not.", "sv": "Underbart. Hamra, hamra, hamra... klart. Prova att hoppa på den. Nej, vänta, gör inte det." } }
       ],
       "reward": { "exp": { "Woodcutting": 1500, "Mining": 800 }, "coins": 250 }
+    },
+    {
+      "key": "talisman",
+      "name": { "en": "The humming talisman", "sv": "Den surrande talismanen" },
+      "steps": [
+        { "type": "talk", "npc": "keeper", "gives": { "talisman": 1 }, "say": { "en": "Fished this out from under the bridge. It hums. Things that hum are not my business. Father Aereck likes old things, take it to him.", "sv": "Fiskade upp den här under bron. Den surrar. Saker som surrar är inte mitt bord. Fader Aereck gillar gamla saker, ta den till honom." } },
+        { "type": "talk", "npc": "priest", "uses": { "talisman": 1 }, "gives": { "talisman": 1 }, "say": { "en": "Oh my. It hums just like the stone they found in the Ironhill caves. It wants something... essence, I think. Mine me five pieces of the pale stone in the swamp mine and we shall see.", "sv": "Oj då. Den surrar precis som stenen de hittade i grottorna på Ironhill. Den vill ha något... essens, tror jag. Bryt fem bitar av den bleka stenen i träskgruvan så får vi se." } },
+        { "type": "collect", "item": "essence", "amount": 5, "skill": "Mining", "chance": 0.3, "hint": { "en": "Mine five pieces of pale essence in the swamp mine", "sv": "Bryt fem bitar blek essens i träskgruvan" } },
+        { "type": "bring", "npc": "priest", "items": { "essence": 5, "talisman": 1 }, "say": { "en": "The talisman drinks it in... and goes quiet. Either we have solved a great mystery or we have broken it. Here, for your trouble. Let us never speak of it.", "sv": "Talismanen dricker i sig den... och tystnar. Antingen har vi löst ett stort mysterium eller så har vi förstört det. Här, för besväret. Vi talar aldrig om det här igen." } }
+      ],
+      "reward": { "exp": { "Magic": 1800, "Mining": 900 }, "coins": 250 }
+    },
+    {
+      "key": "romance",
+      "name": { "en": "A letter for Millie", "sv": "Ett brev till Millie" },
+      "steps": [
+        { "type": "talk", "npc": "captain", "gives": { "love_letter": 1 }, "say": { "en": "Psst. You. Not a word to my lads. Take this letter to Millie at the mill. It is about... grain. Official grain business.", "sv": "Psst. Du. Inte ett ord till mina pojkar. Ta det här brevet till Millie vid kvarnen. Det handlar om... spannmål. Officiella spannmålsärenden." } },
+        { "type": "talk", "npc": "miller", "uses": { "love_letter": 1 }, "say": { "en": "A letter from the captain? \"Your sails turn my heart.\" Oh, the big lump. Tell him I want flowers. Real ones, not the ones the goblins pick and eat.", "sv": "Ett brev från kaptenen? \"Dina vingar får mitt hjärta att snurra.\" Åh, den stora klumpen. Säg att jag vill ha blommor. Riktiga, inte de som vättarna plockar och äter upp." } },
+        { "type": "collect", "item": "flowers", "amount": 5, "skill": "Gathering", "chance": 0.35, "hint": { "en": "Pick five wildflowers for Millie", "sv": "Plocka fem vildblommor till Millie" } },
+        { "type": "bring", "npc": "miller", "items": { "flowers": 5 }, "say": { "en": "Oh! They are lovely. Tell the captain he may come for supper. And that he will carry the flour sacks up the stairs. All of them.", "sv": "Åh! De är så fina. Säg till kaptenen att han får komma på kvällsmat. Och att han ska bära mjölsäckarna uppför trappan. Allihop." } },
+        { "type": "talk", "npc": "captain", "say": { "en": "Supper?! She said supper? ... Carrying flour sacks is basically training anyway. Thank you, friend. And remember: not a word.", "sv": "Kvällsmat?! Sa hon kvällsmat? ... Att bära mjölsäckar är ju i princip träning ändå. Tack, min vän. Och kom ihåg: inte ett ord." } }
+      ],
+      "reward": { "exp": { "Health": 1500, "Strength": 800, "Gathering": 800 }, "coins": 300 }
+    },
+    {
+      "key": "cows",
+      "name": { "en": "The cows that know too much", "sv": "Korna som vet för mycket" },
+      "steps": [
+        { "type": "talk", "npc": "shopkeeper", "say": { "en": "Two cows in the field have names. NAMES. Commaster and RavenMMO. Cows do not have names. Bring me their cowbells and I will sell them as collector's editions.", "sv": "Två kor i hagen har namn. NAMN. Commaster och RavenMMO. Kor har inte namn. Ge mig deras koskällor så säljer jag dem som samlarutgåvor." } },
+        { "type": "collect", "item": "bell_commaster", "amount": 1, "kill": "commaster", "chance": 1, "hint": { "en": "Take Commaster the Cow's cowbell", "sv": "Ta koskällan från Commaster the Cow" } },
+        { "type": "collect", "item": "bell_ravenmmo", "amount": 1, "kill": "ravenmmo", "chance": 1, "hint": { "en": "Take RavenMMO the Cow's cowbell (it was called that before it was famous)", "sv": "Ta koskällan från RavenMMO the Cow (den hette så innan den blev känd)" } },
+        { "type": "bring", "npc": "shopkeeper", "items": { "bell_commaster": 1, "bell_ravenmmo": 1 }, "say": { "en": "Limited edition! Signed by the cows! Well, licked. I shall charge a fortune. Here is your cut. Do not tell the cows.", "sv": "Begränsad upplaga! Signerade av korna! Nåja, slickade. Jag ska ta skjortan av folk. Här är din andel. Säg inget till korna." } }
+      ],
+      "reward": { "exp": { "Attack": 800, "Slayer": 800 }, "coins": 200, "ravebridgeCoins": 150 }
+    },
+    {
+      "key": "sauce",
+      "name": { "en": "The cook's secret sauce", "sv": "Kockens hemliga sås" },
+      "steps": [
+        { "type": "talk", "npc": "cook", "say": { "en": "The Duke wants a sauce now. A SAUCE. My grandmother's recipe needs two river trout, three onions and... a goblin's spice pouch. Do not ask.", "sv": "Nu vill hertigen ha en sås. En SÅS. Min mormors recept behöver två flodöringar, tre lökar och... en vättes kryddpung. Fråga inte." } },
+        { "type": "collect", "item": "trout", "amount": 2, "skill": "Fishing", "chance": 0.35, "hint": { "en": "Catch two river trout", "sv": "Fånga två flodöringar" } },
+        { "type": "collect", "item": "onion", "amount": 3, "skill": "Farming", "chance": 0.4, "hint": { "en": "Grow three onions in the crop field", "sv": "Odla tre lökar på åkern" } },
+        { "type": "collect", "item": "spice", "amount": 1, "kill": "goblin", "chance": 0.3, "hint": { "en": "Take a spice pouch from a goblin (they put it on everything)", "sv": "Ta en kryddpung från en vätte (de har det på allt)" } },
+        { "type": "bring", "npc": "cook", "items": { "trout": 2, "onion": 3, "spice": 1 }, "say": { "en": "Into the pot... a pinch of goblin spice... It smells like victory and feet. The Duke will love it.", "sv": "Ner i grytan... en nypa vättekrydda... Det luktar seger och fötter. Hertigen kommer att älska det." } }
+      ],
+      "reward": { "exp": { "Cooking": 2200, "Fishing": 600 }, "coins": 300 }
+    },
+    {
+      "key": "vampire",
+      "name": { "en": "Something in the cellar", "sv": "Något i källaren" },
+      "steps": [
+        { "type": "talk", "npc": "priest", "say": { "en": "Every night something drinks the Duke's wine and leaves the bottles neatly stacked. Only one creature is that polite: a vampyre. Bring me garlic and a stake.", "sv": "Varje natt dricker något upp hertigens vin och lämnar flaskorna prydligt staplade. Bara en varelse är så artig: en vampyr. Ge mig vitlök och en påle." } },
+        { "type": "collect", "item": "garlic", "amount": 3, "skill": "Farming", "chance": 0.35, "hint": { "en": "Grow three bulbs of garlic in the crop field", "sv": "Odla tre vitlökar på åkern" } },
+        { "type": "collect", "item": "stake", "amount": 1, "skill": "Woodcutting", "chance": 0.3, "hint": { "en": "Cut a good sharp stake", "sv": "Hugg till en riktigt vass påle" } },
+        { "type": "bring", "npc": "priest", "items": { "garlic": 3, "stake": 1 }, "say": { "en": "Good. Now listen: it comes at dusk, and it does not come alone.", "sv": "Bra. Lyssna nu: den kommer i skymningen, och den kommer inte ensam." } },
+        { "type": "defend", "npc": "priest", "amount": 3, "say": { "en": "Hold the town until dawn, three waves, and keep the garlic close. I will be... praying. Behind the altar.", "sv": "Håll staden till gryningen, tre vågor, och håll vitlöken nära. Jag kommer att... be. Bakom altaret." }, "hint": { "en": "Hold Ravebridge for three waves until dawn", "sv": "Håll Ravebridge i tre vågor till gryningen" } },
+        { "type": "talk", "npc": "priest", "say": { "en": "Dawn! And in the cellar, a note: \"Sorry about the wine. Moved to Draynor. - V.\" Well. I think that counts.", "sv": "Gryning! Och i källaren en lapp: \"Förlåt för vinet. Har flyttat till Draynor. /V.\" Nåja. Jag tror att det räknas." } }
+      ],
+      "reward": { "exp": { "Attack": 2000, "Strength": 2000, "Magic": 1000, "Healing": 1000 }, "coins": 400, "ravebridgeCoins": 100 }
     },
     {"key": "ears", "name": {"en": "Lend me your ears", "sv": "Låna mig era öron"}, "bounty": true, "cooldown": 10, "steps": [{"type": "talk", "npc": "wartfist", "requires": "goblins", "say": {"en": "My lads keep losing their ears in fights with you lot. I sew them back on. Bring me ten and I won't ask whose they are.", "sv": "Mina pojkar tappar hela tiden öronen när de slåss med er. Jag syr fast dem igen. Ge mig tio så frågar jag inte vems de är."}}, {"type": "loot", "npc": "wartfist", "loot": {"goblin_ear": 10}, "say": {"en": "Ten! Lovely. That one is upside down, but he will never know.", "sv": "Tio! Härligt. Det där sitter upp och ner, men det märker han aldrig."}, "hint": {"en": "Ten goblin ears for General Wartfist", "sv": "Tio vätteöron till general Wartfist"}}], "reward": {"ravebridgeCoins": 120, "exp": {"Attack": 400, "Strength": 400, "Defense": 400}}},
     {"key": "teeth", "name": {"en": "Tooth fairy", "sv": "Tandfén"}, "bounty": true, "cooldown": 10, "steps": [{"type": "talk", "npc": "bentnose", "requires": "goblins", "say": {"en": "Somebody keeps knocking my soldiers' teeth out. You, mostly. They want them back. Five should do.", "sv": "Någon slår hela tiden ut mina soldaters tänder. Mest du. De vill ha tillbaka dem. Fem räcker."}}, {"type": "loot", "npc": "bentnose", "loot": {"goblin_tooth": 5}, "say": {"en": "Back where they belong. Roughly.", "sv": "Tillbaka där de hör hemma. Ungefär."}, "hint": {"en": "Five goblin teeth for General Bentnose", "sv": "Fem vättetänder till general Bentnose"}}], "reward": {"ravebridgeCoins": 150, "exp": {"Attack": 300, "Strength": 300, "Defense": 300}}},

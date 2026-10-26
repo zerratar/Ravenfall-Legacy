@@ -136,6 +136,16 @@ west, becomes an event island where viewers come along and the streamer plays by
     Until it turns there is no flour, so the cook waits on it.
   - **Mending the old bridge** (Ravebridge's own). The wooden bridge has rotted. Cut logs and mine nails, and the
     shortcut across the river opens again.
+  - Added 2026-10-26, with the NPCs already there:
+    - **The humming talisman** (tribute: Rune Mysteries). The bridge keeper fished a humming talisman out of the river. The
+      priest says it hums like the Ironhill runestone and wants five pieces of pale essence from the swamp mine.
+    - **A letter for Millie** (tribute: Romeo and Juliet). The captain's love letter to the miller, who wants five
+      wildflowers, and the captain carries the flour sacks for his supper.
+    - **The cows that know too much** (easter egg). The shopkeeper wants the cowbells of the two cows with names,
+      Commaster and RavenMMO, to sell as collector's editions.
+    - **The cook's secret sauce** (tribute: Witch's Potion). Two river trout, three onions and a goblin's spice pouch.
+    - **Something in the cellar** (tribute: Vampire Slayer). Garlic and a stake for the priest, then three waves until
+      dawn, and the vampyre turns out to have moved to Draynor.
 - **Rewards:** experience, items, and a "quest points" count. Finishing every quest gives the streamer the title
   "of Ravebridge" (for their own characters, through the server's title unlocks).
 
