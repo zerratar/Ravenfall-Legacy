@@ -243,3 +243,4 @@ tools/fontawesome7-metadata/
 # The Image Generator's worker: built on first use by the editor (ImageGen.cs).
 tools/ImageGenService/bin/
 tools/ImageGenService/obj/
+!tools/ImageGenService/ImageGenService.csproj
