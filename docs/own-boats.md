@@ -298,3 +298,19 @@ Tested in play mode: Kyo to Heim and landing, wandering, a restart at sea (back 
 
 Tested on the dev server: sailed out from Heim, `!fish raw mackerel` anchored the boat and a Raw Mackerel came in;
 the save carried island 10 and Fishing.
+
+**Phase 4 (2026-10-26).** The shipwright on Away, and `!boat` on both bots.
+
+- Parts, crafted with `!craft` (Crafting recipes on the server): Rope (Crafting 20: 3 String), Sailcloth (30: 4 String,
+  6 Hemp), Boat Hull (30: 20 Mystwood Logs, 6 Resin, 2 Iron Bars), Mast (35: 8 Pineheart Logs, 1 Rope, 1 Iron Bar),
+  Large Hull (60: 25 Ironbark Logs, 12 Resin, 4 Steel Bars). String comes from Hemp by Alchemy. Wood Plank is
+  obsolete, so the hulls use logs.
+- `!boat build fishing boat` (Sailing 30, Fishing 30; a Boat Hull, a Mast, a Sailcloth, 4 Rope; 50,000 coins) and
+  `!boat build sloop` (Sailing 60, Crafting 50; a Large Hull, 2 Masts, 3 Sailcloth, 8 Rope; 250,000 coins), only on
+  Away where the shipwright works. The boat is given before the parts and coins are taken. Crafted boats are not
+  soulbound (decided 2026-10-26), so they can be traded and sold on the marketplace.
+- `!boat` says which boat is equipped and what it is doing (at the dock with its speed, sailing, roaming, at anchor),
+  or how to get one; `!boat list` says what each boat needs. Server: `BoatManager`, `api/boats/blueprints` and
+  `api/boats/{characterId}/build`; game: `BoatsApi`, `BoatCommand` (`boat_command`); bots: `!boat` in ROBot (`Boat`)
+  and RavenBot (`BoatCommandProcessor`).
+- Icons for the parts and repainted boat icons came from the Image Generator (Flare for new icons, Sunburst for edits).

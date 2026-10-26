@@ -168,6 +168,7 @@ public class RavenBot : System.IDisposable
         Connection.Register<QuestCommand>("quest_command");
         Connection.Register<ShopCommand>("shop_command");
         Connection.Register<DecorCommand>("decor_command");
+        Connection.Register<BoatCommand>("boat_command");
         Connection.Register<ConnectionPing>("ping");
 
         Connection.Register<ExamineItem>("examine_item");

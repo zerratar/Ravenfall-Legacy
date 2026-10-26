@@ -22,5 +22,6 @@ namespace RavenNest.SDK.Endpoints
         Clan,
         Shop,
         Quests,
+        Boats,
     }
 }
