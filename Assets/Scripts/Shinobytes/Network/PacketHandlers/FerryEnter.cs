@@ -32,6 +32,13 @@ public class FerryEnter : ChatBotCommandHandler
             return;
         }
 
+        // at anchor on their own boat: weigh anchor and wander on
+        if (player.ferryHandler.OnOwnBoat)
+        {
+            player.ferryHandler.Embark();
+            return;
+        }
+
         if (player.ferryHandler.Embarking)
         {
             client.SendReply(gm, Localization.MSG_FERRY_ALREADY_WAITING);

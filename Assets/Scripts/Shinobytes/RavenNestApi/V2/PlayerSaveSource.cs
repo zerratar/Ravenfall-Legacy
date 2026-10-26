@@ -74,6 +74,14 @@ public static class PlayerSaveSource
             }
         }
 
+        // at anchor on their own boat, fishing over the side: the server gives the sea's catch (docs/own-boats.md)
+        if (SeaFishing.IsFishing(p))
+        {
+            island = SeaFishing.Island;
+            skill = p.Stats.Fishing;
+            isTraining = true;
+        }
+
         var expPerHour = 0L;
         var skillIndex = -1;
         var levelUpETA = DateTime.MaxValue;
@@ -123,7 +131,7 @@ public static class PlayerSaveSource
             CharacterId = p.Id,
             Health = (short)stats.Health.CurrentValue,
             Island = island,
-            Destination = ferryHandler.OnFerry ? (ferryHandler.Destination?.Island ?? Island.Ferry) : Island.None,
+            Destination = ferryHandler.OnFerry && island != SeaFishing.Island ? (ferryHandler.Destination?.Island ?? Island.Ferry) : Island.None,
             State = p.GetFlags(),
             TrainingSkillIndex = skillIndex,
             TaskArgument = p.taskArgument,

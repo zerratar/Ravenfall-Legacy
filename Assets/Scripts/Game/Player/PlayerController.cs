@@ -1807,7 +1807,9 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return;
         }
 
-        if (ferryHandler && ferryHandler.Active)
+        // a new task at sea means going ashore, except fishing from an own boat at anchor (docs/own-boats.md)
+        var fishingAtAnchor = type == TaskType.Fishing && ferryHandler && ferryHandler.OnOwnBoat && ferryHandler.OwnBoat.State == OwnBoat.Course.Anchored;
+        if (ferryHandler && ferryHandler.Active && !fishingAtAnchor)
         {
             ferryHandler.BeginDisembark();
         }
@@ -2056,6 +2058,29 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// A cast over the side of an own boat at anchor (docs/own-boats.md, phase 3): as <see cref="Fish"/>, with the sea
+    /// where the line goes in and no island to count on; the catch itself comes from the server, as on land.
+    /// </summary>
+    public void FishAtSea(Vector3 water)
+    {
+        LastExecutedTaskTime = Time.time;
+        InCombat = false;
+        Equipment.ShowFishingRod();
+        var currentAnimState = playerAnimations.State;
+        if (lastTrainedSkill != Skill.Fishing || currentAnimState != PlayerAnimationState.Fishing)
+        {
+            lastTrainedSkill = Skill.Fishing;
+            playerAnimations.StartFishing();
+            return;
+        }
+
+        playerAnimations.Fish();
+        GameSounds.Play(SoundKind.WaterSplash, water, 0.6f, 0.7f, this);
+        if (AutoTrainTargetLevel <= 0 || AutoTrainTargetLevel > Stats.Fishing.Level)
+            AddExp(Skill.Fishing, 1d);
     }
 
     public bool Cook(CraftingStation craftingStation)

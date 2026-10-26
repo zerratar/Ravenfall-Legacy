@@ -20,6 +20,10 @@ public class Fish : ChatBotCommandHandler<string>
         var itemType = ItemType.Fishing;
         var playerSkill = player.Stats.Fishing.MaxLevel;
         var query = (data ?? "").Trim().ToLower();
+
+        // out on their own boat: it drops anchor where it is and they fish over the side
+        var atSea = player.ferryHandler.FishAtSea();
+
         if (string.IsNullOrEmpty(query))
         {
             player.SetTask(taskType);
@@ -44,6 +48,11 @@ public class Fish : ChatBotCommandHandler<string>
         if (playerSkill < levelRequirement)
         {
             client.SendReply(gm, Localization.MSG_FISH_LEVEL_REQUIREMENT, levelRequirement, result.Item.Name);
+        }
+
+        if (!atSea && SeaFishing.SeaOnly.Contains(result.Item.Name))
+        {
+            client.SendReply(gm, Localization.MSG_FISH_SEA_ONLY, result.Item.Name);
         }
 
         player.SetTask(taskType, result.Item.Name);

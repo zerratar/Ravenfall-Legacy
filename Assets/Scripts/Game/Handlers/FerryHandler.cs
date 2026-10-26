@@ -410,12 +410,39 @@ public class FerryHandler : MonoBehaviour
             }
         }
 
+        if (SeaFishing.IsFishing(player)) FishOverTheSide();
+
         ownBoatSaveTimer -= GameTime.deltaTime;
         if (ownBoatSaveTimer <= 0f)
         {
             ownBoatSaveTimer = 5f;
             OwnBoatLog.Set(player.Id, ownBoat);
         }
+    }
+
+    /// <summary>
+    /// !fish out at sea: the own boat drops anchor where it is (no longer bound anywhere) so its owner can fish over the
+    /// side. False when not on an own boat.
+    /// </summary>
+    public bool FishAtSea()
+    {
+        if (!ownBoat) return false;
+        ownBoat.Anchor();
+        destination = null;
+        State = PlayerFerryState.Embarked;
+        seaFishTimer = 1f;
+        return true;
+    }
+
+    private float seaFishTimer;
+
+    /// <summary>A cast every few seconds, as at a fishing spot: the animation, the splash and Fishing exp.</summary>
+    private void FishOverTheSide()
+    {
+        seaFishTimer -= GameTime.deltaTime;
+        if (seaFishTimer > 0f) return;
+        seaFishTimer = 3f;
+        player.FishAtSea(ownBoat.transform.position + ownBoat.transform.right * 3f);
     }
 
     private bool IsSailable(string island)

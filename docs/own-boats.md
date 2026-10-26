@@ -281,3 +281,20 @@ island, as on the ferry.
 
 Tested in play mode: Kyo to Heim and landing, wandering, a restart at sea (back aboard, still wandering), and
 `!disembark` to the nearest dock. Not yet: many players at sea at once, and the chat commands through a real bot.
+
+**Phase 3 (2026-10-26).** RavenNest 8a23105e and the game commit after it.
+
+- `!fish` on an own boat drops anchor where it is (no longer bound anywhere); setting fishing at anchor does not send
+  the player ashore, as other tasks at sea do. A cast every 3 s over the side: the animation, the splash and Fishing
+  exp at the full rate (no island chunk to scale it). `!sail` weighs anchor and wanders on; `!sail <island>` and
+  `!disembark` work as at sea.
+- While at anchor and fishing, the save says island 10 (`Island.Sea` on the server, `SeaFishing.Island` in the game,
+  whose RavenNest.Models is older). The server's fishing then needs no island or level gate, and its catch includes
+  the sea's own fish; island fishing spots filter them out (`FishingTaskProcessor.SeaOnly`).
+- The sea's own fish: Raw Mackerel (15), Raw Tuna (60), Raw Marlin (150), Raw Anglerfish (260), Raw Giant Squid (450)
+  and Raw Sea Serpent (800), each with a cooked and a burned dish, a recipe and effects a little above the land fish
+  near its level; and a rare Message in a Bottle (from zerratar, who has more bottles). `!fish tuna` on land says
+  it only bites out at sea. Icons made from the land fish's (hue shifted and turned round), for the game and the site.
+
+Tested on the dev server: sailed out from Heim, `!fish raw mackerel` anchored the boat and a Raw Mackerel came in;
+the save carried island 10 and Fishing.

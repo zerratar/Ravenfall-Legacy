@@ -262,6 +262,7 @@
     "MSG_FERRY_ALREADY_ON": "You're already on the ferry.",
     "MSG_FERRY_ALREADY_WAITING": "You're already waiting for the ferry.",
     "MSG_FERRY_ARRIVED": "You have arrived at your destination, {islandName}!",
+    "MSG_FISH_SEA_ONLY": "{itemName} only bites out at sea. Sail out in your own boat and !fish there.",
     "MSG_OWN_BOAT_SAILING": "You push off in your {boatName}, bound for {islandName}.",
     "MSG_OWN_BOAT_WANDERING": "You push off in your {boatName} to see where the sea takes you. !sail <island> when you know where to go, !disembark to land at the nearest dock.",
     "MSG_FERRY_BOOST_ACTIVE": "The ferry will now move faster for {time}.",

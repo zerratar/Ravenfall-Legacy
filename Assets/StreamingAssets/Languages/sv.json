@@ -261,6 +261,7 @@
     "MSG_FERRY_ALREADY_ON": "Du är redan på färjan.",
     "MSG_FERRY_ALREADY_WAITING": "Du väntar redan på färjan.",
     "MSG_FERRY_ARRIVED": "Du har kommit fram till {islandName}!",
+    "MSG_FISH_SEA_ONLY": "{itemName} nappar bara ute till havs. Segla ut i din egen båt och !fish där.",
     "MSG_OWN_BOAT_SAILING": "Du stöter ut i din {boatName}, på väg mot {islandName}.",
     "MSG_OWN_BOAT_WANDERING": "Du stöter ut i din {boatName} för att se vart havet tar dig. !sail <ö> när du vet vart du ska, !disembark för att lägga till vid närmaste brygga.",
     "MSG_FERRY_BOOST_ACTIVE": "Färjan åker nu snabbare i {time}.",

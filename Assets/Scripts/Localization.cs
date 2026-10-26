@@ -834,6 +834,7 @@ public static class Localization
     public static string MSG_FERRY_ALREADY_WAITING = Meta("travel", "sail", "fail") + "You're already waiting for the ferry.";
     public static string MSG_FERRY_TRAIN_SAIL = Meta("travel", "sail", "info") + "You've decided to sail the seas forever. Use !disembark or !travel <new destination> to leave the ferry. You will gain sailing exp for as long as you're on the ferry.";
     public static string MSG_FERRY_ARRIVED = Meta("travel", "sail", "info") + "You have arrived at your destination, {islandName}!";
+    public static string MSG_FISH_SEA_ONLY = Meta("fish", "sea", "info") + "{itemName} only bites out at sea. Sail out in your own boat and !fish there.";
     public static string MSG_OWN_BOAT_SAILING = Meta("travel", "sail", "info") + "You push off in your {boatName}, bound for {islandName}.";
     public static string MSG_OWN_BOAT_WANDERING = Meta("travel", "sail", "info") + "You push off in your {boatName} to see where the sea takes you. !sail <island> when you know where to go, !disembark to land at the nearest dock.";
     public static string MSG_DISEMBARK_ALREADY = Meta("travel", "sail", "fail") + "You're already disembarking the ferry.";

@@ -33,6 +33,28 @@ public static class SailingSpeeds
 }
 
 /// <summary>
+/// Fishing at sea from an own boat (docs/own-boats.md, phase 3). A player at anchor fishing is saved as on
+/// <see cref="Island"/> 10 (Sea on the server, which the game's older RavenNest.Models does not name), so the server
+/// gives them the sea's catch: the fish from land and the fish below, which only bite out here.
+/// </summary>
+public static class SeaFishing
+{
+    public const Island Island = (Island)10;
+
+    public static readonly System.Collections.Generic.HashSet<string> SeaOnly = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+    {
+        "Raw Mackerel", "Raw Tuna", "Raw Marlin", "Raw Anglerfish", "Raw Giant Squid", "Raw Sea Serpent", "Message in a Bottle",
+    };
+
+    /// <summary>Whether a player is out at anchor on their own boat with their line in the water.</summary>
+    public static bool IsFishing(PlayerController player)
+    {
+        var f = player ? player.ferryHandler : null;
+        return f && f.OnOwnBoat && f.OwnBoat.State == OwnBoat.Course.Anchored && player.GetTask() == TaskType.Fishing;
+    }
+}
+
+/// <summary>
 /// Boats as items: item type 37 and category 14 on the server (Boat, Vehicle), which the game's older RavenNest.Models
 /// does not name yet. A boat goes in its own slot, changes no stats and is never drawn on the character.
 /// </summary>
