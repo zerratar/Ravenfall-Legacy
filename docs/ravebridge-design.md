@@ -170,18 +170,28 @@ the playing by hand from 6c.
 ## Dressed after Lumbridge (2026-10-26)
 
 References in `docs/references/ravebridge/web` (maps from RuneHQ and the wikis, aerial and ground shots; the pictures
-stay local, the README lists the sources). `tools/ravebridge/ravebridge-dress.cs` (rerunnable, group "Dressing"):
+stay local, the README lists the sources). The top view was laid beside RuneHQ's city map and the places moved to match.
 
-- **Roads:** cobbled roads painted into the terrain joining the town: west past Bob's axes and the kitchen to the
-  windmill, up to the church, across to the wooden bridge, and south along the castle to the swamp's mine; a cobbled
-  path from each new house's door. The Ravebridge terrains are not in git (180 + 45 MB); rerun the script to repaint.
-- **Red tiled roofs** on the town's houses (the Fantasy Kingdom palette 02), as in Lumbridge.
-- **More town:** the Sheared Ram (pub), a smithy, two more houses and Father Urhney's hut by the swamp.
-- **Woods:** a forest west of the castle with glades and dead trees, a belt toward the swamp, clumps round the town.
-- **The windmill's crop field,** fenced with a gate on the road; the road now reaches the windmill's door.
-- **The stone bridge** got stone parapets on both sides.
+- `tools/ravebridge/ravebridge-layout.cs` (run first, idempotent): the church (the steepled preset) and its graveyard
+  south east of the castle by the river, as in Lumbridge, with the priest, the ghost and the restless soul's fight
+  spot; Bob's axes south of the castle. The graveyard: rows of stones, a cross, a tomb, a fence with its gate on the road.
+- `tools/ravebridge/ravebridge-dress.cs` (rerunnable, group "Dressing"):
+  - **Roads** with the road tool (WorldRoad, cobbles), no more paint: north to the store and on past the fields to the
+    windmill, west to the windmill, to the wooden bridge, south past Bob's and the church to the swamp, and on the east
+    bank north past the goblins to the farms, with branches to the desert gate and the farmhouse, and a path to each
+    new house's door. The old painted paths were cleared back to grass.
+  - **Red tiled roofs** on the town's houses (the Fantasy Kingdom palette 02).
+  - **More town:** the Sheared Ram, a smithy, two houses, Father Urhney's hut by the swamp.
+  - **Fields:** the windmill's crop, two cabbage fields north of the town and Fred's cabbages and sheep pen by the
+    farmhouse, all fenced with gates on their roads; a crop field where the church used to stand.
+  - **Trees:** the forest west of the castle, woods round the town and the farms, trees along the roads and single
+    trees sprinkled everywhere, as Lumbridge's map is dotted with them (380 in all).
+  - **The stone bridge** got stone parapets.
 - Two backdrop mountains that rose behind the town moved out of the view.
-- Navmesh rebaked; every training spot is reachable from the spawn.
+- The terrains are in LFS (`Assets/TerrainData_*.asset`). Navmesh rebaked; every training spot is reachable.
+
+Still to do: pools in the swamp (the terrain's 5 m heights make dug pools into pits; needs water planes), sheep for
+the pen, and the desert's border fence reads as a heavy black line from far away.
 
 ## Built (2026-10-25)
 
