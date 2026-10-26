@@ -522,3 +522,30 @@ camera hid stairs and bushes. Gatebound (the user's other game) was the model fo
   fight (no enemy moved while swinging, all the sounds played); rolling away from a wind-up 6 of 6 missed,
   standing 6 of 6 hit; the gateway arch hidden over the hero with the walls and statues beside it kept.
 - **Not checked by hand:** the feel with a real mouse, the trail's look, and the hit stop at full frame rate.
+
+### The user's third try (2026-10-26)
+
+- **Ravebridge play:** a click shows the marker (the ground, an enemy, a tree, rock, fish, farm or NPC). The top
+  column's room under the drawer is measured from the bar and the tab, so it clears a bar whose text takes two lines.
+- **Hero clicks:**
+  - enemies are picked on screen (the body nearest the cursor), not by colliders: an enemy's large trigger sphere
+    caught clicks meant for another;
+  - an enemy out of reach is run to a spot well inside the reach (a swing used to start at its edge and miss); the
+    one swung at is hit wherever it stepped while still in reach, and the hero turns with it until the blow lands;
+  - from above a clicked enemy is fought on until it falls (RuneScape); over the shoulder every swing is the
+    player's. A walk, WASD or a click elsewhere stops it;
+  - a click on a tree, rock, fish, farm patch or NPC uses the character's own way of doing it
+    (`ManualPlayerController.Interact`); a swing, a roll, a skill or a walk ends it and brings the hero's stance back.
+- **The bow:** Hero-Shoot is `2Hand-Bow-Attack4` now. The Aiming-Fire clip draws side on: the arrow's line (string
+  hand to bow hand) was 85 to 89 degrees left of where the character faced. Attack4's is within 5 at the release.
+- **Enemies on Ravebridge** amble within 4 m of their spawn now and then at 1.6 m/s; one the hero goes for holds
+  still. Elsewhere they keep their places.
+- **Animator fixes (tools/hero/hero-animations.cs):** putting the axe away went straight back to chopping whenever
+  Action was 1, so the axe chopped and sheathed in a loop (hero mode holds Action at 1; likely the "two-hand axe
+  stance with a staff or bow" seen before). The bow's idle and run had no way out of the fight, so a bow user could
+  not go on to chop, mine or fish.
+- **Controlled characters** are never "unstuck" to the island's spawn by the player validator.
+- **Tested in play mode:** the drawer room open and up; 20 Ravebridge enemies ambling; a click 8 m from a goblin
+  running in and the first swing landing; 25 s of auto attack on one goblin (about 45 hits, then nothing after it
+  fell); the bow's arrow line; chopping a tree in melee and bow style and the stance coming back.
+- **Not checked by hand:** the click marker in Ravebridge play and the screen picking with a real mouse.

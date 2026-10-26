@@ -29,6 +29,14 @@ public class PlayerValidator
                 return true;
             }
 
+            // a character played by hand (Ravebridge, hero mode) goes where the streamer sends it and stands still when
+            // told to: never "unstuck" back to the island's spawn
+            if (player.Controlled)
+            {
+                player.IsStuck = false;
+                return true;
+            }
+
             // ignore if we are in a raid or dungeon for now.
             if (player.raidHandler.InRaid || player.dungeonHandler.InDungeon)
             {

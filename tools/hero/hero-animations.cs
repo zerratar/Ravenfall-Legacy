@@ -21,7 +21,8 @@ var moves = new (string State, string File, string Clip, float ExitTime, bool Lo
     ("Hero-WarCry", "Armed/RPG-Character@Armed-Boost1.FBX", "Armed-Boost1", 0.85f, false, null),
     ("Hero-Drink", "Unarmed/RPG-Character@Unarmed-Boost1.FBX", "Unarmed-Boost1", 0.8f, false, null),
     // the ranged, magic and healing kits (7c)
-    ("Hero-Shoot", "2Hand-Bow/RPG-Character@2Hand-Bow-Aiming-Fire.FBX", "2Hand-Bow-Aiming-Fire-CM", 0.9f, false, null),
+    // a straight shot: the Aiming-Fire clips draw side on, the bow 85 degrees left of where the character faces
+    ("Hero-Shoot", "2Hand-Bow/RPG-Character@2Hand-Bow-Attack4.FBX", "2Hand-Bow-Attack4", 0.9f, false, null),
     ("Hero-Volley", "2Hand-Bow/RPG-Character@2Hand-Bow-Boost1.FBX", "2Hand-Bow-Boost1", 0.85f, false, null),
     ("Hero-Cast", "Staff/RPG-Character@Staff-Cast-Attack1.fbx", "Staff-Cast-Attack1_start", 1f, false, "Hero-CastEnd"),
     ("Hero-CastEnd", "Staff/RPG-Character@Staff-Cast-Attack1.fbx", "Staff-Cast-Attack1_end", 0.9f, false, null),
@@ -140,6 +141,38 @@ foreach (var move in moves)
     next.exitTime = move.ExitTime;
     next.duration = 0.05f;
 }
+// a fix to the animator's own flow: putting the axe away went straight back to chopping whenever Action was 1, even
+// with woodcutting over, so the axe chopped and sheathed in a loop (hero mode holds Action at 1)
+var sheath = Find(machine, "Woodcutting/2Hand-Axe-Sheath-Back-Relax");
+if (sheath != null)
+{
+    foreach (var t in sheath.transitions)
+    {
+        if (t.destinationState == null || t.destinationState.name != "2Hand-Axe-Attack4") continue;
+        var has = false;
+        foreach (var c in t.conditions) if (c.parameter == "Woodcutting") has = true;
+        if (!has) { t.AddCondition(UnityEditor.Animations.AnimatorConditionMode.If, 0f, "Woodcutting"); sb.Append("woodcutting sheath fixed; "); }
+    }
+}
+else sb.Append("no woodcutting sheath; ");
+
+// and the bow never left its stance when the fight was over (the sword and the staff do): a bow user could not go on
+// to chop, mine or fish. Its idle and run leave the fight like theirs.
+var exitCombat = Find(machine, "Combat/Exit Combat");
+foreach (var bowPath in new[] { "Combat/Ranged/2Hand-Bow-Idle", "Combat/Ranged/2Hand-Bow-Run-Forward" })
+{
+    var state = Find(machine, bowPath);
+    if (state == null || exitCombat == null) { sb.Append("no " + bowPath + "; "); continue; }
+    var has = false;
+    foreach (var t in state.transitions) if (t.destinationState == exitCombat) has = true;
+    if (has) continue;
+    var leave = state.AddTransition(exitCombat);
+    leave.hasExitTime = false;
+    leave.duration = 0.15f;
+    leave.AddCondition(UnityEditor.Animations.AnimatorConditionMode.IfNot, 0f, "Attacking");
+    sb.Append(bowPath + " leaves the fight; ");
+}
+
 UnityEditor.EditorUtility.SetDirty(controller);
 UnityEditor.AssetDatabase.SaveAssets();
 return sb.ToString();

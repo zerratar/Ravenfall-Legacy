@@ -401,8 +401,10 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
 
         if ((!InCombat || !Target) && !IsDungeonEnemy)
         {
+            Wander();
             return;
         }
+        if (wanderSpeed >= 0f) EndWander();
 
         if (!IsDungeonBoss)
         {
@@ -476,6 +478,50 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         {
             SetDestination(Target.position);
         }
+    }
+
+    // ---- Wandering (Ravebridge) ------------------------------------------------------------------------------
+
+    private const float WanderRadius = 4f;
+    private const float WanderPace = 1.6f;
+    private float nextWander;
+    private float wanderSpeed = -1f; // the agent's own speed while it ambles, -1 when it does not
+
+    /// <summary>
+    /// On Ravebridge an idle enemy ambles about its spawn now and then, slowly, as in RuneScape, rather than standing
+    /// still; elsewhere enemies keep their places (players train on them where they stand).
+    /// </summary>
+    private void Wander()
+    {
+        if (Time.time < nextWander) return;
+        nextWander = Time.time + UnityEngine.Random.Range(4f, 11f);
+        if (Hunting || Stats == null || Stats.IsDead || !movement || !spawnPositionSet) return;
+        var ravebridge = RavebridgeManager.Instance;
+        if (!ravebridge || !ravebridge.Island || Island != ravebridge.Island) return;
+        var agent = movement.navMeshAgent;
+        if (!agent || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+        var offset = UnityEngine.Random.insideUnitCircle * WanderRadius;
+        if (!NavMesh.SamplePosition(spawnPoint + new Vector3(offset.x, 0f, offset.y), out var hit, 1.5f, agent.areaMask)) return;
+        if (wanderSpeed < 0f) wanderSpeed = agent.speed;
+        agent.speed = Mathf.Min(wanderSpeed, WanderPace);
+        SetDestination(hit.position);
+    }
+
+    /// <summary>Someone means to fight it: it stops ambling and waits (a while) to be reached.</summary>
+    public void HoldStill(float seconds)
+    {
+        nextWander = Mathf.Max(nextWander, Time.time + seconds);
+        if (wanderSpeed < 0f || InCombat) return;
+        movement.Lock();
+        EndWander();
+    }
+
+    /// <summary>A fight: back to its own pace.</summary>
+    private void EndWander()
+    {
+        var agent = movement ? movement.navMeshAgent : null;
+        if (agent) agent.speed = wanderSpeed;
+        wanderSpeed = -1f;
     }
 
     public bool HasValidTarget

@@ -22,6 +22,7 @@ namespace Shinobytes.UI
         private Label meta;
         private Button stay, play, end, look, hero;
         private VisualElement drawer;
+        private VisualElement tab;
         private Label tabText, tabChevron;
         private bool collapsed;
         private bool hovered;
@@ -131,7 +132,7 @@ namespace Shinobytes.UI
             bar.Add(buttons);
 
             // the tab under the bar: the bar slides up behind the top edge and leaves it showing
-            var tab = new VisualElement { name = "ravebridge-tab", pickingMode = PickingMode.Position };
+            tab = new VisualElement { name = "ravebridge-tab", pickingMode = PickingMode.Position };
             tab.AddToClassList("rf-rb-tab");
             var tabIcon = new Label("\uf6d9") { pickingMode = PickingMode.Ignore };
             tabIcon.AddToClassList("rf-icon");
@@ -151,6 +152,7 @@ namespace Shinobytes.UI
             drawer.RegisterCallback<PointerEnterEvent>(_ => hovered = true);
             drawer.RegisterCallback<PointerLeaveEvent>(_ => { hovered = false; hideAt = Time.unscaledTime + HideAfter; });
             bar.RegisterCallback<GeometryChangedEvent>(_ => Slide());
+            tab.RegisterCallback<GeometryChangedEvent>(_ => MakeRoom());
             wrap.Add(drawer);
             layer.Add(wrap);
             collapsed = false;
@@ -203,20 +205,34 @@ namespace Shinobytes.UI
         }
 
         /// <summary>
-        /// The top column (the village bar, the stream quest) steps down under the drawer: a little under its tab, more
-        /// under the whole drawer (a class on the documents, as hero mode's).
+        /// The top column (the village bar, the stream quest) steps down under the drawer: under its tab while it is up,
+        /// under the bar and the tab while it is down. Measured, since the bar grows when its text takes two lines; the
+        /// classes stay for anything else that makes room (as hero mode's).
         /// </summary>
         private void MakeRoom()
         {
             var shown = wrap != null && wrap.style.display == DisplayStyle.Flex;
+            var room = -1f;
+            if (shown && drawer != null && bar != null && tab != null)
+            {
+                var top = drawer.layout.y;
+                var barHeight = bar.layout.height;
+                var tabHeight = tab.layout.height;
+                if (!float.IsNaN(top) && !float.IsNaN(barHeight) && !float.IsNaN(tabHeight) && barHeight > 0f)
+                    room = collapsed ? top + tabHeight + RoomGap - 8f : top + barHeight + tabHeight + RoomGap;
+            }
             foreach (var doc in FindObjectsByType<UIDocument>())
             {
                 var r = doc.rootVisualElement;
                 if (r == null) continue;
                 r.EnableInClassList("rf-rb-open", shown && collapsed);
                 r.EnableInClassList("rf-rb-open-full", shown && !collapsed);
+                foreach (var column in r.Query<VisualElement>(className: "rf-top-column").ToList())
+                    column.style.top = room >= 0f ? new StyleLength(room) : new StyleLength(StyleKeyword.Null);
             }
         }
+
+        private const float RoomGap = 10f;
 
         private static Button BarButton(string label, bool primary, System.Action clicked)
         {

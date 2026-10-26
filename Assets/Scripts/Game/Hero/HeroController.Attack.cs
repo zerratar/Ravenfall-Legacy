@@ -8,6 +8,8 @@ using UnityEngine.AI;
 /// in reach it swings at once (an enemy further off is run to first, then swung at); with Shift, while WASD moves the
 /// hero, or over the shoulder, it swings toward the cursor even into empty air, turning to the enemy nearest the aim.
 /// Holding the button keeps swinging. Three swings make a combo (the third hits harder) that resets after a pause.
+/// From above it plays like RuneScape: a clicked enemy is fought until it falls or the hero is sent elsewhere; over the
+/// shoulder every swing is the player's. A click on a tree, rock, fish, farm or NPC does that (ManualPlayerController).
 ///
 /// A swing roots the hero; its hit lands halfway through, on everything in a 120 degree arc in front within the
 /// weapon's reach (five at most, each once). A roll may cancel it after a third. A hit stops the hero's and the
@@ -23,6 +25,7 @@ public partial class HeroController
     private const float HitShare = 0.5f;      // a swing's hit lands here
     private const float ShotShare = 0.3f;     // a shot leaves here
     private const float ShotRange = 16f;
+    private const float PickPixels = 60f;     // how near the cursor (at 1080 lines) an enemy counts as clicked
 
     private float attackStarted;
     private float attackEnds;
@@ -32,6 +35,8 @@ public partial class HeroController
     private float lastAttackEnd;
     private EnemyController attackTarget;
     private EnemyController pursuing;
+    private EnemyController autoTarget;       // from above: fought until it falls
+    private bool gathering;                   // a tree, rock, fish or farm clicked: the character's own task runs
     private Vector3 attackDirection;
     private bool attackQueued;
     private bool holdingAttack;
@@ -95,10 +100,31 @@ public partial class HeroController
             HeroMarker.Show(enemy.Position, HeroMarker.Attack, 1.8f);
             holdingAttack = true;
             attackInPlace = false;
+            autoTarget = shoulder ? null : enemy;
             Attack(enemy);
             return;
         }
-        if (inPlace || shoulder)
+        autoTarget = null;
+        if (inPlace)
+        {
+            holdingAttack = true;
+            attackInPlace = true;
+            Attack(null);
+            return;
+        }
+
+        // a tree, rock, fish, farm patch or NPC: the character's own way of doing it
+        var manual = Player.GetComponent<ManualPlayerController>();
+        var cam = Camera.main;
+        if (manual && cam && !Attacking && manual.Interact(cam, false, out _))
+        {
+            holdingAttack = false;
+            pursuing = null;
+            if (steering) StopSteering();
+            gathering = Player.taskTarget != null;
+            return;
+        }
+        if (shoulder)
         {
             holdingAttack = true;
             attackInPlace = true;
@@ -116,10 +142,11 @@ public partial class HeroController
     /// <summary>Attack an enemy (run to it first when it is out of reach) or, with none, toward the aim.</summary>
     private void Attack(EnemyController enemy)
     {
+        if (enemy) enemy.HoldStill(6f);
         if (enemy && OutOfReach(enemy))
         {
             pursuing = enemy;
-            Player.SetDestination(enemy.Position);
+            Pursue(enemy);
             return;
         }
         pursuing = null;
@@ -133,24 +160,51 @@ public partial class HeroController
         StartAttack(enemy);
     }
 
+    /// <summary>Too far to swing at (a little inside the reach, so a swing begun at its edge still lands) or to shoot.</summary>
     private bool OutOfReach(EnemyController enemy)
     {
         var distance = Flat(enemy.Position - Player.Position).magnitude;
-        return distance > (Ranged ? ShotRange : Reach + 0.6f);
+        return distance > (Ranged ? ShotRange : Reach - 0.2f);
     }
+
+    /// <summary>Run to an enemy: to a spot well inside the reach on this side of it, not onto it.</summary>
+    private void Pursue(EnemyController enemy)
+    {
+        StopGathering();
+        var away = Flat(Player.Position - enemy.Position);
+        var stand = Ranged ? ShotRange * 0.8f : Reach * 0.55f;
+        var spot = away.magnitude > stand ? enemy.Position + away.normalized * stand : Player.Position;
+        Player.SetDestination(spot);
+    }
+
+    /// <summary>Back to the hero's fighting after a tree, rock or fish: the style's task and stance.</summary>
+    private void StopGathering()
+    {
+        if (!gathering) return;
+        gathering = false;
+        EnterStyleTask();
+    }
+
+    /// <summary>From above, a clicked enemy is fought on: the next swing once the last is done, until it falls.</summary>
+    private bool AutoAttacking => autoTarget && !autoTarget.Stats.IsDead && autoTarget.gameObject.activeInHierarchy
+        && heroCamera && heroCamera.Mode == HeroCamera.View.TopDown;
 
     /// <summary>Every frame: the swing's hit, its end, the next swing (held or buffered), and running to a target.</summary>
     private void UpdateAttack(bool buttonHeld)
     {
         if (!buttonHeld) holdingAttack = false;
+        if (autoTarget && !AutoAttacking) autoTarget = null;
 
         if (attackEnds > 0f)
         {
+            // a swing or a shot keeps turning with a target on the move, until it lands
+            if (!attackLanded && attackTarget && !attackTarget.Stats.IsDead) FaceAttack(attackTarget.Position);
             if (!attackLanded && Time.time >= attackHitAt) LandAttack();
             var chainAt = attackStarted + (attackEnds - attackStarted) * ChainShare;
-            if (Time.time >= chainAt && (attackQueued || holdingAttack))
+            var auto = AutoAttacking;
+            if (Time.time >= chainAt && (attackQueued || holdingAttack || auto))
             {
-                var next = attackQueued ? attackTarget : attackInPlace ? null : attackTarget;
+                var next = attackQueued ? attackTarget : auto ? autoTarget : attackInPlace ? null : attackTarget;
                 if (next && (next.Stats.IsDead || !next.gameObject.activeInHierarchy)) next = attackInPlace ? null : NearestAhead();
                 attackQueued = false;
                 if (next && OutOfReach(next)) { EndAttack(); pursuing = next; }
@@ -158,6 +212,9 @@ public partial class HeroController
             }
             else if (Time.time >= attackEnds) EndAttack();
         }
+
+        // from above: on to the next swing (or after the enemy) once the last one is over
+        if (!Attacking && !pursuing && AutoAttacking && !steering && !busy && !gathering) Attack(autoTarget);
 
         if (pursuing)
         {
@@ -171,7 +228,7 @@ public partial class HeroController
             else if (Time.time >= nextHoldMove)
             {
                 nextHoldMove = Time.time + 0.2f;
-                Player.SetDestination(pursuing.Position);
+                Pursue(pursuing);
             }
         }
     }
@@ -184,6 +241,7 @@ public partial class HeroController
     private void StartAttack(EnemyController enemy)
     {
         if (busy) return;
+        StopGathering();
         // aim assist: the clicked enemy, else the one nearest the aim close by, else straight at the cursor
         var toward = enemy ? enemy.Position : aim;
         if (!enemy)
@@ -200,7 +258,7 @@ public partial class HeroController
         if (!agent) agent = Player.GetComponent<NavMeshAgent>();
         if (agent && agent.isOnNavMesh) { agent.ResetPath(); agent.velocity = Vector3.zero; }
         Player.taskTarget = null;
-        transform.rotation = Quaternion.LookRotation(attackDirection);
+        FaceAttack(toward);
         Player.Equipment.ShowWeapon(AttackTypeOf(Style));
 
         var speedUp = Mathf.Max(0.3f, Style == HeroStyle.Melee ? Player.GetModifiers().AttackSpeedMultiplier : Player.GetModifiers().CastSpeedMultiplier);
@@ -209,7 +267,8 @@ public partial class HeroController
         float speed;
         switch (Style)
         {
-            case HeroStyle.Ranged: state = "Hero-Shoot"; speed = 1f; break;
+            // the bow clip is 0.8 s; a shot takes 0.55
+            case HeroStyle.Ranged: state = "Hero-Shoot"; speed = 1.45f; break;
             case HeroStyle.Magic:
             case HeroStyle.Healing: state = "Hero-Cast"; speed = 1.2f; break;
             default:
@@ -229,7 +288,7 @@ public partial class HeroController
         attackLanded = false;
         if (animator)
         {
-            if (Style == HeroStyle.Melee) { animatorSpeedBefore = 1f; animator.speed = speed; }
+            if (Style == HeroStyle.Melee || Style == HeroStyle.Ranged) { animatorSpeedBefore = 1f; animator.speed = speed; }
             animator.CrossFadeInFixedTime(state, 0.04f, 0);
         }
         if (Style == HeroStyle.Melee)
@@ -249,6 +308,15 @@ public partial class HeroController
         Trail(false);
     }
 
+    /// <summary>Square to a point: the swing's or the shot's way.</summary>
+    private void FaceAttack(Vector3 point)
+    {
+        var to = Flat(point - Player.Position);
+        if (to.sqrMagnitude < 0.01f) return;
+        attackDirection = to.normalized;
+        transform.rotation = Quaternion.LookRotation(attackDirection);
+    }
+
     /// <summary>Cut a swing short (a roll, a skill).</summary>
     private void CancelAttack()
     {
@@ -266,10 +334,11 @@ public partial class HeroController
         {
             var center = Player.Position + attackDirection * 0.5f;
             var struck = new List<EnemyController>();
-            foreach (var e in EnemiesNear(center, Reach))
+            foreach (var e in EnemiesNear(center, Reach + 0.3f))
             {
                 var to = Flat(e.Position - Player.Position);
-                if (to.magnitude > 1f && Vector3.Angle(attackDirection, to) > 60f) continue;
+                // the one swung at is hit wherever it stepped, if still in reach; others in the arc in front
+                if (e != attackTarget && to.magnitude > 1f && Vector3.Angle(attackDirection, to) > 60f) continue;
                 struck.Add(e);
                 if (struck.Count >= 5) break;
             }
@@ -344,7 +413,7 @@ public partial class HeroController
         {
             if (!frozen[i]) continue;
             // the hero's swing speed may have ended meanwhile
-            frozen[i].speed = frozen[i] == animator ? (Attacking && Style == HeroStyle.Melee ? speeds[i] : animatorSpeedBefore) : speeds[i];
+            frozen[i].speed = frozen[i] == animator ? (Attacking && (Style == HeroStyle.Melee || Style == HeroStyle.Ranged) ? speeds[i] : animatorSpeedBefore) : speeds[i];
         }
     }
 

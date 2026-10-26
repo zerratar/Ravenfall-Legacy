@@ -8,7 +8,8 @@ using UnityEngine;
 /// farm patch or enemy does that (the target's own training spot runs the task, so range, experience and items are
 /// those of automatic play, and nothing picks the next target by itself), a click on an NPC talks to it. While a
 /// character is controlled PlayerController skips its automatic play; the camera follows it (GameCamera.FollowControlled).
-/// Hero mode will build its skills and dodge on this.
+/// A marker shows where a click went (HeroMarker). Hero mode fights by itself (HeroController) and comes here for the
+/// rest: trees, rocks, fish, farms and NPCs (<see cref="Interact"/>).
 /// </summary>
 public class ManualPlayerController : MonoBehaviour
 {
@@ -81,27 +82,44 @@ public class ManualPlayerController : MonoBehaviour
 
     private void Click(Camera cam)
     {
+        if (Interact(cam, true, out var ground)) return;
+        if (ground.HasValue)
+        {
+            player.taskTarget = null;
+            player.InterruptAction();
+            player.SetDestination(ground.Value);
+            HeroMarker.Show(ground.Value, HeroMarker.Walk);
+        }
+    }
+
+    /// <summary>
+    /// What the mouse points at, done: an NPC talked to, a rock, fishing spot, farm patch, tree or gather spot worked,
+    /// and with <paramref name="fight"/> an enemy fought. False if it points at none of them; <paramref name="ground"/>
+    /// is then where on the ground it points, if anywhere.
+    /// </summary>
+    public bool Interact(Camera cam, bool fight, out Vector3? ground)
+    {
         Physics.SyncTransforms();
         var ray = cam.ScreenPointToRay(Input.mousePosition);
         var count = Physics.RaycastNonAlloc(ray, hits, 400f, ~0, QueryTriggerInteraction.Collide);
         Array.Sort(hits, 0, count, HitComparer.Instance);
 
-        Vector3? ground = null;
+        ground = null;
         for (var i = 0; i < count; i++)
         {
             var c = hits[i].collider;
             if (!c || c.transform.IsChildOf(player.transform)) continue;
 
             var npc = c.GetComponentInParent<IslandNpc>();
-            if (npc) { Talk(npc); return; }
-            var enemy = c.GetComponentInParent<EnemyController>();
-            if (enemy && !enemy.Stats.IsDead) { Act(TaskType.Fighting, CombatArgument(), enemy.GetComponentInParent<Chunk>(), enemy); return; }
+            if (npc) { Talk(npc); return true; }
+            var enemy = fight ? c.GetComponentInParent<EnemyController>() : null;
+            if (enemy && !enemy.Stats.IsDead) { Act(TaskType.Fighting, CombatArgument(), enemy.GetComponentInParent<Chunk>(), enemy, enemy.Position, HeroMarker.Attack); return true; }
             var rock = c.GetComponentInParent<RockController>();
-            if (rock) { Act(TaskType.Mining, null, rock.GetComponentInParent<Chunk>(), rock); return; }
+            if (rock) { Act(TaskType.Mining, null, rock.GetComponentInParent<Chunk>(), rock, rock.transform.position, HeroMarker.Walk); return true; }
             var fishing = c.GetComponentInParent<FishingController>();
-            if (fishing) { Act(TaskType.Fishing, null, fishing.GetComponentInParent<Chunk>(), fishing); return; }
+            if (fishing) { Act(TaskType.Fishing, null, fishing.GetComponentInParent<Chunk>(), fishing, fishing.transform.position, HeroMarker.Walk); return true; }
             var farm = c.GetComponentInParent<FarmController>();
-            if (farm) { Act(TaskType.Farming, null, farm.GetComponentInParent<Chunk>(), farm); return; }
+            if (farm) { Act(TaskType.Farming, null, farm.GetComponentInParent<Chunk>(), farm, farm.transform.position, HeroMarker.Walk); return true; }
 
             if (!c.isTrigger && c.name != "Do Not Walk" && ground == null) ground = hits[i].point;
         }
@@ -111,26 +129,22 @@ public class ManualPlayerController : MonoBehaviour
         if (resource != null)
         {
             var chunk = resource.Field.GetComponentInParent<Chunk>();
-            if (chunk != null) { Act(chunk.Type, null, chunk, resource); return; }
+            if (chunk != null) { Act(chunk.Type, null, chunk, resource, resource.Position, HeroMarker.Walk); return true; }
         }
-
-        if (ground.HasValue)
-        {
-            player.taskTarget = null;
-            player.InterruptAction();
-            player.SetDestination(ground.Value);
-        }
+        return false;
     }
 
-    private void Act(TaskType task, string argument, Chunk chunk, object target)
+    private void Act(TaskType task, string argument, Chunk chunk, object target, Vector3 at, Color marker)
     {
         if (chunk == null) return;
         player.InterruptAction();
         player.SetManualTask(task, argument, chunk, target);
+        HeroMarker.Show(at, marker, task == TaskType.Fighting ? 1.8f : 2.2f);
     }
 
     private void Talk(IslandNpc npc)
     {
+        HeroMarker.Show(npc.transform.position, HeroMarker.Walk, 1.6f);
         player.taskTarget = null;
         if (Vector3.Distance(player.Position, npc.transform.position) > npc.TalkDistance)
         {

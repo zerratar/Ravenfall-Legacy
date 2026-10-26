@@ -198,14 +198,21 @@ public partial class HeroController : MonoBehaviour
         kit.AddRange(HeroSkill.For(style));
         CancelAttack();
         rapidFireUntil = 0f;
+        gathering = false;
+        EnterStyleTask();
+        Changed?.Invoke();
+    }
+
+    /// <summary>The style's task (its experience) with no target, its weapon in hand and its stance.</summary>
+    private void EnterStyleTask()
+    {
         Player.taskTarget = null;
         Player.InterruptAction();
-        var argument = style == HeroStyle.Ranged ? "ranged" : style == HeroStyle.Magic ? "magic" : style == HeroStyle.Healing ? "healing" : meleeArgument;
+        var argument = Style == HeroStyle.Ranged ? "ranged" : Style == HeroStyle.Magic ? "magic" : Style == HeroStyle.Healing ? "healing" : meleeArgument;
         Player.SetManualTask(TaskType.Fighting, argument, null, null);
-        Player.Equipment.ShowWeapon(AttackTypeOf(style));
+        Player.Equipment.ShowWeapon(AttackTypeOf(Style));
         // the style's own stance for standing and walking (not the last task's: woodcutting held a two-hand axe)
-        if (Player.Animations) Player.Animations.StartCombat(WeaponAnimation, style == HeroStyle.Melee && Player.Equipment.HasShield, 1);
-        Changed?.Invoke();
+        if (Player.Animations) Player.Animations.StartCombat(WeaponAnimation, Style == HeroStyle.Melee && Player.Equipment.HasShield, 1);
     }
 
     /// <summary>
@@ -298,6 +305,8 @@ public partial class HeroController : MonoBehaviour
         {
             if (steering) StopSteering();
             CancelAttack();
+            gathering = false;
+            autoTarget = null;
             Player.taskTarget = null;
             if (heroCamera && heroCamera.Aim(out var at)) aim = at;
             if (!Keybinds.IsTyping && Input.GetKeyDown(KeyCode.V) && heroCamera) heroCamera.Toggle();
@@ -349,6 +358,9 @@ public partial class HeroController : MonoBehaviour
         if (!Input.GetMouseButton(0)) holdingToMove = false;
         UpdateAttack(Input.GetMouseButton(0));
         if (RapidFire) RapidArrows();
+
+        // a tree, rock or fish: the character's own task until it is done, then the hero's stance again
+        if (gathering && (Player.taskTarget == null || !Player.DoManualTask())) StopGathering();
     }
 
     private bool wasd;
@@ -394,6 +406,8 @@ public partial class HeroController : MonoBehaviour
 
     private void Steer(Vector3 direction)
     {
+        StopGathering();
+        autoTarget = null;
         if (!agent) agent = Player.GetComponent<NavMeshAgent>();
         Player.taskTarget = null;
         holdingToMove = false;
@@ -422,31 +436,45 @@ public partial class HeroController : MonoBehaviour
     private void WalkTo(Vector3 point)
     {
         if (!TryGround(point, out var ground)) return;
+        StopGathering();
+        autoTarget = null;
         Player.taskTarget = null;
         pursuing = null;
         Player.InterruptAction();
         Player.SetDestination(ground);
     }
 
-    private static readonly RaycastHit[] cursorHits = new RaycastHit[16];
-
-    /// <summary>The enemy the mouse points at (its collider), or the one standing closest to the point on the ground.</summary>
+    /// <summary>
+    /// The enemy the mouse points at: on screen, the one whose body (feet to head) passes nearest the cursor, within a
+    /// few dozen pixels. (Not the colliders: an enemy's large trigger sphere caught clicks meant for one behind it.)
+    /// Else the one standing closest to the point on the ground.
+    /// </summary>
     private EnemyController EnemyUnderCursor()
     {
         var cam = Camera.main;
-        if (cam && heroCamera && heroCamera.Mode == HeroCamera.View.TopDown)
+        if (cam && (!heroCamera || heroCamera.Mode == HeroCamera.View.TopDown))
         {
-            var count = Physics.RaycastNonAlloc(cam.ScreenPointToRay(Input.mousePosition), cursorHits, 200f, ~0, QueryTriggerInteraction.Collide);
+            var mouse = (Vector2)Input.mousePosition;
+            var bestPixels = PickPixels * Screen.height / 1080f;
             EnemyController best = null;
-            var bestDistance = float.MaxValue;
-            for (var i = 0; i < count; i++)
+            foreach (var e in EnemiesNear(Player.Position, 80f))
             {
-                var e = cursorHits[i].collider ? cursorHits[i].collider.GetComponentInParent<EnemyController>() : null;
-                if (e && !e.Stats.IsDead && cursorHits[i].distance < bestDistance) { bestDistance = cursorHits[i].distance; best = e; }
+                var feet = cam.WorldToScreenPoint(e.Position + Vector3.up * 0.2f);
+                var head = cam.WorldToScreenPoint(e.Position + Vector3.up * 1.7f);
+                if (feet.z <= 0f || head.z <= 0f) continue;
+                var pixels = DistanceToSegment(mouse, feet, head);
+                if (pixels < bestPixels) { bestPixels = pixels; best = e; }
             }
             if (best) return best;
         }
         return EnemyAt(aim, 1.5f);
+    }
+
+    private static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a;
+        var t = ab.sqrMagnitude > 0.0001f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
+        return Vector2.Distance(p, a + ab * t);
     }
 
     /// <summary>The hero's own name tag and health bar stand in the way, over the shoulder; the health orb shows it.</summary>
@@ -633,6 +661,7 @@ public partial class HeroController : MonoBehaviour
         if (Time.time < ready[slot]) { Refused?.Invoke(slot, "cooldown"); return; }
         if (Mana < skill.Mana) { Refused?.Invoke(slot, "mana"); return; }
         CancelAttack();
+        StopGathering();
         if (!skill.Run(this)) { Refused?.Invoke(slot, "target"); return; }
         Mana -= skill.Mana;
         ready[slot] = Time.time + skill.Cooldown;
@@ -684,6 +713,7 @@ public partial class HeroController : MonoBehaviour
     /// <summary>The hero moves itself (a dodge, a leap): an arc of the given height, then back on the navmesh.</summary>
     public IEnumerator Move(Vector3 to, float seconds, float height, Action landed)
     {
+        StopGathering();
         busy = true;
         Player.taskTarget = null;
         Player.InterruptAction();
