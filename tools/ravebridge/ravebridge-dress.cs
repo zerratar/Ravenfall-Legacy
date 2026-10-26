@@ -110,6 +110,7 @@ foreach (UnityEngine.Transform c in island.Find("Playable"))
             if (e != c && (e.GetComponent<EnemyController>() || e.name.Contains("Patch") || e.name.Contains("Rock") || e.name.Contains("Fishing")))
                 keepOut.Add((V(e.position.x, e.position.z), e.GetComponent<EnemyController>() ? 8f : 5f));
 foreach (var f in island.GetComponentsInChildren<ResourceField>(true)) for (var i = 0; i < f.Count; i++) keepOut.Add((V(f.Instances[i].position.x, f.Instances[i].position.z), 5f));
+keepOut.Add((V(-1499, 1591), 12f));   // the toll gate on the desert's border stays in sight
 // the swamp's pools (ravebridge-swamp.cs, run before this)
 foreach (var pool in island.GetComponentsInChildren<SwampPool>(true)) keepOut.Add((V(pool.transform.position.x, pool.transform.position.z), UnityEngine.Mathf.Max(pool.RadiusX, pool.RadiusZ) + 2f));
 // the cow field, the farm's fences and the castle's own fences stay open inside
@@ -288,6 +289,42 @@ Cabbages(cabbagesWest);
 var cabbagesEast = new UnityEngine.Rect(-1732, 1744, 24, 20);
 FenceRect(cabbagesEast, 9f, 14f);
 Cabbages(cabbagesEast);
+// the desert's border, as Lumbridge's: a low wooden fence along the iron one's line, the iron gate kept as the toll
+// gate; the iron panels (4 m tall, a black stripe from afar) are switched off, not removed
+var border = island.Find("Environment/Fence (metal) (1)");
+if (border)
+{
+    var posts = new System.Collections.Generic.List<UnityEngine.Vector2>();
+    var gates = new System.Collections.Generic.List<UnityEngine.Vector2>();
+    foreach (UnityEngine.Transform c in border)
+    {
+        if (c.name.StartsWith("Metal Gate") || c.name.StartsWith("Metal Fence Pole")) { gates.Add(V(c.position.x, c.position.z)); continue; }
+        var r = c.GetComponentInChildren<UnityEngine.Renderer>();
+        var at = r ? V(r.bounds.center.x, r.bounds.center.z) : V(c.position.x, c.position.z);
+        posts.Add(at);
+        if (c.gameObject.activeSelf) { UnityEditor.Undo.RecordObject(c.gameObject, "Ravebridge border"); c.gameObject.SetActive(false); }
+    }
+    // walk the panels from the south end, each to its nearest next one
+    posts.Sort((p1, p2) => p1.y.CompareTo(p2.y));
+    var line = new System.Collections.Generic.List<UnityEngine.Vector2> { posts[0] };
+    var left = new System.Collections.Generic.List<UnityEngine.Vector2>(posts); left.RemoveAt(0);
+    while (left.Count > 0)
+    {
+        var last = line[line.Count - 1]; var bi = 0;
+        for (var i = 1; i < left.Count; i++) if ((left[i] - last).sqrMagnitude < (left[bi] - last).sqrMagnitude) bi = i;
+        line.Add(left[bi]); left.RemoveAt(bi);
+    }
+    // the fence runs panel to panel, leaving the gate's span open
+    var borderSegments = 0;
+    for (var i = 0; i + 1 < line.Count; i++)
+    {
+        var a2 = line[i]; var b2 = line[i + 1]; var mid = (a2 + b2) * 0.5f;
+        var nearGate = false; foreach (var g in gates) if ((g - mid).magnitude < 4f) nearGate = true;
+        if (nearGate || (b2 - a2).magnitude > 9f) continue;
+        var before = segments; Fence(new[] { a2, b2 }); borderSegments += segments - before;
+    }
+    log += "border fence " + borderSegments + " along " + line.Count + " panels, gate kept; ";
+}
 log += "fence segments " + segments + "; ";
 
 // ---- 7. woods and trees: Lumbridge has them everywhere: a forest west of the castle, clumps along every road and

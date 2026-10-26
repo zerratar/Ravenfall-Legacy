@@ -196,8 +196,11 @@ stay local, the README lists the sources). The top view was laid beside RuneHQ's
   first puts back the swamp's ground as committed before any pool (`swamp-heights-before.bin`), so reruns match. The
   pools are not walkable for the navmesh.
 
-Still to do: sheep for the pen (no sheep model yet), and the desert's border fence reads as a heavy black line from
-far away.
+- **The desert's border:** a low wooden fence along the old iron one's line (its 4 m black panels are switched off, not
+  removed), the iron gate kept as Lumbridge's toll gate where the desert road passes, kept clear of trees.
+
+Needs from outside (models or decisions), for later: sheep for the pen; a proper toll gate building with border guards;
+a cow and chicken look closer to RuneScape's if wanted.
 
 ## Built (2026-10-25)
 
