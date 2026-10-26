@@ -40,6 +40,9 @@ public sealed class TavernNpc : MonoBehaviour
     {
         all.Add(this);
         nextLine = Time.time + Random.Range(5f, 20f);
+        // the quest giver always has quests for chat (!quest), so a blue ! over the head, out of the way while talking
+        if (role == NpcRole.QuestGiver)
+            WorldMark.Attach(gameObject, headHeight + 0.5f, () => showLeft > 0f ? IslandNpc.Mark.None : IslandNpc.Mark.Repeatable);
     }
 
     private void OnDisable()

@@ -25,6 +25,9 @@ public static class StoryLog
     private const float IdleRefreshSeconds = 60f;
     private const string RunestonePath = "============ WORLD/Islands/Ironhill Island/Runestone Event";
     private const string BananaSignPath = "============ UI/Canvas3D/unavailable/Text (TMP)";
+    private const float RunestoneMarkHeight = 3f;
+    private const float BananaMarkHeight = 7f;
+    private const float BananaMarkSize = 6f;
 
     private static bool refreshing;
     private static float nextRefresh;
@@ -237,6 +240,7 @@ public static class StoryLog
                     runestoneEffect = rune.GetComponentInChildren<ParticleSystem>(true);
                     if (runestoneText) runestoneOriginal = runestoneText.text;
                     if (runestoneEffect) runestoneRate = runestoneEffect.emission.rateOverTimeMultiplier;
+                    WorldMark.Attach(rune, RunestoneMarkHeight, () => MarkFor(IsDone("runestone") ? "roadwest" : "runestone"));
                 }
             }
 
@@ -261,6 +265,8 @@ public static class StoryLog
                 {
                     bananaSign = sign.GetComponent<TMPro.TMP_Text>();
                     if (bananaSign) bananaOriginal = bananaSign.text;
+                    // the sign is metres tall, made to be read from the overview, so the mark is too
+                    WorldMark.Attach(sign, BananaMarkHeight, () => MarkFor("bananas"), BananaMarkSize);
                 }
             }
             if (bananaSign) bananaSign.text = HasUnlock("island_mangrove") ? Localization.UI_STORY_BANANAS_SIGN_DONE : bananaOriginal;
@@ -269,6 +275,21 @@ public static class StoryLog
         {
             Shinobytes.Debug.LogWarning("The stories could not be shown in the world: " + exc.Message);
         }
+    }
+
+    /// <summary>
+    /// The mark over a story's place in the world: a gold ! while it can be begun (no other story under way), a gold
+    /// ? when the streamer has to talk or choose there, a grey ? while chat works on it.
+    /// </summary>
+    public static IslandNpc.Mark MarkFor(string key)
+    {
+        var story = Story(key);
+        if (story == null) return IslandNpc.Mark.None;
+        if (story.State == Active)
+            return story.Kind == "talk" || story.Kind == "choice" ? IslandNpc.Mark.Ready : IslandNpc.Mark.Waiting;
+        if (story.State == NotBegun || story.State == GivenUp)
+            return ActiveStory == null ? IslandNpc.Mark.Available : IslandNpc.Mark.None;
+        return IslandNpc.Mark.None;
     }
 
     // ---- Words ---------------------------------------------------------------------------------------
