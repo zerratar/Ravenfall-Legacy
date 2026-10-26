@@ -74,6 +74,8 @@ public static class ImageGen
     private const string Endpoint = "https://api.openai.com/v1/images/";
     private static readonly HttpClient http = new HttpClient { Timeout = TimeSpan.FromMinutes(6) };
     private const int MaxRetries = 3;
+    /// <summary>Requests in flight at once; the rest wait their turn, so a batch of icons does not hit the rate limit.</summary>
+    private static readonly System.Threading.SemaphoreSlim inFlight = new System.Threading.SemaphoreSlim(4);
 
     /// <summary>The cutout pass's prompt, as the Buildathon studio's.</summary>
     public const string CutoutPrompt =
@@ -233,6 +235,7 @@ public static class ImageGen
 
         Task.Run(async () =>
         {
+            await inFlight.WaitAsync().ConfigureAwait(false);
             try
             {
                 string text = null;
@@ -290,6 +293,10 @@ public static class ImageGen
             catch (Exception exc)
             {
                 Fail(job, exc.Message);
+            }
+            finally
+            {
+                inFlight.Release();
             }
         });
     }
