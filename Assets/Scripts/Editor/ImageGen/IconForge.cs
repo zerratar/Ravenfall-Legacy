@@ -53,14 +53,20 @@ public static class IconForge
     /// An existing icon changed: "cooked: grilled golden brown with char marks", "burned: blackened and smoking",
     /// "made of gold". The framing, angle, outline and style stay. Sunburst keeps closest to the original.
     /// </summary>
-    public static ImageGen.Job Variant(string fromSlug, string toItemName, string change, ImageGen.Model model = ImageGen.Model.Sunburst, Action<ImageGen.Job> then = null)
+    /// <remarks>
+    /// <paramref name="lookLike"/>: existing icons that show the change as the game draws it (a burned dish for
+    /// "burned"), sent after the icon itself; the first image is always the one changed.
+    /// </remarks>
+    public static ImageGen.Job Variant(string fromSlug, string toItemName, string change, ImageGen.Model model = ImageGen.Model.Sunburst, Action<ImageGen.Job> then = null, string[] lookLike = null)
     {
         var slug = Slug(toItemName);
-        var from = IconPath(fromSlug);
-        var prompt = "The same icon as the image, with one change: " + change.Trim() + ". Keep everything else exactly as it " +
+        var inputs = new List<string> { IconPath(fromSlug) };
+        if (lookLike != null) inputs.AddRange(lookLike.Select(IconPath).Where(File.Exists));
+        var prompt = "The same icon as the first image, with one change: " + change.Trim() + ". Keep everything else exactly as it " +
                      "is: the same item, framing, angle, size in the square, thin dark outline and hand painted style, on a " +
-                     "fully transparent background. No text.";
-        return ImageGen.Edit(prompt, new[] { from }, "Temp/ImageGen/" + slug + ".png", new ImageGen.Options { Model = model }, null,
+                     "fully transparent background. No text." +
+                     (inputs.Count > 1 ? " The other images are other icons from the same game that show how this change looks in its style; do not draw their items." : "");
+        return ImageGen.Edit(prompt, inputs, "Temp/ImageGen/" + slug + ".png", new ImageGen.Options { Model = model }, null,
             job => { Install(job, slug); then?.Invoke(job); });
     }
 

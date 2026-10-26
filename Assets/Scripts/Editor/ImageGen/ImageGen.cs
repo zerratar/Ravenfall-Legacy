@@ -367,7 +367,8 @@ public static class ImageGen
     private static void Fail(Job job, string error)
     {
         job.State = JobState.Failed;
-        job.Error = error;
+        // OpenAI repeats a masked piece of a rejected key in its message: never kept or shown
+        job.Error = System.Text.RegularExpressions.Regex.Replace(error ?? "", @"sk-[A-Za-z0-9_\-\*]+", "(the key)");
         job.Finished = DateTime.UtcNow;
         Remember(job);
         mainThread.Enqueue(() => Debug.LogWarning("Image generator " + job.Id + " failed: " + error));
