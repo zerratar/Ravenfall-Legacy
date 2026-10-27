@@ -1,7 +1,7 @@
 // Run with: unity command eval_file --file tools/sailing/make-boat-prefabs.cs
 //
 // Makes the own boats' prefabs in Assets/World/Sailing/Boats (docs/own-boats.md, phase 2) from the Synty kits, as
-// the decor prefabs are made: Rowboat (PolygonPirates' rowing boat), FishingBoat (its small boat with a fish pile,
+// the decor prefabs are made: Rowboat (PolygonPirates' rowing boat), FishingBoat (its small boat with a fish pile, a net over the side,
 // two rods and the medium boat's rig scaled down as its sail) and Sloop (its medium boat). Each has its pivot at the water line, the bow along +Z, a "Seat" where
 // the owner sits or stands, high enough that the sea never shows inside the hull, (found by casting down onto the hull) and no colliders. Rerun to rebuild them.
 var folder = "Assets/World/Sailing/Boats";
@@ -15,6 +15,9 @@ var boats = new[]
 };
 // the fishing boat's sail (see below): its mast's place along the boat and the rig's size against the medium boat's
 const float MastZ = 0.9f, RigScale = 0.42f, FishPileZ = -0.2f;
+// the net over the starboard side ahead of the oars: its top edge (the prefab's pivot) on the gunwale, turned with the
+// hull's curve towards the bow, clear of the front oars, tipped in at the foot as the planks curve in but clear of them
+const float NetX = 1.5f, NetY = 0.84f, NetZ = 2.3f, NetYaw = -5f, NetRoll = -20f, NetScale = 0.65f;
 var log = new System.Text.StringBuilder();
 var at = new UnityEngine.Vector3(0, -3000, 0);
 foreach (var b in boats)
@@ -55,6 +58,8 @@ foreach (var b in boats)
         // the rods lean out over each side, as when trolling, not crossed at the stern
         Prop("Assets/PolygonPirates/Prefabs/Props/SM_Prop_FishingRod_01.prefab", new UnityEngine.Vector3(0.55f, deck, -1.2f), new UnityEngine.Vector3(-15, 0, -40), 1.6f);
         Prop("Assets/PolygonPirates/Prefabs/Props/SM_Prop_FishingRod_01.prefab", new UnityEngine.Vector3(-0.55f, deck, -1.2f), new UnityEngine.Vector3(-15, 0, 40), 1.6f);
+        // a net hung over the side to dry, its top along the gunwale
+        Prop("Assets/PolygonVikings/Prefabs/Props/SM_Prop_Net_01.prefab", new UnityEngine.Vector3(NetX, NetY, NetZ), new UnityEngine.Vector3(0, NetYaw, NetRoll), NetScale);
 
         // its sail: the medium boat's mast and sails, scaled down around the mast's foot (the kit has no small rig)
         var medium = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonPirates/Prefabs/Vehicles/SM_Veh_Boat_Medium_01_Hull_Attachments.prefab");
