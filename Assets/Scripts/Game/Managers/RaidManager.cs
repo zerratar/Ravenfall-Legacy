@@ -235,10 +235,12 @@ public class RaidManager : MonoBehaviour, IEvent
     }
 
 
-    private void AutoJoinPlayers()
+    // Everyone with auto join on is charged in one call when the raid starts, and only those the server took the coins
+    // from join. The server used to work it out from the join counts in the saves, which was not reliable.
+    private async void AutoJoinPlayers()
     {
-        var playersToJoin = new List<PlayerController>();
         var autoJoinCost = gameManager.SessionSettings.AutoJoinRaidCost;
+        var candidates = new List<PlayerController>();
         foreach (var player in gameManager.Players.GetAllPlayers())
         {
             if (player.IsBot ||
@@ -249,12 +251,50 @@ public class RaidManager : MonoBehaviour, IEvent
                 continue;
             }
 
+            candidates.Add(player);
+        }
+
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        bool[] paid = null;
+        try
+        {
+            paid = await gameManager.RavenNest.Players.AutoJoinRaid(candidates.Select(x => x.Id).ToArray());
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Auto join raid could not be charged, joining " + candidates.Count + " players without it: " + exc.Message);
+        }
+
+        var playersToJoin = new List<PlayerController>();
+        var playersFailed = new List<PlayerController>();
+        for (var i = 0; i < candidates.Count; ++i)
+        {
+            var player = candidates[i];
+            if (!player || CanJoin(player) != RaidJoinResult.CanJoin)
+            {
+                continue;
+            }
+
+            if (paid != null && (i >= paid.Length || !paid[i]))
+            {
+                playersFailed.Add(player);
+                continue;
+            }
+
             if (player.raidHandler.AutoJoinCounter != int.MaxValue)
             {
                 player.raidHandler.AutoJoinCounter--;
             }
 
-            player.Resources.Coins -= autoJoinCost;
+            if (paid != null)
+            {
+                player.Resources.Coins = Math.Max(0, player.Resources.Coins - autoJoinCost);
+            }
+
             player.raidHandler.AutoJoinCount++;
 
             playersToJoin.Add(player);
@@ -265,8 +305,12 @@ public class RaidManager : MonoBehaviour, IEvent
         {
             gameManager.AnnounceAutoRaidJoin(playersToJoin);
         }
-    }
 
+        if (playersFailed.Count > 0)
+        {
+            gameManager.AnnounceAutoRaidJoinFailed(playersFailed);
+        }
+    }
 
     public bool ForceStartRaid()
     {

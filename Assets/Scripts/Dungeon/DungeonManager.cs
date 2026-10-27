@@ -462,10 +462,12 @@ public class DungeonManager : MonoBehaviour, IEvent
         }
     }
 
-    private void AutoJoinPlayers()
+    // Everyone with auto join on is charged in one call when the dungeon opens, and only those the server took the coins
+    // from join. The server used to work it out from the join counts in the saves, which was not reliable.
+    private async void AutoJoinPlayers()
     {
-        var playersToJoin = new List<PlayerController>();
         var autoJoinCost = gameManager.SessionSettings.AutoJoinDungeonCost;
+        var candidates = new List<PlayerController>();
         foreach (var player in gameManager.Players.GetAllPlayers())
         {
             if (player.IsBot ||
@@ -477,12 +479,52 @@ public class DungeonManager : MonoBehaviour, IEvent
                 continue;
             }
 
+            candidates.Add(player);
+        }
+
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        bool[] paid = null;
+        try
+        {
+            var ids = new Guid[candidates.Count];
+            for (var i = 0; i < ids.Length; ++i) ids[i] = candidates[i].Id;
+            paid = await gameManager.RavenNest.Players.AutoJoinDungeon(ids);
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Auto join dungeon could not be charged, joining " + candidates.Count + " players without it: " + exc.Message);
+        }
+
+        var playersToJoin = new List<PlayerController>();
+        var playersFailed = new List<PlayerController>();
+        for (var i = 0; i < candidates.Count; ++i)
+        {
+            var player = candidates[i];
+            if (!player || CanJoin(player) != DungeonJoinResult.CanJoin)
+            {
+                continue;
+            }
+
+            if (paid != null && (i >= paid.Length || !paid[i]))
+            {
+                playersFailed.Add(player);
+                continue;
+            }
+
             if (player.dungeonHandler.AutoJoinCounter != int.MaxValue)
             {
                 player.dungeonHandler.AutoJoinCounter--;
             }
 
-            player.Resources.Coins -= autoJoinCost;
+            if (paid != null)
+            {
+                player.Resources.Coins = Math.Max(0, player.Resources.Coins - autoJoinCost);
+            }
+
             player.dungeonHandler.AutoJoinCount++;
             playersToJoin.Add(player);
             Join(player);
@@ -491,6 +533,11 @@ public class DungeonManager : MonoBehaviour, IEvent
         if (playersToJoin.Count > 0)
         {
             gameManager.AnnounceAutoDungeonJoin(playersToJoin);
+        }
+
+        if (playersFailed.Count > 0)
+        {
+            gameManager.AnnounceAutoDungeonJoinFailed(playersFailed);
         }
     }
 
