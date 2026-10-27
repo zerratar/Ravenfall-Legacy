@@ -1,8 +1,8 @@
 // Run with: unity command eval_file --file tools/sailing/make-boat-prefabs.cs
 //
 // Makes the own boats' prefabs in Assets/World/Sailing/Boats (docs/own-boats.md, phase 2) from the Synty kits, as
-// the decor prefabs are made: Rowboat (PolygonPirates' rowing boat), FishingBoat (its small boat with a fish pile and
-// two rods) and Sloop (its medium boat). Each has its pivot at the water line, the bow along +Z, a "Seat" where
+// the decor prefabs are made: Rowboat (PolygonPirates' rowing boat), FishingBoat (its small boat with a fish pile,
+// two rods and the medium boat's rig scaled down as its sail) and Sloop (its medium boat). Each has its pivot at the water line, the bow along +Z, a "Seat" where
 // the owner sits or stands, high enough that the sea never shows inside the hull, (found by casting down onto the hull) and no colliders. Rerun to rebuild them.
 var folder = "Assets/World/Sailing/Boats";
 System.IO.Directory.CreateDirectory(folder);
@@ -13,6 +13,8 @@ var boats = new[]
     new { Name = "FishingBoat", Kit = "Assets/PolygonPirates/Prefabs/Vehicles/SM_Veh_Boat_Small_01_Hull_Attachments.prefab", Draft = 0.42f, Seat = -2.2f, SeatHeight = float.NaN },
     new { Name = "Sloop", Kit = "Assets/PolygonPirates/Prefabs/Vehicles/SM_Veh_Boat_Medium_01_Hull_Attachments.prefab", Draft = 1.1f, Seat = -5.5f, SeatHeight = float.NaN },
 };
+// the fishing boat's sail (see below): its mast's place along the boat and the rig's size against the medium boat's
+const float MastZ = 0.9f, RigScale = 0.42f, FishPileZ = -0.2f;
 var log = new System.Text.StringBuilder();
 var at = new UnityEngine.Vector3(0, -3000, 0);
 foreach (var b in boats)
@@ -49,9 +51,41 @@ foreach (var b in boats)
             o.transform.localRotation = UnityEngine.Quaternion.Euler(euler);
             o.transform.localScale *= scale;
         }
-        Prop("Assets/PolygonVikings/Prefabs/Props/SM_Prop_Fish_Pile_01.prefab", new UnityEngine.Vector3(0, deck, 1.6f), UnityEngine.Vector3.zero, 1.2f);
-        Prop("Assets/PolygonPirates/Prefabs/Props/SM_Prop_FishingRod_01.prefab", new UnityEngine.Vector3(0.6f, deck, -1.2f), new UnityEngine.Vector3(-35, 20, 0), 1.6f);
-        Prop("Assets/PolygonPirates/Prefabs/Props/SM_Prop_FishingRod_01.prefab", new UnityEngine.Vector3(-0.6f, deck, -1.2f), new UnityEngine.Vector3(-35, -20, 0), 1.6f);
+        Prop("Assets/PolygonVikings/Prefabs/Props/SM_Prop_Fish_Pile_01.prefab", new UnityEngine.Vector3(0, deck, FishPileZ), UnityEngine.Vector3.zero, 1.2f);
+        // the rods lean out over each side, as when trolling, not crossed at the stern
+        Prop("Assets/PolygonPirates/Prefabs/Props/SM_Prop_FishingRod_01.prefab", new UnityEngine.Vector3(0.55f, deck, -1.2f), new UnityEngine.Vector3(-15, 0, -40), 1.6f);
+        Prop("Assets/PolygonPirates/Prefabs/Props/SM_Prop_FishingRod_01.prefab", new UnityEngine.Vector3(-0.55f, deck, -1.2f), new UnityEngine.Vector3(-15, 0, 40), 1.6f);
+
+        // its sail: the medium boat's mast and sails, scaled down around the mast's foot (the kit has no small rig)
+        var medium = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonPirates/Prefabs/Vehicles/SM_Veh_Boat_Medium_01_Hull_Attachments.prefab");
+        UnityEngine.Transform FindPart(UnityEngine.Transform t, string n)
+        {
+            if (t.name == n) return t;
+            foreach (UnityEngine.Transform c in t) { var f = FindPart(c, n); if (f) return f; }
+            return null;
+        }
+        var srcMast = medium ? FindPart(medium.transform, "SM_Veh_Boat_Medium_01_Mast") : null;
+        if (srcMast)
+        {
+            // the deck under the mast, as under the seat
+            var mastDeck = deck;
+            var mastFrom = root.transform.position + new UnityEngine.Vector3(0, 30f, MastZ);
+            var mastBest = float.MinValue;
+            foreach (var c in model.GetComponentsInChildren<UnityEngine.Collider>())
+            {
+                if (c.Raycast(new UnityEngine.Ray(mastFrom, UnityEngine.Vector3.down), out var hit, 60f) && hit.point.y > mastBest && hit.point.y < root.transform.position.y + 4f) mastBest = hit.point.y;
+            }
+            if (mastBest > float.MinValue) mastDeck = mastBest - root.transform.position.y;
+            var foot = new UnityEngine.Vector3(0, mastDeck, MastZ);
+            // the sails are the mast's children and come with it
+            var rig = UnityEngine.Object.Instantiate(srcMast.gameObject, root.transform);
+            rig.name = "Rig";
+            rig.transform.localPosition = foot;
+            rig.transform.localRotation = srcMast.localRotation;
+            rig.transform.localScale = srcMast.localScale * RigScale;
+            foreach (var r in rig.GetComponentsInChildren<UnityEngine.Transform>(true))
+                if (r.name.Contains("Sails_Up")) r.gameObject.SetActive(false);
+        }
     }
 
     foreach (var c in root.GetComponentsInChildren<UnityEngine.Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
