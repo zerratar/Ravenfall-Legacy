@@ -2324,7 +2324,7 @@
     "UI_SETTINGS_SECTION_QUALITY": "KVALITET",
     "UI_SETTINGS_SECTION_WORLD": "VÄRLDEN",
     "UI_SETTINGS_SHORTCUTS": "Genvägsfält",
-    "UI_SETTINGS_SHORTCUTS_HINT": "Raden med kortkommandon längst ner.",
+    "UI_SETTINGS_SHORTCUTS_HINT": "Raden med kortkommandon längst ner. När den är av finns bara menyknappen kvar.",
     "UI_SETTINGS_SILENCE": "Tyst",
     "UI_SETTINGS_TAB_ADMIN": "Admin",
     "UI_SETTINGS_TAB_BOT": "Bot",

@@ -282,6 +282,8 @@ namespace Shinobytes.UI
             if (enemyCount != shownEnemies && enemies != null)
             {
                 shownEnemies = enemyCount;
+                // the boss is not counted: "0 enemies" beside its health bar read as if it were gone
+                SetShown(enemiesBox, !(inBossRoom && enemyCount == 0));
                 enemies.text = enemyCount == 1
                     ? Localization.UI_DUNGEON_ENEMY_ONE
                     : string.Format(CultureInfo.InvariantCulture, Localization.UI_DUNGEON_ENEMIES, enemyCount);

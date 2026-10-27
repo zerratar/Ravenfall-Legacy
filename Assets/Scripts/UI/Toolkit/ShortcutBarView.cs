@@ -14,9 +14,11 @@ namespace Shinobytes.UI
     /// <remarks>
     /// Lives in the TopStatus document (markup "shortcut-bar" in TopStatus.uxml); TownBarView adds this
     /// component to the same GameObject. Hidden before login, during village build mode (which uses the
-    /// bottom of the screen), when F1 has hidden the interface, and when turned off in the UI settings
-    /// (PlayerSettings.ShortcutBarVisible). The raid and dungeon buttons only show for administrators,
-    /// as their keys only work for them.
+    /// bottom of the screen) and when F1 has hidden the interface. Turned off in the UI settings
+    /// (PlayerSettings.ShortcutBarVisible), only the menu button stays, so the menu can always be
+    /// reached with the mouse; it replaced the old settings cog, which sat fixed in the top right
+    /// corner over the windows docked there. The raid and dungeon buttons only show for
+    /// administrators, as their keys only work for them.
     /// </remarks>
     [RequireComponent(typeof(UIDocument))]
     public class ShortcutBarView : MonoBehaviour
@@ -39,12 +41,14 @@ namespace Shinobytes.UI
         }
 
         private readonly List<Shortcut> shortcuts = new List<Shortcut>();
-        private readonly List<VisualElement> adminElements = new List<VisualElement>();
+        /// <summary>Every group and divider, with whether it is the admin's and whether it is the menu's.</summary>
+        private readonly List<(VisualElement Element, bool Admin, bool Menu)> parts = new List<(VisualElement, bool, bool)>();
         private VisualElement bar;
         private Label caption;
         private bool bound;
         private bool shown;
         private bool shownAdmin;
+        private bool shownMenuOnly;
 
         private void OnEnable()
         {
@@ -96,7 +100,7 @@ namespace Shinobytes.UI
             bar.Clear();
             // the caption's empty space must not catch clicks meant for the world; the row does the picking
             bar.pickingMode = PickingMode.Ignore;
-            adminElements.Clear();
+            parts.Clear();
 
             caption = new Label { pickingMode = PickingMode.Ignore };
             caption.AddToClassList("rf-shortcuts__caption");
@@ -117,13 +121,13 @@ namespace Shinobytes.UI
                         var divider = new VisualElement { pickingMode = PickingMode.Ignore };
                         divider.AddToClassList("rf-shortcuts__divider");
                         row.Add(divider);
-                        if (s.AdminOnly) adminElements.Add(divider);
+                        parts.Add((divider, s.AdminOnly, false));
                     }
 
                     group = new VisualElement();
                     group.AddToClassList("rf-shortcuts__group");
                     row.Add(group);
-                    if (s.AdminOnly) adminElements.Add(group);
+                    parts.Add((group, s.AdminOnly, s.Group == Group.Menu));
                     current = s.Group;
                 }
 
@@ -156,6 +160,7 @@ namespace Shinobytes.UI
             RefreshKeys();
             ShowCaption(null);
             shownAdmin = true;
+            shownMenuOnly = false;
             bound = true;
         }
 
@@ -221,16 +226,18 @@ namespace Shinobytes.UI
             var loggedIn = gm && gm.IsLoaded && gm.RavenNest != null && gm.RavenNest.Authenticated;
             var building = VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive;
             var hudHidden = HUDController.Instance && HUDController.Instance.State == HUDController.UIState.Nothing;
-            var wanted = PlayerSettings.Instance.ShortcutBarVisible.GetValueOrDefault(true);
-            SetShown(loggedIn && wanted && !building && !hudHidden);
+            var menuOnly = !PlayerSettings.Instance.ShortcutBarVisible.GetValueOrDefault(true);
+            SetShown(loggedIn && !building && !hudHidden);
 
             var admin = gm && gm.SessionSettings != null && gm.SessionSettings.IsAdministrator;
-            if (shown && admin != shownAdmin)
+            if (shown && (admin != shownAdmin || menuOnly != shownMenuOnly))
             {
                 shownAdmin = admin;
-                foreach (var e in adminElements)
+                shownMenuOnly = menuOnly;
+                foreach (var (element, adminOnly, menu) in parts)
                 {
-                    e.style.display = admin ? DisplayStyle.Flex : DisplayStyle.None;
+                    var on = (menu || !menuOnly) && (!adminOnly || admin);
+                    element.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
                 }
             }
         }

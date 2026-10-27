@@ -614,6 +614,7 @@ namespace Shinobytes.UI
             {
                 state.LastCombatLevel = combatLevel;
                 state.Level.text = combatLevel.ToString(CultureInfo.InvariantCulture);
+                state.Level.EnableInClassList("rf-player-row__level--long", combatLevel >= 1000);
             }
         }
 
@@ -655,9 +656,10 @@ namespace Shinobytes.UI
                 return;
             }
 
+            // "Rested 0m" read as no rest left while the bonus was still on for its last minute.
             var restedText = minutes >= 60
                 ? (minutes / 60).ToString(CultureInfo.InvariantCulture) + "h"
-                : minutes.ToString(CultureInfo.InvariantCulture) + "m";
+                : minutes >= 1 ? minutes.ToString(CultureInfo.InvariantCulture) + "m" : "<1m";
             state.Rested.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RESTED, restedText);
             state.Rested.style.display = DisplayStyle.Flex;
         }

@@ -2327,7 +2327,7 @@
     "UI_SETTINGS_SECTION_QUALITY": "QUALITY",
     "UI_SETTINGS_SECTION_WORLD": "WORLD",
     "UI_SETTINGS_SHORTCUTS": "Shortcut bar",
-    "UI_SETTINGS_SHORTCUTS_HINT": "The row of keyboard shortcuts along the bottom.",
+    "UI_SETTINGS_SHORTCUTS_HINT": "The row of keyboard shortcuts along the bottom. When it is off, only the menu button stays.",
     "UI_SETTINGS_SILENCE": "Silence",
     "UI_SETTINGS_TAB_ADMIN": "Admin",
     "UI_SETTINGS_TAB_BOT": "Bot",

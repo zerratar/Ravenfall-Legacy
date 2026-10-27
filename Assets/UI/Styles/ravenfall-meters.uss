@@ -317,7 +317,8 @@
     font-size: 15px;
     color: var(--rf-text-dim);
     -unity-text-align: middle-center;
-    margin-top: var(--rf-space-5);
+    /* fills the body while the list is hidden, so the note is centred in the window */
+    flex-grow: 1;
 }
 
 /* ---- Footer ---- */

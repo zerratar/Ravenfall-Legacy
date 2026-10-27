@@ -769,9 +769,10 @@ namespace Shinobytes.UI
                 return;
             }
 
+            // under a minute reads "<1m": "Rested 0m" looked like no rest at all
             var time = minutes >= 60
                 ? HudFormat.Duration(minutes * 60)
-                : minutes.ToString(CultureInfo.InvariantCulture) + "m";
+                : minutes >= 1 ? minutes.ToString(CultureInfo.InvariantCulture) + "m" : "<1m";
             restedLabel.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RESTED, time);
             restedLabel.EnableInClassList("rf-details__rested--gaining", gaining);
             restedLabel.style.display = DisplayStyle.Flex;

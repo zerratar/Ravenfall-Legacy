@@ -368,9 +368,11 @@
     background-color: var(--rf-row-hover);
 }
 
+/* Bold, as the gold buttons are: thin dark glyphs at this size blurred into the gold. */
 .rf-settings .rf-segmented__item.rf-segmented__item--active {
     color: var(--rf-text-on-accent);
     background-color: var(--rf-accent);
+    -unity-font-style: bold;
 }
 
 /* ---- Stepper ---- */

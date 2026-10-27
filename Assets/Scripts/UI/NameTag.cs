@@ -38,6 +38,10 @@ public class NameTag : MonoBehaviour
     private Vector3 offset;
     private Transform _transform;
 
+    // faded out by NameTagManager while it would cover a tag nearer the camera
+    private CanvasGroup group;
+    internal float Alpha = 1f;
+
     private void Awake()
     {
         this._transform = transform;
@@ -125,6 +129,52 @@ public class NameTag : MonoBehaviour
 
         titleLabel.text = text;
         titleLabel.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Where the tag's text is on screen, the name with its clan and title lines. False while it has
+    /// no text yet or is behind the camera.
+    /// </summary>
+    internal bool TryGetScreenRect(Camera camera, out Rect rect)
+    {
+        rect = default;
+        var any = false;
+        float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+        void Add(TextMeshProUGUI text)
+        {
+            if (!text || !text.gameObject.activeSelf || string.IsNullOrEmpty(text.text)) return;
+            var b = text.textBounds;
+            if (b.size.x <= 0f) return;
+            var t = text.rectTransform;
+            var a = camera.WorldToScreenPoint(t.TransformPoint(b.min));
+            var c = camera.WorldToScreenPoint(t.TransformPoint(b.max));
+            if (a.z <= 0f || c.z <= 0f) return;
+            xMin = Mathf.Min(xMin, a.x, c.x); xMax = Mathf.Max(xMax, a.x, c.x);
+            yMin = Mathf.Min(yMin, a.y, c.y); yMax = Mathf.Max(yMax, a.y, c.y);
+            any = true;
+        }
+        Add(label);
+        Add(clanName);
+        Add(titleLabel);
+        if (!any) return false;
+        rect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+        return true;
+    }
+
+    /// <summary>Eases the tag toward shown (1) or hidden (0); a fifth of a second either way.</summary>
+    internal void FadeTo(float target, float deltaTime)
+    {
+        if (Alpha == target && group) return;
+        if (!group)
+        {
+            group = GetComponent<CanvasGroup>();
+            if (!group) group = gameObject.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+        }
+
+        Alpha = Mathf.MoveTowards(Alpha, target, deltaTime * 5f);
+        group.alpha = Alpha;
     }
 
     private bool Init()

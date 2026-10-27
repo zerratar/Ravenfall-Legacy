@@ -519,14 +519,19 @@
 /* Skill name in regular weight; its level is set in bold by rich text inside the label. */
 .rf-player-row .rf-player-row__skill {
     font-size: 17px;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--rf-text);
     text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
 }
 
 .rf-player-row .rf-player-row__percent {
     font-size: 17px;
+    flex-shrink: 0;
     color: var(--rf-accent-bright);
-    margin-left: var(--rf-space-4);
+    margin-left: var(--rf-space-3);
     text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
 }
 
@@ -537,16 +542,19 @@
 
 .rf-player-row .rf-player-row__rate {
     font-size: 16px;
+    flex-shrink: 0;
+    margin-left: var(--rf-space-3);
     color: var(--rf-success);
     text-shadow: 1px 1px 2px var(--rf-text-shadow-strong);
 }
 
 /* ---- Level column ------------------------------------------------------------ */
 
-/* Sized to its number rather than a fixed width. A fixed 82px let a four digit level spill left
-   over the rate and the bars; growing with the number makes the text column give way instead. */
+/* One width on every row, so the bars and the rates end in one line down the list. A four digit
+   level is set smaller (--long) to fit it; growing the column with the number squeezed the text
+   column on those rows until the rate was cut off. */
 .rf-player-row__level-col {
-    min-width: 56px;
+    width: 80px;
     flex-shrink: 0;
     align-items: flex-end;
     justify-content: center;
@@ -566,6 +574,10 @@
     -unity-text-outline-width: 1px;
     -unity-text-outline-color: var(--rf-text-outline);
     text-shadow: 1px 2px 3px var(--rf-text-shadow-strong);
+}
+
+.rf-player-row .rf-player-row__level--long {
+    font-size: 24px;
 }
 
 /* ---- Bars ------------------------------------------------------------------------- */

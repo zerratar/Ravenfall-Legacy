@@ -335,6 +335,8 @@ namespace Shinobytes.UI
             if (empty != null)
             {
                 empty.style.display = ranked.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                // the empty list gives its room to the note, so it sits in the middle, not on the footer
+                if (list != null) list.style.display = ranked.Count == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             }
 
             list?.RefreshItems();
