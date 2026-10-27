@@ -45,7 +45,27 @@ Concept: docs/mockups/ironhill-concept.png (the target, not a blueprint: the isl
 The dragon is scenery only (no colliders, no enemy, Default layer): nobody can reach the summit, so it must never be a
 target there. A future quest could wake it for a raid battle on the island itself, where it comes down to fight.
 
-Still open: lava cracks that read well (the kit's lava line is a standing column), and a talkable dwarf for a quest.
+## Built (2026-10-27)
+
+- **Lava cracks:** `LavaCrack` (Assets/Scripts/World) draws a jagged seam with branches, laid on the terrain, with
+  `Ravenfall/Lava Crack` (Assets/World/Ironhill): a hot middle cooling to red lips, heat drifting along it, the whole
+  crack breathing, and burnt ground round it that fades out raggedly. Seven of them (tools/ironhill/ih-cracks.cs): two
+  from the mountain's foot to the dragon eggs, four sparse ones in the scorched east, one in the forge yard by the
+  smelter. They glow with the bloom at night. The mesh is made when the crack wakes and never saved, so the scene keeps
+  only the numbers (seed, length, widths, branches, heat).
+- **The forge-master:** the dwarf worker at the anvil is an `IslandNpc` (key `ironhill_smith`) who gives the
+  runestone's story: the gold ! to begin it is over them now (the runestone keeps its ? and the road west's marks), a
+  grey ? while the stream brings the iron and coal for the stone's bands. A click says where the story stands and
+  opens the quest window on it (StoryLog.SmithClicked). Now and then they talk on their own: their lines plus one for
+  each step of the runestone and the road west (UI_IRONHILL_SMITH_*). Speech bubbles grow with the camera's distance
+  now, so they can be read from the island camera.
+- **The forge corner:** the big crag east of the yard had swallowed the anvil, fire pit, smelting pot, the forge-master,
+  the lava wheel, the crane, a house and a cart; nobody had ever seen them. They moved into the open strip right of the
+  paved way (the lava wheel half into the rock face, the house to the yard's south-west corner, the cart by the
+  smelter); the crane, the second house and one cart were dropped. ih-hold.cs has the new places.
+
+Ideas for later: a dwarf story of their own (the dragon's breakfast, the sheep on the anvil), and the quest that wakes
+the sleeping dragon for a raid on the island.
 
 ## Phases
 

@@ -22,7 +22,7 @@ namespace Shinobytes.UI
         private const string RunestoneName = "Runestone Event";
         private const string MangroveName = "Mangrove";
 
-        private enum Clicked { Nothing, Board, Runestone, Mangrove }
+        private enum Clicked { Nothing, Board, Runestone, Mangrove, Smith }
         private const int TopHelpersShown = 5;
 
         private static readonly RaycastHit[] hits = new RaycastHit[32];
@@ -197,6 +197,7 @@ namespace Shinobytes.UI
                     case Clicked.Board: storyPanel.Focus = null; Open(); break;
                     case Clicked.Runestone: OpenStory(StoryLog.IsDone("runestone") ? "roadwest" : "runestone"); break;
                     case Clicked.Mangrove: OpenStory("bananas"); break;
+                    case Clicked.Smith: OpenStory(StoryLog.SmithClicked()); break;
                 }
             }
             if (windowOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping) Close();
@@ -464,11 +465,22 @@ namespace Shinobytes.UI
             var cam = Camera.main;
             if (!cam) return Clicked.Nothing;
 
-            var count = Physics.RaycastNonAlloc(cam.ScreenPointToRay(Input.mousePosition), hits, 1000f, ~0, QueryTriggerInteraction.Ignore);
+            var ray = cam.ScreenPointToRay(Input.mousePosition);
+            var count = Physics.RaycastNonAlloc(ray, hits, 1000f, ~0, QueryTriggerInteraction.Ignore);
             var nearest = -1;
             for (var i = 0; i < count; ++i)
             {
                 if (nearest < 0 || hits[i].distance < hits[nearest].distance) nearest = i;
+            }
+
+            // the forge-master has no collider: a click on or just round them counts, unless something nearer is in the way
+            var smith = StoryLog.Smith;
+            if (smith && StoryLog.Latest != null)
+            {
+                var middle = smith.transform.position + Vector3.up * 0.8f;
+                var along = Vector3.Dot(middle - ray.origin, ray.direction);
+                var off = Vector3.Cross(ray.direction, middle - ray.origin).magnitude;
+                if (along > 0f && along <= 250f && off < 0.9f && (nearest < 0 || along <= hits[nearest].distance + 1f)) return Clicked.Smith;
             }
 
             if (nearest < 0) return Clicked.Nothing;

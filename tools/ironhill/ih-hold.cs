@@ -1,4 +1,7 @@
-// builds the dwarf hold on Ironhill's shelf from a list; rerunnable (clears its group); pieces stand on the terrain
+// builds the dwarf hold on Ironhill's shelf from a list; rerunnable (clears its group); pieces stand on the terrain.
+// 2026-10-27: the forge corner moved into the open strip right of the paved way: the big crag east of the yard had
+// swallowed it (the crane, a house and a cart that stood there were dropped), and the worker became the forge-master,
+// who gives the runestone's story (IslandNpc, StoryLog.SmithKey)
 var island = UnityEngine.GameObject.Find("============ WORLD/Islands/Ironhill Island").transform;
 var group = island.Find("Dwarf Hold");
 if (group) UnityEngine.Object.DestroyImmediate(group.gameObject);
@@ -13,22 +16,19 @@ var list = new System.Collections.Generic.List<(string p, float x, float z, floa
     (D("Environments/SM_Env_Dwarf_Obelisk_01"), 26, 477, 180, 1.1f, 0),
     (D("Props/SM_Prop_Dwarf_Brazier_01"), 9, 472, 0, 1, 0),
     (D("Props/SM_Prop_Dwarf_Brazier_01"), 23, 472, 0, 1, 0),
-    (D("Props/SM_Prop_Dwarf_Cart_01"), 29, 477, 200, 1, 1.5f),
     (D("Environments/SM_Env_Dwarf_Forge_Smelter_01"), -6, 474, 150, 0.55f, 0),
-    (D("Environments/SM_Env_Dwarf_Lava_Wheel_01"), 38, 477, 90, 1.2f, 4.2f),
-    (D("Props/SM_Prop_Dwarf_Fire_Pit_01"), 33, 462, 0, 1.2f, 0),
+    (D("Environments/SM_Env_Dwarf_Lava_Wheel_01"), 29.5f, 469, 90, 1.2f, 2.5f),
+    (D("Props/SM_Prop_Dwarf_Fire_Pit_01"), 25.5f, 462, 0, 1.2f, 0),
     (D("Environments/SM_Env_Dwarf_Forge_Smelter_02"), 0, 457, 200, 1, 0),
-    (D("Props/SM_Prop_Dwarf_Smelting_Pot_01"), 37, 456, 0, 0.8f, 1.2f),
-    (D("Props/SM_Prop_Dwarf_Crane_01"), 44, 476, 200, 1, 0),
+    (D("Props/SM_Prop_Dwarf_Smelting_Pot_01"), 26.5f, 450.5f, 0, 0.8f, 0),
     (D("Props/SM_Prop_Dwarf_Cog_Pile_01"), 25, 465, 30, 1.4f, 0),
     (D("Props/SM_Prop_Dwarf_Totem_01"), 8, 436, 160, 1.2f, 0),
-    (D("Buildings/SM_Bld_Dwarf_Building_02"), -11, 452, 120, 1, 0),
-    (D("Buildings/SM_Bld_Dwarf_Building_03"), 45, 450, 240, 1, 0),
-    ("Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Anvil_01.prefab", 29, 458, 70, 1.3f, 0),
+    (D("Buildings/SM_Bld_Dwarf_Building_03"), 4, 444, 90, 1, 0),
+    ("Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Anvil_01.prefab", 25.3f, 457.4f, 120, 1.3f, 0),
     (D("Props/SM_Prop_Dwarf_Cart_02"), 1, 466, 20, 1, 1.5f),
-    (D("Props/SM_Prop_Dwarf_Cart_03"), 30, 471, 300, 1, 1.5f),
+    (D("Props/SM_Prop_Dwarf_Cart_03"), 9, 455, 300, 1, 1.5f),
     (D("Props/SM_Prop_Dwarf_Weapon_Barrel_01"), -2, 462, 0, 1, 0),
-    (D("Props/SM_Prop_Dwarf_Weapon_Barrel_02"), 40, 463, 40, 1, 0),
+    (D("Props/SM_Prop_Dwarf_Weapon_Barrel_02"), 26.8f, 447, 40, 1, 0),
     (D("Props/SM_Prop_Dwarf_Lever_01"), 21, 479, 180, 1.2f, 0),
     (D("Props/SM_Prop_Dwarf_Brazier_01"), 12, 452, 0, 1, 0),
     (D("Props/SM_Prop_Dwarf_Brazier_01"), 20, 452, 0, 1, 0),
@@ -62,15 +62,21 @@ void Tile(float px, float pz)
 for (var px = 11f; px <= 26f; px += 5f) for (var pz = 469f; pz <= 474f; pz += 5f) Tile(px, pz);
 for (var pz = 434f; pz < 469f; pz += 5f) Tile(18.5f, pz);
 
-// the dwarves: guards at the gate, a miner at the ore cart, a smith at the fire; the island NPCs' idle (humanoid)
+// the dwarves: guards at the gate, a miner by the gate, the forge-master at the anvil; the island NPCs' idle (humanoid)
 var idle = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.RuntimeAnimatorController>("Assets/Animations/Barkeep.controller");
-foreach (var (n, x, z, yaw) in new[] { ("Chr_BR_Dwarf_Soldier_Male_01", 11.5f, 478f, 180f), ("Chr_BR_Dwarf_Soldier_Female_01", 20.5f, 478f, 180f), ("Chr_BR_Dwarf_Miner_01", 26.5f, 475f, 110f), ("Chr_BR_Dwarf_Worker_01", 31f, 459.5f, 290f) })
+foreach (var (n, x, z, yaw) in new[] { ("Chr_BR_Dwarf_Soldier_Male_01", 11.5f, 478f, 180f), ("Chr_BR_Dwarf_Soldier_Female_01", 20.5f, 478f, 180f), ("Chr_BR_Dwarf_Miner_01", 26.5f, 475f, 110f), ("Chr_BR_Dwarf_Worker_01", 23.8f, 456f, 210f) })
 {
     var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(D("Characters/" + n));
     var go = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, group);
     var y = t.SampleHeight(new UnityEngine.Vector3(x, 0, z)) + t.transform.position.y;
     go.transform.SetPositionAndRotation(new UnityEngine.Vector3(x, y, z), UnityEngine.Quaternion.Euler(0, yaw, 0));
     foreach (var a in go.GetComponentsInChildren<UnityEngine.Animator>(true)) { a.runtimeAnimatorController = idle; a.applyRootMotion = false; }
+    if (n == "Chr_BR_Dwarf_Worker_01")
+    {
+        go.name = "Forge-master";
+        var npc = go.AddComponent<IslandNpc>();
+        npc.Key = StoryLog.SmithKey; npc.HeadHeight = 1.85f; npc.TalkDistance = 3f;
+    }
 }
 // clear the crags that cut into the gate's opening and the yard in front of it
 var gate = placed[0];

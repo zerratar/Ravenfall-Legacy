@@ -29,6 +29,9 @@ public static class StoryLog
     private const float BananaMarkHeight = 7f;
     private const float BananaMarkSize = 6f;
 
+    /// <summary>The forge-master at Ironhill's dwarf hold: an IslandNpc with this key, who gives the runestone's story.</summary>
+    public const string SmithKey = "ironhill_smith";
+
     private static bool refreshing;
     private static float nextRefresh;
 
@@ -222,6 +225,7 @@ public static class StoryLog
     // ---- The world -----------------------------------------------------------------------------------
 
     private static TMPro.TMP_Text runestoneText, bananaSign;
+    private static IslandNpc smith;
     private static string runestoneOriginal, bananaOriginal;
     private static ParticleSystem runestoneEffect;
     private static float runestoneRate = -1f;
@@ -231,6 +235,16 @@ public static class StoryLog
     {
         try
         {
+            if (!smith)
+            {
+                smith = IslandNpc.Find(SmithKey);
+                if (smith)
+                {
+                    smith.Lines = SmithLines;
+                    smith.MarkSource = SmithMark;
+                }
+            }
+
             if (!runestoneText)
             {
                 var rune = GameObject.Find(RunestonePath);
@@ -240,7 +254,7 @@ public static class StoryLog
                     runestoneEffect = rune.GetComponentInChildren<ParticleSystem>(true);
                     if (runestoneText) runestoneOriginal = runestoneText.text;
                     if (runestoneEffect) runestoneRate = runestoneEffect.emission.rateOverTimeMultiplier;
-                    WorldMark.Attach(rune, RunestoneMarkHeight, () => MarkFor(IsDone("runestone") ? "roadwest" : "runestone"));
+                    WorldMark.Attach(rune, RunestoneMarkHeight, RunestoneMark);
                 }
             }
 
@@ -290,6 +304,68 @@ public static class StoryLog
         if (story.State == NotBegun || story.State == GivenUp)
             return ActiveStory == null ? IslandNpc.Mark.Available : IslandNpc.Mark.None;
         return IslandNpc.Mark.None;
+    }
+
+    /// <summary>The runestone's own mark: the forge-master gives its story, so the gold ! to begin it is over them.</summary>
+    private static IslandNpc.Mark RunestoneMark()
+    {
+        var key = IsDone("runestone") ? "roadwest" : "runestone";
+        var mark = MarkFor(key);
+        return key == "runestone" && mark == IslandNpc.Mark.Available && smith ? IslandNpc.Mark.None : mark;
+    }
+
+    // ---- The forge-master ----------------------------------------------------------------------------
+
+    public static IslandNpc Smith => smith;
+
+    /// <summary>
+    /// Over the forge-master: the gold ! while the runestone's story can begin, and a grey ? while the stream brings
+    /// the iron and coal for its bands.
+    /// </summary>
+    private static IslandNpc.Mark SmithMark()
+    {
+        var rune = Story("runestone");
+        if (rune == null) return IslandNpc.Mark.None;
+        if (MarkFor("runestone") == IslandNpc.Mark.Available) return IslandNpc.Mark.Available;
+        return rune.State == Active && rune.Kind == "deliver" ? IslandNpc.Mark.Waiting : IslandNpc.Mark.None;
+    }
+
+    /// <summary>The forge-master's lines: their own, and twice as often what they think of the stories so far.</summary>
+    private static IReadOnlyList<string> SmithLines()
+    {
+        var lines = new List<string>(Localization.UI_IRONHILL_SMITH_LINES.Split('|'));
+        var stage = SmithStage();
+        if (!string.IsNullOrEmpty(stage))
+        {
+            var said = stage.Split('|');
+            lines.AddRange(said);
+            lines.AddRange(said);
+        }
+        return lines;
+    }
+
+    /// <summary>What the forge-master says about the runestone and the road west, by how far they are.</summary>
+    private static string SmithStage()
+    {
+        var rune = Story("runestone");
+        if (rune == null) return null;
+        if (rune.State == Active) return Lookup("UI_IRONHILL_SMITH_STEP_" + (rune.Step + 1), null);
+        if (rune.State != Done) return Localization.UI_IRONHILL_SMITH_BEGIN;
+        var west = Story("roadwest");
+        if (west != null && west.State == Active) return Localization.UI_IRONHILL_SMITH_WEST;
+        if (west != null && west.State == Done) return Localization.UI_IRONHILL_SMITH_WEST_DONE;
+        return Localization.UI_IRONHILL_SMITH_AFTER;
+    }
+
+    /// <summary>A click on the forge-master: they say where the story stands, and the window opens on it.</summary>
+    public static string SmithClicked()
+    {
+        if (smith)
+        {
+            var said = (SmithStage() ?? Localization.UI_IRONHILL_SMITH_LINES).Split('|');
+            smith.Say(said[UnityEngine.Random.Range(0, said.Length)]);
+        }
+        return IsDone("runestone") ? "roadwest" : "runestone";
     }
 
     // ---- Words ---------------------------------------------------------------------------------------

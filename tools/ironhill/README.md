@@ -1,6 +1,6 @@
 # Ironhill rework scripts
 
-The scripts that rebuilt Ironhill on 2026-10-26 (docs/ironhill-rework.md). They ran through the Unity CLI
+The scripts that rebuilt Ironhill on 2026-10-26 (and the cracks and forge corner on 2026-10-27) (docs/ironhill-rework.md). They ran through the Unity CLI
 (`unity command eval_file --file <script>`) against the open editor, in this order. Each one clears what it made
 before, so they can be rerun after a tweak.
 
@@ -14,6 +14,7 @@ before, so they can be rerun after a tweak.
 | `ih-hold.cs` | The dwarf hold (group `Dwarf Hold`): gate, obelisks, braziers, smelters, lava wheel, crane, paving, dwarves. |
 | `ih-dragonland.cs` | The east (group `Dragon Country`): scorched ground, burnt trees, the skeleton, the egg nest. |
 | `ih-dragon.cs` | The sleeping dragon on the summit; `DRAGON_X/Z/YAW/SCALE/CLEAR` are filled in before running (10, 519, 200, 2.6, 14). |
+| `ih-cracks.cs` | The lava cracks (group `Lava Cracks`, LavaCrack components): by the eggs, in the scorched east, in the forge yard (2026-10-27). |
 | `ih-spots.cs` | Moves the woodcutting tree out of the yard and seats every resource spot on the island on the ground. |
 
 Paths in them point at the session scratchpad where they ran (the heights backup and the outputs); change `S` before
