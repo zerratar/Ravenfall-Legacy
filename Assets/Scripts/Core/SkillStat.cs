@@ -64,8 +64,9 @@ public class SkillStat
         if (!updateExpPerHour)
         {
             Level = newLevel;
-            CurrentValue = newLevel;
             Experience = newExp;
+            // the equipment's bonus stays on top of the new level (UpdateEquipmentEffect sets it)
+            CurrentValue = Mathf.FloorToInt(Level + Bonus);
             this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
             return;
         }
@@ -126,7 +127,6 @@ public class SkillStat
             ++newLevels;
             ++Level;
             Experience -= expForNextLevel;
-            CurrentValue = Level;
             expForNextLevel = GameMath.ExperienceForLevel(Level + 1);
         }
 
@@ -150,6 +150,9 @@ public class SkillStat
 
         if (newLevels > 0)
         {
+            // the equipment's bonus (an enchantment) stays on top of the new level; setting the bare level here made
+            // it vanish from the skill panel on every level up until something reapplied the equipment
+            CurrentValue = Mathf.FloorToInt(Level + Bonus);
             this.MaxLevel = Mathf.FloorToInt(Level + Bonus);
             return true;
         }

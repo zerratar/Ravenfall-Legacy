@@ -2469,6 +2469,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     // internal rather than private: PlayerProgression raises this when a skill levels up.
     internal void CelebrateSkillLevelUp(Skill skill, int levelCount)
     {
+        // percent enchantments ("Strength 10%") are worked out from the level, so they grow with it
+        UpdateEquipmentEffect();
         CelebrateLevelUp();// skill.ToString(), levelCount);
     }
 
