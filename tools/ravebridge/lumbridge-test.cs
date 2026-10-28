@@ -1098,7 +1098,7 @@ var things = new System.Collections.Generic.Dictionary<string, string[]>
     { "Onion", new[] { "SM_Env_Bush_Small_05" } },
     { "Rock", new[] { "SM_Env_Rock_01", "SM_Env_Rock_02", "SM_Env_Rock_03" } },
     { "Rocks", new[] { "SM_Env_Rock_Chunk_01", "SM_Env_Rock_Chunk_02" } },
-    { "Boulder", new[] { "SM_Env_Rock_04" } },
+    { "Boulder", new[] { "Assets/PolygonNature/Prefabs/Rocks/SM_Rock_Boulder_01.prefab" } },   // (by name alone SM_Env_Rock_04 came from PolygonAdventure: a brown block like a stump)
     { "Stones", new[] { "SM_Generic_Small_Rocks_01", "SM_Generic_Small_Rocks_02" } },
     { "Rockslide", new[] { "SM_Env_Rock_Chunk_03" } },
     { "Crate", new[] { "SM_Prop_Crate_01", "SM_Prop_Crate_02" } },
@@ -1219,7 +1219,7 @@ var things = new System.Collections.Generic.Dictionary<string, string[]>
     { "Small fishing net", new[] { "SM_Prop_Net_01" } },
     { "Rowboat", new[] { "Assets/PolygonFantasyKingdom/Prefabs/Bonus/SM_Prop_Boat_01.prefab" } },
     { "Dry stone wall", new[] { "SM_Env_StoneWall_01" } },
-    { "Mysterious stone", new[] { "SM_Env_Rock_04" } },
+    { "Mysterious stone", new[] { "Assets/PolygonNature/Prefabs/Rocks/SM_Rock_Boulder_01.prefab" } },
     { "Scoreboard", new[] { "SM_Prop_Quest_Board_01" } },
 };
 var counts = new System.Collections.Generic.Dictionary<string, int>();
@@ -1252,6 +1252,7 @@ foreach (var l in locs)
     if (natural) o.transform.localScale *= 0.85f + (float)rng.NextDouble() * 0.3f;
     if (key == "Water wheel") o.transform.localScale *= 0.5f;
     if (key == "Dairy cow") o.transform.localScale *= 0.8f;   // (3.2 m long as it comes)
+    if (key == "Boulder" || key == "Mysterious stone") o.transform.localScale *= 0.6f;   // (2.7 m as it comes)
     counts[key] = counts.TryGetValue(key, out var cc) ? cc + 1 : 1;
 }
 var placedTotal = 0; foreach (var kv in counts) placedTotal += kv.Value;

@@ -6,7 +6,8 @@
 //   or another house (none where the door is already on a road or the nearest road is far);
 // - a little dressing at the front corners: barrels, crates, sacks, a flower pot or a bench.
 // The door is the middle of the front: the presets are single meshes, and they face out through the map's door (the
-// swap tool's rule, repeated here). Rerunnable: the paths live under "House Paths", the props under "House Dressing".
+// swap tool's rule, repeated here). Also reeds in clumps along part of the river's and the ponds' banks (the grass ran
+// bare to the water). Rerunnable: under "House Paths", "House Dressing" and "Shore Reeds".
 var sb = new System.Text.StringBuilder();
 if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().path != "Assets/Scenes/LumbridgeRavenfall.unity") return "open LumbridgeRavenfall first";
 if (UnityEditor.EditorApplication.isPlaying) return "stop play mode first";
@@ -14,7 +15,7 @@ const float Tile = 2.5f, PathWidth = 1.6f, Reach = 35f;
 var root = UnityEngine.GameObject.Find("Lumbridge (Ravenfall)").transform;
 var houses = root.Find("Ravenfall Buildings");
 if (!houses) return "no Ravenfall Buildings: run lumbridge-swap.cs first";
-foreach (var name in new[] { "House Paths", "House Dressing" }) { var o = root.Find(name); if (o) UnityEngine.Object.DestroyImmediate(o.gameObject); }
+foreach (var name in new[] { "House Paths", "House Dressing", "Shore Reeds" }) { var o = root.Find(name); if (o) UnityEngine.Object.DestroyImmediate(o.gameObject); }
 var paths = new UnityEngine.GameObject("House Paths").transform; paths.SetParent(root, false);
 var dressing = new UnityEngine.GameObject("House Dressing").transform; dressing.SetParent(root, false);
 
@@ -116,6 +117,29 @@ var sets = new[]
     new[] { "SM_Prop_Barrel_Stack_01" },
 };
 var rng = new System.Random(3226);
+// the map's gates (gaps in the fence lines), nearest first when asked
+var gates = new System.Collections.Generic.List<UnityEngine.Vector2>();
+{
+    var gateGroup = root.Find("Walls gate");
+    if (gateGroup)
+        foreach (UnityEngine.Transform c in gateGroup)
+        {
+            var gb = BoundsOf(c);
+            gates.Add(new UnityEngine.Vector2(gb.center.x, gb.center.z));
+        }
+}
+void MakePath(int id, UnityEngine.Vector2[] line)
+{
+    var go = new UnityEngine.GameObject("Path to Building " + id);
+    go.transform.SetParent(paths, false);
+    go.transform.position = new UnityEngine.Vector3(line[0].x, 0f, line[0].y);
+    var road = go.AddComponent<WorldRoad>();
+    road.RoadSurface = WorldRoad.Surface.Dirt;
+    road.Width = PathWidth;
+    foreach (var p in line) road.AddPoint(go.transform.InverseTransformPoint(new UnityEngine.Vector3(p.x, 0f, p.y)));
+    road.StartRound = 0.4f;
+    road.Rebuild();
+}
 var placed = 0; var made = 0; var skipped = new System.Collections.Generic.List<string>();
 
 var index = -1;
@@ -199,15 +223,27 @@ foreach (UnityEngine.Transform h in houses)
                 var bend = door + d2 * UnityEngine.Mathf.Min(1.5f, dist * 0.3f);
                 // (the first leg starts under its own eaves: only the other houses count there)
                 if (!Clear(door, bend, -1 - index) || !Clear(bend, q, index)) continue;
-                var go = new UnityEngine.GameObject("Path to Building " + id);
-                go.transform.SetParent(paths, false);
-                go.transform.position = new UnityEngine.Vector3(door.x, 0f, door.y);
-                var road = go.AddComponent<WorldRoad>();
-                road.RoadSurface = WorldRoad.Surface.Dirt;
-                road.Width = PathWidth;
-                foreach (var p in new[] { door, bend, q }) road.AddPoint(go.transform.InverseTransformPoint(new UnityEngine.Vector3(p.x, 0f, p.y)));
-                road.StartRound = 0.4f;
-                road.Rebuild();
+                MakePath(id, new[] { door, bend, q });
+                made++; found = true;
+            }
+            // fenced in: out through the yard's gate (a gap in the fence lines), then to the road nearest the gate
+            var doorHere = door;
+            gates.Sort((a, c2) => UnityEngine.Vector2.Distance(a, doorHere).CompareTo(UnityEngine.Vector2.Distance(c2, doorHere)));
+            for (var g = 0; g < gates.Count && !found; g++)
+            {
+                var gate = gates[g];
+                if (UnityEngine.Vector2.Distance(gate, door) > Reach) continue;
+                var bend = door + d2 * 1.5f;
+                if (!Clear(door, bend, -1 - index) || !Clear(bend, gate, index)) continue;
+                var outward = (gate - bend).normalized;
+                var best = (float.MaxValue, UnityEngine.Vector2.zero);
+                foreach (var q in roadPoints)
+                {
+                    var dist = UnityEngine.Vector2.Distance(q, gate);
+                    if (dist < best.Item1 && dist < Reach && UnityEngine.Vector2.Dot(q - gate, outward) > 0f && Clear(gate + outward * 0.5f, q, index)) best = (dist, q);
+                }
+                // (no road out there: the path ends a little past the gate, on the field)
+                MakePath(id, best.Item1 == float.MaxValue ? new[] { door, bend, gate, gate + outward * 3f } : best.Item1 < 1.5f ? new[] { door, bend, gate } : new[] { door, bend, gate, best.Item2 });
                 made++; found = true;
             }
             if (!found) skipped.Add(id + " fenced in");
@@ -238,6 +274,65 @@ foreach (UnityEngine.Transform h in houses)
     }
 }
 sb.Append("paths " + made + ", props " + placed + "; no path: " + string.Join(", ", skipped) + "; ");
+
+// ---- reeds: on about one bank edge in six, inland (the coast within 16 tiles of the map's edge keeps its sand) ----
+{
+    var reeds = new UnityEngine.GameObject("Shore Reeds").transform; reeds.SetParent(root, false);
+    var map = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(@"G:\GitHub\rs-map-viewer\out\lumbridge.json"));
+    var overlay = map["overlay"].ToObject<int[][]>();
+    int N = (int)map["sizeX"];
+    bool Water(int x, int y) => x >= 0 && y >= 0 && x < N && y < N && (overlay[x][y] == 442 || overlay[x][y] == 6 || overlay[x][y] == 7);
+    var kinds = new[] { "SM_Env_Reeds_01", "SM_Env_Reeds_02", "SM_Env_Reeds_03" };
+    var reedRng = new System.Random(3227);
+    var count = 0;
+    // the water's surface, hit from above (the river's banks were dug: the tile edges are deep under it)
+    var waterCols = new System.Collections.Generic.List<UnityEngine.MeshCollider>();
+    var waterGroup = root.Find("Water");
+    if (waterGroup)
+        foreach (var mf in waterGroup.GetComponentsInChildren<UnityEngine.MeshFilter>())
+            if (mf.sharedMesh) { var mc = mf.gameObject.AddComponent<UnityEngine.MeshCollider>(); mc.sharedMesh = mf.sharedMesh; waterCols.Add(mc); }
+    UnityEngine.Physics.SyncTransforms();
+    float WaterAt(float wx, float wz)
+    {
+        foreach (var hit in UnityEngine.Physics.RaycastAll(new UnityEngine.Vector3(wx, 500f, wz), UnityEngine.Vector3.down, 1000f))
+            if (waterCols.Contains(hit.collider as UnityEngine.MeshCollider)) return hit.point.y;
+        return float.MinValue;
+    }
+    for (var x = 16; x < N - 16; x++)
+    for (var y = 16; y < N - 16; y++)
+    {
+        if (!Water(x, y)) continue;
+        foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+        {
+            if (Water(x + dx, y + dy) || reedRng.NextDouble() > 0.17) continue;
+            // at the waterline: from the water tile's middle towards the land until the ground comes up to the surface
+            var level = WaterAt((x + 0.5f) * Tile, (y + 0.5f) * Tile);
+            if (level == float.MinValue) continue;
+            float cx = 0f, cz = 0f; var shore = false;
+            for (var step = 0f; step < Tile * 2f; step += 0.25f)
+            {
+                cx = (x + 0.5f) * Tile + dx * step; cz = (y + 0.5f) * Tile + dy * step;
+                if (WorldRoad.GroundHeight(new UnityEngine.Vector3(cx, 1000f, cz)) > level - 0.25f) { shore = true; break; }
+            }
+            if (!shore) continue;
+            var clump = 2 + reedRng.Next(2);
+            for (var k = 0; k < clump; k++)
+            {
+                var along = ((float)reedRng.NextDouble() - 0.5f) * Tile * 0.9f;
+                var at = new UnityEngine.Vector3(cx + (dy != 0 ? along : 0f), 0f, cz + (dx != 0 ? along : 0f));
+                at.y = UnityEngine.Mathf.Max(WorldRoad.GroundHeight(new UnityEngine.Vector3(at.x, 1000f, at.z)), level - 0.3f) - 0.1f;
+                var pf = Prefab(kinds[reedRng.Next(kinds.Length)]); if (!pf) continue;
+                var o = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(pf, reeds);
+                o.transform.SetPositionAndRotation(at, UnityEngine.Quaternion.Euler(0, (float)reedRng.NextDouble() * 360f, 0));
+                o.transform.localScale *= 0.8f + (float)reedRng.NextDouble() * 0.5f;
+                UnityEditor.GameObjectUtility.SetStaticEditorFlags(o, UnityEditor.StaticEditorFlags.BatchingStatic);
+                count++;
+            }
+        }
+    }
+    foreach (var mc in waterCols) UnityEngine.Object.DestroyImmediate(mc);
+    sb.Append("reeds " + count + "; ");
+}
 var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
 UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
