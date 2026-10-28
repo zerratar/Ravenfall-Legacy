@@ -27,6 +27,13 @@ public partial class HeroController
     private const float ShotRange = 16f;
     private const float PickPixels = 60f;     // how near the cursor (at 1080 lines) an enemy counts as clicked
 
+    /// <summary>
+    /// The pace of every attack, all styles: 1 as built, 0.8 a fifth slower. Shown on the hero's HeroController while
+    /// playing, to try a pace live; the default here is what every hero starts with. Gear haste and attack and cast
+    /// speed come on top.
+    /// </summary>
+    [Range(0.5f, 1.5f)] public float AttackPace = 1f;
+
     private float attackStarted;
     private float attackEnds;
     private float attackHitAt;
@@ -274,6 +281,7 @@ public partial class HeroController
 
         var speedUp = Mathf.Max(0.3f, Style == HeroStyle.Melee ? Player.GetModifiers().AttackSpeedMultiplier : Player.GetModifiers().CastSpeedMultiplier);
         speedUp *= 1f + RavebridgeGear.Stat(Player, "haste") / 100f;
+        speedUp *= AttackPace;
         combo = Time.time - lastAttackEnd < ComboReset && combo < 2 ? combo + 1 : 0;
         string state;
         float speed;

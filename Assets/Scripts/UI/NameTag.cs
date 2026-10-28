@@ -3,6 +3,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// after the ferry's LateUpdate rocks it on the waves (and before NameTagManager lays the tags out), so a tag aboard
+// follows the deck where it is drawn
+[DefaultExecutionOrder(50)]
 public class NameTag : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI label;
@@ -99,7 +102,11 @@ public class NameTag : MonoBehaviour
         //+ (Vector3.up * YMinDistance * Scale);
 
         //this.transform.rotation = GameCamera.Rotation;
-        _transform.SetPositionAndRotation(TargetPlayer.Position + this.offset, GameCamera.Rotation); //targetCamera.rotation);
+        // aboard a ferry or a boat the player is carried after their own Update kept Position: where they are now, or
+        // the tag trails the deck by a frame and jumps about the more, the faster the boat goes
+        var player = TargetPlayer.transform;
+        var at = player.parent ? player.position : TargetPlayer.Position;
+        _transform.SetPositionAndRotation(at + this.offset, GameCamera.Rotation); //targetCamera.rotation);
         oldCensor = gameManager.LogoCensor;
         if (titleVersion != QuestTitles.Version || titleOwner != TargetPlayer) UpdateTitle();
     }
