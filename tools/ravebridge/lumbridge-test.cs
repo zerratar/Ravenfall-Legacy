@@ -331,125 +331,9 @@ System.Action<UnityEngine.GameObject, UnityEngine.Transform, UnityEngine.Vector3
     o.transform.SetPositionAndRotation(new UnityEngine.Vector3(a.x, foot, a.z) - rot * new UnityEngine.Vector3(e.min.x * sx, e.min.y * sy, e.center.z), rot);
 };
 
-// ---- walls -------------------------------------------------------------------------------------------------------
-stage = "walls";
-// the wall's kind from its look: invisible blockers have no colour; low ones are field walls; brown and below a
-// floor's height are fences; full height ones are stone (grey), plaster (light) or wood (brown)
-System.Func<Newtonsoft.Json.Linq.JToken, string> wallKind = l =>
-{
-    var name = (string)l["name"] ?? "null";
-    var look = l["look"];
-    if (look == null || look["rgb"] == null || look["rgb"].Type == Newtonsoft.Json.Linq.JTokenType.Null) return null;
-    var rgb = look["rgb"].ToObject<int[]>();
-    var h = (int)look["height"];
-    var brown = rgb[0] > rgb[2] * 1.5f && rgb[0] > 80;
-    if (name.Contains("door") || name.Contains("Door")) return h < 200 ? "gate" : "door";
-    if (name == "Gate") return "gate";
-    if (h < 110) return "low";
-    if (h < 200) return brown ? "fence" : "low";
-    var light = rgb[0] + rgb[1] + rgb[2] > 480;
-    if (light) return "plaster";
-    if (brown) return "wood";
-    return "stone";
-};
-// each kind as layers of pieces from the foot up: (piece, from, to) in metres over the foot, to 0 for the piece's own
-// height. Houses stand on Synty's stone base under the plastered wall; castle stone is one piece a storey high; the
-// low walls of an upper level are the battlements on the walls below
-const float Sink = 0.8f;   // full walls reach into the ground (or the floor below), so a slope never shows under them
-var wallLayers = new System.Collections.Generic.Dictionary<string, (string Piece, float From, float To)[]>
-{
-    { "stone", new[] { ("SM_Bld_Castle_Wall_01", -Sink, Floor) } },
-    { "stone window", new[] { ("SM_Bld_Castle_Wall_01", -Sink, 1.25f), ("SM_Bld_Castle_Wall_Window_01", 1.25f, Floor) } },
-    { "house window", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_Window_01", 1.25f, Floor) } },
-    { "plaster", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_01", 1.25f, Floor) } },
-    { "wood", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_01", 1.25f, Floor) } },
-    { "door", new[] { ("SM_Bld_House_Wall_Door_01", -0.05f, 2.5f), ("SM_Bld_House_Wall_Half_Height_01", 2.5f, Floor) } },
-    { "fence", new[] { ("SM_Prop_Fence_03", -0.05f, 0f) } },
-    { "gate", new[] { ("SM_Prop_Fence_Gate_01", -0.05f, 0f) } },
-    { "low", new[] { ("SM_Env_StoneWall_01", -0.05f, 0f) } },
-    { "battlement", new[] { ("SM_Bld_Castle_Battlements_01", -0.02f, 0f) } },
-};
-// windows: OSRS hangs a window on a wall as a decoration (an unnamed, wall high one on the wall's edge, inside and out)
-var windows = new System.Collections.Generic.HashSet<string>();
-// roofed tiles, any level: a low wall on an upper level under a roof is the attic's, not a battlement
-var roofedAny = new System.Collections.Generic.HashSet<long>();
-foreach (var l in locs)
-{
-    var t = (int)l["type"];
-    if (t >= 12 && t <= 21) roofedAny.Add(((long)(int)l["x"] << 20) | (uint)(int)l["y"]);
-    if (t != 4 && t != 5) continue;
-    var n = (string)l["name"];
-    var look = l["look"];
-    if ((n != null && n != "null") || look == null || look["rgb"].Type == Newtonsoft.Json.Linq.JTokenType.Null || (int)look["height"] < 200) continue;
-    windows.Add((int)l["x"] + "," + (int)l["y"] + "," + (int)l["level"] + "," + (int)l["rot"]);
-}
-System.Func<int, int, bool> underRoof = (x, y) => roofedAny.Contains(((long)x << 20) | (uint)y);
-var stoneGrey = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/PolygonFantasyKingdom/Materials/Alts/PolygonFantasyKingdom_Mat_Castle_Wall_02.mat")
-    ?? UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/PolygonFantasyKingdom/Materials/PolygonFantasyKingdom_Mat_Castle_Wall_02.mat");
-var wallCount = 0; var skipped = 0;
-var kinds = new System.Collections.Generic.Dictionary<string, int>();
-foreach (var l in locs)
-{
-    var type = (int)l["type"];
-    if (type != 0 && type != 2 && type != 9) continue;
-    var kind = wallKind(l);
-    if (kind == null) { skipped++; continue; }
-    int x = (int)l["x"], y = (int)l["y"], rot = (int)l["rot"], level = (int)l["level"];
-    var onBridge = level > 0 && isBridge(x, y);
-    level = levelAt(x, y, level);
-    var rawLevel = (int)l["level"];
-    if (kind == "low" && level > 0 && !onBridge)
-    {
-        // under a roof (this tile or the one across the wall) it is the attic's low wall, hidden by the roof
-        var (nx, ny) = rot == 0 ? (x - 1, y) : rot == 1 ? (x, y + 1) : rot == 2 ? (x + 1, y) : (x, y - 1);
-        if (underRoof(x, y) || underRoof(nx, ny)) { skipped++; continue; }
-        kind = "battlement";
-    }
-    // a window on this wall: the window pieces of its kind
-    if (type == 0 && windows.Contains(x + "," + y + "," + rawLevel + "," + rot))
-    {
-        if (kind == "stone") kind = "stone window";
-        else if (kind == "plaster" || kind == "wood") kind = "house window";
-    }
-    var lift = level * Floor + (onBridge ? Deck : 0f);
-    var parent = group("Walls " + kind);
-    // the tile's corners, south west first, going round: 0 (x, y), 1 (x, y+1), 2 (x+1, y+1), 3 (x+1, y)
-    System.Func<int, float, UnityEngine.Vector3> cornerAt = (c, up) =>
-    {
-        var cx = x + (c >= 2 ? 1 : 0); var cy = y + (c == 1 || c == 2 ? 1 : 0);
-        return new UnityEngine.Vector3(cx * Tile, corner(cx, cy) + lift + up, cy * Tile);
-    };
-    // the edges this wall runs along, as pairs of corners
-    var edges = new System.Collections.Generic.List<(int, int)>();
-    if (type == 9) edges.Add(rot % 2 == 0 ? (0, 2) : (1, 3));   // across the tile
-    else
-    {
-        // on the tile's west (rot 0), north (1), east (2) or south (3) edge; a corner on two of them
-        edges.Add((rot, (rot + 1) % 4));
-        if (type == 2) edges.Add(((rot + 1) % 4, (rot + 2) % 4));
-    }
-    foreach (var (ca, cb) in edges)
-    foreach (var layer in wallLayers[kind])
-    {
-        var pf = prefab(layer.Piece);
-        if (!pf) { skipped++; continue; }
-        // a wall's foot follows the higher end so its top is level (the sink keeps the low end in the ground); fences
-        // and field walls follow the lower one, as they hug the ground
-        var a = cornerAt(ca, 0f); var b = cornerAt(cb, 0f);
-        var hugs = kind == "fence" || kind == "gate" || kind == "low";
-        var top = hugs ? UnityEngine.Mathf.Min(a.y, b.y) : UnityEngine.Mathf.Max(a.y, b.y);
-        a.y = b.y = top + layer.From;
-        span(pf, parent, a, b, layer.To > 0 ? layer.To - layer.From : 0f);
-        // Lumbridge's stone is grey: the pack's castle walls are beige brick, its dungeon stone grey
-        if (stoneGrey && (kind == "stone" || kind == "battlement" || kind == "stone window"))
-            foreach (var r in parent.GetChild(parent.childCount - 1).GetComponentsInChildren<UnityEngine.Renderer>()) r.sharedMaterial = stoneGrey;
-    }
-    wallCount++;
-    kinds[kind] = kinds.TryGetValue(kind, out var kc) ? kc + 1 : 1;
-}
-sb.Append("walls " + wallCount + " (");
-foreach (var kv in kinds) sb.Append(kv.Key + " " + kv.Value + " ");
-sb.Append(") skipped " + skipped + "; ");
+// every roofed tile once the roofs are worked out (their pieces and the gaps between their sides): a low wall on an
+// upper level under one is the attic's, not a battlement
+var roofFootprint = new System.Collections.Generic.HashSet<long>();
 
 // ---- upper floors ------------------------------------------------------------------------------------------------
 stage = "floors";
@@ -551,40 +435,31 @@ stage = "floors";
 // ---- roofs -------------------------------------------------------------------------------------------------------
 stage = "roofs";
 {
-    // The map builds a roof from pieces on several levels (the church: eaves and slopes on level 1, a slope on level
-    // 2, a cap on level 3, with drops in the models between them); copied piece by piece they floated in strips. So
-    // the pieces only say where a roof is and how high it reaches (their corner heights, read from the pieces' own
-    // surfaces by the export): each roof's footprint is every piece on any level, the gaps between its two sides
-    // filled, and it is drawn as one gabled roof from the wall tops (the lowest piece's level) up to the highest
-    // piece's top. Each tile's ridge runs along the longer of its row's and column's runs; the ends are gable walls.
+    // The roofs as the map has them, as meshes of our own: the export samples each roof piece's top surface every
+    // quarter tile over its whole reach (slopes and overhangs run past their own tiles, and some roofs are plain
+    // unnamed objects on upper levels), and here the highest surface at each point makes one height field over the
+    // map, a floor up for each level. Each cell of it is two triangles in its roof's colour; where a roof's edge stands
+    // well over the wall top under it (a gable end), a wall closes it down.
     const float VUnit = Floor / 240f;   // the game's units up: a storey is 240
+    const int Q = 4;                    // samples a tile
     var lit = UnityEngine.Shader.Find("Universal Render Pipeline/Lit");
-    var tiles = new System.Collections.Generic.Dictionary<long, UnityEngine.Color>();
-    var lowLevel = new System.Collections.Generic.Dictionary<long, int>();
-    var topAt = new System.Collections.Generic.Dictionary<long, float>();   // the highest piece top over a tile, over its ground
-    // which way a tile's pieces rise: east minus west, north minus south
-    var slopeX = new System.Collections.Generic.Dictionary<long, float>();
-    var slopeY = new System.Collections.Generic.Dictionary<long, float>();
+    var gn = N * Q + 1;
+    var hgt = new float[gn, gn];
+    var bas = new float[gn, gn];
+    var col = new int[gn, gn];
+    for (var i = 0; i < gn; i++) for (var j = 0; j < gn; j++) hgt[i, j] = float.NaN;
+    var palette = new System.Collections.Generic.List<UnityEngine.Color>();
+    var paletteIndex = new System.Collections.Generic.Dictionary<int, int>();
+    var contributors = 0;
     foreach (var l in locs)
     {
-        var type = (int)l["type"];
-        if (type < 12 || type > 21) continue;
+        var sf = l["surface"];
+        if (sf == null || sf.Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
         int x = (int)l["x"], y = (int)l["y"];
         var level = levelAt(x, y, (int)l["level"]);
-        var key = ((long)x << 20) | (uint)y;
-        var top = level * Floor;
-        var rc = l["roof"];
-        if (rc != null && rc.Type != Newtonsoft.Json.Linq.JTokenType.Null)
-        {
-            var h = rc.ToObject<float[]>();
-            top += UnityEngine.Mathf.Max(UnityEngine.Mathf.Max(h[0], h[1]), UnityEngine.Mathf.Max(h[2], h[3])) * VUnit;
-            slopeX[key] = (slopeX.TryGetValue(key, out var sx0) ? sx0 : 0f) + (h[2] + h[3]) - (h[0] + h[1]);
-            slopeY[key] = (slopeY.TryGetValue(key, out var sy0) ? sy0 : 0f) + (h[1] + h[2]) - (h[0] + h[3]);
-        }
-        topAt[key] = topAt.TryGetValue(key, out var was) ? UnityEngine.Mathf.Max(was, top) : top;
-        lowLevel[key] = lowLevel.TryGetValue(key, out var lw) ? System.Math.Min(lw, level) : level;
-        // its colour: Lumbridge's roofs are red tiles, the map's averaged colours come out brown, so warm ones get
-        // the tile red (lighter or darker as the map's); slate and thatch keep their own
+        var basis = UnityEngine.Mathf.Max(UnityEngine.Mathf.Max(corner(x, y), corner(x + 1, y)), UnityEngine.Mathf.Max(corner(x, y + 1), corner(x + 1, y + 1))) + level * Floor;
+        // its colour: Lumbridge's roofs are red tiles; the map's averaged warm colours come out brown, so they get the
+        // tile red (lighter or darker as the map's); slate and thatch keep their own
         var colour = new UnityEngine.Color(0.55f, 0.25f, 0.18f);
         var look = l["look"];
         if (look != null && look["rgb"].Type != Newtonsoft.Json.Linq.JTokenType.Null)
@@ -593,136 +468,57 @@ stage = "roofs";
             colour = new UnityEngine.Color(rgb[0] / 255f, rgb[1] / 255f, rgb[2] / 255f);
         }
         UnityEngine.Color.RGBToHSV(colour, out var hue, out var sat, out var val);
-        if ((hue < 0.1f || hue > 0.95f) && sat > 0.2f) colour = UnityEngine.Color.HSVToRGB(0.025f, 0.68f, UnityEngine.Mathf.Clamp(val * 1.35f, 0.42f, 0.7f));
-        if (!tiles.ContainsKey(key) || level == lowLevel[key]) tiles[key] = colour;
-    }
-    System.Func<int, int, bool> listed = (x, y) => tiles.ContainsKey(((long)x << 20) | (uint)y);
-    // the gaps between a roof's two sides (the church's open middle): a tile between two roofed tiles a few tiles
-    // apart, in its row or its column, whose pieces rise towards it from both sides (two houses' eaves facing each
-    // other across a street do not)
-    var fill = new System.Collections.Generic.List<long>();
-    int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
-    foreach (var k in tiles.Keys) { int x = (int)(k >> 20), y = (int)(k & 0xfffff); minX = System.Math.Min(minX, x); maxX = System.Math.Max(maxX, x); minY = System.Math.Min(minY, y); maxY = System.Math.Max(maxY, y); }
-    for (var x = minX; x <= maxX; x++)
-    for (var y = minY; y <= maxY; y++)
-    {
-        if (listed(x, y)) continue;
-        System.Func<int, int, int, int, float> firstSlope = (dx, dy, unused1, unused2) =>
+        if ((hue < 0.1f || hue > 0.95f) && sat > 0.25f) colour = UnityEngine.Color.HSVToRGB(0.025f, 0.68f, UnityEngine.Mathf.Clamp(val * 1.35f, 0.42f, 0.7f));
+        var cq = UnityEngine.Mathf.RoundToInt(colour.r * 15) * 256 + UnityEngine.Mathf.RoundToInt(colour.g * 15) * 16 + UnityEngine.Mathf.RoundToInt(colour.b * 15);
+        if (!paletteIndex.TryGetValue(cq, out var ci)) { ci = palette.Count; palette.Add(colour); paletteIndex[cq] = ci; }
+        int x0 = (int)sf["x0"], z0 = (int)sf["z0"], nx = (int)sf["nx"], nz = (int)sf["nz"];
+        var hs2 = sf["h"].ToObject<int[]>();
+        for (var j = 0; j < nz; j++)
+        for (var i = 0; i < nx; i++)
         {
-            for (var d = 1; d <= 5; d++)
-            {
-                var nk = ((long)(x + dx * d) << 20) | (uint)(y + dy * d);
-                if (!tiles.ContainsKey(nk)) continue;
-                var m = dx != 0 ? slopeX : slopeY;
-                return m.TryGetValue(nk, out var v) ? v : 0f;
-            }
-            return float.NaN;
-        };
-        var left = firstSlope(-1, 0, 0, 0); var right = firstSlope(1, 0, 0, 0);
-        var down = firstSlope(0, -1, 0, 0); var up = firstSlope(0, 1, 0, 0);
-        if ((left > 0f && right < 0f) || (down > 0f && up < 0f)) fill.Add(((long)x << 20) | (uint)y);
+            var h = hs2[j * nx + i];
+            if (h < 0) continue;
+            // the sample's place on the grid: the tile's middle is (x * 128 + 64) units in
+            var gx = (x * 128 + 64 + x0 + i * 32) / 32;
+            var gz = (y * 128 + 64 + z0 + j * 32) / 32;
+            if (gx < 0 || gz < 0 || gx >= gn || gz >= gn) continue;
+            var abs = basis + h * VUnit;
+            if (float.IsNaN(hgt[gx, gz]) || abs > hgt[gx, gz]) { hgt[gx, gz] = abs; bas[gx, gz] = basis; col[gx, gz] = ci; }
+        }
+        contributors++;
     }
-    foreach (var k in fill)
-    {
-        int x = (int)(k >> 20), y = (int)(k & 0xfffff);
-        // its colour and level from a roofed neighbour
-        foreach (var n in new[] { ((long)(x - 1) << 20) | (uint)y, ((long)(x + 1) << 20) | (uint)y, ((long)x << 20) | (uint)(y - 1), ((long)x << 20) | (uint)(y + 1) })
-            if (tiles.TryGetValue(n, out var c)) { tiles[k] = c; lowLevel[k] = lowLevel.TryGetValue(n, out var nl) ? nl : 1; break; }
-        if (!tiles.ContainsKey(k)) { tiles[k] = new UnityEngine.Color(0.55f, 0.25f, 0.18f); lowLevel[k] = 1; }
-    }
-    System.Func<int, int, bool> roofed = (x, y) => tiles.ContainsKey(((long)x << 20) | (uint)y);
-
-    var byColour = new System.Collections.Generic.Dictionary<int, (UnityEngine.Color Colour, System.Collections.Generic.List<UnityEngine.Vector3> Verts)>();
+    var byColour = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<UnityEngine.Vector3>>();
     var gables = new System.Collections.Generic.List<UnityEngine.Vector3>();
-    var seen = new System.Collections.Generic.HashSet<long>();
-    var roofs = 0;
-    foreach (var key in new System.Collections.Generic.List<long>(tiles.Keys))
+    const float S = Tile / Q;
+    System.Func<int, int, bool> cell = (i, j) => i >= 0 && j >= 0 && i < gn - 1 && j < gn - 1 && !float.IsNaN(hgt[i, j]) && !float.IsNaN(hgt[i + 1, j]) && !float.IsNaN(hgt[i, j + 1]) && !float.IsNaN(hgt[i + 1, j + 1]);
+    System.Func<int, int, UnityEngine.Vector3> at = (i, j) => new UnityEngine.Vector3(i * S, hgt[i, j], j * S);
+    var cells = 0;
+    for (var i = 0; i < gn - 1; i++)
+    for (var j = 0; j < gn - 1; j++)
     {
-        if (seen.Contains(key)) continue;
-        var part = new System.Collections.Generic.List<long> { key };
-        seen.Add(key);
-        for (var i = 0; i < part.Count; i++)
+        if (!cell(i, j)) continue;
+        cells++;
+        roofFootprint.Add(((long)(i / Q) << 20) | (uint)(j / Q));
+        // the cell's colour: its highest corner's roof
+        int ti = i, tj = j;
+        foreach (var (a2, b2) in new[] { (i + 1, j), (i, j + 1), (i + 1, j + 1) }) if (hgt[a2, b2] > hgt[ti, tj]) { ti = a2; tj = b2; }
+        if (!byColour.TryGetValue(col[ti, tj], out var verts)) byColour[col[ti, tj]] = verts = new System.Collections.Generic.List<UnityEngine.Vector3>();
+        var p0 = at(i, j); var p1 = at(i, j + 1); var p2 = at(i + 1, j + 1); var p3 = at(i + 1, j);
+        if (UnityEngine.Mathf.Abs(p0.y - p2.y) <= UnityEngine.Mathf.Abs(p1.y - p3.y)) verts.AddRange(new[] { p0, p1, p2, p0, p2, p3 });
+        else verts.AddRange(new[] { p0, p1, p3, p1, p2, p3 });
+        // edges to no roof, standing over the wall top: a gable wall down to it
+        System.Action<int, int, int, int> edge = (ai, aj, bi, bj) =>
         {
-            int kx = (int)(part[i] >> 20), ky = (int)(part[i] & 0xfffff);
-            foreach (var n in new[] { ((long)(kx + 1) << 20) | (uint)ky, ((long)(kx - 1) << 20) | (uint)ky, ((long)kx << 20) | (uint)(ky + 1), ((long)kx << 20) | (uint)(ky - 1) })
-                if (tiles.ContainsKey(n) && seen.Add(n)) part.Add(n);
-        }
-        // its eaves on the wall tops (the lowest level any of its pieces has, over its highest ground) and its ridge
-        // at the highest piece's top
-        float ground0 = float.MinValue, top = 0f; var lowest = int.MaxValue; float r = 0, g = 0, b = 0;
-        foreach (var k in part)
-        {
-            int kx = (int)(k >> 20), ky = (int)(k & 0xfffff);
-            ground0 = UnityEngine.Mathf.Max(ground0, UnityEngine.Mathf.Max(UnityEngine.Mathf.Max(corner(kx, ky), corner(kx + 1, ky)), UnityEngine.Mathf.Max(corner(kx, ky + 1), corner(kx + 1, ky + 1))));
-            if (topAt.TryGetValue(k, out var t)) top = UnityEngine.Mathf.Max(top, t);
-            lowest = System.Math.Min(lowest, lowLevel[k]);
-            var c = tiles[k]; r += c.r; g += c.g; b += c.b;
-        }
-        var foot = ground0 + lowest * Floor;
-        var ridgeRise = UnityEngine.Mathf.Max(1.2f, top - lowest * Floor);
-        var colour = new UnityEngine.Color(r / part.Count, g / part.Count, b / part.Count);
-        System.Func<int, int, (int, int)> runX = (x, y) => { int lo = x, hi = x; while (roofed(lo - 1, y)) lo--; while (roofed(hi + 1, y)) hi++; return (lo, hi); };
-        System.Func<int, int, (int, int)> runY = (x, y) => { int lo = y, hi = y; while (roofed(x, lo - 1)) lo--; while (roofed(x, hi + 1)) hi++; return (lo, hi); };
-        // the pitch: up from the eaves to the ridge over half the roof's width
-        var halfWidth = 0.5f;
-        foreach (var k in part)
-        {
-            int kx = (int)(k >> 20), ky = (int)(k & 0xfffff);
-            var (xlo, xhi) = runX(kx, ky); var (ylo, yhi) = runY(kx, ky);
-            halfWidth = UnityEngine.Mathf.Max(halfWidth, UnityEngine.Mathf.Min(xhi - xlo + 1, yhi - ylo + 1) * 0.5f);
-        }
-        var pitch = UnityEngine.Mathf.Clamp(ridgeRise / (halfWidth * Tile), 0.35f, 1.7f);
-        const float eave = 0.35f;
-        if (!byColour.TryGetValue(roofs, out var bucket)) { }
-        var verts = new System.Collections.Generic.List<UnityEngine.Vector3>();
-        foreach (var k in part)
-        {
-            int kx = (int)(k >> 20), ky = (int)(k & 0xfffff);
-            var (xlo, xhi) = runX(kx, ky);
-            var (ylo, yhi) = runY(kx, ky);
-            var alongX = xhi - xlo >= yhi - ylo;
-            System.Func<int, float> across = line =>
-            {
-                float d = alongX ? System.Math.Min(line - ylo, yhi + 1 - line) : System.Math.Min(line - xlo, xhi + 1 - line);
-                return d * Tile * pitch;
-            };
-            var cs = new[] { (kx, ky), (kx, ky + 1), (kx + 1, ky + 1), (kx + 1, ky) };
-            var p = new UnityEngine.Vector3[4];
-            for (var c = 0; c < 4; c++)
-            {
-                var (cx, cy) = cs[c];
-                var line = alongX ? cy : cx;
-                var h = across(line);
-                float px = cx * Tile, pz = cy * Tile;
-                if (h <= 0f)
-                {
-                    var lo = alongX ? ylo : xlo;
-                    var o = line == lo ? -eave : eave;
-                    if (alongX) pz += o; else px += o;
-                    h = -eave * pitch;
-                }
-                if (alongX) { if (cx == xlo) px -= eave; if (cx == xhi + 1) px += eave; }
-                else { if (cy == ylo) pz -= eave; if (cy == yhi + 1) pz += eave; }
-                p[c] = new UnityEngine.Vector3(px, foot + h, pz);
-            }
-            verts.AddRange(new[] { p[0], p[1], p[2], p[0], p[2], p[3] });
-            System.Action<int, int> gable = (c0, c1) =>
-            {
-                var (ax, az) = cs[c0]; var (bx, bz) = cs[c1];
-                var ha = UnityEngine.Mathf.Max(0f, alongX ? across(az) : across(ax));
-                var hb = UnityEngine.Mathf.Max(0f, alongX ? across(bz) : across(bx));
-                if (ha <= 0f && hb <= 0f) return;
-                var A = new UnityEngine.Vector3(ax * Tile, foot - 0.3f, az * Tile);
-                var B = new UnityEngine.Vector3(bx * Tile, foot - 0.3f, bz * Tile);
-                gables.AddRange(new[] { A, new UnityEngine.Vector3(A.x, foot + ha, A.z), new UnityEngine.Vector3(B.x, foot + hb, B.z), A, new UnityEngine.Vector3(B.x, foot + hb, B.z), B });
-            };
-            if (alongX) { if (kx == xlo) gable(0, 1); if (kx == xhi) gable(3, 2); }
-            else { if (ky == ylo) gable(0, 3); if (ky == yhi) gable(1, 2); }
-        }
-        var q = UnityEngine.Mathf.RoundToInt(colour.r * 15) * 256 + UnityEngine.Mathf.RoundToInt(colour.g * 15) * 16 + UnityEngine.Mathf.RoundToInt(colour.b * 15);
-        if (!byColour.TryGetValue(q, out var into)) byColour[q] = into = (colour, new System.Collections.Generic.List<UnityEngine.Vector3>());
-        into.Verts.AddRange(verts);
-        roofs++;
+            var A = at(ai, aj); var B = at(bi, bj);
+            var foot = UnityEngine.Mathf.Min(bas[ai, aj], bas[bi, bj]);
+            if (A.y - foot < 0.5f && B.y - foot < 0.5f) return;
+            var A0 = new UnityEngine.Vector3(A.x, foot - 0.2f, A.z); var B0 = new UnityEngine.Vector3(B.x, foot - 0.2f, B.z);
+            gables.AddRange(new[] { A0, A, B, A0, B, B0 });
+        };
+        if (!cell(i - 1, j)) edge(i, j, i, j + 1);
+        if (!cell(i + 1, j)) edge(i + 1, j, i + 1, j + 1);
+        if (!cell(i, j - 1)) edge(i, j, i + 1, j);
+        if (!cell(i, j + 1)) edge(i, j + 1, i + 1, j + 1);
     }
     System.Action<string, System.Collections.Generic.List<UnityEngine.Vector3>, UnityEngine.Color> build = (name, verts, colour) =>
     {
@@ -736,13 +532,132 @@ stage = "roofs";
         m.SetColor("_BaseColor", colour);
         m.SetFloat("_Smoothness", 0.08f);
         m.SetFloat("_Cull", 0f);
-        var mp = Folder + "/" + name + ".mat";
-        go.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = (UnityEngine.Material)keep(m, mp);
+        go.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = (UnityEngine.Material)keep(m, Folder + "/" + name + ".mat");
     };
-    foreach (var kv in byColour) build("Lumbridge Roof " + kv.Key, kv.Value.Verts, kv.Value.Colour);
+    foreach (var kv in byColour) build("Lumbridge Roof " + kv.Key, kv.Value, palette[kv.Key]);
     build("Lumbridge Gables", gables, new UnityEngine.Color(0.5f, 0.5f, 0.51f));
-    sb.Append("roofs " + roofs + " (" + fill.Count + " gap tiles filled) in " + byColour.Count + " colours; ");
+    sb.Append("roofs: " + contributors + " pieces, " + cells + " cells, " + byColour.Count + " colours; ");
 }
+
+// ---- walls -------------------------------------------------------------------------------------------------------
+stage = "walls";
+// the wall's kind from its look: invisible blockers have no colour; low ones are field walls; brown and below a
+// floor's height are fences; full height ones are stone (grey), plaster (light) or wood (brown)
+System.Func<Newtonsoft.Json.Linq.JToken, string> wallKind = l =>
+{
+    var name = (string)l["name"] ?? "null";
+    var look = l["look"];
+    if (look == null || look["rgb"] == null || look["rgb"].Type == Newtonsoft.Json.Linq.JTokenType.Null) return null;
+    var rgb = look["rgb"].ToObject<int[]>();
+    var h = (int)look["height"];
+    var brown = rgb[0] > rgb[2] * 1.5f && rgb[0] > 80;
+    if (name.Contains("door") || name.Contains("Door")) return h < 200 ? "gate" : "door";
+    if (name == "Gate") return "gate";
+    if (h < 110) return "low";
+    if (h < 200) return brown ? "fence" : "low";
+    var light = rgb[0] + rgb[1] + rgb[2] > 480;
+    if (light) return "plaster";
+    if (brown) return "wood";
+    return "stone";
+};
+// each kind as layers of pieces from the foot up: (piece, from, to) in metres over the foot, to 0 for the piece's own
+// height. Houses stand on Synty's stone base under the plastered wall; castle stone is one piece a storey high; the
+// low walls of an upper level are the battlements on the walls below
+const float Sink = 0.8f;   // full walls reach into the ground (or the floor below), so a slope never shows under them
+var wallLayers = new System.Collections.Generic.Dictionary<string, (string Piece, float From, float To)[]>
+{
+    { "stone", new[] { ("SM_Bld_Castle_Wall_01", -Sink, Floor) } },
+    { "stone window", new[] { ("SM_Bld_Castle_Wall_01", -Sink, 1.25f), ("SM_Bld_Castle_Wall_Window_01", 1.25f, Floor) } },
+    { "house window", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_Window_01", 1.25f, Floor) } },
+    { "plaster", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_01", 1.25f, Floor) } },
+    { "wood", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_01", 1.25f, Floor) } },
+    { "door", new[] { ("SM_Bld_House_Wall_Door_01", -0.05f, 2.5f), ("SM_Bld_House_Wall_Half_Height_01", 2.5f, Floor) } },
+    { "fence", new[] { ("SM_Prop_Fence_03", -0.05f, 0f) } },
+    { "gate", new[] { ("SM_Prop_Fence_Gate_01", -0.05f, 0f) } },
+    { "low", new[] { ("SM_Env_StoneWall_01", -0.05f, 0f) } },
+    { "battlement", new[] { ("SM_Bld_Castle_Battlements_01", -0.02f, 0f) } },
+};
+// windows: OSRS hangs a window on a wall as a decoration (an unnamed, wall high one on the wall's edge, inside and out)
+var windows = new System.Collections.Generic.HashSet<string>();
+// roofed tiles, any level: a low wall on an upper level under a roof is the attic's, not a battlement
+var roofedAny = new System.Collections.Generic.HashSet<long>();
+foreach (var l in locs)
+{
+    var t = (int)l["type"];
+    if (t >= 12 && t <= 21) roofedAny.Add(((long)(int)l["x"] << 20) | (uint)(int)l["y"]);
+    if (t != 4 && t != 5) continue;
+    var n = (string)l["name"];
+    var look = l["look"];
+    if ((n != null && n != "null") || look == null || look["rgb"].Type == Newtonsoft.Json.Linq.JTokenType.Null || (int)look["height"] < 200) continue;
+    windows.Add((int)l["x"] + "," + (int)l["y"] + "," + (int)l["level"] + "," + (int)l["rot"]);
+}
+System.Func<int, int, bool> underRoof = (x, y) => roofedAny.Contains(((long)x << 20) | (uint)y) || roofFootprint.Contains(((long)x << 20) | (uint)y);
+var stoneGrey = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/PolygonFantasyKingdom/Materials/Alts/PolygonFantasyKingdom_Mat_Castle_Wall_02.mat")
+    ?? UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/PolygonFantasyKingdom/Materials/PolygonFantasyKingdom_Mat_Castle_Wall_02.mat");
+var wallCount = 0; var skipped = 0;
+var kinds = new System.Collections.Generic.Dictionary<string, int>();
+foreach (var l in locs)
+{
+    var type = (int)l["type"];
+    if (type != 0 && type != 2 && type != 9) continue;
+    var kind = wallKind(l);
+    if (kind == null) { skipped++; continue; }
+    int x = (int)l["x"], y = (int)l["y"], rot = (int)l["rot"], level = (int)l["level"];
+    var onBridge = level > 0 && isBridge(x, y);
+    level = levelAt(x, y, level);
+    var rawLevel = (int)l["level"];
+    if (kind == "low" && level > 0 && !onBridge)
+    {
+        // under a roof (this tile or the one across the wall) it is the attic's low wall, hidden by the roof
+        var (nx, ny) = rot == 0 ? (x - 1, y) : rot == 1 ? (x, y + 1) : rot == 2 ? (x + 1, y) : (x, y - 1);
+        if (underRoof(x, y) || underRoof(nx, ny)) { skipped++; continue; }
+        kind = "battlement";
+    }
+    // a window on this wall: the window pieces of its kind
+    if (type == 0 && windows.Contains(x + "," + y + "," + rawLevel + "," + rot))
+    {
+        if (kind == "stone") kind = "stone window";
+        else if (kind == "plaster" || kind == "wood") kind = "house window";
+    }
+    var lift = level * Floor + (onBridge ? Deck : 0f);
+    var parent = group("Walls " + kind);
+    // the tile's corners, south west first, going round: 0 (x, y), 1 (x, y+1), 2 (x+1, y+1), 3 (x+1, y)
+    System.Func<int, float, UnityEngine.Vector3> cornerAt = (c, up) =>
+    {
+        var cx = x + (c >= 2 ? 1 : 0); var cy = y + (c == 1 || c == 2 ? 1 : 0);
+        return new UnityEngine.Vector3(cx * Tile, corner(cx, cy) + lift + up, cy * Tile);
+    };
+    // the edges this wall runs along, as pairs of corners
+    var edges = new System.Collections.Generic.List<(int, int)>();
+    if (type == 9) edges.Add(rot % 2 == 0 ? (0, 2) : (1, 3));   // across the tile
+    else
+    {
+        // on the tile's west (rot 0), north (1), east (2) or south (3) edge; a corner on two of them
+        edges.Add((rot, (rot + 1) % 4));
+        if (type == 2) edges.Add(((rot + 1) % 4, (rot + 2) % 4));
+    }
+    foreach (var (ca, cb) in edges)
+    foreach (var layer in wallLayers[kind])
+    {
+        var pf = prefab(layer.Piece);
+        if (!pf) { skipped++; continue; }
+        // a wall's foot follows the higher end so its top is level (the sink keeps the low end in the ground); fences
+        // and field walls follow the lower one, as they hug the ground
+        var a = cornerAt(ca, 0f); var b = cornerAt(cb, 0f);
+        var hugs = kind == "fence" || kind == "gate" || kind == "low";
+        var top = hugs ? UnityEngine.Mathf.Min(a.y, b.y) : UnityEngine.Mathf.Max(a.y, b.y);
+        a.y = b.y = top + layer.From;
+        span(pf, parent, a, b, layer.To > 0 ? layer.To - layer.From : 0f);
+        // Lumbridge's stone is grey: the pack's castle walls are beige brick, its dungeon stone grey
+        if (stoneGrey && (kind == "stone" || kind == "battlement" || kind == "stone window"))
+            foreach (var r in parent.GetChild(parent.childCount - 1).GetComponentsInChildren<UnityEngine.Renderer>()) r.sharedMaterial = stoneGrey;
+    }
+    wallCount++;
+    kinds[kind] = kinds.TryGetValue(kind, out var kc) ? kc + 1 : 1;
+}
+sb.Append("walls " + wallCount + " (");
+foreach (var kv in kinds) sb.Append(kv.Key + " " + kv.Value + " ");
+sb.Append(") skipped " + skipped + "; ");
 
 // ---- trees, plants, rocks and props ------------------------------------------------------------------------------
 stage = "objects";

@@ -108,6 +108,56 @@ function roofCorners(t: any, type: number, rot: number): number[] | undefined {
     return out;
 }
 
+// a roof piece's top surface sampled every 32 units (a quarter tile) over the piece's whole reach (its slopes and
+// overhangs run past its own tile): { x0, z0, nx, nz, h } with x0, z0 the first sample's place from the tile's middle
+// (x east, z north) and h the heights up, row by row (z outer), -1 where the piece does not cover the point. Only faces
+// that are not upright count, and the highest at each point.
+function roofSurface(t: any, type: number, rot: number): any {
+    let m: any;
+    try { m = locModels.getLocModelData(t, type, rot); } catch (e) { return undefined; }
+    if (!m || !m.verticesCount) return undefined;
+    const tris: number[][] = [];
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (let f = 0; f < m.faceCount; f++) {
+        if (m.faceAlphas && (m.faceAlphas[f] & 0xff) > 200) continue;
+        const a = m.indices1[f], b = m.indices2[f], c = m.indices3[f];
+        const ax = m.verticesX[a], ay = -m.verticesY[a], az = m.verticesZ[a];
+        const bx = m.verticesX[b], by = -m.verticesY[b], bz = m.verticesZ[b];
+        const cx = m.verticesX[c], cy = -m.verticesY[c], cz = m.verticesZ[c];
+        const ux = bx - ax, uy = by - ay, uz = bz - az, vx = cx - ax, vy = cy - ay, vz = cz - az;
+        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (!(len > 0) || Math.abs(ny) / len < 0.3) continue;
+        tris.push([ax, ay, az, bx, by, bz, cx, cy, cz]);
+        minX = Math.min(minX, ax, bx, cx); maxX = Math.max(maxX, ax, bx, cx);
+        minZ = Math.min(minZ, az, bz, cz); maxZ = Math.max(maxZ, az, bz, cz);
+    }
+    if (!tris.length) return undefined;
+    const step = 32;
+    const x0 = Math.ceil(minX / step) * step, z0 = Math.ceil(minZ / step) * step;
+    const nxs = Math.floor((maxX - x0) / step) + 1, nzs = Math.floor((maxZ - z0) / step) + 1;
+    const h: number[] = [];
+    for (let j = 0; j < nzs; j++) {
+        for (let i = 0; i < nxs; i++) {
+            const px = x0 + i * step, pz = z0 + j * step;
+            let best = -1;
+            for (const tr of tris) {
+                // the point in the triangle (in x, z) and its height there
+                const [ax, ay, az, bx, by, bz, cx, cy, cz] = tr;
+                const d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+                if (d === 0) continue;
+                const w1 = ((bz - cz) * (px - cx) + (cx - bx) * (pz - cz)) / d;
+                const w2 = ((cz - az) * (px - cx) + (ax - cx) * (pz - cz)) / d;
+                const w3 = 1 - w1 - w2;
+                if (w1 < -0.01 || w2 < -0.01 || w3 < -0.01) continue;
+                best = Math.max(best, w1 * ay + w2 * by + w3 * cy);
+            }
+            h.push(best < 0 ? -1 : Math.round(best));
+        }
+    }
+    return { x0, z0, nx: nxs, nz: nzs, h };
+}
+
 const scene = new Scene(Scene.MAX_LEVELS, sizeX, sizeY);
 const locs: any[] = [];
 const S = Scene.MAP_SQUARE_SIZE;
@@ -138,6 +188,8 @@ for (let mx = Math.floor(baseX / S); mx < Math.ceil((baseX + sizeX) / S); mx++) 
                 const type = attributes >> 2;
                 locs.push({
                     roof: type >= 12 && type <= 21 ? roofCorners(t, type, attributes & 3) : undefined,
+                    // roof pieces, and unnamed objects on upper levels (some roofs are modelled as plain objects)
+                    surface: (type >= 12 && type <= 21) || ((type === 10 || type === 11) && level > 0 && (!t.name || t.name === "null")) ? roofSurface(t, type, attributes & 3) : undefined,
                     id,
                     name: t.name,
                     x,
