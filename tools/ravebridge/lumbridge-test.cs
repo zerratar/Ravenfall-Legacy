@@ -257,6 +257,9 @@ for (var i = 0; i < aRes; i++)
     {
         var tx = (i + 0.5f + sx * 0.45f) / aRes * N;
         var ty = (j + 0.5f + sy * 0.45f) / aRes * N;
+        // a wavering offset, so the edges between grounds wander instead of stepping along the tiles
+        tx += (UnityEngine.Mathf.PerlinNoise(tx * 0.35f + 5.1f, ty * 0.35f + 2.3f) - 0.5f) * 0.9f;
+        ty += (UnityEngine.Mathf.PerlinNoise(tx * 0.35f + 9.7f, ty * 0.35f + 4.4f) - 0.5f) * 0.9f;
         alpha[j, i, paintOf(UnityEngine.Mathf.FloorToInt(tx), UnityEngine.Mathf.FloorToInt(ty))] += 1f / 9f;
     }
 }
@@ -931,7 +934,7 @@ var things = new System.Collections.Generic.Dictionary<string, string[]>
     { "Anvil", new[] { "SM_Prop_Anvil_01" } },
     { "Signpost", new[] { "SM_Prop_Direction_Sign_01" } },
     { "Chest", new[] { "SM_Prop_Chest_01" } },
-    { "Cactus", new[] { "Assets/Low Poly Animated Animals/- Prefabs/Nature/cactus.prefab" } },
+    { "Cactus", new[] { "SM_Env_Bush_Small_04" } },   // (the only cactus in the project has a shader URP cannot draw)
     { "Potted fern", new[] { "SM_Prop_Pot_Plant_02" } },
     { "Standing torch", new[] { "SM_Prop_Torch_01" } },
     { "Cabinet", new[] { "SM_Prop_Cabinet_01" } },
