@@ -98,7 +98,13 @@ public static class SettingsApplier
         public const bool PlayerDetails = true;
         public const bool ShortcutBar = true;
         public const bool BotMessage = true;
+        // as GameManager.isDebugMenuVisible starts: shown in the editor, hidden in builds (a reset turned them off in
+        // the editor too)
+#if DEBUG
+        public const bool DevTools = true;
+#else
         public const bool DevTools = false;
+#endif
         public const float ObserveSeconds = 10f;
         public const float ObserveSecondsSpecial = 30f;
         public const float IslandObserveSeconds = 10f;
