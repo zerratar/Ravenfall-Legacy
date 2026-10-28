@@ -155,9 +155,16 @@ if (layers == null)
     layers = System.Array.ConvertAll(paths, p => UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TerrainLayer>("Assets/PolygonNatureBiomes/" + p + ".terrainlayer"));
 }
 td.terrainLayers = layers;
+// the roads as centre lines for the road tool (tools/ravebridge/osrs/roads.py): under them the ground keeps its own paint,
+// so the tiles' blocky outline does not show round the road
+const string RoadsJson = @"G:\GitHub\rs-map-viewer\out\roads.json";
+Newtonsoft.Json.Linq.JObject roadsMap = System.IO.File.Exists(RoadsJson) ? Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(RoadsJson)) : null;
+var roadTiles = new System.Collections.Generic.HashSet<long>();
+if (roadsMap != null) foreach (var t in roadsMap["covered"].ToObject<int[][]>()) roadTiles.Add(((long)t[0] << 20) | (uint)t[1]);
 System.Func<int, int, int> paintOf = (x, y) =>
 {
     var o = overlayAt(x, y);
+    if (o > 0 && roadTiles.Contains(((long)x << 20) | (uint)y)) o = 0;
     if (o > 0)
     {
         switch (o)
@@ -907,6 +914,32 @@ var miss = new System.Collections.Generic.List<System.Collections.Generic.KeyVal
 miss.Sort((a, b) => b.Value.CompareTo(a.Value));
 for (var i = 0; i < miss.Count && i < 60; i++) sb.Append(miss[i].Key + " " + miss[i].Value + ", ");
 sb.Append("; ");
+
+// ---- roads ---------------------------------------------------------------------------------------------------------
+stage = "roads";
+if (roadsMap != null)
+{
+    var n = 0;
+    foreach (var r in (Newtonsoft.Json.Linq.JArray)roadsMap["roads"])
+    {
+        var pts = r["points"].ToObject<float[][]>();
+        var ws = r["widths"].ToObject<float[]>();
+        if (pts.Length < 2) continue;
+        var surface = (string)r["surface"] == "Cobbles" ? WorldRoad.Surface.Cobbles : (string)r["surface"] == "Gravel" ? WorldRoad.Surface.Gravel : WorldRoad.Surface.Dirt;
+        var go = new UnityEngine.GameObject(surface + " road " + (++n));
+        go.transform.SetParent(group("Roads"), false);
+        go.transform.position = new UnityEngine.Vector3(pts[0][0], 0f, pts[0][1]);
+        var road = go.AddComponent<WorldRoad>();
+        road.RoadSurface = surface;
+        var sorted = (float[])ws.Clone(); System.Array.Sort(sorted);
+        var typical = sorted[sorted.Length / 2];
+        road.Width = typical;
+        for (var i = 0; i < pts.Length; i++)
+            road.AddPoint(go.transform.InverseTransformPoint(new UnityEngine.Vector3(pts[i][0], 0f, pts[i][1])), ws[i] / typical);
+        road.Rebuild();
+    }
+    sb.Append("roads " + n + "; ");
+}
 
 // ---- light and a camera over the castle ------------------------------------------------------------------------
 stage = "camera";
