@@ -241,7 +241,8 @@ System.Func<int, int, int> paintOf = (x, y) =>
     switch (underlayAt(x, y))
     {
         case 62: case 68: case 61: return 0;                                   // desert sand
-        case 63: case 96: case 67: case 64: case 65: return 1;                 // bare earth
+        case 63: case 96: case 67: case 64: case 65: return 4;                 // bare earth: dark brown in the game, the mud
+                                                                               // layer (the footpath layer drew light tan)
         case 54: return 4;                                                     // the swamp
         case 50: case 53: case 56: return 3;                                   // dry grass
         default: return 2;                                                     // grass
@@ -448,7 +449,9 @@ stage = "floors";
         var set = new System.Collections.Generic.HashSet<long>();
         // tiles with no colour are not drawn in the game (walkable tops of nothing; over Al Kharid's palace they made
         // a grey slab over its white roof terrace)
-        foreach (var f in floorsJ[level]) if (f.Length < 3 || f[2] >= 0) set.Add(((long)f[0] << 20) | (uint)f[1]);
+        // (nor upper floors over water that are not bridges: the map has 153 by the mill, a storey up they floated as
+        // squares over the river)
+        foreach (var f in floorsJ[level]) if ((f.Length < 3 || f[2] >= 0) && !(water(f[0], f[1]) && !isBridge(f[0], f[1]))) set.Add(((long)f[0] << 20) | (uint)f[1]);
         // patches of fewer than four tiles are ledges sticking out of walls (the gatehouse had two): left out
         {
             var seenF = new System.Collections.Generic.HashSet<long>();

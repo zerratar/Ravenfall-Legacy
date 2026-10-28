@@ -43,6 +43,7 @@ var table = new System.Collections.Generic.Dictionary<int, (string Prefab, float
     { 18, ("SM_Bld_Preset_Church_01_B_Optimized", 0f, 1.8f) },      // the church (altar, organ, pews)
     { 20, ("SM_Bld_Preset_House_02_A_Optimized", 0f, 1.4f) },
     { 21, ("SM_Bld_Preset_House_09_A_Optimized", 0f, 1.4f) },
+    { 5, ("SM_Prop_Destroyed_House_Preset_01", 0f, 1.3f) },         // the ruin in the woods north west of the castle
 };
 var frontsFile = @"C:\Users\kaaru\AppData\Local\Temp\claude\G--Ravenfall-Projects-Ravenfall-Legacy\86b0e615-81c6-408c-acb9-282e465846ce\scratchpad\fronts.txt";
 // the fronts, found by eye (each preset turned 0, 90, 180, 270 and looked at from the south): "prefab yaw" lines
