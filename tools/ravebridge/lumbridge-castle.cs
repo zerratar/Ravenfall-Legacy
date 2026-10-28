@@ -256,6 +256,17 @@ System.Action<string, UnityEngine.Transform[], UnityEngine.Vector3, float, float
         copy.transform.localScale = p.lossyScale;
         copy.transform.SetParent(holder, true);
     }
+    // a railing piece fallen out of line (one of the stone bridge's stood 3 m under its row) goes back up to the others
+    var rails = new System.Collections.Generic.List<UnityEngine.Renderer>();
+    foreach (var r in holder.GetComponentsInChildren<UnityEngine.MeshRenderer>())
+        if (r.name.Contains("Battlement") || r.name.Contains("Railing")) rails.Add(r);
+    if (rails.Count > 2)
+    {
+        var ys = rails.ConvertAll(r => r.bounds.min.y); ys.Sort();
+        var usual = ys[ys.Count / 2];
+        foreach (var r in rails)
+            if (usual - r.bounds.min.y > 1f) r.transform.position += UnityEngine.Vector3.up * (usual - r.bounds.min.y);
+    }
     // its deck on the map's, stretched along its length (x, as both lie) to the map's river
     holder.position = new UnityEngine.Vector3(mid.x, deckY, mid.z);
     holder.localScale = new UnityEngine.Vector3(mapSpan / rbSpan, 1f, 1f);
@@ -272,8 +283,10 @@ if (rbWood) bridge("Wooden Bridge", new[] { rbWood }, woodMid, woodDeck, (woodTi
 // ---- the banks meet the bridges ---------------------------------------------------------------------------------
 stage = "bridge ends";
 {
-    // the ground at each end of a bridge is raised to its deck, falling back to the bank over 9 m along the road and
-    // 3 m to its sides, so the deck runs onto the ground instead of standing over a gap
+    // the ground at each end of a bridge is raised to the surface walked on there (the deck's last point, read off
+    // its own meshes: not the map's arch, which stood a metre over the stone bridge's flat walk and buried its ends),
+    // falling back to the bank over 9 m along the road and 3 m to its sides, so the deck runs onto the ground instead of
+    // standing over a gap
     const float Run = 9f, Side = 3f;
     var res = td.heightmapResolution;
     var hs = td.GetHeights(0, 0, res, res);
@@ -282,10 +295,32 @@ stage = "bridge ends";
     foreach (UnityEngine.Transform holder in bridgesRoot.transform)
     {
         var b = boundsOf(new[] { holder });
-        var deckY = holder.position.y - 0.08f;
+        // the walk: the bridge's own pieces without parapets and railings, hit from above along its middle
+        var temp = new System.Collections.Generic.List<UnityEngine.MeshCollider>();
+        foreach (var mf in holder.GetComponentsInChildren<UnityEngine.MeshFilter>())
+        {
+            var n = mf.name.ToLowerInvariant();
+            if (n.Contains("battlement") || n.Contains("railing") || n.Contains("parapet") || !mf.sharedMesh) continue;
+            var mc = mf.gameObject.AddComponent<UnityEngine.MeshCollider>(); mc.sharedMesh = mf.sharedMesh; temp.Add(mc);
+        }
+        UnityEngine.Physics.SyncTransforms();
+        System.Func<float, float> walkAt = wx =>
+        {
+            var best = float.MinValue;
+            foreach (var h in UnityEngine.Physics.RaycastAll(new UnityEngine.Vector3(wx, b.max.y + 5f, b.center.z), UnityEngine.Vector3.down, b.size.y + 20f))
+                if (temp.Contains(h.collider as UnityEngine.MeshCollider)) best = UnityEngine.Mathf.Max(best, h.point.y);
+            return best;
+        };
         foreach (var dirX in new[] { -1f, 1f })
         {
-            var endX = dirX < 0 ? b.min.x + 0.3f : b.max.x - 0.3f;
+            // the outermost point with a walk under it, and the walk's height there
+            float endX = b.center.x, endY = holder.position.y;
+            for (var x = dirX < 0 ? b.min.x : b.max.x; (x - b.center.x) * dirX > 0f; x -= dirX * 0.25f)
+            {
+                var y = walkAt(x);
+                if (y != float.MinValue) { endX = x; endY = y; break; }
+            }
+            var deckY = endY - 0.05f;
             for (var j = 0; j < res; j++)
             for (var i = 0; i < res; i++)
             {
@@ -300,7 +335,9 @@ stage = "bridge ends";
                 var y = UnityEngine.Mathf.Lerp(was, deckY, w);
                 if (y > was) { hs[j, i] = UnityEngine.Mathf.Clamp01((y - baseY) / span); raised++; }
             }
+            sb.Append(holder.name + (dirX < 0 ? " west" : " east") + " end " + endX.ToString("F1") + " at " + endY.ToString("F2") + "; ");
         }
+        foreach (var mc in temp) UnityEngine.Object.DestroyImmediate(mc);
     }
     td.SetHeights(0, 0, hs);
     sb.Append("bridge ends raised " + raised + "; ");

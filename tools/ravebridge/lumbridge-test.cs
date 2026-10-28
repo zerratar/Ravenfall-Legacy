@@ -310,31 +310,45 @@ System.Func<int, int, int> paintOf = (x, y) =>
 var aRes = 512;
 td.alphamapResolution = aRes;
 var alpha = new float[aRes, aRes, 8];
+// each tile's grounds; bare earth (the game's dark brown patches) is earth by buildings, and only a trace in the open
+// fields
+var tileW = new float[N, N, 8];
+for (var x = 0; x < N; x++)
+for (var y = 0; y < N; y++)
+{
+    var layer = paintOf(x, y);
+    if (layer == 4 && overlayAt(x, y) == 0 && underlayAt(x, y) != 54)
+    {
+        var share = UnityEngine.Mathf.Lerp(1f, 0.2f, UnityEngine.Mathf.InverseLerp(3f, 9f, nearB[x, y]));
+        tileW[x, y, 4] += share;
+        tileW[x, y, 2] += 1f - share;
+    }
+    else tileW[x, y, layer] = 1f;
+}
+// each texel blends the tiles round it, weighted by distance, then the blend is sharpened again: the edges between
+// grounds stay crisp but run in curves instead of stepping along the tiles (a 3 x 3 sample wavered by a metre left
+// the desert's edge in 2.5 m stairs); a slow and a quick waver make the curves wander
+const float Sigma = 0.75f, Sharpen = 3f;
+var wsum = new float[8];
 for (var j = 0; j < aRes; j++)
 for (var i = 0; i < aRes; i++)
 {
-    // a little blur: the tiles under a 3 x 3 spread of samples round this one
-    for (var sx = -1; sx <= 1; sx++)
-    for (var sy = -1; sy <= 1; sy++)
+    var tx = (i + 0.5f) / aRes * N; var ty = (j + 0.5f) / aRes * N;
+    var wx = tx + (UnityEngine.Mathf.PerlinNoise(tx * 0.12f + 5.1f, ty * 0.12f + 2.3f) - 0.5f) * 1.6f + (UnityEngine.Mathf.PerlinNoise(tx * 0.5f + 1.3f, ty * 0.5f + 8.2f) - 0.5f) * 0.6f;
+    var wy = ty + (UnityEngine.Mathf.PerlinNoise(tx * 0.12f + 9.7f, ty * 0.12f + 4.4f) - 0.5f) * 1.6f + (UnityEngine.Mathf.PerlinNoise(tx * 0.5f + 6.6f, ty * 0.5f + 3.1f) - 0.5f) * 0.6f;
+    System.Array.Clear(wsum, 0, 8);
+    int cx = UnityEngine.Mathf.FloorToInt(wx), cy = UnityEngine.Mathf.FloorToInt(wy);
+    for (var x = cx - 2; x <= cx + 2; x++)
+    for (var y = cy - 2; y <= cy + 2; y++)
     {
-        var tx = (i + 0.5f + sx * 0.45f) / aRes * N;
-        var ty = (j + 0.5f + sy * 0.45f) / aRes * N;
-        // a wavering offset, so the edges between grounds wander instead of stepping along the tiles
-        tx += (UnityEngine.Mathf.PerlinNoise(tx * 0.35f + 5.1f, ty * 0.35f + 2.3f) - 0.5f) * 0.9f;
-        ty += (UnityEngine.Mathf.PerlinNoise(tx * 0.35f + 9.7f, ty * 0.35f + 4.4f) - 0.5f) * 0.9f;
-        int ptx = UnityEngine.Mathf.FloorToInt(tx), pty = UnityEngine.Mathf.FloorToInt(ty);
-        var layer = paintOf(ptx, pty);
-        // bare earth (the game's dark brown patches) is earth by buildings, and only a trace in the open fields
-        var earth = layer == 4 && overlayAt(ptx, pty) == 0 && underlayAt(ptx, pty) != 54;
-        if (earth)
-        {
-            var d = nearB[UnityEngine.Mathf.Clamp(ptx, 0, N - 1), UnityEngine.Mathf.Clamp(pty, 0, N - 1)];
-            var share = UnityEngine.Mathf.Lerp(1f, 0.2f, UnityEngine.Mathf.InverseLerp(3f, 9f, d));
-            alpha[j, i, 4] += share / 9f;
-            alpha[j, i, 2] += (1f - share) / 9f;
-        }
-        else alpha[j, i, layer] += 1f / 9f;
+        var dx = x + 0.5f - wx; var dy = y + 0.5f - wy;
+        var g = UnityEngine.Mathf.Exp(-(dx * dx + dy * dy) / (2f * Sigma * Sigma));
+        int qx = System.Math.Clamp(x, 0, N - 1), qy = System.Math.Clamp(y, 0, N - 1);
+        for (var l = 0; l < 8; l++) wsum[l] += tileW[qx, qy, l] * g;
     }
+    var total = 0f;
+    for (var l = 0; l < 8; l++) { wsum[l] = UnityEngine.Mathf.Pow(wsum[l], Sharpen); total += wsum[l]; }
+    for (var l = 0; l < 8; l++) alpha[j, i, l] = total > 0f ? wsum[l] / total : (l == 2 ? 1f : 0f);
 }
 var tdPath = Folder + "/Lumbridge TerrainData.asset";
 UnityEditor.AssetDatabase.DeleteAsset(tdPath);
