@@ -165,6 +165,45 @@ foreach (UnityEngine.Transform g in root)
     }
     sb.Append("lone parapets taken out " + taken + "; ");
 }
+// ---- the roof terraces --------------------------------------------------------------------------------------------
+// the map's white flat roofs (plain colour 4095, and the cream 3001) glared against the desert: the stucco the walls
+// are made of, a shade warmer and darker, laid in world space (the floor slabs have no UVs of their own)
+stage = "terraces";
+{
+    const string TerracePath = "Assets/Scenes/LumbridgeRavenfall/Al Kharid Terrace.mat";
+    var terrace = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(TerracePath);
+    if (!terrace)
+    {
+        terrace = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")) { name = "Al Kharid Terrace" };
+        UnityEditor.AssetDatabase.CreateAsset(terrace, TerracePath);
+    }
+    terrace.SetTexture("_BaseMap", UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>("Assets/PolygonAncientEmpire/Textures/BuildingAlts/Building_Stucco_01.png"));
+    terrace.SetTextureScale("_BaseMap", UnityEngine.Vector2.one);
+    terrace.SetColor("_BaseColor", new UnityEngine.Color(0.84f, 0.80f, 0.73f));
+    terrace.SetFloat("_Smoothness", 0.05f);
+    UnityEditor.EditorUtility.SetDirty(terrace);
+    var floors = root.Find("Floors");
+    var swappedMats = 0;
+    if (floors)
+        foreach (var mf in floors.GetComponentsInChildren<UnityEngine.MeshFilter>())
+        {
+            var mr = mf.GetComponent<UnityEngine.MeshRenderer>();
+            var mats = mr.sharedMaterials; var any = false;
+            for (var i = 0; i < mats.Length; i++)
+                if (mats[i] && (mats[i].name == "Lumbridge Floor 4095" || mats[i].name == "Lumbridge Floor 3001")) { mats[i] = terrace; any = true; swappedMats++; }
+            if (!any) continue;
+            mr.sharedMaterials = mats;
+            // one texture across 4 m, by where each corner lies
+            var mesh = mf.sharedMesh; var vs = mesh.vertices; var uvs = new UnityEngine.Vector2[vs.Length];
+            var m = mf.transform.localToWorldMatrix;
+            for (var i = 0; i < vs.Length; i++) { var w = m.MultiplyPoint3x4(vs[i]); uvs[i] = new UnityEngine.Vector2(w.x / 4f, w.z / 4f); }
+            mesh.uv = uvs;
+            if (UnityEditor.AssetDatabase.Contains(mesh)) UnityEditor.EditorUtility.SetDirty(mesh);
+        }
+    UnityEditor.AssetDatabase.SaveAssets();
+    sb.Append("terraces " + swappedMats + "; ");
+}
+
 sb.Append("swapped " + swapped + " (");
 foreach (var kv in kinds) sb.Append(kv.Key + " " + kv.Value + " ");
 sb.Append("); ");
