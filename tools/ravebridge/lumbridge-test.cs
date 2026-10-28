@@ -203,6 +203,65 @@ for (var i = 0; i < res; i++)
     }
     hs = smooth;
 }
+// the roads ease the ground under them: across a road the ground is levelled to the road's own line (its middle's
+// height, smoothed along it), fading out a couple of metres past its edges, so a road lies on a gentle bed instead
+// of tilting with every bump; never more than half a metre
+{
+    var roadsFile = @"G:\GitHub\rs-map-viewer\out\roads.json";
+    if (System.IO.File.Exists(roadsFile))
+    {
+        var roadsJ = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(roadsFile));
+        float H(float wx, float wz)
+        {
+            float fi = wx / td.size.x * (res - 1), fj = wz / td.size.z * (res - 1);
+            int i0 = UnityEngine.Mathf.Clamp((int)fi, 0, res - 2), j0 = UnityEngine.Mathf.Clamp((int)fj, 0, res - 2);
+            float u = fi - i0, v = fj - j0;
+            return UnityEngine.Mathf.Lerp(UnityEngine.Mathf.Lerp(hs[j0, i0], hs[j0, i0 + 1], u), UnityEngine.Mathf.Lerp(hs[j0 + 1, i0], hs[j0 + 1, i0 + 1], u), v);
+        }
+        var target = new float[res, res]; var weight = new float[res, res];
+        const float Fade = 2.5f, MaxChange = 0.5f;
+        foreach (var r in (Newtonsoft.Json.Linq.JArray)roadsJ["roads"])
+        {
+            var pts = r["points"].ToObject<float[][]>(); var ws = r["widths"].ToObject<float[]>();
+            // samples every half metre along the line, with the middle's height smoothed over 4 m either way
+            var samples = new System.Collections.Generic.List<(float X, float Z, float Half)>();
+            for (var k = 0; k + 1 < pts.Length; k++)
+            {
+                var len = UnityEngine.Mathf.Sqrt((pts[k + 1][0] - pts[k][0]) * (pts[k + 1][0] - pts[k][0]) + (pts[k + 1][1] - pts[k][1]) * (pts[k + 1][1] - pts[k][1]));
+                var n = UnityEngine.Mathf.Max(1, (int)(len / 0.5f));
+                for (var q = 0; q < n; q++) { var t = q / (float)n; samples.Add((UnityEngine.Mathf.Lerp(pts[k][0], pts[k + 1][0], t), UnityEngine.Mathf.Lerp(pts[k][1], pts[k + 1][1], t), UnityEngine.Mathf.Lerp(ws[k], ws[k + 1], t) * 0.5f)); }
+            }
+            var mids = new float[samples.Count];
+            for (var q = 0; q < samples.Count; q++) mids[q] = H(samples[q].X, samples[q].Z);
+            for (var q = 0; q < samples.Count; q++)
+            {
+                float sum = 0; int c = 0;
+                for (var o = -8; o <= 8; o++) { var qq = q + o; if (qq < 0 || qq >= samples.Count) continue; sum += mids[qq]; c++; }
+                var level = sum / c;
+                var (sx, sz, half) = samples[q];
+                var reach = half + Fade;
+                int i0 = UnityEngine.Mathf.Max(0, (int)((sx - reach) / td.size.x * (res - 1))), i1 = UnityEngine.Mathf.Min(res - 1, (int)((sx + reach) / td.size.x * (res - 1)) + 1);
+                int j0 = UnityEngine.Mathf.Max(0, (int)((sz - reach) / td.size.z * (res - 1))), j1 = UnityEngine.Mathf.Min(res - 1, (int)((sz + reach) / td.size.z * (res - 1)) + 1);
+                for (var jj = j0; jj <= j1; jj++)
+                for (var ii = i0; ii <= i1; ii++)
+                {
+                    var wx = ii / (float)(res - 1) * td.size.x; var wz = jj / (float)(res - 1) * td.size.z;
+                    var d = UnityEngine.Mathf.Sqrt((wx - sx) * (wx - sx) + (wz - sz) * (wz - sz));
+                    var w = d <= half ? 1f : UnityEngine.Mathf.SmoothStep(1f, 0f, (d - half) / Fade);
+                    if (w > weight[jj, ii]) { weight[jj, ii] = w; target[jj, ii] = level; }
+                }
+            }
+        }
+        var maxChange = MaxChange / Span;
+        for (var jj = 0; jj < res; jj++)
+        for (var ii = 0; ii < res; ii++)
+        {
+            if (weight[jj, ii] <= 0f) continue;
+            var to = UnityEngine.Mathf.Clamp(target[jj, ii], hs[jj, ii] - maxChange, hs[jj, ii] + maxChange);
+            hs[jj, ii] = UnityEngine.Mathf.Lerp(hs[jj, ii], to, weight[jj, ii]);
+        }
+    }
+}
 td.SetHeights(0, 0, hs);
 
 // the ground's paint, layers as Ravebridge's (0 dirt and desert, 1 footpath, 2 grass, 3 second grass, 4 mud, 5 snow,
@@ -263,7 +322,18 @@ for (var i = 0; i < aRes; i++)
         // a wavering offset, so the edges between grounds wander instead of stepping along the tiles
         tx += (UnityEngine.Mathf.PerlinNoise(tx * 0.35f + 5.1f, ty * 0.35f + 2.3f) - 0.5f) * 0.9f;
         ty += (UnityEngine.Mathf.PerlinNoise(tx * 0.35f + 9.7f, ty * 0.35f + 4.4f) - 0.5f) * 0.9f;
-        alpha[j, i, paintOf(UnityEngine.Mathf.FloorToInt(tx), UnityEngine.Mathf.FloorToInt(ty))] += 1f / 9f;
+        int ptx = UnityEngine.Mathf.FloorToInt(tx), pty = UnityEngine.Mathf.FloorToInt(ty);
+        var layer = paintOf(ptx, pty);
+        // bare earth (the game's dark brown patches) is earth by buildings, and only a trace in the open fields
+        var earth = layer == 4 && overlayAt(ptx, pty) == 0 && underlayAt(ptx, pty) != 54;
+        if (earth)
+        {
+            var d = nearB[UnityEngine.Mathf.Clamp(ptx, 0, N - 1), UnityEngine.Mathf.Clamp(pty, 0, N - 1)];
+            var share = UnityEngine.Mathf.Lerp(1f, 0.2f, UnityEngine.Mathf.InverseLerp(3f, 9f, d));
+            alpha[j, i, 4] += share / 9f;
+            alpha[j, i, 2] += (1f - share) / 9f;
+        }
+        else alpha[j, i, layer] += 1f / 9f;
     }
 }
 var tdPath = Folder + "/Lumbridge TerrainData.asset";
@@ -612,7 +682,8 @@ stage = "roofs";
             var gx = (x * 128 + 64 + x0 + i * 32) / 32;
             var gz = (y * 128 + 64 + z0 + j * 32) / 32;
             if (gx < 0 || gz < 0 || gx >= gn || gz >= gn) continue;
-            var abs = basis + h * VUnit;
+            // the game's roofs start 40 units over the wall top (its wall decorations hide the strip): down onto the walls
+            var abs = basis + (h - 40) * VUnit;
             if (float.IsNaN(hgt[gx, gz]) || abs > hgt[gx, gz]) { hgt[gx, gz] = abs; bas[gx, gz] = basis; col[gx, gz] = ci; }
         }
         contributors++;
@@ -783,6 +854,7 @@ foreach (var l in locs)
 }
 foreach (var f in map["floors"].ToObject<int[][][]>()[1]) if (f.Length < 3 || f[2] >= 0) overTile.Add(((long)f[0] << 20) | (uint)f[1]);
 var wallCount = 0; var skipped = 0;
+var fenceEdges = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<((int, int), (int, int))>>();
 var kinds = new System.Collections.Generic.Dictionary<string, int>();
 foreach (var l in locs)
 {
@@ -804,6 +876,19 @@ foreach (var l in locs)
     }
     if (kind == "door" || kind == "gate")
     {
+        // an open door is kept a quarter turn round onto the next edge of its tile: it goes back into the wall line,
+        // the edge with walls in line with it either side
+        System.Func<int, int> inLine = r =>
+        {
+            var al = r % 2 == 0 ? (0, 1) : (1, 0); var n = 0;
+            for (var d = 1; d <= 2; d++)
+                foreach (var sgn in new[] { -1, 1 })
+                    if (kindAt.ContainsKey((x + al.Item1 * d * sgn, y + al.Item2 * d * sgn, rawLevel, r))) n++;
+            return n;
+        };
+        if (type == 0 && inLine(rot) == 0)
+            foreach (var r in new[] { (rot + 1) % 4, (rot + 3) % 4 })
+                if (inLine(r) > 0) { rot = r; break; }
         // the walls in line with it, either side: stone ones make it a stone doorway
         var along = rot % 2 == 0 ? (0, 1) : (1, 0);
         var stone = 0; var other = 0;
@@ -860,6 +945,16 @@ foreach (var l in locs)
         edges.Add((rot, (rot + 1) % 4));
         if (type == 2) edges.Add(((rot + 1) % 4, (rot + 2) % 4));
     }
+    // fences and low walls on the ground: gathered into lines, laid as WorldFences below
+    if ((kind == "fence" || kind == "field wall" || kind == "low") && level == 0 && !onBridge)
+    {
+        if (!fenceEdges.TryGetValue(kind, out var list)) fenceEdges[kind] = list = new System.Collections.Generic.List<((int, int), (int, int))>();
+        System.Func<int, (int, int)> cc = c => (x + (c >= 2 ? 1 : 0), y + (c == 1 || c == 2 ? 1 : 0));
+        foreach (var (ca, cb) in edges) list.Add((cc(ca), cc(cb)));
+        wallCount++;
+        kinds[kind] = kinds.TryGetValue(kind, out var kc0) ? kc0 + 1 : 1;
+        continue;
+    }
     foreach (var (ca, cb) in edges)
     foreach (var layer in wallLayers[kind])
     {
@@ -892,6 +987,69 @@ foreach (var l in locs)
     }
     wallCount++;
     kinds[kind] = kinds.TryGetValue(kind, out var kc) ? kc + 1 : 1;
+}
+// ---- fence lines ----------------------------------------------------------------------------------------------
+stage = "fences";
+{
+    // each kind's edges chained into lines through the corners that join exactly two edges, straight runs merged;
+    // each line one WorldFence, its pieces bent to the ground as OSRS does
+    var fenceCount = 0;
+    foreach (var kv in fenceEdges)
+    {
+        var byCorner = new System.Collections.Generic.Dictionary<(int, int), System.Collections.Generic.List<int>>();
+        var es = kv.Value;
+        for (var i = 0; i < es.Count; i++)
+            foreach (var c in new[] { es[i].Item1, es[i].Item2 })
+            {
+                if (!byCorner.TryGetValue(c, out var l2)) byCorner[c] = l2 = new System.Collections.Generic.List<int>();
+                l2.Add(i);
+            }
+        var used = new bool[es.Count];
+        System.Func<(int, int), bool> through = c => byCorner[c].Count == 2;
+        for (var i = 0; i < es.Count; i++)
+        {
+            if (used[i]) continue;
+            used[i] = true;
+            var line = new System.Collections.Generic.List<(int, int)> { es[i].Item1, es[i].Item2 };
+            // grow both ways
+            for (var side = 0; side < 2; side++)
+            {
+                while (true)
+                {
+                    var end = line[line.Count - 1];
+                    if (!through(end)) break;
+                    var next = -1;
+                    foreach (var j in byCorner[end]) if (!used[j]) { next = j; break; }
+                    if (next < 0) break;
+                    used[next] = true;
+                    line.Add(es[next].Item1.Equals(end) ? es[next].Item2 : es[next].Item1);
+                    if (line[line.Count - 1].Equals(line[0])) break;   // a closed pen
+                }
+                line.Reverse();
+            }
+            // straight runs merged
+            var pts = new System.Collections.Generic.List<(int, int)> { line[0] };
+            for (var k = 1; k + 1 < line.Count; k++)
+            {
+                var p0 = pts[pts.Count - 1]; var p1 = line[k]; var p2 = line[k + 1];
+                var straight = (p1.Item1 - p0.Item1) * (p2.Item2 - p1.Item2) - (p1.Item2 - p0.Item2) * (p2.Item1 - p1.Item1) == 0;
+                if (!straight) pts.Add(p1);
+            }
+            pts.Add(line[line.Count - 1]);
+            var go = new UnityEngine.GameObject(kv.Key + " line");
+            go.transform.SetParent(group("Walls " + kv.Key), false);
+            go.transform.position = new UnityEngine.Vector3(pts[0].Item1 * Tile, 0f, pts[0].Item2 * Tile);
+            var fence = go.AddComponent<WorldFence>();
+            fence.Piece = prefab(kv.Key == "fence" ? "SM_Prop_Fence_03" : "SM_Env_StoneWall_01");
+            if (kv.Key == "field wall") { fence.Height = 1.5f; fence.Sink = 0.3f; }
+            else fence.Sink = kv.Key == "fence" ? 0.05f : 0.2f;
+            foreach (var p in pts) fence.AddPoint(go.transform.InverseTransformPoint(new UnityEngine.Vector3(p.Item1 * Tile, 0f, p.Item2 * Tile)));
+            fence.Rebuild();
+            UnityEditor.GameObjectUtility.SetStaticEditorFlags(go, UnityEditor.StaticEditorFlags.BatchingStatic);
+            fenceCount++;
+        }
+    }
+    sb.Append("fence lines " + fenceCount + "; ");
 }
 sb.Append("walls " + wallCount + " (");
 foreach (var kv in kinds) sb.Append(kv.Key + " " + kv.Value + " ");

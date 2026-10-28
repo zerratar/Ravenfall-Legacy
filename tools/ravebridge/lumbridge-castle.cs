@@ -269,6 +269,43 @@ if (rbParapets) stoneParts.Add(rbParapets);
 bridge("Stone Bridge", stoneParts.ToArray(), stoneMid, stoneDeck, (stoneTiles.x1 - stoneTiles.x0 + 1) * Tile, 30f);
 if (rbWood) bridge("Wooden Bridge", new[] { rbWood }, woodMid, woodDeck, (woodTiles.x1 - woodTiles.x0 + 3) * Tile, boundsOf(new[] { rbWood }).size.x);
 
+// ---- the banks meet the bridges ---------------------------------------------------------------------------------
+stage = "bridge ends";
+{
+    // the ground at each end of a bridge is raised to its deck, falling back to the bank over 9 m along the road and
+    // 3 m to its sides, so the deck runs onto the ground instead of standing over a gap
+    const float Run = 9f, Side = 3f;
+    var res = td.heightmapResolution;
+    var hs = td.GetHeights(0, 0, res, res);
+    var span = td.size.y; var baseY = terrain.transform.position.y;
+    var raised = 0;
+    foreach (UnityEngine.Transform holder in bridgesRoot.transform)
+    {
+        var b = boundsOf(new[] { holder });
+        var deckY = holder.position.y - 0.08f;
+        foreach (var dirX in new[] { -1f, 1f })
+        {
+            var endX = dirX < 0 ? b.min.x + 0.3f : b.max.x - 0.3f;
+            for (var j = 0; j < res; j++)
+            for (var i = 0; i < res; i++)
+            {
+                var wx = i / (float)(res - 1) * td.size.x; var wz = j / (float)(res - 1) * td.size.z;
+                var out1 = (wx - endX) * dirX;               // how far out past the end
+                if (out1 < -1.5f || out1 > Run) continue;
+                var side = UnityEngine.Mathf.Abs(wz - b.center.z) - b.extents.z;
+                if (side > Side) continue;
+                var w = UnityEngine.Mathf.Clamp01(1f - UnityEngine.Mathf.Max(0f, out1) / Run) * UnityEngine.Mathf.Clamp01(1f - UnityEngine.Mathf.Max(0f, side) / Side);
+                w = UnityEngine.Mathf.SmoothStep(0f, 1f, w);
+                var was = baseY + hs[j, i] * span;
+                var y = UnityEngine.Mathf.Lerp(was, deckY, w);
+                if (y > was) { hs[j, i] = UnityEngine.Mathf.Clamp01((y - baseY) / span); raised++; }
+            }
+        }
+    }
+    td.SetHeights(0, 0, hs);
+    sb.Append("bridge ends raised " + raised + "; ");
+}
+
 // ---- done ----------------------------------------------------------------------------------------------------------
 stage = "save";
 UnityEditor.SceneManagement.EditorSceneManager.CloseScene(main, true);

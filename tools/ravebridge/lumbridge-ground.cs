@@ -67,6 +67,10 @@ var td = terrain.terrainData;
 
 UnityEditor.EditorUtility.SetDirty(td);
 UnityEditor.AssetDatabase.SaveAssetIfDirty(td);
+// the fences laid on the ground again (the castle's ground, the bridge ends and the shores moved it)
+var fences = 0;
+foreach (var f in UnityEngine.Object.FindObjectsByType<WorldFence>()) { f.Rebuild(); fences++; }
+sb.Append("fences relaid " + fences + "; ");
 var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
 UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);

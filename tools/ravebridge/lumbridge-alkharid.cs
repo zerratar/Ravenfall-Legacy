@@ -131,6 +131,40 @@ foreach (UnityEngine.Transform g in root)
         kinds[kind] = kinds.TryGetValue(kind, out var k) ? k + 1 : 1;
     }
 }
+// parapets with nothing under them (the map's lone low walls on rooftops) float: taken out
+{
+    var pieces = new System.Collections.Generic.List<(UnityEngine.GameObject Go, UnityEngine.Bounds B)>();
+    foreach (UnityEngine.Transform c in group)
+    {
+        var b = new UnityEngine.Bounds(c.position, UnityEngine.Vector3.zero); var first = true;
+        foreach (var r in c.GetComponentsInChildren<UnityEngine.Renderer>()) { if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
+        pieces.Add((c.gameObject, b));
+    }
+    // (again until none is left: a cap held only by a parapet taken out floats in turn)
+    var taken = 0;
+    while (true)
+    {
+        var lone = new System.Collections.Generic.List<(UnityEngine.GameObject Go, UnityEngine.Bounds B)>();
+        foreach (var (go, b) in pieces)
+        {
+            if (b.size.y > 1.6f) continue;   // parapets and trims only
+            var held = false;
+            foreach (var (go2, o) in pieces)
+            {
+                // walls hold parapets, parapets hold their caps
+                if (go2 == go || o.size.y < 0.8f) continue;
+                if (o.max.y < b.min.y - 0.6f || o.min.y > b.min.y) continue;
+                if (o.max.x < b.min.x - 0.3f || o.min.x > b.max.x + 0.3f || o.max.z < b.min.z - 0.3f || o.min.z > b.max.z + 0.3f) continue;
+                held = true; break;
+            }
+            if (!held) lone.Add((go, b));
+        }
+        if (lone.Count == 0) break;
+        foreach (var l in lone) { pieces.Remove(l); UnityEngine.Object.DestroyImmediate(l.Go); }
+        taken += lone.Count;
+    }
+    sb.Append("lone parapets taken out " + taken + "; ");
+}
 sb.Append("swapped " + swapped + " (");
 foreach (var kv in kinds) sb.Append(kv.Key + " " + kv.Value + " ");
 sb.Append("); ");
