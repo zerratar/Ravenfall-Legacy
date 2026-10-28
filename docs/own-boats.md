@@ -183,6 +183,35 @@ each frame, which the current instanced renderers do not support yet.
   few friends.
 - **The sea**: events at sea, sea creatures, treasure fished up.
 
+### Two aboard (discussed 2026-10-28)
+
+The fishing boat takes two: the owner and one guest who tags along. The rowboat stays a one-seat boat; the sloop
+may take more later.
+
+**Both must agree**, as with duels (`DuelHandler`: one request at a time, 30 s to answer, then it times out). A
+player who just wants to travel never ends up in someone's boat by accident. It works both ways:
+
+| Command | Who | What |
+|---|---|---|
+| `!boat invite <player>` | the owner | asks a player aboard |
+| `!boat join <player>` | anyone | asks to come aboard that player's boat |
+| `!boat accept` | whoever was asked | says yes to the request waiting for them, invite or join alike |
+| `!boat decline` | whoever was asked | says no |
+| `!boat leave` | the guest | gets off at the next dock the boat reaches |
+
+- Asking needs both players on the same island and the owner ashore; a boat already at sea does not turn back.
+- **The owner steers.** Only the owner's `!sail`, `!sail <island>`, `!sail stop` and `!disembark` move or land the
+  boat. The guest's own sailing commands answer that they are a passenger (and say how to leave).
+- **Fishing together.** When the owner anchors and fishes, the guest can `!fish` too: two lines over the side.
+- **Exp.** Both earn Sailing exp while the boat moves.
+- **The guest rows**: they sit at the front rowlocks and the front pair of oars comes on (`SM_Prop_Oar_01`, hidden
+  for one aboard in `tools/sailing/make-boat-prefabs.cs`; the rowlock rings were kept for this).
+- **It ends** when the boat docks for good: the owner lands, leaves the game, or goes to a raid or dungeon, and the
+  boat docks at the nearest dock with both stepping ashore. A guest pulled away (raid, dungeon, leaving) simply
+  drops off; nobody is left in the sea.
+- Open: a speed bonus for a second rower (within the speed cap), a Sailing level to join (suggested: none, so new
+  players can ride with veterans), a small reward for the owner for carrying someone (as the ferry captain's).
+
 ## Found while surveying (fix independent of boats)
 
 - The server saved a sailing player's destination as the island they were on (fixed in RavenNest 9d7cd5fb).
