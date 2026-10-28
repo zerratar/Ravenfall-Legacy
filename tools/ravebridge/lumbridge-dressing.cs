@@ -77,6 +77,7 @@ bool Clear(UnityEngine.Vector2 p, UnityEngine.Vector2 q, int self)
     // not through another house with a metre to spare, nor back through its own
     for (var i = 0; i < houseBounds.Count; i++)
     {
+        if (self < 0 && i == -1 - self) continue;   // (-1 - i: house i is left out altogether)
         var b = houseBounds[i]; b.Expand(i == self ? new UnityEngine.Vector3(-0.2f, 100f, -0.2f) : new UnityEngine.Vector3(2f, 100f, 2f));
         for (var k = 0; k <= 10; k++)
         {
@@ -131,7 +132,49 @@ foreach (UnityEngine.Transform h in houses)
     var halfFront = UnityEngine.Mathf.Abs(UnityEngine.Vector3.Dot(b.extents, new UnityEngine.Vector3(UnityEngine.Mathf.Abs(right.x), 0, UnityEngine.Mathf.Abs(right.z))));
     var halfDepth = UnityEngine.Mathf.Abs(UnityEngine.Vector3.Dot(b.extents, new UnityEngine.Vector3(UnityEngine.Mathf.Abs(dir.x), 0, UnityEngine.Mathf.Abs(dir.z))));
     var front = new UnityEngine.Vector3(b.center.x, 0, b.center.z) + dir * halfDepth;
-    var door = new UnityEngine.Vector2(front.x + dir.x * 0.3f, front.z + dir.z * 0.3f);
+    // the door: where the front sticks out furthest at knee height (its steps), else the middle; "front" is the eaves'
+    // line, so the wall's own face is found the same way (how far it stands out from there, negative behind)
+    float doorAlong = 0f, doorOut = 0f, wallOut = 0f;
+    {
+        var temp = new System.Collections.Generic.List<UnityEngine.MeshCollider>();
+        foreach (var mf in h.GetComponentsInChildren<UnityEngine.MeshFilter>())
+        {
+            if (!mf.sharedMesh) continue;
+            var mc = mf.gameObject.AddComponent<UnityEngine.MeshCollider>(); mc.sharedMesh = mf.sharedMesh; temp.Add(mc);
+        }
+        UnityEngine.Physics.SyncTransforms();
+        var ts = new System.Collections.Generic.List<float>(); var outs = new System.Collections.Generic.List<float>();
+        for (var t = -halfFront + 0.4f; t <= halfFront - 0.4f; t += 0.25f)
+        {
+            var o = front + right * t + dir * 3f;
+            o.y = WorldRoad.GroundHeight(new UnityEngine.Vector3(o.x, 1000f, o.z)) + 0.3f;
+            var best = float.MaxValue;
+            foreach (var hit in UnityEngine.Physics.RaycastAll(o, -dir, 3f + halfDepth * 2f))
+                if (temp.Contains(hit.collider as UnityEngine.MeshCollider)) best = UnityEngine.Mathf.Min(best, hit.distance);
+            if (best < float.MaxValue) { ts.Add(t); outs.Add(3f - best); }
+        }
+        foreach (var mc in temp) UnityEngine.Object.DestroyImmediate(mc);
+        if (outs.Count > 4)
+        {
+            var sorted = new System.Collections.Generic.List<float>(outs); sorted.Sort();
+            wallOut = sorted[sorted.Count / 2];
+            doorOut = wallOut;
+            // the longest run standing 0.4 m or more out of the wall
+            int bestStart = -1, bestLen = 0, runStart = -1;
+            for (var i = 0; i < outs.Count; i++)
+            {
+                if (outs[i] > wallOut + 0.4f) { if (runStart < 0) runStart = i; if (i - runStart + 1 > bestLen) { bestLen = i - runStart + 1; bestStart = runStart; } }
+                else runStart = -1;
+            }
+            if (bestLen >= 2)
+            {
+                doorAlong = (ts[bestStart] + ts[bestStart + bestLen - 1]) * 0.5f;
+                doorOut = float.MinValue; for (var i = bestStart; i < bestStart + bestLen; i++) doorOut = UnityEngine.Mathf.Max(doorOut, outs[i]);
+            }
+        }
+    }
+    var doorAt = front + right * doorAlong + dir * (doorOut + 0.3f);
+    var door = new UnityEngine.Vector2(doorAt.x, doorAt.z);
 
     // ---- the path: to the nearest road point in front of the door that it can reach in a straight line
     {
@@ -154,7 +197,8 @@ foreach (UnityEngine.Transform h in houses)
                 var q = candidates[c].Item2; var dist = candidates[c].Item1;
                 // out of the door first, then on to the road
                 var bend = door + d2 * UnityEngine.Mathf.Min(1.5f, dist * 0.3f);
-                if (!Clear(door, bend, index) || !Clear(bend, q, index)) continue;
+                // (the first leg starts under its own eaves: only the other houses count there)
+                if (!Clear(door, bend, -1 - index) || !Clear(bend, q, index)) continue;
                 var go = new UnityEngine.GameObject("Path to Building " + id);
                 go.transform.SetParent(paths, false);
                 go.transform.position = new UnityEngine.Vector3(door.x, 0f, door.y);
@@ -175,7 +219,9 @@ foreach (UnityEngine.Transform h in houses)
     {
         if (rng.NextDouble() < 0.3) continue;
         var set = sets[rng.Next(sets.Length)];
-        var corner = front + right * s * UnityEngine.Mathf.Max(0.8f, halfFront - 1.1f) + dir * 0.9f;
+        var along = s * UnityEngine.Mathf.Max(0.8f, halfFront - 1.1f);
+        if (UnityEngine.Mathf.Abs(along - doorAlong) < 1.8f) continue;   // (not in front of the door)
+        var corner = front + right * along + dir * (wallOut + 0.9f);
         for (var k = 0; k < set.Length; k++)
         {
             var pf = Prefab(set[k]); if (!pf) continue;
