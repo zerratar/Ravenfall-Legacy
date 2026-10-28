@@ -108,6 +108,63 @@ System.Func<int, int, bool> water = (x, y) => { var o = overlayAt(x, y); return 
 stage = "terrain";
 // Unity only takes 2^n + 1 heights a side and rounds anything else up: at 385 (a height every half tile) it made 513
 // and the map covered three quarters of the terrain, offset from everything built on it
+// the sea's level: the map's sea tiles (south of the swamp) as the water surface draws them
+float seaLevel;
+{
+    var levels = new System.Collections.Generic.List<float>();
+    for (var x = 0; x < N; x++) for (var y = 0; y < N; y++)
+        if (overlayAt(x, y) == 442) levels.Add((corner(x, y) + corner(x + 1, y) + corner(x, y + 1) + corner(x + 1, y + 1)) * 0.25f - 0.45f);
+    levels.Sort();
+    seaLevel = levels.Count > 0 ? levels[levels.Count / 2] : -0.45f;
+}
+// the island's edges: v0.9.6 has only this part of the world, so where the map stops the land goes down into the sea
+// along a ragged coast, not a cut (Edge tiles in, wavering by the noise)
+const float Edge = 14f, EdgeWaver = 11f;
+// buildings keep their ground: the coast bulges round anything with full walls or a roof
+var built = new bool[N, N];
+foreach (var l in locs)
+{
+    var t = (int)l["type"];
+    var lk = l["look"];
+    var full = (t == 0 || t == 2 || t == 9) && lk != null && lk["rgb"].Type != Newtonsoft.Json.Linq.JTokenType.Null && (int)lk["height"] >= 200;
+    if (!full && !(t >= 12 && t <= 21)) continue;
+    built[(int)l["x"], (int)l["y"]] = true;
+}
+// how far each tile is from the nearest building (two passes of a chamfer distance), so the coast rounds out round
+// them instead of standing in a square cliff
+var nearB = new float[N, N];
+for (var x = 0; x < N; x++) for (var y = 0; y < N; y++) nearB[x, y] = built[x, y] ? 0f : 999f;
+for (var pass = 0; pass < 2; pass++)
+{
+    for (var x = 0; x < N; x++) for (var y = 0; y < N; y++)
+    {
+        var v = nearB[x, y];
+        if (x > 0) v = UnityEngine.Mathf.Min(v, nearB[x - 1, y] + 1f);
+        if (y > 0) v = UnityEngine.Mathf.Min(v, nearB[x, y - 1] + 1f);
+        if (x > 0 && y > 0) v = UnityEngine.Mathf.Min(v, nearB[x - 1, y - 1] + 1.414f);
+        if (x > 0 && y < N - 1) v = UnityEngine.Mathf.Min(v, nearB[x - 1, y + 1] + 1.414f);
+        nearB[x, y] = v;
+    }
+    for (var x = N - 1; x >= 0; x--) for (var y = N - 1; y >= 0; y--)
+    {
+        var v = nearB[x, y];
+        if (x < N - 1) v = UnityEngine.Mathf.Min(v, nearB[x + 1, y] + 1f);
+        if (y < N - 1) v = UnityEngine.Mathf.Min(v, nearB[x, y + 1] + 1f);
+        if (x < N - 1 && y < N - 1) v = UnityEngine.Mathf.Min(v, nearB[x + 1, y + 1] + 1.414f);
+        if (x < N - 1 && y > 0) v = UnityEngine.Mathf.Min(v, nearB[x + 1, y - 1] + 1.414f);
+        nearB[x, y] = v;
+    }
+}
+System.Func<float, float, float> inland = (tx, ty) =>
+{
+    int bx = UnityEngine.Mathf.Clamp((int)tx, 0, N - 1), by = UnityEngine.Mathf.Clamp((int)ty, 0, N - 1);
+    // land for sure within three tiles of a building, easing off to the coast's own line by nine
+    var keepLand = UnityEngine.Mathf.SmoothStep(1f, 0f, UnityEngine.Mathf.Clamp01((nearB[bx, by] - 3f) / 6f));
+    var d = UnityEngine.Mathf.Min(UnityEngine.Mathf.Min(tx, ty), UnityEngine.Mathf.Min(N - tx, N - ty));
+    var n = (UnityEngine.Mathf.PerlinNoise(tx * 0.028f + 11.3f, ty * 0.028f + 7.1f) - 0.5f) * 2f * EdgeWaver
+          + (UnityEngine.Mathf.PerlinNoise(tx * 0.17f + 3.7f, ty * 0.17f + 1.9f) - 0.5f) * 2f;
+    return UnityEngine.Mathf.Max(keepLand, UnityEngine.Mathf.SmoothStep(0f, 1f, UnityEngine.Mathf.Clamp01((d + n - 3f) / Edge)));
+};
 var res = 513;
 var td = new UnityEngine.TerrainData();
 td.heightmapResolution = res;
@@ -127,6 +184,9 @@ for (var i = 0; i < res; i++)
     }
     // the shore half way down: the water's edge falls on the bank's slope, not along the tiles' squares
     if (wet > 0) y -= wet == all ? WaterDepth : WaterDepth * 0.5f;
+    // down to the sea floor towards the map's edges
+    // (as deep as the terrain goes, so its square edge does not show through the water)
+    y = UnityEngine.Mathf.Lerp(Base + 0.3f, y, inland(tx, ty));
     hs[j, i] = UnityEngine.Mathf.Clamp01((y - Base) / Span);
 }
 {
@@ -219,8 +279,9 @@ if (rbTerrainMat)
     // its tilings are over the terrain: Ravebridge's are for 2560 m
     var k = N * Tile / 2560f;
     foreach (var p in new[] { "_LayerUVScale", "_MainUVScale", "_SecondaryUVScale" }) { var v = mat.GetVector(p); mat.SetVector(p, new UnityEngine.Vector4(v.x * k, v.y * k, 0, 0)); }
-    mat.SetFloat("_SecondaryHeight", -40f);   // no beach: grass everywhere above the water
-    mat.SetFloat("_SeaLevel", -40f);
+    // sand along the new coast, just above the sea, wet where the sea reaches
+    mat.SetFloat("_SecondaryHeight", seaLevel + 0.9f);
+    mat.SetFloat("_SeaLevel", seaLevel);
     terrain.materialTemplate = (UnityEngine.Material)keep(mat, matPath);
 }
 terrain.heightmapPixelError = 3;
@@ -271,6 +332,19 @@ stage = "water";
     var go = new UnityEngine.GameObject("Water");
     go.transform.SetParent(root, false);
     go.AddComponent<RiverWater>().Mesh = mesh;
+    // the sea round the island in this test scene (in MainWorld the ocean is there already): a wide sheet at the sea's
+    // level, under the land
+    var sea = new UnityEngine.Mesh { name = "Lumbridge Sea" };
+    const float far = 600f;
+    float s0 = -far, s1 = N * Tile + far, sl = seaLevel - 0.02f;
+    sea.vertices = new[] { new UnityEngine.Vector3(s0, sl, s0), new UnityEngine.Vector3(s0, sl, s1), new UnityEngine.Vector3(s1, sl, s1), new UnityEngine.Vector3(s1, sl, s0) };
+    sea.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+    sea.normals = new[] { UnityEngine.Vector3.up, UnityEngine.Vector3.up, UnityEngine.Vector3.up, UnityEngine.Vector3.up };
+    sea.RecalculateBounds();
+    sea = (UnityEngine.Mesh)keep(sea, Folder + "/Lumbridge Sea.asset");
+    var seaGo = new UnityEngine.GameObject("Sea (test only)");
+    seaGo.transform.SetParent(root, false);
+    seaGo.AddComponent<RiverWater>().Mesh = sea;
     sb.Append("water points " + verts.Count + "; ");
 }
 
@@ -700,6 +774,7 @@ foreach (var l in locs)
     var onBridge = level > 0 && isBridge(x, y);
     level = levelAt(x, y, level);
     var rawLevel = (int)l["level"];
+    if (inland(x + 0.5f, y + 0.5f) < 0.55f) { skipped++; continue; }   // the coast took this tile
     if (kind == "low" && level > 0 && !onBridge)
     {
         // under a roof (this tile or the one across the wall) it is the attic's low wall, hidden by the roof
@@ -896,6 +971,7 @@ foreach (var l in locs)
     int x = (int)l["x"], y = (int)l["y"], rot = (int)l["rot"], level = (int)l["level"];
     level = levelAt(x, y, level);
     if (level > 0) continue;   // upstairs: not in this test
+    if (inland(x + 0.5f, y + 0.5f) < 0.55f) continue;   // the coast took this tile
     int sxT = (int)l["sx"], syT = (int)l["sy"];
     if (rot % 2 == 1) { var t = sxT; sxT = syT; syT = t; }
     // on the middle of the tiles it covers
@@ -922,8 +998,16 @@ if (roadsMap != null)
     var n = 0;
     foreach (var r in (Newtonsoft.Json.Linq.JArray)roadsMap["roads"])
     {
-        var pts = r["points"].ToObject<float[][]>();
-        var ws = r["widths"].ToObject<float[]>();
+        var allPts = r["points"].ToObject<float[][]>();
+        var allWs = r["widths"].ToObject<float[]>();
+        // the part on land (a road running off the map's edge stops at the coast)
+        var keepPts = new System.Collections.Generic.List<float[]>(); var keepWs = new System.Collections.Generic.List<float>();
+        for (var i = 0; i < allPts.Length; i++)
+        {
+            if (inland(allPts[i][0] / Tile, allPts[i][1] / Tile) < 0.7f) { if (keepPts.Count > 0) break; continue; }
+            keepPts.Add(allPts[i]); keepWs.Add(allWs[i]);
+        }
+        var pts = keepPts.ToArray(); var ws = keepWs.ToArray();
         if (pts.Length < 2) continue;
         var surface = (string)r["surface"] == "Cobbles" ? WorldRoad.Surface.Cobbles : (string)r["surface"] == "Gravel" ? WorldRoad.Surface.Gravel : WorldRoad.Surface.Dirt;
         var go = new UnityEngine.GameObject(surface + " road " + (++n));
