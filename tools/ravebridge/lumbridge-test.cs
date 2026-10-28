@@ -721,6 +721,7 @@ var wallLayers = new System.Collections.Generic.Dictionary<string, (string Piece
     { "fence", new[] { ("SM_Prop_Fence_03", -0.05f, 0f) } },
     { "gate", new[] { ("SM_Prop_Fence_Gate_01", -0.05f, 0f) } },
     { "low", new[] { ("SM_Env_StoneWall_01", -0.05f, 0f) } },
+    { "field wall", new[] { ("SM_Env_StoneWall_01", -0.3f, 1.5f) } },
     { "battlement", new[] { ("SM_Bld_Castle_Battlements_01", -0.02f, 0f) } },
 };
 // windows: OSRS hangs a window on a wall as a decoration (an unnamed, wall high one on the wall's edge, inside and out)
@@ -762,6 +763,15 @@ foreach (var l in locs)
     var k = wallKind(l);
     if (k != null) kindAt[((int)l["x"], (int)l["y"], (int)l["level"], (int)l["rot"])] = k;
 }
+// what stands over a tile: walls on an upper level, upper floors (a stone wall with nothing over it on either side is a
+// field wall, waist high rubble in the game, not a building's)
+var overTile = new System.Collections.Generic.HashSet<long>();
+foreach (var l in locs)
+{
+    var t = (int)l["type"];
+    if ((t == 0 || t == 2 || t == 9) && (int)l["level"] > 0) overTile.Add(((long)(int)l["x"] << 20) | (uint)(int)l["y"]);
+}
+foreach (var f in map["floors"].ToObject<int[][][]>()[1]) if (f.Length < 3 || f[2] >= 0) overTile.Add(((long)f[0] << 20) | (uint)f[1]);
 var wallCount = 0; var skipped = 0;
 var kinds = new System.Collections.Generic.Dictionary<string, int>();
 foreach (var l in locs)
@@ -805,6 +815,13 @@ foreach (var l in locs)
                     }
             kind = stone >= wood && stone >= plaster ? "stone door" : wood >= plaster ? "wood door" : "plaster door";
         }
+    }
+    // (brown ones too: the wheat field's rubble walls have a brownish texture)
+    if ((kind == "stone" || kind == "wood") && level == 0)
+    {
+        var (fx, fy) = rot == 0 ? (x - 1, y) : rot == 1 ? (x, y + 1) : rot == 2 ? (x + 1, y) : (x, y - 1);
+        var covered = underRoof(x, y) || underRoof(fx, fy) || overTile.Contains(((long)x << 20) | (uint)y) || overTile.Contains(((long)fx << 20) | (uint)fy);
+        if (!covered) kind = "field wall";
     }
     // a window on this wall: the window pieces of its kind
     if (type == 0 && windows.Contains(x + "," + y + "," + rawLevel + "," + rot))
@@ -920,7 +937,7 @@ var things = new System.Collections.Generic.Dictionary<string, string[]>
     { "Cabinet", new[] { "SM_Prop_Cabinet_01" } },
     { "Axe cabinet", new[] { "SM_Prop_Cabinet_02" } },
     { "Flag", new[] { "SM_Prop_Banner_01_A" } },
-    { "Water wheel", new[] { "SM_Bld_Waterwheel_01" } },
+    { "Water wheel", new[] { "SM_Bld_Waterwheel_01" } },   // the map has it in four parts: placed once (below)
     { "Yew tree", new[] { "SM_Env_Tree_Large_02" } },
     { "Pear tree", new[] { "SM_Env_Tree_Round_04" } },
     { "Workbench", new[] { "SM_Prop_Workbench_01" } },
@@ -1020,6 +1037,7 @@ foreach (var l in locs)
     if (!things.TryGetValue(key, out var choices)) { missing[name] = missing.TryGetValue(name, out var mc) ? mc + 1 : 1; continue; }
     var pf = prefab(choices[rng.Next(choices.Length)]);
     if (!pf) { missing[name + " (no prefab)"] = 1; continue; }
+    if (key == "Water wheel" && counts.ContainsKey(key)) continue;
     int x = (int)l["x"], y = (int)l["y"], rot = (int)l["rot"], level = (int)l["level"];
     level = levelAt(x, y, level);
     if (level > 0) continue;   // upstairs: not in this test
@@ -1034,6 +1052,7 @@ foreach (var l in locs)
     var yaw = natural ? (float)rng.NextDouble() * 360f : rot * 90f + 180f;
     o.transform.SetPositionAndRotation(pos, UnityEngine.Quaternion.Euler(0, yaw, 0));
     if (natural) o.transform.localScale *= 0.85f + (float)rng.NextDouble() * 0.3f;
+    if (key == "Water wheel") o.transform.localScale *= 0.5f;
     counts[key] = counts.TryGetValue(key, out var cc) ? cc + 1 : 1;
 }
 var placedTotal = 0; foreach (var kv in counts) placedTotal += kv.Value;
