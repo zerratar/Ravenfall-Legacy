@@ -9,8 +9,10 @@ public class NameTag : MonoBehaviour
     [SerializeField] private TextMeshProUGUI clanName;
     [SerializeField] private Image logo;
 
-    // the title the player wears (!title), on a line of its own above the name, made from the clan line
+    // the title the player wears (!title), on a line of its own between the name and the clan, made from the clan line
     private TextMeshProUGUI titleLabel;
+    private Vector2 nameHome, clanHome; // the lines' places without a title
+    private bool homesKnown;
     private int titleVersion = -1;
     private PlayerController titleOwner;
     private static readonly Color TitleColor = new Color(1f, 0.78f, 0.36f);
@@ -102,13 +104,26 @@ public class NameTag : MonoBehaviour
         if (titleVersion != QuestTitles.Version || titleOwner != TargetPlayer) UpdateTitle();
     }
 
-    /// <summary>Shows or hides the worn title. The line is a copy of the clan line, as far above the name as that is below it.</summary>
+    /// <summary>
+    /// Shows or hides the worn title, between the name and the clan. The line is a copy of the clan line, put where the
+    /// clan was; the name and the title then move up together by a line, as close over the clan as the name sits over
+    /// it, so the tag's foot stays where it always was, clear of the head. (Above the name, placed by the lines'
+    /// centres, the title stood further off than the clan, as the name's font is the larger.)
+    /// </summary>
     private void UpdateTitle()
     {
         titleVersion = QuestTitles.Version;
         titleOwner = TargetPlayer;
         if (!TargetPlayer || !clanName || !label) return;
+        if (!homesKnown)
+        {
+            nameHome = label.rectTransform.anchoredPosition;
+            clanHome = clanName.rectTransform.anchoredPosition;
+            homesKnown = true;
+        }
+
         var text = QuestTitles.TextFor(TargetPlayer.Id);
+        label.rectTransform.anchoredPosition = nameHome;
         if (string.IsNullOrEmpty(text))
         {
             if (titleLabel) titleLabel.gameObject.SetActive(false);
@@ -120,16 +135,30 @@ public class NameTag : MonoBehaviour
             var go = Instantiate(clanName.gameObject, clanName.transform.parent);
             go.name = "Title";
             titleLabel = go.GetComponent<TextMeshProUGUI>();
-            var nameRect = label.rectTransform;
-            var clanRect = clanName.rectTransform;
-            titleLabel.rectTransform.anchoredPosition = nameRect.anchoredPosition + (nameRect.anchoredPosition - clanRect.anchoredPosition);
             titleLabel.color = TitleColor;
             titleLabel.fontStyle = FontStyles.Italic;
         }
 
         titleLabel.text = text;
         titleLabel.gameObject.SetActive(true);
+        titleLabel.rectTransform.anchoredPosition = clanHome;
+
+        // the gap is measured on the text itself: the space from the name's bottom to the line under it, kept the
+        // same between the title and the clan
+        label.ForceMeshUpdate();
+        titleLabel.ForceMeshUpdate();
+        var nameBottom = Bottom(label);
+        var titleTop = Top(titleLabel);
+        var lineHeight = titleTop - Bottom(titleLabel);
+        var gap = nameBottom - titleTop; // below zero: a line's box starts a little above the bottom of the one before
+        // without a clan the title simply takes the clan's empty place
+        var step = string.IsNullOrEmpty(clanName.text) ? Vector2.zero : Vector2.up * (lineHeight + gap);
+        titleLabel.rectTransform.anchoredPosition = clanHome + step;
+        label.rectTransform.anchoredPosition = nameHome + step;
     }
+
+    private static float Top(TextMeshProUGUI text) => text.rectTransform.localPosition.y + text.textBounds.max.y * text.rectTransform.localScale.y;
+    private static float Bottom(TextMeshProUGUI text) => text.rectTransform.localPosition.y + text.textBounds.min.y * text.rectTransform.localScale.y;
 
     /// <summary>
     /// Where the tag's text is on screen, the name with its clan and title lines. False while it has
@@ -211,11 +240,13 @@ public class NameTag : MonoBehaviour
         {
             clanName.text = "<" + TargetPlayer.clanHandler.ClanInfo.Name + ">";
             lastSetClanName = TargetPlayer.clanHandler.ClanInfo.Name;
+            titleVersion = -1; // the title's place depends on a clan line under it
         }
         else if (!TargetPlayer.clanHandler.InClan && !string.IsNullOrEmpty(lastSetClanName))
         {
             clanName.text = "";
             lastSetClanName = "";
+            titleVersion = -1;
         }
         if (TargetPlayer.Raider != null && (RaiderLogo == null || !logo.gameObject.activeSelf || oldCensor != gameManager.LogoCensor))
         {
