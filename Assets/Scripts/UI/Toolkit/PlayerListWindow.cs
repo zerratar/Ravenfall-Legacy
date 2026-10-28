@@ -706,9 +706,11 @@ namespace Shinobytes.UI
 
                 // Full names rather than the three letter codes. The level now has its own column,
                 // so there is room, and "Woodcutting" reads at a glance where "Woo" did not.
+                // health and melee are how "all" is kept (PlayerController.TrainingAll): named as the details window
+                // names it, not "Health"
                 state.SkillLabel.text = levelled
                     ? Localization.SkillName(activeSkill) + "  <b>" + skill.Level + "</b>"
-                    : Localization.SkillName(activeSkill);
+                    : Localization.UI_SKILL_ALL;
             }
 
             if (!levelled)

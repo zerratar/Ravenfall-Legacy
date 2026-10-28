@@ -181,8 +181,12 @@ namespace Shinobytes.UI
             x = Mathf.Clamp(x, 0f, Mathf.Max(0f, bounds.width - size.x));
             var y = Mathf.Clamp(anchor.yMin, 0f, Mathf.Max(0f, bounds.height - size.y));
 
-            root.style.left = x;
-            root.style.top = y;
+            // laid out at the corner and moved by a translate, which layout ignores: placed by left, it was measured
+            // against the room right of that spot, so a long name (an enchanted item's) wrapped instead of the
+            // tooltip growing wider
+            root.style.left = 0f;
+            root.style.top = 0f;
+            root.style.translate = new Translate(x, y);
             root.style.visibility = Visibility.Visible;
         }
     }

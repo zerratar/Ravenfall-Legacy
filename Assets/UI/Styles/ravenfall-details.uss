@@ -812,13 +812,15 @@
 
 .rf-tooltip {
     position: absolute;
-    max-width: 340px;
+    max-width: 440px;
     min-width: 180px;
     padding-left: 12px;
     padding-right: 12px;
     padding-top: 10px;
     padding-bottom: 10px;
-    background-color: var(--rf-surface-glass);
+    /* the glass colour, solid: its 3% show-through, blended in linear space, put the slot borders and item icons
+       behind a tooltip plainly through its text */
+    background-color: rgb(20, 18, 15);
     border-left-width: 1px;
     border-right-width: 1px;
     border-bottom-width: 1px;
