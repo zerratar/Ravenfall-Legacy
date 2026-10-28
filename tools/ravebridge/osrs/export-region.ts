@@ -216,7 +216,9 @@ const floorTypes: Record<string, any> = {};
 const bridges: number[][] = [];
 for (let x = 0; x < sizeX; x++)
     for (let y = 0; y < sizeY; y++)
-        if ((scene.tileRenderFlags[1][x][y] & 2) === 2) bridges.push([x, y]);
+        if ((scene.tileRenderFlags[1][x][y] & 2) === 2)
+            // with the deck's own heights (level 1's, up) at the tile's south west, north west, north east, south east
+            bridges.push([x, y, -scene.tileHeights[1][x][y], -scene.tileHeights[1][x][y + 1], -scene.tileHeights[1][x + 1][y + 1], -scene.tileHeights[1][x + 1][y]]);
 // the upper floors (levels 1 to 3): every tile with ground drawn on it, as [x, y]
 const floors: number[][][] = [[], [], [], []];
 for (let level = 1; level < Scene.MAX_LEVELS; level++)

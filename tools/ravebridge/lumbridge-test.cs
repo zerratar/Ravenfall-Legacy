@@ -72,7 +72,15 @@ var overlay = map["overlay"].ToObject<int[][]>();
 var locs = (Newtonsoft.Json.Linq.JArray)map["locs"];
 // bridge tiles: their level 1 is drawn a level down, as the game does; the deck stands a little over the water
 var bridgeSet = new System.Collections.Generic.HashSet<long>();
-foreach (var b in map["bridges"].ToObject<int[][]>()) bridgeSet.Add(((long)b[0] << 20) | (uint)b[1]);
+// each bridge tile's deck heights (m) at its corners, as the map arches it: (x,y) (x,y+1) (x+1,y+1) (x+1,y)
+var deckAt = new System.Collections.Generic.Dictionary<long, float[]>();
+foreach (var b in map["bridges"].ToObject<int[][]>())
+{
+    // the map's edge column has bridge flags with no bridge (the region beyond is not loaded)
+    if (b[0] <= 0 || b[1] <= 0 || b[0] >= N - 1 || b[1] >= N - 1) continue;
+    bridgeSet.Add(((long)b[0] << 20) | (uint)b[1]);
+    if (b.Length >= 6) deckAt[((long)b[0] << 20) | (uint)b[1]] = new[] { b[2] * Unit * HillScale, b[3] * Unit * HillScale, b[4] * Unit * HillScale, b[5] * Unit * HillScale };
+}
 System.Func<int, int, bool> isBridge = (x, y) => bridgeSet.Contains(((long)x << 20) | (uint)y);
 System.Func<int, int, int, int> levelAt = (x, y, level) => level > 0 && isBridge(x, y) ? level - 1 : level;
 const float Deck = 0.7f;
@@ -391,6 +399,21 @@ stage = "floors";
         {
             int x = f[0], y = f[1];
             if (!set.Contains(((long)x << 20) | (uint)y)) continue;
+            if (deckAt.TryGetValue(((long)x << 20) | (uint)y, out var dk))
+            {
+                // a bridge's deck, arched as the map has it, a slab under it
+                float bx0 = x * Tile, bx1 = (x + 1) * Tile, bz0 = y * Tile, bz1 = (y + 1) * Tile;
+                var t0 = new UnityEngine.Vector3(bx0, dk[0], bz0); var t1 = new UnityEngine.Vector3(bx0, dk[1], bz1);
+                var t2 = new UnityEngine.Vector3(bx1, dk[2], bz1); var t3 = new UnityEngine.Vector3(bx1, dk[3], bz0);
+                var dn = new UnityEngine.Vector3(0, -0.6f, 0);
+                quad(t0, t1, t2, t3);
+                quad(t0 + dn, t3 + dn, t2 + dn, t1 + dn);
+                if (!deckAt.ContainsKey(((long)(x - 1) << 20) | (uint)y)) quad(t0 + dn, t1 + dn, t1, t0);
+                if (!deckAt.ContainsKey(((long)(x + 1) << 20) | (uint)y)) quad(t2 + dn, t3 + dn, t3, t2);
+                if (!deckAt.ContainsKey(((long)x << 20) | (uint)(y - 1))) quad(t3 + dn, t0 + dn, t0, t3);
+                if (!deckAt.ContainsKey(((long)x << 20) | (uint)(y + 1))) quad(t1 + dn, t2 + dn, t2, t1);
+                continue;
+            }
             var top = (corner(x, y) + corner(x + 1, y) + corner(x, y + 1) + corner(x + 1, y + 1)) * 0.25f + levelAt(x, y, level) * Floor + (isBridge(x, y) ? Deck : 0f);
             float x0 = x * Tile, x1 = (x + 1) * Tile, z0 = y * Tile, z1 = (y + 1) * Tile, lo = top - Thick;
             // a tile a diagonal wall crosses (the gatehouse towers' cut corners): only the half inside, the side its
@@ -622,9 +645,12 @@ foreach (var l in locs)
     var lift = level * Floor + (onBridge ? Deck : 0f);
     var parent = group("Walls " + kind);
     // the tile's corners, south west first, going round: 0 (x, y), 1 (x, y+1), 2 (x+1, y+1), 3 (x+1, y)
+    deckAt.TryGetValue(((long)x << 20) | (uint)y, out var deck);
     System.Func<int, float, UnityEngine.Vector3> cornerAt = (c, up) =>
     {
         var cx = x + (c >= 2 ? 1 : 0); var cy = y + (c == 1 || c == 2 ? 1 : 0);
+        // on a bridge, the deck's own arch
+        if (onBridge && deck != null) return new UnityEngine.Vector3(cx * Tile, deck[c] + up, cy * Tile);
         return new UnityEngine.Vector3(cx * Tile, corner(cx, cy) + lift + up, cy * Tile);
     };
     // the edges this wall runs along, as pairs of corners
