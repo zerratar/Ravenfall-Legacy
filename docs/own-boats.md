@@ -183,10 +183,12 @@ each frame, which the current instanced renderers do not support yet.
   few friends.
 - **The sea**: events at sea, sea creatures, treasure fished up.
 
-### Two aboard (discussed 2026-10-28)
+### Guests aboard (discussed 2026-10-28)
 
-The fishing boat takes two: the owner and one guest who tags along. The rowboat stays a one-seat boat; the sloop
-may take more later.
+The owner can take guests who tag along, up to the boat's seats. Seats belong to the boat type, so nothing is built
+around two: the rowboat has 1 (the owner), the fishing boat 2 (the owner and one guest), and bigger player-owned
+boats later (the sloop, or larger) can hold more. Each guest seat has its place on the boat and its own pair of oars
+or a spot at the rail.
 
 **Both must agree**, as with duels (`DuelHandler`: one request at a time, 30 s to answer, then it times out). A
 player who just wants to travel never ends up in someone's boat by accident. It works both ways:
@@ -199,18 +201,21 @@ player who just wants to travel never ends up in someone's boat by accident. It 
 | `!boat decline` | whoever was asked | says no |
 | `!boat leave` | the guest | gets off at the next dock the boat reaches |
 
-- Asking needs both players on the same island and the owner ashore; a boat already at sea does not turn back.
+- Asking needs both players on the same island and the owner ashore; a boat already at sea does not turn back. A
+  full boat answers that there is no seat left.
+- **No level needed** to come aboard (decided 2026-10-28), so new players can ride along with veterans.
 - **The owner steers.** Only the owner's `!sail`, `!sail <island>`, `!sail stop` and `!disembark` move or land the
   boat. The guest's own sailing commands answer that they are a passenger (and say how to leave).
-- **Fishing together.** When the owner anchors and fishes, the guest can `!fish` too: two lines over the side.
-- **Exp.** Both earn Sailing exp while the boat moves.
-- **The guest rows**: they sit at the front rowlocks and the front pair of oars comes on (`SM_Prop_Oar_01`, hidden
-  for one aboard in `tools/sailing/make-boat-prefabs.cs`; the rowlock rings were kept for this).
+- **Fishing together.** When the owner anchors and fishes, guests can `!fish` too: a line over the side each.
+- **Exp.** Everyone aboard earns Sailing exp while the boat moves.
+- **Guests row**, and each one rowing makes the boat a little faster (decided 2026-10-28: a small boost, say +10%
+  for the first guest and less for each one after, still within the boat's speed cap). On the fishing boat the
+  guest sits at the front rowlocks and the front pair of oars comes on (`SM_Prop_Oar_01`, hidden for one aboard in
+  `tools/sailing/make-boat-prefabs.cs`; the rowlock rings were kept for this).
 - **It ends** when the boat docks for good: the owner lands, leaves the game, or goes to a raid or dungeon, and the
-  boat docks at the nearest dock with both stepping ashore. A guest pulled away (raid, dungeon, leaving) simply
-  drops off; nobody is left in the sea.
-- Open: a speed bonus for a second rower (within the speed cap), a Sailing level to join (suggested: none, so new
-  players can ride with veterans), a small reward for the owner for carrying someone (as the ferry captain's).
+  boat docks at the nearest dock with everyone stepping ashore. A guest pulled away (raid, dungeon, leaving) simply
+  drops off and frees the seat; nobody is left in the sea.
+- Open: a small reward for the owner for carrying guests (as the ferry captain's).
 
 ## Found while surveying (fix independent of boats)
 
