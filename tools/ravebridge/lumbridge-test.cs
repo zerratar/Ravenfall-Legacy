@@ -359,7 +359,7 @@ const float Sink = 0.8f;   // full walls reach into the ground (or the floor bel
 var wallLayers = new System.Collections.Generic.Dictionary<string, (string Piece, float From, float To)[]>
 {
     { "stone", new[] { ("SM_Bld_Castle_Wall_01", -Sink, Floor) } },
-    { "stone window", new[] { ("SM_Bld_Castle_Wall_01", -Sink, 1.25f), ("SM_Bld_Castle_Wall_Arrowslit_01", 1.25f, Floor) } },
+    { "stone window", new[] { ("SM_Bld_Castle_Wall_01", -Sink, 1.25f), ("SM_Bld_Castle_Wall_Window_01", 1.25f, Floor) } },
     { "house window", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_Window_01", 1.25f, Floor) } },
     { "plaster", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_01", 1.25f, Floor) } },
     { "wood", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_01", 1.25f, Floor) } },
@@ -486,6 +486,17 @@ stage = "floors";
             foreach (var k0 in drop) set.Remove(k0);
         }
         if (set.Count == 0) continue;
+        // diagonal walls on this level or the one below, by tile
+        var diagonals = new System.Collections.Generic.Dictionary<long, int>();
+        foreach (var l in locs)
+        {
+            if ((int)l["type"] != 9) continue;
+            var ll = (int)l["level"];
+            if (ll != level && ll != level - 1) continue;
+            var lk = l["look"];
+            if (lk == null || lk["rgb"].Type == Newtonsoft.Json.Linq.JTokenType.Null) continue;
+            diagonals[((long)(int)l["x"] << 20) | (uint)(int)l["y"]] = (int)l["rot"];
+        }
         var verts = new System.Collections.Generic.List<UnityEngine.Vector3>();
         var tris = new System.Collections.Generic.List<int>();
         System.Action<UnityEngine.Vector3, UnityEngine.Vector3, UnityEngine.Vector3, UnityEngine.Vector3> quad = (a, b, c, d) =>
@@ -498,6 +509,27 @@ stage = "floors";
             if (!set.Contains(((long)x << 20) | (uint)y)) continue;
             var top = (corner(x, y) + corner(x + 1, y) + corner(x, y + 1) + corner(x + 1, y + 1)) * 0.25f + levelAt(x, y, level) * Floor + (isBridge(x, y) ? Deck : 0f);
             float x0 = x * Tile, x1 = (x + 1) * Tile, z0 = y * Tile, z1 = (y + 1) * Tile, lo = top - Thick;
+            // a tile a diagonal wall crosses (the gatehouse towers' cut corners): only the half inside, the side its
+            // floor neighbours are on; the whole tile stuck out past the wall as a shelf
+            if (diagonals.TryGetValue(((long)x << 20) | (uint)y, out var drot))
+            {
+                System.Func<int, int, int> has = (ax, ay) => set.Contains(((long)(x + ax) << 20) | (uint)(y + ay)) ? 1 : 0;
+                // corners: 0 (x0,z0) 1 (x0,z1) 2 (x1,z1) 3 (x1,z0)
+                var cp = new[] { new UnityEngine.Vector3(x0, top, z0), new UnityEngine.Vector3(x0, top, z1), new UnityEngine.Vector3(x1, top, z1), new UnityEngine.Vector3(x1, top, z0) };
+                int[] half;
+                if (drot % 2 == 0) half = has(-1, 0) + has(0, 1) >= has(1, 0) + has(0, -1) ? new[] { 0, 1, 2 } : new[] { 2, 3, 0 };
+                else half = has(-1, 0) + has(0, -1) >= has(1, 0) + has(0, 1) ? new[] { 3, 0, 1 } : new[] { 1, 2, 3 };
+                var v0 = verts.Count;
+                verts.AddRange(new[] { cp[half[0]], cp[half[1]], cp[half[2]] });
+                tris.AddRange(new[] { v0, v0 + 1, v0 + 2 });
+                var down = new UnityEngine.Vector3(0, -Thick, 0);
+                v0 = verts.Count;
+                verts.AddRange(new[] { cp[half[0]] + down, cp[half[2]] + down, cp[half[1]] + down });
+                tris.AddRange(new[] { v0, v0 + 1, v0 + 2 });
+                // the cut edge's face, under the wall
+                quad(cp[half[2]] + down, cp[half[0]] + down, cp[half[0]], cp[half[2]]);
+                continue;
+            }
             quad(new UnityEngine.Vector3(x0, top, z0), new UnityEngine.Vector3(x0, top, z1), new UnityEngine.Vector3(x1, top, z1), new UnityEngine.Vector3(x1, top, z0));
             quad(new UnityEngine.Vector3(x0, lo, z0), new UnityEngine.Vector3(x1, lo, z0), new UnityEngine.Vector3(x1, lo, z1), new UnityEngine.Vector3(x0, lo, z1));
             if (!set.Contains(((long)(x - 1) << 20) | (uint)y)) quad(new UnityEngine.Vector3(x0, lo, z0), new UnityEngine.Vector3(x0, lo, z1), new UnityEngine.Vector3(x0, top, z1), new UnityEngine.Vector3(x0, top, z0));
