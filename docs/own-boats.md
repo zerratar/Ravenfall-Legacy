@@ -215,7 +215,15 @@ player who just wants to travel never ends up in someone's boat by accident. It 
 - **It ends** when the boat docks for good: the owner lands, leaves the game, or goes to a raid or dungeon, and the
   boat docks at the nearest dock with everyone stepping ashore. A guest pulled away (raid, dungeon, leaving) simply
   drops off and frees the seat; nobody is left in the sea.
-- Open: a small reward for the owner for carrying guests (as the ferry captain's).
+- **The owner's reward** for carrying guests (decided 2026-10-28; the ferry captain only makes the ferry faster, so
+  this is new):
+  - **Sailing exp**: about +10% per guest aboard on the owner's own Sailing exp, only while the boat moves, as all
+    Sailing exp. It mirrors the guests' speed boost and grows with bigger boats.
+  - **Titles** for guest trips (one trip = a guest aboard from setting out to stepping ashore): "the Ferryman" at 50,
+    "Sea Captain" at 500, through the achievements on the quest tracker; titles already show on name tags.
+  - **The captain's cut**: each fish a guest lands gives the owner a small chance of a bonus fish of their own,
+    taken from nobody. Decided by the server, beside the guest's catch (the fishing task processor at sea).
+  - **No fare.** Guests never pay coins; a ride stays a favour, not a trade.
 
 ## Found while surveying (fix independent of boats)
 
