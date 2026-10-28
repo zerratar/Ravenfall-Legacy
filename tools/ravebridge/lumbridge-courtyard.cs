@@ -2,7 +2,7 @@
 //
 // The castle courtyard's paths in the Ravenfall Lumbridge (Assets/Scenes/LumbridgeRavenfall.unity), with the road
 // tool: cobbles from the road outside, through the gate, up to the foot of the keep's stairs, and narrower ones off it
-// to the two fountains and the well. Every point comes from where the castle's own pieces stand (it was brought over
+// to the two fountains. Every point comes from where the castle's own pieces stand (it was brought over
 // from Ravebridge, scaled), so the paths follow it wherever it is. Rerunnable: they live under "Courtyard Paths".
 var sb = new System.Text.StringBuilder();
 if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().path != "Assets/Scenes/LumbridgeRavenfall.unity") return "open LumbridgeRavenfall first";
@@ -48,10 +48,38 @@ void Road(string name, UnityEngine.Vector3[] line, float width, float startRound
     road.Rebuild();
     sb.Append(name + " " + line.Length + " points; ");
 }
+// the town's roads to the gate: short stubs that ended at the generated gate (the map's gate stood a few metres off
+// this castle's) are switched off, and the way in starts where the nearest road still ends or passes
+var town = root.Find("Roads");
+var start = outside;
+if (town)
+{
+    foreach (var r in town.GetComponentsInChildren<WorldRoad>())
+    {
+        if (r.Points.Count > 3) continue;
+        foreach (var lp in new[] { r.Points[0], r.Points[r.Points.Count - 1] })
+        {
+            var w = r.transform.TransformPoint(lp); w.y = 0;
+            if (UnityEngine.Vector3.Distance(w, new UnityEngine.Vector3(gate.x, 0, gate.z)) < 12f) { r.gameObject.SetActive(false); sb.Append("stub " + r.name + " off; "); break; }
+        }
+    }
+    var best = 30f;
+    foreach (var r in town.GetComponentsInChildren<WorldRoad>())
+        for (var i = 0; i < r.Points.Count; i++)
+        {
+            var w = r.transform.TransformPoint(r.Points[i]); w.y = 0;
+            // outside the wall, on the gate's side
+            if (w.x < gate.x + 2f) continue;
+            var d = UnityEngine.Vector3.Distance(w, new UnityEngine.Vector3(gate.x, 0, gate.z));
+            if (d < best) { best = d; start = w; }
+        }
+}
+var approach = new UnityEngine.Vector3(gate.x + 6f, 0, UnityEngine.Mathf.Lerp(start.z, gate.z, 0.75f));
 // the main way: square at the stairs' foot, so it meets the bottom step
-Road("Gate to keep", new[] { outside, gate, inside, middle, foot }, 4f, 1f, 0f);
+Road("Gate to keep", new[] { start, approach, gate, inside, middle, foot }, 4f, 1f, 0f);
 // branches from the main way to the fountains and the well, round where they meet them
-foreach (var name in new[] { "SM_Env_Fountain_01 (7)", "SM_Env_Fountain_01 (1)", "SM_Prop_Well_01" })
+// (not the well: at this scale it stands outside the curtain wall)
+foreach (var name in new[] { "SM_Env_Fountain_01 (7)", "SM_Env_Fountain_01 (1)" })
 {
     var t = Find(name);
     if (!t) { sb.Append("no " + name + "; "); continue; }
