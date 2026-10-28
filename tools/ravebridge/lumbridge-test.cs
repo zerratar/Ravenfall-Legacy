@@ -865,6 +865,13 @@ foreach (var l in locs)
         var a = cornerAt(ca, 0f); var b = cornerAt(cb, 0f);
         var hugs = kind == "fence" || kind == "gate" || kind == "low";
         var top = hugs ? UnityEngine.Mathf.Min(a.y, b.y) : UnityEngine.Mathf.Max(a.y, b.y);
+        if (kind == "fence")
+        {
+            // a fence piece has a post at each end, inset a little: reaching past both ends, a piece's posts sit on its
+            // neighbours' instead of standing in pairs at every join
+            var along2 = (b - a).normalized * 0.11f;
+            a -= along2; b += along2;
+        }
         a.y = b.y = top + layer.From;
         span(pf, parent, a, b, layer.To > 0 ? layer.To - layer.From : 0f);
         // Lumbridge's stone is grey: the pack's castle walls are beige brick, its dungeon stone grey
