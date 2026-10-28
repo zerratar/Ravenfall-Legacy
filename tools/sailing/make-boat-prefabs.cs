@@ -106,7 +106,9 @@ foreach (var b in boats)
     if (b.Name == "Sloop")
     {
         UnityEngine.Physics.SyncTransforms();
-        foreach (var at2 in new[] { new UnityEngine.Vector2(-1.1f, -2.6f), new UnityEngine.Vector2(1.1f, -2.6f), new UnityEngine.Vector2(0f, 3.2f) })
+        // two by the hatch amidships, either side (at z -2.6 they stood at the foot of the raised stern, crowding the
+        // owner at the wheel), one at the bow between the cargo and the cannon
+        foreach (var at2 in new[] { new UnityEngine.Vector2(-1.25f, -0.8f), new UnityEngine.Vector2(1.25f, -0.8f), new UnityEngine.Vector2(0f, 3.2f) })
         {
             var h = deck;
             var guestFrom = root.transform.position + new UnityEngine.Vector3(at2.x, 30f, at2.y);
