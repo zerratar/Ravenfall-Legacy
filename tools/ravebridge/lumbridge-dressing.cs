@@ -7,7 +7,8 @@
 // - a little dressing at the front corners: barrels, crates, sacks, a flower pot or a bench.
 // The door is the middle of the front: the presets are single meshes, and they face out through the map's door (the
 // swap tool's rule, repeated here). Also reeds in clumps along part of the river's and the ponds' banks (the grass ran
-// bare to the water). Rerunnable: under "House Paths", "House Dressing" and "Shore Reeds".
+// bare to the water), and tilled earth (the mud layer) under the vegetable patches' crops. Rerunnable: under "House
+// Paths", "House Dressing" and "Shore Reeds"; the earth is painted to the same weight each run.
 var sb = new System.Text.StringBuilder();
 if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().path != "Assets/Scenes/LumbridgeRavenfall.unity") return "open LumbridgeRavenfall first";
 if (UnityEditor.EditorApplication.isPlaying) return "stop play mode first";
@@ -113,7 +114,7 @@ var sets = new[]
     new[] { "SM_Prop_Crate_01", "SM_Prop_Barrel_01" },
     new[] { "SM_Prop_Sack_01", "SM_Prop_Crate_02" },
     new[] { "SM_Prop_Pot_Plant_01" },
-    new[] { "SM_Prop_Bench_01" },
+    new[] { "SM_Prop_Bench_Seat_03" },
     new[] { "SM_Prop_Barrel_Stack_01" },
 };
 var rng = new System.Random(3226);
@@ -333,6 +334,42 @@ sb.Append("paths " + made + ", props " + placed + "; no path: " + string.Join(",
     foreach (var mc in waterCols) UnityEngine.Object.DestroyImmediate(mc);
     sb.Append("reeds " + count + "; ");
 }
+// ---- tilled earth under the vegetable patches (onions, potatoes, cabbages: the map's crops, wheat stays on grass) ----
+{
+    var terrain = UnityEngine.Object.FindAnyObjectByType<UnityEngine.Terrain>();
+    var td = terrain.terrainData;
+    var res = td.alphamapResolution; var layers = td.alphamapLayers;
+    var alpha = td.GetAlphamaps(0, 0, res, res);
+    const int Mud = 4; const float Radius = 1.7f;
+    var crops = 0;
+    var objects = root.Find("Objects other");
+    if (objects && layers > Mud)
+        foreach (UnityEngine.Transform c in objects)
+        {
+            if (!c.name.StartsWith("SM_Env_Crop_Single")) continue;
+            crops++;
+            var p = c.position - terrain.transform.position;
+            int ci = UnityEngine.Mathf.RoundToInt(p.x / td.size.x * res), cj = UnityEngine.Mathf.RoundToInt(p.z / td.size.z * res);
+            var reach = UnityEngine.Mathf.CeilToInt(Radius / td.size.x * res) + 1;
+            for (var j = cj - reach; j <= cj + reach; j++)
+            for (var i = ci - reach; i <= ci + reach; i++)
+            {
+                if (i < 0 || j < 0 || i >= res || j >= res) continue;
+                var wx = (i + 0.5f) / res * td.size.x; var wz = (j + 0.5f) / res * td.size.z;
+                var d = UnityEngine.Vector2.Distance(new UnityEngine.Vector2(wx, wz), new UnityEngine.Vector2(p.x, p.z));
+                var w = UnityEngine.Mathf.SmoothStep(0f, 1f, UnityEngine.Mathf.InverseLerp(Radius, Radius * 0.4f, d)) * 0.85f;
+                if (w <= alpha[j, i, Mud]) continue;
+                // the others give way in proportion
+                var rest = 1f - alpha[j, i, Mud]; var scale = rest > 1e-4f ? (1f - w) / rest : 0f;
+                for (var l = 0; l < layers; l++) alpha[j, i, l] = l == Mud ? w : alpha[j, i, l] * scale;
+            }
+        }
+    td.SetAlphamaps(0, 0, alpha);
+    UnityEditor.EditorUtility.SetDirty(td);
+    UnityEditor.AssetDatabase.SaveAssetIfDirty(td);
+    sb.Append("tilled under " + crops + " crops; ");
+}
+
 var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
 UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
 UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);

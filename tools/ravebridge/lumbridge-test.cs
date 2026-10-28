@@ -1093,10 +1093,10 @@ var things = new System.Collections.Generic.Dictionary<string, string[]>
     { "Roots", new[] { "SM_Env_Mangrove_Roots_01" } },
     { "Bullrushes", new[] { "SM_Env_Reeds_01", "SM_Env_Reeds_02" } },
     { "Wheat", new[] { "Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Prefabs/SM_Env_CropField_Clump_01.prefab", "Assets/PolygonNatureBiomes/PNB_Meadow_Forest/Prefabs/SM_Env_CropField_Clump_02.prefab" } },
-    { "Cabbage", new[] { "SM_Prop_Cabbage_01", "SM_Prop_Cabbage_02" } },
-    { "Potato", new[] { "SM_Env_Bush_Small_05" } },
-    { "Onion", new[] { "SM_Env_Bush_Small_05" } },
-    { "Rock", new[] { "SM_Env_Rock_01", "SM_Env_Rock_02", "SM_Env_Rock_03" } },
+    { "Cabbage", new[] { "Assets/PolygonAncientEmpire/Prefabs/Environment/SM_Env_Crop_Single_02.prefab" } },   // (no cabbage model in the project)
+    { "Potato", new[] { "Assets/PolygonAncientEmpire/Prefabs/Environment/SM_Env_Crop_Single_01.prefab", "Assets/PolygonAncientEmpire/Prefabs/Environment/SM_Env_Crop_Single_02.prefab" } },   // (a 1.5 m bush before: giant onions)
+    { "Onion", new[] { "Assets/PolygonAncientEmpire/Prefabs/Environment/SM_Env_Crop_Single_01.prefab", "Assets/PolygonAncientEmpire/Prefabs/Environment/SM_Env_Crop_Single_02.prefab" } },
+    { "Rock", new[] { "Assets/PolygonNature/Prefabs/Rocks/SM_Rock_01.prefab", "Assets/PolygonNature/Prefabs/Rocks/SM_Rock_02.prefab", "Assets/PolygonNature/Prefabs/Rocks/SM_Rock_03.prefab", "Assets/PolygonNature/Prefabs/Rocks/SM_Rock_04.prefab" } },   // (by name, PolygonAdventure's: brown, one a 2 m column)
     { "Rocks", new[] { "SM_Env_Rock_Chunk_01", "SM_Env_Rock_Chunk_02" } },
     { "Boulder", new[] { "Assets/PolygonNature/Prefabs/Rocks/SM_Rock_Boulder_01.prefab" } },   // (by name alone SM_Env_Rock_04 came from PolygonAdventure: a brown block like a stump)
     { "Stones", new[] { "SM_Generic_Small_Rocks_01", "SM_Generic_Small_Rocks_02" } },
@@ -1108,7 +1108,7 @@ var things = new System.Collections.Generic.Dictionary<string, string[]>
     { "Shelves", new[] { "SM_Prop_Shelf_01", "SM_Prop_Shelf_02" } },
     { "Sack", new[] { "SM_Prop_Sack_01", "SM_Prop_Sack_02" } },
     { "Sacks", new[] { "SM_Prop_Sack_03", "SM_Prop_Sack_04" } },
-    { "Bench", new[] { "SM_Prop_Bench_01" } },
+    { "Bench", new[] { "Assets/PolygonFantasyKingdom/Prefabs/Props/Furniture/SM_Prop_Bench_Seat_03.prefab" } },   // (by name, the Dungeon pack's park bench)
     { "Statue", new[] { "SM_Prop_Statue_Knight_01" } },
     { "Hay bales", new[] { "SM_Prop_Hay_Bale_01" } },
     { "Haystack", new[] { "SM_Prop_Hay_Pile_01" } },
@@ -1253,6 +1253,7 @@ foreach (var l in locs)
     if (key == "Water wheel") o.transform.localScale *= 0.5f;
     if (key == "Dairy cow") o.transform.localScale *= 0.8f;   // (3.2 m long as it comes)
     if (key == "Boulder" || key == "Mysterious stone") o.transform.localScale *= 0.6f;   // (2.7 m as it comes)
+    if (key == "Rock") o.transform.localScale *= 2.5f;   // (PolygonNature's are pebbles of 0.3 to 0.6 m)
     counts[key] = counts.TryGetValue(key, out var cc) ? cc + 1 : 1;
 }
 var placedTotal = 0; foreach (var kv in counts) placedTotal += kv.Value;
