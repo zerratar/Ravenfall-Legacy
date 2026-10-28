@@ -26,7 +26,8 @@ const float Tile = 2.5f, Unit = Tile / 128f;
 const float Floor = 3.75f;
 const float Base = -6f, Span = 30f;          // the terrain's foot and height range
 const float WaterDepth = 1.8f;
-const float HillScale = 0.6f;            // OSRS's heights read steep at 2.5 m a tile
+const float HillScale = 1.0f;            // OSRS's own proportions (heights in the tiles' units): at 0.6 the river
+                                         // valley and the mine's valley north of Al Kharid were half as deep as the game's
 
 if (UnityEditor.EditorApplication.isPlaying) return "stop play mode first";
 if (!System.IO.File.Exists(Json)) return "no " + Json + " (run scripts/cache/export-region.ts in rs-map-viewer)";
@@ -197,7 +198,8 @@ for (var i = 0; i < res; i++)
         float sum = 0; for (var a = -1; a <= 1; a++) for (var b = -1; b <= 1; b++) sum += hs[j + a, i + b];
         // only where the ground is not dug for water (the banks keep their shape)
         var stx = i * (float)N / (res - 1); var sty = j * (float)N / (res - 1);
-        if (!water(UnityEngine.Mathf.FloorToInt(stx + 0.4f), UnityEngine.Mathf.FloorToInt(sty + 0.4f)) && !water(UnityEngine.Mathf.FloorToInt(stx - 0.4f), UnityEngine.Mathf.FloorToInt(sty - 0.4f))) smooth[j, i] = sum / 9f;
+        // half way to the average: the tiles' corners soften, valley walls stay steep
+        if (!water(UnityEngine.Mathf.FloorToInt(stx + 0.4f), UnityEngine.Mathf.FloorToInt(sty + 0.4f)) && !water(UnityEngine.Mathf.FloorToInt(stx - 0.4f), UnityEngine.Mathf.FloorToInt(sty - 0.4f))) smooth[j, i] = (hs[j, i] + sum / 9f) * 0.5f;
     }
     hs = smooth;
 }

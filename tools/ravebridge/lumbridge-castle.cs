@@ -101,7 +101,7 @@ var stoneMid = new UnityEngine.Vector3((stoneTiles.x0 + stoneTiles.x1 + 1) * 0.5
 var woodMid = new UnityEngine.Vector3((woodTiles.x0 + woodTiles.x1 + 1) * 0.5f * Tile, 0, (woodTiles.y0 + woodTiles.y1 + 1) * 0.5f * Tile);
 // the decks' tops from the map (the bridge tiles' own heights, as the builder scales them), so reruns, with the
 // generated decks gone, still find them
-const float Unit = Tile / 128f, HillScale = 0.6f;
+const float Unit = Tile / 128f, HillScale = 1.0f;
 var mapJson = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(@"G:\GitHub\rs-map-viewer\out\lumbridge.json"));
 float stoneDeck = float.MinValue, woodDeck = float.MinValue;
 foreach (var bt in mapJson["bridges"].ToObject<int[][]>())
