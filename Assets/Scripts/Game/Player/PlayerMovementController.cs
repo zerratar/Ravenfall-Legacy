@@ -37,6 +37,9 @@ public class PlayerMovementController : MonoBehaviour
     private NavMeshPath strandedPath;
     private float strandedCheckTime = float.MinValue;
     private bool stranded;
+    // how far off the walkable mesh a destination may be (within the stations' reach) and where it was moved to
+    private const float SnapDistance = 1.5f;
+    private Vector3 snappedTo;
 
     //private NavigationAgent navAgentState;
 
@@ -142,7 +145,7 @@ public class PlayerMovementController : MonoBehaviour
 
     internal bool SetDestination(Vector3 pos)
     {
-        if (Destination == pos && navMeshAgent.destination == pos)
+        if (Destination == pos && (navMeshAgent.destination == pos || navMeshAgent.destination == snappedTo))
         {
             return true;
         }
@@ -161,7 +164,19 @@ public class PlayerMovementController : MonoBehaviour
 
         HasIncompletePath = false;
 
-        if (navMeshAgent.isOnNavMesh && navMeshAgent.CalculatePath(pos, CurrentPath))
+        // a target just off the walkable mesh (a station's pivot inside the hole its stall carves, as the mangrove
+        // island's alchemy table) has no path to it: go to the nearest walkable point beside it instead, or the player
+        // drops it as unreachable, picks it again and stands still for good
+        var found = navMeshAgent.isOnNavMesh && navMeshAgent.CalculatePath(pos, CurrentPath);
+        snappedTo = pos;
+        if (navMeshAgent.isOnNavMesh && (!found || CurrentPath.status == NavMeshPathStatus.PathInvalid)
+            && NavMesh.SamplePosition(pos, out var near, SnapDistance, navMeshAgent.areaMask))
+        {
+            snappedTo = near.position;
+            found = navMeshAgent.CalculatePath(snappedTo, CurrentPath);
+        }
+
+        if (found)
         {
             navmeshErrorCount = 0;
             Destination = pos;
