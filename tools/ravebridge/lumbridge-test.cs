@@ -284,6 +284,8 @@ if (rbTerrainMat)
     foreach (var p in new[] { "_LayerUVScale", "_MainUVScale", "_SecondaryUVScale" }) { var v = mat.GetVector(p); mat.SetVector(p, new UnityEngine.Vector4(v.x * k, v.y * k, 0, 0)); }
     // sand along the new coast, just above the sea, wet where the sea reaches
     mat.SetFloat("_SecondaryHeight", seaLevel + 0.9f);
+    // the first layer is the desert here (Al Kharid's sand), so it draws the shader's own sand, not meadow dirt
+    if (mat.HasProperty("_Dirt") && mat.HasProperty("_Main") && mat.GetTexture("_Main")) mat.SetTexture("_Dirt", mat.GetTexture("_Main"));
     mat.SetFloat("_SeaLevel", seaLevel);
     terrain.materialTemplate = (UnityEngine.Material)keep(mat, matPath);
 }
