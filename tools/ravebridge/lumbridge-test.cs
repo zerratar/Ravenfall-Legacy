@@ -1108,6 +1108,59 @@ if (roadsMap != null)
     sb.Append("roads " + n + "; ");
 }
 
+// ---- the game's look: MainWorld's light, sky and post processing, and its grass --------------------------------------
+stage = "look";
+{
+    // MainWorld's render settings (read from the scene: trilight ambient, its sky, no fog)
+    UnityEngine.RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+    UnityEngine.RenderSettings.ambientSkyColor = new UnityEngine.Color(0.48227125f, 0.50093204f, 0.5849056f);
+    UnityEngine.RenderSettings.ambientEquatorColor = new UnityEngine.Color(0.4572802f, 0.57152236f, 0.6603774f);
+    UnityEngine.RenderSettings.ambientGroundColor = new UnityEngine.Color(0.20507877f, 0.1878208f, 0.15292618f);
+    UnityEngine.RenderSettings.ambientIntensity = 1f;
+    UnityEngine.RenderSettings.fog = false;
+    var sky = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/ASTROFISH_GAMES/MEDIEVAL_SERIES/POLYSTYLE_MEDIEVAL_VILLAGE/Astrofish_Common/C_Assets/C_Materials/Materials/Sky_Prefabs.mat");
+    if (sky) UnityEngine.RenderSettings.skybox = sky;
+    // its sun: warm white at 1.75 with soft shadows, from the south west in the afternoon
+    UnityEngine.Light sun = null;
+    foreach (var l in UnityEngine.Object.FindObjectsByType<UnityEngine.Light>()) if (l.type == UnityEngine.LightType.Directional) sun = l;
+    if (sun)
+    {
+        sun.color = new UnityEngine.Color(1f, 0.94f, 0.84f);
+        sun.intensity = 1.75f;
+        sun.shadows = UnityEngine.LightShadows.Soft;
+        sun.transform.rotation = UnityEngine.Quaternion.Euler(48f, -35f, 0f);
+        UnityEngine.RenderSettings.sun = sun;
+    }
+    // its post processing
+    var profile = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.VolumeProfile>("Assets/Scenes/MainWorld/Post Processing Volume Profile.asset");
+    var volumeGo = UnityEngine.GameObject.Find("Post Processing");
+    if (!volumeGo) volumeGo = new UnityEngine.GameObject("Post Processing");
+    var volume = volumeGo.GetComponent<UnityEngine.Rendering.Volume>() ?? volumeGo.AddComponent<UnityEngine.Rendering.Volume>();
+    volume.isGlobal = true;
+    volume.sharedProfile = profile;
+    var cam0 = UnityEngine.Camera.main;
+    if (cam0)
+    {
+        var data = cam0.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+        if (data) data.renderPostProcessing = true;
+    }
+    // the grass: the game's profile, but no grass on the first layer (the desert here, meadow dirt elsewhere) and none
+    // below the sea
+    var baseProfile = UnityEditor.AssetDatabase.LoadAssetAtPath<GrassProfile>("Assets/World/Grass/Grass Profile.asset");
+    if (baseProfile)
+    {
+        var gp = UnityEngine.Object.Instantiate(baseProfile);
+        gp.name = "Lumbridge Grass Profile";
+        foreach (var layer in gp.layers)
+            if (layer != null && layer.terrainLayer && layer.terrainLayer.name == "Terrain_Meadow_Dirt_01") layer.density = 0f;
+        gp.waterLevel = seaLevel + 0.3f;
+        gp = (GrassProfile)keep(gp, Folder + "/Lumbridge Grass Profile.asset");
+        var field = terrainGo.GetComponent<GrassField>() ?? terrainGo.AddComponent<GrassField>();
+        field.Profile = gp;
+    }
+    sb.Append("look; ");
+}
+
 // ---- light and a camera over the castle ------------------------------------------------------------------------
 stage = "camera";
 var cam = UnityEngine.Camera.main;
