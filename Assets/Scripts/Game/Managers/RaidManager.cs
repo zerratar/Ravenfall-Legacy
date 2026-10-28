@@ -622,9 +622,11 @@ public class RaidManager : MonoBehaviour, IEvent
             var spawnPosition = Vector3.zero;
             if (chunkManager)
             {
+                // never on an event island (Ravebridge) or the mangrove island where the stream has not opened it
                 var randomChunk = chunkManager
                     .GetChunks()
                     .Where(x => x.Type != TaskType.Alchemy && x.Type != TaskType.Cooking && x.Type != TaskType.Crafting && x.Type != TaskType.Arena)
+                    .Where(x => !x.Island || !x.Island.EventOnly && !x.Island.Locked)
                     .OrderBy(x => UnityEngine.Random.value)
                     .FirstOrDefault();
 

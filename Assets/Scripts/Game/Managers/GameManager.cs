@@ -725,7 +725,8 @@ public class GameManager : MonoBehaviour, IGameManager
 
         Chunks.Init();
 
-        var chunks = this.Chunks.GetChunks();
+        // an event island (Ravebridge) is not somewhere to go and train
+        var chunks = this.Chunks.GetChunks().Where(x => !x.Island || !x.Island.EventOnly);
         var grouped = chunks.GroupBy(x => x.Island.Identifier);
         foreach (var island in grouped.OrderBy(x => x.Value.Sum(y => y.RequiredCombatLevel + y.RequiredSkilllevel)))
         {
