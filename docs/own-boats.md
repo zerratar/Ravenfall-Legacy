@@ -183,7 +183,7 @@ each frame, which the current instanced renderers do not support yet.
   few friends.
 - **The sea**: events at sea, sea creatures, treasure fished up.
 
-### Guests aboard (discussed 2026-10-28)
+### Guests aboard (discussed and built 2026-10-28)
 
 The owner can take guests who tag along, up to the boat's seats. Seats belong to the boat type, so nothing is built
 around two: the rowboat has 1 (the owner), the fishing boat 2 (the owner and one guest), and bigger player-owned
@@ -199,7 +199,7 @@ player who just wants to travel never ends up in someone's boat by accident. It 
 | `!boat join <player>` | anyone | asks to come aboard that player's boat |
 | `!boat accept` | whoever was asked | says yes to the request waiting for them, invite or join alike |
 | `!boat decline` | whoever was asked | says no |
-| `!boat leave` | the guest | gets off at the next dock the boat reaches |
+| `!boat leave` | the guest | gets off at the nearest dock (as does `!disembark`); ashore, no longer comes along |
 
 - Asking needs both players on the same island and the owner ashore; a boat already at sea does not turn back. A
   full boat answers that there is no seat left.
@@ -224,6 +224,26 @@ player who just wants to travel never ends up in someone's boat by accident. It 
   - **The captain's cut**: each fish a guest lands gives the owner a small chance of a bonus fish of their own,
     taken from nobody. Decided by the server, beside the guest's catch (the fishing task processor at sea).
   - **No fare.** Guests never pay coins; a ride stays a favour, not a trade.
+
+**Built (2026-10-28).**
+
+- Game: `BoatCrews` (requests, crews, seats per boat: rowboat 1, fishing boat 2, sloop 4), `OwnBoat` (guest seats,
+  the fishing boat's front oars on while a guest sits under them, `SailingSpeeds.Boat` with the rowing boost and
+  `OwnerExpFactor`), `FerryHandler` (the crew walks to the dock with the owner and boards as the boat comes
+  alongside; a guest rides, earns Sailing exp, fishes over the port side at anchor and gets off; crews end when the
+  boat is put away), `!boat invite/join/accept/decline/leave` in `BoatCommand`. Seats are `GuestSeat1`, `2`, `3` in
+  the prefabs (`tools/sailing/make-boat-prefabs.cs`): the fishing boat's guest sits on the bench under the front
+  oars, at its front edge clear of the mast; the sloop's stand on its deck. A guest trip counts after 150 m.
+- Server: `BoatManager` keeps who is aboard whose boat (`api/boats/{owner}/guest-aboard/{guest}` and
+  `guest-ashore/{guest}/{trip|none}`), the captain's cut (`GuestCaught`, from `FishingTaskProcessor` at sea: 20%
+  before the usual one-in-two drop roll, about one fish in ten) and the `ferryman` achievement (50 and 500 trips:
+  "the Ferryman", "the Sea Captain").
+- Bots: only the `!boat` help text; both bots pass the arguments on and the game answers.
+- Found while testing: at a high Sailing level an own boat circled its first waypoint for good (a turning circle
+  wider than the distance to it); it now slows until the circle fits. Roaming (`!sail` with no island) goes at 45%
+  of the boat's speed, a relaxed pace; a course to an island goes at full speed (decided 2026-10-28). An owner who
+  weighed anchor kept the fishing pose while sailing on; back at the helm now.
+- Not kept over a restart: crews live in the game only, so a guest comes back by their own boat or the ferry.
 
 ## Found while surveying (fix independent of boats)
 

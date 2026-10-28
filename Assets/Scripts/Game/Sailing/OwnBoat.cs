@@ -22,10 +22,23 @@ public sealed class OwnBoat : MonoBehaviour
     /// <summary>The island it sails for; null while wandering or anchored.</summary>
     public string Destination { get; private set; }
     public bool Moving => (State == Course.Sailing || State == Course.Wandering) && route != null;
-    public float Speed => SailingSpeeds.Boat(Tier, Owner ? Owner.Stats.Sailing.Level : 1);
+    /// <summary>The owner's speed, and a little more for each guest at the oars (within the boat's cap).</summary>
+    public float Speed => SailingSpeeds.Boat(Tier, Owner ? Owner.Stats.Sailing.Level : 1, guests.Count);
+
+    /// <summary>Guests aboard (docs/own-boats.md, "Guests aboard"), each in a seat of their own.</summary>
+    public IReadOnlyList<PlayerController> Guests => guests;
+    /// <summary>Guests sit at the oars on the small boats; the sloop's stand on its deck.</summary>
+    public bool GuestsSit => Tier != BoatItems.Tier.Sloop;
+
+    private readonly List<PlayerController> guests = new List<PlayerController>();
+    private readonly List<Transform> guestSeats = new List<Transform>();
+    private readonly List<GameObject> guestOars = new List<GameObject>();
 
     /// <summary>Raised once when it comes alongside its destination's dock point.</summary>
     public event Action<OwnBoat> Arrived;
+
+    /// <summary>Roaming (!sail with no island) goes at this share of the boat's speed.</summary>
+    private const float WanderPace = 0.45f;
 
     private List<Vector3> route;
     private int next;
@@ -45,6 +58,15 @@ public sealed class OwnBoat : MonoBehaviour
         boat.Owner = owner;
         boat.Tier = tier;
         boat.Seat = go.transform.Find("Seat") ?? go.transform;
+        // GuestSeat1, 2... and the fishing boat's front oars, off until a guest takes them (tools/sailing/make-boat-prefabs.cs)
+        for (var i = 1; ; i++)
+        {
+            var guestSeat = go.transform.Find("GuestSeat" + i);
+            if (!guestSeat) break;
+            boat.guestSeats.Add(guestSeat);
+        }
+        foreach (var t in go.GetComponentsInChildren<Transform>(true))
+            if (t.name == "SM_Prop_Oar_01" && !t.gameObject.activeSelf) boat.guestOars.Add(t.gameObject);
         boat.heading = heading;
         boat.flat = new Vector3(at.x, SeaChart.Sea, at.z);
         boat.State = Course.Anchored;
@@ -102,10 +124,54 @@ public sealed class OwnBoat : MonoBehaviour
         State = course;
     }
 
+    /// <summary>A free seat for a guest, or null when the boat is full.</summary>
+    public Transform TakeSeat(PlayerController guest)
+    {
+        if (!guest) return null;
+        if (guests.Contains(guest)) return guestSeats[guests.IndexOf(guest)];
+        guests.RemoveAll(g => !g);
+        if (guests.Count >= guestSeats.Count) return null;
+        guests.Add(guest);
+        ShowGuestOars();
+        return guestSeats[guests.Count - 1];
+    }
+
+    public void FreeSeat(PlayerController guest)
+    {
+        var at = guests.IndexOf(guest);
+        if (at < 0) return;
+        guests.RemoveAt(at);
+        Reseat();
+    }
+
+    /// <summary>The guests left move up a seat, so the seats in use are always the first (the fishing boat's oars).</summary>
+    private void Reseat()
+    {
+        for (var i = 0; i < guests.Count; i++)
+        {
+            if (!guests[i] || guests[i].transform.parent == guestSeats[i]) continue;
+            guests[i].transform.SetParent(guestSeats[i]);
+            guests[i].transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        }
+        ShowGuestOars();
+    }
+
+    private void ShowGuestOars()
+    {
+        foreach (var oar in guestOars) if (oar) oar.SetActive(guests.Count > 0);
+    }
+
     private void Update()
     {
-        // its owner gone (left the game): nobody to sail it
-        if (!Owner) { Destroy(gameObject); return; }
+        // its owner gone (left the game): nobody to sail it. Its guests are lifted out first (they would go with it);
+        // each lands at the nearest dock on its own (FerryHandler)
+        if (!Owner)
+        {
+            foreach (var guest in guests) if (guest) guest.transform.SetParent(null);
+            Destroy(gameObject);
+            return;
+        }
+        if (guests.RemoveAll(g => !g) > 0) Reseat();
         if (Moving) Steer(GameTime.deltaTime);
         Place();
     }
@@ -137,9 +203,15 @@ public sealed class OwnBoat : MonoBehaviour
         var turn = Mathf.DeltaAngle(heading, wanted);
         heading += Mathf.Clamp(turn, -turnRate * dt, turnRate * dt);
 
-        // slower through a sharp turn and coming alongside, so it never overshoots or circles its mark
+        // roaming with nowhere to be, it takes its time (decided 2026-10-28); bound for an island it goes at full speed
         var speed = Speed;
+        if (State == Course.Wandering) speed *= WanderPace;
+        // slower through a sharp turn and coming alongside, so it never overshoots or circles its mark
         speed *= Mathf.Lerp(1f, 0.35f, Mathf.Clamp01(Mathf.Abs(turn) / 90f));
+        // a mark inside the turning circle is never reached at speed: at the fishing boat's top speed (36 m/s) and 45
+        // degrees a second the circle is 46 m across, and a high level owner circled a point by the dock for good.
+        // Slow until the circle fits in half the distance to it
+        if (Mathf.Abs(turn) > 15f) speed = Mathf.Min(speed, Mathf.Max(2f, turnRate * Mathf.Deg2Rad * distance * 0.5f));
         if (last) speed = Mathf.Min(speed, Mathf.Max(2f, distance * 0.8f));
         var forward = Quaternion.Euler(0, heading, 0) * Vector3.forward;
         // close in, steer straight at the mark so the last metres are never missed

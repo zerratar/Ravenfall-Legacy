@@ -1807,8 +1807,10 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             return;
         }
 
-        // a new task at sea means going ashore, except fishing from an own boat at anchor (docs/own-boats.md)
-        var fishingAtAnchor = type == TaskType.Fishing && ferryHandler && ferryHandler.OnOwnBoat && ferryHandler.OwnBoat.State == OwnBoat.Course.Anchored;
+        // a new task at sea means going ashore, except fishing from an own boat at anchor (docs/own-boats.md); a guest
+        // aboard someone's boat keeps their seat, their line going in when the owner drops anchor
+        var fishingAtAnchor = type == TaskType.Fishing && ferryHandler
+            && (ferryHandler.OnOwnBoat && ferryHandler.OwnBoat.State == OwnBoat.Course.Anchored || ferryHandler.IsGuest);
         if (ferryHandler && ferryHandler.Active && !fishingAtAnchor)
         {
             ferryHandler.BeginDisembark();

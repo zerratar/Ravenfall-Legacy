@@ -27,6 +27,20 @@ namespace RavenNest.SDK.Endpoints
             return request.Create().Identifier(characterId.ToString()).Method("build").Build()
                 .SendAsync<BoatBuildResultData, BoatBuildRequestData>(ApiRequestTarget.Boats, ApiRequestType.Post, new BoatBuildRequestData { Boat = boat });
         }
+
+        /// <summary>A guest climbed aboard the owner's boat ("Guests aboard"): the owner gets a cut of their fish at sea.</summary>
+        public Task<bool> GuestAboardAsync(Guid ownerId, Guid guestId)
+        {
+            return request.Create().Identifier(ownerId.ToString()).Method("guest-aboard").AddParameter(guestId.ToString()).Build()
+                .SendAsync<bool>(ApiRequestTarget.Boats, ApiRequestType.Post);
+        }
+
+        /// <summary>A guest stepped off; a whole trip (they sailed a fair way) counts towards the owner's Ferryman titles.</summary>
+        public Task<bool> GuestAshoreAsync(Guid ownerId, Guid guestId, bool trip)
+        {
+            return request.Create().Identifier(ownerId.ToString()).Method("guest-ashore").AddParameter(guestId.ToString()).AddParameter(trip ? "trip" : "none").Build()
+                .SendAsync<bool>(ApiRequestTarget.Boats, ApiRequestType.Post);
+        }
     }
 
     public class BoatBuildRequestData

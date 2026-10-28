@@ -54,8 +54,8 @@ foreach (var b in boats)
             o.transform.localRotation = UnityEngine.Quaternion.Euler(euler);
             o.transform.localScale *= scale;
         }
-        // one pair of oars for its one rower: the kit's front pair (Oar_01, beside the mast) goes, the pair nearer the
-        // owner's place at the stern stays
+        // one pair of oars for its one rower: the kit's front pair (Oar_01, beside the mast) is off, the pair nearer the
+        // owner's place at the stern stays; OwnBoat turns the front pair on while a guest sits on the bench under them
         foreach (var t in model.GetComponentsInChildren<UnityEngine.Transform>(true))
             if (t.name == "SM_Prop_Oar_01") t.gameObject.SetActive(false);
         Prop("Assets/PolygonVikings/Prefabs/Props/SM_Prop_Fish_Pile_01.prefab", new UnityEngine.Vector3(0, deck, FishPileZ), UnityEngine.Vector3.zero, 1.2f);
@@ -97,10 +97,39 @@ foreach (var b in boats)
         }
     }
 
+    // guests' places (docs/own-boats.md, "Guests aboard"), GuestSeat1, 2...: the fishing boat's one guest sits on the
+    // bench under the front oars (z 1.10 to 1.30, its top 0.57 above the water line), at its front edge, since in its
+    // middle the mast just behind went through their back; the sloop's three stand on its deck, found by casting down
+    // as for the owner's seat. The rowboat has room for its owner alone.
+    var guestSeats = new System.Collections.Generic.List<UnityEngine.Vector3>();
+    if (b.Name == "FishingBoat") guestSeats.Add(new UnityEngine.Vector3(0, 0.57f, 1.32f));
+    if (b.Name == "Sloop")
+    {
+        UnityEngine.Physics.SyncTransforms();
+        foreach (var at2 in new[] { new UnityEngine.Vector2(-1.1f, -2.6f), new UnityEngine.Vector2(1.1f, -2.6f), new UnityEngine.Vector2(0f, 3.2f) })
+        {
+            var h = deck;
+            var guestFrom = root.transform.position + new UnityEngine.Vector3(at2.x, 30f, at2.y);
+            var guestBest = float.MinValue;
+            foreach (var c in model.GetComponentsInChildren<UnityEngine.Collider>())
+            {
+                if (c.Raycast(new UnityEngine.Ray(guestFrom, UnityEngine.Vector3.down), out var hit, 60f) && hit.point.y > guestBest && hit.point.y < root.transform.position.y + 4f) guestBest = hit.point.y;
+            }
+            if (guestBest > float.MinValue) h = guestBest - root.transform.position.y;
+            guestSeats.Add(new UnityEngine.Vector3(at2.x, h, at2.y));
+        }
+    }
+
     foreach (var c in root.GetComponentsInChildren<UnityEngine.Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
     var seat = new UnityEngine.GameObject("Seat").transform;
     seat.SetParent(root.transform, false);
     seat.localPosition = new UnityEngine.Vector3(0, deck, b.Seat);
+    for (var g = 0; g < guestSeats.Count; g++)
+    {
+        var guestSeat = new UnityEngine.GameObject("GuestSeat" + (g + 1)).transform;
+        guestSeat.SetParent(root.transform, false);
+        guestSeat.localPosition = guestSeats[g];
+    }
     root.transform.position = UnityEngine.Vector3.zero;
     UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, folder + "/" + b.Name + ".prefab");
     UnityEngine.Object.DestroyImmediate(root);

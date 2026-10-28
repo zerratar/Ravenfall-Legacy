@@ -19,8 +19,11 @@ public static class SailingSpeeds
     /// <summary>The ferry's speed with a captain of this Sailing level (0 without one); boost scrolls multiply it.</summary>
     public static float Ferry(float slowest, int captainLevel) => slowest + (slowest * FerryCapFactor - slowest) * Reach(captainLevel);
 
-    /// <summary>An own boat's steady speed in metres a second, by its tier and the owner's Sailing level.</summary>
-    public static float Boat(BoatItems.Tier tier, int sailingLevel)
+    /// <summary>
+    /// An own boat's steady speed in metres a second, by its tier and the owner's Sailing level. Guests at the oars
+    /// add a little (decided 2026-10-28): 10% for the first and 5% for each after, never past the boat's cap.
+    /// </summary>
+    public static float Boat(BoatItems.Tier tier, int sailingLevel, int guests = 0)
     {
         var (slowest, fastest) = tier switch
         {
@@ -28,8 +31,15 @@ public static class SailingSpeeds
             BoatItems.Tier.FishingBoat => (16f, 36f),
             _ => (12f, 24f),
         };
-        return slowest + (fastest - slowest) * Reach(sailingLevel);
+        var speed = slowest + (fastest - slowest) * Reach(sailingLevel);
+        return Mathf.Min(fastest, speed * (1f + GuestRowing(guests)));
     }
+
+    /// <summary>The speed guests add, as a share: 0.1 for one, 0.15 for two, 0.2 for three.</summary>
+    public static float GuestRowing(int guests) => guests <= 0 ? 0f : 0.1f + 0.05f * (guests - 1);
+
+    /// <summary>The owner's Sailing exp with guests aboard: 10% more for each (decided 2026-10-28).</summary>
+    public static double OwnerExpFactor(int guests) => 1d + 0.1d * Mathf.Max(0, guests);
 }
 
 /// <summary>
@@ -46,11 +56,12 @@ public static class SeaFishing
         "Raw Mackerel", "Raw Tuna", "Raw Marlin", "Raw Anglerfish", "Raw Giant Squid", "Raw Sea Serpent", "Message in a Bottle",
     };
 
-    /// <summary>Whether a player is out at anchor on their own boat with their line in the water.</summary>
+    /// <summary>Whether a player is out at anchor on an own boat (theirs, or as a guest) with their line in the water.</summary>
     public static bool IsFishing(PlayerController player)
     {
         var f = player ? player.ferryHandler : null;
-        return f && f.OnOwnBoat && f.OwnBoat.State == OwnBoat.Course.Anchored && player.GetTask() == TaskType.Fishing;
+        var boat = f ? f.Boat : null;
+        return boat && boat.State == OwnBoat.Course.Anchored && player.GetTask() == TaskType.Fishing;
     }
 }
 
