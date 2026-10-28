@@ -1,7 +1,7 @@
 // Run with: unity command eval_file --file tools/sailing/make-boat-prefabs.cs
 //
 // Makes the own boats' prefabs in Assets/World/Sailing/Boats (docs/own-boats.md, phase 2) from the Synty kits, as
-// the decor prefabs are made: Rowboat (PolygonPirates' rowing boat), FishingBoat (its small boat with a fish pile, a net over the side,
+// the decor prefabs are made: Rowboat (PolygonPirates' rowing boat), FishingBoat (its small boat with one pair of oars, a fish pile, a net over the side,
 // two rods and the medium boat's rig scaled down as its sail) and Sloop (its medium boat). Each has its pivot at the water line, the bow along +Z, a "Seat" where
 // the owner sits or stands, high enough that the sea never shows inside the hull, (found by casting down onto the hull) and no colliders. Rerun to rebuild them.
 var folder = "Assets/World/Sailing/Boats";
@@ -54,6 +54,10 @@ foreach (var b in boats)
             o.transform.localRotation = UnityEngine.Quaternion.Euler(euler);
             o.transform.localScale *= scale;
         }
+        // one pair of oars for its one rower: the kit's front pair (Oar_01, beside the mast) goes, the pair nearer the
+        // owner's place at the stern stays
+        foreach (var t in model.GetComponentsInChildren<UnityEngine.Transform>(true))
+            if (t.name == "SM_Prop_Oar_01") t.gameObject.SetActive(false);
         Prop("Assets/PolygonVikings/Prefabs/Props/SM_Prop_Fish_Pile_01.prefab", new UnityEngine.Vector3(0, deck, FishPileZ), UnityEngine.Vector3.zero, 1.2f);
         // the rods lean out over each side, as when trolling, not crossed at the stern
         Prop("Assets/PolygonPirates/Prefabs/Props/SM_Prop_FishingRod_01.prefab", new UnityEngine.Vector3(0.55f, deck, -1.2f), new UnityEngine.Vector3(-15, 0, -40), 1.6f);
