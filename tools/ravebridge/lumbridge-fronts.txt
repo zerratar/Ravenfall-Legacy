@@ -14,3 +14,4 @@ SM_Bld_Preset_House_02_A_Optimized 180
 SM_Bld_Preset_House_09_A_Optimized 180
 SM_Bld_Preset_Shelter_02_Optimized 270
 SM_Prop_Destroyed_House_Preset_01 0
+SM_Bld_Preset_House_01_A_Optimized 180

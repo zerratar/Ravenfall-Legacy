@@ -1212,6 +1212,15 @@ var things = new System.Collections.Generic.Dictionary<string, string[]>
     { "Bow cabinet", new[] { "SM_Prop_Weapon_Rack_01" } },
     { "Big vase", new[] { "SM_Prop_Vase_03" } },
     { "Spit roast", new[] { "SM_Env_CampFire_01" } },
+    { "Coop", new[] { "Medieval_Shelter_Small" } },                // a small roofed shelter, as wide as the map's 2 tiles
+    { "Dairy cow", new[] { "Assets/Low Poly Animated Animals/- Prefabs/Animals/Cow.prefab" } },
+    { "Strong Tree", new[] { "SM_Env_Tree_Large_01" } },
+    { "Strong Yew", new[] { "SM_Env_Tree_Large_02" } },
+    { "Small fishing net", new[] { "SM_Prop_Net_01" } },
+    { "Rowboat", new[] { "Assets/PolygonFantasyKingdom/Prefabs/Bonus/SM_Prop_Boat_01.prefab" } },
+    { "Dry stone wall", new[] { "SM_Env_StoneWall_01" } },
+    { "Mysterious stone", new[] { "SM_Env_Rock_04" } },
+    { "Scoreboard", new[] { "SM_Prop_Quest_Board_01" } },
 };
 var counts = new System.Collections.Generic.Dictionary<string, int>();
 var missing = new System.Collections.Generic.Dictionary<string, int>();
@@ -1221,7 +1230,7 @@ foreach (var l in locs)
     if (type != 10 && type != 11) continue;
     var name = (string)l["name"];
     if (name == null || name == "null") continue;
-    var key = name;
+    var key = name.Replace("<col=ff9040>", "").Replace("</col>", "");
     if (key.EndsWith(" rocks") || key.EndsWith(" rock")) key = "Rocks";
     if (!things.TryGetValue(key, out var choices)) { missing[name] = missing.TryGetValue(name, out var mc) ? mc + 1 : 1; continue; }
     var pf = prefab(choices[rng.Next(choices.Length)]);
@@ -1242,6 +1251,7 @@ foreach (var l in locs)
     o.transform.SetPositionAndRotation(pos, UnityEngine.Quaternion.Euler(0, yaw, 0));
     if (natural) o.transform.localScale *= 0.85f + (float)rng.NextDouble() * 0.3f;
     if (key == "Water wheel") o.transform.localScale *= 0.5f;
+    if (key == "Dairy cow") o.transform.localScale *= 0.8f;   // (3.2 m long as it comes)
     counts[key] = counts.TryGetValue(key, out var cc) ? cc + 1 : 1;
 }
 var placedTotal = 0; foreach (var kv in counts) placedTotal += kv.Value;
