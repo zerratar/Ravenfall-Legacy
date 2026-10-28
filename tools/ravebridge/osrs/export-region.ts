@@ -42,7 +42,13 @@ function lookOf(t: any): any {
                     if (i >= 0) hsl = t.recolorTo[i];
                 }
                 if (tex >= 0) {
-                    try { hsl = textureLoader.getAverageHsl(tex); } catch (e) {}
+                    // the loc's own texture swaps (one roof model, red tiles here, slate there)
+                    let tx = tex;
+                    if (t.retextureFrom) {
+                        const ri = t.retextureFrom.indexOf(tex);
+                        if (ri >= 0) tx = t.retextureTo[ri];
+                    }
+                    try { hsl = textureLoader.getAverageHsl(tx); } catch (e) {}
                 }
                 const rgb = HSL_RGB_MAP[hsl & 0xffff];
                 r += (rgb >> 16) & 255; g += (rgb >> 8) & 255; b += rgb & 255; n++;
@@ -117,6 +123,8 @@ function roofSurface(t: any, type: number, rot: number): any {
     try { m = locModels.getLocModelData(t, type, rot); } catch (e) { return undefined; }
     if (!m || !m.verticesCount) return undefined;
     const tris: number[][] = [];
+    // the surface's look: area by texture (after the loc's own swaps) or colour, the largest wins
+    const areas = new Map<string, number>();
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
     for (let f = 0; f < m.faceCount; f++) {
         if (m.faceAlphas && (m.faceAlphas[f] & 0xff) > 200) continue;
@@ -129,6 +137,12 @@ function roofSurface(t: any, type: number, rot: number): any {
         const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
         if (!(len > 0) || Math.abs(ny) / len < 0.3) continue;
         tris.push([ax, ay, az, bx, by, bz, cx, cy, cz]);
+        let tex = m.faceTextures ? m.faceTextures[f] : -1;
+        if (tex >= 0 && t.retextureFrom) { const ri = t.retextureFrom.indexOf(tex); if (ri >= 0) tex = t.retextureTo[ri]; }
+        let hsl = m.faceColors[f];
+        if (tex < 0 && t.recolorFrom) { const ci = t.recolorFrom.indexOf(hsl); if (ci >= 0) hsl = t.recolorTo[ci]; }
+        const key = tex >= 0 ? "t" + tex : "c" + hsl;
+        areas.set(key, (areas.get(key) ?? 0) + len);
         minX = Math.min(minX, ax, bx, cx); maxX = Math.max(maxX, ax, bx, cx);
         minZ = Math.min(minZ, az, bz, cz); maxZ = Math.max(maxZ, az, bz, cz);
     }
@@ -155,7 +169,12 @@ function roofSurface(t: any, type: number, rot: number): any {
             h.push(best < 0 ? -1 : Math.round(best));
         }
     }
-    return { x0, z0, nx: nxs, nz: nzs, h };
+    let bestKey = "", bestArea = -1;
+    for (const [k, a] of areas) if (a > bestArea) { bestArea = a; bestKey = k; }
+    let rgb = -1;
+    if (bestKey.startsWith("t")) { try { rgb = HSL_RGB_MAP[textureLoader.getAverageHsl(parseInt(bestKey.slice(1))) & 0xffff]; } catch (e) {} }
+    else if (bestKey) rgb = HSL_RGB_MAP[parseInt(bestKey.slice(1)) & 0xffff];
+    return { x0, z0, nx: nxs, nz: nzs, h, rgb, texture: bestKey.startsWith("t") ? parseInt(bestKey.slice(1)) : -1 };
 }
 
 const scene = new Scene(Scene.MAX_LEVELS, sizeX, sizeY);
@@ -224,7 +243,19 @@ const floors: number[][][] = [[], [], [], []];
 for (let level = 1; level < Scene.MAX_LEVELS; level++)
     for (let x = 0; x < sizeX; x++)
         for (let y = 0; y < sizeY; y++)
-            if (scene.tileOverlays[level][x][y] > 0 || scene.tileUnderlays[level][x][y] > 0) floors[level].push([x, y]);
+            if (scene.tileOverlays[level][x][y] > 0 || scene.tileUnderlays[level][x][y] > 0) {
+                // with its colour: the overlay's (its texture's average for a textured one), else the underlay's
+                let rgb = -1;
+                const o = scene.tileOverlays[level][x][y];
+                const u = scene.tileUnderlays[level][x][y];
+                if (o > 0) {
+                    const ot: any = overlays.load(o - 1);
+                    if (ot.textureId >= 0) { try { rgb = HSL_RGB_MAP[textureLoader.getAverageHsl(ot.textureId) & 0xffff]; } catch (e) {} }
+                    else if (ot.primaryRgb >= 0 && ot.primaryRgb !== 0xff00ff) rgb = ot.primaryRgb;
+                }
+                if (rgb < 0 && u > 0) rgb = (underlays.load(u - 1) as any).rgbColor;
+                floors[level].push([x, y, rgb]);
+            }
 const heights: number[][] = [];
 const underlay: number[][] = [];
 const overlay: number[][] = [];

@@ -358,7 +358,9 @@ stage = "floors";
     for (var level = 1; level < floorsJ.Length; level++)
     {
         var set = new System.Collections.Generic.HashSet<long>();
-        foreach (var f in floorsJ[level]) set.Add(((long)f[0] << 20) | (uint)f[1]);
+        // tiles with no colour are not drawn in the game (walkable tops of nothing; over Al Kharid's palace they made
+        // a grey slab over its white roof terrace)
+        foreach (var f in floorsJ[level]) if (f.Length < 3 || f[2] >= 0) set.Add(((long)f[0] << 20) | (uint)f[1]);
         // patches of fewer than four tiles are ledges sticking out of walls (the gatehouse had two): left out
         {
             var seenF = new System.Collections.Generic.HashSet<long>();
@@ -390,6 +392,8 @@ stage = "floors";
             diagonals[((long)(int)l["x"] << 20) | (uint)(int)l["y"]] = (int)l["rot"];
         }
         var verts = new System.Collections.Generic.List<UnityEngine.Vector3>();
+        // one triangle list per floor colour (the map's: grey stone, planks, Al Kharid's white roof terraces)
+        var trisByColour = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<int>>();
         var tris = new System.Collections.Generic.List<int>();
         System.Action<UnityEngine.Vector3, UnityEngine.Vector3, UnityEngine.Vector3, UnityEngine.Vector3> quad = (a, b, c, d) =>
         {
@@ -399,6 +403,10 @@ stage = "floors";
         {
             int x = f[0], y = f[1];
             if (!set.Contains(((long)x << 20) | (uint)y)) continue;
+            // its colour, a little quantised so few materials are made
+            var rgbF = f.Length > 2 && f[2] >= 0 ? f[2] : 0x777570;
+            var ck = (((rgbF >> 16) & 255) / 16) * 256 + (((rgbF >> 8) & 255) / 16) * 16 + ((rgbF & 255) / 16);
+            if (!trisByColour.TryGetValue(ck, out tris)) trisByColour[ck] = tris = new System.Collections.Generic.List<int>();
             if (deckAt.TryGetValue(((long)x << 20) | (uint)y, out var dk))
             {
                 // a bridge's deck, arched as the map has it, a slab under it
@@ -445,11 +453,23 @@ stage = "floors";
             if (!set.Contains(((long)x << 20) | (uint)(y + 1))) quad(new UnityEngine.Vector3(x0, lo, z1), new UnityEngine.Vector3(x1, lo, z1), new UnityEngine.Vector3(x1, top, z1), new UnityEngine.Vector3(x0, top, z1));
         }
         var mesh = new UnityEngine.Mesh { name = "Floors " + level, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
-        mesh.SetVertices(verts); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
+        mesh.SetVertices(verts);
+        mesh.subMeshCount = trisByColour.Count;
+        var mats = new UnityEngine.Material[trisByColour.Count];
+        var si = 0;
+        foreach (var kv in trisByColour)
+        {
+            mesh.SetTriangles(kv.Value, si);
+            var colour = new UnityEngine.Color((kv.Key / 256) / 15f, ((kv.Key / 16) % 16) / 15f, (kv.Key % 16) / 15f);
+            var fm = new UnityEngine.Material(floorMat) { name = "Lumbridge Floor " + kv.Key };
+            fm.SetColor("_BaseColor", colour * 0.95f);
+            mats[si++] = (UnityEngine.Material)keep(fm, Folder + "/Lumbridge Floor " + kv.Key + ".mat");
+        }
+        mesh.RecalculateNormals(); mesh.RecalculateBounds();
         var go = new UnityEngine.GameObject("Floors " + level);
         go.transform.SetParent(group("Floors"), false);
         go.AddComponent<UnityEngine.MeshFilter>().sharedMesh = mesh;
-        go.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = floorMat;
+        go.AddComponent<UnityEngine.MeshRenderer>().sharedMaterials = mats;
         go.AddComponent<UnityEngine.MeshCollider>().sharedMesh = mesh;
     }
     sb.Append("floors; ");
@@ -483,16 +503,12 @@ stage = "roofs";
         var basis = UnityEngine.Mathf.Max(UnityEngine.Mathf.Max(corner(x, y), corner(x + 1, y)), UnityEngine.Mathf.Max(corner(x, y + 1), corner(x + 1, y + 1))) + level * Floor;
         // its colour: Lumbridge's roofs are red tiles; the map's averaged warm colours come out brown, so they get the
         // tile red (lighter or darker as the map's); slate and thatch keep their own
-        var colour = new UnityEngine.Color(0.55f, 0.25f, 0.18f);
-        var look = l["look"];
-        if (look != null && look["rgb"].Type != Newtonsoft.Json.Linq.JTokenType.Null)
-        {
-            var rgb = look["rgb"].ToObject<int[]>();
-            colour = new UnityEngine.Color(rgb[0] / 255f, rgb[1] / 255f, rgb[2] / 255f);
-        }
-        UnityEngine.Color.RGBToHSV(colour, out var hue, out var sat, out var val);
-        if ((hue < 0.1f || hue > 0.95f) && sat > 0.25f) colour = UnityEngine.Color.HSVToRGB(0.025f, 0.68f, UnityEngine.Mathf.Clamp(val * 1.35f, 0.42f, 0.7f));
-        var cq = UnityEngine.Mathf.RoundToInt(colour.r * 15) * 256 + UnityEngine.Mathf.RoundToInt(colour.g * 15) * 16 + UnityEngine.Mathf.RoundToInt(colour.b * 15);
+        // its look: the surface's own texture (6 red tiles, 44 slate, 18 thatch: our textures) or its colour
+        var texId = sf["texture"] != null ? (int)sf["texture"] : -1;
+        var rgbS = sf["rgb"] != null ? (int)sf["rgb"] : -1;
+        var colour = rgbS >= 0 ? new UnityEngine.Color(((rgbS >> 16) & 255) / 255f, ((rgbS >> 8) & 255) / 255f, (rgbS & 255) / 255f) : new UnityEngine.Color(0.55f, 0.25f, 0.18f);
+        var cq = texId == 6 || texId == 44 || texId == 18 ? -1000 - texId
+            : UnityEngine.Mathf.RoundToInt(colour.r * 15) * 256 + UnityEngine.Mathf.RoundToInt(colour.g * 15) * 16 + UnityEngine.Mathf.RoundToInt(colour.b * 15);
         if (!paletteIndex.TryGetValue(cq, out var ci)) { ci = palette.Count; palette.Add(colour); paletteIndex[cq] = ci; }
         int x0 = (int)sf["x0"], z0 = (int)sf["z0"], nx = (int)sf["nx"], nz = (int)sf["nz"];
         var hs2 = sf["h"].ToObject<int[]>();
@@ -543,22 +559,43 @@ stage = "roofs";
         if (!cell(i, j - 1)) edge(i, j, i + 1, j);
         if (!cell(i, j + 1)) edge(i, j + 1, i + 1, j + 1);
     }
-    System.Action<string, System.Collections.Generic.List<UnityEngine.Vector3>, UnityEngine.Color> build = (name, verts, colour) =>
+    System.Action<string, System.Collections.Generic.List<UnityEngine.Vector3>, UnityEngine.Color, string> build = (name, verts, colour, texture) =>
     {
         var tris = new int[verts.Count]; for (var i = 0; i < tris.Length; i++) tris[i] = i;
+        // UVs a tile a texture, the rows along the ridge: across a slope facing east or west they turn, and the
+        // distance up the slope is the true one (the projection shortens it)
+        var uvs = new UnityEngine.Vector2[verts.Count];
+        for (var i = 0; i + 2 < verts.Count; i += 3)
+        {
+            var n = UnityEngine.Vector3.Cross(verts[i + 1] - verts[i], verts[i + 2] - verts[i]).normalized;
+            var ny = UnityEngine.Mathf.Max(0.3f, UnityEngine.Mathf.Abs(n.y));
+            var eastWest = UnityEngine.Mathf.Abs(n.x) > UnityEngine.Mathf.Abs(n.z);
+            for (var k = 0; k < 3; k++)
+            {
+                var v = verts[i + k];
+                uvs[i + k] = eastWest ? new UnityEngine.Vector2(v.z / Tile, v.x / Tile / ny) : new UnityEngine.Vector2(v.x / Tile, v.z / Tile / ny);
+            }
+        }
         var mesh = new UnityEngine.Mesh { name = name, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
-        mesh.SetVertices(verts); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
+        mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
         var go = new UnityEngine.GameObject(name);
         go.transform.SetParent(group("Roofs"), false);
         go.AddComponent<UnityEngine.MeshFilter>().sharedMesh = mesh;
         var m = new UnityEngine.Material(lit) { name = name };
-        m.SetColor("_BaseColor", colour);
+        var tex = texture != null ? UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(Folder + "/" + texture + ".png") : null;
+        if (tex) { m.SetTexture("_BaseMap", tex); m.SetColor("_BaseColor", UnityEngine.Color.white); }
+        else m.SetColor("_BaseColor", colour);
         m.SetFloat("_Smoothness", 0.08f);
         m.SetFloat("_Cull", 0f);
         go.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = (UnityEngine.Material)keep(m, Folder + "/" + name + ".mat");
     };
-    foreach (var kv in byColour) build("Lumbridge Roof " + kv.Key, kv.Value, palette[kv.Key]);
-    build("Lumbridge Gables", gables, new UnityEngine.Color(0.5f, 0.5f, 0.51f));
+    foreach (var kv in byColour)
+    {
+        var key = 0; foreach (var pk in paletteIndex) if (pk.Value == kv.Key) key = pk.Key;
+        var texture = key == -1006 ? "Lumbridge Roof Tiles" : key == -1044 ? "Lumbridge Roof Slate" : key == -1018 ? "Lumbridge Roof Thatch" : null;
+        build("Lumbridge Roof " + kv.Key, kv.Value, palette[kv.Key], texture);
+    }
+    build("Lumbridge Gables", gables, new UnityEngine.Color(0.5f, 0.5f, 0.51f), null);
     sb.Append("roofs: " + contributors + " pieces, " + cells + " cells, " + byColour.Count + " colours; ");
 }
 
@@ -589,12 +626,17 @@ System.Func<Newtonsoft.Json.Linq.JToken, string> wallKind = l =>
 const float Sink = 0.8f;   // full walls reach into the ground (or the floor below), so a slope never shows under them
 var wallLayers = new System.Collections.Generic.Dictionary<string, (string Piece, float From, float To)[]>
 {
+    // a building's walls are all one shape (the castle wall's, plain, with a window or with a door), in its stuff:
+    // grey stone, white stucco or planks (a hut was plaster and timber round its windows and door, planks between)
     { "stone", new[] { ("SM_Bld_Castle_Wall_01", -Sink, Floor) } },
+    { "plaster", new[] { ("SM_Bld_Castle_Wall_01", -Sink, Floor) } },
+    { "wood", new[] { ("SM_Bld_Castle_Wall_01", -Sink, Floor) } },
     { "stone window", new[] { ("SM_Bld_Castle_Wall_01", -Sink, 1.25f), ("SM_Bld_Castle_Wall_Window_01", 1.25f, Floor) } },
-    { "house window", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_Window_01", 1.25f, Floor) } },
-    { "plaster", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_01", 1.25f, Floor) } },
-    { "wood", new[] { ("SM_Bld_House_Base_Wall_01", -Sink, 1.25f), ("SM_Bld_House_Wall_01", 1.25f, Floor) } },
-    { "door", new[] { ("SM_Bld_House_Wall_Door_01", -0.05f, 2.5f), ("SM_Bld_House_Wall_Half_Height_01", 2.5f, Floor) } },
+    { "plaster window", new[] { ("SM_Bld_Castle_Wall_01", -Sink, 1.25f), ("SM_Bld_Castle_Wall_Window_01", 1.25f, Floor) } },
+    { "stone door", new[] { ("SM_Bld_Castle_Wall_Door_Big_01", -0.05f, Floor) } },
+    { "plaster door", new[] { ("SM_Bld_Castle_Wall_Door_Big_01", -0.05f, Floor) } },
+    { "wood door", new[] { ("SM_Bld_Castle_Wall_Door_Big_01", -0.05f, Floor) } },
+    { "door", new[] { ("SM_Bld_Castle_Wall_Door_Big_01", -0.05f, Floor) } },
     { "fence", new[] { ("SM_Prop_Fence_03", -0.05f, 0f) } },
     { "gate", new[] { ("SM_Prop_Fence_Gate_01", -0.05f, 0f) } },
     { "low", new[] { ("SM_Env_StoneWall_01", -0.05f, 0f) } },
@@ -617,6 +659,28 @@ foreach (var l in locs)
 System.Func<int, int, bool> underRoof = (x, y) => roofedAny.Contains(((long)x << 20) | (uint)y) || roofFootprint.Contains(((long)x << 20) | (uint)y);
 var stoneGrey = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/PolygonFantasyKingdom/Materials/Alts/PolygonFantasyKingdom_Mat_Castle_Wall_02.mat")
     ?? UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/PolygonFantasyKingdom/Materials/PolygonFantasyKingdom_Mat_Castle_Wall_02.mat");
+var stucco = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>("Assets/PolygonFantasyKingdom/Materials/Alts/PolygonFantasyKingdom_Mat_Castle_Wall_05.mat");
+// plank walls: the castle wall's shape with planks of our own (Lumbridge Planks.png, from the image generator)
+UnityEngine.Material planks = null;
+{
+    var tex = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(Folder + "/Lumbridge Planks.png");
+    if (tex && stoneGrey)
+    {
+        var pm = new UnityEngine.Material(stoneGrey) { name = "Lumbridge Planks" };
+        foreach (var prop in new[] { "_BaseMap", "_MainTex" }) if (pm.HasProperty(prop)) pm.SetTexture(prop, tex);
+        foreach (var prop in new[] { "_BumpMap", "_NormalMap" }) if (pm.HasProperty(prop)) pm.SetTexture(prop, null);
+        planks = (UnityEngine.Material)keep(pm, Folder + "/Lumbridge Planks.mat");
+    }
+}
+// every wall's kind by place, for doors: a door in a stone wall is a stone doorway
+var kindAt = new System.Collections.Generic.Dictionary<(int, int, int, int), string>();
+foreach (var l in locs)
+{
+    var t = (int)l["type"];
+    if (t != 0) continue;
+    var k = wallKind(l);
+    if (k != null) kindAt[((int)l["x"], (int)l["y"], (int)l["level"], (int)l["rot"])] = k;
+}
 var wallCount = 0; var skipped = 0;
 var kinds = new System.Collections.Generic.Dictionary<string, int>();
 foreach (var l in locs)
@@ -636,11 +700,36 @@ foreach (var l in locs)
         if (underRoof(x, y) || underRoof(nx, ny)) { skipped++; continue; }
         kind = "battlement";
     }
+    if (kind == "door" || kind == "gate")
+    {
+        // the walls in line with it, either side: stone ones make it a stone doorway
+        var along = rot % 2 == 0 ? (0, 1) : (1, 0);
+        var stone = 0; var other = 0;
+        for (var d = 1; d <= 2; d++)
+            foreach (var sgn in new[] { -1, 1 })
+                if (kindAt.TryGetValue((x + along.Item1 * d * sgn, y + along.Item2 * d * sgn, rawLevel, rot), out var nk))
+                {
+                    if (nk == "stone") stone++; else if (nk == "plaster" || nk == "wood") other++;
+                }
+        if (kind == "door")
+        {
+            // the most common stuff of the walls in line with it
+            var wood = 0; var plaster = 0;
+            for (var d = 1; d <= 2; d++)
+                foreach (var sgn in new[] { -1, 1 })
+                    if (kindAt.TryGetValue((x + along.Item1 * d * sgn, y + along.Item2 * d * sgn, rawLevel, rot), out var nk2))
+                    {
+                        if (nk2 == "wood") wood++; else if (nk2 == "plaster") plaster++;
+                    }
+            kind = stone >= wood && stone >= plaster ? "stone door" : wood >= plaster ? "wood door" : "plaster door";
+        }
+    }
     // a window on this wall: the window pieces of its kind
     if (type == 0 && windows.Contains(x + "," + y + "," + rawLevel + "," + rot))
     {
         if (kind == "stone") kind = "stone window";
-        else if (kind == "plaster" || kind == "wood") kind = "house window";
+        else if (kind == "plaster") kind = "plaster window";
+        // planks have no window piece: the hut's walls stay plain
     }
     var lift = level * Floor + (onBridge ? Deck : 0f);
     var parent = group("Walls " + kind);
@@ -675,8 +764,15 @@ foreach (var l in locs)
         a.y = b.y = top + layer.From;
         span(pf, parent, a, b, layer.To > 0 ? layer.To - layer.From : 0f);
         // Lumbridge's stone is grey: the pack's castle walls are beige brick, its dungeon stone grey
-        if (stoneGrey && (kind == "stone" || kind == "battlement" || kind == "stone window"))
-            foreach (var r in parent.GetChild(parent.childCount - 1).GetComponentsInChildren<UnityEngine.Renderer>()) r.sharedMaterial = stoneGrey;
+        // its stuff: the pieces' wall faces (Castle_Wall materials) get it, a door keeps its wood and iron
+        var stuff = kind.StartsWith("stone") || kind == "battlement" ? stoneGrey : kind.StartsWith("plaster") ? stucco : kind.StartsWith("wood") ? planks : null;
+        if (stuff)
+            foreach (var r in parent.GetChild(parent.childCount - 1).GetComponentsInChildren<UnityEngine.Renderer>())
+            {
+                var ms = r.sharedMaterials;
+                for (var mi = 0; mi < ms.Length; mi++) if (ms[mi] && ms[mi].name.Contains("Castle_Wall")) ms[mi] = stuff;
+                r.sharedMaterials = ms;
+            }
     }
     wallCount++;
     kinds[kind] = kinds.TryGetValue(kind, out var kc) ? kc + 1 : 1;
