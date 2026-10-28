@@ -77,6 +77,37 @@ const builder = new SceneBuilder(
     loadedCache.xteas,
 );
 
+// a roof piece's shape as four numbers: its model's height (game units, up) at the tile's south west, north west,
+// north east and south east corners, turned as placed; the model's x runs east and its z north, 128 a tile
+function roofCorners(t: any, type: number, rot: number): number[] | undefined {
+    let m: any;
+    try { m = locModels.getLocModelData(t, type, rot); } catch (e) { return undefined; }
+    if (!m || !m.verticesCount) return undefined;
+    // only the roof's surface: vertices of faces that are not upright (the model also has the walls and gable
+    // triangles under it)
+    const surface = new Set<number>();
+    for (let f = 0; f < m.faceCount; f++) {
+        const a = m.indices1[f], b = m.indices2[f], c = m.indices3[f];
+        const ux = m.verticesX[b] - m.verticesX[a], uy = m.verticesY[b] - m.verticesY[a], uz = m.verticesZ[b] - m.verticesZ[a];
+        const vx = m.verticesX[c] - m.verticesX[a], vy = m.verticesY[c] - m.verticesY[a], vz = m.verticesZ[c] - m.verticesZ[a];
+        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (len > 0 && Math.abs(ny) / len > 0.3) { surface.add(a); surface.add(b); surface.add(c); }
+    }
+    const out: number[] = [];
+    for (const [cx, cz] of [[-64, -64], [-64, 64], [64, 64], [64, -64]]) {
+        let best = -1, bestD = Infinity, near = -Infinity;
+        for (const v of surface) {
+            const dx = m.verticesX[v] - cx, dz = m.verticesZ[v] - cz;
+            const d = dx * dx + dz * dz;
+            if (d <= 12 * 12) near = Math.max(near, -m.verticesY[v]);
+            if (d < bestD) { bestD = d; best = v; }
+        }
+        out.push(near > -Infinity ? near : best >= 0 ? -m.verticesY[best] : 0);
+    }
+    return out;
+}
+
 const scene = new Scene(Scene.MAX_LEVELS, sizeX, sizeY);
 const locs: any[] = [];
 const S = Scene.MAP_SQUARE_SIZE;
@@ -104,7 +135,9 @@ for (let mx = Math.floor(baseX / S); mx < Math.ceil((baseX + sizeX) / S); mx++) 
                 const attributes = buffer.readUnsignedByte();
                 if (x < 0 || y < 0 || x >= sizeX || y >= sizeY) continue;
                 const t = locTypes.load(id);
+                const type = attributes >> 2;
                 locs.push({
+                    roof: type >= 12 && type <= 21 ? roofCorners(t, type, attributes & 3) : undefined,
                     id,
                     name: t.name,
                     x,
