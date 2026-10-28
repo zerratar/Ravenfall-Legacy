@@ -40,8 +40,11 @@ public class EnemyMovementController : MonoBehaviour
     private ConcurrentDictionary<string, AnimatorControllerParameter> parameters
         = new ConcurrentDictionary<string, AnimatorControllerParameter>();
 
-    private bool lastMove;
+    private float lastMove;
     [HideInInspector] public bool isMovingInternal;
+
+    /// <summary>Wandering at a walk: a float move parameter gets 0.5 (the Humanoid Enemy's walk) rather than 1 (its run).</summary>
+    [NonSerialized] public bool Ambling;
 
     internal Vector3 Destination;
 
@@ -93,7 +96,9 @@ public class EnemyMovementController : MonoBehaviour
 
         moveAnimation = animator.parameters
             .Where(x => x.name.IndexOf("Walking", StringComparison.OrdinalIgnoreCase) >= 0 || x.name.IndexOf("Movement", StringComparison.OrdinalIgnoreCase) >= 0)
-            .FirstOrDefault();
+            .FirstOrDefault()
+            // rabbits hop about (their Walking state plays on isJumping)
+            ?? animator.parameters.FirstOrDefault(x => x.name == "isJumping");
 
         hasMoveAnimation = moveAnimation != null;
 
@@ -119,6 +124,7 @@ public class EnemyMovementController : MonoBehaviour
     private void OnBecameVisible()
     {
         animator.enabled = true;
+        lastMove = -1f; // a disabled animator lost its parameters: set the move again
     }
     private void OnBecameInvisible()
     {
@@ -129,15 +135,24 @@ public class EnemyMovementController : MonoBehaviour
     {
         if (GameCache.IsAwaitingGameRestore) return;
 
-        var moving = isMovingInternal;//IsMoving();
+        // at the end of its path it stops: only Lock ended the walk, so a wander or the way back to the spawn left
+        // the enemy walking on the spot. The path goes too, or the agent (stopping distance 0) circles the point,
+        // gliding in its idle pose; nor may it coast on once the walk has stopped
+        if (isMovingInternal && navMeshAgent && navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh
+            && !navMeshAgent.pathPending && navMeshAgent.remainingDistance <= navMeshAgent.stoppingDistance + 0.1f)
+        {
+            Stop();
+        }
 
-        if (moveAnimation != null && lastMove != moving && animator.enabled)
+        var move = isMovingInternal ? (Ambling ? 0.5f : 1f) : 0f;
+
+        if (moveAnimation != null && lastMove != move && animator.enabled)
         {
             if (moveAnimation.type == AnimatorControllerParameterType.Float)
-                animator.SetFloat(moveAnimation.name, moving ? 1f : 0);
+                animator.SetFloat(moveAnimation.name, move);
             else
-                animator.SetBool(moveAnimation.name, moving);
-            lastMove = moving;
+                animator.SetBool(moveAnimation.name, move > 0f);
+            lastMove = move;
         }
 
         if (attackAnimationTimer > 0f)
@@ -147,6 +162,17 @@ public class EnemyMovementController : MonoBehaviour
         {
             attackAnimationTrigger?.Invoke();
             attackAnimationTimer = 0f;
+        }
+    }
+
+    /// <summary>Stands still where it is, the agent left on (Lock turns it off).</summary>
+    public void Stop()
+    {
+        isMovingInternal = false;
+        if (navMeshAgent && navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh)
+        {
+            navMeshAgent.ResetPath();
+            navMeshAgent.velocity = Vector3.zero;
         }
     }
 

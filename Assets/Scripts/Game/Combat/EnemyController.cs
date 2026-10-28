@@ -480,37 +480,72 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         }
     }
 
-    // ---- Wandering (Ravebridge) ------------------------------------------------------------------------------
+    // ---- Wandering ---------------------------------------------------------------------------------------------
 
     private const float WanderRadius = 4f;
-    private const float WanderPace = 1.6f;
+    private const float WanderPace = 1.7f; // the Humanoid Enemy's walk clip covers about 1.8 m/s
+    private const float WanderSightRange = 150f;
+    private const float WanderMinStep = 1.5f;
+    private const float WanderTurn = 540f; // at the agents' own 120 degrees a second a short amble curved round
     private float nextWander;
     private float wanderSpeed = -1f; // the agent's own speed while it ambles, -1 when it does not
+    private float wanderTurn;
+    private float ambleEnds;
 
     /// <summary>
-    /// On Ravebridge an idle enemy ambles about its spawn now and then, slowly, as in RuneScape, rather than standing
-    /// still; elsewhere enemies keep their places (players train on them where they stand).
+    /// An idle enemy ambles about its spawn now and then, at a walk, as in RuneScape, rather than standing still. One a
+    /// player has picked stops where it is and waits to be reached (AddAttacker), so training goes on as before. None
+    /// sets off where nobody would see it: far from the camera, with graphics off or in potato mode.
     /// </summary>
     private void Wander()
     {
+        // an amble that takes far longer than its length is circling: two enemies after the same spot orbit it
+        if (wanderSpeed >= 0f && movement && movement.isMovingInternal && Time.time > ambleEnds) movement.Stop();
         if (Time.time < nextWander) return;
         nextWander = Time.time + UnityEngine.Random.Range(4f, 11f);
-        if (Hunting || Stats == null || Stats.IsDead || !movement || !spawnPositionSet) return;
-        var ravebridge = RavebridgeManager.Instance;
-        if (!ravebridge || !ravebridge.Island || Island != ravebridge.Island) return;
+        if (Hunting || IsRaidBoss || Stats == null || Stats.IsDead || !movement || !spawnPositionSet || Sought()) return;
+        if (!GraphicsToggler.GraphicsEnabled || (game && game.PotatoMode)) return;
+        var cam = Camera.main;
+        if (cam && (cam.transform.position - spawnPoint).sqrMagnitude > WanderSightRange * WanderSightRange) return;
+        // the agent may be off (HoldStill locks it): SetDestination turns it back on
         var agent = movement.navMeshAgent;
-        if (!agent || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+        if (!agent) return;
         var offset = UnityEngine.Random.insideUnitCircle * WanderRadius;
         if (!NavMesh.SamplePosition(spawnPoint + new Vector3(offset.x, 0f, offset.y), out var hit, 1.5f, agent.areaMask)) return;
-        if (wanderSpeed < 0f) wanderSpeed = agent.speed;
+        // a shuffle of a step or two is all turning and no walking
+        if ((hit.position - Position).sqrMagnitude < WanderMinStep * WanderMinStep) return;
+        if (wanderSpeed < 0f)
+        {
+            wanderSpeed = agent.speed;
+            wanderTurn = agent.angularSpeed;
+        }
         agent.speed = Mathf.Min(wanderSpeed, WanderPace);
+        agent.angularSpeed = Mathf.Max(wanderTurn, WanderTurn);
+        movement.Ambling = true;
         SetDestination(hit.position);
+        ambleEnds = Time.time + Vector3.Distance(Position, hit.position) / agent.speed * 1.5f + 1f;
+    }
+
+    /// <summary>A player on its island has it as their target and is on the way.</summary>
+    private bool Sought()
+    {
+        for (var i = 0; i < Attackers.Count; ++i)
+        {
+            if (Attackers[i] is PlayerController p && p && !p.Removed && p.Island == Island && ReferenceEquals(p.CombatTarget, this))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Someone means to fight it: it stops ambling and waits (a while) to be reached.</summary>
     public void HoldStill(float seconds)
     {
         nextWander = Mathf.Max(nextWander, Time.time + seconds);
+        StopWandering();
+    }
+
+    private void StopWandering()
+    {
         if (wanderSpeed < 0f || InCombat) return;
         movement.Lock();
         EndWander();
@@ -520,8 +555,13 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     private void EndWander()
     {
         var agent = movement ? movement.navMeshAgent : null;
-        if (agent) agent.speed = wanderSpeed;
+        if (agent)
+        {
+            agent.speed = wanderSpeed;
+            agent.angularSpeed = wanderTurn;
+        }
         wanderSpeed = -1f;
+        if (movement) movement.Ambling = false;
     }
 
     public bool HasValidTarget
@@ -1008,6 +1048,9 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
         {
             Attackers.Add(player);
         }
+
+        // picked as a target: it stops where it is for the player to reach it
+        StopWandering();
     }
 
     internal void Unstuck()
