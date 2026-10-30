@@ -2,6 +2,8 @@
 Assets/New?Terrain.asset filter=lfs diff=lfs merge=lfs -text
 # Ravebridge's two terrains (the island and its northern half), dressed by tools/ravebridge
 Assets/TerrainData_*.asset filter=lfs diff=lfs merge=lfs -text
+# Ravebridge's Lumbridge meshes (the river)
+Assets/World/Lumbridge/*.asset filter=lfs diff=lfs merge=lfs -text
 
 # release scripts: bash needs LF, cmd CRLF
 tools/release/linux/*.sh text eol=lf

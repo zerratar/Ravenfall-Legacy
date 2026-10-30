@@ -229,6 +229,10 @@ Assets/Village/Derived.meta
 # Ironhill's own pieces (the sleeping dragon's animator), docs/ironhill-rework.md
 !Assets/World/Ironhill.meta
 !Assets/World/Ironhill/**
+# Ravebridge's Lumbridge pieces (roof, floor and wall materials and their textures, the river's mesh, the grass
+# profile), docs/lumbridge-move-plan.md
+!Assets/World/Lumbridge.meta
+!Assets/World/Lumbridge/**
 
 # Local safety copies made before reshaping terrain or scenes.
 Backups/
@@ -252,6 +256,12 @@ tools/ImageGenService/obj/
 docs/references/ravebridge/web/*
 !docs/references/ravebridge/web/README.md
 
-# Ravebridge's terrains, versioned through LFS like the home island's (see .gitattributes)
+# Ravebridge's terrains, versioned through LFS like the home island's (see .gitattributes): the two big ones (its sea
+# floor since the Lumbridge move) and the island's own (docs/lumbridge-move-plan.md); their .meta files too, or a
+# fresh clone loses MainWorld's references to them
 !Assets/TerrainData_18ccb975-f768-4575-8821-9e33d4322770.asset
 !Assets/TerrainData_36a039b1-4738-4f83-99e3-862da344ceea.asset
+!Assets/TerrainData_18ccb975-f768-4575-8821-9e33d4322770.asset.meta
+!Assets/TerrainData_36a039b1-4738-4f83-99e3-862da344ceea.asset.meta
+!Assets/TerrainData_Lumbridge.asset
+!Assets/TerrainData_Lumbridge.asset.meta
