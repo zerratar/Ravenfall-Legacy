@@ -146,13 +146,9 @@ public class HouseYard : MonoBehaviour
     /// </summary>
     private Vector3 Ground(Vector3 point)
     {
-        foreach (var terrain in Terrain.activeTerrains)
+        if (TerrainGround.TryHeight(point, out var ground))
         {
-            if (!terrain || !terrain.terrainData) continue;
-            var origin = terrain.transform.position;
-            var size = terrain.terrainData.size;
-            if (point.x < origin.x || point.z < origin.z || point.x > origin.x + size.x || point.z > origin.z + size.z) continue;
-            point.y = terrain.SampleHeight(point) + origin.y + Lift;
+            point.y = ground + Lift;
             return point;
         }
 

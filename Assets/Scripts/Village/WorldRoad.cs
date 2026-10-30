@@ -230,14 +230,7 @@ public class WorldRoad : MonoBehaviour
     /// </summary>
     public static float GroundHeight(Vector3 point)
     {
-        foreach (var terrain in Terrain.activeTerrains)
-        {
-            if (!terrain || !terrain.terrainData) continue;
-            var origin = terrain.transform.position;
-            var size = terrain.terrainData.size;
-            if (point.x < origin.x || point.z < origin.z || point.x > origin.x + size.x || point.z > origin.z + size.z) continue;
-            return terrain.SampleHeight(point) + origin.y;
-        }
+        if (TerrainGround.TryHeight(point, out var ground)) return ground;
 
         var hits = Physics.RaycastAll(new Ray(new Vector3(point.x, point.y + 500f, point.z), Vector3.down), 2000f, ~0, QueryTriggerInteraction.Ignore);
         var best = float.NegativeInfinity;

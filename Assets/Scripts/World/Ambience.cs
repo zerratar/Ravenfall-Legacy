@@ -353,14 +353,7 @@ public sealed class Ambience : MonoBehaviour
 
     private static Terrain TerrainUnder(Vector3 point)
     {
-        foreach (var t in Terrain.activeTerrains)
-        {
-            if (!t || !t.terrainData) continue;
-            var origin = t.transform.position;
-            var size = t.terrainData.size;
-            if (point.x >= origin.x && point.x <= origin.x + size.x && point.z >= origin.z && point.z <= origin.z + size.z) return t;
-        }
-        return null;
+        return TerrainGround.At(point);
     }
 
     /// <summary>How much it is night, 0 by day to 1 in the dark, from the cycle's light.</summary>

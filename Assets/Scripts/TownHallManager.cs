@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 public class TownHallManager : MonoBehaviour
@@ -300,14 +300,7 @@ public class TownHallManager : MonoBehaviour
     /// </summary>
     public float GroundHeight(Vector3 point)
     {
-        foreach (var terrain in Terrain.activeTerrains)
-        {
-            if (!terrain || !terrain.terrainData) continue;
-            var origin = terrain.transform.position;
-            var size = terrain.terrainData.size;
-            if (point.x < origin.x || point.z < origin.z || point.x > origin.x + size.x || point.z > origin.z + size.z) continue;
-            return terrain.SampleHeight(point) + origin.y;
-        }
+        if (TerrainGround.TryHeight(point, out var ground)) return ground;
 
         return PlacementUtility.FindGroundPoint(point).y;
     }

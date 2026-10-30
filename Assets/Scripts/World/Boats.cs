@@ -41,7 +41,6 @@ public sealed class Boats : MonoBehaviour
         var ocean = FindAnyObjectByType<Ocean>();
         if (!ocean) return;
         var sea = ocean.transform.position.y;
-        var terrain = Terrain.activeTerrain;
         foreach (var renderer in FindObjectsByType<MeshRenderer>(FindObjectsInactive.Exclude))
         {
             var name = renderer.name;
@@ -51,7 +50,7 @@ public sealed class Boats : MonoBehaviour
             if (!filter || !filter.sharedMesh) continue;
 
             var bounds = renderer.bounds;
-            var ground = terrain ? terrain.SampleHeight(bounds.center) + terrain.transform.position.y : sea - 10f;
+            var ground = TerrainGround.TryHeight(bounds.center, out var under) ? under : sea - 10f;
             if (bounds.min.y > sea + 0.5f || bounds.max.y < sea || ground > sea - 0.2f) continue;
 
             var size = Vector3.Scale(filter.sharedMesh.bounds.size, renderer.transform.lossyScale);

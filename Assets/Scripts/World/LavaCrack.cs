@@ -227,15 +227,7 @@ public class LavaCrack : MonoBehaviour
 
     private float Ground(float x, float z)
     {
-        foreach (var t in Terrain.activeTerrains)
-        {
-            if (!t || !t.terrainData) continue;
-            var o = t.transform.position;
-            var size = t.terrainData.size;
-            if (x < o.x || z < o.z || x > o.x + size.x || z > o.z + size.z) continue;
-            return t.SampleHeight(new Vector3(x, 0f, z)) + o.y;
-        }
-        return transform.position.y;
+        return TerrainGround.TryHeight(new Vector3(x, 0f, z), out var ground) ? ground : transform.position.y;
     }
 
     private static void DestroyNow(Object o)
