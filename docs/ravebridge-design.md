@@ -13,6 +13,9 @@ west, becomes an event island where viewers come along and the streamer plays by
 
 ## What is there today
 
+**Since 2026-10-30 the island is the Lumbridge built from the OSRS map** (see "Lumbridge" at the end; the plan is
+`docs/lumbridge-move-plan.md`). The sections below describe the first Ravebridge, kept for its history.
+
 `WORLD/Islands/Ravebridge`, inactive, about 210 x 340 m around (-1620, 5, 1640), on terrain of its own:
 
 - **West bank:** the castle, with walls, round towers, a courtyard with fountains, a well, cannons and banners.
@@ -239,3 +242,34 @@ Not tested yet:
 - the streamer's own character;
 - follow and heal with a real hero;
 - the chat commands through a real bot.
+
+## Lumbridge (2026-10-30)
+
+The island's ground and buildings were replaced by the Ravenfall Lumbridge (Lumbridge and Al Kharid from the OSRS
+map, Ravenfall buildings and look; `Assets/Scenes/LumbridgeRavenfall.unity`, with `LumbridgeTest.unity` kept as the
+OSRS-faithful reference). Island 9, its quests, NPCs, training spots and hero mode stayed; only where they stand
+changed.
+
+- **The ground:** `WORLD/Islands/Ravebridge/Lumbridge`, its own terrain (`Assets/TerrainData_Lumbridge.asset`, 640 m at
+  0.63 m, material `Assets/World/Terrain/Ravebridge Terrain Lumbridge.mat`) with its middle on (-1640, 1610), 2.84 m
+  below the OSRS heights so its sea meets the ocean. Lumbridge's 480 m sit in the middle; round them the land runs on
+  and falls into the sea, and the sea deepens away from the shore. The two old 2560 m terrains are the deep sea floor
+  round it (-30), with no grass fields. Where terrains overlap, the ground is the highest one's (`TerrainGround`).
+- **The island:** its sphere is 357 m (the land reaches the corners), its navmesh box 640 x 640.
+- **Lumbridge's pieces** (roof and floor materials and textures, the river's mesh, the grass profile) are in
+  `Assets/World/Lumbridge`.
+- **Fences** (`WorldFence`) block walking with not walkable navmesh boxes along their runs; the gates stand open
+  (no colliders), as gaps in the fences.
+- **Where things are:** the spawn, the duke, the cook and the kitchen (Cooking), the captain and the courtyard moved
+  with the castle; the shopkeeper at the general store with Crafting and Alchemy beside it; the priest at the church
+  and the ghost among its gravestones; the miller at the windmill; the keeper at the wooden bridge's town end; the
+  goblin generals and the goblins by the goblin house east of the river; the cows in the cow field; the soul in the
+  swamp; Mining on the swamp mine's rocks (south west); Fishing in the river south of the stone bridge; Woodcutting in
+  the wood west of the castle; Farming and Gathering by Fred's farm. The wave gates: past the stone and wooden
+  bridges' east ends, at Al Kharid's toll gate, on the swamp road and on the mill road.
+- **The tools:** `tools/ravebridge/lumbridge-move.cs` and `lumbridge-move-paint.cs` (the move), `lumbridge-places.cs`
+  (the gameplay back on it), `navmesh-bake.cs` (unchanged). They run on the MainWorld from before the move (git tag
+  `before-lumbridge-move`); the Lumbridge build chain (`lumbridge-test.cs` to `lumbridge-dressing.cs`) is frozen, and
+  the island is edited by hand in MainWorld from now on. `ravebridge-island.cs`, `ravebridge-layout.cs`,
+  `ravebridge-dress.cs`, `ravebridge-swamp.cs` and `tools/hero/hero-places.cs` describe the first Ravebridge and must
+  not be run on it.

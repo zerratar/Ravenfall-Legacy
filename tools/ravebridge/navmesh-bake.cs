@@ -1,4 +1,5 @@
-// Run with: unity command eval_file --file tools/ravebridge/navmesh-bake.cs (twice: bake, then check)
+// Run with: unity command eval_file --file tools/ravebridge/navmesh-bake.cs (twice: bake, then check; the bake runs for
+// minutes past the eval's 5 s, poll SessionState "ravebridge-navmesh-bake" for "baked")
 //
 // Bakes Ravebridge's own navmesh (the NavMeshSurface on WORLD/Islands/Ravebridge, area "Ravebridge", over the
 // island only: its terrains reach far beyond it) into Assets/Scenes/MainWorld/NavMesh-Ravebridge.asset and saves
@@ -11,27 +12,26 @@ var island = islandRoot.GetComponent<IslandController>();
 var key = "ravebridge-navmesh-bake";
 var path = "Assets/Scenes/MainWorld/NavMesh-Ravebridge.asset";
 var stage = UnityEditor.SessionState.GetString(key, "");
-if (stage == "")
+if (stage == "" || stage == "baking")
 {
+    // built in one go on the editor's own thread: the asynchronous build stalled with the editor in the background
+    // (the island since the Lumbridge move is 640 m square and takes a few minutes)
     UnityEditor.SessionState.SetString(key, "baking");
-    var data = new UnityEngine.AI.NavMeshData(surface.agentTypeID) { name = "NavMesh-Ravebridge", position = surface.transform.position, rotation = surface.transform.rotation };
-    var op = surface.UpdateNavMesh(data);
-    op.completed += _ =>
-    {
-        var old = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.AI.NavMeshData>(path);
-        if (old) UnityEditor.AssetDatabase.DeleteAsset(path);
-        UnityEditor.AssetDatabase.CreateAsset(data, path);
-        surface.enabled = false;
-        surface.navMeshData = data;
-        surface.enabled = true;
-        UnityEditor.EditorUtility.SetDirty(surface);
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(surface.gameObject.scene);
-        UnityEditor.SceneManagement.EditorSceneManager.SaveScene(surface.gameObject.scene);
-        UnityEditor.SessionState.SetString(key, "baked");
-    };
-    return "baking";
+    surface.BuildNavMesh();
+    var data = surface.navMeshData;
+    data.name = "NavMesh-Ravebridge";
+    var old = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.AI.NavMeshData>(path);
+    if (old) UnityEditor.AssetDatabase.DeleteAsset(path);
+    UnityEditor.AssetDatabase.CreateAsset(data, path);
+    surface.enabled = false;
+    surface.navMeshData = data;
+    surface.enabled = true;
+    UnityEditor.EditorUtility.SetDirty(surface);
+    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(surface.gameObject.scene);
+    UnityEditor.SceneManagement.EditorSceneManager.SaveScene(surface.gameObject.scene);
+    UnityEditor.SessionState.SetString(key, "baked");
+    return "baked";
 }
-if (stage == "baking") return "still baking";
 
 UnityEditor.SessionState.EraseString(key);
 var area = 1 << island.NavMeshArea;

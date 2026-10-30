@@ -307,7 +307,7 @@ After the user's first try ("not playable yet"):
   shoulder zooms (2.5 to 10 m), and no zooming while the mouse is over the HUD.
 - **The Ravebridge bar:** a drawer at the top that slides up a few seconds after the mouse leaves it. A small tab
   stays at the top edge with who is there, the time and any quest notice, and it brings the drawer back.
-- **Grass on Ravebridge:** its two terrains have grass fields with the main island's profile. `GrassRenderer` grows
+- **Grass on Ravebridge:** (until the Lumbridge move; now its own terrain's field) its two terrains have grass fields with the main island's profile. `GrassRenderer` grows
   on the field whose terrain the camera is over; before, it only ever used the first.
 - **Styles:** Tab switches (Shift+Tab goes back; 1 s between switches). Each style has its kit, weapon, task (so
   experience goes to that style) and its own cooldowns:
@@ -445,7 +445,8 @@ The ranged, magic and healing kits and switching style came with the fix round. 
 - **Sight lines (`HeroCamera`):** ten times a second, anything tall between the camera and the hero is drawn as its
   shadow only while it is in the way (a capsule of 2.5 m: whole roofs, wall walks and towers, not just one plank).
   People, enemies and the ground stay. It is a cut, not a fade: the buildings' shaders have no dithering.
-- **The gates and the courtyard (`tools/hero/hero-places.cs`):**
+- **The gates and the courtyard (`tools/hero/hero-places.cs`, for the first Ravebridge; since the Lumbridge move of
+  2026-10-30 they stand where `docs/ravebridge-design.md` "Lumbridge" says):**
   - each wave gate has goblin spike barricades on both sides of the path the waves walk (found from a navmesh path
     to the courtyard) and a brazier with fire on whichever side has ground;
   - the courtyard, the stand, has battle banners at the east gate, two braziers and the captain's arrow barrels and

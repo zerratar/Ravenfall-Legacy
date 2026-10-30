@@ -322,7 +322,9 @@ if (seaFloorVolume)
 }
 sb.Append("sphere radius " + sphere.radius + " (land reaches " + reach.ToString("F0") + " m), navmesh box " + Size + "; ");
 
-// ---- fences on the new ground, with their not walkable boxes ------------------------------------------------------------
+// ---- roads and fences on the new ground ----------------------------------------------------------------------------------
+// (the roads' curves were worked out where Lumbridge stood before; the fences get their not walkable boxes)
+foreach (var road in root.GetComponentsInChildren<WorldRoad>(true)) road.Rebuild();
 stage = "fences";
 var fences = 0;
 foreach (var f in root.GetComponentsInChildren<WorldFence>(true)) { f.Rebuild(); fences++; }
