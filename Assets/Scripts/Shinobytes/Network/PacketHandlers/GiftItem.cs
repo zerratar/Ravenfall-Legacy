@@ -32,7 +32,8 @@ public class GiftItem : ChatBotCommandHandler<string>
             return;
         }
 
-        if (inputQuery.EndsWith(" set", System.StringComparison.OrdinalIgnoreCase) || inputQuery.EndsWith(" sets", System.StringComparison.OrdinalIgnoreCase))
+        // Anywhere after the name, not only at the end: "abraxas armor set 5" is a set too.
+        if (ItemSetRequest.IsSetQuery(inputQuery))
         {
             await GiftItemSetAsync(inputQuery, gm, client, player);
             return;
@@ -97,101 +98,93 @@ public class GiftItem : ChatBotCommandHandler<string>
 
     private async Task GiftItemSetAsync(string inputQuery, GameMessage gm, GameClient client, PlayerController player)
     {
-        // resolve set type
-        // so we can take for instance !gift zerratar black set xAmount
-        // for now, we will just replace the word " set " with various item types
-        // first extract the types of a known set:
-
-        var queryParts = inputQuery.Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLower()).ToArray();
-        if (queryParts.Length < 3)
+        // "!gift zerratar abraxas armor set 5": who, which set, which part of it, how many of each piece.
+        var request = ItemSetRequest.Parse(inputQuery);
+        if (request == null)
         {
             client.SendReply(gm, Localization.MSG_GIFT_SET_HELP);
             return;
         }
 
-        // resolve target player
-        var targetPlayer = base.PlayerManager.GetPlayerByName(queryParts[0]);
+        var targetPlayer = base.PlayerManager.GetPlayerByName(request.Target);
         if (targetPlayer == null)
         {
-            client.SendReply(player, Localization.MSG_GIFT_PLAYER_NOT_FOUND, queryParts[0]);
+            client.SendReply(player, Localization.MSG_GIFT_PLAYER_NOT_FOUND, request.Target);
             return;
         }
 
-        var setType = "";
-        if (queryParts[1] == "elder")
-        {
-            // then combine type
-            setType = $"{queryParts[1]} {queryParts[2]}";
-        }
-        else
-        {
-            setType = queryParts[1];
-        }
-
-        // "ether armor set" is the armour alone, "ether weapons set" the weapons; just "ether set" is all of it
-        var only = ItemSetFilter.From(queryParts.Skip(1).ToList());
-        var itemSet = ItemSetFilter.Apply(itemResolver.GetItemSet(setType), only);
+        var setType = request.SetType;
+        var itemSet = ItemSetFilter.Apply(itemResolver.GetItemSet(setType), request.Only);
         if (itemSet.Count == 0)
         {
             client.SendReply(gm, Localization.MSG_ITEM_SET_NOT_FOUND, setType);
             return;
         }
 
-        // now we have all items, we should compare and see if the player has any of these items in their inventories
-        var unequippedItems = player.Inventory.GetBackpackItems();
-        var itemsToGift = new List<GameInventoryItem>();
-
-        // now select the matches.
-        foreach (var i in itemSet)
+        // Taken before anything is given: the backpack list changes under us as each gift lands.
+        var backpack = player.Inventory.GetBackpackItems().ToList();
+        if (!itemSet.Any(i => backpack.Any(x => !x.Soulbound && x.Item.Id == i.Id)))
         {
-            var existingStack = unequippedItems.FirstOrDefault(x => !x.Soulbound && x.Item.Id == i.Id);
-            if (existingStack != null)
-            {
-                itemsToGift.Add(existingStack);
-            }
+            client.SendReply(gm, Localization.MSG_ITEM_SET_NONE_OWNED, setType);
+            return;
         }
 
-        // targetPlayer
-        if (itemsToGift.Count > 0)
+        var given = new List<(string Name, long Amount)>();
+        var piecesGiven = 0L;
+        try
         {
-            var giftedItems = new List<GameInventoryItem>();
-            try
+            foreach (var i in itemSet)
             {
-                foreach (var i in itemsToGift)
+                // As many of this piece as were asked for, from as many stacks as it takes.
+                var left = request.Count;
+                var sentOfThis = 0L;
+                foreach (var stack in backpack.Where(x => !x.Soulbound && x.Item.Id == i.Id))
                 {
-                    var result = await Game.RavenNest.Players.GiftItemAsync(player.Id, targetPlayer.Id, i.InstanceId, 1);
-                    if (result.Status == RavenNest.Models.GiftItemStatus.OK)
-                    {
-                        // Update game client with the changes
-                        // this is done locally to avoid sending additional data from server to client and visa versa.
+                    if (left <= 0) break;
+                    var result = await Game.RavenNest.Players.GiftItemAsync(player.Id, targetPlayer.Id, stack.InstanceId, left);
+                    if (result.Status != RavenNest.Models.GiftItemStatus.OK) continue;
 
-                        targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
-                        player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
-
-                        giftedItems.Add(i);
-                    }
+                    // Update game client with the changes
+                    // this is done locally to avoid sending additional data from server to client and visa versa.
+                    targetPlayer.Inventory.AddOrSetInventoryItem(result.StackToIncrement);
+                    player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+                    left -= result.Amount;
+                    sentOfThis += result.Amount;
+                }
+                if (sentOfThis > 0)
+                {
+                    given.Add((i.Name, sentOfThis));
+                    piecesGiven += sentOfThis;
                 }
             }
-            catch (System.Exception exc)
-            {
-                Shinobytes.Debug.LogError("Error when '" + player.Name + "' tried to gift an '" + setType + "' item set to '" + targetPlayer.Id + "'. " + giftedItems.Count + " out of " + itemsToGift.Count + " was gifted. Exception: " + exc);
-            }
-            var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", giftedItems.Select(x => x.Name).ToArray()), ", ", Localization.MSG_LIST_AND);
-            if (giftedItems.Count != itemSet.Count)
-            {
-                client.SendReply(gm, Localization.MSG_GIFT_SET_PARTIAL, giftedItems.Count, itemSet.Count, setType, targetPlayer.Name, itemList);
-            }
-            else
-            {
-                var format = Localization.MSG_GIFT_SET_A;
-                if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') format = Localization.MSG_GIFT_SET_AN;
-                client.SendReply(gm, format,
-                    setType, targetPlayer.Name, itemList);
-            }
+        }
+        catch (System.Exception exc)
+        {
+            Shinobytes.Debug.LogError("Error when '" + player.Name + "' tried to gift " + request.Count + "x '" + setType + "' item set to '" + targetPlayer.Id + "'. " + piecesGiven + " out of " + (itemSet.Count * request.Count) + " pieces were gifted. Exception: " + exc);
+        }
+
+        if (given.Count == 0)
+        {
+            client.SendReply(gm, Localization.MSG_ITEM_SET_NONE_OWNED, setType);
+            return;
+        }
+
+        var itemList = ItemSetRequest.ListOf(given, request.Count);
+        var wanted = itemSet.Count * request.Count;
+        if (piecesGiven != wanted)
+        {
+            client.SendReply(gm, Localization.MSG_GIFT_SET_PARTIAL, piecesGiven, wanted, setType, targetPlayer.Name, itemList);
+        }
+        else if (request.Count > 1)
+        {
+            client.SendReply(gm, Localization.MSG_GIFT_SETS, request.Count, setType, targetPlayer.Name, itemList);
         }
         else
         {
-            client.SendReply(gm, Localization.MSG_ITEM_SET_NONE_OWNED, setType);
+            var format = Localization.MSG_GIFT_SET_A;
+            if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') format = Localization.MSG_GIFT_SET_AN;
+            client.SendReply(gm, format,
+                setType, targetPlayer.Name, itemList);
         }
     }
 

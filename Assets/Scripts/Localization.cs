@@ -2371,21 +2371,23 @@ public static class Localization
     public static string MSG_GIFT_COINS_SINGLE = Meta("gift", "info") + "Did you feel extra nice today? You have gifted {playerName} with a single coin!";
     public static string MSG_GIFT_COINS_FAILED = Meta("gift", "fail") + "You could not gift any coins to {playerName}, make sure the name is spelled correctly and that you have enough coins to send.";
     public static string MSG_GIFT_COINS_ERROR = Meta("gift", "fail") + "Unable to gift any coins right now. Please try again later.";
-    public static string MSG_GIFT_SET_HELP = Meta("gift", "fail") + "When gifting a whole item set, please include target player name, item type, word set. You can only gift one set at a time and only unequipped items will be gifted. example !gift playerName rune set";
+    public static string MSG_GIFT_SET_HELP = Meta("gift", "fail") + "When gifting a whole item set, please include target player name, item type, word set, and how many sets if more than one. Only unequipped items will be gifted. example !gift playerName rune set 5";
     public static string MSG_GIFT_SET_PARTIAL = Meta("gift", "info") + "You have gifted {itemCount} out of {itemSetCount} from the {setType} set to {targetPlayerName}! The items gifted were {itemList}";
     public static string MSG_GIFT_SET_A = Meta("gift", "info") + "You have gifted a {setType} set to {targetPlayerName}! The items gifted were {itemList}";
     public static string MSG_GIFT_SET_AN = Meta("gift", "info") + "You have gifted an {setType} set to {targetPlayerName}! The items gifted were {itemList}";
+    public static string MSG_GIFT_SETS = Meta("gift", "info") + "You have gifted {setCount} {setType} sets to {targetPlayerName}! The items gifted were {itemList}";
 
     // GiftItem and SendItem
     public static string MSG_ITEM_SET_NOT_FOUND = Meta("info", "item set", "fail") + "No item sets could be found matching the name {query}";
     public static string MSG_ITEM_SET_NONE_OWNED = Meta("info", "item set", "fail") + "You do not have any of the items in the set '{query}'";
 
     // SendItem
-    public static string MSG_SEND_SET_HELP = Meta("send", "fail") + "When sending a whole item set, please include target player name, item type, word set. You can only send one set at a time and only unequipped items will be sent. example !send characterNumber rune set";
+    public static string MSG_SEND_SET_HELP = Meta("send", "fail") + "When sending a whole item set, please include target player name, item type, word set, and how many sets if more than one. Only unequipped items will be sent. example !send characterNumber rune set 5";
     public static string MSG_SEND_SELF = Meta("send", "fail") + "You cannot send items to yourself.";
     public static string MSG_SEND_SET_PARTIAL = Meta("send", "info") + "You have sent {itemCount} out of {itemSetCount} from the {setType} set to {targetPlayerName}! The items sent were {itemList}";
     public static string MSG_SEND_SET_A = Meta("send", "info") + "You have sent a {setType} set to {targetPlayerName}! The items sent were {itemList}";
     public static string MSG_SEND_SET_AN = Meta("send", "info") + "You have sent an {setType} set to {targetPlayerName}! The items sent were {itemList}";
+    public static string MSG_SEND_SETS = Meta("send", "info") + "You have sent {setCount} {setType} sets to {targetPlayerName}! The items sent were {itemList}";
 
     // TeleportToIsland
     public static string MSG_TELEPORT_FAILED_DUNGEON = Meta("travel", "teleport", "fail") + "You cannot teleport while in a dungeon.";

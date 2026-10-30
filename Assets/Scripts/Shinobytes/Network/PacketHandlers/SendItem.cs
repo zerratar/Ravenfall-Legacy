@@ -33,7 +33,8 @@ public class SendItem : ChatBotCommandHandler<string>
             return;
         }
 
-        if (inputQuery.EndsWith(" set", System.StringComparison.OrdinalIgnoreCase) || inputQuery.EndsWith(" sets", System.StringComparison.OrdinalIgnoreCase))
+        // Anywhere after the character, not only at the end: "rune set 5" is a set too.
+        if (ItemSetRequest.IsSetQuery(inputQuery))
         {
             await SendItemSetAsync(inputQuery, gm, client, player);
             return;
@@ -48,15 +49,15 @@ public class SendItem : ChatBotCommandHandler<string>
         // for now, we will just replace the word " set " with various item types
         // first extract the types of a known set:
 
-        var queryParts = inputQuery.Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLower()).ToArray();
-        if (queryParts.Length < 3)
+        var request = ItemSetRequest.Parse(inputQuery);
+        if (request == null)
         {
             client.SendReply(gm, Localization.MSG_SEND_SET_HELP);
             return;
         }
 
         // resolve target player
-        var targetPlayer = queryParts[0];
+        var targetPlayer = request.Target;
         if (string.IsNullOrEmpty(targetPlayer))
         {
             return;
@@ -68,80 +69,77 @@ public class SendItem : ChatBotCommandHandler<string>
             return;
         }
 
-        var setType = "";
-        if (queryParts[1] == "elder")
-        {
-            // then combine type
-            setType = $"{queryParts[1]} {queryParts[2]}";
-        }
-        else
-        {
-            setType = queryParts[1];
-        }
-
-        // "ether armor set" is the armour alone, "ether weapons set" the weapons; just "ether set" is all of it
-        var only = ItemSetFilter.From(queryParts.Skip(1).ToList());
-        var itemSet = ItemSetFilter.Apply(itemResolver.GetItemSet(setType), only);
+        var setType = request.SetType;
+        var itemSet = ItemSetFilter.Apply(itemResolver.GetItemSet(setType), request.Only);
         if (itemSet.Count == 0)
         {
             client.SendReply(gm, Localization.MSG_ITEM_SET_NOT_FOUND, setType);
             return;
         }
 
-        // now we have all items, we should compare and see if the player has any of these items in their inventories
-        var unequippedItems = player.Inventory.GetBackpackItems();
-        var itemsToSend = new List<GameInventoryItem>();
-
-        // now select the matches.
-        foreach (var i in itemSet)
+        // Taken before anything is sent: the backpack list changes under us as each one leaves.
+        var backpack = player.Inventory.GetBackpackItems().ToList();
+        if (!itemSet.Any(i => backpack.Any(x => !x.Soulbound && x.Item.Id == i.Id)))
         {
-            var existingStack = unequippedItems.FirstOrDefault(x => !x.Soulbound && x.Item.Id == i.Id);
-            if (existingStack != null)
-            {
-                itemsToSend.Add(existingStack);
-            }
+            client.SendReply(gm, Localization.MSG_ITEM_SET_NONE_OWNED, setType);
+            return;
         }
 
-        // targetPlayer
-        if (itemsToSend.Count > 0)
+        var sent = new List<(string Name, long Amount)>();
+        var piecesSent = 0L;
+        try
         {
-            var sentItems = new List<GameInventoryItem>();
-            try
+            foreach (var i in itemSet)
             {
-                foreach (var i in itemsToSend)
+                // As many of this piece as were asked for, from as many stacks as it takes.
+                var left = request.Count;
+                var sentOfThis = 0L;
+                foreach (var stack in backpack.Where(x => !x.Soulbound && x.Item.Id == i.Id))
                 {
-                    var result = await Game.RavenNest.Players.SendItemAsync(player.Id, targetPlayer, i.InstanceId, 1);
-                    if (result.Status == RavenNest.Models.GiftItemStatus.OK)
-                    {
-                        // Update game client with the changes
-                        // this is done locally to avoid sending additional data from server to client and visa versa.
+                    if (left <= 0) break;
+                    var result = await Game.RavenNest.Players.SendItemAsync(player.Id, targetPlayer, stack.InstanceId, left);
+                    if (result.Status != RavenNest.Models.GiftItemStatus.OK) continue;
 
-                        player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
-
-                        sentItems.Add(i);
-                    }
+                    // Update game client with the changes
+                    // this is done locally to avoid sending additional data from server to client and visa versa.
+                    player.Inventory.RemoveOrSetInventoryItem(result.StackToDecrement);
+                    left -= result.Amount;
+                    sentOfThis += result.Amount;
+                }
+                if (sentOfThis > 0)
+                {
+                    sent.Add((i.Name, sentOfThis));
+                    piecesSent += sentOfThis;
                 }
             }
-            catch (System.Exception exc)
-            {
-                Shinobytes.Debug.LogError("Error when '" + player.Name + "' tried to send an '" + setType + "' item set to '" + targetPlayer + "'. " + sentItems.Count + " out of " + itemsToSend.Count + " was sent. Exception: " + exc);
-            }
-            var itemList = Utility.ReplaceLastOccurrence(string.Join(", ", sentItems.Select(x => x.Name).ToArray()), ", ", Localization.MSG_LIST_AND);
-            if (sentItems.Count != itemSet.Count)
-            {
-                client.SendReply(gm, Localization.MSG_SEND_SET_PARTIAL, sentItems.Count, itemSet.Count, setType, targetPlayer, itemList);
-            }
-            else
-            {
-                var format = Localization.MSG_SEND_SET_A;
-                if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') format = Localization.MSG_SEND_SET_AN;
-                client.SendReply(gm, format,
-                    setType, targetPlayer, itemList);
-            }
+        }
+        catch (System.Exception exc)
+        {
+            Shinobytes.Debug.LogError("Error when '" + player.Name + "' tried to send " + request.Count + "x '" + setType + "' item set to '" + targetPlayer + "'. " + piecesSent + " out of " + (itemSet.Count * request.Count) + " pieces were sent. Exception: " + exc);
+        }
+
+        if (sent.Count == 0)
+        {
+            client.SendReply(gm, Localization.MSG_ITEM_SET_NONE_OWNED, setType);
+            return;
+        }
+
+        var itemList = ItemSetRequest.ListOf(sent, request.Count);
+        var wanted = itemSet.Count * request.Count;
+        if (piecesSent != wanted)
+        {
+            client.SendReply(gm, Localization.MSG_SEND_SET_PARTIAL, piecesSent, wanted, setType, targetPlayer, itemList);
+        }
+        else if (request.Count > 1)
+        {
+            client.SendReply(gm, Localization.MSG_SEND_SETS, request.Count, setType, targetPlayer, itemList);
         }
         else
         {
-            client.SendReply(gm, Localization.MSG_ITEM_SET_NONE_OWNED, setType);
+            var format = Localization.MSG_SEND_SET_A;
+            if (setType[0] == 'a' || setType[0] == 'e' || setType[0] == 'i' || setType[0] == 'u' || setType[0] == 'o') format = Localization.MSG_SEND_SET_AN;
+            client.SendReply(gm, format,
+                setType, targetPlayer, itemList);
         }
     }
 
