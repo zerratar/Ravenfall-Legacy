@@ -647,8 +647,9 @@
 }
 
 /* ---- Keyboard shortcut menu (bottom right) ----------------------------------------
-   Square icon buttons in groups, MMO micro menu style, with each key as a badge on its button. The
-   caption above names the hovered button. The cluster dims while the mouse is elsewhere. */
+   Tiles in groups, MMO micro menu style: the icon on top, its key written under it, thin accent
+   lines between the groups. A tooltip with the name and a key cap points down at the hovered tile.
+   The bar dims while the mouse is elsewhere. */
 
 .rf-top-layer .rf-shortcuts {
     position: absolute;
@@ -657,43 +658,97 @@
     align-items: flex-end;
 }
 
-.rf-top-layer .rf-shortcuts__caption {
-    margin-bottom: 6px;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 4px;
-    padding-bottom: 4px;
-    font-size: 14px;
-    color: var(--rf-text);
-    background-color: var(--rf-surface-glass);
-    border-top-left-radius: var(--rf-radius);
-    border-top-right-radius: var(--rf-radius);
-    border-bottom-left-radius: var(--rf-radius);
-    border-bottom-right-radius: var(--rf-radius);
+.rf-top-layer .rf-shortcuts__tip {
+    position: absolute;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 14px;
+    padding-right: 8px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    background-color: rgb(24, 22, 18);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
     opacity: 0;
     transition-property: opacity;
     transition-duration: 0.12s;
 }
 
-.rf-top-layer .rf-shortcuts__caption--visible {
+.rf-top-layer .rf-shortcuts__tip--visible {
     opacity: 1;
+}
+
+.rf-top-layer .rf-shortcuts__tip-name {
+    margin-right: 12px;
+    font-size: 17px;
+    color: var(--rf-text);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+/* the key as a key cap */
+.rf-top-layer .rf-shortcuts__tip-key {
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    background-color: rgba(255, 244, 214, 0.05);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+/* a square turned on its corner, half under the bubble: the arrow pointing at the tile */
+.rf-top-layer .rf-shortcuts__tip-arrow {
+    position: absolute;
+    bottom: -8px;
+    width: 14px;
+    height: 14px;
+    rotate: 45deg;
+    background-color: rgb(24, 22, 18);
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-right-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
 }
 
 .rf-top-layer .rf-shortcuts__row {
     flex-direction: row;
     align-items: center;
-    opacity: 0.85;
+    opacity: 0.92;
     transition-property: opacity;
     transition-duration: 0.2s;
-    padding-left: 6px;
-    padding-right: 6px;
-    padding-top: 6px;
-    padding-bottom: 6px;
-    background-color: var(--rf-surface-glass);
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    /* solid: a little transparency shows the world plainly through */
+    background-color: var(--rf-bg);
     border-left-width: 1px;
     border-right-width: 1px;
     border-bottom-width: 1px;
-    border-top-width: 2px;
+    border-top-width: 3px;
     border-left-color: var(--rf-border);
     border-right-color: var(--rf-border);
     border-bottom-color: var(--rf-border);
@@ -712,80 +767,77 @@
     flex-direction: row;
 }
 
+/* 3px: thinner lines round away or unevenly at the panel's scale */
 .rf-top-layer .rf-shortcuts__divider {
-    width: 1px;
-    height: 30px;
-    margin-left: 6px;
-    margin-right: 6px;
-    background-color: var(--rf-divider);
+    width: 3px;
+    height: 40px;
+    flex-shrink: 0;
+    margin-left: 9px;
+    margin-right: 9px;
+    background-color: var(--rf-accent-dim);
 }
 
 .rf-top-layer .rf-shortcut {
-    width: 44px;
-    height: 44px;
-    margin-left: 2px;
-    margin-right: 2px;
+    min-width: 60px;
+    height: 66px;
+    margin-left: 3px;
+    margin-right: 3px;
     margin-top: 0;
     margin-bottom: 0;
-    padding-left: 0;
-    padding-right: 0;
+    padding-left: 8px;
+    padding-right: 8px;
     padding-top: 0;
     padding-bottom: 0;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0.35);
+    background-color: rgba(255, 244, 214, 0.075);
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
-    border-left-color: var(--rf-border);
-    border-right-color: var(--rf-border);
-    border-top-color: var(--rf-border);
-    border-bottom-color: var(--rf-border);
+    border-left-color: rgba(0, 0, 0, 0.35);
+    border-right-color: rgba(0, 0, 0, 0.35);
+    border-top-color: rgba(0, 0, 0, 0.35);
+    border-bottom-color: rgba(0, 0, 0, 0.35);
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    transition-property: background-color, border-color, translate;
+    transition-property: background-color, border-color;
     transition-duration: 0.1s;
 }
 
 .rf-top-layer .rf-shortcut:hover {
-    background-color: var(--rf-accent-wash);
+    background-color: rgba(232, 163, 61, 0.16);
     border-left-color: var(--rf-accent);
     border-right-color: var(--rf-accent);
     border-top-color: var(--rf-accent);
     border-bottom-color: var(--rf-accent);
-    translate: 0 -2px;
 }
 
 .rf-top-layer .rf-shortcut:active {
-    background-color: var(--rf-accent-dim);
-    translate: 0 0;
-}
-
-.rf-top-layer .rf-shortcut--menu {
-    width: 52px;
+    background-color: rgba(232, 163, 61, 0.3);
 }
 
 .rf-top-layer .rf-shortcut__icon {
-    font-size: 17px;
+    font-size: 22px;
     color: var(--rf-text);
-    margin-top: -6px;
 }
 
-.rf-top-layer .rf-shortcut:hover .rf-shortcut__icon {
+.rf-top-layer .rf-shortcut:hover .rf-shortcut__icon,
+.rf-top-layer .rf-shortcut:hover .rf-shortcut__key {
     color: var(--rf-accent-bright);
 }
 
-/* The key as a little badge along the bottom edge of the button. */
+/* the key written under the icon */
 .rf-top-layer .rf-shortcut__key {
-    position: absolute;
-    bottom: 2px;
-    font-size: 11px;
+    margin-top: 6px;
+    font-size: 15px;
     color: var(--rf-text);
     -unity-text-align: middle-center;
-    -unity-font-style: bold;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
 }
 
 .rf-top-column {

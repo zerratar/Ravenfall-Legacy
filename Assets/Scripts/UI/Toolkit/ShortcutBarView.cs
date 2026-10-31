@@ -7,9 +7,10 @@ namespace Shinobytes.UI
 {
     /// <summary>
     /// The keyboard shortcuts as a small menu of icon buttons in the bottom right corner, in the manner
-    /// of an MMO micro menu: each button does the same as its key, which sits as a badge on the button.
-    /// Hovering one names it in a caption above the cluster, since runtime UI Toolkit shows no tooltips.
-    /// The cluster dims while the mouse is elsewhere so it stays out of the stream's way.
+    /// of an MMO micro menu: each button does the same as its key, which is written under its icon.
+    /// Hovering one names it in a tooltip over the button, with its key as a key cap and an arrow
+    /// pointing down at it, since runtime UI Toolkit shows no tooltips of its own. The bar dims while
+    /// the mouse is elsewhere so it stays out of the stream's way.
     /// </summary>
     /// <remarks>
     /// Lives in the TopStatus document (markup "shortcut-bar" in TopStatus.uxml); TownBarView adds this
@@ -37,14 +38,19 @@ namespace Shinobytes.UI
             public bool AdminOnly;
             public Button Button;
             public Label KeyLabel;
-            public string Caption;
+            public string Name;
+            public string Key;
         }
 
         private readonly List<Shortcut> shortcuts = new List<Shortcut>();
         /// <summary>Every group and divider, with whether it is the admin's and whether it is the menu's.</summary>
         private readonly List<(VisualElement Element, bool Admin, bool Menu)> parts = new List<(VisualElement, bool, bool)>();
         private VisualElement bar;
-        private Label caption;
+        private VisualElement tip;
+        private Label tipName;
+        private Label tipKey;
+        private VisualElement tipArrow;
+        private Shortcut tipFor;
         private bool bound;
         private bool shown;
         private bool shownAdmin;
@@ -65,7 +71,7 @@ namespace Shinobytes.UI
             if (Instance == this) Instance = null;
         }
 
-        /// <summary>Badges and captions follow the keys as they are now, after any rebinding.</summary>
+        /// <summary>The keys under the icons and in the tooltip follow the keys as they are now, after any rebinding.</summary>
         private void RefreshKeys()
         {
             foreach (var s in shortcuts)
@@ -75,18 +81,21 @@ namespace Shinobytes.UI
                 {
                     var label = Keybinds.Label(s.Action.Value);
                     s.KeyLabel.text = Badge(label);
-                    s.Caption = Keybinds.Name(s.Action.Value) + " (" + label + ")";
+                    s.Name = Keybinds.Name(s.Action.Value);
+                    s.Key = label;
                 }
                 else
                 {
                     s.KeyLabel.text = "Esc";
-                    s.Caption = Localization.UI_SHORTCUT_MENU;
+                    s.Name = Localization.UI_SHORTCUT_MENU;
+                    s.Key = "Esc";
                 }
             }
+            if (tipFor != null) ShowTip(tipFor);
         }
 
-        /// <summary>Shift as an arrow keeps the badge short enough for its button.</summary>
-        private static string Badge(string label) => label.Replace("Shift+", "\u2191");
+        /// <summary>Shift as an arrow keeps the key short enough for its tile; a lone letter in capitals, as on the key.</summary>
+        private static string Badge(string label) => label.Length == 1 ? label.ToUpperInvariant() : label.Replace("Shift+", "\u2191");
 
         private void TryBind()
         {
@@ -98,13 +107,24 @@ namespace Shinobytes.UI
 
             Define();
             bar.Clear();
-            // the caption's empty space must not catch clicks meant for the world; the row does the picking
+            // the tooltip and empty space must not catch clicks meant for the world; the row does the picking
             bar.pickingMode = PickingMode.Ignore;
             parts.Clear();
 
-            caption = new Label { pickingMode = PickingMode.Ignore };
-            caption.AddToClassList("rf-shortcuts__caption");
-            bar.Add(caption);
+            // the tooltip floats over the hovered button: placed from its bounds once it has a size
+            tip = new VisualElement { pickingMode = PickingMode.Ignore };
+            tip.AddToClassList("rf-shortcuts__tip");
+            tipName = new Label { pickingMode = PickingMode.Ignore };
+            tipName.AddToClassList("rf-shortcuts__tip-name");
+            tipKey = new Label { pickingMode = PickingMode.Ignore };
+            tipKey.AddToClassList("rf-shortcuts__tip-key");
+            tipArrow = new VisualElement { pickingMode = PickingMode.Ignore };
+            tipArrow.AddToClassList("rf-shortcuts__tip-arrow");
+            tip.Add(tipName);
+            tip.Add(tipKey);
+            tip.Add(tipArrow);
+            tip.RegisterCallback<GeometryChangedEvent>(_ => PlaceTip());
+            bar.Add(tip);
 
             var row = new VisualElement();
             row.AddToClassList("rf-shortcuts__row");
@@ -144,8 +164,8 @@ namespace Shinobytes.UI
                 s.KeyLabel = key;
 
                 var shortcut = s;
-                button.RegisterCallback<PointerEnterEvent>(e => ShowCaption(shortcut.Caption));
-                button.RegisterCallback<PointerLeaveEvent>(e => ShowCaption(null));
+                button.RegisterCallback<PointerEnterEvent>(e => ShowTip(shortcut));
+                button.RegisterCallback<PointerLeaveEvent>(e => { if (tipFor == shortcut) ShowTip(null); });
 
                 var run = s.Run;
                 button.clicked += () =>
@@ -158,17 +178,39 @@ namespace Shinobytes.UI
             }
 
             RefreshKeys();
-            ShowCaption(null);
+            ShowTip(null);
             shownAdmin = true;
             shownMenuOnly = false;
             bound = true;
         }
 
-        private void ShowCaption(string text)
+        private void ShowTip(Shortcut shortcut)
         {
-            if (caption == null) return;
-            caption.text = text ?? string.Empty;
-            caption.EnableInClassList("rf-shortcuts__caption--visible", !string.IsNullOrEmpty(text));
+            tipFor = shortcut;
+            if (tip == null) return;
+            tip.EnableInClassList("rf-shortcuts__tip--visible", shortcut != null);
+            if (shortcut == null) return;
+            tipName.text = shortcut.Name ?? string.Empty;
+            tipKey.text = shortcut.Key ?? string.Empty;
+            PlaceTip();
+        }
+
+        /// <summary>
+        /// Over the hovered button, centred on it but kept inside the bar's width (the menu button sits
+        /// at the screen's right edge), the arrow under the button wherever the tooltip had to go.
+        /// </summary>
+        private void PlaceTip()
+        {
+            if (tip == null || tipFor?.Button == null || bar == null) return;
+            var button = tipFor.Button.worldBound;
+            var area = bar.worldBound;
+            var width = tip.resolvedStyle.width;
+            if (float.IsNaN(width)) width = 0f;
+            var centre = button.center.x - area.x;
+            var left = Mathf.Clamp(centre - width * 0.5f, 0f, Mathf.Max(0f, area.width - width));
+            tip.style.left = left;
+            tip.style.bottom = area.yMax - button.yMin + 14f;
+            tipArrow.style.left = centre - left - 7f;
         }
 
         /// <summary>The shortcuts, in groups and in the order they appear. Each runs exactly what its key runs.</summary>
@@ -247,7 +289,7 @@ namespace Shinobytes.UI
             if (value == shown) return;
             shown = value;
             bar.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!value) ShowCaption(null);
+            if (!value) ShowTip(null);
         }
 
         /// <summary>Turns the bar on or off and remembers it, for the UI settings.</summary>

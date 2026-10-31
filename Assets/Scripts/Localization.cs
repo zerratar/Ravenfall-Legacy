@@ -1476,7 +1476,7 @@ public static class Localization
     public static string UI_BUILD_HALL_NEXT = "NEXT: {0}";
     public static string UI_BUILD_HALL_MAX = "This is the grandest town hall there is.";
     public static string UI_BUILD_HALL_UPGRADE = "Upgrade";
-    public static string UI_SHORTCUT_MENU = "Menu (Esc)";
+    public static string UI_SHORTCUT_MENU = "Menu";
     public static string UI_TOWN_UPGRADE_READY = "A town hall upgrade is ready. Open build mode and select the town hall.";
     public static string UI_BUILD_HALL_UPGRADE_FAILED = "The upgrade did not go through. Check the requirements and try again.";
     public static string UI_BUILD_HALL_NEED_LEVEL = "Village level {0}";
