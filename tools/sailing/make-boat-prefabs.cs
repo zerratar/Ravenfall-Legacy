@@ -43,6 +43,12 @@ foreach (var b in boats)
     if (best > float.MinValue) deck = best - root.transform.position.y;
     if (!float.IsNaN(b.SeatHeight)) deck = b.SeatHeight;
 
+    // the rowboat is its owner's alone: the kit's front pair of oars (Oar_01) is off, the pair beside the owner's seat
+    // stays, so one rower has two oars (the kit seats two rowers, and four oars read wrong with one aboard)
+    if (b.Name == "Rowboat")
+        foreach (var t in model.GetComponentsInChildren<UnityEngine.Transform>(true))
+            if (t.name == "SM_Prop_Oar_01") t.gameObject.SetActive(false);
+
     if (b.Name == "FishingBoat")
     {
         void Prop(string path, UnityEngine.Vector3 local, UnityEngine.Vector3 euler, float scale)
