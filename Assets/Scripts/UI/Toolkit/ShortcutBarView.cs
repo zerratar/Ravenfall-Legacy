@@ -7,7 +7,7 @@ namespace Shinobytes.UI
 {
     /// <summary>
     /// The keyboard shortcuts as a small menu of icon buttons in the bottom right corner, in the manner
-    /// of an MMO micro menu: each button does the same as its key, which is written under its icon.
+    /// of an MMO micro menu: each button does the same as its key.
     /// Hovering one names it in a tooltip over the button, with its key as a key cap and an arrow
     /// pointing down at it, since runtime UI Toolkit shows no tooltips of its own. The bar dims while
     /// the mouse is elsewhere so it stays out of the stream's way.
@@ -37,7 +37,6 @@ namespace Shinobytes.UI
             public Action Run;
             public bool AdminOnly;
             public Button Button;
-            public Label KeyLabel;
             public string Name;
             public string Key;
         }
@@ -71,31 +70,24 @@ namespace Shinobytes.UI
             if (Instance == this) Instance = null;
         }
 
-        /// <summary>The keys under the icons and in the tooltip follow the keys as they are now, after any rebinding.</summary>
+        /// <summary>The tooltips follow the keys as they are now, after any rebinding.</summary>
         private void RefreshKeys()
         {
             foreach (var s in shortcuts)
             {
-                if (s.KeyLabel == null) continue;
                 if (s.Action.HasValue)
                 {
-                    var label = Keybinds.Label(s.Action.Value);
-                    s.KeyLabel.text = Badge(label);
                     s.Name = Keybinds.Name(s.Action.Value);
-                    s.Key = label;
+                    s.Key = Keybinds.Label(s.Action.Value);
                 }
                 else
                 {
-                    s.KeyLabel.text = "Esc";
                     s.Name = Localization.UI_SHORTCUT_MENU;
                     s.Key = "Esc";
                 }
             }
             if (tipFor != null) ShowTip(tipFor);
         }
-
-        /// <summary>Shift as an arrow keeps the key short enough for its tile; a lone letter in capitals, as on the key.</summary>
-        private static string Badge(string label) => label.Length == 1 ? label.ToUpperInvariant() : label.Replace("Shift+", "\u2191");
 
         private void TryBind()
         {
@@ -157,11 +149,7 @@ namespace Shinobytes.UI
                 var icon = new Label(s.Icon) { pickingMode = PickingMode.Ignore };
                 icon.AddToClassList("rf-icon");
                 icon.AddToClassList("rf-shortcut__icon");
-                var key = new Label { pickingMode = PickingMode.Ignore };
-                key.AddToClassList("rf-shortcut__key");
                 button.Add(icon);
-                button.Add(key);
-                s.KeyLabel = key;
 
                 var shortcut = s;
                 button.RegisterCallback<PointerEnterEvent>(e => ShowTip(shortcut));
@@ -209,7 +197,7 @@ namespace Shinobytes.UI
             var centre = button.center.x - area.x;
             var left = Mathf.Clamp(centre - width * 0.5f, 0f, Mathf.Max(0f, area.width - width));
             tip.style.left = left;
-            tip.style.bottom = area.yMax - button.yMin + 14f;
+            tip.style.bottom = area.yMax - button.yMin + 10f;
             tipArrow.style.left = centre - left - 7f;
         }
 
