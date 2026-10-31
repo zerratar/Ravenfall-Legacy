@@ -65,7 +65,7 @@ namespace Shinobytes.UI
             return icon;
         }
 
-        public static VisualElement Coin() => Icon("icon-coin", "");
+        public static VisualElement Coin() => Icon("icon-coin", "\uf51e");
 
         /// <summary>The picture for what a quest asks (a stream quest's or a streamer's): gather by skill, or the objective.</summary>
         public static string QuestPicture(string objective, int skill)
@@ -98,12 +98,12 @@ namespace Shinobytes.UI
         {
             switch (objective)
             {
-                case "gather": return "";
-                case "kill": return "";
-                case "levels": return "";
-                case "raid": return "";
-                case "dungeon": return "";
-                default: return "";
+                case "gather": return "\uf6e3";
+                case "kill": return "\uf71c";
+                case "levels": return "\uf062";
+                case "raid": return "\uf6d5";
+                case "dungeon": return "\uf6d9";
+                default: return "\uf024";
             }
         }
 
@@ -112,10 +112,10 @@ namespace Shinobytes.UI
         {
             switch (resource)
             {
-                case 1: return Icon("icon-wood", "");
-                case 2: return Icon("icon-ore", "");
-                case 3: return Icon("icon-fish", "");
-                default: return Icon("icon-wheat", "");
+                case 1: return Icon("icon-wood", "\uf06c");
+                case 2: return Icon("icon-ore", "\uf3a5");
+                case 3: return Icon("icon-fish", "\uf578");
+                default: return Icon("icon-wheat", "\uf72c");
             }
         }
 

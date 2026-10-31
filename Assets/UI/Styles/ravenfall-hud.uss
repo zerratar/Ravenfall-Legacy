@@ -5110,3 +5110,18 @@
 .rf-hud-hidden #meters-window {
     visibility: hidden;
 }
+
+/* ---- The quest window's Ravebridge tab (RavebridgeQuestPanel) */
+
+.rf-rbq__characters {
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-rbq__objective {
+    margin-top: var(--rf-space-2);
+}
+
+.rf-rbq__begin .rf-qcard__picture {
+    width: 120px;
+    height: 96px;
+}

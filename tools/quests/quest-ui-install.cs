@@ -11,6 +11,7 @@ var done = new System.Collections.Generic.List<string>();
 foreach (var file in System.IO.Directory.GetFiles(From, "*.png"))
 {
     var name = System.IO.Path.GetFileNameWithoutExtension(file);
+    if (name.EndsWith(".uncut")) continue; // the Image Generator keeps the picture from before its cutout pass
     var size = name.StartsWith("icon-") ? 128 : name == "village-houses" ? 256 : 512;
     System.IO.File.WriteAllBytes(To + "/" + name + ".png", IconForge.Shrink(System.IO.File.ReadAllBytes(file), size));
     done.Add(name);

@@ -294,7 +294,7 @@ namespace Shinobytes.UI
 
             var top = new VisualElement();
             top.AddToClassList("rf-qform__top");
-            var back = new Button(CloseForm) { text = "" };
+            var back = new Button(CloseForm) { text = "\uf060" };
             back.AddToClassList("rf-icon");
             back.AddToClassList("rf-qform__back");
             top.Add(back);
@@ -343,8 +343,8 @@ namespace Shinobytes.UI
             var card = Card(Localization.UI_POSTQ_DETAILS);
             var kinds = new VisualElement();
             kinds.AddToClassList("rf-qform__kinds");
-            kinds.Add(KindCard(StreamerQuests.Bounty, "", Localization.UI_STREAMER_QUEST_BOUNTY, Localization.UI_POSTQ_BOUNTY_SUB));
-            kinds.Add(KindCard(StreamerQuests.Goal, "", Localization.UI_STREAMER_QUEST_GOAL, Localization.UI_POSTQ_GOAL_SUB));
+            kinds.Add(KindCard(StreamerQuests.Bounty, "\uf091", Localization.UI_STREAMER_QUEST_BOUNTY, Localization.UI_POSTQ_BOUNTY_SUB));
+            kinds.Add(KindCard(StreamerQuests.Goal, "\uf0c0", Localization.UI_STREAMER_QUEST_GOAL, Localization.UI_POSTQ_GOAL_SUB));
             card.Add(kinds);
             card.Add(Text(goal ? Localization.UI_POSTQ_GOAL_NOTE : Localization.UI_POSTQ_BOUNTY_NOTE, "rf-qform__note"));
 
@@ -401,11 +401,11 @@ namespace Shinobytes.UI
             if (coinSource > characters.Length) coinSource = 0;
             var from = coinSource == 0 ? Localization.UI_POSTQ_TREASURY : characters[coinSource - 1].Name;
             var available = coinSource == 0 ? list.TreasuryCoins : characters[coinSource - 1].Coins;
-            var froms = new List<Option> { new Option(Localization.UI_POSTQ_TREASURY + " (" + Number(list.TreasuryCoins) + ")", "", coinSource == 0, () => { coinSource = 0; redraw(); }) };
+            var froms = new List<Option> { new Option(Localization.UI_POSTQ_TREASURY + " (" + Number(list.TreasuryCoins) + ")", "\uf19c", coinSource == 0, () => { coinSource = 0; redraw(); }) };
             for (var i = 0; i < characters.Length; ++i)
             {
                 var index = i + 1;
-                froms.Add(new Option(characters[i].Name + " (" + Number(characters[i].Coins) + ")", "", coinSource == index, () => { coinSource = index; redraw(); }));
+                froms.Add(new Option(characters[i].Name + " (" + Number(characters[i].Coins) + ")", "\uf007", coinSource == index, () => { coinSource = index; redraw(); }));
             }
             card.Add(Dropdown(null, string.Format(CultureInfo.InvariantCulture, Localization.UI_POSTQ_FROM, from, Number(available)), froms, link: true));
             card.Add(Rule());
@@ -422,7 +422,7 @@ namespace Shinobytes.UI
             card.Add(Rule());
 
             card.Add(FieldLabel(Localization.UI_POSTQ_LOYALTY, true));
-            card.Add(Spinner(loyalty, v => loyalty = v, QuestArt.Icon("icon-loyalty", "")));
+            card.Add(Spinner(loyalty, v => loyalty = v, QuestArt.Icon("icon-loyalty", "\uf5a2")));
             card.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_POSTQ_LOYALTY_LEFT, Number(list.LoyaltyBudgetLeft)), "rf-qform__note"));
             return card;
         }
@@ -434,7 +434,7 @@ namespace Shinobytes.UI
             {
                 var choose = new Button(OpenPicker);
                 choose.AddToClassList("rf-qitem-choose");
-                choose.Add(QuestArt.Glyph("", "rf-qitem-choose__icon"));
+                choose.Add(QuestArt.Glyph("\uf067", "rf-qitem-choose__icon"));
                 choose.Add(Text(Localization.UI_POSTQ_CHOOSE_ITEM, "rf-qitem-choose__text"));
                 choose.SetEnabled(!Busy);
                 return choose;
@@ -452,7 +452,7 @@ namespace Shinobytes.UI
             var change = new Button(OpenPicker) { text = Localization.UI_POSTQ_CHANGE };
             change.AddToClassList("rf-button");
             change.AddToClassList("rf-qitem__change");
-            var remove = new Button(() => { item = null; redraw(); }) { text = "" };
+            var remove = new Button(() => { item = null; redraw(); }) { text = "\uf00d" };
             remove.AddToClassList("rf-icon");
             remove.AddToClassList("rf-qitem__remove");
             card.Add(change);
@@ -483,7 +483,7 @@ namespace Shinobytes.UI
             bar.Add(head);
             reservedCoinsPart = ReservedPart(QuestArt.Coin(), out reservedCoins);
             reservedItemsPart = ReservedPart(item != null ? ItemIcon(item, "rf-qart-icon") : new VisualElement(), out reservedItems);
-            reservedLoyaltyPart = ReservedPart(QuestArt.Icon("icon-loyalty", ""), out reservedLoyalty);
+            reservedLoyaltyPart = ReservedPart(QuestArt.Icon("icon-loyalty", "\uf5a2"), out reservedLoyalty);
             reservedNothing = Text(Localization.UI_POSTQ_NOTHING, "rf-qreserved__nothing");
             bar.Add(reservedCoinsPart);
             bar.Add(reservedItemsPart);
@@ -583,7 +583,7 @@ namespace Shinobytes.UI
             var head = new VisualElement();
             head.AddToClassList("rf-qmodal__head");
             head.Add(Text(Localization.UI_POSTQ_CHOOSE_ITEM, "rf-qheading"));
-            var close = new Button(ClosePicker) { text = "" };
+            var close = new Button(ClosePicker) { text = "\uf00d" };
             close.AddToClassList("rf-icon");
             close.AddToClassList("rf-squest__close");
             head.Add(close);
@@ -594,7 +594,7 @@ namespace Shinobytes.UI
             tools.AddToClassList("rf-qmodal__tools");
             var search = new VisualElement();
             search.AddToClassList("rf-qsearch");
-            search.Add(QuestArt.Glyph("", "rf-qsearch__icon"));
+            search.Add(QuestArt.Glyph("\uf002", "rf-qsearch__icon"));
             var field = new TextField { value = pickFilter };
             field.AddToClassList("rf-squest-field");
             field.AddToClassList("rf-qsearch__field");
@@ -605,7 +605,7 @@ namespace Shinobytes.UI
             tools.Add(search);
             if (sources != null && sources.Sources.Count > 1)
             {
-                var froms = sources.Sources.Select((s, i) => new Option(SourceTitle(i), s.Kind == StreamerShopSourceKind.Stash ? "" : "", i == pickSource,
+                var froms = sources.Sources.Select((s, i) => new Option(SourceTitle(i), s.Kind == StreamerShopSourceKind.Stash ? "\uf187" : "\uf007", i == pickSource,
                     () => { pickSource = i; pickCategory = null; pickItem = null; ShowPicker(); })).ToList();
                 tools.Add(Dropdown(null, SourceTitle(pickSource), froms));
             }
@@ -690,7 +690,7 @@ namespace Shinobytes.UI
                 if (category.Length > 0) text.Add(Text(category, "rf-qpick__category"));
                 row.Add(text);
                 row.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_POSTQ_OWNED, Number(it.Amount)), "rf-qpick__owned"));
-                var tick = QuestArt.Glyph("", "rf-qpick__tick");
+                var tick = QuestArt.Glyph("\uf00c", "rf-qpick__tick");
                 tick.style.visibility = selected ? Visibility.Visible : Visibility.Hidden;
                 row.Add(tick);
                 pickList.Add(row);
@@ -721,9 +721,9 @@ namespace Shinobytes.UI
             var stepper = new VisualElement();
             stepper.AddToClassList("rf-qstepper");
             TextField field = null;
-            var minus = new Button(() => field.value = Math.Max(1, pickAmount - 1).ToString(CultureInfo.InvariantCulture)) { text = "" };
+            var minus = new Button(() => field.value = Math.Max(1, pickAmount - 1).ToString(CultureInfo.InvariantCulture)) { text = "\uf068" };
             field = NumberField(pickAmount, v => { pickAmount = Math.Max(1, v); UpdatePickNote(); });
-            var plus = new Button(() => field.value = (pickAmount + 1).ToString(CultureInfo.InvariantCulture)) { text = "" };
+            var plus = new Button(() => field.value = (pickAmount + 1).ToString(CultureInfo.InvariantCulture)) { text = "\uf067" };
             minus.AddToClassList("rf-icon");
             minus.AddToClassList("rf-qstepper__button");
             plus.AddToClassList("rf-icon");
@@ -804,7 +804,7 @@ namespace Shinobytes.UI
             button.EnableInClassList("rf-qdropdown--link", link);
             if (glyph != null) button.Add(QuestArt.Glyph(glyph, "rf-qdropdown__icon"));
             button.Add(Text(text, "rf-qdropdown__text"));
-            button.Add(QuestArt.Glyph("", "rf-qdropdown__chevron"));
+            button.Add(QuestArt.Glyph("\uf078", "rf-qdropdown__chevron"));
             button.clicked += () => OpenPopup(button, options);
             return button;
         }

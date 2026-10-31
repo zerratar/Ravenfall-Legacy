@@ -427,6 +427,87 @@ public static class RavebridgeQuests
             : ItemName(i.Key) + " (" + Math.Min(Count(have, i.Key), i.Value) + "/" + i.Value + ")"));
     }
 
+    // ---- The quest window's Ravebridge tab ----------------------------------------------------------------
+
+    /// <summary>
+    /// What a quest under way asks now, for the quest window: the step's hint, or whom to talk to or bring things to;
+    /// have and need count it where there is something to count (both 0 otherwise). Loot is only counted with a
+    /// player, as it is in the character's bag.
+    /// </summary>
+    public static string Objective(PlayerController player, State state, Quest quest, out long have, out long need)
+    {
+        have = 0;
+        need = 0;
+        var at = StepOf(state, quest.key);
+        if (at < 0 || at >= quest.steps.Count) return string.Empty;
+        var step = quest.steps[at];
+        switch (step.type)
+        {
+            case "collect":
+                have = Math.Min(Count(state, step.item), step.amount);
+                need = step.amount;
+                return step.hint?.Get() ?? ItemName(step.item);
+            case "bring":
+                if (step.items != null)
+                {
+                    have = step.items.Sum(i => Math.Min(Count(state, i.Key), i.Value));
+                    need = step.items.Sum(i => i.Value);
+                }
+                return string.Format(Localization.UI_RBQ_BRING, Items(step.items), NpcName(step.npc));
+            case "loot":
+                if (step.loot != null && player)
+                {
+                    have = step.loot.Sum(l => Math.Min(RavebridgeLoot.Count(player, l.Key), (long)l.Value));
+                    need = step.loot.Sum(l => l.Value);
+                }
+                return step.hint?.Get() ?? LootList(step.loot);
+            case "defend":
+                return step.hint?.Get() ?? string.Format(Localization.UI_WAVE_START, step.amount);
+            default:
+                if (step.requires != null && !IsDone(state, step.requires)) return step.blocked?.Get() ?? Localization.UI_RAVEBRIDGE_Q_NOT_YET;
+                if (!Has(state, step.uses)) return string.Format(Localization.UI_RAVEBRIDGE_Q_NEED, Items(step.uses));
+                return string.Format(Localization.UI_STORY_TALK, NpcName(step.npc));
+        }
+    }
+
+    /// <summary>Who a quest is with now: its step's NPC, or for a collect step the one who asked for it.</summary>
+    public static string NpcOf(State state, Quest quest)
+    {
+        var at = StepOf(state, quest.key);
+        if (at < 0 || at >= quest.steps.Count) at = quest.steps.Count;
+        if (at < quest.steps.Count && quest.steps[at].npc != null) return quest.steps[at].npc;
+        return quest.steps.Take(at).LastOrDefault(s => s.npc != null)?.npc ?? quest.steps.FirstOrDefault()?.npc;
+    }
+
+    /// <summary>A quest not begun that its NPC would offer now: what it follows is done, a bounty is off its cooldown.</summary>
+    public static bool CanBegin(State state, Quest quest)
+    {
+        var first = quest.steps.FirstOrDefault();
+        if (first == null || StepOf(state, quest.key) != 0) return false;
+        if (first.requires != null && !IsDone(state, first.requires)) return false;
+        return !quest.bounty || BountyWait(state, quest) <= 0f;
+    }
+
+    /// <summary>Minutes until a bounty done not long ago is offered again.</summary>
+    public static float BountyMinutes(State state, Quest quest) => BountyWait(state, quest);
+
+    /// <summary>
+    /// "350 Cooking exp, 1,000 coins, 2 x Cake": what finishing gives. Coins and items go to the Ravebridge character
+    /// only (the streamer's own characters keep the server's), so they are left out for the others.
+    /// </summary>
+    public static string RewardText(Quest quest, bool ravebridgeCharacter = true)
+    {
+        var r = quest.reward;
+        if (r == null) return string.Empty;
+        var parts = new List<string>();
+        if (r.exp != null) foreach (var e in r.exp) parts.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:N0} {1} exp", e.Value, e.Key));
+        if (ravebridgeCharacter && r.coins > 0) parts.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_COINS, r.coins.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)));
+        if (r.ravebridgeCoins > 0) parts.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_RBQ_RB_COINS, r.ravebridgeCoins.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)));
+        if (ravebridgeCharacter && r.items != null) parts.Add(Items(r.items));
+        if (r.loot != null) parts.Add(LootList(r.loot));
+        return string.Join(", ", parts.Where(s => !string.IsNullOrEmpty(s)));
+    }
+
     // ---- Loot steps (bounties) --------------------------------------------------------------------------------
 
     /// <summary>Minutes before a bounty comes round again, 0 when it is ready.</summary>

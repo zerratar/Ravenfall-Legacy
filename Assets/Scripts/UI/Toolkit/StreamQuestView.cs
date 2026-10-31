@@ -12,7 +12,8 @@ namespace Shinobytes.UI
     /// town hall, or in the tavern) opens the window too, so it is found without build mode or chat. A second tab holds
     /// the streamer's own quests (StreamerQuestPanel); a stream goal the streamer wrote shows on the bar as well. A third,
     /// Village, holds the streamer's story lines (StoryPanel); clicking a story's NPC in the world (the Ironhill
-    /// runestone, the mangrove island) opens it on that story.
+    /// runestone, the mangrove island) opens it on that story. A fourth, Ravebridge, shows where the island quests of a
+    /// character played by hand there stand (RavebridgeQuestPanel), while Ravebridge is open to the streamer.
     /// </summary>
     /// <remarks>
     /// Shares the connection warnings' document; ConnectionStatusView adds it. Built in code. The window is dragged by its
@@ -45,6 +46,7 @@ namespace Shinobytes.UI
         private VisualElement content;
         private StreamerQuestPanel streamerPanel;
         private StoryPanel storyPanel;
+        private RavebridgeQuestPanel ravebridgePanel;
         private int tab;
         private VisualElement footer;
         private Label error;
@@ -54,6 +56,7 @@ namespace Shinobytes.UI
         private bool windowOpen;
         private bool busy;
         private float nextSecond;
+        private float nextRavebridgeCheck;
 
         public static StreamQuestView Instance { get; private set; }
 
@@ -67,6 +70,7 @@ namespace Shinobytes.UI
             Languages.Changed += Redraw;
             streamerPanel ??= new StreamerQuestPanel(Redraw, ShowError);
             storyPanel ??= new StoryPanel(Redraw, ShowError);
+            ravebridgePanel ??= new RavebridgeQuestPanel(Redraw);
         }
 
         private void OnDisable()
@@ -213,6 +217,12 @@ namespace Shinobytes.UI
                 UpdateBar();
                 if (windowOpen && StreamQuests.Active != null) UpdateActiveTimes();
                 if (windowOpen && tab == 2 && StoryLog.Voting) Redraw(); // the vote's countdown
+                if (windowOpen && tab == 3 && Time.unscaledTime >= nextRavebridgeCheck)
+                {
+                    // the character gathers and hands in while the window is open: again when what it shows changed
+                    nextRavebridgeCheck = Time.unscaledTime + 2f;
+                    if (ravebridgePanel.Changed()) Redraw();
+                }
             }
 
             if (Input.GetMouseButtonDown(0))
@@ -306,6 +316,14 @@ namespace Shinobytes.UI
             tabs.Add(Tab(Localization.UI_STREAM_QUEST_TAB, 0));
             tabs.Add(Tab(Localization.UI_STREAMER_QUEST_TAB, 1));
             tabs.Add(Tab(Localization.UI_STORY_TAB, 2));
+            if (RavebridgeQuestPanel.Available) tabs.Add(Tab(Localization.UI_RBQ_TAB, 3));
+            else if (tab == 3) tab = 0;
+            if (tab == 3)
+            {
+                ravebridgePanel.Build(content);
+                ravebridgePanel.BuildFooter(footer);
+                return;
+            }
             if (tab == 1)
             {
                 streamerPanel.Build(content);
