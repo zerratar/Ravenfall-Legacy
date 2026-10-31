@@ -16,8 +16,8 @@ namespace Shinobytes.UI
     /// component to the same GameObject. Hidden before login, during village build mode (which uses the
     /// bottom of the screen) and when F1 has hidden the interface. Turned off in the UI settings
     /// (PlayerSettings.ShortcutBarVisible), only the menu button stays, so the menu can always be
-    /// reached with the mouse; it replaced the old settings cog, which sat fixed in the top right
-    /// corner over the windows docked there. The raid and dungeon buttons only show for
+    /// reached with the mouse, as it can with the settings cog in the top right corner (uGUI
+    /// Game UI/SettingsButton, which the user wants kept). The raid and dungeon buttons only show for
     /// administrators, as their keys only work for them.
     /// </remarks>
     [RequireComponent(typeof(UIDocument))]
