@@ -14,7 +14,11 @@ namespace Shinobytes.UI
     /// Village, holds the streamer's story lines (StoryPanel); clicking a story's NPC in the world (the Ironhill
     /// runestone, the mangrove island) opens it on that story.
     /// </summary>
-    /// <remarks>Shares the connection warnings' document; ConnectionStatusView adds it. Built in code.</remarks>
+    /// <remarks>
+    /// Shares the connection warnings' document; ConnectionStatusView adds it. Built in code. The window is dragged by its
+    /// header and resized from its corner (DraggableWindow, saved as "streamquest"); each tab draws its own footer. The
+    /// pictures come from QuestArt.
+    /// </remarks>
     [RequireComponent(typeof(UIDocument))]
     public class StreamQuestView : MonoBehaviour
     {
@@ -42,8 +46,9 @@ namespace Shinobytes.UI
         private StreamerQuestPanel streamerPanel;
         private StoryPanel storyPanel;
         private int tab;
-        private Label hint;
+        private VisualElement footer;
         private Label error;
+        private DraggableWindow drag;
 
         private bool bound;
         private bool windowOpen;
@@ -109,6 +114,8 @@ namespace Shinobytes.UI
             // again after a document was rebuilt: the old pieces go first
             bar?.RemoveFromHierarchy();
             window?.RemoveFromHierarchy();
+            drag?.Detach();
+            drag = null;
 
             bar = new VisualElement { name = "squest-bar" };
             bar.AddToClassList("rf-squest-bar");
@@ -136,6 +143,7 @@ namespace Shinobytes.UI
 
             window = new VisualElement { name = "squest-window" };
             window.AddToClassList("rf-squest");
+            window.AddToClassList("rf-squest--window");
             var header = new VisualElement();
             header.AddToClassList("rf-squest__header");
             windowTitle = new Label();
@@ -153,14 +161,20 @@ namespace Shinobytes.UI
             content.AddToClassList("rf-squest__content");
             error = new Label();
             error.AddToClassList("rf-squest__error");
-            hint = new Label();
-            hint.AddToClassList("rf-squest__hint");
+            footer = new VisualElement();
+            footer.AddToClassList("rf-squest__footer");
+            var grip = new VisualElement();
+            grip.AddToClassList("rf-window__grip");
             window.Add(header);
             window.Add(tabs);
             window.Add(scroll);
             window.Add(error);
-            window.Add(hint);
+            window.Add(footer);
+            window.Add(grip);
+            window.style.display = DisplayStyle.None;
             layer.Add(window);
+            drag = DraggableWindow.Attach(window, header, "streamquest");
+            drag?.EnableResize(grip, new Vector2(620f, 420f));
 
             bound = true;
             Redraw();
@@ -267,9 +281,11 @@ namespace Shinobytes.UI
             if (!windowOpen) return;
 
             windowTitle.text = tab == 2 && storyPanel.Focus != null ? StoryLog.Npc(storyPanel.Focus) : Localization.UI_STREAM_QUEST_TITLE;
-            hint.text = tab == 2 ? Localization.UI_STORY_HINT : tab == 1 ? Localization.UI_STREAMER_QUEST_HINT : Localization.UI_STREAM_QUEST_HINT;
             content.Clear();
+            footer.Clear();
             activeTime = null;
+            activeFill = null;
+            activeCount = null;
 
             tabs.Clear();
             tabs.Add(Tab(Localization.UI_STREAM_QUEST_TAB, 0));
@@ -278,13 +294,21 @@ namespace Shinobytes.UI
             if (tab == 1)
             {
                 streamerPanel.Build(content);
+                streamerPanel.BuildFooter(footer);
                 return;
             }
             if (tab == 2)
             {
                 storyPanel.Build(content);
+                storyPanel.BuildFooter(footer);
                 return;
             }
+
+            // the chat command does the same as this tab
+            footer.Add(QuestArt.Glyph("\uf4ad", "rf-squest__footer-icon"));
+            footer.Add(Text(Localization.UI_QUESTWIN_CHAT, "rf-squest__footer-strong"));
+            footer.Add(QuestArt.Divider());
+            footer.Add(Text(Localization.UI_QUESTWIN_DAILY, "rf-squest__footer-text"));
 
             var state = StreamQuests.Latest;
             if (state == null)
@@ -300,7 +324,7 @@ namespace Shinobytes.UI
                 return;
             }
 
-            content.Add(Text(Localization.UI_STREAM_QUEST_OFFERS, "rf-squest__section"));
+            QuestArt.Heading(content, Localization.UI_QUESTWIN_CHOOSE, Localization.UI_QUESTWIN_CHOOSE_SUB);
             if (state.Offers == null || state.Offers.Length == 0)
             {
                 content.Add(Text(Localization.UI_QUEST_NO_OFFERS, "rf-squest__empty"));
@@ -310,67 +334,105 @@ namespace Shinobytes.UI
             foreach (var offer in state.Offers) content.Add(OfferCard(offer));
         }
 
+        /// <summary>An offer: its picture, what it asks and how long, what the village and the helpers get, and Start.</summary>
         private VisualElement OfferCard(StreamQuestData offer)
         {
             var card = new VisualElement();
-            card.AddToClassList("rf-squest-card");
+            card.AddToClassList("rf-qcard");
+            card.Add(QuestArt.Picture(QuestArt.QuestPicture(offer.Objective, offer.Skill), QuestArt.QuestGlyph(offer.Objective), "rf-qcard__picture"));
+
             var body = new VisualElement();
-            body.AddToClassList("rf-squest-card__body");
-            body.Add(Text(StreamQuests.Text(offer), "rf-squest-card__title"));
-            body.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_MINUTES, offer.Minutes), "rf-squest-card__meta"));
-            body.Add(Text(StreamQuests.Reward(offer), "rf-squest-card__reward"));
+            body.AddToClassList("rf-qcard__body");
+            body.Add(Text(StreamQuests.Text(offer), "rf-qcard__title"));
+            body.Add(QuestArt.Chip("\uf017", string.Format(CultureInfo.InvariantCulture, Localization.UI_QUESTWIN_MIN, offer.Minutes)));
+            body.Add(Rewards(offer));
             card.Add(body);
 
             var slot = offer.Slot;
-            var start = new Button(() => StartQuest(slot)) { text = Localization.UI_STREAM_QUEST_START };
+            var start = new Button(() => StartQuest(slot)) { text = Localization.UI_QUESTWIN_START };
             start.AddToClassList("rf-button");
             start.AddToClassList("rf-button--primary");
-            start.AddToClassList("rf-squest-card__button");
+            start.AddToClassList("rf-qcard__button");
             start.SetEnabled(!busy);
             card.Add(start);
             return card;
         }
 
+        /// <summary>VILLAGE: coins (and a resource) | HELPERS: coins shared by everyone who helped.</summary>
+        private static VisualElement Rewards(StreamQuestData q)
+        {
+            var village = new VisualElement();
+            village.AddToClassList("rf-qrewards__row");
+            village.Add(QuestArt.Amount(QuestArt.Coin(), StreamQuests.Number(q.RewardVillageCoins)));
+            if (q.RewardResource > 0 && q.RewardResourceAmount > 0)
+                village.Add(QuestArt.Amount(QuestArt.Resource(q.RewardResource), StreamQuests.Number(q.RewardResourceAmount)));
+            var helpers = new VisualElement();
+            helpers.AddToClassList("rf-qrewards__row");
+            helpers.Add(QuestArt.Amount(QuestArt.Coin(), StreamQuests.Number(q.RewardHelperCoins)));
+            return QuestArt.Rewards((Localization.UI_QUESTWIN_VILLAGE, village), (Localization.UI_QUESTWIN_HELPERS, helpers));
+        }
+
+        private VisualElement activeFill;
+        private Label activeCount;
+
+        /// <summary>The quest under way: how far, how long is left, who helps most, what it gives, and Stop.</summary>
         private void DrawActive(StreamQuestData q)
         {
+            QuestArt.Heading(content, Localization.UI_QUESTWIN_RUNNING, Localization.UI_QUESTWIN_RUNNING_SUB);
             var card = new VisualElement();
-            card.AddToClassList("rf-squest-card");
-            card.AddToClassList("rf-squest-card--active");
+            card.AddToClassList("rf-qcard");
+            card.AddToClassList("rf-qcard--active");
+            card.Add(QuestArt.Picture(QuestArt.QuestPicture(q.Objective, q.Skill), QuestArt.QuestGlyph(q.Objective), "rf-qcard__picture"));
+
             var body = new VisualElement();
-            body.AddToClassList("rf-squest-card__body");
-            body.Add(Text(StreamQuests.Text(q), "rf-squest-card__title"));
+            body.AddToClassList("rf-qcard__body");
+            var titleRow = new VisualElement();
+            titleRow.AddToClassList("rf-qcard__title-row");
+            titleRow.Add(Text(StreamQuests.Text(q), "rf-qcard__title"));
+            activeCount = Text(string.Empty, "rf-qcard__count");
+            titleRow.Add(activeCount);
+            body.Add(titleRow);
 
             var track = new VisualElement();
             track.AddToClassList("rf-squest-track");
             track.AddToClassList("rf-squest-track--large");
-            var fill = new VisualElement();
-            fill.AddToClassList("rf-squest-track__fill");
-            fill.style.width = new Length(Progress(q) * 100f, LengthUnit.Percent);
-            track.Add(fill);
+            activeFill = new VisualElement();
+            activeFill.AddToClassList("rf-squest-track__fill");
+            track.Add(activeFill);
             body.Add(track);
 
-            activeTime = Text(string.Empty, "rf-squest-card__meta");
-            body.Add(activeTime);
-            UpdateActiveTimes();
-            body.Add(Text(StreamQuests.Reward(q), "rf-squest-card__reward"));
-            body.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_TOP,
-                StreamQuests.Helpers(q.TopHelpers, TopHelpersShown)), "rf-squest-card__helpers"));
+            var chips = new VisualElement();
+            chips.AddToClassList("rf-qcard__chips");
+            var time = QuestArt.Chip("\uf017", string.Empty);
+            activeTime = time.Q<Label>(className: "rf-qchip__text");
+            chips.Add(time);
+            chips.Add(QuestArt.Chip("\uf0c0", string.Format(CultureInfo.InvariantCulture, Localization.UI_QUESTWIN_HELPING, q.Helpers)));
+            body.Add(chips);
+            body.Add(Rewards(q));
+
+            if (q.TopHelpers != null && q.TopHelpers.Length > 0)
+            {
+                body.Add(Text(Localization.UI_QUESTWIN_TOP, "rf-qlabel"));
+                body.Add(Text(StreamQuests.Helpers(q.TopHelpers, TopHelpersShown), "rf-qcard__helpers"));
+            }
             card.Add(body);
 
-            var stop = new Button(StopQuest) { text = Localization.UI_STREAM_QUEST_STOP };
+            var stop = new Button(StopQuest) { text = Localization.UI_QUESTWIN_STOP };
             stop.AddToClassList("rf-button");
-            stop.AddToClassList("rf-squest-card__button");
+            stop.AddToClassList("rf-qcard__button");
             stop.SetEnabled(!busy);
             card.Add(stop);
             content.Add(card);
+            UpdateActiveTimes();
         }
 
         private void UpdateActiveTimes()
         {
             var q = StreamQuests.Active;
             if (activeTime == null || q == null) return;
-            activeTime.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_ACTIVE_META,
-                StreamQuests.Number(q.Progress), StreamQuests.Number(q.Amount), StreamQuests.TimeLeft(q), q.Helpers);
+            activeTime.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_QUESTWIN_LEFT, StreamQuests.TimeLeft(q));
+            if (activeCount != null) activeCount.text = StreamQuests.Number(q.Progress) + " / " + StreamQuests.Number(q.Amount);
+            if (activeFill != null) activeFill.style.width = new Length(Progress(q) * 100f, LengthUnit.Percent);
         }
 
         private async void StartQuest(int slot)

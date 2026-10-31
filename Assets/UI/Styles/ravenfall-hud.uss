@@ -3246,3 +3246,860 @@
     margin-top: var(--rf-space-1);
     margin-bottom: var(--rf-space-2);
 }
+
+/* ---- The quest window, 2026-10-31 -------------------------------------------------------------------------
+   StreamQuestView's window in the look of the user's mockups: picture cards, reward columns, a story card with
+   its steps, and a footer per tab. Dragged by its header and resized from its corner (DraggableWindow), so it
+   is placed by left and top instead of the centring margin the "Who plays?" window keeps. Pictures: QuestArt. */
+
+.rf-squest.rf-squest--window {
+    left: 24%;
+    top: 10%;
+    /* solid: the glass's 3 % let the world show through plainly behind its cards */
+    background-color: var(--rf-bg);
+    width: 900px;
+    max-height: 90%;
+    margin-left: 0;
+    padding-top: var(--rf-space-5);
+    padding-bottom: 0;
+    padding-left: 28px;
+    padding-right: 28px;
+}
+
+.rf-squest--window .unity-label {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.rf-squest--window .rf-squest__header {
+    flex-shrink: 0;
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-squest--window .rf-squest__title {
+    font-size: 30px;
+}
+
+.rf-squest--window .rf-squest-tabs {
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-squest--window .rf-squest-tab {
+    height: 50px;
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: 20px;
+}
+
+.rf-squest--window .rf-squest__scroll {
+    max-height: none;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-squest__error {
+    flex-shrink: 0;
+    margin-top: var(--rf-space-2);
+}
+
+/* bold titles in the real B cut */
+.rf-squest--window .rf-qheading,
+.rf-squest--window .rf-qcard__title,
+.rf-squest--window .rf-qamount__text,
+.rf-squest--window .rf-qbadge,
+.rf-squest--window .rf-qstory__title,
+.rf-squest--window .rf-qempty__title,
+.rf-squest--window .rf-qbudget__value,
+.rf-squest--window .rf-qpost__text,
+.rf-squest--window .rf-qdone__title,
+.rf-squest--window .rf-qobjective__task,
+.rf-squest--window .rf-qobjective__count,
+.rf-squest--window .rf-qcard__count,
+.rf-squest--window .rf-squest__footer-strong {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+.rf-squest--window .rf-qheading {
+    font-size: 27px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-squest--window .rf-qheading__sub {
+    margin-top: var(--rf-space-1);
+    margin-bottom: var(--rf-space-4);
+    font-size: 19px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-squest--window .rf-qsection {
+    margin-top: var(--rf-space-5);
+    margin-bottom: var(--rf-space-3);
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qlabel {
+    margin-bottom: 6px;
+    font-size: 15px;
+    letter-spacing: 1.5px;
+    color: var(--rf-text-dim);
+}
+
+.rf-qdivider {
+    /* 1px rounds to nothing at the panel's scale */
+    width: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+    margin-left: var(--rf-space-5);
+    margin-right: var(--rf-space-5);
+    background-color: var(--rf-border-strong);
+}
+
+/* ---- Pictures and icons */
+
+.rf-qart--missing {
+    align-items: center;
+    justify-content: center;
+    background-color: var(--rf-surface-raised);
+}
+
+.rf-squest--window .rf-qart__glyph {
+    font-size: 44px;
+    color: var(--rf-accent-dim);
+}
+
+.rf-qart-icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-squest--window .rf-qart-icon--glyph {
+    font-size: 20px;
+    color: var(--rf-accent);
+}
+
+/* ---- Cards: a picture, the body, a button on the right */
+
+.rf-qcard {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-4);
+    padding-bottom: var(--rf-space-4);
+    background-color: rgba(255, 244, 214, 0.035);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-qcard:hover {
+    background-color: rgba(255, 244, 214, 0.06);
+}
+
+.rf-qcard--active {
+    border-left-color: var(--rf-accent-dim);
+    border-right-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent-dim);
+    border-bottom-color: var(--rf-accent-dim);
+    background-color: var(--rf-accent-wash);
+}
+
+.rf-qcard__picture {
+    width: 196px;
+    height: 150px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-5);
+    -unity-background-scale-mode: scale-and-crop;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    overflow: hidden;
+}
+
+/* a cut out subject (a story's) stands on the card instead of filling a frame */
+.rf-qcard__picture--plain {
+    -unity-background-scale-mode: scale-to-fit;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.rf-qcard__body {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: var(--rf-space-4);
+}
+
+.rf-squest--window .rf-qcard__title {
+    flex-shrink: 1;
+    font-size: 25px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-qcard__title-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rf-squest--window .rf-qcard__count {
+    margin-left: var(--rf-space-3);
+    font-size: 22px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-qcard__line {
+    margin-top: var(--rf-space-1);
+    font-size: 18px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-squest--window .rf-qcard__reward {
+    margin-top: var(--rf-space-2);
+    font-size: 17px;
+    color: var(--rf-accent-bright);
+    white-space: normal;
+}
+
+.rf-squest--window .rf-qcard__helpers {
+    font-size: 17px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-qcard__chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.rf-squest--window .rf-qcard__button {
+    min-width: 180px;
+    height: 56px;
+    flex-shrink: 0;
+    margin-left: 0;
+    margin-right: 0;
+    font-size: 20px;
+}
+
+/* "(clock) 120 min": an icon and a pill */
+.rf-qchip {
+    flex-direction: row;
+    align-items: center;
+    align-self: flex-start;
+    margin-top: var(--rf-space-2);
+    margin-right: var(--rf-space-3);
+}
+
+.rf-squest--window .rf-qchip__icon {
+    margin-right: var(--rf-space-2);
+    font-size: 22px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qchip__text {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    font-size: 17px;
+    color: var(--rf-text);
+    background-color: rgba(255, 244, 214, 0.06);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+/* VILLAGE (coins, resource) | HELPERS (coins) */
+.rf-qrewards {
+    flex-direction: row;
+    margin-top: var(--rf-space-3);
+}
+
+.rf-qrewards__row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-qamount {
+    flex-direction: row;
+    align-items: center;
+    margin-right: var(--rf-space-5);
+}
+
+.rf-squest--window .rf-qamount__text {
+    margin-left: var(--rf-space-2);
+    font-size: 23px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-qbadge {
+    align-self: flex-start;
+    margin-bottom: var(--rf-space-1);
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    color: var(--rf-accent);
+}
+
+.rf-squest--window .rf-qbadge--solid {
+    padding-left: var(--rf-space-2);
+    padding-right: var(--rf-space-2);
+    padding-top: 2px;
+    padding-bottom: 2px;
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+/* ---- Your quests: the loyalty points, the empty state */
+
+.rf-qbudget {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--rf-space-4);
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-4);
+    padding-bottom: var(--rf-space-4);
+    background-color: rgba(255, 244, 214, 0.035);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-qbudget__icon {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-5);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-qbudget__text {
+    margin-right: var(--rf-space-6);
+}
+
+.rf-squest--window .rf-qbudget__label {
+    font-size: 17px;
+    color: var(--rf-text-dim);
+}
+
+.rf-qbudget__numbers {
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.rf-squest--window .rf-qbudget__value {
+    font-size: 30px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-qbudget__of {
+    margin-left: var(--rf-space-2);
+    margin-bottom: 3px;
+    font-size: 19px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qbudget__track {
+    flex-grow: 1;
+    height: 14px;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.rf-qempty {
+    align-items: center;
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-4);
+}
+
+.rf-qempty__picture {
+    width: 300px;
+    height: 220px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-squest--window .rf-qempty__title {
+    margin-top: var(--rf-space-3);
+    font-size: 27px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-qempty__sub {
+    margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-4);
+    font-size: 19px;
+    color: var(--rf-text-dim);
+}
+
+.rf-qempty__post-row {
+    align-items: center;
+    margin-top: var(--rf-space-2);
+}
+
+.rf-qempty__kinds {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--rf-space-4);
+}
+
+.rf-qempty__kinds .rf-qchip {
+    margin-top: 0;
+    margin-right: 0;
+}
+
+.rf-squest--window .rf-qempty__kinds .rf-qchip__icon {
+    color: var(--rf-accent);
+}
+
+.rf-squest--window .rf-qempty__kinds .rf-qchip__text {
+    padding-left: var(--rf-space-1);
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.rf-squest--window .rf-qpost {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    min-width: 300px;
+    height: 60px;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.rf-squest--window .rf-qpost__icon {
+    margin-right: var(--rf-space-4);
+    font-size: 22px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-squest--window .rf-qpost__text {
+    font-size: 21px;
+    color: var(--rf-text-on-accent);
+}
+
+/* ---- Village: the active story card */
+
+.rf-qstory {
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-4);
+    padding-bottom: var(--rf-space-4);
+    background-color: rgba(232, 163, 61, 0.07);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-accent-dim);
+    border-right-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent-dim);
+    border-bottom-color: var(--rf-accent-dim);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-qstory__head {
+    flex-direction: row;
+    justify-content: space-between;
+    padding-bottom: var(--rf-space-4);
+    margin-bottom: var(--rf-space-4);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--rf-divider);
+}
+
+.rf-qstory__names {
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-qstory__title {
+    margin-top: var(--rf-space-1);
+    font-size: 32px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-qstory__steps {
+    align-items: flex-end;
+    flex-shrink: 0;
+    margin-left: var(--rf-space-4);
+}
+
+.rf-squest--window .rf-qstory__step {
+    margin-bottom: var(--rf-space-3);
+    font-size: 18px;
+    color: var(--rf-text-dim);
+}
+
+.rf-qdots {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-qdot {
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-text-faint);
+    border-right-color: var(--rf-text-faint);
+    border-top-color: var(--rf-text-faint);
+    border-bottom-color: var(--rf-text-faint);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.rf-qdot--done,
+.rf-qdot--current {
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-qdot--current {
+    width: 24px;
+    height: 24px;
+    border-left-color: var(--rf-accent-bright);
+    border-right-color: var(--rf-accent-bright);
+    border-top-color: var(--rf-accent-bright);
+    border-bottom-color: var(--rf-accent-bright);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.rf-squest--window .rf-qdot__tick {
+    font-size: 11px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-qdots__line {
+    width: 16px;
+    height: 2px;
+    background-color: var(--rf-text-faint);
+}
+
+.rf-qdots__line--done {
+    background-color: var(--rf-accent);
+}
+
+.rf-qstory__body {
+    flex-direction: row;
+}
+
+.rf-qstory__picture {
+    width: 270px;
+    height: 230px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-5);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-qstory__right {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-qstory__npc {
+    margin-top: var(--rf-space-1);
+    font-size: 18px;
+    color: var(--rf-accent);
+}
+
+.rf-squest--window .rf-qstory__line {
+    margin-top: var(--rf-space-2);
+    margin-bottom: var(--rf-space-3);
+    font-size: 19px;
+    -unity-font-style: italic;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-qobjective {
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-4);
+    padding-bottom: var(--rf-space-3);
+    background-color: rgba(0, 0, 0, 0.25);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-qobjective__row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--rf-space-1);
+}
+
+.rf-squest--window .rf-qobjective__task {
+    flex-shrink: 1;
+    font-size: 20px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-squest--window .rf-qobjective__count {
+    margin-left: var(--rf-space-3);
+    font-size: 26px;
+    color: var(--rf-text);
+}
+
+.rf-qobjective .rf-squest-track {
+    height: 12px;
+    margin-top: var(--rf-space-3);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-qobjective__foot {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--rf-space-2);
+}
+
+.rf-qobjective__helpers {
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-qobjective__helpers .rf-qchip__text {
+    padding-left: 0;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.rf-squest--window .rf-qobjective__helpers .rf-qchip__icon {
+    font-size: 18px;
+}
+
+.rf-squest--window .rf-squest-chip.rf-qghost {
+    height: 38px;
+    margin-top: var(--rf-space-2);
+    padding-left: 18px;
+    padding-right: 18px;
+    font-size: 17px;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+}
+
+.rf-squest--window .rf-squest-chip.rf-qghost:hover {
+    color: var(--rf-danger);
+    border-left-color: var(--rf-danger);
+    border-right-color: var(--rf-danger);
+    border-top-color: var(--rf-danger);
+    border-bottom-color: var(--rf-danger);
+}
+
+/* ---- Village: finished stories, one line each */
+
+.rf-qdone {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--rf-space-2);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-2);
+    padding-bottom: var(--rf-space-2);
+    background-color: rgba(255, 244, 214, 0.035);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-qdone__picture {
+    width: 96px;
+    height: 72px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-5);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-qdone .rf-qart__glyph {
+    font-size: 28px;
+}
+
+.rf-qdone__names {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-qdone__title {
+    font-size: 21px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-qdone__npc {
+    margin-top: var(--rf-space-1);
+    font-size: 17px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qdone__tick {
+    margin-right: var(--rf-space-2);
+    font-size: 26px;
+    color: var(--rf-success);
+}
+
+.rf-squest--window .rf-qdone__state {
+    font-size: 19px;
+    color: var(--rf-success);
+}
+
+/* ---- The footer: a line, an icon and a short text per tab */
+
+.rf-squest__footer {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 64px;
+    margin-top: var(--rf-space-3);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-2);
+    border-top-width: 1px;
+    border-top-color: var(--rf-border);
+}
+
+.rf-squest--window .rf-squest__footer-icon {
+    margin-right: var(--rf-space-3);
+    font-size: 24px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-squest__footer-strong {
+    font-size: 19px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-squest__footer-text {
+    flex-shrink: 1;
+    font-size: 17px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-squest__footer-picture {
+    width: 96px;
+    height: 60px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-4);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.rf-squest__footer .rf-qdivider {
+    height: 28px;
+    align-self: center;
+}
+
+/* stretching gave the lines no height in a row whose height comes from its labels */
+.rf-qrewards .rf-qdivider {
+    height: 52px;
+    align-self: center;
+}
+
+.rf-qempty__kinds .rf-qdivider {
+    height: 26px;
+    align-self: center;
+}
+
+.rf-squest--window .rf-window__grip {
+    right: 6px;
+    bottom: 6px;
+}

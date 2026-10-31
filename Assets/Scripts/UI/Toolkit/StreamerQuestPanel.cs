@@ -101,59 +101,121 @@ namespace Shinobytes.UI
 
         private void BuildList(VisualElement content, StreamerQuestListData list)
         {
-            content.Add(Text(Localization.UI_STREAMER_QUEST_INTRO, "rf-squest__section"));
+            QuestArt.Heading(content, Localization.UI_QUESTWIN_CREATE, Localization.UI_QUESTWIN_CREATE_SUB);
+            content.Add(Budget(list));
+
             var quests = list.Quests ?? Array.Empty<StreamerQuestData>();
-            if (quests.Length == 0) content.Add(Text(Localization.UI_STREAMER_QUEST_NONE, "rf-squest__empty"));
+            if (quests.Length == 0)
+            {
+                content.Add(Empty());
+                return;
+            }
+
             foreach (var q in quests) content.Add(QuestCard(q));
+            var row = new VisualElement();
+            row.AddToClassList("rf-qempty__post-row");
+            row.Add(PostButton());
+            content.Add(row);
+        }
 
-            content.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_BUDGET,
-                StreamerQuests.Number(list.LoyaltyBudgetLeft), StreamerQuests.Number(list.LoyaltyBudgetWeekly)), "rf-squest-form__note"));
+        /// <summary>The tab's footer: what posting does with the reward.</summary>
+        public void BuildFooter(VisualElement footer)
+        {
+            footer.Add(QuestArt.Glyph("\uf05a", "rf-squest__footer-icon"));
+            footer.Add(QuestArt.Text(Localization.UI_QUESTWIN_RESERVED, "rf-squest__footer-text"));
+        }
 
-            var post = new Button(OpenForm) { text = Localization.UI_STREAMER_QUEST_NEW };
+        /// <summary>The loyalty points left to give this week, as a number and a bar.</summary>
+        private static VisualElement Budget(StreamerQuestListData list)
+        {
+            var card = new VisualElement();
+            card.AddToClassList("rf-qbudget");
+            card.Add(QuestArt.Picture("icon-loyalty", "\uf5a2", "rf-qbudget__icon"));
+            var text = new VisualElement();
+            text.AddToClassList("rf-qbudget__text");
+            text.Add(Text(Localization.UI_QUESTWIN_WEEKLY, "rf-qbudget__label"));
+            var numbers = new VisualElement();
+            numbers.AddToClassList("rf-qbudget__numbers");
+            numbers.Add(Text(StreamerQuests.Number(list.LoyaltyBudgetLeft), "rf-qbudget__value"));
+            numbers.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUESTWIN_AVAILABLE, StreamerQuests.Number(list.LoyaltyBudgetWeekly)), "rf-qbudget__of"));
+            text.Add(numbers);
+            card.Add(text);
+            var track = Track(list.LoyaltyBudgetWeekly > 0 ? (float)list.LoyaltyBudgetLeft / list.LoyaltyBudgetWeekly : 0f);
+            track.AddToClassList("rf-qbudget__track");
+            card.Add(track);
+            return card;
+        }
+
+        /// <summary>No quest of the streamer's running: a picture, a nudge and the post button.</summary>
+        private VisualElement Empty()
+        {
+            var empty = new VisualElement();
+            empty.AddToClassList("rf-qempty");
+            empty.Add(QuestArt.Picture("empty-board", "\uf70e", "rf-qempty__picture"));
+            empty.Add(Text(Localization.UI_QUESTWIN_EMPTY, "rf-qempty__title"));
+            empty.Add(Text(Localization.UI_QUESTWIN_EMPTY_SUB, "rf-qempty__sub"));
+            empty.Add(PostButton());
+            var kinds = new VisualElement();
+            kinds.AddToClassList("rf-qempty__kinds");
+            kinds.Add(QuestArt.Chip("\uf091", Localization.UI_QUESTWIN_FIRST));
+            kinds.Add(QuestArt.Divider());
+            kinds.Add(QuestArt.Chip("\uf0c0", Localization.UI_QUESTWIN_WHOLE));
+            empty.Add(kinds);
+            return empty;
+        }
+
+        private Button PostButton()
+        {
+            var post = new Button(OpenForm);
             post.AddToClassList("rf-button");
             post.AddToClassList("rf-button--primary");
-            post.AddToClassList("rf-squest-form__post");
+            post.AddToClassList("rf-qpost");
+            post.Add(QuestArt.Glyph("\uf067", "rf-qpost__icon"));
+            post.Add(Text(Localization.UI_STREAMER_QUEST_NEW, "rf-qpost__text"));
             post.SetEnabled(!Busy);
-            content.Add(post);
+            return post;
         }
 
         private VisualElement QuestCard(StreamerQuestData q)
         {
+            var goal = q.Kind == StreamerQuests.Goal;
             var card = new VisualElement();
-            card.AddToClassList("rf-squest-card");
-            card.AddToClassList("rf-squest-card--active");
-            var body = new VisualElement();
-            body.AddToClassList("rf-squest-card__body");
-            var kindText = q.Kind == StreamerQuests.Goal ? Localization.UI_STREAMER_QUEST_GOAL : Localization.UI_STREAMER_QUEST_BOUNTY;
-            body.Add(Text(kindText + " - " + StreamerQuests.Title(q), "rf-squest-card__title"));
-            if (!string.IsNullOrEmpty(q.Description)) body.Add(Text(q.Description, "rf-squest-card__meta"));
+            card.AddToClassList("rf-qcard");
+            card.AddToClassList("rf-qcard--active");
+            card.Add(QuestArt.Picture(QuestArt.QuestPicture(q.Objective, q.Skill), QuestArt.QuestGlyph(q.Objective), "rf-qcard__picture"));
 
-            if (q.Kind == StreamerQuests.Goal)
-            {
-                body.Add(Track(q.Amount > 0 ? (float)q.Progress / q.Amount : 0f));
-                body.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_ACTIVE_META,
-                    StreamerQuests.Number(q.Progress), StreamerQuests.Number(q.Amount), StreamerQuests.TimeLeft(q), q.Helpers) + " - " + StreamerQuests.Text(q), "rf-squest-card__meta"));
-                body.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_SHARED, StreamerQuests.Reward(q)), "rf-squest-card__reward"));
-            }
-            else
-            {
-                body.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_BOUNTY_META,
-                    StreamerQuests.Text(q), q.Claimed, q.Winners, StreamerQuests.TimeLeft(q), q.Helpers), "rf-squest-card__meta"));
-                body.Add(Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_EACH, StreamerQuests.Reward(q)), "rf-squest-card__reward"));
-            }
+            var body = new VisualElement();
+            body.AddToClassList("rf-qcard__body");
+            body.Add(Text((goal ? Localization.UI_STREAMER_QUEST_GOAL : Localization.UI_STREAMER_QUEST_BOUNTY).ToUpperInvariant(), "rf-qbadge"));
+            var titleRow = new VisualElement();
+            titleRow.AddToClassList("rf-qcard__title-row");
+            titleRow.Add(Text(StreamerQuests.Title(q), "rf-qcard__title"));
+            if (goal) titleRow.Add(Text(StreamerQuests.Number(q.Progress) + " / " + StreamerQuests.Number(q.Amount), "rf-qcard__count"));
+            body.Add(titleRow);
+            body.Add(Text(string.IsNullOrEmpty(q.Description) ? StreamerQuests.Text(q) : q.Description, "rf-qcard__line"));
+            if (goal) body.Add(Track(q.Amount > 0 ? (float)q.Progress / q.Amount : 0f));
+            else body.Add(Track(q.Winners > 0 ? (float)q.Claimed / q.Winners : 0f));
+
+            var chips = new VisualElement();
+            chips.AddToClassList("rf-qcard__chips");
+            chips.Add(QuestArt.Chip("\uf017", string.Format(CultureInfo.InvariantCulture, Localization.UI_QUESTWIN_LEFT, StreamerQuests.TimeLeft(q))));
+            chips.Add(QuestArt.Chip("\uf0c0", string.Format(CultureInfo.InvariantCulture, Localization.UI_QUESTWIN_HELPING, q.Helpers)));
+            if (!goal) chips.Add(QuestArt.Chip("\uf091", q.Claimed + " / " + q.Winners)); // the winners so far
+            body.Add(chips);
+            body.Add(Text(string.Format(CultureInfo.InvariantCulture, goal ? Localization.UI_STREAMER_QUEST_SHARED : Localization.UI_STREAMER_QUEST_EACH, StreamerQuests.Reward(q)), "rf-qcard__reward"));
 
             if (q.TopHelpers != null && q.TopHelpers.Length > 0)
             {
-                var label = q.Kind == StreamerQuests.Goal ? Localization.UI_STREAM_QUEST_TOP : Localization.UI_STREAMER_QUEST_WINNERS;
-                var names = q.Kind == StreamerQuests.Goal ? StreamQuests.Helpers(q.TopHelpers, 5) : string.Join(", ", q.TopHelpers.Select(h => h.Name));
-                body.Add(Text(string.Format(CultureInfo.InvariantCulture, label, names), "rf-squest-card__helpers"));
+                var label = goal ? Localization.UI_STREAM_QUEST_TOP : Localization.UI_STREAMER_QUEST_WINNERS;
+                var names = goal ? StreamQuests.Helpers(q.TopHelpers, 5) : string.Join(", ", q.TopHelpers.Select(h => h.Name));
+                body.Add(Text(string.Format(CultureInfo.InvariantCulture, label, names), "rf-qcard__helpers"));
             }
             card.Add(body);
 
             var id = q.Id;
-            var stop = new Button(() => Stop(id)) { text = Localization.UI_STREAM_QUEST_STOP };
+            var stop = new Button(() => Stop(id)) { text = Localization.UI_QUESTWIN_STOP };
             stop.AddToClassList("rf-button");
-            stop.AddToClassList("rf-squest-card__button");
+            stop.AddToClassList("rf-qcard__button");
             stop.SetEnabled(!Busy);
             card.Add(stop);
             return card;

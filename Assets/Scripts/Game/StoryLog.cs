@@ -387,8 +387,8 @@ public static class StoryLog
     public static string Option(string key, int option) => Lookup("UI_STORY_" + key + "_CHOICE_" + option, option.ToString(CultureInfo.InvariantCulture));
     public static string UnlockName(string key) => Lookup("UI_UNLOCK_" + key, key);
 
-    /// <summary>What the current step asks, with its progress where it counts.</summary>
-    public static string Task(VillageStoryData s)
+    /// <summary>What the current step asks, with its progress where it counts ("(3/4)") unless withCount is false.</summary>
+    public static string Task(VillageStoryData s, bool withCount = true)
     {
         if (s == null) return string.Empty;
         var amount = Number(s.Amount);
@@ -405,7 +405,7 @@ public static class StoryLog
             case "dungeon": text = string.Format(s.Amount == 1 ? Localization.UI_QUEST_DUNGEON_ONE : Localization.UI_QUEST_DUNGEON, amount); break;
             default: text = s.Kind; break;
         }
-        return s.Kind == "talk" ? text : text + " (" + Number(s.Progress) + "/" + amount + ")";
+        return s.Kind == "talk" || !withCount ? text : text + " (" + Number(s.Progress) + "/" + amount + ")";
     }
 
     public static string Unlocks(string[] keys)

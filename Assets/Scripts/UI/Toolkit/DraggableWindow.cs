@@ -381,7 +381,8 @@ namespace Shinobytes.UI
         /// Writes a size after limiting it to the minimum and to what fits between the window's
         /// position and the container's far edges.
         /// </summary>
-        private void ApplySize(Vector2 size)
+        /// <param name="onlySet">Leave a width or height alone that has no inline value (it follows the stylesheet or the content).</param>
+        private void ApplySize(Vector2 size, bool onlySet = false)
         {
             if (container == null)
             {
@@ -399,8 +400,11 @@ namespace Shinobytes.UI
             var maxW = Mathf.Max(minSize.x, bounds.width - left);
             var maxH = Mathf.Max(minSize.y, bounds.height - top);
 
-            window.style.width = new Length(Mathf.Clamp(size.x, minSize.x, maxW), LengthUnit.Pixel);
-            if (!collapsed && !resizeWidthOnly)
+            if (!onlySet || window.style.width.keyword == StyleKeyword.Undefined)
+            {
+                window.style.width = new Length(Mathf.Clamp(size.x, minSize.x, maxW), LengthUnit.Pixel);
+            }
+            if (!collapsed && !resizeWidthOnly && (!onlySet || window.style.height.keyword == StyleKeyword.Undefined))
             {
                 window.style.height = new Length(Mathf.Clamp(size.y, minSize.y, maxH), LengthUnit.Pixel);
             }
@@ -416,10 +420,12 @@ namespace Shinobytes.UI
             ApplyClamped(CurrentPosition());
 
             // A window resized to fill a large screen would otherwise stay that size on a smaller
-            // one and run off the edge.
+            // one and run off the edge. Only a size that was set (by the grip or a saved one) is
+            // limited: writing the resolved size back pinned a window that follows its content, the
+            // quest window frozen at the height of its loading text.
             if (grip != null && !resizing && !resizingLeft)
             {
-                ApplySize(new Vector2(window.resolvedStyle.width, window.resolvedStyle.height));
+                ApplySize(new Vector2(window.resolvedStyle.width, window.resolvedStyle.height), onlySet: true);
             }
         }
 
