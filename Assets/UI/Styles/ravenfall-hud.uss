@@ -4145,3 +4145,956 @@
     right: 6px;
     bottom: 6px;
 }
+
+/* ---- The post a quest form, 2026-10-31 --------------------------------------------------------------------
+   StreamerQuestPanel's form after the user's mockup: two cards side by side (never wrapped: a wrapping row is
+   measured as if its cards were stacked, which left a card's height empty under the form), option cards for the kind, dropdowns and number fields with arrows, what posting sets aside,
+   and the item dialog laid over the window with its own list and quantity. */
+
+.rf-squest--window .rf-qform__label,
+.rf-squest--window .rf-qform__title,
+.rf-squest--window .rf-qkind__title,
+.rf-squest--window .rf-qitem__name,
+.rf-squest--window .rf-qreserved__title,
+.rf-squest--window .rf-qreserved__amount,
+.rf-squest--window .rf-qpick__name {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+.rf-qform__top {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-squest--window .rf-qform__back {
+    width: 44px;
+    height: 44px;
+    margin-left: 0;
+    margin-right: var(--rf-space-3);
+    font-size: 24px;
+    color: var(--rf-text);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.rf-squest--window .rf-qform__back:hover {
+    color: var(--rf-accent-bright);
+    background-color: var(--rf-row-hover);
+}
+
+.rf-qform__columns {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.rf-qform__card {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    margin-right: var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-4);
+    background-color: rgba(255, 244, 214, 0.03);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-qform__card--rewards {
+    flex-grow: 0.8;
+    margin-right: 0;
+}
+
+.rf-squest--window .rf-qform__title {
+    margin-bottom: var(--rf-space-3);
+    font-size: 23px;
+    color: var(--rf-text);
+}
+
+.rf-qform__rule {
+    height: 2px;
+    margin-top: var(--rf-space-3);
+    margin-bottom: var(--rf-space-1);
+    background-color: var(--rf-divider);
+}
+
+.rf-qform__label-row {
+    flex-direction: row;
+    align-items: flex-end;
+    margin-top: var(--rf-space-3);
+    margin-bottom: 6px;
+}
+
+.rf-squest--window .rf-qform__label {
+    font-size: 18px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-qform__optional {
+    margin-left: var(--rf-space-2);
+    font-size: 16px;
+    color: var(--rf-text-faint);
+}
+
+.rf-squest--window .rf-qform__note {
+    margin-top: 6px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-qform__pair {
+    flex-direction: row;
+}
+
+.rf-qform__cell--wide {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: var(--rf-space-3);
+}
+
+.rf-qform__cell--narrow {
+    width: 38%;
+    flex-shrink: 0;
+}
+
+.rf-squest--window .rf-qform__button {
+    min-width: 130px;
+    height: 48px;
+    margin-left: 0;
+    margin-right: 0;
+    font-size: 18px;
+}
+
+/* the text fields of the form share one look */
+.rf-squest--window .rf-squest-field {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* ---- Bounty or stream goal */
+
+.rf-qform__kinds {
+    flex-direction: row;
+}
+
+.rf-squest--window .rf-qkind {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: row;
+    align-items: center;
+    height: 80px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    background-color: rgba(0, 0, 0, 0.25);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-squest--window .rf-qkind:last-child {
+    margin-right: 0;
+}
+
+.rf-squest--window .rf-qkind:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-squest--window .rf-qkind--active,
+.rf-squest--window .rf-qkind--active:hover {
+    background-color: var(--rf-accent-wash);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-squest--window .rf-qkind__icon {
+    width: 36px;
+    margin-right: var(--rf-space-3);
+    font-size: 26px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qkind--active .rf-qkind__icon {
+    color: var(--rf-accent);
+}
+
+.rf-qkind__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-qkind__title {
+    font-size: 20px;
+    color: var(--rf-text);
+    -unity-text-align: middle-left;
+}
+
+.rf-squest--window .rf-qkind__sub {
+    margin-top: 3px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-left;
+    white-space: normal;
+}
+
+.rf-qkind__radio {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: var(--rf-text-faint);
+    border-right-color: var(--rf-text-faint);
+    border-top-color: var(--rf-text-faint);
+    border-bottom-color: var(--rf-text-faint);
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+    border-bottom-left-radius: 11px;
+    border-bottom-right-radius: 11px;
+}
+
+/* the dot of a picked radio: a thick ring of the window's colour inside the accent rim */
+.rf-qkind--active .rf-qkind__radio {
+    background-color: var(--rf-accent);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+    border-left-width: 5px;
+    border-right-width: 5px;
+    border-top-width: 5px;
+    border-bottom-width: 5px;
+}
+
+/* ---- Dropdowns and their lists */
+
+.rf-squest--window .rf-qdropdown {
+    flex-direction: row;
+    align-items: center;
+    height: 46px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    background-color: rgba(0, 0, 0, 0.35);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-squest--window .rf-qdropdown:hover {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-squest--window .rf-qdropdown__icon {
+    width: 26px;
+    margin-right: var(--rf-space-3);
+    font-size: 19px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qdropdown__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 18px;
+    color: var(--rf-text);
+    -unity-text-align: middle-left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rf-squest--window .rf-qdropdown__chevron {
+    margin-left: var(--rf-space-2);
+    font-size: 14px;
+    color: var(--rf-text-dim);
+}
+
+/* a dropdown that reads as a line of text, "From the village treasury - 10,818 available" */
+.rf-squest--window .rf-qdropdown--link {
+    align-self: flex-start;
+    height: 30px;
+    margin-top: 6px;
+    padding-left: 0;
+    padding-right: var(--rf-space-1);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.rf-squest--window .rf-qdropdown--link .rf-qdropdown__text {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qdropdown--link:hover .rf-qdropdown__text,
+.rf-squest--window .rf-qdropdown--link:hover .rf-qdropdown__chevron {
+    color: var(--rf-accent-bright);
+}
+
+.rf-qpopup-catcher {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.rf-qpopup {
+    position: absolute;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background-color: rgb(28, 25, 21);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-squest--window .rf-qpopup__row {
+    flex-direction: row;
+    align-items: center;
+    height: 40px;
+    margin-left: 4px;
+    margin-right: 4px;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--rf-space-3);
+    padding-right: var(--rf-space-3);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-squest--window .rf-qpopup__row:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-squest--window .rf-qpopup__row--active {
+    background-color: var(--rf-accent-wash);
+}
+
+.rf-squest--window .rf-qpopup__icon {
+    width: 24px;
+    margin-right: var(--rf-space-3);
+    font-size: 16px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qpopup__text {
+    font-size: 16px;
+    color: var(--rf-text);
+    -unity-text-align: middle-left;
+}
+
+.rf-squest--window .rf-qpopup__row--active .rf-qpopup__text {
+    color: var(--rf-accent-bright);
+}
+
+/* ---- Number fields with arrows, an icon box before some */
+
+.rf-qnumber {
+    flex-direction: row;
+    align-items: stretch;
+    height: 46px;
+}
+
+.rf-qnumber--short {
+    width: 50%;
+}
+
+.rf-qnumber__iconbox {
+    width: 46px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-2);
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.35);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-squest--window .rf-qnumber__field {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-qnumber__field > .unity-text-field__input,
+.rf-squest--window .rf-qnumber__field .unity-base-text-field__input {
+    height: 46px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.rf-qnumber__arrows {
+    width: 36px;
+    flex-shrink: 0;
+    background-color: rgba(0, 0, 0, 0.35);
+    border-left-width: 0;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.rf-squest--window .rf-qnumber__arrow {
+    flex-grow: 1;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 11px;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 1px;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-left-color: var(--rf-border-strong);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.rf-squest--window .rf-qnumber__arrow:hover {
+    color: var(--rf-accent-bright);
+    background-color: var(--rf-row-hover);
+}
+
+/* ---- The item on the form */
+
+.rf-qitem {
+    flex-direction: row;
+    align-items: center;
+    padding-right: var(--rf-space-2);
+    background-color: rgba(0, 0, 0, 0.25);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-qitem__icon {
+    width: 76px;
+    height: 76px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-3);
+    -unity-background-scale-mode: scale-to-fit;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-right-width: 1px;
+    border-right-color: var(--rf-border);
+}
+
+.rf-qitem__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-qitem__name {
+    font-size: 19px;
+    color: var(--rf-text);
+    white-space: normal;
+}
+
+.rf-squest--window .rf-qitem__line {
+    margin-top: 3px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qitem__change {
+    height: 38px;
+    margin-left: var(--rf-space-2);
+    margin-right: 0;
+    font-size: 15px;
+}
+
+.rf-squest--window .rf-qitem__remove {
+    width: 38px;
+    height: 38px;
+    margin-left: var(--rf-space-2);
+    margin-right: 0;
+    font-size: 16px;
+}
+
+.rf-squest--window .rf-qitem-choose {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    margin-left: 0;
+    margin-right: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-squest--window .rf-qitem-choose:hover {
+    background-color: var(--rf-accent-wash);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-squest--window .rf-qitem-choose__icon {
+    margin-right: var(--rf-space-3);
+    font-size: 16px;
+    color: var(--rf-accent);
+}
+
+.rf-squest--window .rf-qitem-choose__text {
+    font-size: 17px;
+    color: var(--rf-text);
+}
+
+/* ---- What posting sets aside */
+
+.rf-qreserved {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: var(--rf-space-4);
+    padding-left: var(--rf-space-4);
+    padding-right: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    background-color: rgba(255, 244, 214, 0.03);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-qreserved__head {
+    flex-shrink: 1;
+    margin-right: var(--rf-space-2);
+}
+
+.rf-squest--window .rf-qreserved__title {
+    font-size: 21px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-qreserved__sub {
+    margin-top: 3px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+}
+
+.rf-qreserved__part {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-qreserved__part .rf-qdivider {
+    height: 40px;
+    margin-left: var(--rf-space-4);
+    margin-right: var(--rf-space-4);
+}
+
+.rf-squest--window .rf-qreserved__amount {
+    margin-left: var(--rf-space-2);
+    font-size: 20px;
+    color: var(--rf-text);
+}
+
+.rf-squest--window .rf-qreserved__nothing {
+    margin-left: var(--rf-space-5);
+    font-size: 15px;
+    color: var(--rf-text-faint);
+    white-space: normal;
+}
+
+/* ---- The item dialog */
+
+.rf-qmodal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(8, 7, 5, 0.72);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-qmodal__dialog {
+    width: 92%;
+    max-width: 760px;
+    max-height: 94%;
+    padding-left: var(--rf-space-5);
+    padding-right: var(--rf-space-5);
+    padding-top: var(--rf-space-4);
+    padding-bottom: var(--rf-space-4);
+    background-color: var(--rf-bg);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-top-width: 3px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+    border-top-color: var(--rf-accent);
+    border-top-left-radius: var(--rf-radius-lg);
+    border-top-right-radius: var(--rf-radius-lg);
+    border-bottom-left-radius: var(--rf-radius-lg);
+    border-bottom-right-radius: var(--rf-radius-lg);
+}
+
+.rf-qmodal__head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rf-qmodal__tools {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-qmodal__tools .rf-qdropdown {
+    min-width: 170px;
+    margin-left: var(--rf-space-2);
+}
+
+.rf-qsearch {
+    flex-grow: 1;
+    flex-shrink: 1;
+    justify-content: center;
+}
+
+.rf-squest--window .rf-qsearch__icon {
+    position: absolute;
+    left: 14px;
+    top: 13px;
+    font-size: 17px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qsearch .rf-qsearch__field > .unity-text-field__input,
+.rf-squest--window .rf-qsearch .rf-qsearch__field .unity-base-text-field__input {
+    height: 46px;
+    padding-left: 42px;
+}
+
+.rf-squest--window .rf-qmodal__list {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 120px;
+}
+
+.rf-squest--window .rf-qpick {
+    flex-direction: row;
+    align-items: center;
+    height: 76px;
+    margin-left: 0;
+    margin-right: var(--rf-space-2);
+    margin-top: 0;
+    margin-bottom: var(--rf-space-2);
+    padding-left: 0;
+    padding-right: var(--rf-space-4);
+    background-color: rgba(255, 244, 214, 0.035);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border);
+    border-right-color: var(--rf-border);
+    border-top-color: var(--rf-border);
+    border-bottom-color: var(--rf-border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-squest--window .rf-qpick:hover {
+    background-color: var(--rf-row-hover);
+}
+
+.rf-squest--window .rf-qpick--selected,
+.rf-squest--window .rf-qpick--selected:hover {
+    background-color: var(--rf-accent-wash);
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+.rf-qpick__icon {
+    width: 76px;
+    height: 74px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-4);
+    -unity-background-scale-mode: scale-to-fit;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+
+.rf-qpick__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-squest--window .rf-qpick__name {
+    font-size: 17px;
+    color: var(--rf-text);
+    -unity-text-align: middle-left;
+}
+
+.rf-squest--window .rf-qpick__category {
+    margin-top: 3px;
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-left;
+}
+
+.rf-squest--window .rf-qpick__owned {
+    margin-left: var(--rf-space-3);
+    font-size: 15px;
+    color: var(--rf-text-dim);
+}
+
+.rf-squest--window .rf-qpick__tick {
+    width: 28px;
+    height: 28px;
+    margin-left: var(--rf-space-4);
+    font-size: 13px;
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.rf-qmodal__foot {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+    margin-top: var(--rf-space-2);
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-2);
+    border-top-width: 1px;
+    border-top-color: var(--rf-border);
+}
+
+.rf-qmodal__foot-icon {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    margin-right: var(--rf-space-3);
+    -unity-background-scale-mode: scale-to-fit;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.rf-qmodal__foot-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: var(--rf-space-3);
+}
+
+.rf-qmodal__quantity {
+    flex-shrink: 0;
+}
+
+.rf-qmodal__quantity .rf-qform__label-row {
+    margin-top: 0;
+}
+
+.rf-qstepper {
+    flex-direction: row;
+    height: 44px;
+}
+
+.rf-squest--window .rf-qstepper__button {
+    width: 46px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 15px;
+    color: var(--rf-text);
+    background-color: rgba(255, 244, 214, 0.06);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--rf-border-strong);
+    border-right-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border-strong);
+    border-bottom-color: var(--rf-border-strong);
+}
+
+.rf-squest--window .rf-qstepper__button:hover {
+    color: var(--rf-accent-bright);
+    background-color: var(--rf-row-hover);
+}
+
+.rf-squest--window .rf-qstepper__field {
+    width: 110px;
+}
+
+.rf-squest--window .rf-qstepper__field > .unity-text-field__input,
+.rf-squest--window .rf-qstepper__field .unity-base-text-field__input {
+    height: 44px;
+    -unity-text-align: middle-center;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+/* the form's text fields at the mockup's size; the tall one keeps its own height */
+.rf-squest--window .rf-squest-field > .unity-text-field__input,
+.rf-squest--window .rf-squest-field .unity-base-text-field__input {
+    height: 44px;
+    padding-left: 14px;
+    font-size: 17px;
+}
+
+.rf-squest--window .rf-squest-field--tall > .unity-text-field__input,
+.rf-squest--window .rf-squest-field--tall .unity-base-text-field__input {
+    height: 76px;
+    padding-top: 10px;
+    -unity-text-align: upper-left;
+}
+
+/* the dialog's buttons keep their size while its list gives up room */
+.rf-qmodal__dialog .rf-squest-form__buttons {
+    flex-shrink: 0;
+    margin-top: var(--rf-space-3);
+}
+
+.rf-qmodal__head {
+    flex-shrink: 0;
+}
+
+.rf-squest--window .rf-qreserved .rf-qart-icon {
+    width: 36px;
+    height: 36px;
+    -unity-background-scale-mode: scale-to-fit;
+}

@@ -155,7 +155,7 @@ namespace Shinobytes.UI
             header.Add(close);
             tabs = new VisualElement();
             tabs.AddToClassList("rf-squest-tabs");
-            scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll = new ScrollView(ScrollViewMode.Vertical) { horizontalScrollerVisibility = ScrollerVisibility.Hidden };
             scroll.AddToClassList("rf-squest__scroll");
             content = scroll.contentContainer;
             content.AddToClassList("rf-squest__content");
@@ -214,7 +214,8 @@ namespace Shinobytes.UI
                     case Clicked.Smith: OpenStory(StoryLog.SmithClicked()); break;
                 }
             }
-            if (windowOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping) Close();
+            // Esc closes the post form's open list or item dialog first, then the window
+            if (windowOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping && !(tab == 1 && streamerPanel.HideOverlay())) Close();
         }
 
         // ---- The bar ---------------------------------------------------------------------------------------
@@ -493,6 +494,7 @@ namespace Shinobytes.UI
             var button = new Button(() =>
             {
                 if (tab == index) return;
+                streamerPanel.HideOverlays();
                 tab = index;
                 error.text = string.Empty;
                 scroll.scrollOffset = Vector2.zero;
