@@ -70,6 +70,13 @@
         "en": [ "Welcome to the general store! We sell... a little bit of everything. Mostly nothing.", "The cart came! Pots, buckets, and even a few things that are useful.", "Goblin ears? I will take them. Do not ask what for.", "Whetstones, stew, potions. And a bucket, if you were wondering." ],
         "sv": [ "Välkommen till lanthandeln! Vi säljer... lite av varje. Mest ingenting.", "Vagnen kom! Krukor, hinkar och till och med några saker som är användbara.", "Vätteöron? Jag tar dem. Fråga inte varför.", "Brynen, gryta, drycker. Och en hink, om du undrade." ]
       }
+    },
+    "count": {
+      "name": { "en": "The Count", "sv": "Greven" },
+      "lines": {
+        "en": [ "Good evening. I vant to... I mean, I would like some peace and quiet.", "Wine? I know nothing of any wine. Neatly stacked bottles? Never heard of them.", "Draynor? No, no. This is a completely different manor. Look, it has a glasshouse.", "Do not mind the coffin. It is for... storage.", "Is that garlic I smell? How rude.", "Sunlight? Dreadful for the complexion." ],
+        "sv": [ "God afton. Jag vill suga... sitta. Jag vill sitta i lugn och ro.", "Vin? Jag vet ingenting om något vin. Prydligt staplade flaskor? Aldrig hört talas om.", "Draynor? Nej, nej. Det här är en helt annan herrgård. Titta, den har ett växthus.", "Bry dig inte om kistan. Den är för... förvaring.", "Luktar det vitlök? Så ohyfsat.", "Solljus? Förfärligt för hyn." ]
+      }
     }
   },
   "items": {

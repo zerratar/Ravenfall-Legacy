@@ -85,7 +85,7 @@ public sealed class VillageLife : MonoBehaviour
         {
             var name = renderer.name;
             var bounds = renderer.bounds;
-            if (name.Contains("Windmill") && name.Contains("Blades")) AddSails(renderer);
+            if (name.Contains("Windmill") && (name.Contains("Blades") || name.Contains("_Sail"))) AddSails(renderer);
             else if (!smokeMaterial) continue;
             else if (name.StartsWith("SM_Bld_Chimney") || name.StartsWith("SM_Prop_Workbench_Forge_01_Flue")) AddSmoke(Top(bounds, 0f), 0.5f);
             else if (name.StartsWith("SM_Prop_Camp_Fireplace_01")) AddCampfire(bounds);
