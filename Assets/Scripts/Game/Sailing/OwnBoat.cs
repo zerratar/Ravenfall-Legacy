@@ -7,6 +7,8 @@ using UnityEngine;
 /// a route from <see cref="SeaChart"/> at the owner's speed (<see cref="SailingSpeeds"/>), turning as a boat does
 /// rather than on the spot, and rides the waves (<see cref="Ocean.Float"/>). Going to an island it comes alongside that
 /// island's dock point and says so (<see cref="Arrived"/>); wandering, it picks somewhere new each time it gets there.
+/// Its oars row while it moves (<see cref="Row"/>), a stroke for every few metres it goes, so the faster the owner
+/// sails the faster they row.
 /// </summary>
 public sealed class OwnBoat : MonoBehaviour
 {
@@ -40,6 +42,24 @@ public sealed class OwnBoat : MonoBehaviour
     /// <summary>Roaming (!sail with no island) goes at this share of the boat's speed.</summary>
     private const float WanderPace = 0.45f;
 
+    // rowing: a stroke for every StrokeMetres the boat goes; the blade sweeps SweepDegrees either way of where the kit
+    // left it and lifts LiftDegrees out of the water to come forward again
+    private const float StrokeMetres = 8f, SweepDegrees = 28f, LiftDegrees = 9f;
+
+    private struct Oar
+    {
+        public Transform Transform;
+        /// <summary>Its turn against the boat as the kit left it, resting.</summary>
+        public Quaternion Rest;
+        /// <summary>1 on the starboard side, -1 on the port side.</summary>
+        public float Side;
+    }
+
+    private readonly List<Oar> oars = new List<Oar>();
+    private float strokePhase;
+    private float rowing;   // 0 resting .. 1 rowing, eased so the oars settle when the boat stops
+    private float speedNow; // metres a second it actually went, smoothed
+
     private List<Vector3> route;
     private int next;
     private float heading; // degrees, 0 = north (+Z)
@@ -66,7 +86,12 @@ public sealed class OwnBoat : MonoBehaviour
             boat.guestSeats.Add(guestSeat);
         }
         foreach (var t in go.GetComponentsInChildren<Transform>(true))
+        {
             if (t.name == "SM_Prop_Oar_01" && !t.gameObject.activeSelf) boat.guestOars.Add(t.gameObject);
+            // every oar rows, the guests' too while they are out; each turns at its own origin, the rowlock on the gunwale
+            if (t.name.StartsWith("SM_Prop_Oar", StringComparison.Ordinal))
+                boat.oars.Add(new Oar { Transform = t, Rest = Quaternion.Inverse(go.transform.rotation) * t.rotation, Side = Mathf.Sign(go.transform.InverseTransformPoint(t.position).x) });
+        }
         boat.heading = heading;
         boat.flat = new Vector3(at.x, SeaChart.Sea, at.z);
         boat.State = Course.Anchored;
@@ -172,8 +197,37 @@ public sealed class OwnBoat : MonoBehaviour
             return;
         }
         if (guests.RemoveAll(g => !g) > 0) Reseat();
-        if (Moving) Steer(GameTime.deltaTime);
+        var was = flat;
+        var dt = GameTime.deltaTime;
+        if (Moving) Steer(dt);
+        if (dt > 0f) speedNow = Mathf.Lerp(speedNow, Flat(flat - was).magnitude / dt, 1f - Mathf.Exp(-dt * 6f));
         Place();
+        Row(dt);
+    }
+
+    /// <summary>
+    /// The oars row as fast as the boat goes: the blade sweeps aft in the water (the drive), lifts and swings forward
+    /// again (the recovery). Stopped, they ease back to where they rest. Turned about the boat's own up and fore and
+    /// aft axes at each oar's rowlock, mirrored for the port side.
+    /// </summary>
+    private void Row(float dt)
+    {
+        if (oars.Count == 0 || dt <= 0f) return;
+        rowing = Mathf.MoveTowards(rowing, speedNow > 0.5f ? 1f : 0f, dt * 2f);
+        strokePhase = (strokePhase + speedNow / StrokeMetres * dt) % 1f;
+        if (rowing <= 0f && strokePhase == 0f) return;
+        var angle = strokePhase * Mathf.PI * 2f;
+        // sin: blade forward at the catch (-1) to aft at the release (1); cos > 0 while it drives through the water
+        var sweep = Mathf.Sin(angle) * SweepDegrees * rowing;
+        var lift = Mathf.Max(0f, -Mathf.Cos(angle)) * LiftDegrees * rowing;
+        foreach (var oar in oars)
+        {
+            if (!oar.Transform || !oar.Transform.gameObject.activeInHierarchy) continue;
+            // about +Y a starboard blade (+X) swings aft as the angle grows, a port one forward; about +Z it rises
+            var yaw = Quaternion.AngleAxis(sweep * oar.Side, Vector3.up);
+            var roll = Quaternion.AngleAxis(lift * oar.Side, Vector3.forward);
+            oar.Transform.rotation = transform.rotation * yaw * roll * oar.Rest;
+        }
     }
 
     private void Steer(float dt)
