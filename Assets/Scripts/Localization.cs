@@ -2109,6 +2109,9 @@ public static class Localization
     public static string UI_SETTINGS_PLAYER_DETAILS_HINT = "The panel for the player the camera is watching. Shortcut: {0}.";
     public static string UI_SETTINGS_SHORTCUTS = "Shortcut bar";
     public static string UI_SETTINGS_SHORTCUTS_HINT = "The row of keyboard shortcuts along the bottom. When it is off, only the menu button stays.";
+    public static string UI_SHORTCUT_QUESTS = "Quests";
+    public static string UI_SETTINGS_QUEST_BAR = "Stream quest bar";
+    public static string UI_SETTINGS_QUEST_BAR_HINT = "The stream quest at the top of the screen while one runs, or while there is one to start. The quest window is always in the shortcut bar.";
     public static string UI_SETTINGS_RESET_WINDOWS = "Window positions";
     public static string UI_SETTINGS_RESET_WINDOWS_HINT = "Puts every window back where it started.";
     public static string UI_SETTINGS_RESET_WINDOWS_BUTTON = "Reset";

@@ -97,6 +97,7 @@ public static class SettingsApplier
         public const bool PlayerList = true;
         public const bool PlayerDetails = true;
         public const bool ShortcutBar = true;
+        public const bool StreamQuestBar = true;
         public const bool BotMessage = true;
         // as GameManager.isDebugMenuVisible starts: shown in the editor, hidden in builds (a reset turned them off in
         // the editor too)
@@ -896,6 +897,15 @@ public static class SettingsApplier
     public static bool ShortcutBar => PlayerSettings.Instance.ShortcutBarVisible.GetValueOrDefault(true);
 
     public static void SetShortcutBar(bool value) => Shinobytes.UI.ShortcutBarView.SetEnabled(value);
+
+    /// <summary>The stream quest's bar at the top of the screen; the quest window stays in the shortcut bar either way.</summary>
+    public static bool StreamQuestBar => PlayerSettings.Instance.StreamQuestBarVisible.GetValueOrDefault(true);
+
+    public static void SetStreamQuestBar(bool value)
+    {
+        PlayerSettings.Instance.StreamQuestBarVisible = value;
+        PlayerSettings.Save();
+    }
 
     // ---- Game -----------------------------------------------------------------------------------
 

@@ -31,8 +31,11 @@ namespace Shinobytes.UI
         private sealed class Shortcut
         {
             public Group Group;
-            /// <summary>The rebindable action, or none for the menu, which is always Esc.</summary>
+            /// <summary>The rebindable action, or none: the menu (always Esc) and the quest window (no key).</summary>
             public Keybinds.Action? Action;
+            /// <summary>The name and key of a button without an action.</summary>
+            public System.Func<string> FixedName;
+            public string FixedKey;
             public string Icon;
             public Action Run;
             public bool AdminOnly;
@@ -82,8 +85,8 @@ namespace Shinobytes.UI
                 }
                 else
                 {
-                    s.Name = Localization.UI_SHORTCUT_MENU;
-                    s.Key = "Esc";
+                    s.Name = s.FixedName?.Invoke() ?? string.Empty;
+                    s.Key = s.FixedKey;
                 }
             }
             if (tipFor != null) ShowTip(tipFor);
@@ -180,6 +183,7 @@ namespace Shinobytes.UI
             if (shortcut == null) return;
             tipName.text = shortcut.Name ?? string.Empty;
             tipKey.text = shortcut.Key ?? string.Empty;
+            tipKey.style.display = string.IsNullOrEmpty(shortcut.Key) ? DisplayStyle.None : DisplayStyle.Flex;
             PlaceTip();
         }
 
@@ -221,12 +225,14 @@ namespace Shinobytes.UI
             Add(Group.Admin, Keybinds.Action.StartRaid, "\uf6d5", () => GameManager.Instance.Raid.ForceStartRaid(), adminOnly: true);
             Add(Group.Admin, Keybinds.Action.StartDungeon, "\uf6d9", () => GameManager.Instance.Dungeons.ForceActivateDungeon(), adminOnly: true);
 
-            Add(Group.Menu, null, "\uf0c9", () => GameManager.Instance.ShowMenu());
+            // the quest window, always within reach now that its bar at the top only shows when there is something on
+            Add(Group.Menu, null, "\uf70e", () => { if (StreamQuestView.Instance) StreamQuestView.Instance.Toggle(); }, name: () => Localization.UI_SHORTCUT_QUESTS);
+            Add(Group.Menu, null, "\uf0c9", () => GameManager.Instance.ShowMenu(), name: () => Localization.UI_SHORTCUT_MENU, key: "Esc");
         }
 
-        private void Add(Group group, Keybinds.Action? action, string icon, Action run, bool adminOnly = false)
+        private void Add(Group group, Keybinds.Action? action, string icon, Action run, bool adminOnly = false, System.Func<string> name = null, string key = null)
         {
-            shortcuts.Add(new Shortcut { Group = group, Action = action, Icon = icon, Run = run, AdminOnly = adminOnly });
+            shortcuts.Add(new Shortcut { Group = group, Action = action, Icon = icon, Run = run, AdminOnly = adminOnly, FixedName = name, FixedKey = key });
         }
 
         /// <summary>The key is held to fly; a click switches the free camera on or off instead.</summary>

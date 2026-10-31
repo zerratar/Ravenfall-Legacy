@@ -12,6 +12,7 @@ public class PlayerSettings
     public bool? AlertExpiredStateCacheInChat;
     public bool? PlayerListVisible;
     public bool? ShortcutBarVisible;
+    public bool? StreamQuestBarVisible;
     public bool? PlayerNamesVisible;
     public bool? LocalBotServerDisabled;
     public bool? AutoKickAfkPlayers;
@@ -342,6 +343,11 @@ public class PlayerSettings
             Instance.ShortcutBarVisible = true;
         }
 
+        if (Instance.StreamQuestBarVisible == null)
+        {
+            Instance.StreamQuestBarVisible = true;
+        }
+
         if (Instance.PlayerListVisible == null)
         {
             Instance.PlayerListVisible = true;
@@ -394,6 +400,7 @@ public class PlayerSettings
             Serialize(sw, "alertExpiredStateCacheInChat", obj.AlertExpiredStateCacheInChat);
             Serialize(sw, "playerListVisible", obj.PlayerListVisible);
             Serialize(sw, "shortcutBarVisible", obj.ShortcutBarVisible);
+            Serialize(sw, "streamQuestBarVisible", obj.StreamQuestBarVisible);
             Serialize(sw, "playerNamesVisible", obj.PlayerNamesVisible);
 
             Serialize(sw, "autoKickAfkPlayers", obj.AutoKickAfkPlayers);

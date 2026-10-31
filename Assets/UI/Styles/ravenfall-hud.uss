@@ -5098,3 +5098,15 @@
     height: 36px;
     -unity-background-scale-mode: scale-to-fit;
 }
+
+/* F1's "nothing" (HUDController puts rf-hud-hidden on every document): the top column (the village bar, the XP boost,
+   the event bars, the stream quest bar), the quest window and the details and meters windows step aside; the menu,
+   settings and shop still open. */
+.rf-hud-hidden .rf-top-column,
+.rf-hud-hidden .rf-squest--window,
+.rf-hud-hidden #details-window,
+.rf-hud-hidden #island-window,
+.rf-hud-hidden #enemy-window,
+.rf-hud-hidden #meters-window {
+    visibility: hidden;
+}

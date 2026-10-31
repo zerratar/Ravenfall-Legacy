@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UIElements;
 
 public class HUDController : MonoBehaviour
 {
@@ -7,7 +8,11 @@ public class HUDController : MonoBehaviour
     [SerializeField] private Canvas GameUICanvas;
     [SerializeField] private GameManager gameManager;
 
+    /// <summary>On every UI Toolkit document's root while F1 hides everything: the HUD's bars step aside (ravenfall-hud.uss).</summary>
+    private const string HiddenClass = "rf-hud-hidden";
+
     private UIState state;
+    private float nextMark;
 
     public static HUDController Instance { get; private set; }
 
@@ -86,10 +91,27 @@ public class HUDController : MonoBehaviour
             playerListVisible = false;
         }
 
+        MarkDocuments();
+
         if (wasPlayerListVisible != playerListVisible)
         {
             PlayerSettings.Instance.PlayerListVisible = playerListVisible;
             PlayerSettings.Save();
+        }
+    }
+
+    /// <summary>
+    /// The UI Toolkit HUD (the village bar, the stream quest, the event bars, the details windows) is not under all2d:
+    /// its documents get a class instead. Again every second while everything is hidden, as a document built later or
+    /// rebuilt (a live reload, a view binding again) starts without it.
+    /// </summary>
+    private void MarkDocuments()
+    {
+        nextMark = Time.unscaledTime + 1f;
+        foreach (var doc in FindObjectsByType<UIDocument>())
+        {
+            var root = doc.rootVisualElement;
+            if (root != null) root.EnableInClassList(HiddenClass, state == UIState.Nothing);
         }
     }
 
@@ -99,6 +121,10 @@ public class HUDController : MonoBehaviour
         if (Keybinds.Pressed(Keybinds.Action.ToggleHud))
         {
             CycleState();
+        }
+        else if (state == UIState.Nothing && Time.unscaledTime >= nextMark)
+        {
+            MarkDocuments();
         }
     }
 

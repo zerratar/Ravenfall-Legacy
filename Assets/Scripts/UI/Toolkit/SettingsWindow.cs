@@ -567,6 +567,8 @@ namespace Shinobytes.UI
                 v => SettingsApplier.SetHideLogos(g, v));
             Switch(c, Localization.UI_SETTINGS_SHORTCUTS, Localization.UI_SETTINGS_SHORTCUTS_HINT, SettingsApplier.ShortcutBar, SettingsApplier.Defaults.ShortcutBar,
                 SettingsApplier.SetShortcutBar);
+            Switch(c, Localization.UI_SETTINGS_QUEST_BAR, Localization.UI_SETTINGS_QUEST_BAR_HINT, SettingsApplier.StreamQuestBar, SettingsApplier.Defaults.StreamQuestBar,
+                SettingsApplier.SetStreamQuestBar);
             ButtonRow(c, Localization.UI_SETTINGS_RESET_WINDOWS, Localization.UI_SETTINGS_RESET_WINDOWS_HINT, Localization.UI_SETTINGS_RESET_WINDOWS_BUTTON, ResetWindowPositions);
         }
 

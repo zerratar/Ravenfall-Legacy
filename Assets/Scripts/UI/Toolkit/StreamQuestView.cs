@@ -104,6 +104,17 @@ namespace Shinobytes.UI
             Redraw();
         }
 
+        /// <summary>The shortcut bar's quest button: opens the window, or closes it when it is open.</summary>
+        public void Toggle()
+        {
+            if (windowOpen) Close();
+            else
+            {
+                storyPanel.Focus = null;
+                Open();
+            }
+        }
+
         private void TryBind()
         {
             var doc = GetComponent<UIDocument>();
@@ -224,12 +235,15 @@ namespace Shinobytes.UI
         {
             var game = GameManager.Instance;
             var online = game && game.RavenNest != null && game.RavenNest.SessionStarted && StreamQuests.Latest != null;
-            var hidden = !online || (VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive);
+            var q = online ? StreamQuests.Active : null;
+            var goal = online && q == null ? StreamerQuests.RunningGoal : null;
+            // the idle pill only invites a start: none while today's offers are used up (the window is in the shortcut bar)
+            var offers = online && StreamQuests.Latest.Offers != null && StreamQuests.Latest.Offers.Length > 0;
+            var hidden = !online || !SettingsApplier.StreamQuestBar || (VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive)
+                || (q == null && goal == null && !offers);
             SetDisplay(bar, !hidden);
             if (hidden) return;
 
-            var q = StreamQuests.Active;
-            var goal = q == null ? StreamerQuests.RunningGoal : null;
             bar.EnableInClassList("rf-squest-bar--idle", q == null && goal == null);
             SetDisplay(barTrack, q != null || goal != null);
             SetDisplay(barMeta, q != null || goal != null);
