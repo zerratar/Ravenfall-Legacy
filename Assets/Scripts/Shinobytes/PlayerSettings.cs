@@ -20,6 +20,8 @@ public class PlayerSettings
     public bool? PhysicsEnabled;
     public bool? EnableIslandCameraOnStart;
     public bool? CanObserveEmptyIslands;
+    /// <summary>The regatta's own camera (RaceCamera) while a race runs.</summary>
+    public bool? RegattaCamera;
 
 
     public float? DayNightTime;
@@ -419,6 +421,7 @@ public class PlayerSettings
             Serialize(sw, "qualityLevel", obj.QualityLevel);
             Serialize(sw, "islandObserveSeconds", obj.IslandObserveSeconds);
             Serialize(sw, "canObserveEmptyIslands", obj.CanObserveEmptyIslands);
+            Serialize(sw, "regattaCamera", obj.RegattaCamera);
             Serialize(sw, "announceNoExpGain", obj.AnnounceNoExpGain);
 
             // Serialize all nullable float properties

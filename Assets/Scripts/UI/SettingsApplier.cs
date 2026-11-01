@@ -110,6 +110,7 @@ public static class SettingsApplier
         public const float ObserveSecondsSpecial = 30f;
         public const float IslandObserveSeconds = 10f;
         public const bool ObserveEmptyIslands = true;
+        public const bool RaceCamera = true;
         public const int AfkKick = 0;
         public const bool AnnounceNoExp = false;
         public const int NoExpMinutes = 1;           // index into NoExpMinuteOptions, 5 minutes
@@ -1029,6 +1030,14 @@ public static class SettingsApplier
     public static void SetIslandObserveSeconds(float value) => PlayerSettings.Instance.IslandObserveSeconds = value;
     public static bool ObserveEmptyIslands => PlayerSettings.Instance.CanObserveEmptyIslands.GetValueOrDefault(Defaults.ObserveEmptyIslands);
     public static void SetObserveEmptyIslands(bool value) => PlayerSettings.Instance.CanObserveEmptyIslands = value;
+
+    /// <summary>The regatta's own camera (RaceCamera): turned off mid race, the camera goes back to the islands or the players.</summary>
+    public static bool RaceCamera => PlayerSettings.Instance.RegattaCamera.GetValueOrDefault(Defaults.RaceCamera);
+    public static void SetRaceCamera(bool value)
+    {
+        PlayerSettings.Instance.RegattaCamera = value;
+        if (!value && GameManager.Instance && GameManager.Instance.Camera) GameManager.Instance.Camera.StopRace();
+    }
 
     // ---- Players --------------------------------------------------------------------------------
 

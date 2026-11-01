@@ -42,6 +42,8 @@ public class GameCamera : MonoBehaviour
     // the character the streamer plays by hand (Ravebridge): followed until control ends
     private PlayerController controlled;
     private HeroCamera heroCamera;
+    // the regatta's director (RaceCamera) while a race is shown
+    private RaceCamera raceCamera;
 
     /// <summary>Hero mode's camera while it follows the hero (HeroController), else null.</summary>
     public HeroCamera HeroView => heroCamera && heroCamera.enabled ? heroCamera : null;
@@ -65,7 +67,7 @@ public class GameCamera : MonoBehaviour
 
     public bool AllowJoinObserve
     {
-        get => !forcedFreeCamera && allowJoinObserve && !gameManager.Raid.Started;
+        get => !forcedFreeCamera && allowJoinObserve && !gameManager.Raid.Started && state != GameCameraType.Race;
         private set => allowJoinObserve = value;
     }
 
@@ -183,6 +185,11 @@ public class GameCamera : MonoBehaviour
             {
                 SetOrbitCameraTarget(raidManager?.Boss?.transform);
             }
+            else if (state == GameCameraType.Race)
+            {
+                // the race is over or its camera was turned off
+                if (!raceCamera || !raceCamera.enabled || !raceCamera.Race) StopRace();
+            }
             else if (state == GameCameraType.Observe)
             {
                 AllowJoinObserve = true;
@@ -225,6 +232,7 @@ public class GameCamera : MonoBehaviour
 
     private void EnableFreeCamera()
     {
+        LeaveRace();
         state = GameCameraType.Free;
         canObserveNextPlayer = false;
 
@@ -277,6 +285,7 @@ public class GameCamera : MonoBehaviour
     public void FollowControlled(PlayerController player)
     {
         if (!player) return;
+        LeaveRace();
         controlled = player;
         state = GameCameraType.Controlled;
         observeCamera.ObservePlayer(player);
@@ -294,6 +303,7 @@ public class GameCamera : MonoBehaviour
     public void FollowHero(PlayerController player)
     {
         if (!player) return;
+        LeaveRace();
         controlled = player;
         state = GameCameraType.Controlled;
         if (!heroCamera) heroCamera = GetComponent<HeroCamera>();
@@ -331,6 +341,7 @@ public class GameCamera : MonoBehaviour
     public bool ObserveNextIsland()
     {
         if (controlled) return true;
+        LeaveRace();
         if (forcedFreeCamera || gameManager.StreamRaid.IsWar)
             return true;
 
@@ -366,6 +377,7 @@ public class GameCamera : MonoBehaviour
     public bool ObserveNextPlayer()
     {
         if (controlled) return true;
+        LeaveRace();
         var playerCount = playerManager.GetPlayerCount(true);
         if (playerCount == 0)
         {
@@ -398,6 +410,7 @@ public class GameCamera : MonoBehaviour
     public void EnableRaidCamera()
     {
         if (forcedFreeCamera) return;
+        LeaveRace();
         state = GameCameraType.Raid;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
@@ -408,6 +421,7 @@ public class GameCamera : MonoBehaviour
     public void EnableArenaCamera()
     {
         if (forcedFreeCamera) return;
+        LeaveRace();
         state = GameCameraType.Arena;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
@@ -418,6 +432,7 @@ public class GameCamera : MonoBehaviour
     public void EnableDungeonCamera()
     {
         if (forcedFreeCamera) return;
+        LeaveRace();
         state = GameCameraType.Dungeon;
         observeCamera.ObservePlayer(null);
         playerObserver.Observe(null, 0);
@@ -470,6 +485,7 @@ public class GameCamera : MonoBehaviour
     {
         if (!island) return;
         if (forcedFreeCamera) return;
+        LeaveRace();
         playerObserver.Observe(null, 0);
         observeNextIslandTimer = PlayerSettings.Instance.IslandObserveSeconds;
         islandObserver.Observe(island, observeNextIslandTimer);
@@ -481,6 +497,9 @@ public class GameCamera : MonoBehaviour
 
     public void ObservePlayer(PlayerController player, ObserveEvent @event, int data = 1)
     {
+        // a cheer or a sub does not take the camera off the race (a join does not either: AllowJoinObserve); clicking a
+        // player, !observe and the keys do
+        if (state == GameCameraType.Race && @event != ObserveEvent.Automatic) return;
         var settings = PlayerSettings.Instance;
         var times = settings.PlayerObserveSeconds;
         var observeTime = times.Default;
@@ -525,6 +544,7 @@ public class GameCamera : MonoBehaviour
         if (forcedFreeCamera) return;
         if (controlled) return;
         if (!CanObservePlayer(player)) return;
+        LeaveRace();
 
         observeNextPlayerTimer = time;
         observeCamera.ObservePlayer(player);
@@ -540,11 +560,52 @@ public class GameCamera : MonoBehaviour
     public void EnableFocusTargetCamera(Transform transform)
     {
         if (forcedFreeCamera) return;
+        LeaveRace();
         freeCamera.enabled = false;
         orbitCamera.enabled = false;
         focusTargetCamera.enabled = true;
         islandObserveCamera.enabled = false;
         if (transform) focusTargetCamera.Target = transform;
+    }
+
+    /// <summary>
+    /// The regatta's own camera (RaceCamera), when the setting allows and nothing bigger has the camera: a raid, a
+    /// dungeon, the arena, a war, a character played by hand or the free camera. False when it did not take over.
+    /// </summary>
+    public bool FollowRace(Regatta race)
+    {
+        if (!race || !SettingsApplier.RaceCamera || forcedFreeCamera || controlled || IsFreeCameraActive) return false;
+        if (state == GameCameraType.Raid || state == GameCameraType.Dungeon || state == GameCameraType.Arena) return false;
+        if (gameManager.StreamRaid.IsWar || gameManager.Raid.Started || gameManager.Dungeons.Started) return false;
+        if (!raceCamera) raceCamera = GetComponent<RaceCamera>();
+        if (!raceCamera) raceCamera = gameObject.AddComponent<RaceCamera>();
+        state = GameCameraType.Race;
+        observeCamera.ObservePlayer(null);
+        playerObserver.Observe(null, 0);
+        islandObserver.Observe(null, 0);
+        freeCamera.enabled = false;
+        orbitCamera.enabled = false;
+        islandObserveCamera.enabled = false;
+        focusTargetCamera.enabled = false;
+        raceCamera.Follow(race);
+        raceCamera.enabled = true;
+        return true;
+    }
+
+    /// <summary>The race is over: back to the islands or the players, as before it.</summary>
+    public void StopRace()
+    {
+        var showing = state == GameCameraType.Race;
+        LeaveRace();
+        if (!showing || forcedFreeCamera) return;
+        // nobody to watch: the islands then
+        if (PlayerSettings.Instance.EnableIslandCameraOnStart == true || ObserveNextPlayer()) ObserveNextIsland();
+    }
+
+    private void LeaveRace()
+    {
+        if (raceCamera) raceCamera.enabled = false;
+        if (state == GameCameraType.Race) state = GameCameraType.Free;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -589,5 +650,6 @@ public enum GameCameraType
     Raid,
     Dungeon,
     Island,
-    Controlled
+    Controlled,
+    Race
 }

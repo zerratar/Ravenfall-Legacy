@@ -690,6 +690,8 @@ public class FerryHandler : MonoBehaviour
 
     /// <summary>How long a boat lies at the dock after its owner stepped ashore, sails furled (OwnBoat.Moor).</summary>
     private const float MoorSeconds = 20f;
+    // the regatta's racers all finish at the one dock point: a moment, or the next ships in sail into them
+    private const float RacedMoorSeconds = 3f;
     private OwnBoat mooredBoat;
 
     private void PutAwayOwnBoat(bool forget, bool moor = false)
@@ -703,7 +705,7 @@ public class FerryHandler : MonoBehaviour
         player.Animations.ClearOnsenAnimations();
         if (moor)
         {
-            ownBoat.Moor(MoorSeconds);
+            ownBoat.Moor(ownBoat.Raced ? RacedMoorSeconds : MoorSeconds);
             mooredBoat = ownBoat;
         }
         else

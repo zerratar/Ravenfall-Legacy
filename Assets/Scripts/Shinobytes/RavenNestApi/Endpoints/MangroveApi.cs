@@ -40,6 +40,13 @@ namespace RavenNest.SDK.Endpoints
             return request.Create().Identifier(characterId.ToString()).Method("feed").AddParameter(kind).AddParameter(amount.ToString()).Build()
                 .SendAsync<long>(ApiRequestTarget.Mangrove, ApiRequestType.Post);
         }
+
+        /// <summary>Coins the character pays on the island (meddling in the regatta); the coins left, or -1 when they had too few.</summary>
+        public Task<long> SpendAsync(Guid characterId, long coins)
+        {
+            return request.Create().Identifier(characterId.ToString()).Method("spend").AddParameter(coins.ToString()).Build()
+                .SendAsync<long>(ApiRequestTarget.Mangrove, ApiRequestType.Post);
+        }
     }
 
     public class MangroveRewardData

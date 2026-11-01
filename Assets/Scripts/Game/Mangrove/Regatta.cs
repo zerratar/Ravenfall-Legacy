@@ -7,10 +7,20 @@ using UnityEngine;
 /// <summary>
 /// The regatta round the Mangrove island (docs/banana-island.md): players with an own boat join with !regatta, which
 /// opens the sign-up the first time; after it (or when the broadcaster says !regatta start) their boats come up at a
-/// start line south of the island, race round the buoys and finish at its jetty, where they land. Each boat goes at its
-/// own speed (Sailing level and boat, capped: SailingSpeeds), and gusts and lulls through the race keep it open. The
-/// places pay coins (the server) and Sailing exp (the game); wins and best times go on the board by the jetty.
+/// start line south of the island, sails furled, and on the count of three race round the buoys to its jetty, where
+/// they land. Each boat goes at its own speed (Sailing level and boat, capped: SailingSpeeds), and gusts and lulls
+/// through the race keep it open.
 /// </summary>
+/// <remarks>
+/// On the way (docs/banana-island.md, "Pickups, hazards and meddling"): rows of mystery bottles across each leg give
+/// what a racer needs for where they are (a tailwind or a cannonball for those behind, a barnacle shield or a banana
+/// peel for the leaders); reefs and floating wreckage lie on some legs, and the better sailors steer round them more
+/// often. The racers keep lanes, so they sail beside each other and swerve for bottles and away from trouble. Viewers
+/// meddle from chat (MangroveCommand): a powder keg in front of a racer, wind in a racer's sails, and once a race the
+/// streamer can wake the Kraken. A hit boat cannot be hit again for a few seconds. The race camera (RaceCamera) shows
+/// it all when the setting allows. The places pay coins (the server) and Sailing exp (the game); wins and best times
+/// go on the board by the jetty.
+/// </remarks>
 public sealed class Regatta : MonoBehaviour
 {
     public const float SignupSeconds = 90f;
@@ -18,14 +28,35 @@ public sealed class Regatta : MonoBehaviour
     public const int MostRacers = 12;
     public const float GiveUpAfter = 300f;
     private const float Radius = 150f;
-    private const float StartSpacing = 10f;
+    /// <summary>The gap between hulls on the start line.</summary>
+    private const float StartGap = 4f;
     private const float BuoysStay = 15f;
+    /// <summary>The boats lie at the line this long, then comes the count of three.</summary>
+    private const float LineUpSeconds = 5f, CountSeconds = 3f;
+    /// <summary>The race camera stays on the finish this long after the race.</summary>
+    private const float CameraAfter = 6f;
+    /// <summary>Racers keep up to this far either side of the course, and move between lanes this fast.</summary>
+    private const float LaneWidth = 15f, LaneSpeed = 7f;
+    /// <summary>A buoy is rounded when a boat comes this close to it (its lane keeps it off the buoy itself).</summary>
+    private const float MarkReached = 35f;
+    /// <summary>After a hit a boat cannot be hit again for this long; a viewer's aim waits for it too.</summary>
+    public const float HitImmunity = 4f;
+    /// <summary>A racer aimed at by a viewer's keg is not aimed at again this soon.</summary>
+    private const float AimedRest = 8f;
+    private const float BottleBack = 8f;
+    private const float KegStays = 30f, PeelStays = 30f;
+    private const float ShieldSeconds = 15f;
+    private const float TailwindPace = 1.5f, TailwindSeconds = 4f;
     /// <summary>The Sailing exp of a place, as a share of what the racer's next level takes.</summary>
     private static readonly float[] ExpShare = { 0.05f, 0.035f, 0.025f };
     private const float ExpShareOthers = 0.015f;
 
-    public enum Phase { Signup, Racing, Done }
+    public enum Phase { Signup, Countdown, Racing, Done }
     public enum JoinResult { Joined, Already, NotOpen, NoBoat, Busy, Full, Underway, Cooldown }
+    public enum Item { None, Tailwind, Cannon, Shield, Peel }
+    public enum Hit { Cannon, Keg, Peel, Reef, Wreck, Kraken }
+    public enum Meddling { Keg, Wind, Kraken }
+    public enum MeddleResult { Done, NoRace, Racing, NoTarget, Finished, Protected, Nobody, KrakenUsed }
 
     private sealed class Racer
     {
@@ -35,6 +66,58 @@ public sealed class Regatta : MonoBehaviour
         public int Place;
         public bool Out;
         public float NextGust;
+        public float Gust = 1f;
+        /// <summary>The buoys rounded so far: the next is marks[Mark].</summary>
+        public int Mark;
+        /// <summary>Its boat's course when the race began: another means it sailed off (!sail, !disembark, !fish).</summary>
+        public int Course;
+        public float Lane, LaneWanted, NextLane;
+        public float Boost = 1f, BoostUntil;
+        public float Slow = 1f, SlowUntil;
+        public float ShieldUntil, SafeUntil, AimedUntil;
+        public Item Item;
+        public float UseAt;
+        public GameObject Aura;
+        /// <summary>The things on the water it already tried (or failed) to steer round.</summary>
+        public readonly HashSet<Thing> Judged = new HashSet<Thing>();
+        public bool Racing => !Out && Time < 0f && Player && Boat;
+        public string Name => Player ? Player.Name : "?";
+    }
+
+    private enum Kind { Bottle, Keg, Peel, Reef, Wreck }
+
+    private sealed class Thing
+    {
+        public Kind Kind;
+        public Vector3 At;
+        public GameObject Go;
+        public float Radius;
+        public float Until = float.MaxValue;
+        public float ArmedAt;
+        /// <summary>A taken bottle shows again at this time; 0 while it is there.</summary>
+        public float BackAt;
+        /// <summary>The peel's dropper sails clear of it first; the keg's thrower is a viewer's name.</summary>
+        public Racer Owner;
+        public float OwnerClearAt;
+        public string By;
+        public bool Live(float now) => BackAt <= 0f && now >= ArmedAt;
+    }
+
+    private sealed class Ball
+    {
+        public Racer From, To;
+        public Vector3 Start;
+        public float At;
+        public GameObject Go;
+    }
+
+    private sealed class Kraken
+    {
+        public GameObject Go;
+        public Vector3 At;
+        public float Born;
+        public Racer Target;
+        public bool Struck;
     }
 
     private static Regatta current;
@@ -42,13 +125,24 @@ public sealed class Regatta : MonoBehaviour
 
     private readonly List<Racer> racers = new List<Racer>();
     private readonly List<GameObject> buoys = new List<GameObject>();
+    private readonly List<Thing> things = new List<Thing>();
+    private readonly List<Ball> balls = new List<Ball>();
+    private readonly List<Kraken> krakens = new List<Kraken>();
     private IslandController island;
     private List<Vector3> marks;
+    private Vector3 start;
+    private float startHeading;
     private Phase phase;
     private float signupEnds;
+    private float startWidth;
+    private float goAt;
     private float startedAt;
     private int finished;
     private bool forced;
+    private bool krakenWoken;
+    private bool filmed;
+    private float releaseCameraAt = -1f;
+    private AudioSource horn;
 
     public static bool Running => current && current.phase != Phase.Done;
     public static float CooldownLeft => Mathf.Max(0f, nextAllowed - Time.time);
@@ -59,7 +153,7 @@ public sealed class Regatta : MonoBehaviour
     {
         var island = Mangrove();
         if (!island || island.Locked) return JoinResult.NotOpen;
-        if (current && current.phase == Phase.Racing) return JoinResult.Underway;
+        if (current && current.phase != Phase.Signup) return JoinResult.Underway;
         if (current && current.racers.Any(r => r.Player == player)) return JoinResult.Already;
         if (!player.ferryHandler.HasOwnBoat) return JoinResult.NoBoat;
         if (Busy(player)) return JoinResult.Busy;
@@ -107,6 +201,71 @@ public sealed class Regatta : MonoBehaviour
         GameManager.Instance.RavenBot?.Announce(Localization.MSG_REGATTA_OPEN, Mathf.RoundToInt(SignupSeconds));
     }
 
+    // ---- Meddling from chat (MangroveCommand) ------------------------------------------------------
+
+    /// <summary>
+    /// A viewer meddles: a powder keg in front of a racer, wind in a racer's sails, or the Kraken in front of the
+    /// leader. <paramref name="targetName"/> aims it; without one a racer is picked (for a keg, one not just hit). With
+    /// <paramref name="onlyCheck"/> nothing happens: it only says whether it would, and at whom.
+    /// </summary>
+    public static MeddleResult Meddle(PlayerController viewer, Meddling kind, string targetName, bool onlyCheck, out string target, out int wait)
+    {
+        target = null;
+        wait = 0;
+        if (!current || current.phase != Phase.Racing) return MeddleResult.NoRace;
+        if (current.racers.Any(r => r.Player == viewer && !r.Out)) return MeddleResult.Racing;
+        if (kind == Meddling.Kraken && current.krakenWoken) return MeddleResult.KrakenUsed;
+
+        var now = Time.time;
+        Racer racer;
+        if (kind == Meddling.Kraken)
+        {
+            racer = current.Ordered().FirstOrDefault(r => r.Racing);
+            if (racer == null) return MeddleResult.Nobody;
+        }
+        else if (!string.IsNullOrWhiteSpace(targetName))
+        {
+            var name = targetName.Trim().TrimStart('@');
+            racer = current.racers.FirstOrDefault(r => r.Player && string.Equals(r.Player.Name, name, StringComparison.OrdinalIgnoreCase));
+            target = racer != null ? racer.Name : name;
+            if (racer == null || racer.Out || !racer.Player) return MeddleResult.NoTarget;
+            if (racer.Time >= 0f) return MeddleResult.Finished;
+            if (!racer.Boat) return MeddleResult.NoTarget;
+            var free = Mathf.Max(racer.SafeUntil, racer.AimedUntil);
+            if (kind == Meddling.Keg && now < free)
+            {
+                wait = Mathf.CeilToInt(free - now);
+                return MeddleResult.Protected;
+            }
+        }
+        else
+        {
+            var open = current.racers.Where(r => r.Racing && (kind != Meddling.Keg || now >= Mathf.Max(r.SafeUntil, r.AimedUntil))).ToList();
+            if (open.Count == 0) return MeddleResult.Nobody;
+            racer = open[UnityEngine.Random.Range(0, open.Count)];
+        }
+        target = racer.Name;
+        if (onlyCheck) return MeddleResult.Done;
+
+        switch (kind)
+        {
+            case Meddling.Keg:
+                if (!string.IsNullOrWhiteSpace(targetName)) racer.AimedUntil = now + AimedRest;
+                current.ThrowKeg(racer, viewer.Name);
+                break;
+            case Meddling.Wind:
+                current.Tailwind(racer);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_WIND, viewer.Name, racer.Name), "");
+                break;
+            case Meddling.Kraken:
+                current.krakenWoken = true;
+                current.WakeKraken(racer);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_KRAKEN, viewer.Name), "");
+                break;
+        }
+        return MeddleResult.Done;
+    }
+
     // ---- The race ----------------------------------------------------------------------------------
 
     private void Update()
@@ -120,64 +279,555 @@ public sealed class Regatta : MonoBehaviour
                 else Cancel();
                 return;
 
+            case Phase.Countdown:
+                DropOuts();
+                if (Time.time >= goAt) Go();
+                return;
+
             case Phase.Racing:
-                foreach (var r in racers)
-                {
-                    if (r.Out || r.Time >= 0f) continue;
-                    // left the game, or the boat was put away (a raid or dungeon took them): out of the race
-                    if (!r.Player || !r.Boat || r.Player.ferryHandler.OwnBoat != r.Boat) { r.Out = true; continue; }
-                    if (Time.time >= r.NextGust)
-                    {
-                        r.NextGust = Time.time + UnityEngine.Random.Range(5f, 11f);
-                        r.Boat.Pace = UnityEngine.Random.Range(0.82f, 1.18f);
-                    }
-                }
+                Race();
                 if (racers.All(r => r.Out || r.Time >= 0f) || Time.time - startedAt > GiveUpAfter) Finish();
                 return;
+
+            case Phase.Done:
+                if (releaseCameraAt > 0f && Time.time >= releaseCameraAt)
+                {
+                    releaseCameraAt = -1f;
+                    var camera = GameManager.Instance ? GameManager.Instance.Camera : null;
+                    if (camera && camera.State == GameCameraType.Race) camera.StopRace();
+                }
+                return;
+        }
+    }
+
+    /// <summary>
+    /// Left the game, the boat was put away (a raid or dungeon took them), or it was sent off the course (!sail,
+    /// !disembark, !fish): out of the race, so nobody sails straight to the jetty past the buoys.
+    /// </summary>
+    private void DropOuts()
+    {
+        foreach (var r in racers)
+        {
+            if (r.Out || r.Time >= 0f) continue;
+            if (r.Player && r.Boat && r.Player.ferryHandler.OwnBoat == r.Boat && r.Boat.CourseVersion == r.Course) continue;
+            r.Out = true;
+            ClearAura(r);
+            if (!r.Boat) continue;
+            r.Boat.Arrived -= Arrived;
+            r.Boat.Held = false;
+            r.Boat.Pace = 1f;
+            r.Boat.Lane = 0f;
+            r.Boat.Raced = false;
         }
     }
 
     private void Begin()
     {
-        marks = Course(island, out var start, out var startHeading, out var finishHeading);
+        marks = Course(island, out start, out startHeading, out var finishHeading);
         if (marks == null)
         {
             Shinobytes.Debug.LogWarning("The regatta found no course round the Mangrove island.");
             Cancel();
             return;
         }
-        phase = Phase.Racing;
-        startedAt = Time.time;
+        phase = Phase.Countdown;
+        goAt = Time.time + LineUpSeconds + CountSeconds;
         PlaceBuoys();
 
-        // line abreast across the start, facing the first buoy
+        // line abreast across the start, facing the first buoy, a gap between the hulls, sails furled until the start
         var forward = Quaternion.Euler(0f, startHeading, 0f) * Vector3.forward;
         var side = Vector3.Cross(Vector3.up, forward);
+        var beams = racers.Select(r =>
+        {
+            var item = r.Player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
+            return item != null ? OwnBoat.Size(BoatItems.TierOf(item.Item)).Width : 3f;
+        }).ToList();
+        startWidth = beams.Sum() + StartGap * Mathf.Max(0, racers.Count - 1);
+        var across = -startWidth * 0.5f;
         for (var i = 0; i < racers.Count; ++i)
         {
             var r = racers[i];
-            var at = start + side * ((i - (racers.Count - 1) * 0.5f) * StartSpacing);
-            if (!SeaChart.IsWater(at)) at = start - forward * (i * StartSpacing);
+            var at = start + side * (across + beams[i] * 0.5f);
+            across += beams[i] + StartGap;
+            if (!SeaChart.IsWater(at)) at = start - forward * (i * 45f);
             at.y = SeaChart.Sea;
             r.Boat = r.Player.ferryHandler.RaceOwnBoat(at, startHeading, marks, island, finishHeading);
             if (!r.Boat) { r.Out = true; continue; }
+            r.Boat.Held = true;
+            r.Boat.Raced = true;
             r.Boat.Arrived += Arrived;
-            r.NextGust = Time.time + UnityEngine.Random.Range(2f, 6f);
+            r.Course = r.Boat.CourseVersion;
         }
+        PlaceBottles();
+        PlaceHazards();
+
         var racing = racers.Count(r => !r.Out);
-        MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_STARTED, racing), "");
+        MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_LINEUP, racing), "");
         GameManager.Instance.RavenBot?.Announce(Localization.MSG_REGATTA_START, racing);
+        var camera = GameManager.Instance.Camera;
+        filmed = camera && camera.FollowRace(this);
     }
+
+    /// <summary>The count of three is done: the horn, and every boat sets sail at once.</summary>
+    private void Go()
+    {
+        phase = Phase.Racing;
+        startedAt = Time.time;
+        foreach (var r in racers)
+        {
+            if (!r.Racing) continue;
+            r.Boat.Held = false;
+            r.NextGust = Time.time + UnityEngine.Random.Range(2f, 6f);
+            r.NextLane = Time.time + UnityEngine.Random.Range(3f, 7f);
+        }
+        MangroveFeed.Say(Localization.UI_REGATTA_GO, "");
+        PlayHorn();
+    }
+
+    private void PlayHorn()
+    {
+        var props = RegattaProps.Get();
+        var camera = Camera.main;
+        if (!props || !props.Horn || GameSounds.Volume <= 0.001f) return;
+        // heard by whoever watches the race, not across the world
+        if (!filmed && (!camera || Flat(camera.transform.position - start).magnitude > 400f)) return;
+        if (!horn)
+        {
+            horn = gameObject.AddComponent<AudioSource>();
+            horn.playOnAwake = false;
+            horn.spatialBlend = 0f;
+        }
+        horn.PlayOneShot(props.Horn, GameSounds.Volume * 0.8f);
+    }
+
+    private void Race()
+    {
+        DropOuts();
+        var now = Time.time;
+        var dt = GameTime.deltaTime;
+        var order = Ordered().Where(r => r.Racing).ToList();
+        for (var rank = 0; rank < order.Count; ++rank)
+        {
+            var r = order[rank];
+            if (now >= r.NextGust)
+            {
+                r.NextGust = now + UnityEngine.Random.Range(5f, 11f);
+                r.Gust = UnityEngine.Random.Range(0.82f, 1.18f);
+            }
+            r.Boat.Pace = r.Gust * (now < r.BoostUntil ? r.Boost : 1f) * (now < r.SlowUntil ? r.Slow : 1f);
+            if (r.Mark < marks.Count - 1 && Flat(marks[r.Mark] - r.Boat.SeaPosition).magnitude < MarkReached) r.Mark++;
+            if (r.Item != Item.None && now >= r.UseAt) Use(r, rank, order);
+            if (r.Aura && now >= Mathf.Max(r.ShieldUntil, r.BoostUntil)) ClearAura(r);
+            Steer(r, now, dt);
+        }
+        Touch(now);
+        Fly(now);
+        Rise(now);
+    }
+
+    /// <summary>
+    /// A racer's lane: now and then a new one, often towards a bottle ahead; away from a reef, wreckage, a keg or a peel
+    /// in its way when it sees it in time (the better the sailor, the more often).
+    /// </summary>
+    private void Steer(Racer r, float now, float dt)
+    {
+        var boat = r.Boat;
+        var p = boat.SeaPosition;
+        var forward = Quaternion.Euler(0f, boat.Heading, 0f) * Vector3.forward;
+        var right = Vector3.Cross(Vector3.up, forward);
+        var clearance = boat.Width * 0.5f + 3f;
+        var look = Mathf.Max(70f, boat.Speed * boat.Pace * 2.5f);
+        // on the last leg the lanes close up towards the dock point, where the race ends
+        var widest = r.Mark >= marks.Count - 1
+            ? Mathf.Clamp((Flat(FinishPoint - p).magnitude - 25f) * 0.15f, 0f, LaneWidth + 6f)
+            : LaneWidth + 6f;
+
+        if (now >= r.NextLane)
+        {
+            r.NextLane = now + UnityEngine.Random.Range(3f, 7f);
+            Thing bottle = null;
+            if (r.Item == Item.None && UnityEngine.Random.value < 0.65f)
+            {
+                var best = float.MaxValue;
+                foreach (var t in things)
+                {
+                    if (t.Kind != Kind.Bottle || !t.Live(now)) continue;
+                    var to = Flat(t.At - p);
+                    var ahead = Vector3.Dot(to, forward);
+                    if (ahead < 15f || ahead > look * 2f || Mathf.Abs(Vector3.Dot(to, right)) > LaneWidth * 2f) continue;
+                    var score = ahead + UnityEngine.Random.Range(0f, 25f);
+                    if (score < best) { best = score; bottle = t; }
+                }
+            }
+            r.LaneWanted = bottle != null
+                ? Mathf.Clamp(r.Lane + Vector3.Dot(Flat(bottle.At - p), right), -LaneWidth - 4f, LaneWidth + 4f)
+                : UnityEngine.Random.Range(-LaneWidth, LaneWidth);
+        }
+
+        foreach (var t in things)
+        {
+            if (t.Kind == Kind.Bottle || !t.Live(now) || r.Judged.Contains(t)) continue;
+            if (t.Kind == Kind.Peel && t.Owner == r) continue;
+            var to = Flat(t.At - p);
+            var ahead = Vector3.Dot(to, forward);
+            if (ahead < 0f || ahead > look) continue;
+            var lateral = Vector3.Dot(to, right);
+            var need = t.Radius + clearance;
+            if (Mathf.Abs(lateral) > need) continue;
+            r.Judged.Add(t);
+            // a viewer's keg is harder to see coming: they get their money's worth
+            var chance = Dodge(r) * (t.Kind == Kind.Keg ? 0.5f : 1f);
+            if (UnityEngine.Random.value > chance) continue;
+            var shift = lateral - Mathf.Sign(lateral == 0f ? 1f : lateral) * need;
+            if (Mathf.Abs(r.Lane + shift) > LaneWidth + 6f) shift = lateral + Mathf.Sign(lateral == 0f ? 1f : lateral) * need;
+            r.LaneWanted = Mathf.Clamp(r.Lane + shift, -LaneWidth - 6f, LaneWidth + 6f);
+            r.NextLane = now + UnityEngine.Random.Range(3f, 5f);
+            if (t.Kind == Kind.Keg && !string.IsNullOrEmpty(t.By))
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_DODGE, r.Name, t.By), "");
+        }
+
+        // never through another racer: alongside or overlapping, each moves over
+        foreach (var o in racers)
+        {
+            if (o == r || !o.Racing) continue;
+            var to = Flat(o.Boat.SeaPosition - p);
+            var ahead = Vector3.Dot(to, forward);
+            var lateral = Vector3.Dot(to, right);
+            var beam = (boat.Width + o.Boat.Width) * 0.5f + 2f;
+            if (Mathf.Abs(ahead) > (boat.Length + o.Boat.Length) * 0.5f + 3f || Mathf.Abs(lateral) > beam) continue;
+            var away = lateral > 0f || (lateral == 0f && racers.IndexOf(r) < racers.IndexOf(o)) ? -1f : 1f;
+            r.LaneWanted = r.Lane + away * (beam + 1f - Mathf.Abs(lateral)) * 0.6f;
+        }
+
+        r.LaneWanted = Mathf.Clamp(r.LaneWanted, -widest, widest);
+        r.Lane = Mathf.MoveTowards(r.Lane, r.LaneWanted, LaneSpeed * dt);
+        boat.Lane = r.Lane;
+    }
+
+    /// <summary>
+    /// How often a racer steers round trouble it sees: a fifth of the time at Sailing level 1, rising as the boat's
+    /// speed does with the level (SailingSpeeds.Reach: half way at about 100) to four in five.
+    /// </summary>
+    private static float Dodge(Racer r)
+    {
+        int level = r.Player && r.Player.Stats != null && r.Player.Stats.Sailing != null ? (int)r.Player.Stats.Sailing.Level : 1;
+        return 0.2f + SailingSpeeds.Reach(level) * 0.6f;
+    }
+
+    /// <summary>What the boats sail into: bottles picked up, kegs and peels set off, reefs and wreckage scraped.</summary>
+    private void Touch(float now)
+    {
+        for (var i = things.Count - 1; i >= 0; --i)
+        {
+            var t = things[i];
+            if (t.BackAt > 0f && now >= t.BackAt)
+            {
+                t.BackAt = 0f;
+                if (t.Go) t.Go.SetActive(true);
+            }
+            if (now >= t.Until)
+            {
+                if (t.Go) Destroy(t.Go);
+                things.RemoveAt(i);
+                continue;
+            }
+            if (!t.Live(now)) continue;
+            foreach (var r in racers)
+            {
+                if (!r.Racing) continue;
+                if (Flat(t.At - r.Boat.SeaPosition).magnitude > t.Radius + r.Boat.Width * 0.4f) continue;
+                if (t.Kind == Kind.Bottle)
+                {
+                    if (r.Item != Item.None) continue;
+                    Give(r);
+                    t.BackAt = now + BottleBack;
+                    if (t.Go) t.Go.SetActive(false);
+                    break;
+                }
+                if (t.Kind == Kind.Peel && t.Owner == r && now < t.OwnerClearAt) continue;
+                if (t.Kind == Kind.Reef || t.Kind == Kind.Wreck)
+                {
+                    Strike(r, t.Kind == Kind.Reef ? Hit.Reef : Hit.Wreck, null);
+                    continue;
+                }
+                // a keg or a peel goes off once, whether or not a shield took it
+                Strike(r, t.Kind == Kind.Keg ? Hit.Keg : Hit.Peel, t.Kind == Kind.Keg ? t.By : t.Owner?.Name);
+                if (t.Kind == Kind.Keg) Effect(RegattaProps.Get()?.Blast, t.At, 5f);
+                if (t.Go) Destroy(t.Go);
+                things.RemoveAt(i);
+                break;
+            }
+        }
+    }
+
+    // ---- Bottles and what is in them ---------------------------------------------------------------
+
+    /// <summary>Something for where the racer is: those behind get speed and cannonballs, the leaders shields and peels.</summary>
+    private void Give(Racer r)
+    {
+        var order = Ordered().Where(x => x.Racing).ToList();
+        var rank = order.IndexOf(r);
+        var share = order.Count > 1 ? rank / (float)(order.Count - 1) : 0f;
+        var roll = UnityEngine.Random.value;
+        if (share < 0.34f) r.Item = roll < 0.4f ? Item.Shield : roll < 0.85f ? Item.Peel : Item.Tailwind;
+        else if (share < 0.67f) r.Item = roll < 0.3f ? Item.Tailwind : roll < 0.6f ? Item.Cannon : roll < 0.8f ? Item.Peel : Item.Shield;
+        else r.Item = roll < 0.45f ? Item.Tailwind : roll < 0.85f ? Item.Cannon : Item.Shield;
+        // a shield goes up at once; the rest a moment later, as if they were deciding
+        r.UseAt = Time.time + (r.Item == Item.Shield ? 0.3f : UnityEngine.Random.Range(0.6f, 2.5f));
+        GameSounds.Play(SoundKind.ItemPickup, r.Boat.SeaPosition, 0.8f);
+        Effect(RegattaProps.Get()?.Sparkle, r.Boat.SeaPosition + Vector3.up * 2f, 2f);
+    }
+
+    private void Use(Racer r, int rank, List<Racer> order)
+    {
+        var item = r.Item;
+        r.Item = Item.None;
+        switch (item)
+        {
+            case Item.Tailwind:
+                Tailwind(r);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_TAILWIND, r.Name), "");
+                break;
+
+            case Item.Shield:
+                r.ShieldUntil = Time.time + ShieldSeconds;
+                SetAura(r, RegattaProps.Get()?.Bubbles);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_SHIELD, r.Name), "");
+                break;
+
+            case Item.Peel:
+                DropPeel(r);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_PEEL, r.Name), "");
+                break;
+
+            case Item.Cannon:
+                // at the boat ahead; the leader fires back at the one behind
+                var target = rank > 0 ? order[rank - 1] : rank + 1 < order.Count ? order[rank + 1] : null;
+                if (target == null || !target.Racing)
+                {
+                    MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_CANNON_MISS, r.Name), "");
+                    break;
+                }
+                Fire(r, target);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_CANNON, r.Name, target.Name), "");
+                break;
+        }
+    }
+
+    private void Tailwind(Racer r)
+    {
+        r.Boost = TailwindPace;
+        r.BoostUntil = Time.time + TailwindSeconds;
+        SetAura(r, RegattaProps.Get()?.Sparkle);
+        GameSounds.Play(SoundKind.WindGust, r.Boat.SeaPosition, 1f);
+    }
+
+    private void DropPeel(Racer r)
+    {
+        var boat = r.Boat;
+        var forward = Quaternion.Euler(0f, boat.Heading, 0f) * Vector3.forward;
+        var at = boat.SeaPosition - forward * (boat.Length * 0.5f + 3f);
+        Add(Kind.Peel, at, 2.2f, Time.time + PeelStays, RegattaProps.Get()?.Peel, owner: r);
+    }
+
+    private void ThrowKeg(Racer r, string by)
+    {
+        var boat = r.Boat;
+        // it falls for 0.7 s, then the racer needs a moment to see it: about 2.5 s of sailing ahead, on its course and in
+        // its lane, which it holds until then (unless it sees the keg in time and steers round it)
+        var ahead = Mathf.Clamp(boat.Speed * boat.Pace * 2.5f, 25f, 220f);
+        var at = boat.Ahead(ahead);
+        if (!SeaChart.IsWater(at)) at = boat.Ahead(ahead * 0.5f);
+        r.LaneWanted = r.Lane;
+        r.NextLane = Time.time + 3.5f;
+        // lobbed in from the shore: it lands with a splash a moment later and is live from then
+        var keg = Add(Kind.Keg, at, 2.6f, Time.time + KegStays, RegattaProps.Get()?.Keg, by: by, dropSeconds: 0.7f);
+        keg.ArmedAt = Time.time + 0.7f;
+        MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_KEG, by, r.Name), "");
+    }
+
+    private void Fire(Racer from, Racer to)
+    {
+        var props = RegattaProps.Get();
+        var at = from.Boat.SeaPosition + Vector3.up * 2.5f;
+        Effect(props ? props.CannonShot : null, at, 3f);
+        GameSounds.Play(SoundKind.RockImpact, at, 1f);
+        var ball = new Ball { From = from, To = to, Start = at, At = Time.time };
+        if (props && props.Cannonball) ball.Go = Instantiate(props.Cannonball, at, Quaternion.identity);
+        balls.Add(ball);
+    }
+
+    /// <summary>Cannonballs in the air, curving onto their target wherever it has got to.</summary>
+    private void Fly(float now)
+    {
+        const float seconds = 1.2f;
+        for (var i = balls.Count - 1; i >= 0; --i)
+        {
+            var b = balls[i];
+            var t = Mathf.Clamp01((now - b.At) / seconds);
+            var end = b.To.Boat ? b.To.Boat.SeaPosition + Vector3.up * 1.5f : b.Start;
+            var p = Vector3.Lerp(b.Start, end, t) + Vector3.up * (Mathf.Sin(t * Mathf.PI) * 12f);
+            if (b.Go) b.Go.transform.position = p;
+            if (t < 1f) continue;
+            if (b.Go) Destroy(b.Go);
+            balls.RemoveAt(i);
+            Effect(RegattaProps.Get()?.Splash, end, 4f);
+            GameSounds.Play(SoundKind.WaterSplash, end, 1f);
+            if (b.To.Racing) Strike(b.To, Hit.Cannon, b.From.Name);
+        }
+    }
+
+    // ---- The Kraken ------------------------------------------------------------------------------
+
+    private void WakeKraken(Racer r)
+    {
+        var props = RegattaProps.Get();
+        var boat = r.Boat;
+        var forward = Quaternion.Euler(0f, boat.Heading, 0f) * Vector3.forward;
+        var at = boat.SeaPosition + forward * (boat.Length * 0.5f + 14f);
+        var k = new Kraken { At = at, Born = Time.time, Target = r };
+        if (props && props.Kraken)
+        {
+            // it faces the boat it stops (the octopus looks down its own -Z)
+            k.Go = Instantiate(props.Kraken, at + Vector3.down * 18f, Quaternion.LookRotation(forward));
+        }
+        krakens.Add(k);
+        Effect(props ? props.Splash : null, at, 4f);
+        GameSounds.Play(SoundKind.WaterSplash, at, 1f);
+    }
+
+    /// <summary>It rises out of the sea in a second, holds the boat for a while, and sinks back.</summary>
+    private void Rise(float now)
+    {
+        for (var i = krakens.Count - 1; i >= 0; --i)
+        {
+            var k = krakens[i];
+            var age = now - k.Born;
+            if (!k.Struck)
+            {
+                k.Struck = true;
+                if (k.Target.Racing) Strike(k.Target, Hit.Kraken, null);
+                IncidentPoint = k.At;
+            }
+            var up = age < 1f ? Mathf.SmoothStep(0f, 1f, age) : age < 3.5f ? 1f : 1f - Mathf.SmoothStep(0f, 1f, age - 3.5f);
+            // sixteen metres of it: risen, its tentacles stay under the water
+            if (k.Go) k.Go.transform.position = k.At + Vector3.down * Mathf.Lerp(18f, 4.5f, up) + Vector3.up * (Mathf.Sin(age * 3f) * 0.3f);
+            if (age < 4.6f) continue;
+            if (k.Go) Destroy(k.Go);
+            krakens.RemoveAt(i);
+        }
+    }
+
+    // ---- Hits --------------------------------------------------------------------------------------
+
+    public OwnBoat IncidentBoat { get; private set; }
+    public float IncidentAt { get; private set; } = -1f;
+    /// <summary>The last incident was the Kraken: the camera shows it whatever else is going on.</summary>
+    public bool IncidentBig { get; private set; }
+    public Vector3 IncidentPoint { get; private set; }
+
+    /// <summary>A boat is hit, unless it was just hit or its shield takes it (the Kraken minds neither).</summary>
+    private void Strike(Racer r, Hit hit, string by)
+    {
+        var now = Time.time;
+        if (!r.Racing) return;
+        if (hit != Hit.Kraken && now < r.SafeUntil) return;
+        if (hit != Hit.Kraken && now < r.ShieldUntil)
+        {
+            r.ShieldUntil = 0f;
+            ClearAura(r);
+            Effect(RegattaProps.Get()?.Bubbles, r.Boat.SeaPosition + Vector3.up, 2f);
+            GameSounds.Play(SoundKind.Bubbles, r.Boat.SeaPosition, 1f);
+            MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_BLOCKED, r.Name), "");
+            return;
+        }
+        r.SafeUntil = now + HitImmunity;
+        var at = r.Boat.SeaPosition;
+        switch (hit)
+        {
+            case Hit.Cannon:
+                SlowDown(r, 0.45f, 2f);
+                break;
+            case Hit.Keg:
+                r.Boat.Spin(1.8f);
+                SlowDown(r, 0.35f, 2.6f);
+                GameSounds.Play(SoundKind.RockImpact, at, 1f);
+                GameSounds.Play(SoundKind.WaterSplash, at, 1f);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, string.IsNullOrEmpty(by) ? Localization.UI_REGATTA_HIT_KEG : Localization.UI_REGATTA_HIT_KEG_BY, r.Name, by), "");
+                break;
+            case Hit.Peel:
+                r.Boat.Spin(1.4f);
+                SlowDown(r, 0.5f, 1.4f);
+                GameSounds.Play(SoundKind.WaterSplash, at, 0.7f);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_PEEL, r.Name, by ?? "?"), "");
+                break;
+            case Hit.Reef:
+                SlowDown(r, 0.4f, 1.6f);
+                GameSounds.Play(SoundKind.RockImpact, at, 0.9f);
+                Effect(RegattaProps.Get()?.Splash, at, 3f);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_REEF, r.Name), "");
+                break;
+            case Hit.Wreck:
+                SlowDown(r, 0.6f, 1.2f);
+                GameSounds.Play(SoundKind.WoodChop, at, 0.8f);
+                Effect(RegattaProps.Get()?.Splash, at, 3f);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_WRECK, r.Name), "");
+                break;
+            case Hit.Kraken:
+                SlowDown(r, 0.05f, 3.2f);
+                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_KRAKEN, r.Name), "");
+                break;
+        }
+        IncidentBoat = r.Boat;
+        IncidentBig = hit == Hit.Kraken;
+        IncidentPoint = at;
+        IncidentAt = Time.unscaledTime;
+    }
+
+    private static void SlowDown(Racer r, float pace, float seconds)
+    {
+        r.Slow = pace;
+        r.SlowUntil = Time.time + seconds;
+        r.BoostUntil = 0f;
+    }
+
+    private void SetAura(Racer r, GameObject prefab)
+    {
+        ClearAura(r);
+        if (!prefab || Potato || !r.Boat) return;
+        r.Aura = Instantiate(prefab, r.Boat.transform);
+        r.Aura.transform.localPosition = Vector3.up * 1.5f;
+    }
+
+    private static void ClearAura(Racer r)
+    {
+        if (r.Aura) Destroy(r.Aura);
+        r.Aura = null;
+    }
+
+    private static bool Potato => GameManager.Instance && GameManager.Instance.PotatoMode;
+
+    /// <summary>A one-off effect (a splash, a blast); none in potato mode.</summary>
+    private static void Effect(GameObject prefab, Vector3 at, float seconds)
+    {
+        if (!prefab || Potato) return;
+        var go = Instantiate(prefab, at, Quaternion.identity);
+        Destroy(go, seconds);
+    }
+
+    // ---- The end -----------------------------------------------------------------------------------
 
     private void Arrived(OwnBoat boat)
     {
         boat.Arrived -= Arrived;
         boat.Pace = 1f;
+        boat.Lane = 0f;
         var r = racers.FirstOrDefault(x => x.Boat == boat);
         if (r == null || r.Time >= 0f || r.Out || phase != Phase.Racing) return;
         r.Time = Time.time - startedAt;
         r.Place = ++finished;
-        MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_FINISHED, r.Player ? r.Player.Name : "?", Ordinal(r.Place), Seconds(r.Time)), r.Place == 1 ? "" : "");
+        ClearAura(r);
+        MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_FINISHED, r.Name, Ordinal(r.Place), Seconds(r.Time)), r.Place == 1 ? "" : "");
     }
 
     private void Cancel()
@@ -194,7 +844,17 @@ public sealed class Regatta : MonoBehaviour
         phase = Phase.Done;
         current = null;
         nextAllowed = Time.time + Cooldown;
-        foreach (var r in racers) if (r.Boat) { r.Boat.Arrived -= Arrived; r.Boat.Pace = 1f; }
+        releaseCameraAt = filmed ? Time.time + CameraAfter : -1f;
+        foreach (var r in racers)
+        {
+            ClearAura(r);
+            if (!r.Boat) continue;
+            r.Boat.Arrived -= Arrived;
+            r.Boat.Pace = 1f;
+            r.Boat.Held = false;
+            r.Boat.Lane = 0f;
+            r.Boat.Raced = false;
+        }
 
         var placed = racers.Where(r => r.Time >= 0f && r.Player).OrderBy(r => r.Place).ToList();
         if (placed.Count > 0)
@@ -236,6 +896,93 @@ public sealed class Regatta : MonoBehaviour
     {
         if (current == this) current = null;
         foreach (var b in buoys) if (b) Destroy(b);
+        foreach (var t in things) if (t.Go) Destroy(t.Go);
+        foreach (var b in balls) if (b.Go) Destroy(b.Go);
+        foreach (var k in krakens) if (k.Go) Destroy(k.Go);
+        foreach (var r in racers)
+        {
+            ClearAura(r);
+            if (r.Boat) r.Boat.Held = false;
+        }
+    }
+
+    // ---- For the race camera (RaceCamera) ----------------------------------------------------------
+
+    /// <summary>The order now: the finished by place, then who is furthest round the buoys.</summary>
+    private IEnumerable<Racer> Ordered() => racers.Where(r => !r.Out && r.Player && (r.Boat || r.Time >= 0f))
+        .OrderBy(r => r.Time >= 0f ? r.Place : 1000)
+        .ThenByDescending(Progress);
+
+    private float Progress(Racer r) =>
+        r.Boat && marks != null ? r.Mark * 10000f - Flat(marks[Mathf.Min(r.Mark, marks.Count - 1)] - r.Boat.SeaPosition).magnitude : -1e9f;
+
+    /// <summary>The start is over: the boats are racing (or done).</summary>
+    public bool Started => phase == Phase.Racing || phase == Phase.Done;
+    public bool Finished => phase == Phase.Done;
+    public float SinceStart => phase == Phase.Racing || phase == Phase.Done ? Time.time - startedAt : 0f;
+    public Vector3 StartPoint => start;
+    public float StartHeading => startHeading;
+    public float StartWidth => startWidth;
+    public IReadOnlyList<Vector3> Marks => marks;
+    public Vector3 FinishPoint => marks[marks.Count - 1];
+    public Vector3 IslandCentre => island ? island.SpawnPosition : start;
+
+    /// <summary>The boat in front that is still racing.</summary>
+    public OwnBoat Leader
+    {
+        get
+        {
+            var r = Ordered().FirstOrDefault(x => x.Racing);
+            return r != null ? r.Boat : null;
+        }
+    }
+
+    /// <summary>The buoy a boat makes for next (the last mark is the finish).</summary>
+    public int NextMark(OwnBoat boat)
+    {
+        var r = racers.FirstOrDefault(x => x.Boat == boat);
+        return r != null ? r.Mark : -1;
+    }
+
+    /// <summary>How far a boat is from the finish once on the last leg; far off before it.</summary>
+    public float DistanceToFinish(OwnBoat boat)
+    {
+        var r = racers.FirstOrDefault(x => x.Boat == boat);
+        if (r == null || !boat || r.Mark < marks.Count - 1) return float.MaxValue;
+        return Flat(FinishPoint - boat.SeaPosition).magnitude;
+    }
+
+    /// <summary>The frontmost two racers close enough together to be a battle.</summary>
+    public bool Battle(out OwnBoat a, out OwnBoat b)
+    {
+        a = b = null;
+        var order = Ordered().Where(r => r.Racing).ToList();
+        for (var i = 0; i + 1 < order.Count; ++i)
+        {
+            var x = order[i].Boat;
+            var y = order[i + 1].Boat;
+            if (Flat(x.SeaPosition - y.SeaPosition).magnitude > Mathf.Max(25f, Mathf.Max(x.Length, y.Length) * 2.5f)) continue;
+            a = x;
+            b = y;
+            return true;
+        }
+        return false;
+    }
+
+    public OwnBoat SomeRacer()
+    {
+        var open = racers.Where(r => r.Racing).ToList();
+        return open.Count > 0 ? open[UnityEngine.Random.Range(0, open.Count)].Boat : null;
+    }
+
+    /// <summary>The middle of the leading pack (the first four).</summary>
+    public Vector3 PackCentre()
+    {
+        var pack = Ordered().Where(r => r.Racing).Take(4).Select(r => r.Boat.SeaPosition).ToList();
+        if (pack.Count == 0) return start;
+        var sum = Vector3.zero;
+        foreach (var p in pack) sum += p;
+        return sum / pack.Count;
     }
 
     // ---- The course --------------------------------------------------------------------------------
@@ -283,22 +1030,128 @@ public sealed class Regatta : MonoBehaviour
         {
             var buoy = Instantiate(prefab, marks[i], Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f));
             buoy.name = "Regatta Buoy " + (i + 1);
-            buoy.AddComponent<Bob>();
+            buoy.AddComponent<Floater>();
             buoys.Add(buoy);
         }
     }
 
-    /// <summary>A buoy rides the swell a little.</summary>
-    private sealed class Bob : MonoBehaviour
+    /// <summary>A point part way along the chart's way from one place to another, and the way it runs there.</summary>
+    private static bool Along(Vector3 from, Vector3 to, float share, out Vector3 at, out Vector3 direction)
     {
+        at = direction = default;
+        var way = SeaChart.Route(from, to);
+        if (way == null || way.Count < 2) return false;
+        var total = 0f;
+        for (var i = 1; i < way.Count; ++i) total += Flat(way[i] - way[i - 1]).magnitude;
+        var left = total * share;
+        for (var i = 1; i < way.Count; ++i)
+        {
+            var leg = Flat(way[i] - way[i - 1]);
+            var length = leg.magnitude;
+            if (left > length && i < way.Count - 1) { left -= length; continue; }
+            direction = length > 0.01f ? leg / length : Vector3.forward;
+            at = way[i - 1] + direction * Mathf.Min(left, length);
+            at.y = SeaChart.Sea;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>A row of mystery bottles across the middle of each leg but the last (the way into the harbour).</summary>
+    private void PlaceBottles()
+    {
+        var prefab = RegattaProps.Get()?.Bottle;
+        var from = start;
+        for (var leg = 0; leg < marks.Count - 1; ++leg)
+        {
+            var to = marks[leg];
+            if (Along(from, to, 0.5f, out var at, out var direction))
+            {
+                var across = Vector3.Cross(Vector3.up, direction);
+                foreach (var offset in new[] { -12f, -4f, 4f, 12f })
+                {
+                    var p = at + across * offset;
+                    if (SeaChart.IsWater(p)) Add(Kind.Bottle, p, 2.2f, float.MaxValue, prefab, spin: 40f);
+                }
+            }
+            from = to;
+        }
+    }
+
+    /// <summary>Two to four reefs or patches of wreckage on the legs round the island, never on a row of bottles.</summary>
+    private void PlaceHazards()
+    {
+        var props = RegattaProps.Get();
+        var legs = Enumerable.Range(1, Mathf.Max(0, marks.Count - 2)).OrderBy(_ => UnityEngine.Random.value).ToList();
+        var count = Mathf.Min(legs.Count, UnityEngine.Random.Range(2, 5));
+        for (var i = 0; i < count; ++i)
+        {
+            var leg = legs[i];
+            var share = UnityEngine.Random.value < 0.5f ? UnityEngine.Random.Range(0.25f, 0.38f) : UnityEngine.Random.Range(0.62f, 0.78f);
+            if (!Along(marks[leg - 1], marks[leg], share, out var at, out var direction)) continue;
+            var p = at + Vector3.Cross(Vector3.up, direction) * UnityEngine.Random.Range(-10f, 10f);
+            if (!SeaChart.IsWater(p)) continue;
+            var reef = UnityEngine.Random.value < 0.6f;
+            var go = Add(reef ? Kind.Reef : Kind.Wreck, p, reef ? 4f : 3.5f, float.MaxValue, reef ? props?.Reef : props?.Wreck, floats: !reef).Go;
+            if (go) go.transform.rotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
+        }
+    }
+
+    private Thing Add(Kind kind, Vector3 at, float radius, float until, GameObject prefab, Racer owner = null, string by = null,
+        float spin = 0f, bool floats = true, float dropSeconds = 0f)
+    {
+        at.y = SeaChart.Sea;
+        var t = new Thing { Kind = kind, At = at, Radius = radius, Until = until, Owner = owner, By = by, OwnerClearAt = Time.time + 3f };
+        if (prefab)
+        {
+            t.Go = Instantiate(prefab, at, Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f));
+            if (floats)
+            {
+                var f = t.Go.AddComponent<Floater>();
+                f.Spin = spin;
+                f.DropSeconds = dropSeconds;
+            }
+        }
+        things.Add(t);
+        return t;
+    }
+
+    /// <summary>
+    /// Rides the swell a little (a buoy, a bottle, a keg); a bottle turns slowly to catch the eye, and a keg lobbed in
+    /// falls first and lands with a splash.
+    /// </summary>
+    private sealed class Floater : MonoBehaviour
+    {
+        public float Spin;
+        public float DropSeconds;
         private Vector3 rest;
-        private float phase;
-        private void Start() { rest = transform.position; phase = UnityEngine.Random.Range(0f, 6f); }
+        private float phase, born, yaw;
+        private bool landed;
+
+        private void Start()
+        {
+            rest = transform.position;
+            phase = UnityEngine.Random.Range(0f, 6f);
+            born = Time.time;
+            yaw = transform.eulerAngles.y;
+            landed = DropSeconds <= 0f;
+        }
+
         private void Update()
         {
-            var t = Time.time + phase;
-            transform.position = rest + Vector3.up * (Mathf.Sin(t * 1.3f) * 0.18f);
-            transform.rotation = Quaternion.Euler(Mathf.Sin(t * 0.9f) * 6f, transform.eulerAngles.y, Mathf.Cos(t * 1.1f) * 6f);
+            if (!landed)
+            {
+                var t = Mathf.Clamp01((Time.time - born) / DropSeconds);
+                transform.position = rest + Vector3.up * (18f * (1f - t * t));
+                if (t < 1f) return;
+                landed = true;
+                Effect(RegattaProps.Get()?.Splash, rest, 3f);
+                GameSounds.Play(SoundKind.WaterSplash, rest, 1f);
+            }
+            var s = Time.time + phase;
+            yaw += Spin * Time.deltaTime;
+            transform.position = rest + Vector3.up * (Mathf.Sin(s * 1.3f) * 0.18f);
+            transform.rotation = Quaternion.Euler(Mathf.Sin(s * 0.9f) * 6f, yaw, Mathf.Cos(s * 1.1f) * 6f);
         }
     }
 
@@ -318,17 +1171,26 @@ public sealed class Regatta : MonoBehaviour
                 Progress = 1f - left / SignupSeconds,
             };
         }
+        if (current.phase == Phase.Countdown)
+        {
+            var left = current.goAt - Time.time;
+            return new Shinobytes.UI.MangroveView.Status
+            {
+                Glyph = "",
+                Title = left > CountSeconds
+                    ? Localization.UI_REGATTA_BAR_LINEUP
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_BAR_COUNT, Mathf.CeilToInt(left)),
+                Line = Localization.UI_REGATTA_BAR_HINT,
+                Progress = 1f - Mathf.Clamp01(left / (LineUpSeconds + CountSeconds)),
+            };
+        }
         if (current.phase != Phase.Racing) return null;
-        // the order now: who is furthest along the course
-        var order = current.racers.Where(r => !r.Out && r.Player)
-            .OrderBy(r => r.Time >= 0f ? r.Place : 1000)
-            .ThenByDescending(r => r.Boat ? r.Boat.CourseNext - Vector3.Distance(r.Boat.SeaPosition, r.Boat.CourseTarget) / 1000f : -1f)
-            .Take(3).Select(r => r.Player.Name);
+        var order = current.Ordered().Take(3).Select(r => r.Name);
         return new Shinobytes.UI.MangroveView.Status
         {
             Glyph = "",
             Title = string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_BAR_RACING, Seconds(Time.time - current.startedAt)),
-            Line = string.Join("  ", order.Select((n, i) => Ordinal(i + 1) + " " + n)),
+            Line = string.Join("  ", order.Select((n, i) => Ordinal(i + 1) + " " + n)) + "   " + Localization.UI_REGATTA_BAR_HINT,
         };
     }
 
@@ -341,6 +1203,41 @@ public sealed class Regatta : MonoBehaviour
         3 => Localization.UI_REGATTA_3RD,
         _ => string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_NTH, place),
     };
+
+    private static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
+}
+
+/// <summary>
+/// Viewers' meddling in the regatta (docs/banana-island.md, "Pickups, hazards and meddling"): a free keg or wind now
+/// and then, at a random racer; before the free one is back, or aimed at a racer by name, it costs coins, and the
+/// first time the viewer is told the price and sends the command again to pay.
+/// </summary>
+public static class RegattaMeddling
+{
+    public const float FreeEvery = 60f;
+    public const long RandomPrice = 500;
+    public const long AimedPrice = 2000;
+    public const float ConfirmSeconds = 30f;
+
+    private static readonly Dictionary<Guid, float> freeAt = new Dictionary<Guid, float>();
+    private static readonly Dictionary<Guid, (string What, float Until)> pending = new Dictionary<Guid, (string, float)>();
+
+    /// <summary>Seconds until the viewer's next free one; 0 when it is ready.</summary>
+    public static float FreeIn(Guid viewer) => freeAt.TryGetValue(viewer, out var at) ? Mathf.Max(0f, at - Time.time) : 0f;
+
+    public static void UsedFree(Guid viewer) => freeAt[viewer] = Time.time + FreeEvery;
+
+    /// <summary>True when the viewer sends the same paid command a second time in time: go ahead and pay.</summary>
+    public static bool Confirmed(Guid viewer, string what)
+    {
+        if (pending.TryGetValue(viewer, out var p) && p.What == what && Time.time < p.Until)
+        {
+            pending.Remove(viewer);
+            return true;
+        }
+        pending[viewer] = (what, Time.time + ConfirmSeconds);
+        return false;
+    }
 }
 
 /// <summary>

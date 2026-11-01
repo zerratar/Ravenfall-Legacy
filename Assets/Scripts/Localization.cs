@@ -1949,6 +1949,8 @@ public static class Localization
     public static string UI_SETTINGS_OBSERVE_ISLAND = "Time on each island";
     public static string UI_SETTINGS_OBSERVE_EMPTY = "Visit empty islands";
     public static string UI_SETTINGS_OBSERVE_EMPTY_HINT = "Islands with nobody on them still get a turn in the island camera.";
+    public static string UI_SETTINGS_RACE_CAMERA = "Regatta camera";
+    public static string UI_SETTINGS_RACE_CAMERA_HINT = "The banana island regatta gets its own camera: the start, the leaders, close battles, the buoys and the finish. Any camera key takes the camera back.";
     public static string UI_SETTINGS_AFK = "Kick players who are away";
     public static string UI_SETTINGS_AFK_HINT = "Players who have not typed a command for this long are removed.";
     public static string[] UI_SETTINGS_AFK_OPTIONS = { "Never", "After 1 hour", "After 2 hours", "After 4 hours", "After 8 hours", "After 12 hours", "After 24 hours" };
@@ -2845,7 +2847,7 @@ public static class Localization
 
     // The regatta round the Mangrove island
     public static string MSG_REGATTA_OPEN = Meta("mangrove", "regatta") + "The banana island regatta is open! Own a boat? Type !regatta to race round the island. The start is in {seconds} seconds.";
-    public static string MSG_REGATTA_START = Meta("mangrove", "regatta") + "The regatta is off round the banana island! Boats: {count}.";
+    public static string MSG_REGATTA_START = Meta("mangrove", "regatta") + "The regatta boats are at the start line of the banana island! Boats: {count}. Meddle from chat: !regatta keg throws a powder keg in a racer's way, !regatta wind <name> fills a favourite's sails.";
     public static string MSG_REGATTA_WON = Meta("mangrove", "regatta") + "{player} wins the banana island regatta in {time} s! {others}";
     public static string MSG_REGATTA_JOINED = Meta("mangrove", "regatta") + "You are in the regatta. Your boat will be at the start line.";
     public static string MSG_REGATTA_ALREADY = Meta("mangrove", "regatta", "fail") + "You are already in the regatta.";
@@ -2872,6 +2874,43 @@ public static class Localization
     public static string UI_REGATTA_BOARD = "Banana Island Regatta";
     public static string UI_REGATTA_BOARD_LINE = "{0}. {1} - wins: {2}, best: {3} s";
     public static string UI_REGATTA_BOARD_EMPTY = "No races yet. !regatta";
+    public static string UI_REGATTA_LINEUP = "The boats line up at the start south of the island. Racers: {0}.";
+    public static string UI_REGATTA_GO = "And they're off!";
+    public static string UI_REGATTA_BAR_LINEUP = "Regatta: boats to the line!";
+    public static string UI_REGATTA_BAR_COUNT = "Regatta: {0}...";
+    public static string UI_REGATTA_BAR_HINT = "Meddle: !regatta keg, !regatta wind <name>";
+    public static string UI_REGATTA_TAILWIND = "{0} catches a tailwind!";
+    public static string UI_REGATTA_SHIELD = "{0} raises a barnacle shield.";
+    public static string UI_REGATTA_PEEL = "{0} drops a banana peel behind them.";
+    public static string UI_REGATTA_CANNON = "{0} fires a cannonball at {1}!";
+    public static string UI_REGATTA_CANNON_MISS = "{0} fires a cannonball at nothing in particular.";
+    public static string UI_REGATTA_BLOCKED = "{0}'s barnacle shield takes the hit!";
+    public static string UI_REGATTA_HIT_KEG = "BOOM! {0} sails into a powder keg.";
+    public static string UI_REGATTA_HIT_KEG_BY = "BOOM! {0} sails into {1}'s powder keg.";
+    public static string UI_REGATTA_HIT_PEEL = "{0} slips on {1}'s banana peel and spins round!";
+    public static string UI_REGATTA_HIT_REEF = "{0} scrapes the reef!";
+    public static string UI_REGATTA_HIT_WRECK = "{0} ploughs through floating wreckage.";
+    public static string UI_REGATTA_HIT_KRAKEN = "The Kraken rises in front of {0}!";
+    public static string UI_REGATTA_DODGE = "{0} steers round {1}'s powder keg!";
+    public static string UI_REGATTA_KEG = "{0} lobs a powder keg in front of {1}!";
+    public static string UI_REGATTA_WIND = "{0} fills {1}'s sails!";
+    public static string UI_REGATTA_KRAKEN = "{0} wakes the Kraken!";
+    public static string MSG_REGATTA_MEDDLE_NO_RACE = Meta("mangrove", "regatta", "fail") + "There is no regatta underway to meddle with.";
+    public static string MSG_REGATTA_MEDDLE_RACING = Meta("mangrove", "regatta", "fail") + "You are racing! No meddling in your own race.";
+    public static string MSG_REGATTA_MEDDLE_NO_TARGET = Meta("mangrove", "regatta", "fail") + "Nobody called {name} is racing.";
+    public static string MSG_REGATTA_MEDDLE_FINISHED = Meta("mangrove", "regatta", "fail") + "{name} has already finished.";
+    public static string MSG_REGATTA_MEDDLE_PROTECTED = Meta("mangrove", "regatta", "fail") + "{name} was just hit. Give them {seconds} seconds.";
+    public static string MSG_REGATTA_MEDDLE_NOBODY = Meta("mangrove", "regatta", "fail") + "Every racer is still reeling from the last hit. Try again in a moment.";
+    public static string MSG_REGATTA_MEDDLE_PRICE = Meta("mangrove", "regatta") + "Your free one is back in {seconds} seconds. Send the same command again within {confirm} seconds to do it now for {coins} coins.";
+    public static string MSG_REGATTA_MEDDLE_PRICE_AIMED = Meta("mangrove", "regatta") + "Aiming at {name} costs {coins} coins. Send the same command again within {confirm} seconds to pay.";
+    public static string MSG_REGATTA_MEDDLE_NO_COINS = Meta("mangrove", "regatta", "fail") + "That costs {coins} coins, and you do not have that many.";
+    public static string MSG_REGATTA_KEG_DONE = Meta("mangrove", "regatta") + "Your powder keg splashes down in front of {name}! Your next free one is in {seconds} seconds.";
+    public static string MSG_REGATTA_KEG_PAID = Meta("mangrove", "regatta") + "Your powder keg splashes down in front of {name}! Paid {coins} coins.";
+    public static string MSG_REGATTA_WIND_DONE = Meta("mangrove", "regatta") + "You fill {name}'s sails! Your next free one is in {seconds} seconds.";
+    public static string MSG_REGATTA_WIND_PAID = Meta("mangrove", "regatta") + "You fill {name}'s sails! Paid {coins} coins.";
+    public static string MSG_REGATTA_KRAKEN_DONE = Meta("mangrove", "regatta") + "The Kraken rises in front of {name}!";
+    public static string MSG_REGATTA_KRAKEN_USED = Meta("mangrove", "regatta", "fail") + "The Kraken already rose this race. It needs its nap.";
+    public static string MSG_REGATTA_KRAKEN_NO_RIGHTS = Meta("mangrove", "regatta", "fail") + "Only the streamer or a moderator can wake the Kraken.";
 
     // The pirates' raid on the Mangrove island
     public static string MSG_PIRATES_COMING = Meta("mangrove", "pirates") + "Pirates are coming for the banana island's bananas! Defend the island: !sail mangrove";

@@ -62,6 +62,75 @@ offers. The island was built around monkeys and bananas, and neither existed in 
 - Places pay coins and Sailing exp (the server: api/game/regatta-reward). Best times and wins on a board at the
   jetty (kept by the game, like the tavern games' boards).
 
+#### Pickups, hazards and meddling (built 2026-11-01)
+
+Asked for 2026-11-01: make the race exciting to watch, with its own camera, random obstacles, Mario Kart style
+pickups, and viewers in chat interfering.
+
+- **The start:** the boats lie at the line with their sails furled for 5 s, the bar counts 3, 2, 1, the war horn
+  sounds and every boat sets sail at once (`OwnBoat.Held`). The boats sit abreast with 4 m between the hulls, spaced
+  by each boat's beam.
+- **Lanes:** each racer sails up to 15 m to one side of the course (`OwnBoat.Lane`). The boat steers its course as
+  before and sits that far to the side of it, its bow turned a little into a lane change.
+  - Every few seconds a racer moves to a new lane, often towards a bottle ahead.
+  - A racer alongside or overlapping another moves over, so the boats sail beside each other, not through each other.
+  - On the last leg the lanes close up towards the dock point.
+- **The order:** a buoy counts as rounded within 35 m of it. The order (the bar, the camera, the cannon's target) is
+  buoys rounded, then the distance to the next one.
+- **Dropping out:** a racer whose boat is sent anywhere else (`!sail`, `!disembark`, `!fish`; `OwnBoat.CourseVersion`)
+  is out of the race, so nobody sails straight to the jetty past the buoys. Finishers lie at the dock for 3 s, not the
+  usual 20, as every racer finishes at the one dock point.
+- **Mystery bottles:** a row of four across the middle of every leg but the last, back 8 s after one is taken. A
+  racer carries one item at a time and uses it after a moment. What is in a bottle depends on the racer's place:
+  - the front third: barnacle shield 40%, banana peel 45%, tailwind 15%;
+  - the middle: tailwind 30%, cannonball 30%, peel 20%, shield 20%;
+  - the back third: tailwind 45%, cannonball 40%, shield 15%.
+
+  A tailwind is 1.5x speed for 4 s. The cannonball goes at the boat ahead (the leader fires back at the second). The
+  shield takes the next hit within 15 s. The peel is dropped behind the boat; the next boat over it spins round.
+- **Hazards:** 2 to 4 reefs (60%) or patches of floating wreckage on the legs round the island, away from the bottle
+  rows. A racer that sees one in its lane steers round it at a chance of 20% at Sailing level 1, rising with the level as boat speed does
+  (SailingSpeeds.Reach) to 80%: about 50% at level 100, 70% at 300.
+- **Hits:**
+  - cannonball: 45% speed for 2 s;
+  - powder keg: spins round, then 35% speed for 2.6 s;
+  - peel: spins round, then 50% speed for 1.4 s;
+  - reef: 40% speed for 1.6 s;
+  - wreckage: 60% speed for 1.2 s;
+  - the Kraken: 5% speed for 3.2 s, shields or not.
+
+  A hit boat cannot be hit again for 4 s.
+- **Viewers meddle from chat** (anyone playing who is not racing):
+  - `!regatta keg [name]` lobs a powder keg in front of a racer. A keg is live once it lands, and is half as easy to
+    steer round as a reef.
+  - `!regatta wind [name]` gives a racer a tailwind.
+  - Without a name it picks a random racer, and is free once every 60 s per viewer. Before the free one is back it
+    costs 500 coins; aimed at a name it always costs 2000. A paid one first replies with the price, and the viewer
+    sends the same command again within 30 s to pay.
+  - The coins come off the game's balance at once, so a second command cannot spend them again. Then it happens, and
+    then the server takes them (api/mangrove/{characterId}/spend/{coins}, at most 10000). A race that ends meanwhile
+    never charges for nothing, and coins the server did not take are given back.
+  - A keg cannot be aimed at a racer hit in the last 4 s, or aimed at by a keg in the last 8 s.
+  - `!regatta kraken` (the broadcaster or a moderator, once a race): the Kraken, a sixteen metre Quirky octopus, rises in
+    front of the leader.
+- **The race camera** (RaceCamera; the setting Game > Observer > Regatta camera, on by default): a director that
+  cuts between shots.
+  - The start line from ahead and to one side, every bow in the picture, while the boats wait.
+  - Then mostly the leader from behind, close battles from abeam, a wide orbit over the leading pack, and now and
+    then another racer.
+  - A fixed camera at each buoy as the leader rounds it, and a close look at a boat that was just hit.
+  - Once the leader is on the last leg, a camera out on the water beside the way in to the dock, which stays until 6 s
+    after the race.
+
+  It only takes over when nothing bigger has the camera (a raid, a dungeon, the arena, a war, the free camera, a
+  character played by hand). Players joining or cheering do not take it away; any camera key does. Afterwards the
+  camera goes back to the islands or the players.
+- **Props:** tools/mangrove/regatta-props.cs makes Resources/Mangrove/Regatta Props (RegattaProps) and the things in
+  Resources/Mangrove/Regatta from Pirate Realm's bottle, barrels, crate, banana, cannonball, spiky rocks and effects,
+  the Quirky octopus, and the war horn.
+- Splashes, blasts and auras are left out in potato mode.
+- First guesses to tune: the prices, the free minute, the item odds and strengths, and the dodge chances.
+
 ### 6. The pirate raid
 
 - When the banana pile is big, pirates come for it: a pirate ship anchors off the south beach and waves of pirates

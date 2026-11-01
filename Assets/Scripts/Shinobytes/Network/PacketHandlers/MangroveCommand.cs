@@ -6,8 +6,10 @@ using RavenNest.SDK.Endpoints;
 /// The banana island's chat commands (docs/banana-island.md), one packet for all of them ("mangrove_command", the
 /// command first): !dig joins a treasure dig; !banana (or !bananas) says how the monkeys' pile stands, !banana feed
 /// [amount] hands them the player's own bananas and !banana golden a Golden Banana; !regatta joins (or opens) the
-/// regatta, !regatta start starts it now and !regatta leave leaves it; !pirates calls the pirates (the broadcaster or
-/// a moderator).
+/// regatta, !regatta start starts it now and !regatta leave leaves it; during a race !regatta keg [name] throws a
+/// powder keg in front of a racer, !regatta wind [name] fills a racer's sails and !regatta kraken (the broadcaster or a
+/// moderator, once a race) wakes the Kraken (RegattaMeddling has the prices); !pirates calls the pirates (the
+/// broadcaster or a moderator).
 /// </summary>
 public class MangroveCommand : ChatBotCommandHandler<string>
 {
@@ -36,7 +38,7 @@ public class MangroveCommand : ChatBotCommandHandler<string>
                     await Bananas(player, sub, words.Length > 2 ? words[2] : sub, gm, client);
                     return;
                 case "regatta":
-                    Regatta(player, sub, gm, client);
+                    await Regatta(player, sub, words.Length > 2 ? words[2] : null, gm, client);
                     return;
                 case "pirates":
                 case "pirate":
@@ -95,12 +97,28 @@ public class MangroveCommand : ChatBotCommandHandler<string>
         client.SendReply(gm, Localization.MSG_BANANAS_STATUS, BananaPile.AmountText, BananaPile.MoodName);
     }
 
-    private static void Regatta(PlayerController player, string sub, GameMessage gm, GameClient client)
+    private async System.Threading.Tasks.Task Regatta(PlayerController player, string sub, string target, GameMessage gm, GameClient client)
     {
         if (sub == "leave" || sub == "stop")
         {
             if (global::Regatta.Leave(player)) client.SendReply(gm, Localization.MSG_REGATTA_LEFT);
             return;
+        }
+        switch (sub)
+        {
+            case "keg":
+            case "mine":
+            case "bomb":
+                await Meddle(player, global::Regatta.Meddling.Keg, target, gm, client);
+                return;
+            case "wind":
+            case "boost":
+            case "tailwind":
+                await Meddle(player, global::Regatta.Meddling.Wind, target, gm, client);
+                return;
+            case "kraken":
+                await Meddle(player, global::Regatta.Meddling.Kraken, null, gm, client);
+                return;
         }
 
         var result = global::Regatta.Join(player);
@@ -119,6 +137,93 @@ public class MangroveCommand : ChatBotCommandHandler<string>
             case global::Regatta.JoinResult.Underway: client.SendReply(gm, Localization.MSG_REGATTA_UNDERWAY); break;
             case global::Regatta.JoinResult.Cooldown: client.SendReply(gm, Localization.MSG_REGATTA_COOLDOWN, UnityEngine.Mathf.CeilToInt(global::Regatta.CooldownLeft)); break;
             default: client.SendReply(gm, Localization.MSG_REGATTA_BUSY); break;
+        }
+    }
+
+    /// <summary>
+    /// !regatta keg / wind / kraken. A random racer is free now and then; before the free one is back, or aimed at a
+    /// racer, it costs coins, and the viewer is told the price first and sends the command again to pay. The coins come
+    /// off the game's balance at once (a second command cannot spend them again), it happens, and then the server takes
+    /// them; a race that ends meanwhile never charges for nothing, and coins the server did not take are given back.
+    /// </summary>
+    private async System.Threading.Tasks.Task Meddle(PlayerController player, global::Regatta.Meddling kind, string target, GameMessage gm, GameClient client)
+    {
+        if (kind == global::Regatta.Meddling.Kraken && !player.IsBroadcaster && !player.IsModerator && !player.IsGameAdmin && !player.IsGameModerator)
+        {
+            client.SendReply(gm, Localization.MSG_REGATTA_KRAKEN_NO_RIGHTS);
+            return;
+        }
+        var check = global::Regatta.Meddle(player, kind, target, true, out var name, out var wait);
+        if (check != global::Regatta.MeddleResult.Done)
+        {
+            Refuse(check, name, wait, gm, client);
+            return;
+        }
+
+        var aimed = kind != global::Regatta.Meddling.Kraken && !string.IsNullOrWhiteSpace(target);
+        var freeIn = RegattaMeddling.FreeIn(player.Id);
+        var price = kind == global::Regatta.Meddling.Kraken ? 0 : aimed ? RegattaMeddling.AimedPrice : freeIn > 0f ? RegattaMeddling.RandomPrice : 0;
+        var confirm = UnityEngine.Mathf.RoundToInt(RegattaMeddling.ConfirmSeconds);
+        if (price > 0)
+        {
+            if (!RegattaMeddling.Confirmed(player.Id, kind + "|" + (aimed ? name.ToLowerInvariant() : "")))
+            {
+                if (aimed) client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_PRICE_AIMED, name, price, confirm);
+                else client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_PRICE, UnityEngine.Mathf.CeilToInt(freeIn), confirm, price);
+                return;
+            }
+            if (player.Resources.Coins < price)
+            {
+                client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_COINS, price);
+                return;
+            }
+        }
+
+        var result = global::Regatta.Meddle(player, kind, target, false, out name, out wait);
+        if (result != global::Regatta.MeddleResult.Done)
+        {
+            Refuse(result, name, wait, gm, client);
+            return;
+        }
+        if (price > 0) player.Resources.Coins -= price;
+        if (kind == global::Regatta.Meddling.Kraken)
+        {
+            client.SendReply(gm, Localization.MSG_REGATTA_KRAKEN_DONE, name);
+            return;
+        }
+        if (price == 0)
+        {
+            RegattaMeddling.UsedFree(player.Id);
+            var next = UnityEngine.Mathf.RoundToInt(RegattaMeddling.FreeEvery);
+            client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_DONE : Localization.MSG_REGATTA_WIND_DONE, name, next);
+            return;
+        }
+        var taken = false;
+        try
+        {
+            var left = await Game.RavenNest.Mangrove.SpendAsync(player.Id, price);
+            taken = left >= 0;
+            if (!taken) Shinobytes.Debug.LogWarning(player.Name + " meddled in the regatta for " + price + " coins the server did not find.");
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("The regatta could not take " + player.Name + "'s " + price + " coins: " + exc.Message);
+        }
+        if (!taken && player) player.Resources.Coins += price;
+        client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_PAID : Localization.MSG_REGATTA_WIND_PAID, name, price);
+    }
+
+    private static void Refuse(global::Regatta.MeddleResult result, string name, int wait, GameMessage gm, GameClient client)
+    {
+        switch (result)
+        {
+            case global::Regatta.MeddleResult.NoRace: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_RACE); break;
+            case global::Regatta.MeddleResult.Racing: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_RACING); break;
+            case global::Regatta.MeddleResult.NoTarget: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_TARGET, name); break;
+            case global::Regatta.MeddleResult.Finished: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_FINISHED, name); break;
+            case global::Regatta.MeddleResult.Protected: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_PROTECTED, name, wait); break;
+            case global::Regatta.MeddleResult.KrakenUsed: client.SendReply(gm, Localization.MSG_REGATTA_KRAKEN_USED); break;
+            default: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NOBODY); break;
         }
     }
 

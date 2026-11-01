@@ -30,6 +30,28 @@ public sealed class OwnBoat : MonoBehaviour
     /// <summary>The wind's share of its speed: 1, or a gust or a lull while racing the regatta (Regatta).</summary>
     [NonSerialized] public float Pace = 1f;
 
+    /// <summary>Held at the regatta's start line, sails furled, until the start (Regatta).</summary>
+    [NonSerialized] public bool Held;
+
+    /// <summary>
+    /// Metres to starboard of its course it sails (the regatta's lanes, so racers sail beside each other and not through
+    /// each other): the boat steers its course as ever and sits this far to the side of it, turned a little into a
+    /// lane change. The regatta eases it, and brings it back to 0 before the dock.
+    /// </summary>
+    [NonSerialized] public float Lane;
+
+    /// <summary>Racing the regatta: put away at the finish it lies at the dock only a moment (FerryHandler).</summary>
+    [NonSerialized] public bool Raced;
+
+    /// <summary>Changes whenever it is given a new course or anchors: the regatta drops a racer whose course is not the race's.</summary>
+    public int CourseVersion { get; private set; }
+
+    private float lastLane, laneYaw;
+
+    /// <summary>Spinning round after a banana peel or a mine (Regatta): it goes round once and barely moves.</summary>
+    public bool Spinning => spinLeft > 0f;
+    private float spinLeft, spinSeconds;
+
     /// <summary>Guests aboard (docs/own-boats.md, "Guests aboard"), each in a seat of their own.</summary>
     public IReadOnlyList<PlayerController> Guests => guests;
     /// <summary>Guests sit at the oars on the small boats; the sloop's stand on its deck.</summary>
@@ -108,17 +130,20 @@ public sealed class OwnBoat : MonoBehaviour
         // a ship comes alongside with its sails furled and sets them as it pulls away (docs/own-boats.md, "Sails in port")
         boat.sails = go.GetComponent<BoatSails>();
         if (boat.sails) boat.sails.Snap(true);
-        (boat.length, boat.width, boat.turnRate) = tier switch
-        {
-            BoatItems.Tier.Galleon => (40f, 11f, 22f),
-            BoatItems.Tier.Brigantine => (30f, 8f, 28f),
-            BoatItems.Tier.Sloop => (17f, 6.6f, 35f),
-            BoatItems.Tier.FishingBoat => (8.5f, 3f, 45f),
-            _ => (5.4f, 2.2f, 60f),
-        };
+        (boat.length, boat.width, boat.turnRate) = Size(tier);
         boat.Place();
         return boat;
     }
+
+    /// <summary>A boat's length and beam in metres, and how many degrees a second it turns.</summary>
+    public static (float Length, float Width, float TurnRate) Size(BoatItems.Tier tier) => tier switch
+    {
+        BoatItems.Tier.Galleon => (40f, 11f, 22f),
+        BoatItems.Tier.Brigantine => (30f, 8f, 28f),
+        BoatItems.Tier.Sloop => (17f, 6.6f, 35f),
+        BoatItems.Tier.FishingBoat => (8.5f, 3f, 45f),
+        _ => (5.4f, 2.2f, 60f),
+    };
 
     private static GameObject Prefab(BoatItems.Tier tier)
     {
@@ -180,12 +205,14 @@ public sealed class OwnBoat : MonoBehaviour
     /// <summary>Lies still where it is (to fish, later).</summary>
     public void Anchor()
     {
+        CourseVersion++;
         route = null;
         State = Course.Anchored;
     }
 
     private void Follow(List<Vector3> way, Course course)
     {
+        CourseVersion++;
         route = way;
         next = 1;
         State = course;
@@ -243,6 +270,13 @@ public sealed class OwnBoat : MonoBehaviour
 
     public bool Moored => mooredFor >= 0f;
 
+    /// <summary>Goes round once over these seconds, as good as stopped (a banana peel, a mine).</summary>
+    public void Spin(float seconds)
+    {
+        if (seconds <= 0f || Spinning) return;
+        spinSeconds = spinLeft = seconds;
+    }
+
     /// <summary>Coming in to a dock: the last stretch, in which a ship takes in its sails.</summary>
     private bool NearingPort => State == Course.Sailing && route != null && route.Count > 0
         && Flat(route[route.Count - 1] - flat).magnitude < Mathf.Max(30f, length * 1.5f);
@@ -269,12 +303,21 @@ public sealed class OwnBoat : MonoBehaviour
         }
         if (guests.RemoveAll(g => !g) > 0) Reseat();
         var was = flat;
-        if (Moving) Steer(dt);
+        if (Spinning)
+        {
+            // round once, eased in and out, drifting on a little the way it was going
+            var before = 1f - spinLeft / spinSeconds;
+            spinLeft = Mathf.Max(0f, spinLeft - dt);
+            var after = 1f - spinLeft / spinSeconds;
+            heading += (Mathf.SmoothStep(0f, 1f, after) - Mathf.SmoothStep(0f, 1f, before)) * 360f;
+            flat += Quaternion.Euler(0f, heading, 0f) * Vector3.forward * (Speed * 0.08f * dt);
+        }
+        else if (Moving && !Held) Steer(dt);
         if (dt > 0f) speedNow = Mathf.Lerp(speedNow, Flat(flat - was).magnitude / dt, 1f - Mathf.Exp(-dt * 6f));
         Place();
         Row(dt);
-        // under sail on the open sea; furled at anchor and coming in to a dock
-        if (sails) sails.Furl(!Moving || NearingPort);
+        // under sail on the open sea; furled at anchor, at the start line and coming in to a dock
+        if (sails) sails.Furl(!Moving || Held || NearingPort);
     }
 
     /// <summary>
@@ -345,15 +388,49 @@ public sealed class OwnBoat : MonoBehaviour
         flat += step * Mathf.Min(speed * dt, distance);
     }
 
+    /// <summary>
+    /// Where it will be after this many metres more along its course, round its next turns, in its lane (the regatta's
+    /// kegs land in a racer's way). Straight ahead when it has no course.
+    /// </summary>
+    public Vector3 Ahead(float metres)
+    {
+        var forward = Quaternion.Euler(0f, heading, 0f) * Vector3.forward;
+        if (route == null) return SeaPosition + forward * metres;
+        var at = flat;
+        var left = metres;
+        for (var i = next; i < route.Count && left > 0f; ++i)
+        {
+            var leg = Flat(route[i] - at);
+            var length = leg.magnitude;
+            if (length < 0.01f) continue;
+            forward = leg / length;
+            var step = Mathf.Min(length, left);
+            at += forward * step;
+            left -= step;
+        }
+        return at + Vector3.Cross(Vector3.up, forward) * Lane;
+    }
+
+    /// <summary>Where it sits: its course, and its lane to starboard of it (<see cref="Lane"/>).</summary>
+    private Vector3 Laned => Lane == 0f ? flat : flat + Quaternion.Euler(0f, heading, 0f) * Vector3.right * Lane;
+
     private void Place()
     {
-        var rotation = Quaternion.Euler(0, heading, 0);
-        var position = flat;
+        // a lane change turns the bow a little the way it moves
+        var dt = GameTime.deltaTime;
+        if (dt > 0f)
+        {
+            var sideways = (Lane - lastLane) / dt;
+            laneYaw = Mathf.Lerp(laneYaw, Mathf.Atan2(sideways, Mathf.Max(4f, speedNow)) * Mathf.Rad2Deg, 1f - Mathf.Exp(-dt * 5f));
+        }
+        lastLane = Lane;
+        var rotation = Quaternion.Euler(0, heading + laneYaw, 0);
+        var position = Laned;
         // the waves only near the camera (and not in potato mode): far off nobody sees a boat bob
         var potato = GameManager.Instance && GameManager.Instance.PotatoMode;
         var camera = Camera.main;
-        var near = !camera || (camera.transform.position - flat).sqrMagnitude < 300f * 300f;
-        if (!potato && near && Ocean.Float(flat, rotation * Vector3.forward, rotation * Vector3.right, length, width, out var heave, out var up))
+        var near = !camera || (camera.transform.position - position).sqrMagnitude < 300f * 300f;
+        if (!potato && near && Ocean.Float(position, rotation * Vector3.forward, rotation * Vector3.right, length, width, out var heave, out var up))
         {
             position.y += heave * 0.9f;
             rotation = Quaternion.FromToRotation(Vector3.up, Vector3.Slerp(Vector3.up, up, 0.9f)) * rotation;
@@ -362,8 +439,10 @@ public sealed class OwnBoat : MonoBehaviour
     }
 
     /// <summary>Where it is on the water, for saving and for a restart.</summary>
-    public Vector3 SeaPosition => flat;
+    public Vector3 SeaPosition => Laned;
     public float Heading => heading;
+    public float Length => length;
+    public float Width => width;
 
     private static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
 }
