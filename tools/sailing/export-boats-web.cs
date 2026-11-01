@@ -145,16 +145,19 @@ string Part(UnityEngine.GameObject prefab)
     var items = new System.Collections.Generic.List<string>();
     var root = prefab.transform;
     var toRoot = root.worldToLocalMatrix;
-    foreach (var r in prefab.GetComponentsInChildren<UnityEngine.MeshRenderer>(true))
+    // the set sails are skinned (no bones, one blend shape that raises them, at 0): their own mesh is the sail set
+    foreach (var r in prefab.GetComponentsInChildren<UnityEngine.Renderer>(true))
     {
         if (!Shown(r.transform, root) || r.name.Contains("Locator")) continue;
-        var mf = r.GetComponent<UnityEngine.MeshFilter>();
-        if (!mf || !mf.sharedMesh) continue;
+        var filter = r.GetComponent<UnityEngine.MeshFilter>();
+        var mesh = r is UnityEngine.SkinnedMeshRenderer skinned ? skinned.sharedMesh
+            : r is UnityEngine.MeshRenderer && filter ? filter.sharedMesh : null;
+        if (!mesh) continue;
         var m = toRoot * r.transform.localToWorldMatrix;
         var mats = System.Linq.Enumerable.Select(r.sharedMaterials, x => Q(MaterialId(x)));
         var mtx = new string[16];
         for (var c = 0; c < 4; c++) for (var row = 0; row < 4; row++) mtx[c * 4 + row] = F(m[row, c]);
-        items.Add("{\"name\":" + Q(r.name) + ",\"mesh\":" + Q(MeshId(mf.sharedMesh)) + ",\"materials\":[" + string.Join(",", mats) + "],\"matrix\":[" + string.Join(",", mtx) + "]}");
+        items.Add("{\"name\":" + Q(r.name) + ",\"mesh\":" + Q(MeshId(mesh)) +",\"materials\":[" + string.Join(",", mats) + "],\"matrix\":[" + string.Join(",", mtx) + "]}");
     }
     return "[" + string.Join(",", items) + "]";
 }

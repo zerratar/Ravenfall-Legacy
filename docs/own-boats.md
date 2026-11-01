@@ -506,7 +506,9 @@ not rolled in a test.
 - The models: tools/sailing/export-boats-web.cs writes RavenNest wwwroot/boats/ from BoatParts and the small boats'
   prefabs: one file per mesh (positions in int16 over the mesh's bounds, normals in int8, uvs in uint16, indices),
   boats.json with the parts and materials, and the textures baked with their tints (512 px). About 11.5 MB in all,
-  fetched only for the boat shown. Run it again whenever the boat parts change.
+  fetched only for the boat shown. Run it again whenever the boat parts change. The ships' set sails are skinned
+  meshes (no bones; one blend shape, "Sails_Raised", at 0 so the sails are set); the export takes those too, or the
+  ships showed only their jibs on the website (the game always had the full sails).
 - Server: BoatManager.GetBoats(userId) and SetLook(userId, characterId, stackId, slot, variant) (any of the player's
   boats, equipped or not, the same ownership rules as `!boat`); BoatLookResult now says whose boat it is, and each
   slot where every variant comes from (BoatLooks.HowToEarn). BoatService in the website.
