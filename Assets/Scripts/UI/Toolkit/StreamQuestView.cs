@@ -27,7 +27,8 @@ namespace Shinobytes.UI
         private const string RunestoneName = "Runestone Event";
         private const string MangroveName = "Mangrove";
 
-        private enum Clicked { Nothing, Board, Runestone, Mangrove, Smith }
+        private enum Clicked { Nothing, Board, Runestone, Mangrove, Smith, Monkey, Chief, Treasure }
+        private static Monkey clickedMonkey;
         private const int TopHelpersShown = 5;
 
         private static readonly RaycastHit[] hits = new RaycastHit[32];
@@ -63,6 +64,8 @@ namespace Shinobytes.UI
         private void OnEnable()
         {
             Instance = this;
+            // the banana island's feed and its events' bar ride along on the same document
+            if (!GetComponent<MangroveView>()) gameObject.AddComponent<MangroveView>();
             bound = false;
             StreamQuests.Changed += DataChanged;
             StreamerQuests.Changed += DataChanged;
@@ -233,6 +236,9 @@ namespace Shinobytes.UI
                     case Clicked.Runestone: OpenStory(StoryLog.IsDone("runestone") ? "roadwest" : "runestone"); break;
                     case Clicked.Mangrove: OpenStory("bananas"); break;
                     case Clicked.Smith: OpenStory(StoryLog.SmithClicked()); break;
+                    case Clicked.Monkey: if (MonkeyTroop.Instance) MonkeyTroop.Instance.MonkeyClicked(clickedMonkey); break;
+                    case Clicked.Chief: if (MonkeyTroop.Instance) MonkeyTroop.Instance.ChiefClicked(); break;
+                    case Clicked.Treasure: TreasureHunt.Clicked(); break;
                 }
             }
             // Esc closes the post form's open list or item dialog first, then the window
@@ -587,6 +593,10 @@ namespace Shinobytes.UI
 
             for (var t = hits[nearest].collider.transform; t; t = t.parent)
             {
+                // the banana island's monkeys, their chief and a treasure's X come before the island itself
+                if (t.TryGetComponent<Monkey>(out var monkey)) { clickedMonkey = monkey; return Clicked.Monkey; }
+                if (t.TryGetComponent<IslandNpc>(out var npc) && npc.Key == MonkeyTroop.ChiefKey) return Clicked.Chief;
+                if (t.TryGetComponent<TreasureSpot>(out _)) return Clicked.Treasure;
                 if (t.name.StartsWith(BoardPrefix, System.StringComparison.Ordinal)) return hits[nearest].distance <= 250f ? Clicked.Board : Clicked.Nothing;
                 if (t.name == RunestoneName) return Clicked.Runestone;
                 if (t.name == MangroveName && t.parent && t.parent.name == "Islands") return Clicked.Mangrove;

@@ -629,7 +629,7 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ClearTarget()
+    public void ClearTarget()
     {
         TargetPlayer = null;
         Target = null;

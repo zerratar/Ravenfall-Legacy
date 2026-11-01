@@ -1,5 +1,6 @@
 ﻿using Assets.Scripts.Game;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
@@ -561,6 +562,28 @@ public class FerryHandler : MonoBehaviour
         }
         BoardCrew(from);
         return true;
+    }
+
+    /// <summary>
+    /// The regatta (docs/banana-island.md): their own boat comes up at the start line, takes them aboard wherever they
+    /// were, and sails the course; at its end they land at the finish island's dock as from any trip. False when they
+    /// have no boat, or are someone's guest.
+    /// </summary>
+    public OwnBoat RaceOwnBoat(Vector3 at, float heading, IReadOnlyList<Vector3> course, IslandController finish, float finishHeading)
+    {
+        EnsureReferences();
+        var item = player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
+        if (item == null || guestRiding || !finish) return null;
+        if (ownBoat) PutAwayOwnBoat(true);
+        LeaveCrewAshore();
+        if (player.onsenHandler.InOnsen) player.onsenHandler.Exit();
+        destination = finish;
+        Board(OwnBoat.Launch(player, BoatItems.TierOf(item.Item), at, heading));
+        if (!ownBoat.SailCourse(course, finish.Identifier, finishHeading))
+        {
+            ownBoat.SailTo(finish.Identifier);
+        }
+        return ownBoat;
     }
 
     /// <summary>Back aboard out at sea: where the boat was before a restart, or by the ferry if it is not known.</summary>

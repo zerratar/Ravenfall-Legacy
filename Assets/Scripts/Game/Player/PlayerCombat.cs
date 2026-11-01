@@ -239,7 +239,11 @@ public class PlayerCombat
         {
             var isMonster = enemyController != null;
             if (isMonster && owner.Island)
+            {
                 owner.Island.Statistics.MonstersDefeated++;
+                // a banana island pirate may carry a treasure map (docs/banana-island.md)
+                if (owner.Island.Island == IslandController.MangroveIsland) TreasureHunt.PirateDefeated(owner, enemyController);
+            }
 
             // every player who fought it helped defeat it, as every one of them gets its experience (quests count it)
             if (isMonster)

@@ -64,6 +64,9 @@ public partial class HeroController : MonoBehaviour
     private float nextRapidArrow;
     private bool angel;
 
+    /// <summary>Where hero mode goes on: Ravebridge, or the banana island while its streamer defends it from the pirates.</summary>
+    public static bool InArena(PlayerController p) => p && (p.InRavebridge || PirateRaid.Defending(p));
+
     /// <summary>The character played by hand becomes the hero.</summary>
     public static bool Begin(PlayerController player)
     {
@@ -305,7 +308,7 @@ public partial class HeroController : MonoBehaviour
     private void Update()
     {
         if (!Player || Active != this) return;
-        if (!Player.Controlled || !Player.InRavebridge) { End(); return; }
+        if (!Player.Controlled || !InArena(Player)) { End(); return; }
         ShowOwnTags(false);
         if (Player.Stats.IsDead) return;
         if (!heroCamera) heroCamera = GameManager.Instance ? GameManager.Instance.Camera.HeroView : null;
@@ -534,7 +537,7 @@ public partial class HeroController : MonoBehaviour
         if (enemy.TakeDamage(Player, damage))
         {
             Player.Combat.Defeated(enemy);
-            RavebridgeLoot.Killed(Player, enemy);
+            if (Player.InRavebridge) RavebridgeLoot.Killed(Player, enemy);
         }
     }
 
@@ -545,7 +548,7 @@ public partial class HeroController : MonoBehaviour
         if (!game || game.Players == null) yield break;
         foreach (var p in game.Players.GetAllPlayers())
         {
-            if (p && p.InRavebridge && !p.Stats.IsDead && Flat(p.Position - center).magnitude <= radius) yield return p;
+            if (p && (p.InRavebridge || p.Island == Player.Island) && !p.Stats.IsDead && Flat(p.Position - center).magnitude <= radius) yield return p;
         }
     }
 

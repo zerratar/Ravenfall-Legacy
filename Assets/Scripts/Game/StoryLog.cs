@@ -206,7 +206,10 @@ public static class StoryLog
     /// </summary>
     public static float ExpFactor(Skill skill, IslandController island = null)
     {
-        var factor = island && island.Island == IslandController.MangroveIsland ? 1f + MangroveBonus : 1f;
+        var mangrove = island && island.Island == IslandController.MangroveIsland;
+        var factor = mangrove ? 1f + MangroveBonus : 1f;
+        // well fed monkeys: a little more on their island (docs/banana-island.md)
+        if (mangrove && BananaPile.Current == BananaPile.Mood.Abundant) factor += BananaPile.AbundantBonus;
         if (Latest?.Unlocks == null || Latest.Unlocks.Length == 0) return factor;
         if (HasUnlock("perk_runestone_1") && IsCombat(skill)) factor += PerkBonus;
         if (HasUnlock("perk_runestone_2") && (skill == Skill.Crafting || skill == Skill.Cooking || skill == Skill.Alchemy)) factor += PerkBonus;
@@ -283,7 +286,8 @@ public static class StoryLog
                     WorldMark.Attach(sign, BananaMarkHeight, () => MarkFor("bananas"), BananaMarkSize);
                 }
             }
-            if (bananaSign) bananaSign.text = HasUnlock("island_mangrove") ? Localization.UI_STORY_BANANAS_SIGN_DONE : bananaOriginal;
+            // once open, the sign shows the monkeys' banana pile (BananaPile)
+            if (bananaSign) bananaSign.text = HasUnlock("island_mangrove") ? BananaPile.SignText : bananaOriginal;
         }
         catch (Exception exc)
         {

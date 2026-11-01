@@ -27,6 +27,9 @@ public sealed class OwnBoat : MonoBehaviour
     /// <summary>The owner's speed, and a little more for each guest at the oars (within the boat's cap).</summary>
     public float Speed => SailingSpeeds.Boat(Tier, Owner ? Owner.Stats.Sailing.Level : 1, guests.Count);
 
+    /// <summary>The wind's share of its speed: 1, or a gust or a lull while racing the regatta (Regatta).</summary>
+    [NonSerialized] public float Pace = 1f;
+
     /// <summary>Guests aboard (docs/own-boats.md, "Guests aboard"), each in a seat of their own.</summary>
     public IReadOnlyList<PlayerController> Guests => guests;
     /// <summary>Guests sit at the oars on the small boats; the sloop's stand on its deck.</summary>
@@ -125,6 +128,33 @@ public sealed class OwnBoat : MonoBehaviour
         Follow(way, Course.Sailing);
         return true;
     }
+
+    /// <summary>
+    /// Sails a course of marks in turn (the regatta round the Mangrove island), the chart's way between each, and
+    /// arrives at the last as at a dock: at this island's, landing there (FerryHandler).
+    /// </summary>
+    public bool SailCourse(IReadOnlyList<Vector3> marks, string finishIsland, float finishHeading)
+    {
+        if (marks == null || marks.Count == 0) return false;
+        var way = new List<Vector3> { flat };
+        var from = flat;
+        foreach (var mark in marks)
+        {
+            var leg = SeaChart.Route(from, mark);
+            if (leg == null) return false;
+            for (var i = 1; i < leg.Count; ++i) way.Add(leg[i]);
+            from = mark;
+        }
+        Destination = finishIsland;
+        arrivalHeading = finishHeading;
+        Follow(way, Course.Sailing);
+        return true;
+    }
+
+    /// <summary>How far along its course it is: the point it makes for next, of how many (the regatta's places).</summary>
+    public int CourseNext => route != null ? next : 0;
+    public int CourseLength => route != null ? route.Count : 0;
+    public Vector3 CourseTarget => route != null && next < route.Count ? route[next] : flat;
 
     /// <summary>Wanders the sea until told where to go.</summary>
     public void Wander()
@@ -258,7 +288,7 @@ public sealed class OwnBoat : MonoBehaviour
         heading += Mathf.Clamp(turn, -turnRate * dt, turnRate * dt);
 
         // roaming with nowhere to be, it takes its time (decided 2026-10-28); bound for an island it goes at full speed
-        var speed = Speed;
+        var speed = Speed * Pace;
         if (State == Course.Wandering) speed *= WanderPace;
         // slower through a sharp turn and coming alongside, so it never overshoots or circles its mark
         speed *= Mathf.Lerp(1f, 0.35f, Mathf.Clamp01(Mathf.Abs(turn) / 90f));

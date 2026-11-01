@@ -533,6 +533,19 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
     {
         Inventory.UpdateAppearance();
     }
+    /// <summary>
+    /// A short errand that comes before the task (the Mangrove island's monkeys and treasure, docs/banana-island.md):
+    /// called each frame while the player is free; it returns false when done, and the task carries on.
+    /// </summary>
+    [NonSerialized] public Func<PlayerController, bool> Errand;
+
+    /// <summary>Gives the player an errand: what they were doing is interrupted, and picked up again after it.</summary>
+    public void BeginErrand(Func<PlayerController, bool> errand)
+    {
+        InterruptAction();
+        Errand = errand;
+    }
+
     public void BeginItemDropEvent()
     {
         ItemDropEventActive = true;
@@ -813,6 +826,13 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (arenaHandler.InArena) return;
         if (raidHandler.InRaid) return;
         if (Stats.IsDead) return;
+
+        // a short errand instead of the task: chasing the monkey that took something, digging up a treasure
+        if (Errand != null)
+        {
+            if (Errand(this)) return;
+            Errand = null;
+        }
 
         if (ItemDropEventActive)
         {
@@ -2049,6 +2069,8 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
         if (fishingSpot.Fish(this))
         {
             Island.Statistics.FishCaught++;
+            // the banana island's lagoon sometimes gives up a soggy treasure map (docs/banana-island.md)
+            if (Island.Island == IslandController.MangroveIsland) TreasureHunt.FishedUp(this);
 
             var factor = GetExpFactor(out var state);
             SetExpGainState(state, Stats.Fishing);
@@ -2314,7 +2336,11 @@ public class PlayerController : MonoBehaviour, IAttackable, IPollable
             sessionStats.IncrementGather();
 
             if (Island)
+            {
                 Island.Statistics.ItemsGathered++;
+                // on the banana island, the monkeys get their share (docs/banana-island.md)
+                if (Island.Island == IslandController.MangroveIsland) BananaPile.Add(BananaPile.PerGather);
+            }
 
             // everyone who targeted the spot gets the exp, gathered by them or not; deliberate
             var gatherers = gather.Targeters;

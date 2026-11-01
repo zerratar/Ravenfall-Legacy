@@ -23,5 +23,6 @@ namespace RavenNest.SDK.Endpoints
         Shop,
         Quests,
         Boats,
+        Mangrove,
     }
 }

@@ -5125,3 +5125,51 @@
     width: 120px;
     height: 96px;
 }
+
+/* The Mangrove island (MangroveView, docs/banana-island.md): its feed low on the left, its events' bar */
+.rf-mfeed {
+    position: absolute;
+    left: 16px;
+    bottom: 128px;
+    width: 520px;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.rf-mfeed__line {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 4px;
+    padding-left: 8px;
+    padding-right: 12px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: rgba(20, 18, 15, 0.94);
+    border-left-width: 3px;
+    border-left-color: var(--rf-accent);
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-mfeed__glyph {
+    width: 22px;
+    font-size: 14px;
+    color: var(--rf-accent);
+    -unity-text-align: middle-center;
+    margin-right: 6px;
+}
+
+.rf-mfeed__text {
+    font-size: 16px;
+    color: var(--rf-text);
+    white-space: normal;
+    flex-shrink: 1;
+}
+
+.rf-mbar {
+    min-width: 480px;
+}
+
+.rf-mbar .rf-mbar__icon {
+    background-color: rgb(214, 170, 40);
+}

@@ -2832,4 +2832,120 @@ public static class Localization
     // Player details preview
     public static string UI_DETAILS_PREVIEW_RESET = "Reset view";
     public static string UI_DETAILS_PREVIEW_HINT = "Drag to turn, scroll to zoom, drag with the middle button to move.";
+
+    // The regatta round the Mangrove island
+    public static string MSG_REGATTA_OPEN = Meta("mangrove", "regatta") + "The banana island regatta is open! Own a boat? Type !regatta to race round the island. The start is in {seconds} seconds.";
+    public static string MSG_REGATTA_START = Meta("mangrove", "regatta") + "The regatta is off! {count} boats race round the banana island.";
+    public static string MSG_REGATTA_WON = Meta("mangrove", "regatta") + "{player} wins the banana island regatta in {time} s! {others}";
+    public static string MSG_REGATTA_JOINED = Meta("mangrove", "regatta") + "You are in the regatta. Your boat will be at the start line.";
+    public static string MSG_REGATTA_ALREADY = Meta("mangrove", "regatta", "fail") + "You are already in the regatta.";
+    public static string MSG_REGATTA_NOT_OPEN = Meta("mangrove", "regatta", "fail") + "The regatta sails round the banana island, which this stream has not opened yet.";
+    public static string MSG_REGATTA_NO_BOAT = Meta("mangrove", "regatta", "fail") + "You need a boat of your own to race. Equip one, or see !boat.";
+    public static string MSG_REGATTA_BUSY = Meta("mangrove", "regatta", "fail") + "You cannot race right now.";
+    public static string MSG_REGATTA_FULL = Meta("mangrove", "regatta", "fail") + "The regatta is full.";
+    public static string MSG_REGATTA_UNDERWAY = Meta("mangrove", "regatta", "fail") + "The regatta is already underway. Next time!";
+    public static string MSG_REGATTA_COOLDOWN = Meta("mangrove", "regatta", "fail") + "The boats are still drying. The next regatta can start in {seconds} seconds.";
+    public static string MSG_REGATTA_LEFT = Meta("mangrove", "regatta") + "You left the regatta.";
+    public static string UI_REGATTA_JOINED = "{0} joins the regatta ({1} boats).";
+    public static string UI_REGATTA_STARTED = "The regatta is off! {0} boats race round the island.";
+    public static string UI_REGATTA_FINISHED = "{0} finishes {1} in {2} s.";
+    public static string UI_REGATTA_CANCELLED = "Not enough boats for a regatta. Two are needed.";
+    public static string UI_REGATTA_NOBODY = "Nobody finished the regatta.";
+    public static string UI_REGATTA_PAID = "The regatta's prizes: {0} coins for the racers.";
+    public static string UI_REGATTA_BAR_SIGNUP = "Regatta! The start in {0} s";
+    public static string UI_REGATTA_BAR_SIGNUP_LINE = "{0} of {1} boats. Own a boat? Type !regatta";
+    public static string UI_REGATTA_BAR_RACING = "Regatta: {0} s";
+    public static string UI_REGATTA_1ST = "1st";
+    public static string UI_REGATTA_2ND = "2nd";
+    public static string UI_REGATTA_3RD = "3rd";
+    public static string UI_REGATTA_NTH = "{0}th";
+    public static string UI_REGATTA_BOARD = "Banana Island Regatta";
+    public static string UI_REGATTA_BOARD_LINE = "{0}. {1}  {2} wins, best {3} s";
+    public static string UI_REGATTA_BOARD_EMPTY = "No races yet. !regatta";
+
+    // The pirates' raid on the Mangrove island
+    public static string MSG_PIRATES_COMING = Meta("mangrove", "pirates") + "Pirates are coming for the banana island's bananas! Defend the island: !sail mangrove";
+    public static string MSG_PIRATES_HELD = Meta("mangrove", "pirates") + "The pirates are beaten back from the banana island! {kills} pirates fell. The defenders share the pirates' chest.";
+    public static string MSG_PIRATES_LOST = Meta("mangrove", "pirates") + "The pirates got away with {bananas} of the banana island's bananas! INSUFFICIENT DEFENCE.";
+    public static string MSG_PIRATES_STARTED = Meta("mangrove", "pirates") + "You call the pirates. They are coming.";
+    public static string MSG_PIRATES_NOT_OPEN = Meta("mangrove", "pirates", "fail") + "The pirates only raid the banana island, which this stream has not opened yet.";
+    public static string MSG_PIRATES_RUNNING = Meta("mangrove", "pirates", "fail") + "The pirates are already here!";
+    public static string MSG_PIRATES_BUSY = Meta("mangrove", "pirates", "fail") + "Something else is going on on the banana island. Try again in a while.";
+    public static string MSG_PIRATES_NO_RIGHTS = Meta("mangrove", "pirates", "fail") + "Only the streamer or a moderator can call the pirates.";
+    public static string UI_PIRATES_TITLE = "Pirates!";
+    public static string UI_PIRATES_JOIN = "Defend the island with";
+    public static string UI_PIRATES_COMING = "A pirate ship is coming for the banana pile!";
+    public static string UI_PIRATES_WAVE = "Wave {0} of {1}: {2} pirates row ashore.";
+    public static string UI_PIRATES_WAVE_HELD = "Wave {0} of {1} held!";
+    public static string UI_PIRATES_STOLE = "A pirate ran off with {0} bananas! ({1} of {2} got through)";
+    public static string UI_PIRATES_HELD = "The pirates are beaten! {0} fell.";
+    public static string UI_PIRATES_LOST = "The pirates got away with {0} bananas.";
+    public static string UI_PIRATES_PAID = "The pirates' chest: {0} coins and {1} items for the defenders.";
+    public static string UI_PIRATES_HERO = "{0} takes up arms to defend the island by hand!";
+    public static string UI_PIRATES_BAR_COMING = "Pirates! Landing in {0} s";
+    public static string UI_PIRATES_BAR_BREATHER = "Pirates! Wave {0} in {1} s";
+    public static string UI_PIRATES_BAR_WAVE = "Pirates! Wave {0} of {1}, {2} left";
+    public static string UI_PIRATES_BAR_LINE = "Pile {0}, {1} of {2} got through.";
+    public static string UI_PIRATES_BAR_HERO = "Click to defend by hand.";
+    public static string UI_PIRATES_BAR_HERO_STOP = "Click or Esc to stop.";
+    public static string UI_PIRATES_BAR_HELP = "Combat trainers on the island fight.";
+
+    // !banana, !bananas
+    public static string MSG_BANANAS_STATUS = Meta("mangrove", "bananas") + "The banana island has {bananas} bananas: {mood}. Feed the monkeys your own with !banana feed <amount>.";
+    public static string MSG_BANANAS_FED = Meta("mangrove", "bananas") + "The monkeys took {amount} bananas. The pile: {bananas}.";
+    public static string MSG_BANANAS_FED_GOLDEN = Meta("mangrove", "bananas") + "The monkeys took your Golden Banana. The whole troop is cheering!";
+    public static string MSG_BANANAS_NONE = Meta("mangrove", "bananas", "fail") + "You have no bananas. They only grow on the banana island: !train gathering there.";
+    public static string MSG_BANANAS_NOT_OPEN = Meta("mangrove", "bananas", "fail") + "The banana island is not open on this stream yet.";
+
+    // Pirate treasure on the Mangrove island
+    public static string MSG_TREASURE_FOUND_PIRATE = Meta("mangrove", "treasure") + "{player} took a torn treasure map off a pirate on the banana island! Type !dig to help dig it up.";
+    public static string MSG_TREASURE_FOUND_FISH = Meta("mangrove", "treasure") + "{player} fished a bottle with a soggy treasure map out of the banana island's lagoon! Type !dig to help dig it up.";
+    public static string MSG_TREASURE_RARE = Meta("mangrove", "treasure") + "{player} found a {item} in the pirates' treasure!";
+    public static string MSG_DIG_JOINED = Meta("mangrove", "dig") + "You grab a shovel and head for the X.";
+    public static string MSG_DIG_ALREADY = Meta("mangrove", "dig", "fail") + "You are already digging.";
+    public static string MSG_DIG_NONE = Meta("mangrove", "dig", "fail") + "There is no treasure to dig up right now. The banana island's pirates sometimes carry maps.";
+    public static string MSG_DIG_NOT_ON_ISLAND = Meta("mangrove", "dig", "fail") + "The treasure is on the banana island. Go there first: !sail mangrove";
+    public static string MSG_DIG_BUSY = Meta("mangrove", "dig", "fail") + "You cannot dig right now.";
+    public static string UI_TREASURE_FOUND_PIRATE = "{0} took a torn treasure map off a pirate! X marks the spot.";
+    public static string UI_TREASURE_FOUND_FISH = "{0} fished up a bottle with a soggy treasure map inside!";
+    public static string UI_TREASURE_HOW = "{0} digging. Viewers on the island join with !dig.";
+    public static string UI_TREASURE_DUG = "The chest is up! {0} diggers share the treasure.";
+    public static string UI_TREASURE_PAID = "The treasure: {0} coins and {1} items for the diggers.";
+    public static string UI_TREASURE_LOST = "Nobody dug. The map blows away in the wind.";
+    public static string UI_TREASURE_BAR = "Treasure! {0}'s map";
+    public static string UI_TREASURE_BAR_LINE = "{0} digging, {1} joined. Type !dig on the banana island.";
+    public static string UI_TREASURE_BAR_DUG = "The treasure chest is open";
+    public static string UI_MANGROVE_RARE = "{0} found a {1}!";
+
+    // The Mangrove island (docs/banana-island.md): the banana pile, the monkeys and the chief
+    public static string UI_BANANAS_ABUNDANT = "abundant <b>bananas";
+    public static string UI_BANANAS_BARELY = "barely sufficient <b>bananas";
+    public static string UI_BANANAS_INSUFFICIENT = "insufficient <b>bananas";
+    public static string UI_BANANAS_MOOD_ABUNDANT = "abundant";
+    public static string UI_BANANAS_MOOD_SUFFICIENT = "sufficient";
+    public static string UI_BANANAS_MOOD_BARELY = "barely sufficient";
+    public static string UI_BANANAS_MOOD_INSUFFICIENT = "insufficient";
+    public static string UI_BANANAS_MOOD_CHANGED = "The banana island now has {0} bananas.";
+    public static string UI_BANANAS_FED = "{0} fed the monkeys {1} bananas. The pile: {2}.";
+    public static string UI_BANANAS_FED_GOLDEN = "{0} gave the monkeys a Golden Banana! The whole troop is cheering.";
+    public static string UI_CHIEF_PILE = "{0} looks at the pile: {1} bananas. That is {2}.";
+    public static string UI_MONKEY_POKED = "{0} the monkey beats its chest at you.";
+    public static string UI_MONKEY_STOLE = "{0} the monkey stole {1}'s {2}!";
+    public static string UI_MONKEY_GOT_BACK = "{0} got their {1} back from {2}.";
+    public static string UI_MONKEY_ATE = "{0} ate {1}'s {2}. Somehow.";
+    public static string UI_MONKEY_GAVE_BACK = "{0} gave {1}'s {2} back. The monkeys are too well fed to keep it.";
+    public static string[] UI_MONKEY_THINGS_ANY = { "hat", "left boot", "lunch", "lucky sock", "map" };
+    public static string[] UI_MONKEY_THINGS_FISHING = { "raw shrimp", "raw sprat", "fishing rod", "bait", "raw bass" };
+    public static string[] UI_MONKEY_THINGS_WOODCUTTING = { "log", "axe", "coconut", "palm leaf" };
+    public static string[] UI_MONKEY_THINGS_MINING = { "shiny rock", "pickaxe", "gem", "lantern" };
+    public static string[] UI_MONKEY_THINGS_GATHERING = { "banana", "coconut", "basket", "best banana" };
+    public static string[] UI_MONKEY_THINGS_FARMING = { "carrot", "hoe", "potato", "watering can" };
+    public static string[] UI_MONKEY_THINGS_COOKING = { "dinner", "cooked shrimp", "spoon", "banana bread" };
+    public static string[] UI_MONKEY_THINGS_CRAFTING = { "hammer", "plank", "nails" };
+    public static string[] UI_MONKEY_THINGS_ALCHEMY = { "potion", "empty bottle", "mysterious powder" };
+    public static string[] UI_CHIEF_LINES = { "Bananas.", "{chief} counts the bananas. Twice.", "{chief} points at the sign, then at you.", "Ook.", "{chief} has never trusted a pirate.", "The pile is {bananas} bananas. {chief} knows every one of them." };
+    public static string[] UI_CHIEF_LINES_ABUNDANT = { "{chief} is in a generous mood.", "So many bananas. {chief} is very pleased.", "{chief} lets the little ones play. There are bananas for all." };
+    public static string[] UI_CHIEF_LINES_SUFFICIENT = { "{chief} nods. Sufficient.", "Sufficient bananas. For now." };
+    public static string[] UI_CHIEF_LINES_BARELY = { "{chief} looks at the pile and frowns.", "Barely sufficient. {chief} would like more bananas.", "Gather! {chief} needs bananas!" };
+    public static string[] UI_CHIEF_LINES_INSUFFICIENT = { "INSUFFICIENT BANANAS!", "{chief} cannot stop the troop from taking things. Bring bananas!", "{chief} stares at the empty pile, then at you." };
 }
