@@ -18,9 +18,11 @@ public static class BoatLook
         ["sails"] = 1, ["flag"] = 0, ["wood"] = 1,
     };
 
-    public static Dictionary<string, int> Parse(string tag)
+    public static Dictionary<string, int> Parse(string tag, BoatItems.Tier tier = BoatItems.Tier.Sloop)
     {
         var look = new Dictionary<string, int>(Defaults);
+        // the bigger ships' presets use their first back; the small ship's its third
+        if (tier == BoatItems.Tier.Brigantine || tier == BoatItems.Tier.Galleon) look["back"] = 1;
         if (string.IsNullOrEmpty(tag) || !tag.StartsWith("look:", StringComparison.Ordinal)) return look;
         foreach (var part in tag.Split(';'))
         {

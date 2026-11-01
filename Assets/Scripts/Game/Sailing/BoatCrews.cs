@@ -19,6 +19,8 @@ public static class BoatCrews
     /// <summary>Seats on each boat, the owner's included. Bigger boats may come with more.</summary>
     public static int Seats(BoatItems.Tier tier) => tier switch
     {
+        BoatItems.Tier.Galleon => 10,
+        BoatItems.Tier.Brigantine => 6,
         BoatItems.Tier.Sloop => 4,
         BoatItems.Tier.FishingBoat => 2,
         _ => 1,

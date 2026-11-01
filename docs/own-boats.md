@@ -474,3 +474,19 @@ The chests and the regatta say which looks they gave (MangroveReward.Looks); the
 island's feed. Tested with the dev server: a regatta win gave sails 11, the pirates' chest sails 6 and flag 7,
 `!boat looks` listed flag 13 from the finished shipwright's chain, and flag 7 could be set. The treasure's chance was
 not rolled in a test.
+
+### Built: phase 3 (2026-11-01)
+
+- Server: the Brigantine and the Galleon (items, ItemType.Boat), their parts Keel (Crafting 120: 40 ebonshade logs,
+  16 resin, 8 steel bars), Canvas (Crafting 140: 3 sailcloth, 2 rope) and Iron Fittings (Crafting 160: 6 iron, 4
+  steel, 2 mithril bars); the shipwright's blueprints (Brigantine: Sailing 100, Crafting 120, 1,000,000 coins, a keel,
+  2 masts, 4 canvas, 2 iron fittings, 12 rope; Galleon: Sailing 200, Crafting 200, 5,000,000 coins, 2 keels, a large
+  hull, 3 masts, 8 canvas, 6 iron fittings, 24 rope); seats 6 and 10; their look slots (one hull each, as their
+  rigging is made for it). Painted icons for the five, and a new one for the Sloop (it is a ship now).
+- Game: BoatItems.Tier.Brigantine and Galleon, speeds 24 to 60 and 28 to 70, seats, sizes and turn rates; BoatParts
+  per ship size (Small, Medium, Large); tools/sailing/make-pirate-realm-boats.cs builds all three rigs (everything on
+  the preset's hull but the look's parts, the preset unpacked completely so the masts on the hull's locators come
+  along) and boats (the Seat at the helm's own height, the guests on the main deck found by rays far above the world).
+- Tested: a Galleon equipped in the game (not built on the server) launched with its look, black sails, skull flag,
+  the owner at the helm; both ships checked in renders. Not yet tested: !boat build brigantine and galleon (no test
+  character has the parts), guests aboard the big ships.

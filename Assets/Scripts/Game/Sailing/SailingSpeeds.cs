@@ -27,6 +27,8 @@ public static class SailingSpeeds
     {
         var (slowest, fastest) = tier switch
         {
+            BoatItems.Tier.Galleon => (28f, 70f),
+            BoatItems.Tier.Brigantine => (24f, 60f),
             BoatItems.Tier.Sloop => (20f, 50f),
             BoatItems.Tier.FishingBoat => (16f, 36f),
             _ => (12f, 24f),
@@ -74,13 +76,15 @@ public static class BoatItems
     public const ItemType Type = (ItemType)37;
     public const ItemCategory Category = (ItemCategory)14;
 
-    public enum Tier { Rowboat, FishingBoat, Sloop }
+    public enum Tier { Rowboat, FishingBoat, Sloop, Brigantine, Galleon }
 
     public static bool Is(Item item) => item != null && (item.Type == Type || item.Category == Category);
 
     public static Tier TierOf(Item item)
     {
         var name = item?.Name ?? "";
+        if (name.Equals("Galleon", System.StringComparison.OrdinalIgnoreCase)) return Tier.Galleon;
+        if (name.Equals("Brigantine", System.StringComparison.OrdinalIgnoreCase)) return Tier.Brigantine;
         if (name.Equals("Sloop", System.StringComparison.OrdinalIgnoreCase)) return Tier.Sloop;
         if (name.Equals("Fishing Boat", System.StringComparison.OrdinalIgnoreCase)) return Tier.FishingBoat;
         return Tier.Rowboat;

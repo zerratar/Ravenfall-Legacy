@@ -12,37 +12,98 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ee3b2d5ccef5494fb34928aaf50f24f, type: 3}
   m_Name: BoatParts
   m_EditorClassIdentifier: Assembly-CSharp::BoatParts
-  Hulls:
-  - {fileID: 1899709056268798623, guid: 8486f788ab4192648868fefdc123dcd5, type: 3}
-  - {fileID: 4723367229468569188, guid: 80b85cf0e069fde4f942a54abdd132c4, type: 3}
-  Fronts:
-  - {fileID: 4097995621435148403, guid: 368c27c578b8f0f4cbd4ecba531105ab, type: 3}
-  - {fileID: 1844348797491632997, guid: 0184296981e927d498c93a33b25915b0, type: 3}
-  - {fileID: 3624169172718170327, guid: 3b0572f5b046e114bafdd6a975291249, type: 3}
-  - {fileID: 2665272789118409546, guid: 5b481e656fbe95447a720b5b2ff67d39, type: 3}
-  Middles:
-  - {fileID: 3284723363243260201, guid: 1d0471d8733886842b246beb2d241cfa, type: 3}
-  - {fileID: 2035958559426399457, guid: 21c4cc05cabdc0a4296ad529fe77c540, type: 3}
-  - {fileID: 2532070792723129553, guid: 013e37a84d9174644b6738eb98dbfda7, type: 3}
-  Backs:
-  - {fileID: 1945969651941338285, guid: 208ae3cab614e1c4b9ca41ad41f3067b, type: 3}
-  - {fileID: 3542535203076723813, guid: 93aed5ff89d24c54c9742ea4d6aee39c, type: 3}
-  - {fileID: 180939295256014955, guid: 3129d45ae5c196c4da589bd24f9a3e85, type: 3}
-  - {fileID: 577629172512844140, guid: 0002f216f60daab45b1f0c3dd59f9679, type: 3}
-  Figureheads:
-  - {fileID: 2677329528563741408, guid: 4f56d1d887924814687727eb9e0b44d4, type: 3}
-  - {fileID: 4455513261639822577, guid: 8495669e8ee04a44f8ca6bee66658f09, type: 3}
-  - {fileID: 7202820984363355015, guid: 8b8129a0a7cf6634088cff599b85ca5e, type: 3}
-  - {fileID: 8524383320535801839, guid: d95e25b899f5af049a6cd1b7bce71ad1, type: 3}
-  - {fileID: 6450897876485540748, guid: 827a09a979d877b4e9adaa9efcbb007e, type: 3}
-  - {fileID: 2488009151212434041, guid: 25c9f5b3dd8a59145bc4878d12873963, type: 3}
-  - {fileID: 5982824646437855890, guid: 11367d110fcd11c43af3f3afd4f52e69, type: 3}
-  Rams:
-  - {fileID: 4923167769970237319, guid: d3c23e66bdedc9541b50112b9e639607, type: 3}
-  - {fileID: 7926797933553222629, guid: 9d36eaabb8d842d44ac35effb3d9cf08, type: 3}
-  - {fileID: 5834692181127012736, guid: 890aeb85c126a74479a4b164964aaba1, type: 3}
-  - {fileID: 3855128737387600812, guid: 43c2bef30abaf8d4c8c5f73bb677d5b7, type: 3}
-  Rig: {fileID: 3442062726932012677, guid: 29a2e43639f197b409aa2d2a6f13144f, type: 3}
+  Small:
+    Hulls:
+    - {fileID: 1899709056268798623, guid: 8486f788ab4192648868fefdc123dcd5, type: 3}
+    - {fileID: 4723367229468569188, guid: 80b85cf0e069fde4f942a54abdd132c4, type: 3}
+    Fronts:
+    - {fileID: 4097995621435148403, guid: 368c27c578b8f0f4cbd4ecba531105ab, type: 3}
+    - {fileID: 1844348797491632997, guid: 0184296981e927d498c93a33b25915b0, type: 3}
+    - {fileID: 3624169172718170327, guid: 3b0572f5b046e114bafdd6a975291249, type: 3}
+    - {fileID: 2665272789118409546, guid: 5b481e656fbe95447a720b5b2ff67d39, type: 3}
+    Middles:
+    - {fileID: 3284723363243260201, guid: 1d0471d8733886842b246beb2d241cfa, type: 3}
+    - {fileID: 2035958559426399457, guid: 21c4cc05cabdc0a4296ad529fe77c540, type: 3}
+    - {fileID: 2532070792723129553, guid: 013e37a84d9174644b6738eb98dbfda7, type: 3}
+    Backs:
+    - {fileID: 1945969651941338285, guid: 208ae3cab614e1c4b9ca41ad41f3067b, type: 3}
+    - {fileID: 3542535203076723813, guid: 93aed5ff89d24c54c9742ea4d6aee39c, type: 3}
+    - {fileID: 180939295256014955, guid: 3129d45ae5c196c4da589bd24f9a3e85, type: 3}
+    - {fileID: 577629172512844140, guid: 0002f216f60daab45b1f0c3dd59f9679, type: 3}
+    Figureheads:
+    - {fileID: 2677329528563741408, guid: 4f56d1d887924814687727eb9e0b44d4, type: 3}
+    - {fileID: 4455513261639822577, guid: 8495669e8ee04a44f8ca6bee66658f09, type: 3}
+    - {fileID: 7202820984363355015, guid: 8b8129a0a7cf6634088cff599b85ca5e, type: 3}
+    - {fileID: 8524383320535801839, guid: d95e25b899f5af049a6cd1b7bce71ad1, type: 3}
+    - {fileID: 6450897876485540748, guid: 827a09a979d877b4e9adaa9efcbb007e, type: 3}
+    - {fileID: 2488009151212434041, guid: 25c9f5b3dd8a59145bc4878d12873963, type: 3}
+    - {fileID: 5982824646437855890, guid: 11367d110fcd11c43af3f3afd4f52e69, type: 3}
+    Rams:
+    - {fileID: 4923167769970237319, guid: d3c23e66bdedc9541b50112b9e639607, type: 3}
+    - {fileID: 7926797933553222629, guid: 9d36eaabb8d842d44ac35effb3d9cf08, type: 3}
+    - {fileID: 5834692181127012736, guid: 890aeb85c126a74479a4b164964aaba1, type: 3}
+    - {fileID: 3855128737387600812, guid: 43c2bef30abaf8d4c8c5f73bb677d5b7, type: 3}
+    Rig: {fileID: 3442062726932012677, guid: 29a2e43639f197b409aa2d2a6f13144f, type: 3}
+  Medium:
+    Hulls:
+    - {fileID: 2324293872107833226, guid: b0f4eebcf239b1141a8c3dae9c18cb32, type: 3}
+    Fronts:
+    - {fileID: 1732231381585587182, guid: de438f6f3c39bf84b8eea98c9ccf4373, type: 3}
+    - {fileID: 4151811766962279728, guid: f2b7c0d2da80ab243aef45c40b69f47e, type: 3}
+    - {fileID: 3239632759721273651, guid: bdff848b51e6e40458dec96ae05f309f, type: 3}
+    Middles:
+    - {fileID: 7972766505861997310, guid: 910c62e8adc30d54b90dd70295e68e97, type: 3}
+    - {fileID: 8304249452373169830, guid: 36961914d19707049aaf849979acf486, type: 3}
+    - {fileID: 8866555569344263111, guid: 61ba8b57404a417499be47c2a2a022cf, type: 3}
+    - {fileID: 3145161675037003833, guid: e198594378b8b474685e40bd322b2e4d, type: 3}
+    Backs:
+    - {fileID: 1877891979519866126, guid: dc6ca583a19d81d4e99b3088a073871a, type: 3}
+    - {fileID: 8011074858415273262, guid: 9695a2378b068494d8fe31d3a01976dc, type: 3}
+    - {fileID: 7351814945084260178, guid: e3d7f58aa83414541a804034f9ff11d8, type: 3}
+    - {fileID: 1086299803547797372, guid: bc95e7e1379fb6f43847ef755ed5ff28, type: 3}
+    Figureheads:
+    - {fileID: 9082282934708835656, guid: a9093247513862849b679baa43f84f7e, type: 3}
+    - {fileID: 2218836193389035482, guid: 4d4dc77e9b64c6f4680227ed54eb2dc5, type: 3}
+    - {fileID: 5144270631992539384, guid: c725f05850f1e6b47942992620cba591, type: 3}
+    - {fileID: 8988635587932696091, guid: 1aab7c6e963e21a4290845a5dfb08ea7, type: 3}
+    - {fileID: 1811079704371287475, guid: 5a50c924e8a06354aa7643c6c1939f9b, type: 3}
+    - {fileID: 4278190764603205939, guid: a236c446679ef5141825d91c88c12112, type: 3}
+    - {fileID: 5307035324900633135, guid: 087046e68be6f3546b07767dfb9b9952, type: 3}
+    Rams:
+    - {fileID: 1082256368977688857, guid: de172bbf41b9b1944b74eb3bfdb72ace, type: 3}
+    - {fileID: 2932045085511777375, guid: 92f91e624532c574f8169436b95e6561, type: 3}
+    - {fileID: 955697609756580577, guid: e168916cbe81822438745580574035f1, type: 3}
+    - {fileID: 6241688107002258060, guid: 302d93d37e978e74c8b471a6f0ba34db, type: 3}
+    Rig: {fileID: 3643144569886955537, guid: d5dc2cec9f5182644b42a1a61478c9c5, type: 3}
+  Large:
+    Hulls:
+    - {fileID: 3666332936573274330, guid: 3b4c543305f4e2048bacd9d272ec8730, type: 3}
+    Fronts:
+    - {fileID: 8841482074885801809, guid: 55852bf50f05e2445946a8a88100f12e, type: 3}
+    - {fileID: 2687417333141839564, guid: ff5f6c172bacc24498ab4370b727dfab, type: 3}
+    - {fileID: 322049169050417279, guid: b6e6f3919a70de44abd01dc7208d3bac, type: 3}
+    Middles:
+    - {fileID: 1379146081189177720, guid: 5482b660bd33f0c42ba4d059f813e0c8, type: 3}
+    - {fileID: 4501420939321122630, guid: 486ae21e77da61d42acca6af1b67563f, type: 3}
+    - {fileID: 5841071551727361894, guid: a78de3fa710f6c94988a8747d4fbe51f, type: 3}
+    Backs:
+    - {fileID: 7018330267669154444, guid: 5727f89b75a49824498d1ee701b4a710, type: 3}
+    - {fileID: 5279798303697099996, guid: e5fcb3ab90cfc6246b9e58919fa3a667, type: 3}
+    - {fileID: 7091611757095116729, guid: aeb2c2c864d472b419f083b3d0ae5963, type: 3}
+    Figureheads:
+    - {fileID: 5279902497369448494, guid: 8ff4628002fcb494e9cdd0f4d2daea93, type: 3}
+    - {fileID: 8311964007434435217, guid: 3d85c1614926fa943b2e6bd8f54e345d, type: 3}
+    - {fileID: 8362656080669647875, guid: ec7ccfad588c89248b355743d305ae9f, type: 3}
+    - {fileID: 2123282945108363564, guid: 44be1fb870e27cd4b9fc2b0df80b2ec4, type: 3}
+    - {fileID: 4921362255206548347, guid: 847bd1d14a8780b48a7c235d3acd91cc, type: 3}
+    - {fileID: 9148965967255689356, guid: d47eaacc04fbb744cadb19cec71ade9f, type: 3}
+    - {fileID: 544455957298441375, guid: 9ce76d9ab8b450b448b687026010e6a8, type: 3}
+    Rams:
+    - {fileID: 6367972213024681190, guid: 6e830509582ad50478630b890195ff97, type: 3}
+    - {fileID: 3707270387554737414, guid: f7e25deff1411d747915c5de596be013, type: 3}
+    - {fileID: 1701129151387894069, guid: 55c539d4ea45fed4594088d3ba14157c, type: 3}
+    - {fileID: 1954660619344200844, guid: f3b5bd57a13a44c4da1682a81b537e5c, type: 3}
+    Rig: {fileID: 8760342599312620101, guid: 8ebaf99068fe8fb4a9a82a34d386f334, type: 3}
   Sails:
   - {fileID: 2100000, guid: 754fdc7675faeda4f800474a3bc34b27, type: 2}
   - {fileID: 2100000, guid: 2636dcdc0b443c441be32c0f9aa408b8, type: 2}

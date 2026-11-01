@@ -33,7 +33,8 @@ public sealed class OwnBoat : MonoBehaviour
     /// <summary>Guests aboard (docs/own-boats.md, "Guests aboard"), each in a seat of their own.</summary>
     public IReadOnlyList<PlayerController> Guests => guests;
     /// <summary>Guests sit at the oars on the small boats; the sloop's stand on its deck.</summary>
-    public bool GuestsSit => Tier != BoatItems.Tier.Sloop;
+    /// <summary>On the small boats guests sit; on the ships (Sloop and up) everyone stands on deck.</summary>
+    public bool GuestsSit => Tier == BoatItems.Tier.Rowboat || Tier == BoatItems.Tier.FishingBoat;
 
     private readonly List<PlayerController> guests = new List<PlayerController>();
     private readonly List<Transform> guestSeats = new List<Transform>();
@@ -102,6 +103,8 @@ public sealed class OwnBoat : MonoBehaviour
         BoatAssembler.Apply(go, tier, BoatLook.TagOf(owner));
         (boat.length, boat.width, boat.turnRate) = tier switch
         {
+            BoatItems.Tier.Galleon => (40f, 11f, 22f),
+            BoatItems.Tier.Brigantine => (30f, 8f, 28f),
             BoatItems.Tier.Sloop => (17f, 6.6f, 35f),
             BoatItems.Tier.FishingBoat => (8.5f, 3f, 45f),
             _ => (5.4f, 2.2f, 60f),

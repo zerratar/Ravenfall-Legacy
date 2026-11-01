@@ -9,6 +9,8 @@ public sealed class OwnBoatPrefabs : MonoBehaviour
     [SerializeField] private GameObject rowboat;
     [SerializeField] private GameObject fishingBoat;
     [SerializeField] private GameObject sloop;
+    [SerializeField] private GameObject brigantine;
+    [SerializeField] private GameObject galleon;
     /// <summary>What boats are assembled from (BoatAssembler), made by tools/sailing/make-pirate-realm-boats.cs.</summary>
     [SerializeField] private BoatParts parts;
 
@@ -31,6 +33,8 @@ public sealed class OwnBoatPrefabs : MonoBehaviour
         if (!instance) return null;
         return tier switch
         {
+            BoatItems.Tier.Galleon => instance.galleon,
+            BoatItems.Tier.Brigantine => instance.brigantine,
             BoatItems.Tier.Sloop => instance.sloop,
             BoatItems.Tier.FishingBoat => instance.fishingBoat,
             _ => instance.rowboat,

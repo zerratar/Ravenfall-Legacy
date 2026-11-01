@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Puts a boat's look on it (docs/own-boats.md, "Customizing boats"). The Sloop is built from Synty's Pirate Realm
-/// small ship under its "Model": the hull, front, middle, back, figurehead and ram of the look's variants, the mast,
+/// Puts a boat's look on it (docs/own-boats.md, "Customizing boats"). The Sloop, the Brigantine and the Galleon are
+/// built from Synty's Pirate Realm small, medium and large ships under their "Model": the hull, front, middle, back, figurehead and ram of the look's variants, the mast,
 /// bowsprit, rigging, helm and grate every one has, then its sails and planks by material and its flag at the
 /// masthead. The Rowboat and the Fishing Boat keep their models and get only the flag, on a pole at the stern. Run at
 /// launch and again when the look changes while the boat is out; its seats are never touched.
@@ -19,9 +19,10 @@ public static class BoatAssembler
     {
         var parts = OwnBoatPrefabs.Parts;
         if (!boat || !parts) return;
-        var look = BoatLook.Parse(tag);
+        var look = BoatLook.Parse(tag, tier);
 
-        if (tier == BoatItems.Tier.Sloop)
+        var ship = parts.For(tier);
+        if (ship != null && ship.Hulls != null && ship.Hulls.Length > 0)
         {
             var model = boat.transform.Find(ModelName);
             if (!model)
@@ -29,7 +30,7 @@ public static class BoatAssembler
                 model = new GameObject(ModelName).transform;
                 model.SetParent(boat.transform, false);
             }
-            BuildShip(model, parts, look);
+            BuildShip(model, ship, look);
             Paint(model, parts, look);
             Flag(boat.transform, model, parts, look["flag"], true);
         }
@@ -52,7 +53,7 @@ public static class BoatAssembler
         return o.transform;
     }
 
-    private static void BuildShip(Transform model, BoatParts parts, Dictionary<string, int> look)
+    private static void BuildShip(Transform model, BoatParts.Ship parts, Dictionary<string, int> look)
     {
         for (var i = model.childCount - 1; i >= 0; --i) Kill(model.GetChild(i).gameObject);
 
@@ -64,7 +65,7 @@ public static class BoatAssembler
         Put(parts.Rig, hull);
         Put(Pick(parts.Fronts, look["front"]) ?? Pick(parts.Fronts, 1), hull);
         Put(Pick(parts.Middles, look["middle"]) ?? Pick(parts.Middles, 1), hull);
-        Put(Pick(parts.Backs, look["back"]) ?? Pick(parts.Backs, 3), hull);
+        Put(Pick(parts.Backs, look["back"]) ?? Pick(parts.Backs, 1), hull);
         Put(Pick(parts.Figureheads, look["figurehead"]), hull);
         Put(Pick(parts.Rams, look["ram"]), hull);
     }
