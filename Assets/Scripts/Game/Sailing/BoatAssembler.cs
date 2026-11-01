@@ -111,7 +111,8 @@ public static class BoatAssembler
             if (r.transform.IsChildOf(holder)) continue;
             all = all.HasValue ? Grow(all.Value, r.bounds) : r.bounds;
             if (r.name.Contains("Hull") || r.name == ModelName) hullBounds = hullBounds.HasValue ? Grow(hullBounds.Value, r.bounds) : r.bounds;
-            if (ship && r.name.Contains("Mast_Middle") && !r.name.Contains("Boom") && (!top.HasValue || r.bounds.max.y > top.Value.max.y)) top = r.bounds;
+            // the tallest mast (the Brigantine has a front and a back one, the Galleon three)
+            if (ship && r.name.Contains("_Mast_") && !r.name.Contains("Boom") && !r.name.Contains("Sail") && !r.name.Contains("Locator") && (!top.HasValue || r.bounds.max.y > top.Value.max.y)) top = r.bounds;
         }
         if (!all.HasValue) { Kill(holder.gameObject); return; }
 

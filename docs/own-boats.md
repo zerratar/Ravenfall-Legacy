@@ -490,3 +490,27 @@ not rolled in a test.
 - Tested: a Galleon equipped in the game (not built on the server) launched with its look, black sails, skull flag,
   the owner at the helm; both ships checked in renders. Not yet tested: !boat build brigantine and galleon (no test
   character has the parts), guests aboard the big ships.
+
+### Built: phase 4 (2026-11-01)
+
+- The website's boat designer at /boats (Boats under "You" in the dashboard menu): every boat on all of the player's
+  characters, the equipped one first, shown in 3D as the game builds it, and every part of its look as buttons
+  (pictures for the sails, flags and planks). An owned part is saved at once; a locked one is only tried on in the
+  view, with where it comes from ("Win the regatta at the banana island", "Reach Sailing level 200"). Drag to turn,
+  scroll to zoom.
+- The 3D view is three.js, the same local copy the clan cape editor uses (RavenNest wwwroot/js/three.module.min.js):
+  wwwroot/js/rf-boat-designer.js builds a boat by the BoatAssembler's rules (the ship's parts, the rig, sails and
+  planks by material name, the flag at the tallest mast; the small boats' flag on a pole at the stern). Everything is
+  kept in Unity's space under a root mirrored in z, so the part matrices and the assembler's numbers are used as they
+  are.
+- The models: tools/sailing/export-boats-web.cs writes RavenNest wwwroot/boats/ from BoatParts and the small boats'
+  prefabs: one file per mesh (positions in int16 over the mesh's bounds, normals in int8, uvs in uint16, indices),
+  boats.json with the parts and materials, and the textures baked with their tints (512 px). About 11.5 MB in all,
+  fetched only for the boat shown. Run it again whenever the boat parts change.
+- Server: BoatManager.GetBoats(userId) and SetLook(userId, characterId, stackId, slot, variant) (any of the player's
+  boats, equipped or not, the same ownership rules as `!boat`); BoatLookResult now says whose boat it is, and each
+  slot where every variant comes from (BoatLooks.HowToEarn). BoatService in the website.
+- Tested: all five boats rendered in the browser from the exported files (looks, sails, planks, figureheads, rams,
+  masthead and stern flags), the swatches, and the website builds. Not tested: the page itself signed in (the local
+  site's certificate is for ravenfall.stream), and whether a boat changed on the website while its owner is in a
+  stream shows the new look before the game next loads the inventory.
