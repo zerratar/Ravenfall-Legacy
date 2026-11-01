@@ -2,7 +2,7 @@
 //   unity command eval_file --file tools/mangrove/regatta-props.cs --timeout 120
 // Makes the things the regatta puts on the water as prefabs in Assets/Resources/Mangrove/Regatta (each with its pivot
 // at the waterline), and Assets/Resources/Mangrove/Regatta Props.prefab, whose RegattaProps holds them, the kit's
-// effects and the start's horn. Pirate Realm's props and effects, the Quirky octopus as the Kraken.
+// effects and the start's horn. Pirate Realm's props, effects and tentacle (the Kraken's arms), the horn and the Kraken's roar.
 const string Kit = "Assets/Synty/PolygonPirateRealm/Prefabs/";
 const string Out = "Assets/Resources/Mangrove/Regatta/";
 if (!UnityEditor.AssetDatabase.IsValidFolder("Assets/Resources/Mangrove/Regatta")) UnityEditor.AssetDatabase.CreateFolder("Assets/Resources/Mangrove", "Regatta");
@@ -66,10 +66,19 @@ var ball = New("Regatta Cannonball");
 Put(Kit + "Props/SM_Prop_Cannonball_01.prefab", ball.transform, UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, 4f);
 var ballPrefab = Save(ball, "Regatta Cannonball");
 
-// the Kraken: the Quirky octopus, sixteen metres of it (it was always cute)
-var kraken = New("Regatta Kraken");
-Put("Assets/Quirky Series Ultimate/Quirky Series Vol.4/Sea Vol.2/Prefabs/Octopus.prefab", kraken.transform, UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, 16f);
-var krakenPrefab = Save(kraken, "Regatta Kraken");
+// the Kraken's arm: Pirate Realm's tentacle, 27 m from its root at the pivot to the tip, its joints waved by
+// KrakenTentacle (the kit's own animator has no controller and goes)
+var tentacle = Put(Kit + "Environment/SM_Env_Tentacle_01.prefab", null, UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, 1f);
+tentacle.name = "Regatta Tentacle";
+foreach (var a in tentacle.GetComponentsInChildren<UnityEngine.Animator>(true)) UnityEngine.Object.DestroyImmediate(a);
+var joints = new System.Collections.Generic.List<UnityEngine.Transform>();
+for (var j = tentacle.transform.Find("Root/TentacleJoint_01"); j; j = j.childCount > 0 ? j.GetChild(0) : null) joints.Add(j);
+if (joints.Count < 5) throw new System.Exception("The tentacle's joints were not found");
+tentacle.AddComponent<KrakenTentacle>().Joints = joints.ToArray();
+foreach (var smr in tentacle.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>(true)) smr.updateWhenOffscreen = true;
+var tentaclePrefab = Save(tentacle, "Regatta Tentacle");
+// the Quirky octopus the Kraken used to be
+UnityEditor.AssetDatabase.DeleteAsset(Out + "Regatta Kraken.prefab");
 
 var root = New("Regatta Props");
 var props = root.AddComponent<RegattaProps>();
@@ -79,15 +88,16 @@ props.Peel = peelPrefab;
 props.Reef = reefPrefab;
 props.Wreck = wreckPrefab;
 props.Cannonball = ballPrefab;
-props.Kraken = krakenPrefab;
+props.Tentacle = tentaclePrefab;
 props.Splash = Load(Kit + "FX/FX_Canon_Water_01.prefab");
 props.Blast = Load(Kit + "FX/FX_Explosion_01.prefab");
 props.CannonShot = Load(Kit + "FX/FX_CannonShot_01.prefab");
 props.Sparkle = Load(Kit + "FX/FX_Sparkles_01.prefab");
 props.Bubbles = Load(Kit + "FX/FX_Bubbles_01.prefab");
 props.Horn = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.AudioClip>("Assets/Sounds/War Horn.mp3");
-var hornFound = props.Horn != null;
+props.Roar = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.AudioClip>("Assets/Sounds/Kraken Roar.mp3");
+var hornFound = props.Horn != null && props.Roar != null;
 UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, "Assets/Resources/Mangrove/Regatta Props.prefab");
 UnityEngine.Object.DestroyImmediate(root);
 UnityEditor.AssetDatabase.SaveAssets();
-return "made the regatta's props; horn " + hornFound;
+return "made the regatta's props; horn and roar " + hornFound + ", tentacle joints " + joints.Count;

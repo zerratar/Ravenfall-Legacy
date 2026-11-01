@@ -113,12 +113,33 @@ public sealed class Regatta : MonoBehaviour
 
     private sealed class Kraken
     {
-        public GameObject Go;
         public Vector3 At;
         public float Born;
         public Racer Target;
         public bool Struck;
+        public int Stage = -1;
+        public readonly List<Arm> Arms = new List<Arm>();
     }
+
+    private sealed class Arm
+    {
+        public KrakenTentacle Tentacle;
+        public Vector3 At;
+        public float Delay;
+        public float Depth;
+        /// <summary>How far it curls over while it holds the boat.</summary>
+        public float Reach;
+        /// <summary>The boat it holds on to, and where it is and which way it faces from the boat; null stays put.</summary>
+        public OwnBoat Holds;
+        public Vector3 Offset;
+        public Quaternion Turn;
+    }
+
+    // the Kraken: its arms up in a second, it roars, holds the boat, waves, and is gone again after KrakenGone
+    private const float KrakenUp = 1f;
+    private const float KrakenRoar = 1f;
+    private const float KrakenSinks = 4.2f;
+    private const float KrakenGone = 5.4f;
 
     private static Regatta current;
     private static float nextAllowed;
@@ -294,7 +315,9 @@ public sealed class Regatta : MonoBehaviour
                 {
                     releaseCameraAt = -1f;
                     var camera = GameManager.Instance ? GameManager.Instance.Camera : null;
-                    if (camera && camera.State == GameCameraType.Race) camera.StopRace();
+                    // unless a newer race has the camera by now
+                    var filming = camera ? camera.GetComponent<RaceCamera>() : null;
+                    if (camera && camera.State == GameCameraType.Race && filming && filming.Race == this) camera.StopRace();
                 }
                 return;
         }
@@ -387,17 +410,22 @@ public sealed class Regatta : MonoBehaviour
     private void PlayHorn()
     {
         var props = RegattaProps.Get();
+        Aloud(props ? props.Horn : null, start, 0.8f);
+    }
+
+    /// <summary>A sound for the whole race (the horn, the Kraken's roar), heard by whoever watches it, not across the world.</summary>
+    private void Aloud(AudioClip clip, Vector3 where, float volume)
+    {
         var camera = Camera.main;
-        if (!props || !props.Horn || GameSounds.Volume <= 0.001f) return;
-        // heard by whoever watches the race, not across the world
-        if (!filmed && (!camera || Flat(camera.transform.position - start).magnitude > 400f)) return;
+        if (!clip || GameSounds.Volume <= 0.001f) return;
+        if (!filmed && (!camera || Flat(camera.transform.position - where).magnitude > 400f)) return;
         if (!horn)
         {
             horn = gameObject.AddComponent<AudioSource>();
             horn.playOnAwake = false;
             horn.spatialBlend = 0f;
         }
-        horn.PlayOneShot(props.Horn, GameSounds.Volume * 0.8f);
+        horn.PlayOneShot(clip, GameSounds.Volume * volume);
     }
 
     private void Race()
@@ -686,19 +714,76 @@ public sealed class Regatta : MonoBehaviour
         var forward = Quaternion.Euler(0f, boat.Heading, 0f) * Vector3.forward;
         var at = boat.SeaPosition + forward * (boat.Length * 0.5f + 14f);
         var k = new Kraken { At = at, Born = Time.time, Target = r };
-        if (props && props.Kraken)
+        if (props && props.Tentacle)
         {
-            // it faces the boat it stops (the octopus looks down its own -Z)
-            k.Go = Instantiate(props.Kraken, at + Vector3.down * 18f, Quaternion.LookRotation(forward));
+            // the beast stays under; its three biggest arms burst up in front of the bow and lean over it
+            var side = Vector3.Cross(Vector3.up, forward);
+            AddArm(k, props.Tentacle, at + forward * 5f, boat.SeaPosition, 1.4f, 0f, 0.6f);
+            AddArm(k, props.Tentacle, at + side * 9f, boat.SeaPosition, 1.2f, 0.12f, 0.8f);
+            AddArm(k, props.Tentacle, at - side * 9f, boat.SeaPosition, 1.2f, 0.24f, 0.8f);
+
+            // smaller ones come up on both sides of the boat and curl over its deck; a rowboat gets one pair
+            var scale = Mathf.Clamp(0.4f + boat.Length * 0.025f, 0.5f, 1f);
+            var apart = boat.Width * 0.5f + 2f + 4f * scale;
+            var delay = 0.4f;
+            foreach (var along in boat.Length < 10f ? new[] { 0f } : new[] { -0.3f, 0.2f })
+            {
+                var abeam = boat.SeaPosition + forward * (boat.Length * along);
+                foreach (var sign in new[] { 1f, -1f })
+                {
+                    AddArm(k, props.Tentacle, abeam + side * (sign * apart), abeam, scale, delay, 1f, boat);
+                    delay += 0.15f;
+                }
+            }
         }
         krakens.Add(k);
         Effect(props ? props.Splash : null, at, 4f);
+        Effect(props ? props.Bubbles : null, at, 4f);
         GameSounds.Play(SoundKind.WaterSplash, at, 1f);
     }
 
-    /// <summary>It rises out of the sea in a second, holds the boat for a while, and sinks back.</summary>
+    /// <summary>
+    /// One of the Kraken's arms, deep under the water at a spot, to curl towards a point when it is up; one that holds a
+    /// boat keeps its place beside it while it drifts.
+    /// </summary>
+    private static void AddArm(Kraken k, GameObject prefab, Vector3 spot, Vector3 towards, float scale, float delay, float reach, OwnBoat holds = null)
+    {
+        // it curls towards its own -X
+        var to = Flat(towards - spot);
+        if (to.sqrMagnitude < 0.01f) to = Vector3.forward;
+        var depth = 30f * scale;
+        var facing = Quaternion.LookRotation(Vector3.Cross(-to.normalized, Vector3.up));
+        var go = Instantiate(prefab, spot + Vector3.down * depth, facing);
+        go.transform.localScale = Vector3.one * scale;
+        var tentacle = go.GetComponent<KrakenTentacle>();
+        if (!tentacle)
+        {
+            Destroy(go);
+            return;
+        }
+        var arm = new Arm { Tentacle = tentacle, At = spot, Delay = delay, Depth = depth, Reach = reach, Holds = holds };
+        if (holds)
+        {
+            var boatTurn = Quaternion.Euler(0f, holds.Heading, 0f);
+            var back = Quaternion.Inverse(boatTurn);
+            arm.Offset = back * (spot - holds.SeaPosition);
+            arm.Offset.y = 0f;
+            arm.Turn = back * facing;
+        }
+        k.Arms.Add(arm);
+    }
+
+    /// <summary>How much the Kraken's roar shakes the race camera, 0 to 1.</summary>
+    public float Rumble { get; private set; }
+
+    /// <summary>
+    /// Its arms burst out of the sea in a second, in front of the boat and round it; it roars from below with them
+    /// curled over the boat, holds it while they wave about, and they sink back.
+    /// </summary>
     private void Rise(float now)
     {
+        Rumble = 0f;
+        var props = RegattaProps.Get();
         for (var i = krakens.Count - 1; i >= 0; --i)
         {
             var k = krakens[i];
@@ -709,11 +794,48 @@ public sealed class Regatta : MonoBehaviour
                 if (k.Target.Racing) Strike(k.Target, Hit.Kraken, null);
                 IncidentPoint = k.At;
             }
-            var up = age < 1f ? Mathf.SmoothStep(0f, 1f, age) : age < 3.5f ? 1f : 1f - Mathf.SmoothStep(0f, 1f, age - 3.5f);
-            // sixteen metres of it: risen, its tentacles stay under the water
-            if (k.Go) k.Go.transform.position = k.At + Vector3.down * Mathf.Lerp(18f, 4.5f, up) + Vector3.up * (Mathf.Sin(age * 3f) * 0.3f);
-            if (age < 4.6f) continue;
-            if (k.Go) Destroy(k.Go);
+
+            var stage = age < KrakenRoar ? 0 : age < KrakenRoar + 1.6f ? 1 : age < KrakenSinks ? 2 : 3;
+            if (stage != k.Stage)
+            {
+                k.Stage = stage;
+                if (stage == 1)
+                {
+                    Aloud(props ? props.Roar : null, k.At, 1f);
+                    Effect(props ? props.Splash : null, k.At, 5f);
+                    foreach (var a in k.Arms) Effect(props ? props.Splash : null, a.At, 3f);
+                }
+            }
+            // the roar shakes the picture: hard at first, settling
+            if (stage == 1) Rumble = Mathf.Max(Rumble, 1f - (age - KrakenRoar) / 1.6f);
+
+            foreach (var a in k.Arms)
+            {
+                if (!a.Tentacle) continue;
+                if (a.Holds)
+                {
+                    var boatTurn = Quaternion.Euler(0f, a.Holds.Heading, 0f);
+                    a.At = a.Holds.SeaPosition + boatTurn * a.Offset;
+                    a.At.y = k.At.y;
+                    a.Tentacle.transform.rotation = boatTurn * a.Turn;
+                }
+                var armAge = age - a.Delay;
+                var armUp = armAge < 0f ? 0f
+                    : armAge < KrakenUp * 0.8f ? Mathf.SmoothStep(0f, 1f, armAge / (KrakenUp * 0.8f))
+                    : age < KrakenSinks ? 1f
+                    : 1f - Mathf.SmoothStep(0f, 1f, (age - KrakenSinks - a.Delay * 0.5f) / (KrakenGone - KrakenSinks - 0.4f));
+                // only its root stays under the water (the clear sea shows what is below)
+                a.Tentacle.transform.position = a.At + Vector3.down * Mathf.Lerp(a.Depth, a.Depth * 0.1f, armUp);
+                // up straight and thrashing, curled right over the boat while it roars, then waving over it
+                a.Tentacle.Curl = a.Reach * (stage == 0 ? 0.2f * armUp
+                    : stage == 1 ? 0.9f
+                    : stage == 2 ? 0.55f + Mathf.Sin(age * 2.2f + a.Delay * 9f) * 0.35f
+                    : 0.3f);
+                a.Tentacle.Wave = stage == 1 ? 0.5f : 1f;
+            }
+
+            if (age < KrakenGone) continue;
+            foreach (var a in k.Arms) if (a.Tentacle) Destroy(a.Tentacle.gameObject);
             krakens.RemoveAt(i);
         }
     }
@@ -774,7 +896,8 @@ public sealed class Regatta : MonoBehaviour
                 MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_WRECK, r.Name), "");
                 break;
             case Hit.Kraken:
-                SlowDown(r, 0.05f, 3.2f);
+                // held until its arms let go and sink
+                SlowDown(r, 0.05f, KrakenSinks + 0.3f);
                 MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_KRAKEN, r.Name), "");
                 break;
         }
@@ -898,7 +1021,9 @@ public sealed class Regatta : MonoBehaviour
         foreach (var b in buoys) if (b) Destroy(b);
         foreach (var t in things) if (t.Go) Destroy(t.Go);
         foreach (var b in balls) if (b.Go) Destroy(b.Go);
-        foreach (var k in krakens) if (k.Go) Destroy(k.Go);
+        foreach (var k in krakens)
+            foreach (var a in k.Arms)
+                if (a.Tentacle) Destroy(a.Tentacle.gameObject);
         foreach (var r in racers)
         {
             ClearAura(r);

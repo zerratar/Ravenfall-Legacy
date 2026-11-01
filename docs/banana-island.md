@@ -111,8 +111,11 @@ pickups, and viewers in chat interfering.
     then the server takes them (api/mangrove/{characterId}/spend/{coins}, at most 10000). A race that ends meanwhile
     never charges for nothing, and coins the server did not take are given back.
   - A keg cannot be aimed at a racer hit in the last 4 s, or aimed at by a keg in the last 8 s.
-  - `!regatta kraken` (the broadcaster or a moderator, once a race): the Kraken, a sixteen metre Quirky octopus, rises in
-    front of the leader.
+  - `!regatta kraken` (the broadcaster or a moderator, once a race): the Kraken wakes under the leader. Its three biggest
+    arms burst up in front of the bow and smaller ones on both sides of the boat; it roars from below (the picture
+    shakes), curls them over the boat and holds it about 3 s while they wave, and they sink back. Its arms are Pirate
+    Realm's tentacle (KrakenTentacle waves the joints); the roar is Assets/Sounds/Kraken Roar.mp3, a bear and a tiger
+    roar pitched down and layered with ffmpeg.
 - **The race camera** (RaceCamera; the setting Game > Observer > Regatta camera, on by default): a director that
   cuts between shots.
   - The start line from ahead and to one side, every bow in the picture, while the boats wait.
@@ -127,7 +130,7 @@ pickups, and viewers in chat interfering.
   camera goes back to the islands or the players.
 - **Props:** tools/mangrove/regatta-props.cs makes Resources/Mangrove/Regatta Props (RegattaProps) and the things in
   Resources/Mangrove/Regatta from Pirate Realm's bottle, barrels, crate, banana, cannonball, spiky rocks and effects,
-  the Quirky octopus, and the war horn.
+  the tentacle, the war horn and the Kraken's roar.
 - Splashes, blasts and auras are left out in potato mode.
 - First guesses to tune: the prices, the free minute, the item odds and strengths, and the dodge chances.
 

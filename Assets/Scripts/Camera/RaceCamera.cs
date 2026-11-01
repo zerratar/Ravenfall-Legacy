@@ -72,8 +72,9 @@ public class RaceCamera : MonoBehaviour
             look = Vector3.Lerp(look, wantLook, 1f - Mathf.Exp(-dt * 5f));
         }
         position = AboveGround(position);
-        var forward = look - position;
-        if (forward.sqrMagnitude > 0.01f) transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward));
+        var shaken = position + Shake(race.Rumble);
+        var forward = look - shaken;
+        if (forward.sqrMagnitude > 0.01f) transform.SetPositionAndRotation(shaken, Quaternion.LookRotation(forward));
         TiltShift.FocusPoint = focus;
     }
 
@@ -95,7 +96,7 @@ public class RaceCamera : MonoBehaviour
         {
             lastIncident = race.IncidentAt;
             beast = race.IncidentPoint;
-            Cut(Shot.Kraken, race.IncidentBoat, 4.5f);
+            Cut(Shot.Kraken, race.IncidentBoat, 5.2f);
             return;
         }
         if (shot == Shot.Kraken && now < shotEnds && subject) return;
@@ -212,9 +213,11 @@ public class RaceCamera : MonoBehaviour
                 // seaward of the course, where the other racers do not sail past the lens (they cut in towards the island)
                 if (Vector3.Dot(side, Flat(mid - race.IslandCentre)) < 0f) side = -side;
                 var apart = Flat(beast - p).magnitude;
-                // far enough out for sixteen metres of octopus and a galleon in one picture, above the smaller boats' sails
-                at = mid + side * (apart + subject.Length * 0.6f + 48f) - forward * 8f + Vector3.up * 18f;
-                lookAt = mid + Vector3.up * 6f;
+                // from ahead on the quarter and above: the arms in front with the boat behind them, and the ones beside
+                // it arching over its deck; far enough out for thirty metre arms and a galleon, above the smaller sails
+                var across = (side * 0.75f + forward * 0.65f).normalized;
+                at = mid + across * (apart * 0.5f + subject.Length * 0.8f + 50f) + Vector3.up * (24f + subject.Length * 0.2f);
+                lookAt = mid + Vector3.up * 10f;
                 focus = mid;
                 return true;
             }
@@ -292,6 +295,14 @@ public class RaceCamera : MonoBehaviour
         }
         if (at.y < lowest) at.y = lowest;
         return at;
+    }
+
+    /// <summary>The Kraken's roar shakes the picture.</summary>
+    private static Vector3 Shake(float rumble)
+    {
+        if (rumble <= 0f) return Vector3.zero;
+        var t = Time.unscaledTime * 18f;
+        return new Vector3(Mathf.PerlinNoise(t, 0.3f) - 0.5f, Mathf.PerlinNoise(0.7f, t) - 0.5f, Mathf.PerlinNoise(t, 5.1f) - 0.5f) * (2.4f * rumble);
     }
 
     private static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
