@@ -52,6 +52,8 @@ UnityEngine.GameObject Gorilla(string name, float height, UnityEngine.Material m
     var cc = go.GetComponent<UnityEngine.CharacterController>(); if (cc) UnityEngine.Object.DestroyImmediate(cc);
     // the model's own animator (no controller) under the root's
     foreach (var a in go.GetComponentsInChildren<UnityEngine.Animator>(true)) if (a.gameObject != go) UnityEngine.Object.DestroyImmediate(a);
+    // the pack's clips call AnimalSound (its PlaySound, gone): something has to answer, or every idle logs an error
+    go.AddComponent<MonkeyVoice>();
     var smr = go.GetComponentInChildren<UnityEngine.SkinnedMeshRenderer>();
     smr.sharedMaterial = material;
     var animator = go.GetComponent<UnityEngine.Animator>();
@@ -128,7 +130,7 @@ var banShape = Shape(banana);
 var bowAxis = (bowShape.b - bowShape.a).normalized;
 var banAxis = (banShape.b - banShape.a).normalized;
 var turn = UnityEngine.Quaternion.LookRotation(bowAxis, bowShape.bend) * UnityEngine.Quaternion.Inverse(UnityEngine.Quaternion.LookRotation(banAxis, banShape.bend));
-var scale = (bowShape.b - bowShape.a).magnitude / (banShape.b - banShape.a).magnitude * 1.02f;
+var scale = (bowShape.b - bowShape.a).magnitude / (banShape.b - banShape.a).magnitude * 0.85f;
 var rang = new UnityEngine.GameObject("Bananarang");
 rang.transform.localPosition = runeBow.transform.localPosition;
 rang.transform.localRotation = runeBow.transform.localRotation;

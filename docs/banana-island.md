@@ -77,3 +77,22 @@ offers. The island was built around monkeys and bananas, and neither existed in 
 3. Pirate treasure and `!dig`.
 4. The regatta and `!regatta`.
 5. The pirate raid and hero mode on the island, `!pirates`.
+
+## Built (2026-11-01)
+
+All five phases in one go: RavenNest 1b98f933 (items, recipes, Mangrove-only bananas, MangroveManager and
+api/mangrove), game 165f2f8 (everything in the game), RavenBot 769b83a (!dig, !banana, !bananas, !regatta, !pirates on
+both bots).
+
+- Scene and models: tools/mangrove/mangrove-monkeys.cs makes the monkey, the Monkey Pet (and its animator), the
+  Bananarang, the treasure chest, the regatta buoy and the pirate ship, and puts the troop, the chief and the regatta
+  board on the island. Prefabs and Resources are not in git (as everywhere in the project); rerun the tool to remake
+  them.
+- Tested in the editor with bots (the remote bot disconnected so nothing reached chat): monkeys amble and steal
+  (and the chase), the feed, the sign's moods, a treasure found off a pirate and dug up, a regatta of three fishing
+  boats (31.5 s, 32.0 s, 35.1 s, board updated, everyone landed on the island), the pirates' raid (landing, waves,
+  defenders sent at them).
+- Not yet tested: the server's rewards (the running dev server is older than 1b98f933), !banana feed, the chat
+  commands through a real bot, hero mode defending by hand on the island, the Monkey Pet and the Bananarang in game.
+- First guesses to tune: map chances (1/120 pirates, 1/900 fishing), the pile's numbers, pirate strength (0.55 of the
+  defenders' average combat level, captain 0.9), the regatta's radius (150 m) and gusts (0.82 to 1.18).

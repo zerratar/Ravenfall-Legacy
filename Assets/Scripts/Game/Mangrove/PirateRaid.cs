@@ -57,6 +57,7 @@ public sealed class PirateRaid : MonoBehaviour
     private int through;
     private int kills;
     private PlayerController hero;
+    private NavMeshPath spawnPath;
     private TaskType heroTaskBefore;
     private string heroArgumentBefore;
 
@@ -109,8 +110,7 @@ public sealed class PirateRaid : MonoBehaviour
         // the pile: by the chief in the stilt village; the landing: the pirates' own beach on the south side
         var chief = IslandNpc.Find(MonkeyTroop.ChiefKey);
         pile = chief ? chief.transform.position : island.SpawnPosition;
-        landing = template.transform.position;
-        if (NavMesh.SamplePosition(landing, out var hit, 6f, NavMeshHelper.AreaMaskAt(landing))) landing = hit.position;
+        landing = Landing(template.transform.position, pile);
         MakeShip();
 
         MangroveFeed.Say(Localization.UI_PIRATES_COMING, "");
@@ -128,6 +128,27 @@ public sealed class PirateRaid : MonoBehaviour
     {
         var banner = FindAnyObjectByType<Shinobytes.UI.NotificationScreenView>(FindObjectsInactive.Include);
         if (banner) banner.Hide();
+    }
+
+    /// <summary>
+    /// Where the pirates come ashore: by their own beach, at the nearest point that has a way to the pile (the spot the
+    /// island's pirates stand on is cut off from the village on the navmesh).
+    /// </summary>
+    private static Vector3 Landing(Vector3 beach, Vector3 pile)
+    {
+        var mask = NavMeshHelper.AreaMaskAt(pile);
+        var path = new NavMeshPath();
+        for (var r = 0f; r <= 24f; r += 3f)
+        {
+            for (var a = 0; a < 360; a += 30)
+            {
+                var at = beach + Quaternion.Euler(0f, a, 0f) * Vector3.forward * r;
+                if (!NavMesh.SamplePosition(at, out var hit, 3f, mask)) continue;
+                if (NavMesh.CalculatePath(hit.position, pile, mask, path) && path.status == NavMeshPathStatus.PathComplete) return hit.position;
+                if (r == 0f) break;
+            }
+        }
+        return pile;
     }
 
     /// <summary>The pirates' ship sails in and anchors off their beach.</summary>
@@ -198,9 +219,14 @@ public sealed class PirateRaid : MonoBehaviour
         if (toSpawn <= 0 || alive.Count >= MostAlive || Time.time < nextSpawn) return;
         nextSpawn = Time.time + 0.8f;
         var captain = wave == Waves && toSpawn == 1;
+        // spread about the landing, but only where there is a way to the pile
         var offset = UnityEngine.Random.insideUnitCircle * 4f;
-        var at = landing + new Vector3(offset.x, 0f, offset.y);
-        if (NavMesh.SamplePosition(at, out var hit, 4f, NavMeshHelper.AreaMaskAt(landing))) at = hit.position;
+        var at = landing;
+        var mask = NavMeshHelper.AreaMaskAt(landing);
+        spawnPath ??= new NavMeshPath();
+        if (NavMesh.SamplePosition(landing + new Vector3(offset.x, 0f, offset.y), out var hit, 2f, mask)
+            && NavMesh.CalculatePath(hit.position, pile, mask, spawnPath) && spawnPath.status == NavMeshPathStatus.PathComplete)
+            at = hit.position;
         var enemy = Make(at, captain);
         if (enemy) { alive.Add(enemy); toSpawn--; }
     }
@@ -218,11 +244,11 @@ public sealed class PirateRaid : MonoBehaviour
         }
         if (!enemy) return null;
         enemy.name = captain ? "Raid Pirate Captain" : "Raid Pirate";
-        var level = Mathf.Clamp(Mathf.RoundToInt(AverageCombatLevel() * (captain ? 1.1f : 0.75f)), 5, 900);
+        var level = Mathf.Clamp(Mathf.RoundToInt(AverageCombatLevel() * (captain ? 0.9f : 0.55f)), 5, 900);
         enemy.Stats.Attack = new SkillStat(level);
         enemy.Stats.Strength = new SkillStat(level);
         enemy.Stats.Defense = new SkillStat(level);
-        enemy.Stats.Health = new SkillStat(Mathf.Max(20, level * (captain ? 40 : 8) * (1f + wave * 0.15f)));
+        enemy.Stats.Health = new SkillStat(Mathf.Max(20, level * (captain ? 30 : 5) * (1f + wave * 0.15f)));
         enemy.transform.localScale = Vector3.one * (captain ? 1.35f : 1f);
         enemy.AutomaticRespawn = false;
         enemy.Hunting = true;

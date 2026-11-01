@@ -2860,7 +2860,7 @@ public static class Localization
     public static string UI_REGATTA_3RD = "3rd";
     public static string UI_REGATTA_NTH = "{0}th";
     public static string UI_REGATTA_BOARD = "Banana Island Regatta";
-    public static string UI_REGATTA_BOARD_LINE = "{0}. {1}  {2} wins, best {3} s";
+    public static string UI_REGATTA_BOARD_LINE = "{0}. {1} - wins: {2}, best: {3} s";
     public static string UI_REGATTA_BOARD_EMPTY = "No races yet. !regatta";
 
     // The pirates' raid on the Mangrove island
@@ -2909,7 +2909,7 @@ public static class Localization
     public static string UI_TREASURE_FOUND_PIRATE = "{0} took a torn treasure map off a pirate! X marks the spot.";
     public static string UI_TREASURE_FOUND_FISH = "{0} fished up a bottle with a soggy treasure map inside!";
     public static string UI_TREASURE_HOW = "{0} digging. Viewers on the island join with !dig.";
-    public static string UI_TREASURE_DUG = "The chest is up! {0} diggers share the treasure.";
+    public static string UI_TREASURE_DUG = "The chest is up! The diggers share the treasure ({0}).";
     public static string UI_TREASURE_PAID = "The treasure: {0} coins and {1} items for the diggers.";
     public static string UI_TREASURE_LOST = "Nobody dug. The map blows away in the wind.";
     public static string UI_TREASURE_BAR = "Treasure! {0}'s map";

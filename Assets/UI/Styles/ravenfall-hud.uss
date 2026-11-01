@@ -5160,7 +5160,7 @@
 }
 
 .rf-mfeed__text {
-    font-size: 16px;
+    font-size: 17px;
     color: var(--rf-text);
     white-space: normal;
     flex-shrink: 1;
