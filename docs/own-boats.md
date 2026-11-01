@@ -376,3 +376,65 @@ the save carried island 10 and Fishing.
   `api/boats/{characterId}/build`; game: `BoatsApi`, `BoatCommand` (`boat_command`); bots: `!boat` in ROBot (`Boat`)
   and RavenBot (`BoatCommandProcessor`).
 - Icons for the parts and repainted boat icons came from the Image Generator (Flare for new icons, Sunburst for edits).
+
+## Customizing boats (decided 2026-11-01)
+
+Synty's Pirate Realm (imported 2026-11-01, Assets/Synty/PolygonPirateRealm) has modular ships in three sizes: hulls,
+fronts, middles and backs in two to four variants each, masts, rigging, bowsprits, rudders, seven figureheads and four
+rams per size, plus fourteen sail materials, seventeen flags and five plank woods. The user decided:
+
+- **Both ways to change a boat:** chat commands first, a boat designer on the website later.
+- **Every look is earned through play;** nothing is bought.
+- **Pirate Realm's ships become new, bigger boats above the Sloop.**
+
+### What a look is
+
+A boat's look is a short recipe kept on the boat's own inventory stack on the server (its Tag, which every stack
+already has and boats, never stacked, can use): `look:1;hull=2;front=1;middle=3;back=2;figurehead=5;ram=0;sails=7;
+flag=3;wood=2` (0 = none, where a part can be left off). It goes with the boat everywhere: every stream shows it the
+same, and it stays with a crafted boat that is traded or sold. The game assembles the boat from Pirate Realm's parts
+when it is launched (a BoatAssembler: the size's preset as the skeleton, each part swapped for its chosen variant at the
+same place, sails, flags and planks by material).
+
+- **Which boats:** the Pirate Realm boats are fully customizable: the Sloop moves to Pirate Realm's small ship, and the
+  two new boats use the medium and large ships. The Rowboat and the Fishing Boat keep their models and take the flag
+  (a pennant on a pole at the stern) and the sails (the fishing boat's) only.
+- **Defaults:** every boat comes with variant 1 of everything, sails 1 and no flag.
+
+### Earning looks
+
+Unlocks are per player (all their characters), kept by the server (a BoatLookUnlock row per user and key, such as
+`sails_7`, `flag_3`, `figurehead_5`). Proposed sources, to tune:
+
+- **The regatta:** sails. A first place gives a sail not yet owned; a set number of races gives the regatta sails.
+- **Treasure** (dug up, the pirates' chest): flags and figureheads, rarely.
+- **Holding the pirates' raid:** the pirates' own black sails and flag.
+- **Quests and achievements:** planks (wood), rams and hull variants (the shipwright's chain, the Ferryman and Sea
+  Captain titles, Sailing levels 100, 200, 300).
+- **Seasonal events:** special flags (a pumpkin flag at Halloween, a snowflake at Christmas).
+
+### Commands
+
+`!boat look` says what the boat wears, `!boat looks` what the player has earned, and `!boat sails 7`, `!boat flag 3`,
+`!boat figurehead 5`, `!boat hull 2`, `!boat front 1`, `!boat middle 3`, `!boat back 2`, `!boat ram 1`,
+`!boat wood 2` change one part (refused when not earned or not on this boat type). The change shows the next time the
+boat is launched, or at once when it is out.
+
+### The new boats
+
+| Boat | Model | Sailing | Seats | Speed (m/s) |
+|---|---|---|---|---|
+| Brigantine | Pirate Realm medium ship | 100 | 6 | 24 to 60 |
+| Galleon | Pirate Realm large ship | 200 | 10 | 28 to 70 |
+
+Built at the shipwright on Away from crafted parts and a fee, like the Fishing Boat and the Sloop (the ferry's cap of
+80 m/s stays the fastest thing at sea). New parts, crafted: Keel (Crafting 120), Canvas (Crafting 140, from Sailcloth),
+Iron Fittings (Crafting 160, from bars). Seats follow BoatCrews.Seats.
+
+### Phases
+
+1. **Looks:** the BoatAssembler, the Sloop on Pirate Realm's small ship, looks on the boat's stack, unlocks on the
+   server, the `!boat` look commands, and a starter set so they can be tried.
+2. **Earning:** the unlock sources above.
+3. **The new boats:** Brigantine and Galleon (items, parts, blueprints, speeds, seats, prefabs, icons).
+4. **The website's boat designer:** a 3D preview, every earned look to pick from.
