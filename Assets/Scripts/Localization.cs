@@ -2835,7 +2835,7 @@ public static class Localization
 
     // The regatta round the Mangrove island
     public static string MSG_REGATTA_OPEN = Meta("mangrove", "regatta") + "The banana island regatta is open! Own a boat? Type !regatta to race round the island. The start is in {seconds} seconds.";
-    public static string MSG_REGATTA_START = Meta("mangrove", "regatta") + "The regatta is off! {count} boats race round the banana island.";
+    public static string MSG_REGATTA_START = Meta("mangrove", "regatta") + "The regatta is off round the banana island! Boats: {count}.";
     public static string MSG_REGATTA_WON = Meta("mangrove", "regatta") + "{player} wins the banana island regatta in {time} s! {others}";
     public static string MSG_REGATTA_JOINED = Meta("mangrove", "regatta") + "You are in the regatta. Your boat will be at the start line.";
     public static string MSG_REGATTA_ALREADY = Meta("mangrove", "regatta", "fail") + "You are already in the regatta.";
@@ -2846,8 +2846,8 @@ public static class Localization
     public static string MSG_REGATTA_UNDERWAY = Meta("mangrove", "regatta", "fail") + "The regatta is already underway. Next time!";
     public static string MSG_REGATTA_COOLDOWN = Meta("mangrove", "regatta", "fail") + "The boats are still drying. The next regatta can start in {seconds} seconds.";
     public static string MSG_REGATTA_LEFT = Meta("mangrove", "regatta") + "You left the regatta.";
-    public static string UI_REGATTA_JOINED = "{0} joins the regatta ({1} boats).";
-    public static string UI_REGATTA_STARTED = "The regatta is off! {0} boats race round the island.";
+    public static string UI_REGATTA_JOINED = "{0} joins the regatta (boats: {1}).";
+    public static string UI_REGATTA_STARTED = "The regatta is off round the island! Boats: {0}.";
     public static string UI_REGATTA_FINISHED = "{0} finishes {1} in {2} s.";
     public static string UI_REGATTA_CANCELLED = "Not enough boats for a regatta. Two are needed.";
     public static string UI_REGATTA_NOBODY = "Nobody finished the regatta.";

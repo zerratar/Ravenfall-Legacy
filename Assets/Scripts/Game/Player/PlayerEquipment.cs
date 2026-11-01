@@ -33,6 +33,8 @@ public class PlayerEquipment : MonoBehaviour
     private GameObject hammer;
     private GameObject fishingRod;
     private GameObject rake;
+    private GameObject shovel;
+    private bool shovelVisible;
     private float appearanceRefreshTimeout;
     private AttackType lastShownWeapon;
     private bool woodcuttingHatchetVisible;
@@ -73,6 +75,7 @@ public class PlayerEquipment : MonoBehaviour
     public void HideEquipments(bool forceHide = false)
     {
         HideRake(forceHide);
+        HideShovel(forceHide);
         HideWeapon(forceHide);
         HideHatchet(forceHide);
         HidePickAxe(forceHide);
@@ -292,6 +295,33 @@ public class PlayerEquipment : MonoBehaviour
             rakeVisible = true;
         }
         //rakeVisible = true;
+    }
+
+    /// <summary>A shovel in hand, digging up a pirate's treasure on the banana island (TreasureHunt): held as the rake is.</summary>
+    public void ShowShovel()
+    {
+        if (shovelVisible) return;
+
+        HideEquipments();
+        if (!shovel)
+        {
+            var prefab = UnityEngine.Resources.Load<GameObject>("Character/Weapons/Tools/Shovel 01");
+            if (prefab) shovel = Instantiate(prefab, appearance.MainHandTransform);
+        }
+        if (shovel)
+        {
+            shovel.SetActive(true);
+            shovelVisible = true;
+        }
+    }
+
+    public void HideShovel(bool forceHide = false)
+    {
+        if (forceHide || shovelVisible)
+        {
+            if (shovel) shovel.SetActive(false);
+            shovelVisible = false;
+        }
     }
 
     public void ShowWeapon(AttackType type)

@@ -5167,7 +5167,8 @@
 }
 
 .rf-mbar {
-    min-width: 480px;
+    min-width: 0;
+    align-self: center;
 }
 
 .rf-mbar .rf-mbar__icon {

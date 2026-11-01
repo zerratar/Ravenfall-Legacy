@@ -144,14 +144,49 @@ peel.AddComponent<UnityEngine.MeshRenderer>().sharedMaterial = bananaMat;
 UnityEditor.PrefabUtility.SaveAsPrefabAsset(rang, "Assets/Resources/Character/Weapons/Bows/Bananarang.prefab");
 UnityEngine.Object.DestroyImmediate(rang);
 
+// ---- The treasure diggers' shovel -------------------------------------------------------------------------------
+// held as the farming rake is (PlayerEquipment.ShowShovel): the rake's place in the hand, the shovel laid along the
+// rake's handle with its blade where the rake's head is (the wide end of each)
+var rakePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Resources/Character/Weapons/Tools/Rake 01.prefab");
+var rakeMesh = rakePrefab.GetComponent<UnityEngine.MeshFilter>().sharedMesh;
+var shovelPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonFantasyKingdom/Prefabs/Items/SM_Item_Shovel_01.prefab");
+var shovelFilter = shovelPrefab.GetComponentInChildren<UnityEngine.MeshFilter>();
+var shovelMesh = shovelFilter.sharedMesh;
+// which end of a mesh along an axis is the wide one: the side the widest vertex is on
+float WideEnd(UnityEngine.Mesh m, int along)
+{
+    var centre = m.bounds.center[along];
+    var widest = 0f; var side = 1f;
+    foreach (var v in m.vertices) if (UnityEngine.Mathf.Abs(v.x) > widest) { widest = UnityEngine.Mathf.Abs(v.x); side = UnityEngine.Mathf.Sign(v[along] - centre); }
+    return side;
+}
+var rakeHead = WideEnd(rakeMesh, 2);
+var shovelBlade = WideEnd(shovelMesh, 1);
+// shovel +Y (or -Y, by its blade) onto the rake's +Z (or -Z, by its head)
+var lay = UnityEngine.Quaternion.FromToRotation(UnityEngine.Vector3.up * shovelBlade, UnityEngine.Vector3.forward * rakeHead);
+var shovelRoot = new UnityEngine.GameObject("Shovel 01");
+shovelRoot.transform.localPosition = rakePrefab.transform.localPosition;
+shovelRoot.transform.localRotation = rakePrefab.transform.localRotation;
+shovelRoot.transform.localScale = rakePrefab.transform.localScale;
+var blade = new UnityEngine.GameObject("Shovel");
+blade.transform.SetParent(shovelRoot.transform, false);
+blade.transform.localRotation = lay;
+blade.transform.localPosition = rakeMesh.bounds.center - lay * shovelMesh.bounds.center;
+blade.AddComponent<UnityEngine.MeshFilter>().sharedMesh = shovelMesh;
+blade.AddComponent<UnityEngine.MeshRenderer>().sharedMaterials = shovelFilter.GetComponent<UnityEngine.MeshRenderer>().sharedMaterials;
+UnityEditor.PrefabUtility.SaveAsPrefabAsset(shovelRoot, "Assets/Resources/Character/Weapons/Tools/Shovel 01.prefab");
+UnityEngine.Object.DestroyImmediate(shovelRoot);
+
 // ---- The treasure chest -----------------------------------------------------------------------------------------
 Folder("Assets/Resources/Mangrove");
 var chestRoot = new UnityEngine.GameObject("Treasure Chest");
 var chest = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonPirates/Prefabs/Props/SM_Prop_Chest_01.prefab"), chestRoot.transform);
 chest.transform.localPosition = UnityEngine.Vector3.zero;
+// big enough to see from the game camera; its lid (SM_Prop_Chest_Lid_01) swings open when it is up (TreasureHunt)
+chest.transform.localScale = UnityEngine.Vector3.one * 1.6f;
 var pile = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonPirates/Prefabs/Props/SM_Prop_TreasurePile_01.prefab"), chestRoot.transform);
-pile.transform.localPosition = new UnityEngine.Vector3(0.9f, 0f, 0.4f);
-pile.transform.localScale = UnityEngine.Vector3.one * 0.5f;
+pile.transform.localPosition = new UnityEngine.Vector3(1.4f, 0f, 0.6f);
+pile.transform.localScale = UnityEngine.Vector3.one * 0.7f;
 foreach (var c in chestRoot.GetComponentsInChildren<UnityEngine.Collider>()) UnityEngine.Object.DestroyImmediate(c);
 UnityEditor.PrefabUtility.SaveAsPrefabAsset(chestRoot, "Assets/Resources/Mangrove/Treasure Chest.prefab");
 UnityEngine.Object.DestroyImmediate(chestRoot);

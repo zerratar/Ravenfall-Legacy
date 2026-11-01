@@ -169,6 +169,9 @@ namespace Shinobytes.UI
             barIcon.text = status.Glyph;
             barTitle.text = status.Title;
             barLine.text = status.Line;
+            // a bare title (the chest is open) is a small pill, no empty line under it
+            var line = string.IsNullOrEmpty(status.Line) ? DisplayStyle.None : DisplayStyle.Flex;
+            if (barLine.style.display != line) barLine.style.display = line;
             var track = status.Progress >= 0f ? DisplayStyle.Flex : DisplayStyle.None;
             if (barTrack.style.display != track) barTrack.style.display = track;
             if (status.Progress >= 0f) barFill.style.width = new Length(Mathf.Clamp01(status.Progress) * 100f, LengthUnit.Percent);

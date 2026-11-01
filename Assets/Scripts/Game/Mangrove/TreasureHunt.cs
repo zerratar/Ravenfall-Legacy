@@ -22,7 +22,7 @@ public sealed class TreasureHunt : MonoBehaviour
     public const float GiveUpAfter = 180f;
     private const float ReachDistance = 2.2f;
     private const int MostDiggers = 50;
-    private const float ChestSeconds = 25f;
+    private const float ChestSeconds = 40f;
 
     private static TreasureHunt current;
     private static float nextMap;
@@ -37,7 +37,9 @@ public sealed class TreasureHunt : MonoBehaviour
     private bool dug;
     private GameObject mark;
     private GameObject chest;
+    private Transform lid;
     private float chestRise;
+    private const float LidOpen = -110f;
 
     public static bool Running => current && !current.dug;
 
@@ -150,7 +152,7 @@ public sealed class TreasureHunt : MonoBehaviour
         var place = spot + Quaternion.Euler(0f, angle, 0f) * Vector3.forward * (1.1f + 0.35f * (index / 6));
         if ((p.Position - spot).sqrMagnitude > ReachDistance * ReachDistance * (1f + index / 6))
         {
-            if (digging.Remove(p)) p.Animations.EndFarming();
+            if (digging.Remove(p)) { p.Animations.EndFarming(); p.Equipment.HideShovel(); }
             if (!p.Movement.IsMoving || (p.agent && (p.agent.destination - place).sqrMagnitude > 1f)) p.SetDestination(place);
             return true;
         }
@@ -162,13 +164,18 @@ public sealed class TreasureHunt : MonoBehaviour
             look.y = 0f;
             if (look.sqrMagnitude > 0.01f) p.transform.rotation = Quaternion.LookRotation(look);
             p.Animations.StartFarming();
+            p.Equipment.ShowShovel();
         }
         return true;
     }
 
     private void StopDigging(PlayerController p)
     {
-        if (p && digging.Remove(p)) p.Animations.EndFarming();
+        if (p && digging.Remove(p))
+        {
+            p.Animations.EndFarming();
+            p.Equipment.HideShovel();
+        }
     }
 
     // ---- The dig -----------------------------------------------------------------------------------
@@ -187,8 +194,10 @@ public sealed class TreasureHunt : MonoBehaviour
         // the chest comes up out of the sand, then goes after a while
         if (chest)
         {
-            chestRise = Mathf.MoveTowards(chestRise, 1f, Time.deltaTime * 0.8f);
-            chest.transform.position = spot + Vector3.up * Mathf.Lerp(-0.9f, 0.02f, Mathf.SmoothStep(0f, 1f, chestRise));
+            chestRise = Mathf.MoveTowards(chestRise, 2f, Time.deltaTime * 0.8f);
+            chest.transform.position = spot + Vector3.up * Mathf.Lerp(-1.2f, 0.02f, Mathf.SmoothStep(0f, 1f, chestRise));
+            // up out of the sand first, then the lid swings back on its hinge
+            if (lid) lid.localRotation = Quaternion.Euler(Mathf.SmoothStep(0f, LidOpen, chestRise - 1f), 0f, 0f);
         }
     }
 
@@ -238,7 +247,7 @@ public sealed class TreasureHunt : MonoBehaviour
     private void OnDestroy()
     {
         if (current == this) current = null;
-        foreach (var p in digging) if (p) p.Animations.EndFarming();
+        foreach (var p in digging) if (p) { p.Animations.EndFarming(); p.Equipment.HideShovel(); }
         if (mark) Destroy(mark);
         if (chest) Destroy(chest);
     }
@@ -274,7 +283,8 @@ public sealed class TreasureHunt : MonoBehaviour
     {
         var prefab = Resources.Load<GameObject>("Mangrove/Treasure Chest");
         if (!prefab) return;
-        chest = Instantiate(prefab, spot + Vector3.down, Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f), transform);
+        chest = Instantiate(prefab, spot + Vector3.down * 1.2f, Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f), transform);
+        foreach (var t in chest.GetComponentsInChildren<Transform>()) if (t.name.StartsWith("SM_Prop_Chest_Lid")) lid = t;
         chestRise = 0f;
     }
 
