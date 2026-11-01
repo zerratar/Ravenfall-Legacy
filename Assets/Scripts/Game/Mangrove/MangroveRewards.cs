@@ -31,6 +31,15 @@ public static class MangroveRewards
         }
         if (items.Count > 0) game.AddItems(items.ToArray());
 
+        // boat looks earned with it: a line each in the feed (the regatta's sails, the treasure's flags, the pirates' colours)
+        foreach (var r in rewards)
+        {
+            if (r.Looks == null || r.Looks.Length == 0) continue;
+            var player = game.Players.GetPlayerById(r.CharacterId);
+            if (!player) continue;
+            MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_BOAT_LOOK_EARNED, player.Name, string.Join(", ", r.Looks.Select(l => l.Replace('_', ' ')))), "\uf21a");
+        }
+
         if (!string.IsNullOrEmpty(feedLine))
             MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, feedLine, coins.ToString("N0", CultureInfo.InvariantCulture), items.Sum(i => i.Amount)), "");
 

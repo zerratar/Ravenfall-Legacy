@@ -947,7 +947,8 @@ public static class Localization
     public static string MSG_BOAT_ANCHORED = Meta("boat", "anchored", "info") + "Your {boatName} lies at anchor. !sail to weigh anchor.";
     public static string MSG_BOAT_LIST = Meta("boat", "list", "info") + "The shipwright on Away builds: {list}";
     public static string MSG_BOAT_LOOK = Meta("boat", "look", "info") + "Your {boatName}: {look}. Change a part with !boat sails 3 (or flag, figurehead, hull...), see what you own with !boat looks.";
-    public static string MSG_BOAT_LOOKS = Meta("boat", "looks", "info") + "For your {boatName} you own: {owned}. More are earned at sea.";
+    public static string MSG_BOAT_LOOKS = Meta("boat", "looks", "info") + "For your {boatName} you own: {owned}. More: regatta wins (sails), treasure (flags, figureheads), holding the pirates' raid (black sails, skull flag), Sailing levels and the Ferryman titles (wood, rams, hulls, decks).";
+    public static string UI_BOAT_LOOK_EARNED = "{0} earned {1} for their boats! (!boat looks)";
     public static string MSG_BOAT_LOOK_SET = Meta("boat", "look_set", "info") + "Your {boatName} now has {part} {variant}.";
     public static string MSG_BOAT_LOOK_LOCKED = Meta("boat", "look_locked", "fail") + "You have not earned {part} {variant} yet. You own: {owned}.";
     public static string MSG_BOAT_LOOK_SLOT = Meta("boat", "look_slot", "fail") + "Your {boatName} cannot change its {part}. It can change: {parts}.";

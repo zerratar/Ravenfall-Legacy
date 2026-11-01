@@ -47,5 +47,7 @@ namespace RavenNest.SDK.Endpoints
         public Guid CharacterId { get; set; }
         public long Coins { get; set; }
         public EventItemReward[] Items { get; set; }
+        /// <summary>Boat looks earned with it ("sails_9", "flag_12"; docs/own-boats.md, "Customizing boats").</summary>
+        public string[] Looks { get; set; }
     }
 }

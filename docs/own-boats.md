@@ -454,3 +454,23 @@ Iron Fittings (Crafting 160, from bars). Seats follow BoatCrews.Seats.
 - Tested with the dev server: !boat look, looks, a locked flag, a part a rowboat cannot change, a number out of
   range, a flag set and flown on a launched rowboat. The Sloop's parts were checked in renders; a real Sloop was not
   launched (no test character has one).
+
+### Built: phase 2 (2026-11-01)
+
+What earns which look (server: BoatLooks.ByProgress and the lists beside it, BoatManager.OwnedKeys and GrantNew):
+
+- **The regatta:** the winner gets a sail not yet owned from sails 3, 4, 5 and 7 to 14; any other finisher one in ten.
+- **Treasure dug up:** each digger has a 12% chance of a flag (8, 9, 11, 12, 14 to 17) and 4% of a figurehead (1, 3, 4,
+  5, 7) not yet owned.
+- **Holding the pirates' raid:** every defender gets the pirates' colours, the black sails (6) and the skull and
+  bones (flag 7).
+- **Progress at sea** (owned while it holds, counted over all of a player's characters, no row): Sailing 50 wood 3; 100
+  ram 1 and back 2; 150 front 2; 200 wood 4, ram 2 and the second hull; 250 middle 2 and front 3; 300 wood 5 and ram 3;
+  400 middle 3, front 4 and back 4; 500 ram 4. The shipwright's chain: flag 13. The Ferryman: figurehead 2; the Sea
+  Captain: figurehead 6 and flag 10.
+- No seasonal flags: none of the kit's seventeen is seasonal.
+
+The chests and the regatta say which looks they gave (MangroveReward.Looks); the game puts a line in the banana
+island's feed. Tested with the dev server: a regatta win gave sails 11, the pirates' chest sails 6 and flag 7,
+`!boat looks` listed flag 13 from the finished shipwright's chain, and flag 7 could be set. The treasure's chance was
+not rolled in a test.
