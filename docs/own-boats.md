@@ -516,3 +516,23 @@ not rolled in a test.
   masthead and stern flags), the swatches, and the website builds. Not tested: the page itself signed in (the local
   site's certificate is for ravenfall.stream), and whether a boat changed on the website while its owner is in a
   stream shows the new look before the game next loads the inventory.
+
+### Sails in port (built 2026-11-01)
+
+Pirate Realm's masts carry each sail twice: set ("..._Sail_Down_01", a skinned mesh whose one blend shape,
+"Sails_Raised", hauls it up to its yard) and furled ("..._Sail_Tied_01"); the jibs and the spanker come as whole
+pieces with a furled one beside them ("..._Tied_01"). BoatSails (on every ship, found by BoatAssembler) takes them in
+over 2.5 s: the set sails rise on their blend shape, and three quarters of the way the furled ones (and the furled jibs
+and spanker) take their place; setting them runs the other way. The furled sails wear the look's sailcloth with the
+kit's wind turned off (BoatSails.Still), as the kit's own static sails do: they are lashed to their yards.
+
+- A ship comes alongside furled and sets its sails as it pulls away from the dock.
+- Under way (to an island, or roaming) its sails are set; in the last stretch before a dock (30 m, or one and a half
+  ship lengths) it takes them in.
+- At anchor (fishing at sea) they are furled.
+- Landed, the ship lies at the dock with its sails furled for 20 s (OwnBoat.Moor), then goes; its owner sailing
+  again takes it away at once, and so does leaving the game.
+
+Tested in the editor: both ships' sails found (the Galleon 7, the Sloop 3), set, raising, furled, the furled ones in
+the look's colour. Not yet tested in a live game: a ship sailing from dock to dock, fishing at anchor, the moored
+ship, and the regatta's finish (every racer's ship lies at the Mangrove dock for 20 s, overlapping).

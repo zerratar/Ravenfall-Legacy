@@ -612,6 +612,9 @@ public class FerryHandler : MonoBehaviour
 
     private void Board(OwnBoat boat)
     {
+        // the boat they left lying at a dock goes: this is the one they sail now
+        if (mooredBoat) Destroy(mooredBoat.gameObject);
+        mooredBoat = null;
         ownBoat = boat;
         boat.Arrived += OnOwnBoatArrived;
         player.InterruptAction();
@@ -667,7 +670,7 @@ public class FerryHandler : MonoBehaviour
     private void LandOwnBoat(IslandController island)
     {
         CrewAshore(island);
-        PutAwayOwnBoat(true);
+        PutAwayOwnBoat(true, moor: true);
         player.Movement.SetPosition(island.DockingArea.DockPosition);
         player.Movement.Unlock();
         State = PlayerFerryState.None;
@@ -685,7 +688,11 @@ public class FerryHandler : MonoBehaviour
         }
     }
 
-    private void PutAwayOwnBoat(bool forget)
+    /// <summary>How long a boat lies at the dock after its owner stepped ashore, sails furled (OwnBoat.Moor).</summary>
+    private const float MoorSeconds = 20f;
+    private OwnBoat mooredBoat;
+
+    private void PutAwayOwnBoat(bool forget, bool moor = false)
     {
         if (!ownBoat) return;
         // its guests first: they sit in it, and would go with it
@@ -694,7 +701,15 @@ public class FerryHandler : MonoBehaviour
         if (player && player.transform.parent == ownBoat.Seat) player.transform.SetParent(null);
         player.Animations.SetCaptainState(false);
         player.Animations.ClearOnsenAnimations();
-        Destroy(ownBoat.gameObject);
+        if (moor)
+        {
+            ownBoat.Moor(MoorSeconds);
+            mooredBoat = ownBoat;
+        }
+        else
+        {
+            Destroy(ownBoat.gameObject);
+        }
         ownBoat = null;
         isOnFerry = false;
         if (forget) OwnBoatLog.Remove(player.Id);
@@ -710,6 +725,7 @@ public class FerryHandler : MonoBehaviour
             guestRiding = false;
         }
         BoatCrews.Remove(player);
+        if (mooredBoat) Destroy(mooredBoat.gameObject);
 
         // the player left the game at sea: the boat goes with them, its place kept for when they come back. Its guests
         // are lifted out first, or they would go with it; each lands at the nearest dock on its own (PollGuest)

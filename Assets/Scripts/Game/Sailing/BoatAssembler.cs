@@ -31,6 +31,8 @@ public static class BoatAssembler
                 model.SetParent(boat.transform, false);
             }
             BuildShip(model, ship, look);
+            // the sails taken in and set (in port, at anchor), the furled ones painted with the rest
+            BoatSails.Collect(boat, model);
             Paint(model, parts, look);
             Flag(boat.transform, model, parts, look["flag"], true);
         }
@@ -70,19 +72,21 @@ public static class BoatAssembler
         Put(Pick(parts.Rams, look["ram"]), hull);
     }
 
-    /// <summary>The look's sails and planks, in place of the kit's own on every renderer.</summary>
+    /// <summary>The look's sails and planks, in place of the kit's own on every renderer; the furled sails' cloth still.</summary>
     private static void Paint(Transform model, BoatParts parts, Dictionary<string, int> look)
     {
         var sails = Pick(parts.Sails, look["sails"]);
         var wood = Pick(parts.Woods, look["wood"]);
+        var furled = BoatSails.Still(sails);
         foreach (var r in model.GetComponentsInChildren<Renderer>())
         {
             var mats = r.sharedMaterials;
             var changed = false;
+            var tied = r.name.Contains("_Tied");
             for (var i = 0; i < mats.Length; ++i)
             {
                 var name = mats[i] ? mats[i].name : "";
-                if (sails && name.StartsWith("ShipSails_", System.StringComparison.Ordinal)) { mats[i] = sails; changed = true; }
+                if (sails && name.StartsWith("ShipSails_", System.StringComparison.Ordinal)) { mats[i] = tied ? furled : sails; changed = true; }
                 else if (wood && name.StartsWith("Ship_Planks_", System.StringComparison.Ordinal)) { mats[i] = wood; changed = true; }
             }
             if (changed) r.sharedMaterials = mats;

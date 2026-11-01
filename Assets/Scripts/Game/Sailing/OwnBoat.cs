@@ -64,6 +64,10 @@ public sealed class OwnBoat : MonoBehaviour
     private float rowing;   // 0 resting .. 1 rowing, eased so the oars settle when the boat stops
     private float speedNow; // metres a second it actually went, smoothed
 
+    private BoatSails sails;
+    // put away at a dock: it lies there a while, sails furled, then goes (Moor)
+    private float mooredFor = -1f;
+
     private List<Vector3> route;
     private int next;
     private float heading; // degrees, 0 = north (+Z)
@@ -101,6 +105,9 @@ public sealed class OwnBoat : MonoBehaviour
         boat.State = Course.Anchored;
         // its look, from the boat stack's Tag (docs/own-boats.md, "Customizing boats")
         BoatAssembler.Apply(go, tier, BoatLook.TagOf(owner));
+        // a ship comes alongside with its sails furled and sets them as it pulls away (docs/own-boats.md, "Sails in port")
+        boat.sails = go.GetComponent<BoatSails>();
+        if (boat.sails) boat.sails.Snap(true);
         (boat.length, boat.width, boat.turnRate) = tier switch
         {
             BoatItems.Tier.Galleon => (40f, 11f, 22f),
@@ -221,8 +228,37 @@ public sealed class OwnBoat : MonoBehaviour
         foreach (var oar in guestOars) if (oar) oar.SetActive(guests.Count > 0);
     }
 
+    /// <summary>
+    /// Its owner stepped ashore: it lies at the dock with its sails furled for a while, then goes. Its owner sailing again
+    /// takes it away at once (FerryHandler), so two of theirs never lie in one place.
+    /// </summary>
+    public void Moor(float seconds)
+    {
+        route = null;
+        guests.Clear();
+        State = Course.Arrived;
+        mooredFor = seconds;
+        if (sails) sails.Furl(true);
+    }
+
+    public bool Moored => mooredFor >= 0f;
+
+    /// <summary>Coming in to a dock: the last stretch, in which a ship takes in its sails.</summary>
+    private bool NearingPort => State == Course.Sailing && route != null && route.Count > 0
+        && Flat(route[route.Count - 1] - flat).magnitude < Mathf.Max(30f, length * 1.5f);
+
     private void Update()
     {
+        var dt = GameTime.deltaTime;
+        if (Moored)
+        {
+            mooredFor -= dt;
+            if (mooredFor < 0f || !Owner) { Destroy(gameObject); return; }
+            speedNow = Mathf.Lerp(speedNow, 0f, 1f - Mathf.Exp(-dt * 6f));
+            Place();
+            Row(dt);
+            return;
+        }
         // its owner gone (left the game): nobody to sail it. Its guests are lifted out first (they would go with it);
         // each lands at the nearest dock on its own (FerryHandler)
         if (!Owner)
@@ -233,11 +269,12 @@ public sealed class OwnBoat : MonoBehaviour
         }
         if (guests.RemoveAll(g => !g) > 0) Reseat();
         var was = flat;
-        var dt = GameTime.deltaTime;
         if (Moving) Steer(dt);
         if (dt > 0f) speedNow = Mathf.Lerp(speedNow, Flat(flat - was).magnitude / dt, 1f - Mathf.Exp(-dt * 6f));
         Place();
         Row(dt);
+        // under sail on the open sea; furled at anchor and coming in to a dock
+        if (sails) sails.Furl(!Moving || NearingPort);
     }
 
     /// <summary>
