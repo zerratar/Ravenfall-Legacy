@@ -22,6 +22,13 @@ public class DockController : MonoBehaviour
         {
             DockPosition = boxCollider.center + transform.position;
         }
+
+        // on the walkable deck: some islands' points sit inside the pier (Away's over a metre down), and whoever lands
+        // there (from the ferry or their own boat) stood sunk into the planks
+        if (UnityEngine.AI.NavMesh.SamplePosition(DockPosition, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            DockPosition = hit.position;
+        }
     }
 
     public Vector3 DockPosition;
