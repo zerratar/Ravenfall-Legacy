@@ -2766,6 +2766,15 @@
     "MSG_BANANAS_FED": "Aporna tog {amount} bananer. Högen: {bananas}.",
     "MSG_BANANAS_FED_GOLDEN": "Aporna tog din gyllene banan. Hela flocken jublar!",
     "MSG_BANANAS_NONE": "Du har inga bananer. De växer bara på bananön: !train gathering där.",
-    "MSG_BANANAS_NOT_OPEN": "Bananön är inte öppen på den här streamen än."
+    "MSG_BANANAS_NOT_OPEN": "Bananön är inte öppen på den här streamen än.",
+    "MSG_BOAT_LOOK": "Din {boatName}: {look}. Byt en del med !boat sails 3 (eller flag, figurehead, hull...), se vad du äger med !boat looks.",
+    "MSG_BOAT_LOOKS": "Till din {boatName} äger du: {owned}. Fler förtjänas till sjöss.",
+    "MSG_BOAT_LOOK_SET": "Din {boatName} har nu {part} {variant}.",
+    "MSG_BOAT_LOOK_LOCKED": "Du har inte förtjänat {part} {variant} än. Du äger: {owned}.",
+    "MSG_BOAT_LOOK_SLOT": "Din {boatName} kan inte byta {part}. Den kan byta: {parts}.",
+    "MSG_BOAT_LOOK_RANGE": "Det finns ingen {part} {variant}. De går från 1 till {count}.",
+    "MSG_BOAT_LOOK_USAGE": "Vilken? !boat {part} 3, eller !boat {part} none.",
+    "MSG_BOAT_LOOK_NO_BOAT": "Utrusta en båt först: utseendet sitter på båten.",
+    "MSG_BOAT_LOOK_NONE": "ingen"
   }
 }

@@ -946,6 +946,15 @@ public static class Localization
     public static string MSG_BOAT_WANDERING = Meta("boat", "wandering", "info") + "Your {boatName} roams the sea at {speed} m/s. !sail <island> to set a course, !fish to drop anchor and fish.";
     public static string MSG_BOAT_ANCHORED = Meta("boat", "anchored", "info") + "Your {boatName} lies at anchor. !sail to weigh anchor.";
     public static string MSG_BOAT_LIST = Meta("boat", "list", "info") + "The shipwright on Away builds: {list}";
+    public static string MSG_BOAT_LOOK = Meta("boat", "look", "info") + "Your {boatName}: {look}. Change a part with !boat sails 3 (or flag, figurehead, hull...), see what you own with !boat looks.";
+    public static string MSG_BOAT_LOOKS = Meta("boat", "looks", "info") + "For your {boatName} you own: {owned}. More are earned at sea.";
+    public static string MSG_BOAT_LOOK_SET = Meta("boat", "look_set", "info") + "Your {boatName} now has {part} {variant}.";
+    public static string MSG_BOAT_LOOK_LOCKED = Meta("boat", "look_locked", "fail") + "You have not earned {part} {variant} yet. You own: {owned}.";
+    public static string MSG_BOAT_LOOK_SLOT = Meta("boat", "look_slot", "fail") + "Your {boatName} cannot change its {part}. It can change: {parts}.";
+    public static string MSG_BOAT_LOOK_RANGE = Meta("boat", "look_range", "fail") + "There is no {part} {variant}. They go from 1 to {count}.";
+    public static string MSG_BOAT_LOOK_USAGE = Meta("boat", "look_usage", "info") + "Which one? !boat {part} 3, or !boat {part} none.";
+    public static string MSG_BOAT_LOOK_NO_BOAT = Meta("boat", "look_none", "fail") + "Equip a boat first: its look is kept on the boat.";
+    public static string MSG_BOAT_LOOK_NONE = "none";
     public static string MSG_BOAT_BUILD_USAGE = Meta("boat", "build_usage", "info") + "Which boat? !boat build fishing boat, or !boat build sloop. !boat list says what each needs.";
     public static string MSG_BOAT_BUILT = Meta("boat", "built", "info") + "The shipwright hands over your new {boatName} for {fee} coins. Equip it with !equip and the boat's name, then set sail!";
     public static string MSG_BOAT_UNKNOWN = Meta("boat", "unknown", "info") + "The shipwright does not build a \"{query}\". She builds: {list}.";

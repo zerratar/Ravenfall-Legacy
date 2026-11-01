@@ -98,9 +98,11 @@ public sealed class OwnBoat : MonoBehaviour
         boat.heading = heading;
         boat.flat = new Vector3(at.x, SeaChart.Sea, at.z);
         boat.State = Course.Anchored;
+        // its look, from the boat stack's Tag (docs/own-boats.md, "Customizing boats")
+        BoatAssembler.Apply(go, tier, BoatLook.TagOf(owner));
         (boat.length, boat.width, boat.turnRate) = tier switch
         {
-            BoatItems.Tier.Sloop => (16f, 5f, 35f),
+            BoatItems.Tier.Sloop => (17f, 6.6f, 35f),
             BoatItems.Tier.FishingBoat => (8.5f, 3f, 45f),
             _ => (5.4f, 2.2f, 60f),
         };

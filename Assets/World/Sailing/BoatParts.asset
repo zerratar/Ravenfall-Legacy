@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ee3b2d5ccef5494fb34928aaf50f24f, type: 3}
+  m_Name: BoatParts
+  m_EditorClassIdentifier: Assembly-CSharp::BoatParts
+  Hulls:
+  - {fileID: 1899709056268798623, guid: 8486f788ab4192648868fefdc123dcd5, type: 3}
+  - {fileID: 4723367229468569188, guid: 80b85cf0e069fde4f942a54abdd132c4, type: 3}
+  Fronts:
+  - {fileID: 4097995621435148403, guid: 368c27c578b8f0f4cbd4ecba531105ab, type: 3}
+  - {fileID: 1844348797491632997, guid: 0184296981e927d498c93a33b25915b0, type: 3}
+  - {fileID: 3624169172718170327, guid: 3b0572f5b046e114bafdd6a975291249, type: 3}
+  - {fileID: 2665272789118409546, guid: 5b481e656fbe95447a720b5b2ff67d39, type: 3}
+  Middles:
+  - {fileID: 3284723363243260201, guid: 1d0471d8733886842b246beb2d241cfa, type: 3}
+  - {fileID: 2035958559426399457, guid: 21c4cc05cabdc0a4296ad529fe77c540, type: 3}
+  - {fileID: 2532070792723129553, guid: 013e37a84d9174644b6738eb98dbfda7, type: 3}
+  Backs:
+  - {fileID: 1945969651941338285, guid: 208ae3cab614e1c4b9ca41ad41f3067b, type: 3}
+  - {fileID: 3542535203076723813, guid: 93aed5ff89d24c54c9742ea4d6aee39c, type: 3}
+  - {fileID: 180939295256014955, guid: 3129d45ae5c196c4da589bd24f9a3e85, type: 3}
+  - {fileID: 577629172512844140, guid: 0002f216f60daab45b1f0c3dd59f9679, type: 3}
+  Figureheads:
+  - {fileID: 2677329528563741408, guid: 4f56d1d887924814687727eb9e0b44d4, type: 3}
+  - {fileID: 4455513261639822577, guid: 8495669e8ee04a44f8ca6bee66658f09, type: 3}
+  - {fileID: 7202820984363355015, guid: 8b8129a0a7cf6634088cff599b85ca5e, type: 3}
+  - {fileID: 8524383320535801839, guid: d95e25b899f5af049a6cd1b7bce71ad1, type: 3}
+  - {fileID: 6450897876485540748, guid: 827a09a979d877b4e9adaa9efcbb007e, type: 3}
+  - {fileID: 2488009151212434041, guid: 25c9f5b3dd8a59145bc4878d12873963, type: 3}
+  - {fileID: 5982824646437855890, guid: 11367d110fcd11c43af3f3afd4f52e69, type: 3}
+  Rams:
+  - {fileID: 4923167769970237319, guid: d3c23e66bdedc9541b50112b9e639607, type: 3}
+  - {fileID: 7926797933553222629, guid: 9d36eaabb8d842d44ac35effb3d9cf08, type: 3}
+  - {fileID: 5834692181127012736, guid: 890aeb85c126a74479a4b164964aaba1, type: 3}
+  - {fileID: 3855128737387600812, guid: 43c2bef30abaf8d4c8c5f73bb677d5b7, type: 3}
+  Rig: {fileID: 3442062726932012677, guid: 29a2e43639f197b409aa2d2a6f13144f, type: 3}
+  Sails:
+  - {fileID: 2100000, guid: 754fdc7675faeda4f800474a3bc34b27, type: 2}
+  - {fileID: 2100000, guid: 2636dcdc0b443c441be32c0f9aa408b8, type: 2}
+  - {fileID: 2100000, guid: 94291c1fdd996ba408d5b9e1291b3735, type: 2}
+  - {fileID: 2100000, guid: 42800474d952f53499f1a3816e8131df, type: 2}
+  - {fileID: 2100000, guid: baade60e7004cd94cb91a74cc352f72f, type: 2}
+  - {fileID: 2100000, guid: 1336c34c5a115964792356a34dbe2a5e, type: 2}
+  - {fileID: 2100000, guid: 7abe1ad825de17d44bff541bb81ffc60, type: 2}
+  - {fileID: 2100000, guid: 764a44595ae6adf449c899fe0ef164b5, type: 2}
+  - {fileID: 2100000, guid: 07506a2b56c66ef4e8807124e72daf6c, type: 2}
+  - {fileID: 2100000, guid: 19759270ed61d3f45a5cf2f915b55227, type: 2}
+  - {fileID: 2100000, guid: 3a187ffcb5d13254abb283ce2c627cb2, type: 2}
+  - {fileID: 2100000, guid: 275d9b9ce6e56bd45bb4b910d4489cdf, type: 2}
+  - {fileID: 2100000, guid: 6d78c9354be43b446bf434e1720239f7, type: 2}
+  - {fileID: 2100000, guid: 0509bad7b2b5a8840af2baa9c99c62dc, type: 2}
+  Flags:
+  - {fileID: 2100000, guid: d0177293ac51c5340bf5ff687a56dae1, type: 2}
+  - {fileID: 2100000, guid: d2ce3ae7c9d7cbe409fe94aee783ec99, type: 2}
+  - {fileID: 2100000, guid: fcfb254b6b851ac4a99cf04dfb027e77, type: 2}
+  - {fileID: 2100000, guid: 65a8fff3ec24e9e4ea4ed8dcd63466cc, type: 2}
+  - {fileID: 2100000, guid: 24b271d55b920df4bac89343df4896a7, type: 2}
+  - {fileID: 2100000, guid: dad0643e1ebbc984d956f319ec884912, type: 2}
+  - {fileID: 2100000, guid: 7605c20015ffaed4b8457b6f01d90bdd, type: 2}
+  - {fileID: 2100000, guid: d403524fd4b513742a9cd18283b66469, type: 2}
+  - {fileID: 2100000, guid: cc145224bde9cde4a8e4973ea4cbfd5b, type: 2}
+  - {fileID: 2100000, guid: 050ba4d8a5157d646ba2374ad8d5f8eb, type: 2}
+  - {fileID: 2100000, guid: 9406707033e17a84a916bb1d2cf01783, type: 2}
+  - {fileID: 2100000, guid: eec9c862b99e52b42bed815733250353, type: 2}
+  - {fileID: 2100000, guid: 84e7db177eb566e4a86606bed416ae4e, type: 2}
+  - {fileID: 2100000, guid: e72d4ab9ffcbde44494f2df03ea63504, type: 2}
+  - {fileID: 2100000, guid: 73bbe5de248b3a8448d7221a92b044d1, type: 2}
+  - {fileID: 2100000, guid: 2709defa499cd9848a0ae4011c41077a, type: 2}
+  - {fileID: 2100000, guid: 9576457e07a981c4fb348a91b84d3d0e, type: 2}
+  Woods:
+  - {fileID: 2100000, guid: a475c40a9858e9d439a9670c29ddd436, type: 2}
+  - {fileID: 2100000, guid: 1e7ce60efa5116d45b4b4d8feff51355, type: 2}
+  - {fileID: 2100000, guid: f838efc8f9aaae14e8391457721e9595, type: 2}
+  - {fileID: 2100000, guid: 30cd99474a7dcd74d962b0e9a78052f9, type: 2}
+  - {fileID: 2100000, guid: 39d6221cc7766194598f90c548a156d3, type: 2}
+  Flag: {fileID: 4319471411807135604, guid: 977536cb3a64d0d449701a4517234f1c, type: 3}
+  FlagPole: {fileID: 1242942282674092403, guid: 377a363aa586a6546930df3f87e92649, type: 3}

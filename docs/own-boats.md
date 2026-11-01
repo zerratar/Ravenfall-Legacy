@@ -438,3 +438,19 @@ Iron Fittings (Crafting 160, from bars). Seats follow BoatCrews.Seats.
 2. **Earning:** the unlock sources above.
 3. **The new boats:** Brigantine and Galleon (items, parts, blueprints, speeds, seats, prefabs, icons).
 4. **The website's boat designer:** a 3D preview, every earned look to pick from.
+
+### Built: phase 1 (2026-11-01)
+
+- Server: BoatLookUnlock (per user, the table is made at startup), BoatLooks (the parts per boat, what every boat
+  comes with, the recipe), BoatManager.GetLook / SetLook / GrantLook, api/boats/{characterId}/look and
+  api/boats/{characterId}/look/{slot}/{variant}.
+- Game: BoatLook (the recipe), BoatParts (Assets/World/Sailing/BoatParts.asset), BoatAssembler (the Sloop built from
+  Pirate Realm's small ship under its Model; sails and planks by material; the flag at the masthead, on the small
+  boats on a pole at the stern), the Sloop on Pirate Realm's small ship (tools/sailing/make-pirate-realm-boats.cs, its
+  Sloop Rig taken from the kit's preset), the looks applied at launch and at once while out, and `!boat look`,
+  `!boat looks`, `!boat <part> <n|none>` (sail and planks also work).
+- Free for every boat until phase 2 adds earning: variant 1 of every part (back 3, as the kit's preset), no
+  figurehead or ram, sails 1 and 2, flags none and 1 to 3, woods 1 and 2.
+- Tested with the dev server: !boat look, looks, a locked flag, a part a rowboat cannot change, a number out of
+  range, a flag set and flown on a launched rowboat. The Sloop's parts were checked in renders; a real Sloop was not
+  launched (no test character has one).

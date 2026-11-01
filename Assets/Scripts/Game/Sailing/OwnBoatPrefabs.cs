@@ -9,10 +9,21 @@ public sealed class OwnBoatPrefabs : MonoBehaviour
     [SerializeField] private GameObject rowboat;
     [SerializeField] private GameObject fishingBoat;
     [SerializeField] private GameObject sloop;
+    /// <summary>What boats are assembled from (BoatAssembler), made by tools/sailing/make-pirate-realm-boats.cs.</summary>
+    [SerializeField] private BoatParts parts;
 
     private static OwnBoatPrefabs instance;
 
     private void Awake() => instance = this;
+
+    public static BoatParts Parts
+    {
+        get
+        {
+            if (!instance) instance = FindAnyObjectByType<OwnBoatPrefabs>();
+            return instance ? instance.parts : null;
+        }
+    }
 
     public static GameObject Get(BoatItems.Tier tier)
     {

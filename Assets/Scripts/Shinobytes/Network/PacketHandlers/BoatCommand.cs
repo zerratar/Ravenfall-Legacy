@@ -16,6 +16,67 @@ public class BoatCommand : ChatBotCommandHandler<string>
     {
     }
 
+    // ---- Looks (docs/own-boats.md, "Customizing boats") --------------------------------------------------------
+
+    /// <summary>!boat look: what the boat wears; !boat looks: what the player has earned of each part.</summary>
+    private async System.Threading.Tasks.Task Look(PlayerController player, bool owned, GameMessage gm, GameClient client)
+    {
+        var result = await Game.RavenNest.Boats.GetLookAsync(player.Id);
+        if (!LookOk(result, gm, client)) return;
+        if (owned) client.SendReply(gm, Localization.MSG_BOAT_LOOKS, result.Boat, Owned(result));
+        else client.SendReply(gm, Localization.MSG_BOAT_LOOK, result.Boat, Wears(result));
+    }
+
+    /// <summary>!boat sails 7: one part changed, on the boat at once when it is out.</summary>
+    private async System.Threading.Tasks.Task SetLook(PlayerController player, string slot, string value, GameMessage gm, GameClient client)
+    {
+        var none = value.Equals("none", StringComparison.OrdinalIgnoreCase) || value.Equals("off", StringComparison.OrdinalIgnoreCase);
+        if (!none && !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+        {
+            client.SendReply(gm, Localization.MSG_BOAT_LOOK_USAGE, slot);
+            return;
+        }
+        var variant = none ? 0 : int.Parse(value, CultureInfo.InvariantCulture);
+        var result = await Game.RavenNest.Boats.SetLookAsync(player.Id, slot, variant);
+        if (result == null) { client.SendReply(gm, Localization.MSG_BOAT_FAILED); return; }
+        if (!result.Ok)
+        {
+            var s = result.Slots?.FirstOrDefault(x => x.Slot == slot);
+            switch (result.Error)
+            {
+                case "slot": client.SendReply(gm, Localization.MSG_BOAT_LOOK_SLOT, result.Boat, slot, string.Join(", ", (result.Slots ?? new BoatLookSlotData[0]).Select(x => x.Slot))); return;
+                case "range": client.SendReply(gm, Localization.MSG_BOAT_LOOK_RANGE, slot, variant, s != null ? s.Count : 0); return;
+                case "locked": client.SendReply(gm, Localization.MSG_BOAT_LOOK_LOCKED, slot, variant, s != null ? Variants(s) : "-"); return;
+            }
+            LookOk(result, gm, client);
+            return;
+        }
+
+        // the stack's look here too, and the boat itself if it is out
+        var stack = player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
+        if (stack != null && stack.InventoryItem != null) stack.InventoryItem.Tag = result.Look;
+        var boat = player.ferryHandler.OwnBoat;
+        if (boat) BoatAssembler.Apply(boat.gameObject, boat.Tier, result.Look);
+        client.SendReply(gm, Localization.MSG_BOAT_LOOK_SET, result.Boat, slot, variant == 0 ? Localization.MSG_BOAT_LOOK_NONE : variant.ToString(CultureInfo.InvariantCulture));
+    }
+
+    private static bool LookOk(BoatLookResultData result, GameMessage gm, GameClient client)
+    {
+        if (result == null) { client.SendReply(gm, Localization.MSG_BOAT_FAILED); return false; }
+        if (result.Error == "noboat") { client.SendReply(gm, Localization.MSG_BOAT_LOOK_NO_BOAT); return false; }
+        if (!result.Ok && string.IsNullOrEmpty(result.Boat)) { client.SendReply(gm, Localization.MSG_BOAT_FAILED); return false; }
+        return true;
+    }
+
+    private static string Wears(BoatLookResultData result) =>
+        string.Join(", ", (result.Slots ?? new BoatLookSlotData[0]).Select(s => s.Slot + " " + (s.Current == 0 ? Localization.MSG_BOAT_LOOK_NONE : s.Current.ToString(CultureInfo.InvariantCulture))));
+
+    private static string Owned(BoatLookResultData result) =>
+        string.Join("; ", (result.Slots ?? new BoatLookSlotData[0]).Select(s => s.Slot + " " + Variants(s)));
+
+    private static string Variants(BoatLookSlotData s) =>
+        string.Join(", ", (s.Owned ?? new int[0]).Select(v => v == 0 ? Localization.MSG_BOAT_LOOK_NONE : v.ToString(CultureInfo.InvariantCulture))) + " (of " + s.Count + ")";
+
     public override async void Handle(string arguments, GameMessage gm, GameClient client)
     {
         if (!TryGetPlayer(gm, client, out var player)) return;
@@ -30,6 +91,17 @@ public class BoatCommand : ChatBotCommandHandler<string>
             if (sub == "build" || sub == "buy")
             {
                 await Build(player, rest, gm, client);
+                return;
+            }
+
+            if (sub == "look" || sub == "looks")
+            {
+                await Look(player, sub == "looks", gm, client);
+                return;
+            }
+            if (System.Array.IndexOf(BoatLook.Slots, sub) >= 0 || sub == "sail" || sub == "planks")
+            {
+                await SetLook(player, sub == "sail" ? "sails" : sub == "planks" ? "wood" : sub, rest, gm, client);
                 return;
             }
 
