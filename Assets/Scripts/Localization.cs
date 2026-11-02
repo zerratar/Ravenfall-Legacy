@@ -535,6 +535,12 @@ public static class Localization
     public static string UI_HERO_LOCKED = "Lv {0}";
     public static string UI_HERO_DODGE = "Dodge";
     public static string UI_HERO_POTION = "Potion";
+    public static string UI_HERO_DODGE_TIP = "Roll a few steps the way you walk (or face). Nothing hits you while you roll.";
+    public static string UI_HERO_POTION_TIP = "Drink a potion to heal. The village shop sells more.";
+    /// <summary>The skill bar's tooltip, under the name and description: the key, the mana and the cooldown.</summary>
+    public static string UI_HERO_TIP_SKILL = "Key {0}, {1} mana, {2} s cooldown";
+    public static string UI_HERO_TIP_LOCKED = "Key {0}, unlocks at style level {1}";
+    public static string UI_HERO_TIP_KEY = "Key {0}";
     public static string UI_HERO_STYLE_MELEE = "Melee";
     public static string UI_HERO_HEALTH = "HEALTH";
     public static string UI_HERO_MANA = "MANA";

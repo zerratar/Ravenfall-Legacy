@@ -2365,23 +2365,69 @@
     background-color: rgba(0, 0, 0, 0.62);
 }
 
+/* the key and the note (mana, cooldown, potions) on solid badges, readable over any picture (playtest 18) */
 .rf-hero-slot__key {
     position: absolute;
-    left: 4px;
+    left: 2px;
     top: 2px;
-    font-size: 12px;
+    min-width: 18px;
+    padding: 1px 4px;
+    font-size: 13px;
     color: var(--rf-text);
-    -unity-font-style: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.95);
+    -unity-text-align: middle-center;
+    background-color: var(--rf-bg);
+    border-radius: 4px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
 }
 
 .rf-hero-slot__note {
     position: absolute;
-    right: 4px;
+    right: 2px;
     bottom: 2px;
-    font-size: 12px;
+    padding: 1px 4px;
+    font-size: 13px;
     color: var(--rf-text);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.95);
+    background-color: var(--rf-bg);
+    border-radius: 4px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-hero-slot:hover {
+    border-left-color: var(--rf-accent);
+    border-right-color: var(--rf-accent);
+    border-top-color: var(--rf-accent);
+    border-bottom-color: var(--rf-accent);
+}
+
+/* the skill bar's tooltip, over the slot under the mouse */
+.rf-hero-tip {
+    position: absolute;
+    padding: 10px 14px 12px 14px;
+    background-color: var(--rf-bg);
+    border-width: 2px;
+    border-color: var(--rf-accent-dim);
+    border-radius: 8px;
+}
+
+.rf-hero-tip__title {
+    font-size: 19px;
+    color: var(--rf-accent-bright);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-hero-tip__body {
+    margin-top: 4px;
+    font-size: 15px;
+    color: var(--rf-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+.rf-hero-tip__meta {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
 }
 
 .rf-hero-slot--locked {

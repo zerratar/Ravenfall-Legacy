@@ -774,6 +774,15 @@ public partial class HeroController : MonoBehaviour
     private const float DodgeBuffer = 0.4f;
     private float dodgeQueuedUntil;
 
+    /// <summary>A skill bar slot clicked (HeroHudView): 0 to 3 the skills, 4 the roll, 5 a potion, as their keys do.</summary>
+    public void UseSlot(int slot)
+    {
+        if (Shinobytes.UI.RavebridgeDialogueView.IsOpen) return;
+        if (slot >= 0 && slot < 4) Cast(slot);
+        else if (slot == 4) dodgeQueuedUntil = Time.time + DodgeBuffer;
+        else if (slot == 5) Potion();
+    }
+
     private void Dodge()
     {
         if (Time.time < DodgeReadyAt) { Refused?.Invoke(-1, "cooldown"); return; }

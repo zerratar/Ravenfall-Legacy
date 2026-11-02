@@ -25,6 +25,11 @@ namespace Shinobytes.UI
         private VisualElement styleBox;
         private float styleFlashUntil;
         private readonly Slot[] slots = new Slot[6];
+
+        // the skill bar's own tooltip (a runtime panel shows no tooltip of its own): over the slot under the mouse
+        private VisualElement tip;
+        private Label tipTitle, tipBody, tipMeta;
+        private Slot tipFor;
         private VisualElement party;
         private Label partyTitle;
         private HeroMinimap minimap;
@@ -52,6 +57,9 @@ namespace Shinobytes.UI
 
         private sealed class Slot
         {
+            public int Index;
+            public string Key;
+            public string TipTitle, TipBody, TipMeta;
             public VisualElement Box;
             public VisualElement Picture;
             public VisualElement Sweep;
@@ -124,7 +132,7 @@ namespace Shinobytes.UI
             for (var i = 0; i < slots.Length; i++)
             {
                 var key = i < 4 ? (i + 1).ToString(CultureInfo.InvariantCulture) : i == 4 ? "Space" : "Q";
-                slots[i] = MakeSlot(key);
+                slots[i] = MakeSlot(i, key);
                 if (i == 4) slots[i].Box.AddToClassList("rf-hero-slot--gap");
                 row.Add(slots[i].Box);
             }
@@ -134,6 +142,20 @@ namespace Shinobytes.UI
             buffs.AddToClassList("rf-hero-buffs");
             bar.Insert(0, buffs);
             root.Add(bar);
+
+            tip = new VisualElement { pickingMode = PickingMode.Ignore };
+            tip.AddToClassList("rf-hero-tip");
+            tipTitle = new Label { pickingMode = PickingMode.Ignore };
+            tipTitle.AddToClassList("rf-hero-tip__title");
+            tipBody = new Label { pickingMode = PickingMode.Ignore };
+            tipBody.AddToClassList("rf-hero-tip__body");
+            tipMeta = new Label { pickingMode = PickingMode.Ignore };
+            tipMeta.AddToClassList("rf-hero-tip__meta");
+            tip.Add(tipTitle);
+            tip.Add(tipBody);
+            tip.Add(tipMeta);
+            tip.style.display = DisplayStyle.None;
+            root.Add(tip);
 
             party = new VisualElement { pickingMode = PickingMode.Ignore };
             party.AddToClassList("rf-hero-party");
@@ -325,9 +347,10 @@ namespace Shinobytes.UI
             orb.Sphere?.MarkDirtyRepaint();
         }
 
-        private static Slot MakeSlot(string key)
+        /// <summary>A slot: its picture, cooldown sweep, key and note; a click uses it, hovering shows what it does.</summary>
+        private Slot MakeSlot(int index, string key)
         {
-            var s = new Slot { Box = new VisualElement { pickingMode = PickingMode.Position } };
+            var s = new Slot { Index = index, Key = key, Box = new VisualElement { pickingMode = PickingMode.Position } };
             s.Box.AddToClassList("rf-hero-slot");
             s.Picture = new VisualElement { pickingMode = PickingMode.Ignore };
             s.Picture.AddToClassList("rf-hero-slot__picture");
@@ -345,7 +368,40 @@ namespace Shinobytes.UI
             s.Box.Add(s.Sweep);
             s.Box.Add(k);
             s.Box.Add(s.Note);
+            // the click is the slot's, not the world's (UIUtility.IsPointerOverAnyUI keeps the hero from walking there)
+            s.Box.RegisterCallback<PointerDownEvent>(e =>
+            {
+                if (e.button != 0) return;
+                var hero = HeroController.Active;
+                if (hero) hero.UseSlot(s.Index);
+                e.StopPropagation();
+            });
+            s.Box.RegisterCallback<PointerEnterEvent>(_ => ShowTip(s));
+            s.Box.RegisterCallback<PointerLeaveEvent>(_ => { if (tipFor == s) HideTip(); });
             return s;
+        }
+
+        private void ShowTip(Slot s)
+        {
+            if (tip == null || string.IsNullOrEmpty(s.TipTitle)) { HideTip(); return; }
+            tipFor = s;
+            tipTitle.text = s.TipTitle;
+            tipBody.text = s.TipBody ?? string.Empty;
+            tipBody.style.display = string.IsNullOrEmpty(s.TipBody) ? DisplayStyle.None : DisplayStyle.Flex;
+            tipMeta.text = s.TipMeta ?? string.Empty;
+            tip.style.display = DisplayStyle.Flex;
+            // over the slot, centred on it, kept on screen
+            var box = root.WorldToLocal(s.Box.worldBound);
+            var width = 340f;
+            tip.style.width = width;
+            tip.style.left = Mathf.Clamp(box.center.x - width / 2f, 8f, Mathf.Max(8f, root.layout.width - width - 8f));
+            tip.style.bottom = root.layout.height - box.yMin + 12f;
+        }
+
+        private void HideTip()
+        {
+            tipFor = null;
+            if (tip != null) tip.style.display = DisplayStyle.None;
         }
 
         // ---- The orbs' art, drawn once ---------------------------------------------------------------------
@@ -369,13 +425,23 @@ namespace Shinobytes.UI
             for (var i = 0; i < 4; i++)
             {
                 var skill = i < hero.Kit.Count ? hero.Kit[i] : null;
-                ShowPicture(slots[i], skill?.Key, skill?.Icon ?? string.Empty);
-                slots[i].Box.tooltip = skill != null ? skill.Name() + "\n" + skill.Description() : string.Empty;
+                var s = slots[i];
+                ShowPicture(s, skill?.Key, skill?.Icon ?? string.Empty);
+                s.TipTitle = skill?.Name();
+                s.TipBody = skill?.Description();
+                s.TipMeta = skill == null ? null
+                    : hero.StyleLevel < skill.UnlockLevel ? string.Format(CultureInfo.InvariantCulture, Localization.UI_HERO_TIP_LOCKED, s.Key, skill.UnlockLevel)
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_HERO_TIP_SKILL, s.Key, Mathf.RoundToInt(skill.Mana), skill.Cooldown.ToString("0.#", CultureInfo.InvariantCulture));
             }
             ShowPicture(slots[4], "dodge", "");
-            slots[4].Box.tooltip = Localization.UI_HERO_DODGE;
+            slots[4].TipTitle = Localization.UI_HERO_DODGE;
+            slots[4].TipBody = Localization.UI_HERO_DODGE_TIP;
+            slots[4].TipMeta = string.Format(CultureInfo.InvariantCulture, Localization.UI_HERO_TIP_KEY, slots[4].Key);
             ShowPicture(slots[5], "potion", "");
-            slots[5].Box.tooltip = Localization.UI_HERO_POTION;
+            slots[5].TipTitle = Localization.UI_HERO_POTION;
+            slots[5].TipBody = Localization.UI_HERO_POTION_TIP;
+            slots[5].TipMeta = string.Format(CultureInfo.InvariantCulture, Localization.UI_HERO_TIP_KEY, slots[5].Key);
+            if (tipFor != null) ShowTip(tipFor);
             nextParty = 0f;
         }
 
@@ -518,6 +584,8 @@ namespace Shinobytes.UI
             s.Box.EnableInClassList("rf-hero-slot--flash", Time.time < s.FlashUntil);
             s.Sweep.style.height = new Length(Mathf.Clamp01(sweep) * 100f, LengthUnit.Percent);
             s.Note.text = note;
+            // no empty badge
+            s.Note.style.display = string.IsNullOrEmpty(note) ? DisplayStyle.None : DisplayStyle.Flex;
         }
     }
 }
