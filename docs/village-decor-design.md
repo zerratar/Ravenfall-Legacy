@@ -116,9 +116,26 @@ village when earned.
      has unlocked can be given. The gift waits in a Gifts group in the Decor tab (`VillageDecorGift`: how many, the
      last givers' names) and is placed for free; removing a placed gift puts it back with the gifts, nothing is paid
      out. `!decor price <name>` tells the price. Every gift is logged (`VillageDecorGiftLog`).
-4. Quests and the website, when they exist.
+4. Quests and the website. The quest chains' and village stories' pieces came with the quests (eight pieces, see
+   `docs/quests-design.md`). Built 2026-11-02, chosen by the user:
+   - **Pieces from the newer content**, each unlocked on the server where it happens (`VillageDecorManager
+     .UnlockForQuest`, the piece's quest key naming it) and announced in chat ("Ravebridge held! The village can now
+     build Hero's banner!"): the Hero's banner, the Goblin war drum and the Hero of Ravebridge statue for a hero mode
+     run of 10, 25 and 50 waves; the Regatta trophy (a ship's wheel on a plinth) for a regatta of two boats or more; the
+     Captured cannon for holding the pirates' raid; the duke's lion for finishing Ravebridge's quests.
+   - **Patron pieces** (a Patron group): the Ravenfall raven (Mithril), the Golden raven (Rune) and the Disco raven
+     (Dragon, its material cycles colours, with sparkles) for villages whose streamer supports Ravenfall on Patreon at
+     that tier or higher. No real-money purchases.
+   - **The town page** (the website's dashboard, `/town#decor`): every piece with its picture, by group, filtered by
+     all, unlocked, locked or gifts; what it costs, how many are placed, what a locked one waits for in words, and the
+     viewers' gifts waiting with their givers (`TownService.GetDecorAsync`).
+   - The new pieces' prefabs are made by `tools/village-rebuild/decor-v096.cs` into `Assets/Village/Decor/Resources/
+     Decor`, where `VillageDecor.PrefabFor` finds them by key without the scene's list, so the main scene was not
+     saved. It also made the village story's "The road west" signpost, which had no prefab and could not be placed.
+   - The pictures are rendered by `tools/village-rebuild/decor-pictures.cs` (15 a run, run it until it says done) to
+     RavenNest's `wwwroot/images/decor/<key>.png`, on a clear background. Rerun both after adding pieces.
 
 ## Open questions
 
 - **Prices:** the price of each piece (and so what removing an island tree gives back).
-- **Website:** paid decor (real money) or patron perks only?
+- **Website:** decided 2026-11-02: patron perks only (the Patron group), no real-money decor.

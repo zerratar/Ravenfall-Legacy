@@ -310,8 +310,10 @@ namespace RavenNest.SDK.Endpoints
         public string Event { get; set; }
         /// <summary>Treasury coins to unlock it once (the Special pieces), or 0.</summary>
         public double UnlockCoins { get; set; }
-        /// <summary>The quest chain that unlocks it where a viewer finishes it ("cat"), or null.</summary>
+        /// <summary>The quest chain that unlocks it where a viewer finishes it ("cat"), or what else does ("hero10", "regatta"), or null.</summary>
         public string Quest { get; set; }
+        /// <summary>A patron piece: the Patreon tier the streamer needs (1 Mithril, 2 Rune, 3 Dragon), or 0.</summary>
+        public int Patron { get; set; }
         /// <summary>A viewer's price in loyalty points (!decor gift).</summary>
         public long Points { get; set; }
         /// <summary>Viewers' gifts of it waiting to be placed, and the last givers' names, comma separated.</summary>

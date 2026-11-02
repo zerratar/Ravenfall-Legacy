@@ -412,6 +412,7 @@ public static class RavebridgeQuests
         {
             var result = await game.RavenNest.Quests.RavebridgeDoneAsync();
             if (result != null && result.Ok) game.RavenBot?.Announce(Localization.MSG_RAVEBRIDGE_TITLE, player.Name);
+            if (result != null && !string.IsNullOrEmpty(result.Decor)) VillageDecorUnlocks.Announce(game, result.Decor);
         }
         catch (Exception exc)
         {

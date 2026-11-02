@@ -1942,6 +1942,7 @@ namespace Shinobytes.UI
                 case "Halloween": return "\uf6c9";
                 case "Special": return "\uf005";
                 case "Quest": return "\uf70e";
+                case "Patron": return "\uf520";
                 case GiftsGroup: return "\uf06b";
                 default: return "\uf1bb";
             }
@@ -1966,7 +1967,8 @@ namespace Shinobytes.UI
             if (level < piece.Level) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED_LEVEL, piece.Level);
             if (!string.IsNullOrEmpty(piece.Event)) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED_EVENT, Localization.DecorEvent(piece.Event));
             if (piece.UnlockCoins > 0) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_UNLOCK_COST, piece.UnlockCoins.ToString("N0", CultureInfo.InvariantCulture));
-            if (!string.IsNullOrEmpty(piece.Quest)) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED_QUEST, QuestChat.ChainName(piece.Quest), piece.Quest);
+            if (!string.IsNullOrEmpty(piece.Quest)) return VillageDecorUnlocks.QuestHint(piece.Quest);
+            if (piece.Patron > 0) return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED_PATRON, VillageDecorUnlocks.PatronTier(piece.Patron));
             return string.Format(CultureInfo.InvariantCulture, Localization.UI_DECOR_LOCKED, piece.Tier + 1);
         }
 

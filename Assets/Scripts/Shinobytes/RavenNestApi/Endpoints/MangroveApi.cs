@@ -56,5 +56,7 @@ namespace RavenNest.SDK.Endpoints
         public EventItemReward[] Items { get; set; }
         /// <summary>Boat looks earned with it ("sails_9", "flag_12"; docs/own-boats.md, "Customizing boats").</summary>
         public string[] Looks { get; set; }
+        /// <summary>A decor piece the village unlocked with it (the regatta's trophy, the pirates' cannon), on the first reward.</summary>
+        public string Decor { get; set; }
     }
 }

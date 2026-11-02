@@ -1,0 +1,156 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4854647961815707487
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2830749913830413332}
+  m_Layer: 0
+  m_Name: Model
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2830749913830413332
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4854647961815707487}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.007673025, y: 0, z: 0.0027267486}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 13398051874086154}
+  m_Father: {fileID: 5243537215284717402}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7890448472493640398
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5243537215284717402}
+  - component: {fileID: 3636539176670719527}
+  m_Layer: 0
+  m_Name: Decor_hero_banner_01
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5243537215284717402
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7890448472493640398}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2830749913830413332}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3636539176670719527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7890448472493640398}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48009967e9ba6d44a84c53ae662854e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VillageDecorItem
+  defaultKey: 
+  piece: hero_banner_01
+  rectangle: 1
+--- !u!1001 &9327397481628960
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2830749913830413332}
+    m_Modifications:
+    - target: {fileID: 1911324588445948, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_Name
+      value: SM_Prop_Battle_Banner_03
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.6625147
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+--- !u!4 &13398051874086154 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4145446585980970, guid: 03232ca4d1de1f44289e77b986aea352, type: 3}
+  m_PrefabInstance: {fileID: 9327397481628960}
+  m_PrefabAsset: {fileID: 0}

@@ -61,13 +61,40 @@ public class VillageDecor : MonoBehaviour
 
     public GameObject PrefabFor(string key)
     {
+        if (string.IsNullOrEmpty(key)) return null;
         foreach (var p in prefabs) if (p.Key == key) return p.Prefab;
-        return null;
+        // pieces added after the scene's list was made (tools/village-rebuild/decor-v096.cs) are found by key in
+        // Resources/Decor, so adding one does not need the main scene saved
+        if (!loaded.TryGetValue(key, out var prefab))
+        {
+            prefab = Resources.Load<GameObject>("Decor/Decor_" + key);
+            loaded[key] = prefab;
+        }
+        return prefab;
     }
+
+    private readonly Dictionary<string, GameObject> loaded = new Dictionary<string, GameObject>();
 
     public string NameOf(string key) => Localization.DecorName(key, PieceOf(key)?.Name);
 
     // ---- Loading -----------------------------------------------------------------------------
+
+    /// <summary>Asks the server for the pieces again (one was just unlocked), leaving what is placed alone.</summary>
+    public async Task RefreshPiecesAsync()
+    {
+        if (!gameManager || gameManager.RavenNest == null || !Loaded) return;
+        try
+        {
+            var loadedPieces = await gameManager.RavenNest.Village.GetDecorPiecesAsync();
+            if (loadedPieces == null) return;
+            pieces.Clear();
+            pieces.AddRange(loadedPieces);
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Could not refresh the village's decor pieces: " + exc.Message);
+        }
+    }
 
     public async Task LoadAsync()
     {

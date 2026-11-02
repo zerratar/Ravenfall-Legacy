@@ -31,6 +31,10 @@ public static class MangroveRewards
         }
         if (items.Count > 0) game.AddItems(items.ToArray());
 
+        // a decor piece the village unlocked with it (the regatta's trophy, the pirates' cannon)
+        var decor = rewards[0].Decor;
+        if (!string.IsNullOrEmpty(decor)) VillageDecorUnlocks.Announce(game, decor);
+
         // boat looks earned with it: a line each in the feed (the regatta's sails, the treasure's flags, the pirates' colours)
         foreach (var r in rewards)
         {

@@ -770,6 +770,8 @@ public partial class WaveRun : MonoBehaviour
                     result.NewTitles = record.NewTitles;
                     if (record.NewTitles != null)
                         foreach (var t in record.NewTitles) game.RavenBot?.Announce(Localization.MSG_HERO_TITLE, result.Hero, QuestChat.TitleText(t));
+                    if (record.NewDecor != null)
+                        foreach (var d in record.NewDecor) VillageDecorUnlocks.Announce(game, d);
                     RefreshBoard();
                     Changed?.Invoke();
                 }

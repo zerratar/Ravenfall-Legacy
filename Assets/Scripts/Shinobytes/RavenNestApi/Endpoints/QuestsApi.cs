@@ -519,6 +519,8 @@ namespace RavenNest.SDK.Endpoints
         public HeroRunRecordData Best { get; set; }
         public bool NewBest { get; set; }
         public string[] NewTitles { get; set; }
+        /// <summary>Decor pieces the run unlocked for the village (waves 10, 25 and 50).</summary>
+        public string[] NewDecor { get; set; }
         public int Rank { get; set; }
     }
 
@@ -536,6 +538,8 @@ namespace RavenNest.SDK.Endpoints
         public string Error { get; set; }
         public VillageStoryData Story { get; set; }
         public long Given { get; set; }
+        /// <summary>A decor piece the village unlocked with it (Ravebridge's quests done: the duke's lion).</summary>
+        public string Decor { get; set; }
     }
 
     /// <summary>Mirrors RavenNest.Models.VillageStoryProgress, the VillageStoryProgress event's data.</summary>
