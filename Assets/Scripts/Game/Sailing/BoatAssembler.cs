@@ -27,7 +27,7 @@ public static class BoatAssembler
     /// </summary>
     public const int ClanLogo = 99;
     private const int PlainDarkFlag = 6, PlainSails = 1;
-    private static readonly Dictionary<(Material, Texture), Material> clanLooks = new Dictionary<(Material, Texture), Material>();
+    private static readonly Dictionary<(Material, Texture, Color), Material> clanLooks = new Dictionary<(Material, Texture, Color), Material>();
 
     // where the logo goes, as fractions of the sheet from its top left: the flag cloth's shape (u 0.40 to 0.73, v 0.71
     // to 0.97); the sails' four emblem places (Pirate Realm's Sail_Symbols textures, 4096 px) and the gaff sails' middle
@@ -131,27 +131,30 @@ public static class BoatAssembler
         }
         if (!clanSails || !sails) return;
 
-        // the clan's sails: the plain ones until the logo is there, then those with it, the furled ones still
+        // the clan's sails: in the clan's colour at once, then with the logo once it is there, the furled ones still
         var plain = sails;
-        WithClanLogo(owner, logo =>
+        var tint = ClanColor(owner, false);
+        var shown = plain;
+        void Swap(Material to)
         {
-            if (!model) return;
-            var clan = ClanLogoMaterial(plain, logo, SailLogoAreas, SailLogoAspects, 1024);
-            if (!clan) return;
-            var plainStill = BoatSails.Still(plain);
-            var clanStill = BoatSails.Still(clan);
+            if (!model || !to || to == shown) return;
+            var fromStill = BoatSails.Still(shown);
+            var toStill = BoatSails.Still(to);
             foreach (var r in model.GetComponentsInChildren<Renderer>(true))
             {
                 var mats = r.sharedMaterials;
                 var changed = false;
                 for (var i = 0; i < mats.Length; ++i)
                 {
-                    if (mats[i] == plain) { mats[i] = clan; changed = true; }
-                    else if (mats[i] == plainStill) { mats[i] = clanStill; changed = true; }
+                    if (mats[i] == shown) { mats[i] = to; changed = true; }
+                    else if (mats[i] == fromStill) { mats[i] = toStill; changed = true; }
                 }
                 if (changed) r.sharedMaterials = mats;
             }
-        });
+            shown = to;
+        }
+        if (tint.HasValue) Swap(ClanLogoMaterial(plain, null, SailLogoAreas, SailLogoAspects, 1024, tint));
+        WithClanLogo(owner, logo => Swap(ClanLogoMaterial(plain, logo, SailLogoAreas, SailLogoAspects, 1024, tint)));
     }
 
     private static Material Pick(Material[] variants, int variant) =>
@@ -222,14 +225,24 @@ public static class BoatAssembler
         if (clan)
         {
             var plain = material;
-            WithClanLogo(owner, logo =>
+            var tint = ClanColor(owner, true);
+            void Wear(Material to)
             {
                 // a late download: not for a flag taken down since (another look, the boat put away)
-                if (!cloth) return;
-                var withLogo = ClanLogoMaterial(plain, logo, FlagLogoAreas, FlagLogoAspects, 512);
-                if (withLogo) foreach (var r in cloth.GetComponentsInChildren<Renderer>()) r.sharedMaterial = withLogo;
-            });
+                if (cloth && to) foreach (var r in cloth.GetComponentsInChildren<Renderer>()) r.sharedMaterial = to;
+            }
+            if (tint.HasValue) Wear(ClanLogoMaterial(plain, null, FlagLogoAreas, FlagLogoAspects, 512, tint));
+            WithClanLogo(owner, logo => Wear(ClanLogoMaterial(plain, logo, FlagLogoAreas, FlagLogoAspects, 512, tint)));
         }
+    }
+
+    /// <summary>The cloth colour the owner's clan picked for its flag (or its sails), none for the plain one.</summary>
+    private static Color? ClanColor(PlayerController owner, bool flag)
+    {
+        if (!owner || !owner.clanHandler || !owner.clanHandler.InClan || owner.clanHandler.ClanInfo == null || !owner.GameManager) return null;
+        var look = owner.GameManager.ClanLooks?.Get(owner.clanHandler.ClanInfo.Id);
+        var hex = flag ? look?.FlagColor : look?.SailColor;
+        return !string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out var color) ? color : (Color?)null;
     }
 
     /// <summary>
@@ -254,15 +267,24 @@ public static class BoatAssembler
     }
 
     /// <summary>
-    /// A plain flag or plain sails with the logo as their symbol: Synty's fabric shader lays a symbol texture over the
-    /// cloth (the emblem flags' and sails' pictures), so the logo goes on a clear texture in the areas the emblems use,
-    /// in its own colours, over the cloth's shading. Kept per material and logo.
+    /// A plain flag or plain sails in the clan's colour, with the logo as their symbol: Synty's fabric shader tints the
+    /// cloth and lays a symbol texture over it (the emblem flags' and sails' pictures), so the logo goes on a clear
+    /// texture in the areas the emblems use, in its own colours, over the cloth's shading. No logo: the colour alone.
+    /// Kept per material, logo and colour.
     /// </summary>
-    private static Material ClanLogoMaterial(Material plain, Texture logo, Rect[] areas, float[] aspects, int size)
+    private static Material ClanLogoMaterial(Material plain, Texture logo, Rect[] areas, float[] aspects, int size, Color? tint = null)
     {
-        if (clanLooks.TryGetValue((plain, logo), out var made) && made) return made;
+        var key = (plain, logo, tint ?? Color.clear);
+        if (clanLooks.TryGetValue(key, out var made) && made) return made;
         if (!plain || !plain.HasProperty("_Symbol_Texture")) return null;
         if (clanLooks.Count > 32) clanLooks.Clear();
+        if (!logo)
+        {
+            var colored = new Material(plain) { name = plain.name.StartsWith("ShipSails_") ? "ShipSails_Clan" : "Clan flag" };
+            Tint(colored, tint);
+            clanLooks[key] = colored;
+            return colored;
+        }
 
         var symbol = new RenderTexture(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
         {
@@ -297,8 +319,16 @@ public static class BoatAssembler
         material.SetFloat("_USE_SYMBOL_OVERLAY", 1f);
         material.SetTexture("_Symbol_Texture", symbol);
         material.SetColor("_Symbol_Color_Tint", Color.white);
-        clanLooks[(plain, logo)] = material;
+        Tint(material, tint);
+        clanLooks[key] = material;
         return material;
+    }
+
+    private static void Tint(Material material, Color? tint)
+    {
+        if (!tint.HasValue) return;
+        if (material.HasProperty("_Color_Tint")) material.SetColor("_Color_Tint", tint.Value);
+        if (material.HasProperty("_SSSTint")) material.SetColor("_SSSTint", tint.Value);
     }
 
     private static Bounds Grow(Bounds a, Bounds b) { a.Encapsulate(b); return a; }

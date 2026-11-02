@@ -567,3 +567,8 @@ clients show no flag for it.
   (u 0.81 to 0.99, v 0.6 to 0.8; drawn at 0.6 of its height across, the strip being stretched across the sail),
   which the emblem sails leave plain. `!boat sails clan`; the designer's Sails tab has a Clan tile. The value is
   BoatLooks.ClanLogo / BoatAssembler.ClanLogo, 99 for both parts.
+- Clan colours (the user's idea): the clan owner picks the clan flag's and clan sails' cloth colour in the clan
+  page's Look tab (any owner, not only patrons; a palette, the plain colours, or any colour), saved on the clan
+  (FlagColor, SailColor) and sent with its ClanLook. The game tints the copy's `_Color_Tint` (and `_SSSTint`) at once,
+  before the logo arrives; the website tints an uncoloured cloth the export writes for it (boats.json `clanCloth`, with
+  the plain colours as `flagTint` / `sailsTint`). A boat already out takes new colours the next time it is launched.

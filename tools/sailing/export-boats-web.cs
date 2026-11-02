@@ -175,6 +175,23 @@ var pole = Part(parts.FlagPole);
 var sails = Mats(parts.Sails);
 var flags = Mats(parts.Flags);
 var woods = Mats(parts.Woods);
+// the clan flag's and clan sails' cloth without its colour, so the website tints it with the clan's colours (the game
+// sets the material's tint), and the colours they have when a clan picked none (BoatAssembler's plain dark flag and
+// plain cream sails)
+string ClanCloth(UnityEngine.Material plain, string name, out UnityEngine.Color tint)
+{
+    tint = ColorOf(plain, UnityEngine.Color.white, "_Color_Tint");
+    var white = new UnityEngine.Material(plain) { name = name };
+    if (white.HasProperty("_Color_Tint")) white.SetColor("_Color_Tint", UnityEngine.Color.white);
+    if (white.HasProperty("_Symbol_Texture")) white.SetTexture("_Symbol_Texture", null);
+    var id = MaterialId(white);
+    UnityEngine.Object.DestroyImmediate(white);
+    return id;
+}
+var clanFlagCloth = ClanCloth(parts.Flags[5], "Clan_Flag_Cloth", out var clanFlagTint);
+var clanSailCloth = ClanCloth(parts.Sails[0], "Clan_Sail_Cloth", out var clanSailTint);
+string Rgb(UnityEngine.Color c) => "[" + F(c.r) + "," + F(c.g) + "," + F(c.b) + "]";
+var clanCloth = "{\"flag\":" + Q(clanFlagCloth) + ",\"sails\":" + Q(clanSailCloth) + ",\"flagTint\":" + Rgb(clanFlagTint) + ",\"sailsTint\":" + Rgb(clanSailTint) + "}";
 
 var json = new System.Text.StringBuilder();
 json.Append("{\"version\":" + System.DateTime.UtcNow.ToString("yyyyMMddHHmm", inv) + ",\n");
@@ -182,6 +199,6 @@ json.Append("\"meshes\":{" + string.Join(",", System.Linq.Enumerable.Select(mesh
 json.Append("\"materials\":{" + string.Join(",", System.Linq.Enumerable.Select(materialJson, kv => Q(kv.Key) + ":" + kv.Value)) + "},\n");
 json.Append("\"ships\":{\"Sloop\":" + small + ",\n\"Brigantine\":" + medium + ",\n\"Galleon\":" + large + "},\n");
 json.Append("\"boats\":{\"Rowboat\":" + rowboat + ",\"Fishing Boat\":" + fishing + "},\n");
-json.Append("\"flag\":" + flag + ",\"flagPole\":" + pole + ",\n\"sails\":" + sails + ",\"flags\":" + flags + ",\"woods\":" + woods + "}");
+json.Append("\"flag\":" + flag + ",\"flagPole\":" + pole + ",\n\"sails\":" + sails + ",\"flags\":" + flags + ",\"woods\":" + woods + ",\n\"clanCloth\":" + clanCloth + "}");
 System.IO.File.WriteAllText(System.IO.Path.Combine(outDir, "boats.json"), json.ToString());
 return "exported " + meshIds.Count + " meshes (" + (totalBytes / 1024) + " KB), " + materialJson.Count + " materials to " + outDir;
