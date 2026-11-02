@@ -91,7 +91,8 @@ parts.Flags = new UnityEngine.Material[17];
 for (var i = 0; i < 17; ++i) parts.Flags[i] = Mat("Flags/Flag_" + (i + 1).ToString("00"));
 parts.Woods = new[] { Mat("ShipWood/Ship_Planks_01"), Mat("ShipWood/Ship_Planks_02"), Mat("ShipWood/Ship_Planks_02_Alt"), Mat("ShipWood/Ship_Planks_03"), Mat("ShipWood/Ship_Planks_04") };
 parts.Flag = Prefab("SM_Prop_Flag_01");
-parts.FlagPole = Prefab("SM_Prop_Flag_Post_01");
+// a straight banded pole, standing upright (Post_01 was a crooked branch lying on its side)
+parts.FlagPole = Prefab("SM_Prop_Flag_Post_04");
 UnityEditor.EditorUtility.SetDirty(parts);
 UnityEditor.AssetDatabase.SaveAssets();
 

@@ -2,8 +2,10 @@
 //
 // Makes the own boats' prefabs in Assets/World/Sailing/Boats (docs/own-boats.md, phase 2) from the Synty kits, as
 // the decor prefabs are made: Rowboat (PolygonPirates' rowing boat), FishingBoat (its small boat with one pair of oars, a fish pile, a net over the side,
-// two rods and the medium boat's rig scaled down as its sail) and Sloop (its medium boat). Each has its pivot at the water line, the bow along +Z, a "Seat" where
+// two rods and Pirate Realm's small ship's mast with its fore-and-aft sail scaled down, so its sails take the looks' sails as the ships' do) and Sloop
+// (its medium boat). Set Only to a boat's name to rebuild just that one. Each has its pivot at the water line, the bow along +Z, a "Seat" where
 // the owner sits or stands, high enough that the sea never shows inside the hull, (found by casting down onto the hull) and no colliders. Rerun to rebuild them.
+var Only = "";
 var folder = "Assets/World/Sailing/Boats";
 System.IO.Directory.CreateDirectory(folder);
 var boats = new[]
@@ -13,8 +15,9 @@ var boats = new[]
     new { Name = "FishingBoat", Kit = "Assets/PolygonPirates/Prefabs/Vehicles/SM_Veh_Boat_Small_01_Hull_Attachments.prefab", Draft = 0.42f, Seat = -2.2f, SeatHeight = float.NaN },
     new { Name = "Sloop", Kit = "Assets/PolygonPirates/Prefabs/Vehicles/SM_Veh_Boat_Medium_01_Hull_Attachments.prefab", Draft = 1.1f, Seat = -5.5f, SeatHeight = float.NaN },
 };
-// the fishing boat's sail (see below): its mast's place along the boat and the rig's size against the medium boat's
-const float MastZ = 0.9f, RigScale = 0.42f, FishPileZ = -0.2f;
+// the fishing boat's sail (see below): its mast's place along the boat and the small ship's mast's size on it (20 m
+// tall there, about 7.6 here, the sail ending over the stern)
+const float MastZ = 0.9f, RigScale = 0.38f, FishPileZ = -0.2f;
 // the net over the starboard side ahead of the oars: its top edge (the prefab's pivot) on the gunwale, turned with the
 // hull's curve towards the bow, clear of the front oars, tipped in at the foot as the planks curve in but clear of them
 const float NetX = 1.5f, NetY = 0.84f, NetZ = 2.3f, NetYaw = -5f, NetRoll = -20f, NetScale = 0.65f;
@@ -22,6 +25,7 @@ var log = new System.Text.StringBuilder();
 var at = new UnityEngine.Vector3(0, -3000, 0);
 foreach (var b in boats)
 {
+    if (Only.Length > 0 && b.Name != Only) continue;
     var kit = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(b.Kit);
     if (!kit) { log.Append(b.Name + ": kit missing; "); continue; }
     var root = new UnityEngine.GameObject(b.Name);
@@ -71,15 +75,16 @@ foreach (var b in boats)
         // a net hung over the side to dry, its top along the gunwale
         Prop("Assets/PolygonVikings/Prefabs/Props/SM_Prop_Net_01.prefab", new UnityEngine.Vector3(NetX, NetY, NetZ), new UnityEngine.Vector3(0, NetYaw, NetRoll), NetScale);
 
-        // its sail: the medium boat's mast and sails, scaled down around the mast's foot (the kit has no small rig)
-        var medium = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/PolygonPirates/Prefabs/Vehicles/SM_Veh_Boat_Medium_01_Hull_Attachments.prefab");
+        // its sail: Pirate Realm's small ship's mast (the Sloop's rig in BoatParts) with only its fore-and-aft sail, scaled
+        // down around the mast's foot; its sails wear the look's sails (BoatAssembler.Paint) and furl in port (BoatSails)
+        var boatParts = UnityEditor.AssetDatabase.LoadAssetAtPath<BoatParts>("Assets/World/Sailing/BoatParts.asset");
         UnityEngine.Transform FindPart(UnityEngine.Transform t, string n)
         {
             if (t.name == n) return t;
             foreach (UnityEngine.Transform c in t) { var f = FindPart(c, n); if (f) return f; }
             return null;
         }
-        var srcMast = medium ? FindPart(medium.transform, "SM_Veh_Boat_Medium_01_Mast") : null;
+        var srcMast = boatParts && boatParts.Small.Rig ? FindPart(boatParts.Small.Rig.transform, "SM_Veh_Ship_S_Mast_Middle_01") : null;
         if (srcMast)
         {
             // the deck under the mast, as under the seat
@@ -94,12 +99,30 @@ foreach (var b in boats)
             var foot = new UnityEngine.Vector3(0, mastDeck, MastZ);
             // the sails are the mast's children and come with it
             var rig = UnityEngine.Object.Instantiate(srcMast.gameObject, root.transform);
-            rig.name = "Rig";
+            // its own name, so BoatAssembler finds the mast to fly the flag from (it looks for "_Mast_")
+            rig.name = srcMast.name;
             rig.transform.localPosition = foot;
             rig.transform.localRotation = srcMast.localRotation;
             rig.transform.localScale = srcMast.localScale * RigScale;
-            foreach (var r in rig.GetComponentsInChildren<UnityEngine.Transform>(true))
-                if (r.name.Contains("Sails_Up")) r.gameObject.SetActive(false);
+            // the square sail on its yard is far too wide for a boat this narrow: the gaff sail alone
+            var square = FindPart(rig.transform, "SM_Veh_Ship_S_Mast_Middle_01_Boom_01");
+            if (square) UnityEngine.Object.DestroyImmediate(square.gameObject);
+            // where its flag flies: the gaff's peak, the highest point of the spar along the sail's top edge (its mesh
+            // is the boom and the gaff together, so its bounds' corner is in the air); BoatAssembler hangs the flag there
+            var gaff = FindPart(rig.transform, "SM_Veh_Ship_S_Mast_Middle_01_Boom_Back_01");
+            var gaffMesh = gaff ? gaff.GetComponent<UnityEngine.MeshFilter>()?.sharedMesh : null;
+            if (gaffMesh)
+            {
+                var peak = new UnityEngine.Vector3(0, float.MinValue, 0);
+                foreach (var v in gaffMesh.vertices)
+                {
+                    var w = gaff.TransformPoint(v);
+                    if (w.y > peak.y) peak = w;
+                }
+                var flagPoint = new UnityEngine.GameObject("FlagPoint").transform;
+                flagPoint.SetParent(root.transform, false);
+                flagPoint.position = peak;
+            }
         }
     }
 

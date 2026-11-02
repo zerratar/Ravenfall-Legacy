@@ -536,3 +536,17 @@ kit's wind turned off (BoatSails.Still), as the kit's own static sails do: they 
 Tested in the editor: both ships' sails found (the Galleon 7, the Sloop 3), set, raising, furled, the furled ones in
 the look's colour. Not yet tested in a live game: a ship sailing from dock to dock, fishing at anchor, the moored
 ship, and the regatta's finish (every racer's ship lies at the Mangrove dock for 20 s, overlapping).
+
+### The small boats' sail and flags (2026-11-02)
+
+From the user's look at the website's designer: the fishing boat's sail could not be changed, the rowboat's flag pole
+looked like a branch, and every flag hung centred on its pole or mast instead of beside it.
+- The fishing boat's sail is now Pirate Realm's small ship's mast with only its fore-and-aft (gaff) sail, scaled to
+  0.38 (tools/sailing/make-boat-prefabs.cs, `Only = "FishingBoat"` rebuilds it alone): its sails wear the look's
+  sails (BoatAssembler.Paint) and furl in port (BoatSails), and the server's BoatLooks gives the Fishing Boat the
+  ships' 14 sails besides its flag. The square sail on the yard was left off, far too wide for the boat.
+- Flags fly beside what holds them, leading edge at the mast or pole, streaming aft: the ships' at the tallest
+  masthead, the fishing boat's from its gaff's peak (a "FlagPoint" the prefab script finds from the gaff's highest
+  vertex, clear of the sail), the rowboat's from Pirate Realm's straight banded post (SM_Prop_Flag_Post_04, standing
+  upright) instead of the crooked one lying on its side. The website's rf-boat-designer.js does the same (it finds the
+  gaff's peak from the mesh itself).

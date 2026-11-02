@@ -144,4 +144,4 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 30cd99474a7dcd74d962b0e9a78052f9, type: 2}
   - {fileID: 2100000, guid: 39d6221cc7766194598f90c548a156d3, type: 2}
   Flag: {fileID: 4319471411807135604, guid: 977536cb3a64d0d449701a4517234f1c, type: 3}
-  FlagPole: {fileID: 1242942282674092403, guid: 377a363aa586a6546930df3f87e92649, type: 3}
+  FlagPole: {fileID: 1883540330251645266, guid: 4d3c01e517afc8d469cc67750b173b20, type: 3}

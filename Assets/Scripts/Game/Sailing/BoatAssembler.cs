@@ -5,8 +5,10 @@ using UnityEngine;
 /// Puts a boat's look on it (docs/own-boats.md, "Customizing boats"). The Sloop, the Brigantine and the Galleon are
 /// built from Synty's Pirate Realm small, medium and large ships under their "Model": the hull, front, middle, back, figurehead and ram of the look's variants, the mast,
 /// bowsprit, rigging, helm and grate every one has, then its sails and planks by material and its flag at the
-/// masthead. The Rowboat and the Fishing Boat keep their models and get only the flag, on a pole at the stern. Run at
-/// launch and again when the look changes while the boat is out; its seats are never touched.
+/// masthead. The Rowboat and the Fishing Boat keep their models: the fishing boat's sail (the small ship's, see
+/// tools/sailing/make-boat-prefabs.cs) takes the look's sails and its flag flies from its masthead, the rowboat's from
+/// a pole at the stern. Every flag flies beside its mast or pole, as a real one does. Run at launch and again when
+/// the look changes while the boat is out; its seats are never touched.
 /// </summary>
 public static class BoatAssembler
 {
@@ -14,6 +16,10 @@ public static class BoatAssembler
     private const string FlagName = "Look Flag";
     private const float ShipFlagScale = 0.75f;
     private const float SmallFlagScale = 0.32f;
+    /// <summary>The fishing boat's flag at its masthead, between the two.</summary>
+    private const float SailFlagScale = 0.42f;
+    /// <summary>Half the flag cloth's width (SM_Prop_Flag_01, 3.78 m, hanging from the middle of its top edge).</summary>
+    private const float FlagHalfWidth = 1.89f;
 
     public static void Apply(GameObject boat, BoatItems.Tier tier, string tag)
     {
@@ -38,6 +44,9 @@ public static class BoatAssembler
         }
         else
         {
+            // the fishing boat's sail is the small ship's: it wears the look's sails and furls in port
+            BoatSails.Collect(boat, boat.transform);
+            Paint(boat.transform, parts, look);
             Flag(boat.transform, boat.transform, parts, look["flag"], false);
         }
     }
@@ -97,8 +106,9 @@ public static class BoatAssembler
         variants != null && variant >= 1 && variant <= variants.Length ? variants[variant - 1] : null;
 
     /// <summary>
-    /// The look's flag: on a ship, hanging from the masthead behind the mast; on a small boat, on a pole at the stern.
-    /// None for flag 0.
+    /// The look's flag: at the masthead of the tallest mast (the ships), from the peak of the fishing boat's gaff, or on a
+    /// pole at the stern (the rowboat). It hangs from its top edge with its leading edge at the mast or pole, streaming aft, as a
+    /// real flag flies. None for flag 0.
     /// </summary>
     private static void Flag(Transform boat, Transform model, BoatParts parts, int flag, bool ship)
     {
@@ -115,37 +125,46 @@ public static class BoatAssembler
             if (r.transform.IsChildOf(holder)) continue;
             all = all.HasValue ? Grow(all.Value, r.bounds) : r.bounds;
             if (r.name.Contains("Hull") || r.name == ModelName) hullBounds = hullBounds.HasValue ? Grow(hullBounds.Value, r.bounds) : r.bounds;
-            // the tallest mast (the Brigantine has a front and a back one, the Galleon three)
-            if (ship && r.name.Contains("_Mast_") && !r.name.Contains("Boom") && !r.name.Contains("Sail") && !r.name.Contains("Locator") && (!top.HasValue || r.bounds.max.y > top.Value.max.y)) top = r.bounds;
+            // the tallest mast (the Brigantine has a front and a back one, the Galleon three, the fishing boat one)
+            if (r.name.Contains("_Mast_") && !r.name.Contains("Boom") && !r.name.Contains("Sail") && !r.name.Contains("Locator") && (!top.HasValue || r.bounds.max.y > top.Value.max.y)) top = r.bounds;
         }
         if (!all.HasValue) { Kill(holder.gameObject); return; }
 
         Vector3 at;
         float scale;
-        if (ship && top.HasValue)
+        // the fishing boat's gaff peak, marked on its prefab (tools/sailing/make-boat-prefabs.cs): a gaff-rigged boat flies
+        // its flag there, clear of the sail
+        var point = ship ? null : boat.Find("FlagPoint");
+        if (point)
         {
-            at = boat.InverseTransformPoint(new Vector3(top.Value.center.x, top.Value.max.y, top.Value.center.z)) + Vector3.back * 0.9f;
-            scale = ShipFlagScale;
+            scale = SailFlagScale;
+            at = boat.InverseTransformPoint(point.position) + Vector3.back * (FlagHalfWidth * scale);
+        }
+        else if (top.HasValue)
+        {
+            scale = ship ? ShipFlagScale : SailFlagScale;
+            var head = boat.InverseTransformPoint(new Vector3(top.Value.center.x, top.Value.max.y, top.Value.center.z));
+            var mastRadius = Mathf.Min(top.Value.extents.x, top.Value.extents.z) / Mathf.Max(0.01f, boat.lossyScale.z);
+            at = head + Vector3.back * (FlagHalfWidth * scale + mastRadius);
         }
         else
         {
-            // the stern: the back of the hull (not its rig's booms), at its gunwale
+            // the stern: the back of the hull, at its gunwale; the kit's banded post stands upright from its foot
             var b = hullBounds ?? all.Value;
             var stern = boat.InverseTransformPoint(new Vector3(b.center.x, b.max.y, b.min.z));
-            var pole = parts.FlagPole ? Object.Instantiate(parts.FlagPole, holder, false) : null;
-            // the kit's post lies along x about its middle, its hook at one end: stood upright with the hook at the
-            // top (the banner hangs from it), its foot just inside the stern's gunwale
-            const float PoleScale = 0.7f, PoleLength = 2.34f * PoleScale;
+            const float PoleScale = 0.7f, PoleHeight = 2.36f * PoleScale, PoleRadius = 0.06f;
             var foot = stern.y - 0.3f;
+            var poleZ = stern.z + 0.35f;
+            var pole = parts.FlagPole ? Object.Instantiate(parts.FlagPole, holder, false) : null;
             if (pole)
             {
-                pole.transform.localRotation = Quaternion.Euler(0f, 0f, -90f);
+                pole.transform.localRotation = Quaternion.identity;
                 pole.transform.localScale = Vector3.one * PoleScale;
-                pole.transform.localPosition = new Vector3(0f, foot + PoleLength * 0.5f, stern.z + 0.35f);
+                pole.transform.localPosition = new Vector3(0f, foot, poleZ);
                 foreach (var c in pole.GetComponentsInChildren<Collider>()) Kill(c);
             }
-            at = new Vector3(0f, foot + PoleLength, stern.z + 0.35f - 0.05f);
             scale = SmallFlagScale;
+            at = new Vector3(0f, foot + PoleHeight - 0.05f, poleZ - FlagHalfWidth * scale - PoleRadius);
         }
 
         var cloth = Object.Instantiate(parts.Flag, holder, false);
