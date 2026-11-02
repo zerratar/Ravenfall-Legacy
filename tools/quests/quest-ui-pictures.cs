@@ -3,7 +3,8 @@
 // Draws the quest window's pictures with the Image Generator (Ravenfall > Image Generator, the user's key) into
 // Temp/ImageGen/questui: a scene for each stream quest kind (opaque, for the offer cards), the stories' and empty
 // states' subjects and the small reward icons (transparent). Pictures already there are skipped; delete one to draw it
-// again. tools/quests/quest-ui-install.cs shrinks them into Assets/World/Quests/Resources/QuestUI afterwards.
+// again. tools/quests/quest-ui-install.cs shrinks them into Assets/World/Quests/Resources/QuestUI afterwards. Names ending
+// in -wide are banners for the website's quest page (1792x672), which the install leaves out.
 // Set Only to a few names to draw just those (the first test).
 var Only = new string[0];
 const string Style = "Stylized low-poly 3D game art in the style of a cozy fantasy village game, soft warm lighting, chunky simple shapes, " +
@@ -51,6 +52,27 @@ var pictures = new System.Collections.Generic.List<(string Name, bool Transparen
     ("icon-fish", true, "A single blue fish seen from the side. Game UI icon."),
     ("icon-wheat", true, "A small bundle of golden wheat ears. Game UI icon."),
     ("icon-loyalty", true, "A round orange and gold medal badge with a simple flag emblem in the middle. Game UI icon."),
+    // the quest chains (the website's quest page), and a banner for each
+    ("chain-cat", true, "A plump ginger tabby cat sitting upright with a little bell on a red collar and a small fish tail sticking out of its mouth, on a little grassy base."),
+    ("chain-fish", true, "A comically huge silver sprat leaping out of a small splash of water, a snapped fishing line hanging from its mouth."),
+    ("chain-founder", true, "A heroic stone statue of an adventurer on a stone plinth holding something odd aloft, on a small grassy base with a few rocks."),
+    ("chain-pumpkin", true, "A grinning carved jack-o'-lantern pumpkin wearing a small tilted golden crown, a candle glowing inside, curling vines and a smaller pumpkin beside it."),
+    ("chain-shipwright", true, "A small new wooden rowboat resting on a shipwright's wooden trestles, a mallet, a saw and a coil of rope beside it."),
+    ("chain-cat-wide", false, "A cozy harbour at dusk, wooden docks with fishing nets, crates and barrels, a ginger cat's tail disappearing behind a barrel, warm lantern light."),
+    ("chain-fish-wide", false, "A calm lake at golden hour, a little wooden pier with an old fishing rod propped up on it, the shadow of a huge fish under the water."),
+    ("chain-founder-wide", false, "A small village square at sunrise, a statue covered with a cloth on a plinth in the middle, cottages round it and bunting overhead."),
+    ("chain-pumpkin-wide", false, "A pumpkin patch at dusk with glowing carved jack-o'-lanterns, a wooden fence and a lantern hanging from a post, an orange evening sky."),
+    ("chain-shipwright-wide", false, "A shipwright's wooden slipway on a small island shore at sunset, a half built boat hull on trestles, tools and timber round it, the sea beyond."),
+    // achievements with no picture of their own elsewhere (the others reuse the quest and item pictures)
+    ("ach-alchemist", true, "A round glass potion flask of bubbling glowing green liquid with a cork, beside a small stone mortar and pestle and a sprig of herbs."),
+    ("ach-allround", true, "A sturdy leather adventurer's backpack with a rolled bedroll, a small pickaxe, a fishing rod and a sword hilt poking out of it."),
+    ("ach-generous", true, "A small wrapped gift box with a red ribbon bow beside an open leather pouch spilling a few gold coins."),
+    ("ach-helper", true, "A rolled parchment quest scroll with a red wax seal tied with twine, leaning on a small round wooden shield painted with a heart."),
+    ("ach-quitter", true, "A small white surrender flag on a stick planted in the ground beside a dropped, crumpled parchment."),
+    ("ach-storyteller", true, "A stack of three old leather-bound story books, an open one on top with a feather quill and a lit candle beside it."),
+    ("ach-wrong", true, "A colourful red and yellow jester's cap with little brass bells, resting on a rolled riddle scroll."),
+    // the website's quest page header
+    ("quests-header-wide", false, "A wide view of a cozy fantasy village on a cliff, cottages with red roofs, a stone bridge over a river, a castle tower, mountains and pine trees behind, a big tree framing the left side, bright daylight."),
 };
 if (!ImageGen.HasKey) return "no key: enter it in Ravenfall > Image Generator";
 System.IO.Directory.CreateDirectory("Temp/ImageGen/questui");
@@ -60,7 +82,7 @@ foreach (var p in pictures)
     if (Only.Length > 0 && System.Array.IndexOf(Only, p.Name) < 0) continue;
     var path = "Temp/ImageGen/questui/" + p.Name + ".png";
     if (System.IO.File.Exists(path)) continue;
-    var options = new ImageGen.Options { Transparent = p.Transparent, AutoCutout = p.Transparent, Quality = "high" };
+    var options = new ImageGen.Options { Transparent = p.Transparent, AutoCutout = p.Transparent, Quality = "high", Size = p.Name.EndsWith("-wide") ? "1792x672" : "1024x1024" };
     ImageGen.Generate(Style + (p.Transparent ? Cutout : Scene) + p.Prompt, path, options, null, "questui:" + p.Name);
     started.Add(p.Name);
 }

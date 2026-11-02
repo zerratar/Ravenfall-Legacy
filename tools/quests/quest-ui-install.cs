@@ -12,6 +12,7 @@ foreach (var file in System.IO.Directory.GetFiles(From, "*.png"))
 {
     var name = System.IO.Path.GetFileNameWithoutExtension(file);
     if (name.EndsWith(".uncut")) continue; // the Image Generator keeps the picture from before its cutout pass
+    if (name.EndsWith("-wide")) continue; // the website's banners, not the game's
     var size = name.StartsWith("icon-") ? 128 : name == "village-houses" ? 256 : 512;
     System.IO.File.WriteAllBytes(To + "/" + name + ".png", IconForge.Shrink(System.IO.File.ReadAllBytes(file), size));
     done.Add(name);
