@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using RavenNest.SDK.Endpoints;
+using RavenNest.Models;
 
 /// <summary>
 /// !redeem for the tavern shelves (see <see cref="TavernShop"/>): "!redeem 3" buys from shelf 3,

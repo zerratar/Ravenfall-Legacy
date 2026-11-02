@@ -3,6 +3,7 @@ using System.Linq;
 using RavenNest.SDK.Endpoints;
 using Shinobytes.UI;
 using UnityEngine;
+using RavenNest.Models;
 
 /// <summary>
 /// The streamer's shelves in the tavern's redeemables room: the streamer puts items of their own up for

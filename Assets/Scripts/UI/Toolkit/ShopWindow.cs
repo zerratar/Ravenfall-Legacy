@@ -5,6 +5,7 @@ using System.Linq;
 using RavenNest.SDK.Endpoints;
 using UnityEngine;
 using UnityEngine.UIElements;
+using RavenNest.Models;
 
 namespace Shinobytes.UI
 {

@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using RavenNest.SDK.Endpoints;
+using RavenNest.Models;
 
 /// <summary>
 /// !shop: anyone can list what is on the streamer's tavern shelves; the streamer alone can take a shelf

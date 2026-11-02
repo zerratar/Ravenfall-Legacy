@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using RavenNest.Models;
 
 namespace RavenNest.SDK.Endpoints
 {

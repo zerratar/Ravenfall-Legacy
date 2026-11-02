@@ -207,7 +207,18 @@ public partial class SyntyPlayerAppearance
         BeardColor = GetColorFromHex(appearance.BeardColor);
         EyeColor = GetColorFromHex(appearance.EyeColor);
         HelmetVisible = appearance.HelmetVisible;
-        StubbleColor = GetColorFromHex(appearance.StubbleColor);
+        // a server older than v0.9.6 has no scar colour: its stubble colour is what the scars were painted with,
+        // and the stubble was the material's fixed colour
+        if (appearance.ScarColor == null)
+        {
+            ScarColor = GetColorFromHex(appearance.StubbleColor);
+            StubbleColor = GetColorFromHex(SyntyAppearance.DefaultStubbleColor);
+        }
+        else
+        {
+            StubbleColor = GetColorFromHex(appearance.StubbleColor);
+            ScarColor = GetColorFromHex(appearance.ScarColor);
+        }
         WarPaintColor = GetColorFromHex(appearance.WarPaintColor);
     }
 
@@ -307,7 +318,10 @@ public partial class SyntyPlayerAppearance
                 m_maleHeads.SetActive(true);
                 r_maleHeads.material.SetColor("_Color_Eyes", EyeColor);
                 r_maleHeads.material.SetColor("_Color_Skin", SkinColor);
-                r_maleHeads.material.SetColor("_Color_Stubble", StubbleColor);
+                // Synty's face art paints the scars with the colour its shader calls stubble, and the stubble with
+                // the one it calls scar
+                r_maleHeads.material.SetColor("_Color_Stubble", ScarColor);
+                r_maleHeads.material.SetColor("_Color_Scar", StubbleColor);
                 r_maleHeads.material.SetColor("_Color_BodyArt", WarPaintColor);
             }
             var i_maleHelmets = Helmet;
@@ -458,7 +472,10 @@ public partial class SyntyPlayerAppearance
                 m_femaleHeads.SetActive(true);
                 r_femaleHeads.material.SetColor("_Color_Eyes", EyeColor);
                 r_femaleHeads.material.SetColor("_Color_Skin", SkinColor);
-                r_femaleHeads.material.SetColor("_Color_Stubble", StubbleColor);
+                // Synty's face art paints the scars with the colour its shader calls stubble, and the stubble with
+                // the one it calls scar
+                r_femaleHeads.material.SetColor("_Color_Stubble", ScarColor);
+                r_femaleHeads.material.SetColor("_Color_Scar", StubbleColor);
                 r_femaleHeads.material.SetColor("_Color_BodyArt", WarPaintColor);
             }
             var i_femaleHelmets = Helmet;

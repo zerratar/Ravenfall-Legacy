@@ -2,6 +2,7 @@ using System;
 using RavenNest.SDK.Endpoints;
 using TMPro;
 using UnityEngine;
+using RavenNest.Models;
 
 /// <summary>
 /// One of the tavern's shelves for the streamer's own items (see <see cref="TavernShop"/>): the item on
@@ -62,7 +63,7 @@ public sealed class ShopShelf : MonoBehaviour
         var holder = new GameObject("Item");
         holder.transform.SetParent(anchor ? anchor : transform, false);
 
-        var prefab = !string.IsNullOrEmpty(item.GenericPrefab) ? Resources.Load<GameObject>(item.GenericPrefab) : null;
+        var prefab = !string.IsNullOrEmpty(item.GenericPrefab) ? UnityEngine.Resources.Load<GameObject>(item.GenericPrefab) : null;
         if (prefab)
         {
             var model = Instantiate(prefab, holder.transform);
