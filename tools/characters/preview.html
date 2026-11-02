@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+  Tries the website's character view outside the site (python tools/characters/bake-server.py, then
+  http://127.0.0.1:8099/tools/preview.html). Query: mode=2d|3d, g=0|1, head, hair, brows, beard, face=1.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Character preview</title>
+<style>
+  body { margin: 0; background: #12151c; color: #ece4d6; font-family: system-ui; }
+  #stage { position: relative; width: 640px; height: 640px; overflow: hidden; background: radial-gradient(ellipse 80% 70% at 50% 38%, #2b3343 0%, #1a1f2a 55%, #0d1016 100%); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+import * as D from '/js/rf-character-designer.js';
+const q = new URLSearchParams(location.search);
+const n = (k, d) => (q.has(k) ? +q.get(k) : d);
+const a = {
+    gender: n('g', 0), head: n('head', 0), hair: n('hair', 3), eyebrows: n('brows', 1), facialHair: n('beard', 2),
+    skinColor: q.get('skin') || '#D6B8AE', beardColor: q.get('hairColor') || '#3C2823', eyeColor: '#2F6FB5',
+    stubbleColor: '#C8A48F', warPaintColor: '#8A1C1C',
+};
+const view = await D.create(document.getElementById('stage'), { mode: q.get('mode') || 'auto' });
+await view.show(a);
+if (q.get('face')) view.focus('face');
+window.view = view;
+document.title = 'ready ' + view.getMode();
+</script>
+</body>
+</html>

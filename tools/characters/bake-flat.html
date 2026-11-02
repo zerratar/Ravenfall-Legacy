@@ -1,0 +1,287 @@
+<!doctype html>
+<!--
+  The flat character pictures for browsers without WebGL (the website's js/rf-character-designer.js, its Flat view),
+  baked from the 3D parts the game's tools/characters/export-characters-web.cs wrote:
+
+      python tools/characters/bake-server.py     then open http://127.0.0.1:8099/tools/bake-flat.html
+
+  Every layer (each gender's base body, every head, eyebrows, beard and hair) is rendered from six directions, waist
+  up, in the idle's first pose, twice the size and then halved. Each picture is four side by side, cropped to the
+  layer: its baked colour (alpha: how much of the pixel it covers), its masks (skin, stubble, hair), its other masks
+  (war paint, scar, eyes) and its light (red; 0..2 over 0..255) with its depth (green and blue, nearer is larger).
+  The page composites them with the player's colours. Thumbnails of every option in the default colours come along,
+  and characters/flat/flat.json says where everything is. Writes into RavenNest's wwwroot/characters/flat.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bake flat characters</title>
+<style>
+  body { margin: 0; background: #12151c; color: #ece4d6; font: 14px system-ui; }
+  #log { padding: 12px; white-space: pre-wrap; }
+  canvas { display: none; }
+</style>
+</head>
+<body>
+<div id="log">baking...</div>
+<script type="module">
+import { THREE, manifest, loadMesh, characterMaterial, setColors, partsOf, buildRig, skinned, stageLights, normalize } from '/js/rf-character-designer.js';
+
+const log = t => { document.getElementById('log').textContent = t; console.log(t); };
+const m = await manifest();
+const SIZE = 512, SS = 2, R = SIZE * SS;
+const DIRECTIONS = [30, 90, 150, 210, 270, 330];
+const TOP = 1.98, BOTTOM = 1.0; // waist up, in metres
+const THUMB = 112;
+const version = Date.now();
+let bytes = 0, files = 0;
+
+async function save(path, blob) {
+    const r = await fetch('/save?path=' + encodeURIComponent('characters/flat/' + path), { method: 'POST', body: blob });
+    if (!r.ok) throw new Error('save failed ' + path);
+    bytes += blob.size;
+    files++;
+}
+
+// ---- The scene ---------------------------------------------------------------------------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+renderer.setPixelRatio(1);
+renderer.setSize(R, R);
+document.body.appendChild(renderer.domElement);
+const target = new THREE.WebGLRenderTarget(R, R, { type: THREE.UnsignedByteType, format: THREE.RGBAFormat });
+const scene = new THREE.Scene();
+const lights = stageLights();
+scene.add(lights);
+const rig = buildRig(m);
+scene.add(rig.rig);
+// the idle's first pose
+const idle = rig.mixer.clipAction(rig.clips.idle);
+idle.play();
+rig.mixer.update(0);
+rig.rig.updateMatrixWorld(true);
+
+const half = (TOP - BOTTOM) / 2;
+const centre = new THREE.Vector3(0, (TOP + BOTTOM) / 2, 0);
+const camera = new THREE.OrthographicCamera(-half, half, half, -half, 1, 7);
+function aim(degrees) {
+    const a = degrees * Math.PI / 180;
+    camera.position.set(Math.sin(a) * 4, centre.y, Math.cos(a) * 4);
+    camera.lookAt(centre);
+    camera.updateMatrixWorld();
+    // the light comes with the camera: every direction lit from the front left
+    lights.rotation.y = a;
+    lights.updateMatrixWorld(true);
+}
+
+// ---- The passes --------------------------------------------------------------------------------------------------
+const loader = new THREE.TextureLoader();
+async function raw(file) {
+    const t = await loader.loadAsync('/characters/' + file + '?v=' + m.version);
+    t.colorSpace = THREE.NoColorSpace;
+    return t;
+}
+const passColor = new THREE.MeshBasicMaterial({ map: await raw(m.material.base) });
+const passA = new THREE.MeshBasicMaterial({ map: await raw(m.material.masksA) });
+const passB = new THREE.MeshBasicMaterial({ map: await raw(m.material.masksB) });
+const passLight = new THREE.MeshStandardMaterial({
+    color: new THREE.Color().setRGB(0.5, 0.5, 0.5, THREE.LinearSRGBColorSpace),
+    roughness: 1 - (m.material.smoothness ?? 0.2) * 0.8,
+    metalness: m.material.metallic ?? 0,
+});
+const passDepth = new THREE.ShaderMaterial({
+    uniforms: { near: { value: camera.near }, far: { value: camera.far } },
+    vertexShader: `
+#include <common>
+#include <skinning_pars_vertex>
+varying float vDepth;
+void main() {
+#include <skinbase_vertex>
+#include <begin_vertex>
+#include <skinning_vertex>
+#include <project_vertex>
+    vDepth = -mvPosition.z;
+}`,
+    fragmentShader: `
+uniform float near; uniform float far;
+varying float vDepth;
+void main() {
+    float d = 1.0 - clamp((vDepth - near) / (far - near), 0.0, 1.0);
+    float v = floor(d * 65535.0);
+    gl_FragColor = vec4(floor(v / 256.0) / 255.0, mod(v, 256.0) / 255.0, 0.0, 1.0);
+}`,
+});
+
+function render(meshes, material) {
+    for (const mesh of meshes) mesh.material = material;
+    renderer.setRenderTarget(target);
+    renderer.setClearColor(0x000000, 0);
+    renderer.clear();
+    renderer.render(scene, camera);
+    const buf = new Uint8Array(R * R * 4);
+    renderer.readRenderTargetPixels(target, 0, 0, R, R, buf);
+    renderer.setRenderTarget(null);
+    return buf;
+}
+
+// one layer from one direction: the five passes, halved, cropped, side by side
+async function bakeLayer(name, meshes, direction) {
+    aim(DIRECTIONS[direction]);
+    const color = render(meshes, passColor);
+    const a = render(meshes, passA);
+    const b = render(meshes, passB);
+    const light = render(meshes, passLight);
+    const depth = render(meshes, passDepth);
+    // halve: average what the layer covers, keep the nearest depth; rows flipped (GL reads bottom up)
+    const N = SIZE * SIZE;
+    const out = { cover: new Uint8Array(N), color: new Uint8Array(N * 3), a: new Uint8Array(N * 3), b: new Uint8Array(N * 3), light: new Uint8Array(N), depth: new Uint16Array(N) };
+    let x0 = SIZE, y0 = SIZE, x1 = -1, y1 = -1;
+    for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+            let n = 0, z = 0;
+            const sum = new Float32Array(10);
+            for (let sy = 0; sy < SS; sy++) {
+                for (let sx = 0; sx < SS; sx++) {
+                    const gy = R - 1 - (y * SS + sy), gx = x * SS + sx;
+                    const i = (gy * R + gx) * 4;
+                    if (color[i + 3] < 128) continue;
+                    n++;
+                    for (let k = 0; k < 3; k++) { sum[k] += color[i + k]; sum[3 + k] += a[i + k]; sum[6 + k] += b[i + k]; }
+                    sum[9] += light[i];
+                    z = Math.max(z, (depth[i] << 8) | depth[i + 1]);
+                }
+            }
+            if (!n) continue;
+            const o = y * SIZE + x;
+            out.cover[o] = Math.round(n / (SS * SS) * 255);
+            for (let k = 0; k < 3; k++) {
+                out.color[o * 3 + k] = Math.round(sum[k] / n);
+                out.a[o * 3 + k] = Math.round(sum[3 + k] / n);
+                out.b[o * 3 + k] = Math.round(sum[6 + k] / n);
+            }
+            out.light[o] = Math.round(sum[9] / n);
+            out.depth[o] = Math.max(1, z);
+            if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+    }
+    if (x1 < 0) return null;
+    const w = x1 - x0 + 1, h = y1 - y0 + 1;
+    const c = document.createElement('canvas');
+    c.width = w * 4;
+    c.height = h;
+    const g = c.getContext('2d');
+    const img = g.createImageData(w * 4, h);
+    const d = img.data;
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const o = (y0 + y) * SIZE + (x0 + x);
+            const row = y * w * 4;
+            const p = [(row + x) * 4, (row + w + x) * 4, (row + 2 * w + x) * 4, (row + 3 * w + x) * 4];
+            for (let k = 0; k < 3; k++) {
+                d[p[0] + k] = out.color[o * 3 + k];
+                d[p[1] + k] = out.a[o * 3 + k];
+                d[p[2] + k] = out.b[o * 3 + k];
+            }
+            d[p[0] + 3] = out.cover[o];
+            d[p[1] + 3] = d[p[2] + 3] = d[p[3] + 3] = 255;
+            d[p[3]] = out.light[o];
+            d[p[3] + 1] = out.depth[o] >> 8;
+            d[p[3] + 2] = out.depth[o] & 255;
+        }
+    }
+    g.putImageData(img, 0, 0);
+    const file = 'layers/' + name.replace(/[^A-Za-z0-9_-]/g, '_') + '-' + direction + '.png';
+    await save(file, await new Promise(r => c.toBlob(r, 'image/png')));
+    return { x: x0, y: y0, w, h, file };
+}
+
+async function meshesOf(parts) {
+    const list = [];
+    for (const p of parts) for (const id of p.meshes) list.push(skinned(await loadMesh(m, id), passColor, rig.skeleton));
+    return list;
+}
+
+// ---- Every layer -------------------------------------------------------------------------------------------------
+const layers = {};
+const jobs = [];
+for (const g of ['male', 'female']) {
+    jobs.push(['body-' + g, m.parts[g].body.filter(Boolean)]);
+    for (const kind of ['heads', 'eyebrows', 'beards']) for (const p of m.parts[g][kind]) if (p) jobs.push([p.name, [p]]);
+}
+for (const p of m.parts.hairs) if (p) jobs.push([p.name, [p]]);
+
+let done = 0;
+for (const [name, parts] of jobs) {
+    const meshes = await meshesOf(parts);
+    meshes.forEach(x => rig.rig.add(x));
+    layers[name] = [];
+    for (let d = 0; d < DIRECTIONS.length; d++) layers[name].push(await bakeLayer(name, meshes, d));
+    meshes.forEach(x => rig.rig.remove(x));
+    log(`layers ${++done} / ${jobs.length} (${name}), ${files} files, ${(bytes / 1048576).toFixed(1)} MB`);
+}
+
+// ---- Thumbnails, in the default colours --------------------------------------------------------------------------
+const thumbRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+thumbRenderer.setPixelRatio(1);
+thumbRenderer.setSize(THUMB * 2, THUMB * 2);
+thumbRenderer.outputColorSpace = THREE.SRGBColorSpace;
+thumbRenderer.toneMapping = THREE.NeutralToneMapping;
+thumbRenderer.toneMappingExposure = 1.05;
+const material = characterMaterial(m);
+await new Promise(r => setTimeout(r, 500)); // its textures
+const thumbCamera = new THREE.PerspectiveCamera(24, 1, 0.05, 20);
+const shots = {
+    heads: { up: 0.07, distance: 0.62, yaw: 0.3 },
+    hairs: { up: 0.11, distance: 0.8, yaw: 0.55 },
+    eyebrows: { up: 0.12, distance: 0.36, yaw: 0.2 },
+    beards: { up: -0.02, distance: 0.55, yaw: 0.35 },
+};
+const defaults = {
+    male: { gender: 0, head: 0, hair: 3, eyebrows: 1, facialHair: -1, skinColor: '#D6B8AE', beardColor: '#3C2823', eyeColor: '#000000', stubbleColor: '#C8A48F', warPaintColor: '#8A1C1C' },
+    female: { gender: 1, head: 0, hair: 10, eyebrows: 1, facialHair: -1, skinColor: '#D6B8AE', beardColor: '#3C2823', eyeColor: '#000000', stubbleColor: '#D6B8AE', warPaintColor: '#8A1C1C' },
+};
+lights.rotation.y = 0;
+lights.updateMatrixWorld(true);
+const head = new THREE.Vector3();
+rig.headBone.getWorldPosition(head);
+const field = { heads: 'head', hairs: 'hair', eyebrows: 'eyebrows', beards: 'facialHair' };
+const counts = {
+    heads: g => m.parts[g].heads.length, eyebrows: g => m.parts[g].eyebrows.length,
+    beards: g => m.parts[g].beards.length, hairs: () => m.parts.hairs.filter(Boolean).length,
+};
+const thumbs = {};
+for (const kind of Object.keys(shots)) {
+    thumbs[kind] = {};
+    for (const g of ['male', 'female']) {
+        thumbs[kind][g] = [];
+        for (let i = 0; i < counts[kind](g); i++) {
+            const a = normalize({ ...defaults[g], [field[kind]]: i });
+            const p = partsOf(m, a);
+            const meshes = [];
+            for (const part of [...p.body, p.head, p.eyebrows, p.beard, p.hair]) if (part) for (const id of part.meshes) meshes.push(skinned(await loadMesh(m, id), material, rig.skeleton));
+            meshes.forEach(x => rig.rig.add(x));
+            setColors(material.userData.uniforms, a);
+            const s = shots[kind];
+            const t = head.clone().add(new THREE.Vector3(0, s.up, 0));
+            thumbCamera.position.set(t.x + Math.sin(s.yaw) * s.distance, t.y + 0.02, t.z + Math.cos(s.yaw) * s.distance);
+            thumbCamera.lookAt(t);
+            thumbRenderer.setClearColor(0x000000, 0);
+            thumbRenderer.render(scene, thumbCamera);
+            const c = document.createElement('canvas');
+            c.width = c.height = THUMB;
+            c.getContext('2d').drawImage(thumbRenderer.domElement, 0, 0, THUMB, THUMB);
+            const file = `thumbs/${kind}-${g}-${i}.png`;
+            await save(file, await new Promise(r => c.toBlob(r, 'image/png')));
+            thumbs[kind][g].push(file);
+            meshes.forEach(x => rig.rig.remove(x));
+        }
+        log(`thumbs ${kind} ${g}, ${files} files, ${(bytes / 1048576).toFixed(1)} MB`);
+    }
+}
+
+const json = { version, width: SIZE, height: SIZE, directions: DIRECTIONS, layers, thumbs };
+await save('flat.json', new Blob([JSON.stringify(json)], { type: 'application/json' }));
+log(`done: ${files} files, ${(bytes / 1048576).toFixed(1)} MB`);
+document.title = 'baked';
+</script>
+</body>
+</html>
