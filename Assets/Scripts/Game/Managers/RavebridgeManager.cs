@@ -192,6 +192,9 @@ public class RavebridgeManager : MonoBehaviour, IEvent
 
         // in through the castle gate, a little apart from each other
         var spawn = Island.SpawnPosition + new Vector3(UnityEngine.Random.Range(-3f, 3f), 0f, UnityEngine.Random.Range(-3f, 3f));
+        // onto the navmesh: a few spots by the gate posts are off it, and players put there stood stuck
+        if (UnityEngine.AI.NavMesh.SamplePosition(spawn, out var ground, 3f, NavMeshHelper.AreaMaskAt(spawn))) spawn = ground.position;
+        else spawn = Island.SpawnPosition;
         player.teleportHandler.Teleport(spawn);
         player.Island = Island;
         Island.AddPlayer(player);
