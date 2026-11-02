@@ -411,7 +411,7 @@ public partial class WaveRun
     private void OfferBoons()
     {
         boonVotes.Clear();
-        Offer = Boons.OrderBy(_ => UnityEngine.Random.value).Take(3).ToArray();
+        Offer = Boons.OrderBy(_ => Roll()).Take(3).ToArray();
         GameManager.Instance?.RavenBot?.Announce(Localization.MSG_HERO_BOONS, Cleared, Hero ? Hero.Name : "?", Offer[0].Name(), Offer[1].Name(), Offer[2].Name());
         Changed?.Invoke();
     }

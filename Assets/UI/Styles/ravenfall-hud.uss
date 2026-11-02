@@ -3214,6 +3214,63 @@
 }
 
 /* ---- the boss panel ---- */
+/* the day's challenge under the track: its two twists */
+.rf-wave-daily {
+    flex-direction: row;
+    align-items: center;
+    width: 720px;
+    height: 40px;
+    margin-top: 8px;
+    padding: 0 12px;
+    background-color: var(--rf-daily-bg);
+    border-width: 2px;
+    border-color: var(--rf-daily-border);
+    border-radius: 8px;
+}
+
+.rf-wave-daily__cap {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.rf-wave-daily__cap-icon {
+    font-size: 15px;
+    color: var(--rf-daily);
+    margin-right: 8px;
+}
+
+.rf-wave-daily__cap-text {
+    font-size: 15px;
+    color: var(--rf-daily);
+    letter-spacing: 1px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-wave-daily__twist {
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+    padding: 0 12px;
+    margin-left: 8px;
+    background-color: var(--rf-surface-raised);
+    border-width: 2px;
+    border-color: var(--rf-daily-border);
+    border-radius: 6px;
+}
+
+.rf-wave-daily__twist-icon {
+    font-size: 14px;
+    color: var(--rf-daily);
+    margin-right: 8px;
+}
+
+.rf-wave-daily__twist-name {
+    font-size: 16px;
+    color: var(--rf-text);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
 .rf-wave-boss {
     width: 720px;
     margin-top: 8px;

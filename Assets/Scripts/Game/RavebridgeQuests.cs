@@ -345,7 +345,19 @@ public static class RavebridgeQuests
                 reply.Line += "\n\n" + Localization.UI_WAVE_LEADERBOARD;
                 for (var i = 0; i < board.Length && i < 3; i++) reply.Line += "\n" + string.Format(Localization.UI_WAVE_LEADERBOARD_ROW, i + 1, board[i].Streamer, board[i].Waves);
             }
+            // and the day's challenge: the same waves and twists for every streamer today
+            var daily = WaveRun.Today();
+            reply.Line += "\n\n" + string.Format(Localization.UI_WAVE_DAILY_INTRO, WaveRun.TwistName(daily.Twists[0]), WaveRun.TwistText(daily.Twists[0]), WaveRun.TwistName(daily.Twists[1]), WaveRun.TwistText(daily.Twists[1]));
+            var dailyBest = WaveRun.DailyBestOf(player);
+            if (dailyBest > 0) reply.Line += " " + string.Format(Localization.UI_WAVE_DAILY_BEST, dailyBest);
+            var dailyBoard = WaveRun.DailyBoard?.Day == daily.Day ? WaveRun.DailyBoard.Entries : null;
+            if (dailyBoard != null && dailyBoard.Length > 0)
+            {
+                reply.Line += "\n" + Localization.UI_WAVE_DAILY_LEADERBOARD;
+                for (var i = 0; i < dailyBoard.Length && i < 3; i++) reply.Line += "\n" + string.Format(Localization.UI_WAVE_LEADERBOARD_ROW, i + 1, dailyBoard[i].Streamer, dailyBoard[i].Waves);
+            }
             reply.Options.Add(new Option { Label = Localization.UI_WAVE_ENDLESS, Pick = () => Defend(player, 0, null) });
+            reply.Options.Add(new Option { Label = string.Format(Localization.UI_WAVE_DAILY_OFFER, WaveRun.TwistNames(daily)), Pick = () => Defend(player, 0, null, daily) });
             reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
             return reply;
         }
@@ -376,14 +388,14 @@ public static class RavebridgeQuests
     }
 
     /// <summary>A wave run for the character played by hand, in hero mode (started if it is not on yet).</summary>
-    private static void Defend(PlayerController player, int goal, Action<WaveRun> finished)
+    private static void Defend(PlayerController player, int goal, Action<WaveRun> finished, WaveRun.Challenge daily = null)
     {
         if (!player || !player.Controlled) return;
         if (!HeroController.Active || HeroController.Active.Player != player)
         {
             if (!HeroController.Begin(player)) return;
         }
-        if (!WaveRun.Begin(player, goal, finished)) Notice?.Invoke(Localization.UI_WAVE_CANT);
+        if (!WaveRun.Begin(player, goal, finished, daily)) Notice?.Invoke(Localization.UI_WAVE_CANT);
     }
 
     private static Reply Duke(PlayerController player, State state, Reply reply)

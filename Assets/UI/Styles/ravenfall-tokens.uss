@@ -127,4 +127,7 @@
     --rf-danger-text: rgb(255, 130, 110);
     --rf-success-bright: rgb(140, 230, 180);
     --rf-gold-bg: rgb(36, 27, 12);
+    --rf-daily: rgb(110, 190, 225);
+    --rf-daily-bg: rgb(14, 27, 34);
+    --rf-daily-border: rgb(42, 84, 104);
 }

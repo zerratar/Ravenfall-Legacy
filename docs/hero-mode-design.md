@@ -763,3 +763,27 @@ same day (`HeroWaveHud`, the `rf-wave` styles in ravenfall-hud.uss, new `--rf-bo
   Abandoned runs (leaving mid wave) show none, as before.
 - "Wave 0 held!" is gone: the breather before the first wave shows the gathering plate.
 - The telegraph decals got a lighter fill with a bright leading edge (a full fill was a solid red slab at night).
+
+### Daily challenge (2026-11-02)
+
+The design review's "daily seeded runs with modifiers"; the user asked for it after the wave HUD. Built the same day
+(`WaveRun.Daily.cs`, RavenNest `HeroModeManager.RecordDaily`):
+
+- **One run a day, the same for everyone:** the UTC date seeds which enemies each wave brings, the bosses' order and
+  the boons on offer, and picks two twists for the day (never Swarm with Thick hides). How many enemies still follows
+  the viewers there, as in any run.
+- **The twists:** Swarm (half again as many enemies, a third weaker each, 16 alive at once), Thick hides (a quarter
+  fewer, 40% tougher), Boss rush (a boss every third wave), Hasty (enemies a quarter faster), Elite guard (from wave 3
+  every wave but a boss's brings an elite halfway through), Hunters (half the enemies go for viewers instead of a
+  quarter), Dry flasks (no potions on boss waves, half the health back between waves), Tiny terrors (the goblins
+  shrank in the wash: 60% size, a bit faster) and Blessed (start with the day's boon).
+- **Starting it:** Captain Hargrove, once "Hold the line" is done, offers "Today's challenge: Swarm and Boss rush"
+  beside the endless run, says what the twists do, the character's best today and today's top three.
+- **The board:** the server keeps each streamer's best of the day (user property `hero_daily`, day|waves|kills|
+  seconds|ticks) and today's leaderboard (`hero/daily/leaderboard`); a run that ends after midnight still counts for
+  the day it started. Daily runs do not touch the all-time board, its titles or decor (the twists make some days
+  easier), but give the chest and count the waves for the stream's quests, as any run.
+- **The HUD:** a blue TODAY'S CHALLENGE strip under the track with the two twists; the boss pips follow Boss rush;
+  the result card says "#3 in today's challenge" and "Best today".
+- Not built: a reward for the day's winner (it would need the server to close each day), and the daily board on the
+  website.

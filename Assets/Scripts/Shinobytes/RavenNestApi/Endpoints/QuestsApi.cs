@@ -153,6 +153,20 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<HeroLeaderboardData>(ApiRequestTarget.Quests, ApiRequestType.Get);
         }
 
+        /// <summary>A run of the day's challenge ended (day as yyyyMMdd, UTC): the streamer's best of the day and its place.</summary>
+        public Task<HeroRunResultData> HeroDailyAsync(int day, int waves, int kills, int seconds)
+        {
+            return request.Create().Identifier("hero").Method("daily").AddParameter(day.ToString()).AddParameter(waves.ToString()).AddParameter(kills.ToString()).AddParameter(seconds.ToString()).Build()
+                .SendAsync<HeroRunResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>Today's challenge: every streamer's best run of it, the best first.</summary>
+        public Task<HeroLeaderboardData> HeroDailyLeaderboardAsync()
+        {
+            return request.Create().Identifier("hero").Method("daily").AddParameter("leaderboard").Build()
+                .SendAsync<HeroLeaderboardData>(ApiRequestTarget.Quests, ApiRequestType.Get);
+        }
+
         private Task<VillageStoryResultData> StoryAction(string action, string key)
         {
             return request.Create().Identifier("village").Method(action).AddParameter(key).Build()
@@ -527,6 +541,8 @@ namespace RavenNest.SDK.Endpoints
     /// <summary>Mirrors RavenNest.Models.HeroLeaderboard.</summary>
     public class HeroLeaderboardData
     {
+        /// <summary>For the day's challenge: the day (yyyyMMdd, UTC); 0 for the all-time board.</summary>
+        public int Day { get; set; }
         public HeroRunRecordData[] Entries { get; set; }
     }
 

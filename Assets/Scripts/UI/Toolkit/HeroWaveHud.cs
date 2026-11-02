@@ -21,7 +21,9 @@ namespace Shinobytes.UI
         private const int Pips = 9;
 
         // ---- The column ----
-        private readonly VisualElement column, plate, track;
+        private readonly VisualElement column, plate, track, daily;
+        private readonly (VisualElement Chip, Label Icon, Label Name)[] dailyTwists = new (VisualElement, Label, Label)[2];
+        private WaveRun.Challenge shownDaily;
         private readonly VisualElement badge, badgeFlash;
         private readonly Label badgeCap, badgeNum, badgeOf;
         private readonly Label titleIcon, title;
@@ -50,6 +52,7 @@ namespace Shinobytes.UI
         private readonly VisualElement downFrame;
 
         private readonly VisualElement result, resultHeader, resultBest, resultChips, resultRank, resultTitle, resultChest, resultTimer;
+        private readonly Label resultRankIcon;
         private readonly Label resultIcon, resultHeading, resultBestMain, resultBestSub, resultRankText, resultTitleText, resultChestName, resultChestWhat;
         private readonly Label[] statNums = new Label[3];
 
@@ -131,6 +134,17 @@ namespace Shinobytes.UI
             info = Box(track, "rf-wave-track__info");
             infoIcon = Icon(info, "rf-wave-track__info-icon", "");
             infoText = Text(info, "rf-wave-track__info-text");
+
+            // the day's challenge: its two twists
+            daily = Box(column, "rf-wave-daily");
+            var dailyCap = Box(daily, "rf-wave-daily__cap");
+            Icon(dailyCap, "rf-wave-daily__cap-icon", "\uf783");
+            Text(dailyCap, "rf-wave-daily__cap-text").text = Localization.UI_WAVE_DAILY_CAP;
+            for (var i = 0; i < dailyTwists.Length; i++)
+            {
+                var chip = Box(daily, "rf-wave-daily__twist");
+                dailyTwists[i] = (chip, Icon(chip, "rf-wave-daily__twist-icon", ""), Text(chip, "rf-wave-daily__twist-name"));
+            }
 
             // the boss
             boss = Box(column, "rf-wave-boss");
@@ -221,7 +235,7 @@ namespace Shinobytes.UI
             Icon(resultBest, "rf-wave-result__best-icon", "");
             resultChips = Box(resultBody, "rf-wave-result__chips");
             resultRank = Box(resultChips, "rf-wave-result__chip");
-            Icon(resultRank, "rf-wave-result__chip-icon", "");
+            resultRankIcon = Icon(resultRank, "rf-wave-result__chip-icon", "");
             resultRankText = Text(resultRank, "rf-wave-result__chip-text");
             resultTitle = Box(resultChips, "rf-wave-result__chip");
             Icon(resultTitle, "rf-wave-result__chip-icon", "");
@@ -313,6 +327,18 @@ namespace Shinobytes.UI
             var running = (bool)run;
             Show(plate, running);
             Show(track, running);
+            Show(daily, running && run.Daily != null);
+            if (running && run.Daily != null && run.Daily != shownDaily)
+            {
+                shownDaily = run.Daily;
+                for (var i = 0; i < dailyTwists.Length; i++)
+                {
+                    var twist = run.Daily.Twists[i];
+                    dailyTwists[i].Icon.text = TwistGlyph(twist);
+                    dailyTwists[i].Name.text = WaveRun.TwistName(twist);
+                    dailyTwists[i].Chip.tooltip = WaveRun.TwistText(twist);
+                }
+            }
             if (!running)
             {
                 Show(boss, false);
@@ -377,7 +403,7 @@ namespace Shinobytes.UI
                 seenPhase = 0;
                 Flash(badgeFlash);
                 Pop(badgeNum, 1.35f, 0.25f);
-                var bossWave = run.Wave % 5 == 0;
+                var bossWave = run.IsBossWave(run.Wave);
                 if (!bossWave)
                 {
                     var final = run.Goal > 0 && run.Wave == run.Goal;
@@ -427,7 +453,7 @@ namespace Shinobytes.UI
         {
             var ready = run.State == WaveRun.Phase.Gathering || (run.State == WaveRun.Phase.Breather && run.Cleared <= 0);
             var held = run.State == WaveRun.Phase.Breather && run.Cleared > 0;
-            var bossWave = !ready && !held && run.Wave % 5 == 0;
+            var bossWave = !ready && !held && run.IsBossWave(run.Wave);
             badge.EnableInClassList("rf-wave__badge--ready", ready);
             badge.EnableInClassList("rf-wave__badge--held", held);
             badge.EnableInClassList("rf-wave__badge--boss", bossWave);
@@ -477,7 +503,7 @@ namespace Shinobytes.UI
             }
 
             // where the next ones come from, or the boss's warning a breather before it
-            var bossNext = held && (run.Wave + 1) % 5 == 0;
+            var bossNext = held && run.IsBossWave(run.Wave + 1);
             from.EnableInClassList("rf-wave__from--boss", bossNext);
             fromIcon.text = bossNext ? "" : "";
             fromText.text = bossNext ? Localization.UI_WAVE_BOSS_NEXT : run.ComingFrom;
@@ -498,7 +524,7 @@ namespace Shinobytes.UI
                 Show(pip, on);
                 if (!on) continue;
                 var n = first + i;
-                var boss = n % 5 == 0;
+                var boss = run.IsBossWave(n);
                 var goal = all && n == run.Goal;
                 pip.EnableInClassList("rf-wave-pip--done", n < current);
                 pip.EnableInClassList("rf-wave-pip--now", n == current);
@@ -509,7 +535,7 @@ namespace Shinobytes.UI
             }
 
             // the next boss when it is close, else the best (a new best once it is passed)
-            var toBoss = (5 - current % 5) % 5;
+            var toBoss = (run.BossEvery - current % run.BossEvery) % run.BossEvery;
             var newBest = run.Best > 0 && run.Cleared > run.Best;
             info.EnableInClassList("rf-wave-track__info--newbest", newBest);
             info.EnableInClassList("rf-wave-track__info--boss", !newBest && toBoss > 0 && toBoss <= 3);
@@ -613,6 +639,23 @@ namespace Shinobytes.UI
             }
         }
 
+        private static string TwistGlyph(WaveRun.Twist twist)
+        {
+            switch (twist)
+            {
+                case WaveRun.Twist.Swarm: return "";       // users
+                case WaveRun.Twist.ThickHides: return "";  // shield
+                case WaveRun.Twist.BossRush: return "";    // skull
+                case WaveRun.Twist.Hasty: return "";       // running
+                case WaveRun.Twist.EliteGuard: return "";  // crown
+                case WaveRun.Twist.Hunters: return "";     // crosshairs
+                case WaveRun.Twist.DryFlasks: return "";   // flask
+                case WaveRun.Twist.TinyTerrors: return ""; // shrink
+                case WaveRun.Twist.Blessed: return "";     // star
+                default: return "";
+            }
+        }
+
         private void Leave(WaveRun run, float now)
         {
             Show(leave, run.LeaveAsked);
@@ -686,18 +729,23 @@ namespace Shinobytes.UI
 
             resultBest.EnableInClassList("rf-wave-result__best--plain", !run.NewBest);
             resultBestMain.text = run.NewBest ? Localization.UI_WAVE_BANNER_BEST
+                : run.Daily != null ? string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_BEST_TODAY, run.Best)
                 : run.Best == 1 ? Localization.UI_WAVE_RESULT_BEST_ONE
                 : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_BEST, run.Best);
             Show(resultBestSub, run.NewBest);
             resultBestSub.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_NEW_BEST_SUB, run.Cleared);
             foreach (var child in resultBest.Children()) if (child.ClassListContains("rf-wave-result__best-icon")) Show(child, run.NewBest);
 
-            Show(resultRank, run.Rank > 0);
-            resultRankText.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_RANK, run.Rank);
+            // the day's challenge ranks among the day's runs
+            Show(resultRank, run.Rank > 0 || run.Daily != null);
+            resultRankIcon.text = run.Daily != null ? "\uf783" : "\uf091";
+            resultRankText.text = run.Daily == null ? string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_RANK, run.Rank)
+                : run.Rank > 0 ? string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_RANK_TODAY, run.Rank)
+                : Localization.UI_WAVE_DAILY_CAP;
             var titles = run.NewTitles != null && run.NewTitles.Length > 0;
             Show(resultTitle, titles);
             if (titles) resultTitleText.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_TITLE, string.Join(", ", Array.ConvertAll(run.NewTitles, QuestChat.TitleText)));
-            Show(resultChips, run.Rank > 0 || titles);
+            Show(resultChips, run.Rank > 0 || titles || run.Daily != null);
 
             // the chest: what it held, or how many waves it takes
             var chest = run.ChestItems > 0 || run.Coins > 0;

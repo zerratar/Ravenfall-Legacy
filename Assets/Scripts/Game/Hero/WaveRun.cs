@@ -98,6 +98,8 @@ public partial class WaveRun : MonoBehaviour
         public string[] NewTitles;
         public int ChestItems;
         public long Coins;
+        /// <summary>The day's challenge the run played (its rank is then the day's), or null.</summary>
+        public Challenge Daily;
     }
 
     /// <summary>The last run's end, for the HUD to show for a while.</summary>
@@ -156,8 +158,9 @@ public partial class WaveRun : MonoBehaviour
     private float heroHit; // the hero's best average hit; only ever goes up during a run
     private float hit;     // what sizes the enemies (Make): the hero's hit and the fighting viewers' share
 
-    /// <summary>Starts a run for the hero (in hero mode on Ravebridge). Goal 0 is endless; finished hears the end.</summary>
-    public static WaveRun Begin(PlayerController hero, int goal, Action<WaveRun> finished)
+    /// <summary>Starts a run for the hero (in hero mode on Ravebridge). Goal 0 is endless; finished hears the end; daily
+    /// plays the day's challenge (WaveRun.Daily).</summary>
+    public static WaveRun Begin(PlayerController hero, int goal, Action<WaveRun> finished, Challenge daily = null)
     {
         if (Current || !hero || !hero.InRavebridge || !hero.Island) return null;
         var run = new GameObject("Wave run").AddComponent<WaveRun>();
@@ -169,13 +172,15 @@ public partial class WaveRun : MonoBehaviour
         run.Goal = goal;
         run.finished = finished;
         run.StartedAt = Time.time;
-        run.Best = PlayerPrefs.GetInt(BestKey(hero), 0);
+        run.Best = daily != null ? DailyBestOf(hero) : PlayerPrefs.GetInt(BestKey(hero), 0);
         // the helpers' chests go to who helped in this run, not someone from an earlier one who may have left
         HeroHelpers.Clear();
-        run.SetPhase(Phase.Gathering, GatherSeconds);
         Current = run;
+        if (daily != null) run.StartDaily(daily);
+        run.SetPhase(Phase.Gathering, GatherSeconds);
         Last = null;
-        GameManager.Instance?.RavenBot?.Announce(Localization.MSG_WAVE_STARTED, hero.Name);
+        if (daily != null) GameManager.Instance?.RavenBot?.Announce(Localization.MSG_WAVE_DAILY_STARTED, hero.Name, TwistNames(daily));
+        else GameManager.Instance?.RavenBot?.Announce(Localization.MSG_WAVE_STARTED, hero.Name);
         Changed?.Invoke();
         return run;
     }
@@ -198,6 +203,7 @@ public partial class WaveRun : MonoBehaviour
         {
             Shinobytes.Debug.LogWarning("Hero mode's leaderboard: " + exc.Message);
         }
+        RefreshDailyBoard();
     }
 
     private static string BestKey(PlayerController hero) => "rf_hero_best_" + hero.Id;
@@ -279,19 +285,20 @@ public partial class WaveRun : MonoBehaviour
         Boss = null;
         BossName = null;
         var viewers = Others().Count();
-        var count = Mathf.Min(40, 3 + Wave * 2 + Mathf.Min(10, viewers / 2));
-        if (Wave % 5 == 0)
+        var count = Mathf.Min(60, Mathf.RoundToInt((3 + Wave * 2 + Mathf.Min(10, viewers / 2)) * CountFactor));
+        if (IsBossWave(Wave))
         {
-            toSpawn.Enqueue(Bosses[(Wave / 5 - 1) % Bosses.Length]);
+            toSpawn.Enqueue(Bosses[(Wave / BossEvery - 1 + (Daily != null ? Daily.BossFrom : 0)) % Bosses.Length]);
             count /= 2;
         }
         var kinds = Kinds.Where(k => k.From <= Wave).ToArray();
         for (var i = 0; i < count; i++)
         {
             // the newest kind is rarer than the ones before it
-            var k = kinds[Mathf.Min(kinds.Length - 1, Mathf.FloorToInt(Mathf.Pow(UnityEngine.Random.value, 1.6f) * kinds.Length))];
+            var k = kinds[Mathf.Min(kinds.Length - 1, Mathf.FloorToInt(Mathf.Pow(Roll(), 1.6f) * kinds.Length))];
             toSpawn.Enqueue(k);
         }
+        PlanGuard(count);
         nextSpawn = Time.time;
         SetPhase(Phase.Fighting, 0f);
     }
@@ -303,8 +310,10 @@ public partial class WaveRun : MonoBehaviour
         var hero = HeroController.Active;
         if (hero)
         {
-            hero.Refill(0.25f, 40f);
-            if (Wave % 5 == 0) hero.RefillPotions();
+            // Dry flasks: no potions on the boss waves, half the health back instead of a quarter
+            var dry = Twisted(Twist.DryFlasks);
+            hero.Refill(dry ? 0.5f : 0.25f, 40f);
+            if (IsBossWave(Wave) && !dry) hero.RefillPotions();
         }
         if (Goal > 0 && Cleared >= Goal)
         {
@@ -317,7 +326,8 @@ public partial class WaveRun : MonoBehaviour
 
     private void Spawn()
     {
-        if (toSpawn.Count == 0 || alive.Count >= MaxAlive || Time.time < nextSpawn) return;
+        SpawnGuard();
+        if (toSpawn.Count == 0 || alive.Count >= MostAlive || Time.time < nextSpawn) return;
         nextSpawn = Time.time + SpawnInterval;
         var kind = toSpawn.Dequeue();
         var at = SpawnPoint();
@@ -418,10 +428,10 @@ public partial class WaveRun : MonoBehaviour
         var movement = enemy.GetComponent<EnemyMovementController>();
         if (movement) movement.RefreshRenderers();
         enemy.name = elite ? string.Format(Localization.UI_WAVE_ELITE, kind.Name()) : kind.Name();
-        enemy.transform.localScale = Vector3.one * kind.Scale * (elite ? EliteScale : 1f);
+        enemy.transform.localScale = Vector3.one * kind.Scale * (elite ? EliteScale : 1f) * ScaleFactor;
         if (elite) elites.Add(enemy); else elites.Remove(enemy);
         // now and then one goes for a viewer instead (never a boss or an elite: those are the hero's)
-        if (!kind.Boss && !elite && UnityEngine.Random.value < HunterChance) hunters.Add(enemy); else hunters.Remove(enemy);
+        if (!kind.Boss && !elite && UnityEngine.Random.value < Hunting) hunters.Add(enemy); else hunters.Remove(enemy);
         nextMove.Remove(enemy);
         stunRest.Remove(enemy);
         enemy.AutomaticRespawn = false;
@@ -430,7 +440,7 @@ public partial class WaveRun : MonoBehaviour
         enemy.ExpFactor = (kind.Boss ? 5d : 1d) * (1d + Wave * 0.1d);
 
         // the fighting viewers are counted in hit already (StartWave), the boss included
-        var hits = kind.Hits * (1f + Wave * 0.06f) * (elite ? EliteHits : 1f);
+        var hits = kind.Hits * (1f + Wave * 0.06f) * (elite ? EliteHits : 1f) * HitsFactor;
         enemy.Stats.Health = new SkillStat((float)Mathf.Max(5, Mathf.RoundToInt((hit > 0f ? hit : 10f) * hits)));
         enemy.SpawnAt(at);
         HeroController.Active?.EnemiesChanged();
@@ -439,7 +449,7 @@ public partial class WaveRun : MonoBehaviour
         if (agent)
         {
             if (!walkSpeed.ContainsKey(enemy)) walkSpeed[enemy] = agent.speed;
-            agent.speed = ChargeSpeed;
+            agent.speed = ChargeSpeed * SpeedFactor;
         }
         enemy.InCombat = true;
         enemy.SetTarget(Hero);
@@ -551,7 +561,7 @@ public partial class WaveRun : MonoBehaviour
             if (target && walkSpeed.TryGetValue(e, out var walk) && Vector3.Distance(e.Position, target.Position) < ChargeUntil)
             {
                 var agent = e.GetComponent<NavMeshAgent>();
-                if (agent && agent.speed != walk) agent.speed = walk;
+                if (agent && agent.speed != walk * SpeedFactor) agent.speed = walk * SpeedFactor;
             }
             Unstick(e, target);
         }
@@ -765,10 +775,17 @@ public partial class WaveRun : MonoBehaviour
             {
                 Best = Cleared;
                 NewBest = true;
-                PlayerPrefs.SetInt(BestKey(Hero), Best);
-                PlayerPrefs.Save();
+                // the day's challenge keeps its own best, apart from the endless runs'
+                if (Daily != null) SaveDailyBest(Hero, Daily.Day, Best);
+                else
+                {
+                    PlayerPrefs.SetInt(BestKey(Hero), Best);
+                    PlayerPrefs.Save();
+                }
             }
-            if (!abandoned)
+            if (!abandoned && Daily != null)
+                GameManager.Instance?.RavenBot?.Announce(NewBest ? Localization.MSG_WAVE_DAILY_OVER_BEST : Localization.MSG_WAVE_DAILY_OVER, Hero.Name, Cleared, Kills);
+            else if (!abandoned)
                 GameManager.Instance?.RavenBot?.Announce(retreated ? Localization.MSG_WAVE_RETREAT : NewBest ? Localization.MSG_WAVE_OVER_BEST : Localization.MSG_WAVE_OVER, Hero.Name, Cleared, Kills);
         }
 
@@ -776,7 +793,7 @@ public partial class WaveRun : MonoBehaviour
         Last = new Result
         {
             Hero = Hero ? Hero.Name : null, Goal = Goal, Cleared = Cleared, Kills = Kills, Best = Best,
-            NewBest = NewBest, Abandoned = abandoned, Retreated = retreated, StartedAt = StartedAt, EndedAt = Time.time,
+            NewBest = NewBest, Abandoned = abandoned, Retreated = retreated, StartedAt = StartedAt, EndedAt = Time.time, Daily = Daily,
         };
         try { finished?.Invoke(this); }
         catch (Exception exc) { Shinobytes.Debug.LogError("Wave run end: " + exc); }
@@ -821,7 +838,10 @@ public partial class WaveRun : MonoBehaviour
             // the record: the streamer's best, titles, the place among every streamer's
             if (result.Cleared > 0 && game.RavenNest.SessionStarted)
             {
-                var record = await game.RavenNest.Quests.HeroRunAsync(result.Cleared, result.Kills, Mathf.RoundToInt(result.EndedAt - result.StartedAt));
+                var seconds = Mathf.RoundToInt(result.EndedAt - result.StartedAt);
+                var record = result.Daily != null
+                    ? await game.RavenNest.Quests.HeroDailyAsync(result.Daily.Day, result.Cleared, result.Kills, seconds)
+                    : await game.RavenNest.Quests.HeroRunAsync(result.Cleared, result.Kills, seconds);
                 if (record != null && record.Ok)
                 {
                     result.Rank = record.Rank;
