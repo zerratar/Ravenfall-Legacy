@@ -546,7 +546,7 @@ looked like a branch, and every flag hung centred on its pole or mast instead of
   sails (BoatAssembler.Paint) and furl in port (BoatSails), and the server's BoatLooks gives the Fishing Boat the
   ships' 14 sails besides its flag. The square sail on the yard was left off, far too wide for the boat.
 - Flags fly beside what holds them, leading edge at the mast or pole, streaming aft: the ships' at the tallest
-  masthead, the fishing boat's from its gaff's peak (a "FlagPoint" the prefab script finds from the gaff's highest
-  vertex, clear of the sail), the rowboat's from Pirate Realm's straight banded post (SM_Prop_Flag_Post_04, standing
-  upright) instead of the crooked one lying on its side. The website's rf-boat-designer.js does the same (it finds the
-  gaff's peak from the mesh itself).
+  masthead, the fishing boat's at its masthead too, over the top of its sail as on the Sloop (the user's pick; the
+  gaff's peak was tried and looked detached), the rowboat's from Pirate Realm's straight banded post
+  (SM_Prop_Flag_Post_04, standing upright) instead of the crooked one lying on its side. The website's
+  rf-boat-designer.js does the same.

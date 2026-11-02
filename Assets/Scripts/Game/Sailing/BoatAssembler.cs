@@ -6,7 +6,7 @@ using UnityEngine;
 /// built from Synty's Pirate Realm small, medium and large ships under their "Model": the hull, front, middle, back, figurehead and ram of the look's variants, the mast,
 /// bowsprit, rigging, helm and grate every one has, then its sails and planks by material and its flag at the
 /// masthead. The Rowboat and the Fishing Boat keep their models: the fishing boat's sail (the small ship's, see
-/// tools/sailing/make-boat-prefabs.cs) takes the look's sails and its flag flies from its masthead, the rowboat's from
+/// tools/sailing/make-boat-prefabs.cs) takes the look's sails and its flag flies from its masthead as the Sloop's does, the rowboat's from
 /// a pole at the stern. Every flag flies beside its mast or pole, as a real one does. Run at launch and again when
 /// the look changes while the boat is out; its seats are never touched.
 /// </summary>
@@ -106,8 +106,8 @@ public static class BoatAssembler
         variants != null && variant >= 1 && variant <= variants.Length ? variants[variant - 1] : null;
 
     /// <summary>
-    /// The look's flag: at the masthead of the tallest mast (the ships), from the peak of the fishing boat's gaff, or on a
-    /// pole at the stern (the rowboat). It hangs from its top edge with its leading edge at the mast or pole, streaming aft, as a
+    /// The look's flag: at the masthead of the tallest mast (the ships and the fishing boat's sail), or on a pole at the
+    /// stern (the rowboat). It hangs from its top edge with its leading edge at the mast or pole, streaming aft, as a
     /// real flag flies. None for flag 0.
     /// </summary>
     private static void Flag(Transform boat, Transform model, BoatParts parts, int flag, bool ship)
@@ -132,15 +132,7 @@ public static class BoatAssembler
 
         Vector3 at;
         float scale;
-        // the fishing boat's gaff peak, marked on its prefab (tools/sailing/make-boat-prefabs.cs): a gaff-rigged boat flies
-        // its flag there, clear of the sail
-        var point = ship ? null : boat.Find("FlagPoint");
-        if (point)
-        {
-            scale = SailFlagScale;
-            at = boat.InverseTransformPoint(point.position) + Vector3.back * (FlagHalfWidth * scale);
-        }
-        else if (top.HasValue)
+        if (top.HasValue)
         {
             scale = ship ? ShipFlagScale : SailFlagScale;
             var head = boat.InverseTransformPoint(new Vector3(top.Value.center.x, top.Value.max.y, top.Value.center.z));

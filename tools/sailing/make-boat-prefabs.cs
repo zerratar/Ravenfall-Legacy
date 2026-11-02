@@ -107,22 +107,6 @@ foreach (var b in boats)
             // the square sail on its yard is far too wide for a boat this narrow: the gaff sail alone
             var square = FindPart(rig.transform, "SM_Veh_Ship_S_Mast_Middle_01_Boom_01");
             if (square) UnityEngine.Object.DestroyImmediate(square.gameObject);
-            // where its flag flies: the gaff's peak, the highest point of the spar along the sail's top edge (its mesh
-            // is the boom and the gaff together, so its bounds' corner is in the air); BoatAssembler hangs the flag there
-            var gaff = FindPart(rig.transform, "SM_Veh_Ship_S_Mast_Middle_01_Boom_Back_01");
-            var gaffMesh = gaff ? gaff.GetComponent<UnityEngine.MeshFilter>()?.sharedMesh : null;
-            if (gaffMesh)
-            {
-                var peak = new UnityEngine.Vector3(0, float.MinValue, 0);
-                foreach (var v in gaffMesh.vertices)
-                {
-                    var w = gaff.TransformPoint(v);
-                    if (w.y > peak.y) peak = w;
-                }
-                var flagPoint = new UnityEngine.GameObject("FlagPoint").transform;
-                flagPoint.SetParent(root.transform, false);
-                flagPoint.position = peak;
-            }
         }
     }
 
