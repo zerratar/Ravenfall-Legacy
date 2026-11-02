@@ -397,18 +397,8 @@ namespace Shinobytes.UI
                 TryBind();
                 if (!bound) return;
             }
-            // Esc closes the window, leaves hero mode, then stops playing by hand
-            if (Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping)
-            {
-                if (WindowOpen) { EscapeKey.Claim(); CloseWindow(); }
-                else if (RavebridgePlay.Playing)
-                {
-                    EscapeKey.Claim();
-                    if (HeroController.Active) HeroController.End();
-                    else RavebridgePlay.Stop();
-                    Redraw();
-                }
-            }
+            // Esc closes the window; leaving hero mode waits for LateUpdate (see there)
+            if (Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping && WindowOpen) { EscapeKey.Claim(); CloseWindow(); }
             if (Time.unscaledTime >= nextSecond)
             {
                 nextSecond = Time.unscaledTime + 1f;
@@ -418,6 +408,27 @@ namespace Shinobytes.UI
             }
             // the drawer goes up by itself once the mouse has left it a while (never with the window open)
             if (!collapsed && !hovered && !WindowOpen && Time.unscaledTime >= hideAt && wrap.style.display == DisplayStyle.Flex) SetCollapsed(true);
+        }
+
+        /// <summary>
+        /// Esc nothing else used leaves hero mode, then stops playing by hand. Here, after every Update, so a
+        /// press that closed the inventory, the shop or a talk is not also read as leaving. During a wave run
+        /// it asks first: leaving gives no rewards, so the first press warns and a second within
+        /// <see cref="WaveRun.LeaveAskSeconds"/> leaves.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (!bound || !Input.GetKeyDown(KeyCode.Escape) || Keybinds.IsTyping || EscapeKey.ClaimedThisFrame || !RavebridgePlay.Playing) return;
+            EscapeKey.Claim();
+            var run = WaveRun.Current;
+            if (HeroController.Active && run && !run.Finished && !run.LeaveAsked)
+            {
+                run.AskToLeave();
+                return;
+            }
+            if (HeroController.Active) HeroController.End();
+            else RavebridgePlay.Stop();
+            Redraw();
         }
 
         private void Redraw()

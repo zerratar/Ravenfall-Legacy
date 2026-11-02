@@ -114,6 +114,8 @@ namespace Shinobytes.UI
                     if (Time.time - fromShownAt < 6f || run.Wave != fromWave) { if (run.Wave != fromWave) { fromWave = run.Wave; fromShownAt = Time.time; } sub.text += "\n" + run.ComingFrom; }
                     break;
             }
+            // Esc once: a second press leaves the run, and a run left gives nothing
+            if (run.LeaveAsked) sub.text = Localization.UI_WAVE_LEAVE_ASK;
 
             var b = run.Boss;
             boss.style.display = b && !b.Stats.IsDead ? DisplayStyle.Flex : DisplayStyle.None;

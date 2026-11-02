@@ -56,7 +56,12 @@ offers. The island was built around monkeys and bananas, and neither existed in 
 ### 5. The regatta
 
 - A boat race round the island for own boats. `!regatta` joins (an own boat equipped), the broadcaster starts it
-  with `!regatta start`; it also starts by itself when enough boats have joined.
+  with `!regatta start` (without their own character joining; with no sign-up open it opens one as `!regatta`
+  does); it also starts by itself when enough boats have joined.
+- A forced start with one racer is a time trial: the best time goes on the board but not a win, and the server pays
+  the lone finisher the back of a race's prize, with no sail (a race takes two finishers).
+- Racers signed up or still racing are left out of raids' and dungeons' auto-join, which would put the boat away and
+  knock them out.
 - The racers' boats line up off the island, sail round buoys and finish at the jetty. Speed is the boat's own
   (Sailing level and boat tier, capped), with wind gusts per leg so a lower boat can still win.
 - Places pay coins and Sailing exp (the server: api/game/regatta-reward). Best times and wins on a board at the
@@ -99,7 +104,8 @@ pickups, and viewers in chat interfering.
   - wreckage: 60% speed for 1.2 s;
   - the Kraken: 5% speed for 3.2 s, shields or not.
 
-  A hit boat cannot be hit again for 4 s.
+  A hit boat cannot be hit again for 4 s. It sails through a keg or a peel meanwhile, which stays for the next boat.
+  A hit slows the boat but does not blow out a tailwind it has (a viewer may have paid for it).
 - **Viewers meddle from chat** (anyone playing who is not racing):
   - `!regatta keg [name]` lobs a powder keg in front of a racer. A keg is live once it lands, and is half as easy to
     steer round as a reef.
@@ -110,12 +116,16 @@ pickups, and viewers in chat interfering.
   - The coins come off the game's balance at once, so a second command cannot spend them again. Then it happens, and
     then the server takes them (api/mangrove/{characterId}/spend/{coins}, at most 10000). A race that ends meanwhile
     never charges for nothing, and coins the server did not take are given back.
-  - A keg cannot be aimed at a racer hit in the last 4 s, or aimed at by a keg in the last 8 s.
+  - A keg cannot be aimed at a racer hit in the last 4 s, or aimed at by a keg in the last 8 s; a random keg picks
+    only racers free of both, and gives its racer the same 8 s rest.
+  - Viewers throw at most 2 + the number of racers kegs a race.
+  - Racers, also those who dropped out or finished, cannot meddle until the race is over.
+  - A meddle whose coins the server could not take says it was free, not "paid".
   - `!regatta kraken` (the broadcaster or a moderator, once a race): the Kraken wakes under the leader. Its three biggest
     arms burst up in front of the bow and smaller ones on both sides of the boat; it roars from below (the picture
     shakes), curls them over the boat and holds it about 3 s while they wave, and they sink back. Its arms are Pirate
     Realm's tentacle (KrakenTentacle waves the joints); the roar is Assets/Sounds/Kraken Roar.mp3, a bear and a tiger
-    roar pitched down and layered with ffmpeg.
+    roar pitched down and layered with ffmpeg. Woken just before the race ends, it still lets go and sinks.
 - **The race camera** (RaceCamera; the setting Game > Observer > Regatta camera, on by default): a director that
   cuts between shots.
   - The start line from ahead and to one side, every bow in the picture, while the boats wait.

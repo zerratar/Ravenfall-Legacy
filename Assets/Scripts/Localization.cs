@@ -556,6 +556,7 @@ public static class Localization
     public static string UI_WAVE_N = "Wave {0}";
     public static string UI_WAVE_OF = "Wave {0} of {1}";
     public static string UI_WAVE_LEFT = "{0} left, {1} fallen";
+    public static string UI_WAVE_LEAVE_ASK = "Press Esc again to leave the run. A run left early gives no chest and no record.";
     public static string UI_WAVE_DOWN = "DOWN!";
     public static string UI_WAVE_DOWN_HELP = "Chat: !hero revive ({0}/{1})";
     public static string UI_WAVE_DOWN_HEALER = "A healer is helping: {0}%";
@@ -2897,6 +2898,8 @@ public static class Localization
     public static string UI_REGATTA_KRAKEN = "{0} wakes the Kraken!";
     public static string MSG_REGATTA_MEDDLE_NO_RACE = Meta("mangrove", "regatta", "fail") + "There is no regatta underway to meddle with.";
     public static string MSG_REGATTA_MEDDLE_RACING = Meta("mangrove", "regatta", "fail") + "You are racing! No meddling in your own race.";
+    public static string MSG_REGATTA_MEDDLE_RACED = Meta("mangrove", "regatta", "fail") + "You raced in this one. No meddling until it is over.";
+    public static string MSG_REGATTA_MEDDLE_NO_KEGS = Meta("mangrove", "regatta", "fail") + "The shore has run out of powder kegs for this race. Try the wind instead!";
     public static string MSG_REGATTA_MEDDLE_NO_TARGET = Meta("mangrove", "regatta", "fail") + "Nobody called {name} is racing.";
     public static string MSG_REGATTA_MEDDLE_FINISHED = Meta("mangrove", "regatta", "fail") + "{name} has already finished.";
     public static string MSG_REGATTA_MEDDLE_PROTECTED = Meta("mangrove", "regatta", "fail") + "{name} was just hit. Give them {seconds} seconds.";
@@ -2908,6 +2911,8 @@ public static class Localization
     public static string MSG_REGATTA_KEG_PAID = Meta("mangrove", "regatta") + "Your powder keg splashes down in front of {name}! Paid {coins} coins.";
     public static string MSG_REGATTA_WIND_DONE = Meta("mangrove", "regatta") + "You fill {name}'s sails! Your next free one is in {seconds} seconds.";
     public static string MSG_REGATTA_WIND_PAID = Meta("mangrove", "regatta") + "You fill {name}'s sails! Paid {coins} coins.";
+    public static string MSG_REGATTA_KEG_NOT_CHARGED = Meta("mangrove", "regatta") + "Your powder keg splashes down in front of {name}! Your coins could not be taken, so this one was free.";
+    public static string MSG_REGATTA_WIND_NOT_CHARGED = Meta("mangrove", "regatta") + "You fill {name}'s sails! Your coins could not be taken, so this one was free.";
     public static string MSG_REGATTA_KRAKEN_DONE = Meta("mangrove", "regatta") + "The Kraken rises in front of {name}!";
     public static string MSG_REGATTA_KRAKEN_USED = Meta("mangrove", "regatta", "fail") + "The Kraken already rose this race. It needs its nap.";
     public static string MSG_REGATTA_KRAKEN_NO_RIGHTS = Meta("mangrove", "regatta", "fail") + "Only the streamer or a moderator can wake the Kraken.";

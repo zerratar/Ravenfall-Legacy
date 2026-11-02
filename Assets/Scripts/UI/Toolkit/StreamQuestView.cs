@@ -242,7 +242,12 @@ namespace Shinobytes.UI
                 }
             }
             // Esc closes the post form's open list or item dialog first, then the window
-            if (windowOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping && !(tab == 1 && streamerPanel.HideOverlay())) Close();
+            // (claimed, so hero mode does not also leave on it)
+            if (windowOpen && Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping)
+            {
+                EscapeKey.Claim();
+                if (!(tab == 1 && streamerPanel.HideOverlay())) Close();
+            }
         }
 
         // ---- The bar ---------------------------------------------------------------------------------------

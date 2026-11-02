@@ -56,7 +56,7 @@ public sealed class Regatta : MonoBehaviour
     public enum Item { None, Tailwind, Cannon, Shield, Peel }
     public enum Hit { Cannon, Keg, Peel, Reef, Wreck, Kraken }
     public enum Meddling { Keg, Wind, Kraken }
-    public enum MeddleResult { Done, NoRace, Racing, NoTarget, Finished, Protected, Nobody, KrakenUsed }
+    public enum MeddleResult { Done, NoRace, Racing, Raced, NoTarget, Finished, Protected, Nobody, KrakenUsed, NoKegs }
 
     private sealed class Racer
     {
@@ -161,12 +161,24 @@ public sealed class Regatta : MonoBehaviour
     private int finished;
     private bool forced;
     private bool krakenWoken;
+    private int viewerKegs;
     private bool filmed;
     private float releaseCameraAt = -1f;
     private AudioSource horn;
 
     public static bool Running => current && current.phase != Phase.Done;
     public static float CooldownLeft => Mathf.Max(0f, nextAllowed - Time.time);
+
+    /// <summary>Signed up, lining up or still racing (not out, not finished): raids' and dungeons' auto-join leave them be.</summary>
+    public static bool InRace(PlayerController player)
+    {
+        if (!current || !player || current.phase == Phase.Done) return false;
+        var r = current.racers.FirstOrDefault(x => x.Player == player);
+        return r != null && (current.phase == Phase.Signup || r.Racing);
+    }
+
+    /// <summary>The kegs viewers may throw in one race: a couple, plus one per racer, so a big chat cannot bury it.</summary>
+    private int MostViewerKegs => 2 + racers.Count;
 
     // ---- !regatta ----------------------------------------------------------------------------------
 
@@ -234,8 +246,12 @@ public sealed class Regatta : MonoBehaviour
         target = null;
         wait = 0;
         if (!current || current.phase != Phase.Racing) return MeddleResult.NoRace;
-        if (current.racers.Any(r => r.Player == viewer && !r.Out)) return MeddleResult.Racing;
+        // racers keep out of it until the race is over: dropped out (!sail) or finished too, else last place drops
+        // out and kegs the leader
+        var own = current.racers.FirstOrDefault(r => r.Player == viewer);
+        if (own != null) return own.Racing ? MeddleResult.Racing : MeddleResult.Raced;
         if (kind == Meddling.Kraken && current.krakenWoken) return MeddleResult.KrakenUsed;
+        if (kind == Meddling.Keg && current.viewerKegs >= current.MostViewerKegs) return MeddleResult.NoKegs;
 
         var now = Time.time;
         Racer racer;
@@ -271,7 +287,10 @@ public sealed class Regatta : MonoBehaviour
         switch (kind)
         {
             case Meddling.Keg:
-                if (!string.IsNullOrWhiteSpace(targetName)) racer.AimedUntil = now + AimedRest;
+                // aimed or not, the racer gets a rest from viewers' kegs: free random ones piled up on one boat,
+                // and all but the first went off against its immunity
+                racer.AimedUntil = now + AimedRest;
+                current.viewerKegs++;
                 current.ThrowKeg(racer, viewer.Name);
                 break;
             case Meddling.Wind:
@@ -311,6 +330,8 @@ public sealed class Regatta : MonoBehaviour
                 return;
 
             case Phase.Done:
+                // a Kraken woken just before the end still lets go and sinks (and stops shaking the camera)
+                Rise(Time.time);
                 if (releaseCameraAt > 0f && Time.time >= releaseCameraAt)
                 {
                     releaseCameraAt = -1f;
@@ -573,6 +594,9 @@ public sealed class Regatta : MonoBehaviour
                     break;
                 }
                 if (t.Kind == Kind.Peel && t.Owner == r && now < t.OwnerClearAt) continue;
+                // a boat still reeling from a hit sails through a keg or a peel, which waits for the next one: it used to
+                // go off against the immunity, and a paid keg did nothing
+                if ((t.Kind == Kind.Keg || t.Kind == Kind.Peel) && now < r.SafeUntil) continue;
                 if (t.Kind == Kind.Reef || t.Kind == Kind.Wreck)
                 {
                     Strike(r, t.Kind == Kind.Reef ? Hit.Reef : Hit.Wreck, null);
@@ -907,11 +931,11 @@ public sealed class Regatta : MonoBehaviour
         IncidentAt = Time.unscaledTime;
     }
 
+    /// <summary>A hit slows the boat for a while; a tailwind it has keeps blowing (a viewer paid for it).</summary>
     private static void SlowDown(Racer r, float pace, float seconds)
     {
         r.Slow = pace;
         r.SlowUntil = Time.time + seconds;
-        r.BoostUntil = 0f;
     }
 
     private void SetAura(Racer r, GameObject prefab)
@@ -989,7 +1013,8 @@ public sealed class Regatta : MonoBehaviour
                 var share = i < ExpShare.Length ? ExpShare[i] : ExpShareOthers;
                 if (sailing != null) sailing.AddExp(GameMath.ExperienceForLevel(sailing.Level + 1) * share);
             }
-            RegattaRecords.Add(placed.Select(r => (r.Player.Id, r.Player.Name, r.Time)).ToList());
+            // alone (a forced start) it is a time trial: the best time counts, not a win
+            RegattaRecords.Add(placed.Select(r => (r.Player.Id, r.Player.Name, r.Time)).ToList(), racers.Count(r => r.Boat) >= 2);
             RegattaRecords.UpdateBoard(island);
             var winner = placed[0];
             var line = string.Join(", ", placed.Skip(1).Take(2).Select(r => Ordinal(r.Place) + " " + r.Player.Name));
@@ -1395,7 +1420,7 @@ public static class RegattaRecords
         }
     }
 
-    public static void Add(List<(Guid Id, string Name, float Time)> placed)
+    public static void Add(List<(Guid Id, string Name, float Time)> placed, bool race = true)
     {
         for (var i = 0; i < placed.Count; ++i)
         {
@@ -1404,7 +1429,7 @@ public static class RegattaRecords
             if (r == null) Records.Add(r = new Record { UserId = id, Best = float.MaxValue });
             r.Name = name;
             r.Races++;
-            if (i == 0) r.Wins++;
+            if (i == 0 && race) r.Wins++;
             if (time < r.Best || r.Best <= 0f) r.Best = time;
         }
         try { store.Save(Records); }

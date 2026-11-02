@@ -31,6 +31,10 @@ public class WaveRun : MonoBehaviour
     private const float BreatherSeconds = 12f;
     private const float DownedSeconds = 20f;
     private const float HealerReviveSeconds = 5f;
+    private const float HealerReviveMore = 3f; // each revive so far makes a healer's next one take this much longer
+    private const float BossPerFighter = 0.1f; // a boss's health grows with the viewers fighting beside the hero
+    private const float BossFightersCap = 1.5f;
+    public const float LeaveAskSeconds = 3f;
     private const int MaxAlive = 12;
     private const float SpawnInterval = 0.7f;
     private const float BlowCooldown = 1f;
@@ -57,8 +61,8 @@ public class WaveRun : MonoBehaviour
     {
         new Kind { Name = () => Localization.UI_WAVE_GOBLIN, Variants = new[] { "Character_Goblin_Male", "Character_Goblin_Female" }, From = 1, Hits = 2.5f, Blow = 0.008f },
         new Kind { Name = () => Localization.UI_WAVE_WARRIOR, Variants = new[] { "Character_Goblin_Warrior_Male", "Character_Goblin_Warrior_Female" }, From = 3, Hits = 4f, Blow = 0.012f, Scale = 1.05f },
-        new Kind { Name = () => Localization.UI_WAVE_GHOST, Variants = new[] { "Character_Ghost_01", "Character_Ghost_02" }, From = 7, Hits = 3f, Blow = 0.014f },
-        new Kind { Name = () => Localization.UI_WAVE_SKELETON, Variants = new[] { "Character_Skeleton_Soldier_01", "Character_Skeleton_Soldier_02", "Character_Skeleton_Slave_01" }, From = 6, Hits = 5f, Blow = 0.013f },
+        new Kind { Name = () => Localization.UI_WAVE_GHOST, Variants = new[] { "Character_Ghost_01", "Character_Ghost_02" }, From = 6, Hits = 3f, Blow = 0.014f },
+        new Kind { Name = () => Localization.UI_WAVE_SKELETON, Variants = new[] { "Character_Skeleton_Soldier_01", "Character_Skeleton_Soldier_02", "Character_Skeleton_Slave_01" }, From = 7, Hits = 5f, Blow = 0.013f },
         new Kind { Name = () => Localization.UI_WAVE_SKELETON_KNIGHT, Variants = new[] { "Character_Skeleton_Knight" }, From = 11, Hits = 7f, Blow = 0.017f, Scale = 1.1f },
     };
 
@@ -104,7 +108,12 @@ public class WaveRun : MonoBehaviour
     public float DownedUntil { get; private set; }
     public int Votes => votes.Count;
     public int VotesNeeded { get; private set; }
-    public float HealerProgress => healerTime / HealerReviveSeconds;
+    public float HealerProgress => healerTime / HealerSeconds;
+    private float HealerSeconds => HealerReviveSeconds + revives * HealerReviveMore;
+    public bool Finished => State == Phase.Over;
+
+    /// <summary>Esc was pressed once during the run: the HUD warns that a second press leaves it, with no rewards.</summary>
+    public bool LeaveAsked => Time.unscaledTime < leaveAskedUntil;
     public int Best { get; private set; }
     public bool NewBest { get; private set; }
     public bool Abandoned { get; private set; }
@@ -131,6 +140,8 @@ public class WaveRun : MonoBehaviour
     private float healerTime;
     private PlayerController lastHealer;
     private int revives;
+    private float leaveAskedUntil;
+    private float hit; // the hero's best average hit, which sizes the enemies (Make); only ever goes up during a run
 
     /// <summary>Starts a run for the hero (in hero mode on Ravebridge). Goal 0 is endless; finished hears the end.</summary>
     public static WaveRun Begin(PlayerController hero, int goal, Action<WaveRun> finished)
@@ -146,6 +157,8 @@ public class WaveRun : MonoBehaviour
         run.finished = finished;
         run.StartedAt = Time.time;
         run.Best = PlayerPrefs.GetInt(BestKey(hero), 0);
+        // the helpers' chests go to who helped in this run, not someone from an earlier one who may have left
+        HeroHelpers.Clear();
         run.SetPhase(Phase.Gathering, GatherSeconds);
         Current = run;
         Last = null;
@@ -240,6 +253,10 @@ public class WaveRun : MonoBehaviour
     private void StartWave()
     {
         Wave++;
+        // the hero's best style sizes the enemies, measured as the wave starts and never lowered (so switching to
+        // the weakest style, or taking the weapon off, before a wave does not make it easy)
+        var hero = HeroController.Active;
+        if (hero && template) hit = Mathf.Max(hit, hero.BestExpectedHit(template));
         toSpawn.Clear();
         Boss = null;
         BossName = null;
@@ -387,11 +404,11 @@ public class WaveRun : MonoBehaviour
         enemy.AggroRange = 60f;
         enemy.ExpFactor = (kind.Boss ? 5d : 1d) * (1d + Wave * 0.1d);
 
-        var hero = HeroController.Active;
-        var hit = hero ? hero.ExpectedHit(enemy) : 10f;
-        var hits = kind.Hits * (1f + Wave * 0.06f) * (kind.Boss ? 1f + Others().Count() * 0.1f : 1f);
-        enemy.Stats.Health = new SkillStat((float)Mathf.Max(5, Mathf.RoundToInt(hit * hits)));
+        // a boss grows with the viewers actually fighting (capped), not everyone idling on the island
+        var hits = kind.Hits * (1f + Wave * 0.06f) * (kind.Boss ? 1f + Mathf.Min(BossFightersCap, Fighters() * BossPerFighter) : 1f);
+        enemy.Stats.Health = new SkillStat((float)Mathf.Max(5, Mathf.RoundToInt((hit > 0f ? hit : 10f) * hits)));
         enemy.SpawnAt(at);
+        HeroController.Active?.EnemiesChanged();
         // from a far gate they charge in, then fight at their own pace (GiveOrders)
         var agent = enemy.GetComponent<NavMeshAgent>();
         if (agent)
@@ -514,6 +531,9 @@ public class WaveRun : MonoBehaviour
         }
     }
 
+    /// <summary>The viewers on Ravebridge training a combat skill (healers too).</summary>
+    private int Fighters() => Others().Count(p => !p.Stats.IsDead && (p.TrainingMelee || p.TrainingRanged || p.TrainingMagic || p.TrainingHealing));
+
     /// <summary>The viewers on Ravebridge besides the hero.</summary>
     private IEnumerable<PlayerController> Others()
     {
@@ -537,14 +557,17 @@ public class WaveRun : MonoBehaviour
         return (kind.Boss ? "boss " : string.Empty) + kind.Variants[0].ToLowerInvariant();
     }
 
-    /// <summary>A wave enemy's blow on the hero: a share of the hero's health, once a second at most per enemy.</summary>
-    public int BlowFor(EnemyController enemy)
+    /// <summary>
+    /// A wave enemy's blow on the hero: a share of the hero's health, once a second at most per enemy (0 until then).
+    /// Not rounded: with little health it is under a point, and AdjustTaken carries the fraction.
+    /// </summary>
+    public float BlowFor(EnemyController enemy)
     {
         if (!alive.TryGetValue(enemy, out var kind)) return 0;
         if (lastBlow.TryGetValue(enemy, out var last) && Time.time - last < BlowCooldown) return 0;
         lastBlow[enemy] = Time.time;
         var share = kind.Blow * (1f + Wave * 0.03f) * UnityEngine.Random.Range(0.7f, 1.2f);
-        return Mathf.Max(1, Mathf.RoundToInt(Hero.Stats.Health.MaxLevel * share));
+        return Mathf.Max(0.01f, Hero.Stats.Health.MaxLevel * share);
     }
 
     /// <summary>The hero falls: chat has a while to get the hero back up.</summary>
@@ -580,11 +603,11 @@ public class WaveRun : MonoBehaviour
 
     private void UpdateDowned()
     {
-        // a healer standing close brings the hero back by themselves
+        // a healer standing close brings the hero back by themselves, a little slower each time
         var healer = Others().FirstOrDefault(p => p.TrainingHealing && !p.Stats.IsDead && Vector3.Distance(p.Position, Hero.Position) < 12f);
         if (healer) lastHealer = healer;
         healerTime = healer ? healerTime + Time.deltaTime : Mathf.Max(0f, healerTime - Time.deltaTime);
-        if (healerTime >= HealerReviveSeconds) { Revive(); return; }
+        if (healerTime >= HealerSeconds) { Revive(); return; }
         if (Time.time >= DownedUntil) Finish(false, true);
     }
 
@@ -624,6 +647,13 @@ public class WaveRun : MonoBehaviour
     }
 
     // ---- The end --------------------------------------------------------------------------------------------
+
+    /// <summary>The first Esc of a run (RavebridgeView): warn for a moment; a second one within it leaves.</summary>
+    public void AskToLeave()
+    {
+        leaveAskedUntil = Time.unscaledTime + LeaveAskSeconds;
+        Changed?.Invoke();
+    }
 
     /// <summary>Ends the run: the hero left (abandoned), fell, or reached the goal.</summary>
     public void Finish(bool abandoned, bool fell = false)

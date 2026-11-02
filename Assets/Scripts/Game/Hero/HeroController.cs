@@ -19,6 +19,7 @@ public partial class HeroController : MonoBehaviour
     private const float DodgeDistance = 5f;
     private const float DodgeSeconds = 0.4f;
     private const float PotionShare = 0.35f;
+    public const float PotionCooldown = 6f; // a second let bought draughts outheal any wave
     private const float ManaPerSecond = 4f;
     private const float Aura = 0.5f; // 7a: the hero takes half damage; 7b scales it to the waves
     private const float StyleSwitchCooldown = 1f;
@@ -53,6 +54,8 @@ public partial class HeroController : MonoBehaviour
     private HeroCamera heroCamera;
     private Vector3 aim;
     private float potionReadyAt;
+    private float owedBlow; // the part of a point the wave blows took, carried (AdjustTaken)
+    public float PotionReadyAt => potionReadyAt;
     private float invulnerableUntil;
     private float guardUntil;
     private bool busy; // a dodge or a leap moves the hero itself
@@ -233,9 +236,24 @@ public partial class HeroController : MonoBehaviour
         var run = WaveRun.Current;
         var inRun = run && run.Hero == Player;
         if (inRun && run.Downed) return 0;
-        var taken = inRun && attacker is EnemyController enemy && run.Owns(enemy) ? run.BlowFor(enemy) : Mathf.Max(damage > 0 ? 1 : 0, Mathf.RoundToInt(damage * Aura));
-        if (taken > 0 && Time.time < guardUntil) taken = Mathf.Max(1, taken / 2);
-        if (taken > 0) taken = Mathf.Max(1, Mathf.RoundToInt(taken * RavebridgeShop.TakenFactor(Player)));
+        int taken;
+        if (inRun && attacker is EnemyController enemy && run.Owns(enemy))
+        {
+            // a share of the hero's health: with little health that is less than a point, so the fraction is carried
+            // to the next blow (rounding each up to 1 made a goblin take a tenth of a 10 health hero)
+            var blow = run.BlowFor(enemy);
+            if (blow <= 0f) return 0;
+            if (Time.time < guardUntil) blow *= 0.5f;
+            blow = blow * RavebridgeShop.TakenFactor(Player) + owedBlow;
+            taken = Mathf.FloorToInt(blow);
+            owedBlow = blow - taken;
+        }
+        else
+        {
+            taken = Mathf.Max(damage > 0 ? 1 : 0, Mathf.RoundToInt(damage * Aura));
+            if (taken > 0 && Time.time < guardUntil) taken = Mathf.Max(1, taken / 2);
+            if (taken > 0) taken = Mathf.Max(1, Mathf.RoundToInt(taken * RavebridgeShop.TakenFactor(Player)));
+        }
         var health = (int)Player.Stats.Health.CurrentValue;
         if (taken < health) return taken;
         if (angel)
@@ -257,18 +275,29 @@ public partial class HeroController : MonoBehaviour
     /// <summary>Untouchable for a moment (getting back up).</summary>
     public void Invulnerable(float seconds) => invulnerableUntil = Mathf.Max(invulnerableUntil, Time.time + seconds);
 
-    /// <summary>How hard the hero's style hits this enemy on average, misses counted (WaveRun sizes enemies by it).</summary>
-    public float ExpectedHit(EnemyController enemy)
+    /// <summary>How hard a style hits this enemy on average, misses counted.</summary>
+    public float ExpectedHit(EnemyController enemy, HeroStyle style)
     {
         var total = 0f;
         const int Samples = 32;
-        for (var i = 0; i < Samples; i++) total += RawDamage(enemy);
+        for (var i = 0; i < Samples; i++) total += RawDamage(enemy, style);
         return Mathf.Max(1f, total / Samples);
     }
 
-    private float RawDamage(EnemyController enemy)
+    /// <summary>
+    /// The hardest of the hero's four styles' average hits (WaveRun sizes enemies by it). The best style, not the
+    /// current one: sized by the current one, a wave spawned in the weakest style was easy prey for the best.
+    /// </summary>
+    public float BestExpectedHit(EnemyController enemy)
     {
-        switch (Style)
+        var best = 1f;
+        foreach (HeroStyle style in Enum.GetValues(typeof(HeroStyle))) best = Mathf.Max(best, ExpectedHit(enemy, style));
+        return best;
+    }
+
+    private float RawDamage(EnemyController enemy, HeroStyle style)
+    {
+        switch (style)
         {
             case HeroStyle.Ranged: return GameMath.CalculateRangedDamage(Player, enemy);
             case HeroStyle.Magic: return GameMath.CalculateMagicDamage(Player, enemy);
@@ -524,7 +553,7 @@ public partial class HeroController : MonoBehaviour
         if (!enemy || enemy.Stats.IsDead || !Player) return;
         var chunk = enemy.GetComponentInParent<Chunk>();
         if (chunk != null) Player.Chunk = chunk;
-        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy) * multiplier * CheerBonus * RavebridgeShop.DamageFactor(Player)));
+        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy, Style) * multiplier * CheerBonus * RavebridgeShop.DamageFactor(Player)));
         // hero gear: a double hit now and then, and some of the blow back as health
         if (UnityEngine.Random.value * 100f < RavebridgeGear.Stat(Player, "crit")) damage *= 2;
         var leech = RavebridgeGear.Stat(Player, "leech");
@@ -672,6 +701,9 @@ public partial class HeroController : MonoBehaviour
         enemies = Player.Island ? Player.Island.GetComponentsInChildren<EnemyController>() : Array.Empty<EnemyController>();
     }
 
+    /// <summary>An enemy came (a wave's): look again at the next click or skill, not up to two seconds later.</summary>
+    public void EnemiesChanged() => enemiesAt = 0f;
+
     private static Vector3 Flat(Vector3 v) { v.y = 0f; return v; }
 
     public void Face(Vector3 point)
@@ -735,7 +767,7 @@ public partial class HeroController : MonoBehaviour
         // the hero's own first, then a healing draught from the Ravebridge bag
         if (Potions > 0) Potions--;
         else if (!RavebridgeLoot.TakePotion(Player)) { Refused?.Invoke(-2, "empty"); return; }
-        potionReadyAt = Time.time + 1f;
+        potionReadyAt = Time.time + PotionCooldown;
         Player.Heal(Mathf.RoundToInt(Player.Stats.Health.MaxLevel * PotionShare * (1f + RavebridgeGear.Stat(Player, "potion") / 100f)));
         Play("Hero-Drink");
         GameSounds.Play(SoundKind.Heal, Player.Position, 0.7f, 0.4f, Player);
@@ -921,6 +953,7 @@ public partial class HeroController : MonoBehaviour
 
     private void OnDestroy()
     {
+        ReleaseHitStops();
         if (Active == this) Active = null;
     }
 }

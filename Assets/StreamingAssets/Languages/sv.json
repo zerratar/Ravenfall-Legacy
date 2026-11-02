@@ -1308,6 +1308,7 @@
     "UI_WAVE_N": "Våg {0}",
     "UI_WAVE_OF": "Våg {0} av {1}",
     "UI_WAVE_LEFT": "{0} kvar, {1} fällda",
+    "UI_WAVE_LEAVE_ASK": "Tryck på Esc igen för att lämna. En runda som lämnas i förtid ger ingen kista och inget rekord.",
     "UI_WAVE_DOWN": "NERE!",
     "UI_WAVE_DOWN_HELP": "Chatten: !hero revive ({0}/{1})",
     "UI_WAVE_DOWN_HEALER": "En helare hjälper till: {0}%",

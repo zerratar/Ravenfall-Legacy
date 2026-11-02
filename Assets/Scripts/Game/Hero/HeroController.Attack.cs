@@ -417,6 +417,10 @@ public partial class HeroController
         if (!kill && Random.value < 0.35f) GameSounds.Play(SoundKind.GoblinHurt, at, 0.6f, 0.05f, Player);
     }
 
+    // the animators a hit stop holds: how many stops hold each, and its speed before the first. Counted, since stops
+    // overlap (fast arrows): the second one used to save the first's 0 and "restore" it, leaving the enemy frozen
+    private readonly Dictionary<Animator, (int Stops, float Speed)> stopped = new Dictionary<Animator, (int, float)>();
+
     private IEnumerator HitStop(float seconds, List<EnemyController> struck)
     {
         var frozen = new List<Animator>();
@@ -424,17 +428,31 @@ public partial class HeroController
         foreach (var e in struck)
         {
             var a = e ? e.GetComponentInChildren<Animator>() : null;
-            if (a && !e.Stats.IsDead) frozen.Add(a);
+            if (a && !e.Stats.IsDead && !frozen.Contains(a)) frozen.Add(a);
         }
-        var speeds = frozen.ConvertAll(a => a.speed);
-        foreach (var a in frozen) a.speed = 0f;
-        yield return new WaitForSecondsRealtime(seconds);
-        for (var i = 0; i < frozen.Count; i++)
+        foreach (var a in frozen)
         {
-            if (!frozen[i]) continue;
-            // the hero's swing speed may have ended meanwhile
-            frozen[i].speed = frozen[i] == animator ? (Attacking && (Style == HeroStyle.Melee || Style == HeroStyle.Ranged) ? speeds[i] : animatorSpeedBefore) : speeds[i];
+            stopped[a] = stopped.TryGetValue(a, out var held) ? (held.Stops + 1, held.Speed) : (1, a.speed);
+            a.speed = 0f;
         }
+        yield return new WaitForSecondsRealtime(seconds);
+        foreach (var a in frozen)
+        {
+            if (!stopped.TryGetValue(a, out var held)) continue;
+            if (held.Stops > 1) { stopped[a] = (held.Stops - 1, held.Speed); continue; }
+            stopped.Remove(a);
+            if (!a) continue;
+            // the hero's swing speed may have ended meanwhile
+            a.speed = a == animator ? (Attacking && (Style == HeroStyle.Melee || Style == HeroStyle.Ranged) ? held.Speed : animatorSpeedBefore) : held.Speed;
+        }
+    }
+
+    /// <summary>Hero mode ending mid stop (its coroutines die with it): let go of whatever the stops still hold.</summary>
+    private void ReleaseHitStops()
+    {
+        foreach (var held in stopped)
+            if (held.Key) held.Key.speed = held.Key == animator ? 1f : held.Value.Speed;
+        stopped.Clear();
     }
 
     /// <summary>The blade's trail while it swings: a short white streak from the weapon's tip.</summary>

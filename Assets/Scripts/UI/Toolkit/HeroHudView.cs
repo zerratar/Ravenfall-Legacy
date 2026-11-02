@@ -464,7 +464,8 @@ namespace Shinobytes.UI
             Show(slots[4], false, dodge / hero.RollCooldown, dodge > 0f ? dodge.ToString("0.0", CultureInfo.InvariantCulture) : string.Empty, false);
             // the hero's own potions, and the healing draughts in the Ravebridge bag behind them
             var spare = RavebridgeLoot.PotionsInBag(hero.Player);
-            Show(slots[5], hero.Potions <= 0 && spare <= 0, 0f, hero.Potions + "/" + hero.MaxPotions + (spare > 0 ? " +" + spare : string.Empty), false);
+            var potion = Mathf.Max(0f, hero.PotionReadyAt - Time.time);
+            Show(slots[5], hero.Potions <= 0 && spare <= 0, potion / HeroController.PotionCooldown, potion > 0f ? potion.ToString("0", CultureInfo.InvariantCulture) : hero.Potions + "/" + hero.MaxPotions + (spare > 0 ? " +" + spare : string.Empty), false);
 
             if (Time.time >= nextParty)
             {

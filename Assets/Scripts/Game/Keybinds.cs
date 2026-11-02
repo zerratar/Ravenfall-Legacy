@@ -388,13 +388,21 @@ public static class EscapeKey
 {
     private static bool claimed;
     private static float claimedAt;
+    private static int claimedFrame = -1;
 
     /// <summary>The current Esc press was used; its release should not open the menu.</summary>
     public static void Claim()
     {
         claimed = true;
         claimedAt = Time.unscaledTime;
+        claimedFrame = Time.frameCount;
     }
+
+    /// <summary>
+    /// Something already used this frame's press (a window closed on it). Read in LateUpdate by whoever
+    /// should only act on a press nothing else wanted, since the Updates run in no set order.
+    /// </summary>
+    public static bool ClaimedThisFrame => claimedFrame == Time.frameCount;
 
     /// <summary>
     /// Esc released this frame by a press nobody used. Read once a frame, by the game menu; it

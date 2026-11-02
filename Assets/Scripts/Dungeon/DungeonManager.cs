@@ -470,7 +470,8 @@ public class DungeonManager : MonoBehaviour, IEvent
         var candidates = new List<PlayerController>();
         foreach (var player in gameManager.Players.GetAllPlayers())
         {
-            if (player.IsBot ||
+            // a regatta racer finishes the race first (the dungeon would put the boat away and knock them out)
+            if (player.IsBot || Regatta.InRace(player) ||
                 CanJoin(player) != DungeonJoinResult.CanJoin ||
                 Initiator == player ||
                 player.dungeonHandler.AutoJoinCounter <= 0 ||

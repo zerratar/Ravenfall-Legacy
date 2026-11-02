@@ -652,3 +652,31 @@ The user's call: hero-only gear that gives stats in hero mode on Ravebridge, kep
 - **Tested in play mode:** rarity odds over 400 rolls (normal and boss), names and affixes, pickup and auto-wear,
   every effect (damage x1.20, taken x0.90, 1%/s regen healing 20 in 2 s, a potion at +50% healing 524, half the hits
   doubled at 50%), the window, the satchel, selling, gear still there after a restart.
+
+### Fixes from the design review (2026-11-02)
+
+Two reviewers read hero mode and the regatta before the user's first play of them; these are the bugs, fixed before
+the playtest. The balance proposals wait for it.
+
+- **Esc:** a press that closes the inventory, the shop or a talk no longer also ends hero mode (`RavebridgeView` leaves
+  in LateUpdate, after the windows, and skips a press one of them claimed: `EscapeKey.ClaimedThisFrame`). During a wave
+  run the first Esc warns on the wave bar ("Press Esc again to leave the run...") and only a second within 3 s leaves,
+  as the controls table always said.
+- **Blows under a point:** a wave blow is a share of the hero's health, and was rounded up to at least 1, so a goblin
+  took a tenth of a 10 health hero. The fraction is now carried to the next blow (`HeroController.AdjustTaken`).
+- **Enemy health** is sized by the best of the hero's four styles' average hits, measured as each wave starts and never
+  lowered during the run (`HeroController.BestExpectedHit`, `WaveRun.hit`). Before, a wave spawned in the weakest
+  style (or with the weapon off) was easy prey once the hero switched to the best.
+- **Potions:** 6 s between drinks (was 1 s, so bought draughts outhealed any wave); the potion slot shows the wait.
+- **Healers' revives** take 5 s plus 3 s for each revive in the run so far.
+- **Bosses** grow 10% per viewer actually fighting (training a combat skill, healers too), at most +150%; before, every
+  viewer on the island counted, without a cap.
+- **Hit stops** are counted per animator, so two overlapping ones no longer leave an enemy frozen; hero mode ending
+  mid stop lets go of them.
+- **Helpers** are cleared at the start of each run, so its chests go to who helped in it. Their damage counts what the
+  blow took, not the overkill.
+- **New wave enemies** can be clicked and hit at once (the hero's enemy list was cached for 2 s).
+- **Kinds:** ghosts come from wave 6 and skeletons from wave 7, so the newest kind is the rarer one as intended.
+- **The server:** a run's waves are capped at one per 12 s of its time, and its time at the time since the session's
+  previous run (so a made up run cannot top the board or unlock titles); a session's reward chest opens once every
+  10 minutes (was every minute, so "hold five waves, fall, again" opened one every four).

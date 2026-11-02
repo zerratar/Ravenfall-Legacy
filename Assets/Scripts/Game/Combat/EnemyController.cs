@@ -835,8 +835,11 @@ public class EnemyController : MonoBehaviour, IAttackable, IPollable
                 damageCounterManager.Add(transform, damage, false, IsDungeonBoss || IsRaidBoss);//IsDungeonBoss || IsRaidBoss || this.Attackers.Count >= 5);
             //dc.Color = player.PlayerNameHexColor;
 
+            // the helpers' score counts what the blow took, not the overkill (a level 999 one-shotting goblins
+            // would otherwise always top it)
+            var took = Mathf.Max(0, Mathf.Min(damage, (int)Stats.Health.CurrentValue));
             Stats.Health.Add(-damage);
-            HeroHelpers.Damage(player, damage);
+            HeroHelpers.Damage(player, took);
 
             var aggroMultiplier = 1f;
             var sword = player.Inventory.GetMeleeWeapon();

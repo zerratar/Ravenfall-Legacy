@@ -121,12 +121,13 @@ public class MangroveCommand : ChatBotCommandHandler<string>
                 return;
         }
 
-        var result = global::Regatta.Join(player);
         if (sub == "start" && (player.IsBroadcaster || player.IsModerator || player.IsGameAdmin || player.IsGameModerator))
         {
-            // the streamer starts it now, whether or not their own character races
+            // the streamer starts the sign-up now without their own character joining it; with none open, there is
+            // nothing to start, and it opens one as !regatta does
             if (global::Regatta.StartNow()) return;
         }
+        var result = global::Regatta.Join(player);
         switch (result)
         {
             case global::Regatta.JoinResult.Joined: client.SendReply(gm, Localization.MSG_REGATTA_JOINED); break;
@@ -209,7 +210,12 @@ public class MangroveCommand : ChatBotCommandHandler<string>
         {
             Shinobytes.Debug.LogWarning("The regatta could not take " + player.Name + "'s " + price + " coins: " + exc.Message);
         }
-        if (!taken && player) player.Resources.Coins += price;
+        if (!taken)
+        {
+            if (player) player.Resources.Coins += price;
+            client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_NOT_CHARGED : Localization.MSG_REGATTA_WIND_NOT_CHARGED, name);
+            return;
+        }
         client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_PAID : Localization.MSG_REGATTA_WIND_PAID, name, price);
     }
 
@@ -219,6 +225,8 @@ public class MangroveCommand : ChatBotCommandHandler<string>
         {
             case global::Regatta.MeddleResult.NoRace: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_RACE); break;
             case global::Regatta.MeddleResult.Racing: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_RACING); break;
+            case global::Regatta.MeddleResult.Raced: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_RACED); break;
+            case global::Regatta.MeddleResult.NoKegs: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_KEGS); break;
             case global::Regatta.MeddleResult.NoTarget: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_TARGET, name); break;
             case global::Regatta.MeddleResult.Finished: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_FINISHED, name); break;
             case global::Regatta.MeddleResult.Protected: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_PROTECTED, name, wait); break;

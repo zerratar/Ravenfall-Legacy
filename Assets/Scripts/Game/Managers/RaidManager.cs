@@ -243,7 +243,8 @@ public class RaidManager : MonoBehaviour, IEvent
         var candidates = new List<PlayerController>();
         foreach (var player in gameManager.Players.GetAllPlayers())
         {
-            if (player.IsBot ||
+            // a regatta racer finishes the race first (the raid would put the boat away and knock them out)
+            if (player.IsBot || Regatta.InRace(player) ||
                 CanJoin(player) != RaidJoinResult.CanJoin || Initiator == player
                 || player.raidHandler.AutoJoinCounter <= 0
                 || autoJoinCost > player.Resources.Coins)
