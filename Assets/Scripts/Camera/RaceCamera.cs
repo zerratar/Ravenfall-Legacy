@@ -300,7 +300,7 @@ public class RaceCamera : MonoBehaviour
     /// <summary>The Kraken's roar shakes the picture.</summary>
     private static Vector3 Shake(float rumble)
     {
-        if (rumble <= 0f) return Vector3.zero;
+        if (rumble <= 0f || !SettingsApplier.ScreenShake) return Vector3.zero;
         var t = Time.unscaledTime * 18f;
         return new Vector3(Mathf.PerlinNoise(t, 0.3f) - 0.5f, Mathf.PerlinNoise(0.7f, t) - 0.5f, Mathf.PerlinNoise(t, 5.1f) - 0.5f) * (2.4f * rumble);
     }

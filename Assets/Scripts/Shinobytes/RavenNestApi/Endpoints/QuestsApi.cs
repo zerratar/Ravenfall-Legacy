@@ -139,6 +139,13 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<HeroRunResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
         }
 
+        /// <summary>Coins a viewer pays in hero mode (!hero elite); the coins left, or -1 when they had too few.</summary>
+        public Task<long> HeroSpendAsync(Guid characterId, long coins)
+        {
+            return request.Create().Identifier("hero").Method("spend").AddParameter(characterId.ToString()).AddParameter(coins.ToString()).Build()
+                .SendAsync<long>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
         /// <summary>Every streamer's best hero mode run, the best first.</summary>
         public Task<HeroLeaderboardData> HeroLeaderboardAsync()
         {

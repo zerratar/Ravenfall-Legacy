@@ -23,12 +23,12 @@ using UnityEngine.AI;
 /// helpers, or coins for the Ravebridge character; the run is recorded on the server: the streamer's best, the titles
 /// of waves 10, 25 and 50, and the best's place among every streamer's.
 /// </summary>
-public class WaveRun : MonoBehaviour
+public partial class WaveRun : MonoBehaviour
 {
     public enum Phase { Gathering, Fighting, Breather, Over }
 
     private const float GatherSeconds = 8f;
-    private const float BreatherSeconds = 12f;
+    private const float BreatherSeconds = 15f; // long enough for chat, behind the stream's delay, to vote a boon
     private const float DownedSeconds = 20f;
     private const float HealerReviveSeconds = 5f;
     private const float HealerReviveMore = 3f; // each revive so far makes a healer's next one take this much longer
@@ -55,24 +55,26 @@ public class WaveRun : MonoBehaviour
         public float Blow;
         public float Scale = 1f;
         public bool Boss;
+        /// <summary>Its own move, seen coming (WaveRun.Moves).</summary>
+        public Move Move;
     }
 
     private static readonly Kind[] Kinds =
     {
         new Kind { Name = () => Localization.UI_WAVE_GOBLIN, Variants = new[] { "Character_Goblin_Male", "Character_Goblin_Female" }, From = 1, Hits = 2.5f, Blow = 0.008f },
-        new Kind { Name = () => Localization.UI_WAVE_WARRIOR, Variants = new[] { "Character_Goblin_Warrior_Male", "Character_Goblin_Warrior_Female" }, From = 3, Hits = 4f, Blow = 0.012f, Scale = 1.05f },
-        new Kind { Name = () => Localization.UI_WAVE_GHOST, Variants = new[] { "Character_Ghost_01", "Character_Ghost_02" }, From = 6, Hits = 3f, Blow = 0.014f },
+        new Kind { Name = () => Localization.UI_WAVE_WARRIOR, Variants = new[] { "Character_Goblin_Warrior_Male", "Character_Goblin_Warrior_Female" }, From = 3, Hits = 4f, Blow = 0.012f, Scale = 1.05f, Move = Move.Lunge },
+        new Kind { Name = () => Localization.UI_WAVE_GHOST, Variants = new[] { "Character_Ghost_01", "Character_Ghost_02" }, From = 6, Hits = 3f, Blow = 0.014f, Move = Move.Bolt },
         new Kind { Name = () => Localization.UI_WAVE_SKELETON, Variants = new[] { "Character_Skeleton_Soldier_01", "Character_Skeleton_Soldier_02", "Character_Skeleton_Slave_01" }, From = 7, Hits = 5f, Blow = 0.013f },
-        new Kind { Name = () => Localization.UI_WAVE_SKELETON_KNIGHT, Variants = new[] { "Character_Skeleton_Knight" }, From = 11, Hits = 7f, Blow = 0.017f, Scale = 1.1f },
+        new Kind { Name = () => Localization.UI_WAVE_SKELETON_KNIGHT, Variants = new[] { "Character_Skeleton_Knight" }, From = 11, Hits = 7f, Blow = 0.017f, Scale = 1.1f, Move = Move.Lunge },
     };
 
     // every fifth wave, in turn
     private static readonly Kind[] Bosses =
     {
-        new Kind { Name = () => Localization.UI_WAVE_BOSS_CHIEF, Variants = new[] { "Character_Goblin_WarChief" }, Hits = 30f, Blow = 0.045f, Scale = 1.8f, Boss = true },
-        new Kind { Name = () => Localization.UI_WAVE_BOSS_GOLEM, Variants = new[] { "Character_Rock_Golem" }, Hits = 40f, Blow = 0.055f, Scale = 1.5f, Boss = true },
-        new Kind { Name = () => Localization.UI_WAVE_BOSS_SOUL, Variants = new[] { "Character_Tormented_Soul" }, Hits = 36f, Blow = 0.05f, Scale = 1.7f, Boss = true },
-        new Kind { Name = () => Localization.UI_WAVE_BOSS_KNIGHT, Variants = new[] { "Character_Skeleton_Knight" }, Hits = 50f, Blow = 0.065f, Scale = 2.1f, Boss = true },
+        new Kind { Name = () => Localization.UI_WAVE_BOSS_CHIEF, Variants = new[] { "Character_Goblin_WarChief" }, Hits = 30f, Blow = 0.045f, Scale = 1.8f, Boss = true, Move = Move.Slam },
+        new Kind { Name = () => Localization.UI_WAVE_BOSS_GOLEM, Variants = new[] { "Character_Rock_Golem" }, Hits = 40f, Blow = 0.055f, Scale = 1.5f, Boss = true, Move = Move.Slam },
+        new Kind { Name = () => Localization.UI_WAVE_BOSS_SOUL, Variants = new[] { "Character_Tormented_Soul" }, Hits = 36f, Blow = 0.05f, Scale = 1.7f, Boss = true, Move = Move.Slam },
+        new Kind { Name = () => Localization.UI_WAVE_BOSS_KNIGHT, Variants = new[] { "Character_Skeleton_Knight" }, Hits = 50f, Blow = 0.065f, Scale = 2.1f, Boss = true, Move = Move.Slam },
     };
 
     public static WaveRun Current { get; private set; }
@@ -82,7 +84,7 @@ public class WaveRun : MonoBehaviour
     {
         public string Hero;
         public int Goal, Cleared, Kills, Best;
-        public bool NewBest, Abandoned;
+        public bool NewBest, Abandoned, Retreated;
         public float StartedAt, EndedAt;
         /// <summary>From the server, once it answers: the streamer's best's place, and titles the run unlocked.</summary>
         public int Rank;
@@ -112,7 +114,10 @@ public class WaveRun : MonoBehaviour
     private float HealerSeconds => HealerReviveSeconds + revives * HealerReviveMore;
     public bool Finished => State == Phase.Over;
 
-    /// <summary>Esc was pressed once during the run: the HUD warns that a second press leaves it, with no rewards.</summary>
+    /// <summary>Between waves (a wave held, not down) the hero may retreat and keep the chest and the record.</summary>
+    public bool CanRetreat => State == Phase.Breather && !Downed && Cleared > 0;
+
+    /// <summary>Esc was pressed once during the run: the HUD warns that a second press leaves it (CanRetreat: keeping the rewards).</summary>
     public bool LeaveAsked => Time.unscaledTime < leaveAskedUntil;
     public int Best { get; private set; }
     public bool NewBest { get; private set; }
@@ -239,6 +244,7 @@ public class WaveRun : MonoBehaviour
             case Phase.Fighting:
                 Spawn();
                 CountFallen();
+                UpdateMoves();
                 if (toSpawn.Count == 0 && alive.Count == 0) WaveCleared();
                 break;
         }
@@ -252,7 +258,10 @@ public class WaveRun : MonoBehaviour
 
     private void StartWave()
     {
+        ChooseBoon();
         Wave++;
+        elitesThisWave = 0;
+        elitesBy.Clear();
         // the hero's best style sizes the enemies, measured as the wave starts and never lowered (so switching to
         // the weakest style, or taking the weapon off, before a wave does not make it easy)
         var hero = HeroController.Active;
@@ -294,6 +303,7 @@ public class WaveRun : MonoBehaviour
             return;
         }
         SetPhase(Phase.Breather, BreatherSeconds);
+        OfferBoons();
     }
 
     private void Spawn()
@@ -310,6 +320,7 @@ public class WaveRun : MonoBehaviour
         {
             Boss = enemy;
             BossName = kind.Name();
+            bossAdds = bossEnraged = false;
             Changed?.Invoke();
         }
     }
@@ -376,7 +387,7 @@ public class WaveRun : MonoBehaviour
 
     /// <summary>A wave enemy of a kind: a fallen one again, or a new copy of the goblin rig. Its health is the kind's
     /// hits of the hero's own average hit, growing with the wave.</summary>
-    private EnemyController Make(Kind kind, Vector3 at)
+    private EnemyController Make(Kind kind, Vector3 at, bool elite = false)
     {
         EnemyController enemy;
         if (pool.Count > 0)
@@ -397,15 +408,18 @@ public class WaveRun : MonoBehaviour
             if (part.name.StartsWith("Character_")) part.gameObject.SetActive(part.name == variant);
         var movement = enemy.GetComponent<EnemyMovementController>();
         if (movement) movement.RefreshRenderers();
-        enemy.name = kind.Name();
-        enemy.transform.localScale = Vector3.one * kind.Scale;
+        enemy.name = elite ? string.Format(Localization.UI_WAVE_ELITE, kind.Name()) : kind.Name();
+        enemy.transform.localScale = Vector3.one * kind.Scale * (elite ? EliteScale : 1f);
+        if (elite) elites.Add(enemy); else elites.Remove(enemy);
+        nextMove.Remove(enemy);
+        stunRest.Remove(enemy);
         enemy.AutomaticRespawn = false;
         enemy.Hunting = true;
         enemy.AggroRange = 60f;
         enemy.ExpFactor = (kind.Boss ? 5d : 1d) * (1d + Wave * 0.1d);
 
         // a boss grows with the viewers actually fighting (capped), not everyone idling on the island
-        var hits = kind.Hits * (1f + Wave * 0.06f) * (kind.Boss ? 1f + Mathf.Min(BossFightersCap, Fighters() * BossPerFighter) : 1f);
+        var hits = kind.Hits * (1f + Wave * 0.06f) * (kind.Boss ? 1f + Mathf.Min(BossFightersCap, Fighters() * BossPerFighter) : 1f) * (elite ? EliteHits : 1f);
         enemy.Stats.Health = new SkillStat((float)Mathf.Max(5, Mathf.RoundToInt((hit > 0f ? hit : 10f) * hits)));
         enemy.SpawnAt(at);
         HeroController.Active?.EnemiesChanged();
@@ -435,6 +449,7 @@ public class WaveRun : MonoBehaviour
         {
             alive.Remove(e);
             progress.Remove(e);
+            nextMove.Remove(e);
             if (!e) continue;
             Kills++;
             GameSounds.Play(SoundKind.GoblinDeath, e.Position + Vector3.up, 0.7f, 0f, Hero);
@@ -554,7 +569,7 @@ public class WaveRun : MonoBehaviour
     public string LootKey(EnemyController enemy)
     {
         if (!enemy || !alive.TryGetValue(enemy, out var kind) || kind.Variants == null || kind.Variants.Length == 0) return null;
-        return (kind.Boss ? "boss " : string.Empty) + kind.Variants[0].ToLowerInvariant();
+        return (kind.Boss || elites.Contains(enemy) ? "boss " : string.Empty) + kind.Variants[0].ToLowerInvariant();
     }
 
     /// <summary>
@@ -564,9 +579,11 @@ public class WaveRun : MonoBehaviour
     public float BlowFor(EnemyController enemy)
     {
         if (!alive.TryGetValue(enemy, out var kind)) return 0;
+        // a move landing (a lunge, a bolt, a slam) brings its own share, whenever the last blow was
+        if (special > 0f) return Mathf.Max(0.01f, Hero.Stats.Health.MaxLevel * special * (1f + Wave * 0.03f) * Steep * Fierce(enemy) * BoonTaken);
         if (lastBlow.TryGetValue(enemy, out var last) && Time.time - last < BlowCooldown) return 0;
         lastBlow[enemy] = Time.time;
-        var share = kind.Blow * (1f + Wave * 0.03f) * UnityEngine.Random.Range(0.7f, 1.2f);
+        var share = kind.Blow * (1f + Wave * 0.03f) * UnityEngine.Random.Range(0.7f, 1.2f) * Steep * Fierce(enemy) * BoonTaken;
         return Mathf.Max(0.01f, Hero.Stats.Health.MaxLevel * share);
     }
 
@@ -655,12 +672,25 @@ public class WaveRun : MonoBehaviour
         Changed?.Invoke();
     }
 
-    /// <summary>Ends the run: the hero left (abandoned), fell, or reached the goal.</summary>
+    /// <summary>
+    /// The hero leaves (Esc twice, RavebridgeView): between waves a retreat that keeps the chest and the record; mid wave
+    /// or down, abandoned, with nothing.
+    /// </summary>
+    public void Leave()
+    {
+        if (CanRetreat) { retreated = true; Finish(false); }
+        else Finish(true);
+    }
+
+    private bool retreated;
+
+    /// <summary>Ends the run: the hero left (abandoned), fell, retreated, or reached the goal.</summary>
     public void Finish(bool abandoned, bool fell = false)
     {
         if (State == Phase.Over) return;
         State = Phase.Over;
         Abandoned = abandoned;
+        DropMoves();
         foreach (var e in alive.Keys.Concat(fallen.Select(f => f.Enemy)).Concat(pool).ToList())
             if (e) Destroy(e.gameObject);
         alive.Clear();
@@ -681,14 +711,14 @@ public class WaveRun : MonoBehaviour
                 PlayerPrefs.Save();
             }
             if (!abandoned)
-                GameManager.Instance?.RavenBot?.Announce(NewBest ? Localization.MSG_WAVE_OVER_BEST : Localization.MSG_WAVE_OVER, Hero.Name, Cleared, Kills);
+                GameManager.Instance?.RavenBot?.Announce(retreated ? Localization.MSG_WAVE_RETREAT : NewBest ? Localization.MSG_WAVE_OVER_BEST : Localization.MSG_WAVE_OVER, Hero.Name, Cleared, Kills);
         }
 
         Current = null;
         Last = new Result
         {
             Hero = Hero ? Hero.Name : null, Goal = Goal, Cleared = Cleared, Kills = Kills, Best = Best,
-            NewBest = NewBest, Abandoned = abandoned, StartedAt = StartedAt, EndedAt = Time.time,
+            NewBest = NewBest, Abandoned = abandoned, Retreated = retreated, StartedAt = StartedAt, EndedAt = Time.time,
         };
         try { finished?.Invoke(this); }
         catch (Exception exc) { Shinobytes.Debug.LogError("Wave run end: " + exc); }
@@ -753,6 +783,7 @@ public class WaveRun : MonoBehaviour
 
     private void OnDestroy()
     {
+        DropMoves();
         if (Current == this) Current = null;
         if (container) Destroy(container.gameObject);
     }

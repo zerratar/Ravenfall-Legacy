@@ -680,3 +680,49 @@ the playtest. The balance proposals wait for it.
 - **The server:** a run's waves are capped at one per 12 s of its time, and its time at the time since the session's
   previous run (so a made up run cannot top the board or unlock titles); a session's reward chest opens once every
   10 minutes (was every minute, so "hold five waves, fall, again" opened one every four).
+
+### After the design review (2026-11-02)
+
+The reviewer's bigger proposals, built at the user's request before the first playtest. Numbers are first guesses.
+
+- **Heals are shares of the healed one's health**, as the waves' blows are, more with the kit's rank: Mend 20% to the
+  hero and 12% to allies in its cone, a sanctuary tick 3%, the last healing skill full health; `!hero heal` 6% from a
+  healer and 2% with a bandage. The healing level's own numbers healed a high level hero three quarters of its health a
+  cast.
+- **Mana:** 3 back a second (was 4) and 4 for each basic attack that lands (a swing, an arrow or a bolt, never a skill),
+  so attacks woven between skills pay for them. Max mana is 100 plus a fifth of the style's level, 300 at most.
+- **Ranks:** the style's levels 400, 600, 800 and 999 each rank the kit up, 15% more damage and healing a rank
+  (`HeroController.RankFactor`), shown after the level on the HUD ("Rank II"). The waves size enemies by the raw hit,
+  so a level 999 hero is stronger than its waves and a level 300 one is not.
+- **Enemy moves, seen coming** (`WaveRun.Moves`, drawn by the Hero Telegraph shader, Resources/HeroTelegraph): a red line
+  or circle on the ground that fills from the enemy out; when it reaches the edge the blow lands. The enemy stands still
+  and faces the hero meanwhile. Rolling (invulnerable) or stepping out of it avoids it; a stun from the hero breaks it
+  off.
+  - Warriors and skeleton knights **lunge** 7 m along a line (0.7 s to see it, 3.5% of the hero's health).
+  - Ghosts loose a **bolt** that flies 18 m along a line (0.8 s, 2.5%).
+  - Bosses **slam** a 4.5 m circle round them (1.2 s, 18%).
+  - Shares grow with the waves as the blows do.
+- **Bosses' phases:** at half health a boss calls for help (two goblins or warriors, more with many viewers fighting);
+  at a quarter it is enraged (35% faster, slams every 4-5 s with 0.9 s to see them, blows 30% harder).
+- **Stuns on bosses** last half as long, and a boss shrugs stuns off for 6 s after one (frost nova, snare and the leap in
+  turn kept one stunned most of the time).
+- **Steeper late waves:** past wave 15 the blows grow 5% a wave on top, so a long run ends in a fight.
+- **Boons, voted by chat:** every breather (now 15 s, for the stream's delay) offers three; chat votes with `!hero 1`,
+  `!hero 2` or `!hero 3` (no reply; the wave bar lists them with their votes, chat hears the choices). The most votes
+  win as the next wave starts, a draw or no votes pick one of the best at random. They stack for the run:
+  - Sharpened steel: +15% damage. Deep wells: +40% mana back. Thick hide: 12% less damage taken.
+  - Second wind: potions refilled and one more. Glass cannon: +30% damage, 20% more taken.
+  - Swift feet: the roll 0.6 s sooner. Blood price: 3% of damage back as health.
+- **`!hero elite`** (1500 coins, the price told first and paid on the second send within 30 s, through the server's new
+  `api/quests/hero/spend/{characterId}/{coins}`): an elite of the wave's newest kind from a gate, four times as tough,
+  hitting 60% harder, a quarter bigger, dropping from the bosses' table. Two a wave, one per viewer.
+- **Retreat:** between waves the second Esc retreats and keeps the chest and the record ("Press Esc again to retreat.
+  Between waves you keep the chest and the record."); chat hears it. Mid wave or down it is still abandoned.
+- **Screen shake** is a setting (Game > Observer > Screen shake, on), for hero mode's hits, the slam and the Kraken's
+  roar, and always off in potato mode.
+- **The goblin storm** only makes the streamer the hero when the keyboard or mouse was touched in the last three
+  minutes (`InputActivity`); otherwise Ravebridge opens for chat ("Type !ravebridge to fight them off").
+- **Chat replies:** none when a `!hero heal`, `taunt` or `cheer` is still waiting (a big chat's replies held back the
+  bot's announcements).
+- **A coin sink:** the shopkeeper rerolls a hero gear piece's affixes (same base and rarity) for twice its worth, and its
+  worth again for each reroll of it before; worn pieces too, on the Sell tab.

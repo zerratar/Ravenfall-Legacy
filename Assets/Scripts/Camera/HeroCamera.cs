@@ -90,6 +90,7 @@ public class HeroCamera : MonoBehaviour
     /// <summary>Shakes the camera a little for a while (a hit landing).</summary>
     public void Shake(float strength, float seconds)
     {
+        if (!SettingsApplier.ScreenShake) return;
         if (Time.unscaledTime < shakeUntil && strength < shakeStrength) return;
         shakeStrength = strength;
         shakeLength = seconds;

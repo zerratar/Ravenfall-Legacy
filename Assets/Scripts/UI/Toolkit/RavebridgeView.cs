@@ -426,6 +426,8 @@ namespace Shinobytes.UI
                 run.AskToLeave();
                 return;
             }
+            // between waves this is a retreat that keeps the chest and the record; mid wave the run is abandoned
+            if (HeroController.Active && run && !run.Finished) run.Leave();
             if (HeroController.Active) HeroController.End();
             else RavebridgePlay.Stop();
             Redraw();

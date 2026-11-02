@@ -401,8 +401,10 @@ public partial class HeroController
     // ---- How a hit feels ---------------------------------------------------------------------------------------
 
     /// <summary>A short stop of the hero's and the enemies' animation, a little shake: stronger for a finisher or a kill.</summary>
+    /// <summary>A basic attack landed (a swing, an arrow, a bolt; never a skill): the hit's weight, and some mana back.</summary>
     private void Impact(List<EnemyController> struck, bool finisher)
     {
+        GainMana(ManaPerHit);
         var kill = struck.Exists(e => e && e.Stats.IsDead);
         var stop = Mathf.Min(0.12f, 0.05f * (finisher ? 1.5f : 1f) + (kill ? 0.04f : 0f));
         StartCoroutine(HitStop(stop, struck));

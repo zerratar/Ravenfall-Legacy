@@ -1163,6 +1163,7 @@ public class GameManager : MonoBehaviour, IGameManager
     // Update is called once per frame
     void Update()
     {
+        InputActivity.Track();
         GameSystems.Update(!isReloadingScene);
         FreezeChecker.SetCurrentScriptUpdate("GameManager Update");
 

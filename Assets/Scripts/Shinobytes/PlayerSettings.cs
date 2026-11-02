@@ -22,6 +22,8 @@ public class PlayerSettings
     public bool? CanObserveEmptyIslands;
     /// <summary>The regatta's own camera (RaceCamera) while a race runs.</summary>
     public bool? RegattaCamera;
+    /// <summary>Hero mode's hits and the Kraken's roar shake the camera.</summary>
+    public bool? ScreenShake;
 
 
     public float? DayNightTime;
@@ -422,6 +424,7 @@ public class PlayerSettings
             Serialize(sw, "islandObserveSeconds", obj.IslandObserveSeconds);
             Serialize(sw, "canObserveEmptyIslands", obj.CanObserveEmptyIslands);
             Serialize(sw, "regattaCamera", obj.RegattaCamera);
+            Serialize(sw, "screenShake", obj.ScreenShake);
             Serialize(sw, "announceNoExpGain", obj.AnnounceNoExpGain);
 
             // Serialize all nullable float properties

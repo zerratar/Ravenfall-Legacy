@@ -6,7 +6,8 @@ using UnityEngine;
 /// Starting hero mode from outside (docs/hero-mode-design.md, 7d): !hero start from the streamer, and the forced
 /// "goblins storm Ravebridge" event (RavebridgeForced with Storm). Ravebridge opens if it is closed, the streamer's own
 /// character comes along, and once it is on the island it is played by hand as the hero; a storm also starts a wave
-/// run at once. Without a character of the streamer's in the stream there is nothing to play, and it says so.
+/// run at once, unless nobody has touched the keyboard or mouse for three minutes: then Ravebridge only opens for chat.
+/// Without a character of the streamer's in the stream there is nothing to play, and it says so.
 /// </summary>
 public static class HeroStart
 {
@@ -14,10 +15,21 @@ public static class HeroStart
 
     private static Coroutine waiting;
 
+    /// <summary>A storm only makes the streamer the hero if they touched the keyboard or mouse this recently.</summary>
+    private const float AwayAfter = 180f;
+
     public static Result Begin(GameManager game, bool storm, string reason = null)
     {
         var rb = game ? game.Ravebridge : null;
         if (!rb) return Result.Closed;
+        // a storm with nobody at the keyboard: Ravebridge opens and chat fights the goblins, but the streamer's
+        // character is not taken over (it stood still as the hero and fell at once)
+        if (storm && !HeroController.Active && InputActivity.IdleSeconds > AwayAfter)
+        {
+            if (rb.Active) return Result.Started;
+            var opened = rb.Begin(true, reason == null || reason == Localization.MSG_HERO_STORM ? Localization.MSG_HERO_STORM_AWAY : reason, true);
+            return opened == RavebridgeManager.StartResult.Started || opened == RavebridgeManager.StartResult.AlreadyActive ? Result.Started : Result.Closed;
+        }
         if (HeroController.Active)
         {
             if (storm && !WaveRun.Current) WaveRun.Begin(HeroController.Active.Player, 0, null);

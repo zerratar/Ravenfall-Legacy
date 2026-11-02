@@ -418,3 +418,24 @@ public static class EscapeKey
         return !wasClaimed;
     }
 }
+
+/// <summary>
+/// When the person at the keyboard last touched it (a key, the mouse moved, a scroll), so what would take control of
+/// a character by itself can tell whether anyone is there (the goblin storm's hero mode, HeroStart).
+/// </summary>
+public static class InputActivity
+{
+    private static float lastAt = float.NegativeInfinity;
+    private static Vector3 lastMouse;
+
+    /// <summary>Seconds since the last input; infinity before any.</summary>
+    public static float IdleSeconds => Time.unscaledTime - lastAt;
+
+    /// <summary>Once a frame (GameManager.Update).</summary>
+    public static void Track()
+    {
+        var mouse = Input.mousePosition;
+        if (Input.anyKey || (mouse - lastMouse).sqrMagnitude > 4f || Input.mouseScrollDelta.sqrMagnitude > 0f) lastAt = Time.unscaledTime;
+        lastMouse = mouse;
+    }
+}

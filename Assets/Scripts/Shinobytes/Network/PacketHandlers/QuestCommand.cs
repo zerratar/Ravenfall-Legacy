@@ -244,7 +244,8 @@ public static class QuestChat
                 switch (hero.ChatHeal(player, out wait, out var amount))
                 {
                     case HeroController.ChatResult.Done: client.SendReply(gm, Localization.MSG_HERO_HEALED, hero.Player.Name, amount); break;
-                    case HeroController.ChatResult.Cooldown: client.SendReply(gm, Localization.MSG_HERO_WAIT, UnityEngine.Mathf.CeilToInt(wait)); break;
+                    // no reply while it waits: with a big chat spamming it, those replies held back the bot's announcements
+                    case HeroController.ChatResult.Cooldown: break;
                     default: client.SendReply(gm, Localization.MSG_HERO_HEALTHY, hero.Player.Name); break;
                 }
                 return;
@@ -253,7 +254,7 @@ public static class QuestChat
                 switch (hero.Taunt(player, out wait, out var count))
                 {
                     case HeroController.ChatResult.Done: client.SendReply(gm, Localization.MSG_HERO_TAUNTED, count); break;
-                    case HeroController.ChatResult.Cooldown: client.SendReply(gm, Localization.MSG_HERO_WAIT, UnityEngine.Mathf.CeilToInt(wait)); break;
+                    case HeroController.ChatResult.Cooldown: break;
                     case HeroController.ChatResult.TooFar: client.SendReply(gm, Localization.MSG_HERO_TOO_FAR, hero.Player.Name); break;
                     default: client.SendReply(gm, Localization.MSG_HERO_NOTHING_TO_TAUNT, hero.Player.Name); break;
                 }
@@ -261,7 +262,17 @@ public static class QuestChat
 
             case "cheer":
                 if (hero.Cheer(player, out wait) == HeroController.ChatResult.Done) client.SendReply(gm, Localization.MSG_HERO_CHEERED, hero.Player.Name, UnityEngine.Mathf.RoundToInt((hero.CheerBonus - 1f) * 100f));
-                else client.SendReply(gm, Localization.MSG_HERO_WAIT, UnityEngine.Mathf.CeilToInt(wait));
+                return;
+
+            case "1":
+            case "2":
+            case "3":
+                // a boon vote between waves: no reply, the wave bar shows the votes
+                WaveRun.Current?.VoteBoon(player, action[0] - '0');
+                return;
+
+            case "elite":
+                _ = SendElite(game, player, hero, gm, client);
                 return;
 
             case "revive":
@@ -278,6 +289,56 @@ public static class QuestChat
                 return;
         }
         client.SendReply(gm, Localization.MSG_HERO_USAGE);
+    }
+
+    /// <summary>
+    /// !hero elite: an elite enemy sent at the hero during a wave (two a wave, one per viewer), for coins: the price is
+    /// told first, and the same command again within 30 s pays. As the regatta's meddling, the coins come off the game's
+    /// balance at once, the elite comes, then the server takes them; coins it did not take are given back.
+    /// </summary>
+    private static async System.Threading.Tasks.Task SendElite(GameManager game, PlayerController player, HeroController hero, GameMessage gm, GameClient client)
+    {
+        var run = WaveRun.Current;
+        var can = run ? run.CanSendElite(player.Name) : WaveRun.EliteResult.NotFighting;
+        if (can != WaveRun.EliteResult.Sent) { RefuseElite(can, gm, client); return; }
+        var confirm = UnityEngine.Mathf.RoundToInt(RegattaMeddling.ConfirmSeconds);
+        if (!RegattaMeddling.Confirmed(player.Id, "hero-elite"))
+        {
+            client.SendReply(gm, Localization.MSG_HERO_ELITE_PRICE, ElitePrice, confirm);
+            return;
+        }
+        if (player.Resources.Coins < ElitePrice) { client.SendReply(gm, Localization.MSG_HERO_ELITE_NO_COINS, ElitePrice); return; }
+        var sent = run.SendElite(player.Name);
+        if (sent != WaveRun.EliteResult.Sent) { RefuseElite(sent, gm, client); return; }
+        player.Resources.Coins -= ElitePrice;
+        var taken = false;
+        try
+        {
+            taken = await game.RavenNest.Quests.HeroSpendAsync(player.Id, ElitePrice) >= 0;
+        }
+        catch (System.Exception exc)
+        {
+            Shinobytes.Debug.LogWarning("Hero mode could not take " + player.Name + "'s " + ElitePrice + " coins: " + exc.Message);
+        }
+        if (!taken)
+        {
+            if (player) player.Resources.Coins += ElitePrice;
+            client.SendReply(gm, Localization.MSG_HERO_ELITE_FREE, hero && hero.Player ? hero.Player.Name : "?");
+            return;
+        }
+        client.SendReply(gm, Localization.MSG_HERO_ELITE_SENT, hero && hero.Player ? hero.Player.Name : "?", ElitePrice);
+    }
+
+    private const long ElitePrice = 1500;
+
+    private static void RefuseElite(WaveRun.EliteResult result, GameMessage gm, GameClient client)
+    {
+        switch (result)
+        {
+            case WaveRun.EliteResult.Enough: client.SendReply(gm, Localization.MSG_HERO_ELITE_ENOUGH); break;
+            case WaveRun.EliteResult.Already: client.SendReply(gm, Localization.MSG_HERO_ELITE_ALREADY); break;
+            default: client.SendReply(gm, Localization.MSG_HERO_ELITE_NOT_NOW); break;
+        }
     }
 
     /// <summary>

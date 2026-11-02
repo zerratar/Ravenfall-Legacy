@@ -7,7 +7,8 @@ namespace Shinobytes.UI
 {
     /// <summary>
     /// The shopkeeper's cart (RavebridgeShop), opened from talking to him: Buy lists what the cart sells for Ravebridge
-    /// coins (a draught, buffs, hero mode upgrades with their level), Sell the loot in the Ravebridge bag at its worth,
+    /// coins (a draught, buffs, hero mode upgrades with their level), Sell the loot in the Ravebridge bag at its worth
+    /// (and reroll hero gear's affixes, worn pieces too),
     /// one at a time or all of a kind. In the quest window's look, with the coins at the top. Walking away from the
     /// shopkeeper, or no longer playing, closes it. RavebridgeDialogueView owns it, on the same layer.
     /// </summary>
@@ -177,18 +178,26 @@ namespace Shinobytes.UI
                 }
                 list.Add(row);
             }
-            // hero gear not worn: sold whole, at its rarity's worth
-            foreach (var piece in RavebridgeGear.Of(player).Where(p => !p.Worn).OrderByDescending(p => p.Grade).ToList())
+            // hero gear: rerolled for coins, worn or not; sold whole at its rarity's worth when not worn
+            foreach (var piece in RavebridgeGear.Of(player).OrderByDescending(p => p.Worn).ThenByDescending(p => p.Grade).ToList())
             {
                 any = true;
                 var pc = piece;
                 var detail = string.Join(", ", piece.Affixes.Select(a => RavebridgeGear.Describe(a.Key, a.Value)));
-                var row = Row(piece.Glyph, piece.Color, piece.Name, detail);
-                var sell = new Button(() => SellGear(player, pc)) { text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_PRICE, piece.Value) };
-                sell.AddToClassList("rf-squest-chip");
-                sell.AddToClassList("rf-squest-chip--active");
-                sell.AddToClassList("rf-shop__price");
-                row.Add(sell);
+                var row = Row(piece.Glyph, piece.Color, piece.Worn ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_WORN, piece.Name) : piece.Name, detail);
+                var reroll = new Button(() => RerollGear(player, pc)) { text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_REROLL, RavebridgeGear.RerollPrice(piece)) };
+                reroll.AddToClassList("rf-squest-chip");
+                reroll.AddToClassList("rf-shop__price");
+                reroll.tooltip = Localization.UI_RBSHOP_REROLL_HINT;
+                row.Add(reroll);
+                if (!piece.Worn)
+                {
+                    var sell = new Button(() => SellGear(player, pc)) { text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_PRICE, piece.Value) };
+                    sell.AddToClassList("rf-squest-chip");
+                    sell.AddToClassList("rf-squest-chip--active");
+                    sell.AddToClassList("rf-shop__price");
+                    row.Add(sell);
+                }
                 list.Add(row);
             }
             if (!any)
@@ -237,6 +246,14 @@ namespace Shinobytes.UI
                 case RavebridgeShop.BuyResult.TooPoor: Say(Localization.UI_RBSHOP_TOO_POOR); break;
                 case RavebridgeShop.BuyResult.Maxed: Say(Localization.UI_RBSHOP_MAXED); break;
             }
+            Redraw();
+        }
+
+        private void RerollGear(PlayerController player, RavebridgeGear.Piece piece)
+        {
+            Say(RavebridgeGear.Reroll(player, piece)
+                ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RBSHOP_REROLLED, piece.Name)
+                : Localization.UI_RBSHOP_TOO_POOR);
             Redraw();
         }
 

@@ -334,6 +334,8 @@ namespace Shinobytes.UI
                 SettingsApplier.ObserveEmptyIslands, SettingsApplier.Defaults.ObserveEmptyIslands, SettingsApplier.SetObserveEmptyIslands);
             Switch(c, Localization.UI_SETTINGS_RACE_CAMERA, Localization.UI_SETTINGS_RACE_CAMERA_HINT,
                 SettingsApplier.RaceCamera, SettingsApplier.Defaults.RaceCamera, SettingsApplier.SetRaceCamera);
+            Switch(c, Localization.UI_SETTINGS_SCREEN_SHAKE, Localization.UI_SETTINGS_SCREEN_SHAKE_HINT,
+                SettingsApplier.ScreenShakeSetting, SettingsApplier.Defaults.ScreenShake, SettingsApplier.SetScreenShake);
 
             Section(c, Localization.UI_SETTINGS_SECTION_FREE_CAMERA);
             SliderRow(c, Localization.UI_SETTINGS_FREE_SPEED, Localization.UI_SETTINGS_FREE_SPEED_HINT, 10f, 200f,

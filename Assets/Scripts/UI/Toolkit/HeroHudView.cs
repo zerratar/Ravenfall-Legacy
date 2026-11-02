@@ -360,7 +360,10 @@ namespace Shinobytes.UI
             root.style.display = hero ? DisplayStyle.Flex : DisplayStyle.None;
             if (!hero) { inventory?.Close(); return; }
             styleIcon.text = HeroSkill.StyleIcon(hero.Style);
-            styleName.text = hero.StyleName + "  " + hero.StyleLevel.ToString(CultureInfo.InvariantCulture);
+            // the kit's rank past level 400 (each 15% stronger), as I to IV
+            var rank = hero.Rank;
+            styleName.text = hero.StyleName + "  " + hero.StyleLevel.ToString(CultureInfo.InvariantCulture)
+                + (rank > 0 ? "  " + string.Format(CultureInfo.InvariantCulture, Localization.UI_HERO_RANK, new[] { "I", "II", "III", "IV" }[rank - 1]) : string.Empty);
             styleBox.tooltip = Localization.UI_HERO_STYLE_SWITCH;
             foreach (HeroStyle st in System.Enum.GetValues(typeof(HeroStyle))) styleBox.EnableInClassList("rf-hero-style--" + st.ToString().ToLowerInvariant(), st == hero.Style);
             for (var i = 0; i < 4; i++)
@@ -446,7 +449,7 @@ namespace Shinobytes.UI
             var game = GameManager.Instance;
             var draw = !(game && game.PotatoMode) || ++orbFrame % 3 == 0;
             DrawOrb(health, share, draw);
-            DrawOrb(mana, hero.Mana / hero.MaxMana, draw);
+            DrawOrb(mana, Mathf.Clamp01(hero.Mana / hero.MaxMana), draw);
             healthText.text = ((int)life.CurrentValue).ToString(CultureInfo.InvariantCulture) + " / " + ((int)life.MaxLevel).ToString(CultureInfo.InvariantCulture);
             manaText.text = Mathf.FloorToInt(hero.Mana).ToString(CultureInfo.InvariantCulture) + " / " + Mathf.RoundToInt(hero.MaxMana).ToString(CultureInfo.InvariantCulture);
 

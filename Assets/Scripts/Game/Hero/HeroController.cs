@@ -20,7 +20,12 @@ public partial class HeroController : MonoBehaviour
     private const float DodgeSeconds = 0.4f;
     private const float PotionShare = 0.35f;
     public const float PotionCooldown = 6f; // a second let bought draughts outheal any wave
-    private const float ManaPerSecond = 4f;
+    private const float ManaPerSecond = 3f;
+    /// <summary>Mana back for each basic attack that lands (once a swing or shot): weave attacks between the skills.</summary>
+    public const float ManaPerHit = 4f;
+    /// <summary>The style levels past the kit's last unlock that rank its skills up, each 15% stronger.</summary>
+    public static readonly int[] RankLevels = { 400, 600, 800, 999 };
+    private const float RankBonus = 0.15f;
     private const float Aura = 0.5f; // 7a: the hero takes half damage; 7b scales it to the waves
     private const float StyleSwitchCooldown = 1f;
 
@@ -29,12 +34,31 @@ public partial class HeroController : MonoBehaviour
 
     public PlayerController Player { get; private set; }
     public float Mana { get; private set; }
-    public float MaxMana => 100f;
+    /// <summary>100, and a fifth of the style's level on top (300 at most): the big kits of high levels cost more.</summary>
+    public float MaxMana => Mathf.Min(300f, 100f + StyleLevel / 5f);
+
+    /// <summary>The kit's rank: one for each of <see cref="RankLevels"/> the style's level has reached.</summary>
+    public int Rank
+    {
+        get
+        {
+            var level = StyleLevel;
+            var rank = 0;
+            foreach (var at in RankLevels) if (level >= at) rank++;
+            return rank;
+        }
+    }
+
+    /// <summary>What the ranks add to the hero's hits and heals: a level 999 hero is stronger than the waves sized by
+    /// the raw hit, a level 300 one is not.</summary>
+    public float RankFactor => 1f + Rank * RankBonus;
+
+    public void GainMana(float amount) => Mana = Mathf.Min(MaxMana, Mana + amount);
     public int Potions { get; private set; }
-    public int MaxPotions => 3 + RavebridgeShop.ExtraPotions(Player);
+    public int MaxPotions => 3 + RavebridgeShop.ExtraPotions(Player) + WaveRun.BoonPotions;
 
     /// <summary>The roll's wait: three seconds, less with the shopkeeper's boots.</summary>
-    public float RollCooldown => Mathf.Max(1f, DodgeCooldown - RavebridgeShop.RollSooner(Player));
+    public float RollCooldown => Mathf.Max(1f, DodgeCooldown - RavebridgeShop.RollSooner(Player) - WaveRun.BoonRoll);
     public float DodgeReadyAt { get; private set; }
     public IReadOnlyList<HeroSkill> Kit => kit;
     public float ReadyAt(int slot) => readyAt[(int)Style][slot];
@@ -353,7 +377,7 @@ public partial class HeroController : MonoBehaviour
             return;
         }
 
-        Mana = Mathf.Min(MaxMana, Mana + ManaPerSecond * (1f + RavebridgeGear.Stat(Player, "mana") / 100f) * Time.deltaTime);
+        Mana = Mathf.Min(MaxMana, Mana + ManaPerSecond * (1f + RavebridgeGear.Stat(Player, "mana") / 100f) * WaveRun.BoonMana * Time.deltaTime);
         Regenerate();
         if (heroCamera && heroCamera.Aim(out var point)) aim = point;
         if (Time.time < spinUntil) Spin();
@@ -553,10 +577,10 @@ public partial class HeroController : MonoBehaviour
         if (!enemy || enemy.Stats.IsDead || !Player) return;
         var chunk = enemy.GetComponentInParent<Chunk>();
         if (chunk != null) Player.Chunk = chunk;
-        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy, Style) * multiplier * CheerBonus * RavebridgeShop.DamageFactor(Player)));
+        var damage = Mathf.Max(1, Mathf.RoundToInt(RawDamage(enemy, Style) * multiplier * CheerBonus * RankFactor * RavebridgeShop.DamageFactor(Player) * WaveRun.BoonDamage));
         // hero gear: a double hit now and then, and some of the blow back as health
         if (UnityEngine.Random.value * 100f < RavebridgeGear.Stat(Player, "crit")) damage *= 2;
-        var leech = RavebridgeGear.Stat(Player, "leech");
+        var leech = RavebridgeGear.Stat(Player, "leech") + WaveRun.BoonLeech;
         if (leech > 0f)
         {
             var back = Mathf.Min(damage * leech / 100f, Player.Stats.Health.MaxLevel * 0.05f);
@@ -581,11 +605,14 @@ public partial class HeroController : MonoBehaviour
         }
     }
 
-    /// <summary>Heals a player by the hero's healing (at least half its healing level), times the skill's.</summary>
-    public void HealAlly(PlayerController p, float multiplier, bool effect = true)
+    /// <summary>
+    /// Heals a player by a share of their own health (Mend 20%, a sanctuary's tick 3%), more with the kit's rank. A share,
+    /// as the waves' blows are: the healing level's numbers healed a high level hero three quarters of its health a cast.
+    /// </summary>
+    public void HealAlly(PlayerController p, float share, bool effect = true)
     {
         if (!p || p.Stats.IsDead) return;
-        var amount = Mathf.Max(GameMath.CalculateHealing(Player, p), Player.Stats.Healing.Level * 0.5f, 1f) * multiplier;
+        var amount = Mathf.Max(1f, p.Stats.Health.MaxLevel * share * RankFactor);
         var heal = Mathf.Min(Mathf.RoundToInt(amount), p.Stats.Health.MaxLevel);
         if (!p.Heal(heal)) return;
         Player.SessionStats.AddHealingDealt(heal);
@@ -885,8 +912,9 @@ public partial class HeroController : MonoBehaviour
         if (health.CurrentValue >= health.MaxLevel || IsDowned) return ChatResult.Nothing;
         var healer = viewer.TrainingHealing || viewer.Stats.Healing.Level >= 20;
         if (!Ready(viewer, "heal", healer ? 10f : 30f, out wait)) return ChatResult.Cooldown;
+        // shares of the hero's health, as everything in hero mode: a healer's 6%, a bandage's 2%
         var max = (float)health.MaxLevel;
-        var heal = healer ? Mathf.Max(GameMath.CalculateHealing(viewer, Player) * 1.5f, max * 0.05f) : max * 0.03f;
+        var heal = max * (healer ? 0.06f : 0.02f);
         amount = Mathf.Max(1, Mathf.Min(Mathf.RoundToInt(heal), (int)(health.MaxLevel - health.CurrentValue)));
         var given = amount;
         if (viewer.Island == Player.Island && Vector3.Distance(viewer.Position, Player.Position) < 40f)

@@ -105,6 +105,14 @@ namespace Shinobytes.UI
                 case WaveRun.Phase.Breather:
                     wave.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_HELD, run.Cleared);
                     sub.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_NEXT_IN, run.Wave + 1, left) + "\n" + run.ComingFrom;
+                    // chat's boon vote: each choice, its command and its votes so far
+                    if (run.Offer != null)
+                    {
+                        var options = new System.Text.StringBuilder();
+                        for (var i = 0; i < run.Offer.Length; i++)
+                            options.Append("\n").Append(string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_BOON_OPTION, i + 1, run.Offer[i].Name(), run.BoonVotes(i)));
+                        sub.text += "\n" + Localization.UI_WAVE_BOON_VOTE + options;
+                    }
                     break;
                 default:
                     wave.text = run.Goal > 0
@@ -114,8 +122,8 @@ namespace Shinobytes.UI
                     if (Time.time - fromShownAt < 6f || run.Wave != fromWave) { if (run.Wave != fromWave) { fromWave = run.Wave; fromShownAt = Time.time; } sub.text += "\n" + run.ComingFrom; }
                     break;
             }
-            // Esc once: a second press leaves the run, and a run left gives nothing
-            if (run.LeaveAsked) sub.text = Localization.UI_WAVE_LEAVE_ASK;
+            // Esc once: a second press leaves the run; between waves a retreat keeps the rewards, else a run left gives nothing
+            if (run.LeaveAsked) sub.text = run.CanRetreat ? Localization.UI_WAVE_RETREAT_ASK : Localization.UI_WAVE_LEAVE_ASK;
 
             var b = run.Boss;
             boss.style.display = b && !b.Stats.IsDead ? DisplayStyle.Flex : DisplayStyle.None;
@@ -140,7 +148,9 @@ namespace Shinobytes.UI
             result.style.display = run != null ? DisplayStyle.Flex : DisplayStyle.None;
             if (run == null) return;
             var reached = run.Goal > 0 && run.Cleared >= run.Goal;
-            resultTitle.text = reached ? Localization.UI_WAVE_RESULT_HELD : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT, run.Cleared);
+            resultTitle.text = reached ? Localization.UI_WAVE_RESULT_HELD
+                : run.Retreated ? string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_RETREAT, run.Cleared)
+                : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT, run.Cleared);
             var seconds = Mathf.FloorToInt(run.EndedAt - run.StartedAt);
             resultLine.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_LINE, run.Cleared, run.Kills, seconds / 60, seconds % 60);
             var best = run.NewBest ? Localization.UI_WAVE_RESULT_NEW_BEST : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_RESULT_BEST, run.Best);

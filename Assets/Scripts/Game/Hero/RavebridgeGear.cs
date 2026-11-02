@@ -23,6 +23,8 @@ public static class RavebridgeGear
         public string Rarity;
         public Dictionary<string, float> Affixes = new Dictionary<string, float>();
         public bool Worn;
+        /// <summary>How often the shopkeeper rerolled its affixes (each costs more).</summary>
+        public int Rerolls;
 
         [JsonIgnore] public RavebridgeLoot.Rarity Grade => Enum.TryParse<RavebridgeLoot.Rarity>(Rarity, true, out var g) ? g : RavebridgeLoot.Rarity.Common;
         [JsonIgnore] public BaseData Data => Book.bases != null && Base != null && Book.bases.TryGetValue(Base, out var b) ? b : null;
@@ -99,9 +101,17 @@ public static class RavebridgeGear
     {
         if (Book.bases.Count == 0 || Book.affixes.Count == 0 || Book.rarity.Count == 0) return null;
         var rarity = Pick(boss && Book.boss != null ? Book.boss : Book.rarity.ToDictionary(r => r.Key, r => r.Value.weight));
-        var data = Book.rarity.TryGetValue(rarity, out var r) ? r : new RarityData { affixes = 1, power = 1f };
         var bases = Book.bases.Keys.ToList();
         var piece = new Piece { Id = Guid.NewGuid().ToString("N"), Base = bases[UnityEngine.Random.Range(0, bases.Count)], Rarity = rarity };
+        piece.Affixes = RollAffixes(rarity);
+        return piece;
+    }
+
+    /// <summary>A rarity's affixes: how many and how strong by the rarity, which ones at random.</summary>
+    private static Dictionary<string, float> RollAffixes(string rarity)
+    {
+        var data = Book.rarity.TryGetValue(rarity ?? "common", out var r) ? r : new RarityData { affixes = 1, power = 1f };
+        var affixes = new Dictionary<string, float>();
         var pool = Book.affixes.Keys.ToList();
         for (var i = 0; i < data.affixes && pool.Count > 0; i++)
         {
@@ -110,9 +120,31 @@ public static class RavebridgeGear
             var affix = Book.affixes[key];
             var value = UnityEngine.Random.Range(affix.min, affix.max) * data.power;
             // whole percents, or tenths for the small ones (leech, regen)
-            piece.Affixes[key] = affix.max < 2f ? Mathf.Round(value * 10f) / 10f : Mathf.Round(value);
+            affixes[key] = affix.max < 2f ? Mathf.Round(value * 10f) / 10f : Mathf.Round(value);
         }
-        return piece;
+        return affixes;
+    }
+
+    /// <summary>
+    /// What the shopkeeper asks to reroll a piece's affixes: twice its worth, and its worth again for each reroll
+    /// before (a coin sink: the cart's upgrades were all bought within an hour, and coins piled up).
+    /// </summary>
+    public static long RerollPrice(Piece piece) => piece == null ? 0 : piece.Value * (2 + piece.Rerolls);
+
+    /// <summary>The shopkeeper rerolls a piece's affixes (same base and rarity) for Ravebridge coins; false when too poor.</summary>
+    public static bool Reroll(PlayerController player, Piece piece)
+    {
+        if (!player || piece == null || !Of(player).Contains(piece)) return false;
+        var state = RavebridgeQuests.StateOf(player);
+        var price = RerollPrice(piece);
+        if (state.Coins < price) return false;
+        state.Coins -= price;
+        piece.Affixes = RollAffixes(piece.Rarity);
+        piece.Rerolls++;
+        GameSounds.Play(SoundKind.ItemPickup, player.Position, 0.7f, 0f, player);
+        RavebridgeLoot.Saved(player);
+        Changed?.Invoke(player);
+        return true;
     }
 
     private static string Pick(Dictionary<string, float> weights)

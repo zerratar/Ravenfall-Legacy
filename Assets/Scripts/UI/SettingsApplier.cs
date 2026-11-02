@@ -111,6 +111,7 @@ public static class SettingsApplier
         public const float IslandObserveSeconds = 10f;
         public const bool ObserveEmptyIslands = true;
         public const bool RaceCamera = true;
+        public const bool ScreenShake = true;
         public const int AfkKick = 0;
         public const bool AnnounceNoExp = false;
         public const int NoExpMinutes = 1;           // index into NoExpMinuteOptions, 5 minutes
@@ -1038,6 +1039,12 @@ public static class SettingsApplier
         PlayerSettings.Instance.RegattaCamera = value;
         if (!value && GameManager.Instance && GameManager.Instance.Camera) GameManager.Instance.Camera.StopRace();
     }
+
+    /// <summary>Hero mode's hits and the Kraken's roar shake the camera; never in potato mode.</summary>
+    public static bool ScreenShake => PlayerSettings.Instance.ScreenShake.GetValueOrDefault(Defaults.ScreenShake)
+        && !(GameManager.Instance && GameManager.Instance.PotatoMode);
+    public static bool ScreenShakeSetting => PlayerSettings.Instance.ScreenShake.GetValueOrDefault(Defaults.ScreenShake);
+    public static void SetScreenShake(bool value) => PlayerSettings.Instance.ScreenShake = value;
 
     // ---- Players --------------------------------------------------------------------------------
 

@@ -87,7 +87,7 @@ public sealed class HeroSkill
                     foreach (var e in hero.EnemiesNear(ground, 3.5f).ToList())
                     {
                         hero.Strike(e, 2f);
-                        e.StunnedUntil = Time.time + 1.5f;
+                        WaveRun.Stun(e, 1.5f);
                     }
                 }));
                 return true;
@@ -176,7 +176,7 @@ public sealed class HeroSkill
                     hero.StartCoroutine(Repeat(4f, 0.5f, _ =>
                     {
                         HeroEffects.Burst(HeroEffects.Get?.Snare, center, 1.6f, 1.5f);
-                        foreach (var e in hero.EnemiesNear(center, 3f)) e.StunnedUntil = Mathf.Max(e.StunnedUntil, Time.time + 0.7f);
+                        foreach (var e in hero.EnemiesNear(center, 3f)) WaveRun.Stun(e, 0.7f);
                     }));
                 }));
                 return true;
@@ -222,7 +222,7 @@ public sealed class HeroSkill
                 foreach (var e in hero.EnemiesNear(hero.Player.Position, 6f).ToList())
                 {
                     hero.Strike(e, 1f);
-                    e.StunnedUntil = Time.time + 3f;
+                    WaveRun.Stun(e, 3f);
                 }
                 return true;
             },
@@ -273,12 +273,12 @@ public sealed class HeroSkill
             {
                 // heals the hero, and the viewers in front of the hero
                 hero.Play("Hero-Buff", 0.05f);
-                hero.HealAlly(hero.Player, 1.5f);
+                hero.HealAlly(hero.Player, 0.2f);
                 foreach (var p in hero.AlliesNear(hero.Player.Position, 10f))
                 {
                     if (p == hero.Player) continue;
                     var to = Flat(p.Position - hero.Player.Position);
-                    if (Vector3.Angle(hero.Forward, to) <= 70f) hero.HealAlly(p, 1f);
+                    if (Vector3.Angle(hero.Forward, to) <= 70f) hero.HealAlly(p, 0.12f);
                 }
                 return true;
             },
@@ -311,7 +311,7 @@ public sealed class HeroSkill
                 hero.StartCoroutine(Repeat(6f, 1f, _ =>
                 {
                     HeroEffects.Burst(HeroEffects.Get?.Sanctuary, center + Vector3.up * 0.2f, 2.2f, 2f);
-                    foreach (var p in hero.AlliesNear(center, 4.5f)) hero.HealAlly(p, 0.5f, false);
+                    foreach (var p in hero.AlliesNear(center, 4.5f)) hero.HealAlly(p, 0.03f, false);
                     foreach (var e in hero.EnemiesNear(center, 4.5f).ToList()) hero.Strike(e, 0.6f);
                 }));
                 return true;
@@ -326,7 +326,7 @@ public sealed class HeroSkill
                 // everyone near is healed in full, and the next blow that would fell the hero leaves it standing
                 hero.Play("Hero-Buff", 0.05f);
                 HeroEffects.Burst(HeroEffects.Get?.Angel, hero.Player.Position + Vector3.up, 2.5f, 3f);
-                foreach (var p in hero.AlliesNear(hero.Player.Position, 12f)) hero.HealAlly(p, 100f, p != hero.Player);
+                foreach (var p in hero.AlliesNear(hero.Player.Position, 12f)) hero.HealAlly(p, 1f, p != hero.Player);
                 hero.GuardianAngel();
                 return true;
             },
