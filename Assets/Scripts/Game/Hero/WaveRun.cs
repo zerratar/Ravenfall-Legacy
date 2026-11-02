@@ -32,8 +32,15 @@ public partial class WaveRun : MonoBehaviour
     private const float DownedSeconds = 20f;
     private const float HealerReviveSeconds = 5f;
     private const float HealerReviveMore = 3f; // each revive so far makes a healer's next one take this much longer
-    private const float BossPerFighter = 0.1f; // a boss's health grows with the viewers fighting beside the hero
-    private const float BossFightersCap = 1.5f;
+    // the viewers fighting beside the hero make the waves tougher: an enemy's health counts a share of their hits as
+    // well as the hero's, so a full chat makes bigger fights instead of a stroll (the hero sized everything before,
+    // and a few strong viewers flattened every wave); capped, so a weak hero among strong viewers can still hurt them
+    private const float PartyShare = 0.6f;
+    private const float PartyCap = 8f;          // times the hero's own hit
+    // and some enemies go for a viewer instead of the hero, their blows a share of that viewer's health
+    private const float HunterChance = 0.25f;
+    private const float HunterRange = 25f;
+    private const float ViewerBlowShare = 0.6f;
     public const float LeaveAskSeconds = 3f;
     private const int MaxAlive = 12;
     private const float SpawnInterval = 0.7f;
@@ -146,7 +153,8 @@ public partial class WaveRun : MonoBehaviour
     private PlayerController lastHealer;
     private int revives;
     private float leaveAskedUntil;
-    private float hit; // the hero's best average hit, which sizes the enemies (Make); only ever goes up during a run
+    private float heroHit; // the hero's best average hit; only ever goes up during a run
+    private float hit;     // what sizes the enemies (Make): the hero's hit and the fighting viewers' share
 
     /// <summary>Starts a run for the hero (in hero mode on Ravebridge). Goal 0 is endless; finished hears the end.</summary>
     public static WaveRun Begin(PlayerController hero, int goal, Action<WaveRun> finished)
@@ -265,7 +273,8 @@ public partial class WaveRun : MonoBehaviour
         // the hero's best style sizes the enemies, measured as the wave starts and never lowered (so switching to
         // the weakest style, or taking the weapon off, before a wave does not make it easy)
         var hero = HeroController.Active;
-        if (hero && template) hit = Mathf.Max(hit, hero.BestExpectedHit(template));
+        if (hero && template) heroHit = Mathf.Max(heroHit, hero.BestExpectedHit(template));
+        hit = heroHit + Mathf.Min(PartyCap * heroHit, PartyShare * PartyHit());
         toSpawn.Clear();
         Boss = null;
         BossName = null;
@@ -411,6 +420,8 @@ public partial class WaveRun : MonoBehaviour
         enemy.name = elite ? string.Format(Localization.UI_WAVE_ELITE, kind.Name()) : kind.Name();
         enemy.transform.localScale = Vector3.one * kind.Scale * (elite ? EliteScale : 1f);
         if (elite) elites.Add(enemy); else elites.Remove(enemy);
+        // now and then one goes for a viewer instead (never a boss or an elite: those are the hero's)
+        if (!kind.Boss && !elite && UnityEngine.Random.value < HunterChance) hunters.Add(enemy); else hunters.Remove(enemy);
         nextMove.Remove(enemy);
         stunRest.Remove(enemy);
         enemy.AutomaticRespawn = false;
@@ -418,8 +429,8 @@ public partial class WaveRun : MonoBehaviour
         enemy.AggroRange = 60f;
         enemy.ExpFactor = (kind.Boss ? 5d : 1d) * (1d + Wave * 0.1d);
 
-        // a boss grows with the viewers actually fighting (capped), not everyone idling on the island
-        var hits = kind.Hits * (1f + Wave * 0.06f) * (kind.Boss ? 1f + Mathf.Min(BossFightersCap, Fighters() * BossPerFighter) : 1f) * (elite ? EliteHits : 1f);
+        // the fighting viewers are counted in hit already (StartWave), the boss included
+        var hits = kind.Hits * (1f + Wave * 0.06f) * (elite ? EliteHits : 1f);
         enemy.Stats.Health = new SkillStat((float)Mathf.Max(5, Mathf.RoundToInt((hit > 0f ? hit : 10f) * hits)));
         enemy.SpawnAt(at);
         HeroController.Active?.EnemiesChanged();
@@ -523,6 +534,18 @@ public partial class WaveRun : MonoBehaviour
                 var close = others.Where(p => Vector3.Distance(p.Position, e.Position) < 30f).OrderBy(p => Vector3.Distance(p.Position, e.Position)).FirstOrDefault();
                 if (close) target = close;
             }
+            else if (hunters.Contains(e))
+            {
+                // a viewer fighting close by, the one it already has if it is still there
+                var current = e.TargetPlayer;
+                if (current && current != Hero && !current.Stats.IsDead && current.InRavebridge && Vector3.Distance(current.Position, e.Position) < HunterRange) target = current;
+                else
+                {
+                    var prey = others.Where(p => !p.Stats.IsDead && Fighting(p) && Vector3.Distance(p.Position, e.Position) < HunterRange)
+                        .OrderBy(p => Vector3.Distance(p.Position, e.Position)).FirstOrDefault();
+                    if (prey) target = prey;
+                }
+            }
             if (e.TargetPlayer != target) e.SetTarget(target);
             e.InCombat = true;
             if (target && walkSpeed.TryGetValue(e, out var walk) && Vector3.Distance(e.Position, target.Position) < ChargeUntil)
@@ -547,7 +570,42 @@ public partial class WaveRun : MonoBehaviour
     }
 
     /// <summary>The viewers on Ravebridge training a combat skill (healers too).</summary>
-    private int Fighters() => Others().Count(p => !p.Stats.IsDead && (p.TrainingMelee || p.TrainingRanged || p.TrainingMagic || p.TrainingHealing));
+    private int Fighters() => Others().Count(p => !p.Stats.IsDead && Fighting(p));
+
+    private static bool Fighting(PlayerController p) => p.TrainingMelee || p.TrainingRanged || p.TrainingMagic || p.TrainingHealing;
+
+    /// <summary>
+    /// What the viewers fighting on the island hit for together, on average (healers heal instead): their own levels
+    /// and gear, as in any fight; nobody is weakened in a wave run.
+    /// </summary>
+    private float PartyHit()
+    {
+        if (!template) return 0f;
+        var total = 0f;
+        const int Samples = 8;
+        foreach (var p in Others())
+        {
+            if (p.Stats.IsDead || p.TrainingHealing || !(p.TrainingMelee || p.TrainingRanged || p.TrainingMagic)) continue;
+            var sum = 0f;
+            for (var i = 0; i < Samples; i++)
+                sum += p.TrainingRanged ? GameMath.CalculateRangedDamage(p, template)
+                    : p.TrainingMagic ? GameMath.CalculateMagicDamage(p, template)
+                    : GameMath.CalculateMeleeDamage(p, template);
+            total += sum / Samples;
+        }
+        return total;
+    }
+
+    /// <summary>
+    /// A wave enemy's blow on a viewer (PlayerController.TakeDamage): a share of that viewer's health, a bit less than
+    /// the hero's, so a level 1 viewer and a level 999 one both feel it and healers have work to do.
+    /// </summary>
+    public int ViewerBlow(EnemyController enemy, PlayerController viewer)
+    {
+        if (!viewer || !alive.TryGetValue(enemy, out var kind)) return 0;
+        var share = kind.Blow * ViewerBlowShare * (1f + Wave * 0.03f) * UnityEngine.Random.Range(0.7f, 1.2f) * Steep * Fierce(enemy);
+        return Mathf.Max(1, Mathf.RoundToInt(viewer.Stats.Health.MaxLevel * share));
+    }
 
     /// <summary>The viewers on Ravebridge besides the hero.</summary>
     private IEnumerable<PlayerController> Others()

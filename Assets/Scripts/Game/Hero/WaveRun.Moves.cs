@@ -45,6 +45,7 @@ public partial class WaveRun
     private readonly Dictionary<EnemyController, float> nextMove = new Dictionary<EnemyController, float>();
     private readonly Dictionary<EnemyController, float> stunRest = new Dictionary<EnemyController, float>();
     private readonly HashSet<EnemyController> elites = new HashSet<EnemyController>();
+    private readonly HashSet<EnemyController> hunters = new HashSet<EnemyController>(); // go for viewers (GiveOrders)
     private readonly HashSet<string> elitesBy = new HashSet<string>();
     private int elitesThisWave;
     private bool bossAdds, bossEnraged;

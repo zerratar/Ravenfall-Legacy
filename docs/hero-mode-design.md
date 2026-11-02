@@ -726,3 +726,20 @@ The reviewer's bigger proposals, built at the user's request before the first pl
   bot's announcements).
 - **A coin sink:** the shopkeeper rerolls a hero gear piece's affixes (same base and rarity) for twice its worth, and its
   worth again for each reroll of it before; worn pieces too, on the Sell tab.
+
+### Viewers and the waves (2026-11-02)
+
+The user asked how the waves scale with viewers and whether viewers are weakened. They are not: viewers fight with
+their own levels and gear, as anywhere. Before this, ordinary enemies were sized by the hero's hit alone, so a few
+strong viewers flattened every wave (in the bot test they did 33,000 damage while the hero stood at full health until
+the boss) and a big chat was an easy experience fountain. The user left it to me; built the same day:
+
+- **The party counts:** as each wave starts, an enemy's health is sized by the hero's best hit plus 60% of what the
+  viewers fighting on the island hit for together (their own style against the wave's rig; healers left out), that
+  share at most eight times the hero's own hit, so a weak hero among strong viewers can still hurt them
+  (`WaveRun.PartyHit`). The waves also bring more enemies with more viewers, as before. Bosses no longer get the extra
+  10% a fighting viewer: the party is in their health already.
+- **Enemies go for viewers too:** a quarter of the ordinary enemies (never a boss or an elite) go for a viewer fighting
+  within 25 m instead of the hero, and a wave enemy's blow on a viewer is a share of that viewer's health (60% of the
+  kind's share on the hero, `WaveRun.ViewerBlow`), so a level 1 viewer and a level 999 one both feel it and healers
+  and taunts matter. The telegraphed moves stay the hero's.
