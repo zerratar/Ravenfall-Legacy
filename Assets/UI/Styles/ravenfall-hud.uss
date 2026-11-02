@@ -2851,6 +2851,80 @@
     -unity-text-outline-color: rgba(0, 0, 0, 0.85);
 }
 
+/* Chat's boon vote in the breather (HeroWaveHud): a solid box with a row per choice, the leader in gold. */
+.rf-wave-boons {
+    margin-top: 10px;
+    width: 560px;
+    padding: 10px 14px;
+    background-color: rgb(20, 18, 15);
+    border-width: 2px;
+    border-color: var(--rf-accent-dim);
+    border-radius: 6px;
+}
+
+.rf-wave-boons__title {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.rf-wave-boons__row {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+}
+
+.rf-wave-boons__cmd {
+    width: 78px;
+    font-size: 15px;
+    color: var(--rf-accent);
+    -unity-font-style: bold;
+}
+
+.rf-wave-boons__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 16px;
+    color: var(--rf-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rf-wave-boons__bar {
+    width: 80px;
+    height: 8px;
+    margin-left: 10px;
+    border-radius: 4px;
+    background-color: rgb(52, 47, 40);
+    overflow: hidden;
+}
+
+.rf-wave-boons__fill {
+    height: 100%;
+    width: 0;
+    background-color: var(--rf-text-dim);
+}
+
+.rf-wave-boons__votes {
+    width: 34px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-right;
+    -unity-font-style: bold;
+}
+
+.rf-wave-boons__row--lead .rf-wave-boons__name,
+.rf-wave-boons__row--lead .rf-wave-boons__votes {
+    color: var(--rf-accent-bright);
+}
+
+.rf-wave-boons__row--lead .rf-wave-boons__fill {
+    background-color: var(--rf-accent);
+}
+
 .rf-wave-boss {
     margin-top: 8px;
     width: 460px;

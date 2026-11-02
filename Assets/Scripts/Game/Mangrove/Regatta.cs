@@ -107,8 +107,9 @@ public sealed class Regatta : MonoBehaviour
         public bool ChainShot;
         public float UseAt;
         public GameObject Aura;
-        /// <summary>The things on the water it already tried (or failed) to steer round.</summary>
+        /// <summary>The things on the water it already tried (or failed) to steer round, this lap (JudgedLap).</summary>
         public readonly HashSet<Thing> Judged = new HashSet<Thing>();
+        public int JudgedLap;
         public bool Racing => !Out && Time < 0f && Player && Boat;
         public string Name => Player ? Player.Name : "?";
     }
@@ -552,6 +553,13 @@ public sealed class Regatta : MonoBehaviour
         var forward = Quaternion.Euler(0f, boat.Heading, 0f) * Vector3.forward;
         var right = Vector3.Cross(Vector3.up, forward);
         var clearance = boat.Width * 0.5f + 3f;
+        // each lap a new try at the reefs and wreckage: one missed on the first lap was hit on every lap after
+        var lap = Lap(r);
+        if (r.JudgedLap != lap)
+        {
+            r.Judged.Clear();
+            r.JudgedLap = lap;
+        }
         var look = Mathf.Max(70f, boat.Speed * boat.Pace * 2.5f);
         // on the last leg the lanes close up towards the dock point, where the race ends
         var widest = r.Mark >= marks.Count - 1
@@ -986,7 +994,10 @@ public sealed class Regatta : MonoBehaviour
                 r.Boat.Spin(1.4f);
                 SlowDown(r, 0.5f, 1.4f);
                 GameSounds.Play(SoundKind.WaterSplash, at, 0.7f);
-                MangroveFeed.Say(string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_PEEL, r.Name, by ?? "?"), "");
+                // a peel of its own from the lap before: it says so
+                MangroveFeed.Say(by == r.Name
+                    ? string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_OWN_PEEL, r.Name)
+                    : string.Format(CultureInfo.InvariantCulture, Localization.UI_REGATTA_HIT_PEEL, r.Name, by ?? "?"), "");
                 break;
             case Hit.Reef:
                 SlowDown(r, 0.4f, 1.6f);

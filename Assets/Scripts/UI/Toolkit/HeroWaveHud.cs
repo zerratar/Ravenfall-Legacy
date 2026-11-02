@@ -26,6 +26,8 @@ namespace Shinobytes.UI
         private readonly Label resultTitle;
         private readonly Label resultLine;
         private readonly Label resultBest;
+        private readonly VisualElement boons;
+        private readonly (VisualElement Row, Label Command, Label Name, VisualElement Fill, Label Votes)[] boonRows = new (VisualElement, Label, Label, VisualElement, Label)[3];
         private int fromWave = -1;
         private float fromShownAt;
 
@@ -34,6 +36,25 @@ namespace Shinobytes.UI
             top = Box("rf-wave");
             wave = Text(top, "rf-wave__title");
             sub = Text(top, "rf-wave__sub");
+            // chat's boon vote in the breather: a solid box, so it reads over any ground
+            boons = Box("rf-wave-boons");
+            Text(boons, "rf-wave-boons__title").text = Localization.UI_WAVE_BOON_VOTE;
+            for (var i = 0; i < boonRows.Length; i++)
+            {
+                var row = Box("rf-wave-boons__row");
+                var command = Text(row, "rf-wave-boons__cmd");
+                command.text = "!hero " + (i + 1);
+                var name = Text(row, "rf-wave-boons__name");
+                var bar = Box("rf-wave-boons__bar");
+                var fill = Box("rf-wave-boons__fill");
+                bar.Add(fill);
+                row.Add(bar);
+                var votes = Text(row, "rf-wave-boons__votes");
+                boons.Add(row);
+                boonRows[i] = (row, command, name, fill, votes);
+            }
+            top.Add(boons);
+
             boss = Box("rf-wave-boss");
             bossName = Text(boss, "rf-wave-boss__name");
             var track = new VisualElement { pickingMode = PickingMode.Ignore };
@@ -58,6 +79,30 @@ namespace Shinobytes.UI
             root.Add(downed);
             root.Add(result);
             Hide();
+        }
+
+        /// <summary>The breather's boon vote: each choice with its command, its share of the votes and the count.</summary>
+        private void ShowBoons(WaveRun run)
+        {
+            var offer = run.State == WaveRun.Phase.Breather ? run.Offer : null;
+            var display = offer != null ? DisplayStyle.Flex : DisplayStyle.None;
+            if (boons.style.display != display) boons.style.display = display;
+            if (offer == null) return;
+            var total = 0;
+            var most = 0;
+            for (var i = 0; i < offer.Length; i++) { var v = run.BoonVotes(i); total += v; most = Mathf.Max(most, v); }
+            for (var i = 0; i < boonRows.Length; i++)
+            {
+                var (row, _, name, fill, votes) = boonRows[i];
+                var on = i < offer.Length;
+                row.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
+                if (!on) continue;
+                var count = run.BoonVotes(i);
+                name.text = offer[i].Name();
+                votes.text = count.ToString(CultureInfo.InvariantCulture);
+                fill.style.width = new Length(total > 0 ? count * 100f / total : 0f, LengthUnit.Percent);
+                row.EnableInClassList("rf-wave-boons__row--lead", most > 0 && count == most);
+            }
         }
 
         private static VisualElement Box(string className)
@@ -105,14 +150,6 @@ namespace Shinobytes.UI
                 case WaveRun.Phase.Breather:
                     wave.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_HELD, run.Cleared);
                     sub.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_NEXT_IN, run.Wave + 1, left) + "\n" + run.ComingFrom;
-                    // chat's boon vote: each choice, its command and its votes so far
-                    if (run.Offer != null)
-                    {
-                        var options = new System.Text.StringBuilder();
-                        for (var i = 0; i < run.Offer.Length; i++)
-                            options.Append("\n").Append(string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_BOON_OPTION, i + 1, run.Offer[i].Name(), run.BoonVotes(i)));
-                        sub.text += "\n" + Localization.UI_WAVE_BOON_VOTE + options;
-                    }
                     break;
                 default:
                     wave.text = run.Goal > 0
@@ -122,6 +159,7 @@ namespace Shinobytes.UI
                     if (Time.time - fromShownAt < 6f || run.Wave != fromWave) { if (run.Wave != fromWave) { fromWave = run.Wave; fromShownAt = Time.time; } sub.text += "\n" + run.ComingFrom; }
                     break;
             }
+            ShowBoons(run);
             // Esc once: a second press leaves the run; between waves a retreat keeps the rewards, else a run left gives nothing
             if (run.LeaveAsked) sub.text = run.CanRetreat ? Localization.UI_WAVE_RETREAT_ASK : Localization.UI_WAVE_LEAVE_ASK;
 

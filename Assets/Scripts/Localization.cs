@@ -564,7 +564,6 @@ public static class Localization
     public static string UI_WAVE_ELITE = "Elite {0}";
     public static string UI_HERO_RANK = "Rank {0}";
     public static string UI_WAVE_BOON_VOTE = "Chat votes a boon:";
-    public static string UI_WAVE_BOON_OPTION = "!hero {0}  {1}  ({2})";
     public static string UI_WAVE_RETREAT_ASK = "Press Esc again to retreat. Between waves you keep the chest and the record.";
     public static string UI_WAVE_RESULT_RETREAT = "Retreated after {0} waves";
     public static string UI_WAVE_GOBLIN = "Raiding goblin";
@@ -2946,6 +2945,7 @@ public static class Localization
     public static string UI_REGATTA_HIT_KEG = "BOOM! {0} sails into a powder keg.";
     public static string UI_REGATTA_HIT_KEG_BY = "BOOM! {0} sails into {1}'s powder keg.";
     public static string UI_REGATTA_HIT_PEEL = "{0} slips on {1}'s banana peel and spins round!";
+    public static string UI_REGATTA_HIT_OWN_PEEL = "{0} slips on their own banana peel from the lap before. Classic.";
     public static string UI_REGATTA_HIT_REEF = "{0} scrapes the reef!";
     public static string UI_REGATTA_HIT_WRECK = "{0} ploughs through floating wreckage.";
     public static string UI_REGATTA_HIT_KRAKEN = "The Kraken rises in front of {0}!";
