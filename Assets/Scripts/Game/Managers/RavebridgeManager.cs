@@ -73,6 +73,9 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         Instance = this;
         game = GetComponent<GameManager>();
         nextUprisingRoll = Time.time + UprisingRollInterval;
+        // the scenery cows become real ones before the fighting areas count their enemies (Chunk.Start)
+        foreach (var i in FindObjectsByType<IslandController>(FindObjectsInactive.Include))
+            if (i.Island == IslandController.RavebridgeIsland) SceneryAnimals.MakeFightable(i);
     }
 
     public bool Contains(PlayerController player) => player && visits.ContainsKey(player.Id);

@@ -30,9 +30,10 @@ public partial class HeroController
     /// <summary>
     /// The pace of every attack, all styles: 1 as built, 0.8 a fifth slower. Shown on the hero's HeroController while
     /// playing, to try a pace live; the default here is what every hero starts with. Gear haste and attack and cast
-    /// speed come on top.
+    /// speed come on top. 0.75 since the 2026-11-02 playtest: attacks felt a bit too fast, the user asked for a quarter
+    /// slower.
     /// </summary>
-    [Range(0.5f, 1.5f)] public float AttackPace = 1f;
+    [Range(0.5f, 1.5f)] public float AttackPace = 0.75f;
 
     private float attackStarted;
     private float attackEnds;
