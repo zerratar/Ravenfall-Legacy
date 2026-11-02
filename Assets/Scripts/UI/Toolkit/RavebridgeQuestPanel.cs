@@ -215,7 +215,7 @@ namespace Shinobytes.UI
             var npc = RavebridgeQuests.NpcOf(state, q);
             if (npc != null) objective.Add(QuestArt.Chip("\uf007", RavebridgeQuests.NpcName(npc)));
             body.Add(objective);
-            var reward = RavebridgeQuests.RewardText(q, IsRavebridgeCharacter(c));
+            var reward = RavebridgeQuests.RewardText(q, SkillsOf(c), IsRavebridgeCharacter(c));
             if (reward.Length > 0) body.Add(QuestArt.Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_RBQ_REWARD, reward), "rf-qcard__reward"));
             card.Add(body);
             return card;
@@ -243,7 +243,7 @@ namespace Shinobytes.UI
                 line = string.Format(CultureInfo.InvariantCulture, Localization.UI_RBQ_AFTER, after?.name.Get() ?? "?");
             }
             body.Add(QuestArt.Text(line, "rf-qcard__line"));
-            var reward = RavebridgeQuests.RewardText(q, IsRavebridgeCharacter(c));
+            var reward = RavebridgeQuests.RewardText(q, SkillsOf(c), IsRavebridgeCharacter(c));
             if (reward.Length > 0) body.Add(QuestArt.Text(string.Format(CultureInfo.InvariantCulture, Localization.UI_RBQ_REWARD, reward), "rf-qcard__reward"));
             card.Add(body);
             return card;
@@ -266,6 +266,14 @@ namespace Shinobytes.UI
 
         /// <summary>The Ravebridge character (out or not), not one of the streamer's own.</summary>
         private static bool IsRavebridgeCharacter(Character c) => c.Player == null || c.Player.IsLocal;
+
+        /// <summary>The character's skills, for the scaled rewards: the saved Ravebridge character's when it is not out.</summary>
+        private static Skills SkillsOf(Character c)
+        {
+            if (c.Player) return c.Player.Stats;
+            var data = RavebridgeCharacter.Current;
+            return data != null ? new Skills(data.Skills) : null;
+        }
 
         /// <summary>Each quest's picture (rb-key); every bounty shares one.</summary>
         private static string Picture(RavebridgeQuests.Quest q) => q.bounty ? "rb-bounty" : "rb-" + q.key;

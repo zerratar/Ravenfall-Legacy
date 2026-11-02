@@ -8,6 +8,17 @@ namespace RavenNest.SDK.Endpoints
     /// A character's quests (api/quests): today's three offers, this week's quest, the quests taken and the daily
     /// streak. Progress is counted on the server; the game asks, takes and gives up. See docs/quests-design.md.
     /// </summary>
+    /// <summary>What a Ravebridge quest paid (the server's RavebridgeQuestReward, by its JSON).</summary>
+    public class RavebridgeQuestReward
+    {
+        public bool Ok { get; set; }
+        /// <summary>notinsession, unknown, done (paid already), cooldown (a bounty too soon).</summary>
+        public string Error { get; set; }
+        public long Coins { get; set; }
+        /// <summary>Experience per skill index.</summary>
+        public System.Collections.Generic.Dictionary<int, double> Exp { get; set; }
+    }
+
     public class QuestsApi
     {
         private readonly IApiRequestBuilderProvider request;
@@ -41,6 +52,16 @@ namespace RavenNest.SDK.Endpoints
         {
             return request.Create().Identifier(characterId.ToString()).Method("chain").AddParameter(key).Build()
                 .SendAsync<QuestActionResult>(ApiRequestTarget.Quests, ApiRequestType.Post);
+        }
+
+        /// <summary>
+        /// A real character finished a Ravebridge island quest: the server pays the coins (scaled as a daily's) and says
+        /// what experience to add; each quest pays once, a bounty again after its cooldown.
+        /// </summary>
+        public Task<RavebridgeQuestReward> RavebridgeQuestAsync(Guid characterId, string key)
+        {
+            return request.Create().Identifier(characterId.ToString()).Method("ravebridge").AddParameter(key).Build()
+                .SendAsync<RavebridgeQuestReward>(ApiRequestTarget.Quests, ApiRequestType.Post);
         }
 
         /// <summary>Hands in what the chain's delivery step asks for, from the character's inventory.</summary>

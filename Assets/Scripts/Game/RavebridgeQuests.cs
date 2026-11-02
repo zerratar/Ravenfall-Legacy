@@ -367,7 +367,7 @@ public static class RavebridgeQuests
                 {
                     // a quest offered: what is in it, before saying yes; and a polite no
                     var npcName = reply.Npc;
-                    var rewards = RewardText(quest, player.IsLocal);
+                    var rewards = RewardText(quest, player.Stats, player.IsLocal);
                     if (!string.IsNullOrEmpty(rewards))
                     {
                         reply.Options.Add(new Option
@@ -618,20 +618,83 @@ public static class RavebridgeQuests
     public static float BountyMinutes(State state, Quest quest) => BountyWait(state, quest);
 
     /// <summary>
-    /// "350 Cooking exp, 1,000 coins, 2 x Cake": what finishing gives. Coins and items go to the Ravebridge character
-    /// only (the streamer's own characters keep the server's), so they are left out for the others.
+    /// "35,000 Cooking exp, 1,000 coins, 2 x Cake": what finishing gives the character with these skills (scaled, see
+    /// <see cref="ScaledExp"/>; the fixed numbers when there are none). Items go to the Ravebridge character only (the
+    /// streamer's own characters have the server's inventory), so they are left out for the others.
     /// </summary>
-    public static string RewardText(Quest quest, bool ravebridgeCharacter = true)
+    public static string RewardText(Quest quest, Skills skills, bool ravebridgeCharacter = true)
     {
         var r = quest.reward;
         if (r == null) return string.Empty;
         var parts = new List<string>();
-        if (r.exp != null) foreach (var e in r.exp) parts.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:N0} {1} exp", e.Value, e.Key));
-        if (ravebridgeCharacter && r.coins > 0) parts.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_COINS, r.coins.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)));
+        foreach (var e in ScaledExp(quest, skills)) parts.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:N0} {1} exp", e.Value, e.Key));
+        var coins = ScaledCoins(quest, skills);
+        if (coins > 0) parts.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_STREAMER_QUEST_COINS, coins.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)));
         if (r.ravebridgeCoins > 0) parts.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_RBQ_RB_COINS, r.ravebridgeCoins.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)));
         if (ravebridgeCharacter && r.items != null) parts.Add(Items(r.items));
         if (r.loot != null) parts.Add(LootList(r.loot));
         return string.Join(", ", parts.Where(s => !string.IsNullOrEmpty(s)));
+    }
+
+    // the scaling, as the server pays it (RavenNest's RavebridgeQuestRewards): each skill a share of its next level, the
+    // quest's biggest amount counting in full and the others by their size; a bounty a hundredth per ten minutes of its
+    // cooldown. Decided by the user after the 2026-11-02 playtest (the fixed amounts were nothing to a high character).
+    private const double StoryShare = 0.15;
+    private const double BountyShare = 0.01;
+
+    /// <summary>The experience finishing gives a character with these skills, per skill; the fixed amounts without skills.</summary>
+    public static List<KeyValuePair<Skill, double>> ScaledExp(Quest quest, Skills skills)
+    {
+        var result = new List<KeyValuePair<Skill, double>>();
+        var exp = quest?.reward?.exp;
+        if (exp == null || exp.Count == 0) return result;
+        var biggest = exp.Values.Max();
+        var share = quest.bounty ? BountyShare * quest.cooldown / 10.0 : StoryShare;
+        foreach (var e in exp)
+        {
+            if (!Enum.TryParse<Skill>(e.Key, out var skill)) continue;
+            if (skills == null || biggest <= 0) { result.Add(new KeyValuePair<Skill, double>(skill, e.Value)); continue; }
+            var level = skills.GetSkill(skill)?.Level ?? 1;
+            var amount = Math.Round(GameMath.ExperienceForLevel(Math.Min(level + 1, GameMath.MaxLevel)) * share * e.Value / biggest);
+            if (amount > 0) result.Add(new KeyValuePair<Skill, double>(skill, amount));
+        }
+        return result;
+    }
+
+    /// <summary>The coins: as a daily's (300 and 15 per average level), times the quest's own over 300.</summary>
+    public static long ScaledCoins(Quest quest, Skills skills)
+    {
+        var coins = quest?.reward?.coins ?? 0;
+        if (coins <= 0 || skills == null) return coins;
+        var average = skills.SkillList.Average(s => s.Level);
+        return (long)Math.Round((300 + average * 15) * (coins / 300.0) / 10) * 10;
+    }
+
+    /// <summary>
+    /// A real character's reward: the server pays it (once per quest, a bounty again after its cooldown) and says what
+    /// experience to add, as for a daily; the game's skills are what get saved.
+    /// </summary>
+    private static async void ClaimAsync(PlayerController player, Quest quest)
+    {
+        var game = GameManager.Instance;
+        if (!game || game.RavenNest == null) return;
+        try
+        {
+            var result = await game.RavenNest.Quests.RavebridgeQuestAsync(player.Id, quest.key);
+            if (!player || result == null) return;
+            if (!result.Ok)
+            {
+                Shinobytes.Debug.LogWarning("Ravebridge quest " + quest.key + " not paid for " + player.Name + ": " + result.Error);
+                return;
+            }
+            if (result.Coins > 0) player.Resources.Coins += result.Coins;
+            if (result.Exp != null)
+                foreach (var e in result.Exp) player.Stats.GetSkill((Skill)e.Key)?.AddExp(e.Value, out _);
+        }
+        catch (Exception exc)
+        {
+            Shinobytes.Debug.LogError("Ravebridge quest " + quest.key + " could not be claimed for " + player.Name + ": " + exc.Message);
+        }
     }
 
     // ---- Loot steps (bounties) --------------------------------------------------------------------------------
@@ -782,21 +845,15 @@ public static class RavebridgeQuests
             state.Steps[quest.key] = -1;
             state.Points++;
         }
-        if (reward?.exp != null)
-        {
-            foreach (var e in reward.exp)
-            {
-                if (!Enum.TryParse<Skill>(e.Key, out var skill)) continue;
-                var stat = player.Stats.GetSkill(skill);
-                if (stat != null) stat.AddExp(e.Value, out _);
-            }
-        }
-        // the Ravebridge character's coins and items are its own; the streamer's characters keep the server's
+        // the Ravebridge character's reward is its own, never the server's (scaled the same way); a real character's the
+        // server pays
         if (player.IsLocal && reward != null)
         {
-            player.Resources.Coins += reward.coins;
+            foreach (var e in ScaledExp(quest, player.Stats)) player.Stats.GetSkill(e.Key)?.AddExp(e.Value, out _);
+            player.Resources.Coins += ScaledCoins(quest, player.Stats);
             if (reward.items != null) foreach (var i in reward.items) RavebridgeCharacter.Give(player, i.Key, i.Value);
         }
+        else if (reward != null && (reward.exp != null || reward.coins > 0)) ClaimAsync(player, quest);
         // the Ravebridge bag's, for anyone
         if (reward != null)
         {
