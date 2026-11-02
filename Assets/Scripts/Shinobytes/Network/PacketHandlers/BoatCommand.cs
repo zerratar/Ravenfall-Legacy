@@ -28,17 +28,17 @@ public class BoatCommand : ChatBotCommandHandler<string>
         else client.SendReply(gm, Localization.MSG_BOAT_LOOK, result.Boat, Wears(result));
     }
 
-    /// <summary>!boat sails 7: one part changed, on the boat at once when it is out. !boat flag clan flies the clan's logo.</summary>
+    /// <summary>!boat sails 7: one part changed, on the boat at once when it is out. !boat flag clan / !boat sails clan wear the clan's logo.</summary>
     private async System.Threading.Tasks.Task SetLook(PlayerController player, string slot, string value, GameMessage gm, GameClient client)
     {
         var none = value.Equals("none", StringComparison.OrdinalIgnoreCase) || value.Equals("off", StringComparison.OrdinalIgnoreCase);
-        var clan = slot == "flag" && value.Equals("clan", StringComparison.OrdinalIgnoreCase);
+        var clan = (slot == "flag" || slot == "sails") && value.Equals("clan", StringComparison.OrdinalIgnoreCase);
         if (!none && !clan && !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
         {
             client.SendReply(gm, Localization.MSG_BOAT_LOOK_USAGE, slot);
             return;
         }
-        var variant = none ? 0 : clan ? BoatAssembler.ClanFlag : int.Parse(value, CultureInfo.InvariantCulture);
+        var variant = none ? 0 : clan ? BoatAssembler.ClanLogo : int.Parse(value, CultureInfo.InvariantCulture);
         var result = await Game.RavenNest.Boats.SetLookAsync(player.Id, slot, variant);
         if (result == null) { client.SendReply(gm, Localization.MSG_BOAT_FAILED); return; }
         if (!result.Ok)
@@ -81,7 +81,7 @@ public class BoatCommand : ChatBotCommandHandler<string>
         string.Join(", ", (s.Owned ?? new int[0]).Select(VariantName)) + " (of " + s.Count + ")";
 
     private static string VariantName(int v) =>
-        v == 0 ? Localization.MSG_BOAT_LOOK_NONE : v == BoatAssembler.ClanFlag ? Localization.MSG_BOAT_LOOK_CLAN : v.ToString(CultureInfo.InvariantCulture);
+        v == 0 ? Localization.MSG_BOAT_LOOK_NONE : v == BoatAssembler.ClanLogo ? Localization.MSG_BOAT_LOOK_CLAN : v.ToString(CultureInfo.InvariantCulture);
 
     public override async void Handle(string arguments, GameMessage gm, GameClient client)
     {

@@ -21,10 +21,32 @@ public static class BoatAssembler
     /// <summary>Half the flag cloth's width (SM_Prop_Flag_01, 3.78 m, hanging from the middle of its top edge).</summary>
     private const float FlagHalfWidth = 1.89f;
 
-    /// <summary>The look's flag value for the clan's logo (the server's BoatLooks.ClanFlag), drawn on the plain dark flag.</summary>
-    public const int ClanFlag = 99;
-    private const int PlainDarkFlag = 6;
-    private static readonly Dictionary<Texture, Material> clanFlags = new Dictionary<Texture, Material>();
+    /// <summary>
+    /// The look's value for the clan's logo (the server's BoatLooks.ClanLogo): on the flag, the plain dark flag with the
+    /// logo; on the sails, the plain cream sails with the logo where the emblem sails have theirs.
+    /// </summary>
+    public const int ClanLogo = 99;
+    private const int PlainDarkFlag = 6, PlainSails = 1;
+    private static readonly Dictionary<(Material, Texture), Material> clanLooks = new Dictionary<(Material, Texture), Material>();
+
+    // where the logo goes, as fractions of the sheet from its top left: the flag cloth's shape (u 0.40 to 0.73, v 0.71
+    // to 0.97); the sails' four emblem places (Pirate Realm's Sail_Symbols textures, 4096 px) and the gaff sails' middle
+    private static readonly Rect[] FlagLogoAreas = { Rect.MinMaxRect(0.4014f, 1f - 0.9694f, 0.7325f, 1f - 0.7078f) };
+    private static readonly Rect[] SailLogoAreas =
+    {
+        Rect.MinMaxRect(604 / 4096f, 68 / 4096f, 1432 / 4096f, 960 / 4096f),
+        Rect.MinMaxRect(660 / 4096f, 1156 / 4096f, 1376 / 4096f, 1920 / 4096f),
+        Rect.MinMaxRect(1020 / 4096f, 2516 / 4096f, 2060 / 4096f, 3636 / 4096f),
+        Rect.MinMaxRect(3288 / 4096f, 3184 / 4096f, 3904 / 4096f, 3848 / 4096f),
+        // and the fore-and-aft (gaff) sails, which have no emblem of their own (u 0.8 to 1, v 0.5 to 1 on the sheet)
+        Rect.MinMaxRect(0.81f, 0.196f, 0.99f, 0.396f),
+    };
+    /// <summary>
+    /// How wide the logo is drawn against its height in each area, so it shows round on the sail: the gaff sails' strip
+    /// is stretched across them more than up them.
+    /// </summary>
+    private static readonly float[] SailLogoAspects = { 1f, 1f, 1f, 1f, 0.6f };
+    private static readonly float[] FlagLogoAspects = { 1f };
 
     /// <summary>Puts the look on the boat; the owner's clan gives the clan flag its logo.</summary>
     public static void Apply(GameObject boat, BoatItems.Tier tier, string tag, PlayerController owner = null)
@@ -45,14 +67,14 @@ public static class BoatAssembler
             BuildShip(model, ship, look);
             // the sails taken in and set (in port, at anchor), the furled ones painted with the rest
             BoatSails.Collect(boat, model);
-            Paint(model, parts, look);
+            Paint(model, parts, look, owner);
             Flag(boat.transform, model, parts, look["flag"], true, owner);
         }
         else
         {
             // the fishing boat's sail is the small ship's: it wears the look's sails and furls in port
             BoatSails.Collect(boat, boat.transform);
-            Paint(boat.transform, parts, look);
+            Paint(boat.transform, parts, look, owner);
             Flag(boat.transform, boat.transform, parts, look["flag"], false, owner);
         }
     }
@@ -88,9 +110,10 @@ public static class BoatAssembler
     }
 
     /// <summary>The look's sails and planks, in place of the kit's own on every renderer; the furled sails' cloth still.</summary>
-    private static void Paint(Transform model, BoatParts parts, Dictionary<string, int> look)
+    private static void Paint(Transform model, BoatParts parts, Dictionary<string, int> look, PlayerController owner)
     {
-        var sails = Pick(parts.Sails, look["sails"]);
+        var clanSails = look["sails"] == ClanLogo;
+        var sails = Pick(parts.Sails, clanSails ? PlainSails : look["sails"]);
         var wood = Pick(parts.Woods, look["wood"]);
         var furled = BoatSails.Still(sails);
         foreach (var r in model.GetComponentsInChildren<Renderer>())
@@ -106,6 +129,29 @@ public static class BoatAssembler
             }
             if (changed) r.sharedMaterials = mats;
         }
+        if (!clanSails || !sails) return;
+
+        // the clan's sails: the plain ones until the logo is there, then those with it, the furled ones still
+        var plain = sails;
+        WithClanLogo(owner, logo =>
+        {
+            if (!model) return;
+            var clan = ClanLogoMaterial(plain, logo, SailLogoAreas, SailLogoAspects, 1024);
+            if (!clan) return;
+            var plainStill = BoatSails.Still(plain);
+            var clanStill = BoatSails.Still(clan);
+            foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                var changed = false;
+                for (var i = 0; i < mats.Length; ++i)
+                {
+                    if (mats[i] == plain) { mats[i] = clan; changed = true; }
+                    else if (mats[i] == plainStill) { mats[i] = clanStill; changed = true; }
+                }
+                if (changed) r.sharedMaterials = mats;
+            }
+        });
     }
 
     private static Material Pick(Material[] variants, int variant) =>
@@ -120,7 +166,7 @@ public static class BoatAssembler
     {
         var old = boat.Find(FlagName);
         if (old) Kill(old.gameObject);
-        var clan = flag == ClanFlag;
+        var clan = flag == ClanLogo;
         var material = Pick(parts.Flags, clan ? PlainDarkFlag : flag);
         if (!material || !parts.Flag) return;
 
@@ -173,14 +219,24 @@ public static class BoatAssembler
         cloth.transform.localScale = Vector3.one * scale;
         foreach (var c in cloth.GetComponentsInChildren<Collider>()) Kill(c);
         foreach (var r in cloth.GetComponentsInChildren<Renderer>()) r.sharedMaterial = material;
-        if (clan) PutClanLogo(cloth, material, owner);
+        if (clan)
+        {
+            var plain = material;
+            WithClanLogo(owner, logo =>
+            {
+                // a late download: not for a flag taken down since (another look, the boat put away)
+                if (!cloth) return;
+                var withLogo = ClanLogoMaterial(plain, logo, FlagLogoAreas, FlagLogoAspects, 512);
+                if (withLogo) foreach (var r in cloth.GetComponentsInChildren<Renderer>()) r.sharedMaterial = withLogo;
+            });
+        }
     }
 
     /// <summary>
-    /// The clan flag: the plain dark flag at once, then with the clan's logo (as the capes get it, the owner's upload or
-    /// their Twitch picture) once it has downloaded. Plain while the owner is in no clan, or the logos are hidden.
+    /// The owner's clan logo, as the capes get it (the owner's upload or their Twitch picture), once it has downloaded;
+    /// nothing while the owner is in no clan, or the logos are hidden.
     /// </summary>
-    private static void PutClanLogo(GameObject cloth, Material plain, PlayerController owner)
+    private static void WithClanLogo(PlayerController owner, System.Action<Texture> then)
     {
         if (!owner || !owner.clanHandler || !owner.clanHandler.InClan || owner.clanHandler.ClanInfo == null) return;
         var game = owner.GameManager;
@@ -193,28 +249,24 @@ public static class BoatAssembler
             url += (url.Contains("?") ? "&v=" : "?v=") + look.LogoImageId.Value.ToString("N");
         game.PlayerLogo.GetLogo(clan.OwnerUserId, url, logo =>
         {
-            // a late download: not for a flag taken down since (another look, the boat put away)
-            if (!cloth || !logo || !logo.texture) return;
-            var material = ClanFlagMaterial(plain, logo.texture);
-            if (material) foreach (var r in cloth.GetComponentsInChildren<Renderer>()) r.sharedMaterial = material;
+            if (logo && logo.texture) then(logo.texture);
         });
     }
 
     /// <summary>
-    /// The plain flag with the logo as its symbol: Synty's fabric shader lays a symbol texture over the cloth (the skull
-    /// and fish flags' emblems), so the logo goes on a clear texture where the flag cloth's shape is on the sheet, in its
-    /// own colours, over the cloth's shading. Kept per logo.
+    /// A plain flag or plain sails with the logo as their symbol: Synty's fabric shader lays a symbol texture over the
+    /// cloth (the emblem flags' and sails' pictures), so the logo goes on a clear texture in the areas the emblems use,
+    /// in its own colours, over the cloth's shading. Kept per material and logo.
     /// </summary>
-    private static Material ClanFlagMaterial(Material plain, Texture logo)
+    private static Material ClanLogoMaterial(Material plain, Texture logo, Rect[] areas, float[] aspects, int size)
     {
-        if (clanFlags.TryGetValue(logo, out var made) && made) return made;
-        if (!plain.HasProperty("_Symbol_Texture")) return null;
-        if (clanFlags.Count > 32) clanFlags.Clear();
+        if (clanLooks.TryGetValue((plain, logo), out var made) && made) return made;
+        if (!plain || !plain.HasProperty("_Symbol_Texture")) return null;
+        if (clanLooks.Count > 32) clanLooks.Clear();
 
-        const int Size = 512;
-        var symbol = new RenderTexture(Size, Size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+        var symbol = new RenderTexture(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
         {
-            name = "Clan flag symbol",
+            name = plain.name + " clan symbol",
             useMipMap = true,
             autoGenerateMips = true,
             wrapMode = TextureWrapMode.Clamp,
@@ -224,23 +276,28 @@ public static class BoatAssembler
         RenderTexture.active = symbol;
         GL.Clear(true, true, Color.clear);
         GL.PushMatrix();
-        GL.LoadPixelMatrix(0, Size, Size, 0);
-        // the flag cloth is the sheet's top middle shape (u 0.40 to 0.73, v 0.71 to 0.97): the logo in its middle,
-        // most of its height
-        const float U0 = 0.4014f, U1 = 0.7325f, V0 = 0.7078f, V1 = 0.9694f;
-        var side = (V1 - V0) * Size * 0.72f;
-        var centre = new Vector2((U0 + U1) * 0.5f * Size, (1f - (V0 + V1) * 0.5f) * Size);
-        Graphics.DrawTexture(new Rect(centre.x - side * 0.5f, centre.y - side * 0.5f, side, side), logo);
+        GL.LoadPixelMatrix(0, size, size, 0);
+        for (var i = 0; i < areas.Length; ++i)
+        {
+            // as big as most of the area, in its middle, narrowed where the sheet is stretched across the sail
+            var area = areas[i];
+            var aspect = i < aspects.Length ? aspects[i] : 1f;
+            var height = Mathf.Min(area.width / aspect, area.height) * size * 0.85f;
+            var width = height * aspect;
+            var centre = area.center * size;
+            Graphics.DrawTexture(new Rect(centre.x - width * 0.5f, centre.y - height * 0.5f, width, height), logo);
+        }
         GL.PopMatrix();
         RenderTexture.active = previous;
 
-        var material = new Material(plain) { name = "Clan flag" };
-        // the plain flags have the overlay off; on, it is the skull flags' variant, so a build has it
+        // the clan sails keep a "ShipSails_" name, so a later look finds them as it finds any sails
+        var material = new Material(plain) { name = plain.name.StartsWith("ShipSails_") ? "ShipSails_Clan" : "Clan flag" };
+        // the plain ones have the overlay off; on, it is the emblem ones' variant, so a build has it
         material.EnableKeyword("_USE_SYMBOL_OVERLAY");
         material.SetFloat("_USE_SYMBOL_OVERLAY", 1f);
         material.SetTexture("_Symbol_Texture", symbol);
         material.SetColor("_Symbol_Color_Tint", Color.white);
-        clanFlags[logo] = material;
+        clanLooks[(plain, logo)] = material;
         return material;
     }
 

@@ -1068,7 +1068,7 @@ public static class Localization
     public static string MSG_BOAT_LOOK_NO_BOAT = Meta("boat", "look_none", "fail") + "Equip a boat first: its look is kept on the boat.";
     public static string MSG_BOAT_LOOK_NONE = "none";
     public static string MSG_BOAT_LOOK_CLAN = "clan";
-    public static string MSG_BOAT_LOOK_NOCLAN = Meta("boat", "look_noclan", "fail") + "Join a clan to fly its logo on your flag.";
+    public static string MSG_BOAT_LOOK_NOCLAN = Meta("boat", "look_noclan", "fail") + "Join a clan to wear its logo on your flag or sails.";
     public static string MSG_BOAT_BUILD_USAGE = Meta("boat", "build_usage", "info") + "Which boat? !boat build fishing boat, or !boat build sloop. !boat list says what each needs.";
     public static string MSG_BOAT_BUILT = Meta("boat", "built", "info") + "The shipwright hands over your new {boatName} for {fee} coins. Equip it with !equip and the boat's name, then set sail!";
     public static string MSG_BOAT_UNKNOWN = Meta("boat", "unknown", "info") + "The shipwright does not build a \"{query}\". She builds: {list}.";

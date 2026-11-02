@@ -561,3 +561,9 @@ has a symbol overlay (the skull flags' emblems), switched on for the copy (`_USE
 variant, so builds have it), with a clear symbol texture holding the logo where the flag cloth's shape sits on the
 sheet (u 0.40 to 0.73, v 0.71 to 0.97). Out of a clan, or with the logos hidden, it stays the plain dark flag. Old
 clients show no flag for it.
+- Clan sails too (the user's next idea): sails 99 is the plain cream sails (ShipSails_01) with the logo laid as their
+  symbol in the four places Pirate Realm's emblem sails put theirs (Sail_Symbols textures: 604,68-1432,960;
+  660,1156-1376,1920; 1020,2516-2060,3636; 3288,3184-3904,3848 of 4096) and in the middle of the gaff sails' strip
+  (u 0.81 to 0.99, v 0.6 to 0.8; drawn at 0.6 of its height across, the strip being stretched across the sail),
+  which the emblem sails leave plain. `!boat sails clan`; the designer's Sails tab has a Clan tile. The value is
+  BoatLooks.ClanLogo / BoatAssembler.ClanLogo, 99 for both parts.
