@@ -70,8 +70,13 @@ Shader "Ravenfall/Hero Telegraph"
                 }
                 // the rim pulses faster as the blow nears
                 float pulse = 0.75 + 0.25 * sin(_Time.y * (8 + 16 * _Progress));
-                float a = inside * (0.16 + 0.34 * fill) + rim * 0.85 * pulse;
-                return half4(_BaseColor.rgb * (1 + 0.5 * fill), saturate(a) * _BaseColor.a);
+                // a light fill, so the fighters inside stay visible (a full fill was a solid red slab at night); the
+                // rim and the leading edge of the fill carry the warning
+                float edge = _Line > 0.5
+                    ? (1 - smoothstep(0.0, 0.05, abs(input.uv.y - _Progress))) * (1 - smoothstep(0.9, 1.0, abs(input.uv.x * 2 - 1)))
+                    : (1 - smoothstep(0.0, 0.05, abs(length(input.uv * 2 - 1) - _Progress))) * (1 - smoothstep(0.96, 1.0, length(input.uv * 2 - 1)));
+                float a = inside * (0.08 + 0.17 * fill) + rim * 0.8 * pulse + edge * 0.6;
+                return half4(_BaseColor.rgb * (1 + 0.3 * fill), saturate(a) * _BaseColor.a);
             }
             ENDHLSL
         }

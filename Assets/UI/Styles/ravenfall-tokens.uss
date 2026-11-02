@@ -118,4 +118,13 @@
     --rf-live: rgb(95, 168, 199);
     --rf-dungeon: rgb(150, 90, 225);
     --rf-dungeon-bright: rgb(190, 140, 255);
+    /* hero mode's bosses and celebrations (the wave HUD, 2026-11-02) */
+    --rf-boss: rgb(196, 40, 36);
+    --rf-boss-bg: rgb(32, 12, 10);
+    --rf-boss-border: rgb(120, 30, 26);
+    --rf-boss-text: rgb(255, 200, 150);
+    --rf-enraged: rgb(255, 72, 40);
+    --rf-danger-text: rgb(255, 130, 110);
+    --rf-success-bright: rgb(140, 230, 180);
+    --rf-gold-bg: rgb(36, 27, 12);
 }

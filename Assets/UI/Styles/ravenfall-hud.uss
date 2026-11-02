@@ -2823,101 +2823,629 @@
     color: var(--rf-text-faint);
 }
 
-/* a wave run (HeroWaveHud): the wave at the top (below the Ravebridge bar and its tab, which it used to cover), the
-   downed count in the middle, the result after */
+/* a wave run (HeroWaveHud), redesigned 2026-11-02: one solid column at the top centre (under the Ravebridge pill):
+   the wave plate and track, then the boss, chat's boon vote, the leave warning, the downed panel; the result card
+   after the run; banners for the moments lower down, clear of the hero */
 .rf-wave {
     position: absolute;
-    top: 108px;
+    top: 100px;
     left: 0;
     right: 0;
     align-items: center;
 }
 
-.rf-wave__title {
-    font-size: 30px;
+.rf-wave .rf-wave--b,
+.rf-wave__badge-of,
+.rf-wave__count-cap,
+.rf-wave__from-text,
+.rf-wave-track__clock-text,
+.rf-wave-boons__hint,
+.rf-wave-boons__effect,
+.rf-wave-leave__sub,
+.rf-wave-down__cap,
+.rf-wave-down__label,
+.rf-wave-down__healer-text,
+.rf-wave-result__best-sub,
+.rf-wave-result__chip-text,
+.rf-wave-banner__sub {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+    -unity-font-style: normal;
+}
+
+.rf-wave__badge-cap,
+.rf-wave__badge-num,
+.rf-wave__title,
+.rf-wave__count-num,
+.rf-wave-track__info-text,
+.rf-wave-boss__name,
+.rf-wave-boss__tag-text,
+.rf-wave-boss__pct,
+.rf-wave-boons__title,
+.rf-wave-boons__cmd,
+.rf-wave-boons__name,
+.rf-wave-boons__votes,
+.rf-wave-leave__key,
+.rf-wave-leave__main,
+.rf-wave-down__title,
+.rf-wave-down__num,
+.rf-wave-down__cmd,
+.rf-wave-down__votes,
+.rf-wave-down__healer-pct,
+.rf-wave-result__title,
+.rf-wave-result__stat-num,
+.rf-wave-result__stat-cap,
+.rf-wave-result__best-main,
+.rf-wave-result__chest-name,
+.rf-wave-result__chest-what,
+.rf-wave-banner__cap,
+.rf-wave-banner__text {
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+    -unity-font-style: normal;
+}
+
+.rf-wave__spacer {
+    flex-grow: 1;
+}
+
+/* ---- the wave plate ---- */
+.rf-wave__plate {
+    flex-direction: row;
+    width: 720px;
+    height: 104px;
+    background-color: var(--rf-bg);
+    border-width: 2px;
+    border-bottom-width: 0;
+    border-color: var(--rf-border-strong);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    overflow: hidden;
+}
+
+.rf-wave__badge {
+    width: 108px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--rf-accent);
+}
+
+.rf-wave__badge-flash {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--rf-text);
+    opacity: 0;
+}
+
+.rf-wave__badge-cap {
+    font-size: 15px;
+    letter-spacing: 3px;
+    color: var(--rf-text-on-accent);
+    -unity-text-align: middle-center;
+}
+
+.rf-wave__badge-num {
+    font-size: 50px;
+    color: var(--rf-text-on-accent);
+    -unity-text-align: middle-center;
+    margin-top: -4px;
+    margin-bottom: -4px;
+}
+
+.rf-wave__badge-of {
+    font-size: 15px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-wave__badge--ready {
+    background-color: var(--rf-surface-raised);
+}
+
+.rf-wave__badge--ready .rf-wave__badge-cap {
+    color: var(--rf-accent);
+}
+
+.rf-wave__badge--ready .rf-wave__badge-num,
+.rf-wave__badge--ready .rf-wave__badge-of,
+.rf-wave__badge--boss .rf-wave__badge-cap,
+.rf-wave__badge--boss .rf-wave__badge-num,
+.rf-wave__badge--boss .rf-wave__badge-of {
     color: var(--rf-text);
-    -unity-font-style: bold;
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.85);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
 }
 
-.rf-wave__sub {
-    -unity-text-align: upper-center;
-    font-size: 19px;
-    color: rgb(255, 236, 200);
-    -unity-font-style: bold;
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.85);
+.rf-wave__badge--boss {
+    background-color: var(--rf-boss);
 }
 
-/* Chat's boon vote in the breather (HeroWaveHud): a solid box with a row per choice, the leader in gold. */
+.rf-wave__badge--held {
+    background-color: var(--rf-success);
+}
+
+.rf-wave__body {
+    flex-grow: 1;
+    justify-content: space-between;
+    padding: 12px 18px;
+}
+
+.rf-wave__head {
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.rf-wave__title-row {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.rf-wave__title-icon {
+    font-size: 22px;
+    margin-right: 10px;
+    color: var(--rf-success-bright);
+}
+
+.rf-wave__title {
+    font-size: 26px;
+    color: var(--rf-text);
+}
+
+.rf-wave__title--last {
+    color: var(--rf-accent-bright);
+}
+
+.rf-wave__title--held {
+    color: var(--rf-success-bright);
+}
+
+.rf-wave__count {
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.rf-wave__count-icon {
+    font-size: 18px;
+    color: var(--rf-text-dim);
+    margin-right: 8px;
+    margin-bottom: 5px;
+}
+
+.rf-wave__count-num {
+    font-size: 28px;
+    color: var(--rf-text);
+}
+
+.rf-wave__count-num--hot {
+    color: var(--rf-danger-text);
+}
+
+.rf-wave__count-cap {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    margin: 0 8px 5px 8px;
+}
+
+.rf-wave__bar {
+    height: 16px;
+    background-color: rgb(52, 47, 40);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.rf-wave__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background-color: var(--rf-accent);
+    border-radius: 8px;
+}
+
+.rf-wave__fill--time {
+    background-color: var(--rf-text);
+}
+
+.rf-wave__fill--late {
+    background-color: var(--rf-danger);
+}
+
+.rf-wave__from {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-wave__from-icon {
+    font-size: 16px;
+    color: var(--rf-accent);
+    margin-right: 8px;
+}
+
+.rf-wave__from-text {
+    font-size: 17px;
+    color: var(--rf-text-dim);
+}
+
+.rf-wave__from--boss .rf-wave__from-icon {
+    color: var(--rf-danger);
+}
+
+.rf-wave__from--boss .rf-wave__from-text {
+    color: var(--rf-danger-text);
+}
+
+/* ---- the wave track ---- */
+.rf-wave-track {
+    flex-direction: row;
+    align-items: center;
+    width: 720px;
+    height: 46px;
+    padding: 0 16px;
+    background-color: var(--rf-surface);
+    border-width: 2px;
+    border-color: var(--rf-border-strong);
+    border-top-color: var(--rf-border);
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-wave-track__clock {
+    width: 96px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-wave-track__clock-icon {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    margin-right: 8px;
+}
+
+.rf-wave-track__clock-text {
+    font-size: 17px;
+    color: var(--rf-text-dim);
+}
+
+.rf-wave-track__pips {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.rf-wave-pip {
+    width: 24px;
+    height: 10px;
+    border-radius: 5px;
+    background-color: var(--rf-border);
+    margin: 0 4px;
+    align-items: center;
+    justify-content: center;
+}
+
+.rf-wave-pip__icon {
+    font-size: 14px;
+    color: var(--rf-danger-text);
+    -unity-text-align: middle-center;
+}
+
+.rf-wave-pip--done {
+    background-color: var(--rf-accent);
+}
+
+.rf-wave-pip--now {
+    width: 36px;
+    height: 18px;
+    border-radius: 9px;
+    background-color: var(--rf-text);
+    border-width: 2px;
+    border-color: var(--rf-accent);
+}
+
+.rf-wave-pip--boss {
+    width: 28px;
+    height: 28px;
+    border-radius: 14px;
+    background-color: rgb(60, 20, 18);
+    border-width: 2px;
+    border-color: var(--rf-boss);
+}
+
+.rf-wave-pip--boss.rf-wave-pip--done {
+    background-color: var(--rf-accent);
+    border-color: var(--rf-accent);
+}
+
+.rf-wave-pip--boss.rf-wave-pip--done .rf-wave-pip__icon {
+    color: var(--rf-text-on-accent);
+}
+
+.rf-wave-pip--boss.rf-wave-pip--now {
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+    background-color: var(--rf-boss);
+    border-color: var(--rf-text);
+}
+
+.rf-wave-pip--boss.rf-wave-pip--now .rf-wave-pip__icon {
+    color: var(--rf-text);
+    font-size: 16px;
+}
+
+.rf-wave-pip--best {
+    border-width: 2px;
+    border-color: var(--rf-accent-bright);
+}
+
+.rf-wave-track__info {
+    min-width: 140px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.rf-wave-track__info-icon {
+    font-size: 15px;
+    color: var(--rf-accent-bright);
+    margin-right: 8px;
+}
+
+.rf-wave-track__info-text {
+    font-size: 17px;
+    color: var(--rf-accent-bright);
+}
+
+.rf-wave-track__info--boss .rf-wave-track__info-icon,
+.rf-wave-track__info--boss .rf-wave-track__info-text {
+    color: var(--rf-danger-text);
+}
+
+.rf-wave-track__info--newbest {
+    min-width: 0;
+    background-color: var(--rf-accent-bright);
+    border-radius: 4px;
+    padding: 3px 8px;
+}
+
+.rf-wave-track__info--newbest .rf-wave-track__info-icon,
+.rf-wave-track__info--newbest .rf-wave-track__info-text {
+    color: var(--rf-text-on-accent);
+}
+
+/* ---- the boss panel ---- */
+.rf-wave-boss {
+    width: 720px;
+    margin-top: 8px;
+    background-color: var(--rf-boss-bg);
+    border-width: 2px;
+    border-color: var(--rf-boss-border);
+    border-radius: 8px;
+    padding: 10px 16px 14px 16px;
+}
+
+.rf-wave-boss__head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.rf-wave-boss__icon {
+    font-size: 22px;
+    color: var(--rf-health-low);
+    margin-right: 10px;
+}
+
+.rf-wave-boss__name {
+    font-size: 24px;
+    color: var(--rf-boss-text);
+    flex-grow: 1;
+}
+
+.rf-wave-boss__tag {
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.rf-wave-boss__tag-icon {
+    font-size: 14px;
+    margin-right: 6px;
+}
+
+.rf-wave-boss__tag-text {
+    font-size: 15px;
+    letter-spacing: 1px;
+}
+
+.rf-wave-boss__tag--adds {
+    background-color: var(--rf-accent);
+}
+
+.rf-wave-boss__tag--adds .rf-wave-boss__tag-icon,
+.rf-wave-boss__tag--adds .rf-wave-boss__tag-text {
+    color: var(--rf-text-on-accent);
+}
+
+.rf-wave-boss__tag--enraged {
+    background-color: var(--rf-danger);
+}
+
+.rf-wave-boss__tag--enraged .rf-wave-boss__tag-icon,
+.rf-wave-boss__tag--enraged .rf-wave-boss__tag-text {
+    color: var(--rf-text);
+}
+
+.rf-wave-boss__pct {
+    width: 64px;
+    font-size: 20px;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+}
+
+.rf-wave-boss__bar {
+    height: 26px;
+    background-color: rgb(10, 9, 7);
+    border-width: 2px;
+    border-color: rgb(10, 9, 7);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.rf-wave-boss__ghost,
+.rf-wave-boss__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+}
+
+.rf-wave-boss__ghost {
+    background-color: var(--rf-health-ghost);
+}
+
+.rf-wave-boss__fill {
+    background-color: var(--rf-boss);
+}
+
+.rf-wave-boss__fill--enraged {
+    background-color: var(--rf-enraged);
+}
+
+.rf-wave-boss__shine {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 5px;
+    width: 100%;
+    background-color: var(--rf-health-shine);
+}
+
+.rf-wave-boss__tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: rgba(255, 244, 214, 0.75);
+}
+
+.rf-wave-boss__tick--passed {
+    background-color: rgba(255, 244, 214, 0.25);
+}
+
+/* ---- the boon vote ---- */
 .rf-wave-boons {
-    margin-top: 10px;
-    width: 560px;
-    padding: 10px 14px;
-    background-color: rgb(20, 18, 15);
+    width: 720px;
+    margin-top: 8px;
+    background-color: var(--rf-bg);
     border-width: 2px;
     border-color: var(--rf-accent-dim);
-    border-radius: 6px;
+    border-radius: 8px;
+    padding: 12px 14px 10px 14px;
+}
+
+.rf-wave-boons__head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+    padding: 0 2px;
 }
 
 .rf-wave-boons__title {
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--rf-accent);
+    flex-grow: 1;
+}
+
+.rf-wave-boons__hint {
     font-size: 15px;
     color: var(--rf-text-dim);
-    -unity-font-style: bold;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
 }
 
 .rf-wave-boons__row {
     flex-direction: row;
     align-items: center;
-    height: 30px;
+    height: 48px;
+    margin-top: 4px;
+    padding: 0 12px 0 10px;
+    background-color: var(--rf-surface);
+    border-radius: 6px;
+    border-left-width: 3px;
+    border-left-color: var(--rf-surface);
+}
+
+.rf-wave-boons__row--lead {
+    background-color: rgb(54, 40, 20);
+    border-left-color: var(--rf-accent);
 }
 
 .rf-wave-boons__cmd {
-    width: 78px;
-    font-size: 15px;
+    width: 96px;
+    font-size: 16px;
     color: var(--rf-accent);
-    -unity-font-style: bold;
+    background-color: var(--rf-surface-raised);
+    border-radius: 4px;
+    -unity-text-align: middle-center;
+    padding: 5px 0;
+}
+
+.rf-wave-boons__icon {
+    width: 34px;
+    margin-left: 10px;
+    font-size: 20px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-center;
 }
 
 .rf-wave-boons__name {
+    font-size: 19px;
+    color: var(--rf-text);
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
+.rf-wave-boons__effect {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    margin-left: 10px;
     flex-grow: 1;
     flex-shrink: 1;
-    font-size: 16px;
-    color: var(--rf-text);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .rf-wave-boons__bar {
-    width: 80px;
-    height: 8px;
-    margin-left: 10px;
-    border-radius: 4px;
+    width: 110px;
+    height: 10px;
+    border-radius: 5px;
     background-color: rgb(52, 47, 40);
     overflow: hidden;
+    margin-left: 10px;
 }
 
 .rf-wave-boons__fill {
-    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
     width: 0;
     background-color: var(--rf-text-dim);
 }
 
 .rf-wave-boons__votes {
-    width: 34px;
-    font-size: 16px;
+    width: 40px;
+    font-size: 22px;
     color: var(--rf-text-dim);
     -unity-text-align: middle-right;
-    -unity-font-style: bold;
 }
 
 .rf-wave-boons__row--lead .rf-wave-boons__name,
-.rf-wave-boons__row--lead .rf-wave-boons__votes {
+.rf-wave-boons__row--lead .rf-wave-boons__votes,
+.rf-wave-boons__row--lead .rf-wave-boons__icon {
     color: var(--rf-accent-bright);
 }
 
@@ -2925,115 +3453,507 @@
     background-color: var(--rf-accent);
 }
 
-.rf-wave-boss {
-    margin-top: 8px;
-    width: 460px;
+/* ---- the leave warning ---- */
+.rf-wave-leave {
+    flex-direction: row;
     align-items: center;
-}
-
-.rf-wave-boss__name {
-    font-size: 19px;
-    color: rgb(255, 200, 150);
-    -unity-font-style: bold;
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.85);
-}
-
-.rf-wave-boss__bar {
-    width: 100%;
-    height: 14px;
-    margin-top: 3px;
-    background-color: rgba(0, 0, 0, 0.7);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-color: var(--rf-accent);
-    border-right-color: var(--rf-accent);
-    border-top-color: var(--rf-accent);
-    border-bottom-color: var(--rf-accent);
-    border-top-left-radius: 7px;
-    border-top-right-radius: 7px;
-    border-bottom-left-radius: 7px;
-    border-bottom-right-radius: 7px;
+    width: 720px;
+    margin-top: 8px;
+    padding: 12px 16px 14px 16px;
+    background-color: rgb(46, 33, 14);
+    border-width: 2px;
+    border-color: var(--rf-accent);
+    border-radius: 8px;
     overflow: hidden;
 }
 
-.rf-wave-boss__fill {
-    height: 100%;
-    background-color: rgb(196, 40, 36);
+.rf-wave-leave--abandon {
+    background-color: rgb(46, 14, 12);
+    border-color: var(--rf-danger);
 }
 
-.rf-wave-down {
+.rf-wave-leave__key {
+    font-size: 17px;
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-text);
+    border-radius: 4px;
+    padding: 4px 10px 2px 10px;
+    border-bottom-width: 4px;
+    border-bottom-color: var(--rf-text-dim);
+    margin-right: 14px;
+}
+
+.rf-wave-leave__texts {
+    flex-grow: 1;
+}
+
+.rf-wave-leave__main {
+    font-size: 19px;
+    color: var(--rf-text);
+}
+
+.rf-wave-leave__sub {
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    margin-top: 2px;
+}
+
+.rf-wave-leave__icon {
+    font-size: 26px;
+    color: var(--rf-accent);
+    margin-left: 12px;
+}
+
+.rf-wave-leave--abandon .rf-wave-leave__icon {
+    color: var(--rf-danger);
+}
+
+.rf-wave-leave__drain {
     position: absolute;
-    /* above the hero, who lies in the middle of the screen with the damage numbers */
-    top: 13%;
+    left: 0;
+    bottom: 0;
+    height: 4px;
+    width: 100%;
+    background-color: var(--rf-accent);
+}
+
+.rf-wave-leave--abandon .rf-wave-leave__drain {
+    background-color: var(--rf-danger);
+}
+
+/* ---- downed ---- */
+.rf-wave-down {
+    width: 720px;
+    margin-top: 8px;
+    background-color: rgb(34, 10, 9);
+    border-width: 3px;
+    border-color: var(--rf-danger);
+    border-radius: 8px;
+    padding: 12px 18px 14px 18px;
+}
+
+.rf-wave-down__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-wave-down__icon {
+    font-size: 34px;
+    color: var(--rf-danger);
+    margin-right: 14px;
+}
+
+.rf-wave-down__title {
+    font-size: 46px;
+    color: var(--rf-health-low);
+    flex-grow: 1;
+}
+
+.rf-wave-down__count {
+    align-items: flex-end;
+}
+
+.rf-wave-down__num {
+    font-size: 56px;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+}
+
+.rf-wave-down__cap {
+    font-size: 15px;
+    color: var(--rf-text-dim);
+}
+
+.rf-wave-down__drain {
+    height: 8px;
+    border-radius: 4px;
+    background-color: rgb(10, 9, 7);
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.rf-wave-down__drain-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: var(--rf-danger);
+}
+
+.rf-wave-down__revive {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.rf-wave-down__label {
+    font-size: 19px;
+    color: var(--rf-text);
+    margin-right: 8px;
+}
+
+.rf-wave-down__cmd {
+    font-size: 18px;
+    color: var(--rf-text-on-accent);
+    background-color: var(--rf-accent);
+    border-radius: 4px;
+    padding: 4px 10px 3px 10px;
+}
+
+.rf-wave-down__pips {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-wave-down__pip {
+    width: 26px;
+    height: 14px;
+    border-radius: 3px;
+    background-color: var(--rf-border);
+    margin-left: 5px;
+}
+
+.rf-wave-down__pip--on {
+    background-color: var(--rf-accent);
+}
+
+.rf-wave-down__votes {
+    width: 72px;
+    font-size: 22px;
+    color: var(--rf-text);
+    -unity-text-align: middle-right;
+}
+
+.rf-wave-down__healer {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.rf-wave-down__healer-icon {
+    font-size: 20px;
+    color: var(--rf-success);
+    margin-right: 10px;
+}
+
+.rf-wave-down__healer-text {
+    font-size: 17px;
+    color: var(--rf-success-bright);
+    margin-right: 12px;
+}
+
+.rf-wave-down__healer-bar {
+    flex-grow: 1;
+    height: 10px;
+    border-radius: 5px;
+    background-color: rgb(52, 47, 40);
+    overflow: hidden;
+}
+
+.rf-wave-down__healer-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background-color: var(--rf-success);
+}
+
+.rf-wave-down__healer-pct {
+    width: 64px;
+    font-size: 18px;
+    color: var(--rf-success-bright);
+    -unity-text-align: middle-right;
+}
+
+.rf-wave-down-frame {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border-width: 10px;
+    border-color: rgb(229, 72, 77);
+}
+
+/* ---- the result card ---- */
+.rf-wave-result {
+    width: 760px;
+    background-color: var(--rf-bg);
+    border-width: 2px;
+    border-color: var(--rf-border-strong);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.rf-wave-result__header {
+    height: 92px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--rf-boss-border);
+}
+
+.rf-wave-result__icon {
+    font-size: 36px;
+    margin-right: 16px;
+    color: var(--rf-text);
+}
+
+.rf-wave-result__title {
+    font-size: 34px;
+    color: var(--rf-text);
+}
+
+.rf-wave-result__header--held {
+    background-color: var(--rf-accent);
+}
+
+.rf-wave-result__header--held .rf-wave-result__icon,
+.rf-wave-result__header--held .rf-wave-result__title {
+    color: var(--rf-text-on-accent);
+}
+
+.rf-wave-result__header--retreat {
+    background-color: var(--rf-surface-raised);
+}
+
+.rf-wave-result__header--retreat .rf-wave-result__icon,
+.rf-wave-result__header--retreat .rf-wave-result__title {
+    color: var(--rf-accent-bright);
+}
+
+.rf-wave-result__body {
+    padding: 16px 18px 20px 18px;
+}
+
+.rf-wave-result__stats {
+    flex-direction: row;
+    margin: 0 -6px;
+}
+
+.rf-wave-result__stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 0 6px;
+    background-color: var(--rf-surface);
+    border-radius: 6px;
+    padding: 10px 0;
+    align-items: center;
+}
+
+.rf-wave-result__stat-num {
+    font-size: 52px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+}
+
+.rf-wave-result__stat-cap {
+    font-size: 15px;
+    letter-spacing: 2px;
+    color: var(--rf-text-dim);
+}
+
+.rf-wave-result__best {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    margin-top: 12px;
+    border-radius: 6px;
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-wave-result__best-icon {
+    font-size: 22px;
+    margin: 0 14px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-wave-result__best-main {
+    font-size: 26px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-wave-result__best-sub {
+    font-size: 17px;
+    margin-left: 12px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-wave-result__best--plain {
+    background-color: var(--rf-surface);
+    height: 44px;
+}
+
+.rf-wave-result__best--plain .rf-wave-result__best-main {
+    font-size: 20px;
+    color: var(--rf-text-dim);
+}
+
+.rf-wave-result__chips {
+    flex-direction: row;
+    margin-top: 10px;
+}
+
+.rf-wave-result__chip {
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--rf-surface-raised);
+    border-radius: 6px;
+    padding: 9px 14px;
+    margin-right: 10px;
+}
+
+.rf-wave-result__chip-icon {
+    font-size: 18px;
+    color: var(--rf-accent);
+    margin-right: 10px;
+}
+
+.rf-wave-result__chip-text {
+    font-size: 18px;
+    color: var(--rf-text);
+}
+
+.rf-wave-result__chest {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 10px;
+    background-color: var(--rf-gold-bg);
+    border-width: 2px;
+    border-color: var(--rf-accent-dim);
+    border-radius: 6px;
+    padding: 10px 16px;
+}
+
+.rf-wave-result__chest--none {
+    background-color: var(--rf-surface);
+    border-color: var(--rf-border);
+}
+
+.rf-wave-result__chest-icon {
+    font-size: 28px;
+    color: var(--rf-accent);
+    margin-right: 14px;
+}
+
+.rf-wave-result__chest--none .rf-wave-result__chest-icon {
+    color: var(--rf-text-faint);
+}
+
+.rf-wave-result__chest-name {
+    font-size: 20px;
+    color: var(--rf-text);
+    flex-grow: 1;
+}
+
+.rf-wave-result__chest--none .rf-wave-result__chest-name {
+    font-size: 17px;
+    color: var(--rf-text-dim);
+}
+
+.rf-wave-result__chest-what {
+    font-size: 20px;
+    color: var(--rf-accent-bright);
+}
+
+.rf-wave-result__timer {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 4px;
+    width: 100%;
+    background-color: var(--rf-accent);
+}
+
+/* ---- the banners ---- */
+.rf-wave-banner {
+    position: absolute;
+    top: 470px;
     left: 0;
     right: 0;
     align-items: center;
 }
 
-.rf-wave-down__title {
-    font-size: 54px;
-    color: rgb(235, 60, 50);
-    -unity-font-style: bold;
-    -unity-text-outline-width: 2px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
-}
-
-.rf-wave-down__count {
-    font-size: 64px;
-    color: var(--rf-text);
-    -unity-font-style: bold;
-    -unity-text-outline-width: 2px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
-}
-
-.rf-wave-down__help {
-    font-size: 22px;
-    -unity-font-style: bold;
-    color: var(--rf-accent-bright);
-    -unity-text-align: middle-center;
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
-}
-
-.rf-wave-result {
-    position: absolute;
-    top: 26%;
-    left: 50%;
-    width: 520px;
-    margin-left: -260px;
-    align-items: center;
-    padding-top: 16px;
-    padding-bottom: 16px;
-    background-color: rgba(20, 18, 15, 0.88);
+.rf-wave-banner__band {
+    min-width: 1100px;
+    padding: 12px 64px 16px 64px;
+    background-color: var(--rf-bg);
     border-top-width: 3px;
-    border-top-color: var(--rf-accent);
-    border-top-left-radius: var(--rf-radius-lg);
-    border-top-right-radius: var(--rf-radius-lg);
-    border-bottom-left-radius: var(--rf-radius-lg);
-    border-bottom-right-radius: var(--rf-radius-lg);
+    border-bottom-width: 3px;
+    border-color: var(--rf-accent);
+    align-items: center;
 }
 
-.rf-wave-result__title {
-    font-size: 30px;
-    color: var(--rf-text);
-    -unity-font-style: bold;
-}
-
-.rf-wave-result__line {
-    font-size: 17px;
-    color: var(--rf-text-dim);
-    margin-top: 4px;
-}
-
-.rf-wave-result__best {
-    -unity-text-align: middle-center;
+.rf-wave-banner__cap {
     font-size: 18px;
+    letter-spacing: 5px;
+    color: var(--rf-accent);
+}
+
+.rf-wave-banner__main {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.rf-wave-banner__text {
+    font-size: 68px;
+    color: var(--rf-text);
+}
+
+.rf-wave-banner__icon {
+    font-size: 44px;
+    color: var(--rf-accent);
+    margin: 0 22px;
+}
+
+.rf-wave-banner__sub {
+    font-size: 20px;
+    color: var(--rf-text-dim);
+    margin-top: 2px;
+}
+
+.rf-wave-banner--boss .rf-wave-banner__band {
+    background-color: var(--rf-boss-bg);
+    border-color: var(--rf-danger);
+}
+
+.rf-wave-banner--boss .rf-wave-banner__cap {
+    color: var(--rf-danger-text);
+}
+
+.rf-wave-banner--boss .rf-wave-banner__text {
+    color: var(--rf-boss-text);
+}
+
+.rf-wave-banner--boss .rf-wave-banner__icon {
+    color: var(--rf-danger);
+}
+
+.rf-wave-banner--held .rf-wave-banner__band,
+.rf-wave-banner--up .rf-wave-banner__band {
+    border-color: var(--rf-success);
+}
+
+.rf-wave-banner--held .rf-wave-banner__cap,
+.rf-wave-banner--held .rf-wave-banner__icon,
+.rf-wave-banner--up .rf-wave-banner__icon,
+.rf-wave-banner--up .rf-wave-banner__text {
+    color: var(--rf-success-bright);
+}
+
+.rf-wave-banner--gold .rf-wave-banner__band {
+    background-color: var(--rf-gold-bg);
+    border-color: var(--rf-accent-bright);
+}
+
+.rf-wave-banner--gold .rf-wave-banner__cap,
+.rf-wave-banner--gold .rf-wave-banner__text,
+.rf-wave-banner--gold .rf-wave-banner__icon {
     color: var(--rf-accent-bright);
-    -unity-font-style: bold;
-    margin-top: 6px;
 }
 
 /* chat's part (HeroHelpersHud): the top helpers on the right, the feed under the wave line, the cheer bonus */
@@ -3079,7 +3999,9 @@
 
 .rf-hero-feed {
     position: absolute;
-    top: 214px;
+    /* above the skill bar: the wave column at the top grows with the boss, the vote and the warnings */
+    top: auto;
+    bottom: 230px;
     left: 0;
     right: 0;
     align-items: center;

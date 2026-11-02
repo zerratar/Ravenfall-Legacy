@@ -743,3 +743,23 @@ the boss) and a big chat was an easy experience fountain. The user left it to me
   within 25 m instead of the hero, and a wave enemy's blow on a viewer is a share of that viewer's health (60% of the
   kind's share on the hero, `WaveRun.ViewerBlow`), so a level 1 viewer and a level 999 one both feel it and healers
   and taunts matter. The telegraphed moves stay the hero's.
+
+### The wave HUD, redesigned (2026-11-02)
+
+The user found the wave HUD sad ("Wave 0 held!"). A UI designer drew a mockup, the user liked it, and it was built the
+same day (`HeroWaveHud`, the `rf-wave` styles in ravenfall-hud.uss, new `--rf-boss` and friends in the tokens):
+
+- **One column at the top:** a plate with a big wave badge (gold, red on boss waves, green HELD in the breather) beside
+  the enemies left, the fallen count, a progress bar and where the wave comes from; a track under it with the
+  countdown, pips for the waves around this one (a skull on boss waves, a trophy on the last) and "Boss in 2", "Boss
+  next" or the best so far.
+- **Panels under it** for the boss (health with a lagging ghost bar, ticks at the help call and the rage, an ENRAGED
+  pulse), the boon vote, the second-Esc warning (retreat or leave), and the hero down (seconds left, a pip per vote
+  needed, a red frame round the screen).
+- **Banners in the middle of the screen**, one at a time: HERE THEY COME, BOSS WAVE (with a shake), WAVE HELD, BOSS
+  DOWN, NEW BEST and BACK UP. The badge pops and flashes as a wave starts, the count pops on each kill.
+- **The result card** stands alone after a run: held, retreated or broke, the waves, the fallen and the time counting
+  up, a NEW BEST row, the rank and new titles, the chest (or how many waves a chest takes) and a 15 s timer bar.
+  Abandoned runs (leaving mid wave) show none, as before.
+- "Wave 0 held!" is gone: the breather before the first wave shows the gathering plate.
+- The telegraph decals got a lighter fill with a bright leading edge (a full fill was a solid red slab at night).
