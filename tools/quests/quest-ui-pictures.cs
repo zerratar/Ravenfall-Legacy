@@ -71,6 +71,8 @@ var pictures = new System.Collections.Generic.List<(string Name, bool Transparen
     ("ach-quitter", true, "A small white surrender flag on a stick planted in the ground beside a dropped, crumpled parchment."),
     ("ach-storyteller", true, "A stack of three old leather-bound story books, an open one on top with a feather quill and a lit candle beside it."),
     ("ach-wrong", true, "A colourful red and yellow jester's cap with little brass bells, resting on a rolled riddle scroll."),
+    // the website's boats page header
+    ("boats-header-wide", false, "A wide view of a cozy fantasy harbour at golden hour, wooden docks with crates, barrels and ropes, a lighthouse on a rocky point, a few moored sailing ships of different sizes with cream sails, small cottages on the hill behind, calm water with reflections."),
     // the website's quest page header
     ("quests-header-wide", false, "A wide view of a cozy fantasy village on a cliff, cottages with red roofs, a stone bridge over a river, a castle tower, mountains and pine trees behind, a big tree framing the left side, bright daylight."),
 };
