@@ -21,7 +21,13 @@ public static class BoatAssembler
     /// <summary>Half the flag cloth's width (SM_Prop_Flag_01, 3.78 m, hanging from the middle of its top edge).</summary>
     private const float FlagHalfWidth = 1.89f;
 
-    public static void Apply(GameObject boat, BoatItems.Tier tier, string tag)
+    /// <summary>The look's flag value for the clan's logo (the server's BoatLooks.ClanFlag), drawn on the plain dark flag.</summary>
+    public const int ClanFlag = 99;
+    private const int PlainDarkFlag = 6;
+    private static readonly Dictionary<Texture, Material> clanFlags = new Dictionary<Texture, Material>();
+
+    /// <summary>Puts the look on the boat; the owner's clan gives the clan flag its logo.</summary>
+    public static void Apply(GameObject boat, BoatItems.Tier tier, string tag, PlayerController owner = null)
     {
         var parts = OwnBoatPrefabs.Parts;
         if (!boat || !parts) return;
@@ -40,14 +46,14 @@ public static class BoatAssembler
             // the sails taken in and set (in port, at anchor), the furled ones painted with the rest
             BoatSails.Collect(boat, model);
             Paint(model, parts, look);
-            Flag(boat.transform, model, parts, look["flag"], true);
+            Flag(boat.transform, model, parts, look["flag"], true, owner);
         }
         else
         {
             // the fishing boat's sail is the small ship's: it wears the look's sails and furls in port
             BoatSails.Collect(boat, boat.transform);
             Paint(boat.transform, parts, look);
-            Flag(boat.transform, boat.transform, parts, look["flag"], false);
+            Flag(boat.transform, boat.transform, parts, look["flag"], false, owner);
         }
     }
 
@@ -110,11 +116,12 @@ public static class BoatAssembler
     /// stern (the rowboat). It hangs from its top edge with its leading edge at the mast or pole, streaming aft, as a
     /// real flag flies. None for flag 0.
     /// </summary>
-    private static void Flag(Transform boat, Transform model, BoatParts parts, int flag, bool ship)
+    private static void Flag(Transform boat, Transform model, BoatParts parts, int flag, bool ship, PlayerController owner)
     {
         var old = boat.Find(FlagName);
         if (old) Kill(old.gameObject);
-        var material = Pick(parts.Flags, flag);
+        var clan = flag == ClanFlag;
+        var material = Pick(parts.Flags, clan ? PlainDarkFlag : flag);
         if (!material || !parts.Flag) return;
 
         var holder = new GameObject(FlagName).transform;
@@ -166,6 +173,75 @@ public static class BoatAssembler
         cloth.transform.localScale = Vector3.one * scale;
         foreach (var c in cloth.GetComponentsInChildren<Collider>()) Kill(c);
         foreach (var r in cloth.GetComponentsInChildren<Renderer>()) r.sharedMaterial = material;
+        if (clan) PutClanLogo(cloth, material, owner);
+    }
+
+    /// <summary>
+    /// The clan flag: the plain dark flag at once, then with the clan's logo (as the capes get it, the owner's upload or
+    /// their Twitch picture) once it has downloaded. Plain while the owner is in no clan, or the logos are hidden.
+    /// </summary>
+    private static void PutClanLogo(GameObject cloth, Material plain, PlayerController owner)
+    {
+        if (!owner || !owner.clanHandler || !owner.clanHandler.InClan || owner.clanHandler.ClanInfo == null) return;
+        var game = owner.GameManager;
+        if (!game || game.LogoCensor || game.PlayerLogo == null) return;
+        var clan = owner.clanHandler.ClanInfo;
+        var url = owner.clanHandler.Logo;
+        // the logo address stays the same when the owner uploads a new one: its id makes it a new address
+        var look = game.ClanLooks?.Get(clan.Id);
+        if (look?.LogoImageId != null && !string.IsNullOrEmpty(url))
+            url += (url.Contains("?") ? "&v=" : "?v=") + look.LogoImageId.Value.ToString("N");
+        game.PlayerLogo.GetLogo(clan.OwnerUserId, url, logo =>
+        {
+            // a late download: not for a flag taken down since (another look, the boat put away)
+            if (!cloth || !logo || !logo.texture) return;
+            var material = ClanFlagMaterial(plain, logo.texture);
+            if (material) foreach (var r in cloth.GetComponentsInChildren<Renderer>()) r.sharedMaterial = material;
+        });
+    }
+
+    /// <summary>
+    /// The plain flag with the logo as its symbol: Synty's fabric shader lays a symbol texture over the cloth (the skull
+    /// and fish flags' emblems), so the logo goes on a clear texture where the flag cloth's shape is on the sheet, in its
+    /// own colours, over the cloth's shading. Kept per logo.
+    /// </summary>
+    private static Material ClanFlagMaterial(Material plain, Texture logo)
+    {
+        if (clanFlags.TryGetValue(logo, out var made) && made) return made;
+        if (!plain.HasProperty("_Symbol_Texture")) return null;
+        if (clanFlags.Count > 32) clanFlags.Clear();
+
+        const int Size = 512;
+        var symbol = new RenderTexture(Size, Size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+        {
+            name = "Clan flag symbol",
+            useMipMap = true,
+            autoGenerateMips = true,
+            wrapMode = TextureWrapMode.Clamp,
+        };
+        symbol.Create();
+        var previous = RenderTexture.active;
+        RenderTexture.active = symbol;
+        GL.Clear(true, true, Color.clear);
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, Size, Size, 0);
+        // the flag cloth is the sheet's top middle shape (u 0.40 to 0.73, v 0.71 to 0.97): the logo in its middle,
+        // most of its height
+        const float U0 = 0.4014f, U1 = 0.7325f, V0 = 0.7078f, V1 = 0.9694f;
+        var side = (V1 - V0) * Size * 0.72f;
+        var centre = new Vector2((U0 + U1) * 0.5f * Size, (1f - (V0 + V1) * 0.5f) * Size);
+        Graphics.DrawTexture(new Rect(centre.x - side * 0.5f, centre.y - side * 0.5f, side, side), logo);
+        GL.PopMatrix();
+        RenderTexture.active = previous;
+
+        var material = new Material(plain) { name = "Clan flag" };
+        // the plain flags have the overlay off; on, it is the skull flags' variant, so a build has it
+        material.EnableKeyword("_USE_SYMBOL_OVERLAY");
+        material.SetFloat("_USE_SYMBOL_OVERLAY", 1f);
+        material.SetTexture("_Symbol_Texture", symbol);
+        material.SetColor("_Symbol_Color_Tint", Color.white);
+        clanFlags[logo] = material;
+        return material;
     }
 
     private static Bounds Grow(Bounds a, Bounds b) { a.Encapsulate(b); return a; }

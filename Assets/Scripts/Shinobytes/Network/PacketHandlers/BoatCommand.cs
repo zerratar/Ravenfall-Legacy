@@ -28,16 +28,17 @@ public class BoatCommand : ChatBotCommandHandler<string>
         else client.SendReply(gm, Localization.MSG_BOAT_LOOK, result.Boat, Wears(result));
     }
 
-    /// <summary>!boat sails 7: one part changed, on the boat at once when it is out.</summary>
+    /// <summary>!boat sails 7: one part changed, on the boat at once when it is out. !boat flag clan flies the clan's logo.</summary>
     private async System.Threading.Tasks.Task SetLook(PlayerController player, string slot, string value, GameMessage gm, GameClient client)
     {
         var none = value.Equals("none", StringComparison.OrdinalIgnoreCase) || value.Equals("off", StringComparison.OrdinalIgnoreCase);
-        if (!none && !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+        var clan = slot == "flag" && value.Equals("clan", StringComparison.OrdinalIgnoreCase);
+        if (!none && !clan && !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
         {
             client.SendReply(gm, Localization.MSG_BOAT_LOOK_USAGE, slot);
             return;
         }
-        var variant = none ? 0 : int.Parse(value, CultureInfo.InvariantCulture);
+        var variant = none ? 0 : clan ? BoatAssembler.ClanFlag : int.Parse(value, CultureInfo.InvariantCulture);
         var result = await Game.RavenNest.Boats.SetLookAsync(player.Id, slot, variant);
         if (result == null) { client.SendReply(gm, Localization.MSG_BOAT_FAILED); return; }
         if (!result.Ok)
@@ -48,6 +49,7 @@ public class BoatCommand : ChatBotCommandHandler<string>
                 case "slot": client.SendReply(gm, Localization.MSG_BOAT_LOOK_SLOT, result.Boat, slot, string.Join(", ", (result.Slots ?? new BoatLookSlot[0]).Select(x => x.Slot))); return;
                 case "range": client.SendReply(gm, Localization.MSG_BOAT_LOOK_RANGE, slot, variant, s != null ? s.Count : 0); return;
                 case "locked": client.SendReply(gm, Localization.MSG_BOAT_LOOK_LOCKED, slot, variant, s != null ? Variants(s) : "-"); return;
+                case "noclan": client.SendReply(gm, Localization.MSG_BOAT_LOOK_NOCLAN); return;
             }
             LookOk(result, gm, client);
             return;
@@ -57,8 +59,8 @@ public class BoatCommand : ChatBotCommandHandler<string>
         var stack = player.Inventory.GetEquipmentBySlot(ItemSlot.Boat);
         if (stack != null && stack.InventoryItem != null) stack.InventoryItem.Tag = result.Look;
         var boat = player.ferryHandler.OwnBoat;
-        if (boat) BoatAssembler.Apply(boat.gameObject, boat.Tier, result.Look);
-        client.SendReply(gm, Localization.MSG_BOAT_LOOK_SET, result.Boat, slot, variant == 0 ? Localization.MSG_BOAT_LOOK_NONE : variant.ToString(CultureInfo.InvariantCulture));
+        if (boat) BoatAssembler.Apply(boat.gameObject, boat.Tier, result.Look, player);
+        client.SendReply(gm, Localization.MSG_BOAT_LOOK_SET, result.Boat, slot, VariantName(variant));
     }
 
     private static bool LookOk(BoatLookResult result, GameMessage gm, GameClient client)
@@ -76,7 +78,10 @@ public class BoatCommand : ChatBotCommandHandler<string>
         string.Join("; ", (result.Slots ?? new BoatLookSlot[0]).Select(s => s.Slot + " " + Variants(s)));
 
     private static string Variants(BoatLookSlot s) =>
-        string.Join(", ", (s.Owned ?? new int[0]).Select(v => v == 0 ? Localization.MSG_BOAT_LOOK_NONE : v.ToString(CultureInfo.InvariantCulture))) + " (of " + s.Count + ")";
+        string.Join(", ", (s.Owned ?? new int[0]).Select(VariantName)) + " (of " + s.Count + ")";
+
+    private static string VariantName(int v) =>
+        v == 0 ? Localization.MSG_BOAT_LOOK_NONE : v == BoatAssembler.ClanFlag ? Localization.MSG_BOAT_LOOK_CLAN : v.ToString(CultureInfo.InvariantCulture);
 
     public override async void Handle(string arguments, GameMessage gm, GameClient client)
     {

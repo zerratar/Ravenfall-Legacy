@@ -2854,6 +2854,8 @@
     "MSG_BOAT_LOOK_USAGE": "Vilken? !boat {part} 3, eller !boat {part} none.",
     "MSG_BOAT_LOOK_NO_BOAT": "Utrusta en båt först: utseendet sitter på båten.",
     "MSG_BOAT_LOOK_NONE": "ingen",
+    "MSG_BOAT_LOOK_CLAN": "klan",
+    "MSG_BOAT_LOOK_NOCLAN": "Gå med i en klan för att föra dess logga på din flagga.",
     "UI_BOAT_LOOK_EARNED": "{0} förtjänade {1} till sina båtar! (!boat looks)"
   }
 }

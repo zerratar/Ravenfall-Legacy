@@ -550,3 +550,14 @@ looked like a branch, and every flag hung centred on its pole or mast instead of
   gaff's peak was tried and looked detached), the rowboat's from Pirate Realm's straight banded post
   (SM_Prop_Flag_Post_04, standing upright) instead of the crooked one lying on its side. The website's
   rf-boat-designer.js does the same.
+
+### The clan flag (2026-11-02)
+
+The user's idea: a member of a clan can fly the clan's logo. The flag value 99 (BoatLooks.ClanFlag on the server,
+BoatAssembler.ClanFlag here) is any member's while they are in a clan; `!boat flag clan` picks it, and the website's
+Flag tab has a "Clan" tile. The game shows the plain dark flag (Flag_06) at once, then lays the logo (the one the capes
+use: the owner's upload or their Twitch picture, versioned by its image id) as the flag's symbol: Synty's fabric shader
+has a symbol overlay (the skull flags' emblems), switched on for the copy (`_USE_SYMBOL_OVERLAY`, the skull flags'
+variant, so builds have it), with a clear symbol texture holding the logo where the flag cloth's shape sits on the
+sheet (u 0.40 to 0.73, v 0.71 to 0.97). Out of a clan, or with the logos hidden, it stays the plain dark flag. Old
+clients show no flag for it.

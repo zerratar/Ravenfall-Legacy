@@ -126,7 +126,7 @@ public sealed class OwnBoat : MonoBehaviour
         boat.flat = new Vector3(at.x, SeaChart.Sea, at.z);
         boat.State = Course.Anchored;
         // its look, from the boat stack's Tag (docs/own-boats.md, "Customizing boats")
-        BoatAssembler.Apply(go, tier, BoatLook.TagOf(owner));
+        BoatAssembler.Apply(go, tier, BoatLook.TagOf(owner), owner);
         // a ship comes alongside with its sails furled and sets them as it pulls away (docs/own-boats.md, "Sails in port")
         boat.sails = go.GetComponent<BoatSails>();
         if (boat.sails) boat.sails.Snap(true);
