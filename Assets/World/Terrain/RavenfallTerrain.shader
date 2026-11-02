@@ -13,6 +13,9 @@
 //     first layer is drawn as dirt instead, above the beach line, and an eighth layer (the second map's alpha) as
 //     cobblestones. Each terrain has a material of its own, as the splat maps are the material's.
 //
+// Ambient light comes from SceneAmbient's _RavenfallSH (probe volumes are on with nothing baked, so the usual per-object
+// ambient is empty for a shader like this one).
+//
 // The variation costs one more texture read and a few noise lookups a pixel, and a painted layer a read where it is. Lit like the rest of the scene: shadows,
 // cookies (the cloud shadows), ambient occlusion, additional lights, fog.
 Shader "Ravenfall/Terrain"
@@ -75,6 +78,20 @@ Shader "Ravenfall/Terrain"
     TEXTURE2D(_Rock);       SAMPLER(sampler_Rock);
     TEXTURE2D(_Dirt);       SAMPLER(sampler_Dirt);
     TEXTURE2D(_Cobble);     SAMPLER(sampler_Cobble);
+
+    // the scene's ambient light (SceneAmbient): the pipelines use probe volumes with nothing baked, so the per-object
+    // ambient this shader would read is empty and slopes facing away from the sun went black
+    float4 _RavenfallSH[7];
+
+    half3 SceneAmbientLight(half3 normal)
+    {
+        half4 n = half4(normal, 1);
+        half3 x1 = half3(dot(_RavenfallSH[0], n), dot(_RavenfallSH[1], n), dot(_RavenfallSH[2], n));
+        half4 b = n.xyzz * n.yzzx;
+        half3 x2 = half3(dot(_RavenfallSH[3], b), dot(_RavenfallSH[4], b), dot(_RavenfallSH[5], b));
+        half3 x3 = _RavenfallSH[6].xyz * (n.x * n.x - n.y * n.y);
+        return max(half3(0, 0, 0), x1 + x2 + x3);
+    }
 
     CBUFFER_START(UnityPerMaterial)
         float4 _MainUVScale;
@@ -287,6 +304,8 @@ Shader "Ravenfall/Terrain"
                 giParams.positionSS = input.positionCS.xy;
                 giParams.isSurfaceTypeTransparent = false;
                 InitializeBakedGI(giParams, inputData.bakedGI, inputData.shadowMask);
+                // the sky's light where SceneAmbient has set it (it always has in the game)
+                if (_RavenfallSH[0].w + _RavenfallSH[1].w + _RavenfallSH[2].w > 0.0001) inputData.bakedGI = SceneAmbientLight(inputData.normalWS);
 
                 half4 color = (half4)UniversalFragmentPBR(inputData, surfaceData,
                     true, true, false, false, true, false, true);   // specular workflow (as the graph), highlights, opaque, sky reflections
