@@ -93,8 +93,8 @@ Three boats, each a step up:
 | Boat | Model | Needs | Parts | Fee | What it gives |
 |---|---|---|---|---|---|
 | Rowboat | Synty rowboat | Sailing 10 | small hull, oars | 10,000 | own trips, fishing at sea |
-| Fishing boat | Synty fishing boat | Sailing 30, Fishing 30 | hull, mast, sail, rigging | 50,000 | faster; room for a net later |
-| Sloop | Synty small ship | Sailing 60, Crafting 50 | large hull, two masts, sails, rigging | 250,000 | fastest; the base for bigger boats and skills aboard |
+| Fishing boat | Synty fishing boat | Sailing 50, Fishing 30 | hull, mast, sail, rigging | 50,000 | faster; room for a net later |
+| Sloop | Synty small ship | Sailing 100, Crafting 50 | large hull, two masts, sails, rigging | 250,000 | fastest; the base for bigger boats and skills aboard |
 
 The parts each need a Crafting level (about the boat's Sailing level) and materials players already gather: logs
 and planks for hulls, masts and oars, cloth for sails, rope for rigging. The exact items and amounts are worked out
@@ -367,8 +367,8 @@ the save carried island 10 and Fishing.
   6 Hemp), Boat Hull (30: 20 Mystwood Logs, 6 Resin, 2 Iron Bars), Mast (35: 8 Pineheart Logs, 1 Rope, 1 Iron Bar),
   Large Hull (60: 25 Ironbark Logs, 12 Resin, 4 Steel Bars). String comes from Hemp by Alchemy. Wood Plank is
   obsolete, so the hulls use logs.
-- `!boat build fishing boat` (Sailing 30, Fishing 30; a Boat Hull, a Mast, a Sailcloth, 4 Rope; 50,000 coins) and
-  `!boat build sloop` (Sailing 60, Crafting 50; a Large Hull, 2 Masts, 3 Sailcloth, 8 Rope; 250,000 coins), only on
+- `!boat build fishing boat` (Sailing 50, Fishing 30; a Boat Hull, a Mast, a Sailcloth, 4 Rope; 50,000 coins) and
+  `!boat build sloop` (Sailing 100, Crafting 50; a Large Hull, 2 Masts, 3 Sailcloth, 8 Rope; 250,000 coins), only on
   Away where the shipwright works. The boat is given before the parts and coins are taken. Crafted boats are not
   soulbound (decided 2026-10-26), so they can be traded and sold on the marketplace.
 - `!boat` says which boat is equipped and what it is doing (at the dock with its speed, sailing, roaming, at anchor),
@@ -479,8 +479,8 @@ not rolled in a test.
 
 - Server: the Brigantine and the Galleon (items, ItemType.Boat), their parts Keel (Crafting 120: 40 ebonshade logs,
   16 resin, 8 steel bars), Canvas (Crafting 140: 3 sailcloth, 2 rope) and Iron Fittings (Crafting 160: 6 iron, 4
-  steel, 2 mithril bars); the shipwright's blueprints (Brigantine: Sailing 100, Crafting 120, 1,000,000 coins, a keel,
-  2 masts, 4 canvas, 2 iron fittings, 12 rope; Galleon: Sailing 200, Crafting 200, 5,000,000 coins, 2 keels, a large
+  steel, 2 mithril bars); the shipwright's blueprints (Brigantine: Sailing 300, Crafting 120, 1,000,000 coins, a keel,
+  2 masts, 4 canvas, 2 iron fittings, 12 rope; Galleon: Sailing 500, Crafting 200, 5,000,000 coins, 2 keels, a large
   hull, 3 masts, 8 canvas, 6 iron fittings, 24 rope); seats 6 and 10; their look slots (one hull each, as their
   rigging is made for it). Painted icons for the five, and a new one for the Sloop (it is a ship now).
 - Game: BoatItems.Tier.Brigantine and Galleon, speeds 24 to 60 and 28 to 70, seats, sizes and turn rates; BoatParts
@@ -572,3 +572,12 @@ clients show no flag for it.
   (FlagColor, SailColor) and sent with its ClanLook. The game tints the copy's `_Color_Tint` (and `_SSSTint`) at once,
   before the logo arrives; the website tints an uncoloured cloth the export writes for it (boats.json `clanCloth`, with
   the plain colours as `flagTint` / `sailsTint`). A boat already out takes new colours the next time it is launched.
+
+### Sailing levels raised (2026-11-02)
+
+The user: Sailing levels up by itself on a long `!sail`, and with the global exp multipliers players would reach the
+old 30, 60, 100 and 200 too soon, so the Galleon should feel like a grind. The shipwright now asks Sailing 50 for the
+Fishing Boat, 100 for the Sloop, 300 for the Brigantine and 500 for the Galleon (BoatManager's blueprints; the
+Crafting levels, parts and fees are as they were). The level is asked when building; a built boat is soulbound, as the
+rowboat is, so it can go to the player's other characters (the user: give it to your new character) but not be traded,
+gifted or sold to anyone else.
