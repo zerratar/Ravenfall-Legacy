@@ -5,29 +5,41 @@ using UnityEngine.UIElements;
 namespace Shinobytes.UI
 {
     /// <summary>
-    /// Ravebridge on screen (docs/ravebridge-design.md): while the event runs, a drawer at the top of the screen with who
-    /// is there and how long it has been open, and the streamer's buttons: Play (or Stop while playing), Hero mode while
-    /// playing, Stay for a forced event that would close by itself, and End. A few seconds after the mouse leaves it the
-    /// drawer slides up out of the way, leaving a small tab at the top edge (who is there, the time, a quest's notice);
-    /// the tab brings it down again. Play opens
-    /// the "Who plays?" window, in the quest window's look: the streamer's own characters in the stream (where each is,
-    /// with Play and Send home or Bring along) and the Ravebridge character (Play, Export, a new one, Import), and the
-    /// step that makes one, with Back. Esc closes the window, leaves hero mode, then stops playing.
+    /// Ravebridge on screen (docs/ravebridge-design.md): while the event runs, a panel in the top left corner with who is
+    /// played, how long the event has been open and who is there, and the streamer's big buttons: Play (who plays), or
+    /// while playing Enter (or Leave) hero mode and Stop playing, and End Ravebridge; Stay for a forced event that would
+    /// close by itself and New look for the Ravebridge character. It shows in full when the event opens and when play
+    /// starts, then folds into a slim strip (the time and a Hero mode or Play button) once the character walks off or
+    /// the mouse has been away from it a few seconds, so it never sits over the game (the user's ask, playtest 13); a
+    /// click on the strip opens it again. Under it the keys for playing by hand or hero mode, for a while after play
+    /// starts and while the keyboard button is on. Play opens the "Who plays?" window, in the quest window's look: the
+    /// streamer's own characters in the stream (where each is, with Play and Send home or Bring along) and the Ravebridge
+    /// character (Play, Export, a new one, Import), and the step that makes one, with Back. Esc closes the window.
     /// </summary>
     public class RavebridgeView : MonoBehaviour
     {
         private VisualElement wrap;
-        private VisualElement bar;
-        private Label text;
-        private Label meta;
-        private Button stay, play, end, look, hero;
-        private VisualElement drawer;
-        private VisualElement tab;
-        private Label tabText, tabChevron;
+        private VisualElement panel;
+        private VisualElement body;
+        private Label title, info, playingLabel, meta;
+        private Button stripAction, primary, stop, end, stay, look, help, chevron;
+        private VisualElement extras;
+        private VisualElement keys;
         private bool collapsed;
         private bool hovered;
         private float hideAt;
-        private const float HideAfter = 5f;
+        private const float HideAfter = 6f;
+
+        // the keys show for a while after play starts (or hero mode does), and while the keyboard button is on
+        private const float KeysFor = 20f;
+        private float keysUntil;
+        private bool keysPinned;
+        private string keysShown;
+
+        // the character walking off folds the panel
+        private PlayerController watched;
+        private Vector3 watchedFrom;
+        private bool wasPlaying, wasHero;
 
         private VisualElement window;
         private Label windowTitle;
@@ -89,70 +101,71 @@ namespace Shinobytes.UI
             window?.RemoveFromHierarchy();
 
             wrap = new VisualElement { name = "ravebridge", pickingMode = PickingMode.Ignore };
-            wrap.AddToClassList("rf-rb");
-            drawer = new VisualElement { pickingMode = PickingMode.Ignore };
-            drawer.AddToClassList("rf-rb-drawer");
-            bar = new VisualElement { name = "ravebridge-bar" };
-            bar.AddToClassList("rf-rb-bar");
-            var icon = new Label("") { pickingMode = PickingMode.Ignore };
+            wrap.AddToClassList("rf-rbp-wrap");
+            panel = new VisualElement { name = "ravebridge-panel" };
+            panel.AddToClassList("rf-rbp");
+
+            // the head: always there; folded, the strip (the time, Hero mode or Play, the chevron)
+            var head = new VisualElement();
+            head.AddToClassList("rf-rbp__head");
+            var icon = new Label("\uf6d9") { pickingMode = PickingMode.Ignore };
             icon.AddToClassList("rf-icon");
-            icon.AddToClassList("rf-rb-bar__icon");
-            var body = new VisualElement { pickingMode = PickingMode.Ignore };
-            body.AddToClassList("rf-rb-bar__body");
-            text = new Label { pickingMode = PickingMode.Ignore };
-            text.AddToClassList("rf-rb-bar__text");
+            icon.AddToClassList("rf-rbp__icon");
+            title = new Label(Localization.UI_RAVEBRIDGE_TITLE) { pickingMode = PickingMode.Ignore };
+            title.AddToClassList("rf-rbp__title");
+            info = new Label { pickingMode = PickingMode.Ignore };
+            info.AddToClassList("rf-rbp__strip-info");
+            stripAction = Big(string.Empty, "\uf71d", "rf-rbp__strip-action", PrimaryPressed);
+            help = IconButton("\uf11c", () => { keysPinned = !keysPinned; if (!keysPinned) keysUntil = 0f; Redraw(); });
+            help.tooltip = Localization.UI_RAVEBRIDGE_KEYS_TIP;
+            chevron = IconButton("\uf077", () => SetCollapsed(!collapsed));
+            head.Add(icon);
+            head.Add(title);
+            head.Add(info);
+            head.Add(stripAction);
+            head.Add(help);
+            head.Add(chevron);
+            // a click on the folded strip (not on its buttons) opens it
+            head.RegisterCallback<UnityEngine.UIElements.ClickEvent>(e => { if (collapsed && !(e.target is Button)) SetCollapsed(false); });
+
+            // the rest: who is played, the event, the big buttons
+            body = new VisualElement();
+            body.AddToClassList("rf-rbp__body");
+            playingLabel = new Label { pickingMode = PickingMode.Ignore };
+            playingLabel.AddToClassList("rf-rbp__playing");
             meta = new Label { pickingMode = PickingMode.Ignore };
-            meta.AddToClassList("rf-rb-bar__meta");
-            body.Add(text);
-            body.Add(meta);
-            var buttons = new VisualElement();
-            buttons.AddToClassList("rf-rb-buttons");
-            stay = BarButton(Localization.UI_RAVEBRIDGE_STAY, true, () => { var rb = RavebridgeManager.Instance; if (rb) rb.Attended = true; Redraw(); });
-            hero = BarButton(Localization.UI_HERO_ENTER, true, () =>
-            {
-                if (HeroController.Active) LeaveHeroMode();
-                else if (RavebridgePlay.Playing) HeroController.Begin(RavebridgePlay.Playing);
-                Redraw();
-            });
-            look = BarButton(Localization.UI_RAVEBRIDGE_NEW_LOOK, false, () =>
+            meta.AddToClassList("rf-rbp__meta");
+            primary = Big(string.Empty, "\uf71d", "rf-rbp__big--primary", PrimaryPressed);
+            stop = Big(Localization.UI_RAVEBRIDGE_STOP_PLAYING, "\uf04d", "rf-rbp__big--plain", () => { RavebridgePlay.Stop(); Redraw(); });
+            end = Big(Localization.UI_RAVEBRIDGE_END_EVENT, "\uf52b", "rf-rbp__big--danger", () => { CloseWindow(); var rb = RavebridgeManager.Instance; if (rb) rb.End(); });
+            extras = new VisualElement();
+            extras.AddToClassList("rf-rbp__extras");
+            stay = Small(Localization.UI_RAVEBRIDGE_STAY, () => { var rb = RavebridgeManager.Instance; if (rb) rb.Attended = true; Redraw(); });
+            look = Small(Localization.UI_RAVEBRIDGE_NEW_LOOK, () =>
             {
                 var p = RavebridgePlay.Playing;
                 if (p && p.IsLocal) p.Appearance.SetAppearance(RavenNest.SDK.BotPlayerGenerator.GenerateRandomSyntyAppearance(), () => RavebridgeCharacter.Save(), false);
             });
-            play = BarButton(Localization.UI_RAVEBRIDGE_PLAY, true, PlayPressed);
-            end = BarButton(Localization.UI_RAVEBRIDGE_END, false, () => { CloseWindow(); var rb = RavebridgeManager.Instance; if (rb) rb.End(); });
-            buttons.Add(stay);
-            buttons.Add(hero);
-            buttons.Add(look);
-            buttons.Add(play);
-            buttons.Add(end);
-            bar.Add(icon);
-            bar.Add(body);
-            bar.Add(buttons);
+            extras.Add(stay);
+            extras.Add(look);
+            body.Add(playingLabel);
+            body.Add(meta);
+            body.Add(primary);
+            body.Add(stop);
+            body.Add(end);
+            body.Add(extras);
 
-            // the tab under the bar: the bar slides up behind the top edge and leaves it showing
-            tab = new VisualElement { name = "ravebridge-tab", pickingMode = PickingMode.Position };
-            tab.AddToClassList("rf-rb-tab");
-            var tabIcon = new Label("\uf6d9") { pickingMode = PickingMode.Ignore };
-            tabIcon.AddToClassList("rf-icon");
-            tabIcon.AddToClassList("rf-rb-tab__icon");
-            tabText = new Label { pickingMode = PickingMode.Ignore };
-            tabText.AddToClassList("rf-rb-tab__text");
-            tabChevron = new Label { pickingMode = PickingMode.Ignore };
-            tabChevron.AddToClassList("rf-icon");
-            tabChevron.AddToClassList("rf-rb-tab__chevron");
-            tab.Add(tabIcon);
-            tab.Add(tabText);
-            tab.Add(tabChevron);
-            tab.RegisterCallback<UnityEngine.UIElements.ClickEvent>(_ => SetCollapsed(!collapsed));
+            panel.Add(head);
+            panel.Add(body);
+            panel.RegisterCallback<PointerEnterEvent>(_ => hovered = true);
+            panel.RegisterCallback<PointerLeaveEvent>(_ => { hovered = false; hideAt = Time.unscaledTime + HideAfter; });
 
-            drawer.Add(bar);
-            drawer.Add(tab);
-            drawer.RegisterCallback<PointerEnterEvent>(_ => hovered = true);
-            drawer.RegisterCallback<PointerLeaveEvent>(_ => { hovered = false; hideAt = Time.unscaledTime + HideAfter; });
-            bar.RegisterCallback<GeometryChangedEvent>(_ => Slide());
-            tab.RegisterCallback<GeometryChangedEvent>(_ => MakeRoom());
-            wrap.Add(drawer);
+            keys = new VisualElement { pickingMode = PickingMode.Ignore };
+            keys.AddToClassList("rf-rbp-keys");
+            keysShown = null;
+
+            wrap.Add(panel);
+            wrap.Add(keys);
             layer.Add(wrap);
             collapsed = false;
             hideAt = Time.unscaledTime + HideAfter + 3f;
@@ -184,60 +197,59 @@ namespace Shinobytes.UI
             Redraw();
         }
 
-        /// <summary>The drawer up (only the tab showing) or down.</summary>
+        /// <summary>Folded into the strip, or open in full.</summary>
         private void SetCollapsed(bool value)
         {
             collapsed = value;
             if (!collapsed) hideAt = Time.unscaledTime + HideAfter;
-            Slide();
             Redraw();
         }
 
-        private void Slide()
+        /// <summary>The big button: Play while nobody is played, else into hero mode or out of it.</summary>
+        private void PrimaryPressed()
         {
-            if (drawer == null || bar == null) return;
-            var height = bar.resolvedStyle.height;
-            if (float.IsNaN(height)) height = 0f;
-            drawer.style.translate = new Translate(0, collapsed ? -(height + 8f) : 0f);
-            MakeRoom();
-            if (tabChevron != null) tabChevron.text = collapsed ? "\uf078" : "\uf077";
+            var playing = RavebridgePlay.Playing;
+            if (!playing) { PlayPressed(); return; }
+            if (HeroController.Active) LeaveHeroMode();
+            else HeroController.Begin(playing);
+            Redraw();
         }
 
-        /// <summary>
-        /// The top column (the village bar, the stream quest) steps down under the drawer: under its tab while it is up,
-        /// under the bar and the tab while it is down. Measured, since the bar grows when its text takes two lines; the
-        /// classes stay for anything else that makes room (as hero mode's).
-        /// </summary>
-        private void MakeRoom()
+        private static Button Big(string label, string glyph, string className, System.Action clicked)
         {
-            var shown = wrap != null && wrap.style.display == DisplayStyle.Flex;
-            var room = -1f;
-            if (shown && drawer != null && bar != null && tab != null)
-            {
-                var top = drawer.layout.y;
-                var barHeight = bar.layout.height;
-                var tabHeight = tab.layout.height;
-                if (!float.IsNaN(top) && !float.IsNaN(barHeight) && !float.IsNaN(tabHeight) && barHeight > 0f)
-                    room = collapsed ? top + tabHeight + RoomGap - 8f : top + barHeight + tabHeight + RoomGap;
-            }
-            foreach (var doc in FindObjectsByType<UIDocument>())
-            {
-                var r = doc.rootVisualElement;
-                if (r == null) continue;
-                r.EnableInClassList("rf-rb-open", shown && collapsed);
-                r.EnableInClassList("rf-rb-open-full", shown && !collapsed);
-                foreach (var column in r.Query<VisualElement>(className: "rf-top-column").ToList())
-                    column.style.top = room >= 0f ? new StyleLength(room) : new StyleLength(StyleKeyword.Null);
-            }
+            var button = new Button(clicked);
+            button.AddToClassList("rf-rbp__big");
+            button.AddToClassList(className);
+            var icon = new Label(glyph) { pickingMode = PickingMode.Ignore };
+            icon.AddToClassList("rf-icon");
+            icon.AddToClassList("rf-rbp__big-icon");
+            var text = new Label(label) { pickingMode = PickingMode.Ignore };
+            text.AddToClassList("rf-rbp__big-text");
+            button.Add(icon);
+            button.Add(text);
+            return button;
         }
 
-        private const float RoomGap = 10f;
+        private static void SetBig(Button button, string label, string glyph)
+        {
+            var labels = button.Query<Label>().ToList();
+            if (labels.Count < 2) return;
+            labels[0].text = glyph;
+            labels[1].text = label;
+        }
 
-        private static Button BarButton(string label, bool primary, System.Action clicked)
+        private static Button Small(string label, System.Action clicked)
         {
             var button = new Button(clicked) { text = label };
-            button.AddToClassList("rf-rb-button");
-            button.EnableInClassList("rf-rb-button--primary", primary);
+            button.AddToClassList("rf-rbp__small");
+            return button;
+        }
+
+        private static Button IconButton(string glyph, System.Action clicked)
+        {
+            var button = new Button(clicked) { text = glyph };
+            button.AddToClassList("rf-icon");
+            button.AddToClassList("rf-rbp__icon-button");
             return button;
         }
 
@@ -411,7 +423,7 @@ namespace Shinobytes.UI
                 var rb = RavebridgeManager.Instance;
                 if (rb && rb.Active && !RavebridgePlay.Playing && !WindowOpen) OpenWindow();
             }
-            // Esc closes the window; leaving hero mode waits for LateUpdate (see there)
+            // Esc closes the window (it no longer leaves hero mode or stops playing: the game menu opens)
             if (Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping && WindowOpen) { EscapeKey.Claim(); CloseWindow(); }
             if (Time.unscaledTime >= nextSecond)
             {
@@ -420,7 +432,8 @@ namespace Shinobytes.UI
                 if (WindowOpen && !creating && RavebridgePlay.Playing) CloseWindow();
                 Redraw();
             }
-            // the drawer goes up by itself once the mouse has left it a while (never with the window open)
+            Watch();
+            // the panel folds by itself once the mouse has left it a while (never with the window open)
             if (!collapsed && !hovered && !WindowOpen && Time.unscaledTime >= hideAt && wrap.style.display == DisplayStyle.Flex) SetCollapsed(true);
         }
 
@@ -442,34 +455,101 @@ namespace Shinobytes.UI
             HeroController.End();
         }
 
+        /// <summary>
+        /// Play starting (or hero mode) opens the panel and shows the keys a while; the character walking a few steps
+        /// from where that happened folds it again, they are on their way.
+        /// </summary>
+        private void Watch()
+        {
+            var playing = RavebridgePlay.Playing;
+            var hero = HeroController.Active;
+            if ((playing && !wasPlaying) || (hero != wasHero && playing))
+            {
+                keysUntil = Time.unscaledTime + KeysFor;
+                watched = playing;
+                watchedFrom = playing.Position;
+                if (collapsed) SetCollapsed(false);
+                else hideAt = Time.unscaledTime + HideAfter;
+                Redraw();
+            }
+            wasPlaying = playing;
+            wasHero = hero;
+            if (watched && playing == watched && !collapsed && !hovered && !WindowOpen && (watched.Position - watchedFrom).sqrMagnitude > 4f * 4f)
+            {
+                watched = null;
+                SetCollapsed(true);
+            }
+            if (keysUntil > 0f && Time.unscaledTime >= keysUntil) { keysUntil = 0f; Redraw(); }
+        }
+
+        /// <summary>The key chips, from "WASD=walk|E=talk": the key and what it does.</summary>
+        private void DrawKeys(string list)
+        {
+            if (list == keysShown) return;
+            keysShown = list;
+            keys.Clear();
+            if (string.IsNullOrEmpty(list)) return;
+            foreach (var pair in list.Split('|'))
+            {
+                var at = pair.IndexOf('=');
+                if (at <= 0) continue;
+                var chip = new VisualElement { pickingMode = PickingMode.Ignore };
+                chip.AddToClassList("rf-rbp-key");
+                var key = new Label(pair.Substring(0, at)) { pickingMode = PickingMode.Ignore };
+                key.AddToClassList("rf-rbp-key__key");
+                var what = new Label(pair.Substring(at + 1)) { pickingMode = PickingMode.Ignore };
+                what.AddToClassList("rf-rbp-key__text");
+                chip.Add(key);
+                chip.Add(what);
+                keys.Add(chip);
+            }
+        }
+
         private void Redraw()
         {
             if (!bound) return;
             var rb = RavebridgeManager.Instance;
             var shown = rb && rb.Active && !(VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive);
-            var was = wrap.style.display == DisplayStyle.Flex;
             wrap.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
-            if (was != shown) MakeRoom();
             if (!shown) { CloseWindow(); return; }
 
             var playing = RavebridgePlay.Playing;
-            text.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_BAR, rb.PlayerCount, Clock(Time.time - rb.StartedAt));
+            var hero = HeroController.Active;
+            var clock = Clock(Time.time - rb.StartedAt);
             var left = rb.SecondsLeft;
-            meta.text = playing ? (HeroController.Active ? Localization.UI_HERO_CONTROLS : string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_PLAYING, playing.Name) + " " + Localization.UI_RAVEBRIDGE_CONTROLS)
-                : left >= 0f ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_BAR_FORCED, Clock(left))
-                : (rb.Forced && !string.IsNullOrEmpty(rb.ForcedReason) ? rb.ForcedReason : string.Empty);
             if (!string.IsNullOrEmpty(notice) && Time.unscaledTime > noticeUntil) notice = null;
-            if (!string.IsNullOrEmpty(notice)) meta.text = notice;
-            meta.style.display = string.IsNullOrEmpty(meta.text) ? DisplayStyle.None : DisplayStyle.Flex;
-            tabText.text = !string.IsNullOrEmpty(notice) && collapsed ? notice : text.text;
-            tabText.style.display = collapsed ? DisplayStyle.Flex : DisplayStyle.None;
 
+            panel.EnableInClassList("rf-rbp--collapsed", collapsed);
+            chevron.text = collapsed ? "\uf078" : "\uf077";
+            body.style.display = collapsed ? DisplayStyle.None : DisplayStyle.Flex;
+
+            // folded: the time (or a quest's notice) and the one button that matters
+            info.text = collapsed && !string.IsNullOrEmpty(notice) ? notice : clock;
+            info.style.display = collapsed ? DisplayStyle.Flex : DisplayStyle.None;
+            var action = !playing ? Localization.UI_RAVEBRIDGE_PLAY : hero ? Localization.UI_HERO_EXIT : Localization.UI_HERO_ENTER;
+            var glyph = !playing ? "\uf04b" : hero ? "\uf2f5" : "\uf71d";
+            SetBig(stripAction, action, glyph);
+            stripAction.style.display = collapsed ? DisplayStyle.Flex : DisplayStyle.None;
+
+            playingLabel.text = playing ? string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_PLAYING_NAME, playing.Name) : Localization.UI_RAVEBRIDGE_NOBODY;
+            var line = string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_INFO, clock, rb.PlayerCount);
+            if (left >= 0f) line += "\n" + string.Format(CultureInfo.InvariantCulture, Localization.UI_RAVEBRIDGE_BAR_FORCED, Clock(left));
+            else if (rb.Forced && !string.IsNullOrEmpty(rb.ForcedReason)) line += "\n" + rb.ForcedReason;
+            if (!string.IsNullOrEmpty(notice)) line += "\n" + notice;
+            meta.text = line;
+
+            SetBig(primary, !playing ? Localization.UI_RAVEBRIDGE_PLAY_WHO : hero ? Localization.UI_HERO_EXIT : Localization.UI_HERO_ENTER_BIG, glyph);
+            stop.style.display = playing ? DisplayStyle.Flex : DisplayStyle.None;
             stay.style.display = left >= 0f ? DisplayStyle.Flex : DisplayStyle.None;
-            hero.style.display = playing ? DisplayStyle.Flex : DisplayStyle.None;
-            hero.text = HeroController.Active ? Localization.UI_HERO_EXIT : Localization.UI_HERO_ENTER;
-            look.style.display = playing && playing.IsLocal && !HeroController.Active ? DisplayStyle.Flex : DisplayStyle.None;
-            play.text = playing ? Localization.UI_RAVEBRIDGE_STOP : Localization.UI_RAVEBRIDGE_PLAY;
-            play.EnableInClassList("rf-rb-button--primary", !playing);
+            look.style.display = playing && playing.IsLocal && !hero ? DisplayStyle.Flex : DisplayStyle.None;
+            extras.style.display = left >= 0f || (playing && playing.IsLocal && !hero) ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // the keys while playing: for a while after it starts, or while the keyboard button is on
+            var showKeys = playing && (keysPinned || keysUntil > 0f);
+            help.style.display = playing ? DisplayStyle.Flex : DisplayStyle.None;
+            help.EnableInClassList("rf-rbp__icon-button--on", showKeys);
+            DrawKeys(showKeys ? (hero ? Localization.UI_HERO_KEYS : Localization.UI_RAVEBRIDGE_KEYS) : null);
+            keys.style.display = showKeys ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private static string Clock(float seconds)

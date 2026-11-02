@@ -838,15 +838,6 @@
     transition-duration: 0.25s;
 }
 
-/* under Ravebridge's drawer (RavebridgeView): below its tab, or below the whole drawer while it is down */
-.rf-rb-open .rf-top-column {
-    top: 44px;
-}
-
-.rf-rb-open-full .rf-top-column {
-    top: 108px;
-}
-
 /* ---- XP boost pill -------------------------------------------------------------- */
 
 .rf-boost {
@@ -4083,187 +4074,266 @@
 }
 
 /* ---- Ravebridge -----------------------------------------------------------------------------------------
-   RavebridgeView: while the event runs, a bar of its own a little down the screen (clear of the top column and the
-   event banners): who is there, how long it has been open, and the streamer's buttons (Stay, Hero mode, New look,
-   Play, End). Under it the panels to pick who to play and to make a Ravebridge character. */
+   RavebridgeView: while the event runs, a panel in the top left corner (docs/mockups: the user's pick, playtest 13):
+   the title, who is played, the time and who is there, and big buttons (Play a character, or Enter hero mode and Stop
+   playing; End Ravebridge). It folds into a slim strip (rf-rbp--collapsed) once the character walks off, so it never
+   sits over the game. Under it the key chips for a while after play starts. */
 
-.rf-rb {
+.rf-rbp-wrap {
     position: absolute;
-    /* a drawer at the top (Ravebridge is the event, so no other event's banner is there): it slides up behind the
-       edge and leaves its tab showing */
-    top: 0;
-    left: 0;
-    right: 0;
-    align-items: center;
+    top: 14px;
+    left: 14px;
+    align-items: flex-start;
 }
 
-.rf-rb-drawer {
-    align-items: center;
-    padding-top: 8px;
-    transition-property: translate;
-    transition-duration: 0.25s;
-    transition-timing-function: ease-out-cubic;
+.rf-rbp {
+    width: 360px;
+    padding: 14px 16px 16px 16px;
+    background-color: var(--rf-bg);
+    border-width: 2px;
+    border-top-width: 3px;
+    border-color: var(--rf-accent-dim);
+    border-top-color: var(--rf-accent);
+    border-radius: 10px;
 }
 
-.rf-rb-drawer > .rf-rb-bar {
-    border-top-left-radius: var(--rf-radius-lg);
-    border-top-right-radius: var(--rf-radius-lg);
+.rf-rbp--collapsed {
+    width: auto;
+    padding: 6px 8px 6px 12px;
 }
 
-.rf-rb-tab {
+.rf-rbp__head {
     flex-direction: row;
     align-items: center;
-    max-width: 640px;
-    margin-top: -1px;
-    padding-left: 12px;
-    padding-right: 10px;
-    padding-top: 3px;
-    padding-bottom: 4px;
-    background-color: rgba(20, 18, 15, 0.92);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-bottom-width: 1px;
-    border-left-color: var(--rf-accent);
-    border-right-color: var(--rf-accent);
-    border-bottom-color: var(--rf-accent);
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
 }
 
-.rf-rb-tab:hover {
-    background-color: rgba(44, 38, 28, 0.95);
+.rf-rbp__icon {
+    font-size: 22px;
+    color: var(--rf-accent);
+    margin-right: 10px;
 }
 
-.rf-rb-tab__icon {
-    font-size: 12px;
-    color: var(--rf-accent-bright);
-    margin-right: 6px;
+.rf-rbp--collapsed .rf-rbp__icon {
+    font-size: 16px;
+    margin-right: 8px;
 }
 
-.rf-rb-tab__text {
-    font-size: 13px;
+.rf-rbp__title {
+    flex-grow: 1;
+    font-size: 24px;
     color: var(--rf-text);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-rbp--collapsed .rf-rbp__title {
+    flex-grow: 0;
+    font-size: 16px;
+}
+
+.rf-rbp__strip-info {
+    margin-left: 10px;
+    margin-right: 12px;
+    max-width: 280px;
+    font-size: 15px;
+    color: var(--rf-text-dim);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    flex-shrink: 1;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
 }
 
-.rf-rb-tab__chevron {
-    font-size: 11px;
-    color: var(--rf-text-dim);
-    margin-left: 8px;
-}
-
-.rf-rb-bar {
-    flex-direction: row;
-    align-items: center;
-    min-width: 520px;
-    max-width: 900px;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    background-color: rgba(20, 18, 15, 0.92);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-color: var(--rf-accent);
-    border-right-color: var(--rf-accent);
-    border-top-color: var(--rf-accent);
-    border-bottom-color: var(--rf-accent);
-    border-top-left-radius: var(--rf-radius-lg);
-    border-top-right-radius: var(--rf-radius-lg);
-    border-bottom-left-radius: var(--rf-radius-lg);
-    border-bottom-right-radius: var(--rf-radius-lg);
-}
-
-.rf-rb-bar .rf-rb-bar__icon {
-    width: 32px;
-    height: 32px;
-    margin-right: var(--rf-space-3);
-    font-size: 15px;
-    -unity-text-align: middle-center;
-    color: var(--rf-text-on-accent);
-    background-color: var(--rf-accent);
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-}
-
-.rf-rb-bar__body {
-    flex-grow: 1;
-    flex-shrink: 1;
-    margin-right: var(--rf-space-3);
-}
-
-.rf-rb-bar .rf-rb-bar__text {
-    font-size: 18px;
-    color: var(--rf-text);
-    -unity-font-style: bold;
-}
-
-.rf-rb-bar .rf-rb-bar__meta {
+.rf-rbp__icon-button {
+    width: 30px;
+    height: 30px;
+    margin: 0 0 0 4px;
+    padding: 0;
     font-size: 14px;
     color: var(--rf-text-dim);
-    white-space: normal;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    border-radius: 6px;
 }
 
-.rf-rb-buttons {
-    flex-direction: row;
-    align-items: center;
-    flex-shrink: 0;
-}
-
-.rf-rb-button {
-    height: 32px;
-    margin-left: var(--rf-space-2);
-    margin-right: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-left: 14px;
-    padding-right: 14px;
-    padding-top: 0;
-    padding-bottom: 0;
-    font-size: 14px;
-    -unity-text-align: middle-center;
+.rf-rbp__icon-button:hover {
     color: var(--rf-text);
     background-color: var(--rf-surface-raised);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-color: var(--rf-border-strong);
-    border-right-color: var(--rf-border-strong);
-    border-top-color: var(--rf-border-strong);
-    border-bottom-color: var(--rf-border-strong);
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
 }
 
-.rf-rb-button:hover {
-    border-left-color: var(--rf-accent);
-    border-right-color: var(--rf-accent);
-    border-top-color: var(--rf-accent);
-    border-bottom-color: var(--rf-accent);
+.rf-rbp__icon-button--on {
+    color: var(--rf-accent-bright);
 }
 
-.rf-rb-button--primary {
-    color: var(--rf-text-on-accent);
+.rf-rbp__body {
+    margin-top: 10px;
+}
+
+.rf-rbp__playing {
+    font-size: 19px;
+    color: var(--rf-accent-bright);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-rbp__meta {
+    margin-top: 2px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+.rf-rbp__big {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    margin: 8px 0 0 0;
+    padding: 0 16px;
+    background-color: var(--rf-surface);
+    border-width: 2px;
+    border-color: var(--rf-border-strong);
+    border-radius: 8px;
+}
+
+.rf-rbp__big:hover {
+    background-color: var(--rf-surface-raised);
+    border-color: var(--rf-accent-dim);
+}
+
+.rf-rbp__big-icon {
+    font-size: 18px;
+    margin-right: 12px;
+    color: var(--rf-text);
+}
+
+.rf-rbp__big-text {
+    font-size: 19px;
+    color: var(--rf-text);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-rbp__big--primary {
+    height: 56px;
+    margin-top: 0;
     background-color: var(--rf-accent);
-    border-left-color: var(--rf-accent-bright);
-    border-right-color: var(--rf-accent-bright);
-    border-top-color: var(--rf-accent-bright);
-    border-bottom-color: var(--rf-accent-bright);
-    -unity-font-style: bold;
+    border-color: var(--rf-accent-bright);
 }
 
-.rf-rb-button--primary:hover {
+.rf-rbp__big--primary:hover {
     background-color: var(--rf-accent-bright);
+    border-color: var(--rf-accent-bright);
+}
+
+.rf-rbp__big--primary .rf-rbp__big-icon,
+.rf-rbp__big--primary .rf-rbp__big-text {
+    color: var(--rf-text-on-accent);
+}
+
+.rf-rbp__big--primary .rf-rbp__big-text {
+    font-size: 21px;
+}
+
+.rf-rbp__big--danger {
+    border-color: rgb(150, 40, 40);
+    background-color: rgb(40, 18, 18);
+}
+
+.rf-rbp__big--danger:hover {
+    border-color: rgb(210, 60, 60);
+    background-color: rgb(60, 22, 22);
+}
+
+.rf-rbp__big--danger .rf-rbp__big-icon,
+.rf-rbp__big--danger .rf-rbp__big-text {
+    color: rgb(240, 96, 90);
+}
+
+/* the folded strip's one button: Hero mode (or Play) */
+.rf-rbp__strip-action {
+    height: 32px;
+    margin: 0 4px 0 0;
+    padding: 0 12px;
+    background-color: var(--rf-accent);
+    border-color: var(--rf-accent-bright);
+    border-radius: 6px;
+}
+
+.rf-rbp__strip-action:hover {
+    background-color: var(--rf-accent-bright);
+}
+
+.rf-rbp__strip-action .rf-rbp__big-icon {
+    font-size: 13px;
+    margin-right: 8px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-rbp__strip-action .rf-rbp__big-text {
+    font-size: 15px;
+    color: var(--rf-text-on-accent);
+}
+
+.rf-rbp__extras {
+    flex-direction: row;
+    margin-top: 10px;
+}
+
+.rf-rbp__small {
+    height: 32px;
+    margin: 0 8px 0 0;
+    padding: 0 14px;
+    font-size: 15px;
+    color: var(--rf-text);
+    background-color: var(--rf-surface);
+    border-width: 2px;
+    border-color: var(--rf-border-strong);
+    border-radius: 6px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+.rf-rbp__small:hover {
+    border-color: var(--rf-accent-dim);
+    background-color: var(--rf-surface-raised);
+}
+
+/* the keys: a row of chips under the panel */
+.rf-rbp-keys {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: 1000px;
+    margin-top: 8px;
+}
+
+.rf-rbp-key {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 6px 6px 0;
+    padding: 4px 10px 4px 4px;
+    background-color: var(--rf-bg);
+    border-width: 2px;
+    border-color: var(--rf-border-strong);
+    border-radius: 6px;
+}
+
+.rf-rbp-key__key {
+    min-width: 26px;
+    height: 26px;
+    padding: 0 7px;
+    margin-right: 8px;
+    font-size: 14px;
+    color: var(--rf-text);
+    -unity-text-align: middle-center;
+    background-color: var(--rf-surface-raised);
+    border-width: 2px;
+    border-color: var(--rf-border-strong);
+    border-radius: 5px;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-rbp-key__text {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
 }
 
 .rf-rb-panel {
