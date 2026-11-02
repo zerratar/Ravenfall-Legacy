@@ -62,17 +62,16 @@ namespace Shinobytes.UI
         private void Rebuild() => bound = false;
 
         private bool wasActive;
+        private float askAt; // when to ask who plays, once the opening announcement is gone
 
         private void Changed()
         {
-            // Ravebridge just opened: who plays is asked first, nobody is sent along unasked
+            // Ravebridge just opened: who plays is asked first, nobody is sent along unasked; but after the opening
+            // announcement (RavebridgeManager.BannerSeconds), which the window covered when both came at once
             var rb = RavebridgeManager.Instance;
             var active = rb && rb.Active;
-            if (active && !wasActive && bound && !RavebridgePlay.Playing && !WindowOpen)
-            {
-                creating = false;
-                window.style.display = DisplayStyle.Flex;
-            }
+            if (active && !wasActive && !RavebridgePlay.Playing && !WindowOpen) askAt = Time.unscaledTime + RavebridgeManager.BannerSeconds;
+            if (!active) askAt = 0f;
             wasActive = active;
             Redraw();
             if (WindowOpen && !creating) DrawWindow();
@@ -266,8 +265,17 @@ namespace Shinobytes.UI
         {
             if (RavebridgePlay.Playing) { RavebridgePlay.Stop(); Redraw(); return; }
             if (WindowOpen) { CloseWindow(); return; }
+            OpenWindow();
+        }
+
+        private void OpenWindow()
+        {
+            askAt = 0f;
             creating = false;
             window.style.display = DisplayStyle.Flex;
+            // the opening announcement gives way: it sat over the window for its last seconds
+            var banner = FindAnyObjectByType<NotificationScreenView>();
+            if (banner) banner.Hide();
             DrawWindow();
         }
 
@@ -396,6 +404,12 @@ namespace Shinobytes.UI
             {
                 TryBind();
                 if (!bound) return;
+            }
+            if (askAt > 0f && Time.unscaledTime >= askAt)
+            {
+                askAt = 0f;
+                var rb = RavebridgeManager.Instance;
+                if (rb && rb.Active && !RavebridgePlay.Playing && !WindowOpen) OpenWindow();
             }
             // Esc closes the window; leaving hero mode waits for LateUpdate (see there)
             if (Input.GetKeyDown(KeyCode.Escape) && !Keybinds.IsTyping && WindowOpen) { EscapeKey.Claim(); CloseWindow(); }

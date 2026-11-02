@@ -138,13 +138,20 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         {
             // the chat line without the bot's routing tags (%[category:...]%%[tags:...]%)
             var readable = MessageUtilities.TryExtractTags(MessageUtilities.TryExtractCategory(line, out _), out _);
-            banner.Show(Localization.UI_RAVEBRIDGE_TITLE, readable, Shinobytes.UI.NotificationScreenView.WithCommand(Localization.UI_RAVEBRIDGE_JOIN, "!ravebridge"));
-            StartCoroutine(HideLater(banner, 8f));
+            // the join line only when the announcement does not already say the command
+            var said = readable.Contains("!ravebridge");
+            var join = said ? null : Shinobytes.UI.NotificationScreenView.WithCommand(Localization.UI_RAVEBRIDGE_JOIN, "!ravebridge");
+            if (said) readable = Shinobytes.UI.NotificationScreenView.WithCommand(readable.Replace("!ravebridge", "{command}"), "!ravebridge");
+            banner.Show(Localization.UI_RAVEBRIDGE_TITLE, readable, join);
+            StartCoroutine(HideLater(banner, BannerSeconds));
         }
 
         Changed?.Invoke();
         return StartResult.Started;
     }
+
+    /// <summary>How long the opening announcement shows; the "Who plays?" window waits for it (RavebridgeView).</summary>
+    public const float BannerSeconds = 8f;
 
     private static System.Collections.IEnumerator HideLater(Shinobytes.UI.NotificationScreenView banner, float seconds)
     {

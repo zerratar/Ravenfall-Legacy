@@ -356,7 +356,8 @@
 }
 
 .rf-notify {
-    background-color: var(--rf-overlay-scrim);
+    /* solid: the scrim let a bright sky tint it blue */
+    background-color: var(--rf-bg);
     border-left-width: 0;
     border-right-width: 0;
     border-top-width: 3px;
@@ -370,7 +371,9 @@
     /* Below the experience multiplier banner, which is still uGUI and owns the top of the screen.
        Sized to its text and capped rather than given a minimum: the old min-width of 60% made the
        card 1150px wide on a 1080p stream and covered the fight. */
-    margin-top: 120px;
+    /* Clear of the bars stacked at the top (Ravebridge's, the village button, the stream
+       quest bar), which it covered at 120px. */
+    margin-top: 250px;
     align-items: center;
     max-width: 720px;
 }

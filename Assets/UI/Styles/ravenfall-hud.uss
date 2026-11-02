@@ -1690,6 +1690,7 @@
 }
 
 .rf-squest .rf-squest__empty {
+    white-space: normal;
     margin-bottom: var(--rf-space-3);
     font-size: 18px;
     color: var(--rf-text-dim);
@@ -4332,6 +4333,8 @@
 
 /* the "Who plays?" window: the quest window's look, narrower, a little lower */
 .rf-rb-window {
+    /* solid, so the island behind does not show through the cards */
+    background-color: var(--rf-surface);
     top: 16%;
     width: 600px;
     margin-left: -300px;
