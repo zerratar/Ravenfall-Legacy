@@ -90,6 +90,10 @@ public partial class WaveRun
     public static string TwistNames(Challenge challenge) =>
         string.Format(Localization.UI_WAVE_AND, TwistName(challenge.Twists[0]), TwistName(challenge.Twists[1]));
 
+    /// <summary>The twists as the server keeps them for the website's board: "Hunters,Blessed-steel".</summary>
+    public static string TwistKeys(Challenge challenge) =>
+        string.Join(",", challenge.Twists.Select(t => t == Twist.Blessed && !string.IsNullOrEmpty(challenge.Boon) ? t + "-" + challenge.Boon : t.ToString()));
+
     /// <summary>The day's challenge this run plays, or null for an ordinary run.</summary>
     public Challenge Daily { get; private set; }
 

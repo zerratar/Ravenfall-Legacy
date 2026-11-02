@@ -840,7 +840,7 @@ public partial class WaveRun : MonoBehaviour
             {
                 var seconds = Mathf.RoundToInt(result.EndedAt - result.StartedAt);
                 var record = result.Daily != null
-                    ? await game.RavenNest.Quests.HeroDailyAsync(result.Daily.Day, result.Cleared, result.Kills, seconds)
+                    ? await game.RavenNest.Quests.HeroDailyAsync(result.Daily.Day, result.Cleared, result.Kills, seconds, TwistKeys(result.Daily))
                     : await game.RavenNest.Quests.HeroRunAsync(result.Cleared, result.Kills, seconds);
                 if (record != null && record.Ok)
                 {

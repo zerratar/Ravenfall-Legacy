@@ -153,10 +153,11 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<HeroLeaderboardData>(ApiRequestTarget.Quests, ApiRequestType.Get);
         }
 
-        /// <summary>A run of the day's challenge ended (day as yyyyMMdd, UTC): the streamer's best of the day and its place.</summary>
-        public Task<HeroRunResultData> HeroDailyAsync(int day, int waves, int kills, int seconds)
+        /// <summary>A run of the day's challenge ended (day as yyyyMMdd, UTC; twists as "Hunters,Blessed-steel", for the
+        /// website's board): the streamer's best of the day and its place.</summary>
+        public Task<HeroRunResultData> HeroDailyAsync(int day, int waves, int kills, int seconds, string twists)
         {
-            return request.Create().Identifier("hero").Method("daily").AddParameter(day.ToString()).AddParameter(waves.ToString()).AddParameter(kills.ToString()).AddParameter(seconds.ToString()).Build()
+            return request.Create().Identifier("hero").Method("daily").AddParameter(day.ToString()).AddParameter(waves.ToString()).AddParameter(kills.ToString()).AddParameter(seconds.ToString()).AddParameter(twists).Build()
                 .SendAsync<HeroRunResultData>(ApiRequestTarget.Quests, ApiRequestType.Post);
         }
 

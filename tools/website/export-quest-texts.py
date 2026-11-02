@@ -11,7 +11,7 @@ import os, re
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(HERE, "..", "..", "Assets", "Scripts", "Localization.cs")
 TARGET = os.path.realpath(os.path.join(HERE, "..", "..", "..", "RavenNest", "src", "RavenNest.Blazor.Services", "GameTexts.cs"))
-PREFIXES = ("UI_QUEST_", "UI_CHAIN_", "UI_ACHIEVEMENT_", "UI_TITLE_", "UI_MEDAL_", "UI_STORY_", "UI_UNLOCK_", "UI_SKILL_", "UI_STREAM_QUEST_")
+PREFIXES = ("UI_QUEST_", "UI_CHAIN_", "UI_ACHIEVEMENT_", "UI_TITLE_", "UI_MEDAL_", "UI_STORY_", "UI_UNLOCK_", "UI_SKILL_", "UI_STREAM_QUEST_", "UI_DAILY_", "UI_BOON_")
 # the riddles' answers and the in-game window's own words are not needed on the page
 SKIP = re.compile(r"^UI_(CHAIN|STORY)_.*_(ANSWER|WRONG|RIDDLE)(_\d+)?$|^UI_STORY_(TAB|HINT|INTRO|ALL|BEGIN|ONE_AT_A_TIME|LET_CHAT_VOTE|VOTING|ABANDON)$|^UI_QUEST_(TAVERN|WINDOW|TAB|LOADING|FAILED)")
 
