@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
+using RavenNest.Models;
 
 /// <summary>
 /// A wave run (docs/hero-mode-design.md, 7b): the hero holds Ravebridge against waves of enemies, started as a quest
@@ -188,7 +189,7 @@ public partial class WaveRun : MonoBehaviour
     public static int BestOf(PlayerController hero) => hero ? PlayerPrefs.GetInt(BestKey(hero), 0) : 0;
 
     /// <summary>Every streamer's best runs (the server's), refreshed when hero mode starts and after a run.</summary>
-    public static RavenNest.SDK.Endpoints.HeroLeaderboardData Board { get; private set; }
+    public static RavenNest.Models.HeroLeaderboard Board { get; private set; }
 
     public static async void RefreshBoard()
     {

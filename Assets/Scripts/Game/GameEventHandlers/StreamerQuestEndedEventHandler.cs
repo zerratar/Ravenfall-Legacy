@@ -1,16 +1,17 @@
 using System.Collections.Generic;
 using System.Globalization;
 using RavenNest.SDK.Endpoints;
+using RavenNest.Models;
 
 /// <summary>
 /// One of the streamer's quests ended: a stream goal done (the helpers' shares were paid on the server), every bounty
 /// reward claimed, out of time, or stopped. What was not won has gone back to the streamer. Chat hears how it went.
 /// </summary>
-public class StreamerQuestEndedEventHandler : GameEventHandler<StreamerQuestEndedData>
+public class StreamerQuestEndedEventHandler : GameEventHandler<StreamerQuestEnded>
 {
     private const int TopHelpersNamed = 3;
 
-    public override void Handle(GameManager gameManager, StreamerQuestEndedData data)
+    public override void Handle(GameManager gameManager, StreamerQuestEnded data)
     {
         var quest = data?.Quest;
         if (quest == null)
@@ -25,7 +26,7 @@ public class StreamerQuestEndedEventHandler : GameEventHandler<StreamerQuestEnde
         {
             case StreamerQuests.Done:
                 {
-                    var rewards = data.Rewards ?? System.Array.Empty<StreamerQuestRewardData>();
+                    var rewards = data.Rewards ?? System.Array.Empty<StreamerQuestReward>();
                     var top = new List<string>();
                     for (var i = 0; i < rewards.Length && i < TopHelpersNamed; ++i) top.Add(rewards[i].Name + " (" + StreamerQuests.Number(rewards[i].Amount) + ")");
                     bot.Announce(Localization.MSG_STREAMER_GOAL_DONE, title, rewards.Length, top.Count > 0 ? string.Join(", ", top) : Localization.UI_QUEST_NONE);

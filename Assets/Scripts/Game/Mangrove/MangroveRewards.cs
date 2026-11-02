@@ -14,7 +14,7 @@ public static class MangroveRewards
     private static readonly HashSet<string> Rare = new HashSet<string> { "Golden Banana", "Bananarang", "Monkey Pet" };
 
     /// <summary>Gives out the rewards; the feed line gets the total coins and items ({0}, {1}), the chat line a rare find's player and item.</summary>
-    public static void Apply(GameManager game, MangroveRewardData[] rewards, string feedLine, string rareChatLine)
+    public static void Apply(GameManager game, MangroveReward[] rewards, string feedLine, string rareChatLine)
     {
         if (game == null || rewards == null || rewards.Length == 0) return;
         var coins = 0L;

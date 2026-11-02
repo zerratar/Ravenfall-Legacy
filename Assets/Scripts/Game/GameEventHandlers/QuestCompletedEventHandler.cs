@@ -7,9 +7,9 @@ using RavenNest.SDK.Endpoints;
 /// step finished comes here too, with the chain at its next step; the last one pays out, gives the title, and may
 /// unlock the chain's decor piece for the village, which the whole chat hears.
 /// </summary>
-public class QuestCompletedEventHandler : GameEventHandler<QuestCompletedData>
+public class QuestCompletedEventHandler : GameEventHandler<QuestCompleted>
 {
-    public override void Handle(GameManager gameManager, QuestCompletedData data)
+    public override void Handle(GameManager gameManager, QuestCompleted data)
     {
         var player = gameManager.Players.GetPlayerById(data.CharacterId);
         var quest = data.Quest;

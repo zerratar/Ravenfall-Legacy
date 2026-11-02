@@ -21,10 +21,10 @@ public static class StreamQuests
     private static float nextRefresh;
 
     /// <summary>The stream quest as the server last sent it: the running one and today's offers.</summary>
-    public static StreamQuestStateData Latest { get; private set; }
+    public static StreamQuestState Latest { get; private set; }
 
     /// <summary>The running quest, or null.</summary>
-    public static StreamQuestData Active => Latest?.Active != null && Latest.Active.State == Running ? Latest.Active : null;
+    public static StreamQuestInfo Active => Latest?.Active != null && Latest.Active.State == Running ? Latest.Active : null;
 
     public static event Action Changed;
 
@@ -59,12 +59,12 @@ public static class StreamQuests
     }
 
     /// <summary>Starts today's offer in that slot and tells chat.</summary>
-    public static async Task<StreamQuestResultData> StartAsync(GameManager game, int slot)
+    public static async Task<StreamQuestResult> StartAsync(GameManager game, int slot)
     {
         var result = await game.RavenNest.Quests.StartStreamAsync(slot);
         if (result != null && result.Ok && result.Quest != null)
         {
-            Set(new StreamQuestStateData { Active = result.Quest, Offers = Latest?.Offers ?? Array.Empty<StreamQuestData>() });
+            Set(new StreamQuestState { Active = result.Quest, Offers = Latest?.Offers ?? Array.Empty<StreamQuestInfo>() });
             game.RavenBot.Announce(Localization.MSG_STREAM_QUEST_STARTED, Text(result.Quest), result.Quest.Minutes, Reward(result.Quest));
         }
         RefreshSoon();
@@ -72,28 +72,28 @@ public static class StreamQuests
     }
 
     /// <summary>Stops the running quest; the server's StreamQuestEnded tells chat.</summary>
-    public static async Task<StreamQuestResultData> StopAsync(GameManager game)
+    public static async Task<StreamQuestResult> StopAsync(GameManager game)
     {
         var result = await game.RavenNest.Quests.StopStreamAsync();
         if (result != null && result.Ok)
         {
-            Set(new StreamQuestStateData { Active = null, Offers = Latest?.Offers ?? Array.Empty<StreamQuestData>() });
+            Set(new StreamQuestState { Active = null, Offers = Latest?.Offers ?? Array.Empty<StreamQuestInfo>() });
         }
         RefreshSoon();
         return result;
     }
 
     /// <summary>The quest ended on the server: no longer running here either.</summary>
-    public static void Ended(StreamQuestData quest)
+    public static void Ended(StreamQuestInfo quest)
     {
         if (Latest?.Active != null && quest != null && Latest.Active.Id == quest.Id)
         {
-            Set(new StreamQuestStateData { Active = null, Offers = Latest.Offers });
+            Set(new StreamQuestState { Active = null, Offers = Latest.Offers });
         }
         RefreshSoon();
     }
 
-    private static void Set(StreamQuestStateData state)
+    private static void Set(StreamQuestState state)
     {
         Latest = state;
         Changed?.Invoke();
@@ -102,7 +102,7 @@ public static class StreamQuests
     // ---- Wording ---------------------------------------------------------------------------------------
 
     /// <summary>"Chop 600 wood", "Defeat 300 enemies", "Gain 12 levels".</summary>
-    public static string Text(StreamQuestData q)
+    public static string Text(StreamQuestInfo q)
     {
         if (q == null) return string.Empty;
         var amount = Number(q.Amount);
@@ -128,14 +128,14 @@ public static class StreamQuests
     }
 
     /// <summary>"2,200 coins and 600 wood for the village, 9,000 coins shared by the helpers".</summary>
-    public static string Reward(StreamQuestData q) =>
+    public static string Reward(StreamQuestInfo q) =>
         string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_REWARD, Number(q.RewardVillageCoins), ResourcePart(q), Number(q.RewardHelperCoins));
 
     /// <summary>What the village gets: "2,200 coins and 600 wood".</summary>
-    public static string VillageReward(StreamQuestData q) =>
+    public static string VillageReward(StreamQuestInfo q) =>
         string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_VILLAGE_REWARD, Number(q.RewardVillageCoins), ResourcePart(q));
 
-    private static string ResourcePart(StreamQuestData q) =>
+    private static string ResourcePart(StreamQuestInfo q) =>
         q.RewardResource > 0 && q.RewardResourceAmount > 0
             ? string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_REWARD_AND, Number(q.RewardResourceAmount), ResourceName(q.RewardResource))
             : string.Empty;
@@ -153,7 +153,7 @@ public static class StreamQuests
     }
 
     /// <summary>"12:34" until the quest ends, "1:02:03" past an hour, "3d 4h" past a day.</summary>
-    public static string TimeLeft(StreamQuestData q)
+    public static string TimeLeft(StreamQuestInfo q)
     {
         var left = EndsUtc(q) - DateTime.UtcNow;
         if (left < TimeSpan.Zero) left = TimeSpan.Zero;
@@ -163,13 +163,13 @@ public static class StreamQuests
             : string.Format(CultureInfo.InvariantCulture, "{0}:{1:00}", left.Minutes, left.Seconds);
     }
 
-    public static int MinutesLeft(StreamQuestData q) => Math.Max(0, (int)Math.Ceiling((EndsUtc(q) - DateTime.UtcNow).TotalMinutes));
+    public static int MinutesLeft(StreamQuestInfo q) => Math.Max(0, (int)Math.Ceiling((EndsUtc(q) - DateTime.UtcNow).TotalMinutes));
 
     /// <summary>The server's times are UTC, with or without the zone in the text.</summary>
-    private static DateTime EndsUtc(StreamQuestData q) => q.Ends.Kind == DateTimeKind.Local ? q.Ends.ToUniversalTime() : DateTime.SpecifyKind(q.Ends, DateTimeKind.Utc);
+    private static DateTime EndsUtc(StreamQuestInfo q) => q.Ends.Kind == DateTimeKind.Local ? q.Ends.ToUniversalTime() : DateTime.SpecifyKind(q.Ends, DateTimeKind.Utc);
 
     /// <summary>"Ada (120), Bob (80)".</summary>
-    public static string Helpers(IReadOnlyList<StreamQuestHelperData> helpers, int count)
+    public static string Helpers(IReadOnlyList<StreamQuestHelper> helpers, int count)
     {
         if (helpers == null || helpers.Count == 0) return Localization.UI_QUEST_NONE;
         var names = new List<string>();

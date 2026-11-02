@@ -22,10 +22,10 @@ public static class StreamerQuests
     private static float nextRefresh;
 
     /// <summary>The stream's streamer quests as the server last sent them, with what can be set aside.</summary>
-    public static StreamerQuestListData Latest { get; private set; }
+    public static StreamerQuestList Latest { get; private set; }
 
     /// <summary>The running stream goal the streamer wrote, or null.</summary>
-    public static StreamerQuestData RunningGoal
+    public static StreamerQuestInfo RunningGoal
     {
         get
         {
@@ -71,7 +71,7 @@ public static class StreamerQuests
     }
 
     /// <summary>Posts a quest and tells chat about it.</summary>
-    public static async Task<StreamerQuestResultData> PostAsync(GameManager game, StreamerQuestRequestData request)
+    public static async Task<StreamerQuestResult> PostAsync(GameManager game, StreamerQuestRequest request)
     {
         var result = await game.RavenNest.Quests.PostStreamerAsync(request);
         if (result != null && result.Ok && result.Quest != null) Announce(game, result.Quest);
@@ -81,14 +81,14 @@ public static class StreamerQuests
     }
 
     /// <summary>Stops a quest; the server's StreamerQuestEnded tells chat.</summary>
-    public static async Task<StreamerQuestResultData> StopAsync(GameManager game, Guid questId)
+    public static async Task<StreamerQuestResult> StopAsync(GameManager game, Guid questId)
     {
         var result = await game.RavenNest.Quests.StopStreamerAsync(questId);
         await RefreshAsync(game);
         return result;
     }
 
-    private static void Announce(GameManager game, StreamerQuestData q)
+    private static void Announce(GameManager game, StreamerQuestInfo q)
     {
         var title = string.IsNullOrEmpty(q.Description) ? Title(q) : Title(q) + ": " + q.Description;
         if (q.Kind == Goal)
@@ -100,10 +100,10 @@ public static class StreamerQuests
     // ---- Wording ---------------------------------------------------------------------------------------
 
     /// <summary>The streamer's name for it, or what it asks when it has none.</summary>
-    public static string Title(StreamerQuestData q) => string.IsNullOrEmpty(q?.Name) ? Text(q) : q.Name;
+    public static string Title(StreamerQuestInfo q) => string.IsNullOrEmpty(q?.Name) ? Text(q) : q.Name;
 
     /// <summary>"Catch 200 fish", from the objective, skill and amount.</summary>
-    public static string Text(StreamerQuestData q) => Text(q?.Objective, q?.Skill ?? -1, q?.Amount ?? 0);
+    public static string Text(StreamerQuestInfo q) => Text(q?.Objective, q?.Skill ?? -1, q?.Amount ?? 0);
 
     public static string Text(string objective, int skill, long amount)
     {
@@ -131,7 +131,7 @@ public static class StreamerQuests
     }
 
     /// <summary>"5,000 coins, 3 Raw Shrimp and 100 loyalty points" (each, for a bounty; shared, for a goal).</summary>
-    public static string Reward(StreamerQuestData q) => Reward(q.RewardCoins, q.RewardItemName, q.RewardItemAmount, q.RewardLoyalty);
+    public static string Reward(StreamerQuestInfo q) => Reward(q.RewardCoins, q.RewardItemName, q.RewardItemAmount, q.RewardLoyalty);
 
     public static string Reward(long coins, string itemName, long items, long loyalty)
     {
@@ -153,7 +153,7 @@ public static class StreamerQuests
     }
 
     /// <summary>The time left, as the stream quest says it.</summary>
-    public static string TimeLeft(StreamerQuestData q) => StreamQuests.TimeLeft(new StreamQuestData { Ends = q.Ends });
+    public static string TimeLeft(StreamerQuestInfo q) => StreamQuests.TimeLeft(new StreamQuestInfo { Ends = q.Ends });
 
     public static string Number(long value) => value.ToString("N0", CultureInfo.InvariantCulture);
 }

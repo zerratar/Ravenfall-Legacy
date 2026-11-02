@@ -147,7 +147,7 @@ public static class QuestChat
                             return;
                         }
 
-                        var active = list?.Active ?? Array.Empty<QuestData>();
+                        var active = list?.Active ?? Array.Empty<RavenNest.Models.QuestInfo>();
                         if (!int.TryParse(argument, out var number) || number < 1 || number > active.Length)
                         {
                             client.SendReply(gm, Localization.MSG_QUEST_ABANDON_USAGE);
@@ -496,7 +496,7 @@ public static class QuestChat
                 if (goal != null)
                 {
                     client.SendReply(gm, Localization.MSG_STREAMER_GOAL_INFO, StreamerQuests.Title(goal), StreamerQuests.Text(goal), Number(goal.Progress), Number(goal.Amount),
-                        StreamQuests.MinutesLeft(new StreamQuestData { Ends = goal.Ends }), StreamerQuests.Reward(goal));
+                        StreamQuests.MinutesLeft(new StreamQuestInfo { Ends = goal.Ends }), StreamerQuests.Reward(goal));
                     return;
                 }
             }
@@ -509,7 +509,7 @@ public static class QuestChat
             }
 
             var offers = new List<string>();
-            foreach (var o in state.Offers ?? Array.Empty<StreamQuestData>())
+            foreach (var o in state.Offers ?? Array.Empty<StreamQuestInfo>())
             {
                 offers.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_STREAM_QUEST_OFFER_ENTRY, o.Slot + 1, StreamQuests.Text(o), o.Minutes));
             }
@@ -540,7 +540,7 @@ public static class QuestChat
         }
 
         var offers = new List<string>();
-        foreach (var q in list.Offers ?? Array.Empty<QuestData>())
+        foreach (var q in list.Offers ?? Array.Empty<RavenNest.Models.QuestInfo>())
         {
             offers.Add(string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_OFFER_ENTRY, q.Slot + 1, Text(q), Number(q.RewardCoins)));
         }
@@ -578,7 +578,7 @@ public static class QuestChat
     /// <summary>The streamer's running quests, with this player's own progress on the bounties.</summary>
     private static async System.Threading.Tasks.Task StreamerQuestsAsync(GameManager game, PlayerController player, GameMessage gm, GameClient client)
     {
-        StreamerQuestData[] quests;
+        StreamerQuestInfo[] quests;
         try { quests = await game.RavenNest.Quests.GetStreamerForAsync(player.Id); }
         catch { return; } // an older server
         if (quests == null || quests.Length == 0) return;
@@ -711,7 +711,7 @@ public static class QuestChat
     }
 
     /// <summary>A chain by its key, the start of its key or name, or its number in !quest chains.</summary>
-    private static string FindChain(QuestChainData[] chains, string argument)
+    private static string FindChain(QuestChainInfo[] chains, string argument)
     {
         if (chains == null || string.IsNullOrEmpty(argument)) return null;
         if (int.TryParse(argument, out var number)) return number >= 1 && number <= chains.Length ? chains[number - 1].Key : null;
@@ -788,7 +788,7 @@ public static class QuestChat
     // ---- Words -------------------------------------------------------------------------------------------------
 
     /// <summary>"Chop 120 wood", from the quest's objective, skill and amount; a chain step's own kinds too.</summary>
-    public static string Text(QuestData q)
+    public static string Text(RavenNest.Models.QuestInfo q)
     {
         if (q == null) return string.Empty;
         var amount = Number(q.Amount);
@@ -824,7 +824,7 @@ public static class QuestChat
     }
 
     /// <summary>A chain step's task with its progress when it counts: "Bring 10 Raw Sprat (4/10)".</summary>
-    public static string Task(QuestData q)
+    public static string Task(RavenNest.Models.QuestInfo q)
     {
         if (q == null) return string.Empty;
         var text = Text(q);
@@ -832,7 +832,7 @@ public static class QuestChat
     }
 
     /// <summary>"1,200 coins and 3,400 Woodcutting exp".</summary>
-    public static string Reward(QuestData q) =>
+    public static string Reward(RavenNest.Models.QuestInfo q) =>
         string.Format(CultureInfo.InvariantCulture, Localization.UI_QUEST_REWARD, Number(q.RewardCoins), Number((long)q.RewardExp), Localization.SkillName((Skill)q.RewardSkill));
 
     public static string ChainName(string key) => Lookup("UI_CHAIN_" + key, key);
@@ -850,7 +850,7 @@ public static class QuestChat
     public static string Medal(int tier) => tier == 3 ? Localization.UI_MEDAL_GOLD : tier == 2 ? Localization.UI_MEDAL_SILVER : Localization.UI_MEDAL_BRONZE;
 
     /// <summary>The event a seasonal quest belongs to, from its key ("halloween_kill").</summary>
-    public static string SeasonOf(QuestData q)
+    public static string SeasonOf(RavenNest.Models.QuestInfo q)
     {
         var key = q?.Key ?? string.Empty;
         var cut = key.IndexOf('_');

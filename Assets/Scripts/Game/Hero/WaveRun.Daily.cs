@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using RavenNest.Models;
 
 /// <summary>
 /// The day's challenge (docs/hero-mode-design.md, "Daily challenge"): one run a day that is the same for every streamer.
@@ -170,7 +171,7 @@ public partial class WaveRun
     }
 
     /// <summary>Today's challenge: every streamer's best run of it (the server's), refreshed with the other board.</summary>
-    public static RavenNest.SDK.Endpoints.HeroLeaderboardData DailyBoard { get; private set; }
+    public static RavenNest.Models.HeroLeaderboard DailyBoard { get; private set; }
 
     private static async void RefreshDailyBoard()
     {

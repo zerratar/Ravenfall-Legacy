@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using RavenNest.SDK.Endpoints;
+using RavenNest.Models;
 
 /// <summary>
 /// !boat (docs/own-boats.md, phase 4): with nothing more, the player's boat and where they are with it; !boat build
@@ -44,7 +45,7 @@ public class BoatCommand : ChatBotCommandHandler<string>
             var s = result.Slots?.FirstOrDefault(x => x.Slot == slot);
             switch (result.Error)
             {
-                case "slot": client.SendReply(gm, Localization.MSG_BOAT_LOOK_SLOT, result.Boat, slot, string.Join(", ", (result.Slots ?? new BoatLookSlotData[0]).Select(x => x.Slot))); return;
+                case "slot": client.SendReply(gm, Localization.MSG_BOAT_LOOK_SLOT, result.Boat, slot, string.Join(", ", (result.Slots ?? new BoatLookSlot[0]).Select(x => x.Slot))); return;
                 case "range": client.SendReply(gm, Localization.MSG_BOAT_LOOK_RANGE, slot, variant, s != null ? s.Count : 0); return;
                 case "locked": client.SendReply(gm, Localization.MSG_BOAT_LOOK_LOCKED, slot, variant, s != null ? Variants(s) : "-"); return;
             }
@@ -60,7 +61,7 @@ public class BoatCommand : ChatBotCommandHandler<string>
         client.SendReply(gm, Localization.MSG_BOAT_LOOK_SET, result.Boat, slot, variant == 0 ? Localization.MSG_BOAT_LOOK_NONE : variant.ToString(CultureInfo.InvariantCulture));
     }
 
-    private static bool LookOk(BoatLookResultData result, GameMessage gm, GameClient client)
+    private static bool LookOk(BoatLookResult result, GameMessage gm, GameClient client)
     {
         if (result == null) { client.SendReply(gm, Localization.MSG_BOAT_FAILED); return false; }
         if (result.Error == "noboat") { client.SendReply(gm, Localization.MSG_BOAT_LOOK_NO_BOAT); return false; }
@@ -68,13 +69,13 @@ public class BoatCommand : ChatBotCommandHandler<string>
         return true;
     }
 
-    private static string Wears(BoatLookResultData result) =>
-        string.Join(", ", (result.Slots ?? new BoatLookSlotData[0]).Select(s => s.Slot + " " + (s.Current == 0 ? Localization.MSG_BOAT_LOOK_NONE : s.Current.ToString(CultureInfo.InvariantCulture))));
+    private static string Wears(BoatLookResult result) =>
+        string.Join(", ", (result.Slots ?? new BoatLookSlot[0]).Select(s => s.Slot + " " + (s.Current == 0 ? Localization.MSG_BOAT_LOOK_NONE : s.Current.ToString(CultureInfo.InvariantCulture))));
 
-    private static string Owned(BoatLookResultData result) =>
-        string.Join("; ", (result.Slots ?? new BoatLookSlotData[0]).Select(s => s.Slot + " " + Variants(s)));
+    private static string Owned(BoatLookResult result) =>
+        string.Join("; ", (result.Slots ?? new BoatLookSlot[0]).Select(s => s.Slot + " " + Variants(s)));
 
-    private static string Variants(BoatLookSlotData s) =>
+    private static string Variants(BoatLookSlot s) =>
         string.Join(", ", (s.Owned ?? new int[0]).Select(v => v == 0 ? Localization.MSG_BOAT_LOOK_NONE : v.ToString(CultureInfo.InvariantCulture))) + " (of " + s.Count + ")";
 
     public override async void Handle(string arguments, GameMessage gm, GameClient client)
@@ -352,7 +353,7 @@ public class BoatCommand : ChatBotCommandHandler<string>
                 client.SendReply(gm, Localization.MSG_BOAT_BUILT, result.Boat, result.Fee.ToString("N0", CultureInfo.InvariantCulture));
                 break;
             case "unknown":
-                client.SendReply(gm, Localization.MSG_BOAT_UNKNOWN, boat, string.Join(", ", (result.Blueprints ?? Array.Empty<BoatBlueprintData>()).Select(b => b.Boat)));
+                client.SendReply(gm, Localization.MSG_BOAT_UNKNOWN, boat, string.Join(", ", (result.Blueprints ?? Array.Empty<BoatBlueprint>()).Select(b => b.Boat)));
                 break;
             case "island":
                 client.SendReply(gm, Localization.MSG_BOAT_ISLAND, result.Island);
@@ -361,7 +362,7 @@ public class BoatCommand : ChatBotCommandHandler<string>
                 client.SendReply(gm, Localization.MSG_BOAT_LEVEL, result.Boat, result.Skill, result.Level);
                 break;
             case "parts":
-                client.SendReply(gm, Localization.MSG_BOAT_PARTS, result.Boat, string.Join(", ", (result.Missing ?? Array.Empty<BoatPartData>()).Select(p => p.Have + "/" + p.Amount + " " + p.Item)));
+                client.SendReply(gm, Localization.MSG_BOAT_PARTS, result.Boat, string.Join(", ", (result.Missing ?? Array.Empty<BoatPart>()).Select(p => p.Have + "/" + p.Amount + " " + p.Item)));
                 break;
             case "coins":
                 client.SendReply(gm, Localization.MSG_BOAT_COINS, result.Boat, result.Fee.ToString("N0", CultureInfo.InvariantCulture));
@@ -372,7 +373,7 @@ public class BoatCommand : ChatBotCommandHandler<string>
         }
     }
 
-    private static string Describe(BoatBlueprintData[] blueprints)
+    private static string Describe(BoatBlueprint[] blueprints)
     {
         if (blueprints == null || blueprints.Length == 0) return "-";
         return string.Join(" | ", blueprints.Select(b =>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using RavenNest.SDK.Endpoints;
 using UnityEngine;
+using RavenNest.Models;
 
 /// <summary>
 /// The roads in the village: loaded from the server with the village, drawn for everyone to see,
@@ -89,13 +90,13 @@ public class VillageRoads : MonoBehaviour
     private readonly Dictionary<int, Material[]> drawMaterials = new Dictionary<int, Material[]>();
     // made here rather than loaded, so ours to destroy, textures and all
     private readonly HashSet<Material> generated = new HashSet<Material>();
-    private RoadType[] types = Array.Empty<RoadType>();
+    private VillageRoadType[] types = Array.Empty<VillageRoadType>();
     private MaterialPropertyBlock block;
     private GameManager gameManager;
     private Transform root;
 
     public IReadOnlyList<Road> Roads => roads;
-    public IReadOnlyList<RoadType> Types => types;
+    public IReadOnlyList<VillageRoadType> Types => types;
     public bool Loaded { get; private set; }
 
     /// <summary>Raised when the list of roads or of types changes.</summary>
@@ -107,7 +108,7 @@ public class VillageRoads : MonoBehaviour
         root = new GameObject("Village Roads").transform;
     }
 
-    public RoadType TypeOf(int id)
+    public VillageRoadType TypeOf(int id)
     {
         foreach (var type in types) if (type.Id == id) return type;
         return null;
@@ -206,7 +207,7 @@ public class VillageRoads : MonoBehaviour
     }
 
     /// <summary>The village bar shows the spend at once, rather than at the next update.</summary>
-    private void Apply(RoadResult result)
+    private void Apply(VillageRoadResult result)
     {
         if (result == null) return;
         var townHall = gameManager.Village ? gameManager.Village.TownHall : null;
@@ -325,7 +326,7 @@ public class VillageRoads : MonoBehaviour
         if (materials.TryGetValue(type, out var existing) && existing) return existing;
 
         Material material;
-        var asset = Resources.Load<Material>("Roads/Road_" + type);
+        var asset = UnityEngine.Resources.Load<Material>("Roads/Road_" + type);
         if (asset)
         {
             material = new Material(asset) { name = asset.name };
@@ -353,7 +354,7 @@ public class VillageRoads : MonoBehaviour
         return townHall ? townHall.GroundHeight(point) : PlacementUtility.FindGroundPoint(point).y;
     }
 
-    private static Road FromInfo(RoadInfo info)
+    private static Road FromInfo(VillageRoadInfo info)
     {
         var road = new Road { Id = info.Id, Type = info.Type, Points = ToPoints(info.Points), StartRound = (float)info.StartRound, EndRound = (float)info.EndRound };
         if (info.Widths != null) foreach (var w in info.Widths) road.Widths.Add((float)w);

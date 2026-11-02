@@ -1,12 +1,13 @@
 using RavenNest.SDK.Endpoints;
+using RavenNest.Models;
 
 /// <summary>
 /// A step of the streamer's story line moved: a viewer found the story's thing (named in chat), or a step was done
 /// and the NPC says what comes next.
 /// </summary>
-public class VillageStoryProgressEventHandler : GameEventHandler<VillageStoryProgressData>
+public class VillageStoryProgressEventHandler : GameEventHandler<VillageStoryProgress>
 {
-    public override void Handle(GameManager gameManager, VillageStoryProgressData data)
+    public override void Handle(GameManager gameManager, VillageStoryProgress data)
     {
         var story = data?.Story;
         if (story == null)

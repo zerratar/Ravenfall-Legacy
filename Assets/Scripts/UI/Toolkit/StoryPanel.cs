@@ -4,6 +4,7 @@ using System.Linq;
 using RavenNest.SDK.Endpoints;
 using UnityEngine;
 using UnityEngine.UIElements;
+using RavenNest.Models;
 
 namespace Shinobytes.UI
 {
@@ -84,7 +85,7 @@ namespace Shinobytes.UI
         /// The story under way: its name and steps, the NPC's line beside its picture, and the current objective with how
         /// far it is, who helped, the streamer's part (talk, choose, let chat vote) and giving up.
         /// </summary>
-        private VisualElement ActiveCard(VillageStoryData s)
+        private VisualElement ActiveCard(VillageStoryInfo s)
         {
             var card = new VisualElement();
             card.AddToClassList("rf-qstory");
@@ -174,7 +175,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>A story not begun (or given up): its picture, what it is about and Begin.</summary>
-        private VisualElement BeginCard(VillageStoryData s, bool anyActive)
+        private VisualElement BeginCard(VillageStoryInfo s, bool anyActive)
         {
             var card = new VisualElement();
             card.AddToClassList("rf-qcard");
@@ -203,7 +204,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>A finished story: a small picture, its name and NPC, and a green tick. Its ending as the tooltip.</summary>
-        private static VisualElement DoneRow(VillageStoryData s)
+        private static VisualElement DoneRow(VillageStoryInfo s)
         {
             var row = new VisualElement();
             row.AddToClassList("rf-qdone");
@@ -220,7 +221,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>The streamer's part at this step: talk, the choice, or chat's vote (giving up sits under the objective).</summary>
-        private VisualElement Actions(VillageStoryData s)
+        private VisualElement Actions(VillageStoryInfo s)
         {
             var row = new VisualElement();
             row.AddToClassList("rf-squest-chips");
@@ -254,7 +255,7 @@ namespace Shinobytes.UI
             return row;
         }
 
-        private async void Run(Func<GameManager, System.Threading.Tasks.Task<VillageStoryResultData>> action)
+        private async void Run(Func<GameManager, System.Threading.Tasks.Task<VillageStoryResult>> action)
         {
             var game = GameManager.Instance;
             if (Busy || !game) return;

@@ -35,7 +35,7 @@ public static class StoryLog
     private static bool refreshing;
     private static float nextRefresh;
 
-    public static VillageLogData Latest { get; private set; }
+    public static VillageLog Latest { get; private set; }
     public static event Action Changed;
 
     // ---- The chat vote on a choice -------------------------------------------------------------------
@@ -56,14 +56,14 @@ public static class StoryLog
 
     // ---- State --------------------------------------------------------------------------------------
 
-    public static VillageStoryData Story(string key)
+    public static VillageStoryInfo Story(string key)
     {
         if (Latest?.Stories == null) return null;
         foreach (var s in Latest.Stories) if (s.Key == key) return s;
         return null;
     }
 
-    public static VillageStoryData ActiveStory
+    public static VillageStoryInfo ActiveStory
     {
         get
         {
@@ -109,7 +109,7 @@ public static class StoryLog
         }
     }
 
-    private static void Set(VillageLogData log)
+    private static void Set(VillageLog log)
     {
         Latest = log;
         ApplyWorld();
@@ -118,7 +118,7 @@ public static class StoryLog
 
     // ---- What the streamer does ---------------------------------------------------------------------
 
-    public static async Task<VillageStoryResultData> BeginAsync(GameManager game, string key)
+    public static async Task<VillageStoryResult> BeginAsync(GameManager game, string key)
     {
         var result = await game.RavenNest.Quests.BeginStoryAsync(key);
         if (result != null && result.Ok && result.Story != null)
@@ -127,14 +127,14 @@ public static class StoryLog
         return result;
     }
 
-    public static async Task<VillageStoryResultData> TalkAsync(GameManager game, string key)
+    public static async Task<VillageStoryResult> TalkAsync(GameManager game, string key)
     {
         var result = await game.RavenNest.Quests.TalkStoryAsync(key);
         await RefreshAsync(game);
         return result;
     }
 
-    public static async Task<VillageStoryResultData> ChooseAsync(GameManager game, string key, int option)
+    public static async Task<VillageStoryResult> ChooseAsync(GameManager game, string key, int option)
     {
         if (VoteStory == key) StopVote();
         var result = await game.RavenNest.Quests.ChooseStoryAsync(key, option);
@@ -142,7 +142,7 @@ public static class StoryLog
         return result;
     }
 
-    public static async Task<VillageStoryResultData> AbandonAsync(GameManager game, string key)
+    public static async Task<VillageStoryResult> AbandonAsync(GameManager game, string key)
     {
         if (VoteStory == key) StopVote();
         var result = await game.RavenNest.Quests.AbandonStoryAsync(key);
@@ -151,7 +151,7 @@ public static class StoryLog
     }
 
     /// <summary>Lets chat vote on the story's choice for a minute; the most votes wins (the first option on a tie).</summary>
-    public static void StartVote(GameManager game, VillageStoryData story)
+    public static void StartVote(GameManager game, VillageStoryInfo story)
     {
         if (story == null || story.Kind != "choice" || Voting) return;
         VoteStory = story.Key;
@@ -392,7 +392,7 @@ public static class StoryLog
     public static string UnlockName(string key) => Lookup("UI_UNLOCK_" + key, key);
 
     /// <summary>What the current step asks, with its progress where it counts ("(3/4)") unless withCount is false.</summary>
-    public static string Task(VillageStoryData s, bool withCount = true)
+    public static string Task(VillageStoryInfo s, bool withCount = true)
     {
         if (s == null) return string.Empty;
         var amount = Number(s.Amount);

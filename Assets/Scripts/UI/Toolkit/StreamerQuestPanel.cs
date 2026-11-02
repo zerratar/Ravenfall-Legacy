@@ -106,12 +106,12 @@ namespace Shinobytes.UI
 
         // ---- The running quests ----------------------------------------------------------------------------
 
-        private void BuildList(VisualElement content, StreamerQuestListData list)
+        private void BuildList(VisualElement content, StreamerQuestList list)
         {
             QuestArt.Heading(content, Localization.UI_QUESTWIN_CREATE, Localization.UI_QUESTWIN_CREATE_SUB);
             content.Add(Budget(list));
 
-            var quests = list.Quests ?? Array.Empty<StreamerQuestData>();
+            var quests = list.Quests ?? Array.Empty<StreamerQuestInfo>();
             if (quests.Length == 0)
             {
                 content.Add(Empty());
@@ -133,7 +133,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>The loyalty points left to give this week, as a number and a bar.</summary>
-        private static VisualElement Budget(StreamerQuestListData list)
+        private static VisualElement Budget(StreamerQuestList list)
         {
             var card = new VisualElement();
             card.AddToClassList("rf-qbudget");
@@ -183,7 +183,7 @@ namespace Shinobytes.UI
             return post;
         }
 
-        private VisualElement QuestCard(StreamerQuestData q)
+        private VisualElement QuestCard(StreamerQuestInfo q)
         {
             var goal = q.Kind == StreamerQuests.Goal;
             var card = new VisualElement();
@@ -288,7 +288,7 @@ namespace Shinobytes.UI
         /// the right (coins and where they come from, an item picked in its own dialog and how many, loyalty points), what
         /// posting sets aside, then Back and Post quest.
         /// </summary>
-        private void BuildForm(VisualElement content, StreamerQuestListData list)
+        private void BuildForm(VisualElement content, StreamerQuestList list)
         {
             var goal = kind == StreamerQuests.Goal;
 
@@ -389,7 +389,7 @@ namespace Shinobytes.UI
             return card;
         }
 
-        private VisualElement Rewards(bool goal, StreamerQuestListData list)
+        private VisualElement Rewards(bool goal, StreamerQuestList list)
         {
             var card = Card(goal ? Localization.UI_POSTQ_REWARDS_GOAL : Localization.UI_POSTQ_REWARDS_BOUNTY);
             card.AddToClassList("rf-qform__card--rewards");
@@ -397,7 +397,7 @@ namespace Shinobytes.UI
             // coins, and where they come from: the treasury or one of the streamer's characters
             card.Add(FieldLabel(Localization.UI_POSTQ_COINS, true));
             card.Add(Spinner(coins, v => coins = v, QuestArt.Coin()));
-            var characters = list.Characters ?? Array.Empty<StreamerQuestCoinSourceData>();
+            var characters = list.Characters ?? Array.Empty<StreamerQuestCoinSource>();
             if (coinSource > characters.Length) coinSource = 0;
             var from = coinSource == 0 ? Localization.UI_POSTQ_TREASURY : characters[coinSource - 1].Name;
             var available = coinSource == 0 ? list.TreasuryCoins : characters[coinSource - 1].Coins;
@@ -906,9 +906,9 @@ namespace Shinobytes.UI
             if (Busy || !game || list == null) return;
 
             var c = Choices[choice];
-            var characters = list.Characters ?? Array.Empty<StreamerQuestCoinSourceData>();
+            var characters = list.Characters ?? Array.Empty<StreamerQuestCoinSource>();
             var source = sources != null && itemSource < sources.Sources.Count ? sources.Sources[itemSource] : null;
-            var request = new StreamerQuestRequestData
+            var request = new StreamerQuestRequest
             {
                 Kind = kind,
                 Name = questName,

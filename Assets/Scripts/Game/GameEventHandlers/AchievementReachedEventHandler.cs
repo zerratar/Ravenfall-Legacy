@@ -1,12 +1,13 @@
 using RavenNest.SDK.Endpoints;
+using RavenNest.Models;
 
 /// <summary>
 /// A player reached an achievement's tier (the server counts them): the player hears which, and the title it gave.
 /// The hidden ones announce themselves as secrets.
 /// </summary>
-public class AchievementReachedEventHandler : GameEventHandler<AchievementReachedData>
+public class AchievementReachedEventHandler : GameEventHandler<AchievementReached>
 {
-    public override void Handle(GameManager gameManager, AchievementReachedData data)
+    public override void Handle(GameManager gameManager, AchievementReached data)
     {
         var player = gameManager.Players.GetPlayerById(data.CharacterId);
         if (!player)

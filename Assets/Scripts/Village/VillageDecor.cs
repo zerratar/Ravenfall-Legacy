@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using RavenNest.SDK.Endpoints;
 using UnityEngine;
+using RavenNest.Models;
 
 /// <summary>
 /// The village's decor: the island's own trees, bushes and flowers, with the village's changes applied over them,
@@ -30,13 +31,13 @@ public class VillageDecor : MonoBehaviour
     private readonly List<VillageDecorItem> defaults = new List<VillageDecorItem>();
     private readonly Dictionary<string, VillageDecorItem> defaultsByKey = new Dictionary<string, VillageDecorItem>();
     private readonly List<VillageDecorItem> placed = new List<VillageDecorItem>();
-    private readonly List<DecorPiece> pieces = new List<DecorPiece>();
+    private readonly List<VillageDecorPiece> pieces = new List<VillageDecorPiece>();
     private Transform placedRoot;
     private GameManager gameManager;
     private bool collected;
 
     public bool Loaded { get; private set; }
-    public IReadOnlyList<DecorPiece> Pieces => pieces;
+    public IReadOnlyList<VillageDecorPiece> Pieces => pieces;
 
     /// <summary>Something was placed, moved, removed or loaded.</summary>
     public event Action Changed;
@@ -57,7 +58,7 @@ public class VillageDecor : MonoBehaviour
         }
     }
 
-    public DecorPiece PieceOf(string key) => pieces.FirstOrDefault(p => p.Key == key);
+    public VillageDecorPiece PieceOf(string key) => pieces.FirstOrDefault(p => p.Key == key);
 
     public GameObject PrefabFor(string key)
     {
@@ -67,7 +68,7 @@ public class VillageDecor : MonoBehaviour
         // Resources/Decor, so adding one does not need the main scene saved
         if (!loaded.TryGetValue(key, out var prefab))
         {
-            prefab = Resources.Load<GameObject>("Decor/Decor_" + key);
+            prefab = UnityEngine.Resources.Load<GameObject>("Decor/Decor_" + key);
             loaded[key] = prefab;
         }
         return prefab;
@@ -105,7 +106,7 @@ public class VillageDecor : MonoBehaviour
             var rows = await gameManager.RavenNest.Village.GetDecorAsync();
             pieces.Clear();
             if (loadedPieces != null) pieces.AddRange(loadedPieces);
-            Apply(rows ?? Array.Empty<DecorInfo>());
+            Apply(rows ?? Array.Empty<VillageDecorInfo>());
             Loaded = true;
             Subscribe();
         }
@@ -150,7 +151,7 @@ public class VillageDecor : MonoBehaviour
     }
 
     /// <summary>The island as shipped, with the village's changes over it, and the placed pieces.</summary>
-    private void Apply(IReadOnlyList<DecorInfo> rows)
+    private void Apply(IReadOnlyList<VillageDecorInfo> rows)
     {
         Collect();
         foreach (var item in defaults)
@@ -184,7 +185,7 @@ public class VillageDecor : MonoBehaviour
         Changed?.Invoke();
     }
 
-    private VillageDecorItem Spawn(DecorInfo row)
+    private VillageDecorItem Spawn(VillageDecorInfo row)
     {
         var prefab = PrefabFor(row.Piece);
         if (!prefab) return null;
@@ -212,7 +213,7 @@ public class VillageDecor : MonoBehaviour
     /// <summary>Places a piece, or one of the viewers' gifts of it (free). Null with the reason when the server refused.</summary>
     public async Task<(VillageDecorItem item, string error)> PlaceAsync(string piece, Vector3 position, float rotation, bool gift = false)
     {
-        var result = await gameManager.RavenNest.Village.PlaceDecorAsync(new DecorRequest
+        var result = await gameManager.RavenNest.Village.PlaceDecorAsync(new VillageDecorRequest
         {
             Piece = piece, X = position.x, Y = position.y, Z = position.z, Rotation = rotation, Scale = 1, Gift = gift,
         });
@@ -229,7 +230,7 @@ public class VillageDecor : MonoBehaviour
     /// <summary>Saves where a piece stands now. On failure it goes back to where it was.</summary>
     public async Task<string> MoveAsync(VillageDecorItem item, Vector3 position, float rotation, Vector3 before, Quaternion beforeRotation)
     {
-        var result = await gameManager.RavenNest.Village.MoveDecorAsync(new DecorRequest
+        var result = await gameManager.RavenNest.Village.MoveDecorAsync(new VillageDecorRequest
         {
             Id = item.IsDefault ? (Guid?)null : item.Id,
             DefaultKey = item.IsDefault ? item.DefaultKey : null,
@@ -248,9 +249,9 @@ public class VillageDecor : MonoBehaviour
     }
 
     /// <summary>Removes a piece; the result says what it gave back. Null result with the reason on failure.</summary>
-    public async Task<(DecorResult result, string error)> RemoveAsync(VillageDecorItem item)
+    public async Task<(VillageDecorResult result, string error)> RemoveAsync(VillageDecorItem item)
     {
-        var result = await gameManager.RavenNest.Village.RemoveDecorAsync(new DecorRequest
+        var result = await gameManager.RavenNest.Village.RemoveDecorAsync(new VillageDecorRequest
         {
             Id = item.IsDefault ? (Guid?)null : item.Id,
             DefaultKey = item.IsDefault ? item.DefaultKey : null,
@@ -279,7 +280,7 @@ public class VillageDecor : MonoBehaviour
     /// <summary>Unlocks a Special piece for good with the treasury's coins. The reason when the server refused.</summary>
     public async Task<string> UnlockAsync(string piece)
     {
-        var result = await gameManager.RavenNest.Village.UnlockDecorAsync(new DecorRequest { Piece = piece });
+        var result = await gameManager.RavenNest.Village.UnlockDecorAsync(new VillageDecorRequest { Piece = piece });
         ApplyResources(result);
         if (result == null || !result.Ok) return result?.Error ?? "unknown";
         var info = PieceOf(piece);
@@ -289,9 +290,9 @@ public class VillageDecor : MonoBehaviour
     }
 
     /// <summary>A viewer's gift from chat (!decor gift), paid on the server with their loyalty points with this streamer.</summary>
-    public async Task<DecorGiftResult> GiftAsync(string piece, string platform, string platformId, string userName)
+    public async Task<VillageDecorGiftResult> GiftAsync(string piece, string platform, string platformId, string userName)
     {
-        var result = await gameManager.RavenNest.Village.GiftDecorAsync(new DecorGiftRequest
+        var result = await gameManager.RavenNest.Village.GiftDecorAsync(new VillageDecorGiftRequest
         {
             Piece = piece, Platform = platform, PlatformId = platformId, UserName = userName,
         });
@@ -311,9 +312,9 @@ public class VillageDecor : MonoBehaviour
     /// The piece a viewer means by what they typed: its name in the game's language or in English, or its key,
     /// whole or in part. Null when nothing (or more than one piece, listed in <paramref name="candidates"/>) fits.
     /// </summary>
-    public DecorPiece FindPiece(string text, out List<DecorPiece> candidates)
+    public VillageDecorPiece FindPiece(string text, out List<VillageDecorPiece> candidates)
     {
-        candidates = new List<DecorPiece>();
+        candidates = new List<VillageDecorPiece>();
         string Normal(string s) => new string((s ?? string.Empty).ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
         var wanted = Normal(text);
         if (wanted.Length == 0) return null;
@@ -328,7 +329,7 @@ public class VillageDecor : MonoBehaviour
         return candidates.Count == 1 ? candidates[0] : null;
     }
 
-    private void ApplyResources(DecorResult result)
+    private void ApplyResources(VillageDecorResult result)
     {
         if (result == null) return;
         var townHall = gameManager && gameManager.Village ? gameManager.Village.TownHall : null;

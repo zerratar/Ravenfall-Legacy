@@ -1,12 +1,13 @@
 using RavenNest.SDK.Endpoints;
+using RavenNest.Models;
 
 /// <summary>
 /// A viewer finished one of the streamer's bounties and got its reward (the server paid it from what was set aside;
 /// the coins come with a ResourceUpdate, the items through the inventory feed). Chat hears who, and how many are left.
 /// </summary>
-public class StreamerQuestClaimedEventHandler : GameEventHandler<StreamerQuestClaimedData>
+public class StreamerQuestClaimedEventHandler : GameEventHandler<StreamerQuestClaimed>
 {
-    public override void Handle(GameManager gameManager, StreamerQuestClaimedData data)
+    public override void Handle(GameManager gameManager, StreamerQuestClaimed data)
     {
         var quest = data?.Quest;
         if (quest == null)

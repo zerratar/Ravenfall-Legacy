@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using UnityEngine;
+using RavenNest.Models;
 
 /// <summary>
 /// Placing, moving, turning and removing decor in build mode. See docs/village-decor-design.md.
@@ -332,6 +333,6 @@ public class VillageDecorTool : MonoBehaviour
         return string.Join(", ", parts);
     }
 
-    public static string CostText(RavenNest.SDK.Endpoints.DecorPiece piece) =>
+    public static string CostText(RavenNest.Models.VillageDecorPiece piece) =>
         piece == null ? string.Empty : RefundText(piece.Wood, piece.Ore, piece.Fish, piece.Wheat, piece.Coins);
 }

@@ -4,6 +4,7 @@ using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Skill = RavenNest.Models.Skill;
+using RavenNest.Models;
 
 namespace Shinobytes.UI
 {
@@ -1430,7 +1431,7 @@ namespace Shinobytes.UI
             }
         }
 
-        private void AddRoadCard(VillageRoads roads, RavenNest.SDK.Endpoints.RoadType type)
+        private void AddRoadCard(VillageRoads roads, RavenNest.Models.VillageRoadType type)
         {
             var id = type.Id;
             var card = new VisualElement();
@@ -1852,7 +1853,7 @@ namespace Shinobytes.UI
         /// A decor piece's card: placed with resources, or (<paramref name="gift"/>) one of the viewers' gifts, placed
         /// for free. A locked Special piece the town hall allows offers to unlock it with the treasury's coins.
         /// </summary>
-        private void AddDecorCard(VillageDecor decor, RavenNest.SDK.Endpoints.DecorPiece piece, bool gift = false)
+        private void AddDecorCard(VillageDecor decor, RavenNest.Models.VillageDecorPiece piece, bool gift = false)
         {
             var key = piece.Key;
             var buyable = !gift && !piece.Unlocked && CanUnlockWithTreasury(piece);
@@ -1948,7 +1949,7 @@ namespace Shinobytes.UI
             }
         }
 
-        private static string DecorCost(RavenNest.SDK.Endpoints.DecorPiece piece)
+        private static string DecorCost(RavenNest.Models.VillageDecorPiece piece)
         {
             var text = VillageDecorTool.CostText(piece);
             return string.IsNullOrEmpty(text) ? Localization.UI_DECOR_FREE : text;
@@ -1958,7 +1959,7 @@ namespace Shinobytes.UI
         /// What a locked piece waits for: the town hall's tier first, then the village's level, then its event (a
         /// stream during it) or the treasury's coins.
         /// </summary>
-        private static string DecorLocked(RavenNest.SDK.Endpoints.DecorPiece piece)
+        private static string DecorLocked(RavenNest.Models.VillageDecorPiece piece)
         {
             var townHall = GameManager.Instance && GameManager.Instance.Village != null ? GameManager.Instance.Village.TownHall : null;
             var tier = townHall ? townHall.Tier : 0;
@@ -1973,7 +1974,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>A Special piece the town hall and level allow, waiting only for the treasury's coins.</summary>
-        private static bool CanUnlockWithTreasury(RavenNest.SDK.Endpoints.DecorPiece piece)
+        private static bool CanUnlockWithTreasury(RavenNest.Models.VillageDecorPiece piece)
         {
             if (piece.UnlockCoins <= 0 || !string.IsNullOrEmpty(piece.Event)) return false;
             var townHall = GameManager.Instance && GameManager.Instance.Village != null ? GameManager.Instance.Village.TownHall : null;
@@ -1981,7 +1982,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>"2 waiting, from Anna, Bo": the viewers' gifts of a piece.</summary>
-        private static string GiftText(RavenNest.SDK.Endpoints.DecorPiece piece)
+        private static string GiftText(RavenNest.Models.VillageDecorPiece piece)
         {
             var names = string.IsNullOrEmpty(piece.GiftedBy) ? new[] { "?" } : piece.GiftedBy.Split(',');
             var givers = names.Length > 1 ? names[0] + ", " + names[1] : names[0];

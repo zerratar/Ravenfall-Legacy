@@ -21,17 +21,17 @@ namespace RavenNest.SDK.Endpoints
         }
 
         /// <summary>A chest for each character ("treasure": they dug; "pirates": they held the raid, the best first).</summary>
-        public Task<MangroveRewardData[]> ChestAsync(string kind, Guid[] characterIds)
+        public Task<MangroveReward[]> ChestAsync(string kind, Guid[] characterIds)
         {
             return request.Create().Identifier(kind).Method("chest").AddParameter("values", characterIds).Build()
-                .SendAsync<MangroveRewardData[]>(ApiRequestTarget.Mangrove, ApiRequestType.Post);
+                .SendAsync<MangroveReward[]>(ApiRequestTarget.Mangrove, ApiRequestType.Post);
         }
 
         /// <summary>The regatta's finishers, first to last; the coins each was paid.</summary>
-        public Task<MangroveRewardData[]> RegattaAsync(Guid[] finishers)
+        public Task<MangroveReward[]> RegattaAsync(Guid[] finishers)
         {
             return request.Create().Identifier("regatta").AddParameter("values", finishers).Build()
-                .SendAsync<MangroveRewardData[]>(ApiRequestTarget.Mangrove, ApiRequestType.Post);
+                .SendAsync<MangroveReward[]>(ApiRequestTarget.Mangrove, ApiRequestType.Post);
         }
 
         /// <summary>!banana feed: how many of the character's bananas ("banana") or Golden Bananas ("golden") the monkeys got.</summary>
@@ -47,16 +47,5 @@ namespace RavenNest.SDK.Endpoints
             return request.Create().Identifier(characterId.ToString()).Method("spend").AddParameter(coins.ToString()).Build()
                 .SendAsync<long>(ApiRequestTarget.Mangrove, ApiRequestType.Post);
         }
-    }
-
-    public class MangroveRewardData
-    {
-        public Guid CharacterId { get; set; }
-        public long Coins { get; set; }
-        public EventItemReward[] Items { get; set; }
-        /// <summary>Boat looks earned with it ("sails_9", "flag_12"; docs/own-boats.md, "Customizing boats").</summary>
-        public string[] Looks { get; set; }
-        /// <summary>A decor piece the village unlocked with it (the regatta's trophy, the pirates' cannon), on the first reward.</summary>
-        public string Decor { get; set; }
     }
 }

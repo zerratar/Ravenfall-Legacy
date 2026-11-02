@@ -2,6 +2,7 @@ using System.Globalization;
 using RavenNest.SDK.Endpoints;
 using UnityEngine;
 using UnityEngine.UIElements;
+using RavenNest.Models;
 
 namespace Shinobytes.UI
 {
@@ -379,7 +380,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>An offer: its picture, what it asks and how long, what the village and the helpers get, and Start.</summary>
-        private VisualElement OfferCard(StreamQuestData offer)
+        private VisualElement OfferCard(StreamQuestInfo offer)
         {
             var card = new VisualElement();
             card.AddToClassList("rf-qcard");
@@ -403,7 +404,7 @@ namespace Shinobytes.UI
         }
 
         /// <summary>VILLAGE: coins (and a resource) | HELPERS: coins shared by everyone who helped.</summary>
-        private static VisualElement Rewards(StreamQuestData q)
+        private static VisualElement Rewards(StreamQuestInfo q)
         {
             var village = new VisualElement();
             village.AddToClassList("rf-qrewards__row");
@@ -420,7 +421,7 @@ namespace Shinobytes.UI
         private Label activeCount;
 
         /// <summary>The quest under way: how far, how long is left, who helps most, what it gives, and Stop.</summary>
-        private void DrawActive(StreamQuestData q)
+        private void DrawActive(StreamQuestInfo q)
         {
             QuestArt.Heading(content, Localization.UI_QUESTWIN_RUNNING, Localization.UI_QUESTWIN_RUNNING_SUB);
             var card = new VisualElement();
@@ -609,7 +610,7 @@ namespace Shinobytes.UI
             return Clicked.Nothing;
         }
 
-        private static float Progress(StreamQuestData q) => q.Amount > 0 ? Mathf.Clamp01((float)q.Progress / q.Amount) : 0f;
+        private static float Progress(StreamQuestInfo q) => q.Amount > 0 ? Mathf.Clamp01((float)q.Progress / q.Amount) : 0f;
 
         private static Label Text(string text, string className)
         {

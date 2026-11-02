@@ -1,14 +1,15 @@
 using RavenNest.SDK.Endpoints;
+using RavenNest.Models;
 
 /// <summary>
 /// The stream quest ended on the server: done (the server paid the village and the helpers; the helpers' coins show
 /// here too), out of time, or stopped. Chat hears how it went either way.
 /// </summary>
-public class StreamQuestEndedEventHandler : GameEventHandler<StreamQuestEndedData>
+public class StreamQuestEndedEventHandler : GameEventHandler<StreamQuestEnded>
 {
     private const int TopHelpersNamed = 3;
 
-    public override void Handle(GameManager gameManager, StreamQuestEndedData data)
+    public override void Handle(GameManager gameManager, StreamQuestEnded data)
     {
         var quest = data?.Quest;
         if (quest == null)
@@ -17,7 +18,7 @@ public class StreamQuestEndedEventHandler : GameEventHandler<StreamQuestEndedDat
         }
 
         StreamQuests.Ended(quest);
-        var helpers = data.Helpers ?? System.Array.Empty<StreamQuestHelperData>();
+        var helpers = data.Helpers ?? System.Array.Empty<StreamQuestHelper>();
         var bot = gameManager.RavenBot;
 
         switch (quest.State)

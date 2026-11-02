@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RavenNest.SDK.Endpoints;
 using UnityEngine;
 using UnityEngine.Networking;
+using RavenNest.Models;
 
 /// <summary>
 /// What each clan looks like: its cape shape (per role too) and whether it has its own cape image. Asked for once
@@ -123,18 +124,5 @@ public class ClanLooks
 
         public ClanLook Look { get; }
         public DateTime Expires { get; }
-    }
-}
-
-namespace RavenNest.SDK.Endpoints
-{
-    /// <summary>A copy of the server's RavenNest.Models.ClanLook, kept here rather than in the old models assembly.</summary>
-    public class ClanLook
-    {
-        public Guid ClanId { get; set; }
-        public Guid? LogoImageId { get; set; }
-        public Guid? CapeImageId { get; set; }
-        public int CapeStyle { get; set; }
-        public Dictionary<Guid, int> RoleCapeStyles { get; set; } = new Dictionary<Guid, int>();
     }
 }
