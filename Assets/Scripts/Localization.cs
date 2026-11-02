@@ -499,6 +499,12 @@ public static class Localization
     public static string UI_RAVEBRIDGE_Q_ACCEPT = "Start: {0}";
     public static string UI_RAVEBRIDGE_Q_CONTINUE = "All right";
     public static string UI_RAVEBRIDGE_Q_BYE = "Goodbye";
+    public static string UI_RAVEBRIDGE_Q_MORE = "Something else...";
+    public static string UI_RAVEBRIDGE_Q_WHATS_IN_IT = "What's in it for me?";
+    public static string UI_RAVEBRIDGE_Q_REWARD_LINE = "Do it and you get: {0}.";
+    public static string UI_RAVEBRIDGE_Q_NOT_NOW = "Not now";
+    public static string UI_TALK_PROMPT = "Talk to {0}";
+    public static string UI_TALK_SKIP = "Space to skip";
     public static string UI_RAVEBRIDGE_Q_GIVE = "Hand them over";
     public static string UI_RAVEBRIDGE_Q_HAVE = "You have {0}.";
     public static string UI_RAVEBRIDGE_Q_STILL_NEED = "Still needed: {0}.";

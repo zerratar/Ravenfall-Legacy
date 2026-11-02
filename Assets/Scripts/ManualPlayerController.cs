@@ -46,25 +46,28 @@ public class ManualPlayerController : MonoBehaviour
 
         if (!Keybinds.IsTyping)
         {
+            var view = GameManager.Instance ? GameManager.Instance.Camera.HeroView : null;
+            if (Input.GetKeyDown(KeyCode.V) && view) view.Toggle();
+            // E talks to the NPC close by (TalkPrompt shows who)
+            if (Input.GetKeyDown(KeyCode.E) && !Shinobytes.UI.RavebridgeDialogueView.IsOpen)
+            {
+                var near = NearestNpc(player);
+                if (near) { Talk(near); return; }
+            }
+
             var h = (Input.GetKey(KeyCode.D) ? 1f : 0f) - (Input.GetKey(KeyCode.A) ? 1f : 0f);
             var v = (Input.GetKey(KeyCode.W) ? 1f : 0f) - (Input.GetKey(KeyCode.S) ? 1f : 0f);
             if (h != 0f || v != 0f)
             {
-                var forward = cam.transform.forward; forward.y = 0f; forward.Normalize();
-                var right = cam.transform.right; right.y = 0f; right.Normalize();
-                var direction = (forward * v + right * h).normalized;
+                var forward = view ? view.Forward : Flat(cam.transform.forward);
+                var right = view ? view.Right : Flat(cam.transform.right);
                 // keys take over from whatever the character was doing
                 player.taskTarget = null;
-                player.InterruptAction();
-                player.SetDestination(player.Position + direction * 2f);
-                walkingByKeys = true;
+                pendingTalk = null;
+                Steer((forward * v + right * h).normalized);
                 return;
             }
-            if (walkingByKeys)
-            {
-                walkingByKeys = false;
-                player.SetDestination(player.Position);
-            }
+            if (walkingByKeys) StopSteering();
         }
 
         if (Input.GetMouseButtonDown(0) && !OverHud())
@@ -76,6 +79,51 @@ public class ManualPlayerController : MonoBehaviour
         {
             player.DoManualTask();
         }
+    }
+
+    private static Vector3 Flat(Vector3 v) { v.y = 0f; return v.normalized; }
+
+    /// <summary>
+    /// WASD steers at once, as in hero mode: the agent's velocity rather than a path, so the character starts, turns and
+    /// stops with the keys (a path 2 m ahead turned it at the agent's slow turning speed).
+    /// </summary>
+    private void Steer(Vector3 direction)
+    {
+        var agent = player.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (!walkingByKeys) player.InterruptAction();
+        player.Movement.Unlock();
+        walkingByKeys = true;
+        if (!agent || !agent.isOnNavMesh) return;
+        // a short path ahead keeps the agent going (with none it drops any velocity)
+        if (UnityEngine.AI.NavMesh.SamplePosition(player.Position + direction * 2f, out var ahead, 1.5f, agent.areaMask)) agent.SetDestination(ahead.position);
+        agent.velocity = direction * agent.speed;
+        player.transform.rotation = Quaternion.RotateTowards(player.transform.rotation, Quaternion.LookRotation(direction), 900f * Time.deltaTime);
+    }
+
+    private void StopSteering()
+    {
+        walkingByKeys = false;
+        var agent = player.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent && agent.isOnNavMesh)
+        {
+            agent.ResetPath();
+            agent.velocity = Vector3.zero;
+        }
+    }
+
+    /// <summary>The NPC within talking distance nearest the character, if any (E talks to it).</summary>
+    public static IslandNpc NearestNpc(PlayerController player)
+    {
+        if (!player || !player.Island) return null;
+        IslandNpc best = null;
+        var bestDistance = float.MaxValue;
+        foreach (var npc in IslandNpc.All)
+        {
+            if (!npc || !npc.isActiveAndEnabled) continue;
+            var d = Vector3.Distance(player.Position, npc.transform.position);
+            if (d <= npc.TalkDistance + 0.5f && d < bestDistance) { best = npc; bestDistance = d; }
+        }
+        return best;
     }
 
     private static bool OverHud() => Shinobytes.UI.HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement() || Shinobytes.UI.DraggableWindow.IsPointerOverWindow;
@@ -142,7 +190,8 @@ public class ManualPlayerController : MonoBehaviour
         HeroMarker.Show(at, marker, task == TaskType.Fighting ? 1.8f : 2.2f);
     }
 
-    private void Talk(IslandNpc npc)
+    /// <summary>Walks up to the NPC if needed and talks to it (a click, or E close by).</summary>
+    public void Talk(IslandNpc npc)
     {
         HeroMarker.Show(npc.transform.position, HeroMarker.Walk, 1.6f);
         player.taskTarget = null;

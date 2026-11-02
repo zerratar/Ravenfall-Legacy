@@ -281,22 +281,18 @@ public class GameCamera : MonoBehaviour
         forcedFreeCamera = false;
     }
 
-    /// <summary>The camera stays on a character played by hand (ManualPlayerController) until StopFollowingControlled.</summary>
+    /// <summary>
+    /// The camera stays on a character played by hand (ManualPlayerController) until StopFollowingControlled: hero mode's
+    /// camera (HeroCamera), in or out of hero mode, so it looks at the character's head rather than its feet and walls in
+    /// the way are hidden or slipped in front of (the orbit camera went through buildings).
+    /// </summary>
     public void FollowControlled(PlayerController player)
     {
         if (!player) return;
-        LeaveRace();
-        controlled = player;
-        state = GameCameraType.Controlled;
         observeCamera.ObservePlayer(player);
         islandObserver.Observe(null, 0);
         playerObserver.Observe(player, float.MaxValue);
-        freeCamera.enabled = false;
-        islandObserveCamera.enabled = false;
-        focusTargetCamera.enabled = false;
-        orbitCamera.Manual = true;
-        orbitCamera.TargetTransform = player.transform;
-        orbitCamera.enabled = true;
+        FollowHero(player);
     }
 
     /// <summary>Hero mode: the top-down or over-the-shoulder camera on the hero (HeroCamera).</summary>
@@ -316,16 +312,11 @@ public class GameCamera : MonoBehaviour
         heroCamera.Follow(player);
     }
 
-    /// <summary>Hero mode ends: back to following the character played by hand.</summary>
+    /// <summary>Hero mode ends: the character played by hand keeps the same camera (FollowControlled).</summary>
     public void StopHeroView()
     {
+        if (controlled) return;
         if (heroCamera) heroCamera.enabled = false;
-        if (controlled)
-        {
-            orbitCamera.Manual = true;
-            orbitCamera.TargetTransform = controlled.transform;
-            orbitCamera.enabled = true;
-        }
     }
 
     public void StopFollowingControlled()

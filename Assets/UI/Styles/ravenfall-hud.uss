@@ -6305,3 +6305,176 @@
 .rf-mstand__row--done .rf-mstand__detail {
     color: var(--rf-success);
 }
+
+/* ---- Talking to Ravebridge's people, 2026-11-02 (RavebridgeDialogueView) ------------------------------------------
+   An RPG box along the bottom, above hero mode's skill bar: the NPC's face, their name, the line typing out, numbered
+   answers. Solid, so the island does not show through the words. */
+.rf-talk {
+    position: absolute;
+    left: 50%;
+    bottom: 150px;
+    width: 980px;
+    margin-left: -490px;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 16px 18px 14px 16px;
+    background-color: var(--rf-bg);
+    border-width: 2px;
+    border-top-width: 3px;
+    border-color: var(--rf-border-strong);
+    border-top-color: var(--rf-accent);
+    border-radius: 10px;
+}
+
+/* outside hero mode there is no skill bar under it */
+.rf-talk--low {
+    bottom: 56px;
+}
+
+.rf-talk__face {
+    width: 150px;
+    height: 150px;
+    flex-shrink: 0;
+    margin-right: 18px;
+    border-width: 2px;
+    border-color: var(--rf-accent-dim);
+    border-radius: 8px;
+    background-color: var(--rf-surface-raised);
+    -unity-background-scale-mode: scale-and-crop;
+    align-items: center;
+    justify-content: center;
+}
+
+.rf-talk__face-letter {
+    font-size: 64px;
+    color: var(--rf-accent);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-talk__body {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rf-talk__head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rf-talk__name {
+    font-size: 24px;
+    color: var(--rf-accent-bright);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-talk__close {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    color: var(--rf-text-dim);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+}
+
+.rf-talk__close:hover {
+    color: var(--rf-text);
+}
+
+.rf-talk__line {
+    margin: 6px 0 12px 0;
+    min-height: 56px;
+    font-size: 21px;
+    color: var(--rf-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+.rf-talk__option {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 5px;
+    padding: 7px 12px 7px 8px;
+    background-color: var(--rf-surface);
+    border-width: 2px;
+    border-color: var(--rf-surface);
+    border-radius: 6px;
+}
+
+.rf-talk__option:hover {
+    background-color: var(--rf-surface-raised);
+    border-color: var(--rf-accent-dim);
+}
+
+.rf-talk__option-key {
+    width: 28px;
+    height: 28px;
+    margin-right: 12px;
+    border-radius: 5px;
+    background-color: var(--rf-border-strong);
+    color: var(--rf-text);
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-talk__option-text {
+    flex-shrink: 1;
+    font-size: 19px;
+    color: var(--rf-text);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+/* the quest's own step: gold */
+.rf-talk__option--quest .rf-talk__option-key {
+    background-color: var(--rf-accent);
+    color: var(--rf-text-on-accent);
+}
+
+.rf-talk__option--quest .rf-talk__option-text {
+    color: var(--rf-accent-bright);
+}
+
+/* Goodbye and not now: quieter */
+.rf-talk__option--leave .rf-talk__option-text {
+    color: var(--rf-text-dim);
+}
+
+.rf-talk__hint {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--rf-text-faint);
+    -unity-text-align: middle-right;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}
+
+/* "E Talk to Duke Ravacio" floating over the NPC close by */
+.rf-talk-prompt {
+    position: absolute;
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 12px 4px 4px;
+    background-color: var(--rf-bg);
+    border-width: 2px;
+    border-color: var(--rf-accent-dim);
+    border-radius: 6px;
+}
+
+.rf-talk-prompt__key {
+    width: 26px;
+    height: 26px;
+    margin-right: 8px;
+    border-radius: 4px;
+    background-color: var(--rf-accent);
+    color: var(--rf-text-on-accent);
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20EB.otf?fileID=12800000&guid=808365b70ef7f9f4196179cbde30517a&type=3#FOT-NewRodin Pro EB");
+}
+
+.rf-talk-prompt__text {
+    font-size: 16px;
+    color: var(--rf-text);
+    -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
+}

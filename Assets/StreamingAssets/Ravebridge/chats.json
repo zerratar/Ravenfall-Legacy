@@ -1,0 +1,115 @@
+{
+  "comment": "What the streamer can say to Ravebridge's NPCs besides their quests (RavebridgeQuests.Chats, the dialogue box's choices). Per NPC a list of choices: ask (the streamer's words), say (the answer), next (choices after it), requires (a quest that must be done first), once (gone after it is picked), coins (Ravebridge coins it gives, once). Goodbye is always there.",
+  "npcs": {
+    "duke": [
+      { "key": "town", "ask": { "en": "What happened to Ravebridge?", "sv": "Vad hände med Ravebridge?" },
+        "say": { "en": "Goblins, mostly. Then the bridge. Then the goblins on the bridge. The castle is fine, though. I check every morning.", "sv": "Vättar, mest. Sedan bron. Sedan vättarna på bron. Slottet är dock i ordning. Jag kollar varje morgon." },
+        "next": [
+          { "key": "why", "ask": { "en": "Why do you stay?", "sv": "Varför stannar du?" },
+            "say": { "en": "Someone has to sit in the big chair. It is very comfortable. I had it made with extra cushions.", "sv": "Någon måste sitta i den stora stolen. Den är väldigt bekväm. Jag lät göra den med extra kuddar." } },
+          { "key": "help", "ask": { "en": "How can I help?", "sv": "Hur kan jag hjälpa till?" },
+            "say": { "en": "Talk to my people. Every one of them has a problem, and none of them will stop telling me about it.", "sv": "Prata med mitt folk. Var och en har ett problem, och ingen av dem slutar berätta om det för mig." } }
+        ] },
+      { "key": "tax", "once": true, "coins": 50, "ask": { "en": "Do I have to pay taxes here?", "sv": "Måste jag betala skatt här?" },
+        "say": { "en": "Taxes? From a hero? Heavens, no. Here, have a little something instead. Do not tell the treasurer.", "sv": "Skatt? Av en hjälte? Himmel, nej. Här, ta lite smått i stället. Säg inget till skattmästaren." } },
+      { "key": "spare", "ask": { "en": "Got any spare coins? Please?", "sv": "Har du några mynt över? Snälla?" },
+        "say": { "en": "Do I look like a bank? Do not answer that.", "sv": "Ser jag ut som en bank? Svara inte på det." } },
+      { "key": "cook", "ask": { "en": "Your cook seems nervous.", "sv": "Din kock verkar nervös." },
+        "say": { "en": "He is planning something for my birthday. I am pretending not to know. I am a very good pretender.", "sv": "Han planerar något till min födelsedag. Jag låtsas att jag inte vet. Jag är väldigt bra på att låtsas." } }
+    ],
+    "cook": [
+      { "key": "egg", "ask": { "en": "Where do eggs come from around here?", "sv": "Var kommer ägg ifrån här omkring?" },
+        "say": { "en": "Chickens, usually. Ours have gone a bit feral since the goblins. Approach with care and a strong spoon.", "sv": "Hönor, oftast. Våra har förvildats lite sedan vättarna kom. Närma dig försiktigt och med en stadig sked." } },
+      { "key": "taste", "ask": { "en": "Can I taste something?", "sv": "Får jag smaka något?" },
+        "say": { "en": "Absolutely not. Well. Maybe one spoonful. Mind, it is hot. It is also mostly turnip.", "sv": "Absolut inte. Nåja. Kanske en sked. Akta, det är varmt. Det är också mest kålrot." },
+        "next": [
+          { "key": "good", "ask": { "en": "Delicious!", "sv": "Utsökt!" },
+            "say": { "en": "You are a kind liar. I like you.", "sv": "Du är en snäll lögnare. Jag gillar dig." } },
+          { "key": "salt", "ask": { "en": "It needs salt.", "sv": "Det behöver salt." },
+            "say": { "en": "Everyone is a critic. Out of my kitchen. No, wait, come back, the goblins took the salt too.", "sv": "Alla är kritiker. Ut ur mitt kök. Nej, vänta, kom tillbaka, vättarna tog saltet också." } }
+        ] },
+      { "key": "secret", "requires": "cook", "ask": { "en": "Did the Duke like the cake?", "sv": "Gillade hertigen tårtan?" },
+        "say": { "en": "He cried. He says it was the onions. There were no onions in it.", "sv": "Han grät. Han säger att det var löken. Det fanns ingen lök i den." } }
+    ],
+    "miller": [
+      { "key": "sails", "ask": { "en": "Why won't the sails turn?", "sv": "Varför snurrar inte vingarna?" },
+        "say": { "en": "Because they are stubborn, like their owner. My mother said that. She was right about everything except mills.", "sv": "För att de är envisa, som sin ägare. Det sa min mamma. Hon hade rätt om allt utom kvarnar." } },
+      { "key": "hargrove", "ask": { "en": "What do you think of Captain Hargrove?", "sv": "Vad tycker du om kapten Hargrove?" },
+        "say": { "en": "Who? Him? I never think of him. Not even a little. Why, did he say something about me?", "sv": "Vem? Han? Jag tänker aldrig på honom. Inte ens lite. Varför, sa han något om mig?" },
+        "next": [
+          { "key": "yes", "ask": { "en": "He might have.", "sv": "Det kanske han gjorde." },
+            "say": { "en": "Oh. Well. Tell him the flour is very good this year. No, do not tell him that. Tell him nothing. Tell him hello.", "sv": "Åh. Jaså. Säg att mjölet är väldigt bra i år. Nej, säg inte det. Säg ingenting. Säg hej." } },
+          { "key": "no", "ask": { "en": "Not a word.", "sv": "Inte ett ord." },
+            "say": { "en": "Good. Typical. Of course he did not. Fine.", "sv": "Bra. Typiskt. Klart att han inte gjorde. Fint." } }
+        ] },
+      { "key": "flour", "requires": "windmill", "once": true, "coins": 40, "ask": { "en": "How is the mill doing now?", "sv": "Hur går det för kvarnen nu?" },
+        "say": { "en": "Turning like a dream, thanks to you. Here, a cut of the first week's flour money. Do not spend it all on bread.", "sv": "Den snurrar som en dröm, tack vare dig. Här, en del av första veckans mjölpengar. Lägg inte allt på bröd." } }
+    ],
+    "priest": [
+      { "key": "pray", "ask": { "en": "I would like to pray.", "sv": "Jag vill gärna be." },
+        "say": { "en": "Wonderful! Take any pew. They are all comfortable. I measured. You feel blessed already, I can tell.", "sv": "Underbart! Ta vilken bänk du vill. De är alla bekväma. Jag har mätt. Du känner dig redan välsignad, det syns." } },
+      { "key": "graveyard", "ask": { "en": "What is moaning in the graveyard?", "sv": "Vad är det som stönar på kyrkogården?" },
+        "say": { "en": "The wind. It is definitely the wind. The wind that says my name and asks for its skull back.", "sv": "Vinden. Det är definitivt vinden. Vinden som säger mitt namn och ber om sin skalle tillbaka." } },
+      { "key": "count", "ask": { "en": "Do you know the Count up north?", "sv": "Känner du greven i norr?" },
+        "say": { "en": "Lovely neighbour. Never comes to morning service. Or any service before sunset. Odd fellow, very pale.", "sv": "Trevlig granne. Kommer aldrig till morgonmässan. Eller någon mässa före solnedgången. Udda typ, väldigt blek." } }
+    ],
+    "ghost": [
+      { "key": "boo", "ask": { "en": "Boo!", "sv": "Bu!" },
+        "say": { "en": "AAAH! Oh. Oh, that is not funny. I nearly died. Again.", "sv": "AAAH! Åh. Åh, det där är inte roligt. Jag dog nästan. Igen." } },
+      { "key": "wooo", "ask": { "en": "Wooooo?", "sv": "Wooooo?" },
+        "say": { "en": "Wooo wooo woooOOO. Sorry, you do not speak ghost. I said: nice boots.", "sv": "Wooo wooo woooOOO. Förlåt, du talar inte spöke. Jag sa: snygga stövlar." } },
+      { "key": "life", "ask": { "en": "What were you like when you were alive?", "sv": "Hur var du när du levde?" },
+        "say": { "en": "Taller. Warmer. I owned a very good hat. Someone has it now. I think about the hat a lot.", "sv": "Längre. Varmare. Jag ägde en väldigt fin hatt. Någon har den nu. Jag tänker mycket på hatten." } }
+    ],
+    "bentnose": [
+      { "key": "green", "ask": { "en": "Why green armour?", "sv": "Varför grön rustning?" },
+        "say": { "en": "Green like grass! Green like frog! Green like Bentnose's favourite sock! Is obvious.", "sv": "Grön som gräs! Grön som groda! Grön som Bentnoses favoritstrumpa! Är självklart." } },
+      { "key": "blue", "ask": { "en": "Have you considered blue?", "sv": "Har du funderat på blått?" },
+        "say": { "en": "Blue? BLUE? Blue is colour of... of... Bentnose need to sit down. You have broken Bentnose.", "sv": "Blått? BLÅTT? Blått är färgen på... på... Bentnose måste sätta sig. Du har förstört Bentnose." } },
+      { "key": "wartfist", "ask": { "en": "Wartfist says you smell of mud.", "sv": "Wartfist säger att du luktar lera." },
+        "say": { "en": "Mud is GOOD smell! Mud is smell of home! Wartfist smell of... of nothing. Like a coward.", "sv": "Lera är BRA lukt! Lera är lukten av hemma! Wartfist luktar... ingenting. Som en fegis." } }
+    ],
+    "wartfist": [
+      { "key": "red", "ask": { "en": "Why red armour?", "sv": "Varför röd rustning?" },
+        "say": { "en": "Red is colour of victory! And of berries. Wartfist like berries. Victory berries.", "sv": "Rött är segerns färg! Och bärens. Wartfist gillar bär. Segerbär." } },
+      { "key": "peace", "ask": { "en": "Could goblins ever live in peace?", "sv": "Skulle vättar någonsin kunna leva i fred?" },
+        "say": { "en": "Peace? Hm. Peace with snacks? Wartfist will think about it. Wartfist is thinking. Done. Maybe.", "sv": "Fred? Hm. Fred med snacks? Wartfist ska tänka på det. Wartfist tänker. Klar. Kanske." } },
+      { "key": "tribute", "requires": "goblins", "once": true, "coins": 30, "ask": { "en": "How is the new armour working out?", "sv": "Hur funkar den nya rustningen?" },
+        "say": { "en": "Is very good. Bentnose is jealous. Wartfist give you shiny coins. Do not tell Bentnose, he want some.", "sv": "Är väldigt bra. Bentnose är avundsjuk. Wartfist ger dig glänsande mynt. Säg inget till Bentnose, han vill ha också." } }
+    ],
+    "keeper": [
+      { "key": "old", "ask": { "en": "How old is this bridge?", "sv": "Hur gammal är den här bron?" },
+        "say": { "en": "Older than the castle. Younger than my knees. Built by my grandfather's grandfather, who was not very good at bridges.", "sv": "Äldre än slottet. Yngre än mina knän. Byggd av min farfars farfar, som inte var särskilt bra på broar." } },
+      { "key": "jump", "ask": { "en": "Can I jump on the planks?", "sv": "Får jag hoppa på plankorna?" },
+        "say": { "en": "Please do not. Please. The last one who did is still in the river. He seems happy there. He waves.", "sv": "Snälla, gör inte det. Snälla. Den senaste som gjorde det är fortfarande i ån. Han verkar trivas. Han vinkar." } },
+      { "key": "toll", "ask": { "en": "Is there a toll?", "sv": "Kostar det något att gå över?" },
+        "say": { "en": "There used to be. Then nobody came. Now I pay people to cross, just for the company. Not you, though. You already came.", "sv": "Det gjorde det förr. Sedan kom ingen. Nu betalar jag folk för att gå över, bara för sällskapets skull. Inte dig, dock. Du har redan kommit." } }
+    ],
+    "captain": [
+      { "key": "spoons", "ask": { "en": "Do your men really fight with spoons?", "sv": "Slåss dina män verkligen med skedar?" },
+        "say": { "en": "Only on Tuesdays. The swords are being sharpened. They have been sharpened for three years. Very sharp by now.", "sv": "Bara på tisdagar. Svärden håller på att slipas. De har slipats i tre år. Väldigt vassa vid det här laget." } },
+      { "key": "millie", "ask": { "en": "You seem fond of Millie.", "sv": "Du verkar förtjust i Millie." },
+        "say": { "en": "I... what? Fond? I am fond of discipline. And of flour. Her flour. For the bread. For the men. Dismissed.", "sv": "Jag... vad? Förtjust? Jag är förtjust i disciplin. Och i mjöl. Hennes mjöl. Till brödet. Till männen. Utgå." } },
+      { "key": "tip", "ask": { "en": "Any advice for the waves?", "sv": "Några råd inför vågorna?" },
+        "say": { "en": "Watch the ground. A red mark means something big is about to land there, so do not be there. Roll out, and let chat pick you up if you fall.", "sv": "Håll koll på marken. Ett rött märke betyder att något stort snart landar där, så var inte där. Rulla undan, och låt chatten resa dig om du faller." } },
+      { "key": "wage", "requires": "defend", "once": true, "coins": 75, "ask": { "en": "Do I get paid for holding the line?", "sv": "Får jag betalt för att hålla linjen?" },
+        "say": { "en": "The Duke pays in compliments. I pay in coins. Here. You held better than any of my lads. Do not tell them.", "sv": "Hertigen betalar med komplimanger. Jag betalar med mynt. Här. Du höll bättre än någon av mina pojkar. Säg inget till dem." } }
+    ],
+    "shopkeeper": [
+      { "key": "nothing", "ask": { "en": "What do you sell, really?", "sv": "Vad säljer du egentligen?" },
+        "say": { "en": "A little bit of everything! Mostly nothing. But it is very good nothing, and I keep it dusted.", "sv": "Lite av allt! Mest ingenting. Men det är väldigt bra ingenting, och jag håller det dammat." } },
+      { "key": "ears", "ask": { "en": "Why do you buy goblin ears?", "sv": "Varför köper du vättöron?" },
+        "say": { "en": "I said do not ask. You asked. Now I have to think about it, and I was so happy not thinking about it.", "sv": "Jag sa fråga inte. Du frågade. Nu måste jag tänka på det, och jag var så glad när jag inte tänkte på det." } },
+      { "key": "bucket", "ask": { "en": "Tell me about the bucket.", "sv": "Berätta om hinken." },
+        "say": { "en": "Finest bucket in the west. Holds water. Holds milk. Holds a small goblin, if he is cooperative. No refunds.", "sv": "Västerns finaste hink. Rymmer vatten. Rymmer mjölk. Rymmer en liten vätte, om han samarbetar. Inga returer." } }
+    ],
+    "count": [
+      { "key": "fangs", "ask": { "en": "Are those fangs?", "sv": "Är det där huggtänder?" },
+        "say": { "en": "These? Simply very long teeth. A family trait. We floss a great deal. Next question, please.", "sv": "Dessa? Bara väldigt långa tänder. Ett släktdrag. Vi använder mycket tandtråd. Nästa fråga, tack." } },
+      { "key": "garlic", "ask": { "en": "Would you like some garlic bread?", "sv": "Vill du ha lite vitlöksbröd?" },
+        "say": { "en": "How generous. How thoughtful. Get it away from me. I mean, I am on a diet.", "sv": "Så generöst. Så omtänksamt. Ta bort det från mig. Jag menar, jag bantar." } },
+      { "key": "draynor", "ask": { "en": "This looks a lot like Draynor Manor.", "sv": "Det här ser väldigt mycket ut som Draynor Manor." },
+        "say": { "en": "Never heard of it. This is a completely different manor. It has a fence. And a garden. Draynor? Who is Draynor?", "sv": "Aldrig hört talas om det. Det här är en helt annan herrgård. Den har ett staket. Och en trädgård. Draynor? Vem är Draynor?" } }
+    ]
+  }
+}

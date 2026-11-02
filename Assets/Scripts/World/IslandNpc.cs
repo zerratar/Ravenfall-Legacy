@@ -44,7 +44,8 @@ public sealed class IslandNpc : MonoBehaviour
     private const float LineSeconds = 6f;
     private const float FadeSeconds = 0.35f;
 
-    /// <summary>Up to this far from the camera a speech bubble keeps its size; further off it grows (to 3 times), so it stays readable.</summary>
+    /// <summary>At this far from the camera a speech bubble has its own size; further off it grows (to 3 times), so it stays
+    /// readable, and closer it shrinks (to a third, a camera right by the character played by hand).</summary>
     private const float BubbleDistance = 14f;
     private float bubbleScale = 1f;
     private static readonly List<IslandNpc> all = new List<IslandNpc>();
@@ -75,6 +76,18 @@ public sealed class IslandNpc : MonoBehaviour
         if (bubble) bubble.gameObject.SetActive(false);
     }
 
+    /// <summary>Talked to (the dialogue box): no idle lines over their head meanwhile, and the one showing goes.</summary>
+    public bool Hushed
+    {
+        get => hushed;
+        set
+        {
+            hushed = value;
+            if (value && bubble) bubble.gameObject.SetActive(false);
+        }
+    }
+    private bool hushed;
+
     /// <summary>Shows a line over their head for a few seconds.</summary>
     public void Say(string text, float seconds = LineSeconds)
     {
@@ -96,7 +109,7 @@ public sealed class IslandNpc : MonoBehaviour
             nextLine = Time.time + UnityEngine.Random.Range(30f, 60f);
             var lines = Lines != null ? Lines() : LinesFor?.Invoke(Key);
             // only where someone might hear it: a player on the same island
-            if (lines != null && lines.Count > 0 && SomeoneNear()) Say(lines[UnityEngine.Random.Range(0, lines.Count)]);
+            if (lines != null && lines.Count > 0 && !hushed && SomeoneNear()) Say(lines[UnityEngine.Random.Range(0, lines.Count)]);
         }
 
         if (!bubble || !bubble.gameObject.activeSelf) return;
@@ -111,7 +124,7 @@ public sealed class IslandNpc : MonoBehaviour
         var cam = Camera.main;
         bubble.transform.position = transform.position + Vector3.up * HeadHeight;
         // the NPC's own scale (a dwarf is a small human) must not shrink the words
-        bubbleScale = cam ? Mathf.Clamp(Vector3.Distance(cam.transform.position, bubble.transform.position) / BubbleDistance, 1f, 3f) : 1f;
+        bubbleScale = cam ? Mathf.Clamp(Vector3.Distance(cam.transform.position, bubble.transform.position) / BubbleDistance, 0.32f, 3f) : 1f;
         bubble.transform.localScale = Vector3.one * bubbleScale / Mathf.Max(0.0001f, transform.lossyScale.y);
         if (cam) bubble.transform.rotation = cam.transform.rotation;
         bubble.alpha = Mathf.Min(Mathf.Clamp01(shownFor / FadeSeconds), Mathf.Clamp01(showLeft / FadeSeconds));

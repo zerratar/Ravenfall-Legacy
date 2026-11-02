@@ -384,8 +384,15 @@ public partial class HeroController : MonoBehaviour
         else if (spinUntil > 0f) StopSpin();
         if (busy) return;
 
-        if (!Keybinds.IsTyping)
+        // a talk takes the keys (1 to 4 pick answers there, not skills)
+        if (!Keybinds.IsTyping && !Shinobytes.UI.RavebridgeDialogueView.IsOpen)
         {
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                var near = ManualPlayerController.NearestNpc(Player);
+                var manual = near ? Player.GetComponent<ManualPlayerController>() : null;
+                if (manual) { if (steering) StopSteering(); manual.Talk(near); return; }
+            }
             if (Input.GetKeyDown(KeyCode.V) && heroCamera) heroCamera.Toggle();
             if (Input.GetKeyDown(KeyCode.C)) ToggleDetails();
             if (Input.GetKeyDown(KeyCode.I)) InventoryPressed?.Invoke();

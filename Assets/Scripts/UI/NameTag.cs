@@ -47,9 +47,16 @@ public class NameTag : MonoBehaviour
     private CanvasGroup group;
     internal float Alpha = 1f;
 
+    // a camera close to the character (playing by hand on Ravebridge) shrinks the tag,
+    // so it does not fill the screen (a fifth right up close); from NearCamera out it keeps its size
+    private const float NearCamera = 18f;
+    private const float NearestScale = 0.2f;
+    private Vector3 homeScale;
+
     private void Awake()
     {
         this._transform = transform;
+        homeScale = _transform.localScale;
     }
 
     void Start()
@@ -107,6 +114,9 @@ public class NameTag : MonoBehaviour
         var player = TargetPlayer.transform;
         var at = player.parent ? player.position : TargetPlayer.Position;
         _transform.SetPositionAndRotation(at + this.offset, GameCamera.Rotation); //targetCamera.rotation);
+        var cam = Camera.main;
+        var near = cam ? Mathf.Clamp(Vector3.Distance(cam.transform.position, _transform.position) / NearCamera, NearestScale, 1f) : 1f;
+        _transform.localScale = homeScale * near;
         oldCensor = gameManager.LogoCensor;
         if (titleVersion != QuestTitles.Version || titleOwner != TargetPlayer) UpdateTitle();
     }

@@ -273,3 +273,25 @@ changed.
   the island is edited by hand in MainWorld from now on. `ravebridge-island.cs`, `ravebridge-layout.cs`,
   `ravebridge-dress.cs`, `ravebridge-swamp.cs` and `tools/hero/hero-places.cs` describe the first Ravebridge and must
   not be run on it.
+
+## Playing by hand, from the user's first try (2026-11-02)
+
+The user played Ravebridge by hand (outside hero mode) and asked for these, built the same day:
+
+- **The camera:** manual play uses hero mode's camera (HeroCamera) too, so it looks at the character's head rather
+  than its feet and hides a roof or wall that stands between it and the character (the orbit camera went through the
+  buildings). Over the shoulder, a wall between the head and the camera brings the camera in front of it. The wheel
+  goes from top-down into over the shoulder when zooming in past the closest top-down view, and back; V switches too.
+- **Name tags and speech lines shrink up close:** full size from 15 m out, down to a third right by the camera.
+- **WASD steers at once:** the agent's velocity as in hero mode, not a path 2 m ahead that turned the character at the
+  agent's slow turning speed.
+- **E talks** to the NPC within reach; a small "E Talk to ..." prompt floats over them. Clicking still works. In hero
+  mode too; while a talk is open, 1 to 4 pick answers instead of casting.
+- **The dialogue box** is an RPG box along the bottom: the NPC's face (NpcPortrait renders their own model's head
+  once), their name, the line typing out (Space, E, Enter or a click finishes it), numbered answers (1 to 9 or a
+  click). The quest's own step is gold, Goodbye and Not now are quieter. The NPC no longer repeats the line in a
+  speech bubble while talking (it overlapped the name tags).
+- **More to say:** StreamingAssets/Ravebridge/chats.json gives every NPC things to say besides the quests, with
+  answers, follow-up choices, ones that wait for a quest to be done, and a few that give Ravebridge coins once (the
+  Duke's tax, Millie's flour money, Wartfist's thanks, the captain's wage). A quest offered can be asked about first
+  ("What's in it for me?" shows the rewards) or turned down ("Not now").

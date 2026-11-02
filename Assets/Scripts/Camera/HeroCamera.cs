@@ -58,7 +58,11 @@ public class HeroCamera : MonoBehaviour
         if (!Shinobytes.UI.DraggableWindow.IsPointerOverWindow && !Shinobytes.UI.HudPointer.IsOverHud())
         {
             var step = CameraSettings.ZoomStep(20f);
-            if (Mode == View.TopDown) zoom = Mathf.Clamp(zoom - step, MinZoom, MaxZoom);
+            // zooming in past the closest top-down view goes over the shoulder, and out past the farthest shoulder view
+            // back up: the wheel alone reaches both
+            if (Mode == View.TopDown && step > 0f && zoom <= MinZoom + 0.01f) { Mode = View.Shoulder; shoulderDistance = MaxShoulder; }
+            else if (Mode == View.Shoulder && step < 0f && shoulderDistance >= MaxShoulder - 0.01f) { Mode = View.TopDown; zoom = MinZoom; }
+            else if (Mode == View.TopDown) zoom = Mathf.Clamp(zoom - step, MinZoom, MaxZoom);
             else shoulderDistance = Mathf.Clamp(shoulderDistance - step * 0.4f, MinShoulder, MaxShoulder);
         }
 
@@ -72,6 +76,9 @@ public class HeroCamera : MonoBehaviour
         var shoulderPosition = focus + Vector3.up * 2.2f + shoulderRotation * Vector3.right * 0.6f - shoulderRotation * Vector3.forward * shoulderDistance;
         var t = Mathf.SmoothStep(0f, 1f, blend);
         var position = Vector3.Lerp(shoulderPosition, topPosition, t);
+        // over the shoulder, a wall between the head and the camera brings the camera in front of it (from above, the
+        // sight lines hide it instead)
+        position = KeepClear(focus + Vector3.up * 1.7f, position, 1f - t);
         // a hit's shake: a little noise that dies away
         if (Time.unscaledTime < shakeUntil)
         {
@@ -81,6 +88,36 @@ public class HeroCamera : MonoBehaviour
         }
         transform.SetPositionAndRotation(position, Quaternion.Slerp(shoulderRotation, topRotation, t));
         UpdateSightLine();
+    }
+
+    private static readonly RaycastHit[] clearHits = new RaycastHit[16];
+    private float clearDistance = float.MaxValue;
+
+    /// <summary>
+    /// The camera's spot, moved toward the head when something solid (not a character, not a trigger, not something the
+    /// sight lines have hidden) stands between them; eased back out. <paramref name="weight"/> 0 leaves it alone.
+    /// </summary>
+    private Vector3 KeepClear(Vector3 head, Vector3 wanted, float weight)
+    {
+        var to = wanted - head;
+        var length = to.magnitude;
+        if (weight <= 0.01f || length < 0.5f) { clearDistance = float.MaxValue; return wanted; }
+        var direction = to / length;
+        var allowed = length;
+        var count = Physics.SphereCastNonAlloc(new Ray(head, direction), 0.25f, clearHits, length, ~0, QueryTriggerInteraction.Ignore);
+        for (var i = 0; i < count; i++)
+        {
+            var c = clearHits[i].collider;
+            if (!c || clearHits[i].distance <= 0f) continue;
+            if (c.GetComponentInParent<PlayerController>() || c.GetComponentInParent<EnemyController>() || c.GetComponentInParent<IslandNpc>()) continue;
+            var r = c.GetComponent<Renderer>();
+            if (r && hidden.ContainsKey(r)) continue;
+            allowed = Mathf.Min(allowed, Mathf.Max(0.6f, clearHits[i].distance - 0.2f));
+        }
+        // in at once (never through the wall), back out gently
+        clearDistance = allowed < clearDistance ? allowed : Mathf.MoveTowards(Mathf.Min(clearDistance, length), allowed, Time.unscaledDeltaTime * 4f);
+        var clear = head + direction * Mathf.Min(clearDistance, length);
+        return Vector3.Lerp(wanted, clear, weight);
     }
 
     private float shakeUntil;

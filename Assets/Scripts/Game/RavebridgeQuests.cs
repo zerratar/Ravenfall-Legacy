@@ -63,6 +63,13 @@ public static class RavebridgeQuests
     /// <summary>A quest; a bounty comes round again <see cref="cooldown"/> minutes after it is done.</summary>
     public class Quest { public string key; public Text name; public List<Step> steps; public Reward reward; public bool bounty; public float cooldown; }
     public class DukeText { public Text progress, done; }
+
+    /// <summary>
+    /// A choice the streamer can say to an NPC besides the quests (StreamingAssets/Ravebridge/chats.json): its words, the
+    /// answer, choices after it, a quest that must be done first, gone once picked, and Ravebridge coins it gives (once).
+    /// </summary>
+    public class Chat { public string key; public Text ask, say; public List<Chat> next; public string requires; public bool once; public long coins; }
+    public class ChatBook { public Dictionary<string, List<Chat>> npcs; }
     public class Book { public Dictionary<string, Npc> npcs; public Dictionary<string, Text> items; public List<Quest> quests; public DukeText duke; }
 
     /// <summary>
@@ -81,6 +88,9 @@ public static class RavebridgeQuests
 
         /// <summary>Hero mode upgrades bought from the shopkeeper, by shop entry, and their levels (RavebridgeShop).</summary>
         public Dictionary<string, int> Upgrades = new Dictionary<string, int>();
+
+        /// <summary>Chats picked that are said only once (npc.key), and those that gave coins.</summary>
+        public Dictionary<string, int> Chats = new Dictionary<string, int>();
 
         /// <summary>Bounties: how often each was done, and when it comes round again (UTC).</summary>
         public Dictionary<string, int> Bounties = new Dictionary<string, int>();
@@ -116,6 +126,29 @@ public static class RavebridgeQuests
             }
             IslandNpc.LinesFor = key => book.npcs != null && book.npcs.TryGetValue(key, out var n) && n.lines != null ? n.lines.Get() : null;
             return book;
+        }
+    }
+
+    private static ChatBook chats;
+
+    /// <summary>What the streamer can say to each NPC besides the quests (chats.json).</summary>
+    public static ChatBook Chats
+    {
+        get
+        {
+            if (chats != null) return chats;
+            try
+            {
+                var path = Path.Combine(Application.streamingAssetsPath, "Ravebridge", "chats.json");
+                chats = File.Exists(path) ? JsonConvert.DeserializeObject<ChatBook>(File.ReadAllText(path)) : new ChatBook();
+            }
+            catch (Exception exc)
+            {
+                Shinobytes.Debug.LogError("The Ravebridge chats could not be read: " + exc.Message);
+                chats = new ChatBook();
+            }
+            chats.npcs ??= new Dictionary<string, List<Chat>>();
+            return chats;
         }
     }
 
@@ -200,6 +233,12 @@ public static class RavebridgeQuests
 
         /// <summary>The talk ends once it is picked (it opened something else: the shop).</summary>
         public bool Closes;
+
+        /// <summary>What the NPC answers to it (a chat, "what is in it for me?"), shown instead of talking afresh.</summary>
+        public Func<Reply> Then;
+
+        /// <summary>Goodbye, or another way of ending the talk.</summary>
+        public bool Leaves => Pick == null && Then == null;
     }
 
     public class Reply
@@ -209,8 +248,60 @@ public static class RavebridgeQuests
         public readonly List<Option> Options = new List<Option>();
     }
 
-    /// <summary>What an NPC says to the character, and what it can answer.</summary>
+    /// <summary>
+    /// What an NPC says to the character, and what it can answer: the quest's choices, then what the streamer can say
+    /// besides (chats.json), and Goodbye last.
+    /// </summary>
     public static Reply Talk(PlayerController player, string npc)
+    {
+        var reply = TalkQuests(player, npc);
+        var leave = reply.Options.FindIndex(o => o.Leaves);
+        var bye = leave >= 0 ? reply.Options[leave] : new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE };
+        if (leave >= 0) reply.Options.RemoveAt(leave);
+        reply.Options.AddRange(ChatOptions(player, npc, Chats.npcs.TryGetValue(npc, out var list) ? list : null));
+        reply.Options.Add(bye);
+        return reply;
+    }
+
+    /// <summary>The chats the character can pick now: done quests they wait for, not the once-only ones already said.</summary>
+    private static IEnumerable<Option> ChatOptions(PlayerController player, string npc, List<Chat> list)
+    {
+        if (list == null) yield break;
+        var state = StateOf(player);
+        foreach (var chat in list)
+        {
+            if (chat?.ask == null || chat.say == null) continue;
+            if (chat.requires != null && !IsDone(state, chat.requires)) continue;
+            if (chat.once && state.Chats.ContainsKey(npc + "." + chat.key)) continue;
+            var c = chat;
+            yield return new Option { Label = c.ask.Get(), Then = () => ChatReply(player, npc, c) };
+        }
+    }
+
+    /// <summary>A chat picked: the NPC answers (out loud too), coins once if it gives any, and the choices after it.</summary>
+    private static Reply ChatReply(PlayerController player, string npc, Chat chat)
+    {
+        var state = StateOf(player);
+        var id = npc + "." + chat.key;
+        if ((chat.once || chat.coins > 0) && !state.Chats.ContainsKey(id))
+        {
+            state.Chats[id] = 1;
+            if (chat.coins > 0)
+            {
+                state.Coins += chat.coins;
+                Notice?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, Localization.UI_RBQ_RB_COINS, chat.coins.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)));
+            }
+            Save(player);
+        }
+        var reply = new Reply { Npc = NpcName(npc), Line = chat.say.Get() };
+        reply.Options.AddRange(ChatOptions(player, npc, chat.next));
+        // back to what the NPC had to say, an empty Pick talks afresh
+        reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_MORE, Pick = () => { } });
+        reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE });
+        return reply;
+    }
+
+    private static Reply TalkQuests(PlayerController player, string npc)
     {
         var state = StateOf(player);
         var reply = new Reply { Npc = NpcName(npc) };
@@ -266,12 +357,34 @@ public static class RavebridgeQuests
                 }
                 reply.Line = step.say?.Get();
                 var q = quest;
-                reply.Options.Add(new Option
+                var accept = new Option
                 {
                     Label = at == 0 ? string.Format(quest.bounty ? Localization.UI_RAVEBRIDGE_Q_BOUNTY_ACCEPT : Localization.UI_RAVEBRIDGE_Q_ACCEPT, quest.name.Get()) : Localization.UI_RAVEBRIDGE_Q_CONTINUE,
                     Pick = () => { Use(state, step.uses); Add(state, step.gives); Advance(player, q); },
-                });
-                reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
+                };
+                reply.Options.Add(accept);
+                if (at == 0)
+                {
+                    // a quest offered: what is in it, before saying yes; and a polite no
+                    var npcName = reply.Npc;
+                    var rewards = RewardText(quest, player.IsLocal);
+                    if (!string.IsNullOrEmpty(rewards))
+                    {
+                        reply.Options.Add(new Option
+                        {
+                            Label = Localization.UI_RAVEBRIDGE_Q_WHATS_IN_IT,
+                            Then = () =>
+                            {
+                                var r = new Reply { Npc = npcName, Line = string.Format(Localization.UI_RAVEBRIDGE_Q_REWARD_LINE, rewards) };
+                                r.Options.Add(accept);
+                                r.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_NOT_NOW });
+                                return r;
+                            },
+                        });
+                    }
+                    reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_NOT_NOW, Pick = null });
+                }
+                else reply.Options.Add(new Option { Label = Localization.UI_RAVEBRIDGE_Q_BYE, Pick = null });
                 return reply;
             }
 
