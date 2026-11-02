@@ -5174,3 +5174,78 @@
 .rf-mbar .rf-mbar__icon {
     background-color: rgb(214, 170, 40);
 }
+
+/* The regatta's standings (MangroveView): every racer in order on the right, what it carries, its lap or time. */
+.rf-mstand {
+    position: absolute;
+    right: 16px;
+    top: 200px;
+    width: 330px;
+    flex-direction: column;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: rgb(20, 18, 15);
+    border-left-width: 3px;
+    border-left-color: var(--rf-accent);
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.rf-mstand__title {
+    font-size: 14px;
+    color: var(--rf-text-dim);
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    padding-left: 12px;
+    padding-bottom: 4px;
+}
+
+.rf-mstand__row {
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+    padding-left: 8px;
+    padding-right: 12px;
+}
+
+.rf-mstand__row--lead {
+    background-color: rgb(52, 40, 22);
+}
+
+.rf-mstand__place {
+    width: 26px;
+    font-size: 17px;
+    -unity-font-style: bold;
+    color: var(--rf-accent);
+    -unity-text-align: middle-center;
+}
+
+.rf-mstand__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 17px;
+    color: var(--rf-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-left: 6px;
+}
+
+.rf-mstand__glyphs {
+    font-size: 14px;
+    color: var(--rf-accent-bright);
+    letter-spacing: 4px;
+    margin-left: 6px;
+}
+
+.rf-mstand__detail {
+    min-width: 64px;
+    font-size: 15px;
+    color: var(--rf-text-dim);
+    -unity-text-align: middle-right;
+    margin-left: 6px;
+}
+
+.rf-mstand__row--done .rf-mstand__detail {
+    color: var(--rf-success);
+}

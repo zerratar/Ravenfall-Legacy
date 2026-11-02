@@ -163,7 +163,7 @@ public class MangroveCommand : ChatBotCommandHandler<string>
 
         var aimed = kind != global::Regatta.Meddling.Kraken && !string.IsNullOrWhiteSpace(target);
         var freeIn = RegattaMeddling.FreeIn(player.Id);
-        var price = kind == global::Regatta.Meddling.Kraken ? 0 : aimed ? RegattaMeddling.AimedPrice : freeIn > 0f ? RegattaMeddling.RandomPrice : 0;
+        var price = kind == global::Regatta.Meddling.Kraken ? 0 : aimed ? global::Regatta.AimedPrice(player.Id) : freeIn > 0f ? RegattaMeddling.RandomPrice : 0;
         var confirm = UnityEngine.Mathf.RoundToInt(RegattaMeddling.ConfirmSeconds);
         if (price > 0)
         {
@@ -194,9 +194,9 @@ public class MangroveCommand : ChatBotCommandHandler<string>
         }
         if (price == 0)
         {
+            // no chat reply for a free one: the feed on the stream says it, and a busy chat's replies filled the bot's
+            // message budget ahead of the race's own announcements
             RegattaMeddling.UsedFree(player.Id);
-            var next = UnityEngine.Mathf.RoundToInt(RegattaMeddling.FreeEvery);
-            client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_DONE : Localization.MSG_REGATTA_WIND_DONE, name, next);
             return;
         }
         var taken = false;
@@ -216,6 +216,7 @@ public class MangroveCommand : ChatBotCommandHandler<string>
             client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_NOT_CHARGED : Localization.MSG_REGATTA_WIND_NOT_CHARGED, name);
             return;
         }
+        global::Regatta.Paid(player.Id, price, aimed);
         client.SendReply(gm, kind == global::Regatta.Meddling.Keg ? Localization.MSG_REGATTA_KEG_PAID : Localization.MSG_REGATTA_WIND_PAID, name, price);
     }
 
@@ -227,6 +228,8 @@ public class MangroveCommand : ChatBotCommandHandler<string>
             case global::Regatta.MeddleResult.Racing: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_RACING); break;
             case global::Regatta.MeddleResult.Raced: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_RACED); break;
             case global::Regatta.MeddleResult.NoKegs: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_KEGS); break;
+            case global::Regatta.MeddleResult.NoWinds: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_WINDS, name); break;
+            case global::Regatta.MeddleResult.WindRest: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_WIND_REST, name, wait); break;
             case global::Regatta.MeddleResult.NoTarget: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_NO_TARGET, name); break;
             case global::Regatta.MeddleResult.Finished: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_FINISHED, name); break;
             case global::Regatta.MeddleResult.Protected: client.SendReply(gm, Localization.MSG_REGATTA_MEDDLE_PROTECTED, name, wait); break;

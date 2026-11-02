@@ -7,7 +7,8 @@ namespace Shinobytes.UI
     /// <summary>
     /// The Mangrove island on screen (docs/banana-island.md): the feed of what its monkeys, treasure hunters and racers
     /// get up to (MangroveFeed), low on the left, each line fading after a while; and a bar under the village bar while
-    /// something runs there (a treasure dig, the regatta, the pirates' raid), saying what and how to join. It rides on the
+    /// something runs there (a treasure dig, the regatta, the pirates' raid), saying what and how to join; during the
+    /// regatta, every racer's place on the right (Regatta.Standings). It rides on the
     /// stream quest view's document (StreamQuestView adds it), so it hides with the rest of the HUD.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
@@ -32,6 +33,9 @@ namespace Shinobytes.UI
         private Label barLine;
         private VisualElement barTrack;
         private VisualElement barFill;
+        private VisualElement standings;
+        private VisualElement standingsRows;
+        private readonly List<(Label Place, Label Name, Label Glyphs, Label Detail, VisualElement Row)> standingRows = new List<(Label, Label, Label, Label, VisualElement)>();
         private bool bound;
         private bool feedDirty = true;
         private float nextBar;
@@ -47,6 +51,7 @@ namespace Shinobytes.UI
             MangroveFeed.Changed -= FeedChanged;
             feed?.RemoveFromHierarchy();
             bar?.RemoveFromHierarchy();
+            standings?.RemoveFromHierarchy();
         }
 
         private void FeedChanged() => feedDirty = true;
@@ -65,6 +70,18 @@ namespace Shinobytes.UI
 
             feed?.RemoveFromHierarchy();
             bar?.RemoveFromHierarchy();
+            standings?.RemoveFromHierarchy();
+
+            standings = new VisualElement { name = "mangrove-standings", pickingMode = PickingMode.Ignore };
+            standings.AddToClassList("rf-mstand");
+            var head = new Label(Localization.UI_REGATTA_STANDINGS) { pickingMode = PickingMode.Ignore };
+            head.AddToClassList("rf-mstand__title");
+            standings.Add(head);
+            standingsRows = new VisualElement { pickingMode = PickingMode.Ignore };
+            standings.Add(standingsRows);
+            standings.style.display = DisplayStyle.None;
+            standingRows.Clear();
+            layer.Add(standings);
 
             feed = new VisualElement { name = "mangrove-feed", pickingMode = PickingMode.Ignore };
             feed.AddToClassList("rf-mfeed");
@@ -105,7 +122,7 @@ namespace Shinobytes.UI
 
         private void Update()
         {
-            if (bound && (feed.panel == null || bar.panel == null)) bound = false;
+            if (bound && (feed.panel == null || bar.panel == null || standings.panel == null)) bound = false;
             if (!bound)
             {
                 TryBind();
@@ -117,8 +134,9 @@ namespace Shinobytes.UI
 
             if (Time.unscaledTime >= nextBar)
             {
-                nextBar = Time.unscaledTime + 0.5f;
+                nextBar = Time.unscaledTime + 0.25f;
                 UpdateBar();
+                UpdateStandings();
             }
         }
 
@@ -154,6 +172,53 @@ namespace Shinobytes.UI
                 row.style.opacity = opacity;
                 var display = opacity > 0f ? DisplayStyle.Flex : DisplayStyle.None;
                 if (row.style.display != display) row.style.display = display;
+            }
+        }
+
+        /// <summary>The regatta's racers in order, with what each carries and its lap or time.</summary>
+        private void UpdateStandings()
+        {
+            var list = Regatta.Standings();
+            var building = VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive;
+            var show = list != null && list.Count > 0 && !building;
+            var display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (standings.style.display != display) standings.style.display = display;
+            if (!show) return;
+
+            while (standingRows.Count < list.Count)
+            {
+                var row = new VisualElement { pickingMode = PickingMode.Ignore };
+                row.AddToClassList("rf-mstand__row");
+                var place = new Label { pickingMode = PickingMode.Ignore };
+                place.AddToClassList("rf-mstand__place");
+                var name = new Label { pickingMode = PickingMode.Ignore };
+                name.AddToClassList("rf-mstand__name");
+                var glyphs = new Label { pickingMode = PickingMode.Ignore };
+                glyphs.AddToClassList("rf-icon");
+                glyphs.AddToClassList("rf-mstand__glyphs");
+                var detail = new Label { pickingMode = PickingMode.Ignore };
+                detail.AddToClassList("rf-mstand__detail");
+                row.Add(place);
+                row.Add(name);
+                row.Add(glyphs);
+                row.Add(detail);
+                standingsRows.Add(row);
+                standingRows.Add((place, name, glyphs, detail, row));
+            }
+            for (var i = 0; i < standingRows.Count; ++i)
+            {
+                var (place, name, glyphs, detail, row) = standingRows[i];
+                var on = i < list.Count;
+                var rowDisplay = on ? DisplayStyle.Flex : DisplayStyle.None;
+                if (row.style.display != rowDisplay) row.style.display = rowDisplay;
+                if (!on) continue;
+                var s = list[i];
+                place.text = s.Place.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                name.text = s.Name;
+                glyphs.text = s.Glyphs;
+                detail.text = s.Detail;
+                row.EnableInClassList("rf-mstand__row--lead", s.Place == 1);
+                row.EnableInClassList("rf-mstand__row--done", s.Done);
             }
         }
 

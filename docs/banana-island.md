@@ -144,6 +144,36 @@ pickups, and viewers in chat interfering.
 - Splashes, blasts and auras are left out in potato mode.
 - First guesses to tune: the prices, the free minute, the item odds and strengths, and the dodge chances.
 
+#### Balance from the design review (2026-11-02)
+
+A reviewer found boat speed decided every race (a galleon about five times a rowboat, races of 17 to 30 s, a pickup
+worth 1 to 2 s), so the biggest boat always won and the pickups only shuffled the places behind it. The user asked for
+the changes before playing it.
+
+- **Race speed:** in the race a boat goes at `30 + (its own speed - 12) * 0.25` (`Regatta.RaceSpeed`, set as the boat's
+  pace): 30 m/s for a new rowboat, 44.5 for a master's galleon. The order still follows boat and level, by half again at
+  most instead of almost six times. Out of the race boats go at their own speed.
+- **Two laps** (`Regatta.Laps`) round the same buoys: about 60 to 90 s. Buoys, bottle rows and hazards are placed once
+  and sailed through on both laps.
+- **The end:** once the winner is in, the rest have 25 s ("The winner is in! The rest have 25 seconds to finish."); then
+  those still sailing are placed as they lie, without a time. They are paid and counted as races on the board.
+- **Bottles:** each racer takes each bottle once a lap, a taken bottle shows again after 1.5 s (was 8), and the pickup
+  reach is 4 m for every hull (a galleon's beam used to catch twice as much). The first boats through a row no longer
+  take every bottle in it.
+- **Catch-up:** the back third's tailwind is 1.7x for 5 s (others 1.5x for 4 s), and 15% of its cannonballs are chain
+  shots at the leader instead of the boat ahead.
+- **The Kraken** holds its boat at 15% speed (was 5%), so it costs the leader its lead but not the race.
+- **Viewers' wind:** a racer gets it at most every 8 s and twice a race. Aiming costs 2000, doubling with each aimed one
+  a viewer sends in the race (4000, then 8000).
+- **The pot:** half of every paid meddle goes in the session's pot on the server, shared by the next race's podium
+  50/30/20; chat hears "Chat's meddling put N coins in the prize pot". Free meddles get no chat reply (the feed shows
+  them), to spare the bot's message budget.
+- **Prizes:** `(500 + Sailing level * 5)` times the place's factor (was `300 + level * 10`: the high levels already win
+  more often), plus the pot share. Second and third get a new sail at 30% (others 10%, the winner always).
+- **Standings on screen:** every racer in order on the right (MangroveView, `Regatta.Standings`), with icons for the item
+  it carries, a raised shield or a tailwind, and its lap or finish time. The bar keeps the time, the leader's lap and how
+  to meddle.
+
 ### 6. The pirate raid
 
 - When the banana pile is big, pirates come for it: a pirate ship anchors off the south beach and waves of pirates
