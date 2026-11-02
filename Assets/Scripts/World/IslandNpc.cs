@@ -57,6 +57,17 @@ public sealed class IslandNpc : MonoBehaviour
 
     public static IReadOnlyList<IslandNpc> All => all;
 
+    /// <summary>The gap between the head and the mark, and between the mark and a speech bubble (metres).</summary>
+    private const float MarkGap = 0.12f;
+
+    /// <summary>The mark over their head is showing: its middle and its height now (it is sized to the screen).</summary>
+    public bool MarkShown => marker && marker.gameObject.activeSelf;
+    public Vector3 MarkCenter { get; private set; }
+    public float MarkHeight { get; private set; }
+
+    /// <summary>Just over their head: the "Talk to" prompt floats here when there is no mark.</summary>
+    public Vector3 HeadTop => transform.position + Vector3.up * HeadHeight;
+
     public static IslandNpc Find(string key)
     {
         foreach (var npc in all) if (npc && npc.Key == key) return npc;
@@ -122,7 +133,8 @@ public sealed class IslandNpc : MonoBehaviour
         }
 
         var cam = Camera.main;
-        bubble.transform.position = transform.position + Vector3.up * HeadHeight;
+        // over the mark (which stays where it is), else over the head
+        bubble.transform.position = HeadTop + Vector3.up * (MarkShown ? MarkGap + MarkHeight + MarkGap : MarkGap);
         // the NPC's own scale (a dwarf is a small human) must not shrink the words
         bubbleScale = cam ? Mathf.Clamp(Vector3.Distance(cam.transform.position, bubble.transform.position) / BubbleDistance, 0.32f, 3f) : 1f;
         bubble.transform.localScale = Vector3.one * bubbleScale / Mathf.Max(0.0001f, transform.lossyScale.y);
@@ -130,7 +142,11 @@ public sealed class IslandNpc : MonoBehaviour
         bubble.alpha = Mathf.Min(Mathf.Clamp01(shownFor / FadeSeconds), Mathf.Clamp01(showLeft / FadeSeconds));
     }
 
-    /// <summary>The mark over their head: looked up twice a second, bobbing gently, turned to the camera, out of the way of a speech bubble.</summary>
+    /// <summary>
+    /// The mark over their head: looked up twice a second, bobbing gently, turned to the camera. Its foot stays just over
+    /// the head at any distance (it is sized to the screen, so a fixed middle drifted off the head close up), and a speech
+    /// bubble goes over it rather than pushing it up.
+    /// </summary>
     private void UpdateMark()
     {
         if (Time.time >= nextMark)
@@ -152,9 +168,11 @@ public sealed class IslandNpc : MonoBehaviour
 
         if (!marker || !marker.gameObject.activeSelf) return;
         var cam = Camera.main;
-        var talking = bubble && bubble.gameObject.activeSelf;
-        var bob = Mathf.Sin(Time.time * 2.2f + transform.position.x) * 0.08f * WorldMark.Fit(marker, cam, MarkSize);
-        marker.transform.position = transform.position + Vector3.up * (HeadHeight + (talking ? 1.9f * bubbleScale : 0.55f) + bob);
+        var tall = WorldMark.Fit(marker, cam, MarkSize);
+        var bob = Mathf.Sin(Time.time * 2.2f + transform.position.x) * 0.08f * tall;
+        MarkHeight = tall;
+        MarkCenter = HeadTop + Vector3.up * (MarkGap + tall * 0.5f);
+        marker.transform.position = MarkCenter + Vector3.up * bob;
         if (cam) marker.transform.rotation = cam.transform.rotation;
     }
 

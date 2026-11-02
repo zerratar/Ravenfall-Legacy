@@ -43,6 +43,9 @@ public class GameManager : MonoBehaviour, IGameManager
     private object[] ravenbotArgs;
 
     private int lastButtonIndex = 0;
+
+    /// <summary>The admin debug buttons' column in GUI space (top left origin), empty while hidden; clicks there are not the world's.</summary>
+    public static Rect DebugMenuArea;
     private float stateSaveTime = 1f;
     private float experienceSaveTime = 1f;
     private float experienceSaveInterval = 2f; // 3f
@@ -2224,6 +2227,7 @@ public class GameManager : MonoBehaviour, IGameManager
         if (!isDebugMenuVisible)
         {
             lastButtonIndex = 0;
+            DebugMenuArea = default;
             return;
         }
 
@@ -2692,6 +2696,11 @@ public class GameManager : MonoBehaviour, IGameManager
 
 
         lastButtonIndex = buttonIndex;
+        if (Event.current.type == EventType.Repaint)
+        {
+            var first = GetButtonRect(0);
+            DebugMenuArea = Rect.MinMaxRect(first.xMin, first.yMin, first.xMax, GetButtonRect(buttonIndex - 1).yMax);
+        }
     }
 
     private void Debug_TrainWoodcutting()

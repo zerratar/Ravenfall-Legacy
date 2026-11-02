@@ -568,7 +568,7 @@ namespace Shinobytes.UI
 
         private static Clicked UnderMouse()
         {
-            if (HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement() || DraggableWindow.IsPointerOverWindow) return Clicked.Nothing;
+            if (UIUtility.IsPointerOverAnyUI()) return Clicked.Nothing;
             if (VillageBuildMode.Instance && VillageBuildMode.Instance.IsActive) return Clicked.Nothing;
             var cam = Camera.main;
             if (!cam) return Clicked.Nothing;

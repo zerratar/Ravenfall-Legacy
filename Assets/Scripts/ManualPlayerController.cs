@@ -126,7 +126,7 @@ public class ManualPlayerController : MonoBehaviour
         return best;
     }
 
-    private static bool OverHud() => Shinobytes.UI.HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement() || Shinobytes.UI.DraggableWindow.IsPointerOverWindow;
+    private static bool OverHud() => UIUtility.IsPointerOverAnyUI();
 
     private void Click(Camera cam)
     {

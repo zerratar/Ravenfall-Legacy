@@ -68,7 +68,7 @@ public sealed class TavernShop : MonoBehaviour
             Refresh();
         }
 
-        if (Input.GetMouseButtonDown(0) && !HudPointer.IsOverHud() && !UIUtility.IsPointerOverUIElement() && !DraggableWindow.IsPointerOverWindow)
+        if (Input.GetMouseButtonDown(0) && !UIUtility.IsPointerOverAnyUI())
         {
             var shelf = ShelfUnderMouse();
             if (shelf && ShopWindow.Instance) ShopWindow.Instance.OpenShelf(shelf.Index);

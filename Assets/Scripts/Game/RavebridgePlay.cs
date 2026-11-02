@@ -4,7 +4,7 @@ using UnityEngine;
 /// The streamer plays a character by hand on Ravebridge (phase 6c of docs/ravebridge-design.md): their own character
 /// in the stream (saved to the server as always) or their Ravebridge character (6d). Begin takes the character to the
 /// island if it is not there, follows it with the camera and hands it to ManualPlayerController; Stop gives it back
-/// to automatic play. Esc stops (RavebridgeView), as does the character leaving or the event ending.
+/// to automatic play: the Ravebridge bar's Stop, the character leaving or the event ending (Esc opens the game menu).
 /// </summary>
 public static class RavebridgePlay
 {

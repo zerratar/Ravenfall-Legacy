@@ -99,12 +99,8 @@ public class PlayerObserveCamera : MonoBehaviour
 
     public void LateUpdate()
     {
+        // also while the player is played by hand (Ravebridge, hero mode): the preview stays on them as they walk
         if (!player)
-        {
-            return;
-        }
-
-        if (player.Controlled)
         {
             return;
         }
@@ -134,7 +130,8 @@ public class PlayerObserveCamera : MonoBehaviour
 
     public void ObservePlayer(PlayerController player)
     {
-        if (this.player)
+        // another player: the last one is no longer played by hand (observing the same one again keeps it played)
+        if (this.player && this.player != player)
         {
             this.player.RevokeControl();
             ResetPlayerLayer();

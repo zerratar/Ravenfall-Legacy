@@ -573,7 +573,7 @@ public partial class HeroController : MonoBehaviour
         if (bar && bar.gameObject.activeSelf != show) bar.gameObject.SetActive(show);
     }
 
-    private static bool OverHud() => Shinobytes.UI.HudPointer.IsOverHud() || UIUtility.IsPointerOverUIElement() || Shinobytes.UI.DraggableWindow.IsPointerOverWindow;
+    private static bool OverHud() => UIUtility.IsPointerOverAnyUI();
 
     // ---- Attacking ----------------------------------------------------------------------------------------
 

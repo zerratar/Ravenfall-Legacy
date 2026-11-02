@@ -483,7 +483,7 @@ public static class Localization
     public static string UI_POSTQ_USE = "Use item";
     public static string UI_POSTQ_NONE_FOUND = "No items here match.";
     public static string UI_RAVEBRIDGE_STOP = "Stop";
-    public static string UI_RAVEBRIDGE_CONTROLS = "WASD or a click to walk, click a tree, rock, fish or goblin to get to it, right mouse turns the camera, Esc stops";
+    public static string UI_RAVEBRIDGE_CONTROLS = "WASD or a click to walk, click a tree, rock, fish or goblin to get to it, right mouse turns the camera, E talks";
     public static string UI_RAVEBRIDGE_NO_CHARACTER = "Join the stream with your own character, or make a Ravebridge character.";
     public static string UI_RAVEBRIDGE_LOCAL_CHARACTER = "{0} (Ravebridge)";
     public static string UI_RAVEBRIDGE_NEW_CHARACTER = "Make a Ravebridge character";
@@ -523,7 +523,7 @@ public static class Localization
     public static string UI_HERO_BOUNTIES = "Bounties";
     public static string UI_HERO_ENTER = "Hero mode";
     public static string UI_HERO_EXIT = "Leave hero mode";
-    public static string UI_HERO_CONTROLS = "WASD walk, left mouse attacks or walks to the cursor, 1-4 skills, Tab style, Space dodge, Q potion, V camera, C character, I inventory, Esc leaves hero mode";
+    public static string UI_HERO_CONTROLS = "WASD walk, left mouse attacks or walks to the cursor, 1-4 skills, Tab style, Space dodge, Q potion, V camera, C character, I inventory, E talks";
     public static string UI_HERO_CLEAVE = "Cleave";
     public static string UI_HERO_CLEAVE_HINT = "A wide swing in front of you.";
     public static string UI_HERO_LEAP = "Leap slam";

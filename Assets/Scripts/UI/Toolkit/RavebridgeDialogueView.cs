@@ -16,6 +16,9 @@ namespace Shinobytes.UI
     {
         private const float CharsPerSecond = 55f;
 
+        // every line the same distance apart: left to the font, wrapped lines sat closer than others (playtest 17)
+        private const string LineHeight = "<line-height=1.45em>";
+
         private VisualElement box;
         private VisualElement portrait;
         private Label portraitLetter;
@@ -108,7 +111,8 @@ namespace Shinobytes.UI
             prompt.Add(key);
             prompt.Add(promptName);
             prompt.style.display = DisplayStyle.None;
-            layer.Add(prompt);
+            // under every window on the layer (the Stream quest, the shop), never over one
+            layer.Insert(0, prompt);
 
             shop?.Remove();
             shop = new RavebridgeShopWindow(layer);
@@ -131,9 +135,10 @@ namespace Shinobytes.UI
 
             if (typing)
             {
-                typed += Time.unscaledDeltaTime * CharsPerSecond;
+                // a slow frame (the face drawn, the font filling in) must not type half the line at once
+                typed += Mathf.Min(Time.unscaledDeltaTime, 0.05f) * CharsPerSecond;
                 // the key that opened the talk (E) must not skip its first line
-                var skip = Time.unscaledTime - openedAt > 0.15f && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Return));
+                var skip = Time.unscaledTime - openedAt > 0.3f && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Return));
                 if (skip || typed >= fullLine.Length) Finish();
                 else DrawLine();
                 return;
@@ -157,14 +162,30 @@ namespace Shinobytes.UI
                 prompt.style.display = DisplayStyle.None;
                 return;
             }
-            var at = near.transform.position + Vector3.up * (near.HeadHeight + 0.55f) * near.transform.lossyScale.y;
+            // beside the mark over their head, never on it (nor on a line they say, which goes over the mark); with no
+            // mark, just over the head. Worked out from the mark's place, so it stays put at any zoom.
+            var marked = near.MarkShown;
+            var at = marked ? near.MarkCenter : near.HeadTop;
             if (Vector3.Dot(cam.transform.forward, at - cam.transform.position) <= 0f) { prompt.style.display = DisplayStyle.None; return; }
             var panelPoint = RuntimePanelUtils.CameraTransformWorldToPanel(prompt.panel, at, cam);
             promptName.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_TALK_PROMPT, RavebridgeQuests.NpcName(near.Key));
             prompt.style.display = DisplayStyle.Flex;
             var width = prompt.resolvedStyle.width;
-            prompt.style.left = panelPoint.x - (float.IsNaN(width) ? 0f : width / 2f);
-            prompt.style.top = panelPoint.y - 40f;
+            var height = prompt.resolvedStyle.height;
+            if (float.IsNaN(width)) width = 0f;
+            if (float.IsNaN(height)) height = 0f;
+            if (marked)
+            {
+                var top = RuntimePanelUtils.CameraTransformWorldToPanel(prompt.panel, at + cam.transform.up * near.MarkHeight * 0.5f, cam);
+                var half = Mathf.Abs(panelPoint.y - top.y);
+                prompt.style.left = panelPoint.x + half + 10f;
+                prompt.style.top = panelPoint.y - height / 2f;
+            }
+            else
+            {
+                prompt.style.left = panelPoint.x - width / 2f;
+                prompt.style.top = panelPoint.y - height - 6f;
+            }
         }
 
         private void Open(PlayerController player, IslandNpc who)
@@ -222,17 +243,17 @@ namespace Shinobytes.UI
         private void DrawLine()
         {
             var count = Mathf.Clamp(Mathf.FloorToInt(typed), 0, fullLine.Length);
-            line.text = count >= fullLine.Length ? fullLine : fullLine.Substring(0, count) + "<alpha=#00>" + fullLine.Substring(count);
+            line.text = LineHeight + (count >= fullLine.Length ? fullLine : fullLine.Substring(0, count) + "<alpha=#00>" + fullLine.Substring(count));
             options.style.opacity = 0f;
-            hint.style.display = DisplayStyle.Flex;
+            hint.style.visibility = Visibility.Visible;
         }
 
         private void Finish()
         {
             typing = false;
-            line.text = fullLine;
+            line.text = LineHeight + fullLine;
             options.style.opacity = 1f;
-            hint.style.display = DisplayStyle.None;
+            hint.style.visibility = Visibility.Hidden;
         }
 
         private void Pick(RavebridgeQuests.Option o)

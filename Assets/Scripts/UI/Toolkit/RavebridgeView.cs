@@ -110,7 +110,7 @@ namespace Shinobytes.UI
             stay = BarButton(Localization.UI_RAVEBRIDGE_STAY, true, () => { var rb = RavebridgeManager.Instance; if (rb) rb.Attended = true; Redraw(); });
             hero = BarButton(Localization.UI_HERO_ENTER, true, () =>
             {
-                if (HeroController.Active) HeroController.End();
+                if (HeroController.Active) LeaveHeroMode();
                 else if (RavebridgePlay.Playing) HeroController.Begin(RavebridgePlay.Playing);
                 Redraw();
             });
@@ -425,26 +425,21 @@ namespace Shinobytes.UI
         }
 
         /// <summary>
-        /// Esc nothing else used leaves hero mode, then stops playing by hand. Here, after every Update, so a
-        /// press that closed the inventory, the shop or a talk is not also read as leaving. During a wave run
-        /// it asks first: leaving gives no rewards, so the first press warns and a second within
-        /// <see cref="WaveRun.LeaveAskSeconds"/> leaves.
+        /// Leaves hero mode (Esc used to; it opens the game menu now, the user found it ended play by surprise). During
+        /// a wave run it asks first: leaving gives no rewards, so the first press warns and a second within
+        /// <see cref="WaveRun.LeaveAskSeconds"/> leaves; between waves it is a retreat that keeps the chest and the
+        /// record, mid wave the run is abandoned.
         /// </summary>
-        private void LateUpdate()
+        private void LeaveHeroMode()
         {
-            if (!bound || !Input.GetKeyDown(KeyCode.Escape) || Keybinds.IsTyping || EscapeKey.ClaimedThisFrame || !RavebridgePlay.Playing) return;
-            EscapeKey.Claim();
             var run = WaveRun.Current;
-            if (HeroController.Active && run && !run.Finished && !run.LeaveAsked)
+            if (run && !run.Finished && !run.LeaveAsked)
             {
                 run.AskToLeave();
                 return;
             }
-            // between waves this is a retreat that keeps the chest and the record; mid wave the run is abandoned
-            if (HeroController.Active && run && !run.Finished) run.Leave();
-            if (HeroController.Active) HeroController.End();
-            else RavebridgePlay.Stop();
-            Redraw();
+            if (run && !run.Finished) run.Leave();
+            HeroController.End();
         }
 
         private void Redraw()

@@ -6441,8 +6441,11 @@
     color: var(--rf-text-dim);
 }
 
+/* over the box's bottom edge, out of the layout: the box keeps one height while typing and with the answers */
 .rf-talk__hint {
-    margin-top: 4px;
+    position: absolute;
+    right: 0;
+    bottom: -13px;
     font-size: 14px;
     color: var(--rf-text-faint);
     -unity-text-align: middle-right;
