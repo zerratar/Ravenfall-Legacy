@@ -330,3 +330,27 @@ the economy. Points in a streamer's quest come from the streamer's own budget (s
 - **Quest-only rewards:** which titles, cosmetics and pets first? The art for them (Synty packs have pets and
   cosmetics already).
 - **Rerolls:** may a player swap a daily offer they do not like (once a day, or for coins)?
+
+## The website's quest page (2026-11-02)
+
+The user asked whether players and streamers can see their quests on the website; they could not (the dashboard's
+`/quests` was a placeholder). Built 2026-11-02, designed for new and experienced players alike, read only (quests are
+taken and given up in chat):
+
+- **A guide** at the top, "How quests work" (dailies and weeklies, chains, achievements and titles, stream bounties,
+  each with its chat command), open until a user has done five dailies, folded after.
+- **Per character** (tabs, a green dot for one playing in a stream now): the day streak, dailies done, achievement
+  medals and the title worn; **Today**: the quests taken with progress and time left, the weekly and seasonal quest,
+  and today's offers as outlines with the command that takes them (`!quest accept 2`); the **stream's bounties and
+  goals** it plays in, with its own progress; the **quest chains**, the one under way first with the quest giver's
+  words, the task and its progress, ones not begun with their opening line and `!quest begin <key>`, finished ones
+  with their ending, each with its title and its decor piece's picture; **achievements** with bronze, silver and gold
+  pips, progress to the next tier and the title it gives, and the titles earned, numbered for `!title 2`.
+- **For a streamer** (a town, or a story begun): village stories told, the best hero mode run and its place, loyalty
+  points left for quests this week; the stories with the current step's words, task and top helpers; what the stream
+  has unlocked; the quests they posted, running and the last ten ended.
+- Worded as the game words it: `tools/website/export-quest-texts.py` copies the game's quest, chain, achievement,
+  title, story, unlock, stream quest and skill texts into RavenNest's `GameTexts.cs`; rerun it after changing them.
+- The server's website-side reads: `QuestManager.Peek`, `AchievementManager.Peek`, `StreamerQuestManager.ForCharacter`
+  and `HistoryOf`, `HeroModeManager.BestOf`, `VillageStoryManager.LogOf`; the page's `QuestPageService` puts them
+  together. Opening the page makes a character's offers for the day, as `!quest` does.
