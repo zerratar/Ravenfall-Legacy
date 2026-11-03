@@ -1344,6 +1344,8 @@
     "UI_DAILY_BLESSED": "Välsignad",
     "UI_DAILY_BLESSED_TEXT": "börja med gåvan {0}",
     "UI_WAVE_BOON_VOTE": "CHATTEN VÄLJER EN GÅVA",
+    "UI_WAVE_VOTE_ONE": "1 röst",
+    "UI_WAVE_VOTES_N": "{0} röster",
     "UI_WAVE_RETREAT_ASK": "Tryck igen för att dra dig tillbaka",
     "UI_WAVE_LAST_ONE": "Den sista!",
     "UI_WAVE_FALLEN": "fällda",

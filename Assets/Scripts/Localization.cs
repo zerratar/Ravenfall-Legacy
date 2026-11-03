@@ -579,6 +579,8 @@ public static class Localization
     public static string UI_WAVE_ELITE = "Elite {0}";
     public static string UI_HERO_RANK = "Rank {0}";
     public static string UI_WAVE_BOON_VOTE = "CHAT PICKS A BOON";
+    public static string UI_WAVE_VOTE_ONE = "1 vote";
+    public static string UI_WAVE_VOTES_N = "{0} votes";
     public static string UI_WAVE_RETREAT_ASK = "Press again to retreat";
     public static string UI_WAVE_RESULT_RETREAT = "Retreated after {0} waves";
     public static string UI_WAVE_GOBLIN = "Raiding goblin";

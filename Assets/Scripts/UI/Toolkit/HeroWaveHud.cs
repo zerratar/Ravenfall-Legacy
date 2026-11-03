@@ -164,22 +164,33 @@ namespace Shinobytes.UI
             tick25 = Box(bossBar, "rf-wave-boss__tick");
             tick25.style.left = new Length(25f, LengthUnit.Percent);
 
-            // chat's boon vote
+            // chat's boon vote: three tall cards (the user's pick, mockup A, 2026-11-03), each to be read whole on a blurry
+            // stream: its number, a big icon, the name, the whole effect (it was cut off in the old rows), the command and
+            // its votes
             boons = Box(column, "rf-wave-boons");
             var boonsHead = Box(boons, "rf-wave-boons__head");
             Text(boonsHead, "rf-wave-boons__title").text = Localization.UI_WAVE_BOON_VOTE;
             boonsHint = Text(boonsHead, "rf-wave-boons__hint");
+            var cards = Box(boons, "rf-wave-boons__cards");
             for (var i = 0; i < boonRows.Length; i++)
             {
-                var row = Box(boons, "rf-wave-boons__row");
-                Text(row, "rf-wave-boons__cmd").text = "!hero " + (i + 1);
-                var icon = Icon(row, "rf-wave-boons__icon", "");
-                var name = Text(row, "rf-wave-boons__name");
-                var effect = Text(row, "rf-wave-boons__effect");
-                var vb = Box(row, "rf-wave-boons__bar");
-                var fill = Box(vb, "rf-wave-boons__fill");
-                var votes = Text(row, "rf-wave-boons__votes");
-                boonRows[i] = (row, icon, name, effect, fill, votes);
+                var card = Box(cards, "rf-wave-card");
+                var num = Text(card, "rf-wave-card__num");
+                num.AddToClassList("rf-font-eb");
+                num.text = (i + 1).ToString(CultureInfo.InvariantCulture);
+                var icon = Icon(card, "rf-wave-card__icon", string.Empty);
+                var name = Text(card, "rf-wave-card__name");
+                name.AddToClassList("rf-font-eb");
+                var effect = Text(card, "rf-wave-card__effect");
+                effect.AddToClassList("rf-font-b");
+                var cmd = Text(card, "rf-wave-card__cmd");
+                cmd.AddToClassList("rf-font-eb");
+                cmd.text = "!hero " + (i + 1);
+                var vb = Box(card, "rf-wave-card__bar");
+                var fill = Box(vb, "rf-wave-card__fill");
+                var votes = Text(card, "rf-wave-card__votes");
+                votes.AddToClassList("rf-font-eb");
+                boonRows[i] = (card, icon, name, effect, fill, votes);
             }
 
             // the leave warning (Esc once)
@@ -614,15 +625,19 @@ namespace Shinobytes.UI
                 var text = offer[i].Name();
                 var cut = text.IndexOf(" (", StringComparison.Ordinal);
                 name.text = cut > 0 ? text.Substring(0, cut) : text;
-                effect.text = cut > 0 ? text.Substring(cut + 2).TrimEnd(')') : string.Empty;
+                var what = cut > 0 ? text.Substring(cut + 2).TrimEnd(')') : string.Empty;
+                effect.text = what.Length > 0 ? char.ToUpperInvariant(what[0]) + what.Substring(1) : what;
                 icon.text = BoonGlyph(offer[i].Key);
-                votes.text = count.ToString(CultureInfo.InvariantCulture);
+                foreach (var key in BoonKeys) icon.EnableInClassList("rf-wave-card__icon--" + key, key == offer[i].Key);
+                votes.text = count == 1 ? Localization.UI_WAVE_VOTE_ONE : string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_VOTES_N, count);
                 if (count > lastVotes[i]) Pop(votes, 1.35f, 0.2f);
                 lastVotes[i] = count;
                 Width(fill, total > 0 ? count / (float)total : 0f);
-                row.EnableInClassList("rf-wave-boons__row--lead", most > 0 && count == most);
+                row.EnableInClassList("rf-wave-card--lead", most > 0 && count == most);
             }
         }
+
+        private static readonly string[] BoonKeys = { "steel", "wells", "hide", "wind", "glass", "swift", "blood" };
 
         private static string BoonGlyph(string key)
         {

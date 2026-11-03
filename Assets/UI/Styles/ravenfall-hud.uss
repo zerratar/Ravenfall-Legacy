@@ -3613,121 +3613,182 @@
 }
 
 /* ---- the boon vote ---- */
+/* Chat's boon vote, three tall cards (mockup A, 2026-11-03): big, solid and whole, to read on a blurry stream */
 .rf-wave-boons {
-    width: 720px;
-    margin-top: 8px;
-    background-color: var(--rf-bg);
-    border-width: 2px;
-    border-color: var(--rf-accent-dim);
-    border-radius: 8px;
-    padding: 12px 14px 10px 14px;
+    margin-top: 10px;
+    align-items: center;
 }
 
 .rf-wave-boons__head {
     flex-direction: row;
     align-items: center;
-    margin-bottom: 4px;
-    padding: 0 2px;
+    margin-bottom: 10px;
+    padding: 6px 18px;
+    background-color: rgb(20, 18, 15);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
 }
 
 .rf-wave-boons__title {
-    font-size: 16px;
+    font-size: 22px;
     letter-spacing: 2px;
-    color: var(--rf-accent);
-    flex-grow: 1;
+    color: rgb(236, 190, 52);
 }
 
 .rf-wave-boons__hint {
-    font-size: 15px;
-    color: var(--rf-text-dim);
-}
-
-.rf-wave-boons__row {
-    flex-direction: row;
-    align-items: center;
-    height: 48px;
-    margin-top: 4px;
-    padding: 0 12px 0 10px;
-    background-color: var(--rf-surface);
-    border-radius: 6px;
-    border-left-width: 3px;
-    border-left-color: var(--rf-surface);
-}
-
-.rf-wave-boons__row--lead {
-    background-color: rgb(54, 40, 20);
-    border-left-color: var(--rf-accent);
-}
-
-.rf-wave-boons__cmd {
-    width: 96px;
-    font-size: 16px;
-    color: var(--rf-accent);
-    background-color: var(--rf-surface-raised);
-    border-radius: 4px;
-    -unity-text-align: middle-center;
-    padding: 5px 0;
-}
-
-.rf-wave-boons__icon {
-    width: 34px;
-    margin-left: 10px;
-    font-size: 20px;
-    color: var(--rf-text-dim);
-    -unity-text-align: middle-center;
-}
-
-.rf-wave-boons__name {
+    margin-left: 14px;
     font-size: 19px;
-    color: var(--rf-text);
-    margin-left: 6px;
-    flex-shrink: 0;
+    color: rgb(225, 214, 190);
 }
 
-.rf-wave-boons__effect {
-    font-size: 16px;
-    color: var(--rf-text-dim);
-    margin-left: 10px;
+/* the three the same height: the commands and the votes line up at the bottom */
+.rf-wave-boons__cards {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.rf-wave-card {
+    width: 300px;
+    margin: 0 8px;
+    padding: 14px 18px 16px 18px;
+    align-items: center;
+    background-color: rgb(20, 18, 15);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgba(214, 170, 40, 0.55);
+    border-right-color: rgba(214, 170, 40, 0.55);
+    border-top-color: rgba(214, 170, 40, 0.55);
+    border-bottom-color: rgba(214, 170, 40, 0.55);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    transition-property: scale;
+    transition-duration: 0.15s;
+}
+
+.rf-wave-card--lead {
+    background-color: rgb(36, 28, 14);
+    scale: 1.04 1.04;
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: rgb(255, 214, 90);
+    border-right-color: rgb(255, 214, 90);
+    border-top-color: rgb(255, 214, 90);
+    border-bottom-color: rgb(255, 214, 90);
+}
+
+.rf-wave-card__num {
+    width: 48px;
+    height: 48px;
+    font-size: 26px;
+    color: rgb(255, 214, 90);
+    -unity-text-align: middle-center;
+    background-color: rgb(30, 26, 20);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+}
+
+.rf-wave-card__icon {
+    margin: 10px 0 6px 0;
+    font-size: 68px;
+    color: rgb(235, 225, 200);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgb(20, 18, 15);
+}
+
+.rf-wave-card__icon--steel { color: rgb(205, 218, 238); }
+.rf-wave-card__icon--wells { color: rgb(95, 165, 255); }
+.rf-wave-card__icon--hide { color: rgb(140, 178, 225); }
+.rf-wave-card__icon--wind { color: rgb(115, 222, 145); }
+.rf-wave-card__icon--glass { color: rgb(255, 145, 75); }
+.rf-wave-card__icon--swift { color: rgb(95, 222, 222); }
+.rf-wave-card__icon--blood { color: rgb(238, 64, 64); }
+
+.rf-wave-card__name {
+    font-size: 31px;
+    color: rgb(245, 236, 214);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+/* the whole effect, two lines' room on every card so the commands line up */
+.rf-wave-card__effect {
     flex-grow: 1;
-    flex-shrink: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    min-height: 58px;
+    margin-top: 6px;
+    font-size: 21px;
+    color: rgb(232, 222, 198);
+    -unity-text-align: upper-center;
+    white-space: normal;
 }
 
-.rf-wave-boons__bar {
-    width: 110px;
-    height: 10px;
-    border-radius: 5px;
+.rf-wave-card__cmd {
+    margin-top: 12px;
+    padding: 5px 22px;
+    font-size: 26px;
+    color: rgb(20, 18, 15);
+    background-color: rgb(236, 190, 52);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.rf-wave-card__bar {
+    align-self: stretch;
+    height: 12px;
+    margin-top: 12px;
+    overflow: hidden;
     background-color: rgb(52, 47, 40);
-    overflow: hidden;
-    margin-left: 10px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
 }
 
-.rf-wave-boons__fill {
+.rf-wave-card__fill {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     width: 0;
-    background-color: var(--rf-text-dim);
+    background-color: rgb(200, 190, 170);
 }
 
-.rf-wave-boons__votes {
-    width: 40px;
-    font-size: 22px;
-    color: var(--rf-text-dim);
-    -unity-text-align: middle-right;
+.rf-wave-card--lead .rf-wave-card__fill {
+    background-color: rgb(236, 190, 52);
 }
 
-.rf-wave-boons__row--lead .rf-wave-boons__name,
-.rf-wave-boons__row--lead .rf-wave-boons__votes,
-.rf-wave-boons__row--lead .rf-wave-boons__icon {
-    color: var(--rf-accent-bright);
-}
-
-.rf-wave-boons__row--lead .rf-wave-boons__fill {
-    background-color: var(--rf-accent);
+.rf-wave-card__votes {
+    margin-top: 8px;
+    font-size: 23px;
+    color: rgb(245, 236, 214);
 }
 
 /* ---- the leave warning ---- */
