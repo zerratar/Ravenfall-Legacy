@@ -128,7 +128,7 @@ public sealed class Regatta : MonoBehaviour
         public int Hits, Pickups, WorstPlace;
         /// <summary>A gag given until GagUntil (a bottle or a viewer), the one shown now, and the next one's earliest.</summary>
         public Gag Gag, Showing;
-        public float GagUntil, GagRestUntil, NextSplash;
+        public float GagUntil, GagRestUntil, NextSplash, Spin;
         public LineRenderer Rope;
         /// <summary>The character's humanoid rig, for the hands on the rail and the rope (null when it has none).</summary>
         public Animator Rig;
@@ -566,7 +566,7 @@ public sealed class Regatta : MonoBehaviour
             if (upper && lower && hand) r.ArmLength = (lower.position - upper.position).magnitude + (hand.position - lower.position).magnitude;
         }
         if (gag == Gag.Swim && !r.Rope) r.Rope = MakeRope();
-        if (gag != Gag.HangOn && r.Boat) Effect(RegattaProps.Get()?.Splash, r.Boat.SeaPosition, 3f);
+        if (gag != Gag.HangOn && r.Boat) Effect(RegattaProps.Get()?.Splash, r.Boat.SeaPosition, 3f, 0.6f);
     }
 
     private LineRenderer MakeRope()
@@ -635,16 +635,28 @@ public sealed class Regatta : MonoBehaviour
             }
             case Gag.Propeller:
             {
-                // the hub just aft of the stern, above the water; the body a blade through it, head and feet whirling
-                // round the boat's long axis, faster the faster the boat goes
-                var hub = bt.position - bt.forward * (length * 0.5f + 0.5f) + Vector3.up * 1.3f;
-                var spin = now * (600f + boat.Speed * boat.Pace * 12f);
-                var radial = Quaternion.AngleAxis(spin, forward) * Vector3.up;
-                t.SetPositionAndRotation(hub - radial * 0.9f, Quaternion.LookRotation(-forward, radial));
+                // the propeller itself (the user: stiff arms, as funny as possible): feet on the transom, the body the
+                // shaft, lying out aft just above the water and spinning round its own length, faster the faster the
+                // boat goes; the arms out stiff as the blades, pitched like them, the legs pressed together, the head
+                // lolling from the spin; the blade tips throw spray as they come round through the water
+                var transom = bt.position - bt.forward * (length * 0.5f - 0.1f);
+                transom.y = SeaChart.Sea + 0.75f;
+                var aft = -forward;
+                // it spins up like an engine starting and winds down again before they flop back aboard
+                var into = now - (r.GagUntil - GagSeconds);
+                var left = r.GagUntil - now;
+                var revs = Mathf.SmoothStep(0f, 1f, into / 1.5f) * Mathf.SmoothStep(0f, 1f, left / 1.2f);
+                r.Spin += (540f + boat.Speed * boat.Pace * 10f) * revs * Time.deltaTime;
+                t.SetPositionAndRotation(transom, Quaternion.LookRotation(Quaternion.AngleAxis(r.Spin, aft) * Vector3.up, aft));
+                if (r.Rig) PropellerPose(r.Rig, t, now);
                 if (now >= r.NextSplash)
                 {
-                    r.NextSplash = now + 0.6f;
-                    Effect(RegattaProps.Get()?.Splash, hub - Vector3.up * 1.2f, 1f, 0.3f);
+                    r.NextSplash = now + 0.3f;
+                    // the lower blade's tip, wherever it has got to
+                    var down = Vector3.Dot(t.right, Vector3.up) < 0f ? t.right : -t.right;
+                    var tip = t.position + aft * (ShoulderHeight * t.lossyScale.y) + down * (r.ArmLength + 0.2f);
+                    tip.y = SeaChart.Sea;
+                    if (revs > 0.5f) Effect(RegattaProps.Get()?.Splash, tip, 0.8f, 0.18f);
                 }
                 break;
             }
@@ -671,6 +683,37 @@ public sealed class Regatta : MonoBehaviour
 
     /// <summary>How high the shoulders sit on the characters (the modular characters' rig, from the feet).</summary>
     private const float ShoulderHeight = 1.38f;
+
+    /// <summary>
+    /// The propeller's pose over the swim animation: both arms straight out to the sides and twisted like a blade's
+    /// pitch, the legs straight and pressed together, the head lolling one way and the other with the spin.
+    /// </summary>
+    private static void PropellerPose(Animator rig, Transform body, float now)
+    {
+        var up = body.up;
+        var side = body.right;
+        Stiff(rig, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, -side, BladePitch);
+        Stiff(rig, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, side, BladePitch);
+        Stiff(rig, HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, HumanBodyBones.LeftFoot, -up + side * 0.08f, 0f);
+        Stiff(rig, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot, -up - side * 0.08f, 0f);
+        var head = rig.GetBoneTransform(HumanBodyBones.Head);
+        if (head) head.rotation = Quaternion.AngleAxis(Mathf.Sin(now * 23f) * 28f, body.forward) * Quaternion.AngleAxis(Mathf.Sin(now * 17f) * 15f, side) * head.rotation;
+    }
+
+    /// <summary>The propeller's arms turned about their length, as a blade is pitched.</summary>
+    private const float BladePitch = 35f;
+
+    /// <summary>A limb made straight and pointed one way (then turned about its length by <paramref name="twist"/> degrees).</summary>
+    private static void Stiff(Animator rig, HumanBodyBones upperBone, HumanBodyBones lowerBone, HumanBodyBones endBone, Vector3 direction, float twist)
+    {
+        var upper = rig.GetBoneTransform(upperBone);
+        var lower = rig.GetBoneTransform(lowerBone);
+        var end = rig.GetBoneTransform(endBone);
+        if (!upper || !lower || !end) return;
+        lower.rotation = Quaternion.FromToRotation(end.position - lower.position, lower.position - upper.position) * lower.rotation;
+        upper.rotation = Quaternion.FromToRotation(end.position - upper.position, direction) * upper.rotation;
+        if (twist != 0f) upper.rotation = Quaternion.AngleAxis(twist, direction.normalized) * upper.rotation;
+    }
 
     /// <summary>
     /// After the animation, one arm straight out to a point: the elbow straightened, then the whole arm turned at the
@@ -1396,7 +1439,16 @@ public sealed class Regatta : MonoBehaviour
     {
         if (!prefab || Potato) return;
         var go = Instantiate(prefab, at, Quaternion.identity);
-        if (scale != 1f) go.transform.localScale *= scale;
+        if (scale != 1f)
+        {
+            // the particles take the scale too (the effects' systems are set to scale only themselves)
+            go.transform.localScale *= scale;
+            foreach (var system in go.GetComponentsInChildren<ParticleSystem>())
+            {
+                var main = system.main;
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+            }
+        }
         Destroy(go, seconds);
     }
 
