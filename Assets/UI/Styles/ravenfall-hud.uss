@@ -2068,7 +2068,7 @@
    from the middle, half the bar (6 slots of 72px, the 18px gap, padding and border: 476px) and 14px either side. */
 .rf-hero-orb {
     position: absolute;
-    bottom: 24px;
+    bottom: 38px;
     width: 150px;
     height: 150px;
     left: 50%;
@@ -2089,7 +2089,7 @@
     left: 50%;
     width: 654px;
     margin-left: -327px;
-    bottom: 18px;
+    bottom: 26px;
     height: 102px;
     background-color: rgba(20, 18, 15, 0.94);
     border-left-width: 2px;
@@ -2106,13 +2106,14 @@
     border-bottom-right-radius: 14px;
 }
 
-/* The gilded socket ring round each orb (HeroUI/orb-socket): its opening is 77% of it, so 188px round a 150px orb. */
+/* The gold socket ring round each orb (HeroUI/orb-health and orb-mana, the gem on top, a bracket below): its opening
+   is 65% of the picture, centred, so 226px round a 150px orb covers the sphere's edge by a hair. */
 .rf-hero-orb__socket {
     position: absolute;
-    left: -19px;
-    top: -19px;
-    width: 188px;
-    height: 188px;
+    left: -38px;
+    top: -38px;
+    width: 226px;
+    height: 226px;
     -unity-background-scale-mode: scale-to-fit;
 }
 
@@ -2160,7 +2161,7 @@
 
 .rf-hero-bar {
     position: absolute;
-    bottom: 24px;
+    bottom: 32px;
     left: 0;
     right: 0;
     align-items: center;
@@ -4390,7 +4391,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 212px;
+    bottom: 240px;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;

@@ -301,10 +301,10 @@ namespace Shinobytes.UI
             text.AddToClassList("rf-hero-orb__text");
             var name = new Label(label) { pickingMode = PickingMode.Ignore };
             name.AddToClassList("rf-hero-orb__label");
-            // the orb sits in a gilded socket ring (the minimap frame's style), the number on top
+            // the orb sits in its own gold socket ring (a ruby on health's, a sapphire on mana's), the number on top
             var socket = new VisualElement { pickingMode = PickingMode.Ignore };
             socket.AddToClassList("rf-hero-orb__socket");
-            var ring = Resources.Load<Texture2D>("HeroUI/orb-socket");
+            var ring = Resources.Load<Texture2D>(kind == "rf-hero-orb--health" ? "HeroUI/orb-health" : "HeroUI/orb-mana");
             if (ring) socket.style.backgroundImage = new StyleBackground(ring);
             box.Add(orb.Sphere);
             box.Add(socket);
