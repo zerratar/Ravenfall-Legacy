@@ -3785,6 +3785,59 @@
     background-color: rgb(236, 190, 52);
 }
 
+.rf-wave-card:hover {
+    background-color: rgb(30, 26, 20);
+}
+
+.rf-wave-card--lead:hover {
+    background-color: rgb(44, 34, 16);
+}
+
+/* the streamer's pick: a white edge and a tag at the top */
+.rf-wave-card--mine {
+    border-left-color: rgb(245, 236, 214);
+    border-right-color: rgb(245, 236, 214);
+    border-top-color: rgb(245, 236, 214);
+    border-bottom-color: rgb(245, 236, 214);
+}
+
+.rf-wave-card__mine {
+    position: absolute;
+    top: -14px;
+    right: 10px;
+    flex-direction: row;
+    align-items: center;
+    padding: 3px 10px;
+    background-color: rgb(245, 236, 214);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.rf-wave-card__mine-icon {
+    font-size: 13px;
+    margin-right: 6px;
+    color: rgb(20, 18, 15);
+}
+
+.rf-wave-card__mine-text {
+    font-size: 14px;
+    color: rgb(20, 18, 15);
+}
+
+.rf-wave-boons__pick {
+    margin-top: 10px;
+    padding: 4px 14px;
+    font-size: 17px;
+    color: rgb(235, 225, 200);
+    background-color: rgba(20, 18, 15, 0.85);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
 .rf-wave-card__votes {
     margin-top: 8px;
     font-size: 23px;

@@ -41,7 +41,8 @@ namespace Shinobytes.UI
         private readonly VisualElement bossTag, bossGhost, bossFill, bossShine, tick50, tick25;
 
         private readonly VisualElement boons;
-        private readonly Label boonsHint;
+        private readonly Label boonsHint, boonsPick;
+        private readonly VisualElement[] boonMine = new VisualElement[3];
         private readonly (VisualElement Row, Label Icon, Label Name, Label Effect, VisualElement Fill, Label Votes)[] boonRows = new (VisualElement, Label, Label, Label, VisualElement, Label)[3];
 
         private readonly VisualElement leave, leaveDrain;
@@ -175,6 +176,16 @@ namespace Shinobytes.UI
             for (var i = 0; i < boonRows.Length; i++)
             {
                 var card = Box(cards, "rf-wave-card");
+                // the streamer clicks one to pick it: taken if chat does not vote
+                var at = i;
+                card.pickingMode = PickingMode.Position;
+                card.RegisterCallback<UnityEngine.UIElements.ClickEvent>(e => { WaveRun.Current?.PickBoon(at); e.StopPropagation(); });
+                var mine = Box(card, "rf-wave-card__mine");
+                Icon(mine, "rf-wave-card__mine-icon", "\uf00c"); // check
+                var mineText = Text(mine, "rf-wave-card__mine-text");
+                mineText.AddToClassList("rf-font-eb");
+                mineText.text = Localization.UI_WAVE_BOON_YOUR_PICK;
+                boonMine[i] = mine;
                 var num = Text(card, "rf-wave-card__num");
                 num.AddToClassList("rf-font-eb");
                 num.text = (i + 1).ToString(CultureInfo.InvariantCulture);
@@ -192,6 +203,8 @@ namespace Shinobytes.UI
                 votes.AddToClassList("rf-font-eb");
                 boonRows[i] = (card, icon, name, effect, fill, votes);
             }
+            boonsPick = Text(boons, "rf-wave-boons__pick");
+            boonsPick.AddToClassList("rf-font-b");
 
             // the leave warning (Esc once)
             leave = Box(column, "rf-wave-leave");
@@ -615,6 +628,7 @@ namespace Shinobytes.UI
             var most = 0;
             for (var i = 0; i < offer.Length; i++) { var v = run.BoonVotes(i); total += v; most = Mathf.Max(most, v); }
             boonsHint.text = string.Format(CultureInfo.InvariantCulture, Localization.UI_WAVE_BOON_VOTES, total);
+            boonsPick.text = run.StreamerPick >= 0 ? Localization.UI_WAVE_BOON_PICKED_HINT : Localization.UI_WAVE_BOON_PICK_HINT;
             for (var i = 0; i < boonRows.Length; i++)
             {
                 var (row, icon, name, effect, fill, votes) = boonRows[i];
@@ -634,6 +648,8 @@ namespace Shinobytes.UI
                 lastVotes[i] = count;
                 Width(fill, total > 0 ? count / (float)total : 0f);
                 row.EnableInClassList("rf-wave-card--lead", most > 0 && count == most);
+                row.EnableInClassList("rf-wave-card--mine", run.StreamerPick == i);
+                Show(boonMine[i], run.StreamerPick == i);
             }
         }
 

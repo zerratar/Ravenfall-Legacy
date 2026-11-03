@@ -393,6 +393,20 @@ public partial class WaveRun
     /// <summary>The three boons on offer in this breather; null when there is no vote.</summary>
     public Boon[] Offer { get; private set; }
 
+    /// <summary>
+    /// The streamer's own pick, a click on a card (the user, 2026-11-03: with no viewers nothing could be chosen): taken
+    /// when chat did not vote, and it settles a draw. -1 for none.
+    /// </summary>
+    public int StreamerPick { get; private set; } = -1;
+
+    /// <summary>A click on a boon's card: that one is the streamer's pick (again: no pick).</summary>
+    public void PickBoon(int index)
+    {
+        if (Offer == null || State != Phase.Breather || index < 0 || index >= Offer.Length) return;
+        StreamerPick = StreamerPick == index ? -1 : index;
+        Changed?.Invoke();
+    }
+
     /// <summary>The votes for each boon on offer, in its order.</summary>
     public int BoonVotes(int index) => boonVotes.Values.Count(v => v == index);
 
@@ -411,6 +425,7 @@ public partial class WaveRun
     private void OfferBoons()
     {
         boonVotes.Clear();
+        StreamerPick = -1;
         Offer = Boons.OrderBy(_ => Roll()).Take(3).ToArray();
         GameManager.Instance?.RavenBot?.Announce(Localization.MSG_HERO_BOONS, Cleared, Hero ? Hero.Name : "?", Offer[0].Name(), Offer[1].Name(), Offer[2].Name());
         Changed?.Invoke();
@@ -426,19 +441,25 @@ public partial class WaveRun
         return true;
     }
 
-    /// <summary>The next wave starts: the boon with the most votes (a draw, or none, picks one of the best at random).</summary>
+    /// <summary>
+    /// The next wave starts: the boon with the most votes; a draw goes to the streamer's pick if it is one of them, else
+    /// to one of them at random. No votes at all: the streamer's pick, or one at random.
+    /// </summary>
     private void ChooseBoon()
     {
         if (Offer == null) return;
         var counts = Enumerable.Range(0, Offer.Length).Select(BoonVotes).ToArray();
         var most = counts.Max();
         var best = Enumerable.Range(0, Offer.Length).Where(i => counts[i] == most).ToList();
-        var boon = Offer[best[UnityEngine.Random.Range(0, best.Count)]];
+        var picked = StreamerPick >= 0 && StreamerPick < Offer.Length && best.Contains(StreamerPick);
+        var boon = Offer[picked ? StreamerPick : best[UnityEngine.Random.Range(0, best.Count)]];
         Offer = null;
+        StreamerPick = -1;
         boonVotes.Clear();
         boons.Add(boon.Key);
         if (boon.Key == "wind" && HeroController.Active) HeroController.Active.RefillPotions();
-        HeroHelpers.Say(string.Format(most > 0 ? Localization.UI_HERO_FEED_BOON : Localization.UI_HERO_FEED_BOON_RANDOM, boon.Name()));
+        var line = most > 0 ? Localization.UI_HERO_FEED_BOON : picked ? Localization.UI_HERO_FEED_BOON_PICKED : Localization.UI_HERO_FEED_BOON_RANDOM;
+        HeroHelpers.Say(string.Format(line, boon.Name()));
     }
 
     /// <summary>The boons taken so far this run, for the HUD.</summary>
