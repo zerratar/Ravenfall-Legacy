@@ -574,6 +574,12 @@ namespace Shinobytes.UI
             Switch(c, Localization.UI_SETTINGS_QUEST_BAR, Localization.UI_SETTINGS_QUEST_BAR_HINT, SettingsApplier.StreamQuestBar, SettingsApplier.Defaults.StreamQuestBar,
                 SettingsApplier.SetStreamQuestBar);
             ButtonRow(c, Localization.UI_SETTINGS_RESET_WINDOWS, Localization.UI_SETTINGS_RESET_WINDOWS_HINT, Localization.UI_SETTINGS_RESET_WINDOWS_BUTTON, ResetWindowPositions);
+            // what is shown only once: Ravebridge's introduction and its rising from the sea
+            ButtonRow(c, Localization.UI_SETTINGS_INTROS, Localization.UI_SETTINGS_INTROS_HINT, Localization.UI_SETTINGS_INTROS_BUTTON, () =>
+            {
+                RavebridgeIntro.ForgetSeen();
+                if (RavebridgeManager.Instance) RavebridgeManager.Instance.ForgetRevealSeen();
+            });
         }
 
         private void BuildBotMessages(VisualElement c)

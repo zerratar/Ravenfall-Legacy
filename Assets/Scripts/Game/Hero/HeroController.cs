@@ -389,6 +389,12 @@ public partial class HeroController : MonoBehaviour
         if (Time.time < spinUntil) Spin();
         else if (spinUntil > 0f) StopSpin();
         if (busy) return;
+        // the introduction is being read: the hero waits
+        if (Shinobytes.UI.RavebridgeIntro.IsOpen)
+        {
+            if (steering) StopSteering();
+            return;
+        }
 
         // a talk takes the keys (1 to 4 pick answers there, not skills)
         if (!Keybinds.IsTyping && !Shinobytes.UI.RavebridgeDialogueView.IsOpen)
@@ -820,7 +826,7 @@ public partial class HeroController : MonoBehaviour
     /// <summary>A skill bar slot clicked (HeroHudView): 0 to 3 the skills, 4 the roll, 5 a potion, as their keys do.</summary>
     public void UseSlot(int slot)
     {
-        if (Shinobytes.UI.RavebridgeDialogueView.IsOpen) return;
+        if (Shinobytes.UI.RavebridgeDialogueView.IsOpen || Shinobytes.UI.RavebridgeIntro.IsOpen) return;
         if (slot >= 0 && slot < 4) Cast(slot);
         else if (slot == 4) dodgeQueuedUntil = Time.time + DodgeBuffer;
         else if (slot == 5) Potion();

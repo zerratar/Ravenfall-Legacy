@@ -39,6 +39,11 @@ public sealed class RavebridgeReveal : MonoBehaviour
     private GameObject effects;
     private ParticleSystem mist, spray, dust, ring;
     private Material soft;
+    private AudioSource rumble, deepRumble, cascade, waves, oneShots, boom;
+    private float nextDebris;
+    private MusicManager music;
+    private float musicVolume = -1f;
+    private bool boomDone;
     private static Texture2D puff;
     private VisualElement title;
 
@@ -84,6 +89,7 @@ public sealed class RavebridgeReveal : MonoBehaviour
         SetOffset(-Depth);
 
         MakeEffects();
+        MakeSound();
         HideUi();
         Place(0f);
     }
@@ -116,10 +122,12 @@ public sealed class RavebridgeReveal : MonoBehaviour
         {
             burstDone = true;
             if (ring) ring.Emit(500);
+            SplashSound();
         }
 
         var shake = 0.12f + 1.7f * speed + (settling ? 0.7f * (1f - settle) : 0f);
         Place(shake);
+        UpdateSound(speed, above, settle, settling);
         UpdateTitle();
         if (time >= Total) Finish();
     }
@@ -161,6 +169,8 @@ public sealed class RavebridgeReveal : MonoBehaviour
         if (spray) spray.Clear();
         if (dust) dust.Clear();
         if (ring) ring.Clear();
+        boomDone = true;
+        nextDebris = float.MaxValue;
     }
 
     private void Finish()
@@ -171,6 +181,7 @@ public sealed class RavebridgeReveal : MonoBehaviour
         foreach (var w in walkers) if (w) w.SetActive(true);
         walkers.Clear();
         ShowUi();
+        RestoreMusic();
         if (effects) Destroy(effects);
         if (soft) Destroy(soft);
         var game = GameManager.Instance;
@@ -190,8 +201,15 @@ public sealed class RavebridgeReveal : MonoBehaviour
         SetOffset(0f);
         foreach (var w in walkers) if (w) w.SetActive(true);
         ShowUi();
+        RestoreMusic();
         if (effects) Destroy(effects);
         if (current == this) current = null;
+    }
+
+    private void RestoreMusic()
+    {
+        if (music && musicVolume >= 0f) music.volume = musicVolume;
+        musicVolume = -1f;
     }
 
     private static float Smoother(float x) => x * x * x * (x * (x * 6f - 15f) + 10f);
@@ -379,6 +397,84 @@ public sealed class RavebridgeReveal : MonoBehaviour
         var size = system.sizeOverLifetime;
         size.enabled = true;
         size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, from, 1f, to));
+    }
+
+    // ---- The sound -----------------------------------------------------------------------------------
+
+    // the clips' own loudness differs a lot (the debris is quiet, the thunder loud): each is brought near the same
+    private const float RumbleGain = 1f, DeepGain = 0.75f, CascadeGain = 1.1f, WavesGain = 1.6f, BoomGain = 0.8f, SplashGain = 1.2f, DebrisGain = 1f;
+
+    private void MakeSound()
+    {
+        // the music steps back for the rumble and comes back under the name
+        music = FindAnyObjectByType<MusicManager>();
+        if (music) musicVolume = music.volume;
+        var props = RavebridgeRevealProps.Get();
+        if (!props) return;
+        rumble = Source(props.Rumble, 1f);
+        deepRumble = Source(props.DeepRumble, 0.7f);
+        cascade = Source(props.Cascade, 1f);
+        waves = Source(props.Waves, 1f);
+        oneShots = Source(null, 1f);
+        // the thunder pitched down: a deep boom, not weather
+        boom = Source(null, 0.6f);
+        nextDebris = Calm + 2f;
+    }
+
+    /// <summary>Heard as a cutscene is, the same everywhere (not from a place); the game's sound volume applies.</summary>
+    private AudioSource Source(AudioClip clip, float pitch)
+    {
+        var source = effects.AddComponent<AudioSource>();
+        source.spatialBlend = 0f;
+        source.playOnAwake = false;
+        source.pitch = pitch;
+        source.volume = 0f;
+        if (clip)
+        {
+            source.clip = clip;
+            source.loop = true;
+            source.Play();
+        }
+        return source;
+    }
+
+    private void UpdateSound(float speed, float above, float settle, bool settling)
+    {
+        if (music && musicVolume >= 0f)
+        {
+            var duck = Mathf.Min(Mathf.Clamp01(time), Mathf.Clamp01((Total - time) / 1.5f));
+            music.volume = musicVolume * Mathf.Lerp(1f, 0.3f, duck);
+        }
+        var props = RavebridgeRevealProps.Get();
+        if (!props || !effects) return;
+        var volume = GameSounds.Volume;
+        var start = Mathf.Clamp01(time / Calm);                                        // the rumble comes up from nothing
+        var after = Mathf.Clamp01(1f - (time - Calm - Rise - Settle) / (Hold * 0.6f));  // and dies away under the name
+        var skipped = time >= Total - TitleIn - 1.2f && speed <= 0f && !settling ? 0f : 1f;
+        var quake = Mathf.Max(speed, settling ? 0.5f * (1f - settle) : 0f);
+        if (rumble) rumble.volume = volume * RumbleGain * start * after * skipped * (0.35f + 0.65f * quake);
+        if (deepRumble) deepRumble.volume = volume * DeepGain * skipped * quake;
+        if (cascade) cascade.volume = volume * CascadeGain * skipped * Mathf.Max(speed * above, settling ? 0.6f * (1f - settle) : 0f);
+        if (waves) waves.volume = volume * WavesGain * 0.35f * Mathf.Clamp01(Total - time);
+
+        if (!boomDone && time >= Calm)
+        {
+            boomDone = true;
+            if (props.Boom && boom) boom.PlayOneShot(props.Boom, volume * BoomGain);
+        }
+        // rocks cracking and sliding while it moves fast
+        if (time >= nextDebris && speed > 0.25f && props.Debris != null && props.Debris.Length > 0)
+        {
+            nextDebris = time + UnityEngine.Random.Range(0.7f, 1.6f);
+            var clip = props.Debris[UnityEngine.Random.Range(0, props.Debris.Length)];
+            if (clip) oneShots.PlayOneShot(clip, volume * DebrisGain * UnityEngine.Random.Range(0.6f, 1f));
+        }
+    }
+
+    private void SplashSound()
+    {
+        var props = RavebridgeRevealProps.Get();
+        if (props && props.Splash && oneShots) oneShots.PlayOneShot(props.Splash, GameSounds.Volume * SplashGain);
     }
 
     // ---- The screen ----------------------------------------------------------------------------------

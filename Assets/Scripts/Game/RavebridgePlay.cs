@@ -43,6 +43,8 @@ public static class RavebridgePlay
         Playing = player;
         // always as the hero: the wave runs and the bounties are there to start, or not, and the island to roam
         if (!HeroController.Active || HeroController.Active.Player != player) HeroController.Begin(player);
+        // the first time: how hero play works (once per streamer)
+        Shinobytes.UI.RavebridgeIntro.ShowFirstTime();
         Changed?.Invoke();
         return true;
     }

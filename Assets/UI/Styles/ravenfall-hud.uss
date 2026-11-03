@@ -7596,3 +7596,257 @@
     color: var(--rf-text);
     -unity-font-definition: url("project://database/Assets/Fonts/FOT-NewRodin%20Pro%20B.otf?fileID=12800000&guid=ff60cfd97452f864c9a6bf5fc9001f6e&type=3#FOT-NewRodin Pro B");
 }
+
+/* ---- Ravebridge's introduction (RavebridgeIntro), 2026-11-03: a modern game's tutorial window over a dimmed screen --- */
+.rf-intro {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(6, 5, 4, 0.62);
+}
+
+.rf-intro__panel {
+    width: 1240px;
+    overflow: hidden;
+    background-color: rgb(20, 18, 15);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.rf-intro__media {
+    height: 600px;
+    overflow: hidden;
+    background-color: rgb(34, 30, 24);
+}
+
+/* a little bigger than its frame, so the slow drift never shows an edge */
+.rf-intro__picture {
+    position: absolute;
+    left: -5%;
+    top: -5%;
+    width: 110%;
+    height: 110%;
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.rf-intro__shade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 160px;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.rf-intro .rf-intro__counter {
+    position: absolute;
+    left: 24px;
+    top: 22px;
+    padding: 4px 12px;
+    font-size: 16px;
+    color: rgb(245, 236, 214);
+    background-color: rgba(20, 18, 15, 0.85);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(214, 170, 40, 0.8);
+    border-right-color: rgba(214, 170, 40, 0.8);
+    border-top-color: rgba(214, 170, 40, 0.8);
+    border-bottom-color: rgba(214, 170, 40, 0.8);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.rf-intro .rf-intro__close {
+    position: absolute;
+    right: 18px;
+    top: 16px;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    color: rgb(245, 236, 214);
+    background-color: rgba(20, 18, 15, 0.85);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(214, 170, 40, 0.8);
+    border-right-color: rgba(214, 170, 40, 0.8);
+    border-top-color: rgba(214, 170, 40, 0.8);
+    border-bottom-color: rgba(214, 170, 40, 0.8);
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
+    border-bottom-left-radius: 22px;
+    border-bottom-right-radius: 22px;
+}
+
+.rf-intro .rf-intro__close:hover {
+    color: rgb(255, 214, 90);
+    background-color: rgb(40, 32, 18);
+}
+
+.rf-intro__body {
+    /* the same height on every page, so Back and Next stay put */
+    min-height: 236px;
+    padding: 6px 48px 8px 48px;
+}
+
+.rf-intro .rf-intro__eyebrow {
+    font-size: 17px;
+    letter-spacing: 3px;
+    color: rgb(236, 190, 52);
+}
+
+.rf-intro .rf-intro__title {
+    margin-top: 2px;
+    font-size: 46px;
+    color: rgb(245, 236, 214);
+}
+
+.rf-intro .rf-intro__text {
+    margin-top: 8px;
+    font-size: 23px;
+    color: rgb(225, 214, 190);
+    white-space: normal;
+}
+
+.rf-intro__keys {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.rf-intro__key {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 12px 8px 0;
+    padding: 5px 14px 5px 5px;
+    background-color: rgb(30, 27, 22);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(214, 170, 40, 0.6);
+    border-right-color: rgba(214, 170, 40, 0.6);
+    border-top-color: rgba(214, 170, 40, 0.6);
+    border-bottom-color: rgba(214, 170, 40, 0.6);
+    border-top-left-radius: 9px;
+    border-top-right-radius: 9px;
+    border-bottom-left-radius: 9px;
+    border-bottom-right-radius: 9px;
+}
+
+.rf-intro .rf-intro__keycap {
+    min-width: 34px;
+    padding: 3px 10px;
+    margin-right: 10px;
+    font-size: 17px;
+    -unity-text-align: middle-center;
+    color: rgb(245, 236, 214);
+    background-color: rgb(44, 38, 30);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-intro .rf-intro__keytext {
+    font-size: 18px;
+    color: rgb(235, 225, 200);
+}
+
+.rf-intro__foot {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 48px 34px 48px;
+}
+
+.rf-intro__dots {
+    flex-direction: row;
+    align-items: center;
+}
+
+.rf-intro__dot {
+    width: 12px;
+    height: 12px;
+    margin-right: 10px;
+    background-color: rgba(214, 170, 40, 0.3);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.rf-intro__dot:hover {
+    background-color: rgba(214, 170, 40, 0.6);
+}
+
+.rf-intro__dot--on {
+    width: 34px;
+    background-color: rgb(236, 190, 52);
+}
+
+.rf-intro__buttons {
+    flex-direction: row;
+}
+
+.rf-intro .rf-intro__button {
+    height: 52px;
+    min-width: 150px;
+    margin-left: 12px;
+    padding: 0 26px;
+    font-size: 20px;
+    color: rgb(236, 190, 52);
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(214, 170, 40);
+    border-right-color: rgb(214, 170, 40);
+    border-top-color: rgb(214, 170, 40);
+    border-bottom-color: rgb(214, 170, 40);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.rf-intro .rf-intro__button:hover {
+    background-color: rgba(214, 170, 40, 0.15);
+}
+
+.rf-intro .rf-intro__button--primary {
+    color: rgb(20, 18, 15);
+    background-color: rgb(236, 190, 52);
+}
+
+.rf-intro .rf-intro__button--primary:hover {
+    background-color: rgb(255, 214, 90);
+}

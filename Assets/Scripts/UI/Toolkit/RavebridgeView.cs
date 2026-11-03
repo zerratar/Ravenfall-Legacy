@@ -130,7 +130,11 @@ namespace Shinobytes.UI
             head.Add(icon);
             head.Add(title);
             head.Add(info);
+            // the introduction again, any time (RavebridgeIntro)
+            var intro = IconButton("", RavebridgeIntro.Open);
+            intro.tooltip = Localization.UI_RB_INTRO_OPEN;
             head.Add(stripAction);
+            head.Add(intro);
             head.Add(help);
             head.Add(chevron);
             // a click on the folded strip (not on its buttons) opens it

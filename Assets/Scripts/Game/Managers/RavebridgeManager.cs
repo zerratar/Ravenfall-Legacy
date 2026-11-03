@@ -376,6 +376,13 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         Changed?.Invoke();
     }
 
+    /// <summary>The rising plays again the next time Ravebridge opens (the settings' "Introductions").</summary>
+    public void ForgetRevealSeen()
+    {
+        PlayerPrefs.DeleteKey(RevealKey);
+        PlayerPrefs.Save();
+    }
+
     /// <summary>The debug menu's "Ravebridge Rises": opens it (forced) and plays the rising again.</summary>
     public StartResult ReplayReveal()
     {
