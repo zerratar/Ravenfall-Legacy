@@ -35,6 +35,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     private string pendingForcedReason;
     private readonly List<GameObject> scenery = new List<GameObject>();
     private readonly List<EnemyController> respawning = new List<EnemyController>();
+    private readonly List<PlayerController> waitingForReveal = new List<PlayerController>();
     private bool sceneryHidden;
     private float unusedSince = -1f;
     private float nextPresenceCheck;
@@ -151,6 +152,9 @@ public class RavebridgeManager : MonoBehaviour, IEvent
         var readable = MessageUtilities.TryExtractTags(MessageUtilities.TryExtractCategory(line, out _), out _);
         OpeningLine = readable.Replace("!ravebridge", "{command}");
         Ask = ask;
+        // the first time this stream opens it: it rises from the sea (RavebridgeReveal); not when nobody would see it
+        // (HeroStart, a storm, the streamer away: ask false)
+        Revealing = ask && !RevealSeen && RavebridgeReveal.Play(this, Island, RevealDone);
         var banner = ask ? null : FindAnyObjectByType<Shinobytes.UI.NotificationScreenView>(FindObjectsInactive.Include);
         if (banner)
         {
@@ -185,6 +189,8 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     public void End()
     {
         if (!Active) return;
+        waitingForReveal.Clear();
+        if (Revealing) RavebridgeReveal.Skip();
         leaving.Clear();
         foreach (var player in game.Players.GetAllPlayers())
         {
@@ -208,6 +214,14 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     {
         if (!Active || !Island) return JoinResult.NotActive;
         if (Contains(player)) return JoinResult.AlreadyThere;
+        // still rising from the sea: taken over once it is up
+        if (Revealing)
+        {
+            if (!player || player.Stats.IsDead) return JoinResult.Dead;
+            if (waitingForReveal.Contains(player)) return JoinResult.AlreadyThere;
+            waitingForReveal.Add(player);
+            return JoinResult.Joined;
+        }
         if (player.Stats.IsDead) return JoinResult.Dead;
         if (player.dungeonHandler.InDungeon || player.raidHandler.InRaid || player.streamRaidHandler.InWar
             || player.arenaHandler.InArena || player.duelHandler.InDuel)
@@ -342,6 +356,34 @@ public class RavebridgeManager : MonoBehaviour, IEvent
 
     // ---- There only while used ------------------------------------------------------------------------
 
+    // ---- Rising from the sea, the first time ----------------------------------------------------------
+
+    /// <summary>Ravebridge is rising from the sea (RavebridgeReveal): joining waits, "Who plays?" waits.</summary>
+    public bool Revealing { get; private set; }
+
+    /// <summary>The stream has seen Ravebridge rise (kept on this PC, per streamer).</summary>
+    private string RevealKey => "ravebridge.revealed." + (game && game.RavenNest != null ? game.RavenNest.UserId.ToString() : "local");
+    private bool RevealSeen => PlayerPrefs.GetInt(RevealKey, 0) == 1;
+
+    private void RevealDone()
+    {
+        PlayerPrefs.SetInt(RevealKey, 1);
+        PlayerPrefs.Save();
+        Revealing = false;
+        var waiting = waitingForReveal.ToArray();
+        waitingForReveal.Clear();
+        foreach (var player in waiting) if (player) Join(player);
+        Changed?.Invoke();
+    }
+
+    /// <summary>The debug menu's "Ravebridge Rises": opens it (forced) and plays the rising again.</summary>
+    public StartResult ReplayReveal()
+    {
+        if (Active) return StartResult.AlreadyActive;
+        PlayerPrefs.DeleteKey(RevealKey);
+        return Begin(true, null, true);
+    }
+
     /// <summary>How long nobody uses Ravebridge before its contents hide.</summary>
     private const float HideAfter = 3f;
 
@@ -414,7 +456,7 @@ public class RavebridgeManager : MonoBehaviour, IEvent
     {
         if (Time.time < nextPresenceCheck || !game.IsLoaded || !Island) return;
         nextPresenceCheck = Time.time + 0.5f;
-        var used = Active;
+        var used = Active || Revealing;
         if (!used)
         {
             foreach (var player in game.Players.GetAllPlayers())

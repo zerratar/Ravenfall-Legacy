@@ -143,6 +143,9 @@ public class GameCamera : MonoBehaviour
                 return;
             }
 
+            // a cutscene moves the camera itself; no camera key takes it
+            if (state == GameCameraType.Cinematic) return;
+
 
             // the regatta: the race camera key gives the race camera back (from by hand, or from a player or an island
             // watched meanwhile); the free camera key takes the race camera by hand without leaving the race
@@ -600,6 +603,41 @@ public class GameCamera : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// A cutscene takes the camera (RavebridgeReveal): no other camera moves it and no camera key works until
+    /// <see cref="StopCinematic"/>; the cutscene sets the camera's transform itself, in LateUpdate. False when something
+    /// bigger has it: a raid, a dungeon, the arena, a war, a character played by hand or the forced free camera.
+    /// </summary>
+    public bool StartCinematic()
+    {
+        if (forcedFreeCamera || controlled) return false;
+        if (state == GameCameraType.Raid || state == GameCameraType.Dungeon || state == GameCameraType.Arena) return false;
+        if (gameManager.StreamRaid.IsWar || gameManager.Raid.Started || gameManager.Dungeons.Started) return false;
+        LeaveRace();
+        state = GameCameraType.Cinematic;
+        observeCamera.ObservePlayer(null);
+        playerObserver.Observe(null, 0);
+        islandObserver.Observe(null, 0);
+        freeCamera.enabled = false;
+        orbitCamera.enabled = false;
+        islandObserveCamera.enabled = false;
+        focusTargetCamera.enabled = false;
+        return true;
+    }
+
+    /// <summary>The cutscene is over: the camera goes on to <paramref name="island"/>, or to the islands as usual.</summary>
+    public void StopCinematic(IslandController island = null)
+    {
+        if (state != GameCameraType.Cinematic) return;
+        state = GameCameraType.Free;
+        if (island)
+        {
+            state = GameCameraType.Island;
+            ObserveIsland(island);
+        }
+        else if (PlayerSettings.Instance.EnableIslandCameraOnStart == true || ObserveNextPlayer()) ObserveNextIsland();
+    }
+
     /// <summary>The race camera while it shows a race (by hand or not), else null: the race's UI asks it.</summary>
     public RaceCamera RaceCamera => state == GameCameraType.Race ? raceCamera : null;
 
@@ -676,5 +714,6 @@ public enum GameCameraType
     Dungeon,
     Island,
     Controlled,
-    Race
+    Race,
+    Cinematic
 }

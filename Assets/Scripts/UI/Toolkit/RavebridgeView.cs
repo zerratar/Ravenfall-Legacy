@@ -514,7 +514,8 @@ namespace Shinobytes.UI
                 TryBind();
                 if (!bound) return;
             }
-            if (askAt > 0f && Time.unscaledTime >= askAt)
+            // not while it rises from the sea: asked once it is up
+            if (askAt > 0f && Time.unscaledTime >= askAt && !(RavebridgeManager.Instance && RavebridgeManager.Instance.Revealing))
             {
                 askAt = 0f;
                 var rb = RavebridgeManager.Instance;

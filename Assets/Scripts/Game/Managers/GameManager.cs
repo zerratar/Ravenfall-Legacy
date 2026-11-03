@@ -2214,7 +2214,7 @@ public class GameManager : MonoBehaviour, IGameManager
 
     private void OnGUI()
     {
-        if (!SessionSettings.IsAdministrator)
+        if (!SessionSettings.IsAdministrator || RavebridgeReveal.Playing)
         {
             return;
         }
@@ -2288,6 +2288,12 @@ public class GameManager : MonoBehaviour, IGameManager
         {
             if (Ravebridge.Active) Ravebridge.End();
             else Ravebridge.Begin(true, null, true);
+        }
+
+        // the first opening's cutscene again: Ravebridge rising from the sea (RavebridgeReveal)
+        if (Ravebridge && !Ravebridge.Active && GUI.Button(GetButtonRect(buttonIndex++), "Ravebridge Rises"))
+        {
+            Ravebridge.ReplayReveal();
         }
 
         if (Arena.Activated)

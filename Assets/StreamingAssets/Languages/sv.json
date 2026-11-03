@@ -1498,6 +1498,8 @@
     "UI_RAVEBRIDGE_BACK": "Tillbaka",
     "UI_RAVEBRIDGE_PLAYING": "Spelar {0}.",
     "UI_RAVEBRIDGE_TITLE": "Ravebridge",
+    "UI_RAVEBRIDGE_RISEN": "har stigit ur havet",
+    "UI_CUTSCENE_SKIP": "Hoppa över",
     "UI_RAVEBRIDGE_JOIN": "Skriv {command} för att följa med",
     "UI_RAVEBRIDGE_BAR": "Ravebridge: {0} där, öppet {1}",
     "UI_RAVEBRIDGE_INFO": "Öppet {0}, {1} på ön",

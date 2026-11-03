@@ -798,6 +798,8 @@ public static class Localization
     public static string UI_RAVEBRIDGE_BACK = "Back";
     public static string UI_RAVEBRIDGE_PLAYING = "Playing {0}.";
     public static string UI_RAVEBRIDGE_TITLE = "Ravebridge";
+    public static string UI_RAVEBRIDGE_RISEN = "has risen from the sea";
+    public static string UI_CUTSCENE_SKIP = "Skip";
     public static string UI_RAVEBRIDGE_JOIN = "Type {command} to come along";
     public static string UI_RAVEBRIDGE_BAR = "Ravebridge: {0} there, open {1}";
     public static string UI_RAVEBRIDGE_BAR_FORCED = "closes in {0} unless you stay";
