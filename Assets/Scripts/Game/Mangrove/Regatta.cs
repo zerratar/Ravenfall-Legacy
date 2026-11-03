@@ -604,15 +604,19 @@ public sealed class Regatta : MonoBehaviour
         {
             case Gag.Swim:
             {
-                // out in front, in to the shoulders and leaning into it (the swim animation treads water upright), a
-                // little bob and wiggle as they kick; the boat comes along behind on the rope from their shoulder
-                var swimmer = boat.SeaPosition + forward * (length * 0.5f + 6f + Mathf.Sin(now * 1.7f) * 0.6f) + right * Mathf.Sin(now * 2.3f) * 0.8f;
-                swimmer.y = SeaChart.Sea - 1.05f + Mathf.Sin(now * 7f) * 0.08f;
-                var heading = Quaternion.LookRotation(forward) * Quaternion.Euler(0f, Mathf.Sin(now * 5f) * 8f, 0f);
-                t.SetPositionAndRotation(swimmer, heading * Quaternion.Euler(38f + Mathf.Sin(now * 6f) * 6f, 0f, 0f));
-                // the rope in their right hand (it moves with the stroke), or at the shoulder without a rig
-                var rightHand = r.Rig ? r.Rig.GetBoneTransform(HumanBodyBones.RightHand) : null;
-                var hand = rightHand ? rightHand.position : t.position + t.up * 1.3f - t.forward * 0.15f;
+                // out in front doing a frantic front crawl (the user, 2026-11-03): flat on the water, face down, rolling
+                // with each stroke; the arms windmill stiff, the legs flutter, the head turns to gasp every other
+                // stroke (PoseCrawl); the tow rope is tied round their waist to the bow
+                var swimmer = boat.SeaPosition + forward * (length * 0.5f + 6.5f + Mathf.Sin(now * 1.7f) * 0.5f) + right * Mathf.Sin(now * 2.3f) * 0.6f;
+                swimmer.y = SeaChart.Sea - 0.12f + Mathf.Sin(now * CrawlStrokes * Mathf.PI * 2f) * 0.06f;
+                var stroke = now * CrawlStrokes * 360f;
+                var roll = Quaternion.AngleAxis(Mathf.Sin(stroke * Mathf.Deg2Rad) * 22f, forward);
+                var lying = roll * Quaternion.LookRotation(Vector3.down, forward);
+                // the root is at the feet: the body's middle on the swimmer's point
+                t.SetPositionAndRotation(swimmer - roll * forward * (0.9f * t.lossyScale.y), lying);
+                if (r.Rig) PoseCrawl(r.Rig, t, stroke, now);
+                var hips = r.Rig ? r.Rig.GetBoneTransform(HumanBodyBones.Hips) : null;
+                var hand = hips ? hips.position : swimmer;
                 var bow = bt.position + bt.forward * (length * 0.48f) + Vector3.up * Mathf.Max(1f, length * 0.06f);
                 if (r.Rope)
                 {
@@ -626,10 +630,11 @@ public sealed class Regatta : MonoBehaviour
                         r.Rope.SetPosition(i, at);
                     }
                 }
+                // a splash each time a hand comes down in front
                 if (now >= r.NextSplash)
                 {
-                    r.NextSplash = now + 0.9f;
-                    Effect(RegattaProps.Get()?.Splash, swimmer, 1.5f, 0.35f);
+                    r.NextSplash = now + 0.5f / CrawlStrokes;
+                    Effect(RegattaProps.Get()?.Splash, swimmer + forward * 1.1f, 0.8f, 0.16f);
                 }
                 break;
             }
@@ -662,9 +667,12 @@ public sealed class Regatta : MonoBehaviour
             }
             case Gag.HangOn:
             {
-                // hands on the stern rail, the rest blown out behind the boat, legs up in the wind, flapping like a flag
-                var grip = bt.position - bt.forward * (length * 0.5f - 0.4f);
-                grip.y = boat.Seat.position.y + 1f;
+                // hands on the wheel (the ships, sloop and up) or the stern rail (the small boats, steered by oar), the
+                // rest blown out behind, legs up in the wind, flapping like a flag; on the ships it flies over the deck
+                // (out past a galleon's stern the castle hid them)
+                var wheel = boat.Tier != BoatItems.Tier.Rowboat && boat.Tier != BoatItems.Tier.FishingBoat;
+                var grip = wheel ? boat.Seat.position + forward * 0.55f + Vector3.up * 1.15f : bt.position - bt.forward * (length * 0.5f - 0.4f);
+                if (!wheel) grip.y = boat.Seat.position.y + 1f;
                 var flap = Quaternion.AngleAxis(Mathf.Sin(now * 17f) * 20f, forward)
                     * Quaternion.AngleAxis(14f + Mathf.Sin(now * 11f + 1f) * 12f, right);
                 var head = flap * forward;
@@ -698,6 +706,33 @@ public sealed class Regatta : MonoBehaviour
         Stiff(rig, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot, -up - side * 0.08f, 0f);
         var head = rig.GetBoneTransform(HumanBodyBones.Head);
         if (head) head.rotation = Quaternion.AngleAxis(Mathf.Sin(now * 23f) * 28f, body.forward) * Quaternion.AngleAxis(Mathf.Sin(now * 17f) * 15f, side) * head.rotation;
+    }
+
+    /// <summary>The swimmer's strokes a second: a frantic crawl.</summary>
+    private const float CrawlStrokes = 1.6f;
+
+    /// <summary>
+    /// The front crawl over the swim animation, for a body lying face down with its head the way it swims: each arm
+    /// straight, swinging round its shoulder, forward, down and back under the body, then up and over (the arms half a
+    /// turn apart); the legs straight and fluttering; the head turned to the side to gasp every other stroke.
+    /// </summary>
+    private static void PoseCrawl(Animator rig, Transform body, float stroke, float now)
+    {
+        var ahead = body.up;
+        var side = body.right;
+        // ahead, then down (the way the face looks) as the angle grows: the pull under the body, the recovery over it
+        Stiff(rig, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, Quaternion.AngleAxis(stroke, side) * ahead - side * 0.25f, 0f);
+        Stiff(rig, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, Quaternion.AngleAxis(stroke + 180f, side) * ahead + side * 0.25f, 0f);
+        var kick = Mathf.Sin(now * 24f) * 0.3f;
+        Stiff(rig, HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, HumanBodyBones.LeftFoot, -ahead + body.forward * kick - side * 0.05f, 0f);
+        Stiff(rig, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot, -ahead - body.forward * kick + side * 0.05f, 0f);
+        var head = rig.GetBoneTransform(HumanBodyBones.Head);
+        if (head)
+        {
+            // every other stroke, on the right arm's recovery, a quick turn of the head out of the water for air
+            var breath = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(stroke * 0.5f * Mathf.Deg2Rad)), 6f);
+            head.rotation = Quaternion.AngleAxis(breath * 75f, ahead) * Quaternion.AngleAxis(-25f, side) * head.rotation;
+        }
     }
 
     /// <summary>The propeller's arms turned about their length, as a blade is pitched.</summary>
