@@ -55,6 +55,10 @@ offers. The island was built around monkeys and bananas, and neither existed in 
 
 ### 5. The regatta
 
+**Status: done (playtested 2026-11-03).** The user's call: it is for a laugh, not a AAA racer, and good enough to ship;
+revisit once real streamers have played it. Possible later: racer commands (tack, line choice), seasons, per-tier
+records, rivalries, an own-key wheel grip on boats added later (ReadWheel handles them already).
+
 - A boat race round the island for own boats. `!regatta` joins (an own boat equipped), the broadcaster starts it
   with `!regatta start` (without their own character joining; with no sign-up open it opens one as `!regatta`
   does); it also starts by itself when enough boats have joined.
